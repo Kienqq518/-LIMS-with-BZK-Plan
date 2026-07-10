@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>委托登记 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      委托登记
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <!-- 搜索区 -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-3">
+        <div class="flex items-center gap-2"><label class="w-24 text-right text-sm text-slate-600">委托编号</label><input type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
+        <div class="flex items-center gap-2"><label class="w-24 text-right text-sm text-slate-600">合同编号</label><input type="text" placeholder="请输入合同编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
+        <div class="flex items-center gap-2"><label class="w-24 text-right text-sm text-slate-600">样品名称</label><input type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
+        <div class="flex items-center gap-2"><label class="w-24 text-right text-sm text-slate-600">客户单位</label><input type="text" placeholder="请输入委托单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
+        <div class="flex items-center gap-2"><label class="w-24 text-right text-sm text-slate-600">委托受理日期</label><div class="relative flex-1"><input type="text" placeholder="开始日期 ~ 结束日期" class="w-full rounded border border-slate-300 px-3 py-1.5 pr-8 text-sm outline-none focus:border-blue-500" /><i class="fa fa-calendar-o absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"></i></div></div>
+        <div class="flex items-center justify-end gap-2">
+          <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+          <button class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 列表区 -->
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="mb-4">
+        <button onclick="openAddModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 委托登记</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[900px] border-collapse text-left text-sm">
+          <thead><tr class="bg-slate-100 text-slate-600">
+            <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">是否关联框架合同</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+          </tr></thead>
+          <tbody id="registerTableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span>共 39 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200"><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200"><i class="fa fa-angle-right"></i></button>
+        <select class="rounded border border-slate-200 px-2 py-1"><option>50条/页</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增任务弹窗 - 步骤1：选择新增方式 -->
+  <div id="addModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40">
+    <div class="w-[480px] max-w-[92vw] rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">新增任务</h3>
+        <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-6">
+        <p class="mb-4 text-sm text-slate-600">请选择新增方式</p>
+        <label class="mb-3 flex cursor-pointer items-start gap-3 rounded border border-blue-200 bg-blue-50 p-4">
+          <input type="radio" name="addMode" value="manual" checked class="mt-1" />
+          <div><div class="text-sm font-medium text-slate-800">手动创建</div><div class="text-xs text-slate-500">手动录入数据</div></div>
+        </label>
+        <label class="flex cursor-pointer items-start gap-3 rounded border border-slate-200 p-4 hover:bg-slate-50">
+          <input type="radio" name="addMode" value="copy" class="mt-1" />
+          <div><div class="text-sm font-medium text-slate-800">复制任务</div><div class="text-xs text-slate-500">从现有任务中复制数据，复制后可修改</div></div>
+        </label>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeAddModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button id="addNextBtn" onclick="handleAddNext()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增任务弹窗 - 步骤2：选择要复制的委托编号 -->
+  <div id="copyModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+    <div class="w-[480px] max-w-[92vw] rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">新增任务</h3>
+        <button onclick="closeCopyModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-6">
+        <div class="flex items-center gap-3">
+          <label class="whitespace-nowrap text-sm text-slate-600"><span class="text-red-500">*</span> 委托编号：</label>
+          <select id="copySelect" class="flex-1 rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500">
+            <option value="">请选择要复制的任务</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="backToAddModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">上一步</button>
+        <button onclick="confirmCopy()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    // 委托登记列表 Mock 数据
+    var registerData = [
+      { code: 'SC2026/0209', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV·3芯、实壁类塑料电缆导管_直管', date: '2026-06-25', editor: 'admin', salesman: '业务员A' },
+      { code: 'SC2026/0208', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV·3芯', date: '2026-06-15', editor: 'admin', salesman: '梁倩' },
+      { code: 'SC2026/0207', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV·3芯', date: '2026-06-11', editor: 'admin', salesman: '梁倩' },
+      { code: 'SC2026/0206', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV·3芯', date: '2026-06-16', editor: 'admin', salesman: '业务员A' },
+      { code: 'SC2026/0205', contract: '/', customer: '东莞西洁有限公司', sample: '复合硅酸盐水泥', date: '2026-06-11', editor: 'admin', salesman: '梁倩' }
+    ];
+
+    // 可复制任务列表
+    var copyOptions = [
+      'SC2026/0212-杭州数蚕智能科技有限公司',
+      'SC2026/0211-杭州数蚕智能科技有限公司',
+      'SC2026/0210-杭州数蚕智能科技有限公司',
+      'SC2026/0209',
+      'SC2026/0205-东莞西洁有限公司',
+      'SC2026/0188-宇宙设想有限公司'
+    ];
+
+    // 渲染登记列表
+    (function renderTable() {
+      document.getElementById('registerTableBody').innerHTML = registerData.map(function (item, i) {
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-create.html?mode=edit&code=' + item.code + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.date + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.salesman + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
+            '<a href="entrust-create.html?mode=edit&code=' + item.code + '" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</a>' +
+            '<button class="ml-3 text-red-500 hover:underline"><i class="fa fa-trash-o"></i> 删除</button>' +
+          '</td></tr>';
+      }).join('');
+    })();
+
+    // 填充复制任务下拉选项
+    (function initCopySelect() {
+      var sel = document.getElementById('copySelect');
+      copyOptions.forEach(function (opt) {
+        var o = document.createElement('option');
+        o.value = opt.split('-')[0];
+        o.textContent = opt;
+        sel.appendChild(o);
+      });
+    })();
+
+    // 弹窗显示/隐藏
+    function show(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
+    function hide(id) { var m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+    // 打开新增弹窗
+    function openAddModal() { show('addModal'); }
+    function closeAddModal() { hide('addModal'); }
+    function closeCopyModal() { hide('copyModal'); }
+
+    // 步骤1：根据选择跳转手动创建或进入复制步骤
+    function handleAddNext() {
+      var mode = document.querySelector('input[name="addMode"]:checked').value;
+      closeAddModal();
+      if (mode === 'manual') {
+        window.location.href = 'entrust-create.html?mode=manual';
+      } else {
+        show('copyModal');
+      }
+    }
+
+    // 复制步骤：返回上一步
+    function backToAddModal() {
+      closeCopyModal();
+      show('addModal');
+      document.querySelector('input[name="addMode"][value="copy"]').checked = true;
+    }
+
+    // 复制步骤：确认后跳转委托新增详情页（带复制来源参数）
+    function confirmCopy() {
+      var code = document.getElementById('copySelect').value;
+      if (!code) { alert('请选择要复制的任务'); return; }
+      window.location.href = 'entrust-create.html?mode=copy&from=' + encodeURIComponent(code);
+    }
+
+    ['addModal', 'copyModal'].forEach(function (id) {
+      document.getElementById(id).addEventListener('click', function (e) {
+        if (e.target === this) hide(id);
+      });
+    });
+  </script>
+</body>
+</html>
