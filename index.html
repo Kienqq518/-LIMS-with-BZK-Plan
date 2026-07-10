@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智慧实验室 - 实验室业务管理系统</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    /* 自定义滚动条样式，让侧边栏更精致 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, .4); border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    /* 子菜单展开/折叠的过渡动画 */
+    .submenu { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
+    .submenu.open { max-height: 500px; }
+    /* 菜单箭头旋转动画 */
+    .menu-arrow { transition: transform .3s ease; }
+    .menu-arrow.open { transform: rotate(90deg); }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden bg-slate-100">
+  <div class="flex h-full w-full">
+    <!-- ============ 左侧侧边栏 ============ -->
+    <aside class="flex w-56 flex-shrink-0 flex-col bg-slate-800 text-slate-300">
+      <!-- Logo 区域 -->
+      <div class="flex h-14 flex-shrink-0 items-center gap-2 border-b border-slate-700/60 px-4">
+        <i class="fa fa-flask text-lg text-sky-400"></i>
+        <span class="text-base font-semibold tracking-wide text-white">智慧实验室</span>
+      </div>
+
+      <!-- 导航菜单 -->
+      <nav id="sidebarNav" class="flex-1 overflow-y-auto py-3 text-sm">
+        <!-- 工作台 -->
+        <a href="dashboard.html" target="mainFrame"
+           class="menu-link flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-700/60"
+           data-active="true">
+          <i class="fa fa-th-large w-4 text-center"></i>
+          <span>工作台</span>
+        </a>
+
+        <!-- 合同管理（含子菜单） -->
+        <div class="menu-group">
+          <button type="button"
+            class="menu-toggle flex w-full items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-700/60">
+            <i class="fa fa-file-text-o w-4 text-center"></i>
+            <span class="flex-1 text-left">合同管理</span>
+            <i class="fa fa-angle-right menu-arrow text-xs"></i>
+          </button>
+          <div class="submenu bg-slate-900/40">
+            <a href="entrust-preview.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">委托预览</a>
+            <a href="frame-contract.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">框架合同</a>
+            <a href="contract-list.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">合同列表</a>
+          </div>
+        </div>
+
+        <!-- 样品管理（含子菜单） -->
+        <div class="menu-group">
+          <button type="button"
+            class="menu-toggle flex w-full items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-700/60">
+            <i class="fa fa-cubes w-4 text-center"></i>
+            <span class="flex-1 text-left">样品管理</span>
+            <i class="fa fa-angle-right menu-arrow text-xs"></i>
+          </button>
+          <div class="submenu bg-slate-900/40">
+            <a href="sample-receive.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">样品收样</a>
+            <a href="sample-storage.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">样品入库</a>
+            <a href="sample-back.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">样品退回</a>
+          </div>
+        </div>
+
+        <!-- 试验管理（含子菜单） -->
+        <div class="menu-group">
+          <button type="button"
+            class="menu-toggle flex w-full items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-700/60">
+            <i class="fa fa-flask w-4 text-center"></i>
+            <span class="flex-1 text-left">试验管理</span>
+            <i class="fa fa-angle-right menu-arrow text-xs"></i>
+          </button>
+          <div class="submenu bg-slate-900/40">
+            <a href="test-task.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">试验任务</a>
+            <a href="test-data.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">数据录入</a>
+            <a href="test-review.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">数据审核</a>
+          </div>
+        </div>
+
+        <!-- 报告管理 -->
+        <a href="report-list.html" target="mainFrame"
+           class="menu-link flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-700/60">
+          <i class="fa fa-file-pdf-o w-4 text-center"></i>
+          <span>报告管理</span>
+        </a>
+
+        <!-- 设备管理 -->
+        <a href="device-list.html" target="mainFrame"
+           class="menu-link flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-700/60">
+          <i class="fa fa-wrench w-4 text-center"></i>
+          <span>设备管理</span>
+        </a>
+
+        <!-- 客户管理 -->
+        <a href="customer-list.html" target="mainFrame"
+           class="menu-link flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-700/60">
+          <i class="fa fa-users w-4 text-center"></i>
+          <span>客户管理</span>
+        </a>
+
+        <!-- 系统设置 -->
+        <a href="system-settings.html" target="mainFrame"
+           class="menu-link flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-700/60">
+          <i class="fa fa-cog w-4 text-center"></i>
+          <span>系统设置</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- ============ 右侧主体区 ============ -->
+    <div class="flex flex-1 flex-col overflow-hidden">
+      <!-- 顶部导航 Header -->
+      <header class="flex h-14 flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
+        <!-- 左侧：面包屑/标题 -->
+        <div class="flex items-center gap-2 text-sm">
+          <span id="pageTitle" class="text-base font-medium text-slate-800">工作台</span>
+        </div>
+
+        <!-- 右侧：功能区 -->
+        <div class="flex items-center gap-5 text-slate-500">
+          <a href="#" class="flex items-center gap-1 text-sm text-sky-600 hover:text-sky-700">
+            <i class="fa fa-sign-out"></i>
+            <span>返回实验室数智化系统</span>
+          </a>
+          <!-- 搜索框 -->
+          <div class="relative">
+            <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+            <input type="text" placeholder="搜索..."
+              class="w-48 rounded-full border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-sm outline-none focus:border-sky-400 focus:bg-white" />
+          </div>
+          <!-- 消息图标 -->
+          <button class="relative text-lg hover:text-slate-700">
+            <i class="fa fa-bell-o"></i>
+            <span class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">5</span>
+          </button>
+          <!-- 管理员头像 -->
+          <div class="flex items-center gap-2">
+            <img src="https://ui-avatars.com/api/?name=Admin&background=0ea5e9&color=fff&size=64"
+              alt="admin" class="h-8 w-8 rounded-full" />
+            <span class="text-sm text-slate-700">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- 主内容区：iframe 撑满剩余空间 -->
+      <main class="flex-1 overflow-hidden bg-slate-50">
+        <iframe name="mainFrame" id="mainFrame" src="dashboard.html" class="h-full w-full border-0"></iframe>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // 侧边栏交互逻辑（原生 JS）
+    (function () {
+      const nav = document.getElementById('sidebarNav');
+      const pageTitle = document.getElementById('pageTitle');
+
+      // 子菜单展开/折叠：点击带箭头的父级菜单
+      nav.querySelectorAll('.menu-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const submenu = btn.nextElementSibling;
+          const arrow = btn.querySelector('.menu-arrow');
+          submenu.classList.toggle('open');
+          arrow.classList.toggle('open');
+        });
+      });
+
+      // 菜单链接点击：高亮当前项并更新顶部标题（iframe 通过 target 自行加载）
+      nav.querySelectorAll('.menu-link').forEach(function (link) {
+        link.addEventListener('click', function () {
+          nav.querySelectorAll('.menu-link').forEach(function (l) {
+            l.classList.remove('bg-slate-700', 'text-white');
+            l.removeAttribute('data-active');
+          });
+          link.classList.add('bg-slate-700', 'text-white');
+          link.setAttribute('data-active', 'true');
+          // 更新顶部标题为菜单文字
+          pageTitle.textContent = link.textContent.trim();
+        });
+      });
+
+      // 初始化：默认高亮“工作台”
+      const active = nav.querySelector('.menu-link[data-active="true"]');
+      if (active) active.classList.add('bg-slate-700', 'text-white');
+    })();
+  </script>
+</body>
+</html>
