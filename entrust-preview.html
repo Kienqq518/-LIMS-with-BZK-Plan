@@ -212,6 +212,24 @@
     </div>
   </div>
 
+  <!-- ============ 签署链接弹窗 ============ -->
+  <div id="signModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+    <div class="w-[460px] max-w-[92vw] rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">签署链接</h3>
+        <button onclick="closeSign()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-5">
+        <p class="text-sm leading-6 text-slate-700">【数蚕智能邀请您签署】您有一份委托合同文件待签署，请尽快处理哦~点击签署</p>
+        <p id="signLink" class="mt-2 break-all text-sm text-slate-500">http://test.wz.shucantech.cn/api/orderInfo/signedLink/U0MyMDI2LzLzAxNTc=</p>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeSign()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取 消</button>
+        <button onclick="copySignLink()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">一键复制</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ================= Mock 数据 =================
     // 委托预览列表数据
@@ -270,8 +288,7 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + reportCell + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
-            '<a href="#" class="text-blue-600 hover:underline"><i class="fa fa-tag"></i> 样品标签</a>' +
-            '<a href="#" class="ml-2 text-blue-600 hover:underline"><i class="fa fa-mobile"></i> 手机签署链接</a>' +
+            '<button onclick="openSign()" class="text-blue-600 hover:underline"><i class="fa fa-mobile"></i> 手机签署链接</button>' +
           '</td>' +
           '</tr>';
       }).join('');
@@ -305,11 +322,26 @@
     // 报告操作日志弹窗开关
     function openLog() { show('logModal'); }
     function closeLog() { hide('logModal'); }
+    // 签署链接弹窗开关
+    function openSign() { show('signModal'); }
+    function closeSign() { hide('signModal'); }
     function show(id) { const m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
     function hide(id) { const m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
 
+    // 一键复制签署链接（兼容 file:// 本地打开场景）
+    function copySignLink() {
+      const text = document.getElementById('signLink').textContent;
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      closeSign();
+    }
+
     // 点击遮罩层关闭对应弹窗
-    ['reportModal', 'logModal'].forEach(function (id) {
+    ['reportModal', 'logModal', 'signModal'].forEach(function (id) {
       document.getElementById(id).addEventListener('click', function (e) {
         if (e.target === this) hide(id);
       });
