@@ -230,6 +230,23 @@
     </div>
   </div>
 
+  <!-- ============ 合同流程弹窗 ============ -->
+  <div id="flowModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+    <div class="flex max-h-[86vh] w-[440px] max-w-[92vw] flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">合同流程</h3>
+        <button onclick="closeFlow()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="border-b border-slate-100 px-6 py-3 text-sm text-slate-600">
+        <div>委托号：<span id="flowCode" class="text-slate-800"></span></div>
+        <div class="mt-1">样品名称：<span id="flowSample" class="text-slate-800"></span></div>
+      </div>
+      <div id="flowList" class="flex-1 overflow-y-auto px-6 py-4">
+        <!-- 流程时间轴由 JS 使用 Mock 数据渲染 -->
+      </div>
+    </div>
+  </div>
+
   <script>
     // ================= Mock 数据 =================
     // 委托预览列表数据
@@ -246,6 +263,28 @@
       { code: 'SC2026/0202', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '复合硅酸盐水泥', status: '检测中', progress: '试验检测', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-19', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '200', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: false },
       { code: 'SC2026/0201', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '实事求型料准', status: '检测中', progress: '试验检测', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-19', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '业务员A', nature: '例行试验', editor: 'admin', hasReport: true },
       { code: 'SC2026/0200', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '复合硅酸盐水泥', status: '已复审', progress: '报告审核', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-20', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '200', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: true }
+    ];
+
+    // 合同流程步骤数据（前 13 步已完成带时间，第 14 步为当前进度，其后未开始）
+    const flowSteps = [
+      { name: '委托登记', user: 'admin', time: '2026-07-08 08:35:52' },
+      { name: '样品收样', user: 'admin', time: '2026-07-08 08:36:10' },
+      { name: '委托确认', user: 'admin', time: '2026-07-08 08:36:41' },
+      { name: '费用审核', user: 'admin', time: '2026-07-08 08:36:44' },
+      { name: '样品准备', user: 'admin', time: '2026-07-08 08:36:54' },
+      { name: '样品入库', user: 'admin', time: '2026-07-08 08:37:22' },
+      { name: '试样分发', user: 'admin', time: '2026-07-08 08:37:34' },
+      { name: '试验检测', user: 'admin', time: '2026-07-08 08:37:59' },
+      { name: '组内审核', user: 'admin', time: '2026-07-08 08:38:05' },
+      { name: '数据审核', user: 'admin', time: '2026-07-08 08:38:08' },
+      { name: '报告编制', user: 'admin', time: '2026-07-08 08:38:26' },
+      { name: '报告审核', user: 'admin', time: '2026-07-08 08:38:37' },
+      { name: '报告签发', user: 'admin', time: '2026-07-08 08:38:43' },
+      { name: '报告处理', user: '', time: '' },
+      { name: '收费审批', user: '', time: '' },
+      { name: '报告发放', user: '', time: '' },
+      { name: '任务归档', user: '', time: '' },
+      { name: '任务完成', user: '', time: '' }
     ];
 
     // 报告操作日志数据
@@ -274,7 +313,7 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.status + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5"><a href="#" class="text-blue-600 hover:underline">' + item.progress + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><button onclick="openFlow(' + idx + ')" class="text-blue-600 hover:underline">' + item.progress + '</button></td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.acceptDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.receiveDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.requireDate + '</td>' +
@@ -325,6 +364,46 @@
     // 签署链接弹窗开关
     function openSign() { show('signModal'); }
     function closeSign() { hide('signModal'); }
+
+    // 合同流程弹窗：根据点击行填充头部并渲染流程时间轴
+    function openFlow(index) {
+      const item = entrustData[index];
+      document.getElementById('flowCode').textContent = item.code;
+      document.getElementById('flowSample').textContent = item.sample;
+      // 当前进度 = 第一个无时间的步骤
+      const current = flowSteps.findIndex(function (s) { return !s.time; });
+      document.getElementById('flowList').innerHTML = flowSteps.map(function (s, i) {
+        const isDone = !!s.time;
+        const isCurrent = i === current;
+        const isLast = i === flowSteps.length - 1;
+        // 节点图标：已完成绿色对勾 / 当前蓝色实心序号 / 未开始灰色序号
+        let dot;
+        if (isDone) {
+          dot = '<span class="flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-xs text-white"><i class="fa fa-check"></i></span>';
+        } else if (isCurrent) {
+          dot = '<span class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs text-white">' + (i + 1) + '</span>';
+        } else {
+          dot = '<span class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs text-slate-500">' + (i + 1) + '</span>';
+        }
+        // 连接线（最后一个节点不画）
+        const line = isLast ? '' : '<span class="mt-1 w-px flex-1 ' + (isDone ? 'bg-green-400' : 'bg-slate-200') + '"></span>';
+        // 文本：已完成显示 名称(用户)+时间；未完成显示 名称(暂无)，最后一步仅名称
+        let text;
+        if (isDone) {
+          text = '<div class="text-sm text-slate-700">' + s.name + '(' + s.user + ')</div>' +
+            '<div class="text-xs text-slate-400">' + s.time + '</div>';
+        } else {
+          const tag = isLast ? '' : '(暂无)';
+          text = '<div class="text-sm ' + (isCurrent ? 'font-medium text-blue-600' : 'text-slate-500') + '">' + s.name + tag + '</div>';
+        }
+        return '<div class="flex gap-3">' +
+          '<div class="flex flex-col items-center">' + dot + line + '</div>' +
+          '<div class="pb-4">' + text + '</div>' +
+          '</div>';
+      }).join('');
+      show('flowModal');
+    }
+    function closeFlow() { hide('flowModal'); }
     function show(id) { const m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
     function hide(id) { const m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
 
@@ -341,7 +420,7 @@
     }
 
     // 点击遮罩层关闭对应弹窗
-    ['reportModal', 'logModal', 'signModal'].forEach(function (id) {
+    ['reportModal', 'logModal', 'signModal', 'flowModal'].forEach(function (id) {
       document.getElementById(id).addEventListener('click', function (e) {
         if (e.target === this) hide(id);
       });
