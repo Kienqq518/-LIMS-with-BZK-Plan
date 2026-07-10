@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>框架合同详情 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .info-table { width: 100%; border-collapse: collapse; }
+    .info-table td { border: 1px solid #e5e7eb; padding: 8px 12px; font-size: 13px; }
+    .info-table .lbl { background: #f8fafc; color: #64748b; white-space: nowrap; width: 120px; }
+    .info-table .val { color: #334155; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { border: 1px solid #e5e7eb; padding: 8px 10px; font-size: 13px; text-align: left; }
+    .data-table th { background: #f1f5f9; color: #64748b; font-weight: 500; white-space: nowrap; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="frame-contract.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="entrust-preview.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">委托预览</a>
+    <a href="frame-contract.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">框架合同</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      框架合同详情
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="space-y-4 p-4">
+    <!-- 合同信息 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>合同信息</h2>
+      <table class="info-table">
+        <tr><td class="lbl">合同编号</td><td class="val">KJHT2025112001</td><td class="lbl">合同名称</td><td class="val">框架合同名称</td><td class="lbl">客户名称</td><td class="val">南京远能电力工程有限公司监理分公司</td></tr>
+        <tr><td class="lbl">地址</td><td class="val">南京市经济技术开发区</td><td class="lbl">邮政编码</td><td class="val">610222</td><td class="lbl">联系人</td><td class="val">张华</td></tr>
+        <tr><td class="lbl">联系方式</td><td class="val">13766664444</td><td class="lbl">签订时间</td><td class="val">2025-11-20</td><td class="lbl">服务年限</td><td class="val">2026-01-22</td></tr>
+        <tr><td class="lbl">中标价</td><td class="val">200</td><td class="lbl">合同样品</td><td class="val" colspan="3">保护管-电缆保护管, 电线电缆-电线电缆</td></tr>
+        <tr><td class="lbl">合同备注</td><td class="val" colspan="5"></td></tr>
+      </table>
+    </section>
+
+    <!-- 合同文件 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>合同文件</h2>
+      <div class="flex items-center justify-between rounded border border-slate-100 bg-slate-50 px-4 py-3 text-sm">
+        <a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-word-o"></i> 数智化实验室基础服务业务管理系统V1.0产品手册和操作说明.docx</a>
+        <button class="text-blue-600 hover:underline">导出</button>
+      </div>
+    </section>
+
+    <!-- 关联委托任务信息 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>关联委托任务信息</h2>
+        <span class="text-sm text-slate-500">合计(元)：<span class="font-semibold text-slate-800">1,498.86</span></span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[1200px]">
+          <thead>
+            <tr>
+              <th>序号</th><th>委托编号</th><th>样品名称</th><th>委托受理日期</th><th>实际费用(元)</th>
+              <th>检测状态</th><th>委托进度</th><th>开票进度</th><th>付款进度</th><th>业务员</th><th>报告</th>
+            </tr>
+          </thead>
+          <tbody id="taskTableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span>共 7 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200"><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200"><i class="fa fa-angle-right"></i></button>
+      </div>
+    </section>
+
+    <!-- 财务信息统计 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>财务信息统计</h2>
+      <table class="info-table">
+        <tr>
+          <td class="lbl">已收费(元)</td><td class="val">0</td>
+          <td class="lbl">未收费(元)</td><td class="val">1498.86</td>
+          <td class="lbl">已开票(元)</td><td class="val">0</td>
+        </tr>
+        <tr>
+          <td class="lbl">未开票(元)</td><td class="val" colspan="5">1498.86</td>
+        </tr>
+      </table>
+    </section>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    // 关联委托任务 Mock 数据
+    var taskData = [
+      { code: 'SC2025/0003', sample: '绝缘操作杆', date: '2025-11-20', fee: '160', status: '未领样', progress: '试样分发', invoice: '未开票', payment: '未收款', salesman: '梁倩', hasReport: false },
+      { code: 'SC2025/0004', sample: '导线飞车', date: '2025-11-21', fee: '2', status: '已复审', progress: '报告编制', invoice: '未开票', payment: '未收款', salesman: '梁倩', hasReport: true },
+      { code: 'SC2025/0005', sample: '8.7/10kV·3芯', date: '2025-11-22', fee: '13.86', status: '待接收', progress: '试验检测', invoice: '未开票', payment: '未收款', salesman: '业务员A', hasReport: false },
+      { code: 'SC2025/0006', sample: '复合硅酸盐水泥', date: '2025-11-23', fee: '1000', status: '检测中', progress: '试验检测', invoice: '未开票', payment: '未收款', salesman: '梁倩', hasReport: false },
+      { code: 'SC2025/0007', sample: '电缆保护管', date: '2025-11-24', fee: '120', status: '已复审', progress: '报告签发', invoice: '未开票', payment: '未收款', salesman: '梁倩', hasReport: true },
+      { code: 'SC2025/0008', sample: '电线电缆', date: '2025-11-25', fee: '103', status: '已复审', progress: '报告发放', invoice: '未开票', payment: '未收款', salesman: '业务员A', hasReport: true },
+      { code: 'SC2025/0009', sample: '绝缘手套', date: '2025-11-26', fee: '100', status: '检测中', progress: '试验检测', invoice: '未开票', payment: '未收款', salesman: '梁倩', hasReport: false }
+    ];
+
+    // 渲染关联委托任务表格
+    (function renderTasks() {
+      document.getElementById('taskTableBody').innerHTML = taskData.map(function (item, i) {
+        var report = item.hasReport
+          ? '<a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-text-o"></i> 报告</a>'
+          : '<span class="text-slate-300">-</span>';
+        return '<tr class="hover:bg-slate-50">' +
+          '<td>' + (i + 1) + '</td>' +
+          '<td><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td>' + item.sample + '</td><td>' + item.date + '</td><td>' + item.fee + '</td>' +
+          '<td>' + item.status + '</td>' +
+          '<td><a href="#" class="text-blue-600 hover:underline">' + item.progress + '</a></td>' +
+          '<td>' + item.invoice + '</td><td>' + item.payment + '</td><td>' + item.salesman + '</td>' +
+          '<td>' + report + '</td></tr>';
+      }).join('');
+    })();
+  </script>
+</body>
+</html>
