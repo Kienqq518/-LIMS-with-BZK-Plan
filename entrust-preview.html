@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>委托预览 - 智慧实验室</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, .4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <!-- ============ 顶部页签 Tab ============ -->
+  <div class="flex items-center gap-1 border-b border-slate-200 bg-white px-4 pt-2 text-sm">
+    <span class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</span>
+    <span class="flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      委托预览
+      <i class="fa fa-times-circle text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <!-- ============ 搜索表单区 ============ -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label>
+          <input type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
+          <input type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">是否关联框架合同</label>
+          <select class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-500 outline-none focus:border-blue-500">
+            <option value="">请选择是否关联</option><option>是</option><option>否</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">合同编号</label>
+          <input type="text" placeholder="请输入框架合同编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">客户单位</label>
+          <input type="text" placeholder="请输入委托单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">付款单位</label>
+          <input type="text" placeholder="请输入付款单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">委托受理日期</label>
+          <div class="relative flex-1">
+            <input type="text" placeholder="开始日期 - 结束日期" class="w-full rounded border border-slate-300 px-3 py-1.5 pr-8 text-sm outline-none focus:border-blue-500" />
+            <i class="fa fa-calendar-o absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">任务类型</label>
+          <select class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-500 outline-none focus:border-blue-500">
+            <option value="">请选择任务类型</option><option>委托检测</option><option>监督检测</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">检测性质</label>
+          <input type="text" placeholder="请输入检测性质" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <!-- 查询 / 重置：占最后一格右对齐 -->
+        <div class="flex items-center justify-end gap-2 xl:col-start-4">
+          <button class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>
+          <button class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i>重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 列表区 ============ -->
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <!-- 导出选项下拉 -->
+      <div class="mb-4 flex justify-end">
+        <div class="relative">
+          <button onclick="toggleExport()" class="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">
+            导出选项 <i class="fa fa-angle-down"></i>
+          </button>
+          <div id="exportMenu" class="absolute right-0 z-20 mt-1 hidden w-44 rounded border border-slate-200 bg-white py-1 text-sm shadow-lg">
+            <a href="#" class="block px-4 py-2 hover:bg-slate-50">导出业务数据统计表</a>
+            <a href="#" class="block px-4 py-2 hover:bg-slate-50">导出已检样处置记录</a>
+            <a href="#" class="block px-4 py-2 hover:bg-slate-50">导出报告发放记录</a>
+            <a href="#" class="block px-4 py-2 hover:bg-slate-50">导出报告记录表</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 表格（列很多，横向滚动） -->
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[2400px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-xs text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托进度</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">收样时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">要求检测完成时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">开票进度</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">付款进度</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">付款单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">实际费用(元)</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测性质</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">报告</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="entrustTableBody" class="text-slate-600">
+            <!-- 表格行由 JS 使用 Mock 数据渲染 -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 分页器 -->
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span>共 234 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">2</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">3</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">4</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">5</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+        <select class="rounded border border-slate-200 px-2 py-1"><option>50条/页</option></select>
+        <span>跳至</span>
+        <input type="text" class="h-7 w-12 rounded border border-slate-200 px-2 text-center" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 报告记录弹窗 ============ -->
+  <div id="reportModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40">
+    <div class="w-[900px] max-w-[94vw] rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">报告记录</h3>
+        <button onclick="closeReport()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-5">
+        <table class="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr class="text-slate-500">
+              <th class="px-3 py-2 font-medium">序号</th>
+              <th class="px-3 py-2 font-medium">报告编号</th>
+              <th class="px-3 py-2 font-medium">编制</th>
+              <th class="px-3 py-2 font-medium">审核</th>
+              <th class="px-3 py-2 font-medium">签发</th>
+              <th class="px-3 py-2 font-medium">处理</th>
+              <th class="px-3 py-2 font-medium">收费审批</th>
+              <th class="px-3 py-2 font-medium">发放</th>
+              <th class="px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top text-slate-600">
+              <td class="px-3 py-3">1</td>
+              <td class="px-3 py-3">SC2026/0212-01</td>
+              <td class="px-3 py-3">admin<br><span class="text-xs text-slate-400">2026年07月08日</span></td>
+              <td class="px-3 py-3">admin<br><span class="text-xs text-slate-400">2026年07月08日</span></td>
+              <td class="px-3 py-3">admin<br><span class="text-xs text-slate-400">2026年07月08日</span></td>
+              <td class="px-3 py-3"></td>
+              <td class="px-3 py-3"></td>
+              <td class="px-3 py-3"></td>
+              <td class="px-3 py-3"><button onclick="openLog()" class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">日志</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="mt-4 flex justify-end gap-1 text-sm text-slate-500">
+          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-left"></i></button>
+          <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 报告操作日志弹窗（叠加在报告记录之上） ============ -->
+  <div id="logModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+    <div class="w-[640px] max-w-[92vw] rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">报告操作日志</h3>
+        <button onclick="closeLog()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-5">
+        <div id="logList" class="space-y-5">
+          <!-- 日志时间轴由 JS 使用 Mock 数据渲染 -->
+        </div>
+        <div class="mt-5 flex justify-center gap-1 text-sm text-slate-500">
+          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-left"></i></button>
+          <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 签署链接弹窗 ============ -->
+  <div id="signModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+    <div class="w-[460px] max-w-[92vw] rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">签署链接</h3>
+        <button onclick="closeSign()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-5">
+        <p class="text-sm leading-6 text-slate-700">【数蚕智能邀请您签署】您有一份委托合同文件待签署，请尽快处理哦~点击签署</p>
+        <p id="signLink" class="mt-2 break-all text-sm text-slate-500">http://test.wz.shucantech.cn/api/orderInfo/signedLink/U0MyMDI2LzLzAxNTc=</p>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeSign()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取 消</button>
+        <button onclick="copySignLink()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">一键复制</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ================= Mock 数据 =================
+    // 委托预览列表数据
+    const entrustData = [
+      { code: 'SC2026/0212', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV-3芯', status: '已复审', progress: '报告处理', acceptDate: '2026-07-08', receiveDate: '2026-07-08', requireDate: '2026-07-10', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '业务员A', nature: '', editor: 'admin', hasReport: true },
+      { code: 'SC2026/0211', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV-3芯', status: '检测中', progress: '试验检测', acceptDate: '2026-07-07', receiveDate: '2026-07-07', requireDate: '2026-07-09', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '梁倩', nature: '', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0210', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV-3芯', status: '已复审', progress: '报告签发', acceptDate: '2026-07-07', receiveDate: '2026-07-07', requireDate: '2026-07-10', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '梁倩', nature: '', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0208', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV-3芯', status: '已复审', progress: '报告签发', acceptDate: '2026-06-15', receiveDate: '2026-06-15', requireDate: '2026-06-18', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '15', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: true },
+      { code: 'SC2026/0207', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV-3芯', status: '已复审', progress: '报告签发', acceptDate: '2026-06-11', receiveDate: '2026-06-11', requireDate: '2026-06-13', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '梁倩', nature: '', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0206', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV-3芯', status: '已复审', progress: '样品发放', acceptDate: '2026-06-16', receiveDate: '2026-06-16', requireDate: '', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '18', salesman: '业务员A', nature: '', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0205', contract: '/', customer: '东莞西洁有限公司', sample: '复合硅酸盐水泥', status: '已复审', progress: '报告发放', acceptDate: '2026-06-11', receiveDate: '2026-06-11', requireDate: '2026-06-22', customerDate: '2026-06-26', invoice: '未开票', payment: '未收款', payer: '东莞西洁有限公司', fee: '400', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0204', contract: '/', customer: '宇宙设想有限公司', sample: '复合硅酸盐水泥', status: '已复审', progress: '检测检验', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-13', customerDate: '', invoice: '未开票', payment: '未收款', payer: '宇宙设想有限公司', fee: '200', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: true, overdue: true },
+      { code: 'SC2026/0203', contract: '/', customer: '灵知益义有限公司', sample: '复合硅酸盐水泥', status: '已复审', progress: '报告签发', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-20', customerDate: '', invoice: '未开票', payment: '未收款', payer: '灵知益义有限公司', fee: '200', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: true },
+      { code: 'SC2026/0202', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '复合硅酸盐水泥', status: '检测中', progress: '试验检测', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-19', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '200', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0201', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '实事求型料准', status: '检测中', progress: '试验检测', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-19', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '业务员A', nature: '例行试验', editor: 'admin', hasReport: true },
+      { code: 'SC2026/0200', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '复合硅酸盐水泥', status: '已复审', progress: '报告审核', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-20', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '200', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: true }
+    ];
+
+    // 报告操作日志数据
+    const logData = [
+      { time: '2026-07-08 08:38:43', text: 'admin 在 报告签发 将 报告编号为 SC2026/0212-01 的报告 提交至 报告处理' },
+      { time: '2026-07-08 08:38:37', text: 'admin 在 报告审核 将 报告编号为 SC2026/0212-01 的报告 提交至 报告签发' },
+      { time: '2026-07-08 08:38:26', text: 'admin 在 报告编制 将 报告编号为 SC2026/0212-01 的报告 提交至 报告审核' }
+    ];
+
+    // 渲染委托预览表格
+    (function renderTable() {
+      const tbody = document.getElementById('entrustTableBody');
+      tbody.innerHTML = entrustData.map(function (item, idx) {
+        // 客户要求完成日期：逾期显示红色
+        const customerDateCell = item.customerDate
+          ? '<span class="' + (item.overdue ? 'text-red-500' : '') + '">' + item.customerDate + '</span>'
+          : (item.overdue ? '<span class="text-red-500">' + item.requireDate + '</span>' : '');
+        // 报告列：有报告显示可点击链接，打开报告记录弹窗
+        const reportCell = item.hasReport
+          ? '<button onclick="openReport()" class="text-blue-600 hover:underline"><i class="fa fa-file-text-o"></i> 报告</button>'
+          : '<span class="text-slate-300">-</span>';
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (idx + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.status + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="#" class="text-blue-600 hover:underline">' + item.progress + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.acceptDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.receiveDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.requireDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + customerDateCell + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.invoice + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.payment + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.payer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.fee + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.salesman + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (item.nature || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + reportCell + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
+            '<button onclick="openSign()" class="text-blue-600 hover:underline"><i class="fa fa-mobile"></i> 手机签署链接</button>' +
+          '</td>' +
+          '</tr>';
+      }).join('');
+    })();
+
+    // 渲染日志时间轴
+    (function renderLog() {
+      const box = document.getElementById('logList');
+      box.innerHTML = logData.map(function (item) {
+        return '<div class="relative border-l-2 border-slate-200 pl-5">' +
+          '<span class="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-blue-500 bg-white"></span>' +
+          '<div class="text-sm text-slate-500">' + item.time + '</div>' +
+          '<div class="mt-1 text-sm text-slate-700">' + item.text + '</div></div>';
+      }).join('');
+    })();
+
+    // ================= 交互逻辑 =================
+    // 导出选项下拉开关
+    function toggleExport() {
+      document.getElementById('exportMenu').classList.toggle('hidden');
+    }
+    // 点击页面其他区域收起导出菜单
+    document.addEventListener('click', function (e) {
+      const menu = document.getElementById('exportMenu');
+      if (!e.target.closest('.relative') && !menu.classList.contains('hidden')) menu.classList.add('hidden');
+    });
+
+    // 报告记录弹窗开关
+    function openReport() { show('reportModal'); }
+    function closeReport() { hide('reportModal'); }
+    // 报告操作日志弹窗开关
+    function openLog() { show('logModal'); }
+    function closeLog() { hide('logModal'); }
+    // 签署链接弹窗开关
+    function openSign() { show('signModal'); }
+    function closeSign() { hide('signModal'); }
+    function show(id) { const m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
+    function hide(id) { const m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+    // 一键复制签署链接（兼容 file:// 本地打开场景）
+    function copySignLink() {
+      const text = document.getElementById('signLink').textContent;
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      closeSign();
+    }
+
+    // 点击遮罩层关闭对应弹窗
+    ['reportModal', 'logModal', 'signModal'].forEach(function (id) {
+      document.getElementById(id).addEventListener('click', function (e) {
+        if (e.target === this) hide(id);
+      });
+    });
+  </script>
+</body>
+</html>
