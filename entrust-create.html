@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>合同编辑 - 智慧实验室</title>
+  <title>委托编辑 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <style>
@@ -22,6 +22,17 @@
     .preview-doc { font-family: SimSun, serif; font-size: 13px; line-height: 1.8; color: #1e293b; }
     .preview-doc table { width: 100%; border-collapse: collapse; margin: 8px 0; }
     .preview-doc td, .preview-doc th { border: 1px solid #333; padding: 4px 6px; font-size: 12px; }
+    .modal-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 20px; }
+    .modal-form-item { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .modal-form-item label { flex-shrink: 0; width: 108px; text-align: right; font-size: 13px; color: #64748b; }
+    .modal-form-item.span-2 { grid-column: span 2; }
+    .modal-form-item label .req { color: #ef4444; }
+    .modal-form-item input, .modal-form-item select, .modal-form-item textarea { flex: 1; min-width: 0; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
+    .modal-form-item input:focus, .modal-form-item select:focus, .modal-form-item textarea:focus { border-color: #3b82f6; }
+    .test-table { width: 100%; border-collapse: collapse; }
+    .test-table th, .test-table td { border: 1px solid #e5e7eb; padding: 8px 10px; font-size: 12px; text-align: left; vertical-align: top; }
+    .test-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
+    .test-table td.max-w-xs { max-width: 180px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -30,7 +41,7 @@
     <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
     <a href="entrust-register.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">委托登记</a>
     <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
-      合同编辑
+      委托编辑
       <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
     </span>
   </div>
@@ -40,7 +51,7 @@
     <section class="rounded bg-white p-4 shadow-sm">
       <div class="mb-3 flex items-center justify-between">
         <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>样品信息</h2>
-        <button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">添加样品</button>
+        <button onclick="openSampleModal()" class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">添加样品</button>
       </div>
       <div class="overflow-x-auto">
         <table class="data-table min-w-[1200px]">
@@ -51,7 +62,7 @@
         </table>
       </div>
       <div class="mt-3 flex items-center justify-end gap-2 text-sm text-slate-500">
-        <span>共 0 条</span>
+        <span id="sampleTotalCount">共 0 条</span>
         <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
         <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
         <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-right"></i></button>
@@ -135,6 +146,87 @@
     </div>
   </div>
 
+  <!-- 添加样品弹窗 -->
+  <div id="sampleModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="flex max-h-[92vh] w-[1100px] max-w-full flex-col rounded-lg bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">添加样品</h3>
+        <button onclick="closeSampleModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <div class="modal-form-grid">
+          <!-- 第 1 列 -->
+          <div class="modal-form-item"><label><span class="req">*</span> 样品名称</label>
+            <select id="m_sampleName" onchange="onSampleNameChange()">
+              <option value="">请选择样品名称</option>
+              <optgroup label="安全工器具 / 976">
+                <option value="绝缘操作杆">绝缘操作杆</option>
+                <option value="绝缘支、拉、吊杆">绝缘支、拉、吊杆</option>
+                <option value="绝缘托瓶架">绝缘托瓶架</option>
+                <option value="绝缘硬梯">绝缘硬梯</option>
+                <option value="绝缘绳索类工具">绝缘绳索类工具</option>
+                <option value="绝缘软梯">绝缘软梯</option>
+                <option value="绝缘滑车">绝缘滑车</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="modal-form-item"><label>样品别名</label><input id="m_alias" type="text" placeholder="请输入样品别名" /></div>
+          <div class="modal-form-item"><label><span class="req">*</span> 样品数量</label><input id="m_qty" type="text" value="1" oninput="recalcSamplePrice()" /></div>
+
+          <div class="modal-form-item"><label>规格型号</label>
+            <select id="m_spec"><option value="">请选择规格型号</option><option>300</option><option>WW</option><option>20kV</option><option>3</option><option>30kV</option><option>KK</option><option>10kV</option></select>
+          </div>
+          <div class="modal-form-item"><label><span class="req">*</span> 样品单价/元</label><input id="m_unitPrice" type="text" placeholder="请输入样品单价" oninput="recalcSamplePrice()" /></div>
+          <div class="modal-form-item"><label>生产厂家地址</label><input id="m_factoryAddr" type="text" placeholder="请输入生产厂家地址" /></div>
+
+          <div class="modal-form-item"><label><span class="req">*</span> 总价</label><input id="m_totalPrice" type="text" placeholder="请输入总价" /></div>
+          <div class="modal-form-item"><label>生产厂家</label><input id="m_factory" type="text" placeholder="请输入生产厂家" /></div>
+          <div class="modal-form-item"><label>制造商地址</label><input id="m_manufacturerAddr" type="text" placeholder="请输入制造商地址" /></div>
+
+          <div class="modal-form-item"><label>生产日期</label><input id="m_prodDate" type="text" placeholder="请选择生产日期" /></div>
+          <div class="modal-form-item"><label>制造商</label><input id="m_manufacturer" type="text" placeholder="请输入制造商" /></div>
+          <div class="modal-form-item"><label><span class="req">*</span> 是否加急</label>
+            <select id="m_urgent"><option>否</option><option>是</option></select>
+          </div>
+
+          <div class="modal-form-item"><label><span class="req">*</span> 样品状态</label>
+            <select id="m_status"><option>完好</option><option>异常</option></select>
+          </div>
+          <div class="modal-form-item"><label>试样制备数量</label><input id="m_prepQty" type="text" placeholder="请输入试样制备数量" /></div>
+          <div class="modal-form-item"><label><span class="req">*</span> 样品单位</label><input id="m_unit" type="text" placeholder="请输入样品单位" /></div>
+
+          <div class="modal-form-item"><label>样品排序</label><input id="m_sort" type="text" placeholder="请输入样品排序" /></div>
+          <div class="modal-form-item"><label><span class="req">*</span> 是否制样</label>
+            <select id="m_needPrep"><option>否</option><option>是</option></select>
+          </div>
+          <div class="modal-form-item"><label>样品长度</label><input id="m_length" type="text" placeholder="请输入样品长度" /></div>
+
+          <div class="modal-form-item span-2"><label>备注信息</label><textarea id="m_remark" rows="2" placeholder="请输入备注信息"></textarea></div>
+        </div>
+
+        <!-- 选择样品试验 -->
+        <div class="mt-5 border-t border-slate-100 pt-4">
+          <h4 class="mb-3 text-sm font-medium text-slate-700">选择样品试验</h4>
+          <div class="overflow-x-auto">
+            <table class="test-table min-w-[900px]">
+              <thead><tr>
+                <th class="w-10 text-center"><input type="checkbox" id="testCheckAll" onchange="toggleAllTests(this.checked)" /></th>
+                <th>试验名称</th><th>试验单价</th><th>检测依据</th><th>判定依据</th><th>标准要求</th><th>试样数量</th><th>备注</th>
+              </tr></thead>
+              <tbody id="testTableBody">
+                <tr><td colspan="8" class="py-8 text-center text-slate-400">请先选择样品名称</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeSampleModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="confirmSample()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 预览委托单弹窗（图11 Mock） -->
   <div id="previewModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
     <div class="flex max-h-[92vh] w-[800px] max-w-full flex-col rounded-lg bg-white shadow-2xl">
@@ -154,6 +246,19 @@
 
   <script src="js/tab-bar.js"></script>
   <script>
+    // 样品试验 Mock 数据（绝缘操作杆 / 976 类）
+    var sampleTestMap = {
+      '绝缘操作杆': [
+        { name: '交流耐压试验', price: 40, basis: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', judge: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', requirement: '{bcz}/{sj}，应无击穿、无闪络', qty: 1, remark: '' },
+        { name: '外观及尺寸', price: 40, basis: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', judge: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', requirement: '试品应光滑洁净，无气泡、无裂纹、无明显杂质', qty: 1, remark: '' },
+        { name: '抗弯动负荷试验', price: 40, basis: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', judge: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', requirement: '在{bcz}下操作3次，要求无损伤、无变形', qty: 1, remark: '' },
+        { name: '抗弯静负荷试验', price: 40, basis: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', judge: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', requirement: '应在{bcz}下持续1min无损伤、无变形', qty: 1, remark: '' }
+      ]
+    };
+
+    // 默认试验项（其他安全工器具复用）
+    var defaultTests = sampleTestMap['绝缘操作杆'];
+
     // 手动创建默认数据（新建委托登记初始化）
     var manualData = {
       code: 'SC2026/0078', samples: [],
@@ -167,10 +272,10 @@
       reportDelivery: '邮寄', reportQual: 'CNAS CMA', reportDesc: '全部生成一份', reportCount: '1', resultType: '判定'
     };
 
-    // 复制任务默认数据（图10）
+    // 复制任务默认数据
     var copyData = {
       code: 'SC2026/0080',
-      samples: [{ alias: '绝缘操作杆', modelLink: '', spec: '', items: '交流耐压试验、弯曲静载荷试验、弯曲动载荷试验、外观和尺寸', qty: '1', price: '160', total: '160', factory: '', manufacturer: '', remark: '' }],
+      samples: [{ name: '绝缘操作杆', alias: '绝缘操作杆', modelLink: '', spec: '', items: '交流耐压试验,外观及尺寸,抗弯动负荷试验,抗弯静负荷试验', qty: '1', price: '160', total: '160', factory: '', manufacturer: '', remark: '' }],
       contractCode: '', contractName: '', signDate: '', serviceYears: '', bidPrice: '', contractSample: '',
       taskType: '电气（输配电类）', priority: '常规', testType: '常规', testCategory: '例行试验',
       customer: '杭州数蚕智能科技有限公司', address: '浙江省杭州市余杭区', zip: '', contact: '安可', phone: '17835503262',
@@ -180,14 +285,14 @@
       reportDelivery: '邮寄', reportQual: 'CNAS CMA', reportDesc: '全部生成一份', reportCount: '1', resultType: '判定'
     };
 
-    // 解析 URL 参数
+    var editingSampleIndex = -1;
+
     function getParams() {
       var p = {};
       location.search.replace(/[?&]([^=]+)=([^&]*)/g, function (_, k, v) { p[k] = decodeURIComponent(v); });
       return p;
     }
 
-    // 将数据填充到表单
     function fillForm(data) {
       var fields = ['code','contractCode','contractName','signDate','serviceYears','bidPrice','contractSample',
         'taskType','priority','testType','testCategory','customer','address','zip','contact','phone',
@@ -201,79 +306,233 @@
       renderSamples(data.samples || []);
     }
 
-    // 渲染样品表格
     function renderSamples(samples) {
       var tbody = document.getElementById('sampleTableBody');
+      document.getElementById('sampleTotalCount').textContent = '共 ' + samples.length + ' 条';
       if (!samples.length) {
         tbody.innerHTML = '<tr><td colspan="12" class="py-8 text-center text-slate-400"><i class="fa fa-inbox text-2xl text-slate-200"></i><div class="mt-1">暂无数据</div></td></tr>';
         return;
       }
       tbody.innerHTML = samples.map(function (s, i) {
-        return '<tr><td>' + (i+1) + '</td><td>' + (s.alias||s.name||'') + '</td><td>' + (s.modelLink||'') + '</td><td>' + (s.spec||s.model||'') + '</td>' +
-          '<td>' + (s.items||'') + '</td><td>' + (s.qty||'') + '</td><td>' + (s.price||'') + '</td><td>' + (s.total||'') + '</td>' +
-          '<td>' + (s.factory||'') + '</td><td>' + (s.manufacturer||'') + '</td><td>' + (s.remark||'') + '</td>' +
-          '<td><button class="text-blue-600 hover:underline">编辑</button> <button class="ml-2 text-red-500 hover:underline">删除</button></td></tr>';
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(s.alias || s.name || '') + '</td><td>' + esc(s.modelLink || '') + '</td><td>' + esc(s.spec || s.model || '') + '</td>' +
+          '<td class="max-w-[200px] truncate" title="' + esc(s.items || '') + '">' + esc(s.items || '') + '</td><td>' + esc(s.qty || '') + '</td><td>' + esc(s.price || '') + '</td><td>' + esc(s.total || '') + '</td>' +
+          '<td>' + esc(s.factory || '') + '</td><td>' + esc(s.manufacturer || '') + '</td><td>' + esc(s.remark || '') + '</td>' +
+          '<td class="whitespace-nowrap"><button onclick="editSample(' + i + ')" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</button> ' +
+          '<button onclick="deleteSample(' + i + ')" class="ml-2 text-red-500 hover:underline"><i class="fa fa-trash-o"></i> 删除</button></td></tr>';
       }).join('');
+      syncTotalPriceFromSamples(samples);
     }
 
-    // 初始化页面：根据 mode 参数加载手动或复制数据
+    function esc(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    }
+
+    function syncTotalPriceFromSamples(samples) {
+      var sum = samples.reduce(function (acc, s) { return acc + (parseFloat(s.total) || 0); }, 0);
+      document.getElementById('f_totalPrice').value = String(sum);
+      document.getElementById('f_actualFee').value = String(sum);
+      if (window._formData) window._formData.totalPrice = String(sum);
+    }
+
+    function getTestsForSample(name) {
+      return sampleTestMap[name] || defaultTests;
+    }
+
+    function renderTestTable(tests, checkedAll) {
+      var tbody = document.getElementById('testTableBody');
+      if (!tests.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-slate-400">请先选择样品名称</td></tr>';
+        document.getElementById('testCheckAll').checked = false;
+        return;
+      }
+      tbody.innerHTML = tests.map(function (t, i) {
+        var checked = checkedAll !== false ? ' checked' : '';
+        return '<tr><td class="text-center"><input type="checkbox" class="test-check" data-index="' + i + '"' + checked + ' onchange="recalcSamplePrice()" /></td>' +
+          '<td>' + esc(t.name) + '</td><td>' + t.price + '</td>' +
+          '<td class="max-w-xs truncate" title="' + esc(t.basis) + '">' + esc(t.basis) + '</td>' +
+          '<td class="max-w-xs truncate" title="' + esc(t.judge) + '">' + esc(t.judge) + '</td>' +
+          '<td class="max-w-xs truncate" title="' + esc(t.requirement) + '">' + esc(t.requirement) + '</td>' +
+          '<td>' + t.qty + '</td><td>' + esc(t.remark) + '</td></tr>';
+      }).join('');
+      document.getElementById('testCheckAll').checked = checkedAll !== false;
+      recalcSamplePrice();
+    }
+
+    function toggleAllTests(checked) {
+      document.querySelectorAll('.test-check').forEach(function (cb) { cb.checked = checked; });
+      recalcSamplePrice();
+    }
+
+    function onSampleNameChange() {
+      var name = document.getElementById('m_sampleName').value;
+      var aliasEl = document.getElementById('m_alias');
+      if (name && !aliasEl.value) aliasEl.value = name;
+      window._currentTests = name ? getTestsForSample(name) : [];
+      renderTestTable(window._currentTests, !!name);
+    }
+
+    function getSelectedTests() {
+      var tests = window._currentTests || [];
+      var selected = [];
+      document.querySelectorAll('.test-check').forEach(function (cb) {
+        if (cb.checked) selected.push(tests[parseInt(cb.getAttribute('data-index'), 10)]);
+      });
+      return selected;
+    }
+
+    function recalcSamplePrice() {
+      var selected = getSelectedTests();
+      var unitPrice = selected.reduce(function (sum, t) { return sum + (t.price || 0); }, 0);
+      document.getElementById('m_unitPrice').value = unitPrice ? String(unitPrice) : '';
+      var qty = parseFloat(document.getElementById('m_qty').value) || 1;
+      document.getElementById('m_totalPrice').value = unitPrice ? String(unitPrice * qty) : '';
+      var all = document.querySelectorAll('.test-check');
+      var checked = document.querySelectorAll('.test-check:checked');
+      document.getElementById('testCheckAll').checked = all.length > 0 && checked.length === all.length;
+    }
+
+    function resetSampleModal() {
+      editingSampleIndex = -1;
+      ['m_sampleName','m_alias','m_spec','m_factory','m_manufacturer','m_factoryAddr','m_manufacturerAddr',
+        'm_prodDate','m_prepQty','m_sort','m_length','m_unit','m_remark','m_unitPrice','m_totalPrice'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('m_qty').value = '1';
+      document.getElementById('m_status').value = '完好';
+      document.getElementById('m_urgent').value = '否';
+      document.getElementById('m_needPrep').value = '否';
+      window._currentTests = [];
+      renderTestTable([], false);
+    }
+
+    function openSampleModal(index) {
+      resetSampleModal();
+      if (typeof index === 'number' && index >= 0) {
+        editingSampleIndex = index;
+        var s = window._formData.samples[index];
+        document.getElementById('m_sampleName').value = s.name || '';
+        document.getElementById('m_alias').value = s.alias || '';
+        document.getElementById('m_spec').value = s.spec || '';
+        document.getElementById('m_qty').value = s.qty || '1';
+        document.getElementById('m_unitPrice').value = s.price || '';
+        document.getElementById('m_totalPrice').value = s.total || '';
+        document.getElementById('m_factory').value = s.factory || '';
+        document.getElementById('m_manufacturer').value = s.manufacturer || '';
+        document.getElementById('m_remark').value = s.remark || '';
+        window._currentTests = getTestsForSample(s.name || '绝缘操作杆');
+        renderTestTable(window._currentTests, true);
+      }
+      showModal('sampleModal');
+    }
+
+    function closeSampleModal() { hideModal('sampleModal'); }
+
+    function confirmSample() {
+      var name = document.getElementById('m_sampleName').value;
+      var unit = document.getElementById('m_unit').value.trim();
+      if (!name) { alert('请选择样品名称'); return; }
+      if (!unit) { alert('请输入样品单位'); return; }
+      var selectedTests = getSelectedTests();
+      if (!selectedTests.length) { alert('请至少选择一项样品试验'); return; }
+
+      var alias = document.getElementById('m_alias').value.trim() || name;
+      var qty = document.getElementById('m_qty').value || '1';
+      var unitPrice = document.getElementById('m_unitPrice').value || '0';
+      var total = document.getElementById('m_totalPrice').value || unitPrice;
+
+      var sample = {
+        name: name,
+        alias: alias,
+        modelLink: '',
+        spec: document.getElementById('m_spec').value,
+        items: selectedTests.map(function (t) { return t.name; }).join(','),
+        qty: qty,
+        price: unitPrice,
+        total: total,
+        factory: document.getElementById('m_factory').value,
+        manufacturer: document.getElementById('m_manufacturer').value,
+        remark: document.getElementById('m_remark').value,
+        tests: selectedTests
+      };
+
+      if (!window._formData.samples) window._formData.samples = [];
+      if (editingSampleIndex >= 0) {
+        window._formData.samples[editingSampleIndex] = sample;
+      } else {
+        window._formData.samples.push(sample);
+      }
+      renderSamples(window._formData.samples);
+      closeSampleModal();
+    }
+
+    function editSample(index) { openSampleModal(index); }
+
+    function deleteSample(index) {
+      if (!confirm('确定删除该样品吗？')) return;
+      window._formData.samples.splice(index, 1);
+      renderSamples(window._formData.samples);
+    }
+
+    function showModal(id) {
+      var m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function hideModal(id) {
+      var m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
     (function init() {
       var params = getParams();
-      var data = (params.mode === 'copy') ? copyData : manualData;
+      var data = (params.mode === 'copy') ? JSON.parse(JSON.stringify(copyData)) : JSON.parse(JSON.stringify(manualData));
       if (params.mode === 'copy' && params.from) {
-        data.code = 'SC2026/' + String(Math.floor(Math.random() * 900 + 100));
+        data.code = 'SC2026/' + String(Math.floor(Math.random() * 9000 + 1000)).padStart(4, '0');
       }
       fillForm(data);
       window._formData = data;
     })();
 
-    // 打开预览委托单弹窗
     function openPreview() {
       var d = window._formData || manualData;
       var code = document.getElementById('f_code').value || d.code;
       var customer = document.getElementById('f_customer').value || d.customer;
       var contact = document.getElementById('f_contact').value || d.contact || '安可';
       var phone = document.getElementById('f_phone').value || d.phone || '17835503262';
-      var fee = document.getElementById('f_actualFee').value || d.actualFee || '161';
+      var fee = document.getElementById('f_actualFee').value || d.actualFee || '0';
       var acceptDate = document.getElementById('f_acceptDate').value || d.acceptDate;
-      var requireDate = document.getElementById('f_requireDate').value || d.requireDate || '2026-07-30';
+      var requireDate = document.getElementById('f_requireDate').value || d.requireDate || '';
       var salesman = document.getElementById('f_salesman').value || d.salesman;
-      var sampleName = (d.samples && d.samples[0]) ? (d.samples[0].alias || d.samples[0].name) : '绝缘操作杆';
-      var samplePrice = (d.samples && d.samples[0]) ? d.samples[0].price : '160';
+      var firstSample = (d.samples && d.samples[0]) ? d.samples[0] : null;
+      var sampleName = firstSample ? (firstSample.alias || firstSample.name) : '绝缘操作杆';
+      var samplePrice = firstSample ? firstSample.price : '0';
+      var sampleItems = firstSample ? firstSample.items : '';
 
       document.getElementById('previewContent').innerHTML =
         '<div style="text-align:center;font-size:18px;font-weight:bold;margin-bottom:12px">检测委托合同（电气类）</div>' +
         '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">' +
           '<span>杭州数蚕智能科技有限公司</span><span>合同编号：' + code + '</span><span>第1页 共2页</span></div>' +
-        '<table><tr><td width="50%">委托方：' + customer + '</td><td>报告发送方式：☑邮寄 ☐自取 ☐传真 ☐E-mail</td></tr>' +
-        '<tr><td>地址：' + (d.address||'浙江省杭州市余杭区') + '</td><td>付款方式：☑电汇 ☐支票 ☐现金</td></tr>' +
+        '<table><tr><td width="50%">委托方：' + (customer || '') + '</td><td>报告发送方式：☑邮寄 ☐自取 ☐传真 ☐E-mail</td></tr>' +
+        '<tr><td>地址：' + (d.address || '') + '</td><td>付款方式：☑电汇 ☐支票 ☐现金</td></tr>' +
         '<tr><td>委托日期：' + acceptDate + '</td><td>联系人：' + contact + '　电话：' + phone + '</td></tr>' +
         '<tr><td>客户要求时间：' + requireDate + '</td><td>经办人：' + salesman + '　检测类型：☑委托检测</td></tr></table>' +
-        '<p style="margin:8px 0"><b>检测费用：</b>合计金额：' + fee + '元　大写：壹佰陆拾壹元整</p>' +
-        '<p style="font-size:12px;line-height:1.6">一、检测费用计价依据…二、费用结算与支付…三、本合同依据《中华人民共和国合同法》…</p>' +
-        '<div style="display:flex;justify-content:space-between;margin-top:20px">' +
-          '<div>委托方（盖章）：<br><br>联系人：<br>联系电话：</div>' +
-          '<div style="text-align:right">承检方（盖章）：杭州数蚕智能科技有限公司<br>地址：浙江省杭州市余杭区<br>开户行：中国工商银行<br>账号：1202xxxxxxxx<br>税号：91330100xxxxxxxx</div></div>' +
-        '<hr style="margin:24px 0;border:none;border-top:1px dashed #ccc">' +
-        '<div style="text-align:center;font-size:16px;font-weight:bold;margin-bottom:8px">委托内容明细表</div>' +
-        '<table><tr><th>序号</th><th>样品名称</th><th>规格型号</th><th>数量</th><th>检测项目</th><th>执行标准</th><th>单价</th><th>总价</th><th>备注</th></tr>' +
-        '<tr><td>1</td><td>' + sampleName + '</td><td></td><td>1</td><td>弯曲静载荷试验、弯曲动载荷试验、外观和尺寸、交流耐压试验</td><td>DL/T 976-2017</td><td>' + samplePrice + '</td><td>' + samplePrice + '</td><td></td></tr>' +
-        '<tr><td colspan="7" style="text-align:right">合计</td><td>' + samplePrice + '</td><td></td></tr></table>' +
-        '<p style="font-size:12px;margin-top:12px">说明：1.委托方送检样品…2.…</p>' +
-        '<p style="margin-top:16px;font-size:12px">委托方对上述内容确认无误　签字：________　日期：2026-07-10</p>';
+        '<p style="margin:8px 0"><b>检测费用：</b>合计金额：' + fee + '元</p>' +
+        '<div style="text-align:center;font-size:16px;font-weight:bold;margin:16px 0 8px">委托内容明细表</div>' +
+        '<table><tr><th>序号</th><th>样品名称</th><th>规格型号</th><th>数量</th><th>检测项目</th><th>单价</th><th>总价</th></tr>' +
+        '<tr><td>1</td><td>' + sampleName + '</td><td>' + (firstSample ? firstSample.spec || '' : '') + '</td><td>' + (firstSample ? firstSample.qty || '1' : '1') + '</td><td>' + sampleItems + '</td><td>' + samplePrice + '</td><td>' + (firstSample ? firstSample.total || samplePrice : samplePrice) + '</td></tr></table>';
 
-      document.getElementById('previewModal').classList.remove('hidden');
-      document.getElementById('previewModal').classList.add('flex');
+      showModal('previewModal');
     }
 
-    // 关闭预览弹窗
-    function closePreview() {
-      document.getElementById('previewModal').classList.add('hidden');
-      document.getElementById('previewModal').classList.remove('flex');
-    }
+    function closePreview() { hideModal('previewModal'); }
 
-    document.getElementById('previewModal').addEventListener('click', function (e) {
-      if (e.target === this) closePreview();
+    ['previewModal', 'sampleModal'].forEach(function (id) {
+      document.getElementById(id).addEventListener('click', function (e) {
+        if (e.target === this) hideModal(id);
+      });
     });
   </script>
 </body>
