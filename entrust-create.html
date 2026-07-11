@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>委托新增详情 - 智慧实验室</title>
+  <title>合同编辑 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <style>
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
-    .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 24px; }
-    .form-item { display: flex; align-items: center; gap: 8px; }
-    .form-item label { flex-shrink: 0; width: 110px; text-align: right; font-size: 13px; color: #64748b; }
+    .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 16px; }
+    .form-item { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .form-item label { flex-shrink: 0; width: 96px; text-align: right; font-size: 13px; color: #64748b; }
+    .form-item.span-full { grid-column: span 4; }
     .form-item label .req { color: #ef4444; }
     .form-item input, .form-item select, .form-item textarea { flex: 1; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
     .form-item input:focus, .form-item select:focus, .form-item textarea:focus { border-color: #3b82f6; }
@@ -29,7 +30,7 @@
     <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
     <a href="entrust-register.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">委托登记</a>
     <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
-      委托新增详情
+      合同编辑
       <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
     </span>
   </div>
@@ -42,12 +43,19 @@
         <button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">添加样品</button>
       </div>
       <div class="overflow-x-auto">
-        <table class="data-table min-w-[1000px]">
+        <table class="data-table min-w-[1200px]">
           <thead><tr>
-            <th>序号</th><th>样品名称</th><th>产品标记</th><th>型号/分类</th><th>检测类别</th><th>试验项</th><th>数量</th><th>单价(元)</th><th>总价(元)</th><th>备注</th><th>操作</th>
+            <th>序号</th><th>样品别名</th><th>型号关联</th><th>规格型号</th><th>试验项目</th><th>数量</th><th>单价</th><th>总价</th><th>生产厂</th><th>制造商</th><th>备注</th><th>操作</th>
           </tr></thead>
           <tbody id="sampleTableBody"></tbody>
         </table>
+      </div>
+      <div class="mt-3 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span>共 0 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-right"></i></button>
+        <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>10 条/页</option></select>
       </div>
     </section>
 
@@ -56,11 +64,11 @@
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>合同信息</h2>
       <div class="form-grid">
         <div class="form-item"><label>合同编号</label><select id="f_contractCode"><option value="">请选择</option><option>KJHT2025112001</option></select></div>
-        <div class="form-item"><label>合同名称</label><input id="f_contractName" type="text" /></div>
+        <div class="form-item"><label>合同名称</label><input id="f_contractName" type="text" placeholder="请输入" /></div>
         <div class="form-item"><label>签订时间</label><input id="f_signDate" type="text" placeholder="请选择日期" /></div>
         <div class="form-item"><label>服务年限</label><input id="f_serviceYears" type="text" placeholder="请选择日期" /></div>
-        <div class="form-item"><label>中标价</label><input id="f_bidPrice" type="text" /></div>
-        <div class="form-item col-span-3" style="grid-column: span 3"><label>合同样品</label><textarea id="f_contractSample" rows="2"></textarea></div>
+        <div class="form-item"><label>中标价</label><input id="f_bidPrice" type="text" placeholder="请输入" /></div>
+        <div class="form-item span-full"><label>合同样品</label><textarea id="f_contractSample" rows="2" placeholder="请输入"></textarea></div>
       </div>
     </section>
 
@@ -69,25 +77,25 @@
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
       <div class="form-grid">
         <div class="form-item"><label><span class="req">*</span> 委托编号</label><input id="f_code" type="text" readonly class="bg-slate-50" /></div>
-        <div class="form-item"><label><span class="req">*</span> 任务类型</label><select id="f_taskType"><option>电气（输配电类）</option><option>委托检测</option></select></div>
+        <div class="form-item"><label><span class="req">*</span> 任务类型</label><select id="f_taskType"><option value="">请选择</option><option>电气（输配电类）</option><option>委托检测</option></select></div>
         <div class="form-item"><label><span class="req">*</span> 优先等级</label><select id="f_priority"><option>常规</option><option>加急</option></select></div>
-        <div class="form-item"><label><span class="req">*</span> 检测类型</label><select id="f_testType"><option>常规</option></select></div>
-        <div class="form-item"><label><span class="req">*</span> 检测类别</label><select id="f_testCategory"><option>例行试验</option></select></div>
-        <div class="form-item"><label><span class="req">*</span> 客户单位</label><select id="f_customer"><option>杭州数蚕智能科技有限公司</option><option>宇宙设想有限公司</option></select></div>
-        <div class="form-item"><label><span class="req">*</span> 客户地址</label><input id="f_address" type="text" /></div>
-        <div class="form-item"><label>客户邮政编码</label><input id="f_zip" type="text" /></div>
-        <div class="form-item"><label><span class="req">*</span> 客户联系人</label><select id="f_contact"><option>安可</option></select></div>
-        <div class="form-item"><label><span class="req">*</span> 客户联系方式</label><input id="f_phone" type="text" /></div>
-        <div class="form-item"><label><span class="req">*</span> 业务员</label><select id="f_salesman"><option>梁倩</option><option>业务员A</option></select></div>
-        <div class="form-item"><label><span class="req">*</span> 签约地点</label><select id="f_signPlace"><option>湖北</option></select></div>
+        <div class="form-item"><label>检测类型</label><select id="f_testType"><option>常规</option></select></div>
+        <div class="form-item"><label>检测类别</label><select id="f_testCategory"><option>例行试验</option></select></div>
+        <div class="form-item"><label><span class="req">*</span> 客户单位</label><select id="f_customer"><option value="">请选择</option><option>杭州数蚕智能科技有限公司</option><option>宇宙设想有限公司</option></select></div>
+        <div class="form-item"><label>客户地址</label><input id="f_address" type="text" placeholder="请输入" /></div>
+        <div class="form-item"><label>客户邮政编码</label><input id="f_zip" type="text" placeholder="请输入" /></div>
+        <div class="form-item"><label><span class="req">*</span> 客户联系人</label><select id="f_contact"><option value="">请选择</option><option>安可</option></select></div>
+        <div class="form-item"><label><span class="req">*</span> 客户联系方式</label><input id="f_phone" type="text" placeholder="请输入" /></div>
+        <div class="form-item"><label><span class="req">*</span> 业务员</label><select id="f_salesman"><option value="">请选择</option><option>梁倩</option><option>业务员A</option></select></div>
+        <div class="form-item"><label>签约地点</label><select id="f_signPlace"><option>湖北</option></select></div>
         <div class="form-item"><label><span class="req">*</span> 实验室检测中心</label><select id="f_lab"><option>应敏科技有限公司</option></select></div>
         <div class="form-item"><label><span class="req">*</span> 委托受理日期</label><input id="f_acceptDate" type="text" /></div>
-        <div class="form-item"><label>客户要求完成日期</label><input id="f_requireDate" type="text" /></div>
-        <div class="form-item"><label>要求检测完成天数</label><input id="f_days" type="text" /></div>
+        <div class="form-item"><label>客户要求完成日期</label><input id="f_requireDate" type="text" placeholder="请选择日期" /></div>
+        <div class="form-item"><label>要求检测完成天数</label><input id="f_days" type="text" placeholder="请输入" /></div>
         <div class="form-item"><label><span class="req">*</span> 编制人</label><input id="f_editor" type="text" readonly class="bg-slate-50" value="admin" /></div>
         <div class="form-item"><label>代理单位</label><select id="f_agent"><option value="">请选择</option></select></div>
-        <div class="form-item"><label>代理人联系方式</label><select id="f_agentPhone"><option value="">请选择</option></select></div>
-        <div class="form-item col-span-3" style="grid-column: span 3"><label>备注</label><textarea id="f_remark" rows="2"></textarea></div>
+        <div class="form-item"><label>代理人联系方式</label><input id="f_agentPhone" type="text" placeholder="请输入" /></div>
+        <div class="form-item span-full"><label>备注</label><textarea id="f_remark" rows="2" placeholder="请输入"></textarea></div>
       </div>
     </section>
 
@@ -95,12 +103,12 @@
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>付款信息</h2>
       <div class="form-grid">
-        <div class="form-item"><label>样品检测总价(元)</label><input id="f_totalPrice" type="text" /></div>
-        <div class="form-item"><label>实际费用(元)</label><input id="f_actualFee" type="text" /></div>
-        <div class="form-item"><label>折扣率(%)</label><input id="f_discount" type="text" value="0" /></div>
-        <div class="form-item"><label>付款单位</label><input id="f_payer" type="text" /></div>
-        <div class="form-item"><label>付款方式</label><select id="f_payMethod"><option>电汇</option><option>对公转账</option></select></div>
-        <div class="form-item"><label>费用备注</label><input id="f_feeRemark" type="text" /></div>
+        <div class="form-item"><label><span class="req">*</span> 样品检测总价(元)</label><input id="f_totalPrice" type="text" /></div>
+        <div class="form-item"><label><span class="req">*</span> 实际费用(元)</label><input id="f_actualFee" type="text" /></div>
+        <div class="form-item"><label><span class="req">*</span> 折扣率(%)</label><input id="f_discount" type="text" value="0" /></div>
+        <div class="form-item"><label>付款单位</label><input id="f_payer" type="text" placeholder="请输入" /></div>
+        <div class="form-item"><label>付款方式</label><select id="f_payMethod"><option value="">请选择</option><option>电汇</option><option>对公转账</option></select></div>
+        <div class="form-item"><label>费用备注</label><input id="f_feeRemark" type="text" placeholder="请输入" /></div>
       </div>
     </section>
 
@@ -109,7 +117,7 @@
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>报告信息</h2>
       <div class="form-grid">
         <div class="form-item"><label>报告传送方式</label><select id="f_reportDelivery"><option>邮寄</option><option>自取</option></select></div>
-        <div class="form-item"><label>报告资质</label><select id="f_reportQual"><option>CNAS CMA</option></select></div>
+        <div class="form-item"><label><span class="req">*</span> 报告资质</label><select id="f_reportQual"><option>CNAS CMA</option></select></div>
         <div class="form-item"><label>报告描述</label><select id="f_reportDesc"><option>全部生成一份</option></select></div>
         <div class="form-item"><label>报告数量</label><input id="f_reportCount" type="text" value="1" /></div>
         <div class="form-item"><label>结果方式</label><select id="f_resultType"><option>判定</option></select></div>
@@ -146,22 +154,23 @@
 
   <script src="js/tab-bar.js"></script>
   <script>
-    // 手动创建默认数据
+    // 手动创建默认数据（新建委托登记初始化）
     var manualData = {
-      code: 'SC2026/0213', samples: [],
+      code: 'SC2026/0078', samples: [],
       contractCode: '', contractName: '', signDate: '', serviceYears: '', bidPrice: '', contractSample: '',
-      taskType: '委托检测', priority: '常规', testType: '常规', testCategory: '例行试验',
-      customer: '杭州数蚕智能科技有限公司', address: '', zip: '', contact: '', phone: '',
-      salesman: '业务员A', signPlace: '湖北', lab: '应敏科技有限公司',
-      acceptDate: '2026-07-10', requireDate: '', days: '', editor: 'admin',
-      totalPrice: '0', actualFee: '0', discount: '0', payer: '', payMethod: '电汇', feeRemark: '',
+      taskType: '', priority: '常规', testType: '常规', testCategory: '例行试验',
+      customer: '', address: '', zip: '', contact: '', phone: '',
+      salesman: '', signPlace: '湖北', lab: '应敏科技有限公司',
+      acceptDate: '2026-07-11', requireDate: '', days: '', editor: 'admin',
+      agent: '', agentPhone: '', remark: '',
+      totalPrice: '0', actualFee: '0', discount: '0', payer: '', payMethod: '', feeRemark: '',
       reportDelivery: '邮寄', reportQual: 'CNAS CMA', reportDesc: '全部生成一份', reportCount: '1', resultType: '判定'
     };
 
     // 复制任务默认数据（图10）
     var copyData = {
       code: 'SC2026/0080',
-      samples: [{ name: '绝缘操作杆', mark: '', model: '', category: '例行试验', items: '交流耐压试验、弯曲静载荷试验、弯曲动载荷试验、外观和尺寸', qty: '1', price: '160', total: '160', remark: '' }],
+      samples: [{ alias: '绝缘操作杆', modelLink: '', spec: '', items: '交流耐压试验、弯曲静载荷试验、弯曲动载荷试验、外观和尺寸', qty: '1', price: '160', total: '160', factory: '', manufacturer: '', remark: '' }],
       contractCode: '', contractName: '', signDate: '', serviceYears: '', bidPrice: '', contractSample: '',
       taskType: '电气（输配电类）', priority: '常规', testType: '常规', testCategory: '例行试验',
       customer: '杭州数蚕智能科技有限公司', address: '浙江省杭州市余杭区', zip: '', contact: '安可', phone: '17835503262',
@@ -182,7 +191,7 @@
     function fillForm(data) {
       var fields = ['code','contractCode','contractName','signDate','serviceYears','bidPrice','contractSample',
         'taskType','priority','testType','testCategory','customer','address','zip','contact','phone',
-        'salesman','signPlace','lab','acceptDate','requireDate','days','editor',
+        'salesman','signPlace','lab','acceptDate','requireDate','days','editor','agent','agentPhone','remark',
         'totalPrice','actualFee','discount','payer','payMethod','feeRemark',
         'reportDelivery','reportQual','reportDesc','reportCount','resultType'];
       fields.forEach(function (key) {
@@ -196,12 +205,13 @@
     function renderSamples(samples) {
       var tbody = document.getElementById('sampleTableBody');
       if (!samples.length) {
-        tbody.innerHTML = '<tr><td colspan="11" class="py-8 text-center text-slate-400"><i class="fa fa-inbox text-2xl text-slate-200"></i><div class="mt-1">暂无数据</div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="py-8 text-center text-slate-400"><i class="fa fa-inbox text-2xl text-slate-200"></i><div class="mt-1">暂无数据</div></td></tr>';
         return;
       }
       tbody.innerHTML = samples.map(function (s, i) {
-        return '<tr><td>' + (i+1) + '</td><td>' + s.name + '</td><td>' + (s.mark||'') + '</td><td>' + (s.model||'') + '</td>' +
-          '<td>' + (s.category||'') + '</td><td>' + (s.items||'') + '</td><td>' + s.qty + '</td><td>' + s.price + '</td><td>' + s.total + '</td><td>' + (s.remark||'') + '</td>' +
+        return '<tr><td>' + (i+1) + '</td><td>' + (s.alias||s.name||'') + '</td><td>' + (s.modelLink||'') + '</td><td>' + (s.spec||s.model||'') + '</td>' +
+          '<td>' + (s.items||'') + '</td><td>' + (s.qty||'') + '</td><td>' + (s.price||'') + '</td><td>' + (s.total||'') + '</td>' +
+          '<td>' + (s.factory||'') + '</td><td>' + (s.manufacturer||'') + '</td><td>' + (s.remark||'') + '</td>' +
           '<td><button class="text-blue-600 hover:underline">编辑</button> <button class="ml-2 text-red-500 hover:underline">删除</button></td></tr>';
       }).join('');
     }
@@ -228,7 +238,7 @@
       var acceptDate = document.getElementById('f_acceptDate').value || d.acceptDate;
       var requireDate = document.getElementById('f_requireDate').value || d.requireDate || '2026-07-30';
       var salesman = document.getElementById('f_salesman').value || d.salesman;
-      var sampleName = (d.samples && d.samples[0]) ? d.samples[0].name : '绝缘操作杆';
+      var sampleName = (d.samples && d.samples[0]) ? (d.samples[0].alias || d.samples[0].name) : '绝缘操作杆';
       var samplePrice = (d.samples && d.samples[0]) ? d.samples[0].price : '160';
 
       document.getElementById('previewContent').innerHTML =
