@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>样品收样 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    .modal-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+    .modal-form-item { display: flex; align-items: flex-start; gap: 8px; }
+    .modal-form-item label { flex-shrink: 0; width: 88px; padding-top: 7px; text-align: right; font-size: 13px; color: #64748b; }
+    .modal-form-item label .req { color: #ef4444; }
+    .modal-form-item input, .modal-form-item select, .modal-form-item textarea { flex: 1; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
+    .modal-form-item input:focus, .modal-form-item select:focus, .modal-form-item textarea:focus { border-color: #3b82f6; }
+    .modal-form-item.span-full { grid-column: span 2; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <!-- 顶部页签 -->
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="entrust-register.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">委托登记</a>
+    <a href="entrust-create.html?mode=manual" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">委托编辑</a>
+    <a href="entrust-preview.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">委托预览</a>
+    <a href="#" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">委托确认</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      样品收样
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <!-- 搜索区 -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label>
+          <input type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">是否关联框架合同</label>
+          <select class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-500 outline-none focus:border-blue-500">
+            <option value="">请选择是否关联框架合同</option>
+            <option>是</option><option>否</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">合同编号</label>
+          <input type="text" placeholder="请输入框架合同编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">客户单位</label>
+          <input type="text" placeholder="请输入客户单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
+          <input type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托受理日期</label>
+          <div class="relative flex-1">
+            <input type="text" placeholder="开始日期 ~ 结束日期" class="w-full rounded border border-slate-300 px-3 py-1.5 pr-8 text-sm outline-none focus:border-blue-500" />
+            <i class="fa fa-calendar-o absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 xl:col-span-2 xl:justify-end">
+          <button class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>
+          <button class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i>重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 列表区 -->
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1400px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">先收费</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">优先等级</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">任务状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="receiveTableBody" class="text-slate-600"></tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span>共 10 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+        <select class="rounded border border-slate-200 px-2 py-1"><option>50条/页</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 收样弹窗 -->
+  <div id="receiveModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[90vh] w-[760px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 id="receiveModalTitle" class="text-base font-medium text-slate-800">SC2026/0080-收样</h3>
+        <button onclick="closeReceiveModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <!-- 弹窗内样品表格 -->
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr class="bg-slate-50 text-slate-600">
+                <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+                <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+                <th class="border border-slate-200 px-3 py-2 font-medium">数量</th>
+                <th class="border border-slate-200 px-3 py-2 font-medium">型号关联</th>
+                <th class="border border-slate-200 px-3 py-2 font-medium">规格型号</th>
+              </tr>
+            </thead>
+            <tbody id="modalSampleBody"></tbody>
+          </table>
+        </div>
+
+        <!-- 收样表单 -->
+        <div class="modal-form-grid mt-5">
+          <div class="modal-form-item">
+            <label><span class="req">*</span> 收样人</label>
+            <select id="r_receiver"><option value="">请选择收样人</option><option>admin</option><option>张三</option><option>李四</option></select>
+          </div>
+          <div class="modal-form-item">
+            <label>收样状态</label>
+            <select id="r_status"><option>完好</option><option>异常</option></select>
+          </div>
+          <div class="modal-form-item">
+            <label><span class="req">*</span> 收样日期</label>
+            <input id="r_date" type="text" value="2026-07-11" />
+          </div>
+          <div class="modal-form-item">
+            <label><span class="req">*</span> 送样方式</label>
+            <select id="r_delivery"><option>送样</option><option>上门</option></select>
+          </div>
+          <div class="modal-form-item">
+            <label>送样人</label>
+            <input id="r_sender" type="text" placeholder="请输入送样人" />
+          </div>
+          <div class="modal-form-item">
+            <label>送样人电话</label>
+            <input id="r_senderPhone" type="text" placeholder="请输入送样人电话" />
+          </div>
+          <div class="modal-form-item">
+            <label>样品图片</label>
+            <button type="button" class="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"><i class="fa fa-paperclip"></i> 上传附件</button>
+          </div>
+          <div class="modal-form-item">
+            <label>备注</label>
+            <textarea id="r_remark" rows="3" placeholder="请输入备注"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeReceiveModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="confirmReceive()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确认提交</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 退回弹窗 -->
+  <div id="returnModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-[480px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 id="returnModalTitle" class="text-base font-medium text-slate-800">退回</h3>
+        <button onclick="closeReturnModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-5">
+        <div class="flex items-start gap-2">
+          <label class="w-20 flex-shrink-0 pt-2 text-right text-sm text-slate-600"><span class="text-red-500">*</span> 退回原因</label>
+          <textarea id="returnReason" rows="4" placeholder="请输入退回原因" class="flex-1 rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeReturnModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="confirmReturn()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var receiveData = [
+      { code: 'SC2026/0080', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', sendDate: '', requireDate: '2026-07-30', acceptDate: '2026-07-03', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘操作杆', qty: '1', modelLink: '', spec: '' }] },
+      { code: 'SC2026/0067', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', sendDate: '', requireDate: '2026-07-25', acceptDate: '2026-06-28', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘操作杆', qty: '1', modelLink: '', spec: '' }] },
+      { code: 'SC2026/0065', contract: '/', customer: '东集西造有限公司', sample: '10kV带电作业用绝缘服', sendDate: '', requireDate: '2026-07-20', acceptDate: '2026-06-26', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '10kV带电作业用绝缘服', qty: '2', modelLink: '', spec: '' }] },
+      { code: 'SC2026/0063', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘斗臂车-t', sendDate: '', requireDate: '2026-07-18', acceptDate: '2026-06-24', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘斗臂车-t', qty: '1', modelLink: '', spec: '' }] },
+      { code: 'SC2026/0061', contract: '/', customer: '宇宙设想有限公司', sample: '10kV旁路作业设备', sendDate: '', requireDate: '2026-07-15', acceptDate: '2026-06-22', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '10kV旁路作业设备', qty: '1', modelLink: '', spec: '' }] },
+      { code: 'SC2026/0059', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', sendDate: '', requireDate: '2026-07-12', acceptDate: '2026-06-20', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '绝缘操作杆', qty: '1', modelLink: '', spec: '' }] },
+      { code: 'SC2026/0057', contract: '/', customer: '东集西造有限公司', sample: '安全帽', sendDate: '', requireDate: '2026-07-10', acceptDate: '2026-06-18', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '安全帽', qty: '5', modelLink: '', spec: '' }] },
+      { code: 'SC2026/0055', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘毯、安全带', sendDate: '', requireDate: '2026-07-08', acceptDate: '2026-06-16', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘毯、安全带', qty: '3', modelLink: '', spec: '' }] },
+      { code: 'SC2026/0053', contract: '/', customer: '灵知益义有限公司', sample: '绝缘杆', sendDate: '', requireDate: '2026-07-05', acceptDate: '2026-06-14', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '绝缘杆', qty: '2', modelLink: '', spec: '' }] },
+      { code: 'SC2026/0051', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '遮蔽罩、安全带', sendDate: '', requireDate: '2026-07-03', acceptDate: '2026-06-12', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '遮蔽罩、安全带', qty: '1', modelLink: '', spec: '' }] }
+    ];
+
+    var currentIndex = -1;
+
+    function renderTable() {
+      document.getElementById('receiveTableBody').innerHTML = receiveData.map(function (item, i) {
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (item.sendDate || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.requireDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.acceptDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><span class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-600">' + item.prepaid + '</span></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.priority + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.status + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.salesman + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
+            '<button onclick="openReceiveModal(' + i + ')" class="text-blue-600 hover:underline"><i class="fa fa-edit"></i> 收样</button>' +
+            '<button onclick="openReturnModal(' + i + ')" class="ml-3 text-blue-600 hover:underline"><i class="fa fa-reply"></i> 退回</button>' +
+          '</td></tr>';
+      }).join('');
+    }
+
+    function showModal(id) {
+      var m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function hideModal(id) {
+      var m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function resetReceiveForm() {
+      document.getElementById('r_receiver').value = '';
+      document.getElementById('r_status').value = '完好';
+      document.getElementById('r_date').value = '2026-07-11';
+      document.getElementById('r_delivery').value = '送样';
+      document.getElementById('r_sender').value = '';
+      document.getElementById('r_senderPhone').value = '';
+      document.getElementById('r_remark').value = '';
+    }
+
+    function openReceiveModal(index) {
+      currentIndex = index;
+      var item = receiveData[index];
+      document.getElementById('receiveModalTitle').textContent = item.code + '-收样';
+      document.getElementById('modalSampleBody').innerHTML = item.samples.map(function (s, i) {
+        return '<tr><td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + s.name + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + s.qty + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + (s.modelLink || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + (s.spec || '') + '</td></tr>';
+      }).join('');
+      resetReceiveForm();
+      showModal('receiveModal');
+    }
+
+    function closeReceiveModal() { hideModal('receiveModal'); }
+
+    function confirmReceive() {
+      if (!document.getElementById('r_receiver').value) {
+        alert('请选择收样人');
+        return;
+      }
+      if (!document.getElementById('r_date').value.trim()) {
+        alert('请填写收样日期');
+        return;
+      }
+      alert('收样提交成功（原型演示）');
+      closeReceiveModal();
+    }
+
+    function openReturnModal(index) {
+      currentIndex = index;
+      document.getElementById('returnModalTitle').textContent = receiveData[index].code + '-退回';
+      document.getElementById('returnReason').value = '';
+      showModal('returnModal');
+    }
+
+    function closeReturnModal() { hideModal('returnModal'); }
+
+    function confirmReturn() {
+      if (!document.getElementById('returnReason').value.trim()) {
+        alert('请输入退回原因');
+        return;
+      }
+      alert('退回成功（原型演示）');
+      closeReturnModal();
+    }
+
+    ['receiveModal', 'returnModal'].forEach(function (id) {
+      document.getElementById(id).addEventListener('click', function (e) {
+        if (e.target === this) hideModal(id);
+      });
+    });
+
+    renderTable();
+  </script>
+</body>
+</html>
