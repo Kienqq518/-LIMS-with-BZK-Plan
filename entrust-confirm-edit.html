@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>委托确认编辑 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .info-table { width: 100%; border-collapse: collapse; }
+    .info-table td { border: 1px solid #e5e7eb; padding: 8px 12px; font-size: 13px; vertical-align: top; }
+    .info-table .lbl { background: #f8fafc; color: #64748b; white-space: nowrap; width: 120px; }
+    .info-table .val { color: #334155; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { border: 1px solid #e5e7eb; padding: 8px 10px; font-size: 13px; text-align: left; }
+    .data-table th { background: #f1f5f9; color: #64748b; font-weight: 500; white-space: nowrap; }
+    .nested-table { margin: 8px 0 8px 24px; }
+    .tag-blue { display: inline-block; rounded: 9999px; background: #dbeafe; color: #2563eb; padding: 2px 8px; font-size: 12px; border-radius: 9999px; }
+    .tag-orange { display: inline-block; background: #ffedd5; color: #ea580c; padding: 2px 8px; font-size: 12px; border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700 pb-20">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="entrust-confirm.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="entrust-confirm.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">委托确认</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      委托确认编辑
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="space-y-4 p-4">
+    <!-- 合同信息 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>合同信息</h2>
+      <table class="info-table">
+        <tr><td class="lbl">合同编号</td><td class="val">/</td><td class="lbl">合同名称</td><td class="val">/</td><td class="lbl">签订时间</td><td class="val">/</td></tr>
+        <tr><td class="lbl">服务年限</td><td class="val">/</td><td class="lbl">中标价</td><td class="val">/</td><td class="lbl">合同样品</td><td class="val">/</td></tr>
+        <tr><td class="lbl">合同备注</td><td class="val" colspan="5">/</td></tr>
+      </table>
+    </section>
+
+    <!-- 委托信息 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
+      <table class="info-table">
+        <tr><td class="lbl">委托编号</td><td class="val">SC2026/0071</td><td class="lbl">任务类型</td><td class="val">电气（输配电类）</td><td class="lbl">优先等级</td><td class="val">常规</td></tr>
+        <tr><td class="lbl">检测类型</td><td class="val">常规</td><td class="lbl">检测类别</td><td class="val">例行试验</td><td class="lbl">客户单位</td><td class="val">宇宙设想有限公司</td></tr>
+        <tr><td class="lbl">客户地址</td><td class="val">/</td><td class="lbl">客户邮政编码</td><td class="val">/</td><td class="lbl">客户联系人</td><td class="val">张三</td></tr>
+        <tr><td class="lbl">客户联系方式</td><td class="val">13800000001</td><td class="lbl">业务员</td><td class="val">梁倩</td><td class="lbl">签约地点</td><td class="val">湖北</td></tr>
+        <tr><td class="lbl">实验室检测中心</td><td class="val">应敏科技有限公司</td><td class="lbl">委托受理日期</td><td class="val">2026-06-09</td><td class="lbl">客户要求完成日期</td><td class="val">2026-06-20</td></tr>
+        <tr><td class="lbl">要求检测完成天数</td><td class="val">/</td><td class="lbl">编制人</td><td class="val">admin</td><td class="lbl">代理单位</td><td class="val">/</td></tr>
+        <tr><td class="lbl">备注</td><td class="val" colspan="5">/</td></tr>
+      </table>
+    </section>
+
+    <!-- 付款信息 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>付款信息</h2>
+      <table class="info-table">
+        <tr><td class="lbl">样品检测总价(元)</td><td class="val">238</td><td class="lbl">实际费用(元)</td><td class="val">45</td><td class="lbl">折扣率(%)</td><td class="val">81.09</td></tr>
+        <tr><td class="lbl">付款单位</td><td class="val">宇宙设想有限公司</td><td class="lbl">付款方式</td><td class="val">电汇</td><td class="lbl">费用备注</td><td class="val">/</td></tr>
+      </table>
+    </section>
+
+    <!-- 报告信息 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>报告信息</h2>
+      <table class="info-table">
+        <tr><td class="lbl">报告传送方式</td><td class="val">邮寄</td><td class="lbl">报告资质</td><td class="val">CNAS CMA</td><td class="lbl">报告描述</td><td class="val">全部生成一份</td></tr>
+        <tr><td class="lbl">报告数量</td><td class="val">1</td><td class="lbl">结果方式</td><td class="val">判定</td><td class="lbl"></td><td class="val"></td></tr>
+      </table>
+    </section>
+
+    <!-- 收样信息 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>收样信息</h2>
+      <table class="info-table">
+        <tr><td class="lbl">收样人</td><td class="val">admin</td><td class="lbl">收样状态</td><td class="val">完好</td><td class="lbl">收样日期</td><td class="val">2026-06-24</td></tr>
+        <tr><td class="lbl">送样方式</td><td class="val">送样</td><td class="lbl">送样人</td><td class="val">/</td><td class="lbl">送样人电话</td><td class="val">/</td></tr>
+        <tr><td class="lbl">备注</td><td class="val" colspan="5">/</td></tr>
+      </table>
+      <div class="mt-3 space-y-1 text-sm">
+        <a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> 数量logo(1).png</a><br>
+        <a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> ceshi.png</a>
+      </div>
+    </section>
+
+    <!-- 检测信息 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测信息</h2>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[900px]">
+          <thead>
+            <tr><th>序号</th><th>样品名称</th><th>型号关联</th><th>规格型号</th><th>样品数量</th><th>样品单位</th><th>是否加急</th><th>备注</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td><td>遮蔽罩</td><td></td><td></td><td>1</td><td>件</td><td>否</td><td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="mb-2 mt-4 text-sm font-medium text-slate-600">试验信息</p>
+      <div class="overflow-x-auto">
+        <table class="data-table nested-table min-w-[1100px]">
+          <thead>
+            <tr><th>序号</th><th>名称</th><th>检测依据</th><th>判定依据</th><th>标准要求</th><th>负责人</th><th>状态</th><th>备注</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td><td>交流耐压试验</td>
+              <td><a href="#" class="text-blue-600 hover:underline">DL/T 976-2017</a></td>
+              <td>DL/T 976-2017</td><td>应无击穿、无闪络</td><td>admin</td>
+              <td><span class="tag-blue">待接收</span></td><td></td>
+            </tr>
+            <tr>
+              <td>2</td><td>外观及尺寸</td>
+              <td><a href="#" class="text-blue-600 hover:underline">DL/T 976-2017</a></td>
+              <td>DL/T 976-2017</td><td>试品应光滑洁净</td><td>admin</td>
+              <td><span class="tag-orange">未领样</span></td><td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 委托单文件 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托单文件</h2>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[560px]">
+          <thead><tr><th>序号</th><th>委托单文件</th><th>生成时间</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-word-o"></i> SC2026/0071-06检测委托书.docx</a></td>
+              <td>2026-06-09</td>
+              <td><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">导出</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 检测任务单 -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测任务单</h2>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[560px]">
+          <thead><tr><th>序号</th><th>检测任务单</th><th>生成时间</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-word-o"></i> SC2026/0071检测任务单.docx</a></td>
+              <td>2026-06-09</td>
+              <td><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">下载</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- 底部操作栏 -->
+  <div class="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-center gap-3 border-t border-slate-200 bg-white px-6 py-3 shadow-lg">
+    <button onclick="returnRegister()" class="rounded border border-slate-300 px-8 py-2 text-sm text-slate-600 hover:bg-slate-50">退回登记</button>
+    <button onclick="confirmPass()" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">确认通过</button>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    function returnRegister() {
+      if (confirm('确认退回至委托登记吗？')) alert('已退回登记（原型演示）');
+    }
+    function confirmPass() {
+      if (confirm('确认通过该委托吗？')) alert('确认通过（原型演示）');
+    }
+  </script>
+</body>
+</html>
