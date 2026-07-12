@@ -17,7 +17,8 @@
     '.pa-marker { position: absolute; z-index: 9990; width: 22px; height: 22px; border-radius: 50%; background: #f97316; color: #fff; font-size: 12px; font-weight: 700; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(249,115,22,.45); cursor: pointer; border: 2px solid #fff; }',
     '.pa-marker.visible { display: flex; }',
     '.pa-marker:hover { transform: scale(1.1); }',
-    '.pa-card { position: fixed; z-index: 9998; width: 300px; max-width: calc(100vw - 40px); background: #fffbeb; border: 1px solid #fcd34d; border-left: 4px solid #f97316; border-radius: 8px; padding: 12px 14px; box-shadow: 0 8px 24px rgba(15,23,42,.12); display: none; font-size: 13px; color: #334155; line-height: 1.55; }',
+    '.pa-card { position: fixed; z-index: 9998; width: 340px; max-width: calc(100vw - 40px); background: #fffbeb; border: 1px solid #fcd34d; border-left: 4px solid #f97316; border-radius: 8px; padding: 12px 14px; box-shadow: 0 8px 24px rgba(15,23,42,.12); display: none; font-size: 13px; color: #334155; line-height: 1.6; }',
+    '.pa-card.wide { width: 400px; }',
     '.pa-card.visible { display: block; }',
     '.pa-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }',
     '.pa-card-num { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: #f97316; color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }',
@@ -127,7 +128,7 @@
 
       var card = document.createElement('div');
       card.id = 'pa-card-' + item.id;
-      card.className = 'pa-card';
+      card.className = 'pa-card' + (item.wide ? ' wide' : '');
       card.innerHTML =
         '<div class="pa-card-head">' +
           '<span class="pa-card-num">' + num + '</span>' +

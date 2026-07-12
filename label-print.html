@@ -100,22 +100,9 @@
         <button onclick="closeInspectorModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="px-6 py-5">
-        <div class="flex items-start gap-3">
-          <label class="w-24 flex-shrink-0 pt-2 text-right text-sm text-slate-600">检验人员</label>
-          <div id="inspectorTags" class="flex-1 min-h-[38px] flex flex-wrap gap-1 rounded border border-slate-300 px-2 py-1.5">
-            <span class="inspector-tag inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-sm text-blue-700" data-value="admin">admin <i class="fa fa-times cursor-pointer text-xs hover:text-blue-900" onclick="removeInspector(this)"></i></span>
-          </div>
-        </div>
-        <div class="mt-3 flex items-center gap-3">
-          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600"></label>
-          <select id="inspectorSelect" onchange="addInspector(this)" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500">
-            <option value="">添加检验人员</option>
-            <option value="admin">admin</option>
-            <option value="cs222">cs222</option>
-            <option value="cs3">cs3</option>
-            <option value="张三">张三</option>
-            <option value="李四">李四</option>
-          </select>
+        <div class="flex items-center gap-3">
+          <label class="w-[72px] flex-shrink-0 text-right text-sm text-slate-600">检验人员</label>
+          <div id="modalInspectorBox" class="flex-1"></div>
         </div>
       </div>
       <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
@@ -126,6 +113,7 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/inspector-select.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     var listData = [
@@ -145,6 +133,30 @@
     ];
 
     var filtered = listData.slice();
+    var modalInspectors = ['admin'];
+    var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
+
+    function renderModalInspectors() {
+      document.getElementById('modalInspectorBox').innerHTML = InspectorSelect.renderHTML({
+        inspectors: modalInspectors,
+        options: INSPECTOR_OPTIONS,
+        mode: 'modal',
+        idx: '',
+        prefix: 'modal'
+      });
+    }
+
+    InspectorSelect.bind(document.getElementById('inspectorModal'), {
+      onAdd: function (_, name) {
+        if (modalInspectors.indexOf(name) === -1) modalInspectors.push(name);
+        renderModalInspectors();
+      },
+      onRemove: function (_, name) {
+        modalInspectors = modalInspectors.filter(function (n) { return n !== name; });
+        renderModalInspectors();
+      }
+    });
+    renderModalInspectors();
 
     function renderTable() {
       document.getElementById('tableBody').innerHTML = filtered.map(function (item, i) {
@@ -181,9 +193,7 @@
     }
 
     function getInspectors() {
-      return Array.prototype.map.call(document.querySelectorAll('.inspector-tag'), function (el) {
-        return el.getAttribute('data-value');
-      });
+      return modalInspectors.slice();
     }
 
     function doSearch() {
@@ -217,6 +227,8 @@
     function openInspectorModal() {
       var codes = getSelectedCodes();
       if (!codes.length) { alert('请先勾选可打印合格证的委托（任务完成状态）'); return; }
+      modalInspectors = ['admin'];
+      renderModalInspectors();
       showModal('inspectorModal');
     }
 
@@ -229,23 +241,6 @@
       var url = 'cert-print-batch.html?codes=' + encodeURIComponent(codes.join(',')) +
         '&inspectors=' + encodeURIComponent(inspectors.join(','));
       window.location.href = url;
-    }
-
-    function addInspector(sel) {
-      var val = sel.value;
-      if (!val) return;
-      var exists = getInspectors().indexOf(val) !== -1;
-      if (exists) { sel.value = ''; return; }
-      var tag = document.createElement('span');
-      tag.className = 'inspector-tag inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-sm text-blue-700';
-      tag.setAttribute('data-value', val);
-      tag.innerHTML = val + ' <i class="fa fa-times cursor-pointer text-xs hover:text-blue-900" onclick="removeInspector(this)"></i>';
-      document.getElementById('inspectorTags').appendChild(tag);
-      sel.value = '';
-    }
-
-    function removeInspector(icon) {
-      icon.parentElement.remove();
     }
 
     function showModal(id) {
@@ -289,7 +284,7 @@
           selector: '#btnConfirmInspector',
           position: 'top-right',
           title: '确认检验人员',
-          content: '确定后将携带所选委托与默认检验人员跳转至批量合格证打印页（图5），可在右侧列表逐条修改检验人员。',
+          content: '检验人员标签与添加下拉合并为一行（对齐系统 UI）。确定后将所选委托与默认检验人员带入批量打印页，可在列表逐条调整。',
           tag: '流程 · 图4→5'
         }
       ]

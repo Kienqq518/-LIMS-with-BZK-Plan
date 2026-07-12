@@ -7,34 +7,65 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-700 flex items-center justify-center p-6">
-  <div class="w-full max-w-md rounded-lg bg-white p-8 shadow-lg text-center">
-    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600 text-2xl">
-      <i class="fa fa-check"></i>
+<body class="min-h-screen bg-slate-100 text-slate-700">
+  <div class="mx-auto max-w-lg p-4 pt-8">
+    <div class="rounded-lg bg-white shadow-lg overflow-hidden">
+      <div class="bg-blue-600 px-6 py-4 text-center text-white">
+        <i class="fa fa-flask text-2xl mb-2"></i>
+        <h1 class="text-lg font-semibold">智慧实验室 · 合格证验真</h1>
+        <p class="text-xs text-blue-100 mt-1">扫码验真 · 公开查询</p>
+      </div>
+      <div class="px-6 py-5">
+        <div id="verifyStatus" class="mb-4 flex items-center gap-2 rounded-lg bg-green-50 px-4 py-3 text-green-700">
+          <i class="fa fa-check-circle text-xl"></i>
+          <span class="font-medium">该合格证有效</span>
+        </div>
+        <div id="verifyInfo" class="space-y-3 text-sm"></div>
+        <p class="mt-5 text-xs text-slate-400 leading-relaxed">
+          本页面为扫码跳转后的 H5 验真页。微信、支付宝或手机相机扫描标签二维码均可打开。
+        </p>
+      </div>
     </div>
-    <h1 class="text-lg font-semibold text-slate-800">合格证验真页（Mock）</h1>
-    <p class="mt-2 text-sm text-slate-500">短链扫码后 302 跳转至此页面</p>
-    <div id="verifyInfo" class="mt-6 rounded border border-slate-200 bg-slate-50 p-4 text-left text-sm space-y-2"></div>
-    <p class="mt-4 text-xs text-slate-400">完整验真地址将在正式环境中由短链服务重定向</p>
-    <button onclick="history.back()" class="mt-6 rounded bg-blue-600 px-5 py-2 text-sm text-white hover:bg-blue-700">返回</button>
   </div>
   <script src="js/short-link-qr.js"></script>
   <script>
     (function () {
+      var MOCK_DETAIL = {
+        'SC2026/00790101': { name: '绝缘操作杆', spec: '10kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: 'cs222、cs3', org: '杭州数蚕智能科技有限公司' },
+        'SC2026/00730101': { name: '绝缘操作杆', spec: '10kV', inspectDate: '2026-06-10', reinspectDate: '2027-06-09', inspectors: 'admin', org: '杭州数蚕智能科技有限公司' }
+      };
+
       var params = new URLSearchParams(location.search);
       var code = params.get('code') || '';
       var sampleNo = ShortLinkQR.getSampleNo(code);
-      var longUrl = ShortLinkQR.getLongUrl(code);
       var el = document.getElementById('verifyInfo');
+      var statusEl = document.getElementById('verifyStatus');
+
       if (!code || !sampleNo) {
-        el.innerHTML = '<p class="text-red-500">无效短链代码</p>';
+        statusEl.className = 'mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-red-600';
+        statusEl.innerHTML = '<i class="fa fa-times-circle text-xl"></i><span class="font-medium">无效短链，无法验真</span>';
+        el.innerHTML = '<p class="text-slate-500">请确认扫描的是本实验室发放的合格证二维码。</p>';
         return;
       }
+
+      var detail = MOCK_DETAIL[sampleNo] || {
+        name: '安全工器具', spec: '-', inspectDate: '2026-06-01', reinspectDate: '2027-05-31', inspectors: 'admin', org: '杭州数蚕智能科技有限公司'
+      };
+
+      function row(label, val) {
+        return '<div class="flex border-b border-slate-100 py-2.5"><span class="w-24 flex-shrink-0 text-slate-500">' + label + '</span><span class="flex-1 text-slate-800">' + val + '</span></div>';
+      }
+
       el.innerHTML =
-        '<p><span class="text-slate-500">短链代码：</span><strong>' + code + '</strong></p>' +
-        '<p><span class="text-slate-500">试样编号：</span><strong>' + sampleNo + '</strong></p>' +
-        '<p><span class="text-slate-500">验真状态：</span><span class="text-green-600">有效</span></p>' +
-        '<p class="text-xs text-slate-400 break-all mt-2">原完整链接：' + (longUrl || '-') + '</p>';
+        row('试样编号', sampleNo) +
+        row('试样名称', detail.name) +
+        row('型号规格', detail.spec) +
+        row('检验日期', detail.inspectDate) +
+        row('再检日期', detail.reinspectDate) +
+        row('检验人员', detail.inspectors) +
+        row('检验机构', detail.org) +
+        row('验真结论', '<span class="text-green-600 font-medium">合格（在有效期内）</span>') +
+        '<div class="pt-2 text-xs text-slate-400">短链 ' + ShortLinkQR.BASE + code + ' 已跳转至本页</div>';
     })();
   </script>
 </body>

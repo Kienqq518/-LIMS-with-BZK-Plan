@@ -94,7 +94,7 @@
             '</p>'
           : '') +
         (opts.showHint
-          ? '<p class="text-[9px] text-slate-400">扫码 → 302 → 验真页</p>'
+          ? '<p class="text-[9px] text-slate-400 text-center">微信/支付宝/相机扫码 → 验真页</p>'
           : '') +
       '</div>';
 

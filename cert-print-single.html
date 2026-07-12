@@ -20,7 +20,6 @@
     .toggle-switch.on { background: #3b82f6; }
     .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform .2s; }
     .toggle-switch.on::after { transform: translateX(22px); }
-    .inspector-select { min-width: 120px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 12px; }
     @media print {
       .no-print { display: none !important; }
       .cert-preview-area { background: #fff !important; padding: 0 !important; }
@@ -90,6 +89,7 @@
   </div>
 
   <script src="js/short-link-qr.js"></script>
+  <script src="js/inspector-select.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     var entrustCode = new URLSearchParams(location.search).get('code') || 'SC2026/0079';
@@ -140,10 +140,6 @@
     function renderSampleTable() {
       document.getElementById('sampleBody').innerHTML = samples.map(function (item, i) {
         item._checked = item._checked !== false;
-        var opts = INSPECTOR_OPTIONS.map(function (o) {
-          var sel = item.inspectors.indexOf(o) !== -1 ? ' selected' : '';
-          return '<option value="' + o + '"' + sel + '>' + o + '</option>';
-        }).join('');
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2"><input type="checkbox" class="sample-check" data-idx="' + i + '" ' + (item._checked ? 'checked' : '') + ' onchange="onSampleCheck(' + i + ', this.checked)" /></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
@@ -153,8 +149,8 @@
           '<td class="border border-slate-200 px-3 py-2">' + (item.model || '') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.inspectDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.reinspectDate + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' +
-            '<select multiple class="inspector-select" size="2" onchange="onInspectorChange(' + i + ', this)">' + opts + '</select>' +
+          '<td class="border border-slate-200 px-3 py-2 min-w-[140px]" data-annotate-inspector="' + (i === 0 ? '1' : '') + '">' +
+            InspectorSelect.renderHTML({ inspectors: item.inspectors, options: INSPECTOR_OPTIONS, mode: 'cell', idx: i, prefix: 'row' }) +
           '</td></tr>';
       }).join('');
       document.getElementById('sampleTotal').textContent = '共 ' + samples.length + ' 条';
@@ -171,10 +167,20 @@
       renderSampleTable();
     }
 
-    function onInspectorChange(idx, sel) {
-      samples[idx].inspectors = Array.prototype.map.call(sel.selectedOptions, function (o) { return o.value; });
-      renderPreview();
+    function onInspectorAdd(idx, name) {
+      if (samples[idx].inspectors.indexOf(name) === -1) samples[idx].inspectors.push(name);
+      renderSampleTable();
     }
+
+    function onInspectorRemove(idx, name) {
+      samples[idx].inspectors = samples[idx].inspectors.filter(function (n) { return n !== name; });
+      renderSampleTable();
+    }
+
+    InspectorSelect.bind(document.getElementById('sampleBody'), {
+      onAdd: onInspectorAdd,
+      onRemove: onInspectorRemove
+    });
 
     function filterSamples() {
       var no = document.getElementById('s_no').value.trim();
@@ -215,7 +221,16 @@
           selector: '[data-annotate="qr-area"]',
           position: 'bottom-right',
           title: '短链二维码整改',
-          content: '合格证二维码不再编码完整验真 URL，改为短链（如 <strong>https://lab.sc/Ab3K9</strong>）。短链字符更少、码点更稀疏，手机扫码识别率更高。用户扫码后由短链服务 302 跳转至完整验真页。',
+          wide: true,
+          content: '<strong>原问题：</strong>QR 编码完整验真 URL（60+ 字符），码点密集，微信/支付宝扫码易失败。<br><br>' +
+            '<strong>技术方案：</strong><br>' +
+            '① 打印时为试样编号生成唯一短链映射（如 SC2026/00790101 → https://lab.sc/Ab3K9）<br>' +
+            '② QR 仅编码短链（≤20 字符）<br>' +
+            '③ 扫码后短链服务 HTTP 302 跳转至 H5 验真页<br><br>' +
+            '<strong>扫码方式：</strong>微信、支付宝、手机系统相机均可，无特殊限制<br><br>' +
+            '<strong>跳转页面：</strong>「合格证验真」H5 页（原型 cert-verify.html）<br><br>' +
+            '<strong>展示信息：</strong>试样编号/名称、型号规格、检验/再检日期、检验人员、检验机构、验真结论（合格/失效）<br><br>' +
+            '<strong>预期效果：</strong>识别率提升；QR 可缩小仍清晰；URL 变更时只改短链映射，无需重印',
           tag: '核心整改'
         },
         {
@@ -223,16 +238,16 @@
           selector: '[data-annotate="qr-area"]',
           position: 'top-left',
           title: '短链地址展示',
-          content: '预览区二维码下方同步展示短链地址，便于核对。点击二维码可模拟扫码跳转至验真页（cert-verify.html）。',
+          content: '预览区二维码下方展示短链地址，便于打印前核对。点击 QR 可模拟扫码，打开验真页查看实际展示内容。',
           tag: '交互说明'
         },
         {
           id: 'inspector-edit',
-          selector: '#sampleBody',
+          selector: '[data-annotate-inspector="1"]',
           position: 'top-right',
-          title: '检验人员可编辑',
-          content: '右侧列表支持多选检验人员，修改后左侧预览实时同步。单个打印场景下默认带出该样品已关联的检验人员。',
-          tag: '业务规则'
+          title: '检验人员选择',
+          content: '与系统一致：标签 + 下拉在同一行边框内展示，支持多选。修改后左侧合格证预览实时同步检验人员字段。',
+          tag: 'UI 对齐'
         }
       ]
     });

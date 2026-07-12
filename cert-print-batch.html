@@ -20,8 +20,6 @@
     .toggle-switch.on { background: #3b82f6; }
     .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform .2s; }
     .toggle-switch.on::after { transform: translateX(22px); }
-    .inspector-tag { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; margin: 1px; border-radius: 4px; background: #eff6ff; color: #2563eb; font-size: 12px; cursor: pointer; }
-    .inspector-tag .fa-times { font-size: 10px; }
     @media print {
       .no-print { display: none !important; }
       .cert-preview-area { background: #fff !important; padding: 0 !important; width: 100% !important; }
@@ -94,6 +92,7 @@
   </div>
 
   <script src="js/short-link-qr.js"></script>
+  <script src="js/inspector-select.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     var params = new URLSearchParams(location.search);
@@ -178,15 +177,13 @@
     }
 
     function inspectorCell(item, globalIdx) {
-      var tags = item.inspectors.map(function (name) {
-        return '<span class="inspector-tag">' + name +
-          ' <i class="fa fa-times" onclick="removeInspector(' + globalIdx + ',\'' + name + '\')"></i></span>';
-      }).join('');
-      var addBtn = '<select onchange="addInspector(' + globalIdx + ', this)" class="mt-1 w-full rounded border border-slate-200 px-1 py-0.5 text-xs">' +
-        '<option value="">+ 添加</option>' +
-        INSPECTOR_OPTIONS.map(function (o) { return '<option value="' + o + '">' + o + '</option>'; }).join('') +
-        '</select>';
-      return tags + addBtn;
+      return InspectorSelect.renderHTML({
+        inspectors: item.inspectors,
+        options: INSPECTOR_OPTIONS,
+        mode: 'cell',
+        idx: globalIdx,
+        prefix: 'row'
+      });
     }
 
     function getPageData() {
@@ -207,7 +204,7 @@
           '<td class="border border-slate-200 px-3 py-2">' + (item.model || '') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.inspectDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.reinspectDate + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2 min-w-[120px]">' + inspectorCell(item, gIdx) + '</td></tr>';
+          '<td class="border border-slate-200 px-3 py-2 min-w-[140px]"' + (gIdx === 0 ? ' data-annotate-inspector="1"' : '') + '>' + inspectorCell(item, gIdx) + '</td></tr>';
       }).join('');
       document.getElementById('sampleTotal').textContent = '共 ' + samples.length + ' 条';
       renderPreview();
@@ -223,11 +220,9 @@
       renderSampleTable();
     }
 
-    function addInspector(idx, sel) {
-      var val = sel.value;
-      if (!val || samples[idx].inspectors.indexOf(val) !== -1) { sel.value = ''; return; }
-      samples[idx].inspectors.push(val);
-      sel.value = '';
+    function addInspector(idx, name) {
+      if (!name || samples[idx].inspectors.indexOf(name) !== -1) return;
+      samples[idx].inspectors.push(name);
       renderSampleTable();
     }
 
@@ -235,6 +230,11 @@
       samples[idx].inspectors = samples[idx].inspectors.filter(function (n) { return n !== name; });
       renderSampleTable();
     }
+
+    InspectorSelect.bind(document.getElementById('sampleBody'), {
+      onAdd: addInspector,
+      onRemove: removeInspector
+    });
 
     function filterSamples() {
       var no = document.getElementById('s_no').value.trim();
@@ -288,16 +288,25 @@
           selector: '[data-annotate="qr-area"]',
           position: 'bottom-right',
           title: '短链二维码（批量）',
-          content: '批量打印时每张合格证独立生成短链 QR。相比原方案编码完整 URL，短链码图更简洁、扫码成功率更高。每条短链与试样编号一一映射。',
+          wide: true,
+          content: '<strong>原问题：</strong>批量打印时每张合格证 QR 若编码完整 URL，码图复杂，现场用微信/支付宝扫码失败率高。<br><br>' +
+            '<strong>技术方案：</strong><br>' +
+            '① 每张合格证按试样编号独立生成短链（一一映射，互不复用）<br>' +
+            '② QR 仅编码短链，如 https://lab.sc/Xk7m2（约 20 字符）<br>' +
+            '③ 用户扫码 → 短链网关 302 → 正式 H5 验真页<br><br>' +
+            '<strong>扫码方式：</strong>微信扫一扫、支付宝扫一扫、iOS/Android 相机均可<br><br>' +
+            '<strong>跳转页面：</strong>智慧实验室「合格证验真」H5 页（原型 cert-verify.html，移动端适配）<br><br>' +
+            '<strong>页面展示：</strong>验真结论（有效/失效）、试样编号、试样名称、型号规格、检验日期、再检日期、检验人员、检验机构<br><br>' +
+            '<strong>预期效果：</strong>① 扫码一次成功率明显提升 ② 标签 QR 面积可缩小 ③ 后端验真 URL 调整时仅更新短链映射，已发放标签仍有效',
           tag: '核心整改'
         },
         {
           id: 'default-inspector',
-          selector: '#sampleBody',
+          selector: '[data-annotate-inspector="1"]',
           position: 'top-right',
-          title: '默认检验人员继承',
-          content: '批量入口弹窗选择的检验人员作为默认值写入每条样品，支持在右侧列表增删检验人员标签，左侧预览实时更新。',
-          tag: '业务规则'
+          title: '检验人员选择',
+          content: '样式对齐系统：标签与添加下拉在同一行边框内。批量入口设置的默认检验人员写入每条样品，可逐条增删，左侧预览同步更新。',
+          tag: 'UI 对齐'
         }
       ]
     });
