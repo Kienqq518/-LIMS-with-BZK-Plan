@@ -9,7 +9,7 @@
   var config = { annotations: [] };
 
   var css = [
-    '#prototype-annotation-root { pointer-events: none; }',
+    '#prototype-annotation-root { position: fixed; inset: 0; pointer-events: none; z-index: 9990; overflow: hidden; }',
     '#prototype-annotation-root * { pointer-events: auto; }',
     '.pa-toggle { position: fixed; right: 20px; bottom: 20px; z-index: 9999; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 14px rgba(15,23,42,.18); cursor: pointer; border: none; transition: all .2s; }',
     '.pa-toggle.off { background: #fff; color: #475569; }',
@@ -61,22 +61,25 @@
 
   function positionMarker(marker, target, position) {
     var rect = target.getBoundingClientRect();
-    var top = rect.top + window.scrollY;
-    var left = rect.left + window.scrollX;
+    if (!rect.width && !rect.height) {
+      marker.style.display = 'none';
+      return;
+    }
+    marker.style.display = '';
     position = position || 'top-right';
 
     if (position === 'top-right') {
-      marker.style.top = (top - 8) + 'px';
-      marker.style.left = (left + rect.width - 8) + 'px';
+      marker.style.top = (rect.top - 8) + 'px';
+      marker.style.left = (rect.left + rect.width - 8) + 'px';
     } else if (position === 'top-left') {
-      marker.style.top = (top - 8) + 'px';
-      marker.style.left = (left - 8) + 'px';
+      marker.style.top = (rect.top - 8) + 'px';
+      marker.style.left = (rect.left - 8) + 'px';
     } else if (position === 'bottom-right') {
-      marker.style.top = (top + rect.height - 14) + 'px';
-      marker.style.left = (left + rect.width - 8) + 'px';
+      marker.style.top = (rect.top + rect.height - 14) + 'px';
+      marker.style.left = (rect.left + rect.width - 8) + 'px';
     } else {
-      marker.style.top = (top + rect.height / 2 - 11) + 'px';
-      marker.style.left = (left + rect.width + 4) + 'px';
+      marker.style.top = (rect.top + rect.height / 2 - 11) + 'px';
+      marker.style.left = (rect.left + rect.width + 4) + 'px';
     }
   }
 
@@ -96,7 +99,7 @@
     var cardLeft = Math.min(mRect.left, window.innerWidth - 320);
     if (cardTop + 180 > window.innerHeight) cardTop = mRect.top - 160;
 
-    card.style.top = (cardTop + window.scrollY) + 'px';
+    card.style.top = cardTop + 'px';
     card.style.left = Math.max(12, cardLeft) + 'px';
     card.classList.add('visible');
   }
@@ -129,6 +132,7 @@
       var card = document.createElement('div');
       card.id = 'pa-card-' + item.id;
       card.className = 'pa-card' + (item.wide ? ' wide' : '');
+      card.style.position = 'fixed';
       card.innerHTML =
         '<div class="pa-card-head">' +
           '<span class="pa-card-num">' + num + '</span>' +
