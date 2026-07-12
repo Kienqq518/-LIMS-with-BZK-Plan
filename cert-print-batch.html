@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>批量合格证打印 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    .cert-sheet { width: 420px; min-height: 220px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(15,23,42,.06); margin-bottom: 16px; }
+    .cert-header { display: flex; align-items: center; gap: 8px; padding: 12px 16px 8px; border-bottom: 1px solid #f1f5f9; }
+    .cert-body { display: flex; padding: 12px 16px 16px; gap: 12px; }
+    .cert-fields { flex: 1; font-size: 13px; line-height: 1.85; color: #334155; }
+    .cert-fields dt { display: inline; color: #64748b; }
+    .cert-fields dd { display: inline; margin: 0; }
+    .toggle-switch { position: relative; width: 44px; height: 22px; background: #cbd5e1; border-radius: 11px; cursor: pointer; transition: background .2s; }
+    .toggle-switch.on { background: #3b82f6; }
+    .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform .2s; }
+    .toggle-switch.on::after { transform: translateX(22px); }
+    .inspector-tag { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; margin: 1px; border-radius: 4px; background: #eff6ff; color: #2563eb; font-size: 12px; cursor: pointer; }
+    .inspector-tag .fa-times { font-size: 10px; }
+    @media print {
+      .no-print { display: none !important; }
+      .cert-preview-area { background: #fff !important; padding: 0 !important; width: 100% !important; }
+      .cert-sheet { box-shadow: none; border: none; page-break-after: always; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700 h-screen flex flex-col overflow-hidden">
+
+  <div class="no-print flex h-full">
+    <!-- 左侧预览 -->
+    <div class="cert-preview-area flex w-[480px] flex-shrink-0 flex-col border-r border-slate-200 bg-slate-50">
+      <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5">
+        <a href="label-print.html" class="text-sm text-blue-600 hover:underline"><i class="fa fa-arrow-left"></i> 返回</a>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 text-sm text-slate-600">
+            <span id="toggleLabel">开</span>
+            <div id="previewToggle" class="toggle-switch on" onclick="togglePreview(this)"></div>
+          </div>
+          <button onclick="clearPreview()" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">清空待打印区域</button>
+          <button onclick="window.print()" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">打印</button>
+        </div>
+      </div>
+      <div id="previewContainer" class="flex-1 overflow-y-auto p-4"></div>
+    </div>
+
+    <!-- 右侧列表 -->
+    <div class="flex flex-1 flex-col overflow-hidden">
+      <div class="border-b border-slate-200 bg-white px-4 py-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-slate-600">样品编号</label>
+            <input id="s_no" type="text" placeholder="请输入样品编号" class="w-40 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-slate-600">样品名称</label>
+            <input id="s_name" type="text" placeholder="请输入样品名称" class="w-40 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+          </div>
+          <button onclick="filterSamples()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">查询</button>
+          <button onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto p-4">
+        <table class="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium w-10"><input type="checkbox" id="sampleCheckAll" onchange="toggleSampleAll(this.checked)" checked /></th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">规格</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">型号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检验日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">再检日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检验人员</th>
+            </tr>
+          </thead>
+          <tbody id="sampleBody"></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-end gap-2 border-t border-slate-200 bg-white px-4 py-2 text-sm text-slate-500">
+        <span id="sampleTotal">共 0 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+        <button id="page1" class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button id="page2" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">2</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+        <select class="rounded border border-slate-200 px-2 py-1"><option>10条/页</option></select>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/short-link-qr.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var entrustCodes = (params.get('codes') || 'SC2026/0074,SC2026/0073,SC2026/0072').split(',');
+    var defaultInspectors = (params.get('inspectors') || 'admin').split(',');
+
+    var SAMPLE_CATALOG = {
+      'SC2026/0074': [{ sampleNo: 'SC2026/00740101', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-06-11', reinspectDate: '2027-06-10' }],
+      'SC2026/0073': [{ sampleNo: 'SC2026/00730101', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-06-10', reinspectDate: '2027-06-09' }],
+      'SC2026/0072': [{ sampleNo: 'SC2026/00730201', name: '验电器', spec: '', model: '', inspectDate: '2026-06-10', reinspectDate: '2027-06-09' }],
+      'SC2026/0070': [{ sampleNo: 'SC2026/00730301', name: '绝缘毯', spec: '', model: '', inspectDate: '2026-06-09', reinspectDate: '2027-06-08' }],
+      'SC2026/0068': [{ sampleNo: 'SC2026/00730401', name: '安全带', spec: '', model: '', inspectDate: '2026-06-08', reinspectDate: '2027-06-07' }]
+    };
+
+    var EXTRA = [
+      { sampleNo: 'SC2026/00730501', name: '卡线器', spec: '', model: '', inspectDate: '2026-06-08', reinspectDate: '2027-06-07', inspectors: defaultInspectors.slice() },
+      { sampleNo: 'SC2026/00730601', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-06-07', reinspectDate: '2027-06-06', inspectors: defaultInspectors.slice() },
+      { sampleNo: 'SC2026/00730701', name: '验电器', spec: '', model: '', inspectDate: '2026-06-07', reinspectDate: '2027-06-06', inspectors: defaultInspectors.slice() },
+      { sampleNo: 'SC2026/00730801', name: '绝缘毯', spec: '', model: '', inspectDate: '2026-06-06', reinspectDate: '2027-06-05', inspectors: defaultInspectors.slice() },
+      { sampleNo: 'SC2026/00730901', name: '安全带', spec: '', model: '', inspectDate: '2026-06-06', reinspectDate: '2027-06-05', inspectors: defaultInspectors.slice() },
+      { sampleNo: 'SC2026/00731001', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-06-05', reinspectDate: '2027-06-04', inspectors: defaultInspectors.slice() },
+      { sampleNo: 'SC2026/00731101', name: '验电器', spec: '', model: '', inspectDate: '2026-06-05', reinspectDate: '2027-06-04', inspectors: defaultInspectors.slice() }
+    ];
+
+    var allSamples = [];
+    entrustCodes.forEach(function (code) {
+      var list = SAMPLE_CATALOG[code.trim()];
+      if (list) {
+        list.forEach(function (s) {
+          allSamples.push({
+            sampleNo: s.sampleNo,
+            name: s.name,
+            spec: s.spec,
+            model: s.model,
+            inspectDate: s.inspectDate,
+            reinspectDate: s.reinspectDate,
+            inspectors: defaultInspectors.slice(),
+            _checked: true
+          });
+        });
+      }
+    });
+    EXTRA.forEach(function (s) { allSamples.push(Object.assign({}, s, { _checked: true })); });
+
+    var samples = allSamples.slice();
+    var previewEnabled = true;
+    var currentPage = 1;
+    var pageSize = 10;
+    var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
+
+    function buildCertHtml(item, isFirst) {
+      var annotate = isFirst ? ' data-annotate="qr-area"' : '';
+      return '<div class="cert-sheet mx-auto" data-sample="' + item.sampleNo + '">' +
+        '<div class="cert-header">' +
+          '<i class="fa fa-building text-blue-500"></i>' +
+          '<div><div class="text-sm font-medium text-slate-800">杭州数蚕智能科技有限公司</div><div class="text-center text-base font-semibold tracking-widest text-slate-700">合 格 证</div></div>' +
+        '</div>' +
+        '<div class="cert-body">' +
+          '<dl class="cert-fields">' +
+            '<div><dt>试样编号：</dt><dd>' + item.sampleNo + '</dd></div>' +
+            '<div><dt>试样名称：</dt><dd>' + item.name + '</dd></div>' +
+            '<div><dt>型号规格：</dt><dd>' + (item.spec || item.model || '') + '</dd></div>' +
+            '<div><dt>检验日期：</dt><dd>' + item.inspectDate + '</dd></div>' +
+            '<div><dt>再检日期：</dt><dd>' + item.reinspectDate + '</dd></div>' +
+            '<div><dt>检验人员：</dt><dd>' + item.inspectors.join('、') + '</dd></div>' +
+          '</dl>' +
+          '<div class="cert-qr-wrap flex-shrink-0"' + annotate + ' id="qr-' + item.sampleNo.replace(/[/]/g, '') + '"></div>' +
+        '</div></div>';
+    }
+
+    function renderPreview() {
+      var container = document.getElementById('previewContainer');
+      var selected = samples.filter(function (s) { return s._checked; });
+      if (!previewEnabled || !selected.length) {
+        container.innerHTML = '<p class="text-center text-sm text-slate-400 py-12">暂无待打印合格证</p>';
+        return;
+      }
+      container.innerHTML = selected.map(function (item, i) { return buildCertHtml(item, i === 0); }).join('');
+      selected.forEach(function (item) {
+        ShortLinkQR.renderQRBlock('#qr-' + item.sampleNo.replace(/[/]/g, ''), item.sampleNo, { size: 100, showHint: false });
+      });
+    }
+
+    function inspectorCell(item, globalIdx) {
+      var tags = item.inspectors.map(function (name) {
+        return '<span class="inspector-tag">' + name +
+          ' <i class="fa fa-times" onclick="removeInspector(' + globalIdx + ',\'' + name + '\')"></i></span>';
+      }).join('');
+      var addBtn = '<select onchange="addInspector(' + globalIdx + ', this)" class="mt-1 w-full rounded border border-slate-200 px-1 py-0.5 text-xs">' +
+        '<option value="">+ 添加</option>' +
+        INSPECTOR_OPTIONS.map(function (o) { return '<option value="' + o + '">' + o + '</option>'; }).join('') +
+        '</select>';
+      return tags + addBtn;
+    }
+
+    function getPageData() {
+      var start = (currentPage - 1) * pageSize;
+      return { slice: samples.slice(start, start + pageSize), start: start };
+    }
+
+    function renderSampleTable() {
+      var pg = getPageData();
+      document.getElementById('sampleBody').innerHTML = pg.slice.map(function (item, i) {
+        var gIdx = pg.start + i;
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2"><input type="checkbox" class="sample-check" ' + (item._checked ? 'checked' : '') + ' onchange="onSampleCheck(' + gIdx + ', this.checked)" /></td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + (gIdx + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.sampleNo + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + item.name + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + (item.spec || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + (item.model || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.inspectDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.reinspectDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2 min-w-[120px]">' + inspectorCell(item, gIdx) + '</td></tr>';
+      }).join('');
+      document.getElementById('sampleTotal').textContent = '共 ' + samples.length + ' 条';
+      renderPreview();
+    }
+
+    function onSampleCheck(idx, checked) {
+      samples[idx]._checked = checked;
+      renderPreview();
+    }
+
+    function toggleSampleAll(checked) {
+      samples.forEach(function (s) { s._checked = checked; });
+      renderSampleTable();
+    }
+
+    function addInspector(idx, sel) {
+      var val = sel.value;
+      if (!val || samples[idx].inspectors.indexOf(val) !== -1) { sel.value = ''; return; }
+      samples[idx].inspectors.push(val);
+      sel.value = '';
+      renderSampleTable();
+    }
+
+    function removeInspector(idx, name) {
+      samples[idx].inspectors = samples[idx].inspectors.filter(function (n) { return n !== name; });
+      renderSampleTable();
+    }
+
+    function filterSamples() {
+      var no = document.getElementById('s_no').value.trim();
+      var name = document.getElementById('s_name').value.trim();
+      samples = allSamples.filter(function (s) {
+        if (no && s.sampleNo.indexOf(no) === -1) return false;
+        if (name && s.name.indexOf(name) === -1) return false;
+        return true;
+      });
+      currentPage = 1;
+      renderSampleTable();
+    }
+
+    function resetFilter() {
+      document.getElementById('s_no').value = '';
+      document.getElementById('s_name').value = '';
+      samples = allSamples.slice();
+      currentPage = 1;
+      renderSampleTable();
+    }
+
+    function togglePreview(el) {
+      previewEnabled = !previewEnabled;
+      el.classList.toggle('on', previewEnabled);
+      document.getElementById('toggleLabel').textContent = previewEnabled ? '开' : '关';
+      renderPreview();
+    }
+
+    function clearPreview() {
+      samples.forEach(function (s) { s._checked = false; });
+      renderSampleTable();
+    }
+
+    document.getElementById('page1').addEventListener('click', function () { currentPage = 1; renderSampleTable(); });
+    document.getElementById('page2').addEventListener('click', function () { currentPage = 2; renderSampleTable(); });
+
+    renderSampleTable();
+
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'batch-flow',
+          selector: '#previewContainer',
+          position: 'top-left',
+          title: '批量打印预览',
+          content: '从列表页多选委托并指定默认检验人员后进入本页。左侧滚动展示全部待打印合格证，右侧可逐条调整检验人员或取消勾选。',
+          tag: '流程 · 图5'
+        },
+        {
+          id: 'qr-shortlink',
+          selector: '[data-annotate="qr-area"]',
+          position: 'bottom-right',
+          title: '短链二维码（批量）',
+          content: '批量打印时每张合格证独立生成短链 QR。相比原方案编码完整 URL，短链码图更简洁、扫码成功率更高。每条短链与试样编号一一映射。',
+          tag: '核心整改'
+        },
+        {
+          id: 'default-inspector',
+          selector: '#sampleBody',
+          position: 'top-right',
+          title: '默认检验人员继承',
+          content: '批量入口弹窗选择的检验人员作为默认值写入每条样品，支持在右侧列表增删检验人员标签，左侧预览实时更新。',
+          tag: '业务规则'
+        }
+      ]
+    });
+  </script>
+</body>
+</html>

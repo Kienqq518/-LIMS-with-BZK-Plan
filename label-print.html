@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>标签打印 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    .status-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; background: #f1f5f9; color: #64748b; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      标签打印
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <!-- 搜索区 -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label>
+          <input id="f_code" type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">是否关联框架合同</label>
+          <select id="f_frame" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-500 outline-none focus:border-blue-500">
+            <option value="">请选择是否关联框架合同</option>
+            <option>是</option><option>否</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">合同编号</label>
+          <input id="f_contract" type="text" placeholder="请输入框架合同编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">客户单位</label>
+          <input id="f_customer" type="text" placeholder="请输入客户单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
+          <input id="f_sample" type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2 xl:col-span-3 xl:justify-end">
+          <button onclick="doSearch()" class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>
+          <button onclick="doReset()" class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i>重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 列表区 -->
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-end gap-2">
+        <button onclick="batchSampleLabel()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">批量打印样品标签</button>
+        <button id="btnBatchCert" data-annotate="batch-cert" onclick="openInspectorModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">批量打印合格证</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1200px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium w-10"><input type="checkbox" id="checkAll" onchange="toggleAll(this.checked)" /></th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="totalText">共 13 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+        <select class="rounded border border-slate-200 px-2 py-1"><option>50条/页</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 选择检验人员弹窗 -->
+  <div id="inspectorModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-[480px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">选择检验人员</h3>
+        <button onclick="closeInspectorModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-5">
+        <div class="flex items-start gap-3">
+          <label class="w-24 flex-shrink-0 pt-2 text-right text-sm text-slate-600">检验人员</label>
+          <div id="inspectorTags" class="flex-1 min-h-[38px] flex flex-wrap gap-1 rounded border border-slate-300 px-2 py-1.5">
+            <span class="inspector-tag inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-sm text-blue-700" data-value="admin">admin <i class="fa fa-times cursor-pointer text-xs hover:text-blue-900" onclick="removeInspector(this)"></i></span>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-3">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600"></label>
+          <select id="inspectorSelect" onchange="addInspector(this)" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">添加检验人员</option>
+            <option value="admin">admin</option>
+            <option value="cs222">cs222</option>
+            <option value="cs3">cs3</option>
+            <option value="张三">张三</option>
+            <option value="李四">李四</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeInspectorModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button id="btnConfirmInspector" data-annotate="confirm-inspector" onclick="confirmBatchCert()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var listData = [
+      { code: 'SC2026/0080', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-09', requireDate: '2026-07-30', status: '样品收样', editor: 'admin', hasCert: false },
+      { code: 'SC2026/0079', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-09', requireDate: '2026-07-30', status: '任务完成', editor: 'admin', hasCert: true },
+      { code: 'SC2026/0078', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-08', requireDate: '2026-07-28', status: '委托登记', editor: 'admin', hasCert: false },
+      { code: 'SC2026/0077', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-07', requireDate: '2026-07-27', status: '报告审核', editor: 'admin', hasCert: false },
+      { code: 'SC2026/0076', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-06', requireDate: '2026-07-26', status: '任务完成', editor: 'admin', hasCert: false },
+      { code: 'SC2026/0075', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-12', requireDate: '2026-07-25', status: '任务完成', editor: 'admin', hasCert: false },
+      { code: 'SC2026/0074', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-11', requireDate: '2026-07-24', status: '任务完成', editor: 'admin', hasCert: true },
+      { code: 'SC2026/0073', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-10', requireDate: '2026-07-23', status: '任务完成', editor: 'admin', hasCert: true },
+      { code: 'SC2026/0072', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-09', requireDate: '2026-07-22', status: '任务完成', editor: 'admin', hasCert: true },
+      { code: 'SC2026/0071', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-08', requireDate: '2026-07-21', status: '任务完成', editor: 'admin', hasCert: false },
+      { code: 'SC2026/0070', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-07', requireDate: '2026-07-20', status: '任务完成', editor: 'admin', hasCert: true },
+      { code: 'SC2026/0069', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-06', requireDate: '2026-07-19', status: '任务完成', editor: 'admin', hasCert: false },
+      { code: 'SC2026/0068', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-05', requireDate: '2026-07-18', status: '任务完成', editor: 'admin', hasCert: true }
+    ];
+
+    var filtered = listData.slice();
+
+    function renderTable() {
+      document.getElementById('tableBody').innerHTML = filtered.map(function (item, i) {
+        var certBtn = item.hasCert
+          ? '<a id="' + (item.code === 'SC2026/0079' ? 'linkSingleCert' : '') + '" href="cert-print-single.html?code=' + encodeURIComponent(item.code) + '" class="text-green-600 hover:underline"><i class="fa fa-print"></i> 合格证</a>'
+          : '';
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5"><input type="checkbox" class="row-check" data-code="' + item.code + '" ' + (item.hasCert ? '' : 'disabled') + ' /></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.sendDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.requireDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><span class="status-tag">' + item.status + '</span></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
+            '<a href="#" class="text-blue-600 hover:underline">样品标签</a>' +
+            (certBtn ? ' <span class="text-slate-300">|</span> ' + certBtn : '') +
+          '</td></tr>';
+      }).join('');
+      document.getElementById('totalText').textContent = '共 ' + filtered.length + ' 条';
+      document.getElementById('checkAll').checked = false;
+    }
+
+    function toggleAll(checked) {
+      document.querySelectorAll('.row-check:not(:disabled)').forEach(function (cb) { cb.checked = checked; });
+    }
+
+    function getSelectedCodes() {
+      return Array.prototype.map.call(document.querySelectorAll('.row-check:checked'), function (cb) {
+        return cb.getAttribute('data-code');
+      });
+    }
+
+    function getInspectors() {
+      return Array.prototype.map.call(document.querySelectorAll('.inspector-tag'), function (el) {
+        return el.getAttribute('data-value');
+      });
+    }
+
+    function doSearch() {
+      var code = document.getElementById('f_code').value.trim();
+      var customer = document.getElementById('f_customer').value.trim();
+      var sample = document.getElementById('f_sample').value.trim();
+      filtered = listData.filter(function (item) {
+        if (code && item.code.indexOf(code) === -1) return false;
+        if (customer && item.customer.indexOf(customer) === -1) return false;
+        if (sample) return false;
+        return true;
+      });
+      renderTable();
+    }
+
+    function doReset() {
+      ['f_code', 'f_contract', 'f_customer', 'f_sample'].forEach(function (id) {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('f_frame').value = '';
+      filtered = listData.slice();
+      renderTable();
+    }
+
+    function batchSampleLabel() {
+      var codes = getSelectedCodes();
+      if (!codes.length) { alert('请先勾选需要打印的委托'); return; }
+      alert('批量打印样品标签（原型演示）：' + codes.join('、'));
+    }
+
+    function openInspectorModal() {
+      var codes = getSelectedCodes();
+      if (!codes.length) { alert('请先勾选可打印合格证的委托（任务完成状态）'); return; }
+      showModal('inspectorModal');
+    }
+
+    function closeInspectorModal() { hideModal('inspectorModal'); }
+
+    function confirmBatchCert() {
+      var codes = getSelectedCodes();
+      var inspectors = getInspectors();
+      if (!inspectors.length) { alert('请至少选择一名检验人员'); return; }
+      var url = 'cert-print-batch.html?codes=' + encodeURIComponent(codes.join(',')) +
+        '&inspectors=' + encodeURIComponent(inspectors.join(','));
+      window.location.href = url;
+    }
+
+    function addInspector(sel) {
+      var val = sel.value;
+      if (!val) return;
+      var exists = getInspectors().indexOf(val) !== -1;
+      if (exists) { sel.value = ''; return; }
+      var tag = document.createElement('span');
+      tag.className = 'inspector-tag inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-sm text-blue-700';
+      tag.setAttribute('data-value', val);
+      tag.innerHTML = val + ' <i class="fa fa-times cursor-pointer text-xs hover:text-blue-900" onclick="removeInspector(this)"></i>';
+      document.getElementById('inspectorTags').appendChild(tag);
+      sel.value = '';
+    }
+
+    function removeInspector(icon) {
+      icon.parentElement.remove();
+    }
+
+    function showModal(id) {
+      var m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function hideModal(id) {
+      var m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    document.getElementById('inspectorModal').addEventListener('click', function (e) {
+      if (e.target === this) closeInspectorModal();
+    });
+
+    renderTable();
+
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'single-cert',
+          selector: '#linkSingleCert',
+          position: 'top-right',
+          title: '单个合格证打印',
+          content: '点击操作列「合格证」进入单个打印页。左侧实时预览合格证，右侧可勾选样品并调整检验人员。',
+          tag: '流程 · 图2'
+        },
+        {
+          id: 'batch-cert',
+          selector: '#btnBatchCert',
+          position: 'top-right',
+          title: '批量打印合格证',
+          content: '多选任务完成状态的委托后，点击此按钮弹出「选择检验人员」对话框，为批量打印设置默认检验人员。',
+          tag: '流程 · 图3'
+        },
+        {
+          id: 'confirm-inspector',
+          selector: '#btnConfirmInspector',
+          position: 'top-right',
+          title: '确认检验人员',
+          content: '确定后将携带所选委托与默认检验人员跳转至批量合格证打印页（图5），可在右侧列表逐条修改检验人员。',
+          tag: '流程 · 图4→5'
+        }
+      ]
+    });
+  </script>
+</body>
+</html>
