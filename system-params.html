@@ -11,6 +11,24 @@
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
     .param-tab { border-bottom: 2px solid transparent; color: #64748b; padding: 10px 16px; cursor: pointer; white-space: nowrap; }
     .param-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
+    .param-panel { display: none; }
+    .param-panel.active { display: block; }
+    /* 委托信息设置 */
+    .field-section { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden; }
+    .field-section-head { display: flex; align-items: center; gap: 8px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 16px; font-size: 14px; font-weight: 500; color: #334155; }
+    .field-section-head input { accent-color: #2563eb; }
+    .field-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 20px; padding: 16px; }
+    @media (max-width: 1100px) { .field-grid { grid-template-columns: repeat(2, 1fr); } }
+    .field-item { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .field-item label { flex-shrink: 0; width: 112px; text-align: right; font-size: 13px; color: #64748b; }
+    .field-item .field-input { flex: 1; min-width: 0; height: 32px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 0 10px; font-size: 13px; color: #94a3b8; background: #fff; }
+    .field-item .field-check { flex-shrink: 0; width: 16px; height: 16px; accent-color: #2563eb; cursor: pointer; }
+    .field-item .field-check:disabled { cursor: not-allowed; opacity: .55; }
+    .field-item.is-locked label { color: #475569; }
+    .field-item.is-off .field-input { background: #f8fafc; color: #cbd5e1; }
+    .field-item.is-off label { color: #94a3b8; }
+    .field-help { color: #94a3b8; font-size: 12px; cursor: help; }
+    /* 流程设置 */
     .flow-wrap { position: relative; padding: 48px 16px 80px; min-height: 420px; overflow: hidden; }
     .flow-row { display: flex; align-items: center; flex-wrap: nowrap; gap: 0; margin-bottom: 32px; padding: 0 8px; overflow-x: auto; }
     .flow-row::-webkit-scrollbar { height: 4px; }
@@ -18,12 +36,9 @@
     .flow-arrow { width: 32px; height: 2px; background: #cbd5e1; position: relative; flex-shrink: 0; margin: 0 2px; }
     .flow-arrow::after { content: ''; position: absolute; right: 0; top: 50%; transform: translateY(-50%); border: 4px solid transparent; border-left-color: #cbd5e1; }
     .flow-card {
-      box-sizing: border-box; min-width: 96px; height: 36px; padding: 0 10px;
-      border-radius: 4px; font-size: 12px; line-height: 1;
-      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-      cursor: default; user-select: none; flex-shrink: 0;
-      white-space: nowrap; position: relative; z-index: 1;
-      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+      box-sizing: border-box; min-width: 96px; height: 36px; padding: 0 10px; border-radius: 4px; font-size: 12px; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center; gap: 5px; cursor: default; user-select: none; flex-shrink: 0;
+      white-space: nowrap; position: relative; z-index: 1; box-shadow: 0 1px 2px rgba(0,0,0,.04);
     }
     .flow-card.fixed { background: #eef2f6; color: #475569; border: 1px solid #cbd5e1; }
     .flow-card.config { background: #fff; color: #334155; border: 1px solid #93c5fd; }
@@ -49,41 +64,63 @@
   </div>
 
   <!-- 子 Tab -->
-  <div class="flex overflow-x-auto border-b border-slate-200 bg-white px-4 text-sm">
-    <div class="param-tab">委托信息</div>
-    <div class="param-tab">承检方信息</div>
-    <div class="param-tab">报告设置</div>
-    <div class="param-tab">记录单设置</div>
-    <div class="param-tab">微信设置</div>
-    <div class="param-tab">对接设置</div>
-    <div class="param-tab active" data-annotate="flow-tab">流程设置</div>
+  <div class="flex overflow-x-auto border-b border-slate-200 bg-white px-4 text-sm" id="paramTabBar">
+    <div class="param-tab active" data-panel="entrust" data-annotate="entrust-tab">委托信息设置</div>
+    <div class="param-tab" data-panel="undertaker">承检方信息</div>
+    <div class="param-tab" data-panel="report">报告设置</div>
+    <div class="param-tab" data-panel="record">记录单设置</div>
+    <div class="param-tab" data-panel="wechat">微信设置</div>
+    <div class="param-tab" data-panel="connect">对接设置</div>
+    <div class="param-tab" data-panel="flow" data-annotate="flow-tab">流程设置</div>
   </div>
 
   <div class="p-4">
-    <div class="rounded bg-white shadow-sm">
-      <!-- 提示条 -->
-      <div class="mx-4 mt-4 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-        <i class="fa fa-info-circle mt-0.5 text-blue-500"></i>
-        <span>您好！灰色卡片为固定流程，白色卡片为可配置流程。可拖拽移动顺序，勾选启用，取消勾选停用，进行功能配置。</span>
-      </div>
-
-      <!-- 版本 + 流程图 -->
-      <div class="relative flow-wrap">
-        <div class="absolute right-4 top-2 z-10">
-          <div class="version-badge">
-            <span>当前流程版本：V21</span>
-            <button type="button" onclick="openVersionModal()" class="btn-view-changes" data-annotate="view-changes"><i class="fa fa-star"></i> 查看更改</button>
-          </div>
+    <!-- ========== 委托信息设置 ========== -->
+    <div id="panel-entrust" class="param-panel active">
+      <div class="rounded bg-white shadow-sm pb-6">
+        <div class="flex items-center justify-end border-b border-slate-100 px-6 py-3">
+          <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+            <input type="checkbox" id="selectAllFields" class="field-check" checked onchange="toggleSelectAll(this.checked)" />
+            全选
+          </label>
         </div>
-
-        <div id="flowCanvas"></div>
-
-        <div class="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-3">
-          <button onclick="resetFlow()" class="rounded border border-slate-300 px-6 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
-          <button onclick="saveFlow()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white hover:bg-blue-700">保存</button>
+        <div class="px-6 pt-4" id="fieldSections"></div>
+        <div class="mt-6 flex justify-center gap-3">
+          <button onclick="resetEntrustFields()" class="rounded border border-slate-300 px-8 py-2 text-sm text-slate-600 hover:bg-slate-50">恢复默认</button>
+          <button onclick="saveEntrustFields()" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">保存</button>
         </div>
       </div>
     </div>
+
+    <!-- ========== 流程设置 ========== -->
+    <div id="panel-flow" class="param-panel">
+      <div class="rounded bg-white shadow-sm">
+        <div class="mx-4 mt-4 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <i class="fa fa-info-circle mt-0.5 text-blue-500"></i>
+          <span>您好！灰色卡片为固定流程，白色卡片为可配置流程。可拖拽移动顺序，勾选启用，取消勾选停用，进行功能配置。</span>
+        </div>
+        <div class="relative flow-wrap">
+          <div class="absolute right-4 top-2 z-10">
+            <div class="version-badge">
+              <span>当前流程版本：V21</span>
+              <button type="button" onclick="openVersionModal()" class="btn-view-changes" data-annotate="view-changes"><i class="fa fa-star"></i> 查看更改</button>
+            </div>
+          </div>
+          <div id="flowCanvas"></div>
+          <div class="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-3">
+            <button onclick="resetFlow()" class="rounded border border-slate-300 px-6 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+            <button onclick="saveFlow()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white hover:bg-blue-700">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 其他 Tab 占位 -->
+    <div id="panel-undertaker" class="param-panel"><div class="rounded bg-white p-12 text-center text-slate-400 shadow-sm">承检方信息（占位）</div></div>
+    <div id="panel-report" class="param-panel"><div class="rounded bg-white p-12 text-center text-slate-400 shadow-sm">报告设置（占位）</div></div>
+    <div id="panel-record" class="param-panel"><div class="rounded bg-white p-12 text-center text-slate-400 shadow-sm">记录单设置（占位）</div></div>
+    <div id="panel-wechat" class="param-panel"><div class="rounded bg-white p-12 text-center text-slate-400 shadow-sm">微信设置（占位）</div></div>
+    <div id="panel-connect" class="param-panel"><div class="rounded bg-white p-12 text-center text-slate-400 shadow-sm">对接设置（占位）</div></div>
   </div>
 
   <!-- 流程更改详情弹窗 -->
@@ -107,7 +144,7 @@
         </table>
       </div>
       <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3 text-sm text-slate-500">
-        <span id="versionTotal">共 21 条</span>
+        <span>共 21 条</span>
         <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
         <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>50条/页</option></select>
       </div>
@@ -118,6 +155,175 @@
   <script src="js/flow-stages.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
+    /* ===== Tab 切换 ===== */
+    document.getElementById('paramTabBar').addEventListener('click', function (e) {
+      var tab = e.target.closest('.param-tab');
+      if (!tab) return;
+      var panel = tab.getAttribute('data-panel');
+      document.querySelectorAll('.param-tab').forEach(function (t) { t.classList.remove('active'); });
+      document.querySelectorAll('.param-panel').forEach(function (p) { p.classList.remove('active'); });
+      tab.classList.add('active');
+      document.getElementById('panel-' + panel).classList.add('active');
+      if (panel === 'flow') renderFlow();
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    });
+
+    /* ===== 委托信息字段配置 ===== */
+    var FIELD_SECTIONS = [
+      {
+        title: '合同信息', id: 'contract', checked: true,
+        fields: [
+          { id: 'contractNo', label: '合同编号', placeholder: '合同编号', locked: true, checked: true },
+          { id: 'contractName', label: '合同名称', placeholder: '合同名称', checked: true },
+          { id: 'signTime', label: '合同签订时间', placeholder: '合同签订时间', checked: true },
+          { id: 'servicePeriod', label: '合同服务期限', placeholder: '合同服务期限', checked: true },
+          { id: 'bidPrice', label: '合同招标价款', placeholder: '合同招标价款', checked: true },
+          { id: 'contractSample', label: '合同样品', placeholder: '合同样品', checked: true }
+        ]
+      },
+      {
+        title: '委托信息', id: 'entrustInfo', checked: true,
+        fields: [
+          { id: 'entrustNo', label: '委托编号', placeholder: '委托编号', locked: true, checked: true },
+          { id: 'taskType', label: '任务类型', placeholder: '任务类型', locked: true, checked: true },
+          { id: 'priority', label: '优先等级', placeholder: '优先等级', locked: true, checked: true },
+          { id: 'detectType', label: '检测类型', placeholder: '检测类型', checked: true },
+          { id: 'detectNature', label: '检测性质', placeholder: '检测性质', checked: true },
+          { id: 'clientUnit', label: '委托单位', placeholder: '委托单位', locked: true, checked: true },
+          { id: 'address', label: '地址', placeholder: '地址', checked: true },
+          { id: 'zipCode', label: '邮编', placeholder: '邮编', checked: true },
+          { id: 'contact', label: '联系人', placeholder: '联系人', locked: true, checked: true },
+          { id: 'contactPhone', label: '联系方式', placeholder: '联系方式', locked: true, checked: true },
+          { id: 'salesman', label: '业务负责人', placeholder: '业务员', checked: true, removable: true, annotate: 'salesman-field' },
+          { id: 'signPlace', label: '签订地点', placeholder: '签订地点', checked: true },
+          { id: 'testCenter', label: '检测中心', placeholder: '检测中心', locked: true, checked: true },
+          { id: 'acceptDate', label: '受理日期', placeholder: '受理日期', locked: true, checked: true },
+          { id: 'requireDate', label: '客户要求完成日期', placeholder: '客户要求完成日期', checked: true },
+          { id: 'requireDays', label: '要求检测完成天数', placeholder: '要求检测完成天数', locked: true, checked: true, help: true },
+          { id: 'compiler', label: '编制人', placeholder: '编制人', locked: true, checked: true },
+          { id: 'agentUnit', label: '代检单位', placeholder: '代检单位', checked: true },
+          { id: 'agentPhone', label: '代检联系方式', placeholder: '代检联系方式', checked: true },
+          { id: 'entrustRemark', label: '委托备注', placeholder: '委托备注', checked: true }
+        ]
+      },
+      {
+        title: '付款信息', id: 'payment', checked: true,
+        fields: [
+          { id: 'totalPrice', label: '样品检测总价格', placeholder: '样品检测总价格', locked: true, checked: true },
+          { id: 'actualCost', label: '实际费用', placeholder: '实际费用', locked: true, checked: true },
+          { id: 'discount', label: '折扣率', placeholder: '折扣率', locked: true, checked: true },
+          { id: 'payerUnit', label: '付款单位', placeholder: '付款单位', checked: true },
+          { id: 'payMethod', label: '付款方式', placeholder: '付款方式', checked: true },
+          { id: 'bizRemark', label: '业务备注', placeholder: '业务备注', checked: true }
+        ]
+      },
+      {
+        title: '报告信息', id: 'reportInfo', checked: true,
+        fields: [
+          { id: 'reportDelivery', label: '报告交付方式', placeholder: '报告交付方式', checked: true },
+          { id: 'reportQual', label: '报告资质', placeholder: '报告资质', locked: true, checked: true },
+          { id: 'reportDesc', label: '报告说明', placeholder: '报告说明', checked: true },
+          { id: 'reportQty', label: '报告数量', placeholder: '报告数量', checked: true },
+          { id: 'resultFormat', label: '结果格式', placeholder: '结果格式', checked: true }
+        ]
+      }
+    ];
+
+    function renderFieldSections() {
+      document.getElementById('fieldSections').innerHTML = FIELD_SECTIONS.map(function (sec) {
+        var fields = sec.fields.map(function (f) {
+          var cls = 'field-item' + (f.locked ? ' is-locked' : '') + (!f.checked ? ' is-off' : '');
+          var dis = f.locked ? ' disabled' : '';
+          var help = f.help ? ' <i class="fa fa-question-circle field-help" title="按工作日计算"></i>' : '';
+          var anno = f.annotate ? ' data-annotate="' + f.annotate + '"' : '';
+          return '<div class="' + cls + '" data-field-id="' + f.id + '"' + anno + '>' +
+            '<label>' + f.label + help + '</label>' +
+            '<input type="text" class="field-input" placeholder="' + f.placeholder + '" readonly />' +
+            '<input type="checkbox" class="field-check" data-field="' + f.id + '" ' +
+              (f.checked ? 'checked' : '') + dis + ' onchange="onFieldCheck(\'' + f.id + '\', this)" />' +
+            '</div>';
+        }).join('');
+        return '<div class="field-section" data-section="' + sec.id + '">' +
+          '<div class="field-section-head">' +
+            '<input type="checkbox" class="field-check" ' + (sec.checked ? 'checked' : '') + ' onchange="toggleSection(\'' + sec.id + '\', this.checked)" />' +
+            '<span>' + sec.title + '</span>' +
+          '</div><div class="field-grid">' + fields + '</div></div>';
+      }).join('');
+    }
+
+    function findField(id) {
+      for (var i = 0; i < FIELD_SECTIONS.length; i++) {
+        for (var j = 0; j < FIELD_SECTIONS[i].fields.length; j++) {
+          if (FIELD_SECTIONS[i].fields[j].id === id) return FIELD_SECTIONS[i].fields[j];
+        }
+      }
+      return null;
+    }
+
+    function onFieldCheck(id, cb) {
+      var f = findField(id);
+      if (!f || f.locked) return;
+      f.checked = cb.checked;
+      var item = cb.closest('.field-item');
+      if (item) item.classList.toggle('is-off', !cb.checked);
+      syncSelectAll();
+    }
+
+    function toggleSection(secId, checked) {
+      FIELD_SECTIONS.forEach(function (sec) {
+        if (sec.id !== secId) return;
+        sec.checked = checked;
+        sec.fields.forEach(function (f) {
+          if (!f.locked) f.checked = checked;
+        });
+      });
+      renderFieldSections();
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function toggleSelectAll(checked) {
+      FIELD_SECTIONS.forEach(function (sec) {
+        sec.checked = checked;
+        sec.fields.forEach(function (f) {
+          if (!f.locked) f.checked = checked;
+        });
+      });
+      renderFieldSections();
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function syncSelectAll() {
+      var allOn = true;
+      FIELD_SECTIONS.forEach(function (sec) {
+        sec.fields.forEach(function (f) {
+          if (!f.locked && !f.checked) allOn = false;
+        });
+      });
+      document.getElementById('selectAllFields').checked = allOn;
+    }
+
+    function resetEntrustFields() {
+      if (!confirm('确定恢复默认字段配置？')) return;
+      var salesman = findField('salesman');
+      FIELD_SECTIONS.forEach(function (sec) {
+        sec.checked = true;
+        sec.fields.forEach(function (f) {
+          f.checked = true;
+        });
+      });
+      renderFieldSections();
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function saveEntrustFields() {
+      var salesman = findField('salesman');
+      var msg = salesman.checked ? '已保存（业务负责人字段：显示）' : '已保存（业务负责人字段：已隐藏）';
+      alert(msg + '（原型演示）');
+    }
+
+    renderFieldSections();
+
+    /* ===== 流程设置 ===== */
     var FLOW_ROWS = [
       [
         { name: '委托登记', type: 'fixed', start: true },
@@ -151,15 +357,13 @@
       { ver: 'V21', config: CONFIG_STR, user: 'admin', time: '2025-12-10 14:13:05' },
       { ver: 'V20', config: CONFIG_STR.replace('样品制备>', ''), user: 'admin', time: '2025-11-28 09:42:18' },
       { ver: 'V19', config: CONFIG_STR.replace('收费审批>', ''), user: '管理员', time: '2025-11-15 16:20:33' },
-      { ver: 'V18', config: CONFIG_STR, user: 'admin', time: '2025-10-30 11:05:47' },
-      { ver: 'V17', config: CONFIG_STR.replace('组内审核>', ''), user: 'admin', time: '2025-10-12 08:55:12' },
-      { ver: 'V16', config: CONFIG_STR, user: '管理员', time: '2025-09-25 15:30:00' },
-      { ver: 'V15', config: CONFIG_STR, user: 'admin', time: '2025-09-10 10:18:22' },
-      { ver: 'V14', config: CONFIG_STR, user: 'admin', time: '2025-08-22 14:44:09' }
+      { ver: 'V18', config: CONFIG_STR, user: 'admin', time: '2025-10-30 11:05:47' }
     ];
 
     function renderFlow() {
-      var html = FLOW_ROWS.map(function (row) {
+      var el = document.getElementById('flowCanvas');
+      if (!el) return;
+      el.innerHTML = FLOW_ROWS.map(function (row) {
         return '<div class="flow-row">' + row.map(function (node, i) {
           var cardCls = 'flow-card ' + (node.type === 'fixed' ? 'fixed' : 'config' + (node.enabled ? '' : ' off'));
           var flag = node.start ? '<i class="fa fa-flag flow-start-icon"></i>' : '';
@@ -168,25 +372,15 @@
             : '';
           var anchor = node.annotate ? '<span class="flow-anno-anchor" data-annotate="' + node.annotate + '"></span>' : '';
           var card = '<div class="' + cardCls + '">' + flag + '<span class="flow-label">' + node.name + '</span>' + check + '</div>';
-          var part = '<div class="flow-node-wrap">' + anchor + card + '</div>';
-          return (i > 0 ? '<div class="flow-arrow"></div>' : '') + part;
+          return (i > 0 ? '<div class="flow-arrow"></div>' : '') + '<div class="flow-node-wrap">' + anchor + card + '</div>';
         }).join('') + '</div>';
       }).join('');
-      document.getElementById('flowCanvas').innerHTML = html;
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
-    function toggleNode(cb) {
-      cb.closest('.flow-card').classList.toggle('off', !cb.checked);
-    }
-
-    function resetFlow() {
-      if (confirm('确定重置为当前版本 V21 的配置？')) renderFlow();
-    }
-
-    function saveFlow() {
-      alert('流程配置已保存，生成新版本 V22（原型演示）');
-    }
+    function toggleNode(cb) { cb.closest('.flow-card').classList.toggle('off', !cb.checked); }
+    function resetFlow() { if (confirm('确定重置为当前版本 V21 的配置？')) renderFlow(); }
+    function saveFlow() { alert('流程配置已保存，生成新版本 V22（原型演示）'); }
 
     function renderVersionTable() {
       document.getElementById('versionTableBody').innerHTML = versionHistory.map(function (v) {
@@ -200,30 +394,43 @@
     function openVersionModal() {
       renderVersionTable();
       var m = document.getElementById('versionModal');
-      m.classList.remove('hidden');
-      m.classList.add('flex');
+      m.classList.remove('hidden'); m.classList.add('flex');
     }
-
     function closeVersionModal() {
       var m = document.getElementById('versionModal');
-      m.classList.add('hidden');
-      m.classList.remove('flex');
+      m.classList.add('hidden'); m.classList.remove('flex');
     }
-
     document.getElementById('versionModal').addEventListener('click', function (e) {
       if (e.target === this) closeVersionModal();
     });
 
-    renderFlow();
-
     PrototypeAnnotation.init({
       annotations: [
+        {
+          id: 'entrust-tab',
+          selector: '[data-annotate="entrust-tab"]',
+          position: 'top-right',
+          title: '委托信息设置',
+          content: '配置委托登记表单中各字段的显示/隐藏。灰色勾选为系统必填不可取消；蓝色勾选为可选字段，取消勾选后委托表单中不再展示该字段。',
+          tag: '应用设置'
+        },
+        {
+          id: 'salesman-field',
+          selector: '[data-annotate="salesman-field"]',
+          position: 'top-right',
+          title: '业务负责人 / 业务员',
+          wide: true,
+          content: '<strong>整改点：</strong>原系统中「业务负责人/业务员」为灰色锁定勾选，用户无法去除。<br><br>' +
+            '现改为<strong>可取消勾选</strong>：取消后，委托登记、委托编辑等页面的「业务员」字段将不再展示。<br><br>' +
+            '勾选 = 委托表单显示该字段；取消勾选 = 隐藏该字段（不影响历史数据）。',
+          tag: '字段可配置'
+        },
         {
           id: 'flow-tab',
           selector: '[data-annotate="flow-tab"]',
           position: 'top-right',
           title: '流程设置',
-          content: '配置实验室任务全流程。灰色为固定节点不可关闭；白色节点可勾选启用/停用。流程顺序与「标签打印-合格证」显示时机直接相关。',
+          content: '配置实验室任务全流程。灰色为固定节点不可关闭；白色节点可勾选启用/停用。',
           tag: '应用设置'
         },
         {
@@ -232,7 +439,7 @@
           position: 'top-right',
           title: '报告签发节点',
           wide: true,
-          content: '「报告签发」为固定流程节点。标签打印列表中，「合格证」入口仅在委托到达<strong>报告签发及后续阶段</strong>（报告签发 → 报告处理 → … → 任务完成）时展示。<br><br>若流程从后续阶段<strong>回退</strong>到报告签发及之前，已发放合格证短链自动作废。',
+          content: '「报告签发」为固定流程节点。标签打印「合格证」入口仅在报告签发及后续阶段展示。',
           tag: '与合格证联动'
         },
         {
@@ -240,7 +447,7 @@
           selector: '[data-annotate="view-changes"]',
           position: 'bottom-right',
           title: '查看更改',
-          content: '查看历史流程版本变更记录，包含完整流程配置串、操作人与更改时间。每次保存生成新版本号（当前 V21）。',
+          content: '查看历史流程版本变更记录。',
           tag: '版本管理'
         }
       ]
