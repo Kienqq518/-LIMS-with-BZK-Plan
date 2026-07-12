@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>变更申请 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="entrust-confirm.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">委托确认</a>
+    <a href="fee-audit.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">费用审核</a>
+    <a href="fee-audit-edit.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">费用审核编辑</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">变更申请<i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i></span>
+  </div>
+  <div class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">委托编号</label><input type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">是否关联框架合同</label><select class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"><option value="">请选择</option><option>是</option><option>否</option></select></div>
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">合同编号</label><input type="text" placeholder="请输入框架合同编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">客户单位</label><input type="text" placeholder="请输入客户单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">样品名称</label><input type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">委托受理日期</label><div class="relative flex-1"><input type="text" placeholder="开始日期 ~ 结束日期" class="w-full rounded border border-slate-300 px-3 py-1.5 pr-8 text-sm outline-none focus:border-blue-500" /><i class="fa fa-calendar-o absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"></i></div></div>
+        <div class="flex items-center gap-2 xl:col-span-2 xl:justify-end"><button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button><button class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button></div>
+      </div>
+    </div>
+    <div class="mt-4 rounded bg-white p-4 shadow-sm overflow-x-auto">
+      <table class="w-full min-w-[1200px] border-collapse text-sm"><thead><tr class="bg-slate-100 text-slate-600">
+        <th class="border border-slate-200 px-3 py-2 font-medium">序号</th><th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th><th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th><th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th><th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th><th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th><th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th><th class="border border-slate-200 px-3 py-2 font-medium">委托进度</th><th class="border border-slate-200 px-3 py-2 font-medium">编制人</th><th class="border border-slate-200 px-3 py-2 font-medium">业务员</th><th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+      </tr></thead><tbody id="tableBody"></tbody></table>
+      <div class="mt-4 flex justify-end gap-2 text-sm text-slate-500"><span>共 15 条</span><button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button><select class="rounded border border-slate-200 px-2 py-1"><option>50条/页</option></select></div>
+    </div>
+  </div>
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var samples=['绝缘操作杆','遮蔽罩、安全带','绝缘斗臂车-t','安全帽','绝缘杆','10kV旁路作业设备'];
+    var progress=['委托确认','报告编制','样品收样','试验检测','费用审核','报告签发'];
+    var customers=['杭州数蚕智能科技有限公司','宇宙设想有限公司','东集西造有限公司','灵知益义有限公司'];
+    var rows=[]; for(var i=0;i<15;i++){ rows.push({code:'SC2026/'+(String(71-i).padStart(4,'0')),customer:customers[i%4],sample:samples[i%6],acceptDate:'2026-06-'+String(10-i%9).padStart(2,'0'),progress:progress[i%6]}); }
+    document.getElementById('tableBody').innerHTML=rows.map(function(d,i){
+      return '<tr class="hover:bg-slate-50"><td class="border border-slate-200 px-3 py-2.5">'+(i+1)+'</td><td class="border border-slate-200 px-3 py-2.5"><a href="change-apply-edit.html?code='+d.code+'" class="text-blue-600 hover:underline">'+d.code+'</a></td><td class="border border-slate-200 px-3 py-2.5 text-center">/</td><td class="border border-slate-200 px-3 py-2.5">'+d.customer+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.sample+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.acceptDate+'</td><td class="border border-slate-200 px-3 py-2.5"></td><td class="border border-slate-200 px-3 py-2.5">'+d.progress+'</td><td class="border border-slate-200 px-3 py-2.5">admin</td><td class="border border-slate-200 px-3 py-2.5">梁倩</td><td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="change-apply-edit.html?code='+d.code+'" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</a><button class="ml-3 text-red-500 hover:underline"><i class="fa fa-trash-o"></i> 删除委托</button></td></tr>';
+    }).join('');
+  </script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>委托变更编辑 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    .form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 16px}.form-item{display:flex;align-items:center;gap:6px;min-width:0}.form-item label{flex-shrink:0;width:96px;text-align:right;font-size:13px;color:#64748b}.form-item.span-full{grid-column:span 4}.form-item label .req{color:#ef4444}.form-item input,.form-item select,.form-item textarea{flex:1;border:1px solid #cbd5e1;border-radius:4px;padding:6px 10px;font-size:13px;outline:none}.data-table{width:100%;border-collapse:collapse}.data-table th,.data-table td{border:1px solid #e5e7eb;padding:8px 10px;font-size:13px;text-align:left}.data-table th{background:#f1f5f9;color:#64748b;font-weight:500}
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700 pb-8">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="change-apply.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="change-apply.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">变更申请</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">委托变更编辑<i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i></span>
+  </div>
+  <div class="space-y-4 p-4">
+    <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>合同信息</h2>
+      <div class="form-grid">
+        <div class="form-item"><label>合同编号</label><select><option value="">请选择</option></select></div>
+        <div class="form-item"><label>合同名称</label><input type="text" /></div>
+        <div class="form-item"><label>签订时间</label><input type="text" placeholder="请选择日期" /></div>
+        <div class="form-item"><label>服务年限</label><input type="text" placeholder="请选择日期" /></div>
+        <div class="form-item"><label>中标价</label><input type="text" /></div>
+        <div class="form-item span-full"><label>合同样品</label><textarea rows="2"></textarea></div>
+      </div>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
+      <div class="form-grid">
+        <div class="form-item"><label><span class="req">*</span> 委托编号</label><input type="text" readonly class="bg-slate-50" value="SC2026/0071" /></div>
+        <div class="form-item"><label><span class="req">*</span> 任务类型</label><select><option>电气（输配电类）</option></select></div>
+        <div class="form-item"><label><span class="req">*</span> 优先等级</label><select><option>常规</option></select></div>
+        <div class="form-item"><label>检测类型</label><select><option>常规</option></select></div>
+        <div class="form-item"><label>检测类别</label><select><option>例行试验</option></select></div>
+        <div class="form-item"><label><span class="req">*</span> 客户单位</label><select><option>宇宙设想有限公司</option></select></div>
+        <div class="form-item"><label>客户地址</label><input type="text" value="福州市鼓楼区五四路158号环球广场" /></div>
+        <div class="form-item"><label>客户邮政编码</label><input type="text" value="350000" /></div>
+        <div class="form-item"><label><span class="req">*</span> 客户联系人</label><input type="text" value="张三" /></div>
+        <div class="form-item"><label><span class="req">*</span> 客户联系方式</label><input type="text" value="18888885555" /></div>
+        <div class="form-item"><label><span class="req">*</span> 业务员</label><input type="text" value="梁倩" /></div>
+        <div class="form-item"><label>签约地点</label><input type="text" value="湖北" /></div>
+        <div class="form-item"><label><span class="req">*</span> 实验室检测中心</label><select><option>应敏科技有限公司</option></select></div>
+        <div class="form-item"><label><span class="req">*</span> 委托受理日期</label><input type="text" value="2026-06-09" /></div>
+        <div class="form-item"><label>客户要求完成日期</label><input type="text" value="2026-06-11" /></div>
+        <div class="form-item"><label>要求检测完成天数</label><input type="text" value="1" /></div>
+        <div class="form-item"><label><span class="req">*</span> 编制人</label><input type="text" readonly class="bg-slate-50" value="admin" /></div>
+        <div class="form-item span-full"><label>备注</label><textarea rows="2"></textarea></div>
+      </div>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>付款信息</h2>
+      <div class="form-grid">
+        <div class="form-item"><label><span class="req">*</span> 样品检测总价(元)</label><input type="text" value="238" /></div>
+        <div class="form-item"><label><span class="req">*</span> 实际费用(元)</label><input type="text" value="45" /></div>
+        <div class="form-item"><label><span class="req">*</span> 折扣率(%)</label><input type="text" value="81.09" /></div>
+        <div class="form-item"><label>付款单位</label><input type="text" value="宇宙设想有限公司" /></div>
+      </div>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>报告信息</h2>
+      <div class="form-grid">
+        <div class="form-item"><label>报告传送方式</label><select><option>邮寄</option></select></div>
+        <div class="form-item"><label><span class="req">*</span> 报告资质</label><select><option>CNAS CMA</option></select></div>
+        <div class="form-item"><label>报告描述</label><select><option>全部生成一份</option></select></div>
+        <div class="form-item"><label>报告数量</label><input type="text" value="1" /></div>
+      </div>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>收样信息</h2>
+      <div class="form-grid">
+        <div class="form-item"><label><span class="req">*</span> 收样日期</label><input type="text" value="2026-06-24" /></div>
+        <div class="form-item"><label><span class="req">*</span> 送样方式</label><select><option>送样</option></select></div>
+        <div class="form-item"><label>送样人</label><input type="text" /></div>
+        <div class="form-item"><label>送样人电话</label><input type="text" /></div>
+      </div>
+      <div class="mt-3 text-sm"><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> 上传附件</a><div class="mt-2 space-y-1"><a href="#" class="text-blue-600 hover:underline">数量logo(1).png <i class="fa fa-trash-o text-red-400"></i></a><br><a href="#" class="text-blue-600 hover:underline">ceshi.png <i class="fa fa-trash-o text-red-400"></i></a></div></div>
+      <div class="mt-4 text-center"><button class="rounded bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-700">基本信息变更提交</button></div>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>样品列表</h2>
+      <table class="data-table min-w-[1000px]"><thead><tr><th>序号</th><th>样品别名</th><th>型号关联</th><th>规格型号</th><th>试验项目</th><th>数量</th><th>单价</th><th>总价</th><th>生产厂</th><th>制造商</th><th>备注</th><th>操作</th></tr></thead>
+      <tbody><tr><td>1</td><td>遮蔽罩</td><td></td><td></td><td>交流耐压试验</td><td>1</td><td>120</td><td>120</td><td></td><td></td><td></td><td><button class="text-blue-600 hover:underline">编辑</button> <button class="text-red-500 hover:underline">删除</button></td></tr>
+      <tr><td>2</td><td>安全带</td><td></td><td></td><td>外观及尺寸</td><td>1</td><td>118</td><td>118</td><td></td><td></td><td></td><td><button class="text-blue-600 hover:underline">编辑</button> <button class="text-red-500 hover:underline">删除</button></td></tr></tbody></table>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm"><div class="mb-3 flex items-center justify-between"><h2 class="flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>变更待提交样品</h2><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">变更添加样品</button></div>
+      <table class="data-table"><tbody><tr><td colspan="12" class="py-8 text-center text-slate-400">暂无数据</td></tr></tbody></table>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息变更记录</h2>
+      <table class="data-table min-w-[900px]"><thead><tr><th>序号</th><th>变更类型</th><th>变更内容</th><th>操作人</th><th>变更时间</th><th>变更原因</th><th>驳回原因</th><th>状态</th></tr></thead>
+      <tbody><tr><td>1</td><td>修改</td><td class="max-w-md text-xs">客户要求完成日期 从 2026-06-20 修改为 2026-06-11</td><td>admin</td><td>2026-06-10</td><td>客户催办</td><td></td><td><span class="text-green-600">通过</span></td></tr></tbody></table>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>样品信息变更记录</h2>
+      <table class="data-table min-w-[900px]"><thead><tr><th>序号</th><th>变更类型</th><th>变更内容</th><th>操作人</th><th>变更时间</th><th>变更原因</th><th>驳回原因</th><th>状态</th></tr></thead>
+      <tbody><tr><td>1</td><td>新增</td><td class="max-w-md text-xs">新增样品「安全带」，数量1，单价118</td><td>admin</td><td>2026-06-10</td><td>补充检测</td><td></td><td><span class="text-green-600">通过</span></td></tr></tbody></table>
+    </section>
+  </div>
+  <script src="js/tab-bar.js"></script>
+</body>
+</html>
