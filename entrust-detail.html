@@ -22,6 +22,12 @@
     .data-table th, .data-table td { border: 1px solid #e5e7eb; padding: 8px 12px; font-size: 13px; text-align: left; }
     .data-table th { background: #f1f5f9; color: #64748b; font-weight: 500; white-space: nowrap; }
     .data-table td { color: #334155; }
+    .timeline-item { position: relative; border-left: 2px solid #e2e8f0; padding-left: 20px; padding-bottom: 20px; }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .timeline-item::before { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #3b82f6; background: #fff; }
+    .notice-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .notice-table th, .notice-table td { border: 1px solid #333; padding: 6px 8px; text-align: center; }
+    .notice-table th { background: #f8fafc; font-weight: 500; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -33,6 +39,21 @@
       委托详情
       <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
     </span>
+  </div>
+
+  <!-- 右上角操作栏 -->
+  <div class="flex items-center justify-end border-b border-slate-200 bg-white px-4 py-2">
+    <div class="relative" id="viewMoreWrap">
+      <button onclick="toggleViewMore()" class="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">
+        查看更多 <i class="fa fa-angle-down text-xs"></i>
+      </button>
+      <div id="viewMoreMenu" class="absolute right-0 z-30 mt-1 hidden w-48 rounded border border-slate-200 bg-white py-1 text-sm shadow-lg">
+        <button onclick="openLedgerModal()" class="block w-full px-4 py-2 text-left text-slate-700 hover:bg-blue-50">样品台账</button>
+        <button onclick="openNoticeModal()" class="block w-full px-4 py-2 text-left text-slate-700 hover:bg-blue-50">产品检测预通知书</button>
+        <button onclick="openOriginalRecord()" class="block w-full px-4 py-2 text-left text-slate-700 hover:bg-blue-50">原始记录</button>
+        <button onclick="openSysLogModal()" class="block w-full px-4 py-2 text-left text-slate-700 hover:bg-blue-50">系统日志</button>
+      </div>
+    </div>
   </div>
 
   <div class="space-y-4 p-4">
@@ -53,9 +74,9 @@
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
       <table class="info-table">
-        <tr><td class="lbl">委托编号</td><td class="val">SC2026/0212</td><td class="lbl">任务类型</td><td class="val">委托检测</td><td class="lbl">优先等级</td><td class="val">常规</td></tr>
+        <tr><td class="lbl">委托编号</td><td class="val">SC2026/0073</td><td class="lbl">任务类型</td><td class="val">委托检测</td><td class="lbl">优先等级</td><td class="val">常规</td></tr>
         <tr><td class="lbl">检测标准</td><td class="val">GB/T 12706</td><td class="lbl">客户单位</td><td class="val">杭州数蚕智能科技有限公司</td><td class="lbl">委托单位</td><td class="val">杭州数蚕智能科技有限公司</td></tr>
-        <tr><td class="lbl">样品名称</td><td class="val">8.7/10kV-3芯</td><td class="lbl">样品类型</td><td class="val">电缆</td><td class="lbl">样品数量</td><td class="val">3</td></tr>
+        <tr><td class="lbl">样品名称</td><td class="val">绝缘操作杆</td><td class="lbl">样品类型</td><td class="val">安全工器具</td><td class="lbl">样品数量</td><td class="val">1</td></tr>
         <tr><td class="lbl">样品状态</td><td class="val">完好</td><td class="lbl">业务员</td><td class="val">业务员A</td><td class="lbl">检测类别</td><td class="val">例行试验</td></tr>
         <tr><td class="lbl">受理日期</td><td class="val">2026-07-08</td><td class="lbl">报告日期</td><td class="val">2026-07-10</td><td class="lbl">样品编号</td><td class="val">SC2026/0212</td></tr>
         <tr><td class="lbl">留样处理</td><td class="val">是</td><td class="lbl">样品处置日期</td><td class="val">2026-08-10</td><td class="lbl">客户要求完成日期</td><td class="val">2026-07-10</td></tr>
@@ -99,7 +120,7 @@
             <tr><th>序号</th><th>名称</th><th>型号规格</th><th>生产厂家</th><th>检测标准</th><th>样品状态</th><th>检测参数</th><th>检测备注</th></tr>
           </thead>
           <tbody>
-            <tr><td>1</td><td>8.7/10kV-3芯</td><td>YJV22-3×95</td><td>华东电缆厂</td><td>GB/T 12706</td><td>完好</td><td>导体电阻、绝缘厚度、护套厚度</td><td>admin</td></tr>
+            <tr><td>1</td><td>绝缘操作杆</td><td></td><td>/</td><td>DL/T 976-2017</td><td>完好</td><td>交流耐压试验、外观及尺寸、抗弯动负荷试验、抗弯静负荷试验</td><td>admin</td></tr>
           </tbody>
         </table>
       </div>
@@ -115,7 +136,7 @@
           </thead>
           <tbody>
             <tr>
-              <td>1</td><td>8.7/10kV-3芯</td>
+              <td>1</td><td>绝缘操作杆</td>
               <td><i class="fa fa-picture-o text-2xl text-slate-300"></i></td>
               <td>admin</td><td>2026-07-08</td>
               <td><a href="#" class="text-blue-600 hover:underline">SC2026/0212 报告处理阶段</a></td>
@@ -249,6 +270,178 @@
     </section>
 
   </div>
+
+  <!-- 样品台账弹窗 -->
+  <div id="ledgerModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[86vh] w-[720px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">台账信息</h3>
+        <button onclick="closeModal('ledgerModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="border-b border-slate-100 px-6 py-3">
+        <div class="flex flex-wrap items-center gap-4 text-sm">
+          <div class="flex items-center gap-2">
+            <label class="text-slate-600">时间范围：</label>
+            <input type="text" placeholder="开始日期" class="w-32 rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" />
+            <span class="text-slate-400">~</span>
+            <input type="text" placeholder="结束日期" class="w-32 rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-slate-600">关键字：</label>
+            <input type="text" placeholder="请输入关键字" class="w-44 rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" />
+          </div>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <div id="ledgerTimeline" class="space-y-0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 产品检测预通知书弹窗 -->
+  <div id="noticeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[90vh] w-[900px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">产品检测预通知书</h3>
+        <button onclick="closeModal('noticeModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-8 py-6">
+        <div class="border border-slate-800 p-4">
+          <h4 class="mb-4 text-center text-lg font-semibold text-slate-800">产品检测预通知书</h4>
+          <table class="notice-table mb-0">
+            <tr>
+              <td class="w-24 bg-slate-50">委托编号</td><td>SC2026/0073</td>
+              <td class="w-24 bg-slate-50">委托单位</td><td colspan="3">杭州数蚕智能科技有限公司</td>
+            </tr>
+            <tr>
+              <th>编号</th><th>样品名称</th><th>型号</th><th>数量</th><th>检测项目</th><th>生产厂/制造商</th><th>试验状态</th><th>是否加急</th><th>备注信息</th>
+            </tr>
+            <tr>
+              <td>1</td>
+              <td>绝缘操作杆</td>
+              <td></td>
+              <td>1</td>
+              <td class="text-left text-xs">交流耐压试验|外观及尺寸|抗弯动负荷试验|抗弯静负荷试验</td>
+              <td>/</td>
+              <td><span class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-600">已复审</span></td>
+              <td><span class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-600">不加急</span></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="bg-slate-50">编制人</td><td>admin</td>
+              <td class="bg-slate-50">受理日期</td><td colspan="5">2026-06-10</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 系统操作日志弹窗 -->
+  <div id="sysLogModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[86vh] w-[760px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">系统操作日志</h3>
+        <button onclick="closeModal('sysLogModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="border-b border-slate-100 px-6 py-3">
+        <div class="flex flex-wrap items-center gap-4 text-sm">
+          <div class="flex items-center gap-2">
+            <label class="text-slate-600">时间：</label>
+            <input type="text" placeholder="开始日期" class="w-32 rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" />
+            <span class="text-slate-400">~</span>
+            <input type="text" placeholder="结束日期" class="w-32 rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-slate-600">关键字：</label>
+            <input type="text" placeholder="请输入关键字" class="w-44 rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" />
+          </div>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <div id="sysLogTimeline" class="space-y-0"></div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/tab-bar.js"></script>
+  <script>
+    var ledgerLogs = [
+      { time: '2026-06-10 09:27:16', text: 'admin将绝缘操作杆[SC2026/00730101]申请归还样品库' },
+      { time: '2026-06-10 09:24:38', text: 'admin将样品发给admin' },
+      { time: '2026-06-10 09:24:13', text: '收到了样品，收样日期为：2026-06-10，收样人为：admin，收样状态：完好，送样人为：null，送样方式为：送样，送样人电话为：null，备注为：/' }
+    ];
+
+    var sysLogs = [
+      { time: '2026-06-10 14:40:52', text: 'admin 在 报告编制 将样品编号是SC2026/00730101生成报告' },
+      { time: '2026-06-10 14:38:20', text: 'admin 在 数据审核 数据审核全部通过' },
+      { time: '2026-06-10 14:35:10', text: 'admin 在 试验检测 完成检测项录入' },
+      { time: '2026-06-10 09:24:13', text: 'admin 在 样品收样 完成了样品收样操作' },
+      { time: '2026-06-10 09:20:05', text: 'admin 在 委托登记 创建了合同' }
+    ];
+
+    function renderTimeline(containerId, items) {
+      document.getElementById(containerId).innerHTML = items.map(function (item) {
+        return '<div class="timeline-item">' +
+          '<div class="text-sm text-slate-500">' + item.time + '</div>' +
+          '<div class="mt-1 text-sm text-slate-700">' + item.text + '</div></div>';
+      }).join('');
+    }
+
+    function toggleViewMore() {
+      document.getElementById('viewMoreMenu').classList.toggle('hidden');
+    }
+
+    function closeViewMoreMenu() {
+      document.getElementById('viewMoreMenu').classList.add('hidden');
+    }
+
+    function showModal(id) {
+      var m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeModal(id) {
+      var m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function openLedgerModal() {
+      closeViewMoreMenu();
+      renderTimeline('ledgerTimeline', ledgerLogs);
+      showModal('ledgerModal');
+    }
+
+    function openNoticeModal() {
+      closeViewMoreMenu();
+      showModal('noticeModal');
+    }
+
+    function openOriginalRecord() {
+      closeViewMoreMenu();
+      window.location.href = 'test-record.html';
+    }
+
+    function openSysLogModal() {
+      closeViewMoreMenu();
+      renderTimeline('sysLogTimeline', sysLogs);
+      showModal('sysLogModal');
+    }
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('#viewMoreWrap')) closeViewMoreMenu();
+    });
+
+    ['ledgerModal', 'noticeModal', 'sysLogModal'].forEach(function (id) {
+      document.getElementById(id).addEventListener('click', function (e) {
+        if (e.target === this) closeModal(id);
+      });
+    });
+
+    renderTimeline('ledgerTimeline', ledgerLogs);
+    renderTimeline('sysLogTimeline', sysLogs);
+  </script>
 </body>
 </html>
