@@ -41,18 +41,24 @@
     }
     /* 起始节点：委托登记，单独一行左对齐 */
     .flow-start-row { margin-bottom: 28px; }
-    /* 每行 6 列对齐网格 */
+    /* 流程行：卡片与连接线交替排列，连接线独占列避免遮盖标签 */
     .flow-grid {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
       align-items: center;
       margin-bottom: 28px;
     }
+    .flow-grid.cols-6 {
+      grid-template-columns: auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto;
+    }
+    .flow-grid.cols-5 {
+      grid-template-columns: auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto;
+    }
     .flow-grid:last-child { margin-bottom: 0; }
-    .flow-cell { display: flex; align-items: center; min-width: 0; }
+    .flow-cell { display: flex; align-items: center; justify-content: center; min-width: 0; }
     .flow-card {
       box-sizing: border-box;
-      flex: 0 0 auto;
+      position: relative;
+      z-index: 1;
       height: 36px;
       padding: 0 12px;
       border-radius: 4px;
@@ -70,14 +76,14 @@
     .flow-card.config { background: #fff; color: #334155; border: 1px solid #93c5fd; }
     .flow-card.config.off { border-color: #e2e8f0; color: #94a3b8; background: #f8fafc; }
     .flow-card .flow-check { width: 14px; height: 14px; margin: 0; flex-shrink: 0; accent-color: #2563eb; cursor: pointer; }
-    /* 连接线：填充卡片到下一列之间的空隙 */
+    /* 连接线：独立 grid 列，仅填充相邻卡片之间的空隙 */
     .flow-conn {
-      flex: 1 1 auto;
       height: 2px;
       background: #cbd5e1;
       position: relative;
-      margin: 0 6px;
-      min-width: 16px;
+      margin: 0 4px;
+      min-width: 12px;
+      align-self: center;
     }
     .flow-conn::after {
       content: '';
@@ -408,7 +414,7 @@
       { ver: 'V18', config: CONFIG_STR, user: 'admin', time: '2025-10-30 11:05:47' }
     ];
 
-    function nodeCard(node, withConn) {
+    function nodeCard(node) {
       var cardCls = 'flow-card ' + (node.type === 'fixed' ? 'fixed' : 'config' + (node.enabled ? '' : ' off'));
       var flag = node.start ? '<i class="fa fa-flag flow-start-icon"></i>' : '';
       var check = node.type === 'config'
@@ -416,23 +422,30 @@
         : '';
       var annotateAttr = node.annotate ? ' data-annotate="' + node.annotate + '"' : '';
       var card = '<div class="' + cardCls + '"' + annotateAttr + '><span class="flow-label">' + node.name + '</span>' + check + '</div>';
-      var conn = withConn ? '<div class="flow-conn" aria-hidden="true"></div>' : '';
-      return '<div class="flow-cell">' + flag + card + conn + '</div>';
+      return '<div class="flow-cell">' + flag + card + '</div>';
+    }
+
+    function flowConn() {
+      return '<div class="flow-conn" aria-hidden="true"></div>';
+    }
+
+    function renderFlowRow(row) {
+      var parts = [];
+      row.forEach(function (node, i) {
+        parts.push(nodeCard(node));
+        if (i < row.length - 1) parts.push(flowConn());
+      });
+      return '<div class="flow-grid cols-' + row.length + '">' + parts.join('') + '</div>';
     }
 
     function renderFlow() {
       var el = document.getElementById('flowCanvas');
       if (!el) return;
-      var html = '<div class="flow-start-row flow-grid"><div class="flow-cell">' +
+      var html = '<div class="flow-start-row flow-grid cols-6"><div class="flow-cell">' +
         '<i class="fa fa-flag flow-start-icon"></i>' +
         '<div class="flow-card fixed"><span class="flow-label">' + FLOW_START.name + '</span></div>' +
         '</div></div>';
-      html += FLOW_ROWS.map(function (row) {
-        var cells = row.map(function (node, i) {
-          return nodeCard(node, i < row.length - 1);
-        }).join('');
-        return '<div class="flow-grid">' + cells + '</div>';
-      }).join('');
+      html += FLOW_ROWS.map(renderFlowRow).join('');
       el.innerHTML = html;
     }
 
