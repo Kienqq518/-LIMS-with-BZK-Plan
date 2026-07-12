@@ -38,6 +38,8 @@
     #flowCanvas {
       max-width: 960px;
       margin: 0 auto;
+      --flow-node: 90px;
+      --flow-gap: minmax(10px, 1fr);
     }
     /* 起始节点：委托登记，单独一行左对齐 */
     .flow-start-row { margin-bottom: 28px; }
@@ -48,13 +50,13 @@
       margin-bottom: 28px;
     }
     .flow-grid.cols-6 {
-      grid-template-columns: auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto;
+      grid-template-columns: var(--flow-node) var(--flow-gap) var(--flow-node) var(--flow-gap) var(--flow-node) var(--flow-gap) var(--flow-node) var(--flow-gap) var(--flow-node) var(--flow-gap) var(--flow-node);
     }
     .flow-grid.cols-5 {
-      grid-template-columns: auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto;
+      grid-template-columns: var(--flow-node) var(--flow-gap) var(--flow-node) var(--flow-gap) var(--flow-node) var(--flow-gap) var(--flow-node) var(--flow-gap) var(--flow-node);
     }
     .flow-grid:last-child { margin-bottom: 0; }
-    .flow-cell { display: flex; align-items: center; justify-content: center; min-width: 0; }
+    .flow-cell { display: flex; align-items: center; justify-content: flex-start; min-width: 0; }
     .flow-card {
       box-sizing: border-box;
       position: relative;
@@ -94,7 +96,8 @@
       border: 4px solid transparent;
       border-left-color: #cbd5e1;
     }
-    .flow-start-icon { color: #22c55e; font-size: 12px; flex-shrink: 0; line-height: 1; margin-right: 6px; }
+    .flow-start-icon { color: #22c55e; font-size: 12px; flex-shrink: 0; line-height: 1; width: 18px; text-align: center; }
+    .flow-flag-slot { flex-shrink: 0; width: 18px; }
     .flow-label { display: inline-block; white-space: nowrap; }
     .flow-anno-anchor { display: none; }
     .flow-wrap .pa-highlight { outline: none !important; box-shadow: 0 0 0 2px #f97316; border-radius: 4px; }
@@ -414,9 +417,12 @@
       { ver: 'V18', config: CONFIG_STR, user: 'admin', time: '2025-10-30 11:05:47' }
     ];
 
-    function nodeCard(node) {
+    function nodeCard(node, opts) {
+      opts = opts || {};
       var cardCls = 'flow-card ' + (node.type === 'fixed' ? 'fixed' : 'config' + (node.enabled ? '' : ' off'));
-      var flag = node.start ? '<i class="fa fa-flag flow-start-icon"></i>' : '';
+      var flag = node.start
+        ? '<i class="fa fa-flag flow-start-icon"></i>'
+        : (opts.leadingSlot ? '<span class="flow-flag-slot" aria-hidden="true"></span>' : '');
       var check = node.type === 'config'
         ? '<input type="checkbox" class="flow-check" ' + (node.enabled ? 'checked' : '') + ' onchange="toggleNode(this)" />'
         : '';
@@ -432,7 +438,7 @@
     function renderFlowRow(row) {
       var parts = [];
       row.forEach(function (node, i) {
-        parts.push(nodeCard(node));
+        parts.push(nodeCard(node, { leadingSlot: i === 0 }));
         if (i < row.length - 1) parts.push(flowConn());
       });
       return '<div class="flow-grid cols-' + row.length + '">' + parts.join('') + '</div>';
