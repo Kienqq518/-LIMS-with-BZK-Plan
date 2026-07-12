@@ -20,7 +20,7 @@
     Ef4k2: { sampleNo: 'SC2026/00731001', longUrl: 'https://lims.example.com/verify/cert/SC2026-00731001', status: 'valid', reinspectDate: '2027-06-04' },
     Gh7l8: { sampleNo: 'SC2026/00731101', longUrl: 'https://lims.example.com/verify/cert/SC2026-00731101', status: 'valid', reinspectDate: '2027-06-04' },
     Ex1p1: { sampleNo: 'SC2026/00990101', longUrl: 'https://lims.example.com/verify/cert/SC2026-00990101', status: 'expired', reinspectDate: '2025-06-01' },
-    Rv0k1: { sampleNo: 'SC2026/00990201', longUrl: 'https://lims.example.com/verify/cert/SC2026-00990201', status: 'revoked', reinspectDate: '2027-12-31' }
+    Rv0k1: { sampleNo: 'SC2026/00990201', longUrl: 'https://lims.example.com/verify/cert/SC2026-00990201', status: 'revoked', reinspectDate: '2027-12-31', revokeReason: 'rollback' },
   };
 
   var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -86,7 +86,10 @@
       return { ok: false, reason: 'not_found', message: '短链代码不存在或已失效', entry: null };
     }
     if (entry.status === 'revoked') {
-      return { ok: false, reason: 'revoked', message: '该合格证已被作废/撤回', entry: entry };
+      var revokeMsg = entry.revokeReason === 'rollback'
+        ? '流程已从报告签发后续阶段退回到报告签发及之前，合格证自动作废'
+        : '该合格证已被作废/撤回';
+      return { ok: false, reason: 'revoked', message: revokeMsg, entry: entry };
     }
     if (entry.status === 'expired') {
       return { ok: false, reason: 'expired', message: '已超过再检日期，合格证已失效', entry: entry };

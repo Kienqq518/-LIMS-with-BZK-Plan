@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>系统参数 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .param-tab { border-bottom: 2px solid transparent; color: #64748b; padding: 10px 16px; cursor: pointer; white-space: nowrap; }
+    .param-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
+    .flow-wrap { position: relative; padding: 24px 16px 80px; min-height: 420px; }
+    .flow-row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0; margin-bottom: 28px; }
+    .flow-node-wrap { display: flex; align-items: center; }
+    .flow-arrow { width: 28px; height: 2px; background: #cbd5e1; position: relative; flex-shrink: 0; }
+    .flow-arrow::after { content: ''; position: absolute; right: -1px; top: -4px; border: 5px solid transparent; border-left-color: #cbd5e1; }
+    .flow-card { min-width: 88px; height: 36px; padding: 0 10px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: default; user-select: none; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+    .flow-card.fixed { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
+    .flow-card.config { background: #fff; color: #334155; border: 1px solid #93c5fd; }
+    .flow-card.config.off { border-color: #e2e8f0; color: #94a3b8; background: #f8fafc; }
+    .flow-card .flow-check { width: 14px; height: 14px; accent-color: #2563eb; cursor: pointer; }
+    .flow-card.start::before { content: '\f024'; font-family: FontAwesome; color: #22c55e; font-size: 11px; margin-right: -2px; }
+    .version-badge { background: linear-gradient(135deg, #8b5cf6, #a78bfa); color: #fff; border-radius: 6px; padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 10px; }
+    .btn-view-changes { background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.35); border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+    .btn-view-changes:hover { background: rgba(255,255,255,.3); }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      系统参数
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <!-- 子 Tab -->
+  <div class="flex overflow-x-auto border-b border-slate-200 bg-white px-4 text-sm">
+    <div class="param-tab">委托信息</div>
+    <div class="param-tab">承检方信息</div>
+    <div class="param-tab">报告设置</div>
+    <div class="param-tab">记录单设置</div>
+    <div class="param-tab">微信设置</div>
+    <div class="param-tab">对接设置</div>
+    <div class="param-tab active" data-annotate="flow-tab">流程设置</div>
+  </div>
+
+  <div class="p-4">
+    <div class="rounded bg-white shadow-sm">
+      <!-- 提示条 -->
+      <div class="mx-4 mt-4 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+        <i class="fa fa-info-circle mt-0.5 text-blue-500"></i>
+        <span>您好！灰色卡片为固定流程，白色卡片为可配置流程。可拖拽移动顺序，勾选启用，取消勾选停用，进行功能配置。</span>
+      </div>
+
+      <!-- 版本 + 流程图 -->
+      <div class="relative flow-wrap">
+        <div class="absolute right-4 top-2 z-10">
+          <div class="version-badge">
+            <span>当前流程版本：V21</span>
+            <button type="button" onclick="openVersionModal()" class="btn-view-changes" data-annotate="view-changes"><i class="fa fa-star"></i> 查看更改</button>
+          </div>
+        </div>
+
+        <div id="flowCanvas"></div>
+
+        <div class="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-3">
+          <button onclick="resetFlow()" class="rounded border border-slate-300 px-6 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+          <button onclick="saveFlow()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white hover:bg-blue-700">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 流程更改详情弹窗 -->
+  <div id="versionModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[85vh] w-[920px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">流程更改详情</h3>
+        <button onclick="closeVersionModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto p-4">
+        <table class="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-50 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium w-20">版本号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">配置</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-24">操作人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-40">更改时间</th>
+            </tr>
+          </thead>
+          <tbody id="versionTableBody"></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3 text-sm text-slate-500">
+        <span id="versionTotal">共 21 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>50条/页</option></select>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/flow-stages.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var FLOW_ROWS = [
+      [
+        { name: '委托登记', type: 'fixed', start: true },
+        { name: '样品收样', type: 'config', enabled: true },
+        { name: '委托确认', type: 'config', enabled: true },
+        { name: '费用审核', type: 'config', enabled: true },
+        { name: '样品制备', type: 'config', enabled: true },
+        { name: '样品发样', type: 'config', enabled: true },
+        { name: '试样分发', type: 'fixed' }
+      ],
+      [
+        { name: '试验检测', type: 'fixed' },
+        { name: '组内审核', type: 'config', enabled: true },
+        { name: '数据审核', type: 'fixed' },
+        { name: '报告编制', type: 'fixed' },
+        { name: '报告审核', type: 'config', enabled: true },
+        { name: '报告签发', type: 'fixed', annotate: 'report-sign' }
+      ],
+      [
+        { name: '报告处理', type: 'config', enabled: true },
+        { name: '收费审批', type: 'config', enabled: true },
+        { name: '报告发放', type: 'config', enabled: true },
+        { name: '任务归档', type: 'config', enabled: true },
+        { name: '任务完成', type: 'fixed' }
+      ]
+    ];
+
+    var CONFIG_STR = '委托登记>样品收样>委托确认>费用审核>样品制备>样品发样>试样分发>试验检测>组内审核>数据审核>报告编制>报告审核>报告签发>报告处理>收费审批>报告发放>任务归档>任务完成';
+
+    var versionHistory = [
+      { ver: 'V21', config: CONFIG_STR, user: 'admin', time: '2025-12-10 14:13:05' },
+      { ver: 'V20', config: CONFIG_STR.replace('样品制备>', ''), user: 'admin', time: '2025-11-28 09:42:18' },
+      { ver: 'V19', config: CONFIG_STR.replace('收费审批>', ''), user: '管理员', time: '2025-11-15 16:20:33' },
+      { ver: 'V18', config: CONFIG_STR, user: 'admin', time: '2025-10-30 11:05:47' },
+      { ver: 'V17', config: CONFIG_STR.replace('组内审核>', ''), user: 'admin', time: '2025-10-12 08:55:12' },
+      { ver: 'V16', config: CONFIG_STR, user: '管理员', time: '2025-09-25 15:30:00' },
+      { ver: 'V15', config: CONFIG_STR, user: 'admin', time: '2025-09-10 10:18:22' },
+      { ver: 'V14', config: CONFIG_STR, user: 'admin', time: '2025-08-22 14:44:09' }
+    ];
+
+    function renderFlow() {
+      var html = FLOW_ROWS.map(function (row) {
+        return '<div class="flow-row">' + row.map(function (node, i) {
+          var cardCls = 'flow-card ' + (node.type === 'fixed' ? 'fixed' : 'config' + (node.enabled ? '' : ' off'));
+          if (node.start) cardCls += ' start';
+          var check = node.type === 'config'
+            ? '<input type="checkbox" class="flow-check" ' + (node.enabled ? 'checked' : '') + ' onchange="toggleNode(this)" />'
+            : '';
+          var attr = node.annotate ? ' data-annotate="' + node.annotate + '"' : '';
+          var part = '<div class="flow-node-wrap"><div class="' + cardCls + '"' + attr + '>' + node.name + check + '</div></div>';
+          return (i > 0 ? '<div class="flow-arrow"></div>' : '') + part;
+        }).join('') + '</div>';
+      }).join('');
+      document.getElementById('flowCanvas').innerHTML = html;
+    }
+
+    function toggleNode(cb) {
+      cb.closest('.flow-card').classList.toggle('off', !cb.checked);
+    }
+
+    function resetFlow() {
+      if (confirm('确定重置为当前版本 V21 的配置？')) renderFlow();
+    }
+
+    function saveFlow() {
+      alert('流程配置已保存，生成新版本 V22（原型演示）');
+    }
+
+    function renderVersionTable() {
+      document.getElementById('versionTableBody').innerHTML = versionHistory.map(function (v) {
+        return '<tr class="hover:bg-slate-50"><td class="border border-slate-200 px-3 py-2.5 font-medium">' + v.ver + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-xs text-slate-600 leading-relaxed">' + v.config + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + v.user + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + v.time + '</td></tr>';
+      }).join('');
+    }
+
+    function openVersionModal() {
+      renderVersionTable();
+      var m = document.getElementById('versionModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeVersionModal() {
+      var m = document.getElementById('versionModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    document.getElementById('versionModal').addEventListener('click', function (e) {
+      if (e.target === this) closeVersionModal();
+    });
+
+    renderFlow();
+
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'flow-tab',
+          selector: '[data-annotate="flow-tab"]',
+          position: 'top-right',
+          title: '流程设置',
+          content: '配置实验室任务全流程。灰色为固定节点不可关闭；白色节点可勾选启用/停用。流程顺序与「标签打印-合格证」显示时机直接相关。',
+          tag: '应用设置'
+        },
+        {
+          id: 'report-sign',
+          selector: '[data-annotate="report-sign"]',
+          position: 'top-right',
+          title: '报告签发节点',
+          wide: true,
+          content: '「报告签发」为固定流程节点。标签打印列表中，「合格证」入口仅在委托到达<strong>报告签发及后续阶段</strong>（报告签发 → 报告处理 → … → 任务完成）时展示。<br><br>若流程从后续阶段<strong>回退</strong>到报告签发及之前，已发放合格证短链自动作废。',
+          tag: '与合格证联动'
+        },
+        {
+          id: 'view-changes',
+          selector: '[data-annotate="view-changes"]',
+          position: 'bottom-right',
+          title: '查看更改',
+          content: '查看历史流程版本变更记录，包含完整流程配置串、操作人与更改时间。每次保存生成新版本号（当前 V21）。',
+          tag: '版本管理'
+        }
+      ]
+    });
+  </script>
+</body>
+</html>

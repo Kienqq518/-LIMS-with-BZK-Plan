@@ -45,8 +45,8 @@
       rulesEl.innerHTML =
         '<p class="font-medium text-slate-700 mb-2">验真判定规则</p>' +
         '<p class="mb-1"><span class="text-green-600 font-medium">✓ 有效：</span>短链存在且未过期、未作废，对应报告已签发且在再检日期之前。</p>' +
-        '<p class="mb-1"><span class="text-red-500 font-medium">✗ 无效：</span>① 短链代码不存在/已失效 ② 报告未签发 ③ 超过再检日期 ④ 合格证已作废或撤回。</p>' +
-        '<p class="text-slate-400 mt-2">原型演示：有效码 Ab3K9 · 过期码 Ex1p1 · 作废码 Rv0k1 · 不存在 XXXXX</p>';
+        '<p class="mb-1"><span class="text-red-500 font-medium">✗ 无效：</span>① 短链不存在/已失效 ② 超过再检日期 ③ 合格证已作废/撤回（含<strong>流程从报告签发后续退回到报告签发及之前</strong>，已发短链自动作废）④ 报告尚未到达报告签发阶段。</p>' +
+        '<p class="text-slate-400 mt-2">原型演示：有效 Ab3K9 · 过期 Ex1p1 · 回退作废 Rv0k1 · 不存在 XXXXX</p>';
 
       function row(label, val) {
         return '<div class="flex border-b border-slate-100 py-2.5"><span class="w-24 flex-shrink-0 text-slate-500">' + label + '</span><span class="flex-1 text-slate-800">' + val + '</span></div>';
@@ -60,7 +60,7 @@
           not_found: '系统中查无此短链映射，可能为伪造标签、短链已过期清理或非本实验室发放。',
           empty: '未识别到短链参数，请重新扫描合格证二维码。',
           expired: '该试样已超过再检日期，合格证自动失效，需重新送检。',
-          revoked: '该合格证已被实验室主动作废或撤回（如报告变更、样品退回等），不再具有验真效力。'
+          revoked: '该合格证已被作废或撤回。若委托从「报告签发」后续流程回退到「报告签发」及之前，系统自动作废已发放短链，已打印标签扫码亦无效，需重新到达报告签发后续阶段后重打。',
         };
 
         el.innerHTML =

@@ -114,23 +114,24 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/flow-stages.js"></script>
   <script src="js/inspector-select.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     var listData = [
-      { code: 'SC2026/0080', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-09', requireDate: '2026-07-30', status: '样品收样', editor: 'admin', reportIssued: false },
-      { code: 'SC2026/0079', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-09', requireDate: '2026-07-30', status: '任务完成', editor: 'admin', reportIssued: true },
-      { code: 'SC2026/0078', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-08', requireDate: '2026-07-28', status: '委托登记', editor: 'admin', reportIssued: false },
-      { code: 'SC2026/0077', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-07', requireDate: '2026-07-27', status: '报告审核', editor: 'admin', reportIssued: false },
-      { code: 'SC2026/0076', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-06', requireDate: '2026-07-26', status: '任务完成', editor: 'admin', reportIssued: false },
-      { code: 'SC2026/0075', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-12', requireDate: '2026-07-25', status: '任务完成', editor: 'admin', reportIssued: false },
-      { code: 'SC2026/0074', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-11', requireDate: '2026-07-24', status: '任务完成', editor: 'admin', reportIssued: true },
-      { code: 'SC2026/0073', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-10', requireDate: '2026-07-23', status: '任务完成', editor: 'admin', reportIssued: true },
-      { code: 'SC2026/0072', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-09', requireDate: '2026-07-22', status: '任务完成', editor: 'admin', reportIssued: true },
-      { code: 'SC2026/0071', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-08', requireDate: '2026-07-21', status: '任务完成', editor: 'admin', reportIssued: false },
-      { code: 'SC2026/0070', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-07', requireDate: '2026-07-20', status: '任务完成', editor: 'admin', reportIssued: true },
-      { code: 'SC2026/0069', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-06', requireDate: '2026-07-19', status: '任务完成', editor: 'admin', reportIssued: false },
-      { code: 'SC2026/0068', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-05', requireDate: '2026-07-18', status: '任务完成', editor: 'admin', reportIssued: true }
+      { code: 'SC2026/0080', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-09', requireDate: '2026-07-30', status: '样品收样', editor: 'admin' },
+      { code: 'SC2026/0079', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-09', requireDate: '2026-07-30', status: '报告发放', editor: 'admin' },
+      { code: 'SC2026/0078', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-08', requireDate: '2026-07-28', status: '委托登记', editor: 'admin' },
+      { code: 'SC2026/0077', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-07', requireDate: '2026-07-27', status: '报告审核', editor: 'admin' },
+      { code: 'SC2026/0076', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-06', requireDate: '2026-07-26', status: '报告审核', editor: 'admin' },
+      { code: 'SC2026/0075', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-12', requireDate: '2026-07-25', status: '报告处理', editor: 'admin' },
+      { code: 'SC2026/0074', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-11', requireDate: '2026-07-24', status: '任务完成', editor: 'admin' },
+      { code: 'SC2026/0073', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-10', requireDate: '2026-07-23', status: '任务完成', editor: 'admin' },
+      { code: 'SC2026/0072', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-09', requireDate: '2026-07-22', status: '收费审批', editor: 'admin' },
+      { code: 'SC2026/0071', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-08', requireDate: '2026-07-21', status: '报告签发', editor: 'admin' },
+      { code: 'SC2026/0070', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-07', requireDate: '2026-07-20', status: '任务归档', editor: 'admin' },
+      { code: 'SC2026/0069', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-06', requireDate: '2026-07-19', status: '报告编制', editor: 'admin' },
+      { code: 'SC2026/0068', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-05', requireDate: '2026-07-18', status: '数据审核', editor: 'admin' }
     ];
 
     var filtered = listData.slice();
@@ -143,7 +144,7 @@
     var STORAGE_INIT = 'lims_label_print_inspector_inited';
 
     function canShowCert(item) {
-      return item.status === '任务完成' && item.reportIssued === true;
+      return FlowStages.canShowCert(item);
     }
 
     function getLastInspectors() {
@@ -286,7 +287,7 @@
 
     function openInspectorModal() {
       var codes = getSelectedCodes();
-      if (!codes.length) { alert('请先勾选可打印合格证的委托（任务完成且报告已签发）'); return; }
+      if (!codes.length) { alert('请先勾选可打印合格证的委托（报告签发及后续流程）'); return; }
       modalMode = 'batch';
       pendingSingleCode = null;
       if (hasSelectedBefore()) {
@@ -354,10 +355,10 @@
           position: 'top-right',
           title: '合格证入口显示条件',
           wide: true,
-          content: '操作列「合格证」仅在同时满足以下条件时展示：<br>' +
-            '① 委托状态为「<strong>任务完成</strong>」<br>' +
-            '② 检测报告已<strong>签发</strong><br><br>' +
-            '不满足时（如样品收样、委托登记、报告审核中、任务完成但报告未签发）仅展示「样品标签」，不展示「合格证」。',
+          content: '操作列「合格证」仅在委托处于<strong>报告签发及后续流程</strong>时展示：<br>' +
+            '报告签发 → 报告处理 → 收费审批 → 报告发放 → 任务归档 → 任务完成<br><br>' +
+            '报告签发<strong>之前</strong>的阶段（如报告审核、报告编制、数据审核等）不展示「合格证」，仅展示「样品标签」。<br><br>' +
+            '<strong>流程回退作废：</strong>若从报告签发后续阶段退回到报告签发及之前，已打印合格证对应的短链自动作废，验真显示「短链无效」。',
           tag: '业务规则'
         },
         {
