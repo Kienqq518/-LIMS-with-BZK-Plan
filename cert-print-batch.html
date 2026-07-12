@@ -97,7 +97,7 @@
   <script>
     var params = new URLSearchParams(location.search);
     var entrustCodes = (params.get('codes') || 'SC2026/0074,SC2026/0073,SC2026/0072').split(',');
-    var defaultInspectors = (params.get('inspectors') || 'admin').split(',');
+    var defaultInspectors = (params.get('inspectors') || 'admin').split(',').filter(Boolean).slice(0, 2);
 
     var SAMPLE_CATALOG = {
       'SC2026/0074': [{ sampleNo: 'SC2026/00740101', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-06-11', reinspectDate: '2027-06-10' }],
@@ -142,6 +142,7 @@
     var currentPage = 1;
     var pageSize = 10;
     var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
+    var MAX_INSPECTORS = 2;
 
     function buildCertHtml(item, isFirst) {
       var annotate = isFirst ? ' data-annotate="qr-area"' : '';
@@ -182,7 +183,8 @@
         options: INSPECTOR_OPTIONS,
         mode: 'cell',
         idx: globalIdx,
-        prefix: 'row'
+        prefix: 'row',
+        maxCount: MAX_INSPECTORS
       });
     }
 
@@ -222,6 +224,10 @@
 
     function addInspector(idx, name) {
       if (!name || samples[idx].inspectors.indexOf(name) !== -1) return;
+      if (samples[idx].inspectors.length >= MAX_INSPECTORS) {
+        alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检验人员');
+        return;
+      }
       samples[idx].inspectors.push(name);
       renderSampleTable();
     }
@@ -296,8 +302,11 @@
             '③ 用户扫码 → 短链网关 302 → 正式 H5 验真页<br><br>' +
             '<strong>扫码方式：</strong>微信扫一扫、支付宝扫一扫、iOS/Android 相机均可<br><br>' +
             '<strong>跳转页面：</strong>智慧实验室「合格证验真」H5 页（原型 cert-verify.html，移动端适配）<br><br>' +
-            '<strong>页面展示：</strong>验真结论（有效/失效）、试样编号、试样名称、型号规格、检验日期、再检日期、检验人员、检验机构<br><br>' +
-            '<strong>预期效果：</strong>① 扫码一次成功率明显提升 ② 标签 QR 面积可缩小 ③ 后端验真 URL 调整时仅更新短链映射，已发放标签仍有效',
+            '<strong>页面展示：</strong>验真结论、试样编号/名称、型号规格、检验/再检日期、检验人员、检验机构<br><br>' +
+            '<strong>验真有效条件：</strong>短链代码在系统中存在；对应检测报告已签发；当前日期在再检日期之前；合格证未被作废/撤回 → 显示「短链有效，验真通过」<br><br>' +
+            '<strong>验真无效条件：</strong>① 短链不存在或已失效 ② 报告未签发 ③ 超过再检日期 ④ 合格证已作废/撤回 → 显示「短链无效，无法验真」并说明原因<br><br>' +
+            '<strong>原型演示码：</strong>有效 Ab3K9 · 过期 Ex1p1 · 作废 Rv0k1 · 不存在 cert-verify.html?code=XXXXX<br><br>' +
+            '<strong>预期效果：</strong>① 扫码成功率提升 ② QR 面积可缩小 ③ 验真 URL 变更时仅更新短链映射',
           tag: '核心整改'
         },
         {
@@ -305,7 +314,7 @@
           selector: '[data-annotate-inspector="1"]',
           position: 'top-right',
           title: '检验人员选择',
-          content: '样式对齐系统：标签与添加下拉在同一行边框内。批量入口设置的默认检验人员写入每条样品，可逐条增删，左侧预览同步更新。',
+          content: '样式对齐系统：标签与添加下拉在同一行边框内。最多 2 名检验人员。批量入口带入默认值，可逐条增删，左侧预览同步更新。',
           tag: 'UI 对齐'
         }
       ]

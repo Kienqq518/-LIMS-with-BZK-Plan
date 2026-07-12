@@ -40,16 +40,21 @@
     var idx = opts.idx != null ? opts.idx : '';
     var prefix = opts.prefix || 'insp';
 
+    var maxCount = opts.maxCount || 0;
     var tags = inspectors.map(function (name) {
       return '<span class="inspector-tag" data-value="' + name + '">' + name +
         ' <i class="fa fa-times" data-action="remove" data-name="' + name + '" data-idx="' + idx + '"></i></span>';
     }).join('');
 
     var avail = options.filter(function (o) { return inspectors.indexOf(o) === -1; });
-    var select = '<select class="inspector-add" data-action="add" data-idx="' + idx + '" data-prefix="' + prefix + '">' +
-      '<option value="">' + (mode.indexOf('modal') !== -1 ? '添加检验人员' : '') + '</option>' +
-      avail.map(function (o) { return '<option value="' + o + '">' + o + '</option>'; }).join('') +
-      '</select>';
+    var atMax = maxCount > 0 && inspectors.length >= maxCount;
+    var select = atMax ? '' : (
+      '<select class="inspector-add" data-action="add" data-idx="' + idx + '" data-prefix="' + prefix + '"' +
+        (maxCount ? ' data-max="' + maxCount + '"' : '') + '>' +
+        '<option value="">' + (mode.indexOf('modal') !== -1 ? '添加检验人员' : '') + '</option>' +
+        avail.map(function (o) { return '<option value="' + o + '">' + o + '</option>'; }).join('') +
+      '</select>'
+    );
 
     return '<div class="inspector-combobox ' + mode + '" data-inspector-box="' + prefix + '-' + idx + '">' + tags + select + '</div>';
   }

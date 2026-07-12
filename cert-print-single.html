@@ -92,15 +92,17 @@
   <script src="js/inspector-select.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
-    var entrustCode = new URLSearchParams(location.search).get('code') || 'SC2026/0079';
+    var params = new URLSearchParams(location.search);
+    var entrustCode = params.get('code') || 'SC2026/0079';
+    var urlInspectors = (params.get('inspectors') || 'cs222,cs3').split(',').filter(Boolean).slice(0, 2);
 
     var allSamples = [
-      { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: ['cs222', 'cs3'], entrust: 'SC2026/0079' }
+      { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), entrust: 'SC2026/0079' }
     ];
 
     var samples = allSamples.slice();
     var previewEnabled = true;
-
+    var MAX_INSPECTORS = 2;
     var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
 
     function buildCertHtml(item) {
@@ -150,7 +152,7 @@
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.inspectDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.reinspectDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 min-w-[140px]" data-annotate-inspector="' + (i === 0 ? '1' : '') + '">' +
-            InspectorSelect.renderHTML({ inspectors: item.inspectors, options: INSPECTOR_OPTIONS, mode: 'cell', idx: i, prefix: 'row' }) +
+            InspectorSelect.renderHTML({ inspectors: item.inspectors, options: INSPECTOR_OPTIONS, mode: 'cell', idx: i, prefix: 'row', maxCount: MAX_INSPECTORS }) +
           '</td></tr>';
       }).join('');
       document.getElementById('sampleTotal').textContent = '共 ' + samples.length + ' 条';
@@ -168,6 +170,10 @@
     }
 
     function onInspectorAdd(idx, name) {
+      if (samples[idx].inspectors.length >= MAX_INSPECTORS) {
+        alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检验人员');
+        return;
+      }
       if (samples[idx].inspectors.indexOf(name) === -1) samples[idx].inspectors.push(name);
       renderSampleTable();
     }
@@ -229,7 +235,10 @@
             '③ 扫码后短链服务 HTTP 302 跳转至 H5 验真页<br><br>' +
             '<strong>扫码方式：</strong>微信、支付宝、手机系统相机均可，无特殊限制<br><br>' +
             '<strong>跳转页面：</strong>「合格证验真」H5 页（原型 cert-verify.html）<br><br>' +
-            '<strong>展示信息：</strong>试样编号/名称、型号规格、检验/再检日期、检验人员、检验机构、验真结论（合格/失效）<br><br>' +
+            '<strong>展示信息：</strong>试样编号/名称、型号规格、检验/再检日期、检验人员、检验机构、验真结论<br><br>' +
+            '<strong>验真有效：</strong>短链存在 + 报告已签发 + 未超过再检日期 + 未作废<br>' +
+            '<strong>验真无效：</strong>短链不存在/已失效、报告未签发、超过再检日期、合格证已作废撤回（验真页展示「短链无效，无法验真」及原因）<br><br>' +
+            '<strong>演示：</strong>有效 Ab3K9 · 过期 Ex1p1 · 作废 Rv0k1 · 不存在 XXXXX<br><br>' +
             '<strong>预期效果：</strong>识别率提升；QR 可缩小仍清晰；URL 变更时只改短链映射，无需重印',
           tag: '核心整改'
         },
@@ -246,7 +255,7 @@
           selector: '[data-annotate-inspector="1"]',
           position: 'top-right',
           title: '检验人员选择',
-          content: '与系统一致：标签 + 下拉在同一行边框内展示，支持多选。修改后左侧合格证预览实时同步检验人员字段。',
+          content: '与系统一致：标签 + 下拉在同一行边框内展示，最多选择 2 名检验人员。修改后左侧合格证预览实时同步。',
           tag: 'UI 对齐'
         }
       ]

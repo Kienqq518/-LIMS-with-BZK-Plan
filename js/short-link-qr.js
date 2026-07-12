@@ -1,25 +1,26 @@
 /**
  * 合格证短链 & 二维码 Mock 服务
- * 整改：QR 编码短链（如 https://lab.sc/Ab3K9），扫码后 302 跳转验真页，提升识别率
  */
 (function (global) {
   var BASE = 'https://lab.sc/';
   var VERIFY_BASE = 'cert-verify.html?code=';
 
-  /** @type {Record<string, { sampleNo: string, longUrl: string }>} */
+  /** status: valid | expired | revoked */
   var registry = {
-    Ab3K9: { sampleNo: 'SC2026/00790101', longUrl: 'https://lims.example.com/verify/cert/SC2026-00790101' },
-    Xk7m2: { sampleNo: 'SC2026/00730101', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730101' },
-    Pq4n8: { sampleNo: 'SC2026/00730201', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730201' },
-    Rt5w1: { sampleNo: 'SC2026/00730301', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730301' },
-    Yh6c3: { sampleNo: 'SC2026/00730401', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730401' },
-    Jm8d4: { sampleNo: 'SC2026/00730501', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730501' },
-    Ln2f6: { sampleNo: 'SC2026/00730601', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730601' },
-    Bv9g7: { sampleNo: 'SC2026/00730701', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730701' },
-    Cw3h5: { sampleNo: 'SC2026/00730801', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730801' },
-    Dk1j9: { sampleNo: 'SC2026/00730901', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730901' },
-    Ef4k2: { sampleNo: 'SC2026/00731001', longUrl: 'https://lims.example.com/verify/cert/SC2026-00731001' },
-    Gh7l8: { sampleNo: 'SC2026/00731101', longUrl: 'https://lims.example.com/verify/cert/SC2026-00731101' }
+    Ab3K9: { sampleNo: 'SC2026/00790101', longUrl: 'https://lims.example.com/verify/cert/SC2026-00790101', status: 'valid', reinspectDate: '2027-07-08' },
+    Xk7m2: { sampleNo: 'SC2026/00730101', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730101', status: 'valid', reinspectDate: '2027-06-09' },
+    Pq4n8: { sampleNo: 'SC2026/00730201', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730201', status: 'valid', reinspectDate: '2027-06-09' },
+    Rt5w1: { sampleNo: 'SC2026/00730301', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730301', status: 'valid', reinspectDate: '2027-06-08' },
+    Yh6c3: { sampleNo: 'SC2026/00730401', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730401', status: 'valid', reinspectDate: '2027-06-07' },
+    Jm8d4: { sampleNo: 'SC2026/00730501', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730501', status: 'valid', reinspectDate: '2027-06-07' },
+    Ln2f6: { sampleNo: 'SC2026/00730601', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730601', status: 'valid', reinspectDate: '2027-06-06' },
+    Bv9g7: { sampleNo: 'SC2026/00730701', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730701', status: 'valid', reinspectDate: '2027-06-06' },
+    Cw3h5: { sampleNo: 'SC2026/00730801', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730801', status: 'valid', reinspectDate: '2027-06-05' },
+    Dk1j9: { sampleNo: 'SC2026/00730901', longUrl: 'https://lims.example.com/verify/cert/SC2026-00730901', status: 'valid', reinspectDate: '2027-06-05' },
+    Ef4k2: { sampleNo: 'SC2026/00731001', longUrl: 'https://lims.example.com/verify/cert/SC2026-00731001', status: 'valid', reinspectDate: '2027-06-04' },
+    Gh7l8: { sampleNo: 'SC2026/00731101', longUrl: 'https://lims.example.com/verify/cert/SC2026-00731101', status: 'valid', reinspectDate: '2027-06-04' },
+    Ex1p1: { sampleNo: 'SC2026/00990101', longUrl: 'https://lims.example.com/verify/cert/SC2026-00990101', status: 'expired', reinspectDate: '2025-06-01' },
+    Rv0k1: { sampleNo: 'SC2026/00990201', longUrl: 'https://lims.example.com/verify/cert/SC2026-00990201', status: 'revoked', reinspectDate: '2027-12-31' }
   };
 
   var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -45,7 +46,9 @@
     do { code = randomCode(5); } while (registry[code]);
     registry[code] = {
       sampleNo: sampleNo,
-      longUrl: 'https://lims.example.com/verify/cert/' + encodeURIComponent(sampleNo.replace(/\//g, '-'))
+      longUrl: 'https://lims.example.com/verify/cert/' + encodeURIComponent(sampleNo.replace(/\//g, '-')),
+      status: 'valid',
+      reinspectDate: '2027-12-31'
     };
     return code;
   }
@@ -66,14 +69,44 @@
     return registry[code] ? registry[code].sampleNo : null;
   }
 
+  function getEntry(code) {
+    return registry[code] || null;
+  }
+
+  /**
+   * 验真结果判定
+   * @returns {{ ok: boolean, reason: string, message: string, entry: object|null }}
+   */
+  function getVerifyResult(code) {
+    if (!code) {
+      return { ok: false, reason: 'empty', message: '短链代码为空', entry: null };
+    }
+    var entry = registry[code];
+    if (!entry) {
+      return { ok: false, reason: 'not_found', message: '短链代码不存在或已失效', entry: null };
+    }
+    if (entry.status === 'revoked') {
+      return { ok: false, reason: 'revoked', message: '该合格证已被作废/撤回', entry: entry };
+    }
+    if (entry.status === 'expired') {
+      return { ok: false, reason: 'expired', message: '已超过再检日期，合格证已失效', entry: entry };
+    }
+    if (entry.reinspectDate) {
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      var reDate = new Date(entry.reinspectDate.replace(/-/g, '/'));
+      if (reDate < today) {
+        return { ok: false, reason: 'expired', message: '已超过再检日期（' + entry.reinspectDate + '），无法验真', entry: entry };
+      }
+    }
+    return { ok: true, reason: 'valid', message: '该合格证有效', entry: entry };
+  }
+
   function qrImageUrl(text, size) {
     size = size || 120;
     return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&data=' + encodeURIComponent(text);
   }
 
-  /**
-   * 渲染 QR 区域：短链二维码 + 短链文字 + 验真跳转说明
-   */
   function renderQRBlock(container, sampleNo, opts) {
     if (typeof container === 'string') container = document.querySelector(container);
     if (!container) return;
@@ -109,6 +142,8 @@
     getVerifyPageUrl: getVerifyPageUrl,
     getLongUrl: getLongUrl,
     getSampleNo: getSampleNo,
+    getEntry: getEntry,
+    getVerifyResult: getVerifyResult,
     qrImageUrl: qrImageUrl,
     renderQRBlock: renderQRBlock
   };

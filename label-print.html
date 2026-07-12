@@ -76,7 +76,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">委托状态</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" id="thOperation" data-annotate="cert-visibility">操作</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -104,10 +104,11 @@
           <label class="w-[72px] flex-shrink-0 text-right text-sm text-slate-600">检验人员</label>
           <div id="modalInspectorBox" class="flex-1"></div>
         </div>
+        <p class="mt-2 pl-[84px] text-xs text-slate-400">最多选择 2 名检验人员</p>
       </div>
       <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
         <button onclick="closeInspectorModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
-        <button id="btnConfirmInspector" data-annotate="confirm-inspector" onclick="confirmBatchCert()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+        <button id="btnConfirmInspector" data-annotate="confirm-inspector" onclick="confirmInspector()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
       </div>
     </div>
   </div>
@@ -117,24 +118,54 @@
   <script src="js/prototype-annotation.js"></script>
   <script>
     var listData = [
-      { code: 'SC2026/0080', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-09', requireDate: '2026-07-30', status: '样品收样', editor: 'admin', hasCert: false },
-      { code: 'SC2026/0079', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-09', requireDate: '2026-07-30', status: '任务完成', editor: 'admin', hasCert: true },
-      { code: 'SC2026/0078', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-08', requireDate: '2026-07-28', status: '委托登记', editor: 'admin', hasCert: false },
-      { code: 'SC2026/0077', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-07', requireDate: '2026-07-27', status: '报告审核', editor: 'admin', hasCert: false },
-      { code: 'SC2026/0076', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-06', requireDate: '2026-07-26', status: '任务完成', editor: 'admin', hasCert: false },
-      { code: 'SC2026/0075', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-12', requireDate: '2026-07-25', status: '任务完成', editor: 'admin', hasCert: false },
-      { code: 'SC2026/0074', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-11', requireDate: '2026-07-24', status: '任务完成', editor: 'admin', hasCert: true },
-      { code: 'SC2026/0073', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-10', requireDate: '2026-07-23', status: '任务完成', editor: 'admin', hasCert: true },
-      { code: 'SC2026/0072', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-09', requireDate: '2026-07-22', status: '任务完成', editor: 'admin', hasCert: true },
-      { code: 'SC2026/0071', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-08', requireDate: '2026-07-21', status: '任务完成', editor: 'admin', hasCert: false },
-      { code: 'SC2026/0070', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-07', requireDate: '2026-07-20', status: '任务完成', editor: 'admin', hasCert: true },
-      { code: 'SC2026/0069', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-06', requireDate: '2026-07-19', status: '任务完成', editor: 'admin', hasCert: false },
-      { code: 'SC2026/0068', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-05', requireDate: '2026-07-18', status: '任务完成', editor: 'admin', hasCert: true }
+      { code: 'SC2026/0080', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-09', requireDate: '2026-07-30', status: '样品收样', editor: 'admin', reportIssued: false },
+      { code: 'SC2026/0079', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-09', requireDate: '2026-07-30', status: '任务完成', editor: 'admin', reportIssued: true },
+      { code: 'SC2026/0078', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-08', requireDate: '2026-07-28', status: '委托登记', editor: 'admin', reportIssued: false },
+      { code: 'SC2026/0077', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-07', requireDate: '2026-07-27', status: '报告审核', editor: 'admin', reportIssued: false },
+      { code: 'SC2026/0076', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-07-06', requireDate: '2026-07-26', status: '任务完成', editor: 'admin', reportIssued: false },
+      { code: 'SC2026/0075', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-12', requireDate: '2026-07-25', status: '任务完成', editor: 'admin', reportIssued: false },
+      { code: 'SC2026/0074', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-11', requireDate: '2026-07-24', status: '任务完成', editor: 'admin', reportIssued: true },
+      { code: 'SC2026/0073', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-10', requireDate: '2026-07-23', status: '任务完成', editor: 'admin', reportIssued: true },
+      { code: 'SC2026/0072', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-09', requireDate: '2026-07-22', status: '任务完成', editor: 'admin', reportIssued: true },
+      { code: 'SC2026/0071', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-08', requireDate: '2026-07-21', status: '任务完成', editor: 'admin', reportIssued: false },
+      { code: 'SC2026/0070', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-07', requireDate: '2026-07-20', status: '任务完成', editor: 'admin', reportIssued: true },
+      { code: 'SC2026/0069', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-06', requireDate: '2026-07-19', status: '任务完成', editor: 'admin', reportIssued: false },
+      { code: 'SC2026/0068', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-05', requireDate: '2026-07-18', status: '任务完成', editor: 'admin', reportIssued: true }
     ];
 
     var filtered = listData.slice();
     var modalInspectors = ['admin'];
     var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
+    var MAX_INSPECTORS = 2;
+    var modalMode = 'batch';
+    var pendingSingleCode = null;
+    var STORAGE_INSPECTORS = 'lims_label_print_last_inspectors';
+    var STORAGE_INIT = 'lims_label_print_inspector_inited';
+
+    function canShowCert(item) {
+      return item.status === '任务完成' && item.reportIssued === true;
+    }
+
+    function getLastInspectors() {
+      try {
+        var raw = localStorage.getItem(STORAGE_INSPECTORS);
+        var list = raw ? JSON.parse(raw) : ['admin'];
+        return list.slice(0, MAX_INSPECTORS);
+      } catch (e) {
+        return ['admin'];
+      }
+    }
+
+    function saveLastInspectors(list) {
+      var trimmed = list.slice(0, MAX_INSPECTORS);
+      localStorage.setItem(STORAGE_INSPECTORS, JSON.stringify(trimmed));
+      localStorage.setItem(STORAGE_INIT, '1');
+      return trimmed;
+    }
+
+    function hasSelectedBefore() {
+      return localStorage.getItem(STORAGE_INIT) === '1';
+    }
 
     function renderModalInspectors() {
       document.getElementById('modalInspectorBox').innerHTML = InspectorSelect.renderHTML({
@@ -142,12 +173,17 @@
         options: INSPECTOR_OPTIONS,
         mode: 'modal',
         idx: '',
-        prefix: 'modal'
+        prefix: 'modal',
+        maxCount: MAX_INSPECTORS
       });
     }
 
     InspectorSelect.bind(document.getElementById('inspectorModal'), {
       onAdd: function (_, name) {
+        if (modalInspectors.length >= MAX_INSPECTORS) {
+          alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检验人员');
+          return;
+        }
         if (modalInspectors.indexOf(name) === -1) modalInspectors.push(name);
         renderModalInspectors();
       },
@@ -160,11 +196,12 @@
 
     function renderTable() {
       document.getElementById('tableBody').innerHTML = filtered.map(function (item, i) {
-        var certBtn = item.hasCert
-          ? '<a id="' + (item.code === 'SC2026/0079' ? 'linkSingleCert' : '') + '" href="cert-print-single.html?code=' + encodeURIComponent(item.code) + '" class="text-green-600 hover:underline"><i class="fa fa-print"></i> 合格证</a>'
+        var showCert = canShowCert(item);
+        var certBtn = showCert
+          ? '<a id="' + (item.code === 'SC2026/0079' ? 'linkSingleCert' : '') + '" href="#" onclick="onSingleCertClick(event,\'' + item.code + '\')" class="text-green-600 hover:underline"><i class="fa fa-print"></i> 合格证</a>'
           : '';
         return '<tr class="hover:bg-slate-50">' +
-          '<td class="border border-slate-200 px-3 py-2.5"><input type="checkbox" class="row-check" data-code="' + item.code + '" ' + (item.hasCert ? '' : 'disabled') + ' /></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><input type="checkbox" class="row-check" data-code="' + item.code + '" ' + (showCert ? '' : 'disabled') + ' /></td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
@@ -224,23 +261,60 @@
       alert('批量打印样品标签（原型演示）：' + codes.join('、'));
     }
 
-    function openInspectorModal() {
-      var codes = getSelectedCodes();
-      if (!codes.length) { alert('请先勾选可打印合格证的委托（任务完成状态）'); return; }
-      modalInspectors = ['admin'];
+    function goSingleCert(code, inspectors) {
+      window.location.href = 'cert-print-single.html?code=' + encodeURIComponent(code) +
+        '&inspectors=' + encodeURIComponent(inspectors.join(','));
+    }
+
+    function goBatchCert(codes, inspectors) {
+      window.location.href = 'cert-print-batch.html?codes=' + encodeURIComponent(codes.join(',')) +
+        '&inspectors=' + encodeURIComponent(inspectors.join(','));
+    }
+
+    function onSingleCertClick(e, code) {
+      e.preventDefault();
+      modalMode = 'single';
+      pendingSingleCode = code;
+      if (hasSelectedBefore()) {
+        goSingleCert(code, getLastInspectors());
+        return;
+      }
+      modalInspectors = getLastInspectors().slice();
       renderModalInspectors();
       showModal('inspectorModal');
     }
 
-    function closeInspectorModal() { hideModal('inspectorModal'); }
-
-    function confirmBatchCert() {
+    function openInspectorModal() {
       var codes = getSelectedCodes();
+      if (!codes.length) { alert('请先勾选可打印合格证的委托（任务完成且报告已签发）'); return; }
+      modalMode = 'batch';
+      pendingSingleCode = null;
+      if (hasSelectedBefore()) {
+        goBatchCert(codes, getLastInspectors());
+        return;
+      }
+      modalInspectors = getLastInspectors().slice();
+      renderModalInspectors();
+      showModal('inspectorModal');
+    }
+
+    function closeInspectorModal() {
+      hideModal('inspectorModal');
+      pendingSingleCode = null;
+    }
+
+    function confirmInspector() {
       var inspectors = getInspectors();
-      if (!inspectors.length) { alert('请至少选择一名检验人员'); return; }
-      var url = 'cert-print-batch.html?codes=' + encodeURIComponent(codes.join(',')) +
-        '&inspectors=' + encodeURIComponent(inspectors.join(','));
-      window.location.href = url;
+      if (!inspectors.length) { alert('请至少选择 1 名检验人员'); return; }
+      if (inspectors.length > MAX_INSPECTORS) { alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检验人员'); return; }
+      saveLastInspectors(inspectors);
+      if (modalMode === 'single' && pendingSingleCode) {
+        goSingleCert(pendingSingleCode, inspectors);
+      } else {
+        var codes = getSelectedCodes();
+        if (!codes.length) { alert('请先勾选委托'); return; }
+        goBatchCert(codes, inspectors);
+      }
     }
 
     function showModal(id) {
@@ -268,15 +342,30 @@
           selector: '#linkSingleCert',
           position: 'top-right',
           title: '单个合格证打印',
-          content: '点击操作列「合格证」进入单个打印页。左侧实时预览合格证，右侧可勾选样品并调整检验人员。',
+          wide: true,
+          content: '点击「合格证」先弹出选择检验人员（<strong>最多 2 人</strong>），确认后跳转打印页。<br><br>' +
+            '<strong>首次打印：</strong>必须弹出选择检验人员弹窗。<br>' +
+            '<strong>后续再打印：</strong>不再弹窗，默认沿用上次选择的检验人员（浏览器 localStorage 记忆，原型可清除缓存复测首次流程）。',
           tag: '流程 · 图2'
+        },
+        {
+          id: 'cert-visibility',
+          selector: '[data-annotate="cert-visibility"]',
+          position: 'top-right',
+          title: '合格证入口显示条件',
+          wide: true,
+          content: '操作列「合格证」仅在同时满足以下条件时展示：<br>' +
+            '① 委托状态为「<strong>任务完成</strong>」<br>' +
+            '② 检测报告已<strong>签发</strong><br><br>' +
+            '不满足时（如样品收样、委托登记、报告审核中、任务完成但报告未签发）仅展示「样品标签」，不展示「合格证」。',
+          tag: '业务规则'
         },
         {
           id: 'batch-cert',
           selector: '#btnBatchCert',
           position: 'top-right',
           title: '批量打印合格证',
-          content: '多选任务完成状态的委托后，点击此按钮弹出「选择检验人员」对话框，为批量打印设置默认检验人员。',
+          content: '多选已签发报告的委托后点击。首次打印弹出检验人员选择（最多 2 人），后续默认沿用上次选择，直接进入批量打印页。',
           tag: '流程 · 图3'
         },
         {
@@ -284,7 +373,7 @@
           selector: '#btnConfirmInspector',
           position: 'top-right',
           title: '确认检验人员',
-          content: '检验人员标签与添加下拉合并为一行（对齐系统 UI）。确定后将所选委托与默认检验人员带入批量打印页，可在列表逐条调整。',
+          content: '单个/批量打印共用此弹窗。确认后记忆检验人员，后续打印自动带入。最多选择 2 名检验人员。',
           tag: '流程 · 图4→5'
         }
       ]
