@@ -104,6 +104,42 @@
     .version-badge { background: linear-gradient(135deg, #8b5cf6, #a78bfa); color: #fff; border-radius: 6px; padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 10px; }
     .btn-view-changes { background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.35); border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
     .btn-view-changes:hover { background: rgba(255,255,255,.3); }
+    /* 通用配置表单 */
+    .cfg-panel { padding: 20px 24px 28px; }
+    .cfg-section { margin-bottom: 24px; }
+    .cfg-section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 14px; font-weight: 600; color: #334155; }
+    .cfg-section-title::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: #2563eb; flex-shrink: 0; }
+    .cfg-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 32px; }
+    @media (max-width: 900px) { .cfg-form-grid { grid-template-columns: 1fr; } }
+    .cfg-form-item { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .cfg-form-item label { flex-shrink: 0; width: 140px; text-align: right; font-size: 13px; color: #64748b; }
+    .cfg-form-item label .req { color: #ef4444; margin-right: 2px; }
+    .cfg-form-item input, .cfg-form-item select, .cfg-form-item textarea { flex: 1; min-width: 0; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; color: #334155; background: #fff; }
+    .cfg-form-item input:focus, .cfg-form-item select:focus, .cfg-form-item textarea:focus { border-color: #3b82f6; }
+    .cfg-form-item.span-full { grid-column: span 2; }
+    @media (max-width: 900px) { .cfg-form-item.span-full { grid-column: span 1; } }
+    .cfg-form-item textarea { min-height: 72px; resize: vertical; line-height: 1.6; }
+    .cfg-upload-row { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 8px; }
+    .cfg-upload-box { text-align: center; }
+    .cfg-upload-box .label { margin-bottom: 8px; font-size: 13px; color: #64748b; }
+    .cfg-upload-preview { width: 120px; height: 120px; border: 1px dashed #cbd5e1; border-radius: 4px; background: #f8fafc; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .cfg-upload-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .cfg-upload-preview.placeholder { color: #94a3b8; font-size: 12px; flex-direction: column; gap: 6px; }
+    .cfg-save-bar { display: flex; justify-content: center; padding-top: 8px; }
+    .cfg-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .cfg-toolbar .cfg-form-item { flex: 0 0 auto; }
+    .cfg-toolbar .cfg-form-item label { width: auto; }
+    .cfg-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .cfg-table th, .cfg-table td { border: 1px solid #e5e7eb; padding: 10px 12px; text-align: left; }
+    .cfg-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
+    .cfg-table tr:hover td { background: #fafafa; }
+    .cfg-toggle { position: relative; display: inline-flex; align-items: center; width: 44px; height: 22px; cursor: pointer; }
+    .cfg-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .cfg-toggle-slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 11px; transition: .2s; }
+    .cfg-toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+    .cfg-toggle input:checked + .cfg-toggle-slider { background: #2563eb; }
+    .cfg-toggle input:checked + .cfg-toggle-slider::before { transform: translateX(22px); }
+    .cfg-toggle-text { margin-left: 10px; font-size: 13px; color: #64748b; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -169,11 +205,186 @@
     </div>
 
     <!-- 其他 Tab 占位 -->
-    <div id="panel-undertaker" class="param-panel"><div class="rounded bg-white p-12 text-center text-slate-400 shadow-sm">承检方信息（占位）</div></div>
-    <div id="panel-report" class="param-panel"><div class="rounded bg-white p-12 text-center text-slate-400 shadow-sm">报告设置（占位）</div></div>
-    <div id="panel-record" class="param-panel"><div class="rounded bg-white p-12 text-center text-slate-400 shadow-sm">记录单设置（占位）</div></div>
-    <div id="panel-wechat" class="param-panel"><div class="rounded bg-white p-12 text-center text-slate-400 shadow-sm">微信设置（占位）</div></div>
-    <div id="panel-connect" class="param-panel"><div class="rounded bg-white p-12 text-center text-slate-400 shadow-sm">对接设置（占位）</div></div>
+    <div id="panel-undertaker" class="param-panel">
+      <div class="rounded bg-white shadow-sm">
+        <div class="cfg-panel">
+          <div class="cfg-section">
+            <div class="cfg-section-title">基本信息</div>
+            <div class="cfg-form-grid">
+              <div class="cfg-form-item"><label>单位名称</label><input type="text" value="杭州数蚕智能科技有限公司" /></div>
+              <div class="cfg-form-item"><label>法定代表人</label><input type="text" value="马勇" /></div>
+              <div class="cfg-form-item"><label>联系电话</label><input type="text" value="17767191675" /></div>
+              <div class="cfg-form-item span-full"><label>单位地址</label><input type="text" value="浙江省杭州市拱墅区七古路90号2幢408室" /></div>
+            </div>
+          </div>
+          <div class="cfg-section">
+            <div class="cfg-section-title">开票信息</div>
+            <div class="cfg-form-grid">
+              <div class="cfg-form-item"><label>发票抬头</label><input type="text" value="杭州数蚕智能科技有限公司" /></div>
+              <div class="cfg-form-item"><label>开户银行</label><input type="text" value="杭州银行文创支行" /></div>
+              <div class="cfg-form-item"><label>银行账号</label><input type="text" value="330104016020671111" /></div>
+              <div class="cfg-form-item"><label>纳税人识别号</label><input type="text" value="91330105MACKPCU66T" /></div>
+            </div>
+          </div>
+          <div class="cfg-section">
+            <div class="cfg-section-title">资质信息</div>
+            <div class="cfg-form-grid">
+              <div class="cfg-form-item"><label>CNAS 注册号</label><input type="text" value="L12522" /></div>
+              <div class="cfg-form-item"><label>CMA 证书编号</label><input type="text" value="2024033665T" /></div>
+            </div>
+          </div>
+          <div class="cfg-section">
+            <div class="cfg-section-title">签章与标识</div>
+            <div class="cfg-upload-row">
+              <div class="cfg-upload-box">
+                <div class="label">法定代表人电子签名</div>
+                <div class="cfg-upload-preview placeholder"><i class="fa fa-pencil-square-o text-lg"></i><span>签名预览</span></div>
+              </div>
+              <div class="cfg-upload-box">
+                <div class="label">检测专用章</div>
+                <div class="cfg-upload-preview"><img src="https://via.placeholder.com/100x100/e11d48/ffffff?text=章" alt="检测专用章" /></div>
+              </div>
+              <div class="cfg-upload-box">
+                <div class="label">单位 Logo</div>
+                <div class="cfg-upload-preview"><img src="https://ui-avatars.com/api/?name=S&background=2563eb&color=fff&size=120" alt="Logo" /></div>
+              </div>
+            </div>
+          </div>
+          <div class="cfg-save-bar">
+            <button onclick="savePanel('承检方信息')" class="rounded bg-blue-600 px-10 py-2 text-sm text-white hover:bg-blue-700">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-report" class="param-panel">
+      <div class="rounded bg-white shadow-sm">
+        <div class="cfg-panel">
+          <div class="cfg-section">
+            <div class="cfg-section-title">报告生成规则</div>
+            <div class="cfg-form-grid">
+              <div class="cfg-form-item"><label>骑缝章生成阶段</label><select><option selected>报告审核</option><option>报告签发</option><option>报告发放</option></select></div>
+              <div class="cfg-form-item"><label>报告中是否添加收样图片</label><select><option selected>是</option><option>否</option></select></div>
+              <div class="cfg-form-item"><label>头部—内容是否加换页符</label><select><option>是</option><option selected>否</option></select></div>
+              <div class="cfg-form-item"><label>内容—尾部是否加换页符</label><select><option>是</option><option selected>否</option></select></div>
+            </div>
+          </div>
+          <div class="cfg-section">
+            <div class="cfg-section-title">检测结论模板</div>
+            <div class="cfg-form-grid">
+              <div class="cfg-form-item span-full"><label>检测合格结论</label><textarea>经检测，该样品所检项目符合相关标准及委托方要求，判定为合格。</textarea></div>
+              <div class="cfg-form-item span-full"><label>检测不合格结论</label><textarea>经检测，该样品所检项目中部分项目不符合相关标准及委托方要求，判定为不合格。</textarea></div>
+            </div>
+          </div>
+          <div class="cfg-section">
+            <div class="cfg-section-title">报告用章</div>
+            <div class="cfg-upload-row">
+              <div class="cfg-upload-box">
+                <div class="label">骑缝章</div>
+                <div class="cfg-upload-preview"><img src="https://via.placeholder.com/100x100/e11d48/ffffff?text=骑缝" alt="骑缝章" /></div>
+              </div>
+              <div class="cfg-upload-box">
+                <div class="label">CNAS</div>
+                <div class="cfg-upload-preview"><img src="https://via.placeholder.com/100x100/1d4ed8/ffffff?text=CNAS" alt="CNAS" /></div>
+              </div>
+              <div class="cfg-upload-box">
+                <div class="label">CMA</div>
+                <div class="cfg-upload-preview"><img src="https://via.placeholder.com/100x100/dc2626/ffffff?text=CMA" alt="CMA" /></div>
+              </div>
+            </div>
+          </div>
+          <div class="cfg-save-bar">
+            <button onclick="savePanel('报告设置')" class="rounded bg-blue-600 px-10 py-2 text-sm text-white hover:bg-blue-700">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-record" class="param-panel">
+      <div class="rounded bg-white shadow-sm">
+        <div class="cfg-panel">
+          <div class="cfg-toolbar">
+            <div class="cfg-form-item"><label>样品分类</label><input type="text" id="recordFilterCat" placeholder="请输入" style="width:140px" /></div>
+            <div class="cfg-form-item"><label>样品名称</label><input type="text" id="recordFilterName" placeholder="请输入" style="width:140px" /></div>
+            <div class="cfg-form-item"><label>生成模式</label><select id="recordFilterMode" style="width:180px"><option value="">全部</option><option>该样品下全部试验生成一个文件</option><option>一个样品下一个试验生成一个文件</option></select></div>
+            <button onclick="filterRecords()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">查询</button>
+            <button onclick="resetRecordFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+            <button onclick="alert('新增记录单配置（原型演示）')" class="ml-auto rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新增</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="cfg-table">
+              <thead><tr><th style="width:60px">序号</th><th>样品分类</th><th>样品名称</th><th>生成模式</th><th style="width:120px">操作</th></tr></thead>
+              <tbody id="recordTableBody"></tbody>
+            </table>
+          </div>
+          <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+            <span id="recordTotal">共 3 条</span>
+            <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+            <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>10 条/页</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-wechat" class="param-panel">
+      <div class="rounded bg-white shadow-sm">
+        <div class="cfg-panel">
+          <div class="cfg-section">
+            <div class="cfg-section-title">微信公众号信息</div>
+            <div class="cfg-form-grid">
+              <div class="cfg-form-item"><label>appid</label><input type="text" value="wxa1b2c3d4e5f67890" /></div>
+              <div class="cfg-form-item"><label>appsecret</label><input type="text" value="********************************" /></div>
+            </div>
+          </div>
+          <div class="cfg-section">
+            <div class="cfg-section-title">微信小程序信息</div>
+            <div class="cfg-form-grid">
+              <div class="cfg-form-item"><label>appid</label><input type="text" value="wx9876543210abcdef" /></div>
+              <div class="cfg-form-item"><label>appsecret</label><input type="text" value="********************************" /></div>
+            </div>
+          </div>
+          <div class="cfg-section">
+            <div class="cfg-section-title">微信开放平台信息</div>
+            <div class="cfg-form-grid">
+              <div class="cfg-form-item"><label>appid</label><input type="text" value="wxopen1234567890ab" /></div>
+              <div class="cfg-form-item"><label>appsecret</label><input type="text" value="********************************" /></div>
+            </div>
+          </div>
+          <div class="cfg-section">
+            <div class="cfg-section-title">通知设置</div>
+            <div class="flex items-center">
+              <span class="text-sm text-slate-600" style="width:140px;text-align:right;margin-right:8px">是否发送公众号提醒</span>
+              <label class="cfg-toggle"><input type="checkbox" id="wechatNotify" onchange="updateToggleText(this,'wechatNotifyText')" /><span class="cfg-toggle-slider"></span></label>
+              <span class="cfg-toggle-text" id="wechatNotifyText">否</span>
+            </div>
+          </div>
+          <div class="cfg-save-bar">
+            <button onclick="savePanel('微信设置')" class="rounded bg-blue-600 px-10 py-2 text-sm text-white hover:bg-blue-700">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-connect" class="param-panel">
+      <div class="rounded bg-white shadow-sm">
+        <div class="cfg-panel">
+          <div class="cfg-section">
+            <div class="flex items-center mb-4">
+              <span class="text-sm text-slate-600" style="width:140px;text-align:right;margin-right:8px">是否打开 SSO 开关</span>
+              <label class="cfg-toggle"><input type="checkbox" id="ssoSwitch" checked onchange="updateToggleText(this,'ssoSwitchText')" /><span class="cfg-toggle-slider"></span></label>
+              <span class="cfg-toggle-text" id="ssoSwitchText">是</span>
+            </div>
+            <div class="cfg-form-grid">
+              <div class="cfg-form-item span-full"><label><span class="req">*</span> 智能仓库地址</label><input type="text" value="http://swms.ym-lims.com:8010" /></div>
+              <div class="cfg-form-item span-full"><label><span class="req">*</span> word 页码服务地址</label><input type="text" value="http://convert.ym-lims.com:801" /></div>
+            </div>
+          </div>
+          <div class="cfg-save-bar">
+            <button onclick="savePanel('对接设置')" class="rounded bg-blue-600 px-10 py-2 text-sm text-white hover:bg-blue-700">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 流程更改详情弹窗 -->
@@ -223,7 +434,54 @@
           if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
         });
       }
+      if (panel === 'record') renderRecords();
     });
+
+    function savePanel(name) { alert(name + '已保存（原型演示）'); }
+
+    function updateToggleText(input, textId) {
+      var el = document.getElementById(textId);
+      if (el) el.textContent = input.checked ? '是' : '否';
+    }
+
+    /* ===== 记录单设置 ===== */
+    var RECORD_DATA = [
+      { id: 1, category: '安全工器具', name: '', mode: '该样品下全部试验生成一个文件' },
+      { id: 2, category: '电网物资', name: '', mode: '一个样品下一个试验生成一个文件' },
+      { id: 3, category: '', name: '电线电缆', mode: '一个样品下一个试验生成一个文件' }
+    ];
+
+    function renderRecords(list) {
+      var data = list || RECORD_DATA;
+      document.getElementById('recordTableBody').innerHTML = data.map(function (row, i) {
+        return '<tr><td>' + (i + 1) + '</td><td>' + (row.category || '—') + '</td><td>' + (row.name || '—') + '</td><td>' + row.mode + '</td>' +
+          '<td class="whitespace-nowrap"><button onclick="alert(\'编辑（原型演示）\')" class="text-blue-600 hover:underline">编辑</button> ' +
+          '<button onclick="alert(\'删除（原型演示）\')" class="ml-2 text-red-500 hover:underline">删除</button></td></tr>';
+      }).join('');
+      document.getElementById('recordTotal').textContent = '共 ' + data.length + ' 条';
+    }
+
+    function filterRecords() {
+      var cat = document.getElementById('recordFilterCat').value.trim();
+      var name = document.getElementById('recordFilterName').value.trim();
+      var mode = document.getElementById('recordFilterMode').value;
+      var filtered = RECORD_DATA.filter(function (row) {
+        if (cat && !(row.category || '').includes(cat)) return false;
+        if (name && !(row.name || '').includes(name)) return false;
+        if (mode && row.mode !== mode) return false;
+        return true;
+      });
+      renderRecords(filtered);
+    }
+
+    function resetRecordFilter() {
+      document.getElementById('recordFilterCat').value = '';
+      document.getElementById('recordFilterName').value = '';
+      document.getElementById('recordFilterMode').value = '';
+      renderRecords();
+    }
+
+    renderRecords();
 
     /* ===== 委托信息字段配置 ===== */
     var FIELD_SECTIONS = [
