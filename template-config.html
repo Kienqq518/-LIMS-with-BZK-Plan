@@ -22,6 +22,10 @@
     .tree-node.child { padding-left: 28px; }
     .tree-node.grandchild { padding-left: 40px; font-size: 12px; }
     .tree-node.leaf { padding-left: 52px; color: #64748b; }
+    .tree-node.test-item { padding-left: 52px; font-size: 12px; color: #64748b; }
+    .tree-node.test-item .cfg-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+    .tree-node.test-item .cfg-dot.on { background: #22c55e; }
+    .tree-node.test-item .cfg-dot.off { background: #cbd5e1; }
     .tree-node .count { color: #94a3b8; font-size: 12px; }
     .badge-enabled { display: inline-block; background: #dcfce7; color: #15803d; font-size: 11px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
     .badge-none { color: #94a3b8; font-size: 12px; }
@@ -302,20 +306,30 @@
       ]}
     ];
 
-    var RECORD_TREE = [
-      { id: 'wz', label: 'WZ电网物资', children: [
-        { id: 'cable-duct', label: '02电力电缆导管', children: [
-          { id: 'pvc-c', label: 'PVC-C', children: [
-            { id: 'pvc-c', label: '关联单试验项', count: '4/7', leaf: true }
+    function getRecordTreeCount(modelId) {
+      var items = RECORD_DATA.filter(function (r) { return r.tree === modelId; });
+      var configured = items.filter(function (r) { return r.configured; }).length;
+      return configured + '/' + items.length;
+    }
+
+    function testsForModel(modelId) {
+      return RECORD_DATA.filter(function (r) { return r.tree === modelId; }).map(function (r) {
+        return { id: 'test-' + r.id, label: r.test, configured: r.configured, isTestItem: true };
+      });
+    }
+
+    function buildRecordTree() {
+      return [
+        { id: 'wz', label: 'WZ电网物资', children: [
+          { id: 'cable-duct', label: '02电力电缆导管', children: [
+            { id: 'pvc-c', label: 'PVC-C', model: true, count: getRecordTreeCount('pvc-c'), annotate: 'record-tree-tests', children: testsForModel('pvc-c') }
           ]}
+        ]},
+        { id: 'gqj', label: 'GQJ安全工器具', children: [
+          { id: 'glove', label: '01绝缘手套', model: true, count: getRecordTreeCount('glove'), children: testsForModel('glove') }
         ]}
-      ]},
-      { id: 'gqj', label: 'GQJ安全工器具', children: [
-        { id: 'glove', label: '01绝缘手套', children: [
-          { id: 'glove', label: '关联单试验项', count: '1/3', leaf: true }
-        ]}
-      ]}
-    ];
+      ];
+    }
 
     var BODY_DATA = [
       { id: 1, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', tests: ['B-颜色外观', 'B-尺寸检查'], file: 'PVC-C报告模板V1.doc', head: '电网物资通用模板头.doc', tail: '—' },
@@ -363,14 +377,22 @@
           var inner = renderTreeNodes(n.children, kw, depth + 1, match || showGroup);
           if (!inner && kw && !match) return;
           var cls = depth === 0 ? '' : (depth === 1 ? ' child' : ' grandchild');
-          html += '<div class="tree-node' + cls + '"><i class="fa fa-folder-o text-slate-400"></i>' + n.label + '</div>' + inner;
+          if (n.model) {
+            var active = state.treeId === n.id ? ' active' : '';
+            var count = n.count ? '<span class="count">(' + n.count + ')</span>' : '';
+            var annotate = n.annotate ? ' data-annotate="' + n.annotate + '"' : '';
+            html += '<div class="tree-node' + cls + active + '"' + annotate + ' data-id="' + n.id + '" onclick="selectTree(\'' + n.id + '\')"><i class="fa fa-folder-o text-slate-400"></i>' + n.label + count + '</div>' + inner;
+          } else {
+            html += '<div class="tree-node' + cls + '"><i class="fa fa-folder-o text-slate-400"></i>' + n.label + '</div>' + inner;
+          }
         } else {
           if (kw && !match && !showGroup) return;
           var active = state.treeId === n.id ? ' active' : '';
-          var leafCls = n.leaf ? ' leaf' : (depth >= 2 ? ' grandchild' : ' child');
+          var nodeCls = n.isTestItem ? ' test-item' : (n.leaf ? ' leaf' : (depth >= 2 ? ' grandchild' : ' child'));
           var count = n.count ? '<span class="count">(' + n.count + ')</span>' : '';
-          var annotate = n.leaf ? ' data-annotate="record-tree-count"' : '';
-          html += '<div class="tree-node' + leafCls + active + '"' + annotate + ' data-id="' + n.id + '" onclick="selectTree(\'' + n.id + '\')">' + n.label + count + '</div>';
+          var annotate = n.annotate ? ' data-annotate="' + n.annotate + '"' : '';
+          var dot = n.isTestItem ? '<span class="cfg-dot ' + (n.configured ? 'on' : 'off') + '"></span>' : '';
+          html += '<div class="tree-node' + nodeCls + active + '"' + annotate + ' data-id="' + n.id + '" onclick="selectTree(\'' + n.id + '\')">' + dot + n.label + count + '</div>';
         }
       });
       return html;
@@ -380,7 +402,7 @@
       var kw = (document.getElementById('treeSearch').value || '').trim().toLowerCase();
       var html = '';
       if (state.main === 'record') {
-        RECORD_TREE.forEach(function (g) {
+        buildRecordTree().forEach(function (g) {
           var showGroup = !kw || g.label.toLowerCase().includes(kw);
           html += renderTreeNodes([g], kw, 0, showGroup);
         });
@@ -442,7 +464,14 @@
 
     function getFilteredRows() {
       var rows;
-      if (state.main === 'record') rows = RECORD_DATA.filter(function (r) { return r.tree === state.treeId; });
+      if (state.main === 'record') {
+        if (String(state.treeId).indexOf('test-') === 0) {
+          var rowId = parseInt(state.treeId.replace('test-', ''), 10);
+          rows = RECORD_DATA.filter(function (r) { return r.id === rowId; });
+        } else {
+          rows = RECORD_DATA.filter(function (r) { return r.tree === state.treeId; });
+        }
+      }
       else if (state.sub === 'public') rows = PUBLIC_DATA.slice();
       else rows = BODY_DATA.filter(function (r) { return r.tree === state.treeId; });
 
@@ -874,7 +903,7 @@
     PrototypeAnnotation.init({
       annotations: [
         { id: 'tree-count', selector: '[data-annotate="tree-count"]', position: 'top-right', title: '关联模板数量', content: '括号内数字表示该分类/型号下已关联的报告模板数量。', tag: '报告模板' },
-        { id: 'record-tree-count', selector: '[data-annotate="record-tree-count"]', position: 'top-right', title: '单试验项配置进度', content: '括号内为（已配置模板的试验项数 / 试验项总数），如 4/7 表示 7 个试验项中已有 4 个绑定了模板。', tag: '记录单' },
+        { id: 'record-tree-tests', selector: '[data-annotate="record-tree-tests"]', position: 'top-right', title: '型号下展开试验项', wide: true, content: '选中型号（如 PVC-C）后，下方列出该型号对应的全部试验项；绿点表示已配置模板。点击某一试验项可快速定位右侧列表，括号内为（已配置数 / 试验项总数）。', tag: '记录单' },
         { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板', content: '打开新增/编辑弹窗，配置样品、试验项、模板文件及公共头尾引用。', tag: '报告模板' },
         { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑样品名称、关联试验项、更新模板文件、关联头尾等信息。', tag: '操作说明' },
         { id: 'row-delete', selector: '[data-annotate="row-delete"]', position: 'top-right', title: '删除', content: '删除该条模板配置记录。', tag: '操作说明' },
