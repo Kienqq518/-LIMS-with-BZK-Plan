@@ -83,7 +83,7 @@
     <!-- ============ 列表区 ============ -->
     <div class="mt-4 rounded bg-white p-4 shadow-sm">
       <!-- 导出按钮 -->
-      <div class="mb-4 flex flex-wrap justify-end gap-2">
+      <div class="mb-4 flex flex-wrap justify-end gap-2" data-annotate="export-btns">
         <button onclick="alert('导出业务数据统计表（原型演示）')" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">导出业务数据统计表</button>
         <button onclick="alert('导出已检样品处置记录（原型演示）')" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">导出已检样品处置记录</button>
         <button onclick="alert('导出报告发放记录（原型演示）')" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">导出报告发放记录</button>
@@ -338,16 +338,6 @@
     })();
 
     // ================= 交互逻辑 =================
-    // 导出选项下拉开关
-    function toggleExport() {
-      document.getElementById('exportMenu').classList.toggle('hidden');
-    }
-    // 点击页面其他区域收起导出菜单
-    document.addEventListener('click', function (e) {
-      const menu = document.getElementById('exportMenu');
-      if (!e.target.closest('.relative') && !menu.classList.contains('hidden')) menu.classList.add('hidden');
-    });
-
     // 报告记录弹窗开关
     function openReport() { show('reportModal'); }
     function closeReport() { hide('reportModal'); }
@@ -420,5 +410,26 @@
     });
   </script>
   <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'export-btns',
+          selector: '[data-annotate="export-btns"]',
+          position: 'bottom-left',
+          title: '导出按钮整改',
+          wide: true,
+          content: '原系统为「导出选项」下拉菜单，需点击展开后再选择。<br><br>' +
+            '<strong>现改为四个独立按钮</strong>，平铺展示，减少一次点击：<br>' +
+            '1. 导出业务数据统计表<br>' +
+            '2. 导出已检样品处置记录<br>' +
+            '3. 导出报告发放记录<br>' +
+            '4. 导出报告记录表',
+          tag: '交互优化'
+        }
+      ]
+    });
+  </script>
 </body>
 </html>
