@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数据管理 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 border-b border-slate-200 bg-white px-4 pt-2 text-sm" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      <span id="tabTitle">页面</span>
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+  <div class="flex min-h-[calc(100vh-80px)] flex-col items-center justify-center p-8">
+    <div class="rounded-lg bg-white px-12 py-10 text-center shadow-sm">
+      <i class="fa fa-database mb-4 text-4xl text-slate-300"></i>
+      <h1 id="pageName" class="mb-2 text-lg font-medium text-slate-800">页面</h1>
+      <p id="pageGroup" class="mb-1 text-sm text-slate-500"></p>
+      <p class="text-sm text-slate-400">该页面为数据管理模块占位，待后续原型补充。</p>
+    </div>
+  </div>
+  <script src="js/tab-bar.js"></script>
+  <script>
+    (function () {
+      var p = {};
+      location.search.replace(/[?&]([^=]+)=([^&]*)/g, function (_, k, v) { p[k] = decodeURIComponent(v); });
+      document.getElementById('pageName').textContent = p.name || '数据管理';
+      document.getElementById('tabTitle').textContent = p.name || '数据管理';
+      document.title = (p.name || '数据管理') + ' - 智慧实验室';
+      if (p.group) document.getElementById('pageGroup').textContent = '所属分组：' + p.group;
+    })();
+  </script>
+</body>
+</html>
