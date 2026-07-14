@@ -94,6 +94,19 @@
     .po-field-item .acts .add { color: #2563eb; border-color: #93c5fd; background: #eff6ff; }
     .po-field-item .acts .del { color: #ef4444; border-color: #fca5a5; background: #fef2f2; }
     .po-field-item .acts .loc { color: #64748b; border-color: #cbd5e1; background: #f8fafc; }
+    /* 页眉页脚与印章 */
+    .stamp-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
+    .stamp-card-title { font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+    .stamp-card-title::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: #2563eb; }
+    .stamp-upload-row { display: flex; flex-wrap: wrap; gap: 28px; }
+    .stamp-upload-box { text-align: center; }
+    .stamp-upload-box .label { margin-bottom: 8px; font-size: 13px; color: #64748b; }
+    .stamp-preview { width: 320px; height: 64px; border: 1px dashed #cbd5e1; border-radius: 4px; background: #f8fafc; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .stamp-preview.seal { width: 120px; height: 120px; }
+    .stamp-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .stamp-upload-btn { margin-top: 8px; font-size: 12px; padding: 4px 12px; border-radius: 4px; border: 1px solid #cbd5e1; color: #475569; background: #fff; cursor: pointer; }
+    .stamp-upload-btn:hover { border-color: #2563eb; color: #2563eb; }
+    .badge-doc { display: inline-block; background: #dcfce7; color: #15803d; font-size: 11px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -108,8 +121,10 @@
 
   <!-- 一级 Tab -->
   <div class="flex border-b border-slate-200 bg-white px-4" id="mainTabBar">
-    <div class="main-tab active" data-tab="report">报告</div>
-    <div class="main-tab" data-tab="record">记录单</div>
+    <div class="main-tab active" data-tab="report">报告模板</div>
+    <div class="main-tab" data-tab="record">记录单模板</div>
+    <div class="main-tab" data-tab="doc" data-annotate="doc-tab">单据模板</div>
+    <div class="main-tab" data-tab="stamp" data-annotate="stamp-tab">页眉页脚与印章</div>
   </div>
 
   <!-- 报告 · 二级 Tab -->
@@ -145,6 +160,84 @@
         <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>10 条/页</option></select>
       </div>
       <div class="info-bar hidden" id="infoBar"></div>
+    </div>
+  </div>
+
+  <!-- ============ 单据模板 ============ -->
+  <div id="docView" class="hidden">
+    <div class="tpl-toolbar" id="docToolbar"></div>
+    <div class="overflow-x-auto px-4 pb-4">
+      <table class="tpl-table min-w-[1000px]">
+        <thead id="docTableHead"></thead>
+        <tbody id="docTableBody"></tbody>
+      </table>
+    </div>
+    <div class="info-bar" data-annotate="doc-logic">
+      <i class="fa fa-info-circle"></i> <strong>单据模板：</strong>系统各类流程单据（委托书/收费通知单/检测任务单/检测任务及流转单/还样退库确认表/退样申请表/产品检测预通知书）在此统一维护。
+      <strong>按大类分套</strong>——同一单据可为不同大类配置各自的模板；<strong>一类可上传多个模板版本，同时仅启用一个</strong>，导出时使用启用版。点击「配置」调用 PageOffice 编辑并插入字段占位符。
+    </div>
+  </div>
+
+  <!-- ============ 页眉页脚与印章 ============ -->
+  <div id="stampView" class="hidden px-4 py-4">
+    <div class="stamp-card">
+      <div class="stamp-card-title" data-annotate="stamp-global">全局默认页眉 / 页脚</div>
+      <p class="mb-3 text-sm text-slate-500">应用于系统中所有需要导出的文件（报告、记录单及各类单据）。未单独配置的单据默认使用此页眉页脚。</p>
+      <div class="stamp-upload-row">
+        <div class="stamp-upload-box"><div class="label">默认页眉图片</div><div class="stamp-preview"><img src="https://via.placeholder.com/320x60/1e3a8a/ffffff?text=数蚕智能+·+页眉" alt="页眉" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
+        <div class="stamp-upload-box"><div class="label">默认页脚图片</div><div class="stamp-preview"><img src="https://via.placeholder.com/320x50/64748b/ffffff?text=地址+·+电话+·+页脚" alt="页脚" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
+      </div>
+    </div>
+
+    <div class="stamp-card">
+      <div class="stamp-card-title" data-annotate="stamp-override">按单据类型覆盖</div>
+      <p class="mb-3 text-sm text-slate-500">如某类单据的页眉页脚与全局默认不同，可在此单独上传覆盖；留空则沿用全局默认。</p>
+      <div class="overflow-x-auto">
+        <table class="tpl-table">
+          <thead><tr><th style="width:60px">序号</th><th>文件类型</th><th>页眉</th><th>页脚</th><th style="width:200px">操作</th></tr></thead>
+          <tbody id="stampOverrideBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="stamp-card">
+      <div class="stamp-card-title" data-annotate="stamp-seal">印章管理</div>
+      <p class="mb-3 text-sm text-slate-500">报告 / 单据用章统一在此维护（原「业务流程配置 › 报告设置」中的用章已迁移至此）。</p>
+      <div class="stamp-upload-row">
+        <div class="stamp-upload-box"><div class="label">骑缝章</div><div class="stamp-preview seal"><img src="https://via.placeholder.com/110x110/e11d48/ffffff?text=骑缝" alt="骑缝章" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
+        <div class="stamp-upload-box"><div class="label">CNAS 章</div><div class="stamp-preview seal"><img src="https://via.placeholder.com/110x110/1d4ed8/ffffff?text=CNAS" alt="CNAS" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
+        <div class="stamp-upload-box"><div class="label">CMA 章</div><div class="stamp-preview seal"><img src="https://via.placeholder.com/110x110/dc2626/ffffff?text=CMA" alt="CMA" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
+        <div class="stamp-upload-box"><div class="label">检测专用章</div><div class="stamp-preview seal"><img src="https://via.placeholder.com/110x110/e11d48/ffffff?text=检测" alt="检测专用章" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 单据模板 · 版本管理 -->
+  <div id="docVersionModal" class="modal-mask">
+    <div class="modal-box lg">
+      <div class="modal-head"><span id="docVersionTitle">单据模板版本</span><button onclick="closeModal('docVersionModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <p class="mb-3 text-sm text-slate-500">同一单据（同大类）可保存多个模板版本，<strong class="text-slate-700">同时只能启用一个</strong>，导出时取启用版。</p>
+        <table class="tpl-table">
+          <thead><tr><th style="width:50px">启用</th><th>模板文件</th><th>上传时间</th><th style="width:120px">操作</th></tr></thead>
+          <tbody id="docVersionBody"></tbody>
+        </table>
+        <div class="mt-3"><button onclick="alert('上传新版本（原型演示）')" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-upload"></i> 上传新版本</button></div>
+      </div>
+      <div class="modal-foot"><button onclick="closeModal('docVersionModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="saveDocVersion()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
+    </div>
+  </div>
+
+  <!-- 单据模板 · 新增 -->
+  <div id="docAddModal" class="modal-mask">
+    <div class="modal-box">
+      <div class="modal-head"><span>新增单据模板</span><button onclick="closeModal('docAddModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <div class="form-row"><label><span class="req">*</span> 单据类型</label><div class="ctrl"><select id="da_type"></select></div></div>
+        <div class="form-row"><label><span class="req">*</span> 适用大类</label><div class="ctrl"><select id="da_category"><option>WZ电网物资</option><option>GQJ安全工器具</option><option>材料类</option><option>通用（全部大类）</option></select></div></div>
+        <div class="form-row"><label><span class="req">*</span> 模板文件</label><div class="ctrl"><div class="upload-zone" onclick="alert('上传模板文件（原型演示）')"><i class="fa fa-cloud-upload block"></i><div>点击上传 .doc/.docx</div></div></div></div>
+      </div>
+      <div class="modal-foot"><button onclick="closeModal('docAddModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="saveDocAdd()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
     </div>
   </div>
 
@@ -589,11 +682,24 @@
       state.sub = tab === 'record' ? 'record-single' : 'body';
       if (tab === 'record') state.treeId = 'pvc-c';
       document.querySelectorAll('#mainTabBar .main-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === tab); });
+
+      var isDoc = tab === 'doc';
+      var isStamp = tab === 'stamp';
+      var isTable = tab === 'report' || tab === 'record';
       document.getElementById('reportSubBar').classList.toggle('hidden', tab !== 'report');
       document.getElementById('recordSubBar').classList.toggle('hidden', tab !== 'record');
-      document.getElementById('treePanel').classList.toggle('hidden', tab === 'report' && state.sub === 'public');
-      renderTree();
-      renderView();
+      document.querySelector('.tpl-layout').classList.toggle('hidden', !isTable);
+      document.getElementById('docView').classList.toggle('hidden', !isDoc);
+      document.getElementById('stampView').classList.toggle('hidden', !isStamp);
+
+      if (isDoc) { renderDocView(); }
+      else if (isStamp) { renderStampView(); }
+      else {
+        document.getElementById('treePanel').classList.toggle('hidden', tab === 'report' && state.sub === 'public');
+        renderTree();
+        renderView();
+      }
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function switchSub(sub) {
@@ -819,7 +925,11 @@
     }
 
     function renderPoDocument(type) {
-      document.getElementById('poDocument').innerHTML = type === 'record' ? renderRecordDocument() : renderReportDocument();
+      var html;
+      if (type === 'record') html = renderRecordDocument();
+      else if (type === 'doc') html = renderDocDocument(state.poDocType);
+      else html = renderReportDocument();
+      document.getElementById('poDocument').innerHTML = html;
     }
 
     function renderPoFieldTabs() {
@@ -868,11 +978,14 @@
 
     function openPageOffice(type, rowId) {
       state.poType = type;
-      state.poTab = type === 'record' ? 'result' : 'report';
+      state.poTab = type === 'record' ? 'result' : (type === 'doc' ? 'contract' : 'report');
       var fileName = '模板.docx';
       if (type === 'record' && rowId) {
         var row = findRecord(rowId);
         if (row && row.file) fileName = row.file;
+      } else if (type === 'doc' && rowId) {
+        var drow = findDoc(rowId);
+        if (drow) { state.poDocType = drow.type; fileName = drow.file || (drow.type + '.docx'); }
       } else if (type === 'body') {
         fileName = 'PVC-C报告模板V1.doc';
       } else if (type === 'public') {
@@ -897,6 +1010,238 @@
       alert('模板已保存（PageOffice 原型演示）');
     }
 
+    /* ============ 单据模板 ============ */
+    var DOC_TYPES = ['检测委托书', '收费通知单', '检测任务单', '检测任务及流转单', '还样退库确认表', '退样申请表', '产品检测预通知书'];
+
+    var DOC_DATA = [
+      { id: 1, type: '检测委托书', category: 'WZ电网物资', file: '电网物资_检测委托书V2.docx', templates: [
+        { name: '电网物资_检测委托书V1.docx', time: '2025-09-10 10:00', enabled: false },
+        { name: '电网物资_检测委托书V2.docx', time: '2026-01-12 14:20', enabled: true }
+      ]},
+      { id: 2, type: '检测委托书', category: 'GQJ安全工器具', file: '安全工器具_检测委托书V1.docx', templates: [
+        { name: '安全工器具_检测委托书V1.docx', time: '2025-10-08 09:30', enabled: true }
+      ]},
+      { id: 3, type: '收费通知单', category: '通用（全部大类）', file: '收费通知单.docx', templates: [
+        { name: '收费通知单.docx', time: '2025-08-01 11:00', enabled: true }
+      ]},
+      { id: 4, type: '检测任务单', category: '通用（全部大类）', file: '检测任务单_SLZJ15-01.docx', templates: [
+        { name: '检测任务单_SLZJ15-01.docx', time: '2025-08-20 16:40', enabled: true }
+      ]},
+      { id: 5, type: '检测任务及流转单', category: '通用（全部大类）', file: '检测任务及流转单_QD088.docx', templates: [
+        { name: '检测任务及流转单_QD088.docx', time: '2026-02-24 08:50', enabled: true }
+      ]},
+      { id: 6, type: '还样退库确认表', category: '通用（全部大类）', file: '还样退库确认表.docx', templates: [
+        { name: '还样退库确认表.docx', time: '2025-11-05 13:15', enabled: true }
+      ]},
+      { id: 7, type: '退样申请表', category: '通用（全部大类）', file: null, templates: [] },
+      { id: 8, type: '产品检测预通知书', category: 'WZ电网物资', file: '产品检测预通知书.docx', templates: [
+        { name: '产品检测预通知书.docx', time: '2025-12-18 10:05', enabled: true }
+      ]}
+    ];
+
+    function findDoc(id) { return DOC_DATA.find(function (d) { return d.id === id; }); }
+
+    function renderDocView() {
+      document.getElementById('docToolbar').innerHTML =
+        '<label>单据类型</label><select id="df_type"><option value="">全部</option>' + DOC_TYPES.map(function (t) { return '<option>' + t + '</option>'; }).join('') + '</select>' +
+        '<label>适用大类</label><select id="df_category"><option value="">全部</option><option>WZ电网物资</option><option>GQJ安全工器具</option><option>材料类</option><option>通用（全部大类）</option></select>' +
+        '<label>文件名</label><input id="df_file" placeholder="请输入" />' +
+        '<button onclick="renderDocTable()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
+        '<button onclick="resetDocFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600">重置</button>' +
+        '<button onclick="openDocAdd()" class="ml-auto rounded bg-blue-600 px-4 py-1.5 text-sm text-white" data-annotate="doc-add"><i class="fa fa-plus"></i> 新增</button>';
+      renderDocTable();
+    }
+
+    function resetDocFilter() {
+      ['df_type', 'df_category', 'df_file'].forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+      renderDocTable();
+    }
+
+    function renderDocTable() {
+      var type = (document.getElementById('df_type') || {}).value || '';
+      var cat = (document.getElementById('df_category') || {}).value || '';
+      var file = ((document.getElementById('df_file') || {}).value || '').trim();
+      var rows = DOC_DATA.filter(function (r) {
+        if (type && r.type !== type) return false;
+        if (cat && r.category !== cat) return false;
+        if (file && !(r.file || '').includes(file)) return false;
+        return true;
+      });
+      document.getElementById('docTableHead').innerHTML = '<tr><th style="width:56px">序号</th><th>单据类型</th><th>适用大类</th><th>启用模板文件</th><th style="width:80px">版本数</th><th style="width:150px">更新时间</th><th style="min-width:240px">操作</th></tr>';
+      document.getElementById('docTableBody').innerHTML = rows.map(function (r, i) {
+        var enabledTpl = (r.templates || []).find(function (t) { return t.enabled; });
+        var fileCell = r.file ? '<span class="link">' + r.file + '</span><span class="badge-doc">启用中</span>' : '<span class="badge-none">未配置</span>';
+        var ops;
+        if (r.file) {
+          ops = '<button onclick="openPageOffice(\'doc\',' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="doc-config">配置</button> ' +
+            '<button onclick="openDocVersion(' + r.id + ')" class="ml-1 text-blue-600 hover:underline">版本</button> ' +
+            '<button onclick="alert(\'预览（原型演示）\')" class="ml-1 text-blue-600 hover:underline">预览</button> ' +
+            '<button onclick="alert(\'下载（原型演示）\')" class="ml-1 text-blue-600 hover:underline">下载</button> ' +
+            '<button onclick="clearDoc(' + r.id + ')" class="ml-1 text-red-500 hover:underline">清除</button>';
+        } else {
+          ops = '<button onclick="alert(\'上传模板（原型演示）\')" class="text-blue-600 hover:underline">上传</button> ' +
+            '<button onclick="openDocVersion(' + r.id + ')" class="ml-1 text-blue-600 hover:underline">版本</button>';
+        }
+        return '<tr><td>' + (i + 1) + '</td><td>' + r.type + '</td><td>' + r.category + '</td><td>' + fileCell + '</td>' +
+          '<td class="text-center">' + (r.templates || []).length + '</td><td>' + (enabledTpl ? enabledTpl.time : '—') + '</td>' +
+          '<td class="whitespace-nowrap">' + ops + '</td></tr>';
+      }).join('') || '<tr><td colspan="7" class="py-8 text-center text-slate-400">暂无单据模板</td></tr>';
+      document.getElementById('pageTotal') && (document.getElementById('pageTotal').textContent = '共 ' + rows.length + ' 条');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function clearDoc(id) {
+      if (!confirm('清除将移除该单据的模板文件关联。确定清除？')) return;
+      var r = findDoc(id);
+      if (r) { r.file = null; r.templates = []; }
+      renderDocTable();
+    }
+
+    var docVersionId = null;
+    function openDocVersion(id) {
+      docVersionId = id;
+      var r = findDoc(id);
+      document.getElementById('docVersionTitle').textContent = r.type + '（' + r.category + '）· 模板版本';
+      renderDocVersionTable();
+      openModal('docVersionModal');
+    }
+    function renderDocVersionTable() {
+      var r = findDoc(docVersionId);
+      document.getElementById('docVersionBody').innerHTML = (r.templates || []).map(function (t, i) {
+        return '<tr><td class="text-center"><input type="radio" name="docEnabledTpl" ' + (t.enabled ? 'checked' : '') + ' onchange="setDocEnabled(' + i + ')" /></td>' +
+          '<td><span class="link">' + t.name + '</span></td><td>' + t.time + '</td>' +
+          '<td><button onclick="alert(\'预览\')" class="text-blue-600 hover:underline">预览</button> ' +
+          '<button onclick="removeDocTpl(' + i + ')" class="ml-1 text-red-500 hover:underline">删除</button></td></tr>';
+      }).join('') || '<tr><td colspan="4" class="py-6 text-center text-slate-400">暂无版本，请上传</td></tr>';
+    }
+    function setDocEnabled(index) {
+      var r = findDoc(docVersionId);
+      r.templates.forEach(function (t, i) { t.enabled = i === index; });
+      r.file = r.templates[index] ? r.templates[index].name : null;
+    }
+    function removeDocTpl(index) {
+      var r = findDoc(docVersionId);
+      if (!confirm('确定删除该版本？')) return;
+      r.templates.splice(index, 1);
+      if (!r.templates.length) r.file = null;
+      else if (!r.templates.some(function (t) { return t.enabled; })) { r.templates[0].enabled = true; r.file = r.templates[0].name; }
+      renderDocVersionTable();
+    }
+    function saveDocVersion() { closeModal('docVersionModal'); renderDocTable(); alert('版本配置已保存（原型演示）'); }
+
+    function openDocAdd() {
+      document.getElementById('da_type').innerHTML = DOC_TYPES.map(function (t) { return '<option>' + t + '</option>'; }).join('');
+      openModal('docAddModal');
+    }
+    function saveDocAdd() {
+      var type = document.getElementById('da_type').value;
+      var cat = document.getElementById('da_category').value;
+      var newId = Math.max.apply(null, DOC_DATA.map(function (d) { return d.id; })) + 1;
+      var fname = cat.replace(/（.*）/, '') + '_' + type + '.docx';
+      DOC_DATA.push({ id: newId, type: type, category: cat, file: fname, templates: [{ name: fname, time: '2026-07-14 10:00', enabled: true }] });
+      closeModal('docAddModal');
+      renderDocTable();
+      alert('单据模板已新增（原型演示）');
+    }
+
+    // 单据模板 PageOffice 左侧文档 Mock
+    function renderDocDocument(docType) {
+      switch (docType) {
+        case '检测委托书':
+          return '<div class="doc-meta"><span>' + ph('undertakerName') + '</span><span>合同编号：' + ph('contractNo') + '</span></div>' +
+            '<div class="doc-title" style="letter-spacing:4px">检测委托合同</div>' +
+            '<table class="doc-tbl">' +
+            '<tr><td class="label" style="width:14%">委托单位</td><td style="width:36%;text-align:left">' + ph('ordConsigner') + '</td><td class="label" style="width:14%">地址</td><td style="text-align:left">' + ph('consignerAddr') + '</td></tr>' +
+            '<tr><td class="label">制造商</td><td style="text-align:left">' + ph('samProducer') + '</td><td class="label">联系电话</td><td style="text-align:left">' + ph('consignerPhone') + '</td></tr>' +
+            '<tr><td class="label">送样人/电话</td><td style="text-align:left">' + ph('deliverMan') + '</td><td class="label">送样时间</td><td style="text-align:left">' + ph('deliverDate') + '</td></tr>' +
+            '<tr><td class="label">经办人</td><td style="text-align:left">' + ph('handler') + '</td><td class="label">检测委托时间</td><td style="text-align:left">' + ph('entrustDate') + '</td></tr>' +
+            '<tr><td>序号</td><td>样品名称</td><td>规格/型号</td><td>检测项目</td></tr>' +
+            '<tr><td>1</td><td>' + ph('#sampleList samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('testItems') + '</td></tr>' +
+            '<tr><td class="label">检测费用(合计)</td><td colspan="3" style="text-align:left">' + ph('totalFee') + '　大写：' + ph('totalFeeCN') + '</td></tr>' +
+            '</table>';
+        case '收费通知单':
+          return '<div class="doc-title" style="letter-spacing:4px">收费通知</div>' +
+            '<p style="margin:12px 0">致：' + ph('ordConsigner') + '</p>' +
+            '<p style="line-height:2">您单位下列产品检验由我方实验室承检，相关检测费（详见附表）请在收到通知五个工作日内汇入如下账号：</p>' +
+            '<table class="doc-tbl" style="margin-top:10px">' +
+            '<tr><td class="label" style="width:20%">开户名</td><td style="text-align:left">' + ph('undertakerName') + '</td></tr>' +
+            '<tr><td class="label">地址</td><td style="text-align:left">' + ph('undertakerAddr') + '</td></tr>' +
+            '<tr><td class="label">账号</td><td style="text-align:left">' + ph('bankAccount') + '</td></tr>' +
+            '<tr><td class="label">开户行</td><td style="text-align:left">' + ph('bankName') + '</td></tr>' +
+            '</table>' +
+            '<p style="margin:14px 0 6px;font-weight:bold">附表1：委托检测内容及费用摘要</p>' +
+            '<table class="doc-tbl"><tr><td>序号</td><td>产品名称</td><td>型号规格</td><td>数量</td><td>检测项目</td><td>检测费元(含税)</td></tr>' +
+            '<tr><td>1</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('sampleQty') + '</td><td>' + ph('testItems') + '</td><td>' + ph('feeInclTax') + '</td></tr>' +
+            '<tr><td colspan="5">合计</td><td>' + ph('totalFee') + '</td></tr></table>';
+        case '检测任务单':
+          return '<div class="doc-meta"><span>' + ph('undertakerName') + '</span><span>SL/ZJ15-01</span></div>' +
+            '<div class="doc-title" style="letter-spacing:4px">检测任务单</div>' +
+            '<div class="doc-meta" style="margin-top:8px"><span>委托单位：' + ph('ordConsigner') + '</span><span>送检时间：' + ph('deliverDate') + '</span></div>' +
+            '<table class="doc-tbl" style="margin-top:6px"><tr><td>委托合同编号</td><td>样品名称</td><td>规格型号</td><td>样品数量</td><td>样品编号</td><td>试验项目</td><td>试验标准</td><td>备注</td></tr>' +
+            '<tr><td>' + ph('contractNo') + '</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('sampleQty') + '</td><td>' + ph('samNumber') + '</td><td>' + ph('testItems') + '</td><td>' + ph('testStandard') + '</td><td>/</td></tr></table>' +
+            '<div style="margin-top:14px">下发人：' + ph('issuer') + '　日期：' + ph('issueDate') + '　　接收部门：__________　(签字)__________</div>';
+        case '检测任务及流转单':
+          return '<div class="doc-meta"><span>QD088-2022</span><span></span></div>' +
+            '<div class="doc-title" style="letter-spacing:4px">检测任务及流转单</div>' +
+            '<table class="doc-tbl" style="margin-top:8px">' +
+            '<tr><td class="label" style="width:22%">样品编号</td><td style="text-align:left">' + ph('samNumber') + '</td></tr>' +
+            '<tr><td class="label">样品名称</td><td style="text-align:left">' + ph('samSampleName') + '</td></tr>' +
+            '<tr><td class="label">检测类别</td><td style="text-align:left">' + ph('ordQuality') + '</td></tr>' +
+            '<tr><td class="label">规格型号/样品等级</td><td style="text-align:left">' + ph('samModel') + '</td></tr>' +
+            '<tr><td class="label">商定完成时间</td><td style="text-align:left">' + ph('requireDate') + '</td></tr>' +
+            '<tr><td class="label">检测项目及要求</td><td style="text-align:left">' + ph('testItems') + '</td></tr>' +
+            '<tr><td class="label">检测依据</td><td style="text-align:left">' + ph('testStandard') + '</td></tr>' +
+            '</table>' +
+            '<table class="doc-tbl" style="margin-top:6px"><tr><td>检测流程</td><td>样品交接人签名/日期</td><td>样品数量</td><td>备注</td></tr>' +
+            '<tr><td>' + ph('flowDept') + '领样</td><td>' + ph('handoverSign') + ' / ' + ph('handoverDate') + '</td><td>' + ph('sampleQty') + '</td><td></td></tr>' +
+            '<tr><td style="color:#94a3b8">（后续检测流程节点待配置）</td><td></td><td></td><td></td></tr></table>';
+        case '还样退库确认表':
+          return '<div class="doc-meta"><span>' + ph('undertakerName') + '</span><span>2024 版</span></div>' +
+            '<div class="doc-title" style="letter-spacing:4px">还样退库确认表</div>' +
+            '<div style="text-align:center;font-size:11px;color:#64748b;margin-bottom:8px">(内部样品流程管控表单)</div>' +
+            '<table class="doc-tbl"><tr><td>序号</td><td>还样合同编号</td><td>还样日期</td><td>送样单位</td><td>样品名称</td><td>规格/型号</td><td>数量</td><td>试验结论不合格样品</td><td>还样人签字</td><td>样品员签字确认</td><td>备注</td></tr>' +
+            '<tr><td>1</td><td>' + ph('contractNo') + '</td><td>' + ph('returnDate') + '</td><td>' + ph('ordConsigner') + '</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('sampleQty') + '</td><td></td><td>' + ph('returnSign') + '</td><td>' + ph('keeperSign') + '</td><td>' + ph('contractNo') + '</td></tr></table>';
+        case '退样申请表':
+          return '<div class="doc-meta"><span>' + ph('undertakerName') + '</span><span></span></div>' +
+            '<div class="doc-title" style="letter-spacing:4px">退样申请表</div>' +
+            '<table class="doc-tbl" style="margin-top:8px">' +
+            '<tr><td class="label" style="width:22%">委托编号</td><td style="text-align:left">' + ph('entrustNo') + '</td><td class="label" style="width:16%">申请日期</td><td style="text-align:left">' + ph('applyDate') + '</td></tr>' +
+            '<tr><td class="label">委托单位</td><td colspan="3" style="text-align:left">' + ph('ordConsigner') + '</td></tr>' +
+            '<tr><td>样品名称</td><td>规格/型号</td><td>数量</td><td>退样原因</td></tr>' +
+            '<tr><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('sampleQty') + '</td><td>' + ph('returnReason') + '</td></tr>' +
+            '<tr><td class="label">申请人</td><td style="text-align:left">' + ph('applicant') + '</td><td class="label">审批人</td><td style="text-align:left">' + ph('approver') + '</td></tr></table>';
+        case '产品检测预通知书':
+          return '<div class="doc-title" style="letter-spacing:4px">产品检测预通知书</div>' +
+            '<table class="doc-tbl" style="margin-top:10px">' +
+            '<tr><td class="label" style="width:14%">委托编号</td><td colspan="2" style="text-align:left">' + ph('entrustNo') + '</td><td class="label" style="width:14%">委托单位</td><td colspan="4" style="text-align:left">' + ph('ordConsigner') + '</td></tr>' +
+            '<tr><td>编号</td><td>样品名称</td><td>型号</td><td>数量</td><td>检测项目</td><td>生产厂/制造商</td><td>试验状态</td><td>是否加急</td></tr>' +
+            '<tr><td>1</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('sampleQty') + '</td><td>' + ph('testItems') + '</td><td>' + ph('samProducer') + '</td><td>' + ph('testStatus') + '</td><td>' + ph('urgent') + '</td></tr>' +
+            '<tr><td class="label">编制人</td><td colspan="2" style="text-align:left">' + ph('compiler') + '</td><td class="label">受理日期</td><td colspan="4" style="text-align:left">' + ph('acceptDate') + '</td></tr></table>';
+        default:
+          return '<div class="doc-title">单据模板</div><p style="margin-top:12px;color:#64748b">该单据模板暂未配置内容。</p>';
+      }
+    }
+
+    /* ============ 页眉页脚与印章 ============ */
+    var STAMP_OVERRIDES = [
+      { type: '检测报告', header: '默认（继承全局）', footer: '默认（继承全局）' },
+      { type: '记录单', header: '记录单专用页眉.png', footer: '默认（继承全局）' },
+      { type: '检测委托书', header: '默认（继承全局）', footer: '默认（继承全局）' },
+      { type: '收费通知单', header: '收费通知专用页眉.png', footer: '默认（继承全局）' },
+      { type: '产品检测预通知书', header: '默认（继承全局）', footer: '默认（继承全局）' }
+    ];
+    function renderStampView() {
+      document.getElementById('stampOverrideBody').innerHTML = STAMP_OVERRIDES.map(function (r, i) {
+        var h = r.header.indexOf('默认') === 0 ? '<span class="text-slate-400">' + r.header + '</span>' : '<span class="link">' + r.header + '</span>';
+        var f = r.footer.indexOf('默认') === 0 ? '<span class="text-slate-400">' + r.footer + '</span>' : '<span class="link">' + r.footer + '</span>';
+        return '<tr><td>' + (i + 1) + '</td><td>' + r.type + '</td><td>' + h + '</td><td>' + f + '</td>' +
+          '<td class="whitespace-nowrap"><button onclick="alert(\'上传页眉（原型演示）\')" class="text-blue-600 hover:underline">上传页眉</button> ' +
+          '<button onclick="alert(\'上传页脚（原型演示）\')" class="ml-1 text-blue-600 hover:underline">上传页脚</button> ' +
+          '<button onclick="alert(\'恢复默认（原型演示）\')" class="ml-1 text-red-500 hover:underline">恢复默认</button></td></tr>';
+      }).join('');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
     renderTree();
     renderView();
 
@@ -912,7 +1257,15 @@
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
         { id: 'record-upload', selector: '[data-annotate="record-upload"]', position: 'top-right', title: '上传', content: '未配置模板的试验项可上传模板文件。', tag: '记录单' },
         { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '从其他样品/试验项复制已有模板，避免重复上传。', tag: '记录单' },
-        { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出拼接逻辑', wide: true, content: '无需配置「多试验项」。用户导出时，系统自动按检测员实际做的试验项，拉取各试验项启用模板并拼接为一个文件。', tag: '产品逻辑' }
+        { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出拼接逻辑', wide: true, content: '无需配置「多试验项」。用户导出时，系统自动按检测员实际做的试验项，拉取各试验项启用模板并拼接为一个文件。', tag: '产品逻辑' },
+        { id: 'doc-tab', selector: '[data-annotate="doc-tab"]', position: 'top-left', title: '新增：单据模板', wide: true, content: '统一维护 7 类流程单据模板：检测委托书、收费通知单、检测任务单、检测任务及流转单、还样退库确认表、退样申请表、产品检测预通知书。', tag: '模板管理' },
+        { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模板逻辑', wide: true, content: '<strong>按大类分套：</strong>同一单据（如检测委托书）可为不同大类（电网物资 / 安全工器具 / 材料类 / 通用）配置各自模板。<br><br><strong>一类多版本：</strong>每套可上传多个版本，<strong>同时仅启用一个</strong>，导出时使用启用版。', tag: '模板管理' },
+        { id: 'doc-add', selector: '[data-annotate="doc-add"]', position: 'top-left', title: '新增单据模板', content: '选择单据类型 + 适用大类，上传模板文件。', tag: '模板管理' },
+        { id: 'doc-config', selector: '[data-annotate="doc-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 打开该单据的 Word 模板，右侧字段面板可插入占位符。不同单据类型左侧模板内容不同。', tag: '模板管理' },
+        { id: 'stamp-tab', selector: '[data-annotate="stamp-tab"]', position: 'top-left', title: '新增：页眉页脚与印章', wide: true, content: '统一管理系统所有导出文件的页眉、页脚与用章（骑缝章 / CNAS / CMA / 检测专用章）。原「报告设置」中的用章已迁移至此。', tag: '模板管理' },
+        { id: 'stamp-global', selector: '[data-annotate="stamp-global"]', position: 'top-right', title: '全局默认页眉页脚', wide: true, content: '上传全局默认的页眉、页脚图片，应用于所有导出文件；未单独覆盖的单据默认沿用此设置（两级模型的「默认层」）。', tag: '模板管理' },
+        { id: 'stamp-override', selector: '[data-annotate="stamp-override"]', position: 'top-right', title: '按单据类型覆盖', wide: true, content: '某类单据若与全局默认不同，可单独上传页眉/页脚覆盖；留空即继承全局默认（两级模型的「覆盖层」）。', tag: '模板管理' },
+        { id: 'stamp-seal', selector: '[data-annotate="stamp-seal"]', position: 'top-right', title: '印章管理（迁移）', wide: true, content: '骑缝章、CNAS、CMA、检测专用章图片统一在此上传维护——由原「业务流程配置 › 报告设置 › 报告用章」迁移而来。', tag: '模板管理' }
       ]
     });
   </script>
