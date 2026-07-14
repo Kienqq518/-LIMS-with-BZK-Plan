@@ -1,9 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>变更审批 - 智慧实验室</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>变更审批 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    .sort-th { cursor: pointer; user-select: none; white-space: nowrap; }
+    .sort-th:hover { color: #2563eb; }
+    .sort-th .sort-icon { margin-left: 4px; font-size: 11px; color: #94a3b8; }
+    .sort-th.active .sort-icon { color: #2563eb; }
+  </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
   <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
@@ -25,16 +33,107 @@
       </div>
     </div>
     <div class="mt-4 rounded bg-white p-4 shadow-sm overflow-x-auto">
-      <table class="w-full min-w-[1200px] border-collapse text-sm"><thead><tr class="bg-slate-100 text-slate-600">
-        <th class="border border-slate-200 px-3 py-2 font-medium">序号</th><th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th><th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th><th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th><th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th><th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th><th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th><th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th><th class="border border-slate-200 px-3 py-2 font-medium">编制人</th><th class="border border-slate-200 px-3 py-2 font-medium">业务员</th><th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
-      </tr></thead><tbody id="tableBody"></tbody></table>
-      <div class="mt-4 flex justify-end gap-2 text-sm text-slate-500"><span>共 6 条</span><button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button><select class="rounded border border-slate-200 px-2 py-1"><option>50条/页</option></select></div>
+      <table class="w-full min-w-[1300px] border-collapse text-sm">
+        <thead>
+          <tr class="bg-slate-100 text-slate-600">
+            <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium sort-th active" data-annotate="apply-time-col" data-sort="applyTime" onclick="toggleSort('applyTime')">变更申请时间<i class="fa fa-sort-desc sort-icon"></i></th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="mt-4 flex justify-end gap-2 text-sm text-slate-500"><span id="totalText">共 0 条</span><button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button><select class="rounded border border-slate-200 px-2 py-1"><option>50条/页</option></select></div>
     </div>
   </div>
   <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
   <script>
-    var data=[{code:'SC2026/0055',customer:'东集西造有限公司',sample:'绝缘斗臂车-t',sendDate:'2026-06-01',acceptDate:'2026-06-01',editor:'admin',salesman:'业务员A'},{code:'SC2026/0053',customer:'宇宙设想有限公司',sample:'遮蔽罩、安全带',sendDate:'2026-05-28',acceptDate:'2026-05-28',editor:'admin',salesman:'梁倩'},{code:'SC2026/0051',customer:'杭州数蚕智能科技有限公司',sample:'绝缘操作杆',sendDate:'2026-05-25',acceptDate:'2026-05-25',editor:'潘哲宁',salesman:'梁倩'},{code:'SC2026/0049',customer:'灵知益义有限公司',sample:'安全帽',sendDate:'2026-05-20',acceptDate:'2026-05-20',editor:'admin',salesman:'业务员A'},{code:'SC2026/0047',customer:'东集西造有限公司',sample:'绝缘杆',sendDate:'2026-05-18',acceptDate:'2026-05-18',editor:'admin',salesman:'梁倩'},{code:'SC2026/0045',customer:'宇宙设想有限公司',sample:'10kV旁路作业设备',sendDate:'2026-05-15',acceptDate:'2026-05-15',editor:'admin',salesman:'业务员A'}];
-    document.getElementById('tableBody').innerHTML=data.map(function(d,i){return '<tr class="hover:bg-slate-50"><td class="border border-slate-200 px-3 py-2.5">'+(i+1)+'</td><td class="border border-slate-200 px-3 py-2.5"><a href="change-approve-edit.html?code='+d.code+'" class="text-blue-600 hover:underline">'+d.code+'</a></td><td class="border border-slate-200 px-3 py-2.5 text-center">/</td><td class="border border-slate-200 px-3 py-2.5">'+d.customer+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.sample+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.sendDate+'</td><td class="border border-slate-200 px-3 py-2.5"></td><td class="border border-slate-200 px-3 py-2.5">'+d.acceptDate+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.editor+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.salesman+'</td><td class="border border-slate-200 px-3 py-2.5"><a href="change-approve-edit.html?code='+d.code+'" class="text-blue-600 hover:underline"><i class="fa fa-gavel"></i> 审批</a></td></tr>';}).join('');
+    var DATA = [
+      { code: 'SC2026/0055', customer: '东集西造有限公司', sample: '绝缘斗臂车-t', sendDate: '2026-06-01', acceptDate: '2026-06-01', editor: 'admin', salesman: '业务员A', applyTime: '2026-06-10 09:15:00' },
+      { code: 'SC2026/0053', customer: '宇宙设想有限公司', sample: '遮蔽罩、安全带', sendDate: '2026-05-28', acceptDate: '2026-05-28', editor: 'admin', salesman: '梁倩', applyTime: '2026-06-12 14:30:00' },
+      { code: 'SC2026/0051', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', sendDate: '2026-05-25', acceptDate: '2026-05-25', editor: '潘哲宁', salesman: '梁倩', applyTime: '2026-06-11 10:20:00' },
+      { code: 'SC2026/0049', customer: '灵知益义有限公司', sample: '安全帽', sendDate: '2026-05-20', acceptDate: '2026-05-20', editor: 'admin', salesman: '业务员A', applyTime: '2026-06-09 16:45:00' },
+      { code: 'SC2026/0047', customer: '东集西造有限公司', sample: '绝缘杆', sendDate: '2026-05-18', acceptDate: '2026-05-18', editor: 'admin', salesman: '梁倩', applyTime: '2026-06-08 11:00:00' },
+      { code: 'SC2026/0045', customer: '宇宙设想有限公司', sample: '10kV旁路作业设备', sendDate: '2026-05-15', acceptDate: '2026-05-15', editor: 'admin', salesman: '业务员A', applyTime: '2026-06-13 08:50:00' },
+      { code: 'SC2026/0043', customer: '杭州数蚕智能科技有限公司', sample: '验电器', sendDate: '2026-05-12', acceptDate: '2026-05-12', editor: 'admin', salesman: '梁倩', applyTime: '2026-06-07 15:10:00' }
+    ];
+
+    var sortState = { field: 'applyTime', dir: 'desc' };
+
+    function toggleSort(field) {
+      if (sortState.field === field) {
+        sortState.dir = sortState.dir === 'desc' ? 'asc' : 'desc';
+      } else {
+        sortState.field = field;
+        sortState.dir = 'desc';
+      }
+      renderTable();
+    }
+
+    function renderTable() {
+      var rows = DATA.slice().sort(function (a, b) {
+        var av = a[sortState.field] || '';
+        var bv = b[sortState.field] || '';
+        if (av === bv) return 0;
+        return sortState.dir === 'desc' ? (av < bv ? 1 : -1) : (av > bv ? 1 : -1);
+      });
+
+      document.getElementById('tableBody').innerHTML = rows.map(function (d, i) {
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + d.applyTime + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="change-approve-edit.html?code=' + d.code + '" class="text-blue-600 hover:underline">' + d.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">/</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + d.customer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + d.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + d.sendDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + d.acceptDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + d.editor + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + d.salesman + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="change-approve-edit.html?code=' + d.code + '" class="text-blue-600 hover:underline"><i class="fa fa-gavel"></i> 审批</a></td>' +
+          '</tr>';
+      }).join('');
+
+      document.getElementById('totalText').textContent = '共 ' + rows.length + ' 条';
+
+      document.querySelectorAll('.sort-th').forEach(function (th) {
+        var f = th.getAttribute('data-sort');
+        var icon = th.querySelector('.sort-icon');
+        th.classList.toggle('active', f === sortState.field);
+        if (icon && f === sortState.field) {
+          icon.className = 'fa sort-icon ' + (sortState.dir === 'desc' ? 'fa-sort-desc' : 'fa-sort-asc');
+        } else if (icon) {
+          icon.className = 'fa fa-sort sort-icon';
+        }
+      });
+
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    renderTable();
+
+    PrototypeAnnotation.init({
+      annotations: [{
+        id: 'apply-time-col',
+        selector: '[data-annotate="apply-time-col"]',
+        position: 'top-right',
+        title: '新增：变更申请时间',
+        wide: true,
+        content: '列表增加「变更申请时间」列，支持点击表头排序。<br><br><strong>默认按变更申请时间倒序</strong>，最新提交的变更申请排在最上面，便于审批人员优先处理。',
+        tag: '变更审批'
+      }]
+    });
   </script>
 </body>
 </html>
