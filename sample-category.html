@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>样品分类 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .toggle { position: relative; display: inline-block; width: 40px; height: 22px; vertical-align: middle; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 11px; cursor: pointer; transition: .2s; }
+    .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+    .toggle input:checked + .toggle-slider { background: #2563eb; }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .group-card { margin-bottom: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; overflow: hidden; }
+    .group-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f8fafc; cursor: pointer; font-size: 14px; font-weight: 500; color: #334155; }
+    .group-head:hover { background: #f1f5f9; }
+    .group-body { display: none; padding: 12px 16px 16px; border-top: 1px solid #e2e8f0; }
+    .group-card.open .group-body { display: block; }
+    .group-card.open .group-arrow { transform: rotate(180deg); }
+    .group-arrow { transition: transform .2s; color: #94a3b8; }
+    .tree-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .tree-table th, .tree-table td { border: 1px solid #e5e7eb; padding: 9px 10px; text-align: left; vertical-align: middle; }
+    .tree-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
+    .tree-name { display: inline-flex; align-items: center; gap: 6px; }
+    .tree-toggle { width: 16px; height: 16px; border: 1px solid #cbd5e1; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; cursor: pointer; background: #fff; flex-shrink: 0; }
+    .tree-toggle.empty { border-color: transparent; background: transparent; cursor: default; }
+    .tree-indent { display: inline-block; }
+    .modal-mask { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      样品分类
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4 space-y-4">
+    <!-- 筛选 -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">分类名称</label><input id="f_name" class="w-44 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入分类名称" /></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">分类编号</label><input id="f_code" class="w-44 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入分类编号" /></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">状态</label><select id="f_status" class="w-36 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"><option value="">请选择状态</option><option value="1">启用</option><option value="0">停用</option></select></div>
+        <button onclick="renderAll()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+        <button onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+      </div>
+    </div>
+
+    <!-- 按大类分组的树表 -->
+    <div id="groupList"></div>
+  </div>
+
+  <!-- 新增/编辑分类 -->
+  <div id="editModal" class="modal-mask">
+    <div class="w-[480px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 id="modalTitle" class="text-base font-medium">新增分类</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="space-y-4 px-5 py-4 text-sm">
+        <div class="flex items-center gap-3"><label class="w-24 text-right text-slate-600">所属大类</label><input id="m_group" class="flex-1 rounded border border-slate-200 bg-slate-50 px-3 py-1.5" readonly /></div>
+        <div class="flex items-center gap-3"><label class="w-24 text-right text-slate-600">上级分类</label><input id="m_parent" class="flex-1 rounded border border-slate-200 bg-slate-50 px-3 py-1.5" readonly /></div>
+        <div class="flex items-center gap-3"><label class="w-24 text-right text-slate-600"><span class="text-red-500">*</span> 分类名称</label><input id="m_name" class="flex-1 rounded border border-slate-300 px-3 py-1.5 outline-none focus:border-blue-500" placeholder="请输入" /></div>
+        <div class="flex items-center gap-3"><label class="w-24 text-right text-slate-600">分类编号</label><input id="m_code" class="flex-1 rounded border border-slate-300 px-3 py-1.5 outline-none focus:border-blue-500" placeholder="请输入" /></div>
+        <div class="flex items-center gap-3"><label class="w-24 text-right text-slate-600"><span class="text-red-500">*</span> 状态</label><label class="toggle"><input type="checkbox" id="m_status" checked /><span class="toggle-slider"></span></label></div>
+        <div class="flex items-center gap-3"><label class="w-24 text-right text-slate-600">层级</label><input id="m_level" class="flex-1 rounded border border-slate-200 bg-slate-50 px-3 py-1.5" readonly /></div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
+        <button onclick="saveModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    /* 图4/图5 Mock：按大类分组的多级样品分类树 */
+    var GROUPS = [
+      {
+        id: 'dlwz', name: '电力物资类', open: true,
+        children: [
+          {
+            id: 'n1', name: '电力电缆类', code: 'DLDL', level: 1, enabled: true, open: true,
+            children: [
+              { id: 'n11', name: '额定电压 1kV 和 3kV', code: '', level: 2, enabled: true, children: [] },
+              { id: 'n12', name: '额定电压 6kV-30kV', code: '', level: 2, enabled: true, children: [] },
+              { id: 'n13', name: '额定电压 35kV', code: '', level: 2, enabled: true, children: [] }
+            ]
+          },
+          {
+            id: 'n2', name: '电缆保护管', code: 'BHG', level: 1, enabled: true, open: true,
+            children: [
+              {
+                id: 'n21', name: 'DLT 802.1-2023', code: '', level: 2, enabled: true, open: true,
+                children: [
+                  {
+                    id: 'n211', name: 'DS实壁类塑料电缆导管', code: '', level: 3, enabled: true, open: true,
+                    children: [
+                      { id: 'n2111', name: 'DLT 802.3-2023', code: '', level: 4, enabled: true, children: [] }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'aqgqj', name: '安全工器具类', open: true,
+        children: [
+          { id: 's1', name: 'DLT 976-2017', code: '', level: 1, enabled: false, children: [] },
+          { id: 's2', name: 'DLT 1476-2017', code: '', level: 1, enabled: false, children: [] },
+          { id: 's3', name: 'DLT 1741-2017', code: '', level: 1, enabled: false, children: [] }
+        ]
+      },
+      {
+        id: 'hjjc', name: '环境检测', open: false,
+        children: []
+      },
+      {
+        id: 'gcjc', name: '工程检测', open: true,
+        children: [
+          {
+            id: 'e1', name: '通用硅酸盐水泥', code: '', level: 1, enabled: false, open: true,
+            children: [
+              { id: 'e11', name: 'GB 175-2023', code: '', level: 2, enabled: false, children: [] }
+            ]
+          }
+        ]
+      }
+    ];
+
+    var modalCtx = { groupId: null, parentId: null, editId: null, level: 1 };
+
+    function matchNode(node, name, code, status) {
+      if (name && !node.name.includes(name)) return false;
+      if (code && !(node.code || '').includes(code)) return false;
+      if (status === '1' && !node.enabled) return false;
+      if (status === '0' && node.enabled) return false;
+      return true;
+    }
+
+    function filterTree(nodes, name, code, status) {
+      if (!name && !code && !status) return nodes;
+      var result = [];
+      (nodes || []).forEach(function (n) {
+        var kids = filterTree(n.children || [], name, code, status);
+        if (matchNode(n, name, code, status) || kids.length) {
+          var copy = Object.assign({}, n, { children: kids, open: true });
+          result.push(copy);
+        }
+      });
+      return result;
+    }
+
+    function findNode(nodes, id) {
+      for (var i = 0; i < (nodes || []).length; i++) {
+        if (nodes[i].id === id) return nodes[i];
+        var found = findNode(nodes[i].children, id);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    function findInGroups(id) {
+      for (var i = 0; i < GROUPS.length; i++) {
+        var found = findNode(GROUPS[i].children, id);
+        if (found) return { group: GROUPS[i], node: found };
+      }
+      return null;
+    }
+
+    function removeFromTree(nodes, id) {
+      for (var i = 0; i < nodes.length; i++) {
+        if (nodes[i].id === id) { nodes.splice(i, 1); return true; }
+        if (nodes[i].children && removeFromTree(nodes[i].children, id)) return true;
+      }
+      return false;
+    }
+
+    function flattenVisible(nodes, out) {
+      (nodes || []).forEach(function (n) {
+        out.push(n);
+        if (n.open && n.children && n.children.length) flattenVisible(n.children, out);
+      });
+      return out;
+    }
+
+    function renderTreeRows(groupId, nodes) {
+      var flat = flattenVisible(nodes, []);
+      if (!flat.length) {
+        return '<tr><td colspan="5" class="border border-slate-200 py-8 text-center text-slate-400">暂无分类数据，点击「新增」添加一级分类</td></tr>';
+      }
+      return flat.map(function (n) {
+        var hasChild = n.children && n.children.length > 0;
+        var indent = (n.level - 1) * 20;
+        var toggle = hasChild
+          ? '<span class="tree-toggle" onclick="toggleNode(\'' + groupId + '\',\'' + n.id + '\')">' + (n.open ? '−' : '+') + '</span>'
+          : '<span class="tree-toggle empty"></span>';
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2"><span class="tree-name" style="padding-left:' + indent + 'px">' + toggle + '<span>' + n.name + '</span></span></td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + (n.code || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + n.level + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2"><label class="toggle"><input type="checkbox" ' + (n.enabled ? 'checked' : '') + ' onchange="toggleStatus(\'' + n.id + '\', this.checked)" /><span class="toggle-slider"></span></label></td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' +
+            '<button onclick="openEdit(\'' + groupId + '\',\'' + n.id + '\')" class="text-blue-600 hover:underline">编辑</button> ' +
+            '<button onclick="openAddChild(\'' + groupId + '\',\'' + n.id + '\')" class="ml-2 text-blue-600 hover:underline">+ 新增下级</button> ' +
+            '<button onclick="removeNode(\'' + groupId + '\',\'' + n.id + '\')" class="ml-2 text-red-500 hover:underline">删除</button>' +
+          '</td></tr>';
+      }).join('');
+    }
+
+    function renderAll() {
+      var name = document.getElementById('f_name').value.trim();
+      var code = document.getElementById('f_code').value.trim();
+      var status = document.getElementById('f_status').value;
+      var html = GROUPS.map(function (g) {
+        var tree = filterTree(g.children, name, code, status);
+        var openCls = g.open ? ' open' : '';
+        return '<div class="group-card' + openCls + '" id="group-' + g.id + '">' +
+          '<div class="group-head" onclick="toggleGroup(\'' + g.id + '\')"><span>' + g.name + '</span><i class="fa fa-angle-down group-arrow"></i></div>' +
+          '<div class="group-body">' +
+            '<div class="mb-3"><button onclick="openAddRoot(\'' + g.id + '\')" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新增</button></div>' +
+            '<div class="overflow-x-auto"><table class="tree-table min-w-[800px]"><thead><tr>' +
+              '<th>分类名称</th><th style="width:140px">分类编号</th><th style="width:80px">层级</th><th style="width:90px">状态</th><th style="width:240px">操作</th>' +
+            '</tr></thead><tbody>' + renderTreeRows(g.id, tree) + '</tbody></table></div>' +
+          '</div></div>';
+      }).join('');
+      document.getElementById('groupList').innerHTML = html;
+    }
+
+    function toggleGroup(id) {
+      var g = GROUPS.find(function (x) { return x.id === id; });
+      if (g) g.open = !g.open;
+      renderAll();
+    }
+
+    function toggleNode(groupId, nodeId) {
+      var hit = findInGroups(nodeId);
+      if (hit) hit.node.open = !hit.node.open;
+      renderAll();
+    }
+
+    function toggleStatus(id, checked) {
+      var hit = findInGroups(id);
+      if (hit) hit.node.enabled = checked;
+    }
+
+    function openAddRoot(groupId) {
+      var g = GROUPS.find(function (x) { return x.id === groupId; });
+      modalCtx = { groupId: groupId, parentId: null, editId: null, level: 1 };
+      document.getElementById('modalTitle').textContent = '新增分类';
+      document.getElementById('m_group').value = g.name;
+      document.getElementById('m_parent').value = '（一级分类）';
+      document.getElementById('m_name').value = '';
+      document.getElementById('m_code').value = '';
+      document.getElementById('m_status').checked = true;
+      document.getElementById('m_level').value = '1';
+      document.getElementById('editModal').classList.add('open');
+    }
+
+    function openAddChild(groupId, parentId) {
+      var hit = findInGroups(parentId);
+      if (!hit) return;
+      modalCtx = { groupId: groupId, parentId: parentId, editId: null, level: hit.node.level + 1 };
+      document.getElementById('modalTitle').textContent = '新增下级分类';
+      document.getElementById('m_group').value = hit.group.name;
+      document.getElementById('m_parent').value = hit.node.name;
+      document.getElementById('m_name').value = '';
+      document.getElementById('m_code').value = '';
+      document.getElementById('m_status').checked = true;
+      document.getElementById('m_level').value = String(hit.node.level + 1);
+      document.getElementById('editModal').classList.add('open');
+    }
+
+    function openEdit(groupId, id) {
+      var hit = findInGroups(id);
+      if (!hit) return;
+      modalCtx = { groupId: groupId, parentId: null, editId: id, level: hit.node.level };
+      document.getElementById('modalTitle').textContent = '编辑分类';
+      document.getElementById('m_group').value = hit.group.name;
+      document.getElementById('m_parent').value = '—';
+      document.getElementById('m_name').value = hit.node.name;
+      document.getElementById('m_code').value = hit.node.code || '';
+      document.getElementById('m_status').checked = hit.node.enabled;
+      document.getElementById('m_level').value = String(hit.node.level);
+      document.getElementById('editModal').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('editModal').classList.remove('open'); }
+
+    function saveModal() {
+      var name = document.getElementById('m_name').value.trim();
+      if (!name) { alert('请输入分类名称'); return; }
+      var code = document.getElementById('m_code').value.trim();
+      var enabled = document.getElementById('m_status').checked;
+      var g = GROUPS.find(function (x) { return x.id === modalCtx.groupId; });
+      if (!g) return;
+
+      if (modalCtx.editId) {
+        var hit = findInGroups(modalCtx.editId);
+        if (hit) { hit.node.name = name; hit.node.code = code; hit.node.enabled = enabled; }
+      } else {
+        var node = { id: 'n' + Date.now(), name: name, code: code, level: modalCtx.level, enabled: enabled, children: [], open: true };
+        if (modalCtx.parentId) {
+          var parent = findInGroups(modalCtx.parentId);
+          if (parent) {
+            parent.node.children = parent.node.children || [];
+            parent.node.children.push(node);
+            parent.node.open = true;
+          }
+        } else {
+          g.children.push(node);
+          g.open = true;
+        }
+      }
+      closeModal();
+      renderAll();
+    }
+
+    function removeNode(groupId, id) {
+      if (!confirm('确定删除该分类及其下级？')) return;
+      var g = GROUPS.find(function (x) { return x.id === groupId; });
+      if (g) removeFromTree(g.children, id);
+      renderAll();
+    }
+
+    function resetFilter() {
+      document.getElementById('f_name').value = '';
+      document.getElementById('f_code').value = '';
+      document.getElementById('f_status').value = '';
+      renderAll();
+    }
+
+    document.getElementById('editModal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
+    renderAll();
+  </script>
+</body>
+</html>
