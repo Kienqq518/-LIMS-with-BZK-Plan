@@ -52,6 +52,44 @@
     .upload-zone { border: 1px dashed #cbd5e1; border-radius: 6px; padding: 28px; text-align: center; color: #64748b; background: #f8fafc; cursor: pointer; }
     .upload-zone i { font-size: 28px; color: #94a3b8; margin-bottom: 8px; }
     .info-bar { margin: 12px 16px; padding: 10px 14px; border-radius: 4px; background: #fffbeb; border: 1px solid #fde68a; font-size: 12px; color: #92400e; line-height: 1.6; }
+    .po-mask { position: fixed; inset: 0; z-index: 200; display: none; flex-direction: column; background: #eef2f7; }
+    .po-mask.open { display: flex; }
+    .po-titlebar { display: flex; align-items: center; justify-content: space-between; height: 36px; padding: 0 12px; background: linear-gradient(180deg, #4a90d9 0%, #357abd 100%); color: #fff; font-size: 13px; flex-shrink: 0; }
+    .po-titlebar .po-save { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 3px; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); cursor: pointer; font-size: 12px; }
+    .po-titlebar .po-save:hover { background: rgba(255,255,255,.25); }
+    .po-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px 10px; background: #f3f4f6; border-bottom: 1px solid #d1d5db; font-size: 12px; flex-shrink: 0; }
+    .po-toolbar .tb-group { display: flex; align-items: center; gap: 2px; padding-right: 8px; margin-right: 8px; border-right: 1px solid #d1d5db; }
+    .po-toolbar .tb-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 3px; color: #374151; cursor: default; }
+    .po-body { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+    .po-editor { flex: 1; min-width: 0; overflow: auto; background: #c8c8c8; padding: 24px; }
+    .po-paper { width: 794px; min-height: 1123px; margin: 0 auto; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.15); padding: 48px 56px; font-family: SimSun, "Songti SC", serif; font-size: 12px; color: #111; line-height: 1.5; }
+    .po-paper .ph { color: #2563eb; background: #eff6ff; padding: 0 2px; border-radius: 2px; font-family: Consolas, monospace; font-size: 11px; white-space: nowrap; }
+    .po-paper table.doc-tbl { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .po-paper table.doc-tbl td, .po-paper table.doc-tbl th { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; text-align: center; word-break: break-all; }
+    .po-paper table.doc-tbl .label { font-weight: normal; }
+    .po-paper .doc-title { text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 8px; margin: 24px 0 8px; font-family: SimHei, "Heiti SC", sans-serif; }
+    .po-paper .doc-subtitle { text-align: center; font-size: 14px; margin-bottom: 20px; }
+    .po-paper .doc-meta { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; }
+    .po-sidebar { width: 340px; flex-shrink: 0; display: flex; flex-direction: column; background: #fff; border-left: 1px solid #d1d5db; }
+    .po-field-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid #e5e7eb; flex-shrink: 0; }
+    .po-field-tab { padding: 10px 14px; font-size: 13px; color: #64748b; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; flex-shrink: 0; }
+    .po-field-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
+    .po-field-search { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; flex-shrink: 0; }
+    .po-field-search input { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px 6px 28px; font-size: 13px; outline: none; }
+    .po-field-search .wrap { position: relative; }
+    .po-field-search .wrap i { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 12px; }
+    .po-field-body { flex: 1; overflow-y: auto; padding: 8px 0; font-size: 13px; }
+    .po-field-group { border-bottom: 1px solid #f1f5f9; }
+    .po-field-group-head { display: flex; align-items: center; gap: 6px; padding: 8px 12px; cursor: pointer; color: #334155; font-weight: 500; }
+    .po-field-group-head:hover { background: #f8fafc; }
+    .po-field-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px 6px 28px; color: #475569; }
+    .po-field-item:hover { background: #f8fafc; }
+    .po-field-item .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .po-field-item .acts { display: flex; gap: 4px; flex-shrink: 0; }
+    .po-field-item .acts button { padding: 2px 8px; font-size: 11px; border-radius: 3px; border: 1px solid; cursor: pointer; }
+    .po-field-item .acts .add { color: #2563eb; border-color: #93c5fd; background: #eff6ff; }
+    .po-field-item .acts .del { color: #ef4444; border-color: #fca5a5; background: #fef2f2; }
+    .po-field-item .acts .loc { color: #64748b; border-color: #cbd5e1; background: #f8fafc; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -214,10 +252,43 @@
     </div>
   </div>
 
+  <!-- PageOffice 模板配置（原型 Mock） -->
+  <div id="pageOfficeModal" class="po-mask">
+    <div class="po-titlebar">
+      <div class="flex items-center gap-3">
+        <span class="font-medium"><i class="fa fa-file-word-o mr-1"></i> PageOffice</span>
+        <span class="opacity-80 text-xs">卓正 PageOffice 开发平台</span>
+        <button class="po-save" onclick="savePageOffice()"><i class="fa fa-floppy-o"></i> 保存</button>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="poFileName" class="text-xs opacity-90"></span>
+        <button onclick="closePageOffice()" class="text-white/80 hover:text-white text-lg leading-none"><i class="fa fa-times"></i></button>
+      </div>
+    </div>
+    <div class="po-toolbar">
+      <div class="tb-group"><span class="tb-btn"><i class="fa fa-bold"></i></span><span class="tb-btn"><i class="fa fa-italic"></i></span><span class="tb-btn"><i class="fa fa-underline"></i></span><span class="tb-btn"><i class="fa fa-strikethrough"></i></span></div>
+      <div class="tb-group"><span class="tb-btn"><i class="fa fa-align-left"></i></span><span class="tb-btn"><i class="fa fa-align-center"></i></span><span class="tb-btn"><i class="fa fa-align-right"></i></span></div>
+      <div class="tb-group"><span class="text-slate-500 px-1">正文</span><span class="text-slate-500 px-1">标题 1</span><span class="text-slate-500 px-1">标题 2</span></div>
+      <span class="text-slate-400 text-xs ml-auto">Word 编辑器（原型演示）</span>
+    </div>
+    <div class="po-body">
+      <div class="po-editor">
+        <div class="po-paper" id="poDocument"></div>
+      </div>
+      <aside class="po-sidebar">
+        <div class="po-field-tabs" id="poFieldTabs"></div>
+        <div class="po-field-search">
+          <div class="wrap"><i class="fa fa-search"></i><input type="text" id="poFieldSearch" placeholder="搜索关键字" oninput="filterPoFields()" /></div>
+        </div>
+        <div class="po-field-body" id="poFieldBody"></div>
+      </aside>
+    </div>
+  </div>
+
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
-    var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null };
+    var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, poType: 'report', poTab: 'center' };
 
     var TREE = [
       { id: 'gqj', label: 'GQJ安全工器具', children: [
@@ -366,7 +437,7 @@
           '<button onclick="renderView()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
           '<button onclick="resetFilters(true)" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600">重置</button>' +
           '<button onclick="alert(\'下载（原型演示）\')" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600"><i class="fa fa-download"></i> 下载</button>';
-      } else {
+      }
     }
 
     function getFilteredRows() {
@@ -397,7 +468,8 @@
     function recordOps(r) {
       if (r.configured && r.file) {
         return '<button onclick="openRename(' + r.id + ')" class="text-blue-600 hover:underline">修改文件名</button> ' +
-          '<button onclick="openConfig(' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="record-config">配置</button> ' +
+          '<button onclick="openPageOffice(\'record\',' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="po-config">配置</button> ' +
+          '<button onclick="openConfig(' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="record-config">版本</button> ' +
           '<button onclick="alert(\'预览（原型演示）\')" class="ml-1 text-blue-600 hover:underline">预览</button> ' +
           '<button onclick="clearRecord(' + r.id + ')" class="ml-1 text-red-500 hover:underline" data-annotate="record-clear">清除</button>';
       }
@@ -409,9 +481,10 @@
       var head = document.getElementById('tableHead');
       var body = document.getElementById('tableBody');
       var rows = getFilteredRows();
-      var ops = function (type) {
+      var ops = function (type, row) {
+        var cfgFn = type === 'record' ? 'openPageOffice(\'record\',' + row.id + ')' : 'openPageOffice(\'' + type + '\')';
         return '<button onclick="alert(\'编辑（原型演示）\')" class="text-blue-600 hover:underline" data-annotate="row-edit">编辑</button> ' +
-          '<button onclick="alert(\'配置（原型演示）\')" class="ml-1 text-blue-600 hover:underline">配置</button> ' +
+          '<button onclick="' + cfgFn + '" class="ml-1 text-blue-600 hover:underline" data-annotate="po-config">配置</button> ' +
           '<button onclick="alert(\'预览（原型演示）\')" class="ml-1 text-blue-600 hover:underline">预览</button> ' +
           '<button onclick="alert(\'删除（原型演示）\')" class="ml-1 text-red-500 hover:underline" data-annotate="row-delete">删除</button>' +
           (type === 'public' ? ' <button onclick="alert(\'上传（原型演示）\')" class="ml-1 text-blue-600 hover:underline">上传</button> <button onclick="openCopyPicker(\'public\')" class="ml-1 text-blue-600 hover:underline">复制</button>' : '');
@@ -423,13 +496,13 @@
           return '<tr><td>' + (i + 1) + '</td><td>' + r.sample + '</td><td>' + r.category + '</td><td>' +
             r.tests.map(function (t) { return '<span class="tag-chip">' + t + '</span>'; }).join('') + '</td>' +
             '<td><span class="link">' + r.file + '</span></td><td><span class="link">' + r.head + '</span></td><td><span class="link">' + r.tail + '</span></td>' +
-            '<td class="whitespace-nowrap">' + ops('body') + '</td></tr>';
+            '<td class="whitespace-nowrap">' + ops('body', r) + '</td></tr>';
         }).join('');
       } else if (state.main === 'report' && state.sub === 'public') {
         head.innerHTML = '<tr><th>序号</th><th>模板内容</th><th>样品分类</th><th>模板文件</th><th style="min-width:240px">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           return '<tr><td>' + (i + 1) + '</td><td>' + r.content + '</td><td>' + (r.category !== '—' ? r.category : r.sample) + '</td>' +
-            '<td><span class="link">' + r.file + '</span></td><td class="whitespace-nowrap">' + ops('public') + '</td></tr>';
+            '<td><span class="link">' + r.file + '</span></td><td class="whitespace-nowrap">' + ops('public', r) + '</td></tr>';
         }).join('');
       } else if (state.main === 'record') {
         head.innerHTML = '<tr><th style="width:36px"><input type="checkbox" /></th><th>序号</th><th>样品名称【型号】</th><th>样品分类</th><th>试验项</th><th>模板文件</th><th style="min-width:220px">操作</th></tr>';
@@ -644,6 +717,157 @@
 
     function confirmCopy() { closeModal('copyModal'); alert('已复制选中模板（原型演示）'); }
 
+    function ph(key) {
+      return '<span class="ph">{{' + key + '}}</span>';
+    }
+
+    var PO_FIELD_TABS = [
+      { id: 'center', label: '检测中心信息', groups: [
+        { title: '承检方信息', open: true, fields: ['承检方单位名称', '承检方税号', '承检方地址', '承检方邮编', '承检方电话', '承检方代表姓名', '承检方代表电话', '承检方开户行', '承检方银行账户', '承检方代表签名', '承检方检测章'] }
+      ]},
+      { id: 'contract', label: '合同信息', groups: [
+        { title: '委托信息', open: true, fields: ['委托编号', '合同编号', '客户单位', '付款单位', '业务员', '委托受理日期'] },
+        { title: '框架合同', open: false, fields: ['框架合同编号', '框架合同名称', '关联框架合同'] }
+      ]},
+      { id: 'report', label: '报告信息', groups: [
+        { title: '报告基本信息', open: true, fields: ['报告编号', '报告日期', '签发日期', '检测结论', '报告页数'] },
+        { title: '签发信息', open: false, fields: ['编制人', '审核人', '批准人', '签发人签名'] }
+      ]},
+      { id: 'device', label: '设备信息', groups: [
+        { title: '检测设备', open: true, fields: ['设备名称', '设备编号', '设备型号', '检定有效期', '测量范围'] }
+      ]},
+      { id: 'sample', label: '样品信息', groups: [
+        { title: '当前样品信息', open: true, fields: ['样品名称', '规格型号', '生产单位', '样品编号', '送样日期', '样品数量'] },
+        { title: '基本信息', open: true, fields: ['样品外观', '样品状态', '样品标识', '收样日期'] }
+      ]},
+      { id: 'result', label: '试验结果集', groups: [
+        { title: '汇总信息', open: true, fields: ['summaryInfo.sumSampleName', 'summaryInfo.sumModel', 'summaryInfo.nextTime', 'standardRequest'] },
+        { title: '样品列表 sampleList', open: true, fields: ['samNumber', 'wgjc[0].wg', 'wgjc[1].wg', 'gpnysy[0].syz', 'gpnysy[0].xldlsy', 'gpnysy[0].ztms', 'gpnysy[1].syz', 'gpnysy[1].xldlsy', 'gpnysy[1].ztms', 'jl'] }
+      ]}
+    ];
+
+    function renderRecordDocument() {
+      return '<table class="doc-tbl">' +
+        '<tr>' +
+        '<td class="label" style="width:11%">试样名称</td><td colspan="2">' + ph('summaryInfo.sumSampleName') + '</td>' +
+        '<td class="label" style="width:11%">规格型号</td><td colspan="2">' + ph('summaryInfo.sumModel') + '</td>' +
+        '<td class="label" rowspan="6" style="width:7%;writing-mode:vertical-rl;letter-spacing:4px">合格证编号</td>' +
+        '</tr>' +
+        '<tr><td class="label" colspan="2">要 · 求</td><td colspan="4" style="text-align:left">' + ph('standardRequest') + '</td></tr>' +
+        '<tr><td colspan="6" style="text-align:left;font-size:11px;color:#64748b;padding:3px 6px">' + ph('#sampleList') + ' … ' + ph('/sampleList') + '</td></tr>' +
+        '<tr>' +
+        '<td>试样编号</td><td>—</td><td>外观</td><td>试验电压<br>(kV·60s)</td><td>泄漏电流<br>(mA)</td><td>状态描述</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td rowspan="2">' + ph('samNumber') + '</td><td rowspan="2">—</td>' +
+        '<td>' + ph('wgjc[0].wg') + '</td><td>' + ph('gpnysy[0].syz') + '</td><td>' + ph('gpnysy[0].xldlsy') + '</td><td>' + ph('gpnysy[0].ztms') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td>' + ph('wgjc[1].wg') + '</td><td>' + ph('gpnysy[1].syz') + '</td><td>' + ph('gpnysy[1].xldlsy') + '</td><td>' + ph('gpnysy[1].ztms') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="2" style="text-align:left">结论：' + ph('jl') + '</td>' +
+        '<td colspan="4" style="text-align:left">编号：' + ph('samNumber') + '</td>' +
+        '</tr>' +
+        '<tr><td class="label" colspan="2">备 · 注</td><td colspan="5" style="text-align:left">检测有效期至 ' + ph('summaryInfo.nextTime') + '</td></tr>' +
+        '</table>';
+    }
+
+    function renderReportDocument() {
+      return '<div class="doc-meta"><span>报告编号 (No.)：' + ph('reportNumber') + '</span><span>第 1 页 共 4 页</span></div>' +
+        '<div class="doc-title">检 测 报 告</div>' +
+        '<div class="doc-subtitle">Test Report</div>' +
+        '<div style="text-align:center;margin-bottom:16px">编号 (No.)：' + ph('reportNumber') + '</div>' +
+        '<table class="doc-tbl">' +
+        '<tr><td class="label" style="width:22%">委托单位<br><span style="font-size:10px">Consignor</span></td><td style="text-align:left">' + ph('ordConsigner') + '</td></tr>' +
+        '<tr><td class="label">工程名称<br><span style="font-size:10px">Project name</span></td><td style="text-align:left">—</td></tr>' +
+        '<tr><td class="label">试样名称<br><span style="font-size:10px">Sample name</span></td><td style="text-align:left">' + ph('samSampleName') + '</td></tr>' +
+        '<tr><td class="label">规格型号<br><span style="font-size:10px">Type</span></td><td style="text-align:left">' + ph('samModel') + '</td></tr>' +
+        '<tr><td class="label">生产单位<br><span style="font-size:10px">Production unit</span></td><td style="text-align:left">' + ph('samProducer') + '</td></tr>' +
+        '<tr><td class="label">检测类别<br><span style="font-size:10px">Test category</span></td><td style="text-align:left">' + ph('ordQuality') + '</td></tr>' +
+        '<tr><td class="label">检测项目<br><span style="font-size:10px">Test items</span></td><td style="text-align:left">' + ph('resName') + '</td></tr>' +
+        '</table>';
+    }
+
+    function renderPoDocument(type) {
+      document.getElementById('poDocument').innerHTML = type === 'record' ? renderRecordDocument() : renderReportDocument();
+    }
+
+    function renderPoFieldTabs() {
+      document.getElementById('poFieldTabs').innerHTML = PO_FIELD_TABS.map(function (t) {
+        return '<div class="po-field-tab' + (t.id === state.poTab ? ' active' : '') + '" onclick="switchPoTab(\'' + t.id + '\')">' + t.label + '</div>';
+      }).join('');
+    }
+
+    function renderPoFields() {
+      var kw = (document.getElementById('poFieldSearch').value || '').trim().toLowerCase();
+      var tab = PO_FIELD_TABS.find(function (t) { return t.id === state.poTab; }) || PO_FIELD_TABS[0];
+      var html = '';
+      (tab.groups || []).forEach(function (g, gi) {
+        var fields = (g.fields || []).filter(function (f) { return !kw || f.toLowerCase().includes(kw); });
+        if (!fields.length && kw) return;
+        html += '<div class="po-field-group"><div class="po-field-group-head" onclick="togglePoGroup(' + gi + ')">' +
+          '<i class="fa fa-caret-' + (g.open !== false ? 'down' : 'right') + ' text-slate-400"></i>' + g.title + '</div>';
+        if (g.open !== false) {
+          fields.forEach(function (f) {
+            html += '<div class="po-field-item"><span class="name" title="' + f + '">' + f + '</span>' +
+              '<span class="acts"><button class="add" onclick="alert(\'添加字段 ' + f + '（原型演示）\')">添加</button>' +
+              '<button class="del" onclick="alert(\'删除字段（原型演示）\')">删除</button>' +
+              '<button class="loc" onclick="alert(\'定位字段（原型演示）\')">定位</button></span></div>';
+          });
+        }
+        html += '</div>';
+      });
+      document.getElementById('poFieldBody').innerHTML = html || '<div class="py-8 text-center text-slate-400 text-sm">无匹配字段</div>';
+    }
+
+    function switchPoTab(id) {
+      state.poTab = id;
+      renderPoFieldTabs();
+      renderPoFields();
+    }
+
+    function togglePoGroup(index) {
+      var tab = PO_FIELD_TABS.find(function (t) { return t.id === state.poTab; });
+      if (tab && tab.groups[index]) {
+        tab.groups[index].open = tab.groups[index].open === false;
+        renderPoFields();
+      }
+    }
+
+    function filterPoFields() { renderPoFields(); }
+
+    function openPageOffice(type, rowId) {
+      state.poType = type;
+      state.poTab = type === 'record' ? 'result' : 'report';
+      var fileName = '模板.docx';
+      if (type === 'record' && rowId) {
+        var row = findRecord(rowId);
+        if (row && row.file) fileName = row.file;
+      } else if (type === 'body') {
+        fileName = 'PVC-C报告模板V1.doc';
+      } else if (type === 'public') {
+        fileName = '电网物资通用模板头.doc';
+      }
+      document.getElementById('poFileName').textContent = fileName;
+      document.getElementById('poFieldSearch').value = '';
+      renderPoDocument(type);
+      renderPoFieldTabs();
+      renderPoFields();
+      document.getElementById('pageOfficeModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePageOffice() {
+      document.getElementById('pageOfficeModal').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function savePageOffice() {
+      closePageOffice();
+      alert('模板已保存（PageOffice 原型演示）');
+    }
+
     renderTree();
     renderView();
 
@@ -654,7 +878,8 @@
         { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板', content: '打开新增/编辑弹窗，配置样品、试验项、模板文件及公共头尾引用。', tag: '报告模板' },
         { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑样品名称、关联试验项、更新模板文件、关联头尾等信息。', tag: '操作说明' },
         { id: 'row-delete', selector: '[data-annotate="row-delete"]', position: 'top-right', title: '删除', content: '删除该条模板配置记录。', tag: '操作说明' },
-        { id: 'record-config', selector: '[data-annotate="record-config"]', position: 'top-right', title: '配置多模板', wide: true, content: '同一试验项可存多个模板版本，通过单选启用其中一个；导出时使用启用模板。', tag: '记录单' },
+        { id: 'record-config', selector: '[data-annotate="record-config"]', position: 'top-right', title: '版本管理', wide: true, content: '同一试验项可存多个模板版本，通过单选启用其中一个；导出时使用启用模板。点击「配置」进入 PageOffice 编辑当前启用模板。', tag: '记录单' },
+        { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 插件打开编辑窗口：左侧为 Word 模板预览区，右侧为配置字段面板（检测中心信息、合同信息、报告信息、设备信息、样品信息、试验结果集）。记录单与报告模板左侧内容不同。', tag: '模板配置' },
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
         { id: 'record-upload', selector: '[data-annotate="record-upload"]', position: 'top-right', title: '上传', content: '未配置模板的试验项可上传模板文件。', tag: '记录单' },
         { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '从其他样品/试验项复制已有模板，避免重复上传。', tag: '记录单' },
