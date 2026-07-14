@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>模板配置 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .main-tab, .sub-tab { border-bottom: 2px solid transparent; color: #64748b; padding: 10px 18px; cursor: pointer; white-space: nowrap; font-size: 14px; }
+    .main-tab.active, .sub-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
+    .tpl-layout { display: flex; gap: 0; min-height: calc(100vh - 130px); }
+    .tpl-tree { width: 220px; flex-shrink: 0; border-right: 1px solid #e2e8f0; background: #fff; }
+    .tpl-tree-head { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+    .tpl-tree-head input { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
+    .tpl-tree-body { padding: 8px 0; max-height: calc(100vh - 200px); overflow-y: auto; font-size: 13px; }
+    .tree-node { padding: 6px 12px 6px 16px; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; }
+    .tree-node:hover { background: #f1f5f9; }
+    .tree-node.active { background: #eff6ff; color: #2563eb; }
+    .tree-node.child { padding-left: 28px; }
+    .tree-node .count { color: #94a3b8; font-size: 12px; }
+    .tpl-main { flex: 1; min-width: 0; background: #fff; }
+    .tpl-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
+    .tpl-toolbar label { font-size: 13px; color: #64748b; white-space: nowrap; }
+    .tpl-toolbar input, .tpl-toolbar select { border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; min-width: 120px; }
+    .tpl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .tpl-table th, .tpl-table td { border: 1px solid #e5e7eb; padding: 9px 10px; text-align: left; vertical-align: top; }
+    .tpl-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
+    .tpl-table tr:hover td { background: #fafafa; }
+    .tpl-table .link { color: #2563eb; cursor: pointer; }
+    .tpl-table .link:hover { text-decoration: underline; }
+    .tag-chip { display: inline-block; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 6px; margin: 2px 4px 2px 0; font-size: 12px; }
+    .modal-mask { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+    .modal-box { width: 560px; max-width: 100%; max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 8px; box-shadow: 0 20px 40px rgba(0,0,0,.15); }
+    .modal-box.lg { width: 900px; }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #f1f5f9; font-size: 15px; font-weight: 500; }
+    .modal-body { padding: 20px; }
+    .modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 20px; border-top: 1px solid #f1f5f9; }
+    .form-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+    .form-row > label { width: 130px; flex-shrink: 0; text-align: right; font-size: 13px; color: #64748b; padding-top: 8px; }
+    .form-row > label .req { color: #ef4444; }
+    .form-row .ctrl { flex: 1; min-width: 0; }
+    .form-row input[type=text], .form-row select, .form-row textarea { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; }
+    .radio-group { display: flex; gap: 20px; padding-top: 6px; font-size: 13px; }
+    .upload-zone { border: 1px dashed #cbd5e1; border-radius: 6px; padding: 28px; text-align: center; color: #64748b; background: #f8fafc; cursor: pointer; }
+    .upload-zone i { font-size: 28px; color: #94a3b8; margin-bottom: 8px; }
+    .info-bar { margin: 12px 16px; padding: 10px 14px; border-radius: 4px; background: #fffbeb; border: 1px solid #fde68a; font-size: 12px; color: #92400e; line-height: 1.6; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      模板配置
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <!-- 一级 Tab -->
+  <div class="flex border-b border-slate-200 bg-white px-4" id="mainTabBar">
+    <div class="main-tab active" data-tab="report">报告</div>
+    <div class="main-tab" data-tab="record">记录单</div>
+  </div>
+
+  <!-- 报告 · 二级 Tab -->
+  <div id="reportSubBar" class="flex border-b border-slate-200 bg-white px-4 text-sm">
+    <div class="sub-tab active" data-sub="body">正文模板</div>
+    <div class="sub-tab" data-sub="public">公共头尾模板</div>
+  </div>
+  <div id="recordSubBar" class="hidden flex border-b border-slate-200 bg-white px-4 text-sm">
+    <div class="sub-tab active" data-sub="record-body">正文模板</div>
+  </div>
+
+  <div class="tpl-layout">
+    <!-- 左侧树 -->
+    <aside class="tpl-tree" id="treePanel">
+      <div class="tpl-tree-head">
+        <input type="text" id="treeSearch" placeholder="请输入关键字搜索" oninput="filterTree()" />
+      </div>
+      <div class="tpl-tree-body" id="treeBody"></div>
+    </aside>
+
+    <!-- 右侧主区 -->
+    <div class="tpl-main">
+      <div class="tpl-toolbar" id="toolbar"></div>
+      <div class="overflow-x-auto px-4 pb-4">
+        <table class="tpl-table min-w-[900px]" id="dataTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-end gap-2 px-4 pb-4 text-sm text-slate-500">
+        <span id="pageTotal">共 0 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>10 条/页</option></select>
+      </div>
+      <div class="info-bar hidden" id="infoBar"></div>
+    </div>
+  </div>
+
+  <!-- 正文模板 新增/编辑 -->
+  <div id="bodyModal" class="modal-mask">
+    <div class="modal-box">
+      <div class="modal-head"><span>新增/编辑详情</span><button onclick="closeModal('bodyModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <div class="form-row"><label><span class="req">*</span> 样品名称(型号)</label><div class="ctrl"><select id="m_sample"><option>PVC-C</option><option>MPP</option><option>HDPE</option></select></div></div>
+        <div class="form-row"><label><span class="req">*</span> 试验项</label><div class="ctrl"><select id="m_tests" multiple size="4" style="width:100%"><option selected>B-颜色外观</option><option selected>B-尺寸检查</option><option>B-环刚度</option><option>B-压扁试验</option></select><div class="mt-1 text-xs text-slate-400">按住 Ctrl / Cmd 多选</div></div></div>
+        <div class="form-row"><label><span class="req">*</span> 模板文件</label><div class="ctrl">
+          <div class="radio-group mb-2"><label><input type="radio" name="bodyFileMode" value="upload" checked onchange="toggleBodyFileMode()" /> 上传</label><label><input type="radio" name="bodyFileMode" value="copy" onchange="toggleBodyFileMode()" /> 复制</label></div>
+          <div id="bodyUploadZone" class="upload-zone" onclick="alert('上传模板文件（原型演示）')"><i class="fa fa-cloud-upload block"></i><div>上传</div></div>
+          <button id="bodyCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openCopyPicker('body')"><i class="fa fa-copy"></i> 复制</button>
+        </div></div>
+        <div class="form-row"><label>引用公共模版头</label><div class="ctrl flex items-center gap-2"><input type="checkbox" id="m_useHead" checked /><select id="m_head" class="flex-1"><option>电网物资通用模板头</option><option>GQJ安全工器具通用模板头</option></select></div></div>
+        <div class="form-row"><label>引用公共模版尾</label><div class="ctrl flex items-center gap-2"><input type="checkbox" id="m_useTail" /><select id="m_tail" class="flex-1" disabled><option>电网物资通用模板尾</option></select></div></div>
+      </div>
+      <div class="modal-foot"><button onclick="closeModal('bodyModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="saveBodyModal()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
+    </div>
+  </div>
+
+  <!-- 公共头尾 新增/编辑 -->
+  <div id="publicModal" class="modal-mask">
+    <div class="modal-box">
+      <div class="modal-head"><span>新增/编辑详情</span><button onclick="closeModal('publicModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <div class="form-row"><label>模板内容</label><div class="ctrl"><select id="p_content"><option>模板头</option><option>模板尾</option></select></div></div>
+        <div class="form-row"><label></label><div class="ctrl radio-group"><label><input type="radio" name="p_scope" value="category" checked onchange="togglePublicScope()" /> 样品分类</label><label><input type="radio" name="p_scope" value="sample" onchange="togglePublicScope()" /> 样品名称(型号)</label></div></div>
+        <div class="form-row" id="p_categoryRow"><label>样品分类</label><div class="ctrl"><select id="p_category" multiple size="3" style="width:100%"><option selected>976</option><option selected>WZ电网物资</option><option>GQJ安全工器具</option></select></div></div>
+        <div class="form-row hidden" id="p_sampleRow"><label>样品名称(型号)</label><div class="ctrl"><select id="p_sample" multiple size="3" style="width:100%"><option>PVC-C</option><option>MPP</option></select></div></div>
+        <div class="form-row"><label>模板文件</label><div class="ctrl">
+          <div class="radio-group mb-2"><label><input type="radio" name="pubFileMode" value="upload" checked onchange="togglePublicFileMode()" /> 上传</label><label><input type="radio" name="pubFileMode" value="copy" onchange="togglePublicFileMode()" /> 复制</label></div>
+          <div id="publicUploadZone" class="upload-zone" onclick="alert('上传模板文件（原型演示）')"><i class="fa fa-cloud-upload block"></i><div>上传</div></div>
+          <button id="publicCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openCopyPicker('public')"><i class="fa fa-copy"></i> 复制</button>
+        </div></div>
+      </div>
+      <div class="modal-foot"><button onclick="closeModal('publicModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="savePublicModal()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
+    </div>
+  </div>
+
+  <!-- 复制模板选择 -->
+  <div id="copyModal" class="modal-mask">
+    <div class="modal-box lg">
+      <div class="modal-head"><span id="copyModalTitle">公共模板头尾复制</span><button onclick="closeModal('copyModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <div class="tpl-toolbar" style="padding:0 0 12px;border:none">
+          <label>模板内容</label><select style="min-width:100px"><option>全部</option><option>模板头</option><option>模板尾</option></select>
+          <label>样品分类</label><input type="text" placeholder="请输入" />
+          <button class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>
+        </div>
+        <table class="tpl-table">
+          <thead><tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>模板内容</th><th>样品分类</th><th>样品名称(型号)</th><th>操作</th></tr></thead>
+          <tbody id="copyTableBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-foot"><button onclick="closeModal('copyModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="confirmCopy()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var state = { main: 'report', sub: 'body', treeId: 'pvc-c' };
+
+    var TREE = [
+      { id: 'gqj', label: 'GQJ安全工器具', children: [
+        { id: 'glove', label: '01绝缘手套', count: 2 },
+        { id: 'rod', label: '02绝缘操作杆', count: 1 }
+      ]},
+      { id: 'wz', label: 'WZ电网物资', children: [
+        { id: 'cable-duct', label: '02电力电缆导管', count: 4 },
+        { id: 'pvc-c', label: 'PVC-C', count: 3 },
+        { id: 'mpp', label: 'MPP', count: 2 }
+      ]}
+    ];
+
+    var BODY_DATA = [
+      { id: 1, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', tests: ['B-颜色外观', 'B-尺寸检查'], file: 'PVC-C报告模板V1.doc', head: '电网物资通用模板头.doc', tail: '—' },
+      { id: 2, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', tests: ['B-环刚度', 'B-压扁试验'], file: 'PVC-C报告模板V2.doc', head: '电网物资通用模板头.doc', tail: '电网物资通用模板尾.doc' },
+      { id: 3, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', tests: ['B-落锤冲击'], file: 'PVC-C报告模板V3.doc', head: '—', tail: '—' }
+    ];
+
+    var PUBLIC_DATA = [
+      { id: 1, content: '模板头', category: 'GQJ安全工器具', sample: '—', file: '安全工器具通用模板头.doc' },
+      { id: 2, content: '模板头', category: 'WZ电网物资', sample: '—', file: '电网物资通用模板头.doc' },
+      { id: 3, content: '模板尾', category: 'WZ电网物资', sample: '—', file: '电网物资通用模板尾.doc' },
+      { id: 4, content: '模板头', category: '—', sample: 'PVC-C', file: 'PVC-C专用模板头.doc' },
+      { id: 5, content: '模板尾', category: 'GQJ安全工器具', sample: '—', file: '安全工器具通用模板尾.doc' }
+    ];
+
+    var RECORD_DATA = [
+      { id: 1, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', tests: ['B-颜色外观'], file: 'PVC-C记录单.doc' },
+      { id: 2, tree: 'glove', sample: '01绝缘手套', category: 'GQJ安全工器具', tests: ['工频耐压'], file: '绝缘手套记录单.doc' }
+    ];
+
+    function renderTree() {
+      var kw = (document.getElementById('treeSearch').value || '').trim().toLowerCase();
+      var html = '';
+      TREE.forEach(function (g) {
+        var showGroup = !kw || g.label.toLowerCase().includes(kw);
+        var childHtml = (g.children || []).map(function (c) {
+          if (kw && !showGroup && !c.label.toLowerCase().includes(kw)) return '';
+          var active = state.treeId === c.id ? ' active' : '';
+          var count = c.count ? '<span class="count">(' + c.count + ')</span>' : '';
+          return '<div class="tree-node child' + active + '" data-id="' + c.id + '" onclick="selectTree(\'' + c.id + '\')">' + c.label + count + '</div>';
+        }).join('');
+        if (!childHtml && kw && !showGroup) return;
+        html += '<div class="tree-node" data-annotate="tree-count"><i class="fa fa-folder-o text-slate-400"></i>' + g.label + '</div>' + childHtml;
+      });
+      document.getElementById('treeBody').innerHTML = html;
+    }
+
+    function filterTree() { renderTree(); }
+
+    function selectTree(id) {
+      state.treeId = id;
+      renderTree();
+      renderView();
+    }
+
+    function renderToolbar() {
+      var el = document.getElementById('toolbar');
+      if (state.main === 'report' && state.sub === 'body') {
+        el.innerHTML = '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
+          '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
+          '<label>试验项</label><input id="f_test" placeholder="请输入" />' +
+          '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
+          '<button onclick="renderView()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
+          '<button onclick="resetFilters()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600">重置</button>' +
+          '<button onclick="alert(\'下载（原型演示）\')" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600"><i class="fa fa-download"></i> 下载</button>' +
+          '<button onclick="openBodyModal()" class="ml-auto rounded bg-blue-600 px-4 py-1.5 text-sm text-white" data-annotate="btn-add"><i class="fa fa-plus"></i> 新增</button>';
+      } else if (state.main === 'report' && state.sub === 'public') {
+        el.innerHTML = '<label>模板内容</label><select id="f_content"><option value="">全部</option><option>模板头</option><option>模板尾</option></select>' +
+          '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
+          '<label>样品名称</label><input id="f_sample" placeholder="请输入" />' +
+          '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
+          '<button onclick="renderView()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">查询</button>' +
+          '<button onclick="resetFilters()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600">重置</button>' +
+          '<button onclick="alert(\'下载（原型演示）\')" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600">下载</button>' +
+          '<button onclick="openPublicModal()" class="ml-auto rounded bg-blue-600 px-4 py-1.5 text-sm text-white"><i class="fa fa-plus"></i> 新增</button>';
+      } else {
+        el.innerHTML = '<label>样品</label><input placeholder="请输入" />' +
+          '<label>试验项</label><input placeholder="请输入" />' +
+          '<button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">查询</button>' +
+          '<button class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600">重置</button>' +
+          '<button class="ml-auto rounded bg-blue-600 px-4 py-1.5 text-sm text-white"><i class="fa fa-plus"></i> 新增</button>';
+      }
+    }
+
+    function getFilteredRows() {
+      var rows;
+      if (state.main === 'record') rows = RECORD_DATA.filter(function (r) { return r.tree === state.treeId; });
+      else if (state.sub === 'public') rows = PUBLIC_DATA.slice();
+      else rows = BODY_DATA.filter(function (r) { return r.tree === state.treeId; });
+
+      var sample = document.getElementById('f_sample');
+      var category = document.getElementById('f_category');
+      var test = document.getElementById('f_test');
+      var file = document.getElementById('f_file');
+      var content = document.getElementById('f_content');
+      if (sample && sample.value.trim()) rows = rows.filter(function (r) { return (r.sample || '').includes(sample.value.trim()); });
+      if (category && category.value.trim()) rows = rows.filter(function (r) { return (r.category || '').includes(category.value.trim()); });
+      if (test && test.value.trim()) rows = rows.filter(function (r) { return (r.tests || []).join(',').includes(test.value.trim()); });
+      if (file && file.value.trim()) rows = rows.filter(function (r) { return (r.file || '').includes(file.value.trim()); });
+      if (content && content.value) rows = rows.filter(function (r) { return r.content === content.value; });
+      return rows;
+    }
+
+    function renderTable() {
+      var head = document.getElementById('tableHead');
+      var body = document.getElementById('tableBody');
+      var rows = getFilteredRows();
+      var ops = function (type) {
+        return '<button onclick="alert(\'编辑（原型演示）\')" class="text-blue-600 hover:underline" data-annotate="row-edit">编辑</button> ' +
+          '<button onclick="alert(\'配置（原型演示）\')" class="ml-1 text-blue-600 hover:underline">配置</button> ' +
+          '<button onclick="alert(\'预览（原型演示）\')" class="ml-1 text-blue-600 hover:underline">预览</button> ' +
+          '<button onclick="alert(\'删除（原型演示）\')" class="ml-1 text-red-500 hover:underline" data-annotate="row-delete">删除</button>' +
+          (type === 'public' ? ' <button onclick="alert(\'上传（原型演示）\')" class="ml-1 text-blue-600 hover:underline">上传</button> <button onclick="openCopyPicker(\'public\')" class="ml-1 text-blue-600 hover:underline">复制</button>' : '');
+      };
+
+      if (state.main === 'report' && state.sub === 'body') {
+        head.innerHTML = '<tr><th>序号</th><th>样品</th><th>样品分类</th><th>试验项</th><th>模板文件</th><th>引用公共模版头</th><th>引用公共模版尾</th><th style="min-width:200px">操作</th></tr>';
+        body.innerHTML = rows.map(function (r, i) {
+          return '<tr><td>' + (i + 1) + '</td><td>' + r.sample + '</td><td>' + r.category + '</td><td>' +
+            r.tests.map(function (t) { return '<span class="tag-chip">' + t + '</span>'; }).join('') + '</td>' +
+            '<td><span class="link">' + r.file + '</span></td><td><span class="link">' + r.head + '</span></td><td><span class="link">' + r.tail + '</span></td>' +
+            '<td class="whitespace-nowrap">' + ops('body') + '</td></tr>';
+        }).join('');
+      } else if (state.main === 'report' && state.sub === 'public') {
+        head.innerHTML = '<tr><th>序号</th><th>模板内容</th><th>样品分类</th><th>模板文件</th><th style="min-width:240px">操作</th></tr>';
+        body.innerHTML = rows.map(function (r, i) {
+          return '<tr><td>' + (i + 1) + '</td><td>' + r.content + '</td><td>' + (r.category !== '—' ? r.category : r.sample) + '</td>' +
+            '<td><span class="link">' + r.file + '</span></td><td class="whitespace-nowrap">' + ops('public') + '</td></tr>';
+        }).join('');
+      } else {
+        head.innerHTML = '<tr><th>序号</th><th>样品</th><th>样品分类</th><th>试验项</th><th>模板文件</th><th>操作</th></tr>';
+        body.innerHTML = rows.map(function (r, i) {
+          return '<tr><td>' + (i + 1) + '</td><td>' + r.sample + '</td><td>' + r.category + '</td><td>' +
+            r.tests.map(function (t) { return '<span class="tag-chip">' + t + '</span>'; }).join('') + '</td>' +
+            '<td><span class="link">' + r.file + '</span></td><td>' + ops('body') + '</td></tr>';
+        }).join('');
+      }
+      document.getElementById('pageTotal').textContent = '共 ' + rows.length + ' 条';
+    }
+
+    function renderInfoBar() {
+      var bar = document.getElementById('infoBar');
+      if (state.main === 'report' && state.sub === 'body') {
+        bar.classList.remove('hidden');
+        bar.innerHTML = '<i class="fa fa-info-circle"></i> 目前单样品型号可支持存储多版报告，每版支持不同的试验项组合；关联关系需要创建，需要选择是否关联模板头/尾。';
+      } else if (state.main === 'report' && state.sub === 'public') {
+        bar.classList.remove('hidden');
+        bar.innerHTML = '<i class="fa fa-info-circle"></i> 模板内容单选「样品分类」或「样品名称(型号)」；二者均支持多选。模板文件非必填，可上传新模板或复制已有模板。';
+      } else {
+        bar.classList.add('hidden');
+      }
+    }
+
+    function renderView() {
+      renderToolbar();
+      renderTable();
+      renderInfoBar();
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function resetFilters() {
+      ['f_sample', 'f_category', 'f_test', 'f_file'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      var c = document.getElementById('f_content');
+      if (c) c.value = '';
+      renderTable();
+    }
+
+    function switchMain(tab) {
+      state.main = tab;
+      state.sub = tab === 'record' ? 'record-body' : 'body';
+      document.querySelectorAll('#mainTabBar .main-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === tab); });
+      document.getElementById('reportSubBar').classList.toggle('hidden', tab !== 'report');
+      document.getElementById('recordSubBar').classList.toggle('hidden', tab !== 'record');
+      document.getElementById('treePanel').classList.toggle('hidden', tab === 'report' && state.sub === 'public');
+      renderView();
+    }
+
+    function switchSub(sub) {
+      state.sub = sub;
+      var bar = state.main === 'report' ? '#reportSubBar' : '#recordSubBar';
+      document.querySelectorAll(bar + ' .sub-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-sub') === sub); });
+      document.getElementById('treePanel').classList.toggle('hidden', state.main === 'report' && sub === 'public');
+      renderView();
+    }
+
+    document.getElementById('mainTabBar').addEventListener('click', function (e) {
+      var t = e.target.closest('.main-tab');
+      if (t) switchMain(t.getAttribute('data-tab'));
+    });
+    document.getElementById('reportSubBar').addEventListener('click', function (e) {
+      var t = e.target.closest('.sub-tab');
+      if (t) switchSub(t.getAttribute('data-sub'));
+    });
+
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    function openBodyModal() { openModal('bodyModal'); }
+    function openPublicModal() { openModal('publicModal'); }
+    function saveBodyModal() { closeModal('bodyModal'); alert('正文模板已保存（原型演示）'); }
+    function savePublicModal() { closeModal('publicModal'); alert('公共头尾模板已保存（原型演示）'); }
+
+    function toggleBodyFileMode() {
+      var copy = document.querySelector('input[name=bodyFileMode]:checked').value === 'copy';
+      document.getElementById('bodyUploadZone').classList.toggle('hidden', copy);
+      document.getElementById('bodyCopyBtn').classList.toggle('hidden', !copy);
+    }
+    function togglePublicFileMode() {
+      var copy = document.querySelector('input[name=pubFileMode]:checked').value === 'copy';
+      document.getElementById('publicUploadZone').classList.toggle('hidden', copy);
+      document.getElementById('publicCopyBtn').classList.toggle('hidden', !copy);
+    }
+    function togglePublicScope() {
+      var cat = document.querySelector('input[name=p_scope]:checked').value === 'category';
+      document.getElementById('p_categoryRow').classList.toggle('hidden', !cat);
+      document.getElementById('p_sampleRow').classList.toggle('hidden', cat);
+    }
+
+    document.getElementById('m_useTail').addEventListener('change', function () {
+      document.getElementById('m_tail').disabled = !this.checked;
+    });
+
+    function openCopyPicker(from) {
+      document.getElementById('copyModalTitle').textContent = from === 'body' ? '模板文件复制' : '公共模板头尾复制';
+      document.getElementById('copyTableBody').innerHTML = PUBLIC_DATA.map(function (r, i) {
+        return '<tr><td><input type="radio" name="copyPick" value="' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td><td>' + r.file + '</td><td>' + r.content + '</td><td>' + r.category + '</td><td>' + r.sample + '</td><td><button class="text-blue-600">预览</button></td></tr>';
+      }).join('');
+      openModal('copyModal');
+    }
+    function confirmCopy() { closeModal('copyModal'); alert('已复制选中模板（原型演示）'); }
+
+    renderTree();
+    renderView();
+
+    PrototypeAnnotation.init({
+      annotations: [
+        { id: 'tree-count', selector: '[data-annotate="tree-count"]', position: 'top-right', title: '关联模板数量', content: '括号内数字表示该分类/型号下已关联的报告模板数量。', tag: '模板配置' },
+        { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板', content: '打开新增/编辑弹窗，配置样品、试验项、模板文件及公共头尾引用。', tag: '模板配置' },
+        { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑样品名称、关联试验项、更新模板文件、关联头尾等信息。', tag: '操作说明' },
+        { id: 'row-delete', selector: '[data-annotate="row-delete"]', position: 'top-right', title: '删除', content: '删除该条模板配置记录。', tag: '操作说明' }
+      ]
+    });
+  </script>
+</body>
+</html>
