@@ -25,6 +25,15 @@
     .scheme-chip:hover { border-color: #93c5fd; color: #2563eb; }
     .scheme-chip.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; font-weight: 500; }
     .footer-bar { position: sticky; bottom: 0; display: flex; justify-content: center; gap: 12px; padding: 14px; background: #fff; border-top: 1px solid #e2e8f0; margin: 0 -20px -80px; }
+    .modal-mask { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+    .batch-form-row { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .batch-form-row > label { width: 110px; flex-shrink: 0; text-align: right; font-size: 13px; color: #64748b; }
+    .batch-form-row > label .req { color: #ef4444; margin-right: 2px; }
+    .batch-form-row .ctrl { flex: 1; min-width: 0; }
+    .batch-form-row select { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; background: #fff; }
+    .batch-form-row select:focus { border-color: #3b82f6; }
+    .batch-radios { display: flex; flex-wrap: wrap; gap: 16px; padding-top: 2px; font-size: 13px; color: #475569; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -76,6 +85,49 @@
       <aside class="tree-panel" id="treePanel"></aside>
       <div class="config-panel" id="configPanel">
         <div class="py-16 text-center text-slate-400 text-sm">请在左侧选择样品型号</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量设置弹窗 -->
+  <div id="batchModal" class="modal-mask">
+    <div class="w-[520px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 class="text-base font-medium text-slate-800">批量设置</h3>
+        <button onclick="closeBatchModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-5">
+        <div class="batch-form-row">
+          <label><span class="req">*</span>样品分类</label>
+          <div class="ctrl">
+            <select id="b_category">
+              <option value="">请选择样品分类</option>
+            </select>
+          </div>
+        </div>
+        <div class="batch-form-row">
+          <label><span class="req">*</span>检测类别</label>
+          <div class="ctrl">
+            <select id="b_testType">
+              <option value="">请选择检测类别</option>
+              <option>例行试验</option>
+              <option>抽样试验</option>
+              <option>出厂检验</option>
+              <option>型式检验</option>
+            </select>
+          </div>
+        </div>
+        <div class="batch-form-row">
+          <label><span class="req">*</span>规则判定方案</label>
+          <div class="ctrl batch-radios">
+            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="b_scheme" value="0" checked /> ABC质量特性分级判定</label>
+            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="b_scheme" value="1" /> 简单合格/不合格判定</label>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeBatchModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="confirmBatch()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
       </div>
     </div>
   </div>
@@ -239,12 +291,45 @@
     }
 
     function batchSet() {
-      var cfg = ensureConfig(state.selectedId);
-      var first = cfg[TEST_TYPES[0]];
-      TEST_TYPES.forEach(function (t) { cfg[t] = first; });
-      renderConfig();
-      alert('已将「' + TEST_TYPES[0] + '」的方案批量应用到全部试验类型（原型演示）');
+      fillBatchCategory();
+      document.getElementById('b_testType').value = '';
+      document.querySelector('input[name=b_scheme][value="0"]').checked = true;
+      document.getElementById('batchModal').classList.add('open');
     }
+
+    function fillBatchCategory() {
+      var sel = document.getElementById('b_category');
+      var leaves = flattenLeaves(TREES[state.cat], []);
+      sel.innerHTML = '<option value="">请选择样品分类</option>' +
+        leaves.map(function (n) {
+          var selected = n.id === state.selectedId ? ' selected' : '';
+          return '<option value="' + n.id + '"' + selected + '>' + n.label + '</option>';
+        }).join('');
+    }
+
+    function closeBatchModal() {
+      document.getElementById('batchModal').classList.remove('open');
+    }
+
+    function confirmBatch() {
+      var catId = document.getElementById('b_category').value;
+      var testType = document.getElementById('b_testType').value;
+      var schemeEl = document.querySelector('input[name=b_scheme]:checked');
+      var schemeIdx = schemeEl ? parseInt(schemeEl.value, 10) : 0;
+      if (!catId) { alert('请选择样品分类'); return; }
+      if (!testType) { alert('请选择检测类别'); return; }
+      var cfg = ensureConfig(catId);
+      cfg[testType] = schemeIdx;
+      state.selectedId = catId;
+      closeBatchModal();
+      renderTree();
+      renderConfig();
+      alert('批量设置已应用（原型演示）');
+    }
+
+    document.getElementById('batchModal').addEventListener('click', function (e) {
+      if (e.target === this) closeBatchModal();
+    });
 
     function saveConfig() {
       alert('报告判定配置已保存（原型演示）');
