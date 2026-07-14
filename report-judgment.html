@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>报告判定 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .cat-tab { border-bottom: 2px solid transparent; color: #64748b; padding: 10px 18px; cursor: pointer; white-space: nowrap; font-size: 14px; }
+    .cat-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
+    .layout { display: flex; gap: 0; min-height: calc(100vh - 260px); border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; overflow: hidden; }
+    .tree-panel { width: 320px; flex-shrink: 0; border-right: 1px solid #e2e8f0; overflow-y: auto; max-height: calc(100vh - 260px); }
+    .tree-node { padding: 7px 12px; cursor: pointer; font-size: 13px; color: #475569; display: flex; align-items: center; gap: 4px; user-select: none; }
+    .tree-node:hover { background: #f8fafc; }
+    .tree-node.active { background: #eff6ff; color: #2563eb; font-weight: 500; }
+    .tree-toggle { width: 14px; flex-shrink: 0; color: #94a3b8; font-size: 10px; text-align: center; }
+    .config-panel { flex: 1; min-width: 0; overflow-y: auto; padding: 16px 20px 80px; max-height: calc(100vh - 260px); }
+    .test-section { margin-bottom: 20px; }
+    .test-section-title { font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 10px; padding-left: 8px; border-left: 3px solid #2563eb; }
+    .scheme-options { display: flex; flex-wrap: wrap; gap: 10px; }
+    .scheme-chip { border: 1px solid #e2e8f0; border-radius: 4px; padding: 8px 14px; font-size: 13px; color: #64748b; cursor: pointer; background: #fff; transition: all .15s; }
+    .scheme-chip:hover { border-color: #93c5fd; color: #2563eb; }
+    .scheme-chip.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; font-weight: 500; }
+    .footer-bar { position: sticky; bottom: 0; display: flex; justify-content: center; gap: 12px; padding: 14px; background: #fff; border-top: 1px solid #e2e8f0; margin: 0 -20px -80px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      报告判定
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <!-- 大类 Tab -->
+  <div class="flex overflow-x-auto border-b border-slate-200 bg-white px-4" id="catTabBar">
+    <div class="cat-tab active" data-cat="dlwz">电力物资类</div>
+    <div class="cat-tab" data-cat="aqgqj">安全工器具类</div>
+    <div class="cat-tab" data-cat="hjjc">环境检测</div>
+    <div class="cat-tab" data-cat="gcjc">工程检测</div>
+  </div>
+
+  <div class="p-4 space-y-4">
+    <!-- 筛选 -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2">
+          <label class="whitespace-nowrap text-sm text-slate-600">样品分类</label>
+          <select id="f_category" class="w-44 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">请选择样品分类</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="whitespace-nowrap text-sm text-slate-600">样品名称</label>
+          <input id="f_sample" class="w-44 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入样品名称" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="whitespace-nowrap text-sm text-slate-600">规则判定方案</label>
+          <select id="f_scheme" class="w-52 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">请选择规则判定方案</option>
+            <option>规则判定方案—ABC质量特性分级判定</option>
+            <option>规则判定方案—简单合格/不合格判定</option>
+          </select>
+        </div>
+        <button onclick="doSearch()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+        <button onclick="doReset()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+      </div>
+    </div>
+
+    <!-- 左树 + 右配置 -->
+    <div class="layout">
+      <aside class="tree-panel" id="treePanel"></aside>
+      <div class="config-panel" id="configPanel">
+        <div class="py-16 text-center text-slate-400 text-sm">请在左侧选择样品型号</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var SCHEMES = [
+      '规则判定方案—ABC质量特性分级判定',
+      '规则判定方案—简单合格/不合格判定'
+    ];
+    var TEST_TYPES = ['例行试验', '抽样试验', '出厂检验', '型式检验'];
+
+    var TREES = {
+      dlwz: [
+        { id: 'cable', label: '电力电缆类', children: [
+          { id: 'v1', label: '额定电压 1kV 和 3kV', children: [] },
+          { id: 'v6', label: '额定电压 6kV-30kV', children: [
+            { id: 'std', label: 'GBT 12706.2-2020', children: [
+              { id: 'cu', label: '铜芯', children: [
+                { id: 'model-3c', label: '8.7/10kV·3芯', leaf: true },
+                { id: 'model-1c', label: '单芯 10kv', leaf: true }
+              ]},
+              { id: 'al', label: '铝芯', children: [
+                { id: 'model-al', label: '8.7/10kV·3芯铝芯', leaf: true }
+              ]}
+            ]}
+          ]},
+          { id: 'v35', label: '额定电压 35kV', children: [] }
+        ]},
+        { id: 'pipe', label: '电缆保护管', children: [
+          { id: 'dlt1', label: 'DLT 802.1-2023', children: [
+            { id: 'ds', label: 'DS实壁型塑料电缆导管', leaf: true }
+          ]},
+          { id: 'dlt3', label: 'DLT 802.3-2023', children: [
+            { id: 'pipe-s', label: '实壁型塑料电缆导管_直管', leaf: true },
+            { id: 'pipe-k', label: '实壁型塑料电缆导管_带承口', leaf: true }
+          ]}
+        ]}
+      ],
+      aqgqj: [
+        { id: 'tool', label: '安全工器具', children: [
+          { id: 'glove', label: '绝缘手套', leaf: true },
+          { id: 'rod', label: '绝缘操作杆', leaf: true }
+        ]}
+      ],
+      hjjc: [
+        { id: 'env', label: '环境检测', children: [
+          { id: 'water', label: '水质检测', leaf: true }
+        ]}
+      ],
+      gcjc: [
+        { id: 'eng', label: '工程检测', children: [
+          { id: 'cement', label: '通用硅酸盐水泥', leaf: true }
+        ]}
+      ]
+    };
+
+    /* 每个叶子节点的判定方案配置：testType -> schemeIndex */
+    var CONFIG = {
+      'model-3c': { '例行试验': 0, '抽样试验': 0, '出厂检验': 1, '型式检验': 0 },
+      'model-1c': { '例行试验': 1, '抽样试验': 1, '出厂检验': 1, '型式检验': 1 },
+      'ds': { '例行试验': 0, '抽样试验': 0, '出厂检验': 0, '型式检验': 0 },
+      'pipe-s': { '例行试验': 0, '抽样试验': 1, '出厂检验': 0, '型式检验': 1 },
+      'glove': { '例行试验': 1, '抽样试验': 1, '出厂检验': 1, '型式检验': 1 },
+      'cement': { '例行试验': 0, '抽样试验': 0, '出厂检验': 0, '型式检验': 0 }
+    };
+
+    var state = { cat: 'dlwz', selectedId: 'model-3c', openIds: { cable: true, v6: true, std: true, cu: true, pipe: true } };
+
+    function flattenLeaves(nodes, out) {
+      (nodes || []).forEach(function (n) {
+        if (n.leaf) out.push(n);
+        else if (n.children) flattenLeaves(n.children, out);
+      });
+      return out;
+    }
+
+    function fillCategorySelect() {
+      var sel = document.getElementById('f_category');
+      var leaves = flattenLeaves(TREES[state.cat], []);
+      sel.innerHTML = '<option value="">请选择样品分类</option>' +
+        leaves.map(function (n) { return '<option value="' + n.id + '">' + n.label + '</option>'; }).join('');
+    }
+
+    function renderTreeNodes(nodes, depth) {
+      var html = '';
+      (nodes || []).forEach(function (n) {
+        var hasChild = n.children && n.children.length;
+        var isOpen = state.openIds[n.id];
+        var pad = depth * 16 + 12;
+        var active = state.selectedId === n.id ? ' active' : '';
+        var toggle = hasChild
+          ? '<span class="tree-toggle">' + (isOpen ? '▼' : '▶') + '</span>'
+          : '<span class="tree-toggle"></span>';
+        html += '<div class="tree-node' + active + '" style="padding-left:' + pad + 'px" data-id="' + n.id + '" data-leaf="' + (n.leaf ? '1' : '0') + '" onclick="onTreeClick(event,\'' + n.id + '\',' + !!n.leaf + ',' + !!hasChild + ')">' +
+          toggle + '<span>' + n.label + '</span></div>';
+        if (hasChild && isOpen) html += renderTreeNodes(n.children, depth + 1);
+      });
+      return html;
+    }
+
+    function renderTree() {
+      document.getElementById('treePanel').innerHTML = renderTreeNodes(TREES[state.cat], 0);
+    }
+
+    function onTreeClick(e, id, isLeaf, hasChild) {
+      e.stopPropagation();
+      if (hasChild) {
+        state.openIds[id] = !state.openIds[id];
+      }
+      if (isLeaf) state.selectedId = id;
+      renderTree();
+      if (isLeaf) renderConfig();
+    }
+
+    function ensureConfig(id) {
+      if (!CONFIG[id]) {
+        CONFIG[id] = {};
+        TEST_TYPES.forEach(function (t) { CONFIG[id][t] = 0; });
+      }
+      return CONFIG[id];
+    }
+
+    function findLabel(nodes, id) {
+      for (var i = 0; i < (nodes || []).length; i++) {
+        if (nodes[i].id === id) return nodes[i].label;
+        var found = findLabel(nodes[i].children, id);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    function renderConfig() {
+      var panel = document.getElementById('configPanel');
+      if (!state.selectedId) {
+        panel.innerHTML = '<div class="py-16 text-center text-slate-400 text-sm">请在左侧选择样品型号</div>';
+        return;
+      }
+      var label = findLabel(TREES[state.cat], state.selectedId) || state.selectedId;
+      var cfg = ensureConfig(state.selectedId);
+      var sections = TEST_TYPES.map(function (type) {
+        var chips = SCHEMES.map(function (s, i) {
+          var active = cfg[type] === i ? ' active' : '';
+          return '<div class="scheme-chip' + active + '" onclick="selectScheme(\'' + type + '\',' + i + ')">' + s + '</div>';
+        }).join('');
+        return '<div class="test-section"><div class="test-section-title">' + type + '</div><div class="scheme-options">' + chips + '</div></div>';
+      }).join('');
+
+      panel.innerHTML =
+        '<div class="mb-4 text-sm text-slate-500">当前样品：<span class="font-medium text-slate-800">' + label + '</span></div>' +
+        sections +
+        '<div class="footer-bar">' +
+          '<button onclick="batchSet()" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">批量设置</button>' +
+          '<button onclick="saveConfig()" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">保存</button>' +
+        '</div>';
+    }
+
+    function selectScheme(type, index) {
+      ensureConfig(state.selectedId)[type] = index;
+      renderConfig();
+    }
+
+    function batchSet() {
+      var cfg = ensureConfig(state.selectedId);
+      var first = cfg[TEST_TYPES[0]];
+      TEST_TYPES.forEach(function (t) { cfg[t] = first; });
+      renderConfig();
+      alert('已将「' + TEST_TYPES[0] + '」的方案批量应用到全部试验类型（原型演示）');
+    }
+
+    function saveConfig() {
+      alert('报告判定配置已保存（原型演示）');
+    }
+
+    function switchCat(cat) {
+      state.cat = cat;
+      document.querySelectorAll('#catTabBar .cat-tab').forEach(function (t) {
+        t.classList.toggle('active', t.getAttribute('data-cat') === cat);
+      });
+      var leaves = flattenLeaves(TREES[cat], []);
+      state.selectedId = leaves.length ? leaves[0].id : null;
+      fillCategorySelect();
+      renderTree();
+      renderConfig();
+    }
+
+    function doSearch() {
+      var catId = document.getElementById('f_category').value;
+      var sample = document.getElementById('f_sample').value.trim();
+      if (catId) {
+        state.selectedId = catId;
+        renderTree();
+        renderConfig();
+        return;
+      }
+      if (sample) {
+        var leaves = flattenLeaves(TREES[state.cat], []);
+        var hit = leaves.find(function (n) { return n.label.includes(sample); });
+        if (hit) {
+          state.selectedId = hit.id;
+          renderTree();
+          renderConfig();
+        } else {
+          alert('未找到匹配样品');
+        }
+      }
+    }
+
+    function doReset() {
+      document.getElementById('f_category').value = '';
+      document.getElementById('f_sample').value = '';
+      document.getElementById('f_scheme').value = '';
+      switchCat(state.cat);
+    }
+
+    document.getElementById('catTabBar').addEventListener('click', function (e) {
+      var tab = e.target.closest('.cat-tab');
+      if (tab) switchCat(tab.getAttribute('data-cat'));
+    });
+
+    fillCategorySelect();
+    renderTree();
+    renderConfig();
+  </script>
+</body>
+</html>
