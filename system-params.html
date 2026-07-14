@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>系统参数 - 智慧实验室</title>
+  <title>业务流程配置 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <style>
@@ -141,6 +141,21 @@
     .cfg-toggle input:checked + .cfg-toggle-slider { background: #2563eb; }
     .cfg-toggle input:checked + .cfg-toggle-slider::before { transform: translateX(22px); }
     .cfg-toggle-text { margin-left: 10px; font-size: 13px; color: #64748b; }
+    /* 编号规则 */
+    .num-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; margin-bottom: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+    .num-card:hover { border-color: #bfdbfe; box-shadow: 0 1px 4px rgba(37,99,235,.06); }
+    .num-card .num-info { min-width: 0; }
+    .num-card .num-title { font-size: 14px; font-weight: 500; color: #334155; margin-bottom: 8px; }
+    .num-card .num-rule { display: flex; flex-wrap: wrap; gap: 6px; }
+    .rule-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 4px; font-size: 12px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; white-space: nowrap; }
+    .rule-chip.sep { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+    .rule-chip.fixed { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+    #ruleBuilder .rule-chip { cursor: move; padding-right: 6px; }
+    #ruleBuilder .rule-chip .chip-del { cursor: pointer; color: #94a3b8; font-size: 11px; }
+    #ruleBuilder .rule-chip .chip-del:hover { color: #ef4444; }
+    #ruleBuilder .rule-chip.dragging { opacity: .4; }
+    .token-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 6px; font-size: 12px; background: #fff; border: 1px solid #cbd5e1; color: #475569; cursor: pointer; }
+    .token-btn:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -148,7 +163,7 @@
   <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
     <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
     <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
-      系统参数
+      业务流程配置
       <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
     </span>
   </div>
@@ -159,9 +174,9 @@
     <div class="param-tab" data-panel="undertaker">承检方信息</div>
     <div class="param-tab" data-panel="report">报告设置</div>
     <div class="param-tab" data-panel="record">记录单设置</div>
-    <div class="param-tab" data-panel="wechat">微信设置</div>
-    <div class="param-tab" data-panel="connect">对接设置</div>
     <div class="param-tab" data-panel="flow" data-annotate="flow-tab">流程设置</div>
+    <div class="param-tab" data-panel="wechat">微信设置</div>
+    <div class="param-tab" data-panel="numbering" data-annotate="numbering-tab">编号规则</div>
   </div>
 
   <div class="p-4">
@@ -366,24 +381,41 @@
       </div>
     </div>
 
-    <div id="panel-connect" class="param-panel">
+    <!-- ========== 编号规则 ========== -->
+    <div id="panel-numbering" class="param-panel">
       <div class="rounded bg-white shadow-sm">
-        <div class="cfg-panel">
-          <div class="cfg-section">
-            <div class="flex items-center mb-4">
-              <span class="text-sm text-slate-600" style="width:140px;text-align:right;margin-right:8px">是否打开 SSO 开关</span>
-              <label class="cfg-toggle"><input type="checkbox" id="ssoSwitch" checked onchange="updateToggleText(this,'ssoSwitchText')" /><span class="cfg-toggle-slider"></span></label>
-              <span class="cfg-toggle-text" id="ssoSwitchText">是</span>
-            </div>
-            <div class="cfg-form-grid">
-              <div class="cfg-form-item span-full"><label><span class="req">*</span> 智能仓库地址</label><input type="text" value="http://swms.ym-lims.com:8010" /></div>
-              <div class="cfg-form-item span-full"><label><span class="req">*</span> word 页码服务地址</label><input type="text" value="http://convert.ym-lims.com:801" /></div>
-            </div>
-          </div>
-          <div class="cfg-save-bar">
-            <button onclick="savePanel('对接设置')" class="rounded bg-blue-600 px-10 py-2 text-sm text-white hover:bg-blue-700">保存</button>
-          </div>
+        <div class="mx-4 mt-4 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <i class="fa fa-info-circle mt-0.5 text-blue-500"></i>
+          <span>配置系统各类业务单据的编号生成规则。点击「修改」可用令牌拖拽/增删组合规则，并实时预览生成示例。</span>
         </div>
+        <div class="p-4" id="numberingList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编号规则编辑弹窗 -->
+  <div id="numberingModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[88vh] w-[720px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800" id="numberingModalTitle">修改编号规则</h3>
+        <button onclick="closeNumberingModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto px-6 py-4">
+        <div class="mb-4">
+          <div class="mb-2 text-sm font-medium text-slate-600">当前规则</div>
+          <div id="ruleBuilder" class="flex min-h-[52px] flex-wrap items-center gap-2 rounded border border-dashed border-slate-300 bg-slate-50 p-3"></div>
+        </div>
+        <div class="mb-4">
+          <div class="mb-2 text-sm font-medium text-slate-600">添加令牌</div>
+          <div id="tokenPalette" class="flex flex-wrap gap-2"></div>
+        </div>
+        <div class="rounded border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <span class="mr-2 font-medium">生成预览：</span><span id="rulePreview" class="font-mono">—</span>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeNumberingModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
+        <button onclick="saveNumbering()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white">确定</button>
       </div>
     </div>
   </div>
@@ -740,15 +772,168 @@
       if (e.target === this) closeVersionModal();
     });
 
+    /* ===== 编号规则 ===== */
+    // token 类型定义：{ type, label, value?, digits? }
+    var TOKEN_DEFS = [
+      { type: 'prefix', label: '前缀文本', sample: 'SC' },
+      { type: 'year4', label: '年份(4位)', sample: '2026' },
+      { type: 'year2', label: '年份(2位)', sample: '26' },
+      { type: 'month', label: '月份', sample: '02' },
+      { type: 'day', label: '日期', sample: '24' },
+      { type: 'ref-entrust', label: '委托编号', sample: 'SC2026/0037' },
+      { type: 'ref-sample', label: '样品编号', sample: 'SC2026/00370101' },
+      { type: 'rowno', label: '行号', sample: '01' },
+      { type: 'seq2', label: '2位自增序号', sample: '01' },
+      { type: 'seq3', label: '3位自增序号', sample: '001' },
+      { type: 'seq4', label: '4位自增序号', sample: '0037' },
+      { type: 'sep-slash', label: '分隔符 /', sample: '/' },
+      { type: 'sep-dash', label: '分隔符 -', sample: '-' },
+      { type: 'sep-underline', label: '分隔符 _', sample: '_' }
+    ];
+
+    function tokenDef(type) { return TOKEN_DEFS.find(function (t) { return t.type === type; }); }
+    function tokenLabel(tk) { return tk.type === 'prefix' ? '前缀「' + (tk.value || '') + '」' : tokenDef(tk.type).label; }
+    function tokenSample(tk) { return tk.type === 'prefix' ? (tk.value || '') : tokenDef(tk.type).sample; }
+    function isSep(tk) { return tk.type.indexOf('sep-') === 0; }
+
+    var NUMBERING_RULES = [
+      { id: 'entrust', name: '委托编号规则', tokens: [ { type: 'prefix', value: 'SC' }, { type: 'year4' }, { type: 'sep-slash' }, { type: 'seq4' } ] },
+      { id: 'entrust-order', name: '委托单编号规则', tokens: [ { type: 'ref-entrust' }, { type: 'sep-dash' }, { type: 'seq2' } ] },
+      { id: 'sample', name: '样品编号规则', tokens: [ { type: 'ref-entrust' }, { type: 'rowno' }, { type: 'seq2' } ] },
+      { id: 'test-record', name: '试验记录单编号规则', tokens: [ { type: 'ref-sample' }, { type: 'sep-dash' }, { type: 'seq2' } ] },
+      { id: 'origin-record', name: '原始记录单编号规则', tokens: [ { type: 'prefix', value: 'SC/' }, { type: 'year4' }, { type: 'month' }, { type: 'seq3' } ] },
+      { id: 'report', name: '报告编号规则', tokens: [ { type: 'ref-entrust' }, { type: 'sep-dash' }, { type: 'seq2' } ] }
+    ];
+
+    function ruleChipsHtml(tokens) {
+      return tokens.map(function (tk) {
+        var cls = 'rule-chip' + (isSep(tk) ? ' sep' : (tk.type === 'prefix' ? ' fixed' : ''));
+        return '<span class="' + cls + '">' + tokenLabel(tk) + '</span>';
+      }).join('');
+    }
+
+    function rulePreview(tokens) {
+      return tokens.map(tokenSample).join('') || '—';
+    }
+
+    function renderNumbering() {
+      document.getElementById('numberingList').innerHTML = NUMBERING_RULES.map(function (r) {
+        return '<div class="num-card">' +
+          '<div class="num-info"><div class="num-title">当前' + r.name + '</div>' +
+          '<div class="num-rule">' + ruleChipsHtml(r.tokens) + '</div>' +
+          '<div class="mt-2 text-xs text-slate-400">生成示例：<span class="font-mono text-slate-500">' + rulePreview(r.tokens) + '</span></div></div>' +
+          '<button onclick="openNumberingModal(\'' + r.id + '\')" class="flex-shrink-0 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">修改' + r.name.replace('规则', '') + '规则</button>' +
+          '</div>';
+      }).join('');
+    }
+
+    var editingRuleId = null;
+    var editingTokens = [];
+
+    function openNumberingModal(id) {
+      var rule = NUMBERING_RULES.find(function (r) { return r.id === id; });
+      if (!rule) return;
+      editingRuleId = id;
+      editingTokens = rule.tokens.map(function (t) { return { type: t.type, value: t.value }; });
+      document.getElementById('numberingModalTitle').textContent = '修改' + rule.name;
+      renderTokenPalette();
+      renderRuleBuilder();
+      var m = document.getElementById('numberingModal');
+      m.classList.remove('hidden'); m.classList.add('flex');
+    }
+
+    function closeNumberingModal() {
+      var m = document.getElementById('numberingModal');
+      m.classList.add('hidden'); m.classList.remove('flex');
+    }
+
+    function renderTokenPalette() {
+      document.getElementById('tokenPalette').innerHTML = TOKEN_DEFS.map(function (t) {
+        return '<button type="button" class="token-btn" onclick="addToken(\'' + t.type + '\')"><i class="fa fa-plus text-xs"></i>' + t.label + '</button>';
+      }).join('');
+    }
+
+    function addToken(type) {
+      var tk = { type: type };
+      if (type === 'prefix') {
+        var v = prompt('请输入前缀文本', 'SC');
+        if (v === null) return;
+        tk.value = v;
+      }
+      editingTokens.push(tk);
+      renderRuleBuilder();
+    }
+
+    function removeToken(index) {
+      editingTokens.splice(index, 1);
+      renderRuleBuilder();
+    }
+
+    function renderRuleBuilder() {
+      var box = document.getElementById('ruleBuilder');
+      if (!editingTokens.length) {
+        box.innerHTML = '<span class="text-sm text-slate-400">请从下方添加令牌组合编号规则</span>';
+      } else {
+        box.innerHTML = editingTokens.map(function (tk, i) {
+          var cls = 'rule-chip' + (isSep(tk) ? ' sep' : (tk.type === 'prefix' ? ' fixed' : ''));
+          return '<span class="' + cls + '" draggable="true" data-index="' + i + '">' + tokenLabel(tk) +
+            '<i class="fa fa-times chip-del" onclick="removeToken(' + i + ')"></i></span>';
+        }).join('');
+        bindDrag();
+      }
+      document.getElementById('rulePreview').textContent = rulePreview(editingTokens);
+    }
+
+    function bindDrag() {
+      var chips = document.querySelectorAll('#ruleBuilder .rule-chip');
+      var dragIdx = null;
+      chips.forEach(function (chip) {
+        chip.addEventListener('dragstart', function () { dragIdx = +chip.getAttribute('data-index'); chip.classList.add('dragging'); });
+        chip.addEventListener('dragend', function () { chip.classList.remove('dragging'); });
+        chip.addEventListener('dragover', function (e) { e.preventDefault(); });
+        chip.addEventListener('drop', function (e) {
+          e.preventDefault();
+          var dropIdx = +chip.getAttribute('data-index');
+          if (dragIdx === null || dragIdx === dropIdx) return;
+          var moved = editingTokens.splice(dragIdx, 1)[0];
+          editingTokens.splice(dropIdx, 0, moved);
+          renderRuleBuilder();
+        });
+      });
+    }
+
+    function saveNumbering() {
+      var rule = NUMBERING_RULES.find(function (r) { return r.id === editingRuleId; });
+      if (rule) rule.tokens = editingTokens.map(function (t) { return { type: t.type, value: t.value }; });
+      closeNumberingModal();
+      renderNumbering();
+      alert('编号规则已保存（原型演示）');
+    }
+
+    document.getElementById('numberingModal').addEventListener('click', function (e) {
+      if (e.target === this) closeNumberingModal();
+    });
+
+    renderNumbering();
+
     PrototypeAnnotation.init({
       annotations: [
+        {
+          id: 'numbering-tab',
+          selector: '[data-annotate="numbering-tab"]',
+          position: 'top-right',
+          title: '编号规则',
+          wide: true,
+          content: '各类业务单据（委托/委托单/样品/试验记录单/原始记录单/报告）的编号生成规则。点击「修改」用令牌（前缀、年份、月份、引用编号、行号、自增序号、分隔符）拖拽组合，并实时预览生成示例。<br><br>编号规则属于业务流程相关配置，故置于此页。',
+          tag: '业务流程配置'
+        },
         {
           id: 'entrust-tab',
           selector: '[data-annotate="entrust-tab"]',
           position: 'top-right',
           title: '委托信息设置',
           content: '配置委托登记表单中各字段的显示/隐藏。灰色勾选为系统必填不可取消；蓝色勾选为可选字段，取消勾选后委托表单中不再展示该字段。',
-          tag: '应用设置'
+          tag: '业务流程配置'
         },
         {
           id: 'salesman-field',
@@ -767,7 +952,7 @@
           position: 'top-right',
           title: '流程设置',
           content: '配置实验室任务全流程。灰色为固定节点不可关闭；白色节点可勾选启用/停用。',
-          tag: '应用设置'
+          tag: '业务流程配置'
         },
         {
           id: 'report-sign',

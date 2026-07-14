@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>参数设置 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .pc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .pc-table th, .pc-table td { border: 1px solid #e5e7eb; padding: 9px 10px; text-align: left; vertical-align: middle; }
+    .pc-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
+    .pc-table tr:hover td { background: #fafafa; }
+    .pc-table .link { color: #2563eb; cursor: pointer; }
+    .pc-table .link:hover { text-decoration: underline; }
+    .badge-yes { display: inline-block; padding: 1px 8px; border-radius: 4px; background: #dcfce7; color: #15803d; font-size: 12px; }
+    .badge-no { display: inline-block; padding: 1px 8px; border-radius: 4px; background: #f1f5f9; color: #64748b; font-size: 12px; }
+    .filt label { font-size: 13px; color: #64748b; white-space: nowrap; }
+    .filt input, .filt select { border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
+    .filt input:focus, .filt select:focus { border-color: #3b82f6; }
+    .modal-mask { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+    .modal-box { width: 520px; max-width: 100%; background: #fff; border-radius: 8px; box-shadow: 0 20px 40px rgba(0,0,0,.15); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #f1f5f9; font-size: 15px; font-weight: 500; }
+    .modal-body { padding: 20px; }
+    .modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 20px; border-top: 1px solid #f1f5f9; }
+    .form-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+    .form-row > label { width: 100px; flex-shrink: 0; text-align: right; font-size: 13px; color: #64748b; padding-top: 8px; }
+    .form-row > label .req { color: #ef4444; margin-right: 2px; }
+    .form-row .ctrl { flex: 1; min-width: 0; }
+    .form-row input[type=text], .form-row textarea { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; }
+    .form-row textarea { min-height: 64px; resize: vertical; }
+    .radio-group { display: flex; gap: 20px; padding-top: 6px; font-size: 13px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      参数设置
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <!-- 筛选栏 -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="filt flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div class="flex items-center gap-2"><label>参数名称</label><input type="text" id="f_name" placeholder="请输入参数名称" style="width:180px" /></div>
+        <div class="flex items-center gap-2"><label>参数键名</label><input type="text" id="f_key" placeholder="请输入参数键名" style="width:180px" /></div>
+        <div class="flex items-center gap-2"><label>系统内置</label><select id="f_type" style="width:120px"><option value="">全部</option><option value="Y">是</option><option value="N">否</option></select></div>
+        <div class="flex items-center gap-2"><label>创建时间</label><input type="text" placeholder="开始日期 ~ 结束日期" style="width:200px" /></div>
+        <div class="flex items-center gap-2">
+          <button onclick="applyFilter()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 搜索</button>
+          <button onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 工具栏 + 表格 -->
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex flex-wrap items-center gap-2">
+        <button onclick="openEdit()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新增</button>
+        <button onclick="editSelected()" class="rounded border border-amber-300 px-3 py-1.5 text-sm text-amber-600 hover:bg-amber-50"><i class="fa fa-pencil"></i> 修改</button>
+        <button onclick="deleteSelected()" class="rounded border border-red-300 px-3 py-1.5 text-sm text-red-500 hover:bg-red-50"><i class="fa fa-trash-o"></i> 删除</button>
+        <button onclick="alert('导出（原型演示）')" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-download"></i> 导出</button>
+        <button onclick="alert('已刷新缓存（原型演示）')" class="rounded border border-sky-300 px-3 py-1.5 text-sm text-sky-600 hover:bg-sky-50" data-annotate="refresh-cache"><i class="fa fa-refresh"></i> 刷新缓存</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="pc-table min-w-[1000px]">
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" id="checkAll" onchange="toggleAll(this.checked)" /></th>
+              <th style="width:70px">参数主键</th>
+              <th>参数名称</th>
+              <th>参数键名</th>
+              <th>参数键值</th>
+              <th style="width:80px">系统内置</th>
+              <th>备注</th>
+              <th style="width:160px">创建时间</th>
+              <th style="width:120px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="totalText">共 0 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-500">&lsaquo;</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-500">2</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-500">&rsaquo;</button>
+        <select class="rounded border border-slate-200 px-2 py-1"><option>10 条/页</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增/修改弹窗 -->
+  <div id="editModal" class="modal-mask">
+    <div class="modal-box">
+      <div class="modal-head"><span id="editTitle">新增参数</span><button onclick="closeEdit()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <div class="form-row"><label><span class="req">*</span>参数名称</label><div class="ctrl"><input type="text" id="m_name" placeholder="请输入参数名称" /></div></div>
+        <div class="form-row"><label><span class="req">*</span>参数键名</label><div class="ctrl"><input type="text" id="m_key" placeholder="请输入参数键名" /></div></div>
+        <div class="form-row"><label><span class="req">*</span>参数键值</label><div class="ctrl"><input type="text" id="m_value" placeholder="请输入参数键值" /></div></div>
+        <div class="form-row"><label>系统内置</label><div class="ctrl radio-group">
+          <label><input type="radio" name="m_type" value="Y" checked /> 是</label>
+          <label><input type="radio" name="m_type" value="N" /> 否</label>
+        </div></div>
+        <div class="form-row"><label>备注</label><div class="ctrl"><textarea id="m_remark" placeholder="请输入内容"></textarea></div></div>
+      </div>
+      <div class="modal-foot"><button onclick="closeEdit()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button><button onclick="saveEdit()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white">确定</button></div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var DATA = [
+      { id: 1, name: '主框架页-默认皮肤样式名称', key: 'sys.index.skinName', value: 'skin-purple', type: 'Y', remark: '蓝色 skin-blue、绿色 skin-green、紫色 skin-purple、红色 skin-red、黄色 skin-yellow', time: '2022-04-26 19:50:45' },
+      { id: 2, name: '用户管理-账号初始密码', key: 'sys.user.initPassword', value: '123456', type: 'Y', remark: '初始化密码 123456', time: '2022-04-26 19:50:45' },
+      { id: 3, name: '主框架页-侧边栏主题', key: 'sys.index.sideTheme', value: 'theme-dark', type: 'Y', remark: '深色主题 theme-dark，浅色主题 theme-light', time: '2022-04-26 19:50:45' },
+      { id: 4, name: '账号自助-验证码开关', key: 'sys.account.captchaOnOff', value: 'true', type: 'Y', remark: '是否开启验证码功能（true 开启，false 关闭）', time: '2022-04-26 19:50:45' },
+      { id: 5, name: '账号自助-是否开启用户注册功能', key: 'sys.account.registerUser', value: 'false', type: 'Y', remark: '是否开启注册用户功能（true 开启，false 关闭）', time: '2022-04-26 19:50:45' },
+      { id: 6, name: '智能仓库 url 地址', key: 'dock.storage.url', value: 'http://swms.ym-lims.com:8010', type: 'N', remark: '', time: '2022-07-18 19:40:19' },
+      { id: 7, name: '是否打开 sso 开关', key: 'sys.sso.enable', value: 'true', type: 'N', remark: '', time: '2022-07-22 15:20:06' },
+      { id: 8, name: '获取 word 页码 url', key: 'convert.url', value: 'http://convert.ym-lims.com:801', type: 'N', remark: '', time: '2022-10-25 10:05:24' },
+      { id: 9, name: '是否发送公众号提醒', key: 'send_msg', value: 'true', type: 'N', remark: '', time: '2022-10-25 10:06:48' },
+      { id: 10, name: '缴费公众号 appID', key: 'wx.mp.appId', value: 'wxa6c7b648fc8ab596', type: 'Y', remark: '', time: '2022-10-25 10:09:03' },
+      { id: 11, name: '检测报告默认导出格式', key: 'report.export.format', value: 'pdf', type: 'N', remark: '支持 pdf / docx', time: '2023-03-12 09:12:20' },
+      { id: 12, name: '附件上传大小限制(MB)', key: 'upload.max.size', value: '20', type: 'Y', remark: '单个附件上传上限，单位 MB', time: '2023-05-08 14:22:31' },
+      { id: 13, name: '合格证短链有效期(天)', key: 'cert.shortlink.days', value: '365', type: 'N', remark: '合格证二维码短链默认有效天数', time: '2023-09-20 16:40:05' },
+      { id: 14, name: '系统名称', key: 'sys.name', value: '智慧实验室', type: 'Y', remark: '登录页与顶部展示的系统名称', time: '2024-01-15 08:30:00' }
+    ];
+
+    var editingId = null;
+
+    function getFiltered() {
+      var name = document.getElementById('f_name').value.trim();
+      var key = document.getElementById('f_key').value.trim();
+      var type = document.getElementById('f_type').value;
+      return DATA.filter(function (r) {
+        if (name && !r.name.includes(name)) return false;
+        if (key && !r.key.includes(key)) return false;
+        if (type && r.type !== type) return false;
+        return true;
+      });
+    }
+
+    function render() {
+      var rows = getFiltered();
+      document.getElementById('tableBody').innerHTML = rows.map(function (r) {
+        var badge = r.type === 'Y' ? '<span class="badge-yes">是</span>' : '<span class="badge-no">否</span>';
+        return '<tr>' +
+          '<td><input type="checkbox" class="row-check" value="' + r.id + '" /></td>' +
+          '<td>' + r.id + '</td>' +
+          '<td>' + r.name + '</td>' +
+          '<td class="font-mono text-xs">' + r.key + '</td>' +
+          '<td class="font-mono text-xs">' + r.value + '</td>' +
+          '<td>' + badge + '</td>' +
+          '<td class="text-slate-500">' + (r.remark || '—') + '</td>' +
+          '<td class="whitespace-nowrap">' + r.time + '</td>' +
+          '<td class="whitespace-nowrap"><span class="link" onclick="openEdit(' + r.id + ')"><i class="fa fa-pencil"></i> 修改</span>' +
+          ' <span class="link text-red-500" onclick="deleteOne(' + r.id + ')"><i class="fa fa-trash-o"></i> 删除</span></td>' +
+          '</tr>';
+      }).join('') || '<tr><td colspan="9" class="py-8 text-center text-slate-400">暂无数据</td></tr>';
+      document.getElementById('totalText').textContent = '共 ' + rows.length + ' 条';
+      document.getElementById('checkAll').checked = false;
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function applyFilter() { render(); }
+    function resetFilter() {
+      document.getElementById('f_name').value = '';
+      document.getElementById('f_key').value = '';
+      document.getElementById('f_type').value = '';
+      render();
+    }
+
+    function toggleAll(checked) {
+      document.querySelectorAll('.row-check').forEach(function (c) { c.checked = checked; });
+    }
+    function selectedIds() {
+      return Array.prototype.slice.call(document.querySelectorAll('.row-check:checked')).map(function (c) { return parseInt(c.value, 10); });
+    }
+
+    function openEdit(id) {
+      editingId = id || null;
+      var r = id ? DATA.find(function (d) { return d.id === id; }) : null;
+      document.getElementById('editTitle').textContent = id ? '修改参数' : '新增参数';
+      document.getElementById('m_name').value = r ? r.name : '';
+      document.getElementById('m_key').value = r ? r.key : '';
+      document.getElementById('m_value').value = r ? r.value : '';
+      document.getElementById('m_remark').value = r ? r.remark : '';
+      document.querySelector('input[name=m_type][value="' + (r ? r.type : 'Y') + '"]').checked = true;
+      document.getElementById('editModal').classList.add('open');
+    }
+    function closeEdit() { document.getElementById('editModal').classList.remove('open'); }
+
+    function saveEdit() {
+      var name = document.getElementById('m_name').value.trim();
+      var key = document.getElementById('m_key').value.trim();
+      var value = document.getElementById('m_value').value.trim();
+      if (!name || !key || !value) { alert('请填写参数名称、键名、键值'); return; }
+      var type = document.querySelector('input[name=m_type]:checked').value;
+      var remark = document.getElementById('m_remark').value.trim();
+      if (editingId) {
+        var r = DATA.find(function (d) { return d.id === editingId; });
+        Object.assign(r, { name: name, key: key, value: value, type: type, remark: remark });
+      } else {
+        var newId = Math.max.apply(null, DATA.map(function (d) { return d.id; })) + 1;
+        DATA.push({ id: newId, name: name, key: key, value: value, type: type, remark: remark, time: '2026-07-14 10:00:00' });
+      }
+      closeEdit();
+      render();
+      alert('参数已保存（原型演示）');
+    }
+
+    function editSelected() {
+      var ids = selectedIds();
+      if (ids.length !== 1) { alert('请选择单条数据进行修改'); return; }
+      openEdit(ids[0]);
+    }
+    function deleteOne(id) {
+      if (!confirm('确认删除该参数？')) return;
+      var i = DATA.findIndex(function (d) { return d.id === id; });
+      if (i > -1) DATA.splice(i, 1);
+      render();
+    }
+    function deleteSelected() {
+      var ids = selectedIds();
+      if (!ids.length) { alert('请选择要删除的数据'); return; }
+      if (!confirm('确认删除选中的 ' + ids.length + ' 条参数？')) return;
+      ids.forEach(function (id) {
+        var i = DATA.findIndex(function (d) { return d.id === id; });
+        if (i > -1) DATA.splice(i, 1);
+      });
+      render();
+    }
+
+    document.getElementById('editModal').addEventListener('click', function (e) {
+      if (e.target === this) closeEdit();
+    });
+
+    render();
+
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'refresh-cache',
+          selector: '[data-annotate="refresh-cache"]',
+          position: 'top-right',
+          title: '刷新缓存',
+          content: '参数以键值对形式存储并缓存。修改后点击「刷新缓存」使配置立即在系统各处生效。',
+          tag: '参数设置'
+        }
+      ]
+    });
+  </script>
+</body>
+</html>
