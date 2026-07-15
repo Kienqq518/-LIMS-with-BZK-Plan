@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>判定规则 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .scheme-card { border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; margin-bottom: 16px; overflow: hidden; }
+    .scheme-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 500; color: #334155; }
+    .scheme-body { padding: 12px 16px 16px; }
+    .rule-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .rule-table th, .rule-table td { border: 1px solid #e5e7eb; padding: 9px 10px; text-align: left; vertical-align: middle; }
+    .rule-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
+    .modal-mask { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+    .form-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; font-size: 13px; }
+    .form-row > label { width: 100px; flex-shrink: 0; padding-top: 7px; text-align: right; color: #64748b; }
+    .form-row > label .req { color: #ef4444; }
+    .form-row .ctrl { flex: 1; min-width: 0; }
+    .form-row input, .form-row select, .form-row textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; outline: none; font-size: 13px; }
+    .form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color: #3b82f6; }
+    .cond-box { border: 1px solid #e2e8f0; border-radius: 4px; padding: 12px; background: #f8fafc; }
+    .cond-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .radio-inline { display: flex; gap: 16px; padding-top: 6px; }
+    .radio-inline label { display: flex; align-items: center; gap: 4px; cursor: pointer; color: #475569; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="sample-category.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">样品分类</a>
+    <a href="sample-data.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">样品数据</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      判定规则
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <button onclick="openSchemeModal('add')" class="mb-4 flex items-center gap-1 rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">
+      <i class="fa fa-plus"></i> 新增判定方案
+    </button>
+
+    <div id="schemeList"></div>
+  </div>
+
+  <!-- 新增/编辑判定方案 -->
+  <div id="schemeModal" class="modal-mask">
+    <div class="w-[440px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 id="schemeModalTitle" class="text-base font-medium">新增判定方案</h3>
+        <button onclick="closeSchemeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4">
+        <div class="form-row"><label><span class="req">*</span> 判定方案名称</label><div class="ctrl"><input id="s_name" placeholder="请输入" /></div></div>
+        <div class="form-row"><label><span class="req">*</span> 排序</label><div class="ctrl"><input id="s_sort" type="number" placeholder="请输入" /></div></div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeSchemeModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="saveScheme()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加/编辑判定规则 -->
+  <div id="ruleModal" class="modal-mask">
+    <div class="w-[560px] max-w-full max-h-[90vh] overflow-y-auto rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3 sticky top-0 bg-white">
+        <h3 id="ruleModalTitle" class="text-base font-medium">添加判定规则</h3>
+        <button onclick="closeRuleModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4">
+        <div class="form-row"><label><span class="req">*</span> 优先级</label><div class="ctrl"><input id="r_priority" type="number" value="1" /></div></div>
+        <div class="form-row"><label><span class="req">*</span> 判定类型</label><div class="ctrl">
+          <select id="r_type"><option value="">请选择</option><option>A类不合格</option><option>B类不合格</option><option>C类不合格</option><option>不合格</option><option>合格</option></select>
+        </div></div>
+        <div class="form-row"><label><span class="req">*</span> 结论描述</label><div class="ctrl"><textarea id="r_conclusion" rows="2" placeholder="请输入"></textarea></div></div>
+        <div class="form-row"><label><span class="req">*</span> 判定条件</label><div class="ctrl">
+          <div class="cond-box">
+            <div class="text-slate-600">是否根据试验项质量特性判定</div>
+            <div class="radio-inline mt-2">
+              <label><input type="radio" name="r_byQuality" value="yes" checked onchange="toggleQualityMode()" /> 是</label>
+              <label><input type="radio" name="r_byQuality" value="no" onchange="toggleQualityMode()" /> 否</label>
+            </div>
+            <div class="mt-3">
+              <select id="r_logic" class="mb-2"><option>当满足所有条件时</option><option>当满足任一条件时</option></select>
+              <div id="condList"></div>
+              <button type="button" onclick="addCondition()" class="mt-2 text-sm text-blue-600 hover:underline"><i class="fa fa-plus"></i> 条件</button>
+            </div>
+          </div>
+        </div></div>
+        <div class="form-row"><label>备注</label><div class="ctrl"><textarea id="r_remark" rows="2" placeholder="请输入"></textarea></div></div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3 sticky bottom-0 bg-white">
+        <button onclick="closeRuleModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="saveRule()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var QUALITY_OPTS = ['存在A类不合格项', '存在B类不合格项', '存在C类不合格项', '所有A类试验项均合格', '所有B类试验项均合格', '所有C类试验项均合格'];
+    var SIMPLE_OPTS = ['所有试验项均合格', '存在任一试验项不合格'];
+
+    var schemes = [
+      {
+        id: 1, name: '规则判定方案-ABC质量特性分级判定', sort: 1,
+        rules: [
+          { priority: 1, type: 'A类不合格', condition: '存在A类不合格项', conclusion: '该样品经检测，存在 A 类不合格项：', remark: '若有A类不合格，直接判定为A类' },
+          { priority: 2, type: 'B类不合格', condition: '存在B类不合格项', conclusion: '该样品经检测，存在 B 类不合格项：', remark: '若无A类、有B类，判定为B类' },
+          { priority: 3, type: 'C类不合格', condition: '存在C类不合格项', conclusion: '该样品经检测，存在 C 类不合格项：', remark: '若无A/B类、有C类，判定为C类' },
+          { priority: 4, type: '合格', condition: '所有试验项均合格', conclusion: '该样品经检测，所检项目符合标准要求。', remark: '兜底合格规则' }
+        ]
+      },
+      {
+        id: 2, name: '规则判定方案-简单合格/不合格判定', sort: 2,
+        rules: [
+          { priority: 1, type: '不合格', condition: '存在任一试验项不合格', conclusion: '数据不符合要求，详见报告正文。', remark: '任一不合格即判不合格' },
+          { priority: 2, type: '合格', condition: '所有试验项均合格', conclusion: '该样品经检测，所检项目符合标准要求。', remark: '兜底合格' }
+        ]
+      }
+    ];
+
+    var editingSchemeId = null;
+    var editingRuleCtx = null; /* { schemeId, ruleIndex } */
+    var condCounter = 0;
+
+    function renderSchemes() {
+      document.getElementById('schemeList').innerHTML = schemes.map(function (s) {
+        var rows = s.rules.map(function (r, ri) {
+          return '<tr>' +
+            '<td class="text-center">' + r.priority + '</td>' +
+            '<td>' + r.type + '</td>' +
+            '<td>' + r.condition + '</td>' +
+            '<td>' + r.conclusion + '</td>' +
+            '<td class="text-slate-500">' + (r.remark || '') + '</td>' +
+            '<td class="whitespace-nowrap">' +
+              '<button onclick="openRuleModal(' + s.id + ',' + ri + ')" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</button>' +
+              '<button onclick="deleteRule(' + s.id + ',' + ri + ')" class="ml-3 text-red-500 hover:underline"><i class="fa fa-trash-o"></i> 删除</button>' +
+            '</td></tr>';
+        }).join('');
+        return '<div class="scheme-card">' +
+          '<div class="scheme-head">' +
+            '<span>' + s.name + '</span>' +
+            '<div class="space-x-3 text-sm font-normal">' +
+              '<button onclick="openSchemeModal(\'edit\',' + s.id + ')" class="text-blue-600 hover:underline">编辑方案</button>' +
+              '<button onclick="deleteScheme(' + s.id + ')" class="text-red-500 hover:underline">删除方案</button>' +
+            '</div></div>' +
+          '<div class="scheme-body">' +
+            '<button onclick="openRuleModal(' + s.id + ')" class="mb-3 flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 添加判定规则</button>' +
+            '<div class="overflow-x-auto"><table class="rule-table"><thead><tr>' +
+              '<th style="width:70px">优先级</th><th style="width:110px">样品判定类型</th><th style="width:160px">判定条件</th><th>样品检测结论描述</th><th style="width:140px">备注</th><th style="width:120px">操作</th>' +
+            '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+          '</div></div>';
+      }).join('');
+    }
+
+    function openSchemeModal(mode, id) {
+      editingSchemeId = mode === 'edit' ? id : null;
+      document.getElementById('schemeModalTitle').textContent = mode === 'edit' ? '编辑判定方案' : '新增判定方案';
+      if (mode === 'edit') {
+        var s = schemes.find(function (x) { return x.id === id; });
+        document.getElementById('s_name').value = s.name;
+        document.getElementById('s_sort').value = s.sort;
+      } else {
+        document.getElementById('s_name').value = '';
+        document.getElementById('s_sort').value = '';
+      }
+      document.getElementById('schemeModal').classList.add('open');
+    }
+
+    function closeSchemeModal() { document.getElementById('schemeModal').classList.remove('open'); }
+
+    function saveScheme() {
+      var name = document.getElementById('s_name').value.trim();
+      var sort = document.getElementById('s_sort').value;
+      if (!name || !sort) { alert('请填写必填项'); return; }
+      if (editingSchemeId) {
+        var s = schemes.find(function (x) { return x.id === editingSchemeId; });
+        s.name = name; s.sort = +sort;
+      } else {
+        schemes.push({ id: Date.now(), name: name, sort: +sort, rules: [] });
+      }
+      closeSchemeModal();
+      renderSchemes();
+      alert('保存成功（原型演示）');
+    }
+
+    function deleteScheme(id) {
+      if (!confirm('确定删除该判定方案？')) return;
+      schemes = schemes.filter(function (s) { return s.id !== id; });
+      renderSchemes();
+    }
+
+    function getCondOptions() {
+      var byQuality = document.querySelector('input[name="r_byQuality"]:checked').value === 'yes';
+      return byQuality ? QUALITY_OPTS : SIMPLE_OPTS;
+    }
+
+    function renderConditions(selected) {
+      var opts = getCondOptions();
+      var html = (selected || [opts[0]]).map(function (val, i) {
+        return '<div class="cond-row" data-idx="' + i + '">' +
+          '<span class="text-slate-500 whitespace-nowrap">条件' + (i + 1)</span>' +
+          '<select class="flex-1 cond-select">' + opts.map(function (o) {
+            return '<option' + (o === val ? ' selected' : '') + '>' + o + '</option>';
+          }).join('') + '</select>' +
+          '<button type="button" onclick="removeCondition(this)" class="text-red-500 text-sm hover:underline"><i class="fa fa-trash-o"></i> 删除</button></div>';
+      }).join('');
+      document.getElementById('condList').innerHTML = html;
+    }
+
+    function toggleQualityMode() { renderConditions(); }
+
+    function addCondition() {
+      var opts = getCondOptions();
+      var list = document.getElementById('condList');
+      var i = list.children.length;
+      var div = document.createElement('div');
+      div.className = 'cond-row';
+      div.innerHTML = '<span class="text-slate-500 whitespace-nowrap">条件' + (i + 1) + '</span>' +
+        '<select class="flex-1 cond-select">' + opts.map(function (o) { return '<option>' + o + '</option>'; }).join('') + '</select>' +
+        '<button type="button" onclick="removeCondition(this)" class="text-red-500 text-sm hover:underline"><i class="fa fa-trash-o"></i> 删除</button>';
+      list.appendChild(div);
+    }
+
+    function removeCondition(btn) {
+      var row = btn.closest('.cond-row');
+      if (document.querySelectorAll('.cond-row').length <= 1) { alert('至少保留一个条件'); return; }
+      row.remove();
+    }
+
+    function openRuleModal(schemeId, ruleIndex) {
+      editingRuleCtx = { schemeId: schemeId, ruleIndex: ruleIndex };
+      var isEdit = typeof ruleIndex === 'number';
+      document.getElementById('ruleModalTitle').textContent = isEdit ? '编辑判定规则' : '添加判定规则';
+      if (isEdit) {
+        var rule = schemes.find(function (s) { return s.id === schemeId; }).rules[ruleIndex];
+        document.getElementById('r_priority').value = rule.priority;
+        document.getElementById('r_type').value = rule.type;
+        document.getElementById('r_conclusion').value = rule.conclusion;
+        document.getElementById('r_remark').value = rule.remark || '';
+        var byQ = rule.condition.indexOf('类') !== -1;
+        document.querySelector('input[name="r_byQuality"][value="' + (byQ ? 'yes' : 'no') + '"]').checked = true;
+        renderConditions([rule.condition]);
+      } else {
+        document.getElementById('r_priority').value = '1';
+        document.getElementById('r_type').value = '';
+        document.getElementById('r_conclusion').value = '';
+        document.getElementById('r_remark').value = '';
+        document.querySelector('input[name="r_byQuality"][value="yes"]').checked = true;
+        renderConditions(['存在A类不合格项']);
+      }
+      document.getElementById('ruleModal').classList.add('open');
+    }
+
+    function closeRuleModal() { document.getElementById('ruleModal').classList.remove('open'); }
+
+    function saveRule() {
+      var priority = document.getElementById('r_priority').value;
+      var type = document.getElementById('r_type').value;
+      var conclusion = document.getElementById('r_conclusion').value.trim();
+      if (!priority || !type || !conclusion) { alert('请填写必填项'); return; }
+      var condEl = document.querySelector('.cond-select');
+      var condition = condEl ? condEl.value : '';
+      var remark = document.getElementById('r_remark').value.trim();
+      var scheme = schemes.find(function (s) { return s.id === editingRuleCtx.schemeId; });
+      var rule = { priority: +priority, type: type, condition: condition, conclusion: conclusion, remark: remark };
+      if (typeof editingRuleCtx.ruleIndex === 'number') {
+        scheme.rules[editingRuleCtx.ruleIndex] = rule;
+      } else {
+        scheme.rules.push(rule);
+        scheme.rules.sort(function (a, b) { return a.priority - b.priority; });
+      }
+      closeRuleModal();
+      renderSchemes();
+      alert('保存成功（原型演示）');
+    }
+
+    function deleteRule(schemeId, ri) {
+      if (!confirm('确定删除该判定规则？')) return;
+      schemes.find(function (s) { return s.id === schemeId; }).rules.splice(ri, 1);
+      renderSchemes();
+    }
+
+    ['schemeModal', 'ruleModal'].forEach(function (id) {
+      document.getElementById(id).addEventListener('click', function (e) {
+        if (e.target === this) this.classList.remove('open');
+      });
+    });
+
+    renderSchemes();
+  </script>
+</body>
+</html>
