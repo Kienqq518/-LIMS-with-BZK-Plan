@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>试验检测编辑 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+
+    .sample-tab {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #fff;
+      color: #64748b;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .sample-tab:hover { border-color: #93c5fd; color: #2563eb; }
+    .sample-tab.active {
+      border-color: #2563eb;
+      color: #2563eb;
+      background: #eff6ff;
+      font-weight: 500;
+    }
+
+    /* 层级：样品大类 → 试验项分组 → 数据表 */
+    .test-group {
+      margin-bottom: 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+      overflow: hidden;
+    }
+    .test-group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: linear-gradient(90deg, #f1f5f9 0%, #f8fafc 100%);
+      border-bottom: 1px solid #e2e8f0;
+      border-left: 4px solid #2563eb;
+    }
+    .test-group-header .group-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .test-group-header .group-title .sample-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 8px;
+      border-radius: 3px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .test-group-header .group-title .divider {
+      color: #94a3b8;
+      font-weight: 400;
+    }
+    .test-group-header .group-meta {
+      flex-shrink: 0;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .test-group-body { padding: 0; }
+
+    .detect-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .detect-table th, .detect-table td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      text-align: center;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .detect-table th {
+      background: #f8fafc;
+      color: #64748b;
+      font-weight: 500;
+    }
+    .detect-table tbody tr:nth-child(even) { background: #fafbfc; }
+    .detect-table tbody tr:hover { background: #f1f5f9; }
+
+    .status-done {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #15803d;
+      font-weight: 500;
+    }
+    .status-done::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+    .status-doing {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #2563eb;
+      font-weight: 500;
+    }
+    .status-doing::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3b82f6;
+    }
+    .concl-pass { color: #15803d; font-weight: 500; }
+    .concl-fail { color: #dc2626; font-weight: 500; }
+
+    .pager {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      padding: 10px 14px;
+      border-top: 1px solid #f1f5f9;
+      font-size: 12px;
+      color: #64748b;
+      background: #fff;
+    }
+    .pager button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 28px;
+      padding: 0 6px;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      background: #fff;
+      color: #64748b;
+    }
+    .pager button:hover:not(:disabled) { background: #f8fafc; color: #2563eb; border-color: #93c5fd; }
+    .pager button.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+    .pager button:disabled { color: #cbd5e1; cursor: not-allowed; }
+    .pager select {
+      height: 28px;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 0 6px;
+      background: #fff;
+      color: #64748b;
+    }
+
+    .op-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      color: #2563eb;
+    }
+    .op-btn:hover { background: #eff6ff; }
+
+    .panel-hidden { display: none !important; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="test-detect.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="test-detect.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">试验检测</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      试验检测编辑
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <!-- 提示条 -->
+    <div class="mb-3 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+      <i class="fa fa-info-circle mt-0.5 flex-shrink-0"></i>
+      <span>您好！完成所有试验项的检测并导出原始记录单后，该样品才能顺利流转到下一个环节。</span>
+    </div>
+
+    <!-- 样品页签 + 操作 -->
+    <div class="mb-3 rounded bg-white px-4 py-3 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2" id="sampleTabs"></div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="alert('导出管理（原型演示）')" class="rounded border border-blue-600 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50">
+            <i class="fa fa-download"></i> 导出管理
+          </button>
+          <button onclick="alert('检测任务单（原型演示）')" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">
+            <i class="fa fa-file-text-o"></i> 检测任务单
+          </button>
+        </div>
+      </div>
+      <p class="mt-3 text-sm text-slate-600">
+        <span class="font-medium text-slate-700">注：</span>
+        将鼠标悬浮在 <i class="fa fa-question-circle text-orange-500" title="不合格原因"></i> 图标上，可查看不合格原因；
+        将鼠标悬浮在 <i class="fa fa-info-circle text-blue-500" title="退回原因"></i> 图标上，可查看退回原因
+      </p>
+      <div class="mt-2 text-xs text-slate-400">
+        委托编号：<span id="entrustCode" class="text-slate-600">—</span>
+        <span class="mx-2 text-slate-300">|</span>
+        客户单位：<span id="customerName" class="text-slate-600">—</span>
+      </div>
+    </div>
+
+    <!-- 各样品对应的试验项面板 -->
+    <div id="panels"></div>
+  </div>
+
+  <!-- 行编辑弹窗（原型） -->
+  <div id="rowEditModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-[560px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 class="text-base font-medium text-slate-800" id="rowEditTitle">编辑检测数据</h3>
+        <button onclick="closeRowEdit()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="space-y-3 px-5 py-4 text-sm" id="rowEditBody"></div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeRowEdit()" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
+        <button onclick="alert('保存成功（原型演示）');closeRowEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var entrustCode = params.get('code') || 'SC2026/0052';
+    var customer = params.get('customer') || '杭州数蚕智能科技有限公司';
+
+    document.getElementById('entrustCode').textContent = entrustCode;
+    document.getElementById('customerName').textContent = customer;
+
+    function pad(n) { return n < 10 ? '0' + n : String(n); }
+    function specimenIds(prefix, count) {
+      var list = [];
+      for (var i = 1; i <= count; i++) list.push(prefix + '-' + pad(i));
+      return list;
+    }
+
+    var pageData = {
+      samples: [
+        {
+          id: 'rod',
+          name: '绝缘操作杆',
+          groups: [
+            {
+              key: 'ac',
+              title: '交流耐压试验',
+              columns: ['试样编号', '试验设备', '标称值/kV', '试验值/kV', '时间/min', '状态描述', '结论', '室温/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0101', 10).map(function (id, i) {
+                return [id, '设备', '45', String(10 + (i % 3)), '1', '无异常', '合格', '23', '1013', '55', '', '已完成'];
+              })
+            },
+            {
+              key: 'appear',
+              title: '外观及尺寸',
+              columns: ['试样编号', '试验设备', '外观', '有效绝缘长度/m', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0102', 10).map(function (id) {
+                return [id, '设备', '无缺陷', '1.2', '', '已完成'];
+              })
+            },
+            {
+              key: 'dyn',
+              title: '抗弯动负荷试验',
+              columns: ['试样编号', '试验设备', '试样长度/m', '标称值/N', '试验值/N', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0103', 10).map(function (id, i) {
+                return [id, '设备', '1.5', '300', String(295 + i), '无异常', '合格', '23', '1013', '55', '', '已完成'];
+              })
+            },
+            {
+              key: 'static',
+              title: '抗弯静负荷试验',
+              columns: ['试样编号', '试验设备', '试样长度/m', '标称值/N', '试验值/N', '时间/min', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0104', 10).map(function (id, i) {
+                return [id, '设备', '1.5', '300', String(298 + (i % 2)), '1', '无异常', i === 3 ? '不合格' : '合格', '23', '1013', '55', i === 3 ? '变形超限' : '', i === 3 ? '检测中' : '已完成'];
+              })
+            }
+          ]
+        },
+        {
+          id: 'ladder',
+          name: '绝缘硬梯',
+          groups: [
+            {
+              key: 'l-appear',
+              title: '外观及尺寸',
+              columns: ['试样编号', '试验设备', '外观', '有效绝缘长度/mm', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0201', 10).map(function (id) {
+                return [id, '设备', '无缺陷', '3000', '', '已完成'];
+              })
+            },
+            {
+              key: 'l-ac',
+              title: '交流耐压试验',
+              columns: ['试样编号', '试验设备', '电极间距离/m', '标称值/kV', '试验值/kV', '时间/min', '状态描述', '结论', '室温/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0202', 10).map(function (id) {
+                return [id, '设备', '0.5', '45', '45', '1', '无异常', '合格', '23', '1013', '55', '', '已完成'];
+              })
+            },
+            {
+              key: 'l-h',
+              title: '水平强度试验',
+              columns: ['试样编号', '试验设备', '标称值/N', '试验值/N', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0203', 10).map(function (id, i) {
+                return [id, '设备', '1000', String(980 + i), '无异常', '合格', '23', '1013', '55', '', '已完成'];
+              })
+            },
+            {
+              key: 'l-rung',
+              title: '横档强度试验',
+              columns: ['试样编号', '试验设备', '标称值/N', '试验值/N', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0204', 10).map(function (id) {
+                return [id, '设备', '2500', '2500', '无异常', '合格', '23', '1013', '55', '', '已完成'];
+              })
+            },
+            {
+              key: 'l-conn',
+              title: '连接装置强度试验',
+              columns: ['试样编号', '试验设备', '标称值/N', '试验值/N', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0205', 10).map(function (id) {
+                return [id, '设备', '1200', '1195', '无异常', '合格', '23', '1013', '55', '', '已完成'];
+              })
+            },
+            {
+              key: 'l-press',
+              title: '抗压试验（折梯、人字梯）',
+              columns: ['试样编号', '试验设备', '标称值/N', '试验值/N', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0206', 10).map(function (id) {
+                return [id, '设备', '1500', '1490', '无异常', '合格', '23', '1013', '55', '', '已完成'];
+              })
+            }
+          ]
+        },
+        {
+          id: 'crossarm',
+          name: '绝缘横担',
+          groups: [
+            {
+              key: 'c-appear',
+              title: '外观及尺寸',
+              columns: ['试样编号', '试验设备', '外观', '有效绝缘长度/m', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0301', 8).map(function (id) {
+                return [id, '设备', '无缺陷', '1.8', '', '已完成'];
+              })
+            },
+            {
+              key: 'c-ac',
+              title: '交流耐压试验',
+              columns: ['试样编号', '试验设备', '标称值/kV', '试验值/kV', '时间/min', '状态描述', '结论', '室温/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
+              rows: specimenIds(entrustCode + '0302', 8).map(function (id) {
+                return [id, '设备', '70', '70', '1', '无异常', '合格', '22', '1012', '58', '', '已完成'];
+              })
+            }
+          ]
+        }
+      ]
+    };
+
+    var activeSample = pageData.samples[0].id;
+
+    function statusHtml(text) {
+      if (text === '已完成') return '<span class="status-done">已完成</span>';
+      if (text === '检测中') return '<span class="status-doing">检测中</span>';
+      return text || '—';
+    }
+
+    function conclHtml(text) {
+      if (text === '合格') return '<span class="concl-pass">合格</span>';
+      if (text === '不合格') {
+        return '<span class="concl-fail">不合格</span> <i class="fa fa-question-circle text-orange-500 cursor-help" title="不合格原因：变形超限"></i>';
+      }
+      return text || '';
+    }
+
+    function cellHtml(col, value, sampleName, groupTitle) {
+      if (col === '试验设备') {
+        return '<button onclick="alert(\'选择设备（原型演示）\')" class="rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-blue-600 hover:bg-blue-100">' + (value || '设备') + '</button>';
+      }
+      if (col === '结论') return conclHtml(value);
+      if (col === '状态') return statusHtml(value);
+      if (col === '操作') {
+        return '<button class="op-btn" title="编辑" onclick="openRowEdit(\'' + sampleName + '\',\'' + groupTitle + '\')"><i class="fa fa-pencil"></i></button>' +
+          '<button class="op-btn" title="复制" onclick="alert(\'复制行（原型演示）\')"><i class="fa fa-files-o"></i></button>';
+      }
+      return value === '' || value == null ? '' : value;
+    }
+
+    function pagerHtml(total) {
+      return '<div class="pager">' +
+        '<button disabled><i class="fa fa-angle-left"></i></button>' +
+        '<button class="active">1</button>' +
+        (total > 10 ? '<button>2</button><button>3</button><span>…</span><button>10</button>' : '') +
+        '<button' + (total > 10 ? '' : ' disabled') + '><i class="fa fa-angle-right"></i></button>' +
+        '<select><option>10 条/页</option><option>20 条/页</option><option>50 条/页</option></select>' +
+        '</div>';
+    }
+
+    function renderTabs() {
+      document.getElementById('sampleTabs').innerHTML = pageData.samples.map(function (s) {
+        return '<button type="button" class="sample-tab' + (s.id === activeSample ? ' active' : '') + '" data-id="' + s.id + '" onclick="switchSample(\'' + s.id + '\')">' + s.name + '</button>';
+      }).join('');
+    }
+
+    function renderPanels() {
+      var html = '';
+      pageData.samples.forEach(function (sample) {
+        html += '<div class="space-y-0' + (sample.id === activeSample ? '' : ' panel-hidden') + '" id="panel-' + sample.id + '">';
+        sample.groups.forEach(function (g) {
+          var doneCount = g.rows.filter(function (r) {
+            var idx = g.columns.indexOf('状态');
+            return idx >= 0 && r[idx] === '已完成';
+          }).length;
+          html += '<section class="test-group">';
+          html += '<div class="test-group-header">';
+          html += '<div class="group-title">';
+          html += '<span class="sample-tag">' + sample.name + '</span>';
+          html += '<span class="divider">/</span>';
+          html += '<span>' + g.title + '</span>';
+          html += '</div>';
+          html += '<div class="group-meta">已完成 ' + doneCount + ' / ' + g.rows.length + '</div>';
+          html += '</div>';
+          html += '<div class="test-group-body overflow-x-auto">';
+          html += '<table class="detect-table min-w-full"><thead><tr>';
+          g.columns.forEach(function (c) { html += '<th>' + c + '</th>'; });
+          html += '</tr></thead><tbody>';
+          g.rows.forEach(function (row) {
+            html += '<tr>';
+            g.columns.forEach(function (col, ci) {
+              var val = ci < row.length ? row[ci] : '';
+              html += '<td>' + cellHtml(col, val, sample.name, g.title) + '</td>';
+            });
+            html += '</tr>';
+          });
+          html += '</tbody></table>';
+          html += pagerHtml(g.rows.length);
+          html += '</div></section>';
+        });
+        html += '</div>';
+      });
+      document.getElementById('panels').innerHTML = html;
+    }
+
+    function switchSample(id) {
+      activeSample = id;
+      renderTabs();
+      pageData.samples.forEach(function (s) {
+        var el = document.getElementById('panel-' + s.id);
+        if (!el) return;
+        if (s.id === id) el.classList.remove('panel-hidden');
+        else el.classList.add('panel-hidden');
+      });
+    }
+
+    function openRowEdit(sampleName, groupTitle) {
+      document.getElementById('rowEditTitle').textContent = '编辑 · ' + sampleName + ' / ' + groupTitle;
+      document.getElementById('rowEditBody').innerHTML =
+        '<div class="flex items-center gap-3"><label class="w-24 text-right text-slate-500">试样编号</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5" value="' + entrustCode + '0101-01" readonly /></div>' +
+        '<div class="flex items-center gap-3"><label class="w-24 text-right text-slate-500">试验值</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5" value="10" /></div>' +
+        '<div class="flex items-center gap-3"><label class="w-24 text-right text-slate-500">状态描述</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5" value="无异常" /></div>' +
+        '<div class="flex items-center gap-3"><label class="w-24 text-right text-slate-500">结论</label><select class="flex-1 rounded border border-slate-300 px-3 py-1.5"><option>合格</option><option>不合格</option></select></div>' +
+        '<div class="flex items-center gap-3"><label class="w-24 text-right text-slate-500">备注</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5" placeholder="请输入备注" /></div>';
+      var m = document.getElementById('rowEditModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeRowEdit() {
+      var m = document.getElementById('rowEditModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    document.getElementById('rowEditModal').addEventListener('click', function (e) {
+      if (e.target === this) closeRowEdit();
+    });
+
+    renderTabs();
+    renderPanels();
+  </script>
+</body>
+</html>
