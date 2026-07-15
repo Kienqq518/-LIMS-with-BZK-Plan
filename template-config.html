@@ -28,6 +28,7 @@
     .tree-node.test-item .cfg-dot.off { background: #cbd5e1; }
     .tree-node .count { color: #94a3b8; font-size: 12px; }
     .badge-enabled { display: inline-block; background: #dcfce7; color: #15803d; font-size: 11px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+    .badge-default { display: inline-block; background: #dbeafe; color: #1d4ed8; font-size: 11px; padding: 1px 6px; border-radius: 4px; }
     .badge-none { color: #94a3b8; font-size: 12px; }
     .tpl-main { flex: 1; min-width: 0; background: #fff; }
     .tpl-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
@@ -292,14 +293,34 @@
     </div>
   </div>
 
+  <!-- 正文模板 · 版本管理 -->
+  <div id="bodyVersionModal" class="modal-mask">
+    <div class="modal-box lg">
+      <div class="modal-head"><span id="bodyVersionTitle">正文模板版本</span><button onclick="closeModal('bodyVersionModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <p class="mb-3 text-sm text-slate-500">同一模板变体可上传多个版本，<strong class="text-slate-700">同时只能启用一个</strong>；报告生成时使用启用版本。点击「配置」进入 PageOffice 编辑当前启用版本。</p>
+        <table class="tpl-table">
+          <thead><tr><th style="width:50px">启用</th><th>模板文件</th><th>上传时间</th><th style="width:120px">操作</th></tr></thead>
+          <tbody id="bodyVersionTableBody"></tbody>
+        </table>
+        <div class="mt-3 flex gap-2">
+          <button onclick="alert('上传新版本（原型演示）')" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-upload"></i> 上传</button>
+          <button onclick="openBodyCopyPicker()" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-copy"></i> 复制其他项</button>
+        </div>
+      </div>
+      <div class="modal-foot"><button onclick="closeModal('bodyVersionModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="saveBodyVersion()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
+    </div>
+  </div>
+
   <!-- 正文模板 新增/编辑 -->
   <div id="bodyModal" class="modal-mask">
     <div class="modal-box">
-      <div class="modal-head"><span>新增/编辑详情</span><button onclick="closeModal('bodyModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-head"><span id="bodyModalTitle">新增模板变体</span><button onclick="closeModal('bodyModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
       <div class="modal-body">
         <div class="form-row"><label><span class="req">*</span> 样品名称(型号)</label><div class="ctrl"><select id="m_sample"><option>PVC-C</option><option>MPP</option><option>HDPE</option></select></div></div>
-        <div class="form-row"><label><span class="req">*</span> 试验项</label><div class="ctrl"><select id="m_tests" multiple size="4" style="width:100%"><option selected>B-颜色外观</option><option selected>B-尺寸检查</option><option>B-环刚度</option><option>B-压扁试验</option></select><div class="mt-1 text-xs text-slate-400">按住 Ctrl / Cmd 多选</div></div></div>
-        <div class="form-row"><label><span class="req">*</span> 模板文件</label><div class="ctrl">
+        <div class="form-row"><label><span class="req">*</span> 模板名称</label><div class="ctrl"><input type="text" id="m_name" placeholder="如：标准版、英文版、简版" /><div class="mt-1 text-xs text-slate-400">同一样品型号下可配置多个模板变体，以名称区分</div></div></div>
+        <div class="form-row"><label></label><div class="ctrl"><label class="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" id="m_default" /> 设为默认模板（报告生成时默认选用）</label></div></div>
+        <div class="form-row" id="bodyFileRow"><label><span class="req">*</span> 模板文件</label><div class="ctrl">
           <div class="radio-group mb-2"><label><input type="radio" name="bodyFileMode" value="upload" checked onchange="toggleBodyFileMode()" /> 上传</label><label><input type="radio" name="bodyFileMode" value="copy" onchange="toggleBodyFileMode()" /> 复制</label></div>
           <div id="bodyUploadZone" class="upload-zone" onclick="alert('上传模板文件（原型演示）')"><i class="fa fa-cloud-upload block"></i><div>上传</div></div>
           <button id="bodyCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openCopyPicker('body')"><i class="fa fa-copy"></i> 复制</button>
@@ -385,7 +406,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
-    var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, poType: 'report', poTab: 'center' };
+    var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, poType: 'report', poTab: 'center' };
 
     var TREE = [
       { id: 'gqj', label: 'GQJ安全工器具', children: [
@@ -425,9 +446,32 @@
     }
 
     var BODY_DATA = [
-      { id: 1, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', tests: ['B-颜色外观', 'B-尺寸检查'], file: 'PVC-C报告模板V1.doc', head: '电网物资通用模板头.doc', tail: '—' },
-      { id: 2, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', tests: ['B-环刚度', 'B-压扁试验'], file: 'PVC-C报告模板V2.doc', head: '电网物资通用模板头.doc', tail: '电网物资通用模板尾.doc' },
-      { id: 3, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', tests: ['B-落锤冲击'], file: 'PVC-C报告模板V3.doc', head: '—', tail: '—' }
+      { id: 1, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', name: '标准版', isDefault: true,
+        head: '电网物资通用模板头.doc', tail: '电网物资通用模板尾.doc', file: 'PVC-C报告模板_标准版.doc',
+        templates: [
+          { name: 'PVC-C报告模板_标准版.doc', time: '2026-01-08 15:30', enabled: true },
+          { name: 'PVC-C报告模板_标准版_v2.doc', time: '2026-03-15 10:00', enabled: false }
+        ]},
+      { id: 2, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', name: '英文版', isDefault: false,
+        head: '电网物资通用模板头.doc', tail: '—', file: 'PVC-C报告模板_英文版.doc',
+        templates: [
+          { name: 'PVC-C报告模板_英文版.doc', time: '2026-02-01 09:00', enabled: true }
+        ]},
+      { id: 3, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', name: '简版', isDefault: false,
+        head: '—', tail: '—', file: 'PVC-C报告模板_简版.doc',
+        templates: [
+          { name: 'PVC-C报告模板_简版.doc', time: '2026-02-20 14:00', enabled: true }
+        ]},
+      { id: 4, tree: 'mpp', sample: 'MPP', category: 'WZ电网物资', name: '标准版', isDefault: true,
+        head: '电网物资通用模板头.doc', tail: '电网物资通用模板尾.doc', file: 'MPP报告模板_标准版.doc',
+        templates: [
+          { name: 'MPP报告模板_标准版.doc', time: '2026-01-20 11:00', enabled: true }
+        ]},
+      { id: 5, tree: 'mpp', sample: 'MPP', category: 'WZ电网物资', name: '简版', isDefault: false,
+        head: '电网物资通用模板头.doc', tail: '—', file: 'MPP报告模板_简版.doc',
+        templates: [
+          { name: 'MPP报告模板_简版.doc', time: '2026-02-10 16:30', enabled: true }
+        ]}
     ];
 
     var PUBLIC_DATA = [
@@ -491,6 +535,10 @@
       return html;
     }
 
+    function getBodyTreeCount(modelId) {
+      return BODY_DATA.filter(function (r) { return r.tree === modelId; }).length;
+    }
+
     function renderTree() {
       var kw = (document.getElementById('treeSearch').value || '').trim().toLowerCase();
       var html = '';
@@ -505,7 +553,8 @@
           var childHtml = (g.children || []).map(function (c) {
             if (kw && !showGroup && !c.label.toLowerCase().includes(kw)) return '';
             var active = state.treeId === c.id ? ' active' : '';
-            var count = c.count ? '<span class="count">(' + c.count + ')</span>' : '';
+            var countNum = getBodyTreeCount(c.id);
+            var count = countNum ? '<span class="count">(' + countNum + ')</span>' : (c.count ? '<span class="count">(' + c.count + ')</span>' : '');
             return '<div class="tree-node child' + active + '" data-id="' + c.id + '" onclick="selectTree(\'' + c.id + '\')">' + c.label + count + '</div>';
           }).join('');
           if (!childHtml && kw && !showGroup) return;
@@ -526,9 +575,9 @@
     function renderToolbar() {
       var el = document.getElementById('toolbar');
       if (state.main === 'report' && state.sub === 'body') {
-        el.innerHTML = '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
+        el.innerHTML = '<label>模板名称</label><input id="f_name" placeholder="请输入" />' +
+          '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
           '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
-          '<label>试验项</label><input id="f_test" placeholder="请输入" />' +
           '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
           '<button onclick="renderView()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
           '<button onclick="resetFilters()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600">重置</button>' +
@@ -568,12 +617,14 @@
       else if (state.sub === 'public') rows = PUBLIC_DATA.slice();
       else rows = BODY_DATA.filter(function (r) { return r.tree === state.treeId; });
 
+      var name = document.getElementById('f_name');
       var sample = document.getElementById('f_sample');
       var category = document.getElementById('f_category');
       var test = document.getElementById('f_test');
       var file = document.getElementById('f_file');
       var content = document.getElementById('f_content');
       var configured = document.getElementById('f_configured');
+      if (name && name.value.trim()) rows = rows.filter(function (r) { return (r.name || '').includes(name.value.trim()); });
       if (sample && sample.value.trim()) rows = rows.filter(function (r) { return (r.sample || '').includes(sample.value.trim()); });
       if (category && category.value.trim()) rows = rows.filter(function (r) { return (r.category || '').includes(category.value.trim()); });
       if (test && test.value.trim()) rows = rows.filter(function (r) {
@@ -599,6 +650,18 @@
         '<button onclick="openRecordCopyForRow(' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="record-copy">复制</button>';
     }
 
+    function bodyOps(r) {
+      var defaultBtn = r.isDefault
+        ? '<span class="text-slate-400 text-xs ml-1">已是默认</span>'
+        : '<button onclick="setBodyDefault(' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="body-default">设为默认</button>';
+      return '<button onclick="openBodyEdit(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="row-edit">编辑</button> ' +
+        '<button onclick="openBodyVersion(' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="body-version">版本</button> ' +
+        '<button onclick="openPageOffice(\'body\',' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="po-config">配置</button> ' +
+        '<button onclick="alert(\'预览（原型演示）\')" class="ml-1 text-blue-600 hover:underline">预览</button> ' +
+        defaultBtn + ' ' +
+        '<button onclick="deleteBody(' + r.id + ')" class="ml-1 text-red-500 hover:underline" data-annotate="row-delete">删除</button>';
+    }
+
     function renderTable() {
       var head = document.getElementById('tableHead');
       var body = document.getElementById('tableBody');
@@ -608,20 +671,24 @@
         return '<button onclick="alert(\'编辑（原型演示）\')" class="text-blue-600 hover:underline" data-annotate="row-edit">编辑</button> ' +
           '<button onclick="' + cfgFn + '" class="ml-1 text-blue-600 hover:underline" data-annotate="po-config">配置</button> ' +
           '<button onclick="alert(\'预览（原型演示）\')" class="ml-1 text-blue-600 hover:underline">预览</button> ' +
-          '<button onclick="alert(\'删除（原型演示）\')" class="ml-1 text-red-500 hover:underline" data-annotate="row-delete">删除</button>' +
-          (type === 'public' ? ' <button onclick="alert(\'上传（原型演示）\')" class="ml-1 text-blue-600 hover:underline">上传</button> <button onclick="openCopyPicker(\'public\')" class="ml-1 text-blue-600 hover:underline">复制</button>' : '');
+          '<button onclick="alert(\'删除（原型演示）\')" class="ml-1 text-red-500 hover:underline" data-annotate="row-delete">删除</button>';
       };
 
       if (state.main === 'report' && state.sub === 'body') {
-        head.innerHTML = '<tr><th>序号</th><th>样品</th><th>样品分类</th><th>试验项</th><th>模板文件</th><th>引用公共模版头</th><th>引用公共模版尾</th><th style="min-width:200px">操作</th></tr>';
+        head.innerHTML = '<tr><th>序号</th><th>模板名称</th><th>样品名称(型号)</th><th>样品分类</th><th>默认</th><th>当前启用版本</th><th>引用公共模版头</th><th>引用公共模版尾</th><th style="min-width:300px">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
-          return '<tr><td>' + (i + 1) + '</td><td>' + r.sample + '</td><td>' + r.category + '</td><td>' +
-            r.tests.map(function (t) { return '<span class="tag-chip">' + t + '</span>'; }).join('') + '</td>' +
-            '<td><span class="link">' + r.file + '</span></td><td><span class="link">' + r.head + '</span></td><td><span class="link">' + r.tail + '</span></td>' +
-            '<td class="whitespace-nowrap">' + ops('body', r) + '</td></tr>';
+          var defaultCell = r.isDefault
+            ? '<span class="badge-default">默认</span>'
+            : '<span class="text-slate-400">—</span>';
+          var fileCell = r.file
+            ? '<span class="link">' + r.file + '</span>' + (r.templates && r.templates.length > 1 ? '<span class="badge-enabled">启用中</span>' : '')
+            : '<span class="badge-none">未配置</span>';
+          return '<tr><td>' + (i + 1) + '</td><td>' + r.name + '</td><td>' + r.sample + '</td><td>' + r.category + '</td><td>' + defaultCell + '</td>' +
+            '<td>' + fileCell + '</td><td><span class="link">' + r.head + '</span></td><td><span class="link">' + r.tail + '</span></td>' +
+            '<td class="whitespace-nowrap">' + bodyOps(r) + '</td></tr>';
         }).join('');
       } else if (state.main === 'report' && state.sub === 'public') {
-        head.innerHTML = '<tr><th>序号</th><th>模板内容</th><th>样品分类</th><th>模板文件</th><th style="min-width:240px">操作</th></tr>';
+        head.innerHTML = '<tr><th>序号</th><th>模板内容</th><th>样品分类</th><th>模板文件</th><th style="min-width:180px">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           return '<tr><td>' + (i + 1) + '</td><td>' + r.content + '</td><td>' + (r.category !== '—' ? r.category : r.sample) + '</td>' +
             '<td><span class="link">' + r.file + '</span></td><td class="whitespace-nowrap">' + ops('public', r) + '</td></tr>';
@@ -643,10 +710,10 @@
       var bar = document.getElementById('infoBar');
       if (state.main === 'report' && state.sub === 'body') {
         bar.classList.remove('hidden');
-        bar.innerHTML = '<i class="fa fa-info-circle"></i> 目前单样品型号可支持存储多版报告，每版支持不同的试验项组合；关联关系需要创建，需要选择是否关联模板头/尾。';
+        bar.innerHTML = '<i class="fa fa-info-circle"></i> 同一样品名称(型号)下可配置多个<strong>模板变体</strong>（如标准版/英文版/简版），每个变体可保存多个模板版本、<strong>同时仅启用一个</strong>。其中一个变体标记为<strong>默认</strong>，报告生成时默认选用。模板内含全部试验项占位，与委托试验项无关联；委托缺少的试验项在生成时不渲染。';
       } else if (state.main === 'report' && state.sub === 'public') {
         bar.classList.remove('hidden');
-        bar.innerHTML = '<i class="fa fa-info-circle"></i> 模板内容单选「样品分类」或「样品名称(型号)」；二者均支持多选。模板文件非必填，可上传新模板或复制已有模板。';
+        bar.innerHTML = '<i class="fa fa-info-circle"></i> 模板内容单选「样品分类」或「样品名称(型号)」；二者均支持多选。正文模板变体通过下拉引用公共头尾。主列表仅支持编辑/配置/预览/删除，上传与复制在新增弹窗内完成。';
       } else if (state.main === 'record') {
         bar.classList.remove('hidden');
         bar.setAttribute('data-annotate', 'record-export-logic');
@@ -666,7 +733,7 @@
     }
 
     function resetFilters() {
-      ['f_sample', 'f_category', 'f_test', 'f_file'].forEach(function (id) {
+      ['f_name', 'f_sample', 'f_category', 'f_test', 'f_file'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.value = '';
       });
@@ -721,9 +788,162 @@
 
     function openModal(id) { document.getElementById(id).classList.add('open'); }
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-    function openBodyModal() { openModal('bodyModal'); }
+
+    function findBody(id) {
+      return BODY_DATA.find(function (r) { return r.id === id; });
+    }
+
+    function openBodyModal() {
+      state.bodyRowId = null;
+      document.getElementById('bodyModalTitle').textContent = '新增模板变体';
+      document.getElementById('m_name').value = '';
+      document.getElementById('m_default').checked = !BODY_DATA.some(function (r) { return r.tree === state.treeId && r.isDefault; });
+      document.getElementById('bodyFileRow').classList.remove('hidden');
+      document.querySelector('input[name=bodyFileMode][value=upload]').checked = true;
+      toggleBodyFileMode();
+      openModal('bodyModal');
+    }
+
+    function openBodyEdit(id) {
+      var row = findBody(id);
+      if (!row) return;
+      state.bodyRowId = id;
+      document.getElementById('bodyModalTitle').textContent = '编辑模板变体';
+      document.getElementById('m_sample').value = row.sample;
+      document.getElementById('m_name').value = row.name;
+      document.getElementById('m_default').checked = row.isDefault;
+      document.getElementById('m_useHead').checked = row.head !== '—';
+      document.getElementById('m_useTail').checked = row.tail !== '—';
+      document.getElementById('m_tail').disabled = row.tail === '—';
+      document.getElementById('bodyFileRow').classList.add('hidden');
+      openModal('bodyModal');
+    }
+
+    function saveBodyModal() {
+      var name = (document.getElementById('m_name').value || '').trim();
+      if (!name) { alert('请填写模板名称'); return; }
+      var sample = document.getElementById('m_sample').value;
+      var isDefault = document.getElementById('m_default').checked;
+      var useHead = document.getElementById('m_useHead').checked;
+      var useTail = document.getElementById('m_useTail').checked;
+      var head = useHead ? document.getElementById('m_head').value + '.doc' : '—';
+      var tail = useTail ? document.getElementById('m_tail').value + '.doc' : '—';
+
+      if (state.bodyRowId) {
+        var row = findBody(state.bodyRowId);
+        if (row) {
+          row.name = name;
+          row.head = head;
+          row.tail = tail;
+          if (isDefault) {
+            BODY_DATA.forEach(function (r) {
+              if (r.tree === row.tree) r.isDefault = r.id === row.id;
+            });
+          } else if (row.isDefault) {
+            alert('至少保留一个默认模板，请先为同型号其他变体设为默认');
+            return;
+          }
+        }
+      } else {
+        if (isDefault) {
+          BODY_DATA.forEach(function (r) {
+            if (r.tree === state.treeId) r.isDefault = false;
+          });
+        }
+        var newId = BODY_DATA.reduce(function (m, r) { return Math.max(m, r.id); }, 0) + 1;
+        BODY_DATA.push({
+          id: newId, tree: state.treeId, sample: sample, category: 'WZ电网物资',
+          name: name, isDefault: isDefault, head: head, tail: tail,
+          file: sample + '报告模板_' + name + '.doc',
+          templates: [{ name: sample + '报告模板_' + name + '.doc', time: '2026-07-15 12:00', enabled: true }]
+        });
+      }
+      closeModal('bodyModal');
+      renderTree();
+      renderTable();
+      alert('正文模板变体已保存（原型演示）');
+    }
+
+    function openBodyVersion(id) {
+      state.bodyRowId = id;
+      var row = findBody(id);
+      document.getElementById('bodyVersionTitle').textContent = '正文模板版本 · ' + (row ? row.name : '');
+      renderBodyVersionTable();
+      openModal('bodyVersionModal');
+    }
+
+    function renderBodyVersionTable() {
+      var row = findBody(state.bodyRowId);
+      if (!row) return;
+      document.getElementById('bodyVersionTableBody').innerHTML = (row.templates || []).map(function (t, i) {
+        return '<tr><td class="text-center"><input type="radio" name="enabledBodyTpl" ' + (t.enabled ? 'checked' : '') + ' onchange="setEnabledBodyTpl(' + i + ')" /></td>' +
+          '<td><span class="link">' + t.name + '</span></td><td>' + t.time + '</td>' +
+          '<td><button onclick="alert(\'预览\')" class="text-blue-600 hover:underline">预览</button> ' +
+          '<button onclick="removeBodyTpl(' + i + ')" class="ml-1 text-red-500 hover:underline">删除</button></td></tr>';
+      }).join('') || '<tr><td colspan="4" class="py-6 text-center text-slate-400">暂无模板，请上传或复制</td></tr>';
+    }
+
+    function setEnabledBodyTpl(index) {
+      var row = findBody(state.bodyRowId);
+      if (!row) return;
+      row.templates.forEach(function (t, i) { t.enabled = i === index; });
+      var enabled = row.templates[index];
+      row.file = enabled ? enabled.name : null;
+    }
+
+    function removeBodyTpl(index) {
+      var row = findBody(state.bodyRowId);
+      if (!row || !confirm('确定删除该模板版本？')) return;
+      row.templates.splice(index, 1);
+      if (!row.templates.length) row.file = null;
+      else if (!row.templates.some(function (t) { return t.enabled; })) {
+        row.templates[0].enabled = true;
+        row.file = row.templates[0].name;
+      }
+      renderBodyVersionTable();
+    }
+
+    function saveBodyVersion() {
+      closeModal('bodyVersionModal');
+      renderTable();
+      alert('正文模板版本已保存（原型演示）');
+    }
+
+    function openBodyCopyPicker() {
+      var sources = BODY_DATA.filter(function (r) { return r.file && r.id !== state.bodyRowId; });
+      document.getElementById('copyModalTitle').textContent = '正文模板复制';
+      document.getElementById('copyTableBody').innerHTML = sources.map(function (r, i) {
+        return '<tr><td><input type="radio" name="copyPick" value="' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
+          '<td>' + r.file + '</td><td>正文</td><td>' + r.category + '</td><td>' + r.sample + ' · ' + r.name + '</td>' +
+          '<td><button class="text-blue-600">预览</button></td></tr>';
+      }).join('');
+      openModal('copyModal');
+    }
+
+    function setBodyDefault(id) {
+      var row = findBody(id);
+      if (!row) return;
+      BODY_DATA.forEach(function (r) {
+        if (r.tree === row.tree) r.isDefault = r.id === id;
+      });
+      renderTable();
+      alert('已设为默认模板（原型演示）');
+    }
+
+    function deleteBody(id) {
+      var row = findBody(id);
+      if (!row || !confirm('确定删除模板变体「' + row.name + '」？')) return;
+      if (row.isDefault) {
+        alert('默认模板不可直接删除，请先将同型号其他变体设为默认');
+        return;
+      }
+      var idx = BODY_DATA.indexOf(row);
+      if (idx >= 0) BODY_DATA.splice(idx, 1);
+      renderTree();
+      renderTable();
+    }
+
     function openPublicModal() { openModal('publicModal'); }
-    function saveBodyModal() { closeModal('bodyModal'); alert('正文模板已保存（原型演示）'); }
     function savePublicModal() { closeModal('publicModal'); alert('公共头尾模板已保存（原型演示）'); }
 
     function toggleBodyFileMode() {
@@ -986,8 +1206,11 @@
       } else if (type === 'doc' && rowId) {
         var drow = findDoc(rowId);
         if (drow) { state.poDocType = drow.type; fileName = drow.file || (drow.type + '.docx'); }
+      } else if (type === 'body' && rowId) {
+        var brow = findBody(rowId);
+        if (brow && brow.file) fileName = brow.file;
       } else if (type === 'body') {
-        fileName = 'PVC-C报告模板V1.doc';
+        fileName = 'PVC-C报告模板_标准版.doc';
       } else if (type === 'public') {
         fileName = '电网物资通用模板头.doc';
       }
@@ -1249,11 +1472,13 @@
 
     PrototypeAnnotation.init({
       annotations: [
-        { id: 'tree-count', selector: '[data-annotate="tree-count"]', position: 'top-right', title: '关联模板数量', content: '括号内数字表示该分类/型号下已关联的报告模板数量。', tag: '报告模板' },
+        { id: 'tree-count', selector: '[data-annotate="tree-count"]', position: 'top-right', title: '关联模板数量', content: '括号内数字表示该分类/型号下已配置的报告模板变体数量。', tag: '报告模板' },
         { id: 'record-tree-tests', selector: '[data-annotate="record-tree-tests"]', position: 'top-right', title: '型号下展开试验项', wide: true, content: '选中型号（如 PVC-C）后，下方列出该型号对应的全部试验项；绿点表示已配置模板。点击某一试验项可快速定位右侧列表，括号内为（已配置数 / 试验项总数）。', tag: '记录单' },
-        { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板', content: '打开新增/编辑弹窗，配置样品、试验项、模板文件及公共头尾引用。', tag: '报告模板' },
-        { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑样品名称、关联试验项、更新模板文件、关联头尾等信息。', tag: '操作说明' },
-        { id: 'row-delete', selector: '[data-annotate="row-delete"]', position: 'top-right', title: '删除', content: '删除该条模板配置记录。', tag: '操作说明' },
+        { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板变体', content: '打开新增弹窗，配置样品、模板名称、是否默认、模板文件及公共头尾引用。不再关联试验项。', tag: '报告模板' },
+        { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑模板名称、是否默认、引用公共头尾。模板文件通过「版本」管理。', tag: '操作说明' },
+        { id: 'body-version', selector: '[data-annotate="body-version"]', position: 'top-right', title: '版本管理', wide: true, content: '同一模板变体可存多个版本，通过单选启用其中一个；报告生成时使用启用版本。点击「配置」进入 PageOffice 编辑当前启用版本。', tag: '报告模板' },
+        { id: 'body-default', selector: '[data-annotate="body-default"]', position: 'top-right', title: '设为默认', content: '同一样品型号下仅有一个默认模板变体；报告编制生成报告时默认选中该变体，用户可临时切换其他变体。', tag: '报告模板' },
+        { id: 'row-delete', selector: '[data-annotate="row-delete"]', position: 'top-right', title: '删除', content: '删除该模板变体及其全部版本。默认变体需先切换默认后再删除。', tag: '操作说明' },
         { id: 'record-config', selector: '[data-annotate="record-config"]', position: 'top-right', title: '版本管理', wide: true, content: '同一试验项可存多个模板版本，通过单选启用其中一个；导出时使用启用模板。点击「配置」进入 PageOffice 编辑当前启用模板。', tag: '记录单' },
         { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 插件打开编辑窗口：左侧为 Word 模板预览区，右侧为配置字段面板（检测中心信息、合同信息、报告信息、设备信息、样品信息、试验结果集）。记录单与报告模板左侧内容不同。', tag: '模板配置' },
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
