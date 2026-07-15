@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>标准管理 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .std-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .std-table th, .std-table td { border-bottom: 1px solid #e5e7eb; padding: 10px 12px; text-align: left; vertical-align: middle; }
+    .std-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
+    .std-table tbody tr:hover { background: #f8fafc; }
+    .tag-current { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #dcfce7; color: #15803d; font-size: 12px; }
+    .popover { position: fixed; z-index: 60; width: 360px; max-width: calc(100vw - 24px); background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.15); padding: 14px 16px; display: none; font-size: 13px; }
+    .popover.visible { display: block; }
+    .popover-title { font-weight: 600; color: #334155; margin-bottom: 10px; line-height: 1.5; }
+    .popover-row { display: flex; gap: 8px; margin-bottom: 6px; color: #64748b; }
+    .popover-row span:first-child { flex-shrink: 0; width: 110px; text-align: right; }
+    .modal-mask { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+    .edit-modal { width: 640px; max-width: 100%; max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 8px; }
+    .form-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; font-size: 13px; }
+    .form-row > label { width: 110px; flex-shrink: 0; padding-top: 7px; text-align: right; color: #64748b; }
+    .form-row > label .req { color: #ef4444; }
+    .form-row .ctrl { flex: 1; }
+    .form-row input, .form-row select, .form-row textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; outline: none; font-size: 13px; }
+    .form-section { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; margin-bottom: 14px; }
+    .form-section-title { font-weight: 600; color: #334155; margin-bottom: 10px; font-size: 13px; }
+    .upload-box { border: 2px dashed #cbd5e1; border-radius: 6px; padding: 24px; text-align: center; color: #94a3b8; font-size: 12px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      标准管理
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-3">
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">标准名称</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none" placeholder="请输入标准名称" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">标准号</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none" placeholder="请输入标准号" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">状态</label><select class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none"><option>请选择状态</option><option>现行</option><option>作废</option></select></div>
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">是否关联类别</label><select class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none"><option>请选择</option><option>是</option><option>否</option></select></div>
+        <div class="flex items-center gap-2 md:col-span-2"><label class="w-28 text-right text-sm text-slate-600">样品名称</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none" placeholder="请选择样品名称" /></div>
+        <div class="flex items-center gap-2 md:col-span-3 md:justify-end">
+          <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+          <button class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="mb-3"><button onclick="openEditModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新增</button></div>
+      <div class="overflow-x-auto">
+        <table class="std-table min-w-[1100px]">
+          <thead>
+            <tr>
+              <th class="w-12">序号</th>
+              <th>标准名称</th>
+              <th class="w-36">标准号</th>
+              <th class="w-24">基本信息</th>
+              <th class="w-20">状态</th>
+              <th class="w-28">上传时间</th>
+              <th class="w-24">关联关系</th>
+              <th class="w-28">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500"><span>共 22 条</span></div>
+    </div>
+  </div>
+
+  <div id="popover" class="popover"></div>
+
+  <!-- 编辑标准 -->
+  <div id="editModal" class="modal-mask">
+    <div class="edit-modal shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3 sticky top-0 bg-white">
+        <h3 class="text-base font-medium">编辑文件名</h3>
+        <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4">
+        <div class="form-row"><label><span class="req">*</span> 上传文件</label><div class="ctrl"><div class="upload-box"><i class="fa fa-folder-open-o text-2xl"></i><p class="mt-2">点击上传/拖拽到此区域，只能上传一个 PDF 文件，大小限制不超过 60M</p><p class="mt-2 text-blue-600">GB_T 12706.3-2020 额定电压1kV到35kV挤包绝缘电力电缆及附件 第3部分...</p></div></div></div>
+        <div class="form-row"><label><span class="req">*</span> 文件名称</label><div class="ctrl"><input value="GB_T 12706.3-2020 额定电压1kV到35kV挤包绝缘电力电缆及附件 第3部分：额定电压35kV电缆" /></div></div>
+        <div class="form-row"><label><span class="req">*</span> 标准号</label><div class="ctrl"><input value="GB_T 12706.3-2020" /></div></div>
+        <div class="form-row"><label><span class="req">*</span> 状态</label><div class="ctrl"><label class="mr-4"><input type="radio" name="stdStatus" checked /> 现行</label><label class="mr-4"><input type="radio" name="stdStatus" /> 作废</label><label><input type="radio" name="stdStatus" /> 未生效</label></div></div>
+        <div class="form-row"><label><span class="req">*</span> 排序</label><div class="ctrl"><input type="number" value="1" /></div></div>
+        <div class="form-section">
+          <div class="form-section-title">基本信息</div>
+          <div class="form-row"><label>发布单位或类别</label><div class="ctrl"><input placeholder="请输入" /></div></div>
+          <div class="form-row"><label>发布日期</label><div class="ctrl"><input placeholder="请选择日期" /></div></div>
+          <div class="form-row"><label>实施日期</label><div class="ctrl"><input placeholder="请选择日期" /></div></div>
+          <div class="form-row"><label>截止日期</label><div class="ctrl"><input placeholder="请选择日期" /></div></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">关联关系</div>
+          <div class="form-row"><label>样品分类关联</label><div class="ctrl"><input placeholder="请输入" /></div></div>
+          <div class="form-row"><label>代替如下标准</label><div class="ctrl"><select><option>请选择</option></select></div></div>
+          <div class="form-row"><label>引用下列标准</label><div class="ctrl"><select><option>请选择</option></select></div></div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3 sticky bottom-0 bg-white">
+        <button onclick="closeEditModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
+        <button onclick="alert('提交成功（原型演示）');closeEditModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">提交</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var standards = [
+      { id: 1, name: 'GB/T 12706.1-2020 额定电压1kV(Um=1.2kV)到35kV(Um=40.5kV)挤包绝缘电力电缆及附件 第1部分：额定电压1kV(Um=1.2kV)和3kV(Um=3.6kV)电缆', code: 'GBT 12706.1-2020', time: '2026-04-03' },
+      { id: 2, name: 'GBT 3956-2008 电缆的导体', code: 'GBT 3956-2008', time: '2026-04-03' },
+      { id: 3, name: 'GB/T 8815-2016 硬质聚氯乙烯(PVC-U) 管材', code: 'GBT 8815-2016', time: '2026-04-03' },
+      { id: 4, name: 'GB/T 8802-2001 硬聚氯乙烯(PVC-U) 管材 维卡软化温度', code: 'GBT 8802-2001', time: '2026-04-03' },
+      { id: 5, name: 'DL/T 802.7-2023 电力电缆用导管技术条件 第7部分：非开挖用塑料电缆导管', code: 'DLT 802.7-2023', time: '2026-04-03' },
+      { id: 6, name: 'GB/T 9647-2015 热塑性塑料耐外冲击性能', code: 'GBT 9647-2015', time: '2026-04-03' },
+      { id: 7, name: 'DL/T 802.1-2023 电力电缆用导管技术条件 第1部分：总则', code: 'DLT 802.1-2023', time: '2026-04-03' },
+      { id: 8, name: 'GB/T 1033.1-2008 塑料 非泡沫塑料密度', code: 'GBT 1033.1-2008', time: '2026-04-03' }
+    ];
+
+    function renderTable() {
+      document.getElementById('tableBody').innerHTML = standards.map(function (s, i) {
+        return '<tr><td>' + (i + 1) + '</td>' +
+          '<td><a href="#" class="text-blue-600 hover:underline" onclick="return false">' + s.name + '</a></td>' +
+          '<td>' + s.code + '</td>' +
+          '<td><button onclick="showBasicPopover(event,' + s.id + ')" class="text-blue-600 hover:underline">详情</button></td>' +
+          '<td><span class="tag-current">现行</span></td>' +
+          '<td>' + s.time + '</td>' +
+          '<td><button onclick="showRelPopover(event,' + s.id + ')" class="text-blue-600 hover:underline">详情</button></td>' +
+          '<td class="whitespace-nowrap"><button onclick="openEditModal()" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</button>' +
+          '<button onclick="confirm(\'确定删除？\')" class="ml-2 text-red-500 hover:underline"><i class="fa fa-trash-o"></i> 删除</button></td></tr>';
+      }).join('');
+    }
+
+    function showPopover(e, html) {
+      e.stopPropagation();
+      var pop = document.getElementById('popover');
+      pop.innerHTML = html;
+      pop.classList.add('visible');
+      var rect = e.target.getBoundingClientRect();
+      var left = rect.left;
+      var top = rect.bottom + 8;
+      if (left + 360 > window.innerWidth) left = window.innerWidth - 372;
+      pop.style.left = Math.max(12, left) + 'px';
+      pop.style.top = top + 'px';
+    }
+
+    function showBasicPopover(e, id) {
+      var s = standards.find(function (x) { return x.id === id; });
+      showPopover(e, '<div class="popover-title">' + s.name + '</div>' +
+        '<div class="popover-row"><span>发布单位或类别</span><span>—</span></div>' +
+        '<div class="popover-row"><span>发布日期</span><span>—</span></div>' +
+        '<div class="popover-row"><span>实施日期</span><span>—</span></div>' +
+        '<div class="popover-row"><span>截止日期</span><span>—</span></div>');
+    }
+
+    function showRelPopover(e, id) {
+      var s = standards.find(function (x) { return x.id === id; });
+      showPopover(e, '<div class="popover-title">' + s.name + '</div>' +
+        '<div class="popover-row"><span>样品分类关联</span><span>—</span></div>' +
+        '<div class="popover-row"><span>样品试验项关联</span><span>—</span></div>' +
+        '<div class="popover-row"><span>代替如下标准</span><span>—</span></div>' +
+        '<div class="popover-row"><span>被如下标准代替</span><span>—</span></div>' +
+        '<div class="popover-row"><span>引用下列标准</span><span>—</span></div>');
+    }
+
+    function openEditModal() { document.getElementById('editModal').classList.add('open'); }
+    function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
+
+    document.addEventListener('click', function () { document.getElementById('popover').classList.remove('visible'); });
+    document.getElementById('editModal').addEventListener('click', function (e) { if (e.target === this) closeEditModal(); });
+    renderTable();
+  </script>
+</body>
+</html>

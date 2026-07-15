@@ -15,7 +15,7 @@
     .modal-form-item label .req { color: #ef4444; }
     .modal-form-item input, .modal-form-item select, .modal-form-item textarea { flex: 1; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
     .modal-form-item input:focus, .modal-form-item select:focus, .modal-form-item textarea:focus { border-color: #3b82f6; }
-    .modal-form-item input:read-only { background: #f8fafc; color: #64748b; }
+    .modal-form-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-bottom: 14px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -107,15 +107,17 @@
 
         <!-- 制样表单 -->
         <div class="mt-5">
-          <div class="modal-form-item">
-            <label><span class="req">*</span> 制备员</label>
-            <select id="p_operator" onchange="updatePreparePreview()"><option value="">请选择制备员</option></select>
-          </div>
-          <div class="modal-form-item">
-            <label><span class="req">*</span> 制备日期</label>
-            <div class="relative flex-1">
-              <input id="p_date" type="text" placeholder="请选择制备日期" oninput="updatePreparePreview()" />
-              <i class="fa fa-calendar-o absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+          <div class="modal-form-row2">
+            <div class="modal-form-item">
+              <label><span class="req">*</span> 制备员</label>
+              <select id="p_operator" onchange="updatePreparePreview()"><option value="">请选择制备员</option></select>
+            </div>
+            <div class="modal-form-item">
+              <label><span class="req">*</span> 制备日期</label>
+              <div class="relative flex-1">
+                <input id="p_date" type="text" placeholder="请选择制备日期" oninput="updatePreparePreview()" />
+                <i class="fa fa-calendar-o absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+              </div>
             </div>
           </div>
           <div class="modal-form-item">
@@ -128,7 +130,7 @@
           <div class="mb-1 font-medium"><i class="fa fa-magic"></i> 将自动回填「检测任务及流转单」制备节点：</div>
           <ul class="ml-5 list-disc space-y-0.5 text-xs leading-relaxed">
             <li>检测流程 = <span id="pv_flow" class="font-medium">—</span></li>
-            <li>样品交接人签名/日期 = <span id="pv_sign" class="font-medium">—</span></li>
+            <li>样品交接人签名/日期 = <span id="pv_sign" class="font-medium">制备员电子签名 / —</span></li>
             <li>样品数量 = <span id="pv_qty" class="font-medium">—</span>（取上表数量汇总）</li>
           </ul>
         </div>
@@ -141,8 +143,10 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/current-user.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
+    var CURRENT_USER = window.LimsCurrentUser || { name: 'admin', dept: '样品库' };
     var OPERATORS = [
       { name: '张三', dept: '样品库' },
       { name: 'admin', dept: '样品库' },
@@ -206,8 +210,10 @@
           '<td class="border border-slate-200 px-3 py-2">' + s.needPrepare + '</td></tr>';
       }).join('');
       document.getElementById('p_operator').innerHTML = '<option value="">请选择制备员</option>' +
-        OPERATORS.map(function (o) { return '<option value="' + o.name + '">' + o.name + '（' + o.dept + '）</option>'; }).join('');
-      document.getElementById('p_date').value = '';
+        OPERATORS.map(function (o) {
+          return '<option value="' + o.name + '"' + (o.name === CURRENT_USER.name ? ' selected' : '') + '>' + o.name + '（' + o.dept + '）</option>';
+        }).join('');
+      document.getElementById('p_date').value = new Date().toISOString().slice(0, 10);
       document.getElementById('p_remark').value = '';
       updatePreparePreview();
       showModal('prepareModal');
@@ -222,7 +228,7 @@
       var item = listData[currentIndex];
       var totalQty = item ? sumQty(item.samples) : 0;
       document.getElementById('pv_flow').textContent = o ? (o.dept + ' 样品制备') : '—';
-      document.getElementById('pv_sign').textContent = o ? (o.name + '（电子签名） / ' + (document.getElementById('p_date').value || '—')) : '—';
+      document.getElementById('pv_sign').textContent = o ? ('制备员电子签名 / ' + (document.getElementById('p_date').value || '—')) : '—';
       document.getElementById('pv_qty').textContent = item ? String(totalQty) : '—';
     }
 

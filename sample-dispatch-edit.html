@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>样品下发编辑 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .info-table { width: 100%; border-collapse: collapse; }
+    .info-table td { border: 1px solid #e5e7eb; padding: 8px 12px; font-size: 13px; }
+    .info-table .lbl { background: #f8fafc; color: #64748b; white-space: nowrap; width: 120px; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { border: 1px solid #e5e7eb; padding: 8px 12px; font-size: 13px; text-align: left; }
+    .data-table th { background: #f1f5f9; color: #64748b; font-weight: 500; }
+    .page-shell { display: flex; flex-direction: column; height: calc(100vh - 42px); }
+    .page-scroll { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 24px; }
+    .page-footer { flex-shrink: 0; border-top: 1px solid #e2e8f0; background: #fff; padding: 12px 16px; text-align: center; box-shadow: 0 -2px 8px rgba(15,23,42,.06); }
+    .receiver-list { max-height: 320px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; }
+    .receiver-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; font-size: 13px; }
+    .receiver-item:last-child { border-bottom: none; }
+    .receiver-item:hover { background: #f8fafc; }
+    .receiver-item input { flex-shrink: 0; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="sample-dispatch.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="sample-dispatch.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">样品发样</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      样品下发编辑
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="page-shell">
+    <div class="page-scroll space-y-4">
+      <section class="rounded bg-white p-4 shadow-sm">
+        <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>合同信息</h2>
+        <table class="info-table"><tr><td class="lbl">合同编号</td><td>/</td><td class="lbl">合同名称</td><td>/</td><td class="lbl">签订时间</td><td>/</td></tr></table>
+      </section>
+
+      <section class="rounded bg-white p-4 shadow-sm">
+        <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
+        <table class="info-table">
+          <tr><td class="lbl">委托编号</td><td id="entrustCode">SC2026/0088</td><td class="lbl">任务类型</td><td>电气(配)</td><td class="lbl">优先等级</td><td>常规</td></tr>
+          <tr><td class="lbl">检测类型</td><td>例行</td><td class="lbl">检测类别</td><td>委托检测</td><td class="lbl">客户单位</td><td>杭州数蚕智能科技有限公司</td></tr>
+          <tr><td class="lbl">编制人</td><td>admin</td><td class="lbl">业务员</td><td>梁倩</td><td class="lbl">备注</td><td>/</td></tr>
+        </table>
+      </section>
+
+      <section class="rounded bg-white p-4 shadow-sm">
+        <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>收样信息</h2>
+        <table class="info-table">
+          <tr><td class="lbl">收样人</td><td>admin</td><td class="lbl">收样状态</td><td>完好</td><td class="lbl">收样日期</td><td>2026-07-14</td></tr>
+          <tr><td class="lbl">送样方式</td><td>送样</td><td class="lbl">送样人</td><td>/</td><td class="lbl">送样人电话</td><td>/</td></tr>
+        </table>
+      </section>
+
+      <section class="rounded bg-white p-4 shadow-sm">
+        <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测信息</h2>
+        <table class="data-table">
+          <thead><tr><th>样品名称</th><th>规格型号</th><th>数量</th><th>是否制备</th><th>备注</th></tr></thead>
+          <tbody><tr><td>安全绳</td><td>常规</td><td>1</td><td>否</td><td>/</td></tr></tbody>
+        </table>
+        <table class="data-table mt-3">
+          <thead><tr><th>试验名称</th><th>检测/判定依据</th><th>负责人</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr><td>静载荷试验</td><td><a href="#" class="text-blue-600">GB 6095-2021</a></td><td>admin, cs222</td><td><span class="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-700">未领样</span></td></tr>
+            <tr><td>外观检查</td><td><a href="#" class="text-blue-600">GB 6095-2021</a></td><td>admin</td><td><span class="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-700">未领样</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="rounded bg-white p-4 shadow-sm">
+        <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托单文件</h2>
+        <table class="data-table"><thead><tr><th>序号</th><th>委托单</th><th>生成时间</th><th>操作</th></tr></thead>
+          <tbody><tr><td>1</td><td><a href="#" class="text-blue-600"><i class="fa fa-file-word-o"></i> SC2026/0088-检测委托书.docx</a></td><td>2026-07-14</td><td><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white">导出</button></td></tr></tbody>
+        </table>
+      </section>
+
+      <section class="rounded bg-white p-4 shadow-sm">
+        <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测任务单</h2>
+        <table class="data-table"><thead><tr><th>序号</th><th>检测任务单</th><th>生成时间</th></tr></thead>
+          <tbody><tr><td>1</td><td><a href="#" class="text-blue-600"><i class="fa fa-file-word-o"></i> SC2026/0088-检测任务单.docx</a></td><td>2026-07-14</td></tr></tbody>
+        </table>
+      </section>
+    </div>
+
+    <div class="page-footer">
+      <button onclick="openAssignModal()" class="inline-flex items-center gap-2 rounded bg-blue-600 px-8 py-2.5 text-sm font-medium text-white hover:bg-blue-700" data-annotate="assign-btn">
+        <i class="fa fa-check"></i> 样品分发
+      </button>
+    </div>
+  </div>
+
+  <!-- 样品分发弹窗 -->
+  <div id="assignModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-[480px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">样品分发</h3>
+        <button onclick="closeAssignModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-4">
+        <div class="mb-2 text-sm text-slate-600">领样人：</div>
+        <div id="receiverList" class="receiver-list"></div>
+        <div class="mt-4 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800 leading-relaxed" data-annotate="assign-writeback">
+          <strong>流转单回填（领样）：</strong><br>
+          检测流程 = 领样人部门 +「领样」<br>
+          签名/日期 = 领样人电子签名 + 发样日期<br>
+          样品数量 = 发样数量
+        </div>
+      </div>
+      <div class="flex justify-center border-t border-slate-100 px-6 py-4">
+        <button onclick="confirmAssign()" class="rounded bg-blue-600 px-10 py-2 text-sm text-white hover:bg-blue-700" data-annotate="assign-confirm">发放</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var RECEIVERS = [
+      { name: 'admin', dept: '事业发展部' },
+      { name: '梁倩', dept: '数蚕智能' },
+      { name: 'ZR01', dept: '检测中心' },
+      { name: '业务员A', dept: '市场部门' },
+      { name: '业务员B', dept: '市场部门' },
+      { name: '业务员C', dept: '测试部门' },
+      { name: 'lims_test', dept: '杭州总公司' }
+    ];
+
+    (function () {
+      var p = {};
+      location.search.replace(/[?&]([^=]+)=([^&]*)/g, function (_, k, v) { p[k] = decodeURIComponent(v); });
+      if (p.code) document.getElementById('entrustCode').textContent = p.code;
+    })();
+
+    function renderReceivers() {
+      document.getElementById('receiverList').innerHTML = RECEIVERS.map(function (r, i) {
+        return '<label class="receiver-item"><input type="radio" name="receiver" value="' + r.name + '" data-dept="' + r.dept + '"' + (i === 0 ? ' checked' : '') + ' />' +
+          '<span>' + r.name + ' - ' + r.dept + '</span></label>';
+      }).join('');
+    }
+
+    function openAssignModal() {
+      renderReceivers();
+      document.getElementById('assignModal').classList.remove('hidden');
+      document.getElementById('assignModal').classList.add('flex');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function closeAssignModal() {
+      var m = document.getElementById('assignModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function confirmAssign() {
+      var sel = document.querySelector('input[name="receiver"]:checked');
+      if (!sel) { alert('请选择领样人'); return; }
+      var dept = sel.getAttribute('data-dept');
+      alert('已发放给 ' + sel.value + ' - ' + dept + '。\n检测任务及流转单已追加「' + dept + ' 领样」节点（原型演示）。');
+      closeAssignModal();
+    }
+
+    document.getElementById('assignModal').addEventListener('click', function (e) { if (e.target === this) closeAssignModal(); });
+    renderReceivers();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          { id: 'assign-btn', selector: '[data-annotate="assign-btn"]', position: 'top-left', title: '样品分发', wide: true, content: '固定在页面底部。点击后选择领样人并「发放」，触发流转单领样节点回填。', tag: '流转单' },
+          { id: 'assign-writeback', selector: '[data-annotate="assign-writeback"]', position: 'top-left', title: '领样回填规则', wide: true, content: '检测流程 = 领样人部门 +「领样」<br>签名/日期 = 领样人电子签名 + 发样日期<br>样品数量 = 发样数量', tag: '流转单' },
+          { id: 'assign-confirm', selector: '[data-annotate="assign-confirm"]', position: 'top-left', title: '发放', content: '确认后将领样信息写入检测任务及样品流转单。', tag: '流转单' }
+        ]
+      });
+    }
+  </script>
+</body>
+</html>

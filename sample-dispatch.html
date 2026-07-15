@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>样品发样 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      样品发样
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="flex items-center gap-2"><label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入委托编号" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">是否关联框架合同</label><select class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none"><option>请选择是否关联框架合同</option><option>是</option><option>否</option></select></div>
+        <div class="flex items-center gap-2"><label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">合同编号</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none" placeholder="请输入框架合同编号" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">客户单位</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none" placeholder="请输入客户单位" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none" placeholder="请输入样品名称" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托受理日期</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none" placeholder="开始日期 ~ 结束日期" /></div>
+        <div class="flex items-center gap-2 xl:col-span-2 xl:justify-end">
+          <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+          <button class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1400px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">先收费</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">优先等级</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">任务状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500"><span>共 3 条</span></div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var listData = [
+      { code: 'SC2026/0088', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '安全绳', sendDate: '2026-07-14', requireDate: '', acceptDate: '2026-07-14', prepaid: '否', priority: '常规', status: '样品发样', editor: 'admin', salesman: '梁倩' },
+      { code: 'SC2026/0086', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '电缆保护管', sendDate: '2026-07-13', requireDate: '', acceptDate: '2026-07-13', prepaid: '否', priority: '2', status: '样品发样', editor: 'admin', salesman: '梁倩' },
+      { code: 'SC2026/0084', contract: '/', customer: '东集西造有限公司', sample: '绝缘操作杆', sendDate: '2026-07-12', requireDate: '', acceptDate: '2026-07-12', prepaid: '否', priority: '常规', status: '样品发样', editor: 'admin', salesman: '业务员A' }
+    ];
+
+    document.getElementById('tableBody').innerHTML = listData.map(function (item, i) {
+      return '<tr class="hover:bg-slate-50">' +
+        '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+        '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2.5">' + item.sendDate + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2.5">' + (item.requireDate || '') + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2.5">' + item.acceptDate + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2.5"><span class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-600">' + item.prepaid + '</span></td>' +
+        '<td class="border border-slate-200 px-3 py-2.5">' + item.priority + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2.5">' + item.status + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2.5">' + item.salesman + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
+          '<a href="sample-dispatch-edit.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline" data-annotate="dispatch-entry"><i class="fa fa-share"></i> 发样</a>' +
+          '<button onclick="alert(\'退回（原型演示）\')" class="ml-3 text-orange-500 hover:underline"><i class="fa fa-reply"></i> 退回</button>' +
+        '</td></tr>';
+    }).join('');
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          { id: 'dispatch-entry', selector: '[data-annotate="dispatch-entry"]', position: 'bottom-left', title: '发样入口', wide: true, content: '点击「发样」进入<strong>样品下发编辑</strong>页，在底部点击「样品分发」选择领样人，完成发样并回填流转单领样节点。', tag: '流转单' }
+        ]
+      });
+    }
+  </script>
+</body>
+</html>
