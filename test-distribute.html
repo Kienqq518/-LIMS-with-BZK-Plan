@@ -68,39 +68,7 @@
           <tbody id="tableBody"></tbody>
         </table>
       </div>
-      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500"><span>共 10 条</span></div>
-    </div>
-  </div>
-
-  <!-- 分发弹窗 -->
-  <div id="distributeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-    <div class="w-[520px] max-w-full rounded-lg bg-white shadow-xl">
-      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
-        <h3 id="distributeModalTitle" class="text-base font-medium text-slate-800">试样分发</h3>
-        <button onclick="closeDistributeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
-      </div>
-      <div class="px-6 py-5 space-y-4 text-sm">
-        <div class="flex items-center gap-2">
-          <label class="w-24 text-right text-slate-600"><span class="text-red-500">*</span> 检测员</label>
-          <select id="d_tester" class="flex-1 rounded border border-slate-300 px-3 py-1.5 outline-none focus:border-blue-500">
-            <option value="">请选择检测员</option>
-            <option>潘哲宁（电气试验室）</option>
-            <option>李四（力学试验室）</option>
-            <option>王五（材料检测室）</option>
-          </select>
-        </div>
-        <div class="flex items-center gap-2">
-          <label class="w-24 text-right text-slate-600">试样名称</label>
-          <input id="d_sample" type="text" readonly class="flex-1 rounded border border-slate-200 bg-slate-50 px-3 py-1.5" />
-        </div>
-        <div class="rounded border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 leading-relaxed" data-annotate="distribute-note">
-          本页「分发」仅将试样指派给检测员。流转单<strong>接收试样</strong>行的回填时机在<strong>试验检测</strong>页，检测员点击「接收」时触发（见试验检测页批注）。
-        </div>
-      </div>
-      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
-        <button onclick="closeDistributeModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
-        <button onclick="confirmDistribute()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="distribute-btn">确认分发</button>
-      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500"><span>共 5 条</span></div>
     </div>
   </div>
 
@@ -108,14 +76,12 @@
   <script src="js/prototype-annotation.js"></script>
   <script>
     var listData = [
+      { code: 'SC2026/0213', contract: 'SC2026/0213', sample: '实壁类塑料电缆导管_直管', customer: '杭州数蚕智能科技有限公司', acceptDate: '2026-07-14', progress: '试样分发', editor: 'admin', salesman: '梁倩' },
       { code: 'SC2026/0087', contract: '/', sample: '安全带', customer: '杭州数蚕智能科技有限公司', acceptDate: '2026-07-14', progress: '试样分发', editor: 'admin', salesman: '梁倩' },
       { code: 'SC2026/0085', contract: '/', sample: '绝缘操作杆', customer: '杭州数蚕智能科技有限公司', acceptDate: '2026-07-12', progress: '试样分发', editor: 'admin', salesman: '梁倩' },
       { code: 'SC2026/0083', contract: '测试2', sample: '吊钩（环）t', customer: '杭州数蚕智能科技有限公司', acceptDate: '2026-07-10', progress: '试样分发', editor: 'admin', salesman: '梁倩' },
-      { code: 'SC2026/0081', contract: '/', sample: '绝缘操作杆', customer: '东集西造有限公司', acceptDate: '2026-07-08', progress: '试样分发', editor: 'admin', salesman: '业务员A' },
-      { code: 'SC2026/0079', contract: '/', sample: '安全帽', customer: '宇宙设想有限公司', acceptDate: '2026-07-06', progress: '试样分发', editor: 'admin', salesman: '梁倩' }
+      { code: 'SC2026/0081', contract: '/', sample: '绝缘操作杆', customer: '东集西造有限公司', acceptDate: '2026-07-08', progress: '试样分发', editor: 'admin', salesman: '业务员A' }
     ];
-
-    var currentIndex = -1;
 
     function renderTable() {
       document.getElementById('tableBody').innerHTML = listData.map(function (item, i) {
@@ -130,41 +96,18 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.salesman + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
-            '<button onclick="openDistributeModal(' + i + ')" class="text-blue-600 hover:underline" data-annotate="distribute-action"><i class="fa fa-share"></i> 分发</button>' +
+            '<a href="test-distribute-edit.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline" data-annotate="distribute-entry"><i class="fa fa-share"></i> 分发</a>' +
             '<button onclick="alert(\'退回（原型演示）\')" class="ml-3 text-blue-600 hover:underline"><i class="fa fa-reply"></i> 退回</button>' +
           '</td></tr>';
       }).join('');
     }
 
-    function showModal(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
-    function hideModal(id) { var m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
-
-    function openDistributeModal(index) {
-      currentIndex = index;
-      document.getElementById('distributeModalTitle').textContent = listData[index].code + '-试样分发';
-      document.getElementById('d_sample').value = listData[index].sample;
-      document.getElementById('d_tester').value = '';
-      showModal('distributeModal');
-      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
-    }
-
-    function closeDistributeModal() { hideModal('distributeModal'); }
-
-    function confirmDistribute() {
-      if (!document.getElementById('d_tester').value) { alert('请选择检测员'); return; }
-      alert('试样已分发给检测员，状态变为「待接收」。检测员在试验检测页点击「接收」后回填流转单（原型演示）。');
-      closeDistributeModal();
-    }
-
-    document.getElementById('distributeModal').addEventListener('click', function (e) { if (e.target === this) closeDistributeModal(); });
     renderTable();
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
-          { id: 'distribute-action', selector: '[data-annotate="distribute-action"]', position: 'top-right', title: '试样分发', wide: true, content: '流程节点：<strong>试样分发</strong>。本操作将试样指派给检测员，任务进入「待接收」状态。', tag: '流转单' },
-          { id: 'distribute-note', selector: '[data-annotate="distribute-note"]', position: 'top-left', title: '回填时机说明', wide: true, content: '流转单「接收试样」行<strong>不在本页回填</strong>，而在<strong>试验检测</strong>页检测员点击「接收」时回填：<br>检测流程 = 检测员部门 +「接收试样」<br>签名/日期 = 检测员电子签名 + 接收日期<br>多检测员接收同一样品下不同试样时，各回填一行。', tag: '流转单' },
-          { id: 'distribute-btn', selector: '[data-annotate="distribute-btn"]', position: 'bottom-right', title: '确认分发', content: '分发成功后，检测员在试验检测列表可见「待接收」任务。', tag: '流转单' }
+          { id: 'distribute-entry', selector: '[data-annotate="distribute-entry"]', position: 'bottom-left', title: '试样分发入口', wide: true, content: '点击「分发」进入<strong>试样分发编辑</strong>页。可勾选试样后「发样」，或「全部发样」一次性分发给同一检测员。', tag: '流转单' }
         ]
       });
     }

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>试样分发编辑 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    .receiver-list { max-height: 280px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; }
+    .receiver-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; font-size: 13px; }
+    .receiver-item:last-child { border-bottom: none; }
+    .receiver-item:hover { background: #f8fafc; }
+    .btn-disabled { cursor: not-allowed; background: #e2e8f0 !important; color: #94a3b8 !important; border-color: #e2e8f0 !important; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="test-distribute.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="test-distribute.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">试样分发</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      试样分发编辑
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-center gap-2">
+            <label class="whitespace-nowrap text-sm text-slate-600">样品名称</label>
+            <input id="f_sample" type="text" placeholder="请输入样品名称" class="w-44 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="whitespace-nowrap text-sm text-slate-600">试验名称</label>
+            <input id="f_test" type="text" placeholder="请输入试验名称" class="w-44 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="doSearch()" class="rounded border border-blue-600 px-4 py-1.5 text-sm text-blue-600 hover:bg-blue-50"><i class="fa fa-search"></i> 查询</button>
+          <button onclick="doReset()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+          <button id="btnIssue" onclick="openIssueModal(false)" disabled class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 btn-disabled" data-annotate="issue-btn">发样</button>
+          <button onclick="openIssueModal(true)" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="issue-all-btn">全部发样</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1100px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium w-10">
+                <input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleAll(this.checked)" />
+              </th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">试样编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">型号规格</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">试验名称</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="totalText">共 13 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">2</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+        <select class="rounded border border-slate-200 px-2 py-1"><option>10条/页</option></select>
+        <span>跳至</span>
+        <input type="text" class="h-7 w-12 rounded border border-slate-200 px-2 text-center" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 试样分发弹窗 -->
+  <div id="issueModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-[520px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">试样分发</h3>
+        <button onclick="closeIssueModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-4">
+        <div class="mb-4 flex items-center gap-3 text-sm">
+          <label class="w-20 flex-shrink-0 text-right text-slate-600"><span class="text-red-500">*</span> 检测时效</label>
+          <div class="relative flex-1">
+            <input id="m_deadline" type="text" placeholder="请选择日期" class="w-full rounded border border-slate-300 px-3 py-1.5 outline-none focus:border-blue-500" />
+            <i class="fa fa-calendar-o absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+          </div>
+        </div>
+        <div class="mb-2 text-sm text-slate-600">领样人：</div>
+        <div id="receiverList" class="receiver-list"></div>
+        <div class="mt-4 rounded border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 leading-relaxed" data-annotate="distribute-note">
+          本操作将试样指派给检测员，任务进入「待接收」状态。流转单「接收试样」行在<strong>试验检测</strong>页检测员点击「接收」时回填。
+        </div>
+      </div>
+      <div class="flex justify-center border-t border-slate-100 px-6 py-4">
+        <button onclick="confirmIssue()" class="rounded bg-blue-600 px-12 py-2 text-sm text-white hover:bg-blue-700" data-annotate="issue-confirm">发放</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var RECEIVERS = [
+      { name: 'admin', dept: '事业发展部' },
+      { name: 'cs222', dept: '安全工器具检测组' },
+      { name: '梁倩', dept: '数蚕智能' },
+      { name: 'cs111', dept: 'XXX检测' },
+      { name: '环境检测体验账号1', dept: '主目录' },
+      { name: '谢刘成', dept: '杭州总公司' },
+      { name: 'ZR01', dept: '检测中心' },
+      { name: '潘哲宁', dept: '电气试验室' },
+      { name: '李四', dept: '力学试验室' },
+      { name: 'lims_test', dept: '杭州总公司' }
+    ];
+
+    var allData = [
+      { specimenId: 'SC2026/02130101-01', sampleName: '实壁类塑料电缆导管_直管', sampleCode: 'SC2026/02130101', spec: 'PVC-C 氯化聚氯乙烯实壁导管', testName: '颜色外观检查' },
+      { specimenId: 'SC2026/02130101-01', sampleName: '实壁类塑料电缆导管_直管', sampleCode: 'SC2026/02130101', spec: 'PVC-C 氯化聚氯乙烯实壁导管', testName: '尺寸检查' },
+      { specimenId: 'SC2026/02130101-01', sampleName: '实壁类塑料电缆导管_直管', sampleCode: 'SC2026/02130101', spec: 'PVC-C 氯化聚氯乙烯实壁导管', testName: '密度测量' },
+      { specimenId: 'SC2026/02130101-01', sampleName: '实壁类塑料电缆导管_直管', sampleCode: 'SC2026/02130101', spec: 'PVC-C 氯化聚氯乙烯实壁导管', testName: '环刚度' },
+      { specimenId: 'SC2026/02130101-02', sampleName: '实壁类塑料电缆导管_直管', sampleCode: 'SC2026/02130101', spec: 'PVC-C 氯化聚氯乙烯实壁导管', testName: '30%压扁试验' },
+      { specimenId: 'SC2026/02130101-02', sampleName: '实壁类塑料电缆导管_直管', sampleCode: 'SC2026/02130101', spec: 'PVC-C 氯化聚氯乙烯实壁导管', testName: '颜色外观检查' },
+      { specimenId: 'SC2026/02130101-02', sampleName: '实壁类塑料电缆导管_直管', sampleCode: 'SC2026/02130101', spec: 'PVC-C 氯化聚氯乙烯实壁导管', testName: '尺寸检查' },
+      { specimenId: 'SC2026/02130101-03', sampleName: '实壁类塑料电缆导管_直管', sampleCode: 'SC2026/02130101', spec: 'PVC-C 氯化聚氯乙烯实壁导管', testName: '密度测量' },
+      { specimenId: 'SC2026/02130101-03', sampleName: '实壁类塑料电缆导管_直管', sampleCode: 'SC2026/02130101', spec: 'PVC-C 氯化聚氯乙烯实壁导管', testName: '环刚度' },
+      { specimenId: 'SC2026/02130101-03', sampleName: '实壁类塑料电缆导管_直管', sampleCode: 'SC2026/02130101', spec: 'PVC-C 氯化聚氯乙烯实壁导管', testName: '30%压扁试验' },
+      { specimenId: 'SC2026/02130102-01', sampleName: '8.7/10kV·3芯', sampleCode: 'SC2026/02130102', spec: '8.7/10kV·3芯', testName: '导体电阻测量' },
+      { specimenId: 'SC2026/02130102-01', sampleName: '8.7/10kV·3芯', sampleCode: 'SC2026/02130102', spec: '8.7/10kV·3芯', testName: '绝缘厚度测量' },
+      { specimenId: 'SC2026/02130102-01', sampleName: '8.7/10kV·3芯', sampleCode: 'SC2026/02130102', spec: '8.7/10kV·3芯', testName: '局部放电试验' }
+    ];
+
+    var displayData = allData.slice();
+    var issueAllMode = false;
+
+    function renderReceivers() {
+      document.getElementById('receiverList').innerHTML = RECEIVERS.map(function (r, i) {
+        return '<label class="receiver-item"><input type="radio" name="receiver" value="' + r.name + '" data-dept="' + r.dept + '"' + (i === 0 ? ' checked' : '') + ' />' +
+          '<span>' + r.name + ' — ' + r.dept + '</span></label>';
+      }).join('');
+    }
+
+    function renderTable() {
+      document.getElementById('tableBody').innerHTML = displayData.map(function (item, i) {
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center"><input type="checkbox" class="row-check accent-blue-600" data-index="' + i + '" onchange="updateIssueBtn()" /></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.specimenId + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.sampleName + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.sampleCode + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.spec + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.testName + '</td></tr>';
+      }).join('');
+      document.getElementById('totalText').textContent = '共 ' + displayData.length + ' 条';
+      document.getElementById('checkAll').checked = false;
+      updateIssueBtn();
+    }
+
+    function getSelectedIndexes() {
+      var indexes = [];
+      document.querySelectorAll('.row-check:checked').forEach(function (cb) {
+        indexes.push(parseInt(cb.getAttribute('data-index'), 10));
+      });
+      return indexes;
+    }
+
+    function updateIssueBtn() {
+      var btn = document.getElementById('btnIssue');
+      var hasSelection = getSelectedIndexes().length > 0;
+      btn.disabled = !hasSelection;
+      btn.classList.toggle('btn-disabled', !hasSelection);
+      var total = document.querySelectorAll('.row-check').length;
+      var checked = document.querySelectorAll('.row-check:checked').length;
+      document.getElementById('checkAll').checked = total > 0 && checked === total;
+    }
+
+    function toggleAll(checked) {
+      document.querySelectorAll('.row-check').forEach(function (cb) { cb.checked = checked; });
+      updateIssueBtn();
+    }
+
+    function doSearch() {
+      var sample = document.getElementById('f_sample').value.trim();
+      var test = document.getElementById('f_test').value.trim();
+      displayData = allData.filter(function (item) {
+        var okSample = !sample || item.sampleName.indexOf(sample) !== -1;
+        var okTest = !test || item.testName.indexOf(test) !== -1;
+        return okSample && okTest;
+      });
+      renderTable();
+    }
+
+    function doReset() {
+      document.getElementById('f_sample').value = '';
+      document.getElementById('f_test').value = '';
+      displayData = allData.slice();
+      renderTable();
+    }
+
+    function showModal(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
+    function hideModal(id) { var m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+    function openIssueModal(all) {
+      issueAllMode = all;
+      if (!all && !getSelectedIndexes().length) return;
+      document.getElementById('m_deadline').value = '';
+      renderReceivers();
+      showModal('issueModal');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function closeIssueModal() { hideModal('issueModal'); }
+
+    function confirmIssue() {
+      var deadline = document.getElementById('m_deadline').value.trim();
+      if (!deadline) { alert('请选择检测时效'); return; }
+      var sel = document.querySelector('input[name="receiver"]:checked');
+      if (!sel) { alert('请选择领样人'); return; }
+      var dept = sel.getAttribute('data-dept');
+      var count = issueAllMode ? displayData.length : getSelectedIndexes().length;
+      var modeText = issueAllMode ? '全部 ' + count + ' 条试样' : '已选 ' + count + ' 条试样';
+      alert('试样分发成功（原型演示）。\n' + modeText + ' 已发放给 ' + sel.value + ' — ' + dept + '\n检测时效：' + deadline + '\n检测员在试验检测页可见「待接收」任务。');
+      closeIssueModal();
+    }
+
+    document.getElementById('issueModal').addEventListener('click', function (e) { if (e.target === this) closeIssueModal(); });
+    renderTable();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          { id: 'issue-btn', selector: '[data-annotate="issue-btn"]', position: 'bottom-left', title: '发样', wide: true, content: '勾选至少一条试样后按钮点亮。点击后弹出「试样分发」弹窗，选择检测时效与领样人完成发放。', tag: '流转单' },
+          { id: 'issue-all-btn', selector: '[data-annotate="issue-all-btn"]', position: 'bottom-left', title: '全部发样', wide: true, content: '无需勾选，将当前列表全部试样一次性分发给同一领样人。', tag: '流转单' },
+          { id: 'distribute-note', selector: '[data-annotate="distribute-note"]', position: 'top-left', title: '回填时机说明', wide: true, content: '流转单「接收试样」行在<strong>试验检测</strong>页检测员点击「接收」时回填：检测流程 = 检测员部门 +「接收试样」；签名/日期 = 检测员电子签名 + 接收日期。', tag: '流转单' },
+          { id: 'issue-confirm', selector: '[data-annotate="issue-confirm"]', position: 'top-left', title: '发放', content: '确认后将试样指派给所选领样人（检测员），任务进入「待接收」状态。', tag: '流转单' }
+        ]
+      });
+    }
+  </script>
+</body>
+</html>
