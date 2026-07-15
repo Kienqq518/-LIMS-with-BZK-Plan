@@ -56,7 +56,7 @@
       <div class="overflow-x-auto">
         <table class="data-table min-w-[1200px]">
           <thead><tr>
-            <th>序号</th><th>样品别名</th><th>型号关联</th><th>规格型号</th><th>试验项目</th><th>数量</th><th>单价</th><th>总价</th><th>生产厂</th><th>制造商</th><th>备注</th><th>操作</th>
+            <th>序号</th><th>样品别名</th><th>型号规格</th><th>试验项目</th><th>数量</th><th>单价</th><th>总价</th><th>生产厂</th><th>制造商</th><th>备注</th><th>操作</th>
           </tr></thead>
           <tbody id="sampleTableBody"></tbody>
         </table>
@@ -173,8 +173,8 @@
           <div class="modal-form-item"><label>样品别名</label><input id="m_alias" type="text" placeholder="请输入样品别名" /></div>
           <div class="modal-form-item"><label><span class="req">*</span> 样品数量</label><input id="m_qty" type="text" value="1" oninput="recalcSamplePrice()" /></div>
 
-          <div class="modal-form-item"><label>规格型号</label>
-            <select id="m_spec"><option value="">请选择规格型号</option><option>300</option><option>WW</option><option>20kV</option><option>3</option><option>30kV</option><option>KK</option><option>10kV</option></select>
+          <div class="modal-form-item"><label>型号规格</label>
+            <select id="m_spec"><option value="">请选择型号规格</option><option>300</option><option>WW</option><option>20kV</option><option>3</option><option>30kV</option><option>KK</option><option>10kV</option></select>
           </div>
           <div class="modal-form-item"><label><span class="req">*</span> 样品单价/元</label><input id="m_unitPrice" type="text" placeholder="请输入样品单价" oninput="recalcSamplePrice()" /></div>
           <div class="modal-form-item"><label>生产厂家地址</label><input id="m_factoryAddr" type="text" placeholder="请输入生产厂家地址" /></div>
@@ -275,7 +275,7 @@
     // 复制任务默认数据
     var copyData = {
       code: 'SC2026/0080',
-      samples: [{ name: '绝缘操作杆', alias: '绝缘操作杆', modelLink: '', spec: '', items: '交流耐压试验,外观及尺寸,抗弯动负荷试验,抗弯静负荷试验', qty: '1', price: '160', total: '160', factory: '', manufacturer: '', remark: '' }],
+      samples: [{ name: '绝缘操作杆', alias: '绝缘操作杆', spec: '', items: '交流耐压试验,外观及尺寸,抗弯动负荷试验,抗弯静负荷试验', qty: '1', price: '160', total: '160', factory: '', manufacturer: '', remark: '' }],
       contractCode: '', contractName: '', signDate: '', serviceYears: '', bidPrice: '', contractSample: '',
       taskType: '电气（输配电类）', priority: '常规', testType: '常规', testCategory: '例行试验',
       customer: '杭州数蚕智能科技有限公司', address: '浙江省杭州市余杭区', zip: '', contact: '安可', phone: '17835503262',
@@ -310,11 +310,11 @@
       var tbody = document.getElementById('sampleTableBody');
       document.getElementById('sampleTotalCount').textContent = '共 ' + samples.length + ' 条';
       if (!samples.length) {
-        tbody.innerHTML = '<tr><td colspan="12" class="py-8 text-center text-slate-400"><i class="fa fa-inbox text-2xl text-slate-200"></i><div class="mt-1">暂无数据</div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="py-8 text-center text-slate-400"><i class="fa fa-inbox text-2xl text-slate-200"></i><div class="mt-1">暂无数据</div></td></tr>';
         return;
       }
       tbody.innerHTML = samples.map(function (s, i) {
-        return '<tr><td>' + (i + 1) + '</td><td>' + esc(s.alias || s.name || '') + '</td><td>' + esc(s.modelLink || '') + '</td><td>' + esc(s.spec || s.model || '') + '</td>' +
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(s.alias || s.name || '') + '</td><td>' + esc(s.spec || s.model || '') + '</td>' +
           '<td class="max-w-[200px] truncate" title="' + esc(s.items || '') + '">' + esc(s.items || '') + '</td><td>' + esc(s.qty || '') + '</td><td>' + esc(s.price || '') + '</td><td>' + esc(s.total || '') + '</td>' +
           '<td>' + esc(s.factory || '') + '</td><td>' + esc(s.manufacturer || '') + '</td><td>' + esc(s.remark || '') + '</td>' +
           '<td class="whitespace-nowrap"><button onclick="editSample(' + i + ')" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</button> ' +
@@ -444,7 +444,6 @@
       var sample = {
         name: name,
         alias: alias,
-        modelLink: '',
         spec: document.getElementById('m_spec').value,
         items: selectedTests.map(function (t) { return t.name; }).join(','),
         qty: qty,
@@ -521,7 +520,7 @@
         '<tr><td>客户要求时间：' + requireDate + '</td><td>经办人：' + salesman + '　检测类型：☑委托检测</td></tr></table>' +
         '<p style="margin:8px 0"><b>检测费用：</b>合计金额：' + fee + '元</p>' +
         '<div style="text-align:center;font-size:16px;font-weight:bold;margin:16px 0 8px">委托内容明细表</div>' +
-        '<table><tr><th>序号</th><th>样品名称</th><th>规格型号</th><th>数量</th><th>检测项目</th><th>单价</th><th>总价</th></tr>' +
+        '<table><tr><th>序号</th><th>样品名称</th><th>型号规格</th><th>数量</th><th>检测项目</th><th>单价</th><th>总价</th></tr>' +
         '<tr><td>1</td><td>' + sampleName + '</td><td>' + (firstSample ? firstSample.spec || '' : '') + '</td><td>' + (firstSample ? firstSample.qty || '1' : '1') + '</td><td>' + sampleItems + '</td><td>' + samplePrice + '</td><td>' + (firstSample ? firstSample.total || samplePrice : samplePrice) + '</td></tr></table>';
 
       showModal('previewModal');
