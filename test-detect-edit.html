@@ -291,25 +291,28 @@
     .export-table .col-check { width: 40px; text-align: center; }
     .export-table .col-qty { width: 72px; text-align: center; }
     .export-table .col-op { width: 56px; text-align: center; }
-    .export-table .test-list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      line-height: 1.7;
-    }
+    .export-table .test-list,
     .export-table .tpl-list {
       display: flex;
       flex-direction: column;
       gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
     }
+    .export-table .test-item,
     .export-table .tpl-item {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       cursor: pointer;
       color: #334155;
+      line-height: 1.4;
     }
+    .export-table .test-item:hover,
     .export-table .tpl-item:hover { color: #2563eb; }
+    .export-table .test-item input,
+    .export-table .tpl-item input { accent-color: #2563eb; flex-shrink: 0; }
     .export-mode {
       display: flex;
       flex-wrap: wrap;
@@ -750,17 +753,17 @@
     var exportDrawerData = null;
 
     function buildExportDrawerData() {
-      return pageData.samples.map(function (sample, idx) {
+      return pageData.samples.map(function (sample) {
         var qty = sample.groups.length ? sample.groups[0].rows.length : 0;
-        var tests = sample.groups.map(function (g) { return g.title; });
+        var testNames = sample.groups.map(function (g) { return g.title; });
         var model = sample.model || (sample.name === '绝缘操作杆' ? '10kV' : sample.name === '绝缘硬梯' ? '折叠式' : '通用型');
         // 原型：部分样品缺个别单试验项模版；横担演示「缺少多试验项组合模版」
         var missingSingle = sample.id === 'rod' ? ['抗弯静负荷试验'] : [];
         var multiTemplates = sample.id === 'crossarm'
           ? []
           : [
-              { id: sample.id + '-tpl1', name: '模版名称1', tests: tests.slice(0, Math.min(2, tests.length)), checked: true },
-              { id: sample.id + '-tpl2', name: '模版名称2', tests: tests.slice(Math.min(2, tests.length)), checked: true }
+              { id: sample.id + '-tpl1', name: '模版名称1', tests: testNames.slice(0, Math.min(2, testNames.length)), checked: true },
+              { id: sample.id + '-tpl2', name: '模版名称2', tests: testNames.slice(Math.min(2, testNames.length)), checked: true }
             ];
         return {
           id: sample.id,
@@ -768,13 +771,33 @@
           model: model,
           label: sample.name + ' - ' + model,
           qty: qty,
-          tests: tests,
+          singleTests: testNames.map(function (name) { return { name: name, checked: true }; }),
+          multiTests: testNames.map(function (name) { return { name: name, checked: true }; }),
           missingSingle: missingSingle,
           multiTemplates: multiTemplates,
           checkedSingle: true,
           checkedMulti: multiTemplates.length > 0
         };
       });
+    }
+
+    function selectedTestNames(list) {
+      return (list || []).filter(function (t) { return t.checked; }).map(function (t) { return t.name; });
+    }
+
+    function missingCheckedSingleTemplates(row) {
+      var selected = selectedTestNames(row.singleTests);
+      return row.missingSingle.filter(function (t) { return selected.indexOf(t) >= 0; });
+    }
+
+    function renderTestCheckList(tests, type, rowIdx) {
+      return '<div class="test-list">' + tests.map(function (t, ti) {
+        return '<label class="test-item">' +
+          '<input type="checkbox" class="' + type + '-test-check" data-idx="' + rowIdx + '" data-test="' + ti + '"' +
+          (t.checked ? ' checked' : '') +
+          ' onchange="onExportTestCheck(\'' + type + '\',' + rowIdx + ',' + ti + ', this.checked)" />' +
+          '<span>' + t.name + '</span></label>';
+      }).join('') + '</div>';
     }
 
     function toggleExportCollapse(id) {
@@ -789,16 +812,12 @@
       var multiHtml = '';
 
       exportDrawerData.forEach(function (row, i) {
-        var testList = '<ul class="test-list">' + row.tests.map(function (t) {
-          return '<li>' + t + '</li>';
-        }).join('') + '</ul>';
-
         singleHtml += '<tr data-idx="' + i + '">';
         singleHtml += '<td class="col-check"><input type="checkbox" class="single-row-check" data-idx="' + i + '"' +
           (row.checkedSingle ? ' checked' : '') + ' onchange="onSingleRowCheck(' + i + ', this.checked)" /></td>';
         singleHtml += '<td>' + row.label + '</td>';
         singleHtml += '<td class="col-qty">' + row.qty + '</td>';
-        singleHtml += '<td>' + testList + '</td>';
+        singleHtml += '<td>' + renderTestCheckList(row.singleTests, 'single', i) + '</td>';
         singleHtml += '<td class="col-op"><button type="button" class="export-op-btn" title="导出"' +
           ' onclick="exportSingleRow(' + i + ')"><i class="fa fa-cloud-download"></i></button></td>';
         singleHtml += '</tr>';
@@ -823,7 +842,7 @@
           ' onchange="onMultiRowCheck(' + i + ', this.checked)" /></td>';
         multiHtml += '<td>' + row.label + '</td>';
         multiHtml += '<td class="col-qty">' + row.qty + '</td>';
-        multiHtml += '<td>' + testList + '</td>';
+        multiHtml += '<td>' + renderTestCheckList(row.multiTests, 'multi', i) + '</td>';
         multiHtml += '<td>' + tplHtml + '</td>';
         multiHtml += '<td class="col-op"><button type="button" class="export-op-btn" title="导出"' +
           (multiDisabled ? ' disabled' : '') +
@@ -843,7 +862,7 @@
       var multiWarns = [];
       if (!exportDrawerData) return;
       exportDrawerData.forEach(function (row) {
-        row.missingSingle.forEach(function (t) {
+        missingCheckedSingleTemplates(row).forEach(function (t) {
           singleWarns.push(row.label + ' 缺少 ' + t + ' 的模版');
         });
         if (!row.multiTemplates.length) {
@@ -876,6 +895,15 @@
     function onMultiRowCheck(idx, checked) {
       if (!exportDrawerData[idx]) return;
       exportDrawerData[idx].checkedMulti = checked;
+    }
+
+    function onExportTestCheck(type, rowIdx, testIdx, checked) {
+      var row = exportDrawerData[rowIdx];
+      if (!row) return;
+      var list = type === 'single' ? row.singleTests : row.multiTests;
+      if (!list || !list[testIdx]) return;
+      list[testIdx].checked = checked;
+      if (type === 'single') syncExportWarnings();
     }
 
     function onMultiTplCheck(idx, tplIdx, checked) {
@@ -912,12 +940,18 @@
     function exportSingleRow(idx) {
       var row = exportDrawerData[idx];
       if (!row) return;
-      if (row.missingSingle.length) {
-        alert(row.label + ' 缺少 ' + row.missingSingle.join('、') + ' 的模版');
+      var tests = selectedTestNames(row.singleTests);
+      if (!tests.length) {
+        alert('请至少勾选一个试验项');
+        return;
+      }
+      var missing = missingCheckedSingleTemplates(row);
+      if (missing.length) {
+        alert(row.label + ' 缺少 ' + missing.join('、') + ' 的模版');
         return;
       }
       var mode = getRadioValue('singleExportMode');
-      alert('导出单试验项记录单（原型演示）\n' + row.label + '\n模式：' + exportModeText(mode) + '\n试验项：' + row.tests.join('、'));
+      alert('导出单试验项记录单（原型演示）\n' + row.label + '\n模式：' + exportModeText(mode) + '\n试验项：' + tests.join('、'));
     }
 
     function exportMultiRow(idx) {
@@ -927,31 +961,54 @@
         alert(row.label + ' 缺少多试验项组合记录单模版');
         return;
       }
+      var tests = selectedTestNames(row.multiTests);
+      if (!tests.length) {
+        alert('请至少勾选一个试验项');
+        return;
+      }
       var selected = row.multiTemplates.filter(function (t) { return t.checked; });
       if (!selected.length) {
         alert('请至少勾选一个多试验项模版');
         return;
       }
       var mode = getRadioValue('multiExportMode');
-      alert('导出多试验项组合记录单（原型演示）\n' + row.label + '\n模式：' + exportModeText(mode) + '\n模版：' + selected.map(function (t) { return t.name; }).join('、'));
+      alert('导出多试验项组合记录单（原型演示）\n' + row.label + '\n模式：' + exportModeText(mode) +
+        '\n试验项：' + tests.join('、') +
+        '\n模版：' + selected.map(function (t) { return t.name; }).join('、'));
     }
 
     function batchExportRecords() {
       if (!exportDrawerData) return;
-      var singleSelected = exportDrawerData.filter(function (r) { return r.checkedSingle && !r.missingSingle.length; });
-      var multiSelected = exportDrawerData.filter(function (r) {
-        return r.checkedMulti && r.multiTemplates.some(function (t) { return t.checked; });
+      var singleSelected = exportDrawerData.filter(function (r) {
+        return r.checkedSingle && selectedTestNames(r.singleTests).length && !missingCheckedSingleTemplates(r).length;
       });
-      var blockedSingle = exportDrawerData.filter(function (r) { return r.checkedSingle && r.missingSingle.length; });
-      var blockedMulti = exportDrawerData.filter(function (r) { return r.checkedMulti && !r.multiTemplates.length; });
+      var multiSelected = exportDrawerData.filter(function (r) {
+        return r.checkedMulti && selectedTestNames(r.multiTests).length &&
+          r.multiTemplates.some(function (t) { return t.checked; });
+      });
+      var blockedSingle = exportDrawerData.filter(function (r) {
+        return r.checkedSingle && missingCheckedSingleTemplates(r).length;
+      });
+      var blockedMulti = exportDrawerData.filter(function (r) {
+        return r.checkedMulti && !r.multiTemplates.length;
+      });
+      var emptySingle = exportDrawerData.filter(function (r) {
+        return r.checkedSingle && !selectedTestNames(r.singleTests).length;
+      });
+      var emptyMulti = exportDrawerData.filter(function (r) {
+        return r.checkedMulti && r.multiTemplates.length && !selectedTestNames(r.multiTests).length;
+      });
 
-      if (blockedSingle.length || blockedMulti.length) {
+      if (blockedSingle.length || blockedMulti.length || emptySingle.length || emptyMulti.length) {
         var msgs = [];
         blockedSingle.forEach(function (r) {
-          msgs.push(r.label + ' 缺少 ' + r.missingSingle.join('、') + ' 的模版');
+          msgs.push(r.label + ' 缺少 ' + missingCheckedSingleTemplates(r).join('、') + ' 的模版');
         });
         blockedMulti.forEach(function (r) {
           msgs.push(r.label + ' 缺少多试验项组合记录单模版');
+        });
+        emptySingle.concat(emptyMulti).forEach(function (r) {
+          msgs.push(r.label + ' 请至少勾选一个试验项');
         });
         alert('无法批量导出：\n' + msgs.join('\n'));
         return;
@@ -963,14 +1020,16 @@
       var lines = ['批量导出（原型演示）'];
       if (singleSelected.length) {
         lines.push('【单试验项】' + exportModeText(getRadioValue('singleExportMode')) + '：' +
-          singleSelected.map(function (r) { return r.label; }).join('、'));
+          singleSelected.map(function (r) {
+            return r.label + '[' + selectedTestNames(r.singleTests).join('、') + ']';
+          }).join('；'));
       }
       if (multiSelected.length) {
         lines.push('【多试验项组合】' + exportModeText(getRadioValue('multiExportMode')) + '：' +
           multiSelected.map(function (r) {
             var tpls = r.multiTemplates.filter(function (t) { return t.checked; }).map(function (t) { return t.name; }).join('+');
-            return r.label + '(' + tpls + ')';
-          }).join('、'));
+            return r.label + '[' + selectedTestNames(r.multiTests).join('、') + '](' + tpls + ')';
+          }).join('；'));
       }
       alert(lines.join('\n'));
     }
