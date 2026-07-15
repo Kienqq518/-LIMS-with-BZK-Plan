@@ -52,7 +52,6 @@
       <div id="viewMoreMenu" class="absolute right-0 z-30 mt-1 hidden w-48 rounded border border-slate-200 bg-white py-1 text-sm shadow-lg">
         <button onclick="openLedgerModal()" class="block w-full px-4 py-2 text-left text-slate-700 hover:bg-blue-50">样品台账</button>
         <button onclick="openNoticeModal()" class="block w-full px-4 py-2 text-left text-slate-700 hover:bg-blue-50">产品检测预通知书</button>
-        <button onclick="openFlowSheetModal()" class="block w-full px-4 py-2 text-left text-slate-700 hover:bg-blue-50" data-annotate="flow-sheet-entry">检测任务及流转单</button>
         <button onclick="openOriginalRecord()" class="block w-full px-4 py-2 text-left text-slate-700 hover:bg-blue-50">原始记录</button>
         <button onclick="openSysLogModal()" class="block w-full px-4 py-2 text-left text-slate-700 hover:bg-blue-50">系统日志</button>
       </div>
@@ -166,18 +165,44 @@
       </div>
     </section>
 
-    <!-- ========== 检测报告单 ========== -->
+    <!-- ========== 检测任务单 ========== -->
     <section class="rounded bg-white p-4 shadow-sm">
-      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测报告单</h2>
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测任务单</h2>
       <div class="overflow-x-auto">
         <table class="data-table min-w-[560px]">
-          <thead><tr><th>序号</th><th>检验报告单</th><th>生成时间</th><th>操作</th></tr></thead>
+          <thead><tr><th>序号</th><th>检测任务单</th><th>生成时间</th><th>操作</th></tr></thead>
           <tbody>
             <tr>
               <td>1</td>
-              <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-word-o"></i> SC2026/0212-检验报告单.docx</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-word-o"></i> SC2026/0212-检测任务单.docx</a></td>
               <td>2026-07-08</td>
               <td><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">下载</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========== 检测任务及样品流转单 ========== -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测任务及样品流转单</h2>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[560px]">
+          <thead><tr><th>序号</th><th>检测任务及样品流转单</th><th>生成时间</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>
+                <button onclick="openFlowSheetModal()" class="text-blue-600 hover:underline" data-annotate="flow-sheet-entry">
+                  <i class="fa fa-file-word-o"></i> SC2026/0212-检测任务及样品流转单.docx
+                </button>
+                <span class="ml-2 rounded bg-green-50 px-2 py-0.5 text-xs text-green-600">系统自动生成</span>
+              </td>
+              <td>2026-07-08</td>
+              <td>
+                <button onclick="openFlowSheetModal()" class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">查看</button>
+                <button onclick="alert('下载（原型演示）')" class="ml-2 rounded border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50">下载</button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -524,7 +549,7 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
-          { id: 'flow-sheet-entry', selector: '[data-annotate="flow-sheet-entry"]', position: 'top-right', title: '检测任务及流转单', wide: true, content: '「检测任务及流转单」(QD088) 入口。收样后<strong>系统自动生成</strong>，随实体样品全程流转；各业务节点操作完成时自动追加回填检测流程行。', tag: '流转单' },
+          { id: 'flow-sheet-entry', selector: '[data-annotate="flow-sheet-entry"]', position: 'top-right', title: '检测任务及样品流转单', wide: true, content: '入口位于委托详情页「检测任务及样品流转单」区块（收样后<strong>系统自动生成</strong>）。点击文档链接或「查看」打开流转单；各业务节点操作完成时自动追加回填检测流程行。', tag: '流转单' },
           { id: 'flow-sheet-auto', selector: '[data-annotate="flow-sheet-auto"]', position: 'bottom-left', title: '自动生成', content: '委托受理/收样后系统自动生成本单，样品编号、检测项目、检测依据等自动带入。', tag: '流转单' },
           { id: 'flow-sheet-process', selector: '[data-annotate="flow-sheet-process"]', position: 'top-right', title: '检测流程回填表', wide: true, content: '<strong>完整流转节点示例：</strong><br>① 样品制备（可选，部门+样品制备）<br>② 发样领样（部门+领样）<br>③ 接收试样（检测员部门+接收试样，可多行）<br>④ 还样（检测员部门+还样，可多行）<br>⑤ 退样（自取：委托单位取回余样签收+联系人；快递：余样快递退回委托单位+操作员电子签）', tag: '流转单' },
           { id: 'flow-sheet-rules', selector: '[data-annotate="flow-sheet-rules"]', position: 'top-left', title: '回填规则总览', wide: true, content: '各节点回填时机见对应业务页面批注。多检测员接收/还样同一样品下不同试样时，按检测员人数各回填一行。', tag: '流转单' }

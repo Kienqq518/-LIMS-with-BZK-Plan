@@ -112,10 +112,6 @@
             <select id="p_operator" onchange="updatePreparePreview()"><option value="">请选择制备员</option></select>
           </div>
           <div class="modal-form-item">
-            <label>部门</label>
-            <input id="p_dept" type="text" readonly placeholder="选择制备员后自动回显" />
-          </div>
-          <div class="modal-form-item">
             <label><span class="req">*</span> 制备日期</label>
             <div class="relative flex-1">
               <input id="p_date" type="text" placeholder="请选择制备日期" oninput="updatePreparePreview()" />
@@ -210,8 +206,7 @@
           '<td class="border border-slate-200 px-3 py-2">' + s.needPrepare + '</td></tr>';
       }).join('');
       document.getElementById('p_operator').innerHTML = '<option value="">请选择制备员</option>' +
-        OPERATORS.map(function (o) { return '<option value="' + o.name + '">' + o.name + '</option>'; }).join('');
-      document.getElementById('p_dept').value = '';
+        OPERATORS.map(function (o) { return '<option value="' + o.name + '">' + o.name + '（' + o.dept + '）</option>'; }).join('');
       document.getElementById('p_date').value = '';
       document.getElementById('p_remark').value = '';
       updatePreparePreview();
@@ -226,7 +221,6 @@
       var o = OPERATORS.find(function (x) { return x.name === name; });
       var item = listData[currentIndex];
       var totalQty = item ? sumQty(item.samples) : 0;
-      document.getElementById('p_dept').value = o ? o.dept : '';
       document.getElementById('pv_flow').textContent = o ? (o.dept + ' 样品制备') : '—';
       document.getElementById('pv_sign').textContent = o ? (o.name + '（电子签名） / ' + (document.getElementById('p_date').value || '—')) : '—';
       document.getElementById('pv_qty').textContent = item ? String(totalQty) : '—';
