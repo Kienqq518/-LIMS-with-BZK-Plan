@@ -355,6 +355,58 @@
       cursor: not-allowed;
       background: transparent;
     }
+
+    /* 产品检测通知书附件弹窗 */
+    .task-doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      table-layout: fixed;
+    }
+    .task-doc-table th,
+    .task-doc-table td {
+      border: 1px solid #334155;
+      padding: 8px 10px;
+      text-align: center;
+      vertical-align: middle;
+      word-break: break-all;
+      color: #1e293b;
+    }
+    .task-doc-table th {
+      background: #f8fafc;
+      font-weight: 500;
+      color: #475569;
+    }
+    .task-doc-table .lbl {
+      background: #f8fafc;
+      color: #475569;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .task-doc-table .text-left { text-align: left; }
+    .task-doc-table .items-cell {
+      text-align: left;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    .tag-done {
+      display: inline-block;
+      border-radius: 3px;
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 12px;
+      padding: 2px 8px;
+      font-weight: 500;
+    }
+    .tag-normal {
+      display: inline-block;
+      border-radius: 3px;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 12px;
+      padding: 2px 8px;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -383,7 +435,7 @@
           <button type="button" onclick="openExportDrawer()" class="rounded border border-blue-600 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50" data-annotate="export-manage">
             <i class="fa fa-download"></i> 导出管理
           </button>
-          <button onclick="alert('检测任务单（原型演示）')" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">
+          <button type="button" onclick="openTaskSheetModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="task-sheet">
             <i class="fa fa-file-text-o"></i> 检测任务单
           </button>
         </div>
@@ -415,6 +467,46 @@
       <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
         <button onclick="closeRowEdit()" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
         <button onclick="alert('保存成功（原型演示）');closeRowEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 检测任务单 · 产品检测通知书附件 -->
+  <div id="taskSheetModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[92vh] w-[980px] max-w-full flex-col rounded-lg bg-white shadow-xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 class="text-base font-medium text-slate-800">产品检测通知书</h3>
+        <button type="button" onclick="closeTaskSheetModal()" class="export-drawer-close" title="关闭" aria-label="关闭">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-5">
+        <div class="border border-slate-700 bg-white p-4">
+          <h4 class="mb-4 text-center text-lg font-semibold tracking-widest text-slate-800">产品检测通知书</h4>
+          <table class="task-doc-table" id="taskSheetTable">
+            <colgroup>
+              <col style="width:5%" />
+              <col style="width:12%" />
+              <col style="width:8%" />
+              <col style="width:6%" />
+              <col style="width:26%" />
+              <col style="width:12%" />
+              <col style="width:10%" />
+              <col style="width:10%" />
+              <col style="width:11%" />
+            </colgroup>
+            <thead></thead>
+            <tbody id="taskSheetBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex items-center justify-center gap-3 border-t border-slate-100 px-5 py-4">
+        <button type="button" onclick="printTaskSheet()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white hover:bg-blue-700">
+          打印此页
+        </button>
+        <button type="button" disabled class="cursor-not-allowed rounded bg-slate-200 px-5 py-1.5 text-sm text-slate-400" title="已接受（当前状态不可操作）">
+          已接受
+        </button>
       </div>
     </div>
   </div>
@@ -747,6 +839,72 @@
 
     document.getElementById('rowEditModal').addEventListener('click', function (e) {
       if (e.target === this) closeRowEdit();
+    });
+
+    /* ===== 检测任务单 · 产品检测通知书 ===== */
+    function sampleModelOf(sample) {
+      return sample.model || (sample.name === '绝缘操作杆' ? '10kV' : sample.name === '绝缘硬梯' ? '折叠式' : '通用型');
+    }
+
+    function renderTaskSheet() {
+      var rowsHtml = '';
+      rowsHtml += '<tr>' +
+        '<td class="lbl">委托编号</td><td colspan="2">' + entrustCode + '</td>' +
+        '<td class="lbl">客户单位</td><td colspan="5" class="text-left">' + customer + '</td>' +
+        '</tr>';
+      rowsHtml += '<tr>' +
+        '<th>编号</th><th>样品名称</th><th>型号</th><th>数量</th><th>检测项目</th>' +
+        '<th>生产厂/制造商</th><th>试验状态</th><th>是否加急</th><th>备注信息</th>' +
+        '</tr>';
+
+      pageData.samples.forEach(function (sample, i) {
+        var qty = sample.groups.length ? sample.groups[0].rows.length : 0;
+        var items = sample.groups.map(function (g) { return g.title; }).join('|');
+        var allDone = sample.groups.every(function (g) {
+          var idx = g.columns.indexOf('状态');
+          return g.rows.every(function (r) { return idx >= 0 && r[idx] === '已完成'; });
+        });
+        rowsHtml += '<tr>';
+        rowsHtml += '<td>' + (i + 1) + '</td>';
+        rowsHtml += '<td>' + sample.name + '</td>';
+        rowsHtml += '<td>' + sampleModelOf(sample) + '</td>';
+        rowsHtml += '<td>' + qty + '</td>';
+        rowsHtml += '<td class="items-cell">' + items + '</td>';
+        rowsHtml += '<td>/</td>';
+        rowsHtml += '<td><span class="tag-done">' + (allDone ? '已完成' : '检测中') + '</span></td>';
+        rowsHtml += '<td><span class="tag-normal">不加急</span></td>';
+        rowsHtml += '<td></td>';
+        rowsHtml += '</tr>';
+      });
+
+      rowsHtml += '<tr>' +
+        '<td class="lbl">编制人</td><td colspan="2">admin</td>' +
+        '<td class="lbl">委托受理日期</td><td colspan="2" class="text-left">2026-04-14</td>' +
+        '<td class="lbl">完成期限</td><td colspan="2" class="text-left"></td>' +
+        '</tr>';
+
+      document.getElementById('taskSheetBody').innerHTML = rowsHtml;
+    }
+
+    function openTaskSheetModal() {
+      renderTaskSheet();
+      var m = document.getElementById('taskSheetModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeTaskSheetModal() {
+      var m = document.getElementById('taskSheetModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function printTaskSheet() {
+      alert('打印产品检测通知书（原型演示）\n委托编号：' + entrustCode);
+    }
+
+    document.getElementById('taskSheetModal').addEventListener('click', function (e) {
+      if (e.target === this) closeTaskSheetModal();
     });
 
     /* ===== 记录单导出详情抽屉 ===== */
