@@ -1193,23 +1193,25 @@
             '<tr><td class="label">检测依据</td><td style="text-align:left">' + ph('testStandard') + '</td></tr>' +
             '</table>' +
             '<table class="doc-tbl" style="margin-top:6px"><tr><td>检测流程</td><td>样品交接人签名/日期</td><td>样品数量</td><td>备注</td></tr>' +
+            '<tr><td>' + ph('flowDept') + '样品制备</td><td>' + ph('prepSign') + ' / ' + ph('prepDate') + '</td><td>' + ph('prepQty') + '</td><td class="text-xs">可选</td></tr>' +
             '<tr><td>' + ph('flowDept') + '领样</td><td>' + ph('handoverSign') + ' / ' + ph('handoverDate') + '</td><td>' + ph('sampleQty') + '</td><td></td></tr>' +
-            '<tr><td style="color:#94a3b8">（后续检测流程节点待配置）</td><td></td><td></td><td></td></tr></table>';
+            '<tr><td>' + ph('testerDept') + '接收试样</td><td>' + ph('testerSign') + ' / ' + ph('receiveDate') + '</td><td>' + ph('sampleQty') + '</td><td></td></tr>' +
+            '<tr><td>' + ph('testerDept') + '还样</td><td>' + ph('returnSign') + ' / ' + ph('returnDate') + '</td><td>' + ph('sampleQty') + '</td><td></td></tr>' +
+            '<tr><td>委托单位取回余样签收</td><td>' + ph('contactName') + ' / ' + ph('returnTime') + '</td><td>' + ph('sampleQty') + '</td><td>自取</td></tr>' +
+            '<tr><td>余样快递退回委托单位</td><td>' + ph('keeperSign') + ' / ' + ph('returnTime') + '</td><td>' + ph('sampleQty') + '</td><td>快递</td></tr></table>';
         case '还样退库确认表':
           return '<div class="doc-meta"><span>' + ph('undertakerName') + '</span><span>2024 版</span></div>' +
             '<div class="doc-title" style="letter-spacing:4px">还样退库确认表</div>' +
             '<div style="text-align:center;font-size:11px;color:#64748b;margin-bottom:8px">(内部样品流程管控表单)</div>' +
-            '<table class="doc-tbl"><tr><td>序号</td><td>还样合同编号</td><td>还样日期</td><td>送样单位</td><td>样品名称</td><td>规格/型号</td><td>数量</td><td>试验结论不合格样品</td><td>还样人签字</td><td>样品员签字确认</td><td>备注</td></tr>' +
-            '<tr><td>1</td><td>' + ph('contractNo') + '</td><td>' + ph('returnDate') + '</td><td>' + ph('ordConsigner') + '</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('sampleQty') + '</td><td></td><td>' + ph('returnSign') + '</td><td>' + ph('keeperSign') + '</td><td>' + ph('contractNo') + '</td></tr></table>';
+            '<table class="doc-tbl"><tr><td>序号</td><td>还样合同编号</td><td>还样日期</td><td>送样单位</td><td>样品名称</td><td>规格/型号</td><td>数量</td><td>标准试样制备数量</td><td>试验结论不合格样品</td><td>还样人签字</td><td>样品员签字确认</td><td>备注</td></tr>' +
+            '<tr><td>1</td><td>' + ph('contractNo') + '</td><td>' + ph('returnDate') + '</td><td>' + ph('ordConsigner') + '</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('sampleQty') + '</td><td>/</td><td></td><td>' + ph('returnSign') + '</td><td>' + ph('keeperSign') + '</td><td>' + ph('contractNo') + '</td></tr></table>' +
+            '<p style="margin-top:10px;font-size:11px;line-height:1.6;color:#475569">说明：上表中"试验结论不合格样品"栏，针对此类样品在还样退库时，请反馈给样品员，便于对已检样品进行合理的保存和管控。</p>';
         case '退样申请表':
-          return '<div class="doc-meta"><span>' + ph('undertakerName') + '</span><span></span></div>' +
+          return '<div class="doc-meta"><span>实链检测（浙江）有限公司</span><span>2024 版</span></div>' +
             '<div class="doc-title" style="letter-spacing:4px">退样申请表</div>' +
-            '<table class="doc-tbl" style="margin-top:8px">' +
-            '<tr><td class="label" style="width:22%">委托编号</td><td style="text-align:left">' + ph('entrustNo') + '</td><td class="label" style="width:16%">申请日期</td><td style="text-align:left">' + ph('applyDate') + '</td></tr>' +
-            '<tr><td class="label">委托单位</td><td colspan="3" style="text-align:left">' + ph('ordConsigner') + '</td></tr>' +
-            '<tr><td>样品名称</td><td>规格/型号</td><td>数量</td><td>退样原因</td></tr>' +
-            '<tr><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('sampleQty') + '</td><td>' + ph('returnReason') + '</td></tr>' +
-            '<tr><td class="label">申请人</td><td style="text-align:left">' + ph('applicant') + '</td><td class="label">审批人</td><td style="text-align:left">' + ph('approver') + '</td></tr></table>';
+            '<table class="doc-tbl" style="margin-top:10px;font-size:11px"><tr>' +
+            '<td>序号</td><td>合同编号</td><td>退样地址</td><td>联系人</td><td>电话</td><td>样品名称</td><td>样品数量</td><td>退样申请人</td><td>备注</td></tr>' +
+            '<tr><td>1</td><td>' + ph('contractNo') + '</td><td>' + ph('returnAddress') + '</td><td>' + ph('contactName') + '</td><td>' + ph('contactPhone') + '</td><td>' + ph('samSampleName') + '</td><td>' + ph('sampleQty') + '</td><td>' + ph('applicant') + '</td><td>/</td></tr></table>';
         case '产品检测预通知书':
           return '<div class="doc-title" style="letter-spacing:4px">产品检测预通知书</div>' +
             '<table class="doc-tbl" style="margin-top:10px">' +

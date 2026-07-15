@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>试验检测 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      试验检测
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label>
+          <input type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">客户单位</label>
+          <input type="text" placeholder="请输入客户单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
+          <input type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2 xl:justify-end">
+          <button class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>
+          <button class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i>重置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1300px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500"><span>共 10 条</span></div>
+    </div>
+  </div>
+
+  <!-- 接收确认弹窗 -->
+  <div id="receiveModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-[540px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">接收试样</h3>
+        <button onclick="closeReceiveModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-5 text-sm">
+        <p class="mb-3 text-slate-600">确认接收试样 <strong id="recvSampleName">—</strong>？</p>
+        <div class="rounded border border-blue-100 bg-blue-50 px-4 py-3 text-blue-800" data-annotate="receive-writeback">
+          <div class="mb-1 font-medium"><i class="fa fa-magic"></i> 将自动回填「检测任务及流转单」：</div>
+          <ul class="ml-5 list-disc space-y-0.5 text-xs leading-relaxed">
+            <li>检测流程 = <span id="pv_flow" class="font-medium">电气试验室 接收试样</span></li>
+            <li>样品交接人签名/日期 = <span id="pv_sign" class="font-medium">潘哲宁（电子签名） / 2026-06-02</span></li>
+          </ul>
+          <p class="mt-2 text-xs text-blue-700">同一委托下多名检测员接收不同试样时，各生成独立一行。</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeReceiveModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="confirmReceive()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="receive-confirm">确认接收</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var CURRENT_USER = { name: '潘哲宁', dept: '电气试验室' };
+
+    var listData = [
+      { code: 'SC2026/0052', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '安全带', sendDate: '2026-03-15', status: '检测中', editor: 'admin', canReceive: false },
+      { code: 'SC2026/0054', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '吊钩（环）t', sendDate: '2026-04-02', status: '未领样', editor: 'admin', canReceive: false },
+      { code: 'SC2026/0056', contract: '测试2', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', sendDate: '2026-05-10', status: '待接收', editor: 'admin', canReceive: true, tester: { name: '潘哲宁', dept: '电气试验室' } },
+      { code: 'SC2026/0058', contract: '/', customer: '东集西造有限公司', sample: '绝缘操作杆', sendDate: '2026-05-20', status: '待接收', editor: 'admin', canReceive: true, tester: { name: '李四', dept: '力学试验室' } },
+      { code: 'SC2026/0060', contract: '/', customer: '宇宙设想有限公司', sample: '安全帽', sendDate: '2026-06-01', status: '已完成', editor: 'admin', canReceive: false },
+      { code: 'SC2026/0062', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘毯', sendDate: '2026-06-05', status: '已审核', editor: 'admin', canReceive: false }
+    ];
+
+    var currentIndex = -1;
+
+    function statusClass(s) {
+      if (s === '待接收') return 'text-orange-600';
+      if (s === '检测中') return 'text-blue-600';
+      if (s === '已完成' || s === '已审核') return 'text-green-600';
+      return 'text-slate-600';
+    }
+
+    function renderTable() {
+      document.getElementById('tableBody').innerHTML = listData.map(function (item, i) {
+        var ops = item.canReceive
+          ? '<button onclick="openReceiveModal(' + i + ')" class="text-blue-600 hover:underline font-medium" data-annotate="receive-btn"><i class="fa fa-check"></i> 接收</button>'
+          : '<button onclick="alert(\'编辑（原型演示）\')" class="text-blue-600 hover:underline"><i class="fa fa-edit"></i> 编辑</button>';
+        ops += '<button onclick="alert(\'退回（原型演示）\')" class="ml-3 text-blue-600 hover:underline"><i class="fa fa-reply"></i> 退回</button>';
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.sendDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 ' + statusClass(item.status) + '">' + item.status + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + ops + '</td></tr>';
+      }).join('');
+    }
+
+    function showModal(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
+    function hideModal(id) { var m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+    function openReceiveModal(index) {
+      currentIndex = index;
+      var item = listData[index];
+      var t = item.tester || CURRENT_USER;
+      document.getElementById('recvSampleName').textContent = item.sample + '（' + item.code + '）';
+      document.getElementById('pv_flow').textContent = t.dept + ' 接收试样';
+      document.getElementById('pv_sign').textContent = t.name + '（电子签名） / ' + new Date().toISOString().slice(0, 10);
+      showModal('receiveModal');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function closeReceiveModal() { hideModal('receiveModal'); }
+
+    function confirmReceive() {
+      var item = listData[currentIndex];
+      var t = item.tester || CURRENT_USER;
+      alert('试样接收成功。\n检测任务及流转单已追加「' + t.dept + ' 接收试样」行（原型演示）。');
+      item.status = '检测中';
+      item.canReceive = false;
+      renderTable();
+      closeReceiveModal();
+    }
+
+    document.getElementById('receiveModal').addEventListener('click', function (e) { if (e.target === this) closeReceiveModal(); });
+    renderTable();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          { id: 'receive-btn', selector: '[data-annotate="receive-btn"]', position: 'top-right', title: '接收试样', wide: true, content: '流程节点：<strong>试样分发 → 试验检测接收</strong>。检测员在「待接收」状态点击「接收」触发流转单回填。', tag: '流转单' },
+          { id: 'receive-writeback', selector: '[data-annotate="receive-writeback"]', position: 'top-left', title: '接收试样回填规则', wide: true, content: '检测流程 = 检测员所在部门 +「接收试样」<br>样品交接人签名/日期 = 检测员电子签名 + 接收日期<br>若多名检测员接收同一样品下不同试样，按检测员人数各回填一行。', tag: '流转单' },
+          { id: 'receive-confirm', selector: '[data-annotate="receive-confirm"]', position: 'bottom-right', title: '确认接收', content: '回填时机：点击「确认接收」瞬间写入流转单。', tag: '流转单' }
+        ]
+      });
+    }
+  </script>
+</body>
+</html>

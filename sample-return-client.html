@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>样品退样 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    .modal-form-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    .modal-form-item { display: flex; align-items: flex-start; gap: 8px; }
+    .modal-form-item label { flex-shrink: 0; width: 100px; padding-top: 7px; text-align: right; font-size: 13px; color: #64748b; }
+    .modal-form-item input { flex: 1; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
+    .radio-group { display: flex; gap: 16px; padding-top: 6px; }
+    .radio-group label { width: auto; display: flex; align-items: center; gap: 4px; padding-top: 0; cursor: pointer; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      样品退样
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <div class="mb-3 rounded border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600" data-annotate="return-skip-hint">
+      <i class="fa fa-info-circle text-blue-500"></i> 委托无需退回委托方样品的，不走本环节，流转单也不生成退样行。
+    </div>
+
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-3">
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label>
+          <input type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
+          <input type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">客户单位</label>
+          <input type="text" placeholder="请输入客户单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1100px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">任务状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 待退样列表 -->
+  <div id="pendingModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[90vh] w-[720px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">待退样列表</h3>
+        <button onclick="closePendingModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <table class="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-50 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称(数量)</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">图片</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">退样申请表</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="border border-slate-200 px-3 py-2.5">绝缘操作杆--(1)个</td>
+              <td class="border border-slate-200 px-3 py-2.5 text-xs text-slate-400">暂无图片</td>
+              <td class="border border-slate-200 px-3 py-2.5"><a href="template-config.html" class="text-blue-600 hover:underline">退样申请表.docx</a></td>
+              <td class="border border-slate-200 px-3 py-2.5">
+                <button onclick="openReturnInfoModal()" class="text-blue-600 hover:underline" data-annotate="return-action">退样</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 填写退样信息 -->
+  <div id="returnInfoModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-[520px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">填写退样信息</h3>
+        <button onclick="closeReturnInfoModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-5">
+        <div class="modal-form-grid text-sm">
+          <div class="modal-form-item">
+            <label>还样方式</label>
+            <div class="radio-group">
+              <label><input type="radio" name="returnMethod" value="self" /> 自留</label>
+              <label><input type="radio" name="returnMethod" value="client" checked /> 客户</label>
+            </div>
+          </div>
+          <div class="modal-form-item">
+            <label>样品处置方式</label>
+            <div class="radio-group">
+              <label><input type="radio" name="dispose" value="internal" /> 内部处置</label>
+              <label><input type="radio" name="dispose" value="client" checked /> 退回客户</label>
+            </div>
+          </div>
+          <div class="modal-form-item">
+            <label>类型</label>
+            <div class="radio-group" data-annotate="return-type">
+              <label><input type="radio" name="returnType" value="pickup" checked onchange="toggleReturnFields()" /> 自取</label>
+              <label><input type="radio" name="returnType" value="express" onchange="toggleReturnFields()" /> 快递</label>
+            </div>
+          </div>
+          <div id="fieldExpress" class="hidden space-y-3">
+            <div class="modal-form-item"><label>快递公司</label><input id="f_company" placeholder="请输入快递公司" /></div>
+            <div class="modal-form-item"><label>快递单号</label><input id="f_tracking" placeholder="请输入快递单号" /></div>
+            <div class="modal-form-item"><label>地址</label><input id="f_address" placeholder="请输入详细地址" /></div>
+          </div>
+          <div class="modal-form-item"><label>联系人</label><input id="f_contact" placeholder="请输入联系人" /></div>
+          <div class="modal-form-item"><label>联系方式</label><input id="f_phone" placeholder="请输入联系方式" /></div>
+        </div>
+        <div class="mt-4 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800 leading-relaxed" id="writebackPreview" data-annotate="return-writeback">
+          <strong>流转单回填预览（自取）：</strong><br>
+          检测流程 = 委托单位取回余样签收<br>
+          签名/日期 = 联系人姓名 + 点击退样时间（非电子签）
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeReturnInfoModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="confirmReturn()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="return-confirm">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var OPERATOR = { name: 'admin', dept: '样品库' };
+
+    var listData = [
+      { code: 'SC2026/0024', contract: 'SC2026/0037', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', status: '任务完成', editor: 'admin' },
+      { code: 'SC2026/0030', contract: '/', customer: '东集西造有限公司', sample: '安全带', status: '任务完成', editor: 'admin' }
+    ];
+
+    function renderTable() {
+      document.getElementById('tableBody').innerHTML = listData.map(function (item, i) {
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.contract + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.status + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' +
+            '<button onclick="openPendingModal()" class="text-blue-600 hover:underline" data-annotate="pending-list"><i class="fa fa-list"></i> 待退样</button>' +
+          '</td></tr>';
+      }).join('');
+    }
+
+    function showModal(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
+    function hideModal(id) { var m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+    function openPendingModal() {
+      showModal('pendingModal');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+    function closePendingModal() { hideModal('pendingModal'); }
+
+    function openReturnInfoModal() {
+      closePendingModal();
+      document.querySelector('input[name="returnType"][value="pickup"]').checked = true;
+      toggleReturnFields();
+      showModal('returnInfoModal');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+    function closeReturnInfoModal() { hideModal('returnInfoModal'); }
+
+    function getReturnType() {
+      var el = document.querySelector('input[name="returnType"]:checked');
+      return el ? el.value : 'pickup';
+    }
+
+    function toggleReturnFields() {
+      var isExpress = getReturnType() === 'express';
+      document.getElementById('fieldExpress').classList.toggle('hidden', !isExpress);
+      var now = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      var preview = document.getElementById('writebackPreview');
+      if (isExpress) {
+        preview.innerHTML = '<strong>流转单回填预览（快递）：</strong><br>检测流程 = 余样快递退回委托单位<br>签名/日期 = ' + OPERATOR.name + '（电子签名） / ' + now;
+      } else {
+        var contact = document.getElementById('f_contact').value || '（联系人）';
+        preview.innerHTML = '<strong>流转单回填预览（自取）：</strong><br>检测流程 = 委托单位取回余样签收<br>签名/日期 = ' + contact + ' / ' + now + '（非电子签）';
+      }
+    }
+
+    document.getElementById('f_contact').addEventListener('input', function () {
+      if (getReturnType() === 'pickup') toggleReturnFields();
+    });
+
+    function confirmReturn() {
+      var type = getReturnType();
+      var now = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      if (type === 'pickup') {
+        var contact = document.getElementById('f_contact').value || '联系人';
+        alert('退样成功（自取）。\n流转单：委托单位取回余样签收\n签名/日期：' + contact + ' / ' + now + '（原型演示）');
+      } else {
+        alert('退样成功（快递）。\n流转单：余样快递退回委托单位\n签名/日期：' + OPERATOR.name + '（电子签名） / ' + now + '（原型演示）');
+      }
+      closeReturnInfoModal();
+    }
+
+    ['pendingModal', 'returnInfoModal'].forEach(function (id) {
+      document.getElementById(id).addEventListener('click', function (e) { if (e.target === this) hideModal(id); });
+    });
+
+    renderTable();
+    toggleReturnFields();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          { id: 'return-skip-hint', selector: '[data-annotate="return-skip-hint"]', position: 'bottom-left', title: '可选节点', content: '仅当委托需要退回委托方样品时才走「样品退样」并回填流转单。', tag: '流转单' },
+          { id: 'pending-list', selector: '[data-annotate="pending-list"]', position: 'top-right', title: '待退样列表', content: '样品库样品员操作退库。可查看/生成「退样申请表」(PageOffice 单据模板)。', tag: '流转单' },
+          { id: 'return-action', selector: '[data-annotate="return-action"]', position: 'top-right', title: '退样操作', content: '点击后打开「填写退样信息」弹窗。', tag: '流转单' },
+          { id: 'return-type', selector: '[data-annotate="return-type"]', position: 'top-left', title: '自取 / 快递', wide: true, content: '<strong>自取：</strong>检测流程=「委托单位取回余样签收」；签名/日期=弹窗联系人 + 点击退样时间（客户无电子签）。<br><strong>快递：</strong>检测流程=「余样快递退回委托单位」；签名/日期=退库操作员电子签名 + 点击退样时间。', tag: '流转单' },
+          { id: 'return-writeback', selector: '[data-annotate="return-writeback"]', position: 'top-right', title: '退样回填预览', wide: true, content: '回填时机：样品退样页点击「确定」完成退样记录时。', tag: '流转单' },
+          { id: 'return-confirm', selector: '[data-annotate="return-confirm"]', position: 'bottom-right', title: '确定退样', content: '确认后立即写入流转单最后一行（若该委托需要退样）。', tag: '流转单' }
+        ]
+      });
+    }
+  </script>
+</body>
+</html>

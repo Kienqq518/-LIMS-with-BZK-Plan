@@ -386,19 +386,23 @@
             <tr><td class="lbl">检测项目及要求</td><td class="text-left">交流耐压试验、外观及尺寸、抗弯动负荷试验、抗弯静负荷试验</td></tr>
             <tr><td class="lbl">检测依据</td><td class="text-left">DL/T 976-2017</td></tr>
           </table>
-          <table class="notice-table" data-annotate="flow-sheet-lingyang">
+          <table class="notice-table" id="flowSheetProcessTable" data-annotate="flow-sheet-process">
             <colgroup><col style="width:22%" /><col style="width:38%" /><col style="width:14%" /><col /></colgroup>
             <tr><th>检测流程</th><th>样品交接人签名/日期</th><th>样品数量</th><th>备注</th></tr>
-            <tr>
-              <td>检测部 领样</td>
-              <td class="text-left"><span class="italic text-blue-700">潘哲宁（电子签名）</span> / 2026-06-01</td>
-              <td>1</td>
-              <td></td>
-            </tr>
-            <tr><td class="text-slate-400">（后续检测流程节点待下轮配置）</td><td></td><td></td><td></td></tr>
-            <tr><td class="text-slate-400">…</td><td></td><td></td><td></td></tr>
+            <tr data-node="prepare"><td>样品库 样品制备</td><td class="text-left"><span class="italic text-blue-700">张三（电子签名）</span> / 2026-06-01</td><td>2</td><td class="text-xs text-slate-400">委托登记「是否制备=是」时才有</td></tr>
+            <tr data-node="lingyang"><td>检测部 领样</td><td class="text-left"><span class="italic text-blue-700">潘哲宁（电子签名）</span> / 2026-06-01</td><td>2</td><td class="text-xs text-slate-400">样品发样</td></tr>
+            <tr data-node="receive"><td>电气试验室 接收试样</td><td class="text-left"><span class="italic text-blue-700">潘哲宁（电子签名）</span> / 2026-06-02</td><td>1</td><td></td></tr>
+            <tr data-node="receive2"><td>力学试验室 接收试样</td><td class="text-left"><span class="italic text-blue-700">李四（电子签名）</span> / 2026-06-02</td><td>1</td><td class="text-xs text-slate-400">多检测员各填一行</td></tr>
+            <tr data-node="huanyang"><td>电气试验室 还样</td><td class="text-left"><span class="italic text-blue-700">潘哲宁（电子签名）</span> / 2026-06-08</td><td>1</td><td></td></tr>
+            <tr data-node="huanyang2"><td>力学试验室 还样</td><td class="text-left"><span class="italic text-blue-700">李四（电子签名）</span> / 2026-06-08</td><td>1</td><td></td></tr>
+            <tr data-node="return-self"><td>委托单位取回余样签收</td><td class="text-left">潘哲宁 / 2026-06-10</td><td>2</td><td class="text-xs text-slate-400">退样·自取（联系人，非电子签）</td></tr>
+            <tr data-node="return-express" class="text-slate-400"><td>余样快递退回委托单位</td><td class="text-left"><span class="italic text-blue-700">admin（电子签名）</span> / 2026-06-11</td><td>1</td><td class="text-xs">退样·快递（二选一示例）</td></tr>
           </table>
-          <p class="mt-3 text-xs text-slate-400">说明：本单由系统在委托受理/收样后自动生成；「检测部 领样」行由「样品管理 › 样品发样」选择接收人后自动回填。</p>
+          <p class="mt-3 text-xs text-slate-500 leading-relaxed" data-annotate="flow-sheet-rules">
+            流转规则：收样后<strong>自动生成</strong>本单。各节点在对应业务操作完成时<strong>自动追加回填</strong>一行——
+            样品制备（可选，委托登记「是否制备=是」）→ 发样领样 → 试样分发/试验检测接收试样（可多行）→ 还样确认（可多行）→ 样品退样（可选：自取=委托单位取回余样签收+联系人；快递=余样快递退回委托单位+操作员电子签）。
+            「是否制备=否」跳过制备行；委托无需退样则跳过退样行。
+          </p>
         </div>
       </div>
     </div>
@@ -520,9 +524,10 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
-          { id: 'flow-sheet-entry', selector: '[data-annotate="flow-sheet-entry"]', position: 'top-right', title: '新增：检测任务及流转单', wide: true, content: '「检测任务及流转单」(QD088) 入口。该单<strong>由系统自动生成</strong>并挂在委托详情页，无需用户手动点击生成，随实体样品全程流转。', tag: '流转单' },
-          { id: 'flow-sheet-auto', selector: '[data-annotate="flow-sheet-auto"]', position: 'bottom-left', title: '自动生成', content: '委托受理/收样后系统自动生成本单；样品编号、检测项目、检测依据等自动带入。', tag: '流转单' },
-          { id: 'flow-sheet-lingyang', selector: '[data-annotate="flow-sheet-lingyang"]', position: 'top-right', title: '领样节点自动回填', wide: true, content: '「样品管理 › 样品发样」选择接收人后，系统自动回填本表首行：<br>• 检测流程 = 接收人所在<strong>部门 + 领样</strong><br>• 样品交接人签名/日期 = 接收人<strong>电子签名 + 日期</strong><br>• 样品数量 = 发样<strong>数量</strong><br><br>后续检测流程节点的回填规则下轮讨论。', tag: '流转单' }
+          { id: 'flow-sheet-entry', selector: '[data-annotate="flow-sheet-entry"]', position: 'top-right', title: '检测任务及流转单', wide: true, content: '「检测任务及流转单」(QD088) 入口。收样后<strong>系统自动生成</strong>，随实体样品全程流转；各业务节点操作完成时自动追加回填检测流程行。', tag: '流转单' },
+          { id: 'flow-sheet-auto', selector: '[data-annotate="flow-sheet-auto"]', position: 'bottom-left', title: '自动生成', content: '委托受理/收样后系统自动生成本单，样品编号、检测项目、检测依据等自动带入。', tag: '流转单' },
+          { id: 'flow-sheet-process', selector: '[data-annotate="flow-sheet-process"]', position: 'top-right', title: '检测流程回填表', wide: true, content: '<strong>完整流转节点示例：</strong><br>① 样品制备（可选，部门+样品制备）<br>② 发样领样（部门+领样）<br>③ 接收试样（检测员部门+接收试样，可多行）<br>④ 还样（检测员部门+还样，可多行）<br>⑤ 退样（自取：委托单位取回余样签收+联系人；快递：余样快递退回委托单位+操作员电子签）', tag: '流转单' },
+          { id: 'flow-sheet-rules', selector: '[data-annotate="flow-sheet-rules"]', position: 'top-left', title: '回填规则总览', wide: true, content: '各节点回填时机见对应业务页面批注。多检测员接收/还样同一样品下不同试样时，按检测员人数各回填一行。', tag: '流转单' }
         ]
       });
     }

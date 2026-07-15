@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>还样确认 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      还样确认
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-3">
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label>
+          <input type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
+          <input type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">客户单位</label>
+          <input type="text" placeholder="请输入客户单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2 md:col-span-3 md:justify-end">
+          <button class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>
+          <button class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i>重置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1200px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">任务状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作记录</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 还样记录弹窗 -->
+  <div id="returnRecordModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[90vh] w-[820px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">还样记录</h3>
+        <button onclick="closeReturnRecordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <table class="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-50 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称(数量)</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">图片</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">还样人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="return-date-col">还样日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">还样退库确认表</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="recordModalBody"></tbody>
+        </table>
+        <div class="mt-4 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800 leading-relaxed" data-annotate="return-writeback">
+          <strong>流转单回填（还样确认）：</strong>检测流程 = 还样人部门 +「还样」；签名/日期 = 还样人电子签名 + 上表<strong>还样日期</strong>。多检测员还样各回填一行。
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeReturnRecordModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="approveAll()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="approve-all">全部通过</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var TESTERS = {
+      '潘哲宁': { dept: '电气试验室' },
+      '李四': { dept: '力学试验室' },
+      'admin': { dept: '电气试验室' }
+    };
+
+    var listData = [
+      { code: 'SC2026/0082', contract: 'SC2026/0082', customer: '杭州数蚕智能科技有限公司', sample: '安全带、安全绳', status: '任务完成', editor: 'admin', salesman: '梁倩',
+        records: [
+          { name: '安全带(1)安全绳(1)', returner: 'admin', returnDate: '2026-07-13', doc: 'SC2026/0082还样退库确认表.docx', confirmed: false },
+          { name: '绝缘操作杆(1)', returner: '潘哲宁', returnDate: '2026-07-13', doc: 'SC2026/0082还样退库确认表.docx', confirmed: false }
+        ]
+      },
+      { code: 'SC2026/0075', contract: '/', customer: '东集西造有限公司', sample: '安全帽', status: '任务完成', editor: 'admin', salesman: '业务员A',
+        records: [{ name: '安全帽(2)', returner: '李四', returnDate: '2026-07-10', doc: 'SC2026/0075还样退库确认表.docx', confirmed: false }]
+      }
+    ];
+
+    var currentIndex = -1;
+
+    function renderTable() {
+      document.getElementById('tableBody').innerHTML = listData.map(function (item, i) {
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.status + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.salesman + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' +
+            '<button onclick="openReturnRecordModal(' + i + ')" class="text-blue-600 hover:underline" data-annotate="return-record-link"><i class="fa fa-list"></i> 还样记录</button>' +
+          '</td></tr>';
+      }).join('');
+    }
+
+    function renderRecordModal() {
+      var item = listData[currentIndex];
+      document.getElementById('recordModalBody').innerHTML = item.records.map(function (r, ri) {
+        var confirmBtn = r.confirmed
+          ? '<span class="text-green-600"><i class="fa fa-check-circle"></i></span>'
+          : '<button onclick="confirmOne(' + ri + ')" class="text-blue-600 hover:text-blue-700" data-annotate="confirm-one" title="确认"><i class="fa fa-check"></i></button>';
+        return '<tr>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + r.name + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-slate-400 text-xs">暂无图片</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + r.returner + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 font-medium text-orange-700">' + r.returnDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="#" class="text-blue-600 hover:underline">' + r.doc + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + confirmBtn + '</td></tr>';
+      }).join('');
+    }
+
+    function showModal(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
+    function hideModal(id) { var m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+    function openReturnRecordModal(index) {
+      currentIndex = index;
+      renderRecordModal();
+      showModal('returnRecordModal');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function closeReturnRecordModal() { hideModal('returnRecordModal'); }
+
+    function writebackMsg(r) {
+      var t = TESTERS[r.returner] || { dept: '检测部' };
+      return '检测任务及流转单已追加「' + t.dept + ' 还样」\n签名/日期：' + r.returner + '（电子签名） / ' + r.returnDate;
+    }
+
+    function confirmOne(ri) {
+      var r = listData[currentIndex].records[ri];
+      if (r.confirmed) return;
+      r.confirmed = true;
+      alert(writebackMsg(r) + '（原型演示）');
+      renderRecordModal();
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function approveAll() {
+      var item = listData[currentIndex];
+      var pending = item.records.filter(function (r) { return !r.confirmed; });
+      if (!pending.length) { alert('已全部确认'); return; }
+      pending.forEach(function (r) { r.confirmed = true; });
+      alert('全部通过 ' + pending.length + ' 条还样记录，流转单已逐条回填（原型演示）。\n示例：' + writebackMsg(pending[0]));
+      renderRecordModal();
+    }
+
+    document.getElementById('returnRecordModal').addEventListener('click', function (e) { if (e.target === this) closeReturnRecordModal(); });
+    renderTable();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          { id: 'return-record-link', selector: '[data-annotate="return-record-link"]', position: 'top-right', title: '还样记录', content: '流程节点：<strong>还样确认</strong>。检测员将试样退回承检方样品库，样品员在此确认。', tag: '流转单' },
+          { id: 'return-date-col', selector: '[data-annotate="return-date-col"]', position: 'bottom-left', title: '还样日期', content: '还样日期取自还样记录弹窗，写入流转单「样品交接人签名/日期」的日期部分。', tag: '流转单' },
+          { id: 'confirm-one', selector: '[data-annotate="confirm-one"]', position: 'top-right', title: '单条确认', content: '点击 ✓ 确认单条还样记录时触发流转单回填。', tag: '流转单' },
+          { id: 'approve-all', selector: '[data-annotate="approve-all"]', position: 'top-left', title: '全部通过', wide: true, content: '点击「全部通过」对未确认记录逐条触发回填。检测流程 = 还样人部门 +「还样」；签名 = 还样人电子签名 + 还样日期。多检测员各一行。', tag: '流转单' },
+          { id: 'return-writeback', selector: '[data-annotate="return-writeback"]', position: 'top-right', title: '还样回填规则', wide: true, content: '回填时机：还样确认页点击 ✓ 或「全部通过」。还样人一般为对应检测员。', tag: '流转单' }
+        ]
+      });
+    }
+  </script>
+</body>
+</html>
