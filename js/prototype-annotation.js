@@ -7,6 +7,7 @@
   var STORAGE_KEY = 'lims-prototype-annotation-enabled';
   var enabled = false;
   var config = { annotations: [] };
+  var focusScopeEl = null;
 
   var css = [
     '#prototype-annotation-root { position: fixed; inset: 0; pointer-events: none; z-index: 9990; overflow: visible; }',
@@ -16,10 +17,12 @@
     '.pa-toggle.on { background: #f97316; color: #fff; }',
     '.pa-marker { position: fixed; z-index: 9995; width: 22px; height: 22px; border-radius: 50%; background: #f97316; color: #fff; font-size: 12px; font-weight: 700; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(249,115,22,.45); cursor: pointer; border: 2px solid #fff; }',
     '.pa-marker.visible { display: flex; }',
+    '.pa-marker.pa-dimmed { display: none !important; }',
     '.pa-marker:hover { transform: scale(1.1); }',
     '.pa-card { position: fixed; z-index: 10000; width: 340px; max-width: calc(100vw - 24px); max-height: calc(100vh - 100px); overflow-y: auto; background: #fffbeb; border: 1px solid #fcd34d; border-left: 4px solid #f97316; border-radius: 8px; padding: 12px 14px; box-shadow: 0 8px 24px rgba(15,23,42,.12); display: none; font-size: 13px; color: #334155; line-height: 1.6; }',
     '.pa-card.wide { width: 400px; max-width: calc(100vw - 24px); }',
     '.pa-card.visible { display: block; }',
+    '.pa-card.pa-dimmed { display: none !important; }',
     '.pa-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }',
     '.pa-card-num { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: #f97316; color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }',
     '.pa-card-title { font-weight: 600; color: #c2410c; flex: 1; }',
@@ -29,6 +32,37 @@
     '.pa-card-tag { display: inline-block; margin-top: 8px; padding: 2px 8px; border-radius: 4px; background: #ffedd5; color: #c2410c; font-size: 11px; }',
     '.pa-highlight { outline: 2px dashed #f97316 !important; outline-offset: 3px; border-radius: 4px; }'
   ].join('\n');
+
+  function detectFocusScope() {
+    var openModal = document.querySelector('.modal-mask.open, .po-mask.open');
+    return openModal || null;
+  }
+
+  function isInFocusScope(el) {
+    if (!focusScopeEl) return true;
+    if (!el) return false;
+    return focusScopeEl.contains(el);
+  }
+
+  function applyFocusScope() {
+    focusScopeEl = detectFocusScope();
+    config.annotations.forEach(function (item) {
+      var inScope = isInFocusScope(item._target);
+      if (item._marker) {
+        item._marker.classList.toggle('pa-dimmed', !inScope);
+        if (!inScope) item._marker.classList.remove('visible');
+        else if (enabled) item._marker.classList.add('visible');
+      }
+      if (item._card) {
+        item._card.classList.toggle('pa-dimmed', !inScope);
+        if (!inScope) {
+          item._card.classList.remove('visible');
+          if (item._target) item._target.classList.remove('pa-highlight');
+        }
+      }
+    });
+    if (enabled) refreshPositions();
+  }
 
   function loadEnabled() {
     try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch (e) { return false; }
@@ -148,12 +182,13 @@
   }
 
   function showCard(item, marker) {
+    if (focusScopeEl && !isInFocusScope(item._target)) return;
     ensureRoot();
     document.querySelectorAll('.pa-card').forEach(function (c) { c.classList.remove('visible'); });
     document.querySelectorAll('.pa-highlight').forEach(function (el) { el.classList.remove('pa-highlight'); });
 
     var card = document.getElementById('pa-card-' + item.id);
-    if (!card) return;
+    if (!card || card.classList.contains('pa-dimmed')) return;
 
     var target = document.querySelector(item.selector);
     if (target) target.classList.add('pa-highlight');
@@ -166,7 +201,12 @@
 
   function refreshPositions() {
     config.annotations.forEach(function (item) {
-      if (item._marker && item._target) positionMarker(item._marker, item._target, item.position);
+      if (!item._marker || !item._target) return;
+      if (focusScopeEl && !isInFocusScope(item._target)) {
+        item._marker.style.display = 'none';
+        return;
+      }
+      positionMarker(item._marker, item._target, item.position);
     });
   }
 
@@ -194,7 +234,6 @@
       });
       root.appendChild(marker);
       positionMarker(marker, target, item.position);
-      if (enabled) marker.classList.add('visible');
 
       var card = document.createElement('div');
       card.id = 'pa-card-' + item.id;
@@ -214,8 +253,16 @@
       root.appendChild(card);
 
       item._marker = marker;
+      item._card = card;
       item._target = target;
     });
+
+    applyFocusScope();
+    if (enabled) {
+      config.annotations.forEach(function (item) {
+        if (item._marker && isInFocusScope(item._target)) item._marker.classList.add('visible');
+      });
+    }
   }
 
   function setEnabled(on) {
@@ -227,12 +274,15 @@
       btn.classList.toggle('off', !enabled);
       btn.querySelector('span').textContent = enabled ? '批注模式：开' : '原型批注模式';
     }
-    document.querySelectorAll('.pa-marker').forEach(function (m) {
-      m.classList.toggle('visible', enabled);
-    });
+    applyFocusScope();
     if (!enabled) {
+      document.querySelectorAll('.pa-marker').forEach(function (m) { m.classList.remove('visible'); });
       document.querySelectorAll('.pa-card').forEach(function (c) { c.classList.remove('visible'); });
       document.querySelectorAll('.pa-highlight').forEach(function (el) { el.classList.remove('pa-highlight'); });
+    } else {
+      config.annotations.forEach(function (item) {
+        if (item._marker && isInFocusScope(item._target)) item._marker.classList.add('visible');
+      });
     }
   }
 
@@ -244,6 +294,16 @@
         setEnabled(true);
       } else {
         setEnabled(loadEnabled());
+      }
+      if (!window._paModalObserver) {
+        window._paModalObserver = new MutationObserver(function () {
+          applyFocusScope();
+        });
+        window._paModalObserver.observe(document.body, {
+          attributes: true,
+          attributeFilter: ['class'],
+          subtree: true
+        });
       }
     }
     if (document.readyState === 'loading') {
@@ -262,6 +322,7 @@
     init: init,
     setEnabled: setEnabled,
     refresh: buildUI,
+    applyFocusScope: applyFocusScope,
     isEnabled: function () { return enabled; }
   };
 })(window);
