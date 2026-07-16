@@ -45,6 +45,11 @@
   }
 
   function applyFocusScope() {
+    // 执行期间暂停观察器：本函数会修改 marker/card 及目标元素（如高亮）的 class，
+    // 这些改动位于被观察的 document.body 子树内，若不暂停会反复触发观察器，
+    // 形成死循环导致页面卡死（点击弹窗等场景会明显卡死）。
+    var obs = window._paModalObserver;
+    if (obs) obs.disconnect();
     focusScopeEl = detectFocusScope();
     config.annotations.forEach(function (item) {
       var inScope = isInFocusScope(item._target);
@@ -62,6 +67,7 @@
       }
     });
     if (enabled) refreshPositions();
+    if (obs) obs.observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
   }
 
   function loadEnabled() {
@@ -296,15 +302,8 @@
         setEnabled(loadEnabled());
       }
       if (!window._paModalObserver) {
-        window._paModalObserver = new MutationObserver(function (records) {
-          // 仅响应批注层以外元素的 class 变化（如弹窗开合触发聚焦），
-          // 忽略批注自身 marker/card 的 class 变更；否则 applyFocusScope 修改
-          // marker/card 的 class 会再次触发本观察器，形成死循环导致页面卡死。
-          var root = document.getElementById(ROOT_ID);
-          var external = records.some(function (r) {
-            return !root || !root.contains(r.target);
-          });
-          if (external) applyFocusScope();
+        window._paModalObserver = new MutationObserver(function () {
+          applyFocusScope();
         });
         window._paModalObserver.observe(document.body, {
           attributes: true,
