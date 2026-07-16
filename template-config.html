@@ -77,7 +77,7 @@
     .tpl-table .link:hover { text-decoration: underline; }
     .cell-sample-name { min-width: 200px; white-space: nowrap; }
     .cell-category-path {
-      width: 240px; max-width: 240px; height: 38px; line-height: 1.35;
+      width: 240px; max-width: 240px; line-height: 18px; max-height: 36px;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
       overflow: hidden; word-break: break-all; font-size: 12px; color: #475569;
     }
@@ -1185,7 +1185,7 @@
       var bar = document.getElementById('infoBar');
       if (state.main === 'report' && state.sub === 'body') {
         bar.classList.remove('hidden');
-        bar.innerHTML = '<i class="fa fa-info-circle"></i> 同一样品名称(型号)下可配置多个<strong>模板变体</strong>（如标准版/英文版/简版），每个变体可保存多个模板版本、<strong>同时仅启用一个</strong>。其中一个变体标记为<strong>默认</strong>，报告生成时默认选用。模板内含全部试验项占位，与委托试验项无关联；委托缺少的试验项在生成时不渲染。';
+        bar.innerHTML = '<i class="fa fa-info-circle"></i> 同一样品名称(型号)下可配置多个<strong>模板变体</strong>（如标准版/英文版/简版），每个变体可保存多个模板版本、<strong>同时仅启用一个</strong>；新上传版本<strong>默认启用最新版</strong>，有文件则必有一版启用。变体可标记为<strong>默认</strong>（可选）——报告生成时若已设默认则默认选中，未设默认时需用户选择；用户均可切换其他变体。模板内含全部试验项占位，与委托试验项无关联；委托缺少的试验项在生成时不渲染。';
       } else if (state.main === 'report' && state.sub === 'public') {
         bar.classList.add('hidden');
         bar.innerHTML = '';
@@ -1367,9 +1367,8 @@
             BODY_DATA.forEach(function (r) {
               if (r.tree === row.tree) r.isDefault = r.id === row.id;
             });
-          } else if (row.isDefault) {
-            alert('至少保留一个默认模板，请先为同型号其他变体设为默认');
-            return;
+          } else {
+            row.isDefault = false;
           }
         }
       } else {
@@ -1389,6 +1388,7 @@
           file: fullFile,
           templates: fullFile ? [{ name: fullFile, time: formatNowTs(), enabled: true, uploader: 'admin' }] : []
         });
+        if (fullFile) ensureBodyVariantEnabled(BODY_DATA[BODY_DATA.length - 1]);
       }
       closeModal('bodyModal');
       renderTree();
@@ -1472,13 +1472,31 @@
       state.filePickerTarget = null;
     }
 
+    function ensureBodyVariantEnabled(row) {
+      if (!row || !row.templates || !row.templates.length) {
+        if (row) row.file = null;
+        return;
+      }
+      if (!row.templates.some(function (t) { return t.enabled; })) {
+        var lastIdx = row.templates.length - 1;
+        row.templates.forEach(function (t, i) { t.enabled = i === lastIdx; });
+      }
+      var enabled = row.templates.find(function (t) { return t.enabled; });
+      row.file = enabled ? enabled.name : null;
+    }
+
+    function addBodyTemplateVersion(row, tpl) {
+      if (!row.templates) row.templates = [];
+      row.templates.forEach(function (t) { t.enabled = false; });
+      tpl.enabled = true;
+      row.templates.push(tpl);
+      row.file = tpl.name;
+    }
+
     function applyBodyVersionUpload(fileName) {
       var row = findBody(state.bodyRowId);
       if (!row) return;
-      if (!row.templates) row.templates = [];
-      var isFirst = !row.templates.length;
-      row.templates.push({ name: fileName, time: formatNowTs(), enabled: isFirst, uploader: 'admin' });
-      if (isFirst) row.file = fileName;
+      addBodyTemplateVersion(row, { name: fileName, time: formatNowTs(), enabled: true, uploader: 'admin' });
       renderBodyVersionTable();
       renderTable();
     }
@@ -1495,12 +1513,9 @@
       var row = findBody(state.bodyRowId);
       if (!row || !confirm('确定删除该模板版本？')) return;
       row.templates.splice(index, 1);
-      if (!row.templates.length) row.file = null;
-      else if (!row.templates.some(function (t) { return t.enabled; })) {
-        row.templates[0].enabled = true;
-        row.file = row.templates[0].name;
-      }
+      ensureBodyVariantEnabled(row);
       renderBodyVersionTable();
+      renderTable();
     }
 
     function saveBodyVersion() {
@@ -1572,10 +1587,6 @@
     function deleteBody(id) {
       var row = findBody(id);
       if (!row || !confirm('确定删除模板变体「' + row.name + '」？')) return;
-      if (row.isDefault) {
-        alert('默认模板不可直接删除，请先将同型号其他变体设为默认');
-        return;
-      }
       var idx = BODY_DATA.indexOf(row);
       if (idx >= 0) BODY_DATA.splice(idx, 1);
       renderTree();
@@ -1867,10 +1878,8 @@
             var row = findBody(state.bodyRowId);
             if (row) {
               var copyName = '复制_' + source.file;
-              var isFirst = !row.templates.length;
               if (!row.templates) row.templates = [];
-              row.templates.push({ name: copyName, time: formatNowTs(), enabled: isFirst, uploader: 'admin' });
-              if (isFirst) row.file = copyName;
+              addBodyTemplateVersion(row, { name: copyName, time: formatNowTs(), enabled: true, uploader: 'admin' });
               renderBodyVersionTable();
               renderTable();
             }
@@ -2347,9 +2356,9 @@
         { id: 'record-tree-tests', selector: '[data-annotate="record-tree-tests"]', position: 'top-right', title: '型号下展开试验项', wide: true, content: '选中型号（如 PVC-C）后，下方列出该型号对应的全部试验项；绿点表示已配置模板。点击某一试验项可快速定位右侧列表，括号内为（已配置数 / 试验项总数）。', tag: '记录单' },
         { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板变体', content: '打开新增弹窗，配置样品、模板名称、是否默认及公共头尾引用。模板文件可在「版本」弹窗中上传。', tag: '报告模板' },
         { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑模板名称、是否默认、引用公共头尾。模板文件通过「版本」管理。', tag: '操作说明' },
-        { id: 'body-version', selector: '[data-annotate="body-version"]', position: 'top-right', title: '版本管理', wide: true, content: '同一模板变体可存多个版本，通过单选启用其中一个；报告生成时使用启用版本。点击「配置」进入 PageOffice 编辑当前启用版本。', tag: '报告模板' },
-        { id: 'body-default', selector: '[data-annotate="body-default"]', position: 'top-right', title: '设为默认', content: '同一样品型号下仅有一个默认模板变体；报告编制生成报告时默认选中该变体，用户可临时切换其他变体。', tag: '报告模板' },
-        { id: 'row-delete', selector: '[data-annotate="row-delete"]', position: 'top-right', title: '删除', content: '删除该模板变体及其全部版本。默认变体需先切换默认后再删除。', tag: '操作说明' },
+        { id: 'body-version', selector: '[data-annotate="body-version"]', position: 'top-right', title: '版本管理', wide: true, content: '同一模板变体可存多个版本，通过单选启用其中一个；<strong>新上传/复制的版本默认启用最新版</strong>，有文件则必有一版启用。报告生成时使用启用版本。点击「配置」进入 PageOffice 编辑当前启用版本。删除版本不受是否启用影响。', tag: '报告模板' },
+        { id: 'body-default', selector: '[data-annotate="body-default"]', position: 'top-right', title: '设为默认', content: '同一样品型号下可设一个默认模板变体（<strong>可选</strong>）。报告生成时若已设默认则默认选中该变体，用户可切换其他变体；未设默认时生成报告需用户手动选择。', tag: '报告模板' },
+        { id: 'row-delete', selector: '[data-annotate="row-delete"]', position: 'top-right', title: '删除', content: '删除该模板变体及其全部版本。不受是否设为默认、版本是否启用影响。', tag: '操作说明' },
         { id: 'record-config', selector: '[data-annotate="record-config"]', position: 'top-right', title: '版本管理', wide: true, content: '同一试验项可存多个模板版本，通过单选启用其中一个；导出时使用启用模板。点击「配置」进入 PageOffice 编辑当前启用模板。', tag: '记录单' },
         { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 插件打开编辑窗口：左侧为 Word 模板预览区，右侧为配置字段面板（检测中心信息、合同信息、报告信息、设备信息、样品信息、试验结果集）。记录单与报告模板左侧内容不同。', tag: '模板配置' },
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
