@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录日志 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .log-table th, .log-table td { border: 1px solid #e5e7eb; padding: 9px 10px; text-align: left; vertical-align: middle; }
+    .log-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
+    .log-table tbody tr:hover { background: #fafafa; }
+    .status-ok { color: #16a34a; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">登录日志<i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i></span>
+  </div>
+
+  <div class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="flex flex-wrap items-end gap-x-6 gap-y-3">
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">登录地址</label><input id="f_ip" class="w-44 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入登录地址" /></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">使用状态</label><select id="f_status" class="w-36 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"><option value="">请选择状态</option><option>成功</option><option>失败</option></select></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">登录名称</label><input id="f_user" class="w-36 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" /></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">登陆时间</label><input class="w-52 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="开始日期 ~ 结束日期" /></div>
+        <button onclick="renderTable()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+        <button onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex gap-2">
+        <button onclick="alert('请先勾选记录（原型演示）')" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-400" disabled><i class="fa fa-trash-o"></i> 删除</button>
+        <button onclick="confirm('确定清空全部登录日志？') && alert('已清空（原型演示）')" class="rounded border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"><i class="fa fa-trash"></i> 清空</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="log-table min-w-[1100px]">
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" id="checkAll" onchange="toggleCheckAll(this.checked)" /></th>
+              <th style="width:80px">访问编号</th>
+              <th>用户名称</th>
+              <th>登录地址</th>
+              <th>登录地点</th>
+              <th>浏览器</th>
+              <th>操作系统</th>
+              <th>登录状态</th>
+              <th>操作信息</th>
+              <th style="width:160px">登录时间</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="pageTotal">共 1162 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">2</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">3</button>
+        <span class="px-1">…</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">117</button>
+        <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>10 条/页</option><option>20 条/页</option><option>50 条/页</option></select>
+        <span>跳至</span><input type="text" class="w-10 rounded border border-slate-200 px-1 py-0.5 text-center text-sm" value="1" /><span>页</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var LOGIN_DATA = [
+      { id: 1162, user: 'admin', ip: '122.231.5.225', location: 'XX XX', browser: 'Chrome 15', os: 'Mac OS X', status: '成功', msg: '登录成功', time: '2026-07-16 10:07:28' },
+      { id: 1161, user: 'admin', ip: '183.156.248.225', location: 'XX XX', browser: 'Chrome 15', os: 'Mac OS X', status: '成功', msg: '登录成功', time: '2026-07-16 09:42:15' },
+      { id: 1160, user: 'admin', ip: '192.168.1.34', location: '内网IP', browser: 'Chrome 13', os: 'Windows 10', status: '成功', msg: '登录成功', time: '2026-07-16 08:55:03' },
+      { id: 1159, user: 'admin', ip: '115.195.197.242', location: 'XX XX', browser: 'Chrome 14', os: 'Windows 10', status: '成功', msg: '登录成功', time: '2026-07-15 18:22:41' },
+      { id: 1158, user: 'zhangsan', ip: '192.168.1.88', location: '内网IP', browser: 'Chrome 13', os: 'Windows 10', status: '成功', msg: '登录成功', time: '2026-07-15 17:10:09' },
+      { id: 1157, user: 'lisi', ip: '10.0.0.15', location: '内网IP', browser: 'Edge 126', os: 'Windows 11', status: '成功', msg: '登录成功', time: '2026-07-15 16:33:52' },
+      { id: 1156, user: 'admin', ip: '183.156.248.225', location: 'XX XX', browser: 'Chrome 15', os: 'Mac OS X', status: '失败', msg: '密码错误', time: '2026-07-15 14:08:17' },
+      { id: 1155, user: 'wangwu', ip: '122.231.5.225', location: 'XX XX', browser: 'Firefox 128', os: 'Windows 10', status: '成功', msg: '登录成功', time: '2026-07-15 11:45:30' },
+      { id: 1154, user: 'admin', ip: '192.168.1.34', location: '内网IP', browser: 'Chrome 13', os: 'Windows 10', status: '成功', msg: '登录成功', time: '2026-07-15 09:20:08' },
+      { id: 1153, user: 'admin', ip: '115.195.197.242', location: 'XX XX', browser: 'Chrome 14', os: 'Mac OS X', status: '成功', msg: '登录成功', time: '2026-07-14 16:58:44' }
+    ];
+
+    function getFilteredRows() {
+      var ip = (document.getElementById('f_ip').value || '').trim();
+      var status = document.getElementById('f_status').value;
+      var user = (document.getElementById('f_user').value || '').trim();
+      return LOGIN_DATA.filter(function (r) {
+        if (ip && r.ip.indexOf(ip) < 0) return false;
+        if (status && r.status !== status) return false;
+        if (user && r.user.indexOf(user) < 0) return false;
+        return true;
+      });
+    }
+
+    function renderTable() {
+      var rows = getFilteredRows();
+      document.getElementById('tableBody').innerHTML = rows.map(function (r) {
+        var statusCls = r.status === '成功' ? 'status-ok' : 'text-red-500';
+        return '<tr><td><input type="checkbox" class="row-check" /></td><td>' + r.id + '</td><td>' + r.user + '</td><td>' + r.ip + '</td><td>' + r.location + '</td><td>' + r.browser + '</td><td>' + r.os + '</td><td class="' + statusCls + '">' + r.status + '</td><td>' + r.msg + '</td><td>' + r.time + '</td></tr>';
+      }).join('');
+      document.getElementById('pageTotal').textContent = '共 ' + (rows.length < LOGIN_DATA.length ? rows.length : 1162) + ' 条';
+    }
+
+    function resetFilter() {
+      document.getElementById('f_ip').value = '';
+      document.getElementById('f_status').value = '';
+      document.getElementById('f_user').value = '';
+      renderTable();
+    }
+
+    function toggleCheckAll(checked) {
+      document.querySelectorAll('.row-check').forEach(function (el) { el.checked = checked; });
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>

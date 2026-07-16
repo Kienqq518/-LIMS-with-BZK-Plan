@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>操作日志 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .log-table th, .log-table td { border: 1px solid #e5e7eb; padding: 9px 10px; text-align: left; vertical-align: middle; }
+    .log-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
+    .log-table tbody tr:hover { background: #fafafa; }
+    .status-ok { color: #16a34a; }
+    .modal-mask { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+    .modal-box { width: 640px; max-width: 100%; max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 8px; box-shadow: 0 20px 40px rgba(0,0,0,.15); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #f1f5f9; font-size: 15px; font-weight: 500; }
+    .modal-body { padding: 20px; font-size: 13px; }
+    .detail-row { display: flex; margin-bottom: 12px; }
+    .detail-row label { width: 100px; flex-shrink: 0; color: #64748b; text-align: right; padding-right: 12px; }
+    .detail-row .val { flex: 1; color: #334155; word-break: break-all; }
+    .detail-pre { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">操作日志<i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i></span>
+  </div>
+
+  <div class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="flex flex-wrap items-end gap-x-6 gap-y-3">
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">系统模块</label><input id="f_module" class="w-40 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" /></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">操作人员</label><input id="f_operator" class="w-36 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" /></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">操作类型</label><select id="f_opType" class="w-36 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"><option value="">请选择</option><option>新增</option><option>修改</option><option>删除</option><option>清空数据</option><option>导出</option></select></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">操作状态</label><select id="f_status" class="w-36 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"><option value="">请选择</option><option>成功</option><option>失败</option></select></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">操作时间</label><input class="w-52 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="开始日期 ~ 结束日期" /></div>
+        <button onclick="renderTable()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+        <button onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex gap-2">
+        <button onclick="alert('请先勾选记录（原型演示）')" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-400" disabled><i class="fa fa-trash-o"></i> 删除</button>
+        <button onclick="confirm('确定清空全部操作日志？') && alert('已清空（原型演示）')" class="rounded border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"><i class="fa fa-trash"></i> 清空</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="log-table min-w-[1200px]">
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" id="checkAll" onchange="toggleCheckAll(this.checked)" /></th>
+              <th style="width:72px">日志编号</th>
+              <th>系统模块</th>
+              <th style="width:72px">操作类型</th>
+              <th style="width:72px">请求方式</th>
+              <th>操作人员</th>
+              <th>主机</th>
+              <th>操作地点</th>
+              <th style="width:64px">操作状态</th>
+              <th style="width:160px">操作日期</th>
+              <th style="width:56px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="pageTotal">共 1480 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">2</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">3</button>
+        <span class="px-1">…</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">148</button>
+        <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>10 条/页</option></select>
+        <span>跳至</span><input type="text" class="w-10 rounded border border-slate-200 px-1 py-0.5 text-center text-sm" value="1" /><span>页</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 操作日志详情 -->
+  <div id="detailModal" class="modal-mask">
+    <div class="modal-box">
+      <div class="modal-head"><span>操作日志详细</span><button onclick="closeDetail()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body" id="detailBody"></div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var OP_DATA = [
+      { id: 1480, module: '新增样品信息', opType: '新增', method: 'POST', operator: 'admin', host: '183.156.248.225', location: 'XX XX', status: '成功', time: '2026-07-15 09:57:27', url: '/api/sample/add', params: '{"sampleName":"PVC-C","model":"SN8","category":"WZ电网物资"}', result: '{"code":200,"msg":"操作成功"}' },
+      { id: 1479, module: '字典类型', opType: '清空数据', method: 'DELETE', operator: 'admin', host: '192.168.1.34', location: '内网IP', status: '成功', time: '2026-07-15 09:34:21', url: '/api/dict/type/clear', params: '{"dictType":"sys_user_sex"}', result: '{"code":200,"msg":"操作成功"}' },
+      { id: 1478, module: '委托登记', opType: '修改', method: 'PUT', operator: 'admin', host: '192.168.1.34', location: '内网IP', status: '成功', time: '2026-07-15 09:12:05', url: '/api/entrust/update', params: '{"entrustCode":"SC2026/0052"}', result: '{"code":200,"msg":"操作成功"}' },
+      { id: 1477, module: '模板管理', opType: '新增', method: 'POST', operator: 'zhangsan', host: '10.0.0.15', location: '内网IP', status: '成功', time: '2026-07-14 16:45:33', url: '/api/template/body/add', params: '{"name":"标准版","sample":"PVC-C"}', result: '{"code":200,"msg":"操作成功"}' },
+      { id: 1476, module: '报告编制', opType: '导出', method: 'POST', operator: 'lisi', host: '122.231.5.225', location: 'XX XX', status: '成功', time: '2026-07-14 15:20:18', url: '/api/report/export', params: '{"reportId":"SCZN202508/0009/01"}', result: '{"code":200,"msg":"操作成功"}' },
+      { id: 1475, module: '用户管理', opType: '删除', method: 'DELETE', operator: 'admin', host: '115.195.197.242', location: 'XX XX', status: '失败', time: '2026-07-14 11:08:42', url: '/api/system/user/12', params: '{}', result: '{"code":500,"msg":"该用户存在关联数据，无法删除"}' },
+      { id: 1474, module: '参数管理', opType: '修改', method: 'PUT', operator: 'admin', host: '192.168.1.34', location: '内网IP', status: '成功', time: '2026-07-08 10:15:09', url: '/api/config/update', params: '{"configKey":"sys.report.prefix"}', result: '{"code":200,"msg":"操作成功"}' },
+      { id: 1473, module: '参数管理', opType: '修改', method: 'PUT', operator: 'admin', host: '192.168.1.34', location: '内网IP', status: '成功', time: '2026-07-08 09:38:01', url: '/api/config/update', params: '{"configKey":"sys.entrust.autoNo"}', result: '{"code":200,"msg":"操作成功"}' },
+      { id: 1472, module: '试验检测', opType: '修改', method: 'PUT', operator: 'wangwu', host: '183.156.248.225', location: 'XX XX', status: '成功', time: '2026-07-08 09:05:27', url: '/api/test/result/save', params: '{"entrustCode":"SC2026/0052"}', result: '{"code":200,"msg":"操作成功"}' },
+      { id: 1471, module: '报告签发', opType: '修改', method: 'PUT', operator: 'admin', host: '115.195.197.242', location: 'XX XX', status: '成功', time: '2026-07-08 08:38:42', url: '/api/report/sign', params: '{"reportId":"SCZN202508/0009/01"}', result: '{"code":200,"msg":"操作成功"}' }
+    ];
+
+    function getFilteredRows() {
+      var module = (document.getElementById('f_module').value || '').trim();
+      var operator = (document.getElementById('f_operator').value || '').trim();
+      var opType = document.getElementById('f_opType').value;
+      var status = document.getElementById('f_status').value;
+      return OP_DATA.filter(function (r) {
+        if (module && r.module.indexOf(module) < 0) return false;
+        if (operator && r.operator.indexOf(operator) < 0) return false;
+        if (opType && r.opType !== opType) return false;
+        if (status && r.status !== status) return false;
+        return true;
+      });
+    }
+
+    function renderTable() {
+      var rows = getFilteredRows();
+      document.getElementById('tableBody').innerHTML = rows.map(function (r) {
+        var statusCls = r.status === '成功' ? 'status-ok' : 'text-red-500';
+        return '<tr><td><input type="checkbox" class="row-check" /></td><td>' + r.id + '</td><td>' + r.module + '</td><td>' + r.opType + '</td><td>' + r.method + '</td><td>' + r.operator + '</td><td>' + r.host + '</td><td>' + r.location + '</td><td class="' + statusCls + '">' + r.status + '</td><td>' + r.time + '</td><td><button onclick="openDetail(' + r.id + ')" class="text-blue-600 hover:underline">详细</button></td></tr>';
+      }).join('');
+      document.getElementById('pageTotal').textContent = '共 ' + (rows.length < OP_DATA.length ? rows.length : 1480) + ' 条';
+    }
+
+    function resetFilter() {
+      document.getElementById('f_module').value = '';
+      document.getElementById('f_operator').value = '';
+      document.getElementById('f_opType').value = '';
+      document.getElementById('f_status').value = '';
+      renderTable();
+    }
+
+    function toggleCheckAll(checked) {
+      document.querySelectorAll('.row-check').forEach(function (el) { el.checked = checked; });
+    }
+
+    function openDetail(id) {
+      var row = OP_DATA.find(function (r) { return r.id === id; });
+      if (!row) return;
+      document.getElementById('detailBody').innerHTML =
+        '<div class="detail-row"><label>操作模块</label><div class="val">' + row.module + '</div></div>' +
+        '<div class="detail-row"><label>请求地址</label><div class="val">' + row.url + '</div></div>' +
+        '<div class="detail-row"><label>登录信息</label><div class="val">' + row.operator + ' / ' + row.host + ' / ' + row.location + '</div></div>' +
+        '<div class="detail-row"><label>请求方式</label><div class="val">' + row.method + '</div></div>' +
+        '<div class="detail-row"><label>操作方法</label><div class="val">com.lims.web.controller.' + row.module.replace(/\s/g, '') + 'Controller.save()</div></div>' +
+        '<div class="detail-row"><label>请求参数</label><div class="val"><div class="detail-pre">' + row.params + '</div></div></div>' +
+        '<div class="detail-row"><label>返回参数</label><div class="val"><div class="detail-pre">' + row.result + '</div></div></div>' +
+        '<div class="detail-row"><label>操作状态</label><div class="val ' + (row.status === '成功' ? 'status-ok' : 'text-red-500') + '">' + row.status + '</div></div>' +
+        '<div class="detail-row"><label>操作时间</label><div class="val">' + row.time + '</div></div>';
+      document.getElementById('detailModal').classList.add('open');
+    }
+
+    function closeDetail() {
+      document.getElementById('detailModal').classList.remove('open');
+    }
+
+    document.getElementById('detailModal').addEventListener('click', function (e) {
+      if (e.target === this) closeDetail();
+    });
+
+    renderTable();
+  </script>
+</body>
+</html>

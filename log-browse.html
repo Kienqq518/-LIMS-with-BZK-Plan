@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>浏览记录 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .log-table th, .log-table td { border: 1px solid #e5e7eb; padding: 9px 10px; text-align: left; vertical-align: middle; }
+    .log-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
+    .log-table tbody tr:hover { background: #fafafa; }
+    .file-link { color: #2563eb; cursor: pointer; }
+    .file-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">浏览记录<i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i></span>
+  </div>
+
+  <div class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="flex flex-wrap items-end gap-x-6 gap-y-3">
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">文件类型</label><select id="f_type" class="w-52 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"><option value="">请选择浏览文件的类型</option><option>检测报告</option><option>原始记录单</option><option>检测委托书</option><option>检测任务单</option><option>收费通知单</option><option>合格证</option></select></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">文件名称</label><input id="f_name" class="w-44 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" /></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">浏览人</label><input id="f_viewer" class="w-36 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" /></div>
+        <button onclick="renderTable()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+        <button onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="log-table min-w-[800px]">
+          <thead>
+            <tr>
+              <th style="width:64px">序号</th>
+              <th>文件名称</th>
+              <th style="width:120px">文件类型</th>
+              <th style="width:100px">浏览人</th>
+              <th style="width:160px">日期</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="pageTotal">共 86 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">2</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">3</button>
+        <span class="px-1">…</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">9</button>
+        <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>10 条/页</option></select>
+        <span>跳至</span><input type="text" class="w-10 rounded border border-slate-200 px-1 py-0.5 text-center text-sm" value="1" /><span>页</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var BROWSE_DATA = [
+      { file: 'SCZN202508/0009/01_检测报告.pdf', type: '检测报告', viewer: 'admin', date: '2026-07-16 10:12:35' },
+      { file: 'SCZN202508/0009-0101_颜色外观记录单.docx', type: '原始记录单', viewer: 'zhangsan', date: '2026-07-16 09:48:22' },
+      { file: 'SC2026/0052_检测委托书.pdf', type: '检测委托书', viewer: 'lisi', date: '2026-07-16 09:30:15' },
+      { file: 'SC2026/0052_检测任务单.pdf', type: '检测任务单', viewer: 'admin', date: '2026-07-16 08:55:40' },
+      { file: 'SCZN202508/0009/01_检测报告.pdf', type: '检测报告', viewer: 'wangwu', date: '2026-07-15 17:22:08' },
+      { file: 'SCZN202508/0009-0102_尺寸检查记录单.docx', type: '原始记录单', viewer: 'zhangsan', date: '2026-07-15 16:10:33' },
+      { file: 'SC2026/0059_收费通知单.pdf', type: '收费通知单', viewer: 'admin', date: '2026-07-15 14:38:51' },
+      { file: 'SCZN202508/0009-0101_合格证.pdf', type: '合格证', viewer: 'lisi', date: '2026-07-15 11:05:19' },
+      { file: 'SC2026/0055_检测委托书.pdf', type: '检测委托书', viewer: 'admin', date: '2026-07-14 15:42:07' },
+      { file: 'SCZN202508/0009-0103_环刚度记录单.docx', type: '原始记录单', viewer: 'wangwu', date: '2026-07-14 10:18:44' }
+    ];
+
+    function getFilteredRows() {
+      var type = document.getElementById('f_type').value;
+      var name = (document.getElementById('f_name').value || '').trim();
+      var viewer = (document.getElementById('f_viewer').value || '').trim();
+      return BROWSE_DATA.filter(function (r) {
+        if (type && r.type !== type) return false;
+        if (name && r.file.indexOf(name) < 0) return false;
+        if (viewer && r.viewer.indexOf(viewer) < 0) return false;
+        return true;
+      });
+    }
+
+    function renderTable() {
+      var rows = getFilteredRows();
+      document.getElementById('tableBody').innerHTML = rows.map(function (r, i) {
+        return '<tr><td>' + (i + 1) + '</td><td><span class="file-link" onclick="alert(\'预览文件（原型演示）\n' + r.file + '\')">' + r.file + '</span></td><td>' + r.type + '</td><td>' + r.viewer + '</td><td>' + r.date + '</td></tr>';
+      }).join('') || '<tr><td colspan="5" class="py-12 text-center text-slate-400">暂无数据</td></tr>';
+      document.getElementById('pageTotal').textContent = '共 ' + (rows.length < BROWSE_DATA.length ? rows.length : 86) + ' 条';
+    }
+
+    function resetFilter() {
+      document.getElementById('f_type').value = '';
+      document.getElementById('f_name').value = '';
+      document.getElementById('f_viewer').value = '';
+      renderTable();
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>
