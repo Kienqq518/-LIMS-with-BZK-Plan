@@ -156,6 +156,95 @@
     .stamp-upload-btn { margin-top: 8px; font-size: 12px; padding: 4px 12px; border-radius: 4px; border: 1px solid #cbd5e1; color: #475569; background: #fff; cursor: pointer; }
     .stamp-upload-btn:hover { border-color: #2563eb; color: #2563eb; }
     .badge-doc { display: inline-block; background: #dcfce7; color: #15803d; font-size: 11px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+    /* 模版类型 Landing */
+    .type-card {
+      position: relative; height: 140px; border-radius: 8px; overflow: hidden; cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+      border: 1px solid #e2e8f0;
+    }
+    .type-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,.12); border-color: #93c5fd; }
+    .type-card .title { position: relative; z-index: 2; padding: 20px 24px; font-size: 18px; font-weight: 600; color: #1e293b; }
+    .type-card .desc { position: relative; z-index: 2; padding: 0 24px; font-size: 12px; color: #64748b; line-height: 1.5; }
+    .type-card .illus {
+      position: absolute; right: 0; bottom: 0; width: 50%; height: 100%;
+      opacity: .25; display: flex; align-items: flex-end; justify-content: flex-end;
+      font-size: 64px; color: #2563eb; padding-right: 16px; padding-bottom: 8px;
+    }
+    .type-card:nth-child(2) .illus { color: #059669; }
+    .type-card:nth-child(3) .illus { color: #7c3aed; }
+    .type-card:nth-child(4) .illus { color: #d97706; }
+    /* 详情顶栏 + 大类横向 Tab */
+    .detail-header {
+      display: flex; align-items: center; gap: 16px; padding: 12px 20px;
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+    }
+    .detail-back {
+      display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #64748b;
+      cursor: pointer; border: none; background: transparent; padding: 4px 8px; border-radius: 4px;
+    }
+    .detail-back:hover { color: #2563eb; background: #f1f5f9; }
+    .detail-title { font-size: 16px; font-weight: 600; color: #1e293b; }
+    .cat-tab-bar {
+      display: flex; gap: 0; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 20px;
+    }
+    .cat-tab {
+      padding: 12px 20px; font-size: 14px; color: #64748b; cursor: pointer; white-space: nowrap;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; user-select: none;
+    }
+    .cat-tab:hover { color: #2563eb; }
+    .cat-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
+    /* 单据卡片 */
+    .doc-view-wrap { padding: 16px 20px 80px; background: #f8fafc; min-height: calc(100vh - 170px); }
+    .doc-card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .doc-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+      display: flex; flex-direction: column; max-height: 300px; transition: opacity .2s, border-color .2s, background .2s;
+    }
+    .doc-card.card-off { opacity: .55; background: #f8fafc; }
+    .doc-card.card-error { border-color: #f87171; background: #fef2f2; }
+    .doc-card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-bottom: 1px solid #f1f5f9; flex-shrink: 0;
+    }
+    .doc-card-head .name { font-size: 14px; font-weight: 600; color: #334155; }
+    .doc-switch { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+    .doc-switch input { opacity: 0; width: 0; height: 0; }
+    .doc-switch .slider {
+      position: absolute; inset: 0; background: #cbd5e1; border-radius: 20px; cursor: pointer; transition: .2s;
+    }
+    .doc-switch .slider::before {
+      content: ''; position: absolute; width: 16px; height: 16px; left: 2px; bottom: 2px;
+      background: #fff; border-radius: 50%; transition: .2s;
+    }
+    .doc-switch input:checked + .slider { background: #2563eb; }
+    .doc-switch input:checked + .slider::before { transform: translateX(16px); }
+    .doc-card-body { flex: 1; overflow-y: auto; padding: 8px 14px; min-height: 80px; }
+    .doc-tpl-row {
+      display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; font-size: 12px;
+    }
+    .doc-tpl-row:hover { background: #f8fafc; }
+    .doc-tpl-row.enabled { background: #eff6ff; }
+    .doc-tpl-row .radio { flex-shrink: 0; }
+    .doc-tpl-row .fname { flex: 1; min-width: 0; color: #2563eb; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .doc-tpl-row .time { flex-shrink: 0; color: #94a3b8; font-size: 11px; }
+    .doc-tpl-row .ops { flex-shrink: 0; white-space: nowrap; }
+    .doc-tpl-row .ops button { font-size: 11px; color: #2563eb; background: none; border: none; cursor: pointer; padding: 0 2px; }
+    .doc-tpl-row .ops button.del { color: #ef4444; }
+    .doc-card-foot { padding: 8px 14px 12px; border-top: 1px solid #f1f5f9; flex-shrink: 0; }
+    .doc-empty { padding: 16px 8px; text-align: center; color: #94a3b8; font-size: 12px; }
+    .doc-save-bar {
+      position: sticky; bottom: 0; display: flex; justify-content: flex-end; align-items: center;
+      gap: 12px; padding: 12px 20px; background: #fff; border-top: 1px solid #e2e8f0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,.04);
+    }
+    .doc-toast {
+      position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 300;
+      padding: 10px 20px; border-radius: 6px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+      max-width: 90%; text-align: center;
+    }
+    .doc-toast.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .doc-toast.success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -168,41 +257,50 @@
     </span>
   </div>
 
-  <!-- 大类选择页 -->
-  <div id="catHubView" class="cat-hub hidden">
+  <!-- 模版类型 Landing -->
+  <div id="tplLandingView" class="cat-hub">
     <h1 class="mb-10 text-2xl font-semibold tracking-wide text-slate-800">模板管理</h1>
     <div class="grid w-full max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2">
-      <div class="cat-card" onclick="enterTplCategory('dlwz')">
-        <div class="title">电力物资类</div>
-        <div class="illus"><i class="fa fa-bolt"></i></div>
+      <div class="type-card" onclick="enterTplType('report')">
+        <div class="title">报告模版</div>
+        <div class="desc">配置报告正文与公共头尾模版，按大类分套管理</div>
+        <div class="illus"><i class="fa fa-file-text-o"></i></div>
       </div>
-      <div class="cat-card" onclick="enterTplCategory('aqgqj')">
-        <div class="title">安全工器具类</div>
-        <div class="illus"><i class="fa fa-shield"></i></div>
+      <div class="type-card" onclick="enterTplType('record')">
+        <div class="title">记录单模版</div>
+        <div class="desc">按试验项配置记录单模版，支持多版本单启用</div>
+        <div class="illus"><i class="fa fa-list-alt"></i></div>
       </div>
-      <div class="cat-card" onclick="enterTplCategory('hjjc')">
-        <div class="title">环境检测</div>
-        <div class="illus"><i class="fa fa-leaf"></i></div>
+      <div class="type-card" onclick="enterTplType('doc')" data-annotate="doc-entry">
+        <div class="title">单据模版</div>
+        <div class="desc">配置 7 类流程单据的生成模版与开关</div>
+        <div class="illus"><i class="fa fa-file-o"></i></div>
       </div>
-      <div class="cat-card" onclick="enterTplCategory('gcjc')">
-        <div class="title">工程检测</div>
-        <div class="illus"><i class="fa fa-building"></i></div>
+      <div class="type-card" onclick="enterTplType('stamp')">
+        <div class="title">页眉页脚</div>
+        <div class="desc">全局默认页眉页脚及按单据类型覆盖</div>
+        <div class="illus"><i class="fa fa-picture-o"></i></div>
       </div>
     </div>
-    <p class="mt-8 text-sm text-slate-400">点击大类卡片进入对应模板配置（原型演示）</p>
+    <p class="mt-8 text-sm text-slate-400">选择模版类型进入配置（原型演示）</p>
   </div>
 
-  <!-- 大类内配置 -->
+  <!-- 模版详情 -->
   <div id="tplDetailView" class="hidden">
-    <!-- 一级 Tab -->
-    <div class="flex border-b border-slate-200 bg-white px-4" id="mainTabBar">
-      <div class="main-tab active" data-tab="report">报告模板</div>
-      <div class="main-tab" data-tab="record">记录单模板</div>
-      <div class="main-tab" data-tab="doc" data-annotate="doc-tab">单据模板</div>
-      <div class="main-tab" data-tab="stamp" data-annotate="stamp-tab">页眉页脚</div>
+    <div class="detail-header">
+      <button type="button" class="detail-back" onclick="backToLanding()"><i class="fa fa-arrow-left"></i> 返回</button>
+      <span class="detail-title" id="detailTitle">报告模版</span>
     </div>
 
-    <!-- 报告 · 二级开关（右侧、字号小于一级 Tab） -->
+    <!-- 大类横向 Tab（报告/记录单/单据） -->
+    <div id="catTabBar" class="cat-tab-bar">
+      <div class="cat-tab active" data-cat="dlwz" onclick="switchCatTab('dlwz')">电力物资类</div>
+      <div class="cat-tab" data-cat="aqgqj" onclick="switchCatTab('aqgqj')">安全工器具类</div>
+      <div class="cat-tab" data-cat="hjjc" onclick="switchCatTab('hjjc')">环境检测</div>
+      <div class="cat-tab" data-cat="gcjc" onclick="switchCatTab('gcjc')">工程检测</div>
+    </div>
+
+    <!-- 报告 · 二级开关 -->
     <div id="reportSubBar" class="sub-switch-bar">
       <div class="sub-switch" id="reportSubSwitch">
         <div class="sub-switch-item active" data-sub="body">正文模板</div>
@@ -211,16 +309,13 @@
     </div>
     <div id="recordSubBar" class="hidden"></div>
 
-    <div class="tpl-layout">
-      <!-- 左侧树 -->
+    <div class="tpl-layout" id="tableLayout">
       <aside class="tpl-tree" id="treePanel">
         <div class="tpl-tree-head">
           <input type="text" id="treeSearch" placeholder="请输入关键字搜索" oninput="filterTree()" />
         </div>
         <div class="tpl-tree-body" id="treeBody"></div>
       </aside>
-
-      <!-- 右侧主区 -->
       <div class="tpl-main">
         <div class="tpl-toolbar" id="toolbar"></div>
         <div class="overflow-x-auto px-4 pb-4">
@@ -240,16 +335,15 @@
 
   <!-- ============ 单据模板 ============ -->
   <div id="docView" class="hidden">
-    <div class="tpl-toolbar" id="docToolbar"></div>
-    <div class="overflow-x-auto px-4 pb-4">
-      <table class="tpl-table min-w-[1000px]">
-        <thead id="docTableHead"></thead>
-        <tbody id="docTableBody"></tbody>
-      </table>
+    <div class="doc-view-wrap">
+      <div class="doc-card-grid" id="docCardGrid"></div>
     </div>
-    <div class="info-bar" data-annotate="doc-logic">
-      <i class="fa fa-info-circle"></i> <strong>单据模板：</strong>系统各类流程单据（委托书/收费通知单/检测任务单/检测任务及流转单/还样退库确认表/退样申请表/产品检测预通知书）在此统一维护。
-      <strong>按大类分套</strong>——同一单据可为不同大类配置各自的模板；<strong>一类可上传多个模板版本，同时仅启用一个</strong>，导出时使用启用版。点击「配置」调用 PageOffice 编辑并插入字段占位符。
+    <div class="doc-save-bar">
+      <span class="text-xs text-slate-400" id="docDirtyHint"></span>
+      <button type="button" onclick="saveDocConfig()" class="rounded bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-700">保存</button>
+    </div>
+    <div class="info-bar mx-5 mb-4" data-annotate="doc-logic">
+      <i class="fa fa-info-circle"></i> <strong>单据模版：</strong>每大类固定 7 类流程单据，卡片内可上传多个版本、同时仅启用一个。卡片开关控制是否支持系统生成该单据；关闭时整卡置灰但保留启用记忆。
     </div>
   </div>
 
@@ -277,32 +371,16 @@
   </div>
   </div><!-- /tplDetailView -->
 
-  <!-- 单据模板 · 版本管理 -->
-  <div id="docVersionModal" class="modal-mask">
-    <div class="modal-box lg">
-      <div class="modal-head"><span id="docVersionTitle">单据模板版本</span><button onclick="closeModal('docVersionModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
-      <div class="modal-body">
-        <p class="mb-3 text-sm text-slate-500">同一单据（同大类）可保存多个模板版本，<strong class="text-slate-700">同时只能启用一个</strong>，导出时取启用版。</p>
-        <table class="tpl-table">
-          <thead><tr><th style="width:50px">启用</th><th>模板文件</th><th>上传时间</th><th style="width:120px">操作</th></tr></thead>
-          <tbody id="docVersionBody"></tbody>
-        </table>
-        <div class="mt-3"><button onclick="alert('上传新版本（原型演示）')" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-upload"></i> 上传新版本</button></div>
+  <!-- 未保存确认 -->
+  <div id="unsavedModal" class="modal-mask">
+    <div class="modal-box" style="width:420px">
+      <div class="modal-head"><span>未保存的修改</span><button onclick="closeModal('unsavedModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body"><p class="text-sm text-slate-600" id="unsavedModalText">当前大类有未保存的修改，是否保存后再离开？</p></div>
+      <div class="modal-foot">
+        <button onclick="closeModal('unsavedModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button>
+        <button onclick="confirmUnsavedDiscard()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">不保存</button>
+        <button onclick="confirmUnsavedSave()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">保存</button>
       </div>
-      <div class="modal-foot"><button onclick="closeModal('docVersionModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="saveDocVersion()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
-    </div>
-  </div>
-
-  <!-- 单据模板 · 新增 -->
-  <div id="docAddModal" class="modal-mask">
-    <div class="modal-box">
-      <div class="modal-head"><span>新增单据模板</span><button onclick="closeModal('docAddModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
-      <div class="modal-body">
-        <div class="form-row"><label><span class="req">*</span> 单据类型</label><div class="ctrl"><select id="da_type"></select></div></div>
-        <div class="form-row"><label><span class="req">*</span> 适用大类</label><div class="ctrl"><select id="da_category"><option>WZ电网物资</option><option>GQJ安全工器具</option><option>材料类</option><option>通用（全部大类）</option></select></div></div>
-        <div class="form-row"><label><span class="req">*</span> 模板文件</label><div class="ctrl"><div class="upload-zone" onclick="alert('上传模板文件（原型演示）')"><i class="fa fa-cloud-upload block"></i><div>点击上传 .doc/.docx</div></div></div></div>
-      </div>
-      <div class="modal-foot"><button onclick="closeModal('docAddModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="saveDocAdd()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
     </div>
   </div>
 
@@ -504,7 +582,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
-    var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: null, openIds: {}, copyMode: 'public', copyTarget: null, filePickerTarget: null, bodyVersionRenameIndex: null, recordVersionRenameIndex: null };
+    var state = { view: 'landing', main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: 'dlwz', openIds: {}, copyMode: 'public', copyTarget: null, filePickerTarget: null, bodyVersionRenameIndex: null, recordVersionRenameIndex: null, docDirty: false, docSavedSnapshots: {}, unsavedAction: null, docUploadType: null, docErrorTypes: [] };
     var modalStack = [];
 
     function syncModalZIndex() {
@@ -1256,42 +1334,105 @@
       renderTable();
     }
 
-    function switchMain(tab) {
-      state.main = tab;
-      state.sub = tab === 'record' ? 'record' : 'body';
-      if (tab === 'record') {
-        state.treeId = defaultTreeIdForCat(state.cat) || 'pvc-c';
-        openReportTreeDefaults();
-        state.openIds[state.treeId] = true;
-      } else if (tab === 'report') {
-        state.treeId = defaultTreeIdForCat(state.cat) || 'pvc-c';
-        openReportTreeDefaults();
-      }
-      document.querySelectorAll('#mainTabBar .main-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === tab); });
+    var TPL_TYPE_TITLES = { report: '报告模版', record: '记录单模版', doc: '单据模版', stamp: '页眉页脚' };
 
+    function renderDetailPanels() {
+      var tab = state.main;
       var isDoc = tab === 'doc';
       var isStamp = tab === 'stamp';
       var isTable = tab === 'report' || tab === 'record';
+      var showCatTabs = !isStamp;
+      document.getElementById('catTabBar').classList.toggle('hidden', !showCatTabs);
+      document.getElementById('detailTitle').textContent = TPL_TYPE_TITLES[tab] || '模板管理';
       document.getElementById('reportSubBar').classList.toggle('hidden', tab !== 'report');
       document.getElementById('recordSubBar').classList.toggle('hidden', tab !== 'record');
-      document.querySelector('.tpl-layout').classList.toggle('hidden', !isTable);
+      document.getElementById('tableLayout').classList.toggle('hidden', !isTable);
       document.getElementById('docView').classList.toggle('hidden', !isDoc);
       document.getElementById('stampView').classList.toggle('hidden', !isStamp);
-
+      document.querySelectorAll('#catTabBar .cat-tab').forEach(function (t) {
+        t.classList.toggle('active', t.getAttribute('data-cat') === state.cat);
+      });
       if (tab === 'report') {
         document.querySelectorAll('#reportSubSwitch .sub-switch-item').forEach(function (t) {
           t.classList.toggle('active', t.getAttribute('data-sub') === state.sub);
         });
       }
-
-      if (isDoc) { renderDocView(); }
-      else if (isStamp) { renderStampView(); }
+      if (isDoc) renderDocView();
+      else if (isStamp) renderStampView();
       else {
         document.getElementById('treePanel').classList.toggle('hidden', tab === 'report' && state.sub === 'public');
         renderTree();
         renderView();
       }
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function enterTplType(type) {
+      state.main = type;
+      state.sub = type === 'record' ? 'record' : 'body';
+      state.cat = state.cat || 'dlwz';
+      state.treeId = defaultTreeIdForCat(state.cat) || 'pvc-c';
+      openReportTreeDefaults();
+      state.openIds[state.treeId] = true;
+      document.getElementById('tplLandingView').classList.add('hidden');
+      document.getElementById('tplDetailView').classList.remove('hidden');
+      renderDetailPanels();
+    }
+
+    function backToLanding() {
+      if (state.main === 'doc' && state.docDirty) {
+        state.unsavedAction = { type: 'landing' };
+        document.getElementById('unsavedModalText').textContent = '当前大类有未保存的修改，是否保存后再返回？';
+        openModal('unsavedModal');
+        return;
+      }
+      document.getElementById('tplDetailView').classList.add('hidden');
+      document.getElementById('tplLandingView').classList.remove('hidden');
+      state.view = 'landing';
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function switchCatTab(cat) {
+      if (!CAT_META[cat] || cat === state.cat) return;
+      if (state.main === 'doc' && state.docDirty) {
+        state.unsavedAction = { type: 'cat', cat: cat };
+        document.getElementById('unsavedModalText').textContent = '当前大类有未保存的修改，是否保存后切换？';
+        openModal('unsavedModal');
+        return;
+      }
+      applyCatSwitch(cat);
+    }
+
+    function applyCatSwitch(cat) {
+      state.cat = cat;
+      state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
+      openReportTreeDefaults();
+      state.openIds[state.treeId] = true;
+      renderDetailPanels();
+    }
+
+    function confirmUnsavedDiscard() {
+      closeModal('unsavedModal');
+      var action = state.unsavedAction;
+      state.unsavedAction = null;
+      if (state.main === 'doc') restoreDocCatSnapshot(state.cat);
+      if (!action) return;
+      if (action.type === 'landing') {
+        document.getElementById('tplDetailView').classList.add('hidden');
+        document.getElementById('tplLandingView').classList.remove('hidden');
+      } else if (action.type === 'cat') applyCatSwitch(action.cat);
+    }
+
+    function confirmUnsavedSave() {
+      var action = state.unsavedAction;
+      if (!saveDocConfig(true)) return;
+      closeModal('unsavedModal');
+      state.unsavedAction = null;
+      if (!action) return;
+      if (action.type === 'landing') {
+        document.getElementById('tplDetailView').classList.add('hidden');
+        document.getElementById('tplLandingView').classList.remove('hidden');
+      } else if (action.type === 'cat') applyCatSwitch(action.cat);
     }
 
     function switchSub(sub) {
@@ -1304,10 +1445,6 @@
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
-    document.getElementById('mainTabBar').addEventListener('click', function (e) {
-      var t = e.target.closest('.main-tab');
-      if (t) switchMain(t.getAttribute('data-tab'));
-    });
     document.getElementById('reportSubSwitch').addEventListener('click', function (e) {
       var t = e.target.closest('.sub-switch-item');
       if (t) switchSub(t.getAttribute('data-sub'));
@@ -1520,6 +1657,8 @@
         applyBodyVersionUpload(fileName);
       } else if (state.filePickerTarget === 'recordVersion') {
         applyRecordVersionUpload(fileName);
+      } else if (state.filePickerTarget === 'docVersion') {
+        applyDocVersionUpload(fileName);
       }
       state.filePickerTarget = null;
     }
@@ -2156,9 +2295,12 @@
       if (type === 'record' && rowId) {
         var row = findRecord(rowId);
         if (row && row.file) fileName = row.file;
-      } else if (type === 'doc' && rowId) {
-        var drow = findDoc(rowId);
-        if (drow) { state.poDocType = drow.type; fileName = drow.file || (drow.type + '.docx'); }
+      } else if (type === 'doc') {
+        var dcard = state.poDocType ? getDocCard(state.poDocCat || state.cat, state.poDocType) : null;
+        if (dcard) {
+          var enabled = (dcard.templates || []).find(function (t) { return t.enabled; });
+          fileName = enabled ? enabled.name : (state.poDocType + '.docx');
+        }
       } else if (type === 'body' && rowId) {
         var brow = findBody(rowId);
         if (brow && brow.file) fileName = brow.file;
@@ -2193,135 +2335,214 @@
 
     /* ============ 单据模板 ============ */
     var DOC_TYPES = ['检测委托书', '收费通知单', '检测任务单', '检测任务及流转单', '还样退库确认表', '退样申请表', '产品检测预通知书'];
+    var DOC_CAT_KEYS = ['dlwz', 'aqgqj', 'hjjc', 'gcjc'];
 
-    var DOC_DATA = [
-      { id: 1, type: '检测委托书', category: 'WZ电网物资', file: '电网物资_检测委托书V2.docx', templates: [
-        { name: '电网物资_检测委托书V1.docx', time: '2025-09-10 10:00', enabled: false },
-        { name: '电网物资_检测委托书V2.docx', time: '2026-01-12 14:20', enabled: true }
-      ]},
-      { id: 2, type: '检测委托书', category: 'GQJ安全工器具', file: '安全工器具_检测委托书V1.docx', templates: [
-        { name: '安全工器具_检测委托书V1.docx', time: '2025-10-08 09:30', enabled: true }
-      ]},
-      { id: 3, type: '收费通知单', category: '通用（全部大类）', file: '收费通知单.docx', templates: [
-        { name: '收费通知单.docx', time: '2025-08-01 11:00', enabled: true }
-      ]},
-      { id: 4, type: '检测任务单', category: '通用（全部大类）', file: '检测任务单_SLZJ15-01.docx', templates: [
-        { name: '检测任务单_SLZJ15-01.docx', time: '2025-08-20 16:40', enabled: true }
-      ]},
-      { id: 5, type: '检测任务及流转单', category: '通用（全部大类）', file: '检测任务及流转单_QD088.docx', templates: [
-        { name: '检测任务及流转单_QD088.docx', time: '2026-02-24 08:50', enabled: true }
-      ]},
-      { id: 6, type: '还样退库确认表', category: '通用（全部大类）', file: '还样退库确认表.docx', templates: [
-        { name: '还样退库确认表.docx', time: '2025-11-05 13:15', enabled: true }
-      ]},
-      { id: 7, type: '退样申请表', category: '通用（全部大类）', file: null, templates: [] },
-      { id: 8, type: '产品检测预通知书', category: 'WZ电网物资', file: '产品检测预通知书.docx', templates: [
-        { name: '产品检测预通知书.docx', time: '2025-12-18 10:05', enabled: true }
-      ]}
-    ];
+    function buildEmptyDocCat() {
+      var cat = {};
+      DOC_TYPES.forEach(function (t) { cat[t] = { cardEnabled: true, templates: [] }; });
+      return cat;
+    }
 
-    function findDoc(id) { return DOC_DATA.find(function (d) { return d.id === id; }); }
+    function cloneDocTemplates(templates) {
+      return (templates || []).map(function (t) { return { name: t.name, time: t.time, enabled: t.enabled }; });
+    }
+
+    function buildDocSeed() {
+      var common = [
+        { type: '收费通知单', templates: [{ name: '收费通知单.docx', time: '2025-08-01 11:00', enabled: true }] },
+        { type: '检测任务单', templates: [{ name: '检测任务单_SLZJ15-01.docx', time: '2025-08-20 16:40', enabled: true }] },
+        { type: '检测任务及流转单', templates: [{ name: '检测任务及流转单_QD088.docx', time: '2026-02-24 08:50', enabled: true }] },
+        { type: '还样退库确认表', templates: [{ name: '还样退库确认表.docx', time: '2025-11-05 13:15', enabled: true }] },
+        { type: '退样申请表', templates: [] },
+        { type: '产品检测预通知书', templates: [{ name: '产品检测预通知书.docx', time: '2025-12-18 10:05', enabled: true }] }
+      ];
+      function applyCommon(cat) {
+        common.forEach(function (item) {
+          cat[item.type].templates = cloneDocTemplates(item.templates);
+        });
+      }
+      var dlwz = buildEmptyDocCat();
+      dlwz['检测委托书'].templates = [
+        { name: 'DLWZ_检测委托书V1.docx', time: '2025-09-10 10:00', enabled: false },
+        { name: 'DLWZ_检测委托书V2.docx', time: '2026-01-12 14:20', enabled: true }
+      ];
+      applyCommon(dlwz);
+      var aqgqj = buildEmptyDocCat();
+      aqgqj['检测委托书'].templates = [
+        { name: 'AQGQJ_检测委托书V1.docx', time: '2025-10-08 09:30', enabled: true }
+      ];
+      applyCommon(aqgqj);
+      var hjjc = buildEmptyDocCat();
+      applyCommon(hjjc);
+      var gcjc = buildEmptyDocCat();
+      applyCommon(gcjc);
+      return { dlwz: dlwz, aqgqj: aqgqj, hjjc: hjjc, gcjc: gcjc };
+    }
+
+    var DOC_CONFIG = buildDocSeed();
+
+    function snapshotDocCat(cat) {
+      var src = DOC_CONFIG[cat];
+      var snap = {};
+      DOC_TYPES.forEach(function (t) {
+        snap[t] = { cardEnabled: src[t].cardEnabled, templates: cloneDocTemplates(src[t].templates) };
+      });
+      return snap;
+    }
+
+    function restoreDocCatSnapshot(cat) {
+      var snap = state.docSavedSnapshots[cat];
+      if (!snap) return;
+      DOC_TYPES.forEach(function (t) {
+        DOC_CONFIG[cat][t].cardEnabled = snap[t].cardEnabled;
+        DOC_CONFIG[cat][t].templates = cloneDocTemplates(snap[t].templates);
+      });
+      state.docDirty = false;
+      state.docErrorTypes = [];
+      updateDocDirtyHint();
+      renderDocCards();
+    }
+
+    function getDocCard(cat, type) {
+      return DOC_CONFIG[cat] && DOC_CONFIG[cat][type];
+    }
+
+    function markDocDirty() {
+      state.docDirty = true;
+      state.docErrorTypes = [];
+      updateDocDirtyHint();
+    }
+
+    function updateDocDirtyHint() {
+      var el = document.getElementById('docDirtyHint');
+      if (!el) return;
+      el.textContent = state.docDirty ? '有未保存的修改' : '';
+      el.className = state.docDirty ? 'text-xs text-amber-600' : 'text-xs text-slate-400';
+    }
 
     function renderDocView() {
-      document.getElementById('docToolbar').innerHTML =
-        '<label>单据类型</label><select id="df_type"><option value="">全部</option>' + DOC_TYPES.map(function (t) { return '<option>' + t + '</option>'; }).join('') + '</select>' +
-        '<label>适用大类</label><select id="df_category"><option value="">全部</option><option>WZ电网物资</option><option>GQJ安全工器具</option><option>材料类</option><option>通用（全部大类）</option></select>' +
-        '<label>文件名</label><input id="df_file" placeholder="请输入" />' +
-        '<button onclick="renderDocTable()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
-        '<button onclick="resetDocFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600">重置</button>' +
-        '<button onclick="openDocAdd()" class="ml-auto rounded bg-blue-600 px-4 py-1.5 text-sm text-white" data-annotate="doc-add"><i class="fa fa-plus"></i> 新增</button>';
-      renderDocTable();
+      if (!state.docSavedSnapshots[state.cat]) state.docSavedSnapshots[state.cat] = snapshotDocCat(state.cat);
+      state.docDirty = false;
+      state.docErrorTypes = [];
+      updateDocDirtyHint();
+      renderDocCards();
     }
 
-    function resetDocFilter() {
-      ['df_type', 'df_category', 'df_file'].forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
-      renderDocTable();
-    }
-
-    function renderDocTable() {
-      var type = (document.getElementById('df_type') || {}).value || '';
-      var cat = (document.getElementById('df_category') || {}).value || '';
-      var file = ((document.getElementById('df_file') || {}).value || '').trim();
-      var rows = DOC_DATA.filter(function (r) {
-        if (type && r.type !== type) return false;
-        if (cat && r.category !== cat) return false;
-        if (file && !(r.file || '').includes(file)) return false;
-        return true;
-      });
-      document.getElementById('docTableHead').innerHTML = '<tr><th style="width:56px">序号</th><th>单据类型</th><th>适用大类</th><th>启用模板文件</th><th style="width:80px">版本数</th><th style="width:150px">更新时间</th><th style="min-width:240px">操作</th></tr>';
-      document.getElementById('docTableBody').innerHTML = rows.map(function (r, i) {
-        var enabledTpl = (r.templates || []).find(function (t) { return t.enabled; });
-        var fileCell = r.file ? '<span class="link">' + r.file + '</span><span class="badge-doc">启用中</span>' : '<span class="badge-none">未配置</span>';
-        var ops;
-        if (r.file) {
-          ops = '<button onclick="openPageOffice(\'doc\',' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="doc-config">配置</button> ' +
-            '<button onclick="openDocVersion(' + r.id + ')" class="ml-1 text-blue-600 hover:underline">版本</button> ' +
-            '<button onclick="alert(\'预览（原型演示）\')" class="ml-1 text-blue-600 hover:underline">预览</button> ' +
-            '<button onclick="clearDoc(' + r.id + ')" class="ml-1 text-red-500 hover:underline">清除</button>';
-        } else {
-          ops = '<button onclick="alert(\'上传模板（原型演示）\')" class="text-blue-600 hover:underline">上传</button> ' +
-            '<button onclick="openDocVersion(' + r.id + ')" class="ml-1 text-blue-600 hover:underline">版本</button>';
-        }
-        return '<tr><td>' + (i + 1) + '</td><td>' + r.type + '</td><td>' + r.category + '</td><td>' + fileCell + '</td>' +
-          '<td class="text-center">' + (r.templates || []).length + '</td><td>' + (enabledTpl ? enabledTpl.time : '—') + '</td>' +
-          '<td class="whitespace-nowrap">' + ops + '</td></tr>';
-      }).join('') || '<tr><td colspan="7" class="py-8 text-center text-slate-400">暂无单据模板</td></tr>';
-      document.getElementById('pageTotal') && (document.getElementById('pageTotal').textContent = '共 ' + rows.length + ' 条');
+    function renderDocCards() {
+      var cat = state.cat;
+      var html = DOC_TYPES.map(function (type, idx) {
+        var card = getDocCard(cat, type);
+        var offClass = card.cardEnabled ? '' : ' card-off';
+        var errClass = state.docErrorTypes.indexOf(type) >= 0 ? ' card-error' : '';
+        var listHtml = (card.templates || []).map(function (t, i) {
+          return '<div class="doc-tpl-row' + (t.enabled ? ' enabled' : '') + '">' +
+            '<input class="radio" type="radio" name="docEn_' + escHtml(type) + '" ' + (t.enabled ? 'checked' : '') + ' onchange="setDocTplEnabled(\'' + escHtml(type) + '\',' + i + ')" />' +
+            '<span class="fname" onclick="alert(\'预览（原型演示）\')" title="' + escHtml(t.name) + '">' + escHtml(t.name) + '</span>' +
+            '<span class="time">' + escHtml(t.time) + '</span>' +
+            '<span class="ops">' +
+            '<button type="button" onclick="openDocPageOffice(\'' + escHtml(type) + '\')" data-annotate="' + (idx === 0 ? 'doc-config' : '') + '">配置</button>' +
+            '<button type="button" onclick="alert(\'预览（原型演示）\')">预览</button>' +
+            '<button type="button" class="del" onclick="removeDocTpl(\'' + escHtml(type) + '\',' + i + ')">删除</button>' +
+            '</span></div>';
+        }).join('');
+        if (!listHtml) listHtml = '<div class="doc-empty">暂无模版，请上传</div>';
+        return '<div class="doc-card' + offClass + errClass + '" id="docCard_' + escHtml(type) + '" data-type="' + escHtml(type) + '">' +
+          '<div class="doc-card-head"><span class="name">' + escHtml(type) + '</span>' +
+          '<label class="doc-switch" title="控制是否支持系统生成该单据">' +
+          '<input type="checkbox" ' + (card.cardEnabled ? 'checked' : '') + ' onchange="toggleDocCard(\'' + escHtml(type) + '\', this.checked)" />' +
+          '<span class="slider"></span></label></div>' +
+          '<div class="doc-card-body">' + listHtml + '</div>' +
+          '<div class="doc-card-foot"><button type="button" onclick="openDocUpload(\'' + escHtml(type) + '\')" class="rounded border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:border-blue-400 hover:text-blue-600"><i class="fa fa-upload"></i> 上传模版</button></div>' +
+          '</div>';
+      }).join('');
+      document.getElementById('docCardGrid').innerHTML = html;
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
-    function clearDoc(id) {
-      if (!confirm('清除将移除该单据的模板文件关联。确定清除？')) return;
-      var r = findDoc(id);
-      if (r) { r.file = null; r.templates = []; }
-      renderDocTable();
+    function toggleDocCard(type, enabled) {
+      getDocCard(state.cat, type).cardEnabled = enabled;
+      markDocDirty();
+      renderDocCards();
     }
 
-    var docVersionId = null;
-    function openDocVersion(id) {
-      docVersionId = id;
-      var r = findDoc(id);
-      document.getElementById('docVersionTitle').textContent = r.type + '（' + r.category + '）· 模板版本';
-      renderDocVersionTable();
-      openModal('docVersionModal');
+    function setDocTplEnabled(type, index) {
+      var card = getDocCard(state.cat, type);
+      card.templates.forEach(function (t, i) { t.enabled = i === index; });
+      markDocDirty();
+      renderDocCards();
     }
-    function renderDocVersionTable() {
-      var r = findDoc(docVersionId);
-      document.getElementById('docVersionBody').innerHTML = (r.templates || []).map(function (t, i) {
-        return '<tr><td class="text-center"><input type="radio" name="docEnabledTpl" ' + (t.enabled ? 'checked' : '') + ' onchange="setDocEnabled(' + i + ')" /></td>' +
-          '<td><span class="link">' + t.name + '</span></td><td>' + t.time + '</td>' +
-          '<td><button onclick="alert(\'预览\')" class="text-blue-600 hover:underline">预览</button> ' +
-          '<button onclick="removeDocTpl(' + i + ')" class="ml-1 text-red-500 hover:underline">删除</button></td></tr>';
-      }).join('') || '<tr><td colspan="4" class="py-6 text-center text-slate-400">暂无版本，请上传</td></tr>';
-    }
-    function setDocEnabled(index) {
-      var r = findDoc(docVersionId);
-      r.templates.forEach(function (t, i) { t.enabled = i === index; });
-      r.file = r.templates[index] ? r.templates[index].name : null;
-    }
-    function removeDocTpl(index) {
-      var r = findDoc(docVersionId);
+
+    function removeDocTpl(type, index) {
       if (!confirm('确定删除该版本？')) return;
-      r.templates.splice(index, 1);
-      if (!r.templates.length) r.file = null;
-      else if (!r.templates.some(function (t) { return t.enabled; })) { r.templates[0].enabled = true; r.file = r.templates[0].name; }
-      renderDocVersionTable();
+      var card = getDocCard(state.cat, type);
+      card.templates.splice(index, 1);
+      if (card.templates.length && !card.templates.some(function (t) { return t.enabled; })) {
+        card.templates[0].enabled = true;
+      }
+      markDocDirty();
+      renderDocCards();
     }
-    function saveDocVersion() { closeModal('docVersionModal'); renderDocTable(); alert('版本配置已保存（原型演示）'); }
 
-    function openDocAdd() {
-      document.getElementById('da_type').innerHTML = DOC_TYPES.map(function (t) { return '<option>' + t + '</option>'; }).join('');
-      openModal('docAddModal');
+    function openDocUpload(type) {
+      state.docUploadType = type;
+      state.filePickerTarget = 'docVersion';
+      var prefix = state.cat.toUpperCase();
+      var candidates = DOC_TYPES.map(function (t) { return prefix + '_' + t + '.docx'; });
+      document.getElementById('mockFilePickerList').innerHTML = candidates.map(function (name) {
+        return '<button type="button" data-file="' + escHtml(name) + '" onclick="pickMockFileByEl(this)" class="w-full rounded border border-slate-200 px-3 py-2 text-left text-sm hover:bg-slate-50"><i class="fa fa-file-word-o mr-2 text-blue-500"></i>' + name + '</button>';
+      }).join('');
+      openModal('mockFilePickerModal');
     }
-    function saveDocAdd() {
-      var type = document.getElementById('da_type').value;
-      var cat = document.getElementById('da_category').value;
-      var newId = Math.max.apply(null, DOC_DATA.map(function (d) { return d.id; })) + 1;
-      var fname = cat.replace(/（.*）/, '') + '_' + type + '.docx';
-      DOC_DATA.push({ id: newId, type: type, category: cat, file: fname, templates: [{ name: fname, time: '2026-07-14 10:00', enabled: true }] });
-      closeModal('docAddModal');
-      renderDocTable();
-      alert('单据模板已新增（原型演示）');
+
+    function applyDocVersionUpload(fileName) {
+      var type = state.docUploadType;
+      if (!type) return;
+      var card = getDocCard(state.cat, type);
+      card.templates.forEach(function (t) { t.enabled = false; });
+      card.templates.push({ name: fileName, time: formatNowTs(), enabled: true });
+      state.docUploadType = null;
+      markDocDirty();
+      renderDocCards();
+    }
+
+    function openDocPageOffice(type) {
+      state.poDocCat = state.cat;
+      state.poDocType = type;
+      openPageOffice('doc');
+    }
+
+    function showDocToast(msg, kind) {
+      var old = document.querySelector('.doc-toast');
+      if (old) old.remove();
+      var el = document.createElement('div');
+      el.className = 'doc-toast ' + (kind || 'error');
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(function () { el.remove(); }, 4000);
+    }
+
+    function saveDocConfig(silent) {
+      var cat = state.cat;
+      var missing = [];
+      DOC_TYPES.forEach(function (type) {
+        var card = getDocCard(cat, type);
+        if (card.cardEnabled && (!card.templates || !card.templates.length)) missing.push(type);
+      });
+      state.docErrorTypes = missing.slice();
+      renderDocCards();
+      if (missing.length) {
+        var msg = '以下开启的单据未配置模版：' + missing.join('、');
+        showDocToast(msg, 'error');
+        var first = document.getElementById('docCard_' + missing[0]);
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      }
+      state.docSavedSnapshots[cat] = snapshotDocCat(cat);
+      state.docDirty = false;
+      state.docErrorTypes = [];
+      updateDocDirtyHint();
+      if (!silent) showDocToast('保存成功（原型演示）', 'success');
+      return true;
     }
 
     // 单据模板 PageOffice 左侧文档 Mock
@@ -2431,49 +2652,21 @@
       return 'pvc-c';
     }
 
-    function enterTplCategory(cat) {
-      if (!CAT_META[cat]) return;
-      // 与样品数据一致：整页跳转进入详情，避免 in-page 显隐被 CSS 覆盖导致「点了没反应」
-      window.location.href = 'template-config.html?cat=' + encodeURIComponent(cat);
-    }
-
     function openReportTreeDefaults() {
       REPORT_TREE_DEFAULT_OPEN.forEach(function (id) { state.openIds[id] = true; });
     }
 
-    function showTplDetail() {
-      var hub = document.getElementById('catHubView');
-      var detail = document.getElementById('tplDetailView');
-      hub.classList.add('hidden');
-      detail.classList.remove('hidden');
-      document.querySelectorAll('#mainTabBar .main-tab').forEach(function (t) {
-        t.classList.toggle('active', t.getAttribute('data-tab') === 'report');
-      });
-      document.querySelectorAll('#reportSubSwitch .sub-switch-item').forEach(function (t) {
-        t.classList.toggle('active', t.getAttribute('data-sub') === 'body');
-      });
-      document.getElementById('reportSubBar').classList.remove('hidden');
-      document.getElementById('recordSubBar').classList.add('hidden');
-      document.querySelector('.tpl-layout').classList.remove('hidden');
-      document.getElementById('docView').classList.add('hidden');
-      document.getElementById('stampView').classList.add('hidden');
-      document.getElementById('treePanel').classList.remove('hidden');
-      renderTree();
-      renderView();
-      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
-    }
-
     (function bootTplPage() {
       var params = new URLSearchParams(window.location.search);
-      var cat = params.get('cat');
-      // 无分类参数时，默认直接进入「电力物资类」
-      if (!cat || !CAT_META[cat]) { cat = 'dlwz'; }
-      state.cat = cat;
-      state.main = 'report';
-      state.sub = 'body';
-      state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
-      openReportTreeDefaults();
-      showTplDetail();
+      var type = params.get('type');
+      if (type && TPL_TYPE_TITLES[type]) {
+        var cat = params.get('cat');
+        if (cat && CAT_META[cat]) state.cat = cat;
+        enterTplType(type);
+      } else {
+        document.getElementById('tplLandingView').classList.remove('hidden');
+        document.getElementById('tplDetailView').classList.add('hidden');
+      }
     })();
 
     PrototypeAnnotation.init({
@@ -2493,12 +2686,10 @@
         { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '未上传模板的试验项可从其他样品/试验项复制已有模板；版本弹窗内亦提供「复制其他项」，交互与正文模板版本弹窗一致。', tag: '记录单' },
         { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出拼接逻辑', wide: true, content: '已移除「关联单试验项」二级切换，页面固定为单试验项绑定模式。用户导出时，系统自动按检测员实际做的试验项，拉取各试验项启用模板并拼接为一个文件。', tag: '产品逻辑' },
         { id: 'record-no-download', selector: '#toolbar', position: 'top-left', title: '移除下载按钮', wide: true, content: '模版管理各 Tab 工具栏已移除「下载」按钮；点击列表中蓝色的模板文件链接即可触发下载。', tag: '模板管理' },
-        { id: 'doc-tab', selector: '[data-annotate="doc-tab"]', position: 'top-left', title: '新增：单据模板', wide: true, content: '统一维护 7 类流程单据模板：检测委托书、收费通知单、检测任务单、检测任务及流转单、还样退库确认表、退样申请表、产品检测预通知书。', tag: '模板管理' },
-        { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模板逻辑', wide: true, content: '<strong>按大类分套：</strong>同一单据（如检测委托书）可为不同大类（电网物资 / 安全工器具 / 材料类 / 通用）配置各自模板。<br><br><strong>一类多版本：</strong>每套可上传多个版本，<strong>同时仅启用一个</strong>，导出时使用启用版。', tag: '模板管理' },
-        { id: 'doc-add', selector: '[data-annotate="doc-add"]', position: 'top-left', title: '新增单据模板', content: '选择单据类型 + 适用大类，上传模板文件。', tag: '模板管理' },
-        { id: 'doc-config', selector: '[data-annotate="doc-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 打开该单据的 Word 模板，右侧字段面板可插入占位符。不同单据类型左侧模板内容不同。', tag: '模板管理' },
-        { id: 'stamp-tab', selector: '[data-annotate="stamp-tab"]', position: 'top-left', title: '页眉页脚', wide: true, content: 'Tab 名称由「页眉页脚与印章」改为「页眉页脚」，仅维护全局默认及按单据类型覆盖的页眉、页脚图片。印章（骑缝章 / CNAS / CMA / 检测专用章）已迁移至「业务流程配置 › 承检方信息 › 签名与印章」。', tag: '模板管理' },
-        { id: 'stamp-global', selector: '[data-annotate="stamp-global"]', position: 'top-right', title: '全局默认页眉页脚', wide: true, content: '上传全局默认的页眉、页脚图片，应用于所有导出文件；未单独覆盖的单据默认沿用此设置（两级模型的「默认层」）。', tag: '模板管理' },
+        { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 7 类流程单据模版。进入后通过顶部横向 Tab 切换四大类，每类固定 7 张卡片，卡片内直接管理多版本模版。', tag: '模板管理' },
+        { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模版逻辑', wide: true, content: '<strong>按大类分套：</strong>DLWZ / AQGQJ / HJJC / GCJC 四大类各自独立配置。<br><br><strong>卡片开关：</strong>控制是否支持系统生成该单据；关闭时整卡置灰但保留启用记忆。<br><br><strong>保存校验：</strong>开启的卡片必须至少有一个模版文件。', tag: '模板管理' },
+        { id: 'doc-config', selector: '[data-annotate="doc-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 打开该单据的 Word 模版，右侧字段面板可插入占位符。', tag: '模板管理' },
+        { id: 'stamp-global', selector: '[data-annotate="stamp-global"]', position: 'top-right', title: '全局默认页眉页脚', wide: true, content: '上传全局默认的页眉、页脚图片，应用于所有导出文件；未单独覆盖的单据默认沿用此设置（两级模型的「默认层」）。页眉页脚不按业务大类区分。', tag: '模板管理' },
         { id: 'stamp-override', selector: '[data-annotate="stamp-override"]', position: 'top-right', title: '按单据类型覆盖', wide: true, content: '某类单据若与全局默认不同，可单独上传页眉/页脚覆盖；留空即继承全局默认（两级模型的「覆盖层」）。', tag: '模板管理' },
         { id: 'public-filter', selector: '[data-annotate="public-filter"]', position: 'top-left', title: '公共头尾筛选', wide: true, content: '筛选字段与弹窗/表头对齐：<strong>模版内容样式</strong>（模板头/尾）、<strong>关联绑定</strong>（全部/样品分类/样品名称型号）、<strong>模版文件名</strong>。', tag: '报告模板' },
         { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共头尾列表', wide: true, content: '表头三列：<strong>模版内容样式</strong>、<strong>关联绑定</strong>（类型 + 绑定对象）、<strong>模版文件</strong>（完整文件名）。列表已按当前大类过滤。', tag: '报告模板' },
