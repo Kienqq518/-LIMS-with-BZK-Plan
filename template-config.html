@@ -11,7 +11,36 @@
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
     .main-tab, .sub-tab { border-bottom: 2px solid transparent; color: #64748b; padding: 10px 18px; cursor: pointer; white-space: nowrap; font-size: 14px; }
     .main-tab.active, .sub-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
-    .tpl-layout { display: flex; gap: 0; min-height: calc(100vh - 130px); }
+    .sub-switch-bar { display: flex; align-items: center; justify-content: flex-end; border-bottom: 1px solid #e2e8f0; background: #fff; padding: 8px 16px; min-height: 42px; }
+    .sub-switch { display: inline-flex; border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden; }
+    .sub-switch-item { padding: 4px 14px; font-size: 12px; color: #64748b; cursor: pointer; background: #fff; border-right: 1px solid #e2e8f0; line-height: 1.4; user-select: none; }
+    .sub-switch-item:last-child { border-right: none; }
+    .sub-switch-item:hover { color: #2563eb; }
+    .sub-switch-item.active { background: #eff6ff; color: #2563eb; font-weight: 500; }
+    .cat-hub { display: flex; min-height: calc(100vh - 80px); flex-direction: column; align-items: center; justify-content: flex-start; padding: 40px 24px; }
+    .cat-card {
+      position: relative; height: 140px; border-radius: 8px; overflow: hidden; cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 45%, #93c5fd 100%);
+    }
+    .cat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,.18); }
+    .cat-card .title { position: relative; z-index: 2; padding: 20px 24px; font-size: 18px; font-weight: 600; color: #1e3a8a; }
+    .cat-card .illus {
+      position: absolute; right: 0; bottom: 0; width: 55%; height: 100%;
+      opacity: .35; display: flex; align-items: flex-end; justify-content: flex-end;
+      font-size: 72px; color: #2563eb; padding-right: 16px; padding-bottom: 8px;
+    }
+    .cat-card:nth-child(2) { background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%); }
+    .cat-card:nth-child(3) { background: linear-gradient(135deg, #ecfdf5 0%, #a7f3d0 50%, #6ee7b7 100%); }
+    .cat-card:nth-child(3) .title { color: #065f46; }
+    .cat-card:nth-child(3) .illus { color: #059669; }
+    .cat-card:nth-child(4) { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%); }
+    .cat-card:nth-child(4) .title { color: #92400e; }
+    .cat-card:nth-child(4) .illus { color: #d97706; }
+    .tpl-detail-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+    .tpl-detail-head .back { color: #64748b; cursor: pointer; }
+    .tpl-detail-head .back:hover { color: #2563eb; }
+    .tpl-layout { display: flex; gap: 0; min-height: calc(100vh - 170px); }
     .tpl-tree { width: 220px; flex-shrink: 0; border-right: 1px solid #e2e8f0; background: #fff; }
     .tpl-tree-head { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
     .tpl-tree-head input { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
@@ -123,49 +152,83 @@
     </span>
   </div>
 
-  <!-- 一级 Tab -->
-  <div class="flex border-b border-slate-200 bg-white px-4" id="mainTabBar">
-    <div class="main-tab active" data-tab="report">报告模板</div>
-    <div class="main-tab" data-tab="record">记录单模板</div>
-    <div class="main-tab" data-tab="doc" data-annotate="doc-tab">单据模板</div>
-    <div class="main-tab" data-tab="stamp" data-annotate="stamp-tab">页眉页脚与印章</div>
-  </div>
-
-  <!-- 报告 · 二级 Tab -->
-  <div id="reportSubBar" class="flex border-b border-slate-200 bg-white px-4 text-sm">
-    <div class="sub-tab active" data-sub="body">正文模板</div>
-    <div class="sub-tab" data-sub="public">公共头尾模板</div>
-  </div>
-  <div id="recordSubBar" class="hidden flex border-b border-slate-200 bg-white px-4 text-sm">
-    <div class="sub-tab active" data-sub="record-single">关联单试验项</div>
-  </div>
-
-  <div class="tpl-layout">
-    <!-- 左侧树 -->
-    <aside class="tpl-tree" id="treePanel">
-      <div class="tpl-tree-head">
-        <input type="text" id="treeSearch" placeholder="请输入关键字搜索" oninput="filterTree()" />
+  <!-- 大类选择页 -->
+  <div id="catHubView" class="cat-hub">
+    <h1 class="mb-10 text-2xl font-semibold tracking-wide text-slate-800">模板管理</h1>
+    <div class="grid w-full max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2">
+      <div class="cat-card" onclick="enterTplCategory('dlwz')">
+        <div class="title">电力物资类</div>
+        <div class="illus"><i class="fa fa-bolt"></i></div>
       </div>
-      <div class="tpl-tree-body" id="treeBody"></div>
-    </aside>
-
-    <!-- 右侧主区 -->
-    <div class="tpl-main">
-      <div class="tpl-toolbar" id="toolbar"></div>
-      <div class="overflow-x-auto px-4 pb-4">
-        <table class="tpl-table min-w-[900px]" id="dataTable">
-          <thead id="tableHead"></thead>
-          <tbody id="tableBody"></tbody>
-        </table>
+      <div class="cat-card" onclick="enterTplCategory('aqgqj')">
+        <div class="title">安全工器具类</div>
+        <div class="illus"><i class="fa fa-shield"></i></div>
       </div>
-      <div class="flex items-center justify-end gap-2 px-4 pb-4 text-sm text-slate-500">
-        <span id="pageTotal">共 0 条</span>
-        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
-        <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>10 条/页</option></select>
+      <div class="cat-card" onclick="enterTplCategory('hjjc')">
+        <div class="title">环境检测</div>
+        <div class="illus"><i class="fa fa-leaf"></i></div>
       </div>
-      <div class="info-bar hidden" id="infoBar"></div>
+      <div class="cat-card" onclick="enterTplCategory('gcjc')">
+        <div class="title">工程检测</div>
+        <div class="illus"><i class="fa fa-building"></i></div>
+      </div>
     </div>
+    <p class="mt-8 text-sm text-slate-400">点击大类卡片进入对应模板配置（原型演示）</p>
   </div>
+
+  <!-- 大类内配置 -->
+  <div id="tplDetailView" class="hidden">
+    <div class="tpl-detail-head">
+      <span class="back" onclick="backToCatHub()"><i class="fa fa-angle-left"></i> 返回大类</span>
+      <span class="text-slate-300">|</span>
+      <span id="tplCatTitle" class="font-medium text-slate-700">电力物资类</span>
+    </div>
+
+    <!-- 一级 Tab -->
+    <div class="flex border-b border-slate-200 bg-white px-4" id="mainTabBar">
+      <div class="main-tab active" data-tab="report">报告模板</div>
+      <div class="main-tab" data-tab="record">记录单模板</div>
+      <div class="main-tab" data-tab="doc" data-annotate="doc-tab">单据模板</div>
+      <div class="main-tab" data-tab="stamp" data-annotate="stamp-tab">页眉页脚与印章</div>
+    </div>
+
+    <!-- 报告 · 二级开关（右侧、字号小于一级 Tab） -->
+    <div id="reportSubBar" class="sub-switch-bar">
+      <div class="sub-switch" id="reportSubSwitch">
+        <div class="sub-switch-item active" data-sub="body">正文模板</div>
+        <div class="sub-switch-item" data-sub="public">公共头尾模板</div>
+      </div>
+    </div>
+    <div id="recordSubBar" class="hidden sub-switch-bar justify-start">
+      <div class="sub-tab active" data-sub="record-single" style="border:none;padding:4px 0;font-size:13px;color:#2563eb;font-weight:500">关联单试验项</div>
+    </div>
+
+    <div class="tpl-layout">
+      <!-- 左侧树 -->
+      <aside class="tpl-tree" id="treePanel">
+        <div class="tpl-tree-head">
+          <input type="text" id="treeSearch" placeholder="请输入关键字搜索" oninput="filterTree()" />
+        </div>
+        <div class="tpl-tree-body" id="treeBody"></div>
+      </aside>
+
+      <!-- 右侧主区 -->
+      <div class="tpl-main">
+        <div class="tpl-toolbar" id="toolbar"></div>
+        <div class="overflow-x-auto px-4 pb-4">
+          <table class="tpl-table min-w-[900px]" id="dataTable">
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-4 pb-4 text-sm text-slate-500">
+          <span id="pageTotal">共 0 条</span>
+          <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+          <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>10 条/页</option></select>
+        </div>
+        <div class="info-bar hidden" id="infoBar"></div>
+      </div>
+    </div>
 
   <!-- ============ 单据模板 ============ -->
   <div id="docView" class="hidden">
@@ -215,6 +278,7 @@
       </div>
     </div>
   </div>
+  </div><!-- /tplDetailView -->
 
   <!-- 单据模板 · 版本管理 -->
   <div id="docVersionModal" class="modal-mask">
@@ -342,10 +406,11 @@
       <div class="modal-body">
         <div class="form-row" data-annotate="public-content-style"><label><span class="req">*</span> 模版内容样式</label><div class="ctrl"><select id="p_content"><option>模板头</option><option>模板尾</option></select></div></div>
         <div class="form-row" data-annotate="public-bind-type"><label><span class="req">*</span> 关联绑定</label><div class="ctrl radio-group"><label><input type="radio" name="p_scope" value="category" checked onchange="togglePublicScope()" /> 样品分类</label><label><input type="radio" name="p_scope" value="sample" onchange="togglePublicScope()" /> 样品名称(型号)</label></div></div>
-        <div class="form-row" id="p_bindRow" data-annotate="public-bind-target"><label id="p_bindLabel">样品分类</label><div class="ctrl"><select id="p_bindSelect" style="width:100%"></select><div class="mt-1 text-xs text-slate-400" id="p_bindHint">可选任意层级分类，加载至样品层级的上一级</div></div></div>
-        <div class="form-row" id="publicFileRow"><label><span class="req">*</span> 模板文件</label><div class="ctrl">
+        <div class="form-row" id="p_bindRow" data-annotate="public-bind-target"><label id="p_bindLabel"><span class="req">*</span> 样品分类</label><div class="ctrl"><select id="p_bindSelect" style="width:100%"></select><div class="mt-1 text-xs text-slate-400" id="p_bindHint">可选任意层级分类，加载至样品层级的上一级</div></div></div>
+        <div class="form-row" id="publicFileRow" data-annotate="public-file"><label><span class="req">*</span> 模板文件</label><div class="ctrl">
           <div class="radio-group mb-2"><label><input type="radio" name="pubFileMode" value="upload" checked onchange="togglePublicFileMode()" /> 上传</label><label><input type="radio" name="pubFileMode" value="copy" onchange="togglePublicFileMode()" /> 复制</label></div>
           <div id="publicUploadZone" class="upload-zone" onclick="mockPublicUpload()"><i class="fa fa-cloud-upload block"></i><div>点击上传 .doc/.docx</div></div>
+          <div id="publicFilePreview" class="hidden rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600"><i class="fa fa-file-word-o mr-1 text-blue-500"></i><span id="publicFileName"></span></div>
           <button id="publicCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openCopyPicker('public')"><i class="fa fa-copy"></i> 复制</button>
         </div></div>
         <div class="form-row" id="publicNameRow" data-annotate="public-template-name"><label><span class="req">*</span> 模版名称</label><div class="ctrl"><div class="name-ext"><input type="text" id="p_templateName" placeholder="上传后自动回显文件名（不含后缀）" /><span class="ext-suffix" id="p_fileExt">.doc</span></div><div class="mt-1 text-xs text-slate-400">名称可编辑；后缀固定显示在框外，不可修改</div></div></div>
@@ -409,19 +474,32 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
-    var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center' };
+    var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: null };
 
-    var TREE = [
-      { id: 'gqj', label: 'GQJ安全工器具', children: [
+    var CAT_META = {
+      dlwz: { name: '电力物资类', treeKeys: ['wz'], publicCats: ['wz', 'cable-duct'], publicSamples: ['cable-duct-sample', 'pvc-c', 'mpp', 'hdpe'] },
+      aqgqj: { name: '安全工器具类', treeKeys: ['gqj'], publicCats: ['976', 'gqj', 'glove-cat', 'rod-cat'], publicSamples: ['glove', 'rod'] },
+      hjjc: { name: '环境检测', treeKeys: [], publicCats: [], publicSamples: [] },
+      gcjc: { name: '工程检测', treeKeys: ['gcjc'], publicCats: ['cement'], publicSamples: ['p', 'po', 'ps'] }
+    };
+
+    var TREE_ALL = [
+      { id: 'gqj', label: 'GQJ安全工器具', cat: 'aqgqj', children: [
         { id: 'glove', label: '01绝缘手套', count: 2 },
         { id: 'rod', label: '02绝缘操作杆', count: 1 }
       ]},
-      { id: 'wz', label: 'WZ电网物资', children: [
+      { id: 'wz', label: 'WZ电网物资', cat: 'dlwz', children: [
         { id: 'cable-duct', label: '02电力电缆导管', count: 4 },
         { id: 'pvc-c', label: 'PVC-C', count: 3 },
         { id: 'mpp', label: 'MPP', count: 2 }
+      ]},
+      { id: 'gcjc', label: '工程检测', cat: 'gcjc', children: [
+        { id: 'cement-p', label: '硅酸盐水泥', count: 0 },
+        { id: 'cement-po', label: '普通硅酸盐水泥', count: 0 }
       ]}
     ];
+
+    var TREE = TREE_ALL.slice();
 
     function getRecordTreeCount(modelId) {
       var items = RECORD_DATA.filter(function (r) { return r.tree === modelId; });
@@ -436,16 +514,21 @@
     }
 
     function buildRecordTree() {
-      return [
-        { id: 'wz', label: 'WZ电网物资', children: [
+      var all = [
+        { id: 'wz', label: 'WZ电网物资', cat: 'dlwz', children: [
           { id: 'cable-duct', label: '02电力电缆导管', children: [
             { id: 'pvc-c', label: 'PVC-C', model: true, count: getRecordTreeCount('pvc-c'), annotate: 'record-tree-tests', children: testsForModel('pvc-c') }
           ]}
         ]},
-        { id: 'gqj', label: 'GQJ安全工器具', children: [
+        { id: 'gqj', label: 'GQJ安全工器具', cat: 'aqgqj', children: [
           { id: 'glove', label: '01绝缘手套', model: true, count: getRecordTreeCount('glove'), children: testsForModel('glove') }
+        ]},
+        { id: 'gcjc', label: '工程检测', cat: 'gcjc', children: [
+          { id: 'cement-p', label: '硅酸盐水泥', model: true, count: getRecordTreeCount('cement-p'), children: testsForModel('cement-p') }
         ]}
       ];
+      if (!state.cat) return all;
+      return all.filter(function (g) { return g.cat === state.cat; });
     }
 
     var BODY_DATA = [
@@ -478,30 +561,38 @@
     ];
 
     var PUBLIC_CATEGORY_BIND_OPTIONS = [
-      { value: '976', label: '976', depth: 0 },
-      { value: 'gqj', label: 'GQJ安全工器具', depth: 0 },
-      { value: 'glove-cat', label: '01绝缘手套', depth: 1 },
-      { value: 'rod-cat', label: '02绝缘操作杆', depth: 1 },
-      { value: 'wz', label: 'WZ电网物资', depth: 0 },
-      { value: 'cable-duct', label: '02电力电缆导管', depth: 1 }
+      { value: '976', label: 'DLT 976-2017', depth: 0, cat: 'aqgqj' },
+      { value: 'gqj', label: 'GQJ安全工器具', depth: 0, cat: 'aqgqj' },
+      { value: 'glove-cat', label: '01绝缘手套', depth: 1, cat: 'aqgqj' },
+      { value: 'rod-cat', label: '02绝缘操作杆', depth: 1, cat: 'aqgqj' },
+      { value: 'wz', label: 'WZ电网物资', depth: 0, cat: 'dlwz' },
+      { value: 'cable-duct', label: '02电力电缆导管', depth: 1, cat: 'dlwz' },
+      { value: 'dldl', label: 'DLDL电力电缆类', depth: 0, cat: 'dlwz' },
+      { value: 'bhg', label: 'BHG电缆保护管', depth: 0, cat: 'dlwz' },
+      { value: 'cement', label: '通用硅酸盐水泥', depth: 0, cat: 'gcjc' },
+      { value: 'gb175', label: 'GB 175-2023', depth: 1, cat: 'gcjc' }
     ];
 
     var PUBLIC_SAMPLE_BIND_OPTIONS = [
-      { value: 'cable-duct-sample', label: '实壁类塑料电缆导管_直管', depth: 0 },
-      { value: 'pvc-c', label: 'PVC-C', depth: 1 },
-      { value: 'mpp', label: 'MPP', depth: 1 },
-      { value: 'hdpe', label: 'HDPE', depth: 1 },
-      { value: 'glove', label: '01绝缘手套', depth: 0 },
-      { value: 'rod', label: '02绝缘操作杆', depth: 0 }
+      { value: 'cable-duct-sample', label: '实壁类塑料电缆导管_直管', depth: 0, cat: 'dlwz' },
+      { value: 'pvc-c', label: 'PVC-C', depth: 1, cat: 'dlwz' },
+      { value: 'mpp', label: 'MPP', depth: 1, cat: 'dlwz' },
+      { value: 'hdpe', label: 'HDPE', depth: 1, cat: 'dlwz' },
+      { value: 'glove', label: '01绝缘手套', depth: 0, cat: 'aqgqj' },
+      { value: 'rod', label: '02绝缘操作杆', depth: 0, cat: 'aqgqj' },
+      { value: 'belt', label: '安全带', depth: 0, cat: 'aqgqj' },
+      { value: 'p', label: '硅酸盐水泥', depth: 0, cat: 'gcjc' },
+      { value: 'po', label: '普通硅酸盐水泥', depth: 0, cat: 'gcjc' },
+      { value: 'ps', label: '矿渣硅酸盐水泥', depth: 0, cat: 'gcjc' }
     ];
 
     var PUBLIC_DATA = [
-      { id: 1, contentStyle: '模板头', bindType: 'category', bindValue: 'gqj', bindLabel: 'GQJ安全工器具', templateName: '安全工器具通用模板头', file: '安全工器具通用模板头.doc', ext: '.doc' },
-      { id: 2, contentStyle: '模板头', bindType: 'category', bindValue: 'wz', bindLabel: 'WZ电网物资', templateName: '电网物资通用模板头', file: '电网物资通用模板头.doc', ext: '.doc' },
-      { id: 3, contentStyle: '模板尾', bindType: 'category', bindValue: 'wz', bindLabel: 'WZ电网物资', templateName: '电网物资通用模板尾', file: '电网物资通用模板尾.doc', ext: '.doc' },
-      { id: 4, contentStyle: '模板头', bindType: 'sample', bindValue: 'pvc-c', bindLabel: 'PVC-C', templateName: 'PVC-C专用模板头', file: 'PVC-C专用模板头.doc', ext: '.doc' },
-      { id: 5, contentStyle: '模板尾', bindType: 'category', bindValue: 'cable-duct', bindLabel: '02电力电缆导管', templateName: '电缆导管通用模板尾', file: '电缆导管通用模板尾.doc', ext: '.doc' },
-      { id: 6, contentStyle: '模板头', bindType: 'sample', bindValue: 'glove', bindLabel: '01绝缘手套', templateName: '绝缘手套专用模板头', file: '绝缘手套专用模板头.docx', ext: '.docx' }
+      { id: 1, contentStyle: '模板头', bindType: 'category', bindValue: 'gqj', bindLabel: 'GQJ安全工器具', templateName: '安全工器具通用模板头', file: '安全工器具通用模板头.doc', ext: '.doc', cat: 'aqgqj' },
+      { id: 2, contentStyle: '模板头', bindType: 'category', bindValue: 'wz', bindLabel: 'WZ电网物资', templateName: '电网物资通用模板头', file: '电网物资通用模板头.doc', ext: '.doc', cat: 'dlwz' },
+      { id: 3, contentStyle: '模板尾', bindType: 'category', bindValue: 'wz', bindLabel: 'WZ电网物资', templateName: '电网物资通用模板尾', file: '电网物资通用模板尾.doc', ext: '.doc', cat: 'dlwz' },
+      { id: 4, contentStyle: '模板头', bindType: 'sample', bindValue: 'pvc-c', bindLabel: 'PVC-C', templateName: 'PVC-C专用模板头', file: 'PVC-C专用模板头.doc', ext: '.doc', cat: 'dlwz' },
+      { id: 5, contentStyle: '模板尾', bindType: 'category', bindValue: 'cable-duct', bindLabel: '02电力电缆导管', templateName: '电缆导管通用模板尾', file: '电缆导管通用模板尾.doc', ext: '.doc', cat: 'dlwz' },
+      { id: 6, contentStyle: '模板头', bindType: 'sample', bindValue: 'glove', bindLabel: '01绝缘手套', templateName: '绝缘手套专用模板头', file: '绝缘手套专用模板头.docx', ext: '.docx', cat: 'aqgqj' }
     ];
 
     var RECORD_DATA = [
@@ -561,6 +652,11 @@
       return BODY_DATA.filter(function (r) { return r.tree === modelId; }).length;
     }
 
+    function getFilteredTree() {
+      if (!state.cat) return TREE_ALL;
+      return TREE_ALL.filter(function (g) { return g.cat === state.cat; });
+    }
+
     function renderTree() {
       var kw = (document.getElementById('treeSearch').value || '').trim().toLowerCase();
       var html = '';
@@ -570,7 +666,7 @@
           html += renderTreeNodes([g], kw, 0, showGroup);
         });
       } else {
-        TREE.forEach(function (g) {
+        getFilteredTree().forEach(function (g) {
           var showGroup = !kw || g.label.toLowerCase().includes(kw);
           var childHtml = (g.children || []).map(function (c) {
             if (kw && !showGroup && !c.label.toLowerCase().includes(kw)) return '';
@@ -583,7 +679,7 @@
           html += '<div class="tree-node" data-annotate="tree-count"><i class="fa fa-folder-o text-slate-400"></i>' + g.label + '</div>' + childHtml;
         });
       }
-      document.getElementById('treeBody').innerHTML = html;
+      document.getElementById('treeBody').innerHTML = html || '<div class="px-3 py-8 text-center text-slate-400 text-sm">当前大类暂无树节点</div>';
     }
 
     function filterTree() { renderTree(); }
@@ -635,7 +731,9 @@
           rows = RECORD_DATA.filter(function (r) { return r.tree === state.treeId; });
         }
       }
-      else if (state.sub === 'public') rows = PUBLIC_DATA.slice();
+      else if (state.sub === 'public') {
+        rows = PUBLIC_DATA.filter(function (r) { return !state.cat || r.cat === state.cat; });
+      }
       else rows = BODY_DATA.filter(function (r) { return r.tree === state.treeId; });
 
       var name = document.getElementById('f_name');
@@ -747,8 +845,8 @@
         bar.classList.remove('hidden');
         bar.innerHTML = '<i class="fa fa-info-circle"></i> 同一样品名称(型号)下可配置多个<strong>模板变体</strong>（如标准版/英文版/简版），每个变体可保存多个模板版本、<strong>同时仅启用一个</strong>。其中一个变体标记为<strong>默认</strong>，报告生成时默认选用。模板内含全部试验项占位，与委托试验项无关联；委托缺少的试验项在生成时不渲染。';
       } else if (state.main === 'report' && state.sub === 'public') {
-        bar.classList.remove('hidden');
-        bar.innerHTML = '<i class="fa fa-info-circle"></i> 公共头尾为模板库，由正文模板变体引用。列表字段与弹窗一致：<strong>模版内容样式 / 关联绑定 / 模版文件</strong>。关联绑定可选「样品分类」（任意层级，至样品上一级）或「样品名称(型号)」（至样品/型号层）。上传后模版名称自动回显文件名（不含后缀），后缀固定显示在输入框外。';
+        bar.classList.add('hidden');
+        bar.innerHTML = '';
       } else if (state.main === 'record') {
         bar.classList.remove('hidden');
         bar.setAttribute('data-annotate', 'record-export-logic');
@@ -784,7 +882,12 @@
     function switchMain(tab) {
       state.main = tab;
       state.sub = tab === 'record' ? 'record-single' : 'body';
-      if (tab === 'record') state.treeId = 'pvc-c';
+      if (tab === 'record') {
+        var rt = buildRecordTree();
+        state.treeId = (rt[0] && rt[0].children && rt[0].children[0] && rt[0].children[0].children && rt[0].children[0].children[0])
+          ? rt[0].children[0].children[0].id
+          : (rt[0] && rt[0].children && rt[0].children[0] ? rt[0].children[0].id : 'pvc-c');
+      }
       document.querySelectorAll('#mainTabBar .main-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === tab); });
 
       var isDoc = tab === 'doc';
@@ -795,6 +898,12 @@
       document.querySelector('.tpl-layout').classList.toggle('hidden', !isTable);
       document.getElementById('docView').classList.toggle('hidden', !isDoc);
       document.getElementById('stampView').classList.toggle('hidden', !isStamp);
+
+      if (tab === 'report') {
+        document.querySelectorAll('#reportSubSwitch .sub-switch-item').forEach(function (t) {
+          t.classList.toggle('active', t.getAttribute('data-sub') === state.sub);
+        });
+      }
 
       if (isDoc) { renderDocView(); }
       else if (isStamp) { renderStampView(); }
@@ -808,23 +917,37 @@
 
     function switchSub(sub) {
       state.sub = sub;
-      var bar = state.main === 'report' ? '#reportSubBar' : '#recordSubBar';
-      document.querySelectorAll(bar + ' .sub-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-sub') === sub); });
+      document.querySelectorAll('#reportSubSwitch .sub-switch-item').forEach(function (t) {
+        t.classList.toggle('active', t.getAttribute('data-sub') === sub);
+      });
       document.getElementById('treePanel').classList.toggle('hidden', state.main === 'report' && sub === 'public');
       renderView();
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     document.getElementById('mainTabBar').addEventListener('click', function (e) {
       var t = e.target.closest('.main-tab');
       if (t) switchMain(t.getAttribute('data-tab'));
     });
-    document.getElementById('reportSubBar').addEventListener('click', function (e) {
-      var t = e.target.closest('.sub-tab');
+    document.getElementById('reportSubSwitch').addEventListener('click', function (e) {
+      var t = e.target.closest('.sub-switch-item');
       if (t) switchSub(t.getAttribute('data-sub'));
     });
 
-    function openModal(id) { document.getElementById(id).classList.add('open'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+      if (window.PrototypeAnnotation) {
+        if (PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+        else if (PrototypeAnnotation.applyFocusScope) PrototypeAnnotation.applyFocusScope();
+      }
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      if (window.PrototypeAnnotation) {
+        if (PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+        else if (PrototypeAnnotation.applyFocusScope) PrototypeAnnotation.applyFocusScope();
+      }
+    }
 
     function findBody(id) {
       return BODY_DATA.find(function (r) { return r.id === id; });
@@ -990,15 +1113,21 @@
 
     function renderPublicBindOptions(selectedValue) {
       var cat = document.querySelector('input[name=p_scope]:checked').value === 'category';
-      var options = cat ? PUBLIC_CATEGORY_BIND_OPTIONS : PUBLIC_SAMPLE_BIND_OPTIONS;
+      var allOptions = cat ? PUBLIC_CATEGORY_BIND_OPTIONS : PUBLIC_SAMPLE_BIND_OPTIONS;
+      var options = allOptions.filter(function (o) { return !state.cat || o.cat === state.cat; });
       var label = cat ? '样品分类' : '样品名称(型号)';
       var hint = cat
-        ? '可选任意层级分类，加载至样品层级的上一级'
-        : '选至样品层或型号层；有型号的可停在样品层，也可下钻到型号层';
-      document.getElementById('p_bindLabel').textContent = label;
+        ? '可选任意层级分类，加载至样品层级的上一级（当前大类内）'
+        : '选至样品层或型号层；有型号的可停在样品层，也可下钻到型号层（当前大类内）';
+      document.getElementById('p_bindLabel').innerHTML = '<span class="req">*</span> ' + label;
       document.getElementById('p_bindHint').textContent = hint;
-      document.getElementById('p_bindSelect').innerHTML = options.map(function (o) {
-        var sel = selectedValue === o.value ? ' selected' : '';
+      if (!options.length) {
+        document.getElementById('p_bindSelect').innerHTML = '<option value="">当前大类暂无可选</option>';
+        return;
+      }
+      var hasSelected = options.some(function (o) { return o.value === selectedValue; });
+      document.getElementById('p_bindSelect').innerHTML = options.map(function (o, i) {
+        var sel = (selectedValue && hasSelected ? selectedValue === o.value : i === 0) ? ' selected' : '';
         return '<option value="' + o.value + '"' + sel + '>' + publicBindIndent(o.depth) + o.label + '</option>';
       }).join('');
     }
@@ -1008,11 +1137,15 @@
       document.querySelector('input[name=p_scope][value=category]').checked = true;
       document.querySelector('input[name=pubFileMode][value=upload]').checked = true;
       togglePublicFileMode();
-      renderPublicBindOptions('wz');
+      var defaultBind = state.cat === 'aqgqj' ? 'gqj' : (state.cat === 'gcjc' ? 'cement' : 'wz');
+      renderPublicBindOptions(defaultBind);
       document.getElementById('p_templateName').value = '';
       document.getElementById('p_fileExt').textContent = '.doc';
       document.getElementById('publicFileRow').classList.remove('hidden');
       document.getElementById('publicNameRow').classList.remove('hidden');
+      document.getElementById('publicUploadZone').classList.remove('hidden');
+      document.getElementById('publicFilePreview').classList.add('hidden');
+      document.getElementById('publicFileName').textContent = '';
     }
 
     function fillPublicModal(row) {
@@ -1021,8 +1154,12 @@
       renderPublicBindOptions(row.bindValue);
       document.getElementById('p_templateName').value = row.templateName;
       document.getElementById('p_fileExt').textContent = row.ext || '.doc';
-      document.getElementById('publicFileRow').classList.add('hidden');
+      document.getElementById('publicFileRow').classList.remove('hidden');
       document.getElementById('publicNameRow').classList.remove('hidden');
+      document.getElementById('publicUploadZone').classList.add('hidden');
+      document.getElementById('publicCopyBtn').classList.add('hidden');
+      document.getElementById('publicFilePreview').classList.remove('hidden');
+      document.getElementById('publicFileName').textContent = row.file || (row.templateName + (row.ext || '.doc'));
     }
 
     function openPublicModal() {
@@ -1030,7 +1167,6 @@
       document.getElementById('publicModalTitle').textContent = '新增公共头尾模板';
       resetPublicModalForm();
       openModal('publicModal');
-      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function openPublicEdit(id) {
@@ -1040,13 +1176,14 @@
       document.getElementById('publicModalTitle').textContent = '编辑公共头尾模板';
       fillPublicModal(row);
       openModal('publicModal');
-      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function mockPublicUpload() {
       var demoName = document.getElementById('p_content').value === '模板尾' ? '公共模板尾_演示' : '公共模板头_演示';
       document.getElementById('p_templateName').value = demoName;
       document.getElementById('p_fileExt').textContent = '.doc';
+      document.getElementById('publicFilePreview').classList.remove('hidden');
+      document.getElementById('publicFileName').textContent = demoName + '.doc';
       alert('已上传模板文件（原型演示）\n文件名：' + demoName + '.doc');
     }
 
@@ -1055,9 +1192,12 @@
       var bindType = document.querySelector('input[name=p_scope]:checked').value;
       var bindSelect = document.getElementById('p_bindSelect');
       var bindValue = bindSelect.value;
+      if (!bindValue) { alert('请选择' + (bindType === 'category' ? '样品分类' : '样品名称(型号)')); return; }
       var bindLabel = bindSelect.options[bindSelect.selectedIndex].text.replace(/^\s+/, '');
       var templateName = (document.getElementById('p_templateName').value || '').trim();
       var ext = document.getElementById('p_fileExt').textContent || '.doc';
+      var fileShown = (document.getElementById('publicFileName').textContent || '').trim();
+      if (!state.publicRowId && !fileShown && !templateName) { alert('请上传模板文件'); return; }
       if (!templateName) { alert('请填写模版名称'); return; }
 
       if (state.publicRowId) {
@@ -1070,12 +1210,13 @@
           row.templateName = templateName;
           row.ext = ext;
           row.file = templateName + ext;
+          row.cat = state.cat || row.cat;
         }
       } else {
         var newId = PUBLIC_DATA.reduce(function (m, r) { return Math.max(m, r.id); }, 0) + 1;
         PUBLIC_DATA.push({
           id: newId, contentStyle: contentStyle, bindType: bindType, bindValue: bindValue, bindLabel: bindLabel,
-          templateName: templateName, file: templateName + ext, ext: ext
+          templateName: templateName, file: templateName + ext, ext: ext, cat: state.cat || 'dlwz'
         });
       }
       closeModal('publicModal');
@@ -1098,8 +1239,15 @@
     }
     function togglePublicFileMode() {
       var copy = document.querySelector('input[name=pubFileMode]:checked').value === 'copy';
+      if (state.publicRowId) {
+        document.getElementById('publicUploadZone').classList.add('hidden');
+        document.getElementById('publicCopyBtn').classList.add('hidden');
+        document.getElementById('publicFilePreview').classList.remove('hidden');
+        return;
+      }
       document.getElementById('publicUploadZone').classList.toggle('hidden', copy);
       document.getElementById('publicCopyBtn').classList.toggle('hidden', !copy);
+      document.getElementById('publicFilePreview').classList.add('hidden');
     }
     function togglePublicScope() {
       renderPublicBindOptions();
@@ -1369,11 +1517,13 @@
       renderPoFields();
       document.getElementById('pageOfficeModal').classList.add('open');
       document.body.style.overflow = 'hidden';
+      if (window.PrototypeAnnotation && PrototypeAnnotation.applyFocusScope) PrototypeAnnotation.applyFocusScope();
     }
 
     function closePageOffice() {
       document.getElementById('pageOfficeModal').classList.remove('open');
       document.body.style.overflow = '';
+      if (window.PrototypeAnnotation && PrototypeAnnotation.applyFocusScope) PrototypeAnnotation.applyFocusScope();
     }
 
     function savePageOffice() {
@@ -1615,12 +1765,71 @@
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
-    renderTree();
-    renderView();
+    function defaultTreeIdForCat(cat) {
+      if (cat === 'aqgqj') return 'glove';
+      if (cat === 'gcjc') return 'cement-p';
+      if (cat === 'hjjc') return null;
+      return 'pvc-c';
+    }
+
+    function enterTplCategory(cat) {
+      if (!CAT_META[cat]) return;
+      state.cat = cat;
+      state.main = 'report';
+      state.sub = 'body';
+      state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
+      var url = new URL(window.location.href);
+      url.searchParams.set('cat', cat);
+      history.replaceState(null, '', url.toString());
+      showTplDetail();
+    }
+
+    function backToCatHub() {
+      state.cat = null;
+      var url = new URL(window.location.href);
+      url.searchParams.delete('cat');
+      history.replaceState(null, '', url.toString());
+      document.getElementById('catHubView').classList.remove('hidden');
+      document.getElementById('tplDetailView').classList.add('hidden');
+    }
+
+    function showTplDetail() {
+      document.getElementById('catHubView').classList.add('hidden');
+      document.getElementById('tplDetailView').classList.remove('hidden');
+      document.getElementById('tplCatTitle').textContent = (CAT_META[state.cat] || {}).name || '';
+      document.querySelectorAll('#mainTabBar .main-tab').forEach(function (t) {
+        t.classList.toggle('active', t.getAttribute('data-tab') === 'report');
+      });
+      document.querySelectorAll('#reportSubSwitch .sub-switch-item').forEach(function (t) {
+        t.classList.toggle('active', t.getAttribute('data-sub') === 'body');
+      });
+      document.getElementById('reportSubBar').classList.remove('hidden');
+      document.getElementById('recordSubBar').classList.add('hidden');
+      document.querySelector('.tpl-layout').classList.remove('hidden');
+      document.getElementById('docView').classList.add('hidden');
+      document.getElementById('stampView').classList.add('hidden');
+      document.getElementById('treePanel').classList.remove('hidden');
+      renderTree();
+      renderView();
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    (function bootTplPage() {
+      var params = new URLSearchParams(window.location.search);
+      var cat = params.get('cat');
+      if (cat && CAT_META[cat]) {
+        state.cat = cat;
+        state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
+        showTplDetail();
+      } else {
+        document.getElementById('catHubView').classList.remove('hidden');
+        document.getElementById('tplDetailView').classList.add('hidden');
+      }
+    })();
 
     PrototypeAnnotation.init({
       annotations: [
-        { id: 'tree-count', selector: '[data-annotate="tree-count"]', position: 'top-right', title: '关联模板数量', content: '括号内数字表示该分类/型号下已配置的报告模板变体数量。', tag: '报告模板' },
+        { id: 'tree-count', selector: '[data-annotate="tree-count"]', position: 'top-right', title: '关联模板数量', content: '括号内数字表示该分类/型号下已配置的报告模板变体数量。左侧树已按当前进入的大类过滤。', tag: '报告模板' },
         { id: 'record-tree-tests', selector: '[data-annotate="record-tree-tests"]', position: 'top-right', title: '型号下展开试验项', wide: true, content: '选中型号（如 PVC-C）后，下方列出该型号对应的全部试验项；绿点表示已配置模板。点击某一试验项可快速定位右侧列表，括号内为（已配置数 / 试验项总数）。', tag: '记录单' },
         { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板变体', content: '打开新增弹窗，配置样品、模板名称、是否默认、模板文件及公共头尾引用。不再关联试验项。', tag: '报告模板' },
         { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑模板名称、是否默认、引用公共头尾。模板文件通过「版本」管理。', tag: '操作说明' },
@@ -1642,13 +1851,14 @@
         { id: 'stamp-override', selector: '[data-annotate="stamp-override"]', position: 'top-right', title: '按单据类型覆盖', wide: true, content: '某类单据若与全局默认不同，可单独上传页眉/页脚覆盖；留空即继承全局默认（两级模型的「覆盖层」）。', tag: '模板管理' },
         { id: 'stamp-seal', selector: '[data-annotate="stamp-seal"]', position: 'top-right', title: '印章管理（迁移）', wide: true, content: '骑缝章、CNAS、CMA、检测专用章图片统一在此上传维护——由原「业务流程配置 › 报告设置 › 报告用章」迁移而来。', tag: '模板管理' },
         { id: 'public-filter', selector: '[data-annotate="public-filter"]', position: 'top-left', title: '公共头尾筛选', wide: true, content: '筛选字段与弹窗/表头对齐：<strong>模版内容样式</strong>（模板头/尾）、<strong>关联绑定</strong>（全部/样品分类/样品名称型号）、<strong>模版文件名</strong>。', tag: '报告模板' },
-        { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共头尾列表', wide: true, content: '表头三列：<strong>模版内容样式</strong>、<strong>关联绑定</strong>（类型 + 绑定对象）、<strong>模版文件</strong>（完整文件名）。', tag: '报告模板' },
+        { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共头尾列表', wide: true, content: '表头三列：<strong>模版内容样式</strong>、<strong>关联绑定</strong>（类型 + 绑定对象）、<strong>模版文件</strong>（完整文件名）。列表已按当前大类过滤。', tag: '报告模板' },
         { id: 'public-add', selector: '[data-annotate="public-add"]', position: 'top-left', title: '新增公共头尾', content: '打开新增弹窗，配置模版内容样式、关联绑定、绑定对象、上传文件并填写模版名称。', tag: '报告模板' },
-        { id: 'public-edit', selector: '[data-annotate="public-edit"]', position: 'top-right', title: '编辑公共头尾', wide: true, content: '回填已保存的模版内容样式、关联绑定、绑定对象与模版名称；编辑时不重新上传文件（文件通过新增时上传或复制）。', tag: '报告模板' },
+        { id: 'public-edit', selector: '[data-annotate="public-edit"]', position: 'top-right', title: '编辑公共头尾', wide: true, content: '回填模版内容样式、关联绑定、绑定对象、模版文件与模版名称；编辑时可查看已关联的模板文件实体。', tag: '报告模板' },
         { id: 'public-delete', selector: '[data-annotate="public-delete"]', position: 'top-right', title: '删除', content: '删除该条公共头尾模板记录。', tag: '报告模板' },
         { id: 'public-content-style', selector: '[data-annotate="public-content-style"]', position: 'top-right', title: '模版内容样式', content: '选择本模板是「模板头」还是「模板尾」。', tag: '报告模板' },
         { id: 'public-bind-type', selector: '[data-annotate="public-bind-type"]', position: 'top-right', title: '关联绑定', wide: true, content: '决定第三行绑定对象的维度：<strong>样品分类</strong> 或 <strong>样品名称(型号)</strong>。切换后第三行字段名与下拉选项联动切换。', tag: '报告模板' },
-        { id: 'public-bind-target', selector: '[data-annotate="public-bind-target"]', position: 'top-right', title: '绑定对象', wide: true, content: '选「样品分类」时：字段名为样品分类，下拉加载至样品层级的上一级，可选任意层级（如 WZ电网物资、02电力电缆导管）。选「样品名称(型号)」时：字段名为样品名称(型号)，下拉加载样品/型号层（如 实壁类塑料电缆导管_直管、PVC-C）。', tag: '报告模板' },
+        { id: 'public-bind-target', selector: '[data-annotate="public-bind-target"]', position: 'top-right', title: '绑定对象（必填）', wide: true, content: '下拉选项已按当前进入的大类过滤。选「样品分类」时加载至样品上一级；选「样品名称(型号)」时加载样品/型号层。', tag: '报告模板' },
+        { id: 'public-file', selector: '[data-annotate="public-file"]', position: 'top-right', title: '模板文件', wide: true, content: '新增时可上传或复制模板文件；编辑时展示已关联的文件实体。上传后模版名称自动回显文件名（不含后缀）。', tag: '报告模板' },
         { id: 'public-template-name', selector: '[data-annotate="public-template-name"]', position: 'top-right', title: '模版名称', wide: true, content: '上传文件后自动回显文件名（不含后缀）；后缀（如 .doc）固定显示在输入框右侧，不可修改；输入框内名称允许用户编辑。', tag: '报告模板' }
       ]
     });

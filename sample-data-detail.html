@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>样品数据 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .layout { display: flex; gap: 0; min-height: calc(100vh - 88px); background: #fff; border-top: 1px solid #e2e8f0; }
+    .tree-panel { width: 340px; flex-shrink: 0; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; background: #fff; }
+    .tree-head { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; }
+    .tree-head .back { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 500; color: #334155; margin-bottom: 10px; cursor: pointer; }
+    .tree-head .back:hover { color: #2563eb; }
+    .tree-head input { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px 7px 30px; font-size: 13px; outline: none; }
+    .tree-search { position: relative; }
+    .tree-search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px; }
+    .tree-body { flex: 1; overflow-y: auto; padding: 6px 0; font-size: 13px; }
+    .tree-node { padding: 7px 12px; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; user-select: none; }
+    .tree-node:hover { background: #f8fafc; }
+    .tree-node.active { background: #eef2f7; color: #1e293b; font-weight: 500; }
+    .tree-toggle { width: 14px; flex-shrink: 0; color: #94a3b8; font-size: 10px; text-align: center; }
+    .main-panel { flex: 1; min-width: 0; background: #f8fafc; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 14px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="sample-data.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="sample-data.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">样品数据</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      <span id="tabCatName">样品数据明细</span>
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="layout">
+    <aside class="tree-panel">
+      <div class="tree-head">
+        <div class="back" onclick="goBack()"><i class="fa fa-angle-left"></i> <span id="catTitle">电力物资类</span></div>
+        <div class="tree-search">
+          <i class="fa fa-search"></i>
+          <input type="text" id="treeSearch" placeholder="搜索关键字" oninput="renderTree()" />
+        </div>
+      </div>
+      <div class="tree-body" id="treeBody"></div>
+    </aside>
+    <div class="main-panel" id="mainPanel">右侧内容区（空白占位）</div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var CAT_META = {
+      dlwz: { name: '电力物资类' },
+      aqgqj: { name: '安全工器具类' },
+      hjjc: { name: '环境检测' },
+      gcjc: { name: '工程检测' }
+    };
+
+    /* 图1 电力物资类 */
+    var TREE_DLWZ = [
+      { id: 'dldl', label: 'DLDL电力电缆类', open: true, children: [
+        { id: 'v1', label: '额定电压 1kV 和 3kV', open: true, children: [
+          { id: 'gbt1', label: 'GBT 12706.1-2020', open: true, children: [
+            { id: 'cu1', label: '铜芯', leaf: true },
+            { id: 'al1', label: '铝芯', leaf: true }
+          ]}
+        ]},
+        { id: 'v6', label: '额定电压 6kV-30kV', open: true, children: [
+          { id: 'gbt2', label: 'GBT 12706.2-2020', open: true, children: [
+            { id: 'cu6', label: '铜芯', open: true, children: [
+              { id: 'cu6-3c', label: '10kV3芯电力电缆', leaf: true },
+              { id: 'cu6-1c', label: '10kV单芯电力电缆', leaf: true }
+            ]},
+            { id: 'al6', label: '铝芯', leaf: true }
+          ]}
+        ]},
+        { id: 'v35', label: '额定电压 35kV', open: true, children: [
+          { id: 'gbt3', label: 'GB_T 12706.3-2020', open: true, children: [
+            { id: 'cu35', label: '铜芯', leaf: true },
+            { id: 'al35', label: '铝芯', leaf: true }
+          ]}
+        ]}
+      ]},
+      { id: 'bhg', label: 'BHG电缆保护管', open: true, children: [
+        { id: 'dlt801', label: 'DLT 802.1-2023', open: true, children: [
+          { id: 'ds', label: 'DS实壁类塑料电缆导管', open: true, children: [
+            { id: 'dlt803', label: 'DLT 802.3-2023', open: true, children: [
+              { id: 'ds-s', label: 'DS实壁类塑料电缆导管_直管', leaf: true },
+              { id: 'ds-k', label: 'DS实壁类塑料电缆导管_带承口', leaf: true }
+            ]},
+            { id: 'dlt802', label: 'DLT 802.2-2023', open: true, children: [
+              { id: 'gf', label: '玻璃纤维增强塑料电缆导管', leaf: true }
+            ]},
+            { id: 'dlt804', label: 'DLT 802.4-2023', open: true, children: [
+              { id: 'bw', label: '波纹类塑料电缆导管', leaf: true }
+            ]},
+            { id: 'dlt805', label: 'DLT 802.5-2023', open: true, children: [
+              { id: 'xw', label: '纤维水泥电缆导管', leaf: true }
+            ]},
+            { id: 'dlt806', label: 'DLT 802.6-2023', open: true, children: [
+              { id: 'cs', label: '承插式混凝土预制电缆导管', leaf: true }
+            ]},
+            { id: 'dlt807', label: 'DLT 802.7-2023', open: true, children: [
+              { id: 'fw', label: '非开挖用塑料电缆导管', leaf: true }
+            ]},
+            { id: 'dlt808', label: 'DLT 802.8-2023', open: true, children: [
+              { id: 'sg', label: '塑钢复合电缆导管', leaf: true }
+            ]},
+            { id: 'dlt810', label: 'DLT 802.10-2023', open: true, children: [
+              { id: 'ts', label: '涂塑钢质电缆导管', leaf: true }
+            ]}
+          ]}
+        ]}
+      ]}
+    ];
+
+    /* 图2 安全工器具类 */
+    var TREE_AQGQJ = [
+      { id: 'dlt976', label: 'DLT 976-2017', open: true, children: [
+        { id: 'rod', label: '绝缘操作杆', leaf: true },
+        { id: 'ladder', label: '绝缘软梯', leaf: true },
+        { id: 'belt976', label: '安全带', leaf: true }
+      ]},
+      { id: 'dlt1476', label: 'DLT 1476-2023', open: true, children: [
+        { id: 'rope1476', label: '安全绳', leaf: true },
+        { id: 'rod1476', label: '绝缘杆', leaf: true },
+        { id: 'belt1476', label: '安全带', leaf: true },
+        { id: 'helmet', label: '安全帽', leaf: true },
+        { id: 'board1476', label: '登高板', leaf: true },
+        { id: 'spur', label: '登杆脚扣', leaf: true }
+      ]},
+      { id: 'dlt1741', label: 'DLT 1741-2017', open: true, children: [
+        { id: 'sling', label: '吊装带', leaf: true },
+        { id: 'shackle', label: '卸扣', leaf: true },
+        { id: 'belt1741', label: '安全带', leaf: true },
+        { id: 'jack', label: '千斤顶', leaf: true },
+        { id: 'board1741', label: '登高板（升降板）', leaf: true },
+        { id: 'rope1741', label: '安全绳', leaf: true }
+      ]}
+    ];
+
+    /* 图3 工程检测 */
+    var TREE_GCJC = [
+      { id: 'cement', label: '通用硅酸盐水泥', open: true, children: [
+        { id: 'gb175', label: 'GB 175-2023', open: true, children: [
+          { id: 'p', label: '硅酸盐水泥', leaf: true },
+          { id: 'po', label: '普通硅酸盐水泥', leaf: true },
+          { id: 'ps', label: '矿渣硅酸盐水泥', leaf: true },
+          { id: 'pf', label: '粉煤灰硅酸盐水泥', leaf: true },
+          { id: 'pp', label: '火山灰质硅酸盐水泥', leaf: true },
+          { id: 'pc', label: 'P·C复合硅酸盐水泥', leaf: true }
+        ]}
+      ]}
+    ];
+
+    var TREE_HJJC = [];
+
+    var TREES = { dlwz: TREE_DLWZ, aqgqj: TREE_AQGQJ, hjjc: TREE_HJJC, gcjc: TREE_GCJC };
+
+    var params = new URLSearchParams(window.location.search);
+    var cat = params.get('cat') || 'dlwz';
+    if (!CAT_META[cat]) cat = 'dlwz';
+
+    var state = {
+      cat: cat,
+      selectedId: cat === 'dlwz' ? 'cu6-3c' : (cat === 'aqgqj' ? 'belt976' : (cat === 'gcjc' ? 'p' : null)),
+      openIds: {}
+    };
+
+    function collectOpen(nodes) {
+      (nodes || []).forEach(function (n) {
+        if (n.open) state.openIds[n.id] = true;
+        if (n.children) collectOpen(n.children);
+      });
+    }
+    collectOpen(TREES[cat]);
+
+    document.getElementById('catTitle').textContent = CAT_META[cat].name;
+    document.getElementById('tabCatName').textContent = CAT_META[cat].name;
+
+    function matchKw(n, kw) {
+      if (!kw) return true;
+      if ((n.label || '').toLowerCase().indexOf(kw) >= 0) return true;
+      return (n.children || []).some(function (c) { return matchKw(c, kw); });
+    }
+
+    function renderNodes(nodes, depth, kw) {
+      var html = '';
+      (nodes || []).forEach(function (n) {
+        if (kw && !matchKw(n, kw)) return;
+        var hasChild = n.children && n.children.length;
+        var isOpen = !!state.openIds[n.id];
+        var pad = depth * 16 + 12;
+        var active = state.selectedId === n.id ? ' active' : '';
+        var toggle = hasChild
+          ? '<span class="tree-toggle">' + (isOpen ? '▼' : '▶') + '</span>'
+          : '<span class="tree-toggle"></span>';
+        html += '<div class="tree-node' + active + '" style="padding-left:' + pad + 'px" onclick="onTreeClick(event,\'' + n.id + '\',' + !!n.leaf + ',' + !!hasChild + ')">' +
+          toggle + '<span>' + n.label + '</span></div>';
+        if (hasChild && isOpen) html += renderNodes(n.children, depth + 1, kw);
+      });
+      return html;
+    }
+
+    function renderTree() {
+      var kw = (document.getElementById('treeSearch').value || '').trim().toLowerCase();
+      var nodes = TREES[state.cat] || [];
+      var html = renderNodes(nodes, 0, kw);
+      document.getElementById('treeBody').innerHTML = html || '<div class="px-4 py-10 text-center text-slate-400 text-sm">暂无样品分类数据</div>';
+    }
+
+    function onTreeClick(e, id, isLeaf, hasChild) {
+      e.stopPropagation();
+      if (hasChild) state.openIds[id] = !state.openIds[id];
+      if (isLeaf || !hasChild) state.selectedId = id;
+      renderTree();
+    }
+
+    function goBack() {
+      window.location.href = 'sample-data.html';
+    }
+
+    renderTree();
+  </script>
+</body>
+</html>
