@@ -373,11 +373,11 @@
       <div class="modal-body">
         <p class="mb-3 text-sm text-slate-500">同一模板变体可上传多个版本，<strong class="text-slate-700">同时只能启用一个</strong>；报告生成时使用启用版本。点击「配置」进入 PageOffice 编辑当前启用版本。</p>
         <table class="tpl-table">
-          <thead><tr><th style="width:50px">启用</th><th>模板文件</th><th>上传时间</th><th style="width:100px">上传人</th><th style="width:120px">操作</th></tr></thead>
+          <thead><tr><th style="width:50px">启用</th><th>模板文件</th><th>上传时间</th><th style="width:100px">上传人</th><th style="width:200px">操作</th></tr></thead>
           <tbody id="bodyVersionTableBody"></tbody>
         </table>
         <div class="mt-3 flex gap-2">
-          <button onclick="uploadBodyVersion()" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-upload"></i> 上传</button>
+          <button onclick="openMockFilePicker('bodyVersion')" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-upload"></i> 上传</button>
           <button onclick="openBodyCopyPicker()" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-copy"></i> 复制其他项</button>
         </div>
       </div>
@@ -390,13 +390,14 @@
     <div class="modal-box">
       <div class="modal-head"><span id="bodyModalTitle">新增模板变体</span><button onclick="closeModal('bodyModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
       <div class="modal-body">
-        <div class="form-row"><label><span class="req">*</span> 样品名称(型号)</label><div class="ctrl"><select id="m_sample"><option>PVC-C</option><option>PVC-U</option><option>PVC-M</option><option>PVC-H</option></select></div></div>
+        <div class="form-row"><label><span class="req">*</span> 样品名称(型号)</label><div class="ctrl"><select id="m_sample"></select></div></div>
         <div class="form-row"><label><span class="req">*</span> 模板名称</label><div class="ctrl"><input type="text" id="m_name" placeholder="如：标准版、英文版、简版" /><div class="mt-1 text-xs text-slate-400">同一样品型号下可配置多个模板变体，以名称区分</div></div></div>
         <div class="form-row"><label></label><div class="ctrl"><label class="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" id="m_default" /> 设为默认模板（报告生成时默认选用）</label></div></div>
-        <div class="form-row hidden" id="bodyFileRow"><label>模板文件</label><div class="ctrl">
+        <div class="form-row" id="bodyFileRow"><label>模板文件</label><div class="ctrl">
           <div class="radio-group mb-2"><label><input type="radio" name="bodyFileMode" value="upload" checked onchange="toggleBodyFileMode()" /> 上传</label><label><input type="radio" name="bodyFileMode" value="copy" onchange="toggleBodyFileMode()" /> 复制</label></div>
-          <div id="bodyUploadZone" class="upload-zone" onclick="uploadBodyVersion()"><i class="fa fa-cloud-upload block"></i><div>上传</div></div>
+          <div id="bodyUploadZone" class="upload-zone" onclick="openMockFilePicker('bodyAdd')"><i class="fa fa-cloud-upload block"></i><div>上传</div></div>
           <button id="bodyCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openCopyPicker('body')"><i class="fa fa-copy"></i> 复制</button>
+          <div class="form-row" style="margin:12px 0 0;padding:0"><label style="width:80px;padding-top:8px">模版文件名</label><div class="ctrl"><div class="name-ext"><input type="text" id="m_fileName" placeholder="上传后自动回显文件名（不含后缀）" /><span class="ext-suffix" id="m_fileExt">.doc</span></div><div class="mt-1 text-xs text-slate-400">名称可编辑；后缀固定显示在框外，不可修改</div></div></div>
         </div></div>
         <div class="form-row"><label>引用公共模版头</label><div class="ctrl flex items-center gap-2"><input type="checkbox" id="m_useHead" checked /><select id="m_head" class="flex-1"><option>电网物资通用模板头</option><option>GQJ安全工器具通用模板头</option></select></div></div>
         <div class="form-row"><label>引用公共模版尾</label><div class="ctrl flex items-center gap-2"><input type="checkbox" id="m_useTail" /><select id="m_tail" class="flex-1" disabled><option>电网物资通用模板尾</option></select></div></div>
@@ -430,17 +431,45 @@
     <div class="modal-box lg">
       <div class="modal-head"><span id="copyModalTitle">公共模板头尾复制</span><button onclick="closeModal('copyModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
       <div class="modal-body">
-        <div class="tpl-toolbar" style="padding:0 0 12px;border:none">
+        <div id="copyBodyToolbar" class="tpl-toolbar hidden" style="padding:0 0 12px;border:none">
+          <label>样品名称(型号)</label><input id="c_sample" placeholder="请输入" />
+          <label>样品分类</label><input id="c_category" placeholder="请输入" />
+          <button onclick="renderBodyCopyTable()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>
+        </div>
+        <div id="copyPublicToolbar" class="tpl-toolbar" style="padding:0 0 12px;border:none">
           <label>模板内容</label><select style="min-width:100px"><option>全部</option><option>模板头</option><option>模板尾</option></select>
           <label>样品分类</label><input type="text" placeholder="请输入" />
           <button class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>
         </div>
         <table class="tpl-table">
-          <thead><tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>模版内容样式</th><th>关联绑定</th><th>绑定对象</th><th>操作</th></tr></thead>
+          <thead id="copyTableHead"><tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>模版内容样式</th><th>关联绑定</th><th>绑定对象</th><th>操作</th></tr></thead>
           <tbody id="copyTableBody"></tbody>
         </table>
       </div>
       <div class="modal-foot"><button onclick="closeModal('copyModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="confirmCopy()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
+    </div>
+  </div>
+
+  <!-- 正文模板版本 · 修改文件名 -->
+  <div id="bodyVersionRenameModal" class="modal-mask">
+    <div class="modal-box" style="width:420px">
+      <div class="modal-head"><span>修改文件名</span><button onclick="closeModal('bodyVersionRenameModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <div class="form-row" style="margin-bottom:0"><label>模版名称</label><div class="ctrl"><div class="name-ext"><input type="text" id="bodyVersionRenameInput" /><span class="ext-suffix" id="bodyVersionRenameExt">.doc</span></div></div></div>
+      </div>
+      <div class="modal-foot"><button onclick="closeModal('bodyVersionRenameModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="saveBodyVersionRename()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
+    </div>
+  </div>
+
+  <!-- Mock 文件选择器 -->
+  <div id="mockFilePickerModal" class="modal-mask">
+    <div class="modal-box" style="width:480px">
+      <div class="modal-head"><span>选择文件</span><button onclick="closeModal('mockFilePickerModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <p class="mb-3 text-sm text-slate-500">模拟文件选择器（原型演示），请选择要上传的模板文件：</p>
+        <div class="flex flex-col gap-2" id="mockFilePickerList"></div>
+      </div>
+      <div class="modal-foot"><button onclick="closeModal('mockFilePickerModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button></div>
     </div>
   </div>
 
@@ -480,7 +509,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
-    var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: null, openIds: {} };
+    var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: null, openIds: {}, copyMode: 'public', copyTarget: null, filePickerTarget: null, bodyVersionRenameIndex: null };
 
     var CAT_META = {
       dlwz: { name: '电力物资类', treeKeys: ['wz'], publicCats: ['wz', 'cable-duct'], publicSamples: ['cable-duct-sample', 'pvc-c', 'pvc-u', 'pvc-m', 'pvc-h'] },
@@ -788,6 +817,110 @@
       return found.path.slice(0, -1).map(function (n) { return n.label; }).join(' > ');
     }
 
+    function getTreePathIds(treeId) {
+      var found = findReportTreeNode(treeId);
+      return found ? found.path.map(function (n) { return n.id; }) : [];
+    }
+
+    function getTreePathNodes(treeId) {
+      var found = findReportTreeNode(treeId);
+      return found ? found.path : [];
+    }
+
+    function collectAllModelIds(node) {
+      var ids = [];
+      if (node.model) ids.push(node.id);
+      (node.children || []).forEach(function (c) { ids = ids.concat(collectAllModelIds(c)); });
+      return ids;
+    }
+
+    function collectModelIdsUnderNode(nodeId, nodes) {
+      nodes = nodes || REPORT_TREE_ALL;
+      for (var i = 0; i < nodes.length; i++) {
+        var n = nodes[i];
+        if (n.id === nodeId) return collectAllModelIds(n);
+        if (n.children && n.children.length) {
+          var found = collectModelIdsUnderNode(nodeId, n.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    function splitFileName(name) {
+      var m = (name || '').match(/^(.+?)(\.[^.]+)$/);
+      return m ? { base: m[1], ext: m[2] } : { base: name || '', ext: '.doc' };
+    }
+
+    function formatNowTs() {
+      var now = new Date();
+      return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    }
+
+    function publicBindMatchesTree(pub, treeId) {
+      var pathNodes = getTreePathNodes(treeId);
+      var pathIds = pathNodes.map(function (n) { return n.id; });
+      if (pub.bindType === 'sample' && pub.bindValue === treeId) return true;
+      if (pub.bindType !== 'category') return false;
+      if (pathIds.indexOf(pub.bindValue) >= 0) return true;
+      if (pathNodes.some(function (n) { return n.label === pub.bindLabel; })) return true;
+      if (pub.bindValue === 'wz' && pathIds.indexOf('cat-dlwz') >= 0) return true;
+      if (pub.bindValue === 'cable-duct' && pathIds.some(function (id) { return id === 'ds-s' || id === 'bhg'; })) return true;
+      return false;
+    }
+
+    function findBestPublicRef(contentStyle, treeId) {
+      var matches = PUBLIC_DATA.filter(function (r) {
+        if (r.contentStyle !== contentStyle) return false;
+        if (state.cat && r.cat !== state.cat) return false;
+        return publicBindMatchesTree(r, treeId);
+      });
+      var sample = matches.find(function (r) { return r.bindType === 'sample'; });
+      if (sample) return sample;
+      var pathIds = getTreePathIds(treeId);
+      for (var i = pathIds.length - 1; i >= 0; i--) {
+        var cat = matches.find(function (r) { return r.bindType === 'category' && (r.bindValue === pathIds[i] || publicBindMatchesTree(r, treeId)); });
+        if (cat) return cat;
+      }
+      return matches[0] || null;
+    }
+
+    function renderBodyPublicSelects() {
+      var heads = PUBLIC_DATA.filter(function (r) { return r.contentStyle === '模板头' && (!state.cat || r.cat === state.cat); });
+      var tails = PUBLIC_DATA.filter(function (r) { return r.contentStyle === '模板尾' && (!state.cat || r.cat === state.cat); });
+      document.getElementById('m_head').innerHTML = heads.map(function (r) {
+        return '<option value="' + r.templateName + '">' + r.templateName + '</option>';
+      }).join('') || '<option value="">暂无可选模板头</option>';
+      document.getElementById('m_tail').innerHTML = tails.map(function (r) {
+        return '<option value="' + r.templateName + '">' + r.templateName + '</option>';
+      }).join('') || '<option value="">暂无可选模板尾</option>';
+    }
+
+    function applyDefaultPublicRefs(treeId) {
+      renderBodyPublicSelects();
+      var headRef = findBestPublicRef('模板头', treeId);
+      var tailRef = findBestPublicRef('模板尾', treeId);
+      document.getElementById('m_useHead').checked = !!headRef;
+      document.getElementById('m_useTail').checked = !!tailRef;
+      document.getElementById('m_tail').disabled = !tailRef;
+      if (headRef) document.getElementById('m_head').value = headRef.templateName;
+      if (tailRef) document.getElementById('m_tail').value = tailRef.templateName;
+    }
+
+    function populateBodySampleSelect(treeId, selectedId) {
+      var modelIds = collectModelIdsUnderNode(treeId) || [];
+      if (findReportTreeNode(treeId) && findReportTreeNode(treeId).node.model) {
+        modelIds = [treeId];
+      }
+      if (!modelIds.length) modelIds = [treeId];
+      var select = document.getElementById('m_sample');
+      select.innerHTML = modelIds.map(function (id) {
+        var sel = selectedId ? id === selectedId : id === modelIds[0];
+        return '<option value="' + id + '"' + (sel ? ' selected' : '') + '>' + getBodySampleDisplay(id) + '</option>';
+      }).join('');
+    }
+
     function reportTreeMatch(n, kw) {
       if (!kw) return true;
       if ((n.label || '').toLowerCase().indexOf(kw) >= 0) return true;
@@ -802,18 +935,19 @@
         var isOpen = kw ? true : !!state.openIds[n.id];
         var pad = depth * 14 + 12;
         var active = state.treeId === n.id ? ' active' : '';
-        var caret = hasChild
-          ? '<span class="tree-caret">' + (isOpen ? '▼' : '▶') + '</span>'
-          : '<span class="tree-caret tree-caret-empty"></span>';
         var icon = hasChild ? '<i class="fa fa-folder-o text-slate-400"></i>' : '';
         var count = '';
-        if (!hasChild) {
+        var modelIds = collectModelIdsUnderNode(n.id);
+        if (modelIds && modelIds.length) {
+          var num = BODY_DATA.filter(function (r) { return modelIds.indexOf(r.tree) >= 0; }).length;
+          count = num ? '<span class="count">(' + num + ')</span>' : '';
+        } else if (!hasChild) {
           var num = getBodyTreeCount(n.id);
           count = num ? '<span class="count">(' + num + ')</span>' : '';
         }
-        var handler = hasChild ? 'toggleReportTree' : 'selectTree';
-        html += '<div class="tree-node' + active + '" style="padding-left:' + pad + 'px" data-id="' + n.id + '" onclick="' + handler + '(\'' + n.id + '\')">' +
-          caret + icon + '<span>' + n.label + '</span>' + count + '</div>';
+        html += '<div class="tree-node' + active + '" style="padding-left:' + pad + 'px" data-id="' + n.id + '" onclick="selectReportTreeNode(\'' + n.id + '\', event)">' +
+          (hasChild ? '<span class="tree-caret" onclick="event.stopPropagation(); toggleReportTree(\'' + n.id + '\')">' + (isOpen ? '▼' : '▶') + '</span>' : '<span class="tree-caret tree-caret-empty"></span>') +
+          icon + '<span>' + n.label + '</span>' + count + '</div>';
         if (hasChild && isOpen) html += renderReportTreeNodes(n.children, depth + 1, kw);
       });
       return html;
@@ -838,6 +972,11 @@
     function toggleReportTree(id) {
       state.openIds[id] = !state.openIds[id];
       renderTree();
+    }
+
+    function selectReportTreeNode(id, event) {
+      if (event && event.target.closest('.tree-caret') && event.target.closest('.tree-caret').textContent.trim()) return;
+      selectTree(id);
     }
 
     function selectTree(id) {
@@ -890,7 +1029,14 @@
       else if (state.sub === 'public') {
         rows = PUBLIC_DATA.filter(function (r) { return !state.cat || r.cat === state.cat; });
       }
-      else rows = BODY_DATA.filter(function (r) { return r.tree === state.treeId; });
+      else {
+        var modelIds = collectModelIdsUnderNode(state.treeId);
+        if (modelIds && modelIds.length) {
+          rows = BODY_DATA.filter(function (r) { return modelIds.indexOf(r.tree) >= 0; });
+        } else {
+          rows = BODY_DATA.filter(function (r) { return r.tree === state.treeId; });
+        }
+      }
 
       var name = document.getElementById('f_name');
       var sample = document.getElementById('f_sample');
@@ -1125,9 +1271,15 @@
       state.bodyRowId = null;
       document.getElementById('bodyModalTitle').textContent = '新增模板变体';
       document.getElementById('m_name').value = '';
-      document.getElementById('m_sample').value = getReportTreeModelLabel(state.treeId);
-      document.getElementById('m_default').checked = !BODY_DATA.some(function (r) { return r.tree === state.treeId && r.isDefault; });
-      document.getElementById('bodyFileRow').classList.add('hidden');
+      populateBodySampleSelect(state.treeId);
+      var sampleTreeId = document.getElementById('m_sample').value || state.treeId;
+      document.getElementById('m_default').checked = !BODY_DATA.some(function (r) { return r.tree === sampleTreeId && r.isDefault; });
+      document.getElementById('m_fileName').value = '';
+      document.getElementById('m_fileExt').textContent = '.doc';
+      document.querySelector('input[name=bodyFileMode][value=upload]').checked = true;
+      document.getElementById('bodyFileRow').classList.remove('hidden');
+      toggleBodyFileMode();
+      applyDefaultPublicRefs(sampleTreeId);
       openModal('bodyModal');
     }
 
@@ -1136,12 +1288,21 @@
       if (!row) return;
       state.bodyRowId = id;
       document.getElementById('bodyModalTitle').textContent = '编辑模板变体';
-      document.getElementById('m_sample').value = getReportTreeModelLabel(row.tree);
+      populateBodySampleSelect(row.tree, row.tree);
       document.getElementById('m_name').value = row.name;
       document.getElementById('m_default').checked = row.isDefault;
       document.getElementById('m_useHead').checked = row.head !== '—';
       document.getElementById('m_useTail').checked = row.tail !== '—';
       document.getElementById('m_tail').disabled = row.tail === '—';
+      renderBodyPublicSelects();
+      if (row.head !== '—') {
+        var pubHead = PUBLIC_DATA.find(function (r) { return r.file === row.head; });
+        if (pubHead) document.getElementById('m_head').value = pubHead.templateName;
+      }
+      if (row.tail !== '—') {
+        var pubTail = PUBLIC_DATA.find(function (r) { return r.file === row.tail; });
+        if (pubTail) document.getElementById('m_tail').value = pubTail.templateName;
+      }
       document.getElementById('bodyFileRow').classList.add('hidden');
       openModal('bodyModal');
     }
@@ -1152,8 +1313,18 @@
       var isDefault = document.getElementById('m_default').checked;
       var useHead = document.getElementById('m_useHead').checked;
       var useTail = document.getElementById('m_useTail').checked;
-      var head = useHead ? document.getElementById('m_head').value + '.doc' : '—';
-      var tail = useTail ? document.getElementById('m_tail').value + '.doc' : '—';
+      var head = '—';
+      var tail = '—';
+      if (useHead) {
+        var headName = document.getElementById('m_head').value;
+        var pubHead = PUBLIC_DATA.find(function (r) { return r.contentStyle === '模板头' && r.templateName === headName; });
+        head = pubHead ? pubHead.file : (headName ? headName + '.doc' : '—');
+      }
+      if (useTail) {
+        var tailName = document.getElementById('m_tail').value;
+        var pubTail = PUBLIC_DATA.find(function (r) { return r.contentStyle === '模板尾' && r.templateName === tailName; });
+        tail = pubTail ? pubTail.file : (tailName ? tailName + '.doc' : '—');
+      }
 
       if (state.bodyRowId) {
         var row = findBody(state.bodyRowId);
@@ -1171,17 +1342,21 @@
           }
         }
       } else {
+        var treeId = document.getElementById('m_sample').value || state.treeId;
         if (isDefault) {
           BODY_DATA.forEach(function (r) {
-            if (r.tree === state.treeId) r.isDefault = false;
+            if (r.tree === treeId) r.isDefault = false;
           });
         }
         var newId = BODY_DATA.reduce(function (m, r) { return Math.max(m, r.id); }, 0) + 1;
+        var fileName = (document.getElementById('m_fileName').value || '').trim();
+        var fileExt = document.getElementById('m_fileExt').textContent || '.doc';
+        var fullFile = fileName ? fileName + fileExt : null;
         BODY_DATA.push({
-          id: newId, tree: state.treeId, sample: getReportTreeModelLabel(state.treeId), category: getBodyCategoryPath(state.treeId),
+          id: newId, tree: treeId, sample: getReportTreeModelLabel(treeId), category: getBodyCategoryPath(treeId),
           name: name, isDefault: isDefault, head: head, tail: tail,
-          file: null,
-          templates: []
+          file: fullFile,
+          templates: fullFile ? [{ name: fullFile, time: formatNowTs(), enabled: true, uploader: 'admin' }] : []
         });
       }
       closeModal('bodyModal');
@@ -1203,22 +1378,75 @@
       document.getElementById('bodyVersionTableBody').innerHTML = (row.templates || []).map(function (t, i) {
         return '<tr><td class="text-center"><input type="radio" name="enabledBodyTpl" ' + (t.enabled ? 'checked' : '') + ' onchange="setEnabledBodyTpl(' + i + ')" /></td>' +
           '<td><span class="link">' + t.name + '</span></td><td>' + t.time + '</td><td>' + (t.uploader || '—') + '</td>' +
-          '<td><button onclick="alert(\'预览\')" class="text-blue-600 hover:underline">预览</button> ' +
+          '<td><button onclick="openBodyVersionRename(' + i + ')" class="text-blue-600 hover:underline">修改文件名</button> ' +
+          '<button onclick="alert(\'预览\')" class="ml-1 text-blue-600 hover:underline">预览</button> ' +
           '<button onclick="removeBodyTpl(' + i + ')" class="ml-1 text-red-500 hover:underline">删除</button></td></tr>';
       }).join('') || '<tr><td colspan="5" class="py-6 text-center text-slate-400">暂无模板，请上传或复制</td></tr>';
     }
 
-    function uploadBodyVersion() {
+    function openBodyVersionRename(index) {
+      var row = findBody(state.bodyRowId);
+      if (!row || !row.templates[index]) return;
+      state.bodyVersionRenameIndex = index;
+      var parts = splitFileName(row.templates[index].name);
+      document.getElementById('bodyVersionRenameInput').value = parts.base;
+      document.getElementById('bodyVersionRenameExt').textContent = parts.ext;
+      openModal('bodyVersionRenameModal');
+    }
+
+    function saveBodyVersionRename() {
+      var row = findBody(state.bodyRowId);
+      var idx = state.bodyVersionRenameIndex;
+      if (!row || idx == null || !row.templates[idx]) return;
+      var base = (document.getElementById('bodyVersionRenameInput').value || '').trim();
+      if (!base) { alert('请填写模版名称'); return; }
+      var ext = document.getElementById('bodyVersionRenameExt').textContent || '.doc';
+      row.templates[idx].name = base + ext;
+      if (row.templates[idx].enabled) row.file = row.templates[idx].name;
+      closeModal('bodyVersionRenameModal');
+      renderBodyVersionTable();
+      renderTable();
+    }
+
+    function openMockFilePicker(target) {
+      state.filePickerTarget = target;
+      var candidates = [
+        'PVC-C报告模板_标准版.doc',
+        'PVC-C报告模板_英文版.doc',
+        'PVC-U报告模板_标准版.doc',
+        'PVC-M报告模板_标准版.doc',
+        '电网物资通用模板头.doc'
+      ];
+      document.getElementById('mockFilePickerList').innerHTML = candidates.map(function (name) {
+        return '<button type="button" data-file="' + escHtml(name) + '" onclick="pickMockFileByEl(this)" class="w-full rounded border border-slate-200 px-3 py-2 text-left text-sm hover:bg-slate-50"><i class="fa fa-file-word-o mr-2 text-blue-500"></i>' + name + '</button>';
+      }).join('');
+      openModal('mockFilePickerModal');
+    }
+
+    function pickMockFileByEl(el) {
+      pickMockFile(el.getAttribute('data-file'));
+    }
+
+    function pickMockFile(fileName) {
+      closeModal('mockFilePickerModal');
+      if (state.filePickerTarget === 'bodyAdd') {
+        var parts = splitFileName(fileName);
+        document.getElementById('m_fileName').value = parts.base;
+        document.getElementById('m_fileExt').textContent = parts.ext;
+        document.querySelector('input[name=bodyFileMode][value=upload]').checked = true;
+        toggleBodyFileMode();
+      } else if (state.filePickerTarget === 'bodyVersion') {
+        applyBodyVersionUpload(fileName);
+      }
+      state.filePickerTarget = null;
+    }
+
+    function applyBodyVersionUpload(fileName) {
       var row = findBody(state.bodyRowId);
       if (!row) return;
       if (!row.templates) row.templates = [];
-      var now = new Date();
-      var ts = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' +
-        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-      var modelLabel = getReportTreeModelLabel(row.tree);
-      var fileName = modelLabel + '报告模板_' + (row.name || '新版') + '_v' + (row.templates.length + 1) + '.doc';
       var isFirst = !row.templates.length;
-      row.templates.push({ name: fileName, time: ts, enabled: isFirst, uploader: 'admin' });
+      row.templates.push({ name: fileName, time: formatNowTs(), enabled: isFirst, uploader: 'admin' });
       if (isFirst) row.file = fileName;
       renderBodyVersionTable();
       renderTable();
@@ -1249,14 +1477,55 @@
       renderTable();
     }
 
-    function openBodyCopyPicker() {
-      var sources = BODY_DATA.filter(function (r) { return r.file && r.id !== state.bodyRowId; });
-      document.getElementById('copyModalTitle').textContent = '正文模板复制';
+    function getBodyCopySources() {
+      return BODY_DATA.filter(function (r) {
+        if (!r.file) return false;
+        if (state.copyTarget === 'version' && r.id === state.bodyRowId) return false;
+        return true;
+      });
+    }
+
+    function renderBodyCopyTable() {
+      var sources = getBodyCopySources();
+      var sampleEl = document.getElementById('c_sample');
+      var categoryEl = document.getElementById('c_category');
+      var sampleKw = sampleEl ? sampleEl.value.trim() : '';
+      var catKw = categoryEl ? categoryEl.value.trim() : '';
+      if (sampleKw) sources = sources.filter(function (r) { return getBodySampleDisplay(r.tree).includes(sampleKw); });
+      if (catKw) sources = sources.filter(function (r) { return getBodyCategoryPath(r.tree).includes(catKw); });
+      document.getElementById('copyTableHead').innerHTML = '<tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>样品名称(型号)</th><th>样品分类</th><th>操作</th></tr>';
       document.getElementById('copyTableBody').innerHTML = sources.map(function (r, i) {
         return '<tr><td><input type="radio" name="copyPick" value="' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
-          '<td>' + r.file + '</td><td>正文</td><td>' + r.category + '</td><td>' + r.sample + ' · ' + r.name + '</td>' +
-          '<td><button class="text-blue-600">预览</button></td></tr>';
+          '<td>' + r.file + '</td><td>' + getBodySampleDisplay(r.tree) + '</td><td>' + getBodyCategoryPath(r.tree) + '</td>' +
+          '<td><button type="button" onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button></td></tr>';
+      }).join('') || '<tr><td colspan="6" class="py-6 text-center text-slate-400">暂无可复制的正文模板</td></tr>';
+    }
+
+    function renderBodyCopyModal() {
+      document.getElementById('copyModalTitle').textContent = '正文模板复制';
+      document.getElementById('copyBodyToolbar').classList.remove('hidden');
+      document.getElementById('copyPublicToolbar').classList.add('hidden');
+      if (document.getElementById('c_sample')) document.getElementById('c_sample').value = '';
+      if (document.getElementById('c_category')) document.getElementById('c_category').value = '';
+      renderBodyCopyTable();
+    }
+
+    function renderPublicCopyModal() {
+      document.getElementById('copyModalTitle').textContent = '公共模板头尾复制';
+      document.getElementById('copyBodyToolbar').classList.add('hidden');
+      document.getElementById('copyPublicToolbar').classList.remove('hidden');
+      document.getElementById('copyTableHead').innerHTML = '<tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>模版内容样式</th><th>关联绑定</th><th>绑定对象</th><th>操作</th></tr>';
+      document.getElementById('copyTableBody').innerHTML = PUBLIC_DATA.map(function (r, i) {
+        return '<tr><td><input type="radio" name="copyPick" value="' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
+          '<td>' + r.file + '</td><td>' + r.contentStyle + '</td><td>' + (r.bindType === 'category' ? '样品分类' : '样品名称(型号)') + '</td>' +
+          '<td>' + r.bindLabel + '</td><td><button class="text-blue-600">预览</button></td></tr>';
       }).join('');
+    }
+
+    function openBodyCopyPicker() {
+      state.copyMode = 'body';
+      state.copyTarget = 'version';
+      renderBodyCopyModal();
       openModal('copyModal');
     }
 
@@ -1267,7 +1536,6 @@
         if (r.tree === row.tree) r.isDefault = r.id === id;
       });
       renderTable();
-      alert('已设为默认模板（原型演示）');
     }
 
     function deleteBody(id) {
@@ -1436,14 +1704,20 @@
     document.getElementById('m_useTail').addEventListener('change', function () {
       document.getElementById('m_tail').disabled = !this.checked;
     });
+    document.getElementById('m_sample').addEventListener('change', function () {
+      if (!state.bodyRowId) applyDefaultPublicRefs(this.value);
+    });
 
     function openCopyPicker(from) {
-      document.getElementById('copyModalTitle').textContent = from === 'body' ? '模板文件复制' : '公共模板头尾复制';
-      document.getElementById('copyTableBody').innerHTML = PUBLIC_DATA.map(function (r, i) {
-        return '<tr><td><input type="radio" name="copyPick" value="' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
-          '<td>' + r.file + '</td><td>' + r.contentStyle + '</td><td>' + (r.bindType === 'category' ? '样品分类' : '样品名称(型号)') + '</td>' +
-          '<td>' + r.bindLabel + '</td><td><button class="text-blue-600">预览</button></td></tr>';
-      }).join('');
+      if (from === 'body') {
+        state.copyMode = 'body';
+        state.copyTarget = 'add';
+        renderBodyCopyModal();
+      } else {
+        state.copyMode = 'public';
+        state.copyTarget = null;
+        renderPublicCopyModal();
+      }
       openModal('copyModal');
     }
     function findRecord(id) {
@@ -1543,7 +1817,36 @@
       alert('已复制模板（原型演示）');
     }
 
-    function confirmCopy() { closeModal('copyModal'); alert('已复制选中模板（原型演示）'); }
+    function confirmCopy() {
+      if (state.copyMode === 'body') {
+        var pick = document.querySelector('input[name=copyPick]:checked');
+        var source = pick ? findBody(parseInt(pick.value, 10)) : null;
+        if (source && source.file) {
+          if (state.copyTarget === 'version') {
+            var row = findBody(state.bodyRowId);
+            if (row) {
+              var copyName = '复制_' + source.file;
+              var isFirst = !row.templates.length;
+              if (!row.templates) row.templates = [];
+              row.templates.push({ name: copyName, time: formatNowTs(), enabled: isFirst, uploader: 'admin' });
+              if (isFirst) row.file = copyName;
+              renderBodyVersionTable();
+              renderTable();
+            }
+          } else if (state.copyTarget === 'add') {
+            var parts = splitFileName(source.file);
+            document.getElementById('m_fileName').value = parts.base;
+            document.getElementById('m_fileExt').textContent = parts.ext;
+            document.querySelector('input[name=bodyFileMode][value=copy]').checked = true;
+            toggleBodyFileMode();
+          }
+        }
+        closeModal('copyModal');
+        return;
+      }
+      closeModal('copyModal');
+      alert('已复制选中模板（原型演示）');
+    }
 
     function ph(key) {
       return '<span class="ph">{{' + key + '}}</span>';
