@@ -143,18 +143,6 @@
     .po-field-item .acts .add { color: #2563eb; border-color: #93c5fd; background: #eff6ff; }
     .po-field-item .acts .del { color: #ef4444; border-color: #fca5a5; background: #fef2f2; }
     .po-field-item .acts .loc { color: #64748b; border-color: #cbd5e1; background: #f8fafc; }
-    /* 页眉页脚 */
-    .stamp-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
-    .stamp-card-title { font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-    .stamp-card-title::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: #2563eb; }
-    .stamp-upload-row { display: flex; flex-wrap: wrap; gap: 28px; }
-    .stamp-upload-box { text-align: center; }
-    .stamp-upload-box .label { margin-bottom: 8px; font-size: 13px; color: #64748b; }
-    .stamp-preview { width: 320px; height: 64px; border: 1px dashed #cbd5e1; border-radius: 4px; background: #f8fafc; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .stamp-preview.seal { width: 120px; height: 120px; }
-    .stamp-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
-    .stamp-upload-btn { margin-top: 8px; font-size: 12px; padding: 4px 12px; border-radius: 4px; border: 1px solid #cbd5e1; color: #475569; background: #fff; cursor: pointer; }
-    .stamp-upload-btn:hover { border-color: #2563eb; color: #2563eb; }
     .badge-doc { display: inline-block; background: #dcfce7; color: #15803d; font-size: 11px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
     /* 模版类型 Landing */
     .type-card {
@@ -173,7 +161,6 @@
     }
     .type-card:nth-child(2) .illus { color: #059669; }
     .type-card:nth-child(3) .illus { color: #7c3aed; }
-    .type-card:nth-child(4) .illus { color: #d97706; }
     /* 详情顶栏 + 大类横向 Tab */
     .detail-header {
       display: flex; align-items: center; gap: 16px; padding: 12px 20px;
@@ -260,7 +247,7 @@
   <!-- 模版类型 Landing -->
   <div id="tplLandingView" class="cat-hub">
     <h1 class="mb-10 text-2xl font-semibold tracking-wide text-slate-800">模板管理</h1>
-    <div class="grid w-full max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2">
+    <div class="grid w-full max-w-5xl grid-cols-1 gap-6 sm:grid-cols-3">
       <div class="type-card" onclick="enterTplType('report')">
         <div class="title">报告模版</div>
         <div class="desc">配置报告正文与公共头尾模版，按大类分套管理</div>
@@ -275,11 +262,6 @@
         <div class="title">单据模版</div>
         <div class="desc">配置 7 类流程单据的生成模版与开关</div>
         <div class="illus"><i class="fa fa-file-o"></i></div>
-      </div>
-      <div class="type-card" onclick="enterTplType('stamp')">
-        <div class="title">页眉页脚</div>
-        <div class="desc">全局默认页眉页脚及按单据类型覆盖</div>
-        <div class="illus"><i class="fa fa-picture-o"></i></div>
       </div>
     </div>
     <p class="mt-8 text-sm text-slate-400">选择模版类型进入配置（原型演示）</p>
@@ -347,28 +329,6 @@
     </div>
   </div>
 
-  <!-- ============ 页眉页脚 ============ -->
-  <div id="stampView" class="hidden px-4 py-4">
-    <div class="stamp-card">
-      <div class="stamp-card-title" data-annotate="stamp-global">全局默认页眉 / 页脚</div>
-      <p class="mb-3 text-sm text-slate-500">应用于系统中所有需要导出的文件（报告、记录单及各类单据）。未单独配置的单据默认使用此页眉页脚。</p>
-      <div class="stamp-upload-row">
-        <div class="stamp-upload-box"><div class="label">默认页眉图片</div><div class="stamp-preview"><img src="https://via.placeholder.com/320x60/1e3a8a/ffffff?text=数蚕智能+·+页眉" alt="页眉" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
-        <div class="stamp-upload-box"><div class="label">默认页脚图片</div><div class="stamp-preview"><img src="https://via.placeholder.com/320x50/64748b/ffffff?text=地址+·+电话+·+页脚" alt="页脚" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
-      </div>
-    </div>
-
-    <div class="stamp-card">
-      <div class="stamp-card-title" data-annotate="stamp-override">按单据类型覆盖</div>
-      <p class="mb-3 text-sm text-slate-500">如某类单据的页眉页脚与全局默认不同，可在此单独上传覆盖；留空则沿用全局默认。</p>
-      <div class="overflow-x-auto">
-        <table class="tpl-table">
-          <thead><tr><th style="width:60px">序号</th><th>文件类型</th><th>页眉</th><th>页脚</th><th style="width:200px">操作</th></tr></thead>
-          <tbody id="stampOverrideBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
   </div><!-- /tplDetailView -->
 
   <!-- 未保存确认 -->
@@ -1343,21 +1303,18 @@
       renderTable();
     }
 
-    var TPL_TYPE_TITLES = { report: '报告模版', record: '记录单模版', doc: '单据模版', stamp: '页眉页脚' };
+    var TPL_TYPE_TITLES = { report: '报告模版', record: '记录单模版', doc: '单据模版' };
 
     function renderDetailPanels() {
       var tab = state.main;
       var isDoc = tab === 'doc';
-      var isStamp = tab === 'stamp';
       var isTable = tab === 'report' || tab === 'record';
-      var showCatTabs = !isStamp;
-      document.getElementById('catTabBar').classList.toggle('hidden', !showCatTabs);
+      document.getElementById('catTabBar').classList.remove('hidden');
       document.getElementById('detailTitle').textContent = TPL_TYPE_TITLES[tab] || '模板管理';
       document.getElementById('reportSubBar').classList.toggle('hidden', tab !== 'report');
       document.getElementById('recordSubBar').classList.toggle('hidden', tab !== 'record');
       document.getElementById('tableLayout').classList.toggle('hidden', !isTable);
       document.getElementById('docView').classList.toggle('hidden', !isDoc);
-      document.getElementById('stampView').classList.toggle('hidden', !isStamp);
       document.querySelectorAll('#catTabBar .cat-tab').forEach(function (t) {
         t.classList.toggle('active', t.getAttribute('data-cat') === state.cat);
       });
@@ -1367,7 +1324,6 @@
         });
       }
       if (isDoc) renderDocView();
-      else if (isStamp) renderStampView();
       else {
         document.getElementById('treePanel').classList.toggle('hidden', tab === 'report' && state.sub === 'public');
         renderTree();
@@ -2634,26 +2590,6 @@
       }
     }
 
-    /* ============ 页眉页脚 ============ */
-    var STAMP_OVERRIDES = [
-      { type: '检测报告', header: '默认（继承全局）', footer: '默认（继承全局）' },
-      { type: '记录单', header: '记录单专用页眉.png', footer: '默认（继承全局）' },
-      { type: '检测委托书', header: '默认（继承全局）', footer: '默认（继承全局）' },
-      { type: '收费通知单', header: '收费通知专用页眉.png', footer: '默认（继承全局）' },
-      { type: '产品检测预通知书', header: '默认（继承全局）', footer: '默认（继承全局）' }
-    ];
-    function renderStampView() {
-      document.getElementById('stampOverrideBody').innerHTML = STAMP_OVERRIDES.map(function (r, i) {
-        var h = r.header.indexOf('默认') === 0 ? '<span class="text-slate-400">' + r.header + '</span>' : '<span class="link">' + r.header + '</span>';
-        var f = r.footer.indexOf('默认') === 0 ? '<span class="text-slate-400">' + r.footer + '</span>' : '<span class="link">' + r.footer + '</span>';
-        return '<tr><td>' + (i + 1) + '</td><td>' + r.type + '</td><td>' + h + '</td><td>' + f + '</td>' +
-          '<td class="whitespace-nowrap"><button onclick="alert(\'上传页眉（原型演示）\')" class="text-blue-600 hover:underline">上传页眉</button> ' +
-          '<button onclick="alert(\'上传页脚（原型演示）\')" class="ml-1 text-blue-600 hover:underline">上传页脚</button> ' +
-          '<button onclick="alert(\'恢复默认（原型演示）\')" class="ml-1 text-red-500 hover:underline">恢复默认</button></td></tr>';
-      }).join('');
-      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
-    }
-
     function defaultTreeIdForCat(cat) {
       if (cat === 'aqgqj') return 'glove';
       if (cat === 'gcjc') return 'p';
@@ -2698,8 +2634,6 @@
         { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 7 类流程单据模版。进入后通过顶部横向 Tab 切换四大类，每类固定 7 张卡片，卡片内直接管理多版本模版。', tag: '模板管理' },
         { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模版逻辑', wide: true, content: '<strong>按大类分套：</strong>DLWZ / AQGQJ / HJJC / GCJC 四大类各自独立配置。<br><br><strong>卡片开关：</strong>控制是否支持系统生成该单据；关闭时整卡置灰但保留启用记忆。<br><br><strong>保存校验：</strong>开启的卡片必须至少有一个模版文件。', tag: '模板管理' },
         { id: 'doc-config', selector: '[data-annotate="doc-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 打开该单据的 Word 模版，右侧字段面板可插入占位符。', tag: '模板管理' },
-        { id: 'stamp-global', selector: '[data-annotate="stamp-global"]', position: 'top-right', title: '全局默认页眉页脚', wide: true, content: '上传全局默认的页眉、页脚图片，应用于所有导出文件；未单独覆盖的单据默认沿用此设置（两级模型的「默认层」）。页眉页脚不按业务大类区分。', tag: '模板管理' },
-        { id: 'stamp-override', selector: '[data-annotate="stamp-override"]', position: 'top-right', title: '按单据类型覆盖', wide: true, content: '某类单据若与全局默认不同，可单独上传页眉/页脚覆盖；留空即继承全局默认（两级模型的「覆盖层」）。', tag: '模板管理' },
         { id: 'public-filter', selector: '[data-annotate="public-filter"]', position: 'top-left', title: '公共头尾筛选', wide: true, content: '筛选字段与弹窗/表头对齐：<strong>模版内容样式</strong>（模板头/尾）、<strong>关联绑定</strong>（全部/样品分类/样品名称型号）、<strong>模版文件名</strong>。', tag: '报告模板' },
         { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共头尾列表', wide: true, content: '表头三列：<strong>模版内容样式</strong>、<strong>关联绑定</strong>（类型 + 绑定对象）、<strong>模版文件</strong>（完整文件名）。列表已按当前大类过滤。', tag: '报告模板' },
         { id: 'public-add', selector: '[data-annotate="public-add"]', position: 'top-left', title: '新增公共头尾', content: '打开新增弹窗，配置模版内容样式、关联绑定、绑定对象、上传文件并填写模版名称。', tag: '报告模板' },

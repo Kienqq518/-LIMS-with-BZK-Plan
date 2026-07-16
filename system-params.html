@@ -166,6 +166,14 @@
     .stamp-upload-btn { margin-top: 8px; font-size: 12px; padding: 4px 12px; border-radius: 4px; border: 1px solid #cbd5e1; color: #475569; background: #fff; cursor: pointer; }
     .stamp-upload-btn:hover { border-color: #2563eb; color: #2563eb; }
     .seal-hint { margin-bottom: 12px; padding: 10px 14px; border-radius: 4px; background: #fffbeb; border: 1px solid #fde68a; font-size: 12px; color: #92400e; line-height: 1.6; }
+    /* 页眉页脚 */
+    .hf-preview { width: 320px; height: 64px; border: 1px dashed #cbd5e1; border-radius: 4px; background: #f8fafc; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .hf-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .hf-preview.placeholder { color: #94a3b8; font-size: 12px; flex-direction: column; gap: 4px; }
+    .hf-side-cell { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+    .hf-side-status { font-size: 13px; }
+    .hf-section-disabled { opacity: .55; pointer-events: none; user-select: none; }
+    .hf-master-row { display: flex; align-items: center; gap: 12px; padding: 4px 0 8px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -180,17 +188,18 @@
 
   <!-- 子 Tab -->
   <div class="flex overflow-x-auto border-b border-slate-200 bg-white px-4 text-sm" id="paramTabBar">
-    <div class="param-tab active" data-panel="entrust" data-annotate="entrust-tab">委托信息设置</div>
-    <div class="param-tab" data-panel="undertaker" data-annotate="undertaker-tab">承检方信息</div>
-    <div class="param-tab" data-panel="report">报告设置</div>
-    <div class="param-tab" data-panel="record">记录单设置</div>
+    <div class="param-tab active" data-panel="undertaker" data-annotate="undertaker-tab">承检方信息</div>
     <div class="param-tab" data-panel="flow" data-annotate="flow-tab">流程设置</div>
+    <div class="param-tab" data-panel="entrust" data-annotate="entrust-tab">委托信息设置</div>
+    <div class="param-tab" data-panel="header-footer" data-annotate="hf-tab">页眉页脚</div>
+    <div class="param-tab" data-panel="record">记录单设置</div>
+    <div class="param-tab" data-panel="report">报告设置</div>
     <div class="param-tab" data-panel="numbering" data-annotate="numbering-tab">编号规则</div>
   </div>
 
   <div class="p-4">
     <!-- ========== 委托信息设置 ========== -->
-    <div id="panel-entrust" class="param-panel active">
+    <div id="panel-entrust" class="param-panel">
       <div class="rounded bg-white shadow-sm pb-6">
         <div class="flex items-center justify-end border-b border-slate-100 px-6 py-3">
           <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
@@ -230,7 +239,7 @@
     </div>
 
     <!-- 其他 Tab 占位 -->
-    <div id="panel-undertaker" class="param-panel">
+    <div id="panel-undertaker" class="param-panel active">
       <div class="rounded bg-white shadow-sm">
         <div class="cfg-panel">
           <div class="cfg-section">
@@ -354,6 +363,67 @@
       </div>
     </div>
 
+    <!-- ========== 页眉页脚 ========== -->
+    <div id="panel-header-footer" class="param-panel">
+      <div class="rounded bg-white shadow-sm">
+        <div class="cfg-panel">
+          <div class="mx-0 mb-4 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            <i class="fa fa-info-circle mt-0.5 text-blue-500"></i>
+            <span>配置导出文件在每页边距叠加的<strong>图片</strong>页眉页脚。报告正文前后的 Word 结构化头尾请在「模板管理 › 报告模版 › 公共头尾模版」维护，两者互不影响。</span>
+          </div>
+          <div class="cfg-section">
+            <div class="cfg-section-title" data-annotate="hf-master">功能开关</div>
+            <div class="hf-master-row">
+              <label class="cfg-toggle" title="关闭后所有导出文件均不叠加页眉页脚">
+                <input type="checkbox" id="hfMasterSwitch" checked onchange="onHfMasterChange(this.checked)" />
+                <span class="cfg-toggle-slider"></span>
+              </label>
+              <span class="text-sm text-slate-600">启用页眉页脚</span>
+              <span class="text-xs text-slate-400">关闭后下方配置保留但不生效</span>
+            </div>
+          </div>
+          <div class="cfg-section" id="hfDefaultSection">
+            <div class="cfg-section-title" data-annotate="hf-default">默认页眉 / 页脚</div>
+            <p class="mb-3 text-sm text-slate-500">各文件类型未单独上传时，默认使用此图片。</p>
+            <div class="stamp-upload-row">
+              <div class="stamp-upload-box">
+                <div class="label">默认页眉图片</div>
+                <div class="hf-preview" id="hfDefaultHeaderPreview"></div>
+                <button type="button" class="stamp-upload-btn hf-action" onclick="uploadHfDefault('header')"><i class="fa fa-upload"></i> 上传</button>
+              </div>
+              <div class="stamp-upload-box">
+                <div class="label">默认页脚图片</div>
+                <div class="hf-preview" id="hfDefaultFooterPreview"></div>
+                <button type="button" class="stamp-upload-btn hf-action" onclick="uploadHfDefault('footer')"><i class="fa fa-upload"></i> 上传</button>
+              </div>
+            </div>
+          </div>
+          <div class="cfg-section" id="hfTableSection">
+            <div class="cfg-section-title" data-annotate="hf-table">按文件类型配置</div>
+            <p class="mb-3 text-sm text-slate-500">页眉、页脚可独立开关；上传专用图后该类型对应侧优先使用专用图，否则继承默认。</p>
+            <div class="overflow-x-auto">
+              <table class="cfg-table">
+                <thead>
+                  <tr>
+                    <th style="width:60px">序号</th>
+                    <th>文件类型</th>
+                    <th style="min-width:220px">页眉</th>
+                    <th style="min-width:220px">页脚</th>
+                    <th style="width:220px">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="hfTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="cfg-save-bar gap-3" style="display:flex;justify-content:center;">
+            <button type="button" onclick="resetHeaderFooter()" class="rounded border border-slate-300 px-8 py-2 text-sm text-slate-600 hover:bg-slate-50 hf-action">恢复默认</button>
+            <button type="button" onclick="saveHeaderFooter()" class="rounded bg-blue-600 px-10 py-2 text-sm text-white hover:bg-blue-700">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ========== 编号规则 ========== -->
     <div id="panel-numbering" class="param-panel">
       <div class="rounded bg-white shadow-sm">
@@ -441,7 +511,168 @@
         });
       }
       if (panel === 'record') renderRecords();
+      if (panel === 'header-footer') renderHeaderFooterPanel();
     });
+
+    /* ===== 页眉页脚 ===== */
+    var HF_FILE_TYPES = [
+      { key: 'report', label: '检测报告' },
+      { key: 'record', label: '记录单' },
+      { key: 'entrust', label: '检测委托书' },
+      { key: 'fee_notice', label: '收费通知单' },
+      { key: 'task', label: '检测任务单' },
+      { key: 'task_flow', label: '检测任务及流转单' },
+      { key: 'return_confirm', label: '还样退库确认表' },
+      { key: 'return_apply', label: '退样申请表' },
+      { key: 'pre_notice', label: '产品检测预通知书' }
+    ];
+
+    var HF_CONFIG = {
+      enabled: true,
+      defaultHeader: { fileName: '默认页眉.png', url: 'https://via.placeholder.com/320x60/1e3a8a/ffffff?text=数蚕智能+·+页眉' },
+      defaultFooter: { fileName: '默认页脚.png', url: 'https://via.placeholder.com/320x50/64748b/ffffff?text=地址+·+电话+·+页脚' },
+      fileTypes: {}
+    };
+
+    HF_FILE_TYPES.forEach(function (ft) {
+      HF_CONFIG.fileTypes[ft.key] = {
+        headerEnabled: true,
+        footerEnabled: true,
+        headerOverride: null,
+        footerOverride: null
+      };
+    });
+    HF_CONFIG.fileTypes.record.headerOverride = { fileName: '记录单专用页眉.png', url: '' };
+    HF_CONFIG.fileTypes.fee_notice.headerOverride = { fileName: '收费通知专用页眉.png', url: '' };
+
+    function hfSideStatus(row, side) {
+      var enabled = side === 'header' ? row.headerEnabled : row.footerEnabled;
+      var override = side === 'header' ? row.headerOverride : row.footerOverride;
+      if (!HF_CONFIG.enabled) return '<span class="hf-side-status text-slate-400">不启用</span>';
+      if (!enabled) return '<span class="hf-side-status text-slate-400">不启用</span>';
+      if (override) return '<span class="hf-side-status text-blue-600 cursor-pointer hover:underline">' + override.fileName + '</span>';
+      var hasDefault = side === 'header' ? HF_CONFIG.defaultHeader : HF_CONFIG.defaultFooter;
+      if (hasDefault) return '<span class="hf-side-status text-slate-500">继承默认</span>';
+      return '<span class="hf-side-status text-slate-400">未配置</span>';
+    }
+
+    function hfSideToggle(key, side, checked) {
+      return '<label class="cfg-toggle" style="flex-shrink:0">' +
+        '<input type="checkbox" class="hf-action hf-side-toggle" data-key="' + key + '" data-side="' + side + '"' + (checked ? ' checked' : '') +
+        ' onchange="onHfSideToggle(\'' + key + '\',\'' + side + '\',this.checked)" />' +
+        '<span class="cfg-toggle-slider"></span></label>';
+    }
+
+    function renderHeaderFooterPanel() {
+      document.getElementById('hfMasterSwitch').checked = HF_CONFIG.enabled;
+      var defaultSec = document.getElementById('hfDefaultSection');
+      var tableSec = document.getElementById('hfTableSection');
+      defaultSec.classList.toggle('hf-section-disabled', !HF_CONFIG.enabled);
+      tableSec.classList.toggle('hf-section-disabled', !HF_CONFIG.enabled);
+
+      var hPrev = document.getElementById('hfDefaultHeaderPreview');
+      var fPrev = document.getElementById('hfDefaultFooterPreview');
+      if (HF_CONFIG.defaultHeader) {
+        hPrev.className = 'hf-preview';
+        hPrev.innerHTML = '<img src="' + HF_CONFIG.defaultHeader.url + '" alt="默认页眉" />';
+      } else {
+        hPrev.className = 'hf-preview placeholder';
+        hPrev.innerHTML = '<i class="fa fa-picture-o"></i><span>未上传</span>';
+      }
+      if (HF_CONFIG.defaultFooter) {
+        fPrev.className = 'hf-preview';
+        fPrev.innerHTML = '<img src="' + HF_CONFIG.defaultFooter.url + '" alt="默认页脚" />';
+      } else {
+        fPrev.className = 'hf-preview placeholder';
+        fPrev.innerHTML = '<i class="fa fa-picture-o"></i><span>未上传</span>';
+      }
+
+      document.getElementById('hfTableBody').innerHTML = HF_FILE_TYPES.map(function (ft, i) {
+        var row = HF_CONFIG.fileTypes[ft.key];
+        return '<tr><td>' + (i + 1) + '</td><td>' + ft.label + '</td>' +
+          '<td><div class="hf-side-cell">' + hfSideToggle(ft.key, 'header', row.headerEnabled) + hfSideStatus(row, 'header') + '</div></td>' +
+          '<td><div class="hf-side-cell">' + hfSideToggle(ft.key, 'footer', row.footerEnabled) + hfSideStatus(row, 'footer') + '</div></td>' +
+          '<td class="whitespace-nowrap">' +
+          '<button type="button" class="text-blue-600 hover:underline hf-action" onclick="uploadHfOverride(\'' + ft.key + '\',\'header\')">上传页眉</button> ' +
+          '<button type="button" class="text-blue-600 hover:underline hf-action" onclick="uploadHfOverride(\'' + ft.key + '\',\'footer\')">上传页脚</button> ' +
+          '<button type="button" class="text-red-500 hover:underline hf-action" onclick="clearHfOverride(\'' + ft.key + '\')">恢复默认</button>' +
+          '</td></tr>';
+      }).join('');
+
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function onHfMasterChange(checked) {
+      HF_CONFIG.enabled = checked;
+      renderHeaderFooterPanel();
+    }
+
+    function onHfSideToggle(key, side, checked) {
+      if (side === 'header') HF_CONFIG.fileTypes[key].headerEnabled = checked;
+      else HF_CONFIG.fileTypes[key].footerEnabled = checked;
+      renderHeaderFooterPanel();
+    }
+
+    function uploadHfDefault(side) {
+      if (!HF_CONFIG.enabled) return;
+      var name = side === 'header' ? '新默认页眉.png' : '新默认页脚.png';
+      if (side === 'header') HF_CONFIG.defaultHeader = { fileName: name, url: 'https://via.placeholder.com/320x60/1e3a8a/ffffff?text=默认页眉' };
+      else HF_CONFIG.defaultFooter = { fileName: name, url: 'https://via.placeholder.com/320x50/64748b/ffffff?text=默认页脚' };
+      alert('上传' + (side === 'header' ? '默认页眉' : '默认页脚') + '（原型演示）');
+      renderHeaderFooterPanel();
+    }
+
+    function uploadHfOverride(key, side) {
+      if (!HF_CONFIG.enabled) return;
+      var ft = HF_FILE_TYPES.find(function (f) { return f.key === key; });
+      var name = (ft ? ft.label : key) + (side === 'header' ? '专用页眉.png' : '专用页脚.png');
+      if (side === 'header') HF_CONFIG.fileTypes[key].headerOverride = { fileName: name, url: '' };
+      else HF_CONFIG.fileTypes[key].footerOverride = { fileName: name, url: '' };
+      alert('上传专用' + (side === 'header' ? '页眉' : '页脚') + '（原型演示）');
+      renderHeaderFooterPanel();
+    }
+
+    function clearHfOverride(key) {
+      if (!HF_CONFIG.enabled) return;
+      HF_CONFIG.fileTypes[key].headerOverride = null;
+      HF_CONFIG.fileTypes[key].footerOverride = null;
+      renderHeaderFooterPanel();
+    }
+
+    function resetHeaderFooter() {
+      if (!confirm('确定恢复页眉页脚为初始默认配置？')) return;
+      HF_CONFIG.enabled = true;
+      HF_CONFIG.defaultHeader = null;
+      HF_CONFIG.defaultFooter = null;
+      HF_FILE_TYPES.forEach(function (ft) {
+        HF_CONFIG.fileTypes[ft.key] = {
+          headerEnabled: true,
+          footerEnabled: true,
+          headerOverride: null,
+          footerOverride: null
+        };
+      });
+      renderHeaderFooterPanel();
+      alert('已恢复默认（原型演示）');
+    }
+
+    function saveHeaderFooter() {
+      alert('页眉页脚配置已保存（原型演示）');
+    }
+
+    function resolveHeaderFooterSide(config, fileTypeKey, side) {
+      if (!config.enabled) return null;
+      var row = config.fileTypes[fileTypeKey];
+      if (!row) return null;
+      if (side === 'header' && !row.headerEnabled) return null;
+      if (side === 'footer' && !row.footerEnabled) return null;
+      var override = side === 'header' ? row.headerOverride : row.footerOverride;
+      if (override) return override;
+      var def = side === 'header' ? config.defaultHeader : config.defaultFooter;
+      return def || null;
+    }
+
+    renderHeaderFooterPanel();
 
     function savePanel(name) { alert(name + '已保存（原型演示）'); }
 
@@ -892,12 +1123,48 @@
     PrototypeAnnotation.init({
       annotations: [
         {
+          id: 'hf-tab',
+          selector: '[data-annotate="hf-tab"]',
+          position: 'top-right',
+          title: '页眉页脚',
+          wide: true,
+          content: '原「模板管理 › 页眉页脚」已迁入业务流程配置。一套部署对应一个检测机构，在此维护导出时叠加的图片页眉页脚；与报告公共头尾 Word 模版无关。',
+          tag: '业务流程配置'
+        },
+        {
+          id: 'hf-master',
+          selector: '[data-annotate="hf-master"]',
+          position: 'top-right',
+          title: '功能开关',
+          wide: true,
+          content: '机构级总开关。关闭后所有导出文件均不叠加页眉页脚，下方默认图与按文件类型配置置灰但保留已保存状态。',
+          tag: '页眉页脚'
+        },
+        {
+          id: 'hf-default',
+          selector: '[data-annotate="hf-default"]',
+          position: 'top-right',
+          title: '默认页眉页脚',
+          wide: true,
+          content: '各文件类型未上传专用图且对应侧开关开启时，继承此处默认图片。默认未上传则该侧不叠加，不阻断导出。',
+          tag: '页眉页脚'
+        },
+        {
+          id: 'hf-table',
+          selector: '[data-annotate="hf-table"]',
+          position: 'top-right',
+          title: '按文件类型配置',
+          wide: true,
+          content: '固定 9 种导出类型（检测报告、记录单及 7 类单据）。页眉、页脚独立开关；可上传专用图覆盖默认。「恢复默认」仅清除该行专用图，不改变开关状态。',
+          tag: '页眉页脚'
+        },
+        {
           id: 'seal-moved',
           selector: '[data-annotate="seal-moved"]',
           position: 'top-right',
           title: '报告用章维护位置',
           wide: true,
-          content: '原「报告设置」及「模板管理 › 页眉页脚与印章 › 印章管理」中的骑缝章 / CNAS / CMA / 检测专用章图片上传，已统一迁移至「业务流程配置 › 承检方信息 › 签名与印章」维护。',
+          content: '原「报告设置」及「模板管理 › 页眉页脚与印章 › 印章管理」中的骑缝章 / CNAS / CMA / 检测专用章图片上传，已统一迁移至「业务流程配置 › 承检方信息 › 签名与印章」维护。页眉页脚图片配置已迁至本页「页眉页脚」Tab。',
           tag: '业务流程配置'
         },
         {
