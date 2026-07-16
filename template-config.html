@@ -19,7 +19,14 @@
     .sub-switch-item:last-child { border-right: none; }
     .sub-switch-item:hover { color: #2563eb; }
     .sub-switch-item.active { background: #eff6ff; color: #2563eb; font-weight: 500; }
-    .cat-hub { display: flex; min-height: calc(100vh - 80px); flex-direction: column; align-items: center; justify-content: flex-start; padding: 40px 24px; }
+    /*
+     * 根因：勿写 .cat-hub { display:flex }。本地 style 在 Tailwind 之后时，等权的 .cat-hub
+     * 会盖过 Tailwind/.hidden，enterTplCategory 加了 hidden 后大类页仍 flex 撑满视口，详情在下方，看似无反应。
+     */
+    .cat-hub {
+      min-height: calc(100vh - 80px); flex-direction: column; align-items: center; justify-content: flex-start; padding: 40px 24px;
+    }
+    .cat-hub:not(.hidden) { display: flex; }
     .cat-card {
       position: relative; height: 140px; border-radius: 8px; overflow: hidden; cursor: pointer;
       transition: transform .2s, box-shadow .2s;
@@ -1783,7 +1790,24 @@
       } catch (e) { /* file:// 或受限环境可能抛错，不影响进入详情 */ }
     }
 
+    // #region agent log
+    function __dbgTpl(hypothesisId, message, data) {
+      var payload = { hypothesisId: hypothesisId, location: 'template-config.html', message: message, data: data || {}, timestamp: Date.now() };
+      try { (window.__dbgTplLogs = window.__dbgTplLogs || []).push(payload); } catch (e0) {}
+      try { console.log('[DBG-TPL]', JSON.stringify(payload)); } catch (e1) {}
+      try {
+        var x = new XMLHttpRequest();
+        x.open('POST', '/__dbg_tpl', true);
+        x.setRequestHeader('Content-Type', 'application/json');
+        x.send(JSON.stringify(payload));
+      } catch (e2) {}
+    }
+    // #endregion
+
     function enterTplCategory(cat) {
+      // #region agent log
+      __dbgTpl('A', 'enter-called', { cat: cat, hasMeta: !!(CAT_META && CAT_META[cat]) });
+      // #endregion
       if (!CAT_META[cat]) return;
       state.cat = cat;
       state.main = 'report';
@@ -1791,6 +1815,18 @@
       state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
       syncTplCatQuery(cat);
       showTplDetail();
+      // #region agent log
+      (function () {
+        var h = document.getElementById('catHubView');
+        var d = document.getElementById('tplDetailView');
+        __dbgTpl('B', 'enter-after-show', {
+          hubCls: h.className, detailCls: d.className,
+          hubDisp: getComputedStyle(h).display, detailDisp: getComputedStyle(d).display,
+          hubH: h.getBoundingClientRect().height, detailTop: d.getBoundingClientRect().top,
+          title: (document.getElementById('tplCatTitle') || {}).textContent, url: location.href
+        });
+      })();
+      // #endregion
     }
 
     function backToCatHub() {
