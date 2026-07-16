@@ -742,6 +742,15 @@
       return enrichRecordTreeWithTests(roots);
     }
 
+    function getReportTreeRoots() {
+      var roots = REPORT_TREE_ALL;
+      if (state.cat && RECORD_CAT_ROOT[state.cat]) {
+        var found = findReportTreeNode(RECORD_CAT_ROOT[state.cat]);
+        roots = found ? [found.node] : REPORT_TREE_ALL;
+      }
+      return roots;
+    }
+
     function recordTreeMatch(n, kw) {
       if (!kw) return true;
       if ((n.label || '').toLowerCase().indexOf(kw) >= 0) return true;
@@ -1076,7 +1085,7 @@
       if (state.main === 'record') {
         html = renderRecordTreeNodes(getRecordTreeRoots(), 0, kw);
       } else {
-        html = renderReportTreeNodes(REPORT_TREE_ALL, 0, kw);
+        html = renderReportTreeNodes(getReportTreeRoots(), 0, kw);
       }
       document.getElementById('treeBody').innerHTML = html || '<div class="px-3 py-8 text-center text-slate-400 text-sm">未匹配到树节点</div>';
     }
