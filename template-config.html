@@ -403,8 +403,10 @@
           <button id="bodyCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openCopyPicker('body')"><i class="fa fa-copy"></i> 复制</button>
           <div class="form-row" style="margin:12px 0 0;padding:0"><label style="width:80px;padding-top:8px">模版文件名</label><div class="ctrl"><div class="name-ext"><input type="text" id="m_fileName" placeholder="上传后自动回显文件名（不含后缀）" /><span class="ext-suffix" id="m_fileExt">.doc</span></div><div class="mt-1 text-xs text-slate-400">名称可编辑；后缀固定显示在框外，不可修改</div></div></div>
         </div></div>
+        <div data-annotate="body-public-ref">
         <div class="form-row"><label>引用公共模版头</label><div class="ctrl flex items-center gap-2"><input type="checkbox" id="m_useHead" checked /><select id="m_head" class="flex-1"><option>电网物资通用模板头</option><option>GQJ安全工器具通用模板头</option></select></div></div>
         <div class="form-row"><label>引用公共模版尾</label><div class="ctrl flex items-center gap-2"><input type="checkbox" id="m_useTail" /><select id="m_tail" class="flex-1" disabled><option>电网物资通用模板尾</option></select></div></div>
+        </div>
       </div>
       <div class="modal-foot"><button onclick="closeModal('bodyModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="saveBodyModal()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
     </div>
@@ -2356,6 +2358,7 @@
         { id: 'record-tree-tests', selector: '[data-annotate="record-tree-tests"]', position: 'top-right', title: '型号下展开试验项', wide: true, content: '选中型号（如 PVC-C）后，下方列出该型号对应的全部试验项；绿点表示已配置模板。点击某一试验项可快速定位右侧列表，括号内为（已配置数 / 试验项总数）。', tag: '记录单' },
         { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板变体', content: '打开新增弹窗，配置样品、模板名称、是否默认及公共头尾引用。模板文件可在「版本」弹窗中上传。', tag: '报告模板' },
         { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑模板名称、是否默认、引用公共头尾。模板文件通过「版本」管理。', tag: '操作说明' },
+        { id: 'body-public-ref', selector: '[data-annotate="body-public-ref"]', position: 'top-right', title: '引用公共模版头/尾', wide: true, content: '弹窗初始化时是否引用公共模版头尾，取决于「公共头尾模版」中是否已预先配置对应<strong>样品分类</strong>或<strong>样品名称(型号)</strong>的头尾模板：若有则默认勾选并选中；也可手动切换其他模版使用（<strong>切换不会同步回写</strong>「公共头尾模版」处的配置）。', tag: '报告模板' },
         { id: 'body-version', selector: '[data-annotate="body-version"]', position: 'top-right', title: '版本管理', wide: true, content: '同一模板变体可存多个版本，通过单选启用其中一个；<strong>新上传/复制的版本默认启用最新版</strong>，有文件则必有一版启用。报告生成时使用启用版本。点击「配置」进入 PageOffice 编辑当前启用版本。删除版本不受是否启用影响。', tag: '报告模板' },
         { id: 'body-default', selector: '[data-annotate="body-default"]', position: 'top-right', title: '设为默认', content: '同一样品型号下可设一个默认模板变体（<strong>可选</strong>）。报告生成时若已设默认则默认选中该变体，用户可切换其他变体；未设默认时生成报告需用户手动选择。', tag: '报告模板' },
         { id: 'row-delete', selector: '[data-annotate="row-delete"]', position: 'top-right', title: '删除', content: '删除该模板变体及其全部版本。不受是否设为默认、版本是否启用影响。', tag: '操作说明' },
@@ -2377,7 +2380,7 @@
         { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共头尾列表', wide: true, content: '表头三列：<strong>模版内容样式</strong>、<strong>关联绑定</strong>（类型 + 绑定对象）、<strong>模版文件</strong>（完整文件名）。列表已按当前大类过滤。', tag: '报告模板' },
         { id: 'public-add', selector: '[data-annotate="public-add"]', position: 'top-left', title: '新增公共头尾', content: '打开新增弹窗，配置模版内容样式、关联绑定、绑定对象、上传文件并填写模版名称。', tag: '报告模板' },
         { id: 'public-edit', selector: '[data-annotate="public-edit"]', position: 'top-right', title: '编辑公共头尾', wide: true, content: '回填模版内容样式、关联绑定、绑定对象、模版文件与模版名称；编辑时可查看已关联的模板文件实体。', tag: '报告模板' },
-        { id: 'public-delete', selector: '[data-annotate="public-delete"]', position: 'top-right', title: '删除', content: '删除该条公共头尾模板记录。', tag: '报告模板' },
+        { id: 'public-delete', selector: '[data-annotate="public-delete"]', position: 'top-right', title: '删除', content: '删除头尾模版时<strong>不受是否被正文模板引用</strong>的影响；点击删除仅弹出二次确认框，确认后即删除该条记录。', tag: '报告模板' },
         { id: 'public-content-style', selector: '[data-annotate="public-content-style"]', position: 'top-right', title: '模版内容样式', content: '选择本模板是「模板头」还是「模板尾」。', tag: '报告模板' },
         { id: 'public-bind-type', selector: '[data-annotate="public-bind-type"]', position: 'top-right', title: '关联绑定', wide: true, content: '决定第三行绑定对象的维度：<strong>样品分类</strong> 或 <strong>样品名称(型号)</strong>。切换后第三行字段名与下拉选项联动切换。', tag: '报告模板' },
         { id: 'public-bind-target', selector: '[data-annotate="public-bind-target"]', position: 'top-right', title: '绑定对象（必填）', wide: true, content: '下拉选项已按当前进入的大类过滤。选「样品分类」时加载至样品上一级；选「样品名称(型号)」时加载样品/型号层。', tag: '报告模板' },
