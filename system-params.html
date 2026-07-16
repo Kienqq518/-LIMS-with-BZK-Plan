@@ -156,6 +156,16 @@
     #ruleBuilder .rule-chip.dragging { opacity: .4; }
     .token-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 6px; font-size: 12px; background: #fff; border: 1px solid #cbd5e1; color: #475569; cursor: pointer; }
     .token-btn:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+    /* 签章与资质（复用模板管理印章样式） */
+    .stamp-upload-row { display: flex; flex-wrap: wrap; gap: 28px; }
+    .stamp-upload-box { text-align: center; }
+    .stamp-upload-box .label { margin-bottom: 8px; font-size: 13px; color: #64748b; }
+    .stamp-preview { width: 120px; height: 120px; border: 1px dashed #cbd5e1; border-radius: 4px; background: #f8fafc; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-direction: column; gap: 6px; }
+    .stamp-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .stamp-preview.placeholder { color: #94a3b8; font-size: 12px; }
+    .stamp-upload-btn { margin-top: 8px; font-size: 12px; padding: 4px 12px; border-radius: 4px; border: 1px solid #cbd5e1; color: #475569; background: #fff; cursor: pointer; }
+    .stamp-upload-btn:hover { border-color: #2563eb; color: #2563eb; }
+    .seal-hint { margin-bottom: 12px; padding: 10px 14px; border-radius: 4px; background: #fffbeb; border: 1px solid #fde68a; font-size: 12px; color: #92400e; line-height: 1.6; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -171,7 +181,7 @@
   <!-- 子 Tab -->
   <div class="flex overflow-x-auto border-b border-slate-200 bg-white px-4 text-sm" id="paramTabBar">
     <div class="param-tab active" data-panel="entrust" data-annotate="entrust-tab">委托信息设置</div>
-    <div class="param-tab" data-panel="undertaker">承检方信息</div>
+    <div class="param-tab" data-panel="undertaker" data-annotate="undertaker-tab">承检方信息</div>
     <div class="param-tab" data-panel="report">报告设置</div>
     <div class="param-tab" data-panel="record">记录单设置</div>
     <div class="param-tab" data-panel="flow" data-annotate="flow-tab">流程设置</div>
@@ -224,12 +234,12 @@
       <div class="rounded bg-white shadow-sm">
         <div class="cfg-panel">
           <div class="cfg-section">
-            <div class="cfg-section-title">基本信息</div>
+            <div class="cfg-section-title" data-annotate="undertaker-basic">基本信息</div>
             <div class="cfg-form-grid">
               <div class="cfg-form-item"><label>单位名称</label><input type="text" value="杭州数蚕智能科技有限公司" /></div>
               <div class="cfg-form-item"><label>法定代表人</label><input type="text" value="马勇" /></div>
+              <div class="cfg-form-item"><label>单位地址</label><input type="text" value="浙江省杭州市拱墅区七古路90号2幢408室" /></div>
               <div class="cfg-form-item"><label>联系电话</label><input type="text" value="17767191675" /></div>
-              <div class="cfg-form-item span-full"><label>单位地址</label><input type="text" value="浙江省杭州市拱墅区七古路90号2幢408室" /></div>
             </div>
           </div>
           <div class="cfg-section">
@@ -249,19 +259,35 @@
             </div>
           </div>
           <div class="cfg-section">
-            <div class="cfg-section-title">签章与标识</div>
-            <div class="cfg-upload-row">
-              <div class="cfg-upload-box">
+            <div class="cfg-section-title" data-annotate="undertaker-seal">签章与资质</div>
+            <div class="seal-hint" data-annotate="undertaker-seal-hint">
+              <i class="fa fa-info-circle"></i> 签章图片建议上传 <strong>PNG 透明底</strong> 格式；骑缝章 / CNAS / CMA / 检测专用章最小尺寸 <strong>200×200 像素</strong>，法定代表人签名建议宽度不小于 <strong>300 像素</strong>；单文件不超过 <strong>2MB</strong>，以保证导出报告时清晰可辨。
+            </div>
+            <div class="stamp-upload-row">
+              <div class="stamp-upload-box">
                 <div class="label">法定代表人电子签名</div>
-                <div class="cfg-upload-preview placeholder"><i class="fa fa-pencil-square-o text-lg"></i><span>签名预览</span></div>
+                <div class="stamp-preview placeholder"><i class="fa fa-pencil-square-o text-lg"></i><span>签名预览</span></div>
+                <button type="button" class="stamp-upload-btn" onclick="alert('上传法定代表人电子签名（原型演示）')"><i class="fa fa-upload"></i> 上传</button>
               </div>
-              <div class="cfg-upload-box">
+              <div class="stamp-upload-box">
                 <div class="label">检测专用章</div>
-                <div class="cfg-upload-preview"><img src="https://via.placeholder.com/100x100/e11d48/ffffff?text=章" alt="检测专用章" /></div>
+                <div class="stamp-preview"><img src="https://via.placeholder.com/110x110/e11d48/ffffff?text=检测" alt="检测专用章" /></div>
+                <button type="button" class="stamp-upload-btn" onclick="alert('上传检测专用章（原型演示）')"><i class="fa fa-upload"></i> 上传</button>
               </div>
-              <div class="cfg-upload-box">
-                <div class="label">单位 Logo</div>
-                <div class="cfg-upload-preview"><img src="https://ui-avatars.com/api/?name=S&background=2563eb&color=fff&size=120" alt="Logo" /></div>
+              <div class="stamp-upload-box">
+                <div class="label">骑缝章</div>
+                <div class="stamp-preview"><img src="https://via.placeholder.com/110x110/e11d48/ffffff?text=骑缝" alt="骑缝章" /></div>
+                <button type="button" class="stamp-upload-btn" onclick="alert('上传骑缝章（原型演示）')"><i class="fa fa-upload"></i> 上传</button>
+              </div>
+              <div class="stamp-upload-box">
+                <div class="label">CNAS 资质章</div>
+                <div class="stamp-preview"><img src="https://via.placeholder.com/110x110/1d4ed8/ffffff?text=CNAS" alt="CNAS 资质章" /></div>
+                <button type="button" class="stamp-upload-btn" onclick="alert('上传 CNAS 资质章（原型演示）')"><i class="fa fa-upload"></i> 上传</button>
+              </div>
+              <div class="stamp-upload-box">
+                <div class="label">CMA 资质章</div>
+                <div class="stamp-preview"><img src="https://via.placeholder.com/110x110/dc2626/ffffff?text=CMA" alt="CMA 资质章" /></div>
+                <button type="button" class="stamp-upload-btn" onclick="alert('上传 CMA 资质章（原型演示）')"><i class="fa fa-upload"></i> 上传</button>
               </div>
             </div>
           </div>
@@ -293,7 +319,7 @@
           </div>
           <div class="mx-0 mb-2 flex items-start gap-2 rounded border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700" data-annotate="seal-moved">
             <i class="fa fa-info-circle mt-0.5 text-amber-500"></i>
-            <span>报告用章（骑缝章 / CNAS / CMA）图片上传已迁移至「检测管理 › 模板管理 › 页眉页脚与印章」统一维护。</span>
+            <span>报告用章（骑缝章 / CNAS / CMA / 检测专用章）图片上传已迁移至本页「承检方信息 › 签章与资质」统一维护。</span>
           </div>
           <div class="cfg-save-bar">
             <button onclick="savePanel('报告设置')" class="rounded bg-blue-600 px-10 py-2 text-sm text-white hover:bg-blue-700">保存</button>
@@ -869,9 +895,44 @@
           id: 'seal-moved',
           selector: '[data-annotate="seal-moved"]',
           position: 'top-right',
-          title: '报告用章已迁移',
+          title: '报告用章维护位置',
           wide: true,
-          content: '原「报告设置」中的骑缝章 / CNAS / CMA 图片上传，已统一迁移至「检测管理 › 模板管理 › 页眉页脚与印章」页面，与页眉页脚一处维护。',
+          content: '原「报告设置」及「模板管理 › 页眉页脚与印章 › 印章管理」中的骑缝章 / CNAS / CMA / 检测专用章图片上传，已统一迁移至「业务流程配置 › 承检方信息 › 签章与资质」维护。',
+          tag: '业务流程配置'
+        },
+        {
+          id: 'undertaker-tab',
+          selector: '[data-annotate="undertaker-tab"]',
+          position: 'top-right',
+          title: '承检方信息',
+          wide: true,
+          content: '维护承检方单位基本信息、开票与资质信息，以及签章图片。原「签章与标识」已更名为「签章与资质」，并移除「单位 Logo」；新增骑缝章、CNAS 资质章、CMA 资质章上传，样式与模板管理原印章区域一致。',
+          tag: '业务流程配置'
+        },
+        {
+          id: 'undertaker-basic',
+          selector: '[data-annotate="undertaker-basic"]',
+          position: 'top-right',
+          title: '基本信息布局',
+          content: '「单位地址」与「联系电话」调整为同一行并列展示（各占一列），便于快速浏览联系信息。',
+          tag: '业务流程配置'
+        },
+        {
+          id: 'undertaker-seal',
+          selector: '[data-annotate="undertaker-seal"]',
+          position: 'top-right',
+          title: '签章与资质',
+          wide: true,
+          content: '区域名称由「签章与标识」改为「签章与资质」。已去除「单位 Logo」；保留法定代表人电子签名、检测专用章，并新增骑缝章、CNAS 资质章、CMA 资质章上传位，交互样式复用原「模板管理 › 印章管理」卡片布局。',
+          tag: '业务流程配置'
+        },
+        {
+          id: 'undertaker-seal-hint',
+          selector: '[data-annotate="undertaker-seal-hint"]',
+          position: 'top-left',
+          title: '签章上传要求',
+          wide: true,
+          content: '提示签章图片格式与最小尺寸要求：PNG 透明底；骑缝章 / CNAS / CMA / 检测专用章最小 200×200 像素；法定代表人签名宽度建议不小于 300 像素；单文件不超过 2MB。',
           tag: '业务流程配置'
         },
         {

@@ -143,7 +143,7 @@
     .po-field-item .acts .add { color: #2563eb; border-color: #93c5fd; background: #eff6ff; }
     .po-field-item .acts .del { color: #ef4444; border-color: #fca5a5; background: #fef2f2; }
     .po-field-item .acts .loc { color: #64748b; border-color: #cbd5e1; background: #f8fafc; }
-    /* 页眉页脚与印章 */
+    /* 页眉页脚 */
     .stamp-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
     .stamp-card-title { font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
     .stamp-card-title::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: #2563eb; }
@@ -199,7 +199,7 @@
       <div class="main-tab active" data-tab="report">报告模板</div>
       <div class="main-tab" data-tab="record">记录单模板</div>
       <div class="main-tab" data-tab="doc" data-annotate="doc-tab">单据模板</div>
-      <div class="main-tab" data-tab="stamp" data-annotate="stamp-tab">页眉页脚与印章</div>
+      <div class="main-tab" data-tab="stamp" data-annotate="stamp-tab">页眉页脚</div>
     </div>
 
     <!-- 报告 · 二级开关（右侧、字号小于一级 Tab） -->
@@ -253,7 +253,7 @@
     </div>
   </div>
 
-  <!-- ============ 页眉页脚与印章 ============ -->
+  <!-- ============ 页眉页脚 ============ -->
   <div id="stampView" class="hidden px-4 py-4">
     <div class="stamp-card">
       <div class="stamp-card-title" data-annotate="stamp-global">全局默认页眉 / 页脚</div>
@@ -272,17 +272,6 @@
           <thead><tr><th style="width:60px">序号</th><th>文件类型</th><th>页眉</th><th>页脚</th><th style="width:200px">操作</th></tr></thead>
           <tbody id="stampOverrideBody"></tbody>
         </table>
-      </div>
-    </div>
-
-    <div class="stamp-card">
-      <div class="stamp-card-title" data-annotate="stamp-seal">印章管理</div>
-      <p class="mb-3 text-sm text-slate-500">报告 / 单据用章统一在此维护（原「业务流程配置 › 报告设置」中的用章已迁移至此）。</p>
-      <div class="stamp-upload-row">
-        <div class="stamp-upload-box"><div class="label">骑缝章</div><div class="stamp-preview seal"><img src="https://via.placeholder.com/110x110/e11d48/ffffff?text=骑缝" alt="骑缝章" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
-        <div class="stamp-upload-box"><div class="label">CNAS 章</div><div class="stamp-preview seal"><img src="https://via.placeholder.com/110x110/1d4ed8/ffffff?text=CNAS" alt="CNAS" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
-        <div class="stamp-upload-box"><div class="label">CMA 章</div><div class="stamp-preview seal"><img src="https://via.placeholder.com/110x110/dc2626/ffffff?text=CMA" alt="CMA" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
-        <div class="stamp-upload-box"><div class="label">检测专用章</div><div class="stamp-preview seal"><img src="https://via.placeholder.com/110x110/e11d48/ffffff?text=检测" alt="检测专用章" /></div><button class="stamp-upload-btn"><i class="fa fa-upload"></i> 上传</button></div>
       </div>
     </div>
   </div>
@@ -2397,7 +2386,7 @@
       }
     }
 
-    /* ============ 页眉页脚与印章 ============ */
+    /* ============ 页眉页脚 ============ */
     var STAMP_OVERRIDES = [
       { type: '检测报告', header: '默认（继承全局）', footer: '默认（继承全局）' },
       { type: '记录单', header: '记录单专用页眉.png', footer: '默认（继承全局）' },
@@ -2490,10 +2479,9 @@
         { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模板逻辑', wide: true, content: '<strong>按大类分套：</strong>同一单据（如检测委托书）可为不同大类（电网物资 / 安全工器具 / 材料类 / 通用）配置各自模板。<br><br><strong>一类多版本：</strong>每套可上传多个版本，<strong>同时仅启用一个</strong>，导出时使用启用版。', tag: '模板管理' },
         { id: 'doc-add', selector: '[data-annotate="doc-add"]', position: 'top-left', title: '新增单据模板', content: '选择单据类型 + 适用大类，上传模板文件。', tag: '模板管理' },
         { id: 'doc-config', selector: '[data-annotate="doc-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 打开该单据的 Word 模板，右侧字段面板可插入占位符。不同单据类型左侧模板内容不同。', tag: '模板管理' },
-        { id: 'stamp-tab', selector: '[data-annotate="stamp-tab"]', position: 'top-left', title: '新增：页眉页脚与印章', wide: true, content: '统一管理系统所有导出文件的页眉、页脚与用章（骑缝章 / CNAS / CMA / 检测专用章）。原「报告设置」中的用章已迁移至此。', tag: '模板管理' },
+        { id: 'stamp-tab', selector: '[data-annotate="stamp-tab"]', position: 'top-left', title: '页眉页脚', wide: true, content: 'Tab 名称由「页眉页脚与印章」改为「页眉页脚」，仅维护全局默认及按单据类型覆盖的页眉、页脚图片。印章（骑缝章 / CNAS / CMA / 检测专用章）已迁移至「业务流程配置 › 承检方信息 › 签章与资质」。', tag: '模板管理' },
         { id: 'stamp-global', selector: '[data-annotate="stamp-global"]', position: 'top-right', title: '全局默认页眉页脚', wide: true, content: '上传全局默认的页眉、页脚图片，应用于所有导出文件；未单独覆盖的单据默认沿用此设置（两级模型的「默认层」）。', tag: '模板管理' },
         { id: 'stamp-override', selector: '[data-annotate="stamp-override"]', position: 'top-right', title: '按单据类型覆盖', wide: true, content: '某类单据若与全局默认不同，可单独上传页眉/页脚覆盖；留空即继承全局默认（两级模型的「覆盖层」）。', tag: '模板管理' },
-        { id: 'stamp-seal', selector: '[data-annotate="stamp-seal"]', position: 'top-right', title: '印章管理（迁移）', wide: true, content: '骑缝章、CNAS、CMA、检测专用章图片统一在此上传维护——由原「业务流程配置 › 报告设置 › 报告用章」迁移而来。', tag: '模板管理' },
         { id: 'public-filter', selector: '[data-annotate="public-filter"]', position: 'top-left', title: '公共头尾筛选', wide: true, content: '筛选字段与弹窗/表头对齐：<strong>模版内容样式</strong>（模板头/尾）、<strong>关联绑定</strong>（全部/样品分类/样品名称型号）、<strong>模版文件名</strong>。', tag: '报告模板' },
         { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共头尾列表', wide: true, content: '表头三列：<strong>模版内容样式</strong>、<strong>关联绑定</strong>（类型 + 绑定对象）、<strong>模版文件</strong>（完整文件名）。列表已按当前大类过滤。', tag: '报告模板' },
         { id: 'public-add', selector: '[data-annotate="public-add"]', position: 'top-left', title: '新增公共头尾', content: '打开新增弹窗，配置模版内容样式、关联绑定、绑定对象、上传文件并填写模版名称。', tag: '报告模板' },
