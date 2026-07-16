@@ -505,6 +505,14 @@
   <script src="js/prototype-annotation.js"></script>
   <script>
     var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: null, openIds: {}, copyMode: 'public', copyTarget: null, filePickerTarget: null, bodyVersionRenameIndex: null, recordVersionRenameIndex: null };
+    var modalStack = [];
+
+    function syncModalZIndex() {
+      modalStack.forEach(function (mid, i) {
+        var m = document.getElementById(mid);
+        if (m && m.classList.contains('open')) m.style.zIndex = String(100 + (i + 1) * 10);
+      });
+    }
 
     var CAT_META = {
       dlwz: { name: '电力物资类', treeKeys: ['wz'], publicCats: ['wz', 'cable-duct'], publicSamples: ['cable-duct-sample', 'pvc-c', 'pvc-u', 'pvc-m', 'pvc-h'] },
@@ -1306,14 +1314,24 @@
     });
 
     function openModal(id) {
-      document.getElementById(id).classList.add('open');
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (modalStack.indexOf(id) < 0) modalStack.push(id);
+      el.classList.add('open');
+      syncModalZIndex();
       if (window.PrototypeAnnotation) {
         if (PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
         else if (PrototypeAnnotation.applyFocusScope) PrototypeAnnotation.applyFocusScope();
       }
     }
     function closeModal(id) {
-      document.getElementById(id).classList.remove('open');
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('open');
+      el.style.zIndex = '';
+      var idx = modalStack.indexOf(id);
+      if (idx >= 0) modalStack.splice(idx, 1);
+      syncModalZIndex();
       if (window.PrototypeAnnotation) {
         if (PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
         else if (PrototypeAnnotation.applyFocusScope) PrototypeAnnotation.applyFocusScope();
