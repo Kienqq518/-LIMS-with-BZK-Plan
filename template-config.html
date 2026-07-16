@@ -19,10 +19,7 @@
     .sub-switch-item:last-child { border-right: none; }
     .sub-switch-item:hover { color: #2563eb; }
     .sub-switch-item.active { background: #eff6ff; color: #2563eb; font-weight: 500; }
-    /*
-     * 根因：勿写 .cat-hub { display:flex }。本地 style 在 Tailwind 之后时，等权的 .cat-hub
-     * 会盖过 Tailwind/.hidden，enterTplCategory 加了 hidden 后大类页仍 flex 撑满视口，详情在下方，看似无反应。
-     */
+    /* 勿写无条件 .cat-hub { display:flex }，否则会盖过 .hidden，大类页关不掉 */
     .cat-hub {
       min-height: calc(100vh - 80px); flex-direction: column; align-items: center; justify-content: flex-start; padding: 40px 24px;
     }
@@ -1781,64 +1778,21 @@
       return 'pvc-c';
     }
 
-    function syncTplCatQuery(cat) {
-      try {
-        var url = new URL(window.location.href);
-        if (cat) url.searchParams.set('cat', cat);
-        else url.searchParams.delete('cat');
-        history.replaceState(null, '', url.toString());
-      } catch (e) { /* file:// 或受限环境可能抛错，不影响进入详情 */ }
-    }
-
-    // #region agent log
-    function __dbgTpl(hypothesisId, message, data) {
-      var payload = { hypothesisId: hypothesisId, location: 'template-config.html', message: message, data: data || {}, timestamp: Date.now() };
-      try { (window.__dbgTplLogs = window.__dbgTplLogs || []).push(payload); } catch (e0) {}
-      try { console.log('[DBG-TPL]', JSON.stringify(payload)); } catch (e1) {}
-      try {
-        var x = new XMLHttpRequest();
-        x.open('POST', '/__dbg_tpl', true);
-        x.setRequestHeader('Content-Type', 'application/json');
-        x.send(JSON.stringify(payload));
-      } catch (e2) {}
-    }
-    // #endregion
-
     function enterTplCategory(cat) {
-      // #region agent log
-      __dbgTpl('A', 'enter-called', { cat: cat, hasMeta: !!(CAT_META && CAT_META[cat]) });
-      // #endregion
       if (!CAT_META[cat]) return;
-      state.cat = cat;
-      state.main = 'report';
-      state.sub = 'body';
-      state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
-      syncTplCatQuery(cat);
-      showTplDetail();
-      // #region agent log
-      (function () {
-        var h = document.getElementById('catHubView');
-        var d = document.getElementById('tplDetailView');
-        __dbgTpl('B', 'enter-after-show', {
-          hubCls: h.className, detailCls: d.className,
-          hubDisp: getComputedStyle(h).display, detailDisp: getComputedStyle(d).display,
-          hubH: h.getBoundingClientRect().height, detailTop: d.getBoundingClientRect().top,
-          title: (document.getElementById('tplCatTitle') || {}).textContent, url: location.href
-        });
-      })();
-      // #endregion
+      // 与样品数据一致：整页跳转进入详情，避免 in-page 显隐被 CSS 覆盖导致「点了没反应」
+      window.location.href = 'template-config.html?cat=' + encodeURIComponent(cat);
     }
 
     function backToCatHub() {
-      state.cat = null;
-      syncTplCatQuery(null);
-      document.getElementById('catHubView').classList.remove('hidden');
-      document.getElementById('tplDetailView').classList.add('hidden');
+      window.location.href = 'template-config.html';
     }
 
     function showTplDetail() {
-      document.getElementById('catHubView').classList.add('hidden');
-      document.getElementById('tplDetailView').classList.remove('hidden');
+      var hub = document.getElementById('catHubView');
+      var detail = document.getElementById('tplDetailView');
+      hub.classList.add('hidden');
+      detail.classList.remove('hidden');
       document.getElementById('tplCatTitle').textContent = (CAT_META[state.cat] || {}).name || '';
       document.querySelectorAll('#mainTabBar .main-tab').forEach(function (t) {
         t.classList.toggle('active', t.getAttribute('data-tab') === 'report');
@@ -1862,6 +1816,8 @@
       var cat = params.get('cat');
       if (cat && CAT_META[cat]) {
         state.cat = cat;
+        state.main = 'report';
+        state.sub = 'body';
         state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
         showTplDetail();
       } else {
