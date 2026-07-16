@@ -7,6 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <style>
+    /* 关键 show/hide：不依赖 Tailwind CDN（CDN 不可达时否则大类页无法进入详情） */
+    .hidden { display: none !important; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
     .main-tab, .sub-tab { border-bottom: 2px solid transparent; color: #64748b; padding: 10px 18px; cursor: pointer; white-space: nowrap; font-size: 14px; }
@@ -1772,23 +1774,28 @@
       return 'pvc-c';
     }
 
+    function syncTplCatQuery(cat) {
+      try {
+        var url = new URL(window.location.href);
+        if (cat) url.searchParams.set('cat', cat);
+        else url.searchParams.delete('cat');
+        history.replaceState(null, '', url.toString());
+      } catch (e) { /* file:// 或受限环境可能抛错，不影响进入详情 */ }
+    }
+
     function enterTplCategory(cat) {
       if (!CAT_META[cat]) return;
       state.cat = cat;
       state.main = 'report';
       state.sub = 'body';
       state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
-      var url = new URL(window.location.href);
-      url.searchParams.set('cat', cat);
-      history.replaceState(null, '', url.toString());
+      syncTplCatQuery(cat);
       showTplDetail();
     }
 
     function backToCatHub() {
       state.cat = null;
-      var url = new URL(window.location.href);
-      url.searchParams.delete('cat');
-      history.replaceState(null, '', url.toString());
+      syncTplCatQuery(null);
       document.getElementById('catHubView').classList.remove('hidden');
       document.getElementById('tplDetailView').classList.add('hidden');
     }
