@@ -44,11 +44,12 @@
     .cat-card:nth-child(4) .title { color: #92400e; }
     .cat-card:nth-child(4) .illus { color: #d97706; }
     .tpl-layout { display: flex; gap: 0; min-height: calc(100vh - 170px); }
-    .tpl-tree { width: 220px; flex-shrink: 0; border-right: 1px solid #e2e8f0; background: #fff; }
+    .tpl-tree { width: 360px; flex-shrink: 0; border-right: 1px solid #e2e8f0; background: #fff; }
     .tpl-tree-head { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
     .tpl-tree-head input { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
     .tpl-tree-body { padding: 8px 0; max-height: calc(100vh - 200px); overflow-y: auto; font-size: 13px; }
-    .tree-node { padding: 6px 12px 6px 16px; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; }
+    .tree-node { padding: 6px 12px 6px 16px; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .tree-node > span { white-space: nowrap; }
     .tree-node .tree-caret { display: inline-block; width: 12px; flex-shrink: 0; text-align: center; font-size: 10px; color: #94a3b8; }
     .tree-node .tree-caret-empty { color: transparent; }
     .tree-node:hover { background: #f1f5f9; }
@@ -383,7 +384,7 @@
     <div class="modal-box">
       <div class="modal-head"><span id="bodyModalTitle">新增模板变体</span><button onclick="closeModal('bodyModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
       <div class="modal-body">
-        <div class="form-row"><label><span class="req">*</span> 样品名称(型号)</label><div class="ctrl"><select id="m_sample"><option>PVC-C</option><option>MPP</option><option>HDPE</option></select></div></div>
+        <div class="form-row"><label><span class="req">*</span> 样品名称(型号)</label><div class="ctrl"><select id="m_sample"><option>PVC-C</option><option>PVC-U</option><option>PVC-M</option><option>PVC-H</option></select></div></div>
         <div class="form-row"><label><span class="req">*</span> 模板名称</label><div class="ctrl"><input type="text" id="m_name" placeholder="如：标准版、英文版、简版" /><div class="mt-1 text-xs text-slate-400">同一样品型号下可配置多个模板变体，以名称区分</div></div></div>
         <div class="form-row"><label></label><div class="ctrl"><label class="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" id="m_default" /> 设为默认模板（报告生成时默认选用）</label></div></div>
         <div class="form-row" id="bodyFileRow"><label><span class="req">*</span> 模板文件</label><div class="ctrl">
@@ -476,7 +477,7 @@
     var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: null, openIds: {} };
 
     var CAT_META = {
-      dlwz: { name: '电力物资类', treeKeys: ['wz'], publicCats: ['wz', 'cable-duct'], publicSamples: ['cable-duct-sample', 'pvc-c', 'mpp', 'hdpe'] },
+      dlwz: { name: '电力物资类', treeKeys: ['wz'], publicCats: ['wz', 'cable-duct'], publicSamples: ['cable-duct-sample', 'pvc-c', 'pvc-u', 'pvc-m', 'pvc-h'] },
       aqgqj: { name: '安全工器具类', treeKeys: ['gqj'], publicCats: ['976', 'gqj', 'glove-cat', 'rod-cat'], publicSamples: ['glove', 'rod'] },
       hjjc: { name: '环境检测', treeKeys: [], publicCats: [], publicSamples: [] },
       gcjc: { name: '工程检测', treeKeys: ['gcjc'], publicCats: ['cement'], publicSamples: ['p', 'po', 'ps'] }
@@ -485,7 +486,7 @@
     // 报告正文模板左侧树：合并「样品数据」各大类 mock 层级（大类 → 分类 → 样品 → 型号）。
     // 多个大类均展示；型号（叶子）可选中，右侧联动模板变体列表。
     var REPORT_TREE_ALL = [
-      { id: 'cat-dlwz', label: '电力物资类', children: [
+      { id: 'cat-dlwz', label: 'DLWZ电力物资类', children: [
         { id: 'dldl', label: 'DLDL电力电缆类', children: [
           { id: 'v1', label: '额定电压 1kV 和 3kV', children: [
             { id: 'gbt1', label: 'GBT 12706.1-2020', children: [
@@ -515,8 +516,9 @@
               { id: 'dlt803', label: 'DLT 802.3-2023', children: [
                 { id: 'ds-s', label: 'DS实壁类塑料电缆导管_直管', children: [
                   { id: 'pvc-c', label: 'PVC-C', model: true },
-                  { id: 'mpp', label: 'MPP', model: true },
-                  { id: 'hdpe', label: 'HDPE', model: true }
+                  { id: 'pvc-u', label: 'PVC-U', model: true },
+                  { id: 'pvc-m', label: 'PVC-M', model: true },
+                  { id: 'pvc-h', label: 'PVC-H', model: true }
                 ]},
                 { id: 'ds-k', label: 'DS实壁类塑料电缆导管_带承口' }
               ]},
@@ -545,7 +547,7 @@
           ]}
         ]}
       ]},
-      { id: 'cat-aqgqj', label: '安全工器具类', children: [
+      { id: 'cat-aqgqj', label: 'AQGQJ安全工器具类', children: [
         { id: 'dlt976', label: 'DLT 976-2017', children: [
           { id: 'rod', label: '绝缘操作杆' },
           { id: 'ladder', label: '绝缘软梯' },
@@ -568,8 +570,8 @@
           { id: 'rope1741', label: '安全绳' }
         ]}
       ]},
-      { id: 'cat-hjjc', label: '环境检测', children: [] },
-      { id: 'cat-gcjc', label: '工程检测', children: [
+      { id: 'cat-hjjc', label: 'HJJC环境检测', children: [] },
+      { id: 'cat-gcjc', label: 'SN工程检测', children: [
         { id: 'cement', label: '通用硅酸盐水泥', children: [
           { id: 'gb175', label: 'GB 175-2023', children: [
             { id: 'p', label: '硅酸盐水泥' },
@@ -633,15 +635,15 @@
         templates: [
           { name: 'PVC-C报告模板_简版.doc', time: '2026-02-20 14:00', enabled: true }
         ]},
-      { id: 4, tree: 'mpp', sample: 'MPP', category: 'WZ电网物资', name: '标准版', isDefault: true,
-        head: '电网物资通用模板头.doc', tail: '电网物资通用模板尾.doc', file: 'MPP报告模板_标准版.doc',
+      { id: 4, tree: 'pvc-u', sample: 'PVC-U', category: 'WZ电网物资', name: '标准版', isDefault: true,
+        head: '电网物资通用模板头.doc', tail: '电网物资通用模板尾.doc', file: 'PVC-U报告模板_标准版.doc',
         templates: [
-          { name: 'MPP报告模板_标准版.doc', time: '2026-01-20 11:00', enabled: true }
+          { name: 'PVC-U报告模板_标准版.doc', time: '2026-01-20 11:00', enabled: true }
         ]},
-      { id: 5, tree: 'mpp', sample: 'MPP', category: 'WZ电网物资', name: '简版', isDefault: false,
-        head: '电网物资通用模板头.doc', tail: '—', file: 'MPP报告模板_简版.doc',
+      { id: 5, tree: 'pvc-m', sample: 'PVC-M', category: 'WZ电网物资', name: '标准版', isDefault: true,
+        head: '电网物资通用模板头.doc', tail: '电网物资通用模板尾.doc', file: 'PVC-M报告模板_标准版.doc',
         templates: [
-          { name: 'MPP报告模板_简版.doc', time: '2026-02-10 16:30', enabled: true }
+          { name: 'PVC-M报告模板_标准版.doc', time: '2026-02-10 16:30', enabled: true }
         ]}
     ];
 
@@ -661,8 +663,9 @@
     var PUBLIC_SAMPLE_BIND_OPTIONS = [
       { value: 'cable-duct-sample', label: '实壁类塑料电缆导管_直管', depth: 0, cat: 'dlwz' },
       { value: 'pvc-c', label: 'PVC-C', depth: 1, cat: 'dlwz' },
-      { value: 'mpp', label: 'MPP', depth: 1, cat: 'dlwz' },
-      { value: 'hdpe', label: 'HDPE', depth: 1, cat: 'dlwz' },
+      { value: 'pvc-u', label: 'PVC-U', depth: 1, cat: 'dlwz' },
+      { value: 'pvc-m', label: 'PVC-M', depth: 1, cat: 'dlwz' },
+      { value: 'pvc-h', label: 'PVC-H', depth: 1, cat: 'dlwz' },
       { value: 'glove', label: '01绝缘手套', depth: 0, cat: 'aqgqj' },
       { value: 'rod', label: '02绝缘操作杆', depth: 0, cat: 'aqgqj' },
       { value: 'belt', label: '安全带', depth: 0, cat: 'aqgqj' },
