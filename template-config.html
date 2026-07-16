@@ -75,6 +75,12 @@
     .tpl-table tr:hover td { background: #fafafa; }
     .tpl-table .link { color: #2563eb; cursor: pointer; }
     .tpl-table .link:hover { text-decoration: underline; }
+    .cell-sample-name { min-width: 200px; white-space: nowrap; }
+    .cell-category-path {
+      width: 240px; max-width: 240px; height: 38px; line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden; word-break: break-all; font-size: 12px; color: #475569;
+    }
     .tag-chip { display: inline-block; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 6px; margin: 2px 4px 2px 0; font-size: 12px; }
     .modal-mask { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
     .modal-mask.open { display: flex; }
@@ -367,11 +373,11 @@
       <div class="modal-body">
         <p class="mb-3 text-sm text-slate-500">同一模板变体可上传多个版本，<strong class="text-slate-700">同时只能启用一个</strong>；报告生成时使用启用版本。点击「配置」进入 PageOffice 编辑当前启用版本。</p>
         <table class="tpl-table">
-          <thead><tr><th style="width:50px">启用</th><th>模板文件</th><th>上传时间</th><th style="width:120px">操作</th></tr></thead>
+          <thead><tr><th style="width:50px">启用</th><th>模板文件</th><th>上传时间</th><th style="width:100px">上传人</th><th style="width:120px">操作</th></tr></thead>
           <tbody id="bodyVersionTableBody"></tbody>
         </table>
         <div class="mt-3 flex gap-2">
-          <button onclick="alert('上传新版本（原型演示）')" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-upload"></i> 上传</button>
+          <button onclick="uploadBodyVersion()" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-upload"></i> 上传</button>
           <button onclick="openBodyCopyPicker()" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-copy"></i> 复制其他项</button>
         </div>
       </div>
@@ -387,9 +393,9 @@
         <div class="form-row"><label><span class="req">*</span> 样品名称(型号)</label><div class="ctrl"><select id="m_sample"><option>PVC-C</option><option>PVC-U</option><option>PVC-M</option><option>PVC-H</option></select></div></div>
         <div class="form-row"><label><span class="req">*</span> 模板名称</label><div class="ctrl"><input type="text" id="m_name" placeholder="如：标准版、英文版、简版" /><div class="mt-1 text-xs text-slate-400">同一样品型号下可配置多个模板变体，以名称区分</div></div></div>
         <div class="form-row"><label></label><div class="ctrl"><label class="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" id="m_default" /> 设为默认模板（报告生成时默认选用）</label></div></div>
-        <div class="form-row" id="bodyFileRow"><label><span class="req">*</span> 模板文件</label><div class="ctrl">
+        <div class="form-row hidden" id="bodyFileRow"><label>模板文件</label><div class="ctrl">
           <div class="radio-group mb-2"><label><input type="radio" name="bodyFileMode" value="upload" checked onchange="toggleBodyFileMode()" /> 上传</label><label><input type="radio" name="bodyFileMode" value="copy" onchange="toggleBodyFileMode()" /> 复制</label></div>
-          <div id="bodyUploadZone" class="upload-zone" onclick="alert('上传模板文件（原型演示）')"><i class="fa fa-cloud-upload block"></i><div>上传</div></div>
+          <div id="bodyUploadZone" class="upload-zone" onclick="uploadBodyVersion()"><i class="fa fa-cloud-upload block"></i><div>上传</div></div>
           <button id="bodyCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openCopyPicker('body')"><i class="fa fa-copy"></i> 复制</button>
         </div></div>
         <div class="form-row"><label>引用公共模版头</label><div class="ctrl flex items-center gap-2"><input type="checkbox" id="m_useHead" checked /><select id="m_head" class="flex-1"><option>电网物资通用模板头</option><option>GQJ安全工器具通用模板头</option></select></div></div>
@@ -622,28 +628,28 @@
       { id: 1, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', name: '标准版', isDefault: true,
         head: '电网物资通用模板头.doc', tail: '电网物资通用模板尾.doc', file: 'PVC-C报告模板_标准版.doc',
         templates: [
-          { name: 'PVC-C报告模板_标准版.doc', time: '2026-01-08 15:30', enabled: true },
-          { name: 'PVC-C报告模板_标准版_v2.doc', time: '2026-03-15 10:00', enabled: false }
+          { name: 'PVC-C报告模板_标准版.doc', time: '2026-01-08 15:30', enabled: true, uploader: 'admin' },
+          { name: 'PVC-C报告模板_标准版_v2.doc', time: '2026-03-15 10:00', enabled: false, uploader: 'zhangsan' }
         ]},
       { id: 2, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', name: '英文版', isDefault: false,
         head: '电网物资通用模板头.doc', tail: '—', file: 'PVC-C报告模板_英文版.doc',
         templates: [
-          { name: 'PVC-C报告模板_英文版.doc', time: '2026-02-01 09:00', enabled: true }
+          { name: 'PVC-C报告模板_英文版.doc', time: '2026-02-01 09:00', enabled: true, uploader: 'admin' }
         ]},
       { id: 3, tree: 'pvc-c', sample: 'PVC-C', category: 'WZ电网物资', name: '简版', isDefault: false,
         head: '—', tail: '—', file: 'PVC-C报告模板_简版.doc',
         templates: [
-          { name: 'PVC-C报告模板_简版.doc', time: '2026-02-20 14:00', enabled: true }
+          { name: 'PVC-C报告模板_简版.doc', time: '2026-02-20 14:00', enabled: true, uploader: 'lisi' }
         ]},
       { id: 4, tree: 'pvc-u', sample: 'PVC-U', category: 'WZ电网物资', name: '标准版', isDefault: true,
         head: '电网物资通用模板头.doc', tail: '电网物资通用模板尾.doc', file: 'PVC-U报告模板_标准版.doc',
         templates: [
-          { name: 'PVC-U报告模板_标准版.doc', time: '2026-01-20 11:00', enabled: true }
+          { name: 'PVC-U报告模板_标准版.doc', time: '2026-01-20 11:00', enabled: true, uploader: 'admin' }
         ]},
       { id: 5, tree: 'pvc-m', sample: 'PVC-M', category: 'WZ电网物资', name: '标准版', isDefault: true,
         head: '电网物资通用模板头.doc', tail: '电网物资通用模板尾.doc', file: 'PVC-M报告模板_标准版.doc',
         templates: [
-          { name: 'PVC-M报告模板_标准版.doc', time: '2026-02-10 16:30', enabled: true }
+          { name: 'PVC-M报告模板_标准版.doc', time: '2026-02-10 16:30', enabled: true, uploader: 'wangwu' }
         ]}
     ];
 
@@ -738,6 +744,48 @@
 
     function getBodyTreeCount(modelId) {
       return BODY_DATA.filter(function (r) { return r.tree === modelId; }).length;
+    }
+
+    function escHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function findReportTreeNode(id, nodes, path) {
+      nodes = nodes || REPORT_TREE_ALL;
+      path = path || [];
+      for (var i = 0; i < nodes.length; i++) {
+        var n = nodes[i];
+        var curPath = path.concat(n);
+        if (n.id === id) return { node: n, path: curPath };
+        if (n.children && n.children.length) {
+          var found = findReportTreeNode(id, n.children, curPath);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    function getReportTreeModelLabel(treeId) {
+      var found = findReportTreeNode(treeId);
+      return found ? found.node.label : treeId;
+    }
+
+    function getBodySampleDisplay(treeId) {
+      var found = findReportTreeNode(treeId);
+      if (!found) return treeId;
+      var node = found.node;
+      var path = found.path;
+      if (path.length > 1) {
+        var parent = path[path.length - 2];
+        if (parent && !parent.model) return parent.label + '【' + node.label + '】';
+      }
+      return node.label;
+    }
+
+    function getBodyCategoryPath(treeId) {
+      var found = findReportTreeNode(treeId);
+      if (!found || found.path.length <= 1) return found ? found.path[0].label : '—';
+      return found.path.slice(0, -1).map(function (n) { return n.label; }).join(' > ');
     }
 
     function reportTreeMatch(n, kw) {
@@ -853,8 +901,14 @@
       var configured = document.getElementById('f_configured');
       var bindType = document.getElementById('f_bindType');
       if (name && name.value.trim()) rows = rows.filter(function (r) { return (r.name || '').includes(name.value.trim()); });
-      if (sample && sample.value.trim()) rows = rows.filter(function (r) { return (r.sample || r.bindLabel || '').includes(sample.value.trim()); });
-      if (category && category.value.trim()) rows = rows.filter(function (r) { return (r.category || r.bindLabel || '').includes(category.value.trim()); });
+      if (sample && sample.value.trim()) rows = rows.filter(function (r) {
+        var text = state.main === 'report' && state.sub === 'body' ? getBodySampleDisplay(r.tree) : (r.sample || r.bindLabel || '');
+        return text.includes(sample.value.trim());
+      });
+      if (category && category.value.trim()) rows = rows.filter(function (r) {
+        var text = state.main === 'report' && state.sub === 'body' ? getBodyCategoryPath(r.tree) : (r.category || r.bindLabel || '');
+        return text.includes(category.value.trim());
+      });
       if (test && test.value.trim()) rows = rows.filter(function (r) {
         var t = r.test || (r.tests || []).join(',');
         return t.includes(test.value.trim());
@@ -916,7 +970,7 @@
       };
 
       if (state.main === 'report' && state.sub === 'body') {
-        head.innerHTML = '<tr><th>序号</th><th>模板名称</th><th>样品名称(型号)</th><th>样品分类</th><th>默认</th><th>当前启用版本</th><th>引用公共模版头</th><th>引用公共模版尾</th><th style="min-width:300px">操作</th></tr>';
+        head.innerHTML = '<tr><th>序号</th><th>模板名称</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>默认</th><th>当前启用版本</th><th>引用公共模版头</th><th>引用公共模版尾</th><th style="min-width:300px">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           var defaultCell = r.isDefault
             ? '<span class="badge-default">默认</span>'
@@ -924,7 +978,10 @@
           var fileCell = r.file
             ? '<span class="link">' + r.file + '</span>' + (r.templates && r.templates.length > 1 ? '<span class="badge-enabled">启用中</span>' : '')
             : '<span class="badge-none">未配置</span>';
-          return '<tr><td>' + (i + 1) + '</td><td>' + r.name + '</td><td>' + r.sample + '</td><td>' + r.category + '</td><td>' + defaultCell + '</td>' +
+          var sampleDisplay = getBodySampleDisplay(r.tree);
+          var categoryPath = getBodyCategoryPath(r.tree);
+          return '<tr><td>' + (i + 1) + '</td><td>' + r.name + '</td><td class="cell-sample-name">' + sampleDisplay + '</td>' +
+            '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td><td>' + defaultCell + '</td>' +
             '<td>' + fileCell + '</td><td><span class="link">' + r.head + '</span></td><td><span class="link">' + r.tail + '</span></td>' +
             '<td class="whitespace-nowrap">' + bodyOps(r) + '</td></tr>';
         }).join('');
@@ -1068,10 +1125,9 @@
       state.bodyRowId = null;
       document.getElementById('bodyModalTitle').textContent = '新增模板变体';
       document.getElementById('m_name').value = '';
+      document.getElementById('m_sample').value = getReportTreeModelLabel(state.treeId);
       document.getElementById('m_default').checked = !BODY_DATA.some(function (r) { return r.tree === state.treeId && r.isDefault; });
-      document.getElementById('bodyFileRow').classList.remove('hidden');
-      document.querySelector('input[name=bodyFileMode][value=upload]').checked = true;
-      toggleBodyFileMode();
+      document.getElementById('bodyFileRow').classList.add('hidden');
       openModal('bodyModal');
     }
 
@@ -1080,7 +1136,7 @@
       if (!row) return;
       state.bodyRowId = id;
       document.getElementById('bodyModalTitle').textContent = '编辑模板变体';
-      document.getElementById('m_sample').value = row.sample;
+      document.getElementById('m_sample').value = getReportTreeModelLabel(row.tree);
       document.getElementById('m_name').value = row.name;
       document.getElementById('m_default').checked = row.isDefault;
       document.getElementById('m_useHead').checked = row.head !== '—';
@@ -1093,7 +1149,6 @@
     function saveBodyModal() {
       var name = (document.getElementById('m_name').value || '').trim();
       if (!name) { alert('请填写模板名称'); return; }
-      var sample = document.getElementById('m_sample').value;
       var isDefault = document.getElementById('m_default').checked;
       var useHead = document.getElementById('m_useHead').checked;
       var useTail = document.getElementById('m_useTail').checked;
@@ -1123,16 +1178,15 @@
         }
         var newId = BODY_DATA.reduce(function (m, r) { return Math.max(m, r.id); }, 0) + 1;
         BODY_DATA.push({
-          id: newId, tree: state.treeId, sample: sample, category: 'WZ电网物资',
+          id: newId, tree: state.treeId, sample: getReportTreeModelLabel(state.treeId), category: getBodyCategoryPath(state.treeId),
           name: name, isDefault: isDefault, head: head, tail: tail,
-          file: sample + '报告模板_' + name + '.doc',
-          templates: [{ name: sample + '报告模板_' + name + '.doc', time: '2026-07-15 12:00', enabled: true }]
+          file: null,
+          templates: []
         });
       }
       closeModal('bodyModal');
       renderTree();
       renderTable();
-      alert('正文模板变体已保存（原型演示）');
     }
 
     function openBodyVersion(id) {
@@ -1148,10 +1202,26 @@
       if (!row) return;
       document.getElementById('bodyVersionTableBody').innerHTML = (row.templates || []).map(function (t, i) {
         return '<tr><td class="text-center"><input type="radio" name="enabledBodyTpl" ' + (t.enabled ? 'checked' : '') + ' onchange="setEnabledBodyTpl(' + i + ')" /></td>' +
-          '<td><span class="link">' + t.name + '</span></td><td>' + t.time + '</td>' +
+          '<td><span class="link">' + t.name + '</span></td><td>' + t.time + '</td><td>' + (t.uploader || '—') + '</td>' +
           '<td><button onclick="alert(\'预览\')" class="text-blue-600 hover:underline">预览</button> ' +
           '<button onclick="removeBodyTpl(' + i + ')" class="ml-1 text-red-500 hover:underline">删除</button></td></tr>';
-      }).join('') || '<tr><td colspan="4" class="py-6 text-center text-slate-400">暂无模板，请上传或复制</td></tr>';
+      }).join('') || '<tr><td colspan="5" class="py-6 text-center text-slate-400">暂无模板，请上传或复制</td></tr>';
+    }
+
+    function uploadBodyVersion() {
+      var row = findBody(state.bodyRowId);
+      if (!row) return;
+      if (!row.templates) row.templates = [];
+      var now = new Date();
+      var ts = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+      var modelLabel = getReportTreeModelLabel(row.tree);
+      var fileName = modelLabel + '报告模板_' + (row.name || '新版') + '_v' + (row.templates.length + 1) + '.doc';
+      var isFirst = !row.templates.length;
+      row.templates.push({ name: fileName, time: ts, enabled: isFirst, uploader: 'admin' });
+      if (isFirst) row.file = fileName;
+      renderBodyVersionTable();
+      renderTable();
     }
 
     function setEnabledBodyTpl(index) {
@@ -1177,7 +1247,6 @@
     function saveBodyVersion() {
       closeModal('bodyVersionModal');
       renderTable();
-      alert('正文模板版本已保存（原型演示）');
     }
 
     function openBodyCopyPicker() {
@@ -1932,7 +2001,7 @@
       annotations: [
         { id: 'tree-count', selector: '[data-annotate="tree-count"]', position: 'top-right', title: '关联模板数量', content: '括号内数字表示该分类/型号下已配置的报告模板变体数量。左侧树已按当前进入的大类过滤。', tag: '报告模板' },
         { id: 'record-tree-tests', selector: '[data-annotate="record-tree-tests"]', position: 'top-right', title: '型号下展开试验项', wide: true, content: '选中型号（如 PVC-C）后，下方列出该型号对应的全部试验项；绿点表示已配置模板。点击某一试验项可快速定位右侧列表，括号内为（已配置数 / 试验项总数）。', tag: '记录单' },
-        { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板变体', content: '打开新增弹窗，配置样品、模板名称、是否默认、模板文件及公共头尾引用。不再关联试验项。', tag: '报告模板' },
+        { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板变体', content: '打开新增弹窗，配置样品、模板名称、是否默认及公共头尾引用。模板文件可在「版本」弹窗中上传。', tag: '报告模板' },
         { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑模板名称、是否默认、引用公共头尾。模板文件通过「版本」管理。', tag: '操作说明' },
         { id: 'body-version', selector: '[data-annotate="body-version"]', position: 'top-right', title: '版本管理', wide: true, content: '同一模板变体可存多个版本，通过单选启用其中一个；报告生成时使用启用版本。点击「配置」进入 PageOffice 编辑当前启用版本。', tag: '报告模板' },
         { id: 'body-default', selector: '[data-annotate="body-default"]', position: 'top-right', title: '设为默认', content: '同一样品型号下仅有一个默认模板变体；报告编制生成报告时默认选中该变体，用户可临时切换其他变体。', tag: '报告模板' },
