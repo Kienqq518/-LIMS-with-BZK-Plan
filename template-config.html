@@ -45,6 +45,8 @@
     .cat-card:nth-child(4) .illus { color: #d97706; }
     .tpl-detail-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
     .tpl-detail-head .back { color: #64748b; cursor: pointer; }
+    /* 取消大类卡片页后，隐藏返回大类按钮 */
+    .tpl-detail-head .back { display: none; }
     .tpl-detail-head .back:hover { color: #2563eb; }
     .tpl-layout { display: flex; gap: 0; min-height: calc(100vh - 170px); }
     .tpl-tree { width: 220px; flex-shrink: 0; border-right: 1px solid #e2e8f0; background: #fff; }
@@ -159,7 +161,7 @@
   </div>
 
   <!-- 大类选择页 -->
-  <div id="catHubView" class="cat-hub">
+  <div id="catHubView" class="cat-hub hidden">
     <h1 class="mb-10 text-2xl font-semibold tracking-wide text-slate-800">模板管理</h1>
     <div class="grid w-full max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2">
       <div class="cat-card" onclick="enterTplCategory('dlwz')">
@@ -1814,16 +1816,13 @@
     (function bootTplPage() {
       var params = new URLSearchParams(window.location.search);
       var cat = params.get('cat');
-      if (cat && CAT_META[cat]) {
-        state.cat = cat;
-        state.main = 'report';
-        state.sub = 'body';
-        state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
-        showTplDetail();
-      } else {
-        document.getElementById('catHubView').classList.remove('hidden');
-        document.getElementById('tplDetailView').classList.add('hidden');
-      }
+      // 无分类参数时，默认直接进入「电力物资类」
+      if (!cat || !CAT_META[cat]) { cat = 'dlwz'; }
+      state.cat = cat;
+      state.main = 'report';
+      state.sub = 'body';
+      state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
+      showTplDetail();
     })();
 
     PrototypeAnnotation.init({
