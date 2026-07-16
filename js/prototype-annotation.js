@@ -296,8 +296,15 @@
         setEnabled(loadEnabled());
       }
       if (!window._paModalObserver) {
-        window._paModalObserver = new MutationObserver(function () {
-          applyFocusScope();
+        window._paModalObserver = new MutationObserver(function (records) {
+          // 仅响应批注层以外元素的 class 变化（如弹窗开合触发聚焦），
+          // 忽略批注自身 marker/card 的 class 变更；否则 applyFocusScope 修改
+          // marker/card 的 class 会再次触发本观察器，形成死循环导致页面卡死。
+          var root = document.getElementById(ROOT_ID);
+          var external = records.some(function (r) {
+            return !root || !root.contains(r.target);
+          });
+          if (external) applyFocusScope();
         });
         window._paModalObserver.observe(document.body, {
           attributes: true,

@@ -43,19 +43,14 @@
     .cat-card:nth-child(4) { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%); }
     .cat-card:nth-child(4) .title { color: #92400e; }
     .cat-card:nth-child(4) .illus { color: #d97706; }
-    .tpl-detail-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-    .tpl-detail-head .back { color: #64748b; cursor: pointer; }
-    /* 取消大类卡片页后，隐藏返回大类按钮 */
-    .tpl-detail-head .back { display: none; }
-    .tpl-detail-head .back:hover { color: #2563eb; }
-    /* 隐藏分类标题文案（如“电力物资类”） */
-    #tplCatTitle { display: none; }
     .tpl-layout { display: flex; gap: 0; min-height: calc(100vh - 170px); }
     .tpl-tree { width: 220px; flex-shrink: 0; border-right: 1px solid #e2e8f0; background: #fff; }
     .tpl-tree-head { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
     .tpl-tree-head input { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
     .tpl-tree-body { padding: 8px 0; max-height: calc(100vh - 200px); overflow-y: auto; font-size: 13px; }
     .tree-node { padding: 6px 12px 6px 16px; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; }
+    .tree-node .tree-caret { display: inline-block; width: 12px; flex-shrink: 0; text-align: center; font-size: 10px; color: #94a3b8; }
+    .tree-node .tree-caret-empty { color: transparent; }
     .tree-node:hover { background: #f1f5f9; }
     .tree-node.active { background: #eff6ff; color: #2563eb; }
     .tree-node.child { padding-left: 28px; }
@@ -188,12 +183,6 @@
 
   <!-- 大类内配置 -->
   <div id="tplDetailView" class="hidden">
-    <div class="tpl-detail-head">
-      <span class="back" onclick="backToCatHub()"><i class="fa fa-angle-left"></i> 返回大类</span>
-      <span class="text-slate-300">|</span>
-      <span id="tplCatTitle" class="font-medium text-slate-700">电力物资类</span>
-    </div>
-
     <!-- 一级 Tab -->
     <div class="flex border-b border-slate-200 bg-white px-4" id="mainTabBar">
       <div class="main-tab active" data-tab="report">报告模板</div>
@@ -484,7 +473,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
-    var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: null };
+    var state = { main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: null, openIds: {} };
 
     var CAT_META = {
       dlwz: { name: '电力物资类', treeKeys: ['wz'], publicCats: ['wz', 'cable-duct'], publicSamples: ['cable-duct-sample', 'pvc-c', 'mpp', 'hdpe'] },
@@ -493,23 +482,109 @@
       gcjc: { name: '工程检测', treeKeys: ['gcjc'], publicCats: ['cement'], publicSamples: ['p', 'po', 'ps'] }
     };
 
-    var TREE_ALL = [
-      { id: 'gqj', label: 'GQJ安全工器具', cat: 'aqgqj', children: [
-        { id: 'glove', label: '01绝缘手套', count: 2 },
-        { id: 'rod', label: '02绝缘操作杆', count: 1 }
+    // 报告正文模板左侧树：合并「样品数据」各大类 mock 层级（大类 → 分类 → 样品 → 型号）。
+    // 多个大类均展示；型号（叶子）可选中，右侧联动模板变体列表。
+    var REPORT_TREE_ALL = [
+      { id: 'cat-dlwz', label: '电力物资类', children: [
+        { id: 'dldl', label: 'DLDL电力电缆类', children: [
+          { id: 'v1', label: '额定电压 1kV 和 3kV', children: [
+            { id: 'gbt1', label: 'GBT 12706.1-2020', children: [
+              { id: 'cu1', label: '铜芯' },
+              { id: 'al1', label: '铝芯' }
+            ]}
+          ]},
+          { id: 'v6', label: '额定电压 6kV-30kV', children: [
+            { id: 'gbt2', label: 'GBT 12706.2-2020', children: [
+              { id: 'cu6', label: '铜芯', children: [
+                { id: 'cu6-3c', label: '10kV3芯电力电缆' },
+                { id: 'cu6-1c', label: '10kV单芯电力电缆' }
+              ]},
+              { id: 'al6', label: '铝芯' }
+            ]}
+          ]},
+          { id: 'v35', label: '额定电压 35kV', children: [
+            { id: 'gbt3', label: 'GB_T 12706.3-2020', children: [
+              { id: 'cu35', label: '铜芯' },
+              { id: 'al35', label: '铝芯' }
+            ]}
+          ]}
+        ]},
+        { id: 'bhg', label: 'BHG电缆保护管', children: [
+          { id: 'dlt801', label: 'DLT 802.1-2023', children: [
+            { id: 'ds', label: 'DS实壁类塑料电缆导管', children: [
+              { id: 'dlt803', label: 'DLT 802.3-2023', children: [
+                { id: 'ds-s', label: 'DS实壁类塑料电缆导管_直管', children: [
+                  { id: 'pvc-c', label: 'PVC-C', model: true },
+                  { id: 'mpp', label: 'MPP', model: true },
+                  { id: 'hdpe', label: 'HDPE', model: true }
+                ]},
+                { id: 'ds-k', label: 'DS实壁类塑料电缆导管_带承口' }
+              ]},
+              { id: 'dlt802', label: 'DLT 802.2-2023', children: [
+                { id: 'gf', label: '玻璃纤维增强塑料电缆导管' }
+              ]},
+              { id: 'dlt804', label: 'DLT 802.4-2023', children: [
+                { id: 'bw', label: '波纹类塑料电缆导管' }
+              ]},
+              { id: 'dlt805', label: 'DLT 802.5-2023', children: [
+                { id: 'xw', label: '纤维水泥电缆导管' }
+              ]},
+              { id: 'dlt806', label: 'DLT 802.6-2023', children: [
+                { id: 'cs', label: '承插式混凝土预制电缆导管' }
+              ]},
+              { id: 'dlt807', label: 'DLT 802.7-2023', children: [
+                { id: 'fw', label: '非开挖用塑料电缆导管' }
+              ]},
+              { id: 'dlt808', label: 'DLT 802.8-2023', children: [
+                { id: 'sg', label: '塑钢复合电缆导管' }
+              ]},
+              { id: 'dlt810', label: 'DLT 802.10-2023', children: [
+                { id: 'ts', label: '涂塑钢质电缆导管' }
+              ]}
+            ]}
+          ]}
+        ]}
       ]},
-      { id: 'wz', label: 'WZ电网物资', cat: 'dlwz', children: [
-        { id: 'cable-duct', label: '02电力电缆导管', count: 4 },
-        { id: 'pvc-c', label: 'PVC-C', count: 3 },
-        { id: 'mpp', label: 'MPP', count: 2 }
+      { id: 'cat-aqgqj', label: '安全工器具类', children: [
+        { id: 'dlt976', label: 'DLT 976-2017', children: [
+          { id: 'rod', label: '绝缘操作杆' },
+          { id: 'ladder', label: '绝缘软梯' },
+          { id: 'belt976', label: '安全带' }
+        ]},
+        { id: 'dlt1476', label: 'DLT 1476-2023', children: [
+          { id: 'rope1476', label: '安全绳' },
+          { id: 'rod1476', label: '绝缘杆' },
+          { id: 'belt1476', label: '安全带' },
+          { id: 'helmet', label: '安全帽' },
+          { id: 'board1476', label: '登高板' },
+          { id: 'spur', label: '登杆脚扣' }
+        ]},
+        { id: 'dlt1741', label: 'DLT 1741-2017', children: [
+          { id: 'sling', label: '吊装带' },
+          { id: 'shackle', label: '卸扣' },
+          { id: 'belt1741', label: '安全带' },
+          { id: 'jack', label: '千斤顶' },
+          { id: 'board1741', label: '登高板（升降板）' },
+          { id: 'rope1741', label: '安全绳' }
+        ]}
       ]},
-      { id: 'gcjc', label: '工程检测', cat: 'gcjc', children: [
-        { id: 'cement-p', label: '硅酸盐水泥', count: 0 },
-        { id: 'cement-po', label: '普通硅酸盐水泥', count: 0 }
+      { id: 'cat-hjjc', label: '环境检测', children: [] },
+      { id: 'cat-gcjc', label: '工程检测', children: [
+        { id: 'cement', label: '通用硅酸盐水泥', children: [
+          { id: 'gb175', label: 'GB 175-2023', children: [
+            { id: 'p', label: '硅酸盐水泥' },
+            { id: 'po', label: '普通硅酸盐水泥' },
+            { id: 'ps', label: '矿渣硅酸盐水泥' },
+            { id: 'pf', label: '粉煤灰硅酸盐水泥' },
+            { id: 'pp', label: '火山灰质硅酸盐水泥' },
+            { id: 'pc', label: 'P·C复合硅酸盐水泥' }
+          ]}
+        ]}
       ]}
     ];
 
-    var TREE = TREE_ALL.slice();
+    // 默认展开到 PVC-C 的整条路径，便于进入即可见示例数据
+    var REPORT_TREE_DEFAULT_OPEN = ['cat-dlwz', 'bhg', 'dlt801', 'ds', 'dlt803', 'ds-s'];
 
     function getRecordTreeCount(modelId) {
       var items = RECORD_DATA.filter(function (r) { return r.tree === modelId; });
@@ -662,9 +737,35 @@
       return BODY_DATA.filter(function (r) { return r.tree === modelId; }).length;
     }
 
-    function getFilteredTree() {
-      if (!state.cat) return TREE_ALL;
-      return TREE_ALL.filter(function (g) { return g.cat === state.cat; });
+    function reportTreeMatch(n, kw) {
+      if (!kw) return true;
+      if ((n.label || '').toLowerCase().indexOf(kw) >= 0) return true;
+      return (n.children || []).some(function (c) { return reportTreeMatch(c, kw); });
+    }
+
+    function renderReportTreeNodes(nodes, depth, kw) {
+      var html = '';
+      (nodes || []).forEach(function (n) {
+        if (kw && !reportTreeMatch(n, kw)) return;
+        var hasChild = n.children && n.children.length;
+        var isOpen = kw ? true : !!state.openIds[n.id];
+        var pad = depth * 14 + 12;
+        var active = state.treeId === n.id ? ' active' : '';
+        var caret = hasChild
+          ? '<span class="tree-caret">' + (isOpen ? '▼' : '▶') + '</span>'
+          : '<span class="tree-caret tree-caret-empty"></span>';
+        var icon = hasChild ? '<i class="fa fa-folder-o text-slate-400"></i>' : '';
+        var count = '';
+        if (!hasChild) {
+          var num = getBodyTreeCount(n.id);
+          count = num ? '<span class="count">(' + num + ')</span>' : '';
+        }
+        var handler = hasChild ? 'toggleReportTree' : 'selectTree';
+        html += '<div class="tree-node' + active + '" style="padding-left:' + pad + 'px" data-id="' + n.id + '" onclick="' + handler + '(\'' + n.id + '\')">' +
+          caret + icon + '<span>' + n.label + '</span>' + count + '</div>';
+        if (hasChild && isOpen) html += renderReportTreeNodes(n.children, depth + 1, kw);
+      });
+      return html;
     }
 
     function renderTree() {
@@ -676,23 +777,17 @@
           html += renderTreeNodes([g], kw, 0, showGroup);
         });
       } else {
-        getFilteredTree().forEach(function (g) {
-          var showGroup = !kw || g.label.toLowerCase().includes(kw);
-          var childHtml = (g.children || []).map(function (c) {
-            if (kw && !showGroup && !c.label.toLowerCase().includes(kw)) return '';
-            var active = state.treeId === c.id ? ' active' : '';
-            var countNum = getBodyTreeCount(c.id);
-            var count = countNum ? '<span class="count">(' + countNum + ')</span>' : (c.count ? '<span class="count">(' + c.count + ')</span>' : '');
-            return '<div class="tree-node child' + active + '" data-id="' + c.id + '" onclick="selectTree(\'' + c.id + '\')">' + c.label + count + '</div>';
-          }).join('');
-          if (!childHtml && kw && !showGroup) return;
-          html += '<div class="tree-node" data-annotate="tree-count"><i class="fa fa-folder-o text-slate-400"></i>' + g.label + '</div>' + childHtml;
-        });
+        html = renderReportTreeNodes(REPORT_TREE_ALL, 0, kw);
       }
-      document.getElementById('treeBody').innerHTML = html || '<div class="px-3 py-8 text-center text-slate-400 text-sm">当前大类暂无树节点</div>';
+      document.getElementById('treeBody').innerHTML = html || '<div class="px-3 py-8 text-center text-slate-400 text-sm">未匹配到树节点</div>';
     }
 
     function filterTree() { renderTree(); }
+
+    function toggleReportTree(id) {
+      state.openIds[id] = !state.openIds[id];
+      renderTree();
+    }
 
     function selectTree(id) {
       state.treeId = id;
@@ -897,6 +992,9 @@
         state.treeId = (rt[0] && rt[0].children && rt[0].children[0] && rt[0].children[0].children && rt[0].children[0].children[0])
           ? rt[0].children[0].children[0].id
           : (rt[0] && rt[0].children && rt[0].children[0] ? rt[0].children[0].id : 'pvc-c');
+      } else if (tab === 'report') {
+        state.treeId = 'pvc-c';
+        openReportTreeDefaults();
       }
       document.querySelectorAll('#mainTabBar .main-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === tab); });
 
@@ -1788,8 +1886,8 @@
       window.location.href = 'template-config.html?cat=' + encodeURIComponent(cat);
     }
 
-    function backToCatHub() {
-      window.location.href = 'template-config.html';
+    function openReportTreeDefaults() {
+      REPORT_TREE_DEFAULT_OPEN.forEach(function (id) { state.openIds[id] = true; });
     }
 
     function showTplDetail() {
@@ -1797,7 +1895,6 @@
       var detail = document.getElementById('tplDetailView');
       hub.classList.add('hidden');
       detail.classList.remove('hidden');
-      document.getElementById('tplCatTitle').textContent = (CAT_META[state.cat] || {}).name || '';
       document.querySelectorAll('#mainTabBar .main-tab').forEach(function (t) {
         t.classList.toggle('active', t.getAttribute('data-tab') === 'report');
       });
@@ -1824,6 +1921,7 @@
       state.main = 'report';
       state.sub = 'body';
       state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
+      openReportTreeDefaults();
       showTplDetail();
     })();
 
