@@ -242,17 +242,17 @@
   <div class="p-4">
     <!-- ========== 委托信息设置 ========== -->
     <div id="panel-entrust" class="param-panel">
-      <div class="rounded bg-white shadow-sm pb-6">
+      <div class="rounded bg-white shadow-sm pb-6" data-annotate="entrust-panel">
         <div class="flex items-center justify-end border-b border-slate-100 px-6 py-3">
-          <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+          <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer" data-annotate="entrust-select-all">
             <input type="checkbox" id="selectAllFields" class="field-check" checked onchange="toggleSelectAll(this.checked)" />
             全选
           </label>
         </div>
-        <div class="px-6 pt-4" id="fieldSections"></div>
+        <div class="px-6 pt-4" id="fieldSections" data-annotate="entrust-field-grid"></div>
         <div class="mt-6 flex justify-center gap-3">
-          <button onclick="resetEntrustFields()" class="rounded border border-slate-300 px-8 py-2 text-sm text-slate-600 hover:bg-slate-50">恢复默认</button>
-          <button onclick="saveEntrustFields()" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">保存</button>
+          <button onclick="resetEntrustFields()" data-annotate="entrust-reset" class="rounded border border-slate-300 px-8 py-2 text-sm text-slate-600 hover:bg-slate-50">恢复默认</button>
+          <button onclick="saveEntrustFields()" data-annotate="entrust-save" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">保存</button>
         </div>
       </div>
     </div>
@@ -1198,6 +1198,7 @@
           var dis = f.locked ? ' disabled' : '';
           var help = f.help ? ' <i class="fa fa-question-circle field-help" title="按工作日计算"></i>' : '';
           var anno = f.annotate ? ' data-annotate="' + f.annotate + '"' : '';
+          if (f.id === 'taskType') anno = ' data-annotate="entrust-alias-field"';
           var bindBlock = '';
           if (f.fieldType === 'select') {
             var dictName = f.dictType ? getDictDisplayName(f.dictType) : '';
@@ -1205,11 +1206,12 @@
             var hintText = invalid ? '字典已失效' : (dictName ? '已绑: ' + dictName : '');
             var hintCls = 'field-bind-hint' + (invalid ? ' is-invalid' : '') + (hintText ? '' : ' hidden');
             var btnCls = 'field-bind-btn' + (f.dictType ? ' is-bound' : '');
+            var bindAnno = f.id === 'taskType' ? ' data-annotate="entrust-dict-bind"' : '';
             bindBlock =
               '<div class="field-control">' +
                 '<div class="field-input-row">' +
                   '<input type="text" class="field-input" data-alias-for="' + f.id + '" value="' + (f.placeholder || '') + '" placeholder="' + f.placeholder + '" oninput="onAliasInput(\'' + f.id + '\', this)" />' +
-                  '<button type="button" class="' + btnCls + '" title="关联数据字典" onclick="openBindPopover(event, \'' + f.id + '\')"><i class="fa fa-cog"></i></button>' +
+                  '<button type="button" class="' + btnCls + '"' + bindAnno + ' title="关联数据字典" onclick="openBindPopover(event, \'' + f.id + '\')"><i class="fa fa-cog"></i></button>' +
                   '<input type="checkbox" class="field-check" data-field="' + f.id + '" ' + (f.checked ? 'checked' : '') + dis + ' onchange="onFieldCheck(\'' + f.id + '\', this)" />' +
                 '</div>' +
                 '<div class="' + hintCls + '" data-hint-for="' + f.id + '">' + hintText + '</div>' +
@@ -1774,8 +1776,62 @@
           selector: '[data-annotate="entrust-tab"]',
           position: 'top-right',
           title: '委托信息设置',
-          content: '配置委托登记表单中各字段的显示/隐藏。灰色勾选为系统必填不可取消；蓝色勾选为可选字段，取消勾选后委托表单中不再展示该字段。',
+          wide: true,
+          content: '配置委托登记/编辑表单中的字段：<strong>显隐</strong>（勾选）、<strong>别名</strong>（中间输入框）、以及下拉字段与<strong>字典管理</strong>的绑定关系。保存后别名会同步至关联字典的「字典名称」，委托表单标签与下拉选项随之更新。',
           tag: '业务流程配置'
+        },
+        {
+          id: 'entrust-field-grid',
+          selector: '[data-annotate="entrust-field-grid"]',
+          position: 'top-right',
+          title: '字段配置栅格',
+          wide: true,
+          content: '按合同信息、委托信息、付款信息、报告信息四个分组展示。每行：<strong>系统标签</strong>（左侧灰色，不可改）→ <strong>别名</strong>（可编辑，委托表单显示名）→ 下拉字段另有<strong>齿轮</strong>绑定字典 → <strong>勾选框</strong>控制显隐。<br><br>灰色勾选 = 系统必填，不可取消；蓝色勾选 = 可选字段，取消后委托表单隐藏该字段。',
+          tag: '委托信息设置'
+        },
+        {
+          id: 'entrust-alias-field',
+          selector: '[data-annotate="entrust-alias-field"]',
+          position: 'top-right',
+          title: '字段别名',
+          wide: true,
+          content: '中间输入框为<strong>别名</strong>（主数据源），修改后将作为委托登记/编辑页的标签文字。例如将「任务类型」改为「检测任务类型」，委托表单对应标签同步变更。<br><br>别名不可为空；点击「保存」后生效。',
+          tag: '委托信息设置'
+        },
+        {
+          id: 'entrust-dict-bind',
+          selector: '[data-annotate="entrust-dict-bind"]',
+          position: 'top-right',
+          title: '字典绑定（齿轮图标）',
+          wide: true,
+          content: '仅<strong>下拉类型</strong>字段显示齿轮图标。点击打开弹窗，从「字典管理」已有字典中选择关联；已绑定时下方显示「已绑: 字典名」。<br><br>弹窗支持搜索字典、单选确认；已被其他字段占用的字典置灰并标注「已绑定: xxx」；已绑定字段可「解除绑定」。绑定变更后需点底部「保存」才持久化。<br><br>规则：<strong>一对一</strong>；<strong>别名为主</strong>（保存时字典名称同步为别名）；解绑后字典名保留、不再同步。主数据下拉（客户单位、业务员等）不参与绑定。',
+          tag: '字典绑定'
+        },
+        {
+          id: 'entrust-select-all',
+          selector: '[data-annotate="entrust-select-all"]',
+          position: 'top-left',
+          title: '全选 / 全不选',
+          content: '批量勾选或取消所有<strong>非锁定</strong>字段。系统必填字段（灰色勾选）不受全不选影响，始终保持启用。',
+          tag: '委托信息设置'
+        },
+        {
+          id: 'entrust-save',
+          selector: '[data-annotate="entrust-save"]',
+          position: 'top-right',
+          title: '保存',
+          wide: true,
+          content: '保存字段显隐、别名与字典绑定配置。对已绑定字段：<strong>字典名称自动同步为当前别名</strong>。委托登记/编辑页刷新后按新配置展示标签、显隐及下拉选项（来自字典数据）。',
+          tag: '委托信息设置'
+        },
+        {
+          id: 'entrust-reset',
+          selector: '[data-annotate="entrust-reset"]',
+          position: 'top-right',
+          title: '恢复默认',
+          wide: true,
+          content: '重置所有字段别名、勾选状态、字典绑定关系，并将 LIMS 业务字典名称恢复为初始值。操作不可撤销，需二次确认。',
+          tag: '委托信息设置'
         },
         {
           id: 'salesman-field',
