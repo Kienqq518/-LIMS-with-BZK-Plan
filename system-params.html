@@ -184,6 +184,10 @@
     .hf-modal-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
     .hf-modal-preview.placeholder { color: #94a3b8; font-size: 12px; flex-direction: column; gap: 4px; }
     .hf-modal-current { margin-top: 10px; font-size: 12px; color: #64748b; }
+    .seal-modal-preview { width: 100%; height: 140px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-top: 12px; }
+    .seal-modal-preview.signature { height: 100px; }
+    .seal-modal-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .seal-modal-preview.placeholder { color: #94a3b8; font-size: 12px; flex-direction: column; gap: 4px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -282,31 +286,31 @@
             <div class="seal-hint" data-annotate="undertaker-seal-hint">
               <i class="fa fa-info-circle"></i> 签名与印章图片建议上传 <strong>PNG 透明底</strong> 格式；骑缝章 / CNAS / CMA / 检测专用章最小尺寸 <strong>200×200 像素</strong>，法定代表人签名建议宽度不小于 <strong>300 像素</strong>；单文件不超过 <strong>2MB</strong>，以保证导出报告时清晰可辨。
             </div>
-            <div class="stamp-upload-row">
-              <div class="stamp-upload-box">
+            <div class="stamp-upload-row" id="sealUploadRow">
+              <div class="stamp-upload-box" data-seal-key="signature">
                 <div class="label">法定代表人电子签名</div>
-                <div class="stamp-preview placeholder"><i class="fa fa-pencil-square-o text-lg"></i><span>签名预览</span></div>
-                <button type="button" class="stamp-upload-btn" onclick="alert('上传法定代表人电子签名（原型演示）')"><i class="fa fa-upload"></i> 上传</button>
+                <div class="stamp-preview placeholder" id="sealPreview_signature"><i class="fa fa-pencil-square-o text-lg"></i><span>签名预览</span></div>
+                <button type="button" class="stamp-upload-btn" data-annotate="undertaker-seal-upload" onclick="openSealUploadModal('signature')"><i class="fa fa-upload"></i> 上传</button>
               </div>
-              <div class="stamp-upload-box">
+              <div class="stamp-upload-box" data-seal-key="inspect">
                 <div class="label">检测专用章</div>
-                <div class="stamp-preview"><img src="https://via.placeholder.com/110x110/e11d48/ffffff?text=检测" alt="检测专用章" /></div>
-                <button type="button" class="stamp-upload-btn" onclick="alert('上传检测专用章（原型演示）')"><i class="fa fa-upload"></i> 上传</button>
+                <div class="stamp-preview" id="sealPreview_inspect"><img src="https://via.placeholder.com/110x110/e11d48/ffffff?text=检测" alt="检测专用章" /></div>
+                <button type="button" class="stamp-upload-btn" onclick="openSealUploadModal('inspect')"><i class="fa fa-upload"></i> 上传</button>
               </div>
-              <div class="stamp-upload-box">
+              <div class="stamp-upload-box" data-seal-key="perforation">
                 <div class="label">骑缝章</div>
-                <div class="stamp-preview"><img src="https://via.placeholder.com/110x110/e11d48/ffffff?text=骑缝" alt="骑缝章" /></div>
-                <button type="button" class="stamp-upload-btn" onclick="alert('上传骑缝章（原型演示）')"><i class="fa fa-upload"></i> 上传</button>
+                <div class="stamp-preview" id="sealPreview_perforation"><img src="https://via.placeholder.com/110x110/e11d48/ffffff?text=骑缝" alt="骑缝章" /></div>
+                <button type="button" class="stamp-upload-btn" onclick="openSealUploadModal('perforation')"><i class="fa fa-upload"></i> 上传</button>
               </div>
-              <div class="stamp-upload-box">
+              <div class="stamp-upload-box" data-seal-key="cnas">
                 <div class="label">CNAS 资质章</div>
-                <div class="stamp-preview"><img src="https://via.placeholder.com/110x110/1d4ed8/ffffff?text=CNAS" alt="CNAS 资质章" /></div>
-                <button type="button" class="stamp-upload-btn" onclick="alert('上传 CNAS 资质章（原型演示）')"><i class="fa fa-upload"></i> 上传</button>
+                <div class="stamp-preview" id="sealPreview_cnas"><img src="https://via.placeholder.com/110x110/1d4ed8/ffffff?text=CNAS" alt="CNAS 资质章" /></div>
+                <button type="button" class="stamp-upload-btn" onclick="openSealUploadModal('cnas')"><i class="fa fa-upload"></i> 上传</button>
               </div>
-              <div class="stamp-upload-box">
+              <div class="stamp-upload-box" data-seal-key="cma">
                 <div class="label">CMA 资质章</div>
-                <div class="stamp-preview"><img src="https://via.placeholder.com/110x110/dc2626/ffffff?text=CMA" alt="CMA 资质章" /></div>
-                <button type="button" class="stamp-upload-btn" onclick="alert('上传 CMA 资质章（原型演示）')"><i class="fa fa-upload"></i> 上传</button>
+                <div class="stamp-preview" id="sealPreview_cma"><img src="https://via.placeholder.com/110x110/dc2626/ffffff?text=CMA" alt="CMA 资质章" /></div>
+                <button type="button" class="stamp-upload-btn" onclick="openSealUploadModal('cma')"><i class="fa fa-upload"></i> 上传</button>
               </div>
             </div>
           </div>
@@ -517,6 +521,31 @@
     </div>
   </div>
 
+  <!-- 签名与印章上传弹窗 -->
+  <div id="sealUploadModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[88vh] w-[560px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800" id="sealUploadModalTitle">上传印章</h3>
+        <button type="button" onclick="closeSealUploadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto px-6 py-4">
+        <div class="hf-upload-hint" id="sealUploadModalHint"></div>
+        <div class="hf-dropzone" onclick="document.getElementById('sealUploadFileInput').click()">
+          <div class="icon"><i class="fa fa-cloud-upload"></i></div>
+          <div class="main">点击或拖拽图片到此处上传</div>
+          <div class="sub">支持 PNG、JPG，单文件不超过 2MB</div>
+        </div>
+        <input type="file" id="sealUploadFileInput" accept="image/png,image/jpeg" class="hidden" onchange="onSealFileSelected(this)" />
+        <div class="hf-modal-current" id="sealUploadModalCurrent"></div>
+        <div class="seal-modal-preview placeholder" id="sealUploadModalPreview"><i class="fa fa-picture-o"></i><span>上传后预览</span></div>
+      </div>
+      <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button type="button" onclick="closeSealUploadModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
+        <button type="button" onclick="confirmSealUpload()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white">确定</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/tab-bar.js"></script>
   <script src="js/flow-stages.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -539,6 +568,126 @@
       if (panel === 'record') renderRecords();
       if (panel === 'header-footer') renderHeaderFooterPanel();
     });
+
+    /* ===== 签名与印章 ===== */
+    var SEAL_META = {
+      signature: { label: '法定代表人电子签名', isSignature: true },
+      inspect: { label: '检测专用章', isSignature: false },
+      perforation: { label: '骑缝章', isSignature: false },
+      cnas: { label: 'CNAS 资质章', isSignature: false },
+      cma: { label: 'CMA 资质章', isSignature: false }
+    };
+
+    var SEAL_CONFIG = {
+      signature: null,
+      inspect: { fileName: '检测专用章.png', url: 'https://via.placeholder.com/110x110/e11d48/ffffff?text=检测' },
+      perforation: { fileName: '骑缝章.png', url: 'https://via.placeholder.com/110x110/e11d48/ffffff?text=骑缝' },
+      cnas: { fileName: 'CNAS资质章.png', url: 'https://via.placeholder.com/110x110/1d4ed8/ffffff?text=CNAS' },
+      cma: { fileName: 'CMA资质章.png', url: 'https://via.placeholder.com/110x110/dc2626/ffffff?text=CMA' }
+    };
+
+    var sealUploadCtx = { key: null, pendingFile: null, pendingPreview: null };
+
+    function sealHintText(key) {
+      var meta = SEAL_META[key];
+      if (meta.isSignature) {
+        return '<i class="fa fa-info-circle"></i> 建议上传 <strong>PNG 透明底</strong> 格式；宽度不小于 <strong>300 像素</strong>；单文件不超过 <strong>2MB</strong>。';
+      }
+      return '<i class="fa fa-info-circle"></i> 建议上传 <strong>PNG 透明底</strong> 格式；最小尺寸 <strong>200×200 像素</strong>；单文件不超过 <strong>2MB</strong>。';
+    }
+
+    function renderSealPreviews() {
+      Object.keys(SEAL_META).forEach(function (key) {
+        var el = document.getElementById('sealPreview_' + key);
+        if (!el) return;
+        var file = SEAL_CONFIG[key];
+        var meta = SEAL_META[key];
+        if (file && file.url) {
+          el.className = 'stamp-preview';
+          el.innerHTML = '<img src="' + file.url + '" alt="' + meta.label + '" />';
+        } else if (meta.isSignature) {
+          el.className = 'stamp-preview placeholder';
+          el.innerHTML = '<i class="fa fa-pencil-square-o text-lg"></i><span>签名预览</span>';
+        } else {
+          el.className = 'stamp-preview placeholder';
+          el.innerHTML = '<i class="fa fa-picture-o"></i><span>未上传</span>';
+        }
+      });
+    }
+
+    function openSealUploadModal(key) {
+      sealUploadCtx = { key: key, pendingFile: null, pendingPreview: null };
+      var meta = SEAL_META[key];
+      document.getElementById('sealUploadModalTitle').textContent = '上传' + meta.label;
+      document.getElementById('sealUploadModalHint').innerHTML = sealHintText(key);
+      var current = SEAL_CONFIG[key];
+      document.getElementById('sealUploadModalCurrent').innerHTML = current
+        ? '当前文件：<span class="text-slate-700">' + current.fileName + '</span>（上传后将替换）'
+        : '当前未上传';
+      var preview = document.getElementById('sealUploadModalPreview');
+      preview.className = 'seal-modal-preview placeholder' + (meta.isSignature ? ' signature' : '');
+      if (current && current.url) {
+        preview.className = 'seal-modal-preview' + (meta.isSignature ? ' signature' : '');
+        preview.innerHTML = '<img src="' + current.url + '" alt="预览" />';
+      } else {
+        preview.innerHTML = '<i class="fa fa-picture-o"></i><span>上传后预览</span>';
+      }
+      document.getElementById('sealUploadFileInput').value = '';
+      var m = document.getElementById('sealUploadModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeSealUploadModal() {
+      var m = document.getElementById('sealUploadModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+      sealUploadCtx.pendingFile = null;
+      sealUploadCtx.pendingPreview = null;
+    }
+
+    function onSealFileSelected(input) {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      if (!/^image\/(png|jpeg)$/.test(file.type)) {
+        alert('仅支持 PNG、JPG 格式');
+        input.value = '';
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        alert('文件大小不能超过 2MB');
+        input.value = '';
+        return;
+      }
+      sealUploadCtx.pendingFile = file;
+      var meta = SEAL_META[sealUploadCtx.key];
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        sealUploadCtx.pendingPreview = e.target.result;
+        var preview = document.getElementById('sealUploadModalPreview');
+        preview.className = 'seal-modal-preview' + (meta.isSignature ? ' signature' : '');
+        preview.innerHTML = '<img src="' + e.target.result + '" alt="预览" />';
+        document.getElementById('sealUploadModalCurrent').innerHTML = '已选择：<span class="text-slate-700">' + file.name + '</span>';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function confirmSealUpload() {
+      var key = sealUploadCtx.key;
+      if (!key) return;
+      var meta = SEAL_META[key];
+      var fileName = sealUploadCtx.pendingFile ? sealUploadCtx.pendingFile.name : (meta.label + '.png');
+      var url = sealUploadCtx.pendingPreview || (SEAL_CONFIG[key] && SEAL_CONFIG[key].url) || ('https://via.placeholder.com/110x110/64748b/ffffff?text=' + encodeURIComponent(meta.label));
+      SEAL_CONFIG[key] = { fileName: fileName, url: url };
+      closeSealUploadModal();
+      renderSealPreviews();
+    }
+
+    document.getElementById('sealUploadModal').addEventListener('click', function (e) {
+      if (e.target === this) closeSealUploadModal();
+    });
+
+    renderSealPreviews();
 
     /* ===== 页眉页脚 ===== */
     var HF_FILE_TYPES = [
@@ -787,10 +936,6 @@
       HF_CONFIG = createDefaultHfConfig();
       renderHeaderFooterPanel();
       alert('已恢复默认（原型演示）');
-    }
-
-    function saveHeaderFooter() {
-      alert('页眉页脚配置已保存（原型演示）');
     }
 
     function resolveHeaderFooterSide(config, fileTypeKey, side) {
@@ -1299,6 +1444,15 @@
           wide: true,
           content: '固定 9 种导出类型（检测报告、记录单及 7 类单据）。页眉、页脚独立开关；可上传专用图覆盖默认。「恢复默认」仅清除该行专用图，不改变开关状态。',
           tag: '页眉页脚'
+        },
+        {
+          id: 'undertaker-seal-upload',
+          selector: '[data-annotate="undertaker-seal-upload"]',
+          position: 'top-right',
+          title: '上传签名与印章',
+          wide: true,
+          content: '点击各上传位打开弹窗：含格式/尺寸提示、拖拽上传区、当前文件说明与预览。法定代表人签名宽度 ≥ 300px；骑缝章/CNAS/CMA/检测专用章最小 200×200px；PNG 透明底，≤ 2MB。确定后立即更新预览。',
+          tag: '业务流程配置'
         },
         {
           id: 'undertaker-tab',

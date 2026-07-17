@@ -275,7 +275,7 @@
     </div>
 
     <!-- 大类横向 Tab（报告/记录单/单据） -->
-    <div id="catTabBar" class="cat-tab-bar">
+    <div id="catTabBar" class="cat-tab-bar" data-annotate="doc-cat-tabs">
       <div class="cat-tab active" data-cat="dlwz" onclick="switchCatTab('dlwz')">电力物资类</div>
       <div class="cat-tab" data-cat="aqgqj" onclick="switchCatTab('aqgqj')">安全工器具类</div>
       <div class="cat-tab" data-cat="hjjc" onclick="switchCatTab('hjjc')">环境检测</div>
@@ -320,9 +320,9 @@
     <div class="doc-view-wrap">
       <div class="doc-card-grid" id="docCardGrid"></div>
     </div>
-    <div class="doc-save-bar">
+    <div class="doc-save-bar" data-annotate="doc-save-bar">
       <span class="text-xs text-slate-400" id="docDirtyHint"></span>
-      <button type="button" onclick="saveDocConfig()" class="rounded bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-700">保存</button>
+      <button type="button" onclick="saveDocConfig()" class="rounded bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-700" data-annotate="doc-save">保存</button>
     </div>
     <div class="info-bar mx-5 mb-4" data-annotate="doc-logic">
       <i class="fa fa-info-circle"></i> <strong>单据模版：</strong>每大类固定 7 类流程单据，卡片内可上传多个版本、同时仅启用一个。卡片开关控制是否支持系统生成该单据；关闭时整卡置灰但保留启用记忆。
@@ -2400,12 +2400,13 @@
         var offClass = card.cardEnabled ? '' : ' card-off';
         var errClass = state.docErrorTypes.indexOf(type) >= 0 ? ' card-error' : '';
         var listHtml = (card.templates || []).map(function (t, i) {
-          return '<div class="doc-tpl-row' + (t.enabled ? ' enabled' : '') + '">' +
+          var versionAnn = idx === 1 && i === 0 ? ' data-annotate="doc-card-version"' : '';
+          return '<div class="doc-tpl-row' + (t.enabled ? ' enabled' : '') + '"' + versionAnn + '>' +
             '<input class="radio" type="radio" name="docEn_' + escHtml(type) + '" ' + (t.enabled ? 'checked' : '') + ' onchange="setDocTplEnabled(\'' + escHtml(type) + '\',' + i + ')" />' +
             '<span class="fname" onclick="alert(\'预览（原型演示）\')" title="' + escHtml(t.name) + '">' + escHtml(t.name) + '</span>' +
             '<span class="time">' + escHtml(t.time) + '</span>' +
             '<span class="ops">' +
-            '<button type="button" onclick="openDocPageOffice(\'' + escHtml(type) + '\')" data-annotate="' + (idx === 0 ? 'doc-config' : '') + '">配置</button>' +
+            '<button type="button" onclick="openDocPageOffice(\'' + escHtml(type) + '\')" data-annotate="' + (idx === 1 && i === 0 ? 'doc-config' : '') + '">配置</button>' +
             '<button type="button" onclick="alert(\'预览（原型演示）\')">预览</button>' +
             '<button type="button" class="del" onclick="removeDocTpl(\'' + escHtml(type) + '\',' + i + ')">删除</button>' +
             '</span></div>';
@@ -2413,11 +2414,11 @@
         if (!listHtml) listHtml = '<div class="doc-empty">暂无模版，请上传</div>';
         return '<div class="doc-card' + offClass + errClass + '" id="docCard_' + escHtml(type) + '" data-type="' + escHtml(type) + '">' +
           '<div class="doc-card-head"><span class="name">' + escHtml(type) + '</span>' +
-          '<label class="doc-switch" title="控制是否支持系统生成该单据">' +
+          '<label class="doc-switch" title="控制是否支持系统生成该单据"' + (idx === 0 ? ' data-annotate="doc-card-switch"' : '') + '>' +
           '<input type="checkbox" ' + (card.cardEnabled ? 'checked' : '') + ' onchange="toggleDocCard(\'' + escHtml(type) + '\', this.checked)" />' +
           '<span class="slider"></span></label></div>' +
           '<div class="doc-card-body">' + listHtml + '</div>' +
-          '<div class="doc-card-foot"><button type="button" onclick="openDocUpload(\'' + escHtml(type) + '\')" class="rounded border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:border-blue-400 hover:text-blue-600"><i class="fa fa-upload"></i> 上传模版</button></div>' +
+          '<div class="doc-card-foot"><button type="button" onclick="openDocUpload(\'' + escHtml(type) + '\')" ' + (idx === 0 ? 'data-annotate="doc-upload"' : '') + ' class="rounded border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:border-blue-400 hover:text-blue-600"><i class="fa fa-upload"></i> 上传模版</button></div>' +
           '</div>';
       }).join('');
       document.getElementById('docCardGrid').innerHTML = html;
@@ -2631,9 +2632,14 @@
         { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '未上传模板的试验项可从其他样品/试验项复制已有模板；版本弹窗内亦提供「复制其他项」，交互与正文模板版本弹窗一致。', tag: '记录单' },
         { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出拼接逻辑', wide: true, content: '已移除「关联单试验项」二级切换，页面固定为单试验项绑定模式。用户导出时，系统自动按检测员实际做的试验项，拉取各试验项启用模板并拼接为一个文件。', tag: '产品逻辑' },
         { id: 'record-no-download', selector: '#toolbar', position: 'top-left', title: '移除下载按钮', wide: true, content: '模版管理各 Tab 工具栏已移除「下载」按钮；点击列表中蓝色的模板文件链接即可触发下载。', tag: '模板管理' },
-        { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 7 类流程单据模版。进入后通过顶部横向 Tab 切换四大类，每类固定 7 张卡片，卡片内直接管理多版本模版。', tag: '模板管理' },
-        { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模版逻辑', wide: true, content: '<strong>按大类分套：</strong>DLWZ / AQGQJ / HJJC / GCJC 四大类各自独立配置。<br><br><strong>卡片开关：</strong>控制是否支持系统生成该单据；关闭时整卡置灰但保留启用记忆。<br><br><strong>保存校验：</strong>开启的卡片必须至少有一个模版文件。', tag: '模板管理' },
+        { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 7 类流程单据模版。进入后通过顶部横向 Tab 切换四大类（电力物资类 / 安全工器具类 / 环境检测 / 工程检测），每类固定 7 张卡片，卡片内直接管理多版本模版。', tag: '模板管理' },
+        { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 7 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },
+        { id: 'doc-card-switch', selector: '[data-annotate="doc-card-switch"]', position: 'top-right', title: '卡片开关', wide: true, content: '控制该单据类型是否支持系统生成。关闭时整卡置灰，但保留已上传模版及启用记忆；关闭状态下保存时不校验是否已上传模版。', tag: '单据模版' },
+        { id: 'doc-card-version', selector: '[data-annotate="doc-card-version"]', position: 'top-right', title: '版本启用', wide: true, content: '同一单据可存多个模版版本，通过单选启用其中一个；新上传的版本默认启用最新版。卡片内可直接配置、预览、删除。', tag: '单据模版' },
+        { id: 'doc-upload', selector: '[data-annotate="doc-upload"]', position: 'top-right', title: '上传模版', content: '打开文件选择弹窗上传 .docx 模版；新上传版本自动启用，原启用版本取消选中。', tag: '单据模版' },
         { id: 'doc-config', selector: '[data-annotate="doc-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 打开该单据的 Word 模版，右侧字段面板可插入占位符。', tag: '模板管理' },
+        { id: 'doc-save', selector: '[data-annotate="doc-save"]', position: 'top-left', title: '保存校验', wide: true, content: '<strong>校验范围：</strong>仅校验<strong>当前大类</strong>下 7 张卡片。<br><br><strong>规则：</strong>卡片开关为「开启」且卡片内无任何模版文件 → 保存失败。<br><br><strong>失败表现：</strong>① 底部 toast 提示「以下开启的单据未配置模版：xxx」；② 未通过卡片边框标红（card-error）；③ 页面滚动定位到第一张失败卡片。<br><br><strong>通过：</strong>写入当前大类快照、清除未保存标记与错误态，toast「保存成功」。卡片关闭或未上传模版均不阻断。', tag: '单据模版' },
+        { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模版逻辑', wide: true, content: '<strong>按大类分套：</strong>DLWZ / AQGQJ / HJJC / GCJC 四大类各自独立配置。<br><br><strong>卡片开关：</strong>控制是否支持系统生成该单据；关闭时整卡置灰但保留启用记忆。<br><br><strong>保存：</strong>仅保存当前大类；详见右下角「保存」批注中的校验规则。', tag: '模板管理' },
         { id: 'public-filter', selector: '[data-annotate="public-filter"]', position: 'top-left', title: '公共头尾筛选', wide: true, content: '筛选字段与弹窗/表头对齐：<strong>模版内容样式</strong>（模板头/尾）、<strong>关联绑定</strong>（全部/样品分类/样品名称型号）、<strong>模版文件名</strong>。', tag: '报告模板' },
         { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共头尾列表', wide: true, content: '表头三列：<strong>模版内容样式</strong>、<strong>关联绑定</strong>（类型 + 绑定对象）、<strong>模版文件</strong>（完整文件名）。列表已按当前大类过滤。', tag: '报告模板' },
         { id: 'public-add', selector: '[data-annotate="public-add"]', position: 'top-left', title: '新增公共头尾', content: '打开新增弹窗，配置模版内容样式、关联绑定、绑定对象、上传文件并填写模版名称。', tag: '报告模板' },
