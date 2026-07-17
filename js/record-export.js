@@ -69,6 +69,19 @@
     return sample.groups[0].rows.map(function (row) { return row[idCol]; });
   }
 
+  function specimenIdForTest(sample, specimenIdx, testName) {
+    var group = null;
+    for (var i = 0; i < sample.groups.length; i++) {
+      if (sample.groups[i].title === testName) {
+        group = sample.groups[i];
+        break;
+      }
+    }
+    if (group && group.rows[specimenIdx]) return group.rows[specimenIdx][0];
+    var fallback = specimenIdsFromSample(sample);
+    return fallback[specimenIdx] || '';
+  }
+
   function isSpecimenTestComplete(sample, specimenIdx, group) {
     var statusIdx = group.columns.indexOf('状态');
     if (statusIdx < 0 || !group.rows[specimenIdx]) return true;
@@ -97,13 +110,13 @@
     var safe = function (s) { return String(s).replace(/[/\\:*?"<>|]/g, '_'); };
     if (mode.split === 'all') {
       if (mode.dim === 'specimen' && specimenId) {
-        return safe(entrustCode + '_' + specimenId + '_' + label + '_记录单.docx');
+        return safe(specimenId) + '_' + label + '_记录单.docx';
       }
       return safe(entrustCode + '_' + label + '_记录单.docx');
     }
     var testPart = tests.length === 1 ? tests[0] : tests.join('_');
     if (mode.dim === 'specimen' && specimenId) {
-      return safe(entrustCode + '_' + specimenId + '_' + testPart + '记录单.docx');
+      return safe(specimenId) + '_' + testPart + '记录单.docx';
     }
     return safe(entrustCode + '_' + label + '_' + testPart + '记录单.docx');
   }
@@ -210,12 +223,13 @@
               var st2 = miss.length
                 ? { status: 'missing_template', statusDetail: '缺少「' + miss[0] + '」的模版' }
                 : { status: 'ready', statusDetail: '就绪' };
+              var rowSpecimenId = specimenIdForTest(sample, si, testName);
               files.push({
                 id: 'f' + (++fileId),
-                fileName: buildFileName(entrustCode, sample, [testName], specimenId, mode),
+                fileName: buildFileName(entrustCode, sample, [testName], rowSpecimenId, mode),
                 sampleId: sample.id,
                 sampleLabel: sampleLabel,
-                specimenId: specimenId,
+                specimenId: rowSpecimenId,
                 tests: [{ name: testName, done: true }],
                 status: st2.status,
                 statusDetail: st2.statusDetail,
