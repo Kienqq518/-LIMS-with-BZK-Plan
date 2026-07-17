@@ -82,7 +82,7 @@
         </table>
       </div>
       <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
-        <span>共 9 条</span>
+        <span id="dictCount">共 0 条</span>
         <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
       </div>
     </div>
@@ -131,27 +131,16 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/mock-dict.js"></script>
   <script>
-    var dictTypes = [
-      { id: 1, name: '用户性别', type: 'sys_user_sex', status: '正常', time: '2022-04-26 19:50:45', remark: '用户性别列表', expanded: true,
-        items: [
-          { id: 1, label: '男', value: '0', sort: 1, status: '正常', time: '2022-04-26 19:50:45', remark: '性别男' },
-          { id: 2, label: '女', value: '1', sort: 2, status: '正常', time: '2022-04-26 19:50:45', remark: '性别女' },
-          { id: 3, label: '未知', value: '2', sort: 3, status: '正常', time: '2022-04-26 19:50:45', remark: '性别未知' }
-        ]
-      },
-      { id: 2, name: '菜单状态', type: 'sys_show_hide', status: '正常', time: '2022-04-26 19:50:45', remark: '菜单状态列表', expanded: false, items: [] },
-      { id: 3, name: '系统开关', type: 'sys_normal_disable', status: '正常', time: '2022-04-26 19:50:45', remark: '系统开关列表', expanded: false, items: [] },
-      { id: 4, name: '任务状态', type: 'sys_job_status', status: '正常', time: '2022-04-26 19:50:45', remark: '任务状态列表', expanded: false, items: [] },
-      { id: 5, name: '任务分组', type: 'sys_job_group', status: '正常', time: '2022-04-26 19:50:45', remark: '任务分组列表', expanded: false, items: [] },
-      { id: 6, name: '系统是否', type: 'sys_yes_no', status: '正常', time: '2022-04-26 19:50:45', remark: '系统是否列表', expanded: false, items: [] },
-      { id: 7, name: '通知类型', type: 'sys_notice_type', status: '正常', time: '2022-04-26 19:50:45', remark: '通知类型列表', expanded: false, items: [] },
-      { id: 8, name: '通知状态', type: 'sys_notice_status', status: '正常', time: '2022-04-26 19:50:45', remark: '通知状态列表', expanded: false, items: [] },
-      { id: 9, name: '操作类型', type: 'sys_oper_type', status: '正常', time: '2022-04-26 19:50:45', remark: '操作类型列表', expanded: false, items: [] }
-    ];
+    var dictTypes = MockDictStore.load();
 
     var editingTypeId = null;
     var editingDataCtx = null; /* { typeId, itemIndex } */
+
+    function persistDictTypes() {
+      MockDictStore.save(dictTypes);
+    }
 
     function renderTable() {
       var html = '';
@@ -176,6 +165,7 @@
         }
       });
       document.getElementById('tableBody').innerHTML = html;
+      document.getElementById('dictCount').textContent = '共 ' + dictTypes.length + ' 条';
     }
 
     function renderSubTable(row) {
@@ -235,6 +225,7 @@
         dictTypes.push({ id: dictTypes.length + 1, name: name, type: type, status: status, time: '2026-07-15 08:00:00', remark: remark, expanded: false, items: [] });
       }
       closeTypeDrawer();
+      persistDictTypes();
       renderTable();
       alert('保存成功（原型演示）');
     }
@@ -242,6 +233,7 @@
     function deleteType(id) {
       if (!confirm('确定删除该字典类型？')) return;
       dictTypes = dictTypes.filter(function (r) { return r.id !== id; });
+      persistDictTypes();
       renderTable();
     }
 
@@ -286,6 +278,7 @@
         row.expanded = true;
       }
       closeDataDrawer();
+      persistDictTypes();
       renderTable();
       alert('保存成功（原型演示）');
     }
@@ -293,6 +286,7 @@
     function deleteData(typeId, ii) {
       if (!confirm('确定删除该字典数据？')) return;
       dictTypes.find(function (r) { return r.id === typeId; }).items.splice(ii, 1);
+      persistDictTypes();
       renderTable();
     }
 

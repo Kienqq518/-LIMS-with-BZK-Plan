@@ -29,6 +29,34 @@
     .field-item.is-off .field-input { background: #f8fafc; color: #cbd5e1; }
     .field-item.is-off label { color: #94a3b8; }
     .field-help { color: #94a3b8; font-size: 12px; cursor: help; }
+    .field-item.has-bind { align-items: flex-start; }
+    .field-item.has-bind > label { padding-top: 8px; }
+    .field-control { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .field-input-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
+    .field-input-row .field-input { flex: 1; min-width: 0; color: #334155; }
+    .field-bind-btn { flex-shrink: 0; width: 24px; height: 24px; border: none; background: transparent; color: #cbd5e1; cursor: pointer; border-radius: 4px; padding: 0; line-height: 1; }
+    .field-bind-btn:hover { color: #64748b; background: #f1f5f9; }
+    .field-bind-btn.is-bound { color: #94a3b8; }
+    .field-bind-hint { font-size: 10px; color: #94a3b8; line-height: 1.2; padding-left: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .field-bind-hint.is-invalid { color: #f97316; }
+    .bind-popover-mask { position: fixed; inset: 0; z-index: 60; display: none; background: rgba(15,23,42,.25); }
+    .bind-popover-mask.open { display: block; }
+    .bind-popover { position: fixed; z-index: 61; width: 320px; max-width: calc(100vw - 32px); background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 40px rgba(15,23,42,.15); padding: 16px; display: none; }
+    .bind-popover.open { display: block; }
+    .bind-popover-title { font-size: 13px; color: #64748b; margin-bottom: 10px; }
+    .bind-search-wrap { position: relative; margin-bottom: 8px; }
+    .bind-search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 12px; }
+    .bind-search-wrap input { width: 100%; height: 34px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 0 10px 0 30px; font-size: 13px; outline: none; }
+    .bind-search-wrap input:focus { border-color: #3b82f6; }
+    .bind-dict-list { max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 4px; }
+    .bind-dict-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+    .bind-dict-item:last-child { border-bottom: none; }
+    .bind-dict-item:hover:not(.disabled) { background: #f8fafc; }
+    .bind-dict-item.selected { background: #eff6ff; }
+    .bind-dict-item.disabled { cursor: not-allowed; opacity: .55; }
+    .bind-dict-item .meta { font-size: 11px; color: #94a3b8; }
+    .bind-popover-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 8px; }
+    .bind-popover-actions .right { display: flex; gap: 8px; margin-left: auto; }
     /* 流程设置 */
     .flow-header { display: flex; justify-content: flex-end; padding: 16px 20px 0; }
     .flow-wrap {
@@ -225,6 +253,24 @@
         <div class="mt-6 flex justify-center gap-3">
           <button onclick="resetEntrustFields()" class="rounded border border-slate-300 px-8 py-2 text-sm text-slate-600 hover:bg-slate-50">恢复默认</button>
           <button onclick="saveEntrustFields()" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 字典绑定弹窗 -->
+    <div id="bindPopoverMask" class="bind-popover-mask" onclick="closeBindPopover()"></div>
+    <div id="bindPopover" class="bind-popover" role="dialog" aria-label="关联数据字典">
+      <div class="bind-popover-title">请选择关联数据字典</div>
+      <div class="bind-search-wrap">
+        <i class="fa fa-search"></i>
+        <input id="bindSearchInput" type="text" placeholder="搜索字典名称..." oninput="filterBindDictList()" />
+      </div>
+      <div id="bindDictList" class="bind-dict-list"></div>
+      <div class="bind-popover-actions">
+        <button id="bindUnlinkBtn" type="button" onclick="confirmUnbindDict()" class="text-sm text-red-500 hover:text-red-600 hidden">解除绑定</button>
+        <div class="right">
+          <button type="button" onclick="closeBindPopover()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+          <button type="button" onclick="confirmBindDict()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">确认</button>
         </div>
       </div>
     </div>
@@ -582,6 +628,8 @@
   <script src="js/flow-stages.js"></script>
   <script src="js/record-export.js"></script>
   <script src="js/prototype-annotation.js"></script>
+  <script src="js/mock-dict.js"></script>
+  <script src="js/entrust-field-config.js"></script>
   <script>
     /* ===== Tab 切换 ===== */
     document.getElementById('paramTabBar').addEventListener('click', function (e) {
@@ -1132,76 +1180,46 @@
     renderRecords();
 
     /* ===== 委托信息字段配置 ===== */
-    var FIELD_SECTIONS = [
-      {
-        title: '合同信息', id: 'contract', checked: true,
-        fields: [
-          { id: 'contractNo', label: '合同编号', placeholder: '合同编号', locked: true, checked: true },
-          { id: 'contractName', label: '合同名称', placeholder: '合同名称', checked: true },
-          { id: 'signTime', label: '合同签订时间', placeholder: '合同签订时间', checked: true },
-          { id: 'servicePeriod', label: '合同服务期限', placeholder: '合同服务期限', checked: true },
-          { id: 'bidPrice', label: '合同招标价款', placeholder: '合同招标价款', checked: true },
-          { id: 'contractSample', label: '合同样品', placeholder: '合同样品', checked: true }
-        ]
-      },
-      {
-        title: '委托信息', id: 'entrustInfo', checked: true,
-        fields: [
-          { id: 'entrustNo', label: '委托编号', placeholder: '委托编号', locked: true, checked: true },
-          { id: 'taskType', label: '任务类型', placeholder: '任务类型', locked: true, checked: true },
-          { id: 'priority', label: '优先等级', placeholder: '优先等级', locked: true, checked: true },
-          { id: 'detectType', label: '检测类型', placeholder: '检测类型', checked: true },
-          { id: 'detectNature', label: '检测性质', placeholder: '检测性质', checked: true },
-          { id: 'clientUnit', label: '委托单位', placeholder: '委托单位', locked: true, checked: true },
-          { id: 'address', label: '地址', placeholder: '地址', checked: true },
-          { id: 'zipCode', label: '邮编', placeholder: '邮编', checked: true },
-          { id: 'contact', label: '联系人', placeholder: '联系人', locked: true, checked: true },
-          { id: 'contactPhone', label: '联系方式', placeholder: '联系方式', locked: true, checked: true },
-          { id: 'salesman', label: '业务负责人', placeholder: '业务员', checked: true, removable: true, annotate: 'salesman-field' },
-          { id: 'signPlace', label: '签订地点', placeholder: '签订地点', checked: true },
-          { id: 'testCenter', label: '检测中心', placeholder: '检测中心', locked: true, checked: true },
-          { id: 'acceptDate', label: '受理日期', placeholder: '受理日期', locked: true, checked: true },
-          { id: 'requireDate', label: '客户要求完成日期', placeholder: '客户要求完成日期', checked: true },
-          { id: 'requireDays', label: '要求检测完成天数', placeholder: '要求检测完成天数', locked: true, checked: true, help: true },
-          { id: 'compiler', label: '编制人', placeholder: '编制人', locked: true, checked: true },
-          { id: 'agentUnit', label: '代检单位', placeholder: '代检单位', checked: true },
-          { id: 'agentPhone', label: '代检联系方式', placeholder: '代检联系方式', checked: true },
-          { id: 'entrustRemark', label: '委托备注', placeholder: '委托备注', checked: true }
-        ]
-      },
-      {
-        title: '付款信息', id: 'payment', checked: true,
-        fields: [
-          { id: 'totalPrice', label: '样品检测总价格', placeholder: '样品检测总价格', locked: true, checked: true },
-          { id: 'actualCost', label: '实际费用', placeholder: '实际费用', locked: true, checked: true },
-          { id: 'discount', label: '折扣率', placeholder: '折扣率', locked: true, checked: true },
-          { id: 'payerUnit', label: '付款单位', placeholder: '付款单位', checked: true },
-          { id: 'payMethod', label: '付款方式', placeholder: '付款方式', checked: true },
-          { id: 'bizRemark', label: '业务备注', placeholder: '业务备注', checked: true }
-        ]
-      },
-      {
-        title: '报告信息', id: 'reportInfo', checked: true,
-        fields: [
-          { id: 'reportDelivery', label: '报告交付方式', placeholder: '报告交付方式', checked: true },
-          { id: 'reportQual', label: '报告资质', placeholder: '报告资质', locked: true, checked: true },
-          { id: 'reportDesc', label: '报告说明', placeholder: '报告说明', checked: true },
-          { id: 'reportQty', label: '报告数量', placeholder: '报告数量', checked: true },
-          { id: 'resultFormat', label: '结果格式', placeholder: '结果格式', checked: true }
-        ]
-      }
-    ];
+    var FIELD_SECTIONS = EntrustFieldConfig.load();
+    var dictTypes = MockDictStore.load();
+    var bindContext = { fieldId: null, selectedType: null };
+
+    function getDictDisplayName(dictType) {
+      if (!dictType) return '';
+      var d = MockDictStore.findByType(dictTypes, dictType);
+      return d ? d.name : '';
+    }
 
     function renderFieldSections() {
       document.getElementById('fieldSections').innerHTML = FIELD_SECTIONS.map(function (sec) {
         var fields = sec.fields.map(function (f) {
           var cls = 'field-item' + (f.locked ? ' is-locked' : '') + (!f.checked ? ' is-off' : '');
+          if (f.fieldType === 'select') cls += ' has-bind';
           var dis = f.locked ? ' disabled' : '';
           var help = f.help ? ' <i class="fa fa-question-circle field-help" title="按工作日计算"></i>' : '';
           var anno = f.annotate ? ' data-annotate="' + f.annotate + '"' : '';
+          var bindBlock = '';
+          if (f.fieldType === 'select') {
+            var dictName = f.dictType ? getDictDisplayName(f.dictType) : '';
+            var invalid = f.dictType && !dictName;
+            var hintText = invalid ? '字典已失效' : (dictName ? '已绑: ' + dictName : '');
+            var hintCls = 'field-bind-hint' + (invalid ? ' is-invalid' : '') + (hintText ? '' : ' hidden');
+            var btnCls = 'field-bind-btn' + (f.dictType ? ' is-bound' : '');
+            bindBlock =
+              '<div class="field-control">' +
+                '<div class="field-input-row">' +
+                  '<input type="text" class="field-input" data-alias-for="' + f.id + '" value="' + (f.placeholder || '') + '" placeholder="' + f.placeholder + '" oninput="onAliasInput(\'' + f.id + '\', this)" />' +
+                  '<button type="button" class="' + btnCls + '" title="关联数据字典" onclick="openBindPopover(event, \'' + f.id + '\')"><i class="fa fa-cog"></i></button>' +
+                  '<input type="checkbox" class="field-check" data-field="' + f.id + '" ' + (f.checked ? 'checked' : '') + dis + ' onchange="onFieldCheck(\'' + f.id + '\', this)" />' +
+                '</div>' +
+                '<div class="' + hintCls + '" data-hint-for="' + f.id + '">' + hintText + '</div>' +
+              '</div>';
+            return '<div class="' + cls + '" data-field-id="' + f.id + '"' + anno + '>' +
+              '<label>' + f.label + help + '</label>' + bindBlock + '</div>';
+          }
           return '<div class="' + cls + '" data-field-id="' + f.id + '"' + anno + '>' +
             '<label>' + f.label + help + '</label>' +
-            '<input type="text" class="field-input" placeholder="' + f.placeholder + '" readonly />' +
+            '<input type="text" class="field-input" data-alias-for="' + f.id + '" value="' + (f.placeholder || '') + '" placeholder="' + f.placeholder + '" oninput="onAliasInput(\'' + f.id + '\', this)" />' +
             '<input type="checkbox" class="field-check" data-field="' + f.id + '" ' +
               (f.checked ? 'checked' : '') + dis + ' onchange="onFieldCheck(\'' + f.id + '\', this)" />' +
             '</div>';
@@ -1214,13 +1232,121 @@
       }).join('');
     }
 
-    function findField(id) {
-      for (var i = 0; i < FIELD_SECTIONS.length; i++) {
-        for (var j = 0; j < FIELD_SECTIONS[i].fields.length; j++) {
-          if (FIELD_SECTIONS[i].fields[j].id === id) return FIELD_SECTIONS[i].fields[j];
-        }
+    function onAliasInput(id, input) {
+      var f = findField(id);
+      if (!f) return;
+      f.placeholder = input.value;
+    }
+
+    function updateBindHint(fieldId) {
+      var f = findField(fieldId);
+      if (!f) return;
+      var hint = document.querySelector('[data-hint-for="' + fieldId + '"]');
+      var btn = document.querySelector('[data-field-id="' + fieldId + '"] .field-bind-btn');
+      if (!hint) return;
+      var dictName = f.dictType ? getDictDisplayName(f.dictType) : '';
+      var invalid = f.dictType && !dictName;
+      if (!f.dictType) {
+        hint.textContent = '';
+        hint.classList.add('hidden');
+        hint.classList.remove('is-invalid');
+        if (btn) btn.classList.remove('is-bound');
+        return;
       }
-      return null;
+      hint.classList.remove('hidden');
+      hint.classList.toggle('is-invalid', invalid);
+      hint.textContent = invalid ? '字典已失效' : ('已绑: ' + dictName);
+      if (btn) btn.classList.toggle('is-bound', true);
+    }
+
+    function openBindPopover(ev, fieldId) {
+      ev.stopPropagation();
+      bindContext.fieldId = fieldId;
+      bindContext.selectedType = findField(fieldId).dictType || null;
+      document.getElementById('bindSearchInput').value = '';
+      renderBindDictList('');
+      document.getElementById('bindUnlinkBtn').classList.toggle('hidden', !bindContext.selectedType);
+      var pop = document.getElementById('bindPopover');
+      var mask = document.getElementById('bindPopoverMask');
+      mask.classList.add('open');
+      pop.classList.add('open');
+      var rect = ev.currentTarget.getBoundingClientRect();
+      var top = rect.bottom + 8;
+      var left = Math.min(rect.left, window.innerWidth - 340);
+      if (top + 320 > window.innerHeight) top = Math.max(8, rect.top - 320);
+      pop.style.top = top + 'px';
+      pop.style.left = Math.max(8, left) + 'px';
+      setTimeout(function () { document.getElementById('bindSearchInput').focus(); }, 50);
+    }
+
+    function closeBindPopover() {
+      document.getElementById('bindPopoverMask').classList.remove('open');
+      document.getElementById('bindPopover').classList.remove('open');
+      bindContext.fieldId = null;
+      bindContext.selectedType = null;
+    }
+
+    function renderBindDictList(keyword) {
+      keyword = (keyword || '').trim().toLowerCase();
+      var fieldId = bindContext.fieldId;
+      var html = '';
+      dictTypes.forEach(function (d) {
+        if (keyword && d.name.toLowerCase().indexOf(keyword) === -1 && d.type.toLowerCase().indexOf(keyword) === -1) return;
+        var occupied = EntrustFieldConfig.getBoundFieldByDictType(FIELD_SECTIONS, d.type, fieldId);
+        var selected = bindContext.selectedType === d.type;
+        var cls = 'bind-dict-item' + (selected ? ' selected' : '') + (occupied ? ' disabled' : '');
+        var sub = occupied ? ('已绑定: ' + occupied.placeholder) : d.type;
+        html += '<div class="' + cls + '" data-dict-type="' + d.type + '" onclick="selectBindDict(\'' + d.type + '\', ' + !!occupied + ')">' +
+          '<input type="radio" name="bindDict" ' + (selected ? 'checked' : '') + (occupied ? ' disabled' : '') + ' />' +
+          '<div><div>' + d.name + '</div><div class="meta">' + sub + '</div></div></div>';
+      });
+      document.getElementById('bindDictList').innerHTML = html || '<div class="p-3 text-sm text-slate-400">无匹配字典</div>';
+    }
+
+    function filterBindDictList() {
+      renderBindDictList(document.getElementById('bindSearchInput').value);
+    }
+
+    function selectBindDict(type, disabled) {
+      if (disabled) return;
+      bindContext.selectedType = type;
+      renderBindDictList(document.getElementById('bindSearchInput').value);
+    }
+
+    function confirmBindDict() {
+      var f = findField(bindContext.fieldId);
+      if (!f || !bindContext.selectedType) {
+        alert('请选择要关联的字典');
+        return;
+      }
+      var occupied = EntrustFieldConfig.getBoundFieldByDictType(FIELD_SECTIONS, bindContext.selectedType, f.id);
+      if (occupied) {
+        alert('该字典已被「' + occupied.placeholder + '」绑定');
+        return;
+      }
+      f.dictType = bindContext.selectedType;
+      updateBindHint(f.id);
+      closeBindPopover();
+    }
+
+    function confirmUnbindDict() {
+      var f = findField(bindContext.fieldId);
+      if (!f || !f.dictType) return;
+      if (!confirm('确定解除与「' + getDictDisplayName(f.dictType) + '」的绑定？字典名称将保留，不再随别名同步。')) return;
+      f.dictType = null;
+      updateBindHint(f.id);
+      closeBindPopover();
+    }
+
+    function collectAliasesFromDom() {
+      document.querySelectorAll('[data-alias-for]').forEach(function (input) {
+        var f = findField(input.getAttribute('data-alias-for'));
+        if (f) f.placeholder = input.value.trim();
+      });
+    }
+
+    function findField(id) {
+      return EntrustFieldConfig.findField(FIELD_SECTIONS, id);
     }
 
     function onFieldCheck(id, cb) {
@@ -1266,22 +1392,34 @@
     }
 
     function resetEntrustFields() {
-      if (!confirm('确定恢复默认字段配置？')) return;
-      var salesman = findField('salesman');
-      FIELD_SECTIONS.forEach(function (sec) {
-        sec.checked = true;
-        sec.fields.forEach(function (f) {
-          f.checked = true;
-        });
-      });
+      if (!confirm('确定恢复默认字段配置？将重置别名、绑定关系及 LIMS 字典名称。')) return;
+      FIELD_SECTIONS = EntrustFieldConfig.reset();
+      dictTypes = MockDictStore.reset();
+      dictTypes = EntrustFieldConfig.resetDictNamesToDefault(dictTypes);
+      MockDictStore.save(dictTypes);
       renderFieldSections();
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function saveEntrustFields() {
+      collectAliasesFromDom();
+      var emptyField = null;
+      FIELD_SECTIONS.forEach(function (sec) {
+        sec.fields.forEach(function (f) {
+          if (!f.placeholder || !f.placeholder.trim()) emptyField = f;
+        });
+      });
+      if (emptyField) {
+        alert('别名不能为空：' + emptyField.label);
+        return;
+      }
+      dictTypes = EntrustFieldConfig.syncBoundDictNames(FIELD_SECTIONS, dictTypes);
+      EntrustFieldConfig.save(FIELD_SECTIONS);
+      MockDictStore.save(dictTypes);
+      renderFieldSections();
       var salesman = findField('salesman');
       var msg = salesman.checked ? '已保存（业务负责人字段：显示）' : '已保存（业务负责人字段：已隐藏）';
-      alert(msg + '（原型演示）');
+      alert(msg + '；已同步绑定字典名称（原型演示）');
     }
 
     renderFieldSections();
