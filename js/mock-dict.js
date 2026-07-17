@@ -101,6 +101,11 @@
       .sort(function (a, b) { return (a.sort || 0) - (b.sort || 0); });
   }
 
+  function formatDictLabel(dict) {
+    if (!dict) return '';
+    return dict.name + ' (' + dict.type + ')';
+  }
+
   global.MockDictStore = {
     STORAGE_KEY: STORAGE_KEY,
     DEFAULT_DICT_TYPES: DEFAULT_DICT_TYPES,
@@ -110,6 +115,7 @@
     reset: reset,
     findByType: findByType,
     syncDictName: syncDictName,
-    getActiveItems: getActiveItems
+    getActiveItems: getActiveItems,
+    formatDictLabel: formatDictLabel
   };
 })(window);

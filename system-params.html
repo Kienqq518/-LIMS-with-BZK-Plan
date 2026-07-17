@@ -1187,7 +1187,11 @@
     function getDictDisplayName(dictType) {
       if (!dictType) return '';
       var d = MockDictStore.findByType(dictTypes, dictType);
-      return d ? d.name : '';
+      return MockDictStore.formatDictLabel(d);
+    }
+
+    function isDictMissing(dictType) {
+      return !!dictType && !MockDictStore.findByType(dictTypes, dictType);
     }
 
     function renderFieldSections() {
@@ -1202,7 +1206,7 @@
           var bindBlock = '';
           if (f.fieldType === 'select') {
             var dictName = f.dictType ? getDictDisplayName(f.dictType) : '';
-            var invalid = f.dictType && !dictName;
+            var invalid = isDictMissing(f.dictType);
             var hintText = invalid ? '字典已失效' : (dictName ? '已绑: ' + dictName : '');
             var hintCls = 'field-bind-hint' + (invalid ? ' is-invalid' : '') + (hintText ? '' : ' hidden');
             var btnCls = 'field-bind-btn' + (f.dictType ? ' is-bound' : '');
@@ -1247,7 +1251,7 @@
       var btn = document.querySelector('[data-field-id="' + fieldId + '"] .field-bind-btn');
       if (!hint) return;
       var dictName = f.dictType ? getDictDisplayName(f.dictType) : '';
-      var invalid = f.dictType && !dictName;
+      var invalid = isDictMissing(f.dictType);
       if (!f.dictType) {
         hint.textContent = '';
         hint.classList.add('hidden');
@@ -1297,10 +1301,10 @@
         var occupied = EntrustFieldConfig.getBoundFieldByDictType(FIELD_SECTIONS, d.type, fieldId);
         var selected = bindContext.selectedType === d.type;
         var cls = 'bind-dict-item' + (selected ? ' selected' : '') + (occupied ? ' disabled' : '');
-        var sub = occupied ? ('已绑定: ' + occupied.placeholder) : d.type;
+        var sub = occupied ? ('已绑定: ' + occupied.placeholder) : (d.remark || '');
         html += '<div class="' + cls + '" data-dict-type="' + d.type + '" onclick="selectBindDict(\'' + d.type + '\', ' + !!occupied + ')">' +
           '<input type="radio" name="bindDict" ' + (selected ? 'checked' : '') + (occupied ? ' disabled' : '') + ' />' +
-          '<div><div>' + d.name + '</div><div class="meta">' + sub + '</div></div></div>';
+          '<div><div>' + MockDictStore.formatDictLabel(d) + '</div><div class="meta">' + sub + '</div></div></div>';
       });
       document.getElementById('bindDictList').innerHTML = html || '<div class="p-3 text-sm text-slate-400">无匹配字典</div>';
     }
@@ -1804,7 +1808,7 @@
           position: 'top-right',
           title: '字典绑定（齿轮图标）',
           wide: true,
-          content: '仅<strong>下拉类型</strong>字段显示齿轮图标。点击打开弹窗，从「字典管理」已有字典中选择关联；已绑定时下方显示「已绑: 字典名」。<br><br>弹窗支持搜索字典、单选确认；已被其他字段占用的字典置灰并标注「已绑定: xxx」；已绑定字段可「解除绑定」。绑定变更后需点底部「保存」才持久化。<br><br>规则：<strong>一对一</strong>；<strong>别名为主</strong>（保存时字典名称同步为别名）；解绑后字典名保留、不再同步。主数据下拉（客户单位、业务员等）不参与绑定。',
+          content: '仅<strong>下拉类型</strong>字段显示齿轮图标。点击打开弹窗，从「字典管理」已有字典中选择关联；已绑定时下方显示「已绑: 字典名 (英文类型)」。<br><br>弹窗支持搜索字典、单选确认；已被其他字段占用的字典置灰并标注「已绑定: xxx」；已绑定字段可「解除绑定」。绑定变更后需点底部「保存」才持久化。<br><br>规则：<strong>一对一</strong>；<strong>别名为主</strong>（保存时字典名称同步为别名）；解绑后字典名保留、不再同步。主数据下拉（客户单位、业务员等）不参与绑定。',
           tag: '字典绑定'
         },
         {
