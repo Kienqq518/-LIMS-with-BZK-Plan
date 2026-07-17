@@ -174,6 +174,16 @@
     .hf-side-status { font-size: 13px; }
     .hf-section-disabled { opacity: .55; pointer-events: none; user-select: none; }
     .hf-master-row { display: flex; align-items: center; gap: 12px; padding: 4px 0 8px; }
+    .hf-upload-hint { margin-bottom: 12px; padding: 10px 14px; border-radius: 4px; background: #fffbeb; border: 1px solid #fde68a; font-size: 12px; color: #92400e; line-height: 1.7; }
+    .hf-dropzone { border: 1px dashed #cbd5e1; border-radius: 6px; background: #f8fafc; padding: 28px 16px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
+    .hf-dropzone:hover { border-color: #93c5fd; background: #eff6ff; }
+    .hf-dropzone .icon { font-size: 28px; color: #94a3b8; margin-bottom: 8px; }
+    .hf-dropzone .main { font-size: 13px; color: #475569; margin-bottom: 4px; }
+    .hf-dropzone .sub { font-size: 12px; color: #94a3b8; }
+    .hf-modal-preview { width: 100%; height: 72px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-top: 12px; }
+    .hf-modal-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .hf-modal-preview.placeholder { color: #94a3b8; font-size: 12px; flex-direction: column; gap: 4px; }
+    .hf-modal-current { margin-top: 10px; font-size: 12px; color: #64748b; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -374,16 +384,19 @@
           <div class="cfg-section" id="hfDefaultSection">
             <div class="cfg-section-title" data-annotate="hf-default">默认页眉 / 页脚</div>
             <p class="mb-3 text-sm text-slate-500">各文件类型未单独上传时，默认使用此图片。</p>
+            <div class="hf-upload-hint" data-annotate="hf-upload-hint">
+              <i class="fa fa-info-circle"></i> 页眉页脚图片建议上传 <strong>PNG / JPG</strong> 格式（页眉推荐 PNG 透明底）。<strong>页眉</strong>建议宽度 ≥ <strong>800px</strong>、高度 <strong>60–120px</strong>；<strong>页脚</strong>建议宽度 ≥ <strong>800px</strong>、高度 <strong>50–100px</strong>；分辨率建议 <strong>150 DPI</strong> 及以上；单文件不超过 <strong>2MB</strong>，以保证导出时清晰可辨。
+            </div>
             <div class="stamp-upload-row">
               <div class="stamp-upload-box">
                 <div class="label">默认页眉图片</div>
                 <div class="hf-preview" id="hfDefaultHeaderPreview"></div>
-                <button type="button" class="stamp-upload-btn hf-action" onclick="uploadHfDefault('header')"><i class="fa fa-upload"></i> 上传</button>
+                <button type="button" class="stamp-upload-btn hf-action" onclick="openHfUploadModal('default', null, 'header')"><i class="fa fa-upload"></i> 上传</button>
               </div>
               <div class="stamp-upload-box">
                 <div class="label">默认页脚图片</div>
                 <div class="hf-preview" id="hfDefaultFooterPreview"></div>
-                <button type="button" class="stamp-upload-btn hf-action" onclick="uploadHfDefault('footer')"><i class="fa fa-upload"></i> 上传</button>
+                <button type="button" class="stamp-upload-btn hf-action" onclick="openHfUploadModal('default', null, 'footer')"><i class="fa fa-upload"></i> 上传</button>
               </div>
             </div>
           </div>
@@ -480,6 +493,31 @@
     </div>
   </div>
 
+  <!-- 页眉页脚上传弹窗 -->
+  <div id="hfUploadModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[88vh] w-[560px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800" id="hfUploadModalTitle">上传页眉</h3>
+        <button type="button" onclick="closeHfUploadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto px-6 py-4">
+        <div class="hf-upload-hint" id="hfUploadModalHint"></div>
+        <div class="hf-dropzone" onclick="document.getElementById('hfUploadFileInput').click()">
+          <div class="icon"><i class="fa fa-cloud-upload"></i></div>
+          <div class="main">点击或拖拽图片到此处上传</div>
+          <div class="sub">支持 PNG、JPG，单文件不超过 2MB</div>
+        </div>
+        <input type="file" id="hfUploadFileInput" accept="image/png,image/jpeg" class="hidden" onchange="onHfFileSelected(this)" />
+        <div class="hf-modal-current" id="hfUploadModalCurrent"></div>
+        <div class="hf-modal-preview placeholder" id="hfUploadModalPreview"><i class="fa fa-picture-o"></i><span>上传后预览</span></div>
+      </div>
+      <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button type="button" onclick="closeHfUploadModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
+        <button type="button" onclick="confirmHfUpload()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white">确定</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/tab-bar.js"></script>
   <script src="js/flow-stages.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -516,23 +554,138 @@
       { key: 'pre_notice', label: '产品检测预通知书' }
     ];
 
-    var HF_CONFIG = {
-      enabled: true,
-      defaultHeader: { fileName: '默认页眉.png', url: 'https://via.placeholder.com/320x60/1e3a8a/ffffff?text=数蚕智能+·+页眉' },
-      defaultFooter: { fileName: '默认页脚.png', url: 'https://via.placeholder.com/320x50/64748b/ffffff?text=地址+·+电话+·+页脚' },
-      fileTypes: {}
-    };
+    var HF_CONFIG = createDefaultHfConfig();
+    var hfUploadCtx = { scope: 'default', key: null, side: 'header', pendingFile: null, pendingPreview: null };
 
-    HF_FILE_TYPES.forEach(function (ft) {
-      HF_CONFIG.fileTypes[ft.key] = {
-        headerEnabled: true,
-        footerEnabled: true,
-        headerOverride: null,
-        footerOverride: null
+    function createDefaultHfConfig() {
+      var config = {
+        enabled: true,
+        defaultHeader: { fileName: '默认页眉.png', url: 'https://via.placeholder.com/320x60/1e3a8a/ffffff?text=数蚕智能+·+页眉' },
+        defaultFooter: { fileName: '默认页脚.png', url: 'https://via.placeholder.com/320x50/64748b/ffffff?text=地址+·+电话+·+页脚' },
+        fileTypes: {}
       };
+      HF_FILE_TYPES.forEach(function (ft) {
+        config.fileTypes[ft.key] = {
+          headerEnabled: false,
+          footerEnabled: false,
+          headerOverride: null,
+          footerOverride: null
+        };
+      });
+      config.fileTypes.entrust.headerEnabled = true;
+      config.fileTypes.entrust.footerEnabled = true;
+      config.fileTypes.fee_notice.headerEnabled = true;
+      config.fileTypes.fee_notice.footerEnabled = true;
+      config.fileTypes.fee_notice.headerOverride = { fileName: '收费通知专用页眉.png', url: 'https://via.placeholder.com/320x60/1e3a8a/ffffff?text=收费通知专用页眉' };
+      return config;
+    }
+
+    function hfUploadHintText(side) {
+      if (side === 'header') {
+        return '<i class="fa fa-info-circle"></i> <strong>页眉</strong>图片建议 <strong>PNG / JPG</strong>（推荐 PNG 透明底）；宽度 ≥ <strong>800px</strong>，高度建议 <strong>60–120px</strong>；分辨率 ≥ <strong>150 DPI</strong>；单文件 ≤ <strong>2MB</strong>。';
+      }
+      return '<i class="fa fa-info-circle"></i> <strong>页脚</strong>图片建议 <strong>PNG / JPG</strong>；宽度 ≥ <strong>800px</strong>，高度建议 <strong>50–100px</strong>；分辨率 ≥ <strong>150 DPI</strong>；单文件 ≤ <strong>2MB</strong>。';
+    }
+
+    function hfSideLabel(scope, key, side) {
+      var sideName = side === 'header' ? '页眉' : '页脚';
+      if (scope === 'default') return '上传默认' + sideName;
+      var ft = HF_FILE_TYPES.find(function (f) { return f.key === key; });
+      return '上传' + sideName + ' — ' + (ft ? ft.label : key);
+    }
+
+    function hfCurrentFile(scope, key, side) {
+      if (scope === 'default') return side === 'header' ? HF_CONFIG.defaultHeader : HF_CONFIG.defaultFooter;
+      var row = HF_CONFIG.fileTypes[key];
+      if (!row) return null;
+      return side === 'header' ? row.headerOverride : row.footerOverride;
+    }
+
+    function openHfUploadModal(scope, key, side) {
+      if (!HF_CONFIG.enabled) return;
+      hfUploadCtx = { scope: scope, key: key, side: side, pendingFile: null, pendingPreview: null };
+      document.getElementById('hfUploadModalTitle').textContent = hfSideLabel(scope, key, side);
+      document.getElementById('hfUploadModalHint').innerHTML = hfUploadHintText(side);
+      var current = hfCurrentFile(scope, key, side);
+      document.getElementById('hfUploadModalCurrent').innerHTML = current
+        ? '当前文件：<span class="text-slate-700">' + current.fileName + '</span>（上传后将替换）'
+        : '当前未配置专用图片';
+      var preview = document.getElementById('hfUploadModalPreview');
+      if (current && current.url) {
+        preview.className = 'hf-modal-preview';
+        preview.innerHTML = '<img src="' + current.url + '" alt="预览" />';
+      } else {
+        preview.className = 'hf-modal-preview placeholder';
+        preview.innerHTML = '<i class="fa fa-picture-o"></i><span>上传后预览</span>';
+      }
+      document.getElementById('hfUploadFileInput').value = '';
+      var m = document.getElementById('hfUploadModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeHfUploadModal() {
+      var m = document.getElementById('hfUploadModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+      hfUploadCtx.pendingFile = null;
+      hfUploadCtx.pendingPreview = null;
+    }
+
+    function onHfFileSelected(input) {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      if (!/^image\/(png|jpeg)$/.test(file.type)) {
+        alert('仅支持 PNG、JPG 格式');
+        input.value = '';
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        alert('文件大小不能超过 2MB');
+        input.value = '';
+        return;
+      }
+      hfUploadCtx.pendingFile = file;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        hfUploadCtx.pendingPreview = e.target.result;
+        var preview = document.getElementById('hfUploadModalPreview');
+        preview.className = 'hf-modal-preview';
+        preview.innerHTML = '<img src="' + e.target.result + '" alt="预览" />';
+        document.getElementById('hfUploadModalCurrent').innerHTML = '已选择：<span class="text-slate-700">' + file.name + '</span>';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function confirmHfUpload() {
+      var ctx = hfUploadCtx;
+      var fileName = ctx.pendingFile ? ctx.pendingFile.name : null;
+      if (!fileName) {
+        if (ctx.scope === 'override') {
+          var ft = HF_FILE_TYPES.find(function (f) { return f.key === ctx.key; });
+          fileName = (ft ? ft.label : ctx.key) + (ctx.side === 'header' ? '专用页眉.png' : '专用页脚.png');
+        } else {
+          fileName = ctx.side === 'header' ? '默认页眉.png' : '默认页脚.png';
+        }
+      }
+      var url = ctx.pendingPreview || (ctx.side === 'header'
+        ? 'https://via.placeholder.com/320x60/1e3a8a/ffffff?text=' + encodeURIComponent(fileName.replace('.png', '').replace('.jpg', ''))
+        : 'https://via.placeholder.com/320x50/64748b/ffffff?text=' + encodeURIComponent(fileName.replace('.png', '').replace('.jpg', '')));
+      var ref = { fileName: fileName, url: url };
+      if (ctx.scope === 'default') {
+        if (ctx.side === 'header') HF_CONFIG.defaultHeader = ref;
+        else HF_CONFIG.defaultFooter = ref;
+      } else {
+        if (ctx.side === 'header') HF_CONFIG.fileTypes[ctx.key].headerOverride = ref;
+        else HF_CONFIG.fileTypes[ctx.key].footerOverride = ref;
+      }
+      closeHfUploadModal();
+      renderHeaderFooterPanel();
+    }
+
+    document.getElementById('hfUploadModal').addEventListener('click', function (e) {
+      if (e.target === this) closeHfUploadModal();
     });
-    HF_CONFIG.fileTypes.record.headerOverride = { fileName: '记录单专用页眉.png', url: '' };
-    HF_CONFIG.fileTypes.fee_notice.headerOverride = { fileName: '收费通知专用页眉.png', url: '' };
 
     function hfSideStatus(row, side) {
       var enabled = side === 'header' ? row.headerEnabled : row.footerEnabled;
@@ -582,8 +735,8 @@
           '<td><div class="hf-side-cell">' + hfSideToggle(ft.key, 'header', row.headerEnabled) + hfSideStatus(row, 'header') + '</div></td>' +
           '<td><div class="hf-side-cell">' + hfSideToggle(ft.key, 'footer', row.footerEnabled) + hfSideStatus(row, 'footer') + '</div></td>' +
           '<td class="whitespace-nowrap">' +
-          '<button type="button" class="text-blue-600 hover:underline hf-action" onclick="uploadHfOverride(\'' + ft.key + '\',\'header\')">上传页眉</button> ' +
-          '<button type="button" class="text-blue-600 hover:underline hf-action" onclick="uploadHfOverride(\'' + ft.key + '\',\'footer\')">上传页脚</button> ' +
+          '<button type="button" class="text-blue-600 hover:underline hf-action" onclick="openHfUploadModal(\'override\',\'' + ft.key + '\',\'header\')">上传页眉</button> ' +
+          '<button type="button" class="text-blue-600 hover:underline hf-action" onclick="openHfUploadModal(\'override\',\'' + ft.key + '\',\'footer\')">上传页脚</button> ' +
           '<button type="button" class="text-red-500 hover:underline hf-action" onclick="clearHfOverride(\'' + ft.key + '\')">恢复默认</button>' +
           '</td></tr>';
       }).join('');
@@ -602,25 +755,6 @@
       renderHeaderFooterPanel();
     }
 
-    function uploadHfDefault(side) {
-      if (!HF_CONFIG.enabled) return;
-      var name = side === 'header' ? '新默认页眉.png' : '新默认页脚.png';
-      if (side === 'header') HF_CONFIG.defaultHeader = { fileName: name, url: 'https://via.placeholder.com/320x60/1e3a8a/ffffff?text=默认页眉' };
-      else HF_CONFIG.defaultFooter = { fileName: name, url: 'https://via.placeholder.com/320x50/64748b/ffffff?text=默认页脚' };
-      alert('上传' + (side === 'header' ? '默认页眉' : '默认页脚') + '（原型演示）');
-      renderHeaderFooterPanel();
-    }
-
-    function uploadHfOverride(key, side) {
-      if (!HF_CONFIG.enabled) return;
-      var ft = HF_FILE_TYPES.find(function (f) { return f.key === key; });
-      var name = (ft ? ft.label : key) + (side === 'header' ? '专用页眉.png' : '专用页脚.png');
-      if (side === 'header') HF_CONFIG.fileTypes[key].headerOverride = { fileName: name, url: '' };
-      else HF_CONFIG.fileTypes[key].footerOverride = { fileName: name, url: '' };
-      alert('上传专用' + (side === 'header' ? '页眉' : '页脚') + '（原型演示）');
-      renderHeaderFooterPanel();
-    }
-
     function clearHfOverride(key) {
       if (!HF_CONFIG.enabled) return;
       HF_CONFIG.fileTypes[key].headerOverride = null;
@@ -630,17 +764,7 @@
 
     function resetHeaderFooter() {
       if (!confirm('确定恢复页眉页脚为初始默认配置？')) return;
-      HF_CONFIG.enabled = true;
-      HF_CONFIG.defaultHeader = null;
-      HF_CONFIG.defaultFooter = null;
-      HF_FILE_TYPES.forEach(function (ft) {
-        HF_CONFIG.fileTypes[ft.key] = {
-          headerEnabled: true,
-          footerEnabled: true,
-          headerOverride: null,
-          footerOverride: null
-        };
-      });
+      HF_CONFIG = createDefaultHfConfig();
       renderHeaderFooterPanel();
       alert('已恢复默认（原型演示）');
     }
@@ -1111,6 +1235,15 @@
 
     PrototypeAnnotation.init({
       annotations: [
+        {
+          id: 'hf-upload-hint',
+          selector: '[data-annotate="hf-upload-hint"]',
+          position: 'top-left',
+          title: '页眉页脚上传要求',
+          wide: true,
+          content: '默认页眉页脚及专用图上传均遵循相同尺寸要求。页眉宽 ≥ 800px、高 60–120px；页脚宽 ≥ 800px、高 50–100px；PNG/JPG，≤ 2MB。表格操作列「上传页眉/页脚」打开弹窗，内含相同提示与预览。',
+          tag: '页眉页脚'
+        },
         {
           id: 'hf-tab',
           selector: '[data-annotate="hf-tab"]',
