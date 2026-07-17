@@ -385,7 +385,7 @@
             <div class="cfg-section-title" data-annotate="hf-default">默认页眉 / 页脚</div>
             <p class="mb-3 text-sm text-slate-500">各文件类型未单独上传时，默认使用此图片。</p>
             <div class="hf-upload-hint" data-annotate="hf-upload-hint">
-              <i class="fa fa-info-circle"></i> 页眉页脚图片建议上传 <strong>PNG / JPG</strong> 格式（页眉推荐 PNG 透明底）。<strong>页眉</strong>建议宽度 ≥ <strong>800px</strong>、高度 <strong>60–120px</strong>；<strong>页脚</strong>建议宽度 ≥ <strong>800px</strong>、高度 <strong>50–100px</strong>；分辨率建议 <strong>150 DPI</strong> 及以上；单文件不超过 <strong>2MB</strong>，以保证导出时清晰可辨。
+              <i class="fa fa-info-circle"></i> 页眉页脚图片建议上传 <strong>PNG / JPG</strong> 格式；<strong>最小尺寸 524×32 像素</strong>；单文件大小不超过 <strong>100KB</strong>。
             </div>
             <div class="stamp-upload-row">
               <div class="stamp-upload-box">
@@ -505,7 +505,7 @@
         <div class="hf-dropzone" onclick="document.getElementById('hfUploadFileInput').click()">
           <div class="icon"><i class="fa fa-cloud-upload"></i></div>
           <div class="main">点击或拖拽图片到此处上传</div>
-          <div class="sub">支持 PNG、JPG，单文件不超过 2MB</div>
+          <div class="sub">支持 PNG、JPG，单文件不超过 100KB</div>
         </div>
         <input type="file" id="hfUploadFileInput" accept="image/png,image/jpeg" class="hidden" onchange="onHfFileSelected(this)" />
         <div class="hf-modal-current" id="hfUploadModalCurrent"></div>
@@ -581,10 +581,8 @@
     }
 
     function hfUploadHintText(side) {
-      if (side === 'header') {
-        return '<i class="fa fa-info-circle"></i> <strong>页眉</strong>图片建议 <strong>PNG / JPG</strong>（推荐 PNG 透明底）；宽度 ≥ <strong>800px</strong>，高度建议 <strong>60–120px</strong>；分辨率 ≥ <strong>150 DPI</strong>；单文件 ≤ <strong>2MB</strong>。';
-      }
-      return '<i class="fa fa-info-circle"></i> <strong>页脚</strong>图片建议 <strong>PNG / JPG</strong>；宽度 ≥ <strong>800px</strong>，高度建议 <strong>50–100px</strong>；分辨率 ≥ <strong>150 DPI</strong>；单文件 ≤ <strong>2MB</strong>。';
+      var label = side === 'header' ? '页眉' : '页脚';
+      return '<i class="fa fa-info-circle"></i> <strong>' + label + '</strong>图片建议 <strong>PNG / JPG</strong> 格式；<strong>最小尺寸 524×32 像素</strong>；单文件大小不超过 <strong>100KB</strong>。';
     }
 
     function hfSideLabel(scope, key, side) {
@@ -605,7 +603,15 @@
       if (!HF_CONFIG.enabled) return;
       hfUploadCtx = { scope: scope, key: key, side: side, pendingFile: null, pendingPreview: null };
       document.getElementById('hfUploadModalTitle').textContent = hfSideLabel(scope, key, side);
-      document.getElementById('hfUploadModalHint').innerHTML = hfUploadHintText(side);
+      var hint = hfUploadHintText(side);
+      if (scope === 'override') {
+        var row = HF_CONFIG.fileTypes[key];
+        var sideEnabled = side === 'header' ? row.headerEnabled : row.footerEnabled;
+        if (!sideEnabled) {
+          hint += '<br><span class="text-amber-700">当前' + (side === 'header' ? '页眉' : '页脚') + '未启用，上传后将保存专用图，开启开关后生效。</span>';
+        }
+      }
+      document.getElementById('hfUploadModalHint').innerHTML = hint;
       var current = hfCurrentFile(scope, key, side);
       document.getElementById('hfUploadModalCurrent').innerHTML = current
         ? '当前文件：<span class="text-slate-700">' + current.fileName + '</span>（上传后将替换）'
@@ -640,8 +646,8 @@
         input.value = '';
         return;
       }
-      if (file.size > 2 * 1024 * 1024) {
-        alert('文件大小不能超过 2MB');
+      if (file.size > 100 * 1024) {
+        alert('文件大小不能超过 100KB');
         input.value = '';
         return;
       }
@@ -680,7 +686,10 @@
         else HF_CONFIG.fileTypes[ctx.key].footerOverride = ref;
       }
       closeHfUploadModal();
-      renderHeaderFooterPanel();
+      renderHeaderFooterPanel({
+        defaults: ctx.scope === 'default',
+        table: ctx.scope === 'override'
+      });
     }
 
     document.getElementById('hfUploadModal').addEventListener('click', function (e) {
@@ -691,7 +700,10 @@
       var enabled = side === 'header' ? row.headerEnabled : row.footerEnabled;
       var override = side === 'header' ? row.headerOverride : row.footerOverride;
       if (!HF_CONFIG.enabled) return '<span class="hf-side-status text-slate-400">不启用</span>';
-      if (!enabled) return '<span class="hf-side-status text-slate-400">不启用</span>';
+      if (!enabled) {
+        if (override) return '<span class="hf-side-status text-slate-400">不启用 · ' + override.fileName + '</span>';
+        return '<span class="hf-side-status text-slate-400">不启用</span>';
+      }
       if (override) return '<span class="hf-side-status text-blue-600 cursor-pointer hover:underline">' + override.fileName + '</span>';
       var hasDefault = side === 'header' ? HF_CONFIG.defaultHeader : HF_CONFIG.defaultFooter;
       if (hasDefault) return '<span class="hf-side-status text-slate-500">继承默认</span>';
@@ -705,13 +717,7 @@
         '<span class="cfg-toggle-slider"></span></label>';
     }
 
-    function renderHeaderFooterPanel() {
-      document.getElementById('hfMasterSwitch').checked = HF_CONFIG.enabled;
-      var defaultSec = document.getElementById('hfDefaultSection');
-      var tableSec = document.getElementById('hfTableSection');
-      defaultSec.classList.toggle('hf-section-disabled', !HF_CONFIG.enabled);
-      tableSec.classList.toggle('hf-section-disabled', !HF_CONFIG.enabled);
-
+    function renderHfDefaultPreview() {
       var hPrev = document.getElementById('hfDefaultHeaderPreview');
       var fPrev = document.getElementById('hfDefaultFooterPreview');
       if (HF_CONFIG.defaultHeader) {
@@ -728,7 +734,9 @@
         fPrev.className = 'hf-preview placeholder';
         fPrev.innerHTML = '<i class="fa fa-picture-o"></i><span>未上传</span>';
       }
+    }
 
+    function renderHfTable() {
       document.getElementById('hfTableBody').innerHTML = HF_FILE_TYPES.map(function (ft, i) {
         var row = HF_CONFIG.fileTypes[ft.key];
         return '<tr><td>' + (i + 1) + '</td><td>' + ft.label + '</td>' +
@@ -737,9 +745,21 @@
           '<td class="whitespace-nowrap">' +
           '<button type="button" class="text-blue-600 hover:underline hf-action" onclick="openHfUploadModal(\'override\',\'' + ft.key + '\',\'header\')">上传页眉</button> ' +
           '<button type="button" class="text-blue-600 hover:underline hf-action" onclick="openHfUploadModal(\'override\',\'' + ft.key + '\',\'footer\')">上传页脚</button> ' +
-          '<button type="button" class="text-red-500 hover:underline hf-action" onclick="clearHfOverride(\'' + ft.key + '\')">恢复默认</button>' +
+          '<button type="button" class="text-red-500 hover:underline hf-action" onclick="clearHfOverride(\'' + ft.key + '\', event)">恢复默认</button>' +
           '</td></tr>';
       }).join('');
+    }
+
+    function renderHeaderFooterPanel(opts) {
+      opts = opts || { defaults: true, table: true };
+      document.getElementById('hfMasterSwitch').checked = HF_CONFIG.enabled;
+      var defaultSec = document.getElementById('hfDefaultSection');
+      var tableSec = document.getElementById('hfTableSection');
+      defaultSec.classList.toggle('hf-section-disabled', !HF_CONFIG.enabled);
+      tableSec.classList.toggle('hf-section-disabled', !HF_CONFIG.enabled);
+
+      if (opts.defaults) renderHfDefaultPreview();
+      if (opts.table) renderHfTable();
 
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
@@ -752,14 +772,15 @@
     function onHfSideToggle(key, side, checked) {
       if (side === 'header') HF_CONFIG.fileTypes[key].headerEnabled = checked;
       else HF_CONFIG.fileTypes[key].footerEnabled = checked;
-      renderHeaderFooterPanel();
+      renderHeaderFooterPanel({ defaults: false, table: true });
     }
 
-    function clearHfOverride(key) {
+    function clearHfOverride(key, e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
       if (!HF_CONFIG.enabled) return;
       HF_CONFIG.fileTypes[key].headerOverride = null;
       HF_CONFIG.fileTypes[key].footerOverride = null;
-      renderHeaderFooterPanel();
+      renderHeaderFooterPanel({ defaults: false, table: true });
     }
 
     function resetHeaderFooter() {
@@ -1241,7 +1262,7 @@
           position: 'top-left',
           title: '页眉页脚上传要求',
           wide: true,
-          content: '默认页眉页脚及专用图上传均遵循相同尺寸要求。页眉宽 ≥ 800px、高 60–120px；页脚宽 ≥ 800px、高 50–100px；PNG/JPG，≤ 2MB。表格操作列「上传页眉/页脚」打开弹窗，内含相同提示与预览。',
+          content: '默认页眉页脚及专用图上传均遵循相同要求：PNG/JPG，最小尺寸 524×32 像素，单文件不超过 100KB。未启用时仍可上传专用图，开启开关后生效。',
           tag: '页眉页脚'
         },
         {
