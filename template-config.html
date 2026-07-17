@@ -1274,8 +1274,8 @@
       } else if (state.main === 'record') {
         bar.classList.remove('hidden');
         bar.setAttribute('data-annotate', 'record-export-logic');
-        bar.innerHTML = '<i class="fa fa-info-circle"></i> 每个样品/型号下的每个试验项单独绑定模板；同一试验项可存多个模板版本，<strong>同时仅启用一个</strong>；新上传/复制的版本<strong>默认启用最新版</strong>。' +
-          '导出时若需多个试验项合并为一个文件，系统自动拉取检测员所做试验项对应的<strong>启用模板</strong>拼接导出。';
+        bar.innerHTML = '<i class="fa fa-info-circle"></i> 每个样品名称(型号)下的每个试验项单独绑定模板；同一试验项可存多个模板版本，<strong>同时仅启用一个</strong>；新上传/复制的版本<strong>默认启用最新版</strong>。' +
+          '导出时系统按<strong>业务流程配置 › 记录单设置</strong>中的生成模式切分文件；合并模式须全部试验项完成后，自动拉取各试验项启用模板<strong>动态拼接</strong>为一个 Word 文件。';
       } else {
         bar.classList.add('hidden');
         bar.removeAttribute('data-annotate');
@@ -2630,7 +2630,7 @@
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
         { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '记录单列表', wide: true, content: '「样品分类」展示完整层级路径，固定宽度最多 2 行，超出省略号，hover 显示全部。「模板文件」未上传时显示「未上传」（原「未配置」）。「修改文件名」已移至版本弹窗操作列。', tag: '记录单' },
         { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '未上传模板的试验项可从其他样品/试验项复制已有模板；版本弹窗内亦提供「复制其他项」，交互与正文模板版本弹窗一致。', tag: '记录单' },
-        { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出拼接逻辑', wide: true, content: '已移除「关联单试验项」二级切换，页面固定为单试验项绑定模式。用户导出时，系统自动按检测员实际做的试验项，拉取各试验项启用模板并拼接为一个文件。', tag: '产品逻辑' },
+        { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出拼接逻辑', wide: true, content: '页面固定为单试验项绑定模式，不配置组合模版。导出切分规则由「业务流程配置 › 记录单设置」决定；合并模式须全部试验项完成后，系统按实际完成的试验项拉取各试验项启用模板并动态拼接为一个文件。', tag: '产品逻辑' },
         { id: 'record-no-download', selector: '#toolbar', position: 'top-left', title: '移除下载按钮', wide: true, content: '模版管理各 Tab 工具栏已移除「下载」按钮；点击列表中蓝色的模板文件链接即可触发下载。', tag: '模板管理' },
         { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 7 类流程单据模版。进入后通过顶部横向 Tab 切换四大类（电力物资类 / 安全工器具类 / 环境检测 / 工程检测），每类固定 7 张卡片，卡片内直接管理多版本模版。', tag: '模板管理' },
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 7 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },

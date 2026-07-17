@@ -206,7 +206,7 @@
     <div class="param-tab" data-panel="flow" data-annotate="flow-tab">流程设置</div>
     <div class="param-tab" data-panel="entrust" data-annotate="entrust-tab">委托信息设置</div>
     <div class="param-tab" data-panel="header-footer" data-annotate="hf-tab">页眉页脚</div>
-    <div class="param-tab" data-panel="record">记录单设置</div>
+    <div class="param-tab" data-panel="record" data-annotate="record-tab">记录单设置</div>
     <div class="param-tab" data-panel="report">报告设置</div>
     <div class="param-tab" data-panel="numbering" data-annotate="numbering-tab">编号规则</div>
   </div>
@@ -343,17 +343,21 @@
     <div id="panel-record" class="param-panel">
       <div class="rounded bg-white shadow-sm">
         <div class="cfg-panel">
+          <div class="mx-0 mb-4 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            <i class="fa fa-info-circle mt-0.5 text-blue-500"></i>
+            <span>配置记录单导出时的<strong>文件切分规则</strong>。操作员在试验检测页导出时按此规则预览文件，不可更改策略。模版在「模板管理 › 记录单模版」按试验项单独维护，合并模式导出时系统自动<strong>动态拼接</strong>。</span>
+          </div>
           <div class="cfg-toolbar">
-            <div class="cfg-form-item"><label>样品分类</label><input type="text" id="recordFilterCat" placeholder="请输入" style="width:140px" /></div>
-            <div class="cfg-form-item"><label>样品名称</label><input type="text" id="recordFilterName" placeholder="请输入" style="width:140px" /></div>
-            <div class="cfg-form-item"><label>生成模式</label><select id="recordFilterMode" style="width:180px"><option value="">全部</option><option>该样品下全部试验生成一个文件</option><option>一个样品下一个试验生成一个文件</option></select></div>
+            <div class="cfg-form-item"><label>绑定对象</label><input type="text" id="recordFilterTarget" placeholder="分类或型号" style="width:140px" /></div>
+            <div class="cfg-form-item"><label>关联模式</label><select id="recordFilterBindType" style="width:140px"><option value="">全部</option><option value="category">样品分类</option><option value="model">样品名称(型号)</option></select></div>
+            <div class="cfg-form-item"><label>生成模式</label><select id="recordFilterMode" style="width:220px"><option value="">全部</option></select></div>
             <button onclick="filterRecords()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">查询</button>
             <button onclick="resetRecordFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
-            <button onclick="alert('新增记录单配置（原型演示）')" class="ml-auto rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新增</button>
+            <button onclick="openRecordModal()" class="ml-auto rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="record-add"><i class="fa fa-plus"></i> 新增</button>
           </div>
           <div class="overflow-x-auto">
             <table class="cfg-table">
-              <thead><tr><th style="width:60px">序号</th><th>样品分类</th><th>样品名称</th><th>生成模式</th><th style="width:120px">操作</th></tr></thead>
+              <thead><tr><th style="width:60px">序号</th><th>关联模式</th><th>绑定对象</th><th>生成模式</th><th style="width:120px">操作</th></tr></thead>
               <tbody id="recordTableBody"></tbody>
             </table>
           </div>
@@ -546,8 +550,37 @@
     </div>
   </div>
 
+  <!-- 记录单设置 · 新增/编辑 -->
+  <div id="recordModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[88vh] w-[520px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800" id="recordModalTitle">新增记录单配置</h3>
+        <button type="button" onclick="closeRecordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto px-6 py-4 space-y-4">
+        <div class="cfg-form-item"><label class="mb-1 block text-sm text-slate-600"><span class="text-red-500">*</span> 关联模式</label>
+          <select id="recordFormBindType" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" onchange="onRecordBindTypeChange()">
+            <option value="category">样品分类</option>
+            <option value="model">样品名称(型号)</option>
+          </select>
+        </div>
+        <div class="cfg-form-item"><label class="mb-1 block text-sm text-slate-600"><span class="text-red-500">*</span> 绑定对象</label>
+          <select id="recordFormBindTarget" class="w-full rounded border border-slate-300 px-3 py-2 text-sm"></select>
+        </div>
+        <div class="cfg-form-item"><label class="mb-1 block text-sm text-slate-600"><span class="text-red-500">*</span> 生成模式</label>
+          <select id="recordFormMode" class="w-full rounded border border-slate-300 px-3 py-2 text-sm"></select>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button type="button" onclick="closeRecordModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
+        <button type="button" onclick="saveRecordModal()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white">保存</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/tab-bar.js"></script>
   <script src="js/flow-stages.js"></script>
+  <script src="js/record-export.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     /* ===== Tab 切换 ===== */
@@ -960,42 +993,142 @@
     }
 
     /* ===== 记录单设置 ===== */
+    var RECORD_BIND_OPTIONS = {
+      category: ['安全工器具', '电网物资', '电力物资类', '环境检测', '工程检测'],
+      model: ['绝缘操作杆 - 10kV', '绝缘硬梯 - 折叠式', '绝缘横担 - 通用型', '电线电缆']
+    };
+
     var RECORD_DATA = [
-      { id: 1, category: '安全工器具', name: '', mode: '该样品下全部试验生成一个文件' },
-      { id: 2, category: '电网物资', name: '', mode: '一个样品下一个试验生成一个文件' },
-      { id: 3, category: '', name: '电线电缆', mode: '一个样品下一个试验生成一个文件' }
+      { id: 1, bindType: 'category', bindTarget: '安全工器具', modeKey: 'model-all' },
+      { id: 2, bindType: 'category', bindTarget: '电网物资', modeKey: 'model-each' },
+      { id: 3, bindType: 'model', bindTarget: '绝缘横担 - 通用型', modeKey: 'specimen-each' }
     ];
+
+    var recordEditId = null;
+    var recordNextId = 4;
+
+    function initRecordFilters() {
+      var modeSel = document.getElementById('recordFilterMode');
+      RecordExport.RECORD_MODES.forEach(function (m) {
+        modeSel.innerHTML += '<option value="' + m.key + '">' + m.label + '</option>';
+      });
+      var formMode = document.getElementById('recordFormMode');
+      formMode.innerHTML = RecordExport.RECORD_MODES.map(function (m) {
+        return '<option value="' + m.key + '">' + m.label + '</option>';
+      }).join('');
+    }
+
+    function bindTypeLabel(type) {
+      return RecordExport.BIND_TYPE_LABELS[type] || type;
+    }
+
+    function renderRecordBindTargetOptions() {
+      var type = document.getElementById('recordFormBindType').value;
+      var sel = document.getElementById('recordFormBindTarget');
+      var opts = RECORD_BIND_OPTIONS[type] || [];
+      sel.innerHTML = opts.map(function (o) {
+        return '<option value="' + o + '">' + o + '</option>';
+      }).join('');
+    }
+
+    function onRecordBindTypeChange() {
+      renderRecordBindTargetOptions();
+    }
+
+    function editRecord(id) {
+      var row = RECORD_DATA.filter(function (r) { return r.id === id; })[0];
+      if (row) openRecordModal(row);
+    }
+
+    function openRecordModal(row) {
+      recordEditId = row ? row.id : null;
+      document.getElementById('recordModalTitle').textContent = row ? '编辑记录单配置' : '新增记录单配置';
+      document.getElementById('recordFormBindType').value = row ? row.bindType : 'category';
+      renderRecordBindTargetOptions();
+      if (row) {
+        document.getElementById('recordFormBindTarget').value = row.bindTarget;
+        document.getElementById('recordFormMode').value = row.modeKey;
+      }
+      var modal = document.getElementById('recordModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeRecordModal() {
+      var modal = document.getElementById('recordModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      recordEditId = null;
+    }
+
+    function saveRecordModal() {
+      var bindType = document.getElementById('recordFormBindType').value;
+      var bindTarget = document.getElementById('recordFormBindTarget').value;
+      var modeKey = document.getElementById('recordFormMode').value;
+      if (!bindTarget) {
+        alert('请选择绑定对象');
+        return;
+      }
+      var dup = RECORD_DATA.some(function (r) {
+        return r.bindType === bindType && r.bindTarget === bindTarget && r.id !== recordEditId;
+      });
+      if (dup) {
+        alert('该关联范围已存在配置，请勿重复添加');
+        return;
+      }
+      if (recordEditId) {
+        var row = RECORD_DATA.filter(function (r) { return r.id === recordEditId; })[0];
+        if (row) {
+          row.bindType = bindType;
+          row.bindTarget = bindTarget;
+          row.modeKey = modeKey;
+        }
+      } else {
+        RECORD_DATA.push({ id: recordNextId++, bindType: bindType, bindTarget: bindTarget, modeKey: modeKey });
+      }
+      closeRecordModal();
+      renderRecords();
+    }
+
+    function deleteRecord(id) {
+      if (!confirm('确定删除该记录单配置？')) return;
+      RECORD_DATA = RECORD_DATA.filter(function (r) { return r.id !== id; });
+      renderRecords();
+    }
 
     function renderRecords(list) {
       var data = list || RECORD_DATA;
       document.getElementById('recordTableBody').innerHTML = data.map(function (row, i) {
-        return '<tr><td>' + (i + 1) + '</td><td>' + (row.category || '—') + '</td><td>' + (row.name || '—') + '</td><td>' + row.mode + '</td>' +
-          '<td class="whitespace-nowrap"><button onclick="alert(\'编辑（原型演示）\')" class="text-blue-600 hover:underline">编辑</button> ' +
-          '<button onclick="alert(\'删除（原型演示）\')" class="ml-2 text-red-500 hover:underline">删除</button></td></tr>';
+        return '<tr><td>' + (i + 1) + '</td><td>' + bindTypeLabel(row.bindType) + '</td><td>' + row.bindTarget + '</td><td>' +
+          RecordExport.modeLabel(row.modeKey) + '</td>' +
+          '<td class="whitespace-nowrap"><button onclick="editRecord(' + row.id + ')" class="text-blue-600 hover:underline">编辑</button> ' +
+          '<button onclick="deleteRecord(' + row.id + ')" class="ml-2 text-red-500 hover:underline">删除</button></td></tr>';
       }).join('');
       document.getElementById('recordTotal').textContent = '共 ' + data.length + ' 条';
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function filterRecords() {
-      var cat = document.getElementById('recordFilterCat').value.trim();
-      var name = document.getElementById('recordFilterName').value.trim();
+      var target = document.getElementById('recordFilterTarget').value.trim();
+      var bindType = document.getElementById('recordFilterBindType').value;
       var mode = document.getElementById('recordFilterMode').value;
       var filtered = RECORD_DATA.filter(function (row) {
-        if (cat && !(row.category || '').includes(cat)) return false;
-        if (name && !(row.name || '').includes(name)) return false;
-        if (mode && row.mode !== mode) return false;
+        if (target && row.bindTarget.indexOf(target) < 0) return false;
+        if (bindType && row.bindType !== bindType) return false;
+        if (mode && row.modeKey !== mode) return false;
         return true;
       });
       renderRecords(filtered);
     }
 
     function resetRecordFilter() {
-      document.getElementById('recordFilterCat').value = '';
-      document.getElementById('recordFilterName').value = '';
+      document.getElementById('recordFilterTarget').value = '';
+      document.getElementById('recordFilterBindType').value = '';
       document.getElementById('recordFilterMode').value = '';
       renderRecords();
     }
 
+    initRecordFilters();
     renderRecords();
 
     /* ===== 委托信息字段配置 ===== */
@@ -1541,6 +1674,24 @@
           title: '查看更改',
           content: '查看历史流程版本变更记录。',
           tag: '版本管理'
+        },
+        {
+          id: 'record-tab',
+          selector: '[data-annotate="record-tab"]',
+          position: 'top-right',
+          title: '记录单设置',
+          wide: true,
+          content: '按<strong>关联模式 + 绑定对象</strong>配置记录单导出的<strong>生成模式</strong>（4 种切分规则）。操作员在试验检测页导出时按此规则预览文件，不可更改策略。保存时不做模版预检。',
+          tag: '业务流程配置'
+        },
+        {
+          id: 'record-add',
+          selector: '[data-annotate="record-add"]',
+          position: 'top-left',
+          title: '新增记录单配置',
+          wide: true,
+          content: '选择关联模式（样品分类 / 样品名称(型号)）、绑定对象与 4 种生成模式之一。同范围不可重复配置。',
+          tag: '记录单设置'
         }
       ]
     });
