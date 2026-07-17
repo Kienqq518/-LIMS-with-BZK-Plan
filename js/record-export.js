@@ -151,6 +151,7 @@
           files.push({
             id: 'f' + (++fileId),
             fileName: buildFileName(entrustCode, sample, allTests, null, mode),
+            sampleId: sample.id,
             sampleLabel: sampleLabel,
             specimenId: null,
             tests: buildTestsMeta(allTests, completedTests),
@@ -169,6 +170,7 @@
             files.push({
               id: 'f' + (++fileId),
               fileName: buildFileName(entrustCode, sample, [testName], null, mode),
+              sampleId: sample.id,
               sampleLabel: sampleLabel,
               specimenId: null,
               tests: [{ name: testName, done: true }],
@@ -192,6 +194,7 @@
             files.push({
               id: 'f' + (++fileId),
               fileName: buildFileName(entrustCode, sample, allTests, specimenId, mode),
+              sampleId: sample.id,
               sampleLabel: sampleLabel,
               specimenId: specimenId,
               tests: buildTestsMeta(allTests, specimenCompleted),
@@ -210,6 +213,7 @@
               files.push({
                 id: 'f' + (++fileId),
                 fileName: buildFileName(entrustCode, sample, [testName], specimenId, mode),
+                sampleId: sample.id,
                 sampleLabel: sampleLabel,
                 specimenId: specimenId,
                 tests: [{ name: testName, done: true }],

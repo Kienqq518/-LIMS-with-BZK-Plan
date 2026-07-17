@@ -326,6 +326,49 @@
       color: #64748b;
       font-size: 10px;
     }
+    .export-mode-group { margin-bottom: 16px; }
+    .export-mode-group .export-collapse-head {
+      justify-content: flex-start;
+    }
+    .export-mode-count {
+      margin-left: auto;
+      font-size: 12px;
+      font-weight: 400;
+      color: #64748b;
+    }
+    .export-sample-block {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+    .export-sample-block:last-child { margin-bottom: 0; }
+    .export-sample-head {
+      padding: 8px 12px;
+      background: #f1f5f9;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+    }
+    .export-sample-block .export-table { border: none; }
+    .export-sample-block .export-table th,
+    .export-sample-block .export-table td { border-left: none; border-right: none; }
+    .export-sample-block .export-table tr:last-child td { border-bottom: none; }
+    .export-select-all {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-right: auto;
+      font-size: 13px;
+      color: #475569;
+      cursor: pointer;
+    }
+    .export-select-all input { accent-color: #2563eb; }
+    .export-drawer-footer {
+      gap: 12px;
+    }
     .export-warn {
       margin-top: 10px;
       padding: 8px 10px;
@@ -518,25 +561,14 @@
         </button>
       </div>
       <div class="export-drawer-body" id="exportDrawerBody">
-        <div class="overflow-x-auto">
-          <table class="export-table min-w-full">
-            <thead>
-              <tr>
-                <th class="col-check"><input type="checkbox" id="exportCheckAll" onchange="toggleExportCheckAll(this.checked)" /></th>
-                <th class="col-filename">文件名（预览）</th>
-                <th>样品名称(型号)</th>
-                <th class="col-specimen">试样编号</th>
-                <th>包含试验项</th>
-                <th class="col-status">状态</th>
-                <th class="col-op">操作</th>
-              </tr>
-            </thead>
-            <tbody id="exportPreviewBody"></tbody>
-          </table>
-        </div>
+        <div id="exportPreviewGroups"></div>
         <div class="export-warn" id="exportSummaryWarn"></div>
       </div>
       <div class="export-drawer-footer">
+        <label class="export-select-all">
+          <input type="checkbox" id="exportCheckAll" onchange="toggleExportCheckAll(this.checked)" />
+          全选可导出项
+        </label>
         <button type="button" onclick="batchExportRecords()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white hover:bg-blue-700">
           批量导出
         </button>
@@ -902,6 +934,54 @@
       }).join('') + '</div>';
     }
 
+    function renderExportFileRow(file, idx, showSpecimen) {
+      var ready = file.status === 'ready';
+      var html = '<tr data-idx="' + idx + '">';
+      html += '<td class="col-check"><input type="checkbox" class="export-row-check" data-idx="' + idx + '"' +
+        (ready && file.checked ? ' checked' : '') + (ready ? '' : ' disabled') +
+        ' onchange="onExportRowCheck(' + idx + ', this.checked)" /></td>';
+      html += '<td class="col-filename">' + file.fileName + '</td>';
+      if (showSpecimen) {
+        html += '<td class="col-specimen">' + (file.specimenId || '—') + '</td>';
+      }
+      html += '<td>' + renderExportTestTags(file.tests) + '</td>';
+      html += '<td class="col-status"><span class="export-status ' + file.status + '">' +
+        exportStatusLabel(file.status) + '</span>' +
+        (file.status !== 'ready' ? '<span class="export-status-detail">' + file.statusDetail + '</span>' : '') +
+        '</td>';
+      html += '<td class="col-op"><button type="button" class="export-op-btn" title="导出"' +
+        (ready ? '' : ' disabled') +
+        ' onclick="exportPreviewRow(' + idx + ')"><i class="fa fa-cloud-download"></i></button></td>';
+      html += '</tr>';
+      return html;
+    }
+
+    function groupExportFiles(files) {
+      var modeOrder = RecordExport.RECORD_MODES.map(function (m) { return m.key; });
+      var byMode = {};
+      files.forEach(function (file, idx) {
+        file._idx = idx;
+        if (!byMode[file.modeKey]) byMode[file.modeKey] = {};
+        var sampleKey = file.sampleId || file.sampleLabel;
+        if (!byMode[file.modeKey][sampleKey]) {
+          byMode[file.modeKey][sampleKey] = { sampleLabel: file.sampleLabel, files: [] };
+        }
+        byMode[file.modeKey][sampleKey].files.push(file);
+      });
+      return modeOrder.filter(function (k) { return byMode[k]; }).map(function (modeKey) {
+        var sampleMap = byMode[modeKey];
+        var samples = Object.keys(sampleMap).map(function (k) { return sampleMap[k]; });
+        var totalFiles = samples.reduce(function (n, s) { return n + s.files.length; }, 0);
+        return {
+          modeKey: modeKey,
+          modeLabel: RecordExport.modeLabel(modeKey),
+          dim: RecordExport.modeByKey(modeKey).dim,
+          samples: samples,
+          totalFiles: totalFiles
+        };
+      });
+    }
+
     function renderExportPreview() {
       exportPreviewFiles = RecordExport.buildRecordFilePreview(
         entrustCode,
@@ -910,28 +990,43 @@
         RECORD_TEMPLATE_INDEX
       );
 
+      var groups = groupExportFiles(exportPreviewFiles);
       var html = '';
-      exportPreviewFiles.forEach(function (file, i) {
-        var ready = file.status === 'ready';
-        html += '<tr data-idx="' + i + '">';
-        html += '<td class="col-check"><input type="checkbox" class="export-row-check" data-idx="' + i + '"' +
-          (ready && file.checked ? ' checked' : '') + (ready ? '' : ' disabled') +
-          ' onchange="onExportRowCheck(' + i + ', this.checked)" /></td>';
-        html += '<td class="col-filename">' + file.fileName + '</td>';
-        html += '<td>' + file.sampleLabel + '</td>';
-        html += '<td class="col-specimen">' + (file.specimenId || '—') + '</td>';
-        html += '<td>' + renderExportTestTags(file.tests) + '</td>';
-        html += '<td class="col-status"><span class="export-status ' + file.status + '">' +
-          exportStatusLabel(file.status) + '</span>' +
-          (file.status !== 'ready' ? '<span class="export-status-detail">' + file.statusDetail + '</span>' : '') +
-          '</td>';
-        html += '<td class="col-op"><button type="button" class="export-op-btn" title="导出"' +
-          (ready ? '' : ' disabled') +
-          ' onclick="exportPreviewRow(' + i + ')"><i class="fa fa-cloud-download"></i></button></td>';
-        html += '</tr>';
-      });
 
-      document.getElementById('exportPreviewBody').innerHTML = html || '<tr><td colspan="7" class="py-6 text-center text-slate-400">暂无可预览的导出文件</td></tr>';
+      if (!groups.length) {
+        html = '<div class="py-10 text-center text-slate-400">暂无可预览的导出文件</div>';
+      } else {
+        groups.forEach(function (group) {
+          var modeId = 'exportMode-' + group.modeKey;
+          var showSpecimen = group.dim === 'specimen';
+          html += '<div class="export-mode-group export-collapse" id="' + modeId + '">';
+          html += '<div class="export-collapse-head" onclick="toggleExportCollapse(\'' + modeId + '\')">';
+          html += '<i class="fa fa-chevron-down chev"></i>';
+          html += '<span>' + group.modeLabel + '</span>';
+          html += '<span class="export-mode-count">' + group.samples.length + ' 个样品 · ' + group.totalFiles + ' 个文件</span>';
+          html += '</div>';
+          html += '<div class="export-collapse-body">';
+
+          group.samples.forEach(function (sampleBlock) {
+            html += '<div class="export-sample-block">';
+            html += '<div class="export-sample-head">' + sampleBlock.sampleLabel + '</div>';
+            html += '<div class="overflow-x-auto"><table class="export-table min-w-full"><thead><tr>';
+            html += '<th class="col-check"></th>';
+            html += '<th class="col-filename">文件名（预览）</th>';
+            if (showSpecimen) html += '<th class="col-specimen">试样编号</th>';
+            html += '<th>包含试验项</th><th class="col-status">状态</th><th class="col-op">操作</th>';
+            html += '</tr></thead><tbody>';
+            sampleBlock.files.forEach(function (file) {
+              html += renderExportFileRow(file, file._idx, showSpecimen);
+            });
+            html += '</tbody></table></div></div>';
+          });
+
+          html += '</div></div>';
+        });
+      }
+
+      document.getElementById('exportPreviewGroups').innerHTML = html;
 
       var readyFiles = exportPreviewFiles.filter(function (f) { return f.status === 'ready'; });
       var checkAll = document.getElementById('exportCheckAll');
@@ -939,6 +1034,11 @@
       checkAll.disabled = !readyFiles.length;
 
       syncExportSummary();
+    }
+
+    function toggleExportCollapse(id) {
+      var el = document.getElementById(id);
+      if (el) el.classList.toggle('collapsed');
     }
 
     function syncExportSummary() {
