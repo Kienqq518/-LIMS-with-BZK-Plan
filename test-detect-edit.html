@@ -587,9 +587,13 @@
     document.getElementById('customerName').textContent = customer;
 
     function pad(n) { return n < 10 ? '0' + n : String(n); }
-    function specimenIds(prefix, count) {
+    /** 试样编号：{委托编号}{样品序号}{试样序号}-{试验序号}，-前末两位为试样自增，-后为试验序号 */
+    function buildSpecimenId(entrustCode, sampleCode, specimenIndex, testSeq) {
+      return entrustCode + sampleCode + pad(specimenIndex) + '-' + pad(testSeq);
+    }
+    function specimenIdsForTest(entrustCode, sampleCode, testSeq, count) {
       var list = [];
-      for (var i = 1; i <= count; i++) list.push(prefix + '-' + pad(i));
+      for (var i = 1; i <= count; i++) list.push(buildSpecimenId(entrustCode, sampleCode, i, testSeq));
       return list;
     }
 
@@ -606,7 +610,7 @@
               key: 'ac',
               title: '交流耐压试验',
               columns: ['试样编号', '试验设备', '标称值/kV', '试验值/kV', '时间/min', '状态描述', '结论', '室温/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0101', 10).map(function (id, i) {
+              rows: specimenIdsForTest(entrustCode, '01', 1, 10).map(function (id, i) {
                 return [id, '设备', '45', String(10 + (i % 3)), '1', '无异常', '合格', '23', '1013', '55', '', '已完成'];
               })
             },
@@ -614,7 +618,7 @@
               key: 'appear',
               title: '外观及尺寸',
               columns: ['试样编号', '试验设备', '外观', '有效绝缘长度/m', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0102', 10).map(function (id) {
+              rows: specimenIdsForTest(entrustCode, '01', 2, 10).map(function (id) {
                 return [id, '设备', '无缺陷', '1.2', '', '已完成'];
               })
             },
@@ -622,7 +626,7 @@
               key: 'dyn',
               title: '抗弯动负荷试验',
               columns: ['试样编号', '试验设备', '试样长度/m', '标称值/N', '试验值/N', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0103', 10).map(function (id, i) {
+              rows: specimenIdsForTest(entrustCode, '01', 3, 10).map(function (id, i) {
                 return [id, '设备', '1.5', '300', String(295 + i), '无异常', '合格', '23', '1013', '55', '', '已完成'];
               })
             },
@@ -630,7 +634,7 @@
               key: 'static',
               title: '抗弯静负荷试验',
               columns: ['试样编号', '试验设备', '试样长度/m', '标称值/N', '试验值/N', '时间/min', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0104', 10).map(function (id, i) {
+              rows: specimenIdsForTest(entrustCode, '01', 4, 10).map(function (id, i) {
                 return [id, '设备', '1.5', '300', String(298 + (i % 2)), '1', '无异常', i === 3 ? '不合格' : '合格', '23', '1013', '55', i === 3 ? '变形超限' : '', i === 3 ? '检测中' : '已完成'];
               })
             }
@@ -647,7 +651,7 @@
               key: 'l-appear',
               title: '外观及尺寸',
               columns: ['试样编号', '试验设备', '外观', '有效绝缘长度/mm', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0201', 10).map(function (id) {
+              rows: specimenIdsForTest(entrustCode, '02', 1, 10).map(function (id) {
                 return [id, '设备', '无缺陷', '3000', '', '已完成'];
               })
             },
@@ -655,7 +659,7 @@
               key: 'l-ac',
               title: '交流耐压试验',
               columns: ['试样编号', '试验设备', '电极间距离/m', '标称值/kV', '试验值/kV', '时间/min', '状态描述', '结论', '室温/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0202', 10).map(function (id) {
+              rows: specimenIdsForTest(entrustCode, '02', 2, 10).map(function (id) {
                 return [id, '设备', '0.5', '45', '45', '1', '无异常', '合格', '23', '1013', '55', '', '已完成'];
               })
             },
@@ -663,7 +667,7 @@
               key: 'l-h',
               title: '水平强度试验',
               columns: ['试样编号', '试验设备', '标称值/N', '试验值/N', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0203', 10).map(function (id, i) {
+              rows: specimenIdsForTest(entrustCode, '02', 3, 10).map(function (id, i) {
                 return [id, '设备', '1000', String(980 + i), '无异常', '合格', '23', '1013', '55', '', '已完成'];
               })
             },
@@ -671,7 +675,7 @@
               key: 'l-rung',
               title: '横档强度试验',
               columns: ['试样编号', '试验设备', '标称值/N', '试验值/N', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0204', 10).map(function (id) {
+              rows: specimenIdsForTest(entrustCode, '02', 4, 10).map(function (id) {
                 return [id, '设备', '2500', '2500', '无异常', '合格', '23', '1013', '55', '', '已完成'];
               })
             },
@@ -679,7 +683,7 @@
               key: 'l-conn',
               title: '连接装置强度试验',
               columns: ['试样编号', '试验设备', '标称值/N', '试验值/N', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0205', 10).map(function (id) {
+              rows: specimenIdsForTest(entrustCode, '02', 5, 10).map(function (id) {
                 return [id, '设备', '1200', '1195', '无异常', '合格', '23', '1013', '55', '', '已完成'];
               })
             },
@@ -687,7 +691,7 @@
               key: 'l-press',
               title: '抗压试验（折梯、人字梯）',
               columns: ['试样编号', '试验设备', '标称值/N', '试验值/N', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0206', 10).map(function (id) {
+              rows: specimenIdsForTest(entrustCode, '02', 6, 10).map(function (id) {
                 return [id, '设备', '1500', '1490', '无异常', '合格', '23', '1013', '55', '', '已完成'];
               })
             }
@@ -704,7 +708,7 @@
               key: 'c-appear',
               title: '外观及尺寸',
               columns: ['试样编号', '试验设备', '外观', '有效绝缘长度/m', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0301', 8).map(function (id) {
+              rows: specimenIdsForTest(entrustCode, '03', 1, 8).map(function (id) {
                 return [id, '设备', '无缺陷', '1.8', '', '已完成'];
               })
             },
@@ -712,7 +716,7 @@
               key: 'c-ac',
               title: '交流耐压试验',
               columns: ['试样编号', '试验设备', '标称值/kV', '试验值/kV', '时间/min', '状态描述', '结论', '室温/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
-              rows: specimenIds(entrustCode + '0302', 8).map(function (id) {
+              rows: specimenIdsForTest(entrustCode, '03', 2, 8).map(function (id) {
                 return [id, '设备', '70', '70', '1', '无异常', '合格', '22', '1012', '58', '', '已完成'];
               })
             }
@@ -819,7 +823,7 @@
     function openRowEdit(sampleName, groupTitle) {
       document.getElementById('rowEditTitle').textContent = '编辑 · ' + sampleName + ' / ' + groupTitle;
       document.getElementById('rowEditBody').innerHTML =
-        '<div class="flex items-center gap-3"><label class="w-24 text-right text-slate-500">试样编号</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5" value="' + entrustCode + '0101-01" readonly /></div>' +
+        '<div class="flex items-center gap-3"><label class="w-24 text-right text-slate-500">试样编号</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5" value="' + buildSpecimenId(entrustCode, '01', 1, 1) + '" readonly /></div>' +
         '<div class="flex items-center gap-3"><label class="w-24 text-right text-slate-500">试验值</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5" value="10" /></div>' +
         '<div class="flex items-center gap-3"><label class="w-24 text-right text-slate-500">状态描述</label><input class="flex-1 rounded border border-slate-300 px-3 py-1.5" value="无异常" /></div>' +
         '<div class="flex items-center gap-3"><label class="w-24 text-right text-slate-500">结论</label><select class="flex-1 rounded border border-slate-300 px-3 py-1.5"><option>合格</option><option>不合格</option></select></div>' +
