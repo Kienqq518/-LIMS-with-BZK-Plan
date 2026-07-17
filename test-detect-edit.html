@@ -552,7 +552,7 @@
   </div>
 
   <!-- 记录单导出详情抽屉 -->
-  <div id="exportDrawerMask" class="drawer-mask">
+  <div id="exportDrawerMask" class="drawer-mask" data-annotate="export-drawer">
     <div class="export-drawer" onclick="event.stopPropagation()">
       <div class="export-drawer-header">
         <h3 class="text-base font-medium text-slate-800">记录单导出详情</h3>
@@ -562,14 +562,14 @@
       </div>
       <div class="export-drawer-body" id="exportDrawerBody">
         <div id="exportPreviewGroups"></div>
-        <div class="export-warn" id="exportSummaryWarn"></div>
+        <div class="export-warn" id="exportSummaryWarn" data-annotate="export-summary-warn"></div>
       </div>
       <div class="export-drawer-footer">
-        <label class="export-select-all">
+        <label class="export-select-all" data-annotate="export-select-all">
           <input type="checkbox" id="exportCheckAll" onchange="toggleExportCheckAll(this.checked)" />
           全选可导出项
         </label>
-        <button type="button" onclick="batchExportRecords()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white hover:bg-blue-700">
+        <button type="button" onclick="batchExportRecords()" data-annotate="export-batch" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white hover:bg-blue-700">
           批量导出
         </button>
       </div>
@@ -578,6 +578,7 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/record-export.js"></script>
+  <script src="js/prototype-annotation.js"></script>
   <script>
     var params = new URLSearchParams(location.search);
     var entrustCode = params.get('code') || 'SC2026/0052';
@@ -938,22 +939,23 @@
       }).join('') + '</div>';
     }
 
-    function renderExportFileRow(file, idx, showSpecimen) {
+    function renderExportFileRow(file, idx, showSpecimen, annotate) {
       var ready = file.status === 'ready';
       var html = '<tr data-idx="' + idx + '">';
       html += '<td class="col-check"><input type="checkbox" class="export-row-check" data-idx="' + idx + '"' +
         (ready && file.checked ? ' checked' : '') + (ready ? '' : ' disabled') +
         ' onchange="onExportRowCheck(' + idx + ', this.checked)" /></td>';
-      html += '<td class="col-filename">' + file.fileName + '</td>';
+      html += '<td class="col-filename"' + (annotate === 'filename' ? ' data-annotate="export-filename"' : '') + '>' + file.fileName + '</td>';
       if (showSpecimen) {
-        html += '<td class="col-specimen">' + (file.specimenId || '—') + '</td>';
+        html += '<td class="col-specimen"' + (annotate === 'specimen' ? ' data-annotate="export-specimen"' : '') + '>' + (file.specimenId || '—') + '</td>';
       }
-      html += '<td>' + renderExportTestTags(file.tests) + '</td>';
-      html += '<td class="col-status"><span class="export-status ' + file.status + '">' +
+      html += '<td' + (annotate === 'tests' ? ' data-annotate="export-tests"' : '') + '>' + renderExportTestTags(file.tests) + '</td>';
+      html += '<td class="col-status"' + (annotate === 'status' ? ' data-annotate="export-status"' : '') + '><span class="export-status ' + file.status + '">' +
         exportStatusLabel(file.status) + '</span>' +
         (file.status !== 'ready' ? '<span class="export-status-detail">' + file.statusDetail + '</span>' : '') +
         '</td>';
       html += '<td class="col-op"><button type="button" class="export-op-btn" title="导出"' +
+        (annotate === 'op' ? ' data-annotate="export-row-op"' : '') +
         (ready ? '' : ' disabled') +
         ' onclick="exportPreviewRow(' + idx + ')"><i class="fa fa-cloud-download"></i></button></td>';
       html += '</tr>';
@@ -996,6 +998,31 @@
 
       var groups = groupExportFiles(exportPreviewFiles);
       var html = '';
+      var annotateFlags = { mode: false, sample: false, filename: false, specimen: false, tests: false, status: false, op: false };
+
+      function pickRowAnnotate(file, showSpecimen) {
+        if (!annotateFlags.status && file.status !== 'ready') {
+          annotateFlags.status = true;
+          return 'status';
+        }
+        if (!annotateFlags.specimen && showSpecimen && file.specimenId) {
+          annotateFlags.specimen = true;
+          return 'specimen';
+        }
+        if (!annotateFlags.tests && file.tests.length > 1) {
+          annotateFlags.tests = true;
+          return 'tests';
+        }
+        if (!annotateFlags.op && file.status === 'ready') {
+          annotateFlags.op = true;
+          return 'op';
+        }
+        if (!annotateFlags.filename) {
+          annotateFlags.filename = true;
+          return 'filename';
+        }
+        return null;
+      }
 
       if (!groups.length) {
         html = '<div class="py-10 text-center text-slate-400">暂无可预览的导出文件</div>';
@@ -1003,7 +1030,9 @@
         groups.forEach(function (group) {
           var modeId = 'exportMode-' + group.modeKey;
           var showSpecimen = group.dim === 'specimen';
-          html += '<div class="export-mode-group export-collapse" id="' + modeId + '">';
+          html += '<div class="export-mode-group export-collapse" id="' + modeId + '"' +
+            (annotateFlags.mode ? '' : ' data-annotate="export-mode-group"') + '>';
+          if (!annotateFlags.mode) annotateFlags.mode = true;
           html += '<div class="export-collapse-head" onclick="toggleExportCollapse(\'' + modeId + '\')">';
           html += '<i class="fa fa-chevron-down chev"></i>';
           html += '<span>' + group.modeLabel + '</span>';
@@ -1012,7 +1041,8 @@
           html += '<div class="export-collapse-body">';
 
           group.samples.forEach(function (sampleBlock) {
-            html += '<div class="export-sample-block">';
+            html += '<div class="export-sample-block"' + (annotateFlags.sample ? '' : ' data-annotate="export-sample-block"') + '>';
+            if (!annotateFlags.sample) annotateFlags.sample = true;
             html += '<div class="export-sample-head">' + sampleBlock.sampleLabel + '</div>';
             html += '<div class="overflow-x-auto"><table class="export-table min-w-full"><thead><tr>';
             html += '<th class="col-check"></th>';
@@ -1021,7 +1051,7 @@
             html += '<th>包含试验项</th><th class="col-status">状态</th><th class="col-op">操作</th>';
             html += '</tr></thead><tbody>';
             sampleBlock.files.forEach(function (file) {
-              html += renderExportFileRow(file, file._idx, showSpecimen);
+              html += renderExportFileRow(file, file._idx, showSpecimen, pickRowAnnotate(file, showSpecimen));
             });
             html += '</tbody></table></div></div>';
           });
@@ -1038,6 +1068,7 @@
       checkAll.disabled = !readyFiles.length;
 
       syncExportSummary();
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function toggleExportCollapse(id) {
@@ -1104,10 +1135,12 @@
     function openExportDrawer() {
       renderExportPreview();
       document.getElementById('exportDrawerMask').classList.add('open');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function closeExportDrawer() {
       document.getElementById('exportDrawerMask').classList.remove('open');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     document.getElementById('exportDrawerMask').addEventListener('click', function (e) {
@@ -1116,6 +1149,117 @@
 
     renderTabs();
     renderPanels();
+
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'export-manage',
+          selector: '[data-annotate="export-manage"]',
+          position: 'top-left',
+          title: '导出管理入口',
+          wide: true,
+          content: '打开「记录单导出详情」抽屉。导出切分规则由「业务流程配置 › 记录单设置」决定，操作员在此仅预览文件并确认导出，不可更改生成策略。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-drawer',
+          selector: '[data-annotate="export-drawer"]',
+          position: 'top-left',
+          title: '记录单导出详情',
+          wide: true,
+          content: '按<strong>生成模式</strong>分组、同模式下按<strong>样品名称(型号)</strong>分块展示将导出的文件列表。打开时自动根据当前委托数据与模版配置计算预览与状态。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-mode-group',
+          selector: '[data-annotate="export-mode-group"]',
+          position: 'top-right',
+          title: '按生成模式分组',
+          wide: true,
+          content: '每个折叠区块对应一种「记录单设置」中的生成模式（如单种样品所有试验生成一份、单个试样单种试验生成一份等）。标题右侧显示该模式下样品数与文件数。不同模式之间以区块区分。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-sample-block',
+          selector: '[data-annotate="export-sample-block"]',
+          position: 'top-right',
+          title: '按样品分块',
+          wide: true,
+          content: '同一生成模式内，不同样品名称(型号)各自成块。块内表格列出该样品在此模式下将生成的全部文件。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-filename',
+          selector: '[data-annotate="export-filename"]',
+          position: 'top-right',
+          title: '文件名（预览）',
+          wide: true,
+          content: '系统按生成模式与试样编号自动命名。试样维度模式下以试样编号为主（<code>/</code> 转为 <code>_</code>），不再重复拼接委托编号前缀；后缀含试验项名称。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-specimen',
+          selector: '[data-annotate="export-specimen"]',
+          position: 'top-right',
+          title: '试样编号',
+          wide: true,
+          content: '仅试样维度生成模式（单个试样…）显示本列。编号规则：<code>{委托编号}{样品序号}{试样序号}-{试验序号}</code>，「-」前末两位为试样自增，「-」后为试验序号（同一试验项相同）。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-tests',
+          selector: '[data-annotate="export-tests"]',
+          position: 'top-right',
+          title: '包含试验项',
+          wide: true,
+          content: '只读展示写入该文件的试验项。合并模式列出全部试验项，未完成项标灰；切分模式仅展示对应单项。操作员不可勾选或删减。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-status',
+          selector: '[data-annotate="export-status"]',
+          position: 'top-right',
+          title: '导出状态',
+          wide: true,
+          content: '三种状态：<strong>就绪</strong>（可导出）、<strong>试验未完成</strong>（合并模式须全部试验项完成后才可导出）、<strong>缺模版</strong>（请在「模板管理 › 记录单模版」配置）。非就绪行禁用勾选与单行导出。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-row-op',
+          selector: '[data-annotate="export-row-op"]',
+          position: 'top-right',
+          title: '单行导出',
+          content: '就绪状态下可导出单个文件。合并模式导出时系统自动拉取各试验项启用模版动态拼接。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-summary-warn',
+          selector: '[data-annotate="export-summary-warn"]',
+          position: 'top-left',
+          title: '不可导出汇总',
+          wide: true,
+          content: '存在暂不可导出文件时，底部红色提示条汇总数量与原因。模版校验仅在导出时进行，不在受理或记录单设置保存时预检。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-select-all',
+          selector: '[data-annotate="export-select-all"]',
+          position: 'top-left',
+          title: '全选可导出项',
+          content: '仅勾选状态为「就绪」的文件；试验未完成或缺模版行不参与全选。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-batch',
+          selector: '[data-annotate="export-batch"]',
+          position: 'top-left',
+          title: '批量导出',
+          wide: true,
+          content: '导出所有已勾选且就绪的文件；跳过未就绪行。若当前无可导出文件则提示完成试验或配置模版。',
+          tag: '记录单导出'
+        }
+      ]
+    });
   </script>
 </body>
 </html>
