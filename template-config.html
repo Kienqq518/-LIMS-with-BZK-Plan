@@ -66,12 +66,11 @@
     .badge-default { display: inline-block; background: #dbeafe; color: #1d4ed8; font-size: 11px; padding: 1px 6px; border-radius: 4px; }
     .badge-none { color: #94a3b8; font-size: 12px; }
     .tpl-main { flex: 1; min-width: 0; background: #fff; }
-    .tpl-toolbar { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
-    .tpl-toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-    .tpl-toolbar-row.actions { justify-content: space-between; }
+    .tpl-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
     .tpl-toolbar-query { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .tpl-toolbar label { font-size: 13px; color: #64748b; white-space: nowrap; }
-    .tpl-toolbar input, .tpl-toolbar select { border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; min-width: 120px; }
+    .tpl-toolbar input { border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 8px; font-size: 13px; outline: none; width: 88px; min-width: 72px; }
+    .tpl-toolbar select { border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 8px; font-size: 13px; outline: none; width: 96px; min-width: 88px; }
     .tpl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .tpl-table th, .tpl-table td { border: 1px solid #e5e7eb; padding: 9px 10px; text-align: left; vertical-align: top; }
     .tpl-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
@@ -1137,49 +1136,37 @@
       var el = document.getElementById('toolbar');
       if (state.main === 'report' && state.sub === 'body') {
         el.innerHTML =
-          '<div class="tpl-toolbar-row">' +
-            '<label>模板名称</label><input id="f_name" placeholder="请输入" />' +
-            '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
-            '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
-            '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
+          '<label>模板名称</label><input id="f_name" placeholder="请输入" />' +
+          '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
+          '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
+          '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
+          '<div class="tpl-toolbar-query">' +
+            '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
+            '<button onclick="resetFilters()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
           '</div>' +
-          '<div class="tpl-toolbar-row actions">' +
-            '<div class="tpl-toolbar-query">' +
-              '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
-              '<button onclick="resetFilters()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
-            '</div>' +
-            '<button onclick="openBodyModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="btn-add"><i class="fa fa-plus"></i> 新增</button>' +
-          '</div>';
+          '<button onclick="openBodyModal()" class="ml-auto rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="btn-add"><i class="fa fa-plus"></i> 新增</button>';
       } else if (state.main === 'report' && state.sub === 'public') {
         el.innerHTML =
-          '<div class="tpl-toolbar-row">' +
-            '<label data-annotate="public-filter">模版内容样式</label><select id="f_content"><option value="">全部</option><option>模板头</option><option>模板尾</option></select>' +
-            '<label>关联绑定</label><select id="f_bindType"><option value="">全部</option><option value="category">样品分类</option><option value="sample">样品名称(型号)</option></select>' +
-            '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
-            '<label>样品名称(型号)</label><input id="f_sample" placeholder="请输入" />' +
-            '<label>模版文件名</label><input id="f_file" placeholder="请输入" />' +
+          '<label data-annotate="public-filter">模版内容样式</label><select id="f_content"><option value="">全部</option><option>模板头</option><option>模板尾</option></select>' +
+          '<label>关联绑定</label><select id="f_bindType"><option value="">全部</option><option value="category">样品分类</option><option value="sample">样品名称(型号)</option></select>' +
+          '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
+          '<label>样品名称(型号)</label><input id="f_sample" placeholder="请输入" />' +
+          '<label>模版文件名</label><input id="f_file" placeholder="请输入" />' +
+          '<div class="tpl-toolbar-query">' +
+            '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>' +
+            '<button onclick="resetFilters()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
           '</div>' +
-          '<div class="tpl-toolbar-row actions">' +
-            '<div class="tpl-toolbar-query">' +
-              '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>' +
-              '<button onclick="resetFilters()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
-            '</div>' +
-            '<button onclick="openPublicModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="public-add"><i class="fa fa-plus"></i> 新增</button>' +
-          '</div>';
+          '<button onclick="openPublicModal()" class="ml-auto rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="public-add"><i class="fa fa-plus"></i> 新增</button>';
       } else if (state.main === 'record') {
         el.innerHTML =
-          '<div class="tpl-toolbar-row">' +
-            '<label>是否配置模板</label><select id="f_configured"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select>' +
-            '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
-            '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
-            '<label>试验项</label><input id="f_test" placeholder="请输入" />' +
-            '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
-          '</div>' +
-          '<div class="tpl-toolbar-row actions">' +
-            '<div class="tpl-toolbar-query">' +
-              '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
-              '<button onclick="resetFilters(true)" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
-            '</div>' +
+          '<label>是否配置模板</label><select id="f_configured"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select>' +
+          '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
+          '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
+          '<label>试验项</label><input id="f_test" placeholder="请输入" />' +
+          '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
+          '<div class="tpl-toolbar-query">' +
+            '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
+            '<button onclick="resetFilters(true)" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
           '</div>';
       }
     }
