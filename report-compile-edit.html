@@ -41,7 +41,7 @@
 
   <div class="p-4 space-y-4">
     <!-- 按样品分组：选取检测信息 -->
-    <div class="rounded bg-white p-4 shadow-sm">
+    <div class="rounded bg-white p-4 shadow-sm" data-annotate="pick-detect-info">
       <div class="mb-3 text-sm font-medium text-slate-700">选取检测信息</div>
       <div id="sampleGroupsContainer"></div>
     </div>
@@ -84,15 +84,15 @@
         <div class="rounded border border-blue-100 bg-blue-50 px-4 py-3 text-blue-800">
           已勾选 <strong id="modalCheckedCount">0</strong> 个试样。请确认导出方式与模版变体（已预填默认值，可修改）。
         </div>
-        <div>
+        <div data-annotate="modal-export-mode">
           <div class="mb-2 font-medium text-slate-700">导出方式</div>
           <div class="space-y-2" id="modalExportModes"></div>
         </div>
-        <div>
+        <div data-annotate="modal-variant">
           <div class="mb-2 font-medium text-slate-700">报告模版变体</div>
           <div id="modalVariantBlocks" class="space-y-3"></div>
         </div>
-        <div class="rounded border border-slate-200 bg-slate-50 px-4 py-3 text-slate-600">
+        <div class="rounded border border-slate-200 bg-slate-50 px-4 py-3 text-slate-600" data-annotate="modal-preview">
           预览：将生成 <strong id="modalPreviewCount" class="text-blue-600">0</strong> 份报告
         </div>
       </div>
@@ -158,6 +158,7 @@
     var modalSelectedVariants = {};
 
     function renderSampleGroups() {
+      var annotateFlags = { group: false, pickAll: false, table: false };
       var html = SAMPLE_GROUPS.map(function (group) {
         var rows = group.specimens.map(function (sp) {
           return '<tr class="hover:bg-slate-50">' +
@@ -166,7 +167,14 @@
             '<td class="border border-slate-200 px-3 py-2 specimen-tests">' + group.tests + '</td></tr>';
         }).join('');
 
-        return '<div class="sample-group" data-group-id="' + group.id + '">' +
+        var groupAnnotate = !annotateFlags.group ? ' data-annotate="sample-group"' : '';
+        if (!annotateFlags.group) annotateFlags.group = true;
+        var pickAllAnnotate = !annotateFlags.pickAll ? ' data-annotate="pick-all-tests"' : '';
+        if (!annotateFlags.pickAll) annotateFlags.pickAll = true;
+        var tableAnnotate = !annotateFlags.table ? ' data-annotate="specimen-table"' : '';
+        if (!annotateFlags.table) annotateFlags.table = true;
+
+        return '<div class="sample-group" data-group-id="' + group.id + '"' + groupAnnotate + '>' +
           '<div class="sample-group-title">样品信息</div>' +
           '<div class="info-grid mb-4">' +
           '<div><span class="lbl">样品名称：</span><span class="val">' + group.name + '</span></div>' +
@@ -180,25 +188,18 @@
           '<div><span class="lbl">厂家产地：</span><span class="val">' + group.mfgOrigin + '</span></div>' +
           '<div class="col-span-2"><span class="lbl">备注：</span><span class="val">' + group.remark + '</span></div>' +
           '</div>' +
-          '<div class="pick-all-row"><label class="inline-flex items-center gap-2 cursor-pointer">' +
+          '<div class="pick-all-row"' + pickAllAnnotate + '><label class="inline-flex items-center gap-2 cursor-pointer">' +
           '<input type="checkbox" class="group-check-all" data-group="' + group.id + '" onchange="toggleGroupAll(\'' + group.id + '\', this.checked)" /> 勾选全部样品所有检测项目</label></div>' +
-          '<div class="overflow-x-auto"><table class="w-full min-w-[700px] border-collapse text-left text-sm">' +
+          '<div class="overflow-x-auto"' + tableAnnotate + '><table class="w-full min-w-[700px] border-collapse text-left text-sm">' +
           '<thead><tr class="bg-slate-100 text-slate-600">' +
           '<th class="border border-slate-200 px-3 py-2 w-10"></th>' +
           '<th class="border border-slate-200 px-3 py-2 font-medium">试样编号</th>' +
           '<th class="border border-slate-200 px-3 py-2 font-medium">检测项目</th></tr></thead>' +
-          '<tbody>' + rows + '</tbody></table></div>' +
-          '<div class="mt-4 flex flex-wrap items-center gap-6 export-mode-row" data-annotate="export-mode">' +
-          '<label class="inline-flex items-center gap-2 text-sm"><input type="radio" name="exportMode-' + group.id + '" value="model-batch" /> 单种样品一起导出</label>' +
-          '<label class="inline-flex items-center gap-2 text-sm"><input type="radio" name="exportMode-' + group.id + '" value="specimen-each" /> 单个样品单个文件</label>' +
-          '</div></div>';
+          '<tbody>' + rows + '</tbody></table></div></div>';
       }).join('');
       document.getElementById('sampleGroupsContainer').innerHTML = html;
-      SAMPLE_GROUPS.forEach(function (g) { applyDefaultExportModeForGroup(g.id); syncGroupCheckAll(g.id); });
-    }
-
-    function getGroupMeta(groupId) {
-      return SAMPLE_GROUPS.filter(function (g) { return g.id === groupId; })[0];
+      SAMPLE_GROUPS.forEach(function (g) { syncGroupCheckAll(g.id); });
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function getCheckedSpecimens() {
@@ -223,26 +224,14 @@
       return result;
     }
 
-    function getPageExportMode() {
-      var checked = getCheckedSpecimens();
-      if (!checked.length) return 'specimen-each';
-      var groupId = checked[0].groupId;
-      var el = document.querySelector('input[name="exportMode-' + groupId + '"]:checked');
-      return el ? el.value : 'specimen-each';
-    }
-
-    function applyDefaultExportModeForGroup(groupId) {
-      var group = getGroupMeta(groupId);
-      if (!group) return;
-      var sampleMeta = { name: group.name, model: group.model, category: group.category, categoryPath: group.categoryPath };
-      var modeKey = ReportExport.resolveReportExportMode(sampleMeta, REPORT_EXPORT_RULES).modeKey;
-      var radio = document.querySelector('input[name="exportMode-' + groupId + '"][value="' + modeKey + '"]');
-      if (radio) radio.checked = true;
+    function resolveDefaultExportMode(checked) {
+      if (!checked || !checked.length) return 'specimen-each';
+      var first = checked[0];
+      var sampleMeta = { name: first.name, model: first.model, category: first.category, categoryPath: first.categoryPath };
+      return ReportExport.resolveReportExportMode(sampleMeta, REPORT_EXPORT_RULES).modeKey;
     }
 
     function onSpecimenCheckChange() {
-      var checked = getCheckedSpecimens();
-      if (checked.length) applyDefaultExportModeForGroup(checked[0].groupId);
       SAMPLE_GROUPS.forEach(function (g) { syncGroupCheckAll(g.id); });
     }
 
@@ -263,7 +252,7 @@
       if (!checked.length) { alert('请至少勾选一个试样'); return; }
       document.getElementById('modalCheckedCount').textContent = String(checked.length);
 
-      var exportMode = getPageExportMode();
+      var exportMode = resolveDefaultExportMode(checked);
       document.getElementById('modalExportModes').innerHTML = ReportExport.REPORT_EXPORT_MODES.map(function (m) {
         return '<label class="flex items-center gap-2"><input type="radio" name="modalExportMode" value="' + m.key + '" ' +
           (m.key === exportMode ? 'checked' : '') + ' onchange="updateModalPreview()" /> ' + m.label + '</label>';
@@ -291,11 +280,13 @@
       var modal = document.getElementById('generateModal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function closeGenerateModal() {
       document.getElementById('generateModal').classList.add('hidden');
       document.getElementById('generateModal').classList.remove('flex');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function onModalVariantChange(sel) {
@@ -305,7 +296,7 @@
 
     function getModalExportMode() {
       var el = document.querySelector('input[name="modalExportMode"]:checked');
-      return el ? el.value : getPageExportMode();
+      return el ? el.value : resolveDefaultExportMode(getCheckedSpecimens());
     }
 
     function updateModalPreview() {
@@ -319,12 +310,6 @@
       var files = ReportExport.buildReportFilePreview(ENTRUST_CODE, checked, exportMode, modalSelectedVariants, TEMPLATE_INDEX);
       var blocked = files.filter(function (f) { return f.status === 'missing-template'; });
       if (blocked.length) { alert(blocked[0].statusMessage); return; }
-
-      if (checked.length) {
-        var gid = checked[0].groupId;
-        var pageRadio = document.querySelector('input[name="exportMode-' + gid + '"][value="' + exportMode + '"]');
-        if (pageRadio) pageRadio.checked = true;
-      }
 
       var now = new Date();
       var ts = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' +
@@ -389,13 +374,112 @@
     renderReportFiles();
 
     if (window.PrototypeAnnotation) {
-      PrototypeAnnotation.register([
-        { id: 'rc-product-mark', selector: '[data-annotate="product-mark"]', position: 'right', title: '产品标识', content: '展示产品标识的实际值。', tag: '报告编制编辑' },
-        { id: 'rc-export-mode', selector: '[data-annotate="export-mode"]', position: 'top-left', title: '导出方式', content: '每组样品独立配置；预填报告设置默认值，编制员可修改。', tag: '报告编制编辑' },
-        { id: 'rc-generate-row', selector: '[data-annotate="btn-generate-row"]', position: 'top', title: '生成报告', content: '勾选试样后点击，确认导出方式与模版变体后生成。', tag: '报告编制编辑' },
-        { id: 'rc-files', selector: '[data-annotate="report-files"]', position: 'top-left', title: '报告文件', wide: true, content: '已生成报告列表；支持添加报告图片与导出 PDF。', tag: '报告编制编辑' },
-        { id: 'rc-confirm', selector: '[data-annotate="confirm-generate"]', position: 'left', title: '确认生成', content: '校验模版后生成 Word 报告。', tag: '报告编制编辑' }
-      ]);
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'rc-tab-detect',
+            selector: '[data-annotate="tab-detect"]',
+            position: 'bottom',
+            title: '检测信息',
+            content: '报告生成编辑页默认 Tab。展示委托下各样品组的只读信息与试样勾选表，编制员在此确定本次生成范围。',
+            tag: '检测信息'
+          },
+          {
+            id: 'rc-pick-detect',
+            selector: '[data-annotate="pick-detect-info"]',
+            position: 'top-left',
+            title: '选取检测信息',
+            wide: true,
+            content: '按样品名称(型号)分组展示。每组含只读<strong>样品信息</strong>与试样勾选表。导出方式在点击「生成报告」后的确认弹窗中配置。',
+            tag: '检测信息'
+          },
+          {
+            id: 'rc-sample-group',
+            selector: '[data-annotate="sample-group"]',
+            position: 'top-right',
+            title: '样品信息（只读）',
+            wide: true,
+            content: '展示样品名称、型号、产品标识、检测类别、数量、厂家等委托收样信息，编制员不可修改。',
+            tag: '检测信息'
+          },
+          {
+            id: 'rc-product-mark',
+            selector: '[data-annotate="product-mark"]',
+            position: 'right',
+            title: '产品标识',
+            content: '展示产品标识的实际值，用于报告生成时写入报告正文。',
+            tag: '检测信息'
+          },
+          {
+            id: 'rc-pick-all',
+            selector: '[data-annotate="pick-all-tests"]',
+            position: 'top-left',
+            title: '勾选全部',
+            content: '一键勾选/取消当前样品组下全部试样，便于批量选择本次参与生成的试样。',
+            tag: '检测信息'
+          },
+          {
+            id: 'rc-specimen-table',
+            selector: '[data-annotate="specimen-table"]',
+            position: 'top-left',
+            title: '试样勾选表',
+            wide: true,
+            content: '编制员勾选本次参与生成的试样。每行对应一个试样编号及其检测项目列表；至少勾选 1 个试样方可点击「生成报告」。',
+            tag: '检测信息'
+          },
+          {
+            id: 'rc-generate-row',
+            selector: '[data-annotate="btn-generate-row"]',
+            position: 'top',
+            title: '生成报告',
+            content: '勾选试样后点击，弹出「生成报告确认」弹窗。在弹窗中确认或修改导出方式与模版变体，确认后生成 Word 报告并写入下方「报告文件」列表。',
+            tag: '检测信息'
+          },
+          {
+            id: 'rc-files',
+            selector: '[data-annotate="report-files"]',
+            position: 'top-left',
+            title: '报告文件',
+            wide: true,
+            content: '已生成报告列表，含报告编号、试样编号、文件名、生成/修改时间。支持<strong>添加报告图片</strong>（PageOffice 粘贴）与<strong>导出 PDF</strong>。',
+            tag: '检测信息'
+          },
+          {
+            id: 'rc-modal-export',
+            selector: '[data-annotate="modal-export-mode"]',
+            position: 'top-left',
+            title: '确认：导出方式',
+            wide: true,
+            content: '预填「业务流程配置 › 报告设置」解析出的默认导出模式，编制员可在确认前修改：<strong>单种样品一份报告</strong>（全部勾选试样 → 1 份）或 <strong>单个样品一份报告</strong>（每个试样各 1 份）。切换选项时底部预览份数实时更新。',
+            tag: '检测信息'
+          },
+          {
+            id: 'rc-modal-variant',
+            selector: '[data-annotate="modal-variant"]',
+            position: 'top-left',
+            title: '确认：模版变体',
+            wide: true,
+            content: '预填「模板管理 › 报告模版」中该型号的<strong>默认变体</strong>（isDefault）。多型号委托时分组展示，各组独立选择变体。',
+            tag: '检测信息'
+          },
+          {
+            id: 'rc-modal-preview',
+            selector: '[data-annotate="modal-preview"]',
+            position: 'top-left',
+            title: '生成预览份数',
+            content: '根据当前勾选的试样数、导出方式与模版变体，实时计算将生成的报告份数。',
+            tag: '检测信息'
+          },
+          {
+            id: 'rc-confirm',
+            selector: '[data-annotate="confirm-generate"]',
+            position: 'left',
+            title: '确认生成',
+            content: '校验各涉及型号须有启用模版变体；缺模版则阻断并提示。通过后生成 Word 报告写入「报告文件」列表。',
+            tag: '检测信息'
+          }
+        ]
+      });
     }
   </script>
 </body>
