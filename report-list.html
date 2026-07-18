@@ -10,7 +10,7 @@
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
-    .report-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #7c3aed; color: #fff; font-size: 11px; }
+    .return-detail { font-size: 12px; line-height: 1.5; color: #64748b; white-space: pre-line; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -66,13 +66,13 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">委托单位</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">样品进度</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">优先等级</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">报告记录</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-compile">报告编制</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-record">报告记录</th>
               <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="report-ops">操作</th>
             </tr>
           </thead>
@@ -91,44 +91,223 @@
     </div>
   </div>
 
+  <!-- 报告列表弹窗（编制） -->
+  <div id="compileListModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[92vh] w-[1100px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">报告列表</h3>
+        <button type="button" onclick="closeCompileListModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto px-6 py-4">
+        <table class="w-full min-w-[980px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-2 py-2 w-10"><input type="checkbox" id="compileCheckAll" onchange="toggleCompileCheckAll(this.checked)" /></th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-12">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">报告编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">报告名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">生成时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">审核意见</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">签发意见</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-36">退回详情</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-24">操作</th>
+            </tr>
+          </thead>
+          <tbody id="compileListBody"></tbody>
+        </table>
+        <div class="mt-3 flex items-center justify-end gap-2 text-sm text-slate-500">
+          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+          <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">2</button>
+          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button type="button" onclick="closeCompileListModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
+        <button type="button" onclick="confirmCompile()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white" data-annotate="compile-confirm">编制</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 报告记录弹窗 -->
+  <div id="reportRecordModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[90vh] w-[960px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">报告记录</h3>
+        <button type="button" onclick="closeReportRecordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto px-6 py-4">
+        <table class="w-full min-w-[860px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium w-12">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">报告编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">编制</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">审核</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">签发</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">处理</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">收费审批</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">发放</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-16">操作</th>
+            </tr>
+          </thead>
+          <tbody id="reportRecordBody"></tbody>
+        </table>
+        <div class="mt-3 flex items-center justify-end gap-2 text-sm text-slate-500">
+          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+          <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     var ROWS = [
-      { id: 1, code: 'SCZN202508/0009', contract: 'HT11213333', unit: '杭州数蚕智能科技有限公司', sample: '实壁塑料电缆导管', acceptDate: '2025-07-18', dueDate: '', priority: '', sales: '', compiler: '王..', reports: 0, demo: true },
-      { id: 2, code: 'SCZN202508/0008', contract: 'HT11213322', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-17', dueDate: '', priority: '', sales: '', compiler: '王..', reports: 1, demo: false },
-      { id: 3, code: 'SCZN202508/0007', contract: '—', unit: '浙江某某供电所', sample: '绝缘手套', acceptDate: '2025-07-16', dueDate: '2025-07-25', priority: '高', sales: '李', compiler: '张..', reports: 0, demo: false },
-      { id: 4, code: 'SCZN202508/0006', contract: 'HT99887766', unit: '某某化工厂', sample: '废水/废气/噪声', acceptDate: '2025-07-15', dueDate: '2025-08-01', priority: '', sales: '', compiler: '赵..', reports: 0, demo: false },
-      { id: 5, code: 'SCZN202508/0005', contract: '—', unit: '某某建设集团', sample: '混凝土试块', acceptDate: '2025-07-14', dueDate: '', priority: '', sales: '', compiler: '陈..', reports: 2, demo: false }
+      { id: 1, code: 'SCZN202508/0009', contract: 'HT11213333', unit: '杭州数蚕智能科技有限公司', sample: '实壁塑料电缆导管', acceptDate: '2025-07-18', dueDate: '', priority: '', sales: '', compiler: '王..', demo: true },
+      { id: 2, code: 'SC2026/0099', contract: 'HT11213322', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-17', dueDate: '', priority: '常规', sales: '', compiler: 'admin', demo: false },
+      { id: 3, code: 'SCZN202508/0007', contract: '—', unit: '浙江某某供电所', sample: '绝缘手套', acceptDate: '2025-07-16', dueDate: '2025-07-25', priority: '高', sales: '李', compiler: '张..' },
+      { id: 4, code: 'SCZN202508/0006', contract: 'HT99887766', unit: '某某化工厂', sample: '废水/废气/噪声', acceptDate: '2025-07-15', dueDate: '2025-08-01', priority: '', sales: '', compiler: '赵..' },
+      { id: 5, code: 'SCZN202508/0005', contract: '—', unit: '某某建设集团', sample: '混凝土试块', acceptDate: '2025-07-14', dueDate: '', priority: '', sales: '', compiler: '陈..' }
     ];
+
+    var COMPILE_LIST_DEMO = [
+      {
+        id: 1, reportNo: 'SC2026/0003-01',
+        sampleNos: ['SCZN202508/0009-0102', 'SCZN202508/0009-0103'],
+        reportName: 'SC2026-0099-01检测报告.docx',
+        createdAt: '2026-07-17 14:30:00',
+        auditOpinion: '审核不通过',
+        signOpinion: '签发不通过',
+        returnDetail: '退回节点：报告审核\n退回原因：数据填写不完整\n退回人：admin\n退回时间：2026-07-17 15:00:00'
+      },
+      {
+        id: 2, reportNo: 'SC2026/0003-02',
+        sampleNos: ['SCZN202508/0009-0101'],
+        reportName: 'SC2026-0099-02检测报告.docx',
+        createdAt: '2026-07-16 10:20:00',
+        auditOpinion: '—',
+        signOpinion: '—',
+        returnDetail: '—'
+      }
+    ];
+
+    var REPORT_RECORD_DEMO = [
+      {
+        id: 1, reportNo: 'SC2026/0099-01',
+        compile: { user: 'admin', date: '2026年07月17日' },
+        audit: { user: 'admin', date: '2026年07月17日' },
+        sign: { user: 'admin', date: '2026年07月17日' },
+        process: { user: 'admin', date: '2026年07月17日' },
+        fee: { user: 'admin', date: '2026年07月17日' },
+        issue: { user: 'admin', date: '2026年07月17日' }
+      }
+    ];
+
+    function stageCell(stage) {
+      if (!stage || !stage.user) return '—';
+      return stage.user + '<br><span class="text-xs text-slate-400">' + stage.date + '</span>';
+    }
 
     function renderTable(list) {
       var data = list || ROWS;
       document.getElementById('tableBody').innerHTML = data.map(function (row, i) {
-        var reportCell = row.reports > 0
-          ? '<span class="relative inline-block text-purple-600"><i class="fa fa-file-word-o text-lg"></i><span class="report-badge absolute -right-2 -top-2">' + row.reports + '</span></span>'
-          : '<i class="fa fa-file-word-o text-lg text-slate-300"></i>';
         var genLink = row.demo
           ? '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline" data-annotate="report-generate"><i class="fa fa-pencil mr-1"></i>报告生成</a>'
           : '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline"><i class="fa fa-pencil mr-1"></i>报告生成</a>';
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2"><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + row.code + '</a></td>' +
-          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline">' + row.contract + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="return false;">' + row.contract + '</a></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.unit + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.sample + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-eye"></i> 详情</a></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.acceptDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (row.dueDate || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (row.priority || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (row.sales || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.compiler + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2 text-center">' + reportCell + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="openCompileListModal();return false;">编制</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="openReportRecordModal();return false;">报告记录</a></td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + genLink +
-          ' <a href="#" class="ml-3 text-blue-600 hover:underline" onclick="alert(\'编制（原型演示）\');return false;"><i class="fa fa-file-text-o mr-1"></i>编制</a></td></tr>';
+          ' <a href="#" class="ml-3 text-blue-600 hover:underline" onclick="alert(\'编辑（原型演示）\');return false;">编辑</a>' +
+          ' <a href="#" class="ml-2 text-orange-500 hover:underline" onclick="alert(\'退回（原型演示）\');return false;">退回</a></td></tr>';
       }).join('');
       document.getElementById('totalText').textContent = '共 ' + data.length + ' 条';
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function renderCompileList() {
+      document.getElementById('compileListBody').innerHTML = COMPILE_LIST_DEMO.map(function (row, i) {
+        var samples = row.sampleNos.join('<br>');
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-2 py-2 text-center"><input type="checkbox" class="compile-row-check" data-id="' + row.id + '" ' + (i === 0 ? 'checked' : '') + ' /></td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + row.reportNo + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2 text-xs leading-5">' + samples + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="return false;">' + row.reportName + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + row.createdAt + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + row.auditOpinion + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + row.signOpinion + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2"><div class="return-detail">' + row.returnDetail + '</div></td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' +
+          '<button class="text-red-500 hover:underline" onclick="alert(\'删除（原型演示）\')"><i class="fa fa-trash-o"></i></button> ' +
+          '<button class="ml-2 text-orange-500 hover:underline" onclick="alert(\'退回（原型演示）\')"><i class="fa fa-reply"></i></button></td></tr>';
+      }).join('');
+    }
+
+    function renderReportRecordList() {
+      document.getElementById('reportRecordBody').innerHTML = REPORT_RECORD_DEMO.map(function (row, i) {
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + row.reportNo + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.compile) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.audit) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.sign) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.process) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.fee) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.issue) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2"><button class="text-blue-600 hover:underline" onclick="alert(\'日志（原型演示）\')">日志</button></td></tr>';
+      }).join('');
+    }
+
+    function openCompileListModal() {
+      renderCompileList();
+      var modal = document.getElementById('compileListModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeCompileListModal() {
+      var modal = document.getElementById('compileListModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function toggleCompileCheckAll(checked) {
+      document.querySelectorAll('.compile-row-check').forEach(function (el) { el.checked = checked; });
+    }
+
+    function confirmCompile() {
+      var n = document.querySelectorAll('.compile-row-check:checked').length;
+      if (!n) { alert('请至少选择一份报告'); return; }
+      closeCompileListModal();
+      alert('已打开 Word 在线编制（原型演示），共 ' + n + ' 份报告');
+    }
+
+    function openReportRecordModal() {
+      renderReportRecordList();
+      var modal = document.getElementById('reportRecordModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeReportRecordModal() {
+      var modal = document.getElementById('reportRecordModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
     }
 
     function doSearch() {
@@ -155,8 +334,11 @@
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.register([
-        { id: 'report-list', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '报告编制操作', content: '「报告生成」进入检测信息 tab，勾选试样并确认导出方式与模版后生成报告；「编制」进入 Word 在线编辑（原型占位）。', tag: '报告编制' },
-        { id: 'report-gen-link', selector: '[data-annotate="report-generate"]', position: 'left', title: '报告生成', content: '演示委托 SCZN202508/0009 · 实壁塑料电缆导管 PVC-C，含缺模版校验与生成确认弹窗。', tag: '报告编制' }
+        { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '「报告生成」进入报告编制编辑页；「编辑」「退回」为流程操作占位。', tag: '报告编制' },
+        { id: 'report-col-compile', selector: '[data-annotate="col-compile"]', position: 'top', title: '报告编制', content: '点击「编制」弹出报告列表，勾选后进入 Word 在线编制。', tag: '报告编制' },
+        { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '点击「报告记录」查看各报告在编制/审核/签发等节点的流转记录。', tag: '报告编制' },
+        { id: 'report-gen-link', selector: '[data-annotate="report-generate"]', position: 'left', title: '报告生成', content: '演示委托 SCZN202508/0009 · 实壁塑料电缆导管 PVC-C。', tag: '报告编制' },
+        { id: 'compile-modal', selector: '[data-annotate="compile-confirm"]', position: 'left', title: '编制确认', content: '勾选报告后点击「编制」进入 Word 在线编辑（原型演示）。', tag: '报告列表' }
       ]);
     }
   </script>
