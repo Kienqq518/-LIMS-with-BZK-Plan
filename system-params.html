@@ -415,7 +415,7 @@
               </table>
             </div>
             <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
-              <span id="reportExportTotal">共 5 条</span>
+              <span id="reportExportTotal">共 4 条</span>
               <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
               <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>10 条/页</option></select>
             </div>
@@ -1118,12 +1118,11 @@
       { id: 1, bindType: 'category', bindTarget: '电力物资类', modeKey: 'specimen-each' },
       { id: 2, bindType: 'category', bindTarget: '安全工器具类', modeKey: 'model-batch' },
       { id: 3, bindType: 'category', bindTarget: '环境检测', modeKey: 'model-batch' },
-      { id: 4, bindType: 'category', bindTarget: '工程检测', modeKey: 'model-batch' },
-      { id: 5, bindType: 'model', bindTarget: '实壁塑料电缆导管 - PVC-C', modeKey: 'specimen-each' }
+      { id: 4, bindType: 'category', bindTarget: '工程检测', modeKey: 'model-batch' }
     ];
 
     var reportExportEditId = null;
-    var reportExportNextId = 6;
+    var reportExportNextId = 5;
 
     function reportBindTypeLabel(type) {
       return ReportExport.BIND_TYPE_LABELS[type] || type;
@@ -2121,8 +2120,16 @@
           position: 'top-right',
           title: '报告设置',
           wide: true,
-          content: '配置报告生成的<strong>默认导出模式</strong>（单种样品一份 / 单个样品一份）。编制员在报告编制页生成时预填此默认，<strong>可修改</strong>。模版变体默认取自报告模版管理中的默认标记。',
+          content: '「报告组装规则（全局）」4 项下拉在区块标题旁单独保存；下方「默认导出模式」表格在弹窗中保存即生效（与记录单设置一致），无页底保存按钮。',
           tag: '业务流程配置'
+        },
+        {
+          id: 'report-save-global',
+          selector: '[data-annotate="report-save-global"]',
+          position: 'left',
+          title: '保存报告组装规则',
+          content: '保存骑缝章生成阶段、收样图片、换页符等全局组装规则。不包含下方默认导出模式表格。',
+          tag: '报告设置'
         },
         {
           id: 'report-export-add',
