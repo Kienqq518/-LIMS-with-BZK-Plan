@@ -75,9 +75,29 @@
     .tpl-table tr:hover td { background: #fafafa; }
     .tpl-table .link { color: #2563eb; cursor: pointer; }
     .tpl-table .link:hover { text-decoration: underline; }
-    .cell-sample-name { width: 132px; max-width: 132px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cell-seq { width: 48px; max-width: 48px; text-align: center; white-space: nowrap; }
-    .cell-tpl-name { width: 72px; max-width: 72px; white-space: nowrap; }
+    .tpl-table-pin { border-collapse: separate; border-spacing: 0; min-width: 1188px; width: max-content; }
+    .tpl-table-pin th, .tpl-table-pin td { box-sizing: border-box; }
+    .tpl-table-pin th.cell-seq, .tpl-table-pin td.cell-seq,
+    .tpl-table-pin th.cell-tpl-name, .tpl-table-pin td.cell-tpl-name,
+    .tpl-table-pin th.cell-sample-name, .tpl-table-pin td.cell-sample-name,
+    .tpl-table-pin th.cell-ops, .tpl-table-pin td.cell-ops {
+      position: sticky;
+      z-index: 2;
+    }
+    .tpl-table-pin th.cell-seq, .tpl-table-pin th.cell-tpl-name, .tpl-table-pin th.cell-sample-name, .tpl-table-pin th.cell-ops { z-index: 4; }
+    .tpl-table-pin td.cell-seq, .tpl-table-pin td.cell-tpl-name, .tpl-table-pin td.cell-sample-name, .tpl-table-pin td.cell-ops { background: #fff; }
+    .tpl-table-pin th.cell-seq, .tpl-table-pin th.cell-tpl-name, .tpl-table-pin th.cell-sample-name, .tpl-table-pin th.cell-ops { background: #f8fafc; }
+    .tpl-table-pin tr:hover td.cell-seq,
+    .tpl-table-pin tr:hover td.cell-tpl-name,
+    .tpl-table-pin tr:hover td.cell-sample-name,
+    .tpl-table-pin tr:hover td.cell-ops { background: #fafafa; }
+    .tpl-table-pin th.cell-seq, .tpl-table-pin td.cell-seq { left: 0; }
+    .tpl-table-pin th.cell-tpl-name, .tpl-table-pin td.cell-tpl-name { left: 48px; }
+    .tpl-table-pin th.cell-sample-name, .tpl-table-pin td.cell-sample-name { left: 120px; box-shadow: 4px 0 8px -4px rgba(15,23,42,.12); }
+    .tpl-table-pin th.cell-ops, .tpl-table-pin td.cell-ops { right: 0; min-width: 300px; box-shadow: -4px 0 8px -4px rgba(15,23,42,.12); }
+    .cell-sample-name { width: 132px; min-width: 132px; max-width: 132px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cell-seq { width: 48px; min-width: 48px; max-width: 48px; text-align: center; white-space: nowrap; }
+    .cell-tpl-name { width: 72px; min-width: 72px; max-width: 72px; white-space: nowrap; }
     .cell-default { width: 56px; min-width: 56px; text-align: center; white-space: nowrap; vertical-align: middle; }
     .cell-version { width: 220px; min-width: 220px; white-space: nowrap; vertical-align: middle; }
     .cell-public-ref { width: 172px; min-width: 172px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
@@ -305,8 +325,8 @@
       </aside>
       <div class="tpl-main">
         <div class="tpl-toolbar" id="toolbar"></div>
-        <div class="overflow-x-auto px-4 pb-4">
-          <table class="tpl-table min-w-[900px]" id="dataTable">
+        <div class="tpl-table-scroll overflow-x-auto px-4 pb-4">
+          <table class="tpl-table" id="dataTable">
             <thead id="tableHead"></thead>
             <tbody id="tableBody"></tbody>
           </table>
@@ -1246,7 +1266,8 @@
       };
 
       if (state.main === 'report' && state.sub === 'body') {
-        head.innerHTML = '<tr><th class="cell-seq">序号</th><th class="cell-tpl-name">模板名称</th><th class="cell-sample-name">样品名称(型号)</th><th style="width:240px">样品分类</th><th class="cell-default">默认</th><th class="cell-version">当前启用版本</th><th class="cell-public-ref">引用公共模版头</th><th class="cell-public-ref">引用公共模版尾</th><th style="min-width:300px">操作</th></tr>';
+        document.getElementById('dataTable').classList.add('tpl-table-pin');
+        head.innerHTML = '<tr><th class="cell-seq">序号</th><th class="cell-tpl-name">模板名称</th><th class="cell-sample-name">样品名称(型号)</th><th style="width:240px">样品分类</th><th class="cell-default">默认</th><th class="cell-version">当前启用版本</th><th class="cell-public-ref">引用公共模版头</th><th class="cell-public-ref">引用公共模版尾</th><th class="cell-ops">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           var defaultCell = r.isDefault
             ? '<span class="badge-default">默认</span>'
@@ -1259,15 +1280,17 @@
           return '<tr><td class="cell-seq">' + (i + 1) + '</td><td class="cell-tpl-name">' + r.name + '</td><td class="cell-sample-name">' + sampleDisplay + '</td>' +
             '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td><td class="cell-default">' + defaultCell + '</td>' +
             '<td class="cell-version">' + fileCell + '</td><td class="cell-public-ref"><span class="link">' + r.head + '</span></td><td class="cell-public-ref"><span class="link">' + r.tail + '</span></td>' +
-            '<td class="whitespace-nowrap">' + bodyOps(r) + '</td></tr>';
+            '<td class="cell-ops whitespace-nowrap">' + bodyOps(r) + '</td></tr>';
         }).join('');
       } else if (state.main === 'report' && state.sub === 'public') {
+        document.getElementById('dataTable').classList.remove('tpl-table-pin');
         head.innerHTML = '<tr data-annotate="public-table"><th>序号</th><th>模版内容样式</th><th style="width:280px">关联绑定</th><th>模版文件</th><th style="min-width:180px">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           return '<tr><td>' + (i + 1) + '</td><td>' + r.contentStyle + '</td><td>' + publicBindDisplay(r) + '</td>' +
             '<td><span class="link">' + r.file + '</span></td><td class="whitespace-nowrap">' + publicOps(r) + '</td></tr>';
         }).join('');
       } else if (state.main === 'record') {
+        document.getElementById('dataTable').classList.remove('tpl-table-pin');
         head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th>序号</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>模板文件</th><th style="min-width:220px">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           var fileCell = r.file
