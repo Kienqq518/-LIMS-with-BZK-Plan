@@ -804,6 +804,16 @@
         head: '电网物资通用模板头.doc', tail: '电网物资通用模板尾.doc', file: 'PVC-M报告模板_标准版.doc',
         templates: [
           { name: 'PVC-M报告模板_标准版.doc', time: '2026-02-10 16:30', enabled: true, uploader: 'wangwu' }
+        ]},
+      { id: 6, tree: 'glove', sample: '01绝缘手套', category: 'AQGQJ安全工器具', name: '标准版', isDefault: true,
+        head: '绝缘手套专用模板头.docx', tail: '—', file: '绝缘手套报告模板_标准版.doc',
+        templates: [
+          { name: '绝缘手套报告模板_标准版.doc', time: '2026-01-10 09:00', enabled: true, uploader: 'admin' }
+        ]},
+      { id: 7, tree: 'glove', sample: '01绝缘手套', category: 'AQGQJ安全工器具', name: '简版', isDefault: false,
+        head: '安全工器具通用模板头.doc', tail: '—', file: '绝缘手套报告模板_简版.doc',
+        templates: [
+          { name: '绝缘手套报告模板_简版.doc', time: '2026-02-05 11:00', enabled: true, uploader: 'admin' }
         ]}
     ];
 
@@ -945,6 +955,15 @@
     function getTreePathIds(treeId) {
       var found = findReportTreeNode(treeId);
       return found ? found.path.map(function (n) { return n.id; }) : [];
+    }
+
+    function treeBelongsToCat(treeId, cat) {
+      if (!treeId || !cat || !RECORD_CAT_ROOT[cat]) return false;
+      return getTreePathIds(treeId).indexOf(RECORD_CAT_ROOT[cat]) >= 0;
+    }
+
+    function resolveTreeIdForCat(cat) {
+      return defaultTreeIdForCat(cat) || RECORD_CAT_ROOT[cat] || null;
     }
 
     function getTreePathNodes(treeId) {
@@ -1201,6 +1220,12 @@
       if (bindType && bindType.value) rows = rows.filter(function (r) { return r.bindType === bindType.value; });
       if (configured && configured.value === 'yes') rows = rows.filter(function (r) { return r.configured; });
       if (configured && configured.value === 'no') rows = rows.filter(function (r) { return !r.configured; });
+      if (state.cat && state.main !== 'doc') {
+        rows = rows.filter(function (r) {
+          if (!r.tree) return true;
+          return treeBelongsToCat(r.tree, state.cat);
+        });
+      }
       return rows;
     }
 
@@ -1379,9 +1404,8 @@
       state.main = type;
       state.sub = type === 'record' ? 'record' : 'body';
       state.cat = state.cat || 'dlwz';
-      state.treeId = defaultTreeIdForCat(state.cat) || 'pvc-c';
-      openReportTreeDefaults();
-      state.openIds[state.treeId] = true;
+      state.treeId = resolveTreeIdForCat(state.cat);
+      openReportTreeDefaultsForCat(state.cat);
       document.getElementById('tplLandingView').classList.add('hidden');
       document.getElementById('tplDetailView').classList.remove('hidden');
       renderDetailPanels();
@@ -1413,9 +1437,8 @@
 
     function applyCatSwitch(cat) {
       state.cat = cat;
-      state.treeId = defaultTreeIdForCat(cat) || 'pvc-c';
-      openReportTreeDefaults();
-      state.openIds[state.treeId] = true;
+      state.treeId = resolveTreeIdForCat(cat);
+      openReportTreeDefaultsForCat(cat);
       renderDetailPanels();
     }
 
@@ -2637,12 +2660,26 @@
     function defaultTreeIdForCat(cat) {
       if (cat === 'aqgqj') return 'glove';
       if (cat === 'gcjc') return 'p';
-      if (cat === 'hjjc') return null;
+      if (cat === 'hjjc') return 'cat-hjjc';
       return 'pvc-c';
     }
 
+    function openReportTreeDefaultsForCat(cat) {
+      state.openIds = {};
+      if (cat === 'dlwz') {
+        REPORT_TREE_DEFAULT_OPEN.forEach(function (id) { state.openIds[id] = true; });
+      } else if (cat === 'aqgqj') {
+        ['cat-aqgqj', 'dlt976', 'glove'].forEach(function (id) { state.openIds[id] = true; });
+      } else if (cat === 'gcjc') {
+        ['cat-gcjc', 'cement', 'gb175', 'p'].forEach(function (id) { state.openIds[id] = true; });
+      } else if (cat === 'hjjc') {
+        state.openIds['cat-hjjc'] = true;
+      }
+      if (state.treeId) state.openIds[state.treeId] = true;
+    }
+
     function openReportTreeDefaults() {
-      REPORT_TREE_DEFAULT_OPEN.forEach(function (id) { state.openIds[id] = true; });
+      openReportTreeDefaultsForCat(state.cat || 'dlwz');
     }
 
     (function bootTplPage() {
