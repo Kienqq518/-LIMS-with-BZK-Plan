@@ -66,7 +66,10 @@
     .badge-default { display: inline-block; background: #dbeafe; color: #1d4ed8; font-size: 11px; padding: 1px 6px; border-radius: 4px; }
     .badge-none { color: #94a3b8; font-size: 12px; }
     .tpl-main { flex: 1; min-width: 0; background: #fff; }
-    .tpl-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
+    .tpl-toolbar { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
+    .tpl-toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .tpl-toolbar-row.actions { justify-content: space-between; }
+    .tpl-toolbar-query { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .tpl-toolbar label { font-size: 13px; color: #64748b; white-space: nowrap; }
     .tpl-toolbar input, .tpl-toolbar select { border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; min-width: 120px; }
     .tpl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -75,7 +78,7 @@
     .tpl-table tr:hover td { background: #fafafa; }
     .tpl-table .link { color: #2563eb; cursor: pointer; }
     .tpl-table .link:hover { text-decoration: underline; }
-    .tpl-table-pin { border-collapse: separate; border-spacing: 0; min-width: 1188px; width: max-content; }
+    .tpl-table-pin { border-collapse: separate; border-spacing: 0; min-width: 1116px; width: max-content; }
     .tpl-table-pin th, .tpl-table-pin td { box-sizing: border-box; }
     .tpl-table-pin th.cell-seq, .tpl-table-pin td.cell-seq,
     .tpl-table-pin th.cell-tpl-name, .tpl-table-pin td.cell-tpl-name,
@@ -94,7 +97,10 @@
     .tpl-table-pin th.cell-seq, .tpl-table-pin td.cell-seq { left: 0; }
     .tpl-table-pin th.cell-tpl-name, .tpl-table-pin td.cell-tpl-name { left: 48px; }
     .tpl-table-pin th.cell-sample-name, .tpl-table-pin td.cell-sample-name { left: 120px; box-shadow: 4px 0 8px -4px rgba(15,23,42,.12); }
-    .tpl-table-pin th.cell-ops, .tpl-table-pin td.cell-ops { right: 0; min-width: 300px; box-shadow: -4px 0 8px -4px rgba(15,23,42,.12); }
+    .tpl-table-pin th.cell-ops, .tpl-table-pin td.cell-ops { right: 0; width: 228px; min-width: 228px; max-width: 228px; box-shadow: -4px 0 8px -4px rgba(15,23,42,.12); }
+    .cell-ops { width: 228px; min-width: 228px; max-width: 228px; font-size: 12px; padding: 6px 8px !important; white-space: nowrap; vertical-align: middle; }
+    .cell-ops button { font-size: 12px; }
+    .cell-ops .op-sep { display: inline-block; width: 4px; }
     .cell-sample-name { width: 132px; min-width: 132px; max-width: 132px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cell-seq { width: 48px; min-width: 48px; max-width: 48px; text-align: center; white-space: nowrap; }
     .cell-tpl-name { width: 72px; min-width: 72px; max-width: 72px; white-space: nowrap; }
@@ -1130,30 +1136,51 @@
     function renderToolbar() {
       var el = document.getElementById('toolbar');
       if (state.main === 'report' && state.sub === 'body') {
-        el.innerHTML = '<label>模板名称</label><input id="f_name" placeholder="请输入" />' +
-          '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
-          '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
-          '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
-          '<button onclick="renderView()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
-          '<button onclick="resetFilters()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600">重置</button>' +
-          '<button onclick="openBodyModal()" class="ml-auto rounded bg-blue-600 px-4 py-1.5 text-sm text-white" data-annotate="btn-add"><i class="fa fa-plus"></i> 新增</button>';
+        el.innerHTML =
+          '<div class="tpl-toolbar-row">' +
+            '<label>模板名称</label><input id="f_name" placeholder="请输入" />' +
+            '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
+            '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
+            '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
+          '</div>' +
+          '<div class="tpl-toolbar-row actions">' +
+            '<div class="tpl-toolbar-query">' +
+              '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
+              '<button onclick="resetFilters()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
+            '</div>' +
+            '<button onclick="openBodyModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="btn-add"><i class="fa fa-plus"></i> 新增</button>' +
+          '</div>';
       } else if (state.main === 'report' && state.sub === 'public') {
-        el.innerHTML = '<label data-annotate="public-filter">模版内容样式</label><select id="f_content"><option value="">全部</option><option>模板头</option><option>模板尾</option></select>' +
-          '<label>关联绑定</label><select id="f_bindType"><option value="">全部</option><option value="category">样品分类</option><option value="sample">样品名称(型号)</option></select>' +
-          '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
-          '<label>样品名称(型号)</label><input id="f_sample" placeholder="请输入" />' +
-          '<label>模版文件名</label><input id="f_file" placeholder="请输入" />' +
-          '<button onclick="renderView()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">查询</button>' +
-          '<button onclick="resetFilters()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600">重置</button>' +
-          '<button onclick="openPublicModal()" class="ml-auto rounded bg-blue-600 px-4 py-1.5 text-sm text-white" data-annotate="public-add"><i class="fa fa-plus"></i> 新增</button>';
+        el.innerHTML =
+          '<div class="tpl-toolbar-row">' +
+            '<label data-annotate="public-filter">模版内容样式</label><select id="f_content"><option value="">全部</option><option>模板头</option><option>模板尾</option></select>' +
+            '<label>关联绑定</label><select id="f_bindType"><option value="">全部</option><option value="category">样品分类</option><option value="sample">样品名称(型号)</option></select>' +
+            '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
+            '<label>样品名称(型号)</label><input id="f_sample" placeholder="请输入" />' +
+            '<label>模版文件名</label><input id="f_file" placeholder="请输入" />' +
+          '</div>' +
+          '<div class="tpl-toolbar-row actions">' +
+            '<div class="tpl-toolbar-query">' +
+              '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>' +
+              '<button onclick="resetFilters()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
+            '</div>' +
+            '<button onclick="openPublicModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="public-add"><i class="fa fa-plus"></i> 新增</button>' +
+          '</div>';
       } else if (state.main === 'record') {
-        el.innerHTML = '<label>是否配置模板</label><select id="f_configured"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select>' +
-          '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
-          '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
-          '<label>试验项</label><input id="f_test" placeholder="请输入" />' +
-          '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
-          '<button onclick="renderView()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
-          '<button onclick="resetFilters(true)" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600">重置</button>';
+        el.innerHTML =
+          '<div class="tpl-toolbar-row">' +
+            '<label>是否配置模板</label><select id="f_configured"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select>' +
+            '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
+            '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
+            '<label>试验项</label><input id="f_test" placeholder="请输入" />' +
+            '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
+          '</div>' +
+          '<div class="tpl-toolbar-row actions">' +
+            '<div class="tpl-toolbar-query">' +
+              '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
+              '<button onclick="resetFilters(true)" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
+            '</div>' +
+          '</div>';
       }
     }
 
@@ -1231,25 +1258,25 @@
 
     function recordOps(r) {
       if (r.configured && r.file) {
-        return '<button onclick="openPageOffice(\'record\',' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="po-config">配置</button> ' +
-          '<button onclick="openConfig(' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="record-config">版本</button> ' +
-          '<button onclick="alert(\'预览（原型演示）\')" class="ml-1 text-blue-600 hover:underline">预览</button> ' +
-          '<button onclick="clearRecord(' + r.id + ')" class="ml-1 text-red-500 hover:underline" data-annotate="record-clear">清除</button>';
+        return '<button onclick="openPageOffice(\'record\',' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="po-config">配置</button><span class="op-sep"></span>' +
+          '<button onclick="openConfig(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button><span class="op-sep"></span>' +
+          '<button onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button><span class="op-sep"></span>' +
+          '<button onclick="clearRecord(' + r.id + ')" class="text-red-500 hover:underline" data-annotate="record-clear">清除</button>';
       }
-      return '<button onclick="openConfig(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button> ' +
-        '<button onclick="openRecordCopyForRow(' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="record-copy">复制</button>';
+      return '<button onclick="openConfig(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button><span class="op-sep"></span>' +
+        '<button onclick="openRecordCopyForRow(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-copy">复制</button>';
     }
 
     function bodyOps(r) {
       var defaultBtn = r.isDefault
-        ? '<span class="text-slate-400 text-xs ml-1">已是默认</span>'
-        : '<button onclick="setBodyDefault(' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="body-default">设为默认</button>';
-      return '<button onclick="openBodyEdit(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="row-edit">编辑</button> ' +
-        '<button onclick="openBodyVersion(' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="body-version">版本</button> ' +
-        '<button onclick="openPageOffice(\'body\',' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="po-config">配置</button> ' +
-        '<button onclick="alert(\'预览（原型演示）\')" class="ml-1 text-blue-600 hover:underline">预览</button> ' +
-        defaultBtn + ' ' +
-        '<button onclick="deleteBody(' + r.id + ')" class="ml-1 text-red-500 hover:underline" data-annotate="row-delete">删除</button>';
+        ? '<span class="text-slate-400 text-xs">默认</span>'
+        : '<button onclick="setBodyDefault(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="body-default">设默认</button>';
+      return '<button onclick="openBodyEdit(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="row-edit">编辑</button><span class="op-sep"></span>' +
+        '<button onclick="openBodyVersion(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="body-version">版本</button><span class="op-sep"></span>' +
+        '<button onclick="openPageOffice(\'body\',' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="po-config">配置</button><span class="op-sep"></span>' +
+        '<button onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button><span class="op-sep"></span>' +
+        defaultBtn + '<span class="op-sep"></span>' +
+        '<button onclick="deleteBody(' + r.id + ')" class="text-red-500 hover:underline" data-annotate="row-delete">删除</button>';
     }
 
     function getPublicSampleBindFull(bindValue, bindLabel) {
@@ -1272,10 +1299,10 @@
     }
 
     function publicOps(r) {
-      return '<button onclick="openPublicEdit(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="public-edit">编辑</button> ' +
-        '<button onclick="openPageOffice(\'public\',' + r.id + ')" class="ml-1 text-blue-600 hover:underline" data-annotate="po-config">配置</button> ' +
-        '<button onclick="alert(\'预览（原型演示）\')" class="ml-1 text-blue-600 hover:underline">预览</button> ' +
-        '<button onclick="deletePublic(' + r.id + ')" class="ml-1 text-red-500 hover:underline" data-annotate="public-delete">删除</button>';
+      return '<button onclick="openPublicEdit(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="public-edit">编辑</button><span class="op-sep"></span>' +
+        '<button onclick="openPageOffice(\'public\',' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="po-config">配置</button><span class="op-sep"></span>' +
+        '<button onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button><span class="op-sep"></span>' +
+        '<button onclick="deletePublic(' + r.id + ')" class="text-red-500 hover:underline" data-annotate="public-delete">删除</button>';
     }
 
     function renderTable() {
@@ -1309,14 +1336,14 @@
         }).join('');
       } else if (state.main === 'report' && state.sub === 'public') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin');
-        head.innerHTML = '<tr data-annotate="public-table"><th>序号</th><th>模版内容样式</th><th style="width:280px">关联绑定</th><th>模版文件</th><th style="min-width:180px">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="public-table"><th>序号</th><th>模版内容样式</th><th style="width:280px">关联绑定</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           return '<tr><td>' + (i + 1) + '</td><td>' + r.contentStyle + '</td><td>' + publicBindDisplay(r) + '</td>' +
-            '<td><span class="link">' + r.file + '</span></td><td class="whitespace-nowrap">' + publicOps(r) + '</td></tr>';
+            '<td><span class="link">' + r.file + '</span></td><td class="cell-ops">' + publicOps(r) + '</td></tr>';
         }).join('');
       } else if (state.main === 'record') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin');
-        head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th>序号</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>模板文件</th><th style="min-width:220px">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th>序号</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>模板文件</th><th class="cell-ops">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           var fileCell = r.file
             ? '<span class="link">' + r.file + '</span>' + (r.templates && r.templates.length > 1 ? '<span class="badge-enabled">启用中</span>' : '')
@@ -1325,7 +1352,7 @@
           var categoryPath = getBodyCategoryPath(r.tree);
           return '<tr><td><input type="checkbox" /></td><td>' + (i + 1) + '</td><td class="cell-sample-name">' + sampleDisplay + '</td>' +
             '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td><td>' + r.test + '</td>' +
-            '<td>' + fileCell + '</td><td class="whitespace-nowrap">' + recordOps(r) + '</td></tr>';
+            '<td>' + fileCell + '</td><td class="cell-ops">' + recordOps(r) + '</td></tr>';
         }).join('');
       }
       document.getElementById('pageTotal').textContent = '共 ' + rows.length + ' 条';
