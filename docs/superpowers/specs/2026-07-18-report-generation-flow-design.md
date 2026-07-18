@@ -2,7 +2,7 @@
 
 **日期**: 2026-07-18  
 **范围**: 业务流程配置 › 报告设置（默认导出模式）；报告管理 › 报告编制 › 报告生成编辑页；模板管理 › 报告模版（默认变体，已有）  
-**状态**: 待确认  
+**状态**: 已确认  
 **前置**: [`2026-07-15-report-template-redesign-design.md`](2026-07-15-report-template-redesign-design.md)、[`2026-07-17-record-sheet-config-flow-design.md`](2026-07-17-record-sheet-config-flow-design.md)
 
 ## 背景与决策
