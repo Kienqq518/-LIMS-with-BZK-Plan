@@ -48,21 +48,20 @@
     .tpl-tree-head { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
     .tpl-tree-head input { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 5px 8px; font-size: 12px; outline: none; }
     .tpl-tree-body { padding: 4px 0; max-height: calc(100vh - 200px); overflow-y: auto; font-size: 12px; }
-    .tree-node { padding: 2px 4px 2px 0; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 0; min-width: 0; }
-    .tree-node > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
-    .tree-node .tree-caret { display: inline-flex; align-items: center; justify-content: center; width: 6px; flex-shrink: 0; font-size: 8px; color: #94a3b8; line-height: 1; margin: 0; padding: 0; }
-    .tree-node > .fa { flex-shrink: 0; width: 10px; font-size: 10px; text-align: center; margin: 0; }
-    .tree-node .tree-caret-empty { display: none; }
+    .tree-node { padding: 3px 4px 3px 2px; cursor: pointer; color: #475569; display: flex; align-items: center; min-width: 0; font-size: 12px; line-height: 1.3; }
+    .tree-node-pad { flex-shrink: 0; width: calc(var(--depth, 0) * 10px); }
+    .tree-node-toggle { flex-shrink: 0; width: 10px; height: 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; line-height: 1; color: #94a3b8; }
+    .tree-node-toggle.is-leaf { visibility: hidden; pointer-events: none; }
+    .tree-node-icon { flex-shrink: 0; width: 12px; height: 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: #94a3b8; }
+    .tree-node-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tree-node:hover { background: #f1f5f9; }
     .tree-node.active { background: #eff6ff; color: #2563eb; }
-    .tree-node.child { padding-left: 0; }
-    .tree-node.grandchild { padding-left: 0; font-size: 11px; }
-    .tree-node.leaf { padding-left: 0; color: #64748b; font-size: 11px; }
-    .tree-node.test-item { padding-left: 0; font-size: 11px; color: #64748b; }
-    .tree-node.test-item .cfg-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; margin-right: 2px; vertical-align: middle; flex-shrink: 0; }
+    .tree-node.active .tree-node-label { color: #2563eb; }
+    .tree-node.is-leaf-node .tree-node-label { color: #64748b; }
+    .tree-node.test-item .cfg-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; vertical-align: middle; }
     .tree-node.test-item .cfg-dot.on { background: #22c55e; }
     .tree-node.test-item .cfg-dot.off { background: #cbd5e1; }
-    .tree-node .count { color: #94a3b8; font-size: 11px; flex-shrink: 0; }
+    .tree-node .count { color: #94a3b8; font-size: 11px; flex-shrink: 0; margin-left: 2px; }
     .badge-enabled { display: inline-block; background: #dcfce7; color: #15803d; font-size: 11px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
     .badge-default { display: inline-block; background: #dbeafe; color: #1d4ed8; font-size: 11px; padding: 1px 6px; border-radius: 4px; }
     .badge-none { color: #94a3b8; font-size: 12px; }
@@ -720,14 +719,17 @@
       return (n.children || []).some(function (c) { return recordTreeMatch(c, kw); });
     }
 
-    function treeNodePad(depth, hasChild) {
-      var base = depth * 4;
-      return hasChild ? base : base + 14;
+    function renderTreeToggle(hasChild, id, isOpen) {
+      if (!hasChild) return '<span class="tree-node-toggle is-leaf"></span>';
+      return '<span class="tree-node-toggle tree-caret" onclick="event.stopPropagation(); toggleReportTree(\'' + id + '\')">' + (isOpen ? '▼' : '▶') + '</span>';
     }
 
-    function renderTreeCaret(hasChild, id, isOpen) {
-      if (!hasChild) return '';
-      return '<span class="tree-caret" onclick="event.stopPropagation(); toggleReportTree(\'' + id + '\')">' + (isOpen ? '▼' : '▶') + '</span>';
+    function renderTreeIcon(kind) {
+      if (kind === 'folder') return '<span class="tree-node-icon"><i class="fa fa-folder-o"></i></span>';
+      if (kind === 'file') return '<span class="tree-node-icon"><i class="fa fa-file-o"></i></span>';
+      if (kind === 'dot-on') return '<span class="tree-node-icon"><span class="cfg-dot on"></span></span>';
+      if (kind === 'dot-off') return '<span class="tree-node-icon"><span class="cfg-dot off"></span></span>';
+      return '<span class="tree-node-icon"></span>';
     }
 
     function renderRecordTreeNodes(nodes, depth, kw) {
@@ -736,17 +738,18 @@
         if (kw && !recordTreeMatch(n, kw)) return;
         var hasChild = n.children && n.children.length;
         var isOpen = kw ? true : !!state.openIds[n.id];
-        var pad = treeNodePad(depth, hasChild);
+        var pad = depth;
         var active = state.treeId === n.id ? ' active' : '';
-        var icon = n.isTestItem ? '' : (hasChild ? '<i class="fa fa-folder-o text-slate-400"></i>' : '');
+        var iconKind = n.isTestItem ? (n.configured ? 'dot-on' : 'dot-off') : (hasChild ? 'folder' : 'file');
         var count = '';
         if (n.count) count = '<span class="count">(' + n.count + ')</span>';
-        var dot = n.isTestItem ? '<span class="cfg-dot ' + (n.configured ? 'on' : 'off') + '"></span>' : '';
         var annotate = n.annotate ? ' data-annotate="' + n.annotate + '"' : '';
-        var nodeCls = n.isTestItem ? ' test-item' : '';
-        html += '<div class="tree-node' + active + nodeCls + '"' + annotate + ' style="padding-left:' + pad + 'px" data-id="' + n.id + '" onclick="selectReportTreeNode(\'' + n.id + '\', event)">' +
-          renderTreeCaret(hasChild, n.id, isOpen) +
-          dot + icon + '<span>' + n.label + '</span>' + count + '</div>';
+        var nodeCls = (n.isTestItem ? ' test-item' : '') + (hasChild ? '' : ' is-leaf-node');
+        html += '<div class="tree-node' + active + nodeCls + '"' + annotate + ' style="--depth:' + pad + '" data-id="' + n.id + '" onclick="selectReportTreeNode(\'' + n.id + '\', event)">' +
+          '<span class="tree-node-pad"></span>' +
+          renderTreeToggle(hasChild, n.id, isOpen) +
+          renderTreeIcon(iconKind) +
+          '<span class="tree-node-label">' + n.label + '</span>' + count + '</div>';
         if (hasChild && isOpen) html += renderRecordTreeNodes(n.children, depth + 1, kw);
       });
       return html;
@@ -1032,9 +1035,8 @@
         if (kw && !reportTreeMatch(n, kw)) return;
         var hasChild = n.children && n.children.length;
         var isOpen = kw ? true : !!state.openIds[n.id];
-        var pad = treeNodePad(depth, hasChild);
         var active = state.treeId === n.id ? ' active' : '';
-        var icon = hasChild ? '<i class="fa fa-folder-o text-slate-400"></i>' : '';
+        var iconKind = hasChild ? 'folder' : 'file';
         var count = '';
         var modelIds = collectModelIdsUnderNode(n.id);
         if (modelIds && modelIds.length) {
@@ -1044,9 +1046,11 @@
           var num = getBodyTreeCount(n.id);
           count = num ? '<span class="count">(' + num + ')</span>' : '';
         }
-        html += '<div class="tree-node' + active + '" style="padding-left:' + pad + 'px" data-id="' + n.id + '" onclick="selectReportTreeNode(\'' + n.id + '\', event)">' +
-          renderTreeCaret(hasChild, n.id, isOpen) +
-          icon + '<span>' + n.label + '</span>' + count + '</div>';
+        html += '<div class="tree-node' + active + (hasChild ? '' : ' is-leaf-node') + '" style="--depth:' + depth + '" data-id="' + n.id + '" onclick="selectReportTreeNode(\'' + n.id + '\', event)">' +
+          '<span class="tree-node-pad"></span>' +
+          renderTreeToggle(hasChild, n.id, isOpen) +
+          renderTreeIcon(iconKind) +
+          '<span class="tree-node-label">' + n.label + '</span>' + count + '</div>';
         if (hasChild && isOpen) html += renderReportTreeNodes(n.children, depth + 1, kw);
       });
       return html;
@@ -1071,7 +1075,7 @@
     }
 
     function selectReportTreeNode(id, event) {
-      if (event && event.target.closest('.tree-caret') && event.target.closest('.tree-caret').textContent.trim()) return;
+      if (event && event.target.closest('.tree-caret')) return;
       selectTree(id);
     }
 
