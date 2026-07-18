@@ -8,7 +8,7 @@
     { key: 'specimen-each', label: '单个样品一份报告' }
   ];
 
-  var DEFAULT_EXPORT_MODE_KEY = 'specimen-each';
+  var DEFAULT_EXPORT_MODE_KEY = 'model-batch';
 
   var BIND_TYPE_LABELS = {
     category: '样品分类',

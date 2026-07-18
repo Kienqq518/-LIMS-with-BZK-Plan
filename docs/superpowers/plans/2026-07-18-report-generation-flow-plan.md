@@ -34,7 +34,7 @@ var REPORT_EXPORT_MODES = [
   { key: 'model-batch',  label: '单种样品一份报告' },
   { key: 'specimen-each', label: '单个样品一份报告' }
 ];
-var DEFAULT_EXPORT_MODE_KEY = 'specimen-each';
+var DEFAULT_EXPORT_MODE_KEY = 'model-batch';
 ```
 
 ### 1.2 `resolveReportExportMode(sample, rules)`
