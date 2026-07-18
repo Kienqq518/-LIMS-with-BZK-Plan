@@ -78,6 +78,9 @@
     .cell-sample-name { width: 132px; max-width: 132px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cell-seq { width: 48px; max-width: 48px; text-align: center; white-space: nowrap; }
     .cell-tpl-name { width: 72px; max-width: 72px; white-space: nowrap; }
+    .cell-default { width: 56px; min-width: 56px; text-align: center; white-space: nowrap; vertical-align: middle; }
+    .cell-version { width: 220px; min-width: 220px; white-space: nowrap; vertical-align: middle; }
+    .cell-public-ref { width: 172px; min-width: 172px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
     .cell-category-path {
       width: 240px; max-width: 240px; line-height: 18px; max-height: 36px;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
@@ -1243,7 +1246,7 @@
       };
 
       if (state.main === 'report' && state.sub === 'body') {
-        head.innerHTML = '<tr><th class="cell-seq">序号</th><th class="cell-tpl-name">模板名称</th><th class="cell-sample-name">样品名称(型号)</th><th style="width:240px">样品分类</th><th>默认</th><th>当前启用版本</th><th>引用公共模版头</th><th>引用公共模版尾</th><th style="min-width:300px">操作</th></tr>';
+        head.innerHTML = '<tr><th class="cell-seq">序号</th><th class="cell-tpl-name">模板名称</th><th class="cell-sample-name">样品名称(型号)</th><th style="width:240px">样品分类</th><th class="cell-default">默认</th><th class="cell-version">当前启用版本</th><th class="cell-public-ref">引用公共模版头</th><th class="cell-public-ref">引用公共模版尾</th><th style="min-width:300px">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           var defaultCell = r.isDefault
             ? '<span class="badge-default">默认</span>'
@@ -1254,8 +1257,8 @@
           var sampleDisplay = getBodySampleDisplay(r.tree);
           var categoryPath = getBodyCategoryPath(r.tree);
           return '<tr><td class="cell-seq">' + (i + 1) + '</td><td class="cell-tpl-name">' + r.name + '</td><td class="cell-sample-name">' + sampleDisplay + '</td>' +
-            '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td><td>' + defaultCell + '</td>' +
-            '<td>' + fileCell + '</td><td><span class="link">' + r.head + '</span></td><td><span class="link">' + r.tail + '</span></td>' +
+            '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td><td class="cell-default">' + defaultCell + '</td>' +
+            '<td class="cell-version">' + fileCell + '</td><td class="cell-public-ref"><span class="link">' + r.head + '</span></td><td class="cell-public-ref"><span class="link">' + r.tail + '</span></td>' +
             '<td class="whitespace-nowrap">' + bodyOps(r) + '</td></tr>';
         }).join('');
       } else if (state.main === 'report' && state.sub === 'public') {
