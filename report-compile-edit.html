@@ -195,19 +195,11 @@
           '<th class="border border-slate-200 px-3 py-2 w-10"></th>' +
           '<th class="border border-slate-200 px-3 py-2 font-medium">试样编号</th>' +
           '<th class="border border-slate-200 px-3 py-2 font-medium">检测项目</th></tr></thead>' +
-          '<tbody>' + rows + '</tbody></table></div>' +
-          '<div class="mt-4 flex flex-wrap items-center gap-6 export-mode-row" data-annotate="export-mode">' +
-          '<label class="inline-flex items-center gap-2 text-sm"><input type="radio" name="exportMode-' + group.id + '" value="model-batch" /> 单种样品一起导出</label>' +
-          '<label class="inline-flex items-center gap-2 text-sm"><input type="radio" name="exportMode-' + group.id + '" value="specimen-each" /> 单个样品单个文件</label>' +
-          '</div></div>';
+          '<tbody>' + rows + '</tbody></table></div></div>';
       }).join('');
       document.getElementById('sampleGroupsContainer').innerHTML = html;
-      SAMPLE_GROUPS.forEach(function (g) { applyDefaultExportModeForGroup(g.id); syncGroupCheckAll(g.id); });
+      SAMPLE_GROUPS.forEach(function (g) { syncGroupCheckAll(g.id); });
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
-    }
-
-    function getGroupMeta(groupId) {
-      return SAMPLE_GROUPS.filter(function (g) { return g.id === groupId; })[0];
     }
 
     function getCheckedSpecimens() {
@@ -232,26 +224,14 @@
       return result;
     }
 
-    function getPageExportMode() {
-      var checked = getCheckedSpecimens();
-      if (!checked.length) return 'specimen-each';
-      var groupId = checked[0].groupId;
-      var el = document.querySelector('input[name="exportMode-' + groupId + '"]:checked');
-      return el ? el.value : 'specimen-each';
-    }
-
-    function applyDefaultExportModeForGroup(groupId) {
-      var group = getGroupMeta(groupId);
-      if (!group) return;
-      var sampleMeta = { name: group.name, model: group.model, category: group.category, categoryPath: group.categoryPath };
-      var modeKey = ReportExport.resolveReportExportMode(sampleMeta, REPORT_EXPORT_RULES).modeKey;
-      var radio = document.querySelector('input[name="exportMode-' + groupId + '"][value="' + modeKey + '"]');
-      if (radio) radio.checked = true;
+    function resolveDefaultExportMode(checked) {
+      if (!checked || !checked.length) return 'specimen-each';
+      var first = checked[0];
+      var sampleMeta = { name: first.name, model: first.model, category: first.category, categoryPath: first.categoryPath };
+      return ReportExport.resolveReportExportMode(sampleMeta, REPORT_EXPORT_RULES).modeKey;
     }
 
     function onSpecimenCheckChange() {
-      var checked = getCheckedSpecimens();
-      if (checked.length) applyDefaultExportModeForGroup(checked[0].groupId);
       SAMPLE_GROUPS.forEach(function (g) { syncGroupCheckAll(g.id); });
     }
 
@@ -272,7 +252,7 @@
       if (!checked.length) { alert('请至少勾选一个试样'); return; }
       document.getElementById('modalCheckedCount').textContent = String(checked.length);
 
-      var exportMode = getPageExportMode();
+      var exportMode = resolveDefaultExportMode(checked);
       document.getElementById('modalExportModes').innerHTML = ReportExport.REPORT_EXPORT_MODES.map(function (m) {
         return '<label class="flex items-center gap-2"><input type="radio" name="modalExportMode" value="' + m.key + '" ' +
           (m.key === exportMode ? 'checked' : '') + ' onchange="updateModalPreview()" /> ' + m.label + '</label>';
@@ -316,7 +296,7 @@
 
     function getModalExportMode() {
       var el = document.querySelector('input[name="modalExportMode"]:checked');
-      return el ? el.value : getPageExportMode();
+      return el ? el.value : resolveDefaultExportMode(getCheckedSpecimens());
     }
 
     function updateModalPreview() {
@@ -330,12 +310,6 @@
       var files = ReportExport.buildReportFilePreview(ENTRUST_CODE, checked, exportMode, modalSelectedVariants, TEMPLATE_INDEX);
       var blocked = files.filter(function (f) { return f.status === 'missing-template'; });
       if (blocked.length) { alert(blocked[0].statusMessage); return; }
-
-      if (checked.length) {
-        var gid = checked[0].groupId;
-        var pageRadio = document.querySelector('input[name="exportMode-' + gid + '"][value="' + exportMode + '"]');
-        if (pageRadio) pageRadio.checked = true;
-      }
 
       var now = new Date();
       var ts = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' +
@@ -416,7 +390,7 @@
             position: 'top-left',
             title: '选取检测信息',
             wide: true,
-            content: '按样品名称(型号)分组展示。每组含只读<strong>样品信息</strong>、试样勾选表与导出方式。多型号委托时各组独立配置。',
+            content: '按样品名称(型号)分组展示。每组含只读<strong>样品信息</strong>与试样勾选表。导出方式在点击「生成报告」后的确认弹窗中配置。',
             tag: '检测信息'
           },
           {
@@ -454,20 +428,11 @@
             tag: '检测信息'
           },
           {
-            id: 'rc-export-mode',
-            selector: '[data-annotate="export-mode"]',
-            position: 'top-left',
-            title: '导出方式',
-            wide: true,
-            content: '每组样品独立配置。预填「业务流程配置 › 报告设置」解析出的默认导出模式，编制员可修改：<strong>单种样品一起导出</strong>（全部勾选试样 → 1 份报告）或 <strong>单个样品单个文件</strong>（每个试样各 1 份）。',
-            tag: '检测信息'
-          },
-          {
             id: 'rc-generate-row',
             selector: '[data-annotate="btn-generate-row"]',
             position: 'top',
             title: '生成报告',
-            content: '勾选试样后点击，弹出确认弹窗。可再次修改导出方式与模版变体，确认后生成 Word 报告并写入下方「报告文件」列表。',
+            content: '勾选试样后点击，弹出「生成报告确认」弹窗。在弹窗中确认或修改导出方式与模版变体，确认后生成 Word 报告并写入下方「报告文件」列表。',
             tag: '检测信息'
           },
           {
@@ -485,7 +450,7 @@
             position: 'top-left',
             title: '确认：导出方式',
             wide: true,
-            content: '预填页面已选的导出方式（来源：报告设置默认规则），编制员可在确认前修改。切换选项时底部预览份数实时更新。',
+            content: '预填「业务流程配置 › 报告设置」解析出的默认导出模式，编制员可在确认前修改：<strong>单种样品一份报告</strong>（全部勾选试样 → 1 份）或 <strong>单个样品一份报告</strong>（每个试样各 1 份）。切换选项时底部预览份数实时更新。',
             tag: '检测信息'
           },
           {
