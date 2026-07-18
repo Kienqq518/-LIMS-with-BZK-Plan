@@ -138,6 +138,11 @@
     .cfg-section { margin-bottom: 24px; }
     .cfg-section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 14px; font-weight: 600; color: #334155; }
     .cfg-section-title::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: #2563eb; flex-shrink: 0; }
+    .cfg-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+    .cfg-section-head .cfg-section-title { margin-bottom: 0; }
+    .cfg-section-save { flex-shrink: 0; border-radius: 4px; background: #2563eb; padding: 6px 20px; font-size: 13px; color: #fff; }
+    .cfg-section-save:hover { background: #1d4ed8; }
+    .seal-instant-note { margin: -8px 0 12px; font-size: 12px; color: #64748b; }
     .cfg-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 32px; }
     @media (max-width: 900px) { .cfg-form-grid { grid-template-columns: 1fr; } }
     .cfg-form-item { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -303,7 +308,10 @@
       <div class="rounded bg-white shadow-sm">
         <div class="cfg-panel">
           <div class="cfg-section">
-            <div class="cfg-section-title" data-annotate="undertaker-basic">基本信息</div>
+            <div class="cfg-section-head">
+              <div class="cfg-section-title" data-annotate="undertaker-basic">基本信息</div>
+              <button type="button" class="cfg-section-save" onclick="savePanel('基本信息')" data-annotate="undertaker-save-basic">保存</button>
+            </div>
             <div class="cfg-form-grid">
               <div class="cfg-form-item"><label>单位名称</label><input type="text" value="杭州数蚕智能科技有限公司" /></div>
               <div class="cfg-form-item"><label>法定代表人</label><input type="text" value="马勇" /></div>
@@ -312,7 +320,10 @@
             </div>
           </div>
           <div class="cfg-section">
-            <div class="cfg-section-title">开票信息</div>
+            <div class="cfg-section-head">
+              <div class="cfg-section-title">开票信息</div>
+              <button type="button" class="cfg-section-save" onclick="savePanel('开票信息')" data-annotate="undertaker-save-invoice">保存</button>
+            </div>
             <div class="cfg-form-grid">
               <div class="cfg-form-item"><label>发票抬头</label><input type="text" value="杭州数蚕智能科技有限公司" /></div>
               <div class="cfg-form-item"><label>开户银行</label><input type="text" value="杭州银行文创支行" /></div>
@@ -321,7 +332,10 @@
             </div>
           </div>
           <div class="cfg-section">
-            <div class="cfg-section-title">资质信息</div>
+            <div class="cfg-section-head">
+              <div class="cfg-section-title">资质信息</div>
+              <button type="button" class="cfg-section-save" onclick="savePanel('资质信息')" data-annotate="undertaker-save-qual">保存</button>
+            </div>
             <div class="cfg-form-grid">
               <div class="cfg-form-item"><label>CNAS 注册号</label><input type="text" value="L12522" /></div>
               <div class="cfg-form-item"><label>CMA 证书编号</label><input type="text" value="2024033665T" /></div>
@@ -329,6 +343,7 @@
           </div>
           <div class="cfg-section">
             <div class="cfg-section-title" data-annotate="undertaker-seal">签名与印章</div>
+            <p class="seal-instant-note" data-annotate="undertaker-seal-note"><i class="fa fa-bolt text-amber-500"></i> 上传后立即生效，无需保存</p>
             <div class="seal-hint" data-annotate="undertaker-seal-hint">
               <i class="fa fa-info-circle"></i> 签名与印章图片建议上传 <strong>PNG 透明底</strong> 格式；骑缝章 / CNAS / CMA / 检测专用章最小尺寸 <strong>200×200 像素</strong>，法定代表人签名建议宽度不小于 <strong>300 像素</strong>；单文件不超过 <strong>2MB</strong>，以保证导出报告时清晰可辨。
             </div>
@@ -360,9 +375,6 @@
               </div>
             </div>
           </div>
-          <div class="cfg-save-bar">
-            <button onclick="savePanel('承检方信息')" class="rounded bg-blue-600 px-10 py-2 text-sm text-white hover:bg-blue-700">保存</button>
-          </div>
         </div>
       </div>
     </div>
@@ -371,7 +383,10 @@
       <div class="rounded bg-white shadow-sm">
         <div class="cfg-panel">
           <div class="cfg-section">
-            <div class="cfg-section-title">报告组装规则（全局）</div>
+            <div class="cfg-section-head">
+              <div class="cfg-section-title" data-annotate="report-global-rules">报告组装规则（全局）</div>
+              <button type="button" class="cfg-section-save" onclick="savePanel('报告组装规则')" data-annotate="report-save-global">保存</button>
+            </div>
             <div class="cfg-form-grid">
               <div class="cfg-form-item"><label>骑缝章生成阶段</label><select><option selected>报告审核</option><option>报告签发</option><option>报告发放</option></select></div>
               <div class="cfg-form-item"><label>报告中是否添加收样图片</label><select><option selected>是</option><option>否</option></select></div>
@@ -404,9 +419,6 @@
               <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
               <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>10 条/页</option></select>
             </div>
-          </div>
-          <div class="cfg-save-bar">
-            <button onclick="savePanel('报告设置')" class="rounded bg-blue-600 px-10 py-2 text-sm text-white hover:bg-blue-700">保存</button>
           </div>
         </div>
       </div>
@@ -1933,7 +1945,7 @@
           position: 'top-right',
           title: '承检方信息',
           wide: true,
-          content: '维护承检方单位基本信息、开票与资质信息，以及签名与印章图片。区域名称现为「签名与印章」（原「签章与标识」/「签章与资质」）；已移除「单位 Logo」，新增骑缝章、CNAS 资质章、CMA 资质章上传，样式与模板管理原印章区域一致。',
+          content: '维护承检方单位基本信息、开票与资质信息，以及签名与印章图片。<strong>基本信息 / 开票 / 资质</strong>各区块标题行右侧独立「保存」；<strong>签名与印章</strong>上传后立即生效，无需保存。',
           tag: '业务流程配置'
         },
         {
@@ -1961,6 +1973,22 @@
           wide: true,
           content: '提示签名与印章图片格式与最小尺寸要求：PNG 透明底；骑缝章 / CNAS / CMA / 检测专用章最小 200×200 像素；法定代表人签名宽度建议不小于 300 像素；单文件不超过 2MB。',
           tag: '业务流程配置'
+        },
+        {
+          id: 'undertaker-seal-note',
+          selector: '[data-annotate="undertaker-seal-note"]',
+          position: 'top-left',
+          title: '印章即时生效',
+          content: '签名与印章在上传弹窗点「确定」后立即生效，无需点击区块保存按钮。',
+          tag: '承检方信息'
+        },
+        {
+          id: 'undertaker-save-basic',
+          selector: '[data-annotate="undertaker-save-basic"]',
+          position: 'left',
+          title: '保存基本信息',
+          content: '仅保存本单位名称、法定代表人、单位地址、联系电话等基本信息字段。',
+          tag: '承检方信息'
         },
         {
           id: 'numbering-tab',
