@@ -44,24 +44,24 @@
     .cat-card:nth-child(4) .title { color: #92400e; }
     .cat-card:nth-child(4) .illus { color: #d97706; }
     .tpl-layout { display: flex; gap: 0; min-height: calc(100vh - 170px); }
-    .tpl-tree { width: 360px; flex-shrink: 0; border-right: 1px solid #e2e8f0; background: #fff; }
-    .tpl-tree-head { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
-    .tpl-tree-head input { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
-    .tpl-tree-body { padding: 8px 0; max-height: calc(100vh - 200px); overflow-y: auto; font-size: 13px; }
-    .tree-node { padding: 6px 12px 6px 16px; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-    .tree-node > span { white-space: nowrap; }
-    .tree-node .tree-caret { display: inline-block; width: 12px; flex-shrink: 0; text-align: center; font-size: 10px; color: #94a3b8; }
+    .tpl-tree { width: 240px; flex-shrink: 0; border-right: 1px solid #e2e8f0; background: #fff; }
+    .tpl-tree-head { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
+    .tpl-tree-head input { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 5px 8px; font-size: 12px; outline: none; }
+    .tpl-tree-body { padding: 6px 0; max-height: calc(100vh - 200px); overflow-y: auto; font-size: 12px; }
+    .tree-node { padding: 5px 8px 5px 10px; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 3px; min-width: 0; }
+    .tree-node > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+    .tree-node .tree-caret { display: inline-block; width: 10px; flex-shrink: 0; text-align: center; font-size: 9px; color: #94a3b8; }
     .tree-node .tree-caret-empty { color: transparent; }
     .tree-node:hover { background: #f1f5f9; }
     .tree-node.active { background: #eff6ff; color: #2563eb; }
-    .tree-node.child { padding-left: 28px; }
-    .tree-node.grandchild { padding-left: 40px; font-size: 12px; }
-    .tree-node.leaf { padding-left: 52px; color: #64748b; }
-    .tree-node.test-item { padding-left: 52px; font-size: 12px; color: #64748b; }
+    .tree-node.child { padding-left: 22px; }
+    .tree-node.grandchild { padding-left: 32px; font-size: 11px; }
+    .tree-node.leaf { padding-left: 42px; color: #64748b; font-size: 11px; }
+    .tree-node.test-item { padding-left: 42px; font-size: 11px; color: #64748b; }
     .tree-node.test-item .cfg-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
     .tree-node.test-item .cfg-dot.on { background: #22c55e; }
     .tree-node.test-item .cfg-dot.off { background: #cbd5e1; }
-    .tree-node .count { color: #94a3b8; font-size: 12px; }
+    .tree-node .count { color: #94a3b8; font-size: 11px; flex-shrink: 0; }
     .badge-enabled { display: inline-block; background: #dcfce7; color: #15803d; font-size: 11px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
     .badge-default { display: inline-block; background: #dbeafe; color: #1d4ed8; font-size: 11px; padding: 1px 6px; border-radius: 4px; }
     .badge-none { color: #94a3b8; font-size: 12px; }
@@ -723,7 +723,7 @@
         if (kw && !recordTreeMatch(n, kw)) return;
         var hasChild = n.children && n.children.length;
         var isOpen = kw ? true : !!state.openIds[n.id];
-        var pad = depth * 14 + 12;
+        var pad = depth * 10 + 8;
         var active = state.treeId === n.id ? ' active' : '';
         var icon = n.isTestItem ? '' : (hasChild ? '<i class="fa fa-folder-o text-slate-400"></i>' : '');
         var count = '';
@@ -1019,7 +1019,7 @@
         if (kw && !reportTreeMatch(n, kw)) return;
         var hasChild = n.children && n.children.length;
         var isOpen = kw ? true : !!state.openIds[n.id];
-        var pad = depth * 14 + 12;
+        var pad = depth * 10 + 8;
         var active = state.treeId === n.id ? ' active' : '';
         var icon = hasChild ? '<i class="fa fa-folder-o text-slate-400"></i>' : '';
         var count = '';
