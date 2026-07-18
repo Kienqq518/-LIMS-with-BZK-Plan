@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>报告编制编辑 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 24px; font-size: 13px; }
+    .info-grid .lbl { color: #64748b; }
+    .info-grid .val { color: #334155; }
+    .sub-tab { padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; color: #64748b; }
+    .sub-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
+    .specimen-tests { font-size: 12px; color: #64748b; line-height: 1.6; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="report-list.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="report-list.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">报告编制</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      报告编制编辑
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="border-b border-slate-200 bg-white px-4">
+    <div class="flex gap-4">
+      <div class="sub-tab active" data-annotate="tab-detect">检测信息</div>
+      <div class="sub-tab">委托信息</div>
+    </div>
+  </div>
+
+  <div class="p-4 space-y-4">
+    <!-- 样品信息 -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 text-sm font-medium text-slate-700">样品信息</div>
+      <div class="info-grid">
+        <div><span class="lbl">样品名称：</span><span class="val" id="infoName">实壁塑料电缆导管</span></div>
+        <div><span class="lbl">型号：</span><span class="val" id="infoModel">PVC-C</span></div>
+        <div class="col-span-2" data-annotate="product-mark"><span class="lbl">产品标识：</span><span class="val" id="infoMarking">DS 150*8*600 SN12 PVC-C DL/T 802.3-2023</span></div>
+        <div><span class="lbl">检测类别：</span><span class="val">出厂检验</span></div>
+        <div><span class="lbl">样品数量：</span><span class="val">3</span></div>
+        <div><span class="lbl">样品单位：</span><span class="val">根</span></div>
+        <div><span class="lbl">生产厂家：</span><span class="val">xxx</span></div>
+        <div><span class="lbl">厂家地址：</span><span class="val">xxxx</span></div>
+        <div><span class="lbl">厂家产地：</span><span class="val">xxxxx</span></div>
+        <div class="col-span-2"><span class="lbl">备注：</span><span class="val">xxxxx</span></div>
+      </div>
+    </div>
+
+    <!-- 检测项目勾选 -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[800px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 w-10"><input type="checkbox" id="checkAllSpecimens" onchange="toggleAllSpecimens(this.checked)" /></th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">试样编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测项目</th>
+            </tr>
+          </thead>
+          <tbody id="specimenBody"></tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex flex-wrap items-center gap-6" data-annotate="export-mode">
+        <label class="inline-flex items-center gap-2 text-sm">
+          <input type="radio" name="pageExportMode" value="model-batch" checked onchange="syncPageExportMode()" /> 单种样品一起导出
+        </label>
+        <label class="inline-flex items-center gap-2 text-sm">
+          <input type="radio" name="pageExportMode" value="specimen-each" onchange="syncPageExportMode()" /> 单个样品单个文件
+        </label>
+      </div>
+
+      <div class="mt-6 text-center">
+        <button onclick="openGenerateModal()" class="rounded bg-blue-600 px-12 py-2 text-sm text-white hover:bg-blue-700" data-annotate="btn-generate">生成报告</button>
+      </div>
+    </div>
+
+    <!-- 报告文件 -->
+    <div class="rounded bg-white p-4 shadow-sm" data-annotate="report-files">
+      <div class="mb-3 text-sm font-medium text-slate-700">报告文件</div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[900px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium w-12">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">报告编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">试样编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">报告</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">生成时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">修改时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="reportFileBody">
+            <tr><td colspan="7" class="border border-slate-200 px-3 py-6 text-center text-slate-400">暂无报告，请勾选试样后生成</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 生成确认弹窗 -->
+  <div id="generateModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[90vh] w-[560px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">生成报告确认</h3>
+        <button type="button" onclick="closeGenerateModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto px-6 py-4 space-y-5 text-sm">
+        <div class="rounded border border-blue-100 bg-blue-50 px-4 py-3 text-blue-800">
+          已勾选 <strong id="modalCheckedCount">0</strong> 个试样。请确认导出方式与模版变体（已预填默认值，可修改）。
+        </div>
+        <div>
+          <div class="mb-2 font-medium text-slate-700">导出方式</div>
+          <div class="space-y-2" id="modalExportModes"></div>
+        </div>
+        <div>
+          <div class="mb-2 font-medium text-slate-700">报告模版变体</div>
+          <div id="modalVariantBlocks" class="space-y-3"></div>
+        </div>
+        <div class="rounded border border-slate-200 bg-slate-50 px-4 py-3 text-slate-600">
+          预览：将生成 <strong id="modalPreviewCount" class="text-blue-600">0</strong> 份报告
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button type="button" onclick="closeGenerateModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
+        <button type="button" onclick="confirmGenerate()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white" data-annotate="confirm-generate">确认生成</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/report-export.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var ENTRUST_CODE = new URLSearchParams(location.search).get('entrust') || 'SCZN202508/0009';
+
+    var REPORT_EXPORT_RULES = [
+      { id: 1, bindType: 'category', bindTarget: '电力物资类', modeKey: 'model-batch' },
+      { id: 2, bindType: 'category', bindTarget: '安全工器具类', modeKey: 'model-batch' },
+      { id: 3, bindType: 'category', bindTarget: '环境检测', modeKey: 'model-batch' },
+      { id: 4, bindType: 'category', bindTarget: '工程检测', modeKey: 'model-batch' },
+      { id: 5, bindType: 'model', bindTarget: '实壁塑料电缆导管 - PVC-C', modeKey: 'model-batch' }
+    ];
+
+    var TEMPLATE_INDEX = {
+      'pvc-c': [
+        { id: 1, name: '标准版', isDefault: true, file: 'PVC-C报告模板_标准版.doc', templates: [{ enabled: true }] },
+        { id: 2, name: '英文版', isDefault: false, file: 'PVC-C报告模板_英文版.doc', templates: [{ enabled: true }] },
+        { id: 3, name: '简版', isDefault: false, file: 'PVC-C报告模板_简版.doc', templates: [{ enabled: true }] }
+      ]
+    };
+
+    var TESTS = '颜色、外观、尺寸、密度、环刚度、压扁试验、落锤冲击、维卡软化、密度测定、拉伸屈服应力、断裂伸长率、热老化';
+
+    var SPECIMENS = [
+      { id: 's1', specimenId: 'SCZN202508/0009-0101', templateKey: 'pvc-c', name: '实壁塑料电缆导管', model: 'PVC-C', category: '电力物资类', categoryPath: ['电力物资类', 'WZ电网物资'] },
+      { id: 's2', specimenId: 'SCZN202508/0009-0102', templateKey: 'pvc-c', name: '实壁塑料电缆导管', model: 'PVC-C', category: '电力物资类', categoryPath: ['电力物资类', 'WZ电网物资'] },
+      { id: 's3', specimenId: 'SCZN202508/0009-0103', templateKey: 'pvc-c', name: '实壁塑料电缆导管', model: 'PVC-C', category: '电力物资类', categoryPath: ['电力物资类', 'WZ电网物资'] }
+    ];
+
+    var reportFiles = [];
+    var reportFileNextId = 1;
+    var modalSelectedVariants = {};
+
+    function renderSpecimens() {
+      document.getElementById('specimenBody').innerHTML = SPECIMENS.map(function (s, i) {
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2"><input type="checkbox" class="specimen-check" data-id="' + s.id + '" ' + (i < 2 ? 'checked' : '') + ' onchange="onSpecimenCheckChange()" /></td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + s.specimenId + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2 specimen-tests">' + TESTS + '</td></tr>';
+      }).join('');
+      applyDefaultExportMode();
+    }
+
+    function getCheckedSpecimens() {
+      var ids = [];
+      document.querySelectorAll('.specimen-check:checked').forEach(function (el) { ids.push(el.getAttribute('data-id')); });
+      return SPECIMENS.filter(function (s) { return ids.indexOf(s.id) >= 0; });
+    }
+
+    function getPageExportMode() {
+      var el = document.querySelector('input[name="pageExportMode"]:checked');
+      return el ? el.value : 'model-batch';
+    }
+
+    function applyDefaultExportMode() {
+      var checked = getCheckedSpecimens();
+      if (!checked.length) return;
+      var modeKey = ReportExport.resolveDefaultExportModeForSpecimens(checked, REPORT_EXPORT_RULES);
+      var radio = document.querySelector('input[name="pageExportMode"][value="' + modeKey + '"]');
+      if (radio) radio.checked = true;
+    }
+
+    function syncPageExportMode() { /* 页面单选与弹窗同步在打开弹窗时处理 */ }
+
+    function onSpecimenCheckChange() {
+      applyDefaultExportMode();
+    }
+
+    function toggleAllSpecimens(checked) {
+      document.querySelectorAll('.specimen-check').forEach(function (el) { el.checked = checked; });
+      applyDefaultExportMode();
+    }
+
+    function openGenerateModal() {
+      var checked = getCheckedSpecimens();
+      if (!checked.length) {
+        alert('请至少勾选一个试样');
+        return;
+      }
+      document.getElementById('modalCheckedCount').textContent = String(checked.length);
+
+      var exportMode = getPageExportMode();
+      document.getElementById('modalExportModes').innerHTML = ReportExport.REPORT_EXPORT_MODES.map(function (m) {
+        return '<label class="flex items-center gap-2"><input type="radio" name="modalExportMode" value="' + m.key + '" ' +
+          (m.key === exportMode ? 'checked' : '') + ' onchange="updateModalPreview()" /> ' + m.label + '</label>';
+      }).join('');
+
+      var templateKeys = {};
+      checked.forEach(function (s) { templateKeys[s.templateKey] = true; });
+      modalSelectedVariants = {};
+      var blocks = '';
+      Object.keys(templateKeys).forEach(function (key) {
+        var variants = ReportExport.getVariantsForModel(TEMPLATE_INDEX, key);
+        var def = ReportExport.getDefaultVariant(TEMPLATE_INDEX, key);
+        modalSelectedVariants[key] = def ? def.id : '';
+        var sampleLabel = checked.filter(function (c) { return c.templateKey === key; })[0];
+        var label = sampleLabel.name + (sampleLabel.model ? ' - ' + sampleLabel.model : '');
+        blocks += '<div class="rounded border border-slate-200 p-3"><div class="mb-2 text-slate-600">' + label + '</div>' +
+          '<select class="w-full rounded border border-slate-300 px-3 py-2" data-template-key="' + key + '" onchange="onModalVariantChange(this)">' +
+          variants.map(function (v) {
+            return '<option value="' + v.id + '"' + (def && v.id === def.id ? ' selected' : '') + '>' + v.name + (v.isDefault ? '（默认）' : '') + '</option>';
+          }).join('') +
+          (variants.length ? '' : '<option value="">— 无可用变体 —</option>') +
+          '</select></div>';
+      });
+      document.getElementById('modalVariantBlocks').innerHTML = blocks;
+      updateModalPreview();
+
+      var modal = document.getElementById('generateModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeGenerateModal() {
+      var modal = document.getElementById('generateModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function onModalVariantChange(sel) {
+      modalSelectedVariants[sel.getAttribute('data-template-key')] = sel.value;
+      updateModalPreview();
+    }
+
+    function getModalExportMode() {
+      var el = document.querySelector('input[name="modalExportMode"]:checked');
+      return el ? el.value : getPageExportMode();
+    }
+
+    function updateModalPreview() {
+      var checked = getCheckedSpecimens();
+      var files = ReportExport.buildReportFilePreview(ENTRUST_CODE, checked, getModalExportMode(), modalSelectedVariants, TEMPLATE_INDEX);
+      document.getElementById('modalPreviewCount').textContent = String(files.length);
+    }
+
+    function confirmGenerate() {
+      var checked = getCheckedSpecimens();
+      var exportMode = getModalExportMode();
+      var files = ReportExport.buildReportFilePreview(ENTRUST_CODE, checked, exportMode, modalSelectedVariants, TEMPLATE_INDEX);
+
+      var blocked = files.filter(function (f) { return f.status === 'missing-template'; });
+      if (blocked.length) {
+        alert(blocked[0].statusMessage);
+        return;
+      }
+
+      var pageRadio = document.querySelector('input[name="pageExportMode"][value="' + exportMode + '"]');
+      if (pageRadio) pageRadio.checked = true;
+
+      var now = new Date();
+      var ts = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+      files.forEach(function (f) {
+        reportFiles.unshift({
+          id: reportFileNextId++,
+          reportNo: 'BG' + ENTRUST_CODE.replace(/\//g, '') + '-' + String(reportFileNextId).padStart(3, '0'),
+          specimenIds: f.specimenIds,
+          fileName: f.fileName,
+          createdAt: ts,
+          modifiedAt: ts,
+          variantName: f.templateVariantName
+        });
+      });
+
+      renderReportFiles();
+      closeGenerateModal();
+      alert('已生成 ' + files.length + ' 份报告（原型演示）');
+    }
+
+    function renderReportFiles() {
+      var tbody = document.getElementById('reportFileBody');
+      if (!reportFiles.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="border border-slate-200 px-3 py-6 text-center text-slate-400">暂无报告，请勾选试样后生成</td></tr>';
+        return;
+      }
+      tbody.innerHTML = reportFiles.map(function (row, i) {
+        var spec = row.specimenIds.length > 1 ? row.specimenIds.join('、') : (row.specimenIds[0] || '—');
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + row.reportNo + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + spec + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="return false;">' + row.fileName + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + row.createdAt + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2" id="modTime-' + row.id + '">' + row.modifiedAt + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' +
+          '<button class="text-blue-600 hover:underline" onclick="addReportImage(' + row.id + ')">添加报告图片</button> ' +
+          '<button class="ml-2 text-blue-600 hover:underline" onclick="exportPdf(' + row.id + ')">导出 pdf</button></td></tr>';
+      }).join('');
+    }
+
+    function addReportImage(id) {
+      alert('打开 PageOffice 弹窗，手动复制粘贴报告图片（原型演示）');
+      var now = new Date();
+      var ts = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+      var row = reportFiles.filter(function (r) { return r.id === id; })[0];
+      if (row) {
+        row.modifiedAt = ts;
+        var cell = document.getElementById('modTime-' + id);
+        if (cell) cell.textContent = ts;
+      }
+    }
+
+    function exportPdf(id) {
+      var row = reportFiles.filter(function (r) { return r.id === id; })[0];
+      alert('导出 PDF：' + (row ? row.fileName.replace('.docx', '.pdf') : '') + '（原型演示）');
+    }
+
+    renderSpecimens();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.register([
+        { id: 'rc-product-mark', selector: '[data-annotate="product-mark"]', position: 'right', title: '产品标识', content: '展示产品标识的实际值。', tag: '报告编制编辑' },
+        { id: 'rc-export-mode', selector: '[data-annotate="export-mode"]', position: 'top-left', title: '导出方式', content: '预填「业务流程配置 › 报告设置」中的默认导出模式，编制员可修改。', tag: '报告编制编辑' },
+        { id: 'rc-generate', selector: '[data-annotate="btn-generate"]', position: 'top', title: '生成报告', content: '勾选试样后点击，弹出确认弹窗：预填默认导出方式与默认模版变体，均可修改。缺模版时阻断并提示。', tag: '报告编制编辑' },
+        { id: 'rc-files', selector: '[data-annotate="report-files"]', position: 'top-left', title: '报告文件', wide: true, content: '展示已生成报告；「添加报告图片」在生成后、提交前可用（PageOffice）；添加后更新修改时间。', tag: '报告编制编辑' },
+        { id: 'rc-confirm', selector: '[data-annotate="confirm-generate"]', position: 'left', title: '确认生成', content: '校验模版完整性后生成 Word 报告并写入下方列表。', tag: '报告编制编辑' }
+      ]);
+    }
+  </script>
+</body>
+</html>
