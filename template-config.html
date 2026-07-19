@@ -1105,7 +1105,7 @@
     function getCombinedRowVirtual(bindType, bindTarget) {
       var existing = findCombinedRecord(bindType, bindTarget);
       if (existing) return existing;
-      return { id: null, bindType: bindType, bindTarget: bindTarget, bindLabel: getReportTreeModelLabel(bindTarget), file: null, configured: false, templates: [] };
+      return { id: null, bindType: bindType, bindTarget: bindTarget, bindLabel: bindType === 'model' ? getBodySampleDisplay(bindTarget) : getReportTreeModelLabel(bindTarget), file: null, configured: false, templates: [] };
     }
 
     function collectCombinedRowsInScope(treeId) {
@@ -1732,21 +1732,14 @@
       if (combinedSectionSub) combinedSectionSub.textContent = RECORD_COMBINED_SECTION_SUB;
       panel.classList.remove('hidden');
       panel.className = 'px-4 pb-2';
+      var scopeRows = sortCombinedScopeRows(collectCombinedRowsInScope(state.treeId));
       var tbody = '';
-      if (kind === 'category') {
-        var scopeRows = sortCombinedScopeRows(collectCombinedRowsInScope(state.treeId));
-        if (!scopeRows.length) {
-          tbody = '<tr class="row-combined row-info"><td colspan="5">' +
-            '分类层不支持上传组合模版。请在<strong>样品层</strong>或<strong>型号层</strong>上传；一份 Word 含绑定范围内全部试验项。' +
-            '适用：' + RECORD_COMBINED_APPLY_MODES + '（导出时自动解析型号 → 样品）。</td></tr>';
-        } else {
-          tbody = scopeRows.map(renderCombinedTableRow).join('');
-        }
+      if (kind === 'category' && !scopeRows.length) {
+        tbody = '<tr class="row-combined row-info"><td colspan="5">' +
+          '分类层不支持上传组合模版。请在<strong>样品层</strong>或<strong>型号层</strong>上传；一份 Word 含绑定范围内全部试验项。' +
+          '适用：' + RECORD_COMBINED_APPLY_MODES + '（导出时自动解析型号 → 样品）。</td></tr>';
       } else {
-        var bindType = kind === 'sample' ? 'sample' : 'model';
-        var bindTarget = state.treeId;
-        var row = getCombinedRowVirtual(bindType, bindTarget);
-        tbody = renderCombinedTableRow(row);
+        tbody = scopeRows.map(renderCombinedTableRow).join('');
       }
       panel.innerHTML = combinedTableShell(tbody);
     }
