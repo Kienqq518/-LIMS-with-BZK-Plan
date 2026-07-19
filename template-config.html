@@ -1077,27 +1077,20 @@
     }
 
     function buildRecordDisplayRows(treeId) {
-      var combined = collectCombinedRowsInScope(treeId).map(function (r) {
-        return { rowType: 'combined', data: r };
-      });
       var tests = getRecordTestRowsInScope(treeId).map(function (r) {
         return { rowType: 'test', data: r };
       });
       var kind = getSelectedNodeKind(treeId);
-      if (kind !== 'sample') return combined.concat(tests);
+      if (kind !== 'sample') return tests;
       var out = [];
       var modelOrder = collectModelIdsUnderNode(treeId, getMarkedReportTree()) || [];
       modelOrder.forEach(function (mid) {
-        var modelCombined = combined.filter(function (x) { return x.data.bindType === 'model' && x.data.bindTarget === mid; });
         var modelTests = tests.filter(function (x) { return x.data.tree === mid; });
-        if (!modelCombined.length && !modelTests.length) return;
+        if (!modelTests.length) return;
         var configured = modelTests.filter(function (x) { return x.data.configured; }).length;
         out.push({ rowType: 'group', modelId: mid, label: getBodySampleDisplay(mid), stats: configured + '/' + modelTests.length });
-        modelCombined.forEach(function (x) { out.push(x); });
         modelTests.forEach(function (x) { out.push(x); });
       });
-      var sampleCombined = combined.filter(function (x) { return x.data.bindType === 'sample'; });
-      sampleCombined.forEach(function (x) { out.unshift(x); });
       return out;
     }
 
@@ -1380,7 +1373,6 @@
       } else if (state.main === 'record') {
         el.className = 'tpl-toolbar tpl-toolbar-record';
         el.innerHTML =
-          '<label>模版类型</label><select id="f_rowType"><option value="">全部</option><option value="combined">组合模版</option><option value="test">试验项模版</option></select>' +
           '<label>是否配置模板</label><select id="f_configured"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select>' +
           '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
           '<label>试验项</label><input id="f_test" placeholder="请输入" />' +
@@ -1417,7 +1409,6 @@
       var content = document.getElementById('f_content');
       var configured = document.getElementById('f_configured');
       var bindType = document.getElementById('f_bindType');
-      var rowType = document.getElementById('f_rowType');
       if (name && name.value.trim()) rows = rows.filter(function (r) {
         if (state.main === 'record') {
           if (r.rowType !== 'test') return false;
@@ -1428,7 +1419,6 @@
       if (sample && sample.value.trim()) rows = rows.filter(function (r) {
         if (state.main === 'record') {
           if (r.rowType === 'group') return r.label.includes(sample.value.trim());
-          if (r.rowType === 'combined') return (r.data.bindLabel || getBodySampleDisplay(r.data.bindTarget)).includes(sample.value.trim());
           return getBodySampleDisplay(r.data.tree).includes(sample.value.trim());
         }
         if (state.main === 'report' && state.sub === 'body') return getBodySampleDisplay(r.tree).includes(sample.value.trim());
@@ -1448,7 +1438,6 @@
       });
       if (test && test.value.trim()) rows = rows.filter(function (r) {
         if (state.main === 'record') {
-          if (r.rowType === 'combined') return '全部试验项'.includes(test.value.trim());
           if (r.rowType !== 'test') return false;
           return (r.data.test || '').includes(test.value.trim());
         }
@@ -1464,14 +1453,6 @@
       });
       if (content && content.value) rows = rows.filter(function (r) { return (r.contentStyle || r.content) === content.value; });
       if (bindType && bindType.value) rows = rows.filter(function (r) { return r.bindType === bindType.value; });
-      if (rowType && rowType.value && state.main === 'record') {
-        rows = rows.filter(function (r) {
-          if (r.rowType === 'group') return true;
-          if (rowType.value === 'combined') return r.rowType === 'combined';
-          if (rowType.value === 'test') return r.rowType === 'test';
-          return true;
-        });
-      }
       if (configured && configured.value === 'yes') rows = rows.filter(function (r) {
         if (state.main === 'record') {
           if (r.rowType === 'group') return false;
@@ -1588,30 +1569,21 @@
         }).join('');
       } else if (state.main === 'record') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin');
-        head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th>序号</th><th>模版类型</th><th>绑定层级</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>模板文件</th><th class="cell-ops">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th>序号</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>模板文件</th><th class="cell-ops">操作</th></tr>';
         var seq = 0;
         body.innerHTML = rows.map(function (row) {
           if (row.rowType === 'group') {
-            return '<tr class="row-group" onclick="selectTree(\'' + row.modelId + '\')"><td></td><td colspan="8">' +
+            return '<tr class="row-group" onclick="selectTree(\'' + row.modelId + '\')"><td></td><td colspan="6">' +
               escHtml(row.label) + ' <span class="text-slate-400">（试验项 ' + row.stats + ' 已配）</span></td></tr>';
           }
           seq++;
-          if (row.rowType === 'combined') {
-            var cr = row.data;
-            var categoryPath = getBodyCategoryPath(cr.bindTarget);
-            var sampleDisplay = cr.bindType === 'model' ? getBodySampleDisplay(cr.bindTarget) : cr.bindLabel;
-            return '<tr class="row-combined" onclick="selectTree(\'' + cr.bindTarget + '\')"><td><input type="checkbox" onclick="event.stopPropagation()" /></td><td>' + seq + '</td>' +
-              '<td>组合模版</td><td>' + combinedBindLevelLabel(cr.bindType) + '</td><td class="cell-sample-name">' + escHtml(sampleDisplay) + '</td>' +
-              '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td><td>全部试验项</td>' +
-              '<td>' + combinedFileCell(cr) + '</td><td class="cell-ops" onclick="event.stopPropagation()">' + combinedOps(cr) + '</td></tr>';
-          }
           var r = row.data;
           var fileCell = r.file
             ? '<span class="link">' + r.file + '</span>' + (r.templates && r.templates.length > 1 ? '<span class="badge-enabled">启用中</span>' : '')
             : '<span class="badge-none">未上传</span>';
           var sampleDisplay2 = getBodySampleDisplay(r.tree);
           var categoryPath2 = getBodyCategoryPath(r.tree);
-          return '<tr><td><input type="checkbox" /></td><td>' + seq + '</td><td>试验项模版</td><td>—</td><td class="cell-sample-name">' + sampleDisplay2 + '</td>' +
+          return '<tr><td><input type="checkbox" /></td><td>' + seq + '</td><td class="cell-sample-name">' + sampleDisplay2 + '</td>' +
             '<td><div class="cell-category-path" title="' + escHtml(categoryPath2) + '">' + categoryPath2 + '</div></td><td>' + r.test + '</td>' +
             '<td>' + fileCell + '</td><td class="cell-ops">' + recordOps(r) + '</td></tr>';
         }).join('');
@@ -1712,8 +1684,6 @@
       if (c) c.value = '';
       var cfg = document.getElementById('f_configured');
       if (cfg) cfg.value = '';
-      var rowTypeEl = document.getElementById('f_rowType');
-      if (rowTypeEl) rowTypeEl.value = '';
       renderView();
     }
 
@@ -3167,7 +3137,7 @@
         { id: 'record-config', selector: '[data-annotate="record-config"]', position: 'top-right', title: '版本管理', wide: true, content: '同一试验项可存多个模板版本，通过单选启用其中一个；<strong>新上传/复制的版本默认启用最新版</strong>，有文件则必有一版启用。弹窗内可上传、复制其他项、修改文件名；含「上传人」列。删除版本不受是否启用影响。', tag: '记录单' },
         { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 插件打开编辑窗口：左侧为 Word 模板预览区，右侧为配置字段面板（检测中心信息、合同信息、报告信息、设备信息、样品信息、试验结果集）。记录单与报告模板左侧内容不同。', tag: '模板配置' },
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
-        { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '记录单列表', wide: true, content: '统一展示<strong>组合模版</strong>与<strong>试验项模版</strong>行，含模版类型列；筛选对两类行均生效。样品层选中时按型号分组。', tag: '记录单' },
+        { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '试验项模版列表', wide: true, content: '仅展示<strong>试验项单模版</strong>；组合模版在上方卡片区域管理。样品层选中时按型号分组。', tag: '记录单' },
         { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '未上传模板的试验项可从其他样品/试验项复制已有模板；版本弹窗内亦提供「复制其他项」，交互与正文模板版本弹窗一致。', tag: '记录单' },
         { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出模版逻辑', wide: true, content: '支持样品层/型号层<strong>组合模版</strong>与各<strong>试验项单模版</strong>并存。「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」优先本型号组合模版，否则上级样品组合模版，否则试验项动态拼接；切分类两种模式始终用试验项单模版。UI 仅显示 xxx.docx/未上传，继承在导出时自动解析。', tag: '产品逻辑' },
         { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版卡片', wide: true, content: '样品层/型号层可上传一份含全部试验项的组合模版。分类层仅展示说明。模版文件列仅显示文件名或「未上传」，不展示继承状态。', tag: '记录单' },
