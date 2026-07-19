@@ -116,17 +116,22 @@
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
       overflow: hidden; word-break: break-all; font-size: 12px; color: #475569;
     }
-    .combined-tpl-table .cell-combined-bind {
+    .combined-tpl-table .cell-combined-bind,
+    .record-tpl-table .cell-record-sample {
       width: 300px; min-width: 300px; max-width: 360px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .combined-tpl-table .cell-ops-tight {
+    .combined-tpl-table .cell-ops-tight,
+    .record-tpl-table .cell-ops-tight {
       width: 1%; min-width: 0; max-width: none;
       white-space: nowrap; vertical-align: middle;
       padding: 6px 8px !important;
     }
-    .combined-tpl-table .cell-ops-tight button { font-size: 12px; padding: 0; line-height: 1.4; }
-    .combined-tpl-table .cell-ops-tight .op-sep { display: inline-block; width: 1px; }
+    .combined-tpl-table .cell-ops-tight button,
+    .record-tpl-table .cell-ops-tight button { font-size: 12px; padding: 0; line-height: 1.4; }
+    .combined-tpl-table .cell-ops-tight .op-sep,
+    .record-tpl-table .cell-ops-tight .op-sep { display: inline-block; width: 1px; }
+    .record-tpl-table .cell-record-file { width: 168px; min-width: 168px; white-space: nowrap; }
     .public-file-preview { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .public-file-preview .file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .public-file-preview .file-del { flex-shrink: 0; color: #ef4444; cursor: pointer; padding: 4px 6px; border: none; background: transparent; }
@@ -447,7 +452,7 @@
           <label id="rc_testLabel">试验项</label><input id="rc_test" placeholder="请输入" />
           <button onclick="renderRecordCopyTable()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>
         </div>
-        <table class="tpl-table">
+        <table id="recordCopyTable" class="tpl-table">
           <thead id="recordCopyTableHead"></thead>
           <tbody id="recordCopyTableBody"></tbody>
         </table>
@@ -1678,6 +1683,7 @@
       };
 
       if (state.main === 'report' && state.sub === 'body') {
+        document.getElementById('dataTable').classList.remove('record-tpl-table');
         document.getElementById('dataTable').classList.add('tpl-table-pin');
         head.innerHTML = '<tr><th class="cell-seq">序号</th><th class="cell-tpl-name">模板名称</th><th class="cell-sample-name">样品名称(型号)</th><th style="width:240px">样品分类</th><th class="cell-default">默认</th><th class="cell-version">当前启用版本</th><th class="cell-public-ref">引用公共模版头</th><th class="cell-public-ref">引用公共模版尾</th><th class="cell-ops">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
@@ -1695,7 +1701,7 @@
             '<td class="cell-ops whitespace-nowrap">' + bodyOps(r) + '</td></tr>';
         }).join('');
       } else if (state.main === 'report' && state.sub === 'public') {
-        document.getElementById('dataTable').classList.remove('tpl-table-pin');
+        document.getElementById('dataTable').classList.remove('tpl-table-pin', 'record-tpl-table');
         head.innerHTML = '<tr data-annotate="public-table"><th>序号</th><th>模版内容样式</th><th style="width:280px">关联绑定</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           return '<tr><td>' + (i + 1) + '</td><td>' + r.contentStyle + '</td><td>' + publicBindDisplay(r) + '</td>' +
@@ -1703,7 +1709,8 @@
         }).join('');
       } else if (state.main === 'record') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin');
-        head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th style="width:48px">序号</th><th class="cell-sample-name">样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>模板文件</th><th class="cell-ops">操作</th></tr>';
+        document.getElementById('dataTable').classList.add('record-tpl-table');
+        head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th style="width:48px">序号</th><th class="cell-record-sample">样品名称(型号)</th><th style="width:240px">样品分类</th><th style="width:88px">试验项</th><th class="cell-record-file">模板文件</th><th class="cell-ops-tight">操作</th></tr>';
         var seq = 0;
         body.innerHTML = rows.map(function (row) {
           if (row.rowType === 'group') {
@@ -1717,9 +1724,9 @@
             : '<span class="badge-none">未上传</span>';
           var sampleDisplay2 = getBodySampleDisplay(r.tree);
           var categoryPath2 = getBodyCategoryPath(r.tree);
-          return '<tr><td><input type="checkbox" /></td><td>' + seq + '</td><td class="cell-sample-name">' + sampleDisplay2 + '</td>' +
+          return '<tr><td><input type="checkbox" /></td><td>' + seq + '</td><td class="cell-record-sample">' + sampleDisplay2 + '</td>' +
             '<td><div class="cell-category-path" title="' + escHtml(categoryPath2) + '">' + categoryPath2 + '</div></td><td>' + r.test + '</td>' +
-            '<td>' + fileCell + '</td><td class="cell-ops">' + recordOps(r) + '</td></tr>';
+            '<td class="cell-record-file">' + fileCell + '</td><td class="cell-ops-tight">' + recordOps(r) + '</td></tr>';
         }).join('');
         document.getElementById('pageTotal').textContent = '共 ' + seq + ' 条';
         return;
@@ -2617,12 +2624,15 @@
       if (head) {
         head.innerHTML = isCombined
           ? combinedTableHeadHtml(true)
-          : '<tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>操作</th></tr>';
+          : '<tr><th style="width:40px"></th><th style="width:48px">序号</th><th class="cell-record-file">模板文件</th><th class="cell-record-sample">样品名称(型号)</th><th style="width:240px">样品分类</th><th style="width:88px">试验项</th><th class="cell-ops-tight">操作</th></tr>';
       }
       var testLabel = document.getElementById('rc_testLabel');
       var testInput = document.getElementById('rc_test');
       var copyTable = document.getElementById('recordCopyTable');
-      if (copyTable) copyTable.classList.toggle('combined-tpl-table', isCombined);
+      if (copyTable) {
+        copyTable.classList.toggle('combined-tpl-table', isCombined);
+        copyTable.classList.toggle('record-tpl-table', !isCombined);
+      }
       if (testLabel) testLabel.classList.toggle('hidden', isCombined);
       if (testInput) testInput.classList.toggle('hidden', isCombined);
     }
@@ -2661,10 +2671,10 @@
         }
         var categoryPath2 = getBodyCategoryPath(r.tree);
         return '<tr><td><input type="radio" name="recordCopyPick" value="' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
-          '<td>' + r.file + '</td><td class="cell-sample-name">' + getBodySampleDisplay(r.tree) + '</td>' +
+          '<td class="cell-record-file">' + r.file + '</td><td class="cell-record-sample">' + getBodySampleDisplay(r.tree) + '</td>' +
           '<td><div class="cell-category-path" title="' + escHtml(categoryPath2) + '">' + categoryPath2 + '</div></td>' +
           '<td>' + r.test + '</td>' +
-          '<td><button type="button" onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button></td></tr>';
+          '<td class="cell-ops-tight"><button type="button" onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button></td></tr>';
       }).join('') || '<tr><td colspan="7" class="py-6 text-center text-slate-400">暂无可复制的记录单模板</td></tr>';
     }
 
