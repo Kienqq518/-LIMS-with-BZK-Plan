@@ -1383,7 +1383,6 @@
           '<label>模版类型</label><select id="f_rowType"><option value="">全部</option><option value="combined">组合模版</option><option value="test">试验项模版</option></select>' +
           '<label>是否配置模板</label><select id="f_configured"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select>' +
           '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
-          '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
           '<label>试验项</label><input id="f_test" placeholder="请输入" />' +
           '<label>文件名</label><input id="f_file" placeholder="请输入" />' +
           '<div class="tpl-toolbar-query">' +
@@ -1444,11 +1443,6 @@
         if (state.main === 'report' && state.sub === 'public') {
           var catText = r.bindType === 'sample' ? getBodyCategoryPath(r.bindValue) : (r.bindLabel || '');
           return catText.includes(category.value.trim());
-        }
-        if (state.main === 'record') {
-          if (r.rowType === 'group') return getBodyCategoryPath(r.modelId).includes(category.value.trim());
-          if (r.rowType === 'combined') return getBodyCategoryPath(r.data.bindTarget).includes(category.value.trim());
-          return getBodyCategoryPath(r.data.tree).includes(category.value.trim());
         }
         return (r.category || r.bindLabel || '').includes(category.value.trim());
       });
