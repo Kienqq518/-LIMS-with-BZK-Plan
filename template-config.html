@@ -1721,12 +1721,17 @@
         return;
       }
       sectionHead.classList.remove('hidden');
-      combinedSectionHead.classList.remove('hidden');
       if (sectionSub) sectionSub.textContent = RECORD_TABLE_SECTION_SUB;
+      var kind = getSelectedNodeKind(state.treeId);
+      if (kind === 'test-item') {
+        panel.classList.add('hidden');
+        combinedSectionHead.classList.add('hidden');
+        return;
+      }
+      combinedSectionHead.classList.remove('hidden');
       if (combinedSectionSub) combinedSectionSub.textContent = RECORD_COMBINED_SECTION_SUB;
       panel.classList.remove('hidden');
       panel.className = 'px-4 pb-2';
-      var kind = getSelectedNodeKind(state.treeId);
       var tbody = '';
       if (kind === 'category') {
         var scopeRows = sortCombinedScopeRows(collectCombinedRowsInScope(state.treeId));
@@ -1737,15 +1742,6 @@
         } else {
           tbody = scopeRows.map(renderCombinedTableRow).join('');
         }
-      } else if (kind === 'test-item') {
-        var testRow = findRecord(parseInt(String(state.treeId).replace('test-', ''), 10));
-        var modelCombined = testRow ? getCombinedRowVirtual('model', testRow.tree) : null;
-        var sampleDisplay = getBodySampleDisplay(testRow ? testRow.tree : '');
-        tbody = '<tr class="row-combined">' +
-          '<td>型号层</td><td class="cell-sample-name">' + escHtml(sampleDisplay) + '</td>' +
-          '<td class="text-slate-400">—</td>' +
-          '<td>' + (modelCombined ? combinedFileCell(modelCombined) : '<span class="badge-none">未上传</span>') + '</td>' +
-          '<td class="cell-ops"><span class="text-slate-400 text-xs">请在型号层配置</span></td></tr>';
       } else {
         var bindType = kind === 'sample' ? 'sample' : 'model';
         var bindTarget = state.treeId;
