@@ -1,6 +1,6 @@
 /**
  * 记录单导出 · 配置驱动预览逻辑（原型共享）
- * 设计依据：docs/superpowers/specs/2026-07-17-record-sheet-config-flow-design.md
+ * 设计依据：docs/superpowers/specs/2026-07-19-record-combined-template-design.md
  */
 (function (global) {
   var RECORD_MODES = [

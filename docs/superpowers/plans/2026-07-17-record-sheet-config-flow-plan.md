@@ -30,8 +30,8 @@ Task 2 可内联于 `test-detect-edit.html`（原型体量小）；若逻辑超�
 var RECORD_MODES = [
   { key: 'model-all',   label: '单种样品所有试验生成一份文件', dim: 'model', split: 'all' },
   { key: 'model-each',  label: '单种样品单种试验生成一份文件', dim: 'model', split: 'each' },
-  { key: 'specimen-all', label: '单个试样所有试验生成一份文件', dim: 'specimen', split: 'all' },
-  { key: 'specimen-each', label: '单个试样单种试验生成一份文件', dim: 'specimen', split: 'each' }
+  { key: 'specimen-all', label: '单个样品所有试验生成一份文件', dim: 'specimen', split: 'all' },
+  { key: 'specimen-each', label: '单个样品单种试验生成一份文件', dim: 'specimen', split: 'each' }
 ];
 
 var RECORD_DATA = [
