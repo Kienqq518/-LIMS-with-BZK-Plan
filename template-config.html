@@ -140,15 +140,7 @@
     .upload-zone { border: 1px dashed #cbd5e1; border-radius: 6px; padding: 28px; text-align: center; color: #64748b; background: #f8fafc; cursor: pointer; }
     .upload-zone i { font-size: 28px; color: #94a3b8; margin-bottom: 8px; }
     .info-bar { margin: 12px 16px; padding: 10px 14px; border-radius: 4px; background: #fffbeb; border: 1px solid #fde68a; font-size: 12px; color: #92400e; line-height: 1.6; }
-    .combined-panel { margin: 12px 16px 0; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
-    .combined-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-    .combined-panel-title { font-size: 14px; font-weight: 600; color: #334155; }
-    .combined-panel-meta { font-size: 12px; color: #64748b; line-height: 1.6; margin-bottom: 10px; }
-    .combined-panel-file { font-size: 13px; margin-bottom: 10px; }
-    .combined-panel-ops { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; }
-    .combined-panel-ops button { font-size: 12px; }
-    .combined-panel-ops button:disabled { color: #94a3b8; cursor: not-allowed; }
-    .combined-fold { margin: 12px 16px 0; padding: 8px 12px; border: 1px dashed #cbd5e1; border-radius: 6px; background: #fff; font-size: 12px; color: #64748b; }
+    .tpl-table tr.row-combined.row-info td { background: #f8fafc; color: #64748b; font-size: 12px; line-height: 1.6; }
     .record-section-head { padding: 8px 16px 4px; }
     .record-section-head .title { font-size: 14px; font-weight: 600; color: #334155; }
     .record-section-head .sub { font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 2px; }
@@ -350,6 +342,10 @@
       </aside>
       <div class="tpl-main">
         <div class="tpl-toolbar" id="toolbar"></div>
+        <div id="recordCombinedSectionHead" class="record-section-head hidden">
+          <div class="title">组合记录单模版</div>
+          <div class="sub" id="recordCombinedSectionSub"></div>
+        </div>
         <div id="combinedTemplatePanel" class="hidden"></div>
         <div id="recordTableSectionHead" class="record-section-head hidden">
           <div class="title">试验项模版</div>
@@ -914,6 +910,8 @@
     ];
 
     var RECORD_TABLE_SECTION_SUB = '用于「单种样品单种试验生成一份文件」「单个样品单种试验生成一份文件」；「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」无本型号/上级样品组合模版时，按试验项单模版动态拼接。';
+    var RECORD_COMBINED_SECTION_SUB = '用于「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」。分类层不支持上传，请在样品层或型号层配置；导出时自动解析型号 → 样品。';
+    var RECORD_COMBINED_APPLY_MODES = '「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」';
 
     function isSampleTreeNode(node) {
       return !!(node && (node.sample || (node.children && node.children.some(function (c) { return c.model; }))));
@@ -972,6 +970,27 @@
       if (bindType === 'sample') return '样品层';
       if (bindType === 'model') return '型号层';
       return '—';
+    }
+
+    function combinedCoverageLabel(bindType, bindTarget) {
+      var modelCount = (collectModelIdsUnderNode(bindTarget, getMarkedReportTree()) || []).length || 1;
+      var testCount = bindType === 'model'
+        ? RECORD_DATA.filter(function (r) { return r.tree === bindTarget; }).length
+        : (collectModelIdsUnderNode(bindTarget, getMarkedReportTree()) || []).reduce(function (n, mid) {
+          return n + RECORD_DATA.filter(function (r) { return r.tree === mid; }).length;
+        }, 0);
+      if (bindType === 'sample') return modelCount + ' 个型号 · 共 ' + testCount + ' 项试验';
+      return testCount + ' 项试验';
+    }
+
+    function combinedTableHeadHtml() {
+      return '<tr><th style="width:88px">绑定层级</th><th style="width:200px">绑定对象</th><th style="width:180px">覆盖范围</th><th>适用模式</th><th style="width:200px">模板文件</th><th class="cell-ops">操作</th></tr>';
+    }
+
+    function combinedTableShell(tbodyHtml) {
+      return '<div class="tpl-table-scroll overflow-x-auto">' +
+        '<table class="tpl-table" data-annotate="record-combined-panel">' +
+        '<thead>' + combinedTableHeadHtml() + '</thead><tbody>' + tbodyHtml + '</tbody></table></div>';
     }
 
     function collectSampleNodesUnder(node) {
@@ -1596,52 +1615,50 @@
     function renderCombinedPanel() {
       var panel = document.getElementById('combinedTemplatePanel');
       var sectionHead = document.getElementById('recordTableSectionHead');
+      var combinedSectionHead = document.getElementById('recordCombinedSectionHead');
+      var combinedSectionSub = document.getElementById('recordCombinedSectionSub');
       var sectionSub = document.getElementById('recordTableSectionSub');
       if (!panel || state.main !== 'record') {
         if (panel) panel.classList.add('hidden');
         if (sectionHead) sectionHead.classList.add('hidden');
+        if (combinedSectionHead) combinedSectionHead.classList.add('hidden');
         return;
       }
       sectionHead.classList.remove('hidden');
+      combinedSectionHead.classList.remove('hidden');
       if (sectionSub) sectionSub.textContent = RECORD_TABLE_SECTION_SUB;
+      if (combinedSectionSub) combinedSectionSub.textContent = RECORD_COMBINED_SECTION_SUB;
+      panel.classList.remove('hidden');
+      panel.className = 'px-4 pb-2';
       var kind = getSelectedNodeKind(state.treeId);
+      var tbody = '';
       if (kind === 'category') {
-        panel.classList.remove('hidden');
-        panel.className = 'combined-panel';
-        panel.setAttribute('data-annotate', 'record-combined-panel');
-        panel.innerHTML = '<div class="combined-panel-head"><span class="combined-panel-title">组合记录单模版</span></div>' +
-          '<div class="combined-panel-meta">分类层不支持上传组合模版。请在<strong>样品层</strong>或<strong>型号层</strong>上传；一份 Word 含绑定范围内全部试验项。</div>' +
-          '<div class="combined-panel-meta">适用：「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」（导出时自动解析型号 → 样品）。</div>';
-        return;
-      }
-      if (kind === 'test-item') {
+        tbody = '<tr class="row-combined row-info"><td colspan="6">' +
+          '分类层不支持上传组合模版。请在<strong>样品层</strong>或<strong>型号层</strong>上传；一份 Word 含绑定范围内全部试验项。' +
+          '适用：' + RECORD_COMBINED_APPLY_MODES + '（导出时自动解析型号 → 样品）。</td></tr>';
+      } else if (kind === 'test-item') {
         var testRow = findRecord(parseInt(String(state.treeId).replace('test-', ''), 10));
         var modelCombined = testRow ? getCombinedRowVirtual('model', testRow.tree) : null;
-        panel.classList.remove('hidden');
-        panel.className = 'combined-fold';
-        panel.innerHTML = '<span>组合模版（' + escHtml(getBodySampleDisplay(testRow ? testRow.tree : '')) + '）：</span>' +
-          (modelCombined ? combinedFileCell(modelCombined) : '<span class="badge-none">未上传</span>');
-        return;
+        var sampleDisplay = getBodySampleDisplay(testRow ? testRow.tree : '');
+        tbody = '<tr class="row-combined">' +
+          '<td>型号层</td><td>' + escHtml(sampleDisplay) + '</td>' +
+          '<td class="text-slate-400">—</td>' +
+          '<td class="text-xs text-slate-500">' + RECORD_COMBINED_APPLY_MODES + '</td>' +
+          '<td>' + (modelCombined ? combinedFileCell(modelCombined) : '<span class="badge-none">未上传</span>') + '</td>' +
+          '<td class="cell-ops"><span class="text-slate-400 text-xs">请在型号层配置</span></td></tr>';
+      } else {
+        var bindType = kind === 'sample' ? 'sample' : 'model';
+        var bindTarget = state.treeId;
+        var row = getCombinedRowVirtual(bindType, bindTarget);
+        tbody = '<tr class="row-combined">' +
+          '<td>' + combinedBindLevelLabel(bindType) + '</td>' +
+          '<td>' + escHtml(row.bindLabel || getReportTreeModelLabel(bindTarget)) + '</td>' +
+          '<td>' + combinedCoverageLabel(bindType, bindTarget) + '</td>' +
+          '<td class="text-xs text-slate-500">' + RECORD_COMBINED_APPLY_MODES + '</td>' +
+          '<td>' + combinedFileCell(row) + '</td>' +
+          '<td class="cell-ops">' + combinedOps(row) + '</td></tr>';
       }
-      var bindType = kind === 'sample' ? 'sample' : 'model';
-      var bindTarget = state.treeId;
-      var row = getCombinedRowVirtual(bindType, bindTarget);
-      var modelCount = (collectModelIdsUnderNode(bindTarget, getMarkedReportTree()) || []).length || 1;
-      var testCount = bindType === 'model'
-        ? RECORD_DATA.filter(function (r) { return r.tree === bindTarget; }).length
-        : (collectModelIdsUnderNode(bindTarget, getMarkedReportTree()) || []).reduce(function (n, mid) {
-          return n + RECORD_DATA.filter(function (r) { return r.tree === mid; }).length;
-        }, 0);
-      panel.classList.remove('hidden');
-      panel.className = 'combined-panel';
-      panel.setAttribute('data-annotate', 'record-combined-panel');
-      panel.innerHTML =
-        '<div class="combined-panel-head"><span class="combined-panel-title">[' + combinedBindLevelLabel(bindType) + '] 组合记录单模版</span></div>' +
-        '<div class="combined-panel-meta">绑定：' + escHtml(row.bindLabel || getReportTreeModelLabel(bindTarget)) +
-          ' · 覆盖 ' + (bindType === 'sample' ? modelCount + ' 个型号 · 共 ' : '') + testCount + ' 项试验</div>' +
-        '<div class="combined-panel-meta">适用：「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」</div>' +
-        '<div class="combined-panel-file">模版文件：' + combinedFileCell(row) + '</div>' +
-        '<div class="combined-panel-ops">' + combinedOps(row) + '</div>';
+      panel.innerHTML = combinedTableShell(tbody);
     }
 
     function renderInfoBar() {
@@ -3137,10 +3154,10 @@
         { id: 'record-config', selector: '[data-annotate="record-config"]', position: 'top-right', title: '版本管理', wide: true, content: '同一试验项可存多个模板版本，通过单选启用其中一个；<strong>新上传/复制的版本默认启用最新版</strong>，有文件则必有一版启用。弹窗内可上传、复制其他项、修改文件名；含「上传人」列。删除版本不受是否启用影响。', tag: '记录单' },
         { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 插件打开编辑窗口：左侧为 Word 模板预览区，右侧为配置字段面板（检测中心信息、合同信息、报告信息、设备信息、样品信息、试验结果集）。记录单与报告模板左侧内容不同。', tag: '模板配置' },
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
-        { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '试验项模版列表', wide: true, content: '仅展示<strong>试验项单模版</strong>；组合模版在上方卡片区域管理。样品层选中时按型号分组。', tag: '记录单' },
+        { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '试验项模版列表', wide: true, content: '仅展示<strong>试验项单模版</strong>；组合模版在上方表格区域管理。样品层选中时按型号分组。', tag: '记录单' },
         { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '未上传模板的试验项可从其他样品/试验项复制已有模板；版本弹窗内亦提供「复制其他项」，交互与正文模板版本弹窗一致。', tag: '记录单' },
         { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出模版逻辑', wide: true, content: '支持样品层/型号层<strong>组合模版</strong>与各<strong>试验项单模版</strong>并存。「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」优先本型号组合模版，否则上级样品组合模版，否则试验项动态拼接；切分类两种模式始终用试验项单模版。UI 仅显示 xxx.docx/未上传，继承在导出时自动解析。', tag: '产品逻辑' },
-        { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版卡片', wide: true, content: '样品层/型号层可上传一份含全部试验项的组合模版。分类层仅展示说明。模版文件列仅显示文件名或「未上传」，不展示继承状态。', tag: '记录单' },
+        { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版表格', wide: true, content: '样品层/型号层可上传一份含全部试验项的组合模版。分类层仅展示说明行。列：绑定层级、绑定对象、覆盖范围、适用模式、模板文件、操作。模版文件列仅显示文件名或「未上传」，不展示继承状态。', tag: '记录单' },
         { id: 'record-no-download', selector: '#toolbar', position: 'top-left', title: '移除下载按钮', wide: true, content: '模版管理各 Tab 工具栏已移除「下载」按钮；点击列表中蓝色的模板文件链接即可触发下载。', tag: '模板管理' },
         { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 7 类流程单据模版。进入后通过顶部横向 Tab 切换四大类（电力物资类 / 安全工器具类 / 环境检测 / 工程检测），每类固定 7 张卡片，卡片内直接管理多版本模版。', tag: '模板管理' },
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 7 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },
