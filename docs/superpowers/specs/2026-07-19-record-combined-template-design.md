@@ -2,7 +2,8 @@
 
 **日期**: 2026-07-19  
 **范围**: 模板管理 › 记录单模版、试验检测 › 记录单导出抽屉（模版解析部分）  
-**状态**: 待实现  
+**状态**: 已确认  
+**实现计划**: [`2026-07-19-record-combined-template-plan.md`](../plans/2026-07-19-record-combined-template-plan.md)  
 **前置文档**: [`2026-07-17-record-sheet-config-flow-design.md`](2026-07-17-record-sheet-config-flow-design.md)
 
 ## 背景
