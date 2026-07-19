@@ -1071,12 +1071,21 @@
         '<thead>' + combinedTableHeadHtml() + '</thead><tbody>' + tbodyHtml + '</tbody></table></div>';
     }
 
-    function sortCombinedScopeRows(rows) {
+    function sortCombinedScopeRows(rows, treeId) {
+      var sampleOrder = {};
+      var modelOrder = {};
+      collectSampleNodesUnderNode(treeId).forEach(function (s, i) { sampleOrder[s.id] = i; });
+      (collectModelIdsUnderNode(treeId, getMarkedReportTree()) || []).forEach(function (mid, i) { modelOrder[mid] = i; });
+      if (getSelectedNodeKind(treeId) === 'sample') sampleOrder[treeId] = 0;
       return rows.slice().sort(function (a, b) {
         if (a.bindType !== b.bindType) return a.bindType === 'sample' ? -1 : 1;
-        var la = a.bindLabel || getReportTreeModelLabel(a.bindTarget);
-        var lb = b.bindLabel || getReportTreeModelLabel(b.bindTarget);
-        return la.localeCompare(lb, 'zh-CN');
+        var orderMap = a.bindType === 'sample' ? sampleOrder : modelOrder;
+        var ia = orderMap[a.bindTarget];
+        var ib = orderMap[b.bindTarget];
+        if (ia == null && ib == null) return 0;
+        if (ia == null) return 1;
+        if (ib == null) return -1;
+        return ia - ib;
       });
     }
 
