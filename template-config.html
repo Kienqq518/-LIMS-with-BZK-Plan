@@ -433,11 +433,11 @@
         <div class="tpl-toolbar" style="padding:0 0 12px;border:none">
           <label>样品名称(型号)</label><input id="rc_sample" placeholder="请输入" />
           <label>样品分类</label><input id="rc_category" placeholder="请输入" />
-          <label>试验项</label><input id="rc_test" placeholder="请输入" />
+          <label id="rc_testLabel">试验项</label><input id="rc_test" placeholder="请输入" />
           <button onclick="renderRecordCopyTable()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>
         </div>
         <table class="tpl-table">
-          <thead id="recordCopyTableHead"><tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>操作</th></tr></thead>
+          <thead id="recordCopyTableHead"></thead>
           <tbody id="recordCopyTableBody"></tbody>
         </table>
       </div>
@@ -1059,8 +1059,10 @@
       return testCount + ' 项试验';
     }
 
-    function combinedTableHeadHtml() {
-      return '<tr><th style="width:88px">绑定层级</th><th style="width:200px">绑定对象</th><th style="width:180px">覆盖范围</th><th>适用模式</th><th style="width:200px">模板文件</th><th class="cell-ops">操作</th></tr>';
+    function combinedTableHeadHtml(withPickCols) {
+      var cols = '<th style="width:88px">绑定层级</th><th style="width:200px">绑定对象</th><th style="width:180px">覆盖范围</th><th style="width:200px">模板文件</th><th class="cell-ops">操作</th>';
+      if (withPickCols) return '<tr><th style="width:40px"></th><th>序号</th>' + cols + '</tr>';
+      return '<tr>' + cols + '</tr>';
     }
 
     function combinedTableShell(tbodyHtml) {
@@ -1083,7 +1085,6 @@
         '<td>' + combinedBindLevelLabel(row.bindType) + '</td>' +
         '<td>' + escHtml(row.bindLabel || getReportTreeModelLabel(row.bindTarget)) + '</td>' +
         '<td>' + combinedCoverageLabel(row.bindType, row.bindTarget) + '</td>' +
-        '<td class="text-xs text-slate-500">' + RECORD_COMBINED_APPLY_MODES + '</td>' +
         '<td>' + combinedFileCell(row) + '</td>' +
         '<td class="cell-ops">' + combinedOps(row) + '</td></tr>';
     }
@@ -1730,7 +1731,7 @@
       if (kind === 'category') {
         var scopeRows = sortCombinedScopeRows(collectCombinedRowsInScope(state.treeId));
         if (!scopeRows.length) {
-          tbody = '<tr class="row-combined row-info"><td colspan="6">' +
+          tbody = '<tr class="row-combined row-info"><td colspan="5">' +
             '分类层不支持上传组合模版。请在<strong>样品层</strong>或<strong>型号层</strong>上传；一份 Word 含绑定范围内全部试验项。' +
             '适用：' + RECORD_COMBINED_APPLY_MODES + '（导出时自动解析型号 → 样品）。</td></tr>';
         } else {
@@ -1743,7 +1744,6 @@
         tbody = '<tr class="row-combined">' +
           '<td>型号层</td><td>' + escHtml(sampleDisplay) + '</td>' +
           '<td class="text-slate-400">—</td>' +
-          '<td class="text-xs text-slate-500">' + RECORD_COMBINED_APPLY_MODES + '</td>' +
           '<td>' + (modelCombined ? combinedFileCell(modelCombined) : '<span class="badge-none">未上传</span>') + '</td>' +
           '<td class="cell-ops"><span class="text-slate-400 text-xs">请在型号层配置</span></td></tr>';
       } else {
@@ -2603,7 +2603,23 @@
       return list;
     }
 
+    function syncRecordCopyModalLayout() {
+      var isCombined = state.configContext === 'combined';
+      var head = document.getElementById('recordCopyTableHead');
+      if (head) {
+        head.innerHTML = isCombined
+          ? combinedTableHeadHtml(true)
+          : '<tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>操作</th></tr>';
+      }
+      var testLabel = document.getElementById('rc_testLabel');
+      var testInput = document.getElementById('rc_test');
+      if (testLabel) testLabel.classList.toggle('hidden', isCombined);
+      if (testInput) testInput.classList.toggle('hidden', isCombined);
+    }
+
     function renderRecordCopyTable() {
+      syncRecordCopyModalLayout();
+      var isCombined = state.configContext === 'combined';
       var sources = getRecordCopySources();
       var sampleEl = document.getElementById('rc_sample');
       var categoryEl = document.getElementById('rc_category');
@@ -2612,24 +2628,25 @@
       var catKw = categoryEl ? categoryEl.value.trim() : '';
       var testKw = testEl ? testEl.value.trim() : '';
       if (sampleKw) sources = sources.filter(function (r) {
-        if (r.kind === 'combined') return (r.bindLabel || '').includes(sampleKw) || getBodySampleDisplay(r.bindTarget).includes(sampleKw);
+        if (r.kind === 'combined') {
+          return (r.bindLabel || '').includes(sampleKw) || getBodySampleDisplay(r.bindTarget).includes(sampleKw);
+        }
         return getBodySampleDisplay(r.tree).includes(sampleKw);
       });
       if (catKw) sources = sources.filter(function (r) {
         if (r.kind === 'combined') return getBodyCategoryPath(r.bindTarget).includes(catKw);
         return getBodyCategoryPath(r.tree).includes(catKw);
       });
-      if (testKw) sources = sources.filter(function (r) {
-        if (r.kind === 'combined') return '全部试验项'.includes(testKw);
+      if (!isCombined && testKw) sources = sources.filter(function (r) {
         return (r.test || '').includes(testKw);
       });
       document.getElementById('recordCopyTableBody').innerHTML = sources.map(function (r, i) {
         if (r.kind === 'combined') {
-          var categoryPath = getBodyCategoryPath(r.bindTarget);
           return '<tr><td><input type="radio" name="recordCopyPick" value="c' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
-            '<td>' + r.file + '</td><td class="cell-sample-name">' + escHtml(r.bindLabel) + '</td>' +
-            '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td>' +
-            '<td>全部试验项（组合）</td>' +
+            '<td>' + combinedBindLevelLabel(r.bindType) + '</td>' +
+            '<td>' + escHtml(r.bindLabel || getReportTreeModelLabel(r.bindTarget)) + '</td>' +
+            '<td>' + combinedCoverageLabel(r.bindType, r.bindTarget) + '</td>' +
+            '<td>' + r.file + '</td>' +
             '<td><button type="button" onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button></td></tr>';
         }
         var categoryPath2 = getBodyCategoryPath(r.tree);
@@ -2651,6 +2668,7 @@
     }
 
     function openRecordCopyForRow(id) {
+      state.configContext = 'test-item';
       state.recordRowId = id;
       if (document.getElementById('rc_sample')) document.getElementById('rc_sample').value = '';
       if (document.getElementById('rc_category')) document.getElementById('rc_category').value = '';
