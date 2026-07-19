@@ -6,8 +6,8 @@
   var RECORD_MODES = [
     { key: 'model-all', label: '单种样品所有试验生成一份文件', dim: 'model', split: 'all' },
     { key: 'model-each', label: '单种样品单种试验生成一份文件', dim: 'model', split: 'each' },
-    { key: 'specimen-all', label: '单个试样所有试验生成一份文件', dim: 'specimen', split: 'all' },
-    { key: 'specimen-each', label: '单个试样单种试验生成一份文件', dim: 'specimen', split: 'each' }
+    { key: 'specimen-all', label: '单个样品所有试验生成一份文件', dim: 'specimen', split: 'all' },
+    { key: 'specimen-each', label: '单个样品单种试验生成一份文件', dim: 'specimen', split: 'each' }
   ];
 
   var DEFAULT_MODE_KEY = 'model-each';
@@ -105,6 +105,46 @@
     return testNames.filter(function (t) { return !hasTemplate(templateIndex, sample, t); });
   }
 
+  function resolveCombinedTemplate(modelTreeKey, combinedData, sampleAncestorId) {
+    combinedData = combinedData || [];
+    var i;
+    for (i = 0; i < combinedData.length; i++) {
+      var row = combinedData[i];
+      if (row.bindType === 'model' && row.bindTarget === modelTreeKey && row.configured && row.file) return row;
+    }
+    if (sampleAncestorId) {
+      for (i = 0; i < combinedData.length; i++) {
+        row = combinedData[i];
+        if (row.bindType === 'sample' && row.bindTarget === sampleAncestorId && row.configured && row.file) return row;
+      }
+    }
+    return null;
+  }
+
+  function evaluateMergeExportStatus(allTestNames, completedTestNames, sample, templateIndex, combinedData, sampleAncestorId) {
+    var incomplete = allTestNames.filter(function (t) {
+      return completedTestNames.indexOf(t) < 0;
+    });
+    if (incomplete.length) {
+      return {
+        status: 'incomplete',
+        statusDetail: '尚有 ' + incomplete.length + ' 项试验未完成：' + incomplete.join('、')
+      };
+    }
+    var modelKey = sample.templateKey || sample.id;
+    if (resolveCombinedTemplate(modelKey, combinedData, sampleAncestorId)) {
+      return { status: 'ready', statusDetail: '就绪' };
+    }
+    var missing = missingTemplates(allTestNames, sample, templateIndex);
+    if (missing.length) {
+      return {
+        status: 'missing_template',
+        statusDetail: '缺少「' + missing.join('」「') + '」的模版'
+      };
+    }
+    return { status: 'ready', statusDetail: '就绪' };
+  }
+
   function buildFileName(entrustCode, sample, tests, specimenId, mode) {
     var label = sample.name + (sample.model ? '-' + sample.model : '');
     var safe = function (s) { return String(s).replace(/[/\\:*?"<>|]/g, '_'); };
@@ -121,24 +161,8 @@
     return safe(entrustCode + '_' + label + '_' + testPart + '记录单.docx');
   }
 
-  function evaluateStatus(allTestNames, completedTestNames, sample, templateIndex) {
-    var incomplete = allTestNames.filter(function (t) {
-      return completedTestNames.indexOf(t) < 0;
-    });
-    if (incomplete.length) {
-      return {
-        status: 'incomplete',
-        statusDetail: '尚有 ' + incomplete.length + ' 项试验未完成：' + incomplete.join('、')
-      };
-    }
-    var missing = missingTemplates(allTestNames, sample, templateIndex);
-    if (missing.length) {
-      return {
-        status: 'missing_template',
-        statusDetail: '缺少「' + missing.join('」「') + '」的模版'
-      };
-    }
-    return { status: 'ready', statusDetail: '就绪' };
+  function evaluateStatus(allTestNames, completedTestNames, sample, templateIndex, combinedData, sampleAncestorId) {
+    return evaluateMergeExportStatus(allTestNames, completedTestNames, sample, templateIndex, combinedData, sampleAncestorId);
   }
 
   function buildTestsMeta(allNames, completedNames) {
@@ -147,7 +171,9 @@
     });
   }
 
-  function buildRecordFilePreview(entrustCode, samples, rules, templateIndex) {
+  function buildRecordFilePreview(entrustCode, samples, rules, templateIndex, combinedData, sampleAncestorMap) {
+    combinedData = combinedData || [];
+    sampleAncestorMap = sampleAncestorMap || {};
     var files = [];
     var fileId = 0;
 
@@ -157,10 +183,12 @@
       var allTests = sample.groups.map(function (g) { return g.title; });
       var completedTests = sample.groups.filter(isGroupComplete).map(function (g) { return g.title; });
       var sampleLabel = sample.name + (sample.model ? ' - ' + sample.model : '');
+      var modelKey = sample.templateKey || sample.id;
+      var sampleAncestorId = sampleAncestorMap[modelKey] || sample.sampleBindTarget || null;
 
       if (mode.dim === 'model') {
         if (mode.split === 'all') {
-          var evalAll = evaluateStatus(allTests, completedTests, sample, templateIndex);
+          var evalAll = evaluateMergeExportStatus(allTests, completedTests, sample, templateIndex, combinedData, sampleAncestorId);
           files.push({
             id: 'f' + (++fileId),
             fileName: buildFileName(entrustCode, sample, allTests, null, mode),
@@ -203,7 +231,7 @@
           });
 
           if (mode.split === 'all') {
-            var evalSpec = evaluateStatus(allTests, specimenCompleted, sample, templateIndex);
+            var evalSpec = evaluateMergeExportStatus(allTests, specimenCompleted, sample, templateIndex, combinedData, sampleAncestorId);
             files.push({
               id: 'f' + (++fileId),
               fileName: buildFileName(entrustCode, sample, allTests, specimenId, mode),
@@ -253,6 +281,7 @@
     modeByKey: modeByKey,
     modeLabel: modeLabel,
     resolveRecordRule: resolveRecordRule,
+    resolveCombinedTemplate: resolveCombinedTemplate,
     buildRecordFilePreview: buildRecordFilePreview
   };
 })(typeof window !== 'undefined' ? window : this);

@@ -135,6 +135,21 @@
     .upload-zone { border: 1px dashed #cbd5e1; border-radius: 6px; padding: 28px; text-align: center; color: #64748b; background: #f8fafc; cursor: pointer; }
     .upload-zone i { font-size: 28px; color: #94a3b8; margin-bottom: 8px; }
     .info-bar { margin: 12px 16px; padding: 10px 14px; border-radius: 4px; background: #fffbeb; border: 1px solid #fde68a; font-size: 12px; color: #92400e; line-height: 1.6; }
+    .combined-panel { margin: 12px 16px 0; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+    .combined-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .combined-panel-title { font-size: 14px; font-weight: 600; color: #334155; }
+    .combined-panel-meta { font-size: 12px; color: #64748b; line-height: 1.6; margin-bottom: 10px; }
+    .combined-panel-file { font-size: 13px; margin-bottom: 10px; }
+    .combined-panel-ops { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; }
+    .combined-panel-ops button { font-size: 12px; }
+    .combined-panel-ops button:disabled { color: #94a3b8; cursor: not-allowed; }
+    .combined-fold { margin: 12px 16px 0; padding: 8px 12px; border: 1px dashed #cbd5e1; border-radius: 6px; background: #fff; font-size: 12px; color: #64748b; }
+    .record-section-head { padding: 8px 16px 4px; }
+    .record-section-head .title { font-size: 14px; font-weight: 600; color: #334155; }
+    .record-section-head .sub { font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 2px; }
+    .tpl-table tr.row-group td { background: #f1f5f9; font-weight: 500; color: #475569; font-size: 12px; cursor: pointer; }
+    .tpl-table tr.row-group:hover td { background: #e2e8f0; }
+    .tpl-table tr.row-combined td { background: #fafbff; }
     .po-mask { position: fixed; inset: 0; z-index: 200; display: none; flex-direction: column; background: #eef2f7; }
     .po-mask.open { display: flex; }
     .po-titlebar { display: flex; align-items: center; justify-content: space-between; height: 36px; padding: 0 12px; background: linear-gradient(180deg, #4a90d9 0%, #357abd 100%); color: #fff; font-size: 13px; flex-shrink: 0; }
@@ -283,9 +298,9 @@
         <div class="desc">配置报告正文与公共头尾模版，按大类分套管理</div>
         <div class="illus"><i class="fa fa-file-text-o"></i></div>
       </div>
-      <div class="type-card" onclick="enterTplType('record')">
+        <div class="type-card" onclick="enterTplType('record')">
         <div class="title">记录单模版</div>
-        <div class="desc">按试验项配置记录单模版，支持多版本单启用</div>
+        <div class="desc">配置组合模版与试验项模版，支持多版本单启用</div>
         <div class="illus"><i class="fa fa-list-alt"></i></div>
       </div>
       <div class="type-card" onclick="enterTplType('doc')" data-annotate="doc-entry">
@@ -330,6 +345,11 @@
       </aside>
       <div class="tpl-main">
         <div class="tpl-toolbar" id="toolbar"></div>
+        <div id="combinedTemplatePanel" class="hidden"></div>
+        <div id="recordTableSectionHead" class="record-section-head hidden">
+          <div class="title">试验项模版</div>
+          <div class="sub" id="recordTableSectionSub"></div>
+        </div>
         <div class="tpl-table-scroll overflow-x-auto px-4 pb-4">
           <table class="tpl-table" id="dataTable">
             <thead id="tableHead"></thead>
@@ -388,15 +408,15 @@
   <!-- 记录单 · 配置多模板（一次仅启用一个） -->
   <div id="configModal" class="modal-mask">
     <div class="modal-box lg">
-      <div class="modal-head"><span>配置模板</span><button onclick="closeModal('configModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-head"><span id="configModalTitle">配置模板</span><button onclick="closeModal('configModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
       <div class="modal-body">
-        <p class="mb-3 text-sm text-slate-500">同一试验项可上传多个模板版本，<strong class="text-slate-700">同时只能启用一个</strong>；新上传/复制的版本默认启用最新版。导出时系统取启用模板。</p>
+        <p class="mb-3 text-sm text-slate-500" id="configModalHint">同一试验项可上传多个模板版本，<strong class="text-slate-700">同时只能启用一个</strong>；新上传/复制的版本默认启用最新版。导出时系统取启用模板。</p>
         <table class="tpl-table">
           <thead><tr><th style="width:50px">启用</th><th>模板文件</th><th>上传时间</th><th style="width:100px">上传人</th><th style="width:220px">操作</th></tr></thead>
           <tbody id="configTableBody"></tbody>
         </table>
         <div class="mt-3 flex gap-2">
-          <button onclick="openMockFilePicker('recordVersion')" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-upload"></i> 上传</button>
+          <button onclick="openRecordVersionUpload()" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-upload"></i> 上传</button>
           <button onclick="openRecordCopyPicker()" class="rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-copy"></i> 复制其他项</button>
         </div>
       </div>
@@ -572,7 +592,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
-    var state = { view: 'landing', main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: 'dlwz', openIds: {}, copyMode: 'public', copyTarget: null, filePickerTarget: null, bodyVersionRenameIndex: null, recordVersionRenameIndex: null, docDirty: false, docSavedSnapshots: {}, unsavedAction: null, docUploadType: null, docErrorTypes: [] };
+    var state = { view: 'landing', main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, configContext: 'test-item', combinedConfigKey: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: 'dlwz', openIds: {}, copyMode: 'public', copyTarget: null, filePickerTarget: null, bodyVersionRenameIndex: null, recordVersionRenameIndex: null, docDirty: false, docSavedSnapshots: {}, unsavedAction: null, docUploadType: null, docErrorTypes: [] };
     var modalStack = [];
 
     function syncModalZIndex() {
@@ -711,7 +731,7 @@
 
     function enrichRecordTreeWithTests(nodes) {
       return (nodes || []).map(function (n) {
-        var copy = { id: n.id, label: n.label, model: n.model, annotate: n.annotate };
+        var copy = { id: n.id, label: n.label, model: n.model, sample: n.sample, annotate: n.annotate };
         if (n.model) {
           copy.children = testsForModel(n.id);
           copy.count = getRecordTreeCount(n.id);
@@ -724,7 +744,7 @@
     }
 
     function getRecordTreeRoots() {
-      var roots = REPORT_TREE_ALL;
+      var roots = getMarkedReportTree();
       if (state.cat && RECORD_CAT_ROOT[state.cat]) {
         var found = findReportTreeNode(RECORD_CAT_ROOT[state.cat]);
         roots = found ? [found.node] : REPORT_TREE_ALL;
@@ -881,6 +901,200 @@
       ]},
       { id: 10, tree: 'glove', test: '泄漏电流', file: null, configured: false, templates: [] }
     ];
+
+    var RECORD_COMBINED_DATA = [
+      { id: 101, bindType: 'sample', bindTarget: 'ds-s', bindLabel: 'DS实壁类塑料电缆导管_直管',
+        file: '实壁导管_全套记录单.docx', configured: true,
+        templates: [{ name: '实壁导管_全套记录单.docx', time: '2026-03-01 10:00', enabled: true, uploader: 'admin' }] }
+    ];
+
+    var RECORD_TABLE_SECTION_SUB = '用于「单种样品单种试验生成一份文件」「单个样品单种试验生成一份文件」；「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」无本型号/上级样品组合模版时，按试验项单模版动态拼接。';
+
+    function isSampleTreeNode(node) {
+      return !!(node && (node.sample || (node.children && node.children.some(function (c) { return c.model; }))));
+    }
+
+    function markSampleOnNodes(nodes) {
+      return (nodes || []).map(function (n) {
+        var copy = { id: n.id, label: n.label, model: n.model, sample: n.sample, annotate: n.annotate, children: n.children };
+        if (copy.children && copy.children.length) {
+          copy.children = markSampleOnNodes(copy.children);
+          if (copy.children.some(function (c) { return c.model; })) copy.sample = true;
+        }
+        return copy;
+      });
+    }
+
+    function getMarkedReportTree() {
+      return markSampleOnNodes(REPORT_TREE_ALL);
+    }
+
+    function findSampleAncestorId(nodeId) {
+      var found = findReportTreeNode(nodeId, getMarkedReportTree());
+      if (!found || found.path.length < 2) return null;
+      for (var i = found.path.length - 2; i >= 0; i--) {
+        if (isSampleTreeNode(found.path[i])) return found.path[i].id;
+      }
+      return null;
+    }
+
+    function getSelectedNodeKind(treeId) {
+      if (String(treeId).indexOf('test-') === 0) return 'test-item';
+      var found = findReportTreeNode(treeId, getMarkedReportTree());
+      if (!found) return 'unknown';
+      if (found.node.model) return 'model';
+      if (isSampleTreeNode(found.node)) return 'sample';
+      return 'category';
+    }
+
+    function findCombinedRecord(bindType, bindTarget) {
+      return RECORD_COMBINED_DATA.find(function (r) { return r.bindType === bindType && r.bindTarget === bindTarget; });
+    }
+
+    function getOrCreateCombinedRecord(bindType, bindTarget, bindLabel) {
+      var row = findCombinedRecord(bindType, bindTarget);
+      if (row) return row;
+      row = { id: Date.now(), bindType: bindType, bindTarget: bindTarget, bindLabel: bindLabel || getReportTreeModelLabel(bindTarget), file: null, configured: false, templates: [] };
+      RECORD_COMBINED_DATA.push(row);
+      return row;
+    }
+
+    function findCombinedById(id) {
+      return RECORD_COMBINED_DATA.find(function (r) { return r.id === id; });
+    }
+
+    function combinedBindLevelLabel(bindType) {
+      if (bindType === 'sample') return '样品层';
+      if (bindType === 'model') return '型号层';
+      return '—';
+    }
+
+    function collectSampleNodesUnder(node) {
+      var list = [];
+      if (isSampleTreeNode(node) && node.id) list.push({ id: node.id, label: node.label });
+      (node.children || []).forEach(function (c) { list = list.concat(collectSampleNodesUnder(c)); });
+      return list;
+    }
+
+    function collectSampleNodesUnderNode(nodeId) {
+      var found = findReportTreeNode(nodeId, getMarkedReportTree());
+      if (!found) return [];
+      return collectSampleNodesUnder(found.node);
+    }
+
+    function getCombinedRowVirtual(bindType, bindTarget) {
+      var existing = findCombinedRecord(bindType, bindTarget);
+      if (existing) return existing;
+      return { id: null, bindType: bindType, bindTarget: bindTarget, bindLabel: getReportTreeModelLabel(bindTarget), file: null, configured: false, templates: [] };
+    }
+
+    function collectCombinedRowsInScope(treeId) {
+      var rows = [];
+      var seen = {};
+      function pushRow(bindType, bindTarget) {
+        var key = bindType + ':' + bindTarget;
+        if (seen[key]) return;
+        seen[key] = true;
+        rows.push(getCombinedRowVirtual(bindType, bindTarget));
+      }
+      var kind = getSelectedNodeKind(treeId);
+      if (kind === 'test-item') {
+        var testRow = findRecord(parseInt(String(treeId).replace('test-', ''), 10));
+        if (testRow) pushRow('model', testRow.tree);
+        return rows;
+      }
+      if (kind === 'model') pushRow('model', treeId);
+      if (kind === 'sample') pushRow('sample', treeId);
+      if (kind === 'category') {
+        collectSampleNodesUnderNode(treeId).forEach(function (s) { pushRow('sample', s.id); });
+      }
+      var modelIds = collectModelIdsUnderNode(treeId, getMarkedReportTree()) || (kind === 'model' ? [treeId] : []);
+      modelIds.forEach(function (mid) { pushRow('model', mid); });
+      return rows;
+    }
+
+    function ensureCombinedEnabled(row) {
+      if (!row || !row.templates || !row.templates.length) {
+        if (row) { row.file = null; row.configured = false; }
+        return;
+      }
+      if (!row.templates.some(function (t) { return t.enabled; })) {
+        var lastIdx = row.templates.length - 1;
+        row.templates.forEach(function (t, i) { t.enabled = i === lastIdx; });
+      }
+      var enabled = row.templates.find(function (t) { return t.enabled; });
+      row.file = enabled ? enabled.name : null;
+      row.configured = !!enabled;
+    }
+
+    function addCombinedTemplateVersion(row, tpl) {
+      if (!row.templates) row.templates = [];
+      row.templates.forEach(function (t) { t.enabled = false; });
+      tpl.enabled = true;
+      row.templates.push(tpl);
+      row.file = tpl.name;
+      row.configured = true;
+    }
+
+    function combinedFileCell(row) {
+      return row.file
+        ? '<span class="link">' + row.file + '</span>' + (row.templates && row.templates.length > 1 ? '<span class="badge-enabled">启用中</span>' : '')
+        : '<span class="badge-none">未上传</span>';
+    }
+
+    function combinedOps(row) {
+      var cfgDisabled = !row.configured || !row.file;
+      var cfgBtn = cfgDisabled
+        ? '<button type="button" disabled class="text-slate-400">配置</button>'
+        : '<button type="button" onclick="openCombinedPageOffice(' + row.id + ')" class="text-blue-600 hover:underline" data-annotate="po-config">配置</button>';
+      var versionFn = row.id
+        ? 'openCombinedConfig(' + row.id + ')'
+        : 'openCombinedConfigByBind(\'' + row.bindType + '\',\'' + row.bindTarget + '\')';
+      if (row.configured && row.file) {
+        return cfgBtn + '<span class="op-sep"></span>' +
+          '<button type="button" onclick="' + versionFn + '" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button><span class="op-sep"></span>' +
+          '<button type="button" onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button><span class="op-sep"></span>' +
+          '<button type="button" onclick="clearCombined(' + (row.id || 'null') + ',\'' + row.bindType + '\',\'' + row.bindTarget + '\')" class="text-red-500 hover:underline">清除</button>';
+      }
+      return '<button type="button" onclick="' + versionFn + '" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button>';
+    }
+
+    function getRecordTestRowsInScope(treeId) {
+      if (String(treeId).indexOf('test-') === 0) {
+        var rowId = parseInt(String(treeId).replace('test-', ''), 10);
+        return RECORD_DATA.filter(function (r) { return r.id === rowId; });
+      }
+      var recModelIds = collectModelIdsUnderNode(treeId, getMarkedReportTree());
+      if (recModelIds && recModelIds.length) {
+        return RECORD_DATA.filter(function (r) { return recModelIds.indexOf(r.tree) >= 0; });
+      }
+      return RECORD_DATA.filter(function (r) { return r.tree === treeId; });
+    }
+
+    function buildRecordDisplayRows(treeId) {
+      var combined = collectCombinedRowsInScope(treeId).map(function (r) {
+        return { rowType: 'combined', data: r };
+      });
+      var tests = getRecordTestRowsInScope(treeId).map(function (r) {
+        return { rowType: 'test', data: r };
+      });
+      var kind = getSelectedNodeKind(treeId);
+      if (kind !== 'sample') return combined.concat(tests);
+      var out = [];
+      var modelOrder = collectModelIdsUnderNode(treeId, getMarkedReportTree()) || [];
+      modelOrder.forEach(function (mid) {
+        var modelCombined = combined.filter(function (x) { return x.data.bindType === 'model' && x.data.bindTarget === mid; });
+        var modelTests = tests.filter(function (x) { return x.data.tree === mid; });
+        if (!modelCombined.length && !modelTests.length) return;
+        var configured = modelTests.filter(function (x) { return x.data.configured; }).length;
+        out.push({ rowType: 'group', modelId: mid, label: getBodySampleDisplay(mid), stats: configured + '/' + modelTests.length });
+        modelCombined.forEach(function (x) { out.push(x); });
+        modelTests.forEach(function (x) { out.push(x); });
+      });
+      var sampleCombined = combined.filter(function (x) { return x.data.bindType === 'sample'; });
+      sampleCombined.forEach(function (x) { out.unshift(x); });
+      return out;
+    }
 
     function renderTreeNodes(nodes, kw, depth, showGroup) {
       var html = '';
@@ -1159,6 +1373,7 @@
           '<button onclick="openPublicModal()" class="ml-auto rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="public-add"><i class="fa fa-plus"></i> 新增</button>';
       } else if (state.main === 'record') {
         el.innerHTML =
+          '<label>模版类型</label><select id="f_rowType"><option value="">全部</option><option value="combined">组合模版</option><option value="test">试验项模版</option></select>' +
           '<label>是否配置模板</label><select id="f_configured"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select>' +
           '<label>样品</label><input id="f_sample" placeholder="请输入" />' +
           '<label>样品分类</label><input id="f_category" placeholder="请输入" />' +
@@ -1174,17 +1389,7 @@
     function getFilteredRows() {
       var rows;
       if (state.main === 'record') {
-        if (String(state.treeId).indexOf('test-') === 0) {
-          var rowId = parseInt(state.treeId.replace('test-', ''), 10);
-          rows = RECORD_DATA.filter(function (r) { return r.id === rowId; });
-        } else {
-          var recModelIds = collectModelIdsUnderNode(state.treeId);
-          if (recModelIds && recModelIds.length) {
-            rows = RECORD_DATA.filter(function (r) { return recModelIds.indexOf(r.tree) >= 0; });
-          } else {
-            rows = RECORD_DATA.filter(function (r) { return r.tree === state.treeId; });
-          }
-        }
+        rows = buildRecordDisplayRows(state.treeId);
       }
       else if (state.sub === 'public') {
         rows = PUBLIC_DATA.filter(function (r) { return !state.cat || r.cat === state.cat; });
@@ -1206,14 +1411,25 @@
       var content = document.getElementById('f_content');
       var configured = document.getElementById('f_configured');
       var bindType = document.getElementById('f_bindType');
-      if (name && name.value.trim()) rows = rows.filter(function (r) { return (r.name || '').includes(name.value.trim()); });
+      var rowType = document.getElementById('f_rowType');
+      if (name && name.value.trim()) rows = rows.filter(function (r) {
+        if (state.main === 'record') {
+          if (r.rowType !== 'test') return false;
+          return (r.data.name || '').includes(name.value.trim());
+        }
+        return (r.name || '').includes(name.value.trim());
+      });
       if (sample && sample.value.trim()) rows = rows.filter(function (r) {
+        if (state.main === 'record') {
+          if (r.rowType === 'group') return r.label.includes(sample.value.trim());
+          if (r.rowType === 'combined') return (r.data.bindLabel || getBodySampleDisplay(r.data.bindTarget)).includes(sample.value.trim());
+          return getBodySampleDisplay(r.data.tree).includes(sample.value.trim());
+        }
         if (state.main === 'report' && state.sub === 'body') return getBodySampleDisplay(r.tree).includes(sample.value.trim());
         if (state.main === 'report' && state.sub === 'public') {
           if (r.bindType !== 'sample') return false;
           return getPublicSampleBindFull(r.bindValue, r.bindLabel).includes(sample.value.trim());
         }
-        if (state.main === 'record') return getBodySampleDisplay(r.tree).includes(sample.value.trim());
         return (r.sample || r.bindLabel || '').includes(sample.value.trim());
       });
       if (category && category.value.trim()) rows = rows.filter(function (r) {
@@ -1222,20 +1438,61 @@
           var catText = r.bindType === 'sample' ? getBodyCategoryPath(r.bindValue) : (r.bindLabel || '');
           return catText.includes(category.value.trim());
         }
-        if (state.main === 'record') return getBodyCategoryPath(r.tree).includes(category.value.trim());
+        if (state.main === 'record') {
+          if (r.rowType === 'group') return getBodyCategoryPath(r.modelId).includes(category.value.trim());
+          if (r.rowType === 'combined') return getBodyCategoryPath(r.data.bindTarget).includes(category.value.trim());
+          return getBodyCategoryPath(r.data.tree).includes(category.value.trim());
+        }
         return (r.category || r.bindLabel || '').includes(category.value.trim());
       });
       if (test && test.value.trim()) rows = rows.filter(function (r) {
+        if (state.main === 'record') {
+          if (r.rowType === 'combined') return '全部试验项'.includes(test.value.trim());
+          if (r.rowType !== 'test') return false;
+          return (r.data.test || '').includes(test.value.trim());
+        }
         var t = r.test || (r.tests || []).join(',');
         return t.includes(test.value.trim());
       });
-      if (file && file.value.trim()) rows = rows.filter(function (r) { return (r.file || r.templateName || '').includes(file.value.trim()); });
+      if (file && file.value.trim()) rows = rows.filter(function (r) {
+        if (state.main === 'record') {
+          if (r.rowType === 'group') return false;
+          return ((r.data && r.data.file) || '').includes(file.value.trim());
+        }
+        return (r.file || r.templateName || '').includes(file.value.trim());
+      });
       if (content && content.value) rows = rows.filter(function (r) { return (r.contentStyle || r.content) === content.value; });
       if (bindType && bindType.value) rows = rows.filter(function (r) { return r.bindType === bindType.value; });
-      if (configured && configured.value === 'yes') rows = rows.filter(function (r) { return r.configured; });
-      if (configured && configured.value === 'no') rows = rows.filter(function (r) { return !r.configured; });
+      if (rowType && rowType.value && state.main === 'record') {
+        rows = rows.filter(function (r) {
+          if (r.rowType === 'group') return true;
+          if (rowType.value === 'combined') return r.rowType === 'combined';
+          if (rowType.value === 'test') return r.rowType === 'test';
+          return true;
+        });
+      }
+      if (configured && configured.value === 'yes') rows = rows.filter(function (r) {
+        if (state.main === 'record') {
+          if (r.rowType === 'group') return false;
+          return !!r.data.configured;
+        }
+        return r.configured;
+      });
+      if (configured && configured.value === 'no') rows = rows.filter(function (r) {
+        if (state.main === 'record') {
+          if (r.rowType === 'group') return false;
+          return !r.data.configured;
+        }
+        return !r.configured;
+      });
       if (state.cat && state.main !== 'doc') {
         rows = rows.filter(function (r) {
+          if (state.main === 'record') {
+            if (r.rowType === 'group') return true;
+            var treeKey = r.rowType === 'combined' ? r.data.bindTarget : r.data.tree;
+            if (!treeKey) return true;
+            return treeBelongsToCat(treeKey, state.cat);
+          }
           if (!r.tree) return true;
           return treeBelongsToCat(r.tree, state.cat);
         });
@@ -1330,19 +1587,88 @@
         }).join('');
       } else if (state.main === 'record') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin');
-        head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th>序号</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>模板文件</th><th class="cell-ops">操作</th></tr>';
-        body.innerHTML = rows.map(function (r, i) {
+        head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th>序号</th><th>模版类型</th><th>绑定层级</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>模板文件</th><th class="cell-ops">操作</th></tr>';
+        var seq = 0;
+        body.innerHTML = rows.map(function (row) {
+          if (row.rowType === 'group') {
+            return '<tr class="row-group" onclick="selectTree(\'' + row.modelId + '\')"><td></td><td colspan="8">' +
+              escHtml(row.label) + ' <span class="text-slate-400">（试验项 ' + row.stats + ' 已配）</span></td></tr>';
+          }
+          seq++;
+          if (row.rowType === 'combined') {
+            var cr = row.data;
+            var categoryPath = getBodyCategoryPath(cr.bindTarget);
+            var sampleDisplay = cr.bindType === 'model' ? getBodySampleDisplay(cr.bindTarget) : cr.bindLabel;
+            return '<tr class="row-combined" onclick="selectTree(\'' + cr.bindTarget + '\')"><td><input type="checkbox" onclick="event.stopPropagation()" /></td><td>' + seq + '</td>' +
+              '<td>组合模版</td><td>' + combinedBindLevelLabel(cr.bindType) + '</td><td class="cell-sample-name">' + escHtml(sampleDisplay) + '</td>' +
+              '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td><td>全部试验项</td>' +
+              '<td>' + combinedFileCell(cr) + '</td><td class="cell-ops" onclick="event.stopPropagation()">' + combinedOps(cr) + '</td></tr>';
+          }
+          var r = row.data;
           var fileCell = r.file
             ? '<span class="link">' + r.file + '</span>' + (r.templates && r.templates.length > 1 ? '<span class="badge-enabled">启用中</span>' : '')
             : '<span class="badge-none">未上传</span>';
-          var sampleDisplay = getBodySampleDisplay(r.tree);
-          var categoryPath = getBodyCategoryPath(r.tree);
-          return '<tr><td><input type="checkbox" /></td><td>' + (i + 1) + '</td><td class="cell-sample-name">' + sampleDisplay + '</td>' +
-            '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td><td>' + r.test + '</td>' +
+          var sampleDisplay2 = getBodySampleDisplay(r.tree);
+          var categoryPath2 = getBodyCategoryPath(r.tree);
+          return '<tr><td><input type="checkbox" /></td><td>' + seq + '</td><td>试验项模版</td><td>—</td><td class="cell-sample-name">' + sampleDisplay2 + '</td>' +
+            '<td><div class="cell-category-path" title="' + escHtml(categoryPath2) + '">' + categoryPath2 + '</div></td><td>' + r.test + '</td>' +
             '<td>' + fileCell + '</td><td class="cell-ops">' + recordOps(r) + '</td></tr>';
         }).join('');
+        document.getElementById('pageTotal').textContent = '共 ' + seq + ' 条';
+        return;
       }
       document.getElementById('pageTotal').textContent = '共 ' + rows.length + ' 条';
+    }
+
+    function renderCombinedPanel() {
+      var panel = document.getElementById('combinedTemplatePanel');
+      var sectionHead = document.getElementById('recordTableSectionHead');
+      var sectionSub = document.getElementById('recordTableSectionSub');
+      if (!panel || state.main !== 'record') {
+        if (panel) panel.classList.add('hidden');
+        if (sectionHead) sectionHead.classList.add('hidden');
+        return;
+      }
+      sectionHead.classList.remove('hidden');
+      if (sectionSub) sectionSub.textContent = RECORD_TABLE_SECTION_SUB;
+      var kind = getSelectedNodeKind(state.treeId);
+      if (kind === 'category') {
+        panel.classList.remove('hidden');
+        panel.className = 'combined-panel';
+        panel.setAttribute('data-annotate', 'record-combined-panel');
+        panel.innerHTML = '<div class="combined-panel-head"><span class="combined-panel-title">组合记录单模版</span></div>' +
+          '<div class="combined-panel-meta">分类层不支持上传组合模版。请在<strong>样品层</strong>或<strong>型号层</strong>上传；一份 Word 含绑定范围内全部试验项。</div>' +
+          '<div class="combined-panel-meta">适用：「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」（导出时自动解析型号 → 样品）。</div>';
+        return;
+      }
+      if (kind === 'test-item') {
+        var testRow = findRecord(parseInt(String(state.treeId).replace('test-', ''), 10));
+        var modelCombined = testRow ? getCombinedRowVirtual('model', testRow.tree) : null;
+        panel.classList.remove('hidden');
+        panel.className = 'combined-fold';
+        panel.innerHTML = '<span>组合模版（' + escHtml(getBodySampleDisplay(testRow ? testRow.tree : '')) + '）：</span>' +
+          (modelCombined ? combinedFileCell(modelCombined) : '<span class="badge-none">未上传</span>');
+        return;
+      }
+      var bindType = kind === 'sample' ? 'sample' : 'model';
+      var bindTarget = state.treeId;
+      var row = getCombinedRowVirtual(bindType, bindTarget);
+      var modelCount = (collectModelIdsUnderNode(bindTarget, getMarkedReportTree()) || []).length || 1;
+      var testCount = bindType === 'model'
+        ? RECORD_DATA.filter(function (r) { return r.tree === bindTarget; }).length
+        : (collectModelIdsUnderNode(bindTarget, getMarkedReportTree()) || []).reduce(function (n, mid) {
+          return n + RECORD_DATA.filter(function (r) { return r.tree === mid; }).length;
+        }, 0);
+      panel.classList.remove('hidden');
+      panel.className = 'combined-panel';
+      panel.setAttribute('data-annotate', 'record-combined-panel');
+      panel.innerHTML =
+        '<div class="combined-panel-head"><span class="combined-panel-title">[' + combinedBindLevelLabel(bindType) + '] 组合记录单模版</span></div>' +
+        '<div class="combined-panel-meta">绑定：' + escHtml(row.bindLabel || getReportTreeModelLabel(bindTarget)) +
+          ' · 覆盖 ' + (bindType === 'sample' ? modelCount + ' 个型号 · 共 ' : '') + testCount + ' 项试验</div>' +
+        '<div class="combined-panel-meta">适用：「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」</div>' +
+        '<div class="combined-panel-file">模版文件：' + combinedFileCell(row) + '</div>' +
+        '<div class="combined-panel-ops">' + combinedOps(row) + '</div>';
     }
 
     function renderInfoBar() {
@@ -1356,8 +1682,10 @@
       } else if (state.main === 'record') {
         bar.classList.remove('hidden');
         bar.setAttribute('data-annotate', 'record-export-logic');
-        bar.innerHTML = '<i class="fa fa-info-circle"></i> 每个样品名称(型号)下的每个试验项单独绑定模板；同一试验项可存多个模板版本，<strong>同时仅启用一个</strong>；新上传/复制的版本<strong>默认启用最新版</strong>。' +
-          '导出时系统按<strong>业务流程配置 › 记录单设置</strong>中的生成模式切分文件；合并模式须全部试验项完成后，自动拉取各试验项启用模板<strong>动态拼接</strong>为一个 Word 文件。';
+        bar.innerHTML = '<i class="fa fa-info-circle"></i> 记录单模版支持 <strong>样品层 / 型号层组合模版</strong>（一份 Word 含全部试验项），以及各 <strong>试验项单模版</strong>。分类层不支持上传组合模版。' +
+          '<strong>「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」</strong>：优先本型号组合模版；若无则上级样品组合模版；若仍无则按试验项单模版动态拼接；拼接时缺任一试验项模版则报错。' +
+          '<strong>「单种样品单种试验生成一份文件」「单个样品单种试验生成一份文件」</strong>：始终使用各试验项单模版，忽略组合模版。' +
+          '导出切分规则由「业务流程配置 › 记录单设置」决定。同一模版可存多个版本，同时仅启用一个。';
       } else {
         bar.classList.add('hidden');
         bar.removeAttribute('data-annotate');
@@ -1366,6 +1694,7 @@
 
     function renderView() {
       renderToolbar();
+      renderCombinedPanel();
       renderTable();
       renderInfoBar();
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
@@ -1382,7 +1711,9 @@
       if (c) c.value = '';
       var cfg = document.getElementById('f_configured');
       if (cfg) cfg.value = '';
-      renderTable();
+      var rowTypeEl = document.getElementById('f_rowType');
+      if (rowTypeEl) rowTypeEl.value = '';
+      renderView();
     }
 
     var TPL_TYPE_TITLES = { report: '报告模版', record: '记录单模版', doc: '单据模版' };
@@ -1667,12 +1998,14 @@
 
     function openMockFilePicker(target) {
       state.filePickerTarget = target;
-      var candidates = target === 'recordVersion' ? [
+      var candidates = target === 'recordVersion' || target === 'combinedVersion' ? [
         '颜色外观.docx',
         '尺寸检查.docx',
         '压扁试验.docx',
         '密度测定.docx',
-        '外观检查.docx'
+        '外观检查.docx',
+        '实壁导管_全套记录单.docx',
+        'PVC-C_全套记录单.docx'
       ] : [
         'PVC-C报告模板_标准版.doc',
         'PVC-C报告模板_英文版.doc',
@@ -1700,7 +2033,7 @@
         toggleBodyFileMode();
       } else if (state.filePickerTarget === 'bodyVersion') {
         applyBodyVersionUpload(fileName);
-      } else if (state.filePickerTarget === 'recordVersion') {
+      } else if (state.filePickerTarget === 'recordVersion' || state.filePickerTarget === 'combinedVersion') {
         applyRecordVersionUpload(fileName);
       } else if (state.filePickerTarget === 'docVersion') {
         applyDocVersionUpload(fileName);
@@ -2036,22 +2369,58 @@
     }
 
     function applyRecordVersionUpload(fileName) {
+      if (state.configContext === 'combined') {
+        var crow = findCombinedById(state.configRowId);
+        if (!crow) return;
+        addCombinedTemplateVersion(crow, { name: fileName, time: formatNowTs(), enabled: true, uploader: 'admin' });
+        renderConfigTable();
+        renderView();
+        return;
+      }
       var row = findRecord(state.configRowId);
       if (!row) return;
       addRecordTemplateVersion(row, { name: fileName, time: formatNowTs(), enabled: true, uploader: 'admin' });
       renderConfigTable();
-      renderTable();
-      renderTree();
+      renderView();
+    }
+
+    function openRecordVersionUpload() {
+      openMockFilePicker(state.configContext === 'combined' ? 'combinedVersion' : 'recordVersion');
     }
 
     function openConfig(id) {
+      state.configContext = 'test-item';
       state.configRowId = id;
+      document.getElementById('configModalTitle').textContent = '配置模板 · 试验项';
+      var hint = document.getElementById('configModalHint');
+      if (hint) hint.innerHTML = '同一试验项可上传多个模板版本，<strong class="text-slate-700">同时只能启用一个</strong>；新上传/复制的版本默认启用最新版。';
       renderConfigTable();
       openModal('configModal');
     }
 
+    function openCombinedConfig(id) {
+      state.configContext = 'combined';
+      state.configRowId = id;
+      var row = findCombinedById(id);
+      document.getElementById('configModalTitle').textContent = '组合记录单模版 · ' + (row ? row.bindLabel : '');
+      var hint = document.getElementById('configModalHint');
+      if (hint) hint.innerHTML = '组合模版应包含绑定范围内<strong>全部试验项</strong>占位。多版本同时仅启用一个；新上传/复制默认启用最新版。';
+      renderConfigTable();
+      openModal('configModal');
+    }
+
+    function openCombinedConfigByBind(bindType, bindTarget) {
+      var row = getOrCreateCombinedRecord(bindType, bindTarget);
+      openCombinedConfig(row.id);
+    }
+
+    function getActiveConfigRow() {
+      if (state.configContext === 'combined') return findCombinedById(state.configRowId);
+      return findRecord(state.configRowId);
+    }
+
     function renderConfigTable() {
-      var row = findRecord(state.configRowId);
+      var row = getActiveConfigRow();
       if (!row) return;
       document.getElementById('configTableBody').innerHTML = (row.templates || []).map(function (t, i) {
         return '<tr><td class="text-center"><input type="radio" name="enabledTpl" ' + (t.enabled ? 'checked' : '') + ' onchange="setEnabledTpl(' + i + ')" /></td>' +
@@ -2063,7 +2432,7 @@
     }
 
     function openRecordVersionRename(index) {
-      var row = findRecord(state.configRowId);
+      var row = getActiveConfigRow();
       if (!row || !row.templates[index]) return;
       state.recordVersionRenameIndex = index;
       var parts = splitFileName(row.templates[index].name);
@@ -2073,7 +2442,7 @@
     }
 
     function saveRecordVersionRename() {
-      var row = findRecord(state.configRowId);
+      var row = getActiveConfigRow();
       var idx = state.recordVersionRenameIndex;
       if (!row || idx == null || !row.templates[idx]) return;
       var base = (document.getElementById('recordVersionRenameInput').value || '').trim();
@@ -2083,11 +2452,11 @@
       if (row.templates[idx].enabled) row.file = row.templates[idx].name;
       closeModal('recordVersionRenameModal');
       renderConfigTable();
-      renderTable();
+      renderView();
     }
 
     function setEnabledTpl(index) {
-      var row = findRecord(state.configRowId);
+      var row = getActiveConfigRow();
       if (!row) return;
       row.templates.forEach(function (t, i) { t.enabled = i === index; });
       var enabled = row.templates[index];
@@ -2096,35 +2465,57 @@
     }
 
     function removeTpl(index) {
-      var row = findRecord(state.configRowId);
+      var row = getActiveConfigRow();
       if (!row || !confirm('确定删除该模板版本？')) return;
       row.templates.splice(index, 1);
-      ensureRecordEnabled(row);
+      if (state.configContext === 'combined') ensureCombinedEnabled(row);
+      else ensureRecordEnabled(row);
       renderConfigTable();
-      renderTable();
-      renderTree();
+      renderView();
     }
 
     function saveConfig() {
       closeModal('configModal');
-      renderTable();
-      renderTree();
+      renderView();
     }
 
     function clearRecord(id) {
       if (!confirm('清除将移除模板文件关联，试验项数据行保留。确定清除？')) return;
       var row = findRecord(id);
       if (row) { row.file = null; row.configured = false; row.templates = []; }
-      renderTable();
-      renderTree();
+      renderView();
+    }
+
+    function clearCombined(id, bindType, bindTarget) {
+      if (!confirm('清除将移除本节点组合模版文件。确定清除？')) return;
+      var row = id ? findCombinedById(id) : findCombinedRecord(bindType, bindTarget);
+      if (row) {
+        var idx = RECORD_COMBINED_DATA.indexOf(row);
+        if (idx >= 0) RECORD_COMBINED_DATA.splice(idx, 1);
+      }
+      renderView();
+    }
+
+    function openCombinedPageOffice(id) {
+      openPageOffice('record-combined', id);
     }
 
     function getRecordCopySources() {
-      return RECORD_DATA.filter(function (r) {
-        if (!r.file || !r.configured) return false;
-        if (state.recordRowId && r.id === state.recordRowId) return false;
-        return true;
+      var list = [];
+      if (state.configContext === 'combined') {
+        RECORD_COMBINED_DATA.forEach(function (r) {
+          if (r.configured && r.file && r.id !== state.configRowId) {
+            list.push({ kind: 'combined', id: r.id, file: r.file, bindType: r.bindType, bindTarget: r.bindTarget, bindLabel: r.bindLabel });
+          }
+        });
+        return list;
+      }
+      RECORD_DATA.forEach(function (r) {
+        if (!r.file || !r.configured) return;
+        if (state.recordRowId && r.id === state.recordRowId) return;
+        list.push({ kind: 'test', id: r.id, file: r.file, tree: r.tree, test: r.test });
       });
+      return list;
     }
 
     function renderRecordCopyTable() {
@@ -2135,14 +2526,31 @@
       var sampleKw = sampleEl ? sampleEl.value.trim() : '';
       var catKw = categoryEl ? categoryEl.value.trim() : '';
       var testKw = testEl ? testEl.value.trim() : '';
-      if (sampleKw) sources = sources.filter(function (r) { return getBodySampleDisplay(r.tree).includes(sampleKw); });
-      if (catKw) sources = sources.filter(function (r) { return getBodyCategoryPath(r.tree).includes(catKw); });
-      if (testKw) sources = sources.filter(function (r) { return (r.test || '').includes(testKw); });
+      if (sampleKw) sources = sources.filter(function (r) {
+        if (r.kind === 'combined') return (r.bindLabel || '').includes(sampleKw) || getBodySampleDisplay(r.bindTarget).includes(sampleKw);
+        return getBodySampleDisplay(r.tree).includes(sampleKw);
+      });
+      if (catKw) sources = sources.filter(function (r) {
+        if (r.kind === 'combined') return getBodyCategoryPath(r.bindTarget).includes(catKw);
+        return getBodyCategoryPath(r.tree).includes(catKw);
+      });
+      if (testKw) sources = sources.filter(function (r) {
+        if (r.kind === 'combined') return '全部试验项'.includes(testKw);
+        return (r.test || '').includes(testKw);
+      });
       document.getElementById('recordCopyTableBody').innerHTML = sources.map(function (r, i) {
-        var categoryPath = getBodyCategoryPath(r.tree);
+        if (r.kind === 'combined') {
+          var categoryPath = getBodyCategoryPath(r.bindTarget);
+          return '<tr><td><input type="radio" name="recordCopyPick" value="c' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
+            '<td>' + r.file + '</td><td class="cell-sample-name">' + escHtml(r.bindLabel) + '</td>' +
+            '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td>' +
+            '<td>全部试验项（组合）</td>' +
+            '<td><button type="button" onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button></td></tr>';
+        }
+        var categoryPath2 = getBodyCategoryPath(r.tree);
         return '<tr><td><input type="radio" name="recordCopyPick" value="' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
           '<td>' + r.file + '</td><td class="cell-sample-name">' + getBodySampleDisplay(r.tree) + '</td>' +
-          '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td>' +
+          '<td><div class="cell-category-path" title="' + escHtml(categoryPath2) + '">' + categoryPath2 + '</div></td>' +
           '<td>' + r.test + '</td>' +
           '<td><button type="button" onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button></td></tr>';
       }).join('') || '<tr><td colspan="7" class="py-6 text-center text-slate-400">暂无可复制的记录单模板</td></tr>';
@@ -2168,16 +2576,23 @@
 
     function confirmRecordCopy() {
       var pick = document.querySelector('input[name=recordCopyPick]:checked');
-      var target = findRecord(state.recordRowId);
-      var source = pick ? findRecord(parseInt(pick.value, 10)) : null;
-      if (target && source && source.file) {
-        var copyName = '复制_' + source.file;
-        addRecordTemplateVersion(target, { name: copyName, time: formatNowTs(), enabled: true, uploader: 'admin' });
+      var pickVal = pick ? pick.value : '';
+      if (state.configContext === 'combined') {
+        var target = findCombinedById(state.configRowId);
+        var sourceCombined = pickVal.indexOf('c') === 0 ? findCombinedById(parseInt(pickVal.slice(1), 10)) : null;
+        if (target && sourceCombined && sourceCombined.file) {
+          addCombinedTemplateVersion(target, { name: '复制_' + sourceCombined.file, time: formatNowTs(), enabled: true, uploader: 'admin' });
+        }
+      } else {
+        var targetRow = findRecord(state.recordRowId);
+        var source = pickVal ? findRecord(parseInt(pickVal, 10)) : null;
+        if (targetRow && source && source.file) {
+          addRecordTemplateVersion(targetRow, { name: '复制_' + source.file, time: formatNowTs(), enabled: true, uploader: 'admin' });
+        }
       }
       closeModal('recordCopyModal');
       if (state.configRowId) renderConfigTable();
-      renderTable();
-      renderTree();
+      renderView();
     }
 
     function confirmCopy() {
@@ -2238,6 +2653,28 @@
       ]}
     ];
 
+    function renderRecordCombinedDocument(bindTarget) {
+      var tests = [];
+      if (findCombinedRecord('model', bindTarget) || findReportTreeNode(bindTarget, getMarkedReportTree()) && findReportTreeNode(bindTarget, getMarkedReportTree()).node.model) {
+        tests = RECORD_DATA.filter(function (r) { return r.tree === bindTarget; }).map(function (r) { return r.test; });
+      } else {
+        var mids = collectModelIdsUnderNode(bindTarget, getMarkedReportTree()) || [];
+        mids.forEach(function (mid) {
+          RECORD_DATA.filter(function (r) { return r.tree === mid; }).forEach(function (r) {
+            if (tests.indexOf(r.test) < 0) tests.push(r.test);
+          });
+        });
+      }
+      var sections = tests.map(function (t) {
+        return '<div style="margin-top:14px;font-weight:bold;border-bottom:1px solid #000;padding-bottom:4px">' + escHtml(t) + '</div>' +
+          '<p style="margin-top:6px;color:#64748b;font-size:11px">（组合模版内 ' + escHtml(t) + ' 试验结果占位 …）</p>';
+      }).join('');
+      return '<div class="doc-title" style="font-size:18px;margin-bottom:12px">组合记录单模版</div>' +
+        '<p style="margin-bottom:8px">绑定：' + escHtml(getReportTreeModelLabel(bindTarget)) + '</p>' +
+        sections +
+        '<p style="margin-top:16px;font-size:11px;color:#64748b">共 ' + tests.length + ' 项试验 · PageOffice 原型演示</p>';
+    }
+
     function renderRecordDocument() {
       return '<table class="doc-tbl">' +
         '<tr>' +
@@ -2283,7 +2720,10 @@
 
     function renderPoDocument(type) {
       var html;
-      if (type === 'record') html = renderRecordDocument();
+      if (type === 'record-combined') {
+        var crow = findCombinedById(state.configRowId);
+        html = renderRecordCombinedDocument(crow ? crow.bindTarget : state.treeId);
+      } else if (type === 'record') html = renderRecordDocument();
       else if (type === 'doc') html = renderDocDocument(state.poDocType);
       else html = renderReportDocument();
       document.getElementById('poDocument').innerHTML = html;
@@ -2335,9 +2775,13 @@
 
     function openPageOffice(type, rowId) {
       state.poType = type;
-      state.poTab = type === 'record' ? 'result' : (type === 'doc' ? 'contract' : 'report');
+      state.poTab = (type === 'record' || type === 'record-combined') ? 'result' : (type === 'doc' ? 'contract' : 'report');
+      if (type === 'record-combined') state.configRowId = rowId;
       var fileName = '模板.docx';
-      if (type === 'record' && rowId) {
+      if (type === 'record-combined' && rowId) {
+        var crow = findCombinedById(rowId);
+        if (crow && crow.file) fileName = crow.file;
+      } else if (type === 'record' && rowId) {
         var row = findRecord(rowId);
         if (row && row.file) fileName = row.file;
       } else if (type === 'doc') {
@@ -2722,9 +3166,10 @@
         { id: 'record-config', selector: '[data-annotate="record-config"]', position: 'top-right', title: '版本管理', wide: true, content: '同一试验项可存多个模板版本，通过单选启用其中一个；<strong>新上传/复制的版本默认启用最新版</strong>，有文件则必有一版启用。弹窗内可上传、复制其他项、修改文件名；含「上传人」列。删除版本不受是否启用影响。', tag: '记录单' },
         { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 插件打开编辑窗口：左侧为 Word 模板预览区，右侧为配置字段面板（检测中心信息、合同信息、报告信息、设备信息、样品信息、试验结果集）。记录单与报告模板左侧内容不同。', tag: '模板配置' },
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
-        { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '记录单列表', wide: true, content: '「样品分类」展示完整层级路径，固定宽度最多 2 行，超出省略号，hover 显示全部。「模板文件」未上传时显示「未上传」（原「未配置」）。「修改文件名」已移至版本弹窗操作列。', tag: '记录单' },
+        { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '记录单列表', wide: true, content: '统一展示<strong>组合模版</strong>与<strong>试验项模版</strong>行，含模版类型列；筛选对两类行均生效。样品层选中时按型号分组。', tag: '记录单' },
         { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '未上传模板的试验项可从其他样品/试验项复制已有模板；版本弹窗内亦提供「复制其他项」，交互与正文模板版本弹窗一致。', tag: '记录单' },
-        { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出拼接逻辑', wide: true, content: '页面固定为单试验项绑定模式，不配置组合模版。导出切分规则由「业务流程配置 › 记录单设置」决定；合并模式须全部试验项完成后，系统按实际完成的试验项拉取各试验项启用模板并动态拼接为一个文件。', tag: '产品逻辑' },
+        { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出模版逻辑', wide: true, content: '支持样品层/型号层<strong>组合模版</strong>与各<strong>试验项单模版</strong>并存。「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」优先本型号组合模版，否则上级样品组合模版，否则试验项动态拼接；切分类两种模式始终用试验项单模版。UI 仅显示 xxx.docx/未上传，继承在导出时自动解析。', tag: '产品逻辑' },
+        { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版卡片', wide: true, content: '样品层/型号层可上传一份含全部试验项的组合模版。分类层仅展示说明。模版文件列仅显示文件名或「未上传」，不展示继承状态。', tag: '记录单' },
         { id: 'record-no-download', selector: '#toolbar', position: 'top-left', title: '移除下载按钮', wide: true, content: '模版管理各 Tab 工具栏已移除「下载」按钮；点击列表中蓝色的模板文件链接即可触发下载。', tag: '模板管理' },
         { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 7 类流程单据模版。进入后通过顶部横向 Tab 切换四大类（电力物资类 / 安全工器具类 / 环境检测 / 工程检测），每类固定 7 张卡片，卡片内直接管理多版本模版。', tag: '模板管理' },
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 7 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },

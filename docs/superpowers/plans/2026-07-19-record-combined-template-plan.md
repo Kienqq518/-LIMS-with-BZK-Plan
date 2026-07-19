@@ -2,7 +2,7 @@
 
 **日期**: 2026-07-19  
 **设计依据**: [`2026-07-19-record-combined-template-design.md`](../specs/2026-07-19-record-combined-template-design.md)  
-**状态**: 待实现
+**状态**: 已实现（原型）
 
 ## 目标
 
