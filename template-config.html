@@ -82,7 +82,7 @@
     .tpl-table tr:hover td { background: #fafafa; }
     .tpl-table .link { color: #2563eb; cursor: pointer; }
     .tpl-table .link:hover { text-decoration: underline; }
-    .tpl-table-pin { border-collapse: separate; border-spacing: 0; min-width: 1116px; width: max-content; }
+    .tpl-table-pin { border-collapse: separate; border-spacing: 0; min-width: 1164px; width: max-content; }
     .tpl-table-pin th, .tpl-table-pin td { box-sizing: border-box; }
     .tpl-table-pin th.cell-seq, .tpl-table-pin td.cell-seq,
     .tpl-table-pin th.cell-tpl-name, .tpl-table-pin td.cell-tpl-name,
@@ -101,11 +101,11 @@
     .tpl-table-pin th.cell-seq, .tpl-table-pin td.cell-seq { left: 0; }
     .tpl-table-pin th.cell-tpl-name, .tpl-table-pin td.cell-tpl-name { left: 48px; }
     .tpl-table-pin th.cell-sample-name, .tpl-table-pin td.cell-sample-name { left: 120px; box-shadow: 4px 0 8px -4px rgba(15,23,42,.12); }
-    .tpl-table-pin th.cell-ops, .tpl-table-pin td.cell-ops { right: 0; width: 228px; min-width: 228px; max-width: 228px; box-shadow: -4px 0 8px -4px rgba(15,23,42,.12); }
-    .cell-ops { width: 228px; min-width: 228px; max-width: 228px; font-size: 12px; padding: 6px 8px !important; white-space: nowrap; vertical-align: middle; }
+    .tpl-table-pin th.cell-ops, .tpl-table-pin td.cell-ops { right: 0; width: 188px; min-width: 188px; max-width: 188px; box-shadow: -4px 0 8px -4px rgba(15,23,42,.12); }
+    .cell-ops { width: 188px; min-width: 188px; max-width: 188px; font-size: 12px; padding: 6px 6px !important; white-space: nowrap; vertical-align: middle; }
     .cell-ops button { font-size: 12px; }
-    .cell-ops .op-sep { display: inline-block; width: 4px; }
-    .cell-sample-name { width: 132px; min-width: 132px; max-width: 132px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cell-ops .op-sep { display: inline-block; width: 2px; }
+    .cell-sample-name { width: 220px; min-width: 220px; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cell-seq { width: 48px; min-width: 48px; max-width: 48px; text-align: center; white-space: nowrap; }
     .cell-tpl-name { width: 72px; min-width: 72px; max-width: 72px; white-space: nowrap; }
     .cell-default { width: 56px; min-width: 56px; text-align: center; white-space: nowrap; vertical-align: middle; }
@@ -1060,7 +1060,7 @@
     }
 
     function combinedTableHeadHtml(withPickCols) {
-      var cols = '<th style="width:88px">绑定层级</th><th style="width:200px">绑定对象</th><th style="width:180px">覆盖范围</th><th style="width:200px">模板文件</th><th class="cell-ops">操作</th>';
+      var cols = '<th style="width:88px">绑定层级</th><th class="cell-sample-name">绑定对象</th><th style="width:180px">覆盖范围</th><th style="width:200px">模板文件</th><th class="cell-ops">操作</th>';
       if (withPickCols) return '<tr><th style="width:40px"></th><th>序号</th>' + cols + '</tr>';
       return '<tr>' + cols + '</tr>';
     }
@@ -1083,7 +1083,7 @@
     function renderCombinedTableRow(row) {
       return '<tr class="row-combined">' +
         '<td>' + combinedBindLevelLabel(row.bindType) + '</td>' +
-        '<td>' + escHtml(row.bindLabel || getReportTreeModelLabel(row.bindTarget)) + '</td>' +
+        '<td class="cell-sample-name">' + escHtml(row.bindLabel || getReportTreeModelLabel(row.bindTarget)) + '</td>' +
         '<td>' + combinedCoverageLabel(row.bindType, row.bindTarget) + '</td>' +
         '<td>' + combinedFileCell(row) + '</td>' +
         '<td class="cell-ops">' + combinedOps(row) + '</td></tr>';
@@ -1684,7 +1684,7 @@
         }).join('');
       } else if (state.main === 'record') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin');
-        head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th>序号</th><th>样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>模板文件</th><th class="cell-ops">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th style="width:48px">序号</th><th class="cell-sample-name">样品名称(型号)</th><th style="width:240px">样品分类</th><th>试验项</th><th>模板文件</th><th class="cell-ops">操作</th></tr>';
         var seq = 0;
         body.innerHTML = rows.map(function (row) {
           if (row.rowType === 'group') {
@@ -1742,7 +1742,7 @@
         var modelCombined = testRow ? getCombinedRowVirtual('model', testRow.tree) : null;
         var sampleDisplay = getBodySampleDisplay(testRow ? testRow.tree : '');
         tbody = '<tr class="row-combined">' +
-          '<td>型号层</td><td>' + escHtml(sampleDisplay) + '</td>' +
+          '<td>型号层</td><td class="cell-sample-name">' + escHtml(sampleDisplay) + '</td>' +
           '<td class="text-slate-400">—</td>' +
           '<td>' + (modelCombined ? combinedFileCell(modelCombined) : '<span class="badge-none">未上传</span>') + '</td>' +
           '<td class="cell-ops"><span class="text-slate-400 text-xs">请在型号层配置</span></td></tr>';
@@ -2644,7 +2644,7 @@
         if (r.kind === 'combined') {
           return '<tr><td><input type="radio" name="recordCopyPick" value="c' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
             '<td>' + combinedBindLevelLabel(r.bindType) + '</td>' +
-            '<td>' + escHtml(r.bindLabel || getReportTreeModelLabel(r.bindTarget)) + '</td>' +
+            '<td class="cell-sample-name">' + escHtml(r.bindLabel || getReportTreeModelLabel(r.bindTarget)) + '</td>' +
             '<td>' + combinedCoverageLabel(r.bindType, r.bindTarget) + '</td>' +
             '<td>' + r.file + '</td>' +
             '<td><button type="button" onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button></td></tr>';
