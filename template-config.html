@@ -67,6 +67,11 @@
     .badge-none { color: #94a3b8; font-size: 12px; }
     .tpl-main { flex: 1; min-width: 0; background: #fff; }
     .tpl-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
+    .tpl-toolbar-record { flex-wrap: nowrap; overflow-x: auto; }
+    .tpl-toolbar-record label { flex-shrink: 0; }
+    .tpl-toolbar-record select { width: 90px; min-width: 82px; flex-shrink: 0; }
+    .tpl-toolbar-record input { width: 76px; min-width: 68px; flex-shrink: 0; }
+    .tpl-toolbar-record .tpl-toolbar-query { margin-left: auto; flex-shrink: 0; }
     .tpl-toolbar-query { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .tpl-toolbar label { font-size: 13px; color: #64748b; white-space: nowrap; }
     .tpl-toolbar input { border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 8px; font-size: 13px; outline: none; width: 88px; min-width: 72px; }
@@ -1348,6 +1353,7 @@
 
     function renderToolbar() {
       var el = document.getElementById('toolbar');
+      el.className = 'tpl-toolbar';
       if (state.main === 'report' && state.sub === 'body') {
         el.innerHTML =
           '<label>模板名称</label><input id="f_name" placeholder="请输入" />' +
@@ -1372,6 +1378,7 @@
           '</div>' +
           '<button onclick="openPublicModal()" class="ml-auto rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="public-add"><i class="fa fa-plus"></i> 新增</button>';
       } else if (state.main === 'record') {
+        el.className = 'tpl-toolbar tpl-toolbar-record';
         el.innerHTML =
           '<label>模版类型</label><select id="f_rowType"><option value="">全部</option><option value="combined">组合模版</option><option value="test">试验项模版</option></select>' +
           '<label>是否配置模板</label><select id="f_configured"><option value="">全部</option><option value="yes">是</option><option value="no">否</option></select>' +
