@@ -1604,8 +1604,7 @@
           '<button onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button><span class="op-sep"></span>' +
           '<button onclick="clearRecord(' + r.id + ')" class="text-red-500 hover:underline" data-annotate="record-clear">清除</button>';
       }
-      return '<button onclick="openConfig(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button><span class="op-sep"></span>' +
-        '<button onclick="openRecordCopyForRow(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-copy">复制</button>';
+      return '<button onclick="openConfig(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button>';
     }
 
     function bodyOps(r) {
@@ -3259,9 +3258,9 @@
         { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 插件打开编辑窗口：左侧为 Word 模板预览区，右侧为配置字段面板（检测中心信息、合同信息、报告信息、设备信息、样品信息、试验结果集）。记录单与报告模板左侧内容不同。', tag: '模板配置' },
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
         { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '试验项模版列表', wide: true, content: '仅展示<strong>试验项单模版</strong>；组合模版在上方表格区域管理。样品层选中时按型号分组。', tag: '记录单' },
-        { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '未上传模板的试验项可从其他样品/试验项复制已有模板；版本弹窗内亦提供「复制其他项」，交互与正文模板版本弹窗一致。', tag: '记录单' },
+        { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '版本弹窗内提供「复制其他项」，可从其他样品/试验项复制已有模板；列表操作列在未上传时仅展示「版本」。', tag: '记录单' },
         { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出模版逻辑', wide: true, content: '支持样品层/型号层<strong>组合模版</strong>与各<strong>试验项单模版</strong>并存。「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」优先本型号组合模版，否则上级样品组合模版，否则试验项动态拼接；切分类两种模式始终用试验项单模版。UI 仅显示 xxx.docx/未上传，继承在导出时自动解析。', tag: '产品逻辑' },
-        { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版表格', wide: true, content: '样品层/型号层可上传一份含全部试验项的组合模版。选中<strong>分类层</strong>时汇总展示范围内全部样品层与型号层组合模版。模版文件列仅显示文件名或「未上传」，不展示继承状态。', tag: '记录单' },
+        { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版表格', wide: true, content: '按左侧选中节点展示<strong>本层级及以下</strong>全部组合模版：分类层汇总下属样品层与型号层；样品层展示本样品 + 其下各型号；型号层仅本型号。试验项节点不展示此区域。', tag: '记录单' },
         { id: 'record-no-download', selector: '#toolbar', position: 'top-left', title: '移除下载按钮', wide: true, content: '模版管理各 Tab 工具栏已移除「下载」按钮；点击列表中蓝色的模板文件链接即可触发下载。', tag: '模板管理' },
         { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 7 类流程单据模版。进入后通过顶部横向 Tab 切换四大类（电力物资类 / 安全工器具类 / 环境检测 / 工程检测），每类固定 7 张卡片，卡片内直接管理多版本模版。', tag: '模板管理' },
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 7 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },
