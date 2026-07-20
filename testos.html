@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TestOS - 实验室数智化系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, .4); border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    .app-card { transition: transform .2s ease, box-shadow .2s ease; }
+    .app-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15, 23, 42, .08); }
+    .app-illus {
+      background: linear-gradient(135deg, var(--from) 0%, var(--to) 100%);
+    }
+    .cal-day { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; font-size: 13px; }
+    .cal-day.today { background: #2563eb; color: #fff; font-weight: 600; }
+    .cal-day.other-month { color: #cbd5e1; }
+  </style>
+</head>
+<body class="flex h-screen flex-col overflow-hidden bg-slate-100 text-slate-700">
+
+  <div id="testosHeader"></div>
+
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- ========== 左侧：在线人员 ========== -->
+    <aside class="flex w-56 flex-shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white">
+      <!-- AI 助手卡片 -->
+      <div class="m-3 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
+        <div class="mb-1 text-sm font-semibold text-indigo-700">实验室AI助手</div>
+        <div class="mb-3 text-xs leading-relaxed text-indigo-500/80">智能问答，助力实验室高效运转</div>
+        <button class="rounded-full bg-blue-600 px-4 py-1.5 text-xs text-white hover:bg-blue-700">去咨询</button>
+      </div>
+
+      <div class="flex items-center justify-between px-4 pb-2 pt-1">
+        <span class="text-sm font-medium text-slate-700">在线人员 (1)</span>
+        <i class="fa fa-angle-down text-xs text-slate-400"></i>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-3 pb-4">
+        <div id="onlineUsers"></div>
+      </div>
+    </aside>
+
+    <!-- ========== 中间：应用总览 ========== -->
+    <main class="flex-1 overflow-y-auto p-5">
+      <div class="mb-5 flex items-center justify-between">
+        <h1 class="text-lg font-semibold text-slate-800">应用总览</h1>
+        <div class="flex items-center gap-2">
+          <button class="flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">
+            <i class="fa fa-plus"></i> 本地应用
+          </button>
+          <button class="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+            <i class="fa fa-cog"></i> 管理应用
+          </button>
+        </div>
+      </div>
+
+      <div id="appGrid" class="grid grid-cols-2 gap-5 xl:grid-cols-4"></div>
+    </main>
+
+    <!-- ========== 右侧：日历 / 帮助 / 增值服务 ========== -->
+    <aside class="flex w-72 flex-shrink-0 flex-col overflow-y-auto border-l border-slate-200 bg-white">
+      <!-- 日历 -->
+      <div class="border-b border-slate-100 p-4">
+        <div class="mb-3 flex items-center justify-between">
+          <span class="text-sm font-medium text-slate-700">日历</span>
+          <div class="flex items-center gap-2 text-xs text-slate-500">
+            <button class="hover:text-blue-600"><i class="fa fa-angle-left"></i></button>
+            <span>2026年7月</span>
+            <button class="hover:text-blue-600"><i class="fa fa-angle-right"></i></button>
+          </div>
+        </div>
+        <div class="grid grid-cols-7 gap-y-1 text-center text-xs text-slate-400">
+          <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+        </div>
+        <div id="calendarGrid" class="mt-1 grid grid-cols-7 gap-y-1 text-center"></div>
+      </div>
+
+      <!-- 帮助 -->
+      <div class="border-b border-slate-100 p-4">
+        <div class="mb-3 text-sm font-medium text-slate-700">帮助</div>
+        <div id="helpList" class="space-y-3"></div>
+      </div>
+
+      <!-- 增值服务 -->
+      <div class="p-4">
+        <div class="mb-3 text-sm font-medium text-slate-700">增值服务</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-slate-100 p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/30">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-orange-500">
+              <i class="fa fa-book text-xl"></i>
+            </div>
+            <span class="text-xs text-slate-600">作业指导书</span>
+          </div>
+          <div class="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-slate-100 p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/30">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 text-green-500">
+              <i class="fa fa-shopping-bag text-xl"></i>
+            </div>
+            <span class="text-xs text-slate-600">实验室商城</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="js/testos-header.js"></script>
+  <script>
+    (function () {
+      var onlineUsers = [
+        { name: 'admin', avatar: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=64&h=64&fit=crop', location: '浙江省 杭州市', dept: '事业发展部' },
+        { name: 'cs222', avatar: 'https://ui-avatars.com/api/?name=cs222&background=6366f1&color=fff', location: '浙江省 杭州市', dept: '安全工具' },
+        { name: 'cs3', avatar: 'https://ui-avatars.com/api/?name=cs3&background=10b981&color=fff', location: '浙江省 杭州市', dept: '安全工具' }
+      ];
+
+      var apps = [
+        { name: '实验室业务管理系统', icon: 'fa-flask', from: '#dbeafe', to: '#93c5fd', href: 'index.html' },
+        { name: 'LIMS检测标准库', icon: 'fa-database', from: '#e0e7ff', to: '#a5b4fc', href: '#' },
+        { name: '实验室物资业务管理系统', icon: 'fa-cubes', from: '#fce7f3', to: '#f9a8d4', href: '#' },
+        { name: '实验室数据采集系统', icon: 'fa-line-chart', from: '#ccfbf1', to: '#5eead4', href: '#' },
+        { name: '客户管理系统 (CRM)', icon: 'fa-users', from: '#fef3c7', to: '#fcd34d', href: '#' },
+        { name: '项目管理系统 (PMS)', icon: 'fa-tasks', from: '#ede9fe', to: '#c4b5fd', href: '#' },
+        { name: '实验室数字孪生', icon: 'fa-cube', from: '#cffafe', to: '#67e8f9', href: '#' },
+        { name: '数字可视化', icon: 'fa-bar-chart', from: '#ffedd5', to: '#fdba74', href: '#' }
+      ];
+
+      var helpArticles = [
+        { title: '如何确定实验室设备的校准周期？', location: '@杭州', date: '2025-08-05', color: 'bg-sky-100 text-sky-600' },
+        { title: '实验室样品管理最佳实践指南', location: '@杭州', date: '2025-08-03', color: 'bg-emerald-100 text-emerald-600' },
+        { title: '检测报告编制规范与注意事项', location: '@杭州', date: '2025-08-01', color: 'bg-amber-100 text-amber-600' }
+      ];
+
+      /* 在线人员 */
+      document.getElementById('onlineUsers').innerHTML = onlineUsers.map(function (u) {
+        return '<div class="mb-2 flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-slate-50">' +
+          '<img src="' + u.avatar + '" alt="' + u.name + '" class="h-9 w-9 flex-shrink-0 rounded-full object-cover" />' +
+          '<div class="min-w-0 flex-1">' +
+            '<div class="truncate text-sm font-medium text-slate-700">' + u.name + '</div>' +
+            '<div class="truncate text-xs text-slate-400">' + u.location + '</div>' +
+            '<div class="truncate text-xs text-slate-400">' + u.dept + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      /* 应用卡片 */
+      document.getElementById('appGrid').innerHTML = apps.map(function (app) {
+        var clickAttr = app.href === '#'
+          ? ' onclick="event.preventDefault();alert(\'原型演示：' + app.name + '\')"'
+          : '';
+        return '<a href="' + app.href + '"' + clickAttr + ' class="app-card block overflow-hidden rounded-xl bg-white shadow-sm">' +
+          '<div class="app-illus flex h-36 items-center justify-center" style="--from:' + app.from + ';--to:' + app.to + '">' +
+            '<div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/60 shadow-sm backdrop-blur-sm">' +
+              '<i class="fa ' + app.icon + ' text-3xl text-slate-600"></i>' +
+            '</div>' +
+          '</div>' +
+          '<div class="px-4 py-3">' +
+            '<div class="mb-1 text-sm font-semibold text-slate-800">' + app.name + '</div>' +
+            '<div class="text-xs text-slate-400">有效期至：永久</div>' +
+          '</div>' +
+        '</a>';
+      }).join('');
+
+      /* 帮助列表 */
+      document.getElementById('helpList').innerHTML = helpArticles.map(function (h) {
+        return '<div class="flex cursor-pointer gap-2.5 rounded-lg p-1 transition-colors hover:bg-slate-50">' +
+          '<div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ' + h.color + '">' +
+            '<i class="fa fa-file-text-o"></i>' +
+          '</div>' +
+          '<div class="min-w-0 flex-1">' +
+            '<div class="line-clamp-2 text-xs leading-relaxed text-slate-700">' + h.title + '</div>' +
+            '<div class="mt-1 flex items-center gap-2 text-[11px] text-slate-400">' +
+              '<span>' + h.location + '</span><span>' + h.date + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      /* 日历：2026年7月，19日高亮 */
+      var calDays = [
+        { day: 29, other: true }, { day: 30, other: true },
+        1, 2, 3, 4, 5,
+        6, 7, 8, 9, 10, 11, 12,
+        13, 14, 15, 16, 17, 18, 19,
+        20, 21, 22, 23, 24, 25, 26,
+        27, 28, 29, 30, 31,
+        { day: 1, other: true }, { day: 2, other: true }
+      ];
+      document.getElementById('calendarGrid').innerHTML = calDays.map(function (d) {
+        var day = typeof d === 'object' ? d.day : d;
+        var other = typeof d === 'object' && d.other;
+        var today = day === 19 && !other;
+        return '<div class="cal-day mx-auto' + (today ? ' today' : '') + (other ? ' other-month' : '') + '">' + day + '</div>';
+      }).join('');
+    })();
+  </script>
+</body>
+</html>

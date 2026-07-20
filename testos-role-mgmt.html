@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>角色管理 - TestOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, .4); border-radius: 3px; }
+    .role-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .role-table th, .role-table td { border-bottom: 1px solid #e5e7eb; padding: 12px 14px; text-align: left; vertical-align: middle; }
+    .role-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
+    .role-table tbody tr:hover { background: #f8fafc; }
+    .tab-btn { position: relative; padding: 10px 4px; margin-right: 24px; font-size: 14px; color: #64748b; cursor: pointer; border: none; background: none; }
+    .tab-btn.active { color: #2563eb; font-weight: 500; }
+    .tab-btn.active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: #2563eb; border-radius: 1px; }
+    .action-link { color: #2563eb; cursor: pointer; margin-right: 12px; }
+    .action-link:hover { text-decoration: underline; }
+    .action-link.danger { color: #ef4444; }
+  </style>
+</head>
+<body class="flex h-screen flex-col overflow-hidden bg-slate-100 text-slate-700">
+
+  <div id="testosHeader"></div>
+
+  <main class="flex-1 overflow-y-auto p-5">
+    <!-- 返回 + 标题 -->
+    <div class="mb-4 flex items-center gap-3">
+      <a href="testos.html" class="flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-blue-600">
+        <i class="fa fa-angle-left"></i> 返回
+      </a>
+      <h1 class="text-lg font-semibold text-slate-800">角色管理</h1>
+    </div>
+
+    <!-- 筛选区 -->
+    <div class="rounded-lg bg-white p-4 shadow-sm">
+      <div class="flex flex-wrap items-end gap-x-8 gap-y-3">
+        <div class="flex items-center gap-2">
+          <label class="whitespace-nowrap text-sm text-slate-600">应用名称</label>
+          <select id="fApp" class="w-44 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">请选择</option>
+            <option>testos底座</option>
+            <option>实验室业务管理系统</option>
+            <option>LIMS检测标准库</option>
+            <option>实验室数据采集系统</option>
+            <option>数字可视化</option>
+            <option>客户管理系统 (CRM)</option>
+            <option>项目管理系统 (PMS)</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="whitespace-nowrap text-sm text-slate-600">角色名称</label>
+          <input id="fName" type="text" placeholder="请输入" class="w-44 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          <button onclick="doSearch()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white hover:bg-blue-700">查询</button>
+          <button onclick="resetFilter()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 表格区 -->
+    <div class="mt-4 rounded-lg bg-white shadow-sm">
+      <!-- Tab 栏 + 操作按钮 -->
+      <div class="flex items-center justify-between border-b border-slate-100 px-4">
+        <div class="flex">
+          <button type="button" class="tab-btn active" data-tab="fixed" onclick="switchTab('fixed')">固定角色类型</button>
+          <button type="button" class="tab-btn" data-tab="custom" onclick="switchTab('custom')">自定义角色类型</button>
+        </div>
+        <div id="customActions" class="hidden items-center gap-2 py-2">
+          <button onclick="alert('原型演示：添加角色')" class="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">
+            <i class="fa fa-plus"></i> 添加角色
+          </button>
+          <button onclick="alert('原型演示：批量删除')" class="flex items-center gap-1 rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+            <i class="fa fa-trash-o"></i> 批量删除
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto p-4">
+        <table class="role-table min-w-[900px]">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-4 py-3 text-sm text-slate-500">
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-400"><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-400"><i class="fa fa-angle-right"></i></button>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/testos-header.js"></script>
+  <script>
+    var currentTab = 'fixed';
+
+    var fixedRoles = [
+      { name: '超级管理员', apps: '实验室业务管理系统, LIMS检测标准库, 实验室物资业务管理系统, 实验室数据采集系统, 客户管理系统 (CRM), 项目管理系统 (PMS), 实验室数字孪生, 数字可视化', remark: '/', readonly: true },
+      { name: '试验员', apps: '实验室业务管理系统, LIMS检测标准库, 实验室物资业务管理系统, 实验室数据采集系统, 客户管理系统 (CRM), 项目管理系统 (PMS), 实验室数字孪生, 数字可视化', remark: '试验检测相关权限' },
+      { name: '业务负责人', apps: '实验室业务管理系统, LIMS检测标准库, 实验室物资业务管理系统, 实验室数据采集系统, 客户管理系统 (CRM), 项目管理系统 (PMS), 实验室数字孪生, 数字可视化', remark: '业务审批相关权限' },
+      { name: '系统管理员', apps: '实验室业务管理系统, LIMS检测标准库, 实验室物资业务管理系统, 实验室数据采集系统, 客户管理系统 (CRM), 项目管理系统 (PMS), 实验室数字孪生, 数字可视化', remark: '系统配置相关权限' },
+      { name: '数采训练', apps: 'testos底座, 实验室数据采集系统, 数字可视化', remark: '数据采集训练权限' },
+      { name: '实验室主任', apps: 'testos底座, 实验室业务管理系统, LIMS检测标准库, 实验室物资业务管理系统, 实验室数据采集系统, 客户管理系统 (CRM), 项目管理系统 (PMS), 实验室数字孪生, 数字可视化', remark: '实验室全面管理权限' }
+    ];
+
+    var customRoles = [
+      { name: '抽检员', apps: 'testos底座, 实验室业务管理系统, LIMS检测标准库, 实验室物资业务管理系统, 实验室数据采集系统, 数字可视化', remark: '/', createdAt: '2025-08-05 14:30:00' },
+      { name: '大屏', apps: 'testos底座, 数字可视化', remark: '/', createdAt: '2025-08-12 09:15:00' },
+      { name: '测试', apps: 'testos底座, 实验室业务管理系统, LIMS检测标准库, 实验室物资业务管理系统, 实验室数据采集系统, 客户管理系统 (CRM), 项目管理系统 (PMS), 实验室数字孪生, 数字可视化', remark: '/', createdAt: '2025-09-01 16:42:00' },
+      { name: '售前1', apps: 'testos底座, 实验室业务管理系统, LIMS检测标准库, 实验室物资业务管理系统, 实验室数据采集系统, 客户管理系统 (CRM), 项目管理系统 (PMS), 实验室数字孪生, 数字可视化', remark: '/', createdAt: '2025-10-18 11:20:00' },
+      { name: 'PMS角色', apps: '项目管理系统 (PMS)', remark: '/', createdAt: '2025-11-02 08:55:00' },
+      { name: 'CRM角色', apps: '客户管理系统 (CRM)', remark: '/', createdAt: '2025-11-10 13:08:00' },
+      { name: '领样员', apps: '实验室业务管理系统', remark: '样品管理 all 试验管理...', createdAt: '2025-11-15 10:30:00' }
+    ];
+
+    var filteredFixed = fixedRoles.slice();
+    var filteredCustom = customRoles.slice();
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
+      document.getElementById('customActions').classList.toggle('hidden', tab !== 'custom');
+      document.getElementById('customActions').classList.toggle('flex', tab === 'custom');
+      renderTable();
+    }
+
+    function renderTableHead() {
+      var head = document.getElementById('tableHead');
+      if (currentTab === 'fixed') {
+        head.innerHTML = '<tr>' +
+          '<th class="w-16">序号</th>' +
+          '<th class="w-36">角色名称</th>' +
+          '<th>应用</th>' +
+          '<th class="w-48">备注</th>' +
+          '<th class="w-36">操作</th>' +
+        '</tr>';
+      } else {
+        head.innerHTML = '<tr>' +
+          '<th class="w-10"><input type="checkbox" /></th>' +
+          '<th class="w-16">序号</th>' +
+          '<th class="w-36">角色名称</th>' +
+          '<th>应用</th>' +
+          '<th class="w-48">备注</th>' +
+          '<th class="w-44">创建时间 <i class="fa fa-sort text-xs"></i></th>' +
+          '<th class="w-48">操作</th>' +
+        '</tr>';
+      }
+    }
+
+    function renderTable() {
+      renderTableHead();
+      var body = document.getElementById('tableBody');
+      var data = currentTab === 'fixed' ? filteredFixed : filteredCustom;
+      var html = '';
+
+      data.forEach(function (row, i) {
+        if (currentTab === 'fixed') {
+          html += '<tr>' +
+            '<td>' + (i + 1) + '</td>' +
+            '<td class="font-medium text-slate-800">' + row.name + '</td>' +
+            '<td class="max-w-md text-slate-600">' + row.apps + '</td>' +
+            '<td class="text-slate-500">' + row.remark + '</td>' +
+            '<td>' +
+              (row.readonly ? '' :
+                '<span class="action-link" onclick="alert(\'原型演示：修改 ' + row.name + '\')">修改</span>' +
+                '<span class="action-link" onclick="alert(\'原型演示：分配用户 ' + row.name + '\')">分配用户</span>') +
+            '</td>' +
+          '</tr>';
+        } else {
+          html += '<tr>' +
+            '<td><input type="checkbox" /></td>' +
+            '<td>' + (i + 1) + '</td>' +
+            '<td class="font-medium text-slate-800">' + row.name + '</td>' +
+            '<td class="max-w-md text-slate-600">' + row.apps + '</td>' +
+            '<td class="text-slate-500">' + row.remark + '</td>' +
+            '<td class="whitespace-nowrap text-slate-500">' + row.createdAt + '</td>' +
+            '<td>' +
+              '<span class="action-link" onclick="alert(\'原型演示：修改 ' + row.name + '\')">修改</span>' +
+              '<span class="action-link danger" onclick="alert(\'原型演示：删除 ' + row.name + '\')">删除</span>' +
+              '<span class="action-link" onclick="alert(\'原型演示：分配用户 ' + row.name + '\')">分配用户</span>' +
+            '</td>' +
+          '</tr>';
+        }
+      });
+
+      body.innerHTML = html;
+    }
+
+    function doSearch() {
+      var app = document.getElementById('fApp').value;
+      var name = document.getElementById('fName').value.trim();
+      filteredFixed = fixedRoles.filter(function (r) {
+        return (!name || r.name.indexOf(name) >= 0) && (!app || r.apps.indexOf(app) >= 0);
+      });
+      filteredCustom = customRoles.filter(function (r) {
+        return (!name || r.name.indexOf(name) >= 0) && (!app || r.apps.indexOf(app) >= 0);
+      });
+      renderTable();
+    }
+
+    function resetFilter() {
+      document.getElementById('fApp').value = '';
+      document.getElementById('fName').value = '';
+      filteredFixed = fixedRoles.slice();
+      filteredCustom = customRoles.slice();
+      renderTable();
+    }
+
+    /* 支持 URL 参数 ?tab=custom 直接打开自定义角色 Tab */
+    (function init() {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('tab') === 'custom') switchTab('custom');
+      else renderTable();
+    })();
+  </script>
+</body>
+</html>
