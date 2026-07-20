@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>编辑角色 - TestOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, .4); border-radius: 3px; }
+    .perm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .perm-table th, .perm-table td { border-bottom: 1px solid #e5e7eb; padding: 14px 16px; text-align: left; vertical-align: middle; }
+    .perm-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
+    .perm-table tbody tr:hover { background: #fafbfc; }
+    .module-tab { flex-shrink: 0; padding: 10px 16px; font-size: 13px; color: #64748b; cursor: pointer; border: none; background: none; white-space: nowrap; border-bottom: 2px solid transparent; }
+    .module-tab.active { color: #2563eb; font-weight: 500; border-bottom-color: #2563eb; }
+    .perm-check { display: inline-flex; align-items: center; gap: 4px; margin-right: 16px; cursor: pointer; }
+    .perm-check input { accent-color: #2563eb; }
+    .req { color: #ef4444; }
+  </style>
+</head>
+<body class="flex h-screen flex-col overflow-hidden bg-slate-100 text-slate-700">
+
+  <div id="testosHeader"></div>
+
+  <main class="flex flex-1 flex-col overflow-hidden p-5">
+    <div class="mb-4 flex items-center gap-3">
+      <a id="backLink" href="testos-role-mgmt.html" class="flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-blue-600">
+        <i class="fa fa-angle-left"></i> 返回
+      </a>
+      <h1 id="pageTitle" class="text-lg font-semibold text-slate-800">编辑角色</h1>
+    </div>
+
+    <div class="flex flex-1 flex-col overflow-hidden rounded-lg bg-white shadow-sm">
+      <!-- 基本信息 -->
+      <div class="border-b border-slate-100 px-6 py-5">
+        <div class="flex flex-wrap gap-x-12 gap-y-4">
+          <div class="flex items-center gap-3">
+            <label class="whitespace-nowrap text-sm text-slate-600"><span class="req">*</span> 角色名称</label>
+            <input id="roleName" type="text" class="w-56 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" />
+          </div>
+          <div class="flex flex-1 items-start gap-3" style="min-width: 280px;">
+            <label class="whitespace-nowrap pt-1.5 text-sm text-slate-600">备注</label>
+            <div class="relative flex-1">
+              <textarea id="roleRemark" rows="2" maxlength="100" placeholder="请输入"
+                class="w-full rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 resize-none"></textarea>
+              <span id="remarkCount" class="absolute bottom-1.5 right-2 text-xs text-slate-400">0/100</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 应用 Tab -->
+      <div class="flex items-center border-b border-slate-100 px-4">
+        <button type="button" id="moduleScrollLeft" class="flex h-9 w-8 flex-shrink-0 items-center justify-center text-slate-400 hover:text-blue-600">
+          <i class="fa fa-angle-left"></i>
+        </button>
+        <div id="moduleTabs" class="flex flex-1 overflow-x-auto"></div>
+        <button type="button" id="moduleScrollRight" class="flex h-9 w-8 flex-shrink-0 items-center justify-center text-slate-400 hover:text-blue-600">
+          <i class="fa fa-angle-right"></i>
+        </button>
+        <span class="flex-shrink-0 px-3 text-xs text-red-500">* 应用权限必选</span>
+      </div>
+
+      <!-- 权限表格 -->
+      <div class="flex flex-1 flex-col overflow-hidden px-6 py-4">
+        <div class="mb-3 flex items-center justify-end gap-4 text-sm">
+          <label class="flex cursor-pointer items-center gap-1.5 text-slate-600">
+            <input id="applyPerm" type="checkbox" checked class="accent-blue-600" /> 应用
+          </label>
+          <button type="button" onclick="toggleExpandAll()" class="text-slate-500 hover:text-blue-600">
+            <i class="fa fa-arrows-alt"></i> 展开
+          </button>
+          <label class="flex cursor-pointer items-center gap-1.5 text-slate-600">
+            <input id="selectAllPerm" type="checkbox" checked class="accent-blue-600" onchange="toggleSelectAll(this.checked)" /> 全选
+          </label>
+        </div>
+
+        <div class="flex-1 overflow-auto">
+          <table class="perm-table">
+            <thead>
+              <tr>
+                <th class="w-48">操作对象</th>
+                <th>权限</th>
+                <th class="w-20 text-center">全选</th>
+              </tr>
+            </thead>
+            <tbody id="permBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 底部按钮 -->
+      <div class="flex items-center justify-center gap-3 border-t border-slate-100 py-5">
+        <button onclick="goBack()" class="rounded border border-slate-300 px-8 py-2 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="saveRole()" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">保存</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/testos-header.js"></script>
+  <script>
+    var params = new URLSearchParams(window.location.search);
+    var roleType = params.get('type') || 'custom';
+    var isAdd = params.get('mode') === 'add';
+    var backUrl = 'testos-role-mgmt.html' + (roleType === 'custom' ? '?tab=custom' : '');
+
+    var modules = [
+      'testos底座',
+      '实验室业务管理系统',
+      'LIMS检测标准库',
+      '实验室物资业务管理系统',
+      '实验室数据采集系统',
+      '数字可视化',
+      '客户管理系统 (CRM)',
+      '项目管理系统 (PMS)',
+      '实验室数字孪生'
+    ];
+
+    var modulePermissions = {
+      '实验室数据采集系统': [
+        { object: '数据源管理', perms: ['查看', '创建新表', '修改表结构', '删除表'], checked: [true, true, true, true] },
+        { object: '任务管理', perms: ['模拟任务管理', '模拟采集管理', '定时任务管理'], checked: [true, true, true] },
+        { object: '基础数据管理', perms: ['设备管理', '关系配置', '第三方试验表'], checked: [true, true, true] },
+        { object: '设备配置', perms: ['设备采集配置', '数据映射配置', '安全管家配置'], checked: [true, true, false] },
+        { object: '图片采集配置', perms: ['数据识别规则', '图像识别调试'], checked: [true, true] },
+        { object: '任务日志', perms: ['试验任务日志', '定时任务日志'], checked: [true, true] },
+        { object: '系统设置', perms: ['系统参数', '操作日志', '登录日志', '关于我们'], checked: [true, true, true, true] }
+      ]
+    };
+
+    var defaultPermissions = [
+      { object: '工作台', perms: ['查看', '导出'], checked: [true, true] },
+      { object: '数据管理', perms: ['查看', '新增', '修改', '删除'], checked: [true, true, true, false] },
+      { object: '系统设置', perms: ['查看', '配置'], checked: [true, false] }
+    ];
+
+    var currentModule = '实验室数据采集系统';
+    var permState = {};
+
+    function initPage() {
+      document.getElementById('backLink').href = backUrl;
+      document.getElementById('pageTitle').textContent = isAdd ? '添加角色' : '编辑角色';
+
+      var name = params.get('name') || '';
+      if (name) document.getElementById('roleName').value = decodeURIComponent(name);
+      if (params.get('remark')) document.getElementById('roleRemark').value = decodeURIComponent(params.get('remark'));
+
+      document.getElementById('roleRemark').addEventListener('input', updateRemarkCount);
+      updateRemarkCount();
+
+      modules.forEach(function (m) {
+        permState[m] = JSON.parse(JSON.stringify(modulePermissions[m] || defaultPermissions));
+      });
+
+      renderModuleTabs();
+      renderPermTable();
+    }
+
+    function updateRemarkCount() {
+      var len = document.getElementById('roleRemark').value.length;
+      document.getElementById('remarkCount').textContent = len + '/100';
+    }
+
+    function renderModuleTabs() {
+      document.getElementById('moduleTabs').innerHTML = modules.map(function (m) {
+        return '<button type="button" class="module-tab' + (m === currentModule ? ' active' : '') +
+          '" onclick="switchModule(\'' + m + '\')">' + m + '</button>';
+      }).join('');
+    }
+
+    function switchModule(name) {
+      currentModule = name;
+      renderModuleTabs();
+      renderPermTable();
+    }
+
+    function renderPermTable() {
+      var rows = permState[currentModule] || [];
+      var html = '';
+
+      rows.forEach(function (row, ri) {
+        html += '<tr data-row="' + ri + '">' +
+          '<td class="font-medium text-slate-700">' + row.object + '</td>' +
+          '<td>' +
+            row.perms.map(function (p, pi) {
+              return '<label class="perm-check">' +
+                '<input type="checkbox" data-row="' + ri + '" data-perm="' + pi + '"' +
+                (row.checked[pi] ? ' checked' : '') +
+                ' onchange="onPermChange(' + ri + ',' + pi + ',this.checked)" />' +
+                '<span>' + p + '</span></label>';
+            }).join('') +
+          '</td>' +
+          '<td class="text-center">' +
+            '<input type="checkbox" class="row-select-all accent-blue-600" data-row="' + ri + '"' +
+            getRowCheckState(row) +
+            ' onchange="toggleRowAll(' + ri + ',this.checked)" />' +
+          '</td>' +
+        '</tr>';
+      });
+
+      document.getElementById('permBody').innerHTML = html;
+      updateGlobalSelectAll();
+    }
+
+    function getRowCheckState(row) {
+      var all = row.checked.every(Boolean);
+      var some = row.checked.some(Boolean);
+      if (all) return ' checked';
+      if (some) return ' data-indeterminate="true"';
+      return '';
+    }
+
+    function applyIndeterminate() {
+      document.querySelectorAll('.row-select-all[data-indeterminate="true"]').forEach(function (el) {
+        el.indeterminate = true;
+      });
+    }
+
+    function onPermChange(rowIdx, permIdx, checked) {
+      permState[currentModule][rowIdx].checked[permIdx] = checked;
+      renderPermTable();
+      setTimeout(applyIndeterminate, 0);
+    }
+
+    function toggleRowAll(rowIdx, checked) {
+      permState[currentModule][rowIdx].checked = permState[currentModule][rowIdx].checked.map(function () { return checked; });
+      renderPermTable();
+    }
+
+    function toggleSelectAll(checked) {
+      permState[currentModule].forEach(function (row) {
+        row.checked = row.checked.map(function () { return checked; });
+      });
+      renderPermTable();
+    }
+
+    function updateGlobalSelectAll() {
+      var rows = permState[currentModule];
+      var allChecked = rows.every(function (r) { return r.checked.every(Boolean); });
+      document.getElementById('selectAllPerm').checked = allChecked;
+      setTimeout(applyIndeterminate, 0);
+    }
+
+    function toggleExpandAll() {
+      alert('原型演示：展开/折叠权限分组');
+    }
+
+    function goBack() {
+      window.location.href = backUrl;
+    }
+
+    function saveRole() {
+      var name = document.getElementById('roleName').value.trim();
+      if (!name) { alert('请输入角色名称'); return; }
+      alert('原型演示：角色「' + name + '」已保存');
+      goBack();
+    }
+
+    document.getElementById('moduleScrollLeft').addEventListener('click', function () {
+      document.getElementById('moduleTabs').scrollBy({ left: -200, behavior: 'smooth' });
+    });
+    document.getElementById('moduleScrollRight').addEventListener('click', function () {
+      document.getElementById('moduleTabs').scrollBy({ left: 200, behavior: 'smooth' });
+    });
+
+    initPage();
+    setTimeout(applyIndeterminate, 0);
+  </script>
+</body>
+</html>

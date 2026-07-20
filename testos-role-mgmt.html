@@ -70,7 +70,7 @@
           <button type="button" class="tab-btn" data-tab="custom" onclick="switchTab('custom')">自定义角色类型</button>
         </div>
         <div id="customActions" class="hidden items-center gap-2 py-2">
-          <button onclick="alert('原型演示：添加角色')" class="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">
+          <button onclick="location.href='testos-role-edit.html?mode=add&type=custom'" class="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">
             <i class="fa fa-plus"></i> 添加角色
           </button>
           <button onclick="alert('原型演示：批量删除')" class="flex items-center gap-1 rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
@@ -168,7 +168,7 @@
             '<td class="text-slate-500">' + row.remark + '</td>' +
             '<td>' +
               (row.readonly ? '' :
-                '<span class="action-link" onclick="alert(\'原型演示：修改 ' + row.name + '\')">修改</span>' +
+                '<span class="action-link" onclick="editRole(' + i + ',\'fixed\')">修改</span>' +
                 '<span class="action-link" onclick="alert(\'原型演示：分配用户 ' + row.name + '\')">分配用户</span>') +
             '</td>' +
           '</tr>';
@@ -181,7 +181,7 @@
             '<td class="text-slate-500">' + row.remark + '</td>' +
             '<td class="whitespace-nowrap text-slate-500">' + row.createdAt + '</td>' +
             '<td>' +
-              '<span class="action-link" onclick="alert(\'原型演示：修改 ' + row.name + '\')">修改</span>' +
+              '<span class="action-link" onclick="editRole(' + i + ',\'custom\')">修改</span>' +
               '<span class="action-link danger" onclick="alert(\'原型演示：删除 ' + row.name + '\')">删除</span>' +
               '<span class="action-link" onclick="alert(\'原型演示：分配用户 ' + row.name + '\')">分配用户</span>' +
             '</td>' +
@@ -202,6 +202,15 @@
         return (!name || r.name.indexOf(name) >= 0) && (!app || r.apps.indexOf(app) >= 0);
       });
       renderTable();
+    }
+
+    function editRole(index, type) {
+      var list = type === 'fixed' ? filteredFixed : filteredCustom;
+      var row = list[index];
+      if (!row) return;
+      var url = 'testos-role-edit.html?name=' + encodeURIComponent(row.name) + '&type=' + type;
+      if (row.remark && row.remark !== '/') url += '&remark=' + encodeURIComponent(row.remark);
+      window.location.href = url;
     }
 
     function resetFilter() {
