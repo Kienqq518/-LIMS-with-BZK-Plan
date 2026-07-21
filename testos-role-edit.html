@@ -23,7 +23,6 @@
     .perm-group.phase2 td { color: #94a3b8; }
     .perm-group .group-toggle { display: inline-block; width: 14px; color: #64748b; }
     .perm-item.child td:first-child { padding-left: 32px; }
-    .module-desc { margin-bottom: 12px; border-radius: 8px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 14px; font-size: 12px; color: #1e40af; line-height: 1.6; }
   </style>
 </head>
 <body class="flex h-screen flex-col overflow-hidden bg-slate-100 text-slate-700">
@@ -82,8 +81,6 @@
             <input id="selectAllPerm" type="checkbox" checked class="accent-blue-600" onchange="toggleSelectAll(this.checked)" /> 全选
           </label>
         </div>
-
-        <div id="moduleDesc" class="module-desc hidden"></div>
 
         <div class="flex-1 overflow-auto">
           <table class="perm-table">
@@ -169,7 +166,6 @@
       });
 
       renderModuleTabs();
-      renderModuleDesc();
       renderPermTable();
     }
 
@@ -195,22 +191,7 @@
       currentModule = name;
       groupExpanded = {};
       renderModuleTabs();
-      renderModuleDesc();
       renderPermTable();
-    }
-
-    function renderModuleDesc() {
-      var el = document.getElementById('moduleDesc');
-      if (currentModule === APP_DATA_MODULE) {
-        el.classList.remove('hidden');
-        el.innerHTML = '本清单对应 <strong>检测员侧 App（平板竖屏）</strong>，与 Web 端「实验室数据采集系统」为同一产品下的不同终端。' +
-          '角色/账号/操作权限在 TestOS 底座 Web 端配置，App 只消费权限。' +
-          '标注 <span class="text-amber-600">条件</span> 的为业务规则门控；' +
-          '标注 <span class="text-slate-500">二期</span> 的为 readme 规划、当前原型未实现的管理员能力。';
-      } else {
-        el.classList.add('hidden');
-        el.innerHTML = '';
-      }
     }
 
     function getActiveGroup(rows, ri) {
