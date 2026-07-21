@@ -206,6 +206,10 @@
     });
   }
 
+  function getFieldByDictType(sections, dictType) {
+    return getBoundFieldByDictType(sections, dictType, null);
+  }
+
   global.EntrustFieldConfig = {
     STORAGE_KEY: STORAGE_KEY,
     FORM_FIELD_MAP: FORM_FIELD_MAP,
@@ -216,6 +220,7 @@
     reset: reset,
     findField: findField,
     getBoundFieldByDictType: getBoundFieldByDictType,
+    getFieldByDictType: getFieldByDictType,
     syncBoundDictNames: syncBoundDictNames,
     resetDictNamesToDefault: resetDictNamesToDefault,
     populateSelectFromDict: populateSelectFromDict,

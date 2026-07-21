@@ -35,7 +35,7 @@
   ].join('\n');
 
   function detectFocusScope() {
-    var openModal = document.querySelector('.modal-mask.open, .po-mask.open');
+    var openModal = document.querySelector('.modal-mask.open, .po-mask.open, .drawer-mask.open, .bind-popover-mask.open');
     return openModal || null;
   }
 

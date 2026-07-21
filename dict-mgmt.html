@@ -29,7 +29,9 @@
     .form-row .ctrl { flex: 1; }
     .form-row input, .form-row select, .form-row textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; outline: none; font-size: 13px; }
     .form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color: #3b82f6; }
-    .form-row input:read-only { background: #f8fafc; color: #64748b; }
+    .form-row input:read-only { background: #f8fafc; color: #64748b; cursor: not-allowed; }
+    .form-hint { margin-top: 4px; font-size: 11px; color: #94a3b8; line-height: 1.4; }
+    .form-hint.is-bound { color: #64748b; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -96,7 +98,7 @@
         <button onclick="closeTypeDrawer()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="flex-1 overflow-y-auto px-5 py-4">
-        <div class="form-row"><label><span class="req">*</span> 字典名称</label><div class="ctrl"><input id="t_name" placeholder="请输入" /></div></div>
+        <div class="form-row"><label><span class="req">*</span> 字典名称</label><div class="ctrl"><input id="t_name" placeholder="请输入" data-annotate="dict-type-name" /><p id="t_name_hint" class="form-hint is-bound hidden"></p></div></div>
         <div class="form-row"><label><span class="req">*</span> 字典类型</label><div class="ctrl"><input id="t_type" placeholder="请输入" /></div></div>
         <div class="form-row"><label>状态</label><div class="ctrl"><select id="t_status"><option>正常</option><option>停用</option></select></div></div>
         <div class="form-row"><label>备注</label><div class="ctrl"><textarea id="t_remark" rows="4" placeholder="请输入"></textarea></div></div>
@@ -132,6 +134,8 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/mock-dict.js"></script>
+  <script src="js/entrust-field-config.js"></script>
+  <script src="js/prototype-annotation.js"></script>
   <script>
     var dictTypes = MockDictStore.load();
 
@@ -140,6 +144,28 @@
 
     function persistDictTypes() {
       MockDictStore.save(dictTypes);
+    }
+
+    function getBoundEntrustField(dictType) {
+      if (!dictType || !window.EntrustFieldConfig) return null;
+      return EntrustFieldConfig.getFieldByDictType(EntrustFieldConfig.load(), dictType);
+    }
+
+    function applyTypeNameLock(dictType) {
+      var nameInput = document.getElementById('t_name');
+      var hintEl = document.getElementById('t_name_hint');
+      var boundField = dictType ? getBoundEntrustField(dictType) : null;
+      if (boundField) {
+        nameInput.readOnly = true;
+        nameInput.value = boundField.placeholder || nameInput.value;
+        hintEl.textContent = '该字典已与「业务流程配置 › 委托信息设置」中的「' + boundField.label + '」字段绑定，名称由字段别名同步，不可在此修改。';
+        hintEl.classList.remove('hidden');
+      } else {
+        nameInput.readOnly = false;
+        hintEl.textContent = '';
+        hintEl.classList.add('hidden');
+      }
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function renderTable() {
@@ -195,8 +221,10 @@
     function openTypeDrawer(mode, id) {
       editingTypeId = mode === 'edit' ? id : null;
       document.getElementById('typeDrawerTitle').textContent = mode === 'edit' ? '修改字典类型' : '添加字典类型';
+      var dictTypeKey = null;
       if (mode === 'edit') {
         var t = dictTypes.find(function (r) { return r.id === id; });
+        dictTypeKey = t.type;
         document.getElementById('t_name').value = t.name;
         document.getElementById('t_type').value = t.type;
         document.getElementById('t_status').value = t.status;
@@ -207,10 +235,15 @@
         document.getElementById('t_status').value = '正常';
         document.getElementById('t_remark').value = '';
       }
+      applyTypeNameLock(dictTypeKey);
       document.getElementById('typeDrawerMask').classList.add('open');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.applyFocusScope) PrototypeAnnotation.applyFocusScope();
     }
 
-    function closeTypeDrawer() { document.getElementById('typeDrawerMask').classList.remove('open'); }
+    function closeTypeDrawer() {
+      document.getElementById('typeDrawerMask').classList.remove('open');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.applyFocusScope) PrototypeAnnotation.applyFocusScope();
+    }
 
     function saveType() {
       var name = document.getElementById('t_name').value.trim();
@@ -220,7 +253,9 @@
       var remark = document.getElementById('t_remark').value.trim();
       if (editingTypeId) {
         var t = dictTypes.find(function (r) { return r.id === editingTypeId; });
-        t.name = name; t.type = type; t.status = status; t.remark = remark;
+        var boundField = getBoundEntrustField(t.type);
+        t.name = boundField ? (boundField.placeholder || t.name) : name;
+        t.type = type; t.status = status; t.remark = remark;
       } else {
         dictTypes.push({ id: dictTypes.length + 1, name: name, type: type, status: status, time: '2026-07-15 08:00:00', remark: remark, expanded: false, items: [] });
       }
@@ -294,6 +329,20 @@
     document.getElementById('dataDrawerMask').addEventListener('click', function (e) { if (e.target === this) closeDataDrawer(); });
 
     renderTable();
+
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'dict-type-name-bound',
+          selector: '[data-annotate="dict-type-name"]',
+          position: 'top-left',
+          title: '字典名称（绑定后只读）',
+          wide: true,
+          content: '当该字典类型已在「业务流程配置 › 委托信息设置」中与下拉字段绑定时，<strong>字典名称不可在此修改</strong>，由委托信息设置中的<strong>字段别名</strong>作为唯一数据源；保存委托信息设置时自动同步至此处。<br><br>解除绑定后，字典名称恢复可编辑，且不再随别名同步。请打开已绑定字典（如「任务类型 / lims_task_type」）的「修改」抽屉查看只读效果。',
+          tag: '字典绑定'
+        }
+      ]
+    });
   </script>
 </body>
 </html>
