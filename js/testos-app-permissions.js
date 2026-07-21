@@ -55,7 +55,7 @@
     item('环境信息', ['查看环境温湿度', '刷新']),
     item('试验数据录入 · 设备直连 auto', ['查看', '上传', '重置'], { conditional: true }),
     item('试验数据录入 · 拍照识别 ocr', ['查看', '拍照', '编辑', '上传', '重置', '删除参照图'], { conditional: true }),
-    item('试验数据录入 · 蓝牙 ble', ['查看', '连接', '手输', '上传', '重置'], { conditional: true }),
+    item('试验数据录入 · 蓝牙 ble', ['查看', '手输', '上传', '重置'], { conditional: true }),
     item('试验数据录入 · 外部程序 external', ['查看', '手输', '上传', '重置'], { conditional: true }),
     item('试验数据录入 · 手工录入 manual', ['查看', '编辑', '上传', '重置'], { conditional: true }),
     item('试验数据录入 · 通用', ['编辑室温/湿度（条件）', '单条上传', '批量上传', '全部上传', '重置全部'], { conditional: true }),
