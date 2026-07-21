@@ -15,9 +15,15 @@
     .perm-table tbody tr:hover { background: #fafbfc; }
     .module-tab { flex-shrink: 0; padding: 10px 16px; font-size: 13px; color: #64748b; cursor: pointer; border: none; background: none; white-space: nowrap; border-bottom: 2px solid transparent; }
     .module-tab.active { color: #2563eb; font-weight: 500; border-bottom-color: #2563eb; }
-    .perm-check { display: inline-flex; align-items: center; gap: 4px; margin-right: 16px; cursor: pointer; }
+    .perm-check { display: inline-flex; align-items: center; gap: 4px; margin-right: 16px; margin-bottom: 4px; cursor: pointer; }
     .perm-check input { accent-color: #2563eb; }
+    .perm-check .cond-tag { font-size: 10px; color: #d97706; margin-left: 2px; }
     .req { color: #ef4444; }
+    .perm-group td { background: #f1f5f9; font-weight: 600; color: #334155; cursor: pointer; user-select: none; }
+    .perm-group.phase2 td { color: #94a3b8; }
+    .perm-group .group-toggle { display: inline-block; width: 14px; color: #64748b; }
+    .perm-item.child td:first-child { padding-left: 32px; }
+    .module-desc { margin-bottom: 12px; border-radius: 8px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 14px; font-size: 12px; color: #1e40af; line-height: 1.6; }
   </style>
 </head>
 <body class="flex h-screen flex-col overflow-hidden bg-slate-100 text-slate-700">
@@ -77,6 +83,8 @@
           </label>
         </div>
 
+        <div id="moduleDesc" class="module-desc hidden"></div>
+
         <div class="flex-1 overflow-auto">
           <table class="perm-table">
             <thead>
@@ -99,6 +107,7 @@
     </div>
   </main>
 
+  <script src="js/testos-app-permissions.js"></script>
   <script src="js/testos-header.js"></script>
   <script>
     var params = new URLSearchParams(window.location.search);
@@ -106,38 +115,43 @@
     var isAdd = params.get('mode') === 'add';
     var backUrl = 'testos-role-mgmt.html' + (roleType === 'custom' ? '?tab=custom' : '');
 
+    var WEB_DATA_MODULE = '实验室数据采集系统 · 网页端 Web';
+    var APP_DATA_MODULE = '实验室数据采集系统 · 移动端 App';
+
     var modules = [
       'testos底座',
       '实验室业务管理系统',
       'LIMS检测标准库',
       '实验室物资业务管理系统',
-      '实验室数据采集系统',
+      WEB_DATA_MODULE,
+      APP_DATA_MODULE,
       '数字可视化',
       '客户管理系统 (CRM)',
       '项目管理系统 (PMS)',
       '实验室数字孪生'
     ];
 
-    var modulePermissions = {
-      '实验室数据采集系统': [
-        { object: '数据源管理', perms: ['查看', '创建新表', '修改表结构', '删除表'], checked: [true, true, true, true] },
-        { object: '任务管理', perms: ['模拟任务管理', '模拟采集管理', '定时任务管理'], checked: [true, true, true] },
-        { object: '基础数据管理', perms: ['设备管理', '关系配置', '第三方试验表'], checked: [true, true, true] },
-        { object: '设备配置', perms: ['设备采集配置', '数据映射配置', '安全管家配置'], checked: [true, true, false] },
-        { object: '图片采集配置', perms: ['数据识别规则', '图像识别调试'], checked: [true, true] },
-        { object: '任务日志', perms: ['试验任务日志', '定时任务日志'], checked: [true, true] },
-        { object: '系统设置', perms: ['系统参数', '操作日志', '登录日志', '关于我们'], checked: [true, true, true, true] }
-      ]
-    };
+    var modulePermissions = {};
+    modulePermissions[WEB_DATA_MODULE] = [
+      { type: 'item', object: '数据源管理', perms: ['查看', '创建新表', '修改表结构', '删除表'], checked: [true, true, true, true] },
+      { type: 'item', object: '任务管理', perms: ['模拟任务管理', '模拟采集管理', '定时任务管理'], checked: [true, true, true] },
+      { type: 'item', object: '基础数据管理', perms: ['设备管理', '关系配置', '第三方试验表'], checked: [true, true, true] },
+      { type: 'item', object: '设备配置', perms: ['设备采集配置', '数据映射配置', '安全管家配置'], checked: [true, true, false] },
+      { type: 'item', object: '图片采集配置', perms: ['数据识别规则', '图像识别调试'], checked: [true, true] },
+      { type: 'item', object: '任务日志', perms: ['试验任务日志', '定时任务日志'], checked: [true, true] },
+      { type: 'item', object: '系统设置', perms: ['系统参数', '操作日志', '登录日志', '关于我们'], checked: [true, true, true, true] }
+    ];
+    modulePermissions[APP_DATA_MODULE] = TestOSAppPermissions.clone();
 
     var defaultPermissions = [
-      { object: '工作台', perms: ['查看', '导出'], checked: [true, true] },
-      { object: '数据管理', perms: ['查看', '新增', '修改', '删除'], checked: [true, true, true, false] },
-      { object: '系统设置', perms: ['查看', '配置'], checked: [true, false] }
+      { type: 'item', object: '工作台', perms: ['查看', '导出'], checked: [true, true] },
+      { type: 'item', object: '数据管理', perms: ['查看', '新增', '修改', '删除'], checked: [true, true, true, false] },
+      { type: 'item', object: '系统设置', perms: ['查看', '配置'], checked: [true, false] }
     ];
 
-    var currentModule = '实验室数据采集系统';
+    var currentModule = WEB_DATA_MODULE;
     var permState = {};
+    var groupExpanded = {};
 
     function initPage() {
       document.getElementById('backLink').href = backUrl;
@@ -155,6 +169,7 @@
       });
 
       renderModuleTabs();
+      renderModuleDesc();
       renderPermTable();
     }
 
@@ -164,32 +179,90 @@
     }
 
     function renderModuleTabs() {
-      document.getElementById('moduleTabs').innerHTML = modules.map(function (m) {
+      document.getElementById('moduleTabs').innerHTML = modules.map(function (m, i) {
         return '<button type="button" class="module-tab' + (m === currentModule ? ' active' : '') +
-          '" onclick="switchModule(\'' + m + '\')">' + m + '</button>';
+          '" data-module-idx="' + i + '">' + m + '</button>';
       }).join('');
+
+      document.getElementById('moduleTabs').querySelectorAll('.module-tab').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          switchModule(modules[parseInt(btn.dataset.moduleIdx, 10)]);
+        });
+      });
     }
 
     function switchModule(name) {
       currentModule = name;
+      groupExpanded = {};
       renderModuleTabs();
+      renderModuleDesc();
       renderPermTable();
+    }
+
+    function renderModuleDesc() {
+      var el = document.getElementById('moduleDesc');
+      if (currentModule === APP_DATA_MODULE) {
+        el.classList.remove('hidden');
+        el.innerHTML = '本清单对应 <strong>检测员侧 App（平板竖屏）</strong>，与 Web 端「实验室数据采集系统」为同一产品下的不同终端。' +
+          '角色/账号/操作权限在 TestOS 底座 Web 端配置，App 只消费权限。' +
+          '标注 <span class="text-amber-600">条件</span> 的为业务规则门控；' +
+          '标注 <span class="text-slate-500">二期</span> 的为 readme 规划、当前原型未实现的管理员能力。';
+      } else {
+        el.classList.add('hidden');
+        el.innerHTML = '';
+      }
+    }
+
+    function getActiveGroup(rows, ri) {
+      for (var i = ri - 1; i >= 0; i--) {
+        if (rows[i].type === 'group') return rows[i].name;
+      }
+      return null;
+    }
+
+    function isGroupCollapsed(groupName) {
+      if (groupExpanded[groupName] === undefined) {
+        var rows = permState[currentModule] || [];
+        var g = rows.find(function (r) { return r.type === 'group' && r.name === groupName; });
+        groupExpanded[groupName] = g ? !g.collapsed : true;
+      }
+      return !groupExpanded[groupName];
     }
 
     function renderPermTable() {
       var rows = permState[currentModule] || [];
       var html = '';
+      var currentGroup = null;
 
       rows.forEach(function (row, ri) {
-        html += '<tr data-row="' + ri + '">' +
-          '<td class="font-medium text-slate-700">' + row.object + '</td>' +
+        if (row.type === 'group') {
+          currentGroup = row.name;
+          var expanded = !isGroupCollapsed(row.name);
+          html += '<tr class="perm-group' + (row.phase2 ? ' phase2' : '') + '" onclick="toggleGroup(\'' + row.name.replace(/'/g, "\\'") + '\')">' +
+            '<td colspan="3">' +
+              '<span class="group-toggle">' + (expanded ? '▼' : '▶') + '</span> ' +
+              row.name +
+              (row.phase2 ? ' <span class="ml-2 text-xs font-normal text-slate-400">（二期 · 预留）</span>' : '') +
+            '</td></tr>';
+          return;
+        }
+
+        var groupName = getActiveGroup(rows, ri);
+        if (groupName && isGroupCollapsed(groupName)) return;
+
+        html += '<tr class="perm-item' + (groupName ? ' child' : '') + '" data-row="' + ri + '">' +
+          '<td class="font-medium text-slate-700">' +
+            row.object +
+            (row.phase2 ? ' <span class="text-xs text-slate-400">（二期）</span>' : '') +
+          '</td>' +
           '<td>' +
             row.perms.map(function (p, pi) {
+              var condHint = row.conditional && /条件/.test(p) ? '<span class="cond-tag" title="业务规则门控，非 RBAC 本身">条件</span>' : '';
               return '<label class="perm-check">' +
                 '<input type="checkbox" data-row="' + ri + '" data-perm="' + pi + '"' +
                 (row.checked[pi] ? ' checked' : '') +
                 ' onchange="onPermChange(' + ri + ',' + pi + ',this.checked)" />' +
-                '<span>' + p + '</span></label>';
+                '<span>' + p + '</span>' + condHint + '</label>';
             }).join('') +
           '</td>' +
           '<td class="text-center">' +
@@ -202,6 +275,11 @@
 
       document.getElementById('permBody').innerHTML = html;
       updateGlobalSelectAll();
+    }
+
+    function toggleGroup(name) {
+      groupExpanded[name] = isGroupCollapsed(name);
+      renderPermTable();
     }
 
     function getRowCheckState(row) {
@@ -231,20 +309,38 @@
 
     function toggleSelectAll(checked) {
       permState[currentModule].forEach(function (row) {
-        row.checked = row.checked.map(function () { return checked; });
+        if (row.type === 'item') {
+          row.checked = row.checked.map(function () { return checked; });
+        }
       });
       renderPermTable();
     }
 
+    function getItemRows(rows) {
+      return rows.filter(function (r) { return r.type === 'item'; });
+    }
+
     function updateGlobalSelectAll() {
-      var rows = permState[currentModule];
+      var rows = getItemRows(permState[currentModule] || []);
+      if (!rows.length) {
+        document.getElementById('selectAllPerm').checked = false;
+        return;
+      }
       var allChecked = rows.every(function (r) { return r.checked.every(Boolean); });
       document.getElementById('selectAllPerm').checked = allChecked;
       setTimeout(applyIndeterminate, 0);
     }
 
     function toggleExpandAll() {
-      alert('原型演示：展开/折叠权限分组');
+      var rows = permState[currentModule] || [];
+      var groups = rows.filter(function (r) { return r.type === 'group'; });
+      if (!groups.length) {
+        alert('原型演示：当前应用无分组权限');
+        return;
+      }
+      var anyCollapsed = groups.some(function (g) { return isGroupCollapsed(g.name); });
+      groups.forEach(function (g) { groupExpanded[g.name] = anyCollapsed; });
+      renderPermTable();
     }
 
     function goBack() {
