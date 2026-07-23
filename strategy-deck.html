@@ -414,6 +414,26 @@
     <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 第一环节</span><span>08</span></div>
   </section>
 
+  <!-- ========== 转型阵痛 ========== -->
+  <section class="slide" data-title="转型阵痛" data-section="1">
+    <div class="head">
+      <span class="kicker">2 · 转型必要性</span>
+      <h1 class="s-title">开放市场：机会背后的挑战</h1>
+    </div>
+    <div class="body">
+      <div class="grid g3">
+        <div class="card"><h3>确定性丧失</h3><p>从"指定供应商的<b>确定性</b>"进入"充分竞争的<b>不确定性</b>"。</p></div>
+        <div class="card"><h3>需求高压</h3><p>客户需求<b>多样化、标准高</b>——CNAS/CMA、多品类、快扩项，现有产品需补齐模块或定制。</p></div>
+        <div class="card" style="border-color:#fecaca;background:#fef2f2"><h3 style="color:var(--red)">红海风险</h3><p>易陷入"<b>一客一开发</b>"，5 人团队人力被摊薄，无法沉淀通用产品。</p></div>
+      </div>
+      <div class="callout" style="margin-top:auto">
+        <div class="lbl">本页落点</div>
+        <p>转型不是"<span class="hl">要不要做</span>"，而是"<span class="hl">用什么姿势做</span>"。</p>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 第一环节</span><span>10</span></div>
+  </section>
+
   <!-- ========== 行业宏观数据 ========== -->
   <section class="slide" data-title="行业宏观数据" data-section="1">
     <div class="head">
@@ -448,26 +468,6 @@
       </div>
     </div>
     <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 第一环节</span><span>09</span></div>
-  </section>
-
-  <!-- ========== 转型阵痛 ========== -->
-  <section class="slide" data-title="转型阵痛" data-section="1">
-    <div class="head">
-      <span class="kicker">2 · 转型必要性</span>
-      <h1 class="s-title">开放市场：机会背后的挑战</h1>
-    </div>
-    <div class="body">
-      <div class="grid g3">
-        <div class="card"><h3>确定性丧失</h3><p>从"指定供应商的<b>确定性</b>"进入"充分竞争的<b>不确定性</b>"。</p></div>
-        <div class="card"><h3>需求高压</h3><p>客户需求<b>多样化、标准高</b>——CNAS/CMA、多品类、快扩项，现有产品需补齐模块或定制。</p></div>
-        <div class="card" style="border-color:#fecaca;background:#fef2f2"><h3 style="color:var(--red)">红海风险</h3><p>易陷入"<b>一客一开发</b>"，5 人团队人力被摊薄，无法沉淀通用产品。</p></div>
-      </div>
-      <div class="callout" style="margin-top:auto">
-        <div class="lbl">本页落点</div>
-        <p>转型不是"<span class="hl">要不要做</span>"，而是"<span class="hl">用什么姿势做</span>"。</p>
-      </div>
-    </div>
-    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 第一环节</span><span>10</span></div>
   </section>
 
   <!-- ========== 市场研判三条事实 ========== -->
@@ -538,7 +538,7 @@
   <!-- ========== 16 行业厂商渗透 ========== -->
   <section class="slide" data-title="厂商渗透" data-section="1">
     <div class="head">
-      <span class="kicker">3 · 市场研判</span>
+      <span class="kicker">4 · 竞争格局</span>
       <h1 class="s-title">16 大行业 · 本土 LIMS 厂商渗透图谱</h1>
       <div class="s-sub">来源：LIMS 行业深度研究报告 · 标注各厂商"领跑/深度"领域</div>
     </div>
@@ -1031,6 +1031,15 @@
     dotsWrap.appendChild(b);
   });
   var dots=Array.prototype.slice.call(dotsWrap.children);
+
+  // 自动为每页页脚编号，避免手工页码错乱
+  slides.forEach(function(s,i){
+    var foot=s.querySelector('.foot');
+    if(!foot)return;
+    var pageEl=foot.querySelector('span:last-child');
+    if(!pageEl)return;
+    pageEl.textContent=String(i+1).padStart(2,'0');
+  });
 
   function fit(){
     var sx=window.innerWidth/1280, sy=window.innerHeight/720;
