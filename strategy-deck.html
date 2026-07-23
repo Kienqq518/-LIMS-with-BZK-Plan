@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>数蚕智能 · 产品定位与未来发展方向 专题研讨会</title>
+<style>
+  :root{
+    --ink:#0f172a; --ink2:#1e293b; --muted:#64748b; --muted2:#94a3b8;
+    --line:#e2e8f0; --line2:#cbd5e1; --bg:#f1f5f9; --card:#ffffff;
+    --sky:#0ea5e9; --sky2:#38bdf8; --cyan:#06b6d4; --navy:#0b1220;
+    --green:#059669; --green-bg:#ecfdf5; --green-line:#a7f3d0;
+    --red:#dc2626; --amber:#d97706; --amber-bg:#fffbeb; --amber-line:#fde68a;
+    --accent-grad:linear-gradient(135deg,#0ea5e9 0%,#06b6d4 100%);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC","Segoe UI",sans-serif;
+    background:#05080f;color:var(--ink);overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ---- stage scaling ---- */
+  #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  #stage{width:1280px;height:720px;position:relative;transform-origin:center center}
+  .slide{
+    position:absolute;inset:0;background:var(--card);
+    display:none;flex-direction:column;overflow:hidden;
+  }
+  .slide.active{display:flex}
+  /* ---- generic slide chrome ---- */
+  .pad{padding:52px 64px}
+  .head{display:flex;flex-direction:column;gap:8px;padding:44px 64px 0}
+  .kicker{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;letter-spacing:.14em;
+    color:var(--sky);text-transform:uppercase}
+  .kicker::before{content:"";width:26px;height:3px;border-radius:3px;background:var(--accent-grad)}
+  .s-title{font-size:38px;font-weight:800;color:var(--ink);line-height:1.15;letter-spacing:-.01em}
+  .s-sub{font-size:17px;color:var(--muted);font-weight:500;margin-top:2px}
+  .body{flex:1;padding:26px 64px 0;min-height:0;display:flex;flex-direction:column;gap:16px}
+  .foot{display:flex;align-items:center;justify-content:space-between;padding:14px 64px;
+    border-top:1px solid var(--line);color:var(--muted2);font-size:13px;font-weight:600;letter-spacing:.02em}
+  .foot .brand{display:flex;align-items:center;gap:9px;color:var(--ink2)}
+  .dot{width:9px;height:9px;border-radius:3px;background:var(--accent-grad);display:inline-block}
+  /* ---- cards ---- */
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 22px;
+    box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .card.soft{background:#f8fafc}
+  .card h3{font-size:19px;font-weight:800;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  .card p,.card li{font-size:15.5px;line-height:1.6;color:var(--ink2)}
+  .card .lead{color:var(--muted);font-size:14px;font-weight:600;margin-bottom:6px;letter-spacing:.02em}
+  ul.clean{list-style:none;display:flex;flex-direction:column;gap:9px}
+  ul.clean li{position:relative;padding-left:22px;font-size:15.5px;line-height:1.55;color:var(--ink2)}
+  ul.clean li::before{content:"";position:absolute;left:2px;top:9px;width:8px;height:8px;border-radius:2px;
+    background:var(--accent-grad)}
+  ul.clean.tight li{font-size:14.5px;gap:6px}
+  .num{flex:none;width:34px;height:34px;border-radius:10px;background:var(--accent-grad);color:#fff;
+    font-weight:800;font-size:17px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 12px rgba(14,165,233,.35)}
+  .num.sm{width:28px;height:28px;font-size:14px;border-radius:8px}
+  /* ---- tags ---- */
+  .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;
+    font-size:12.5px;font-weight:800;letter-spacing:.02em}
+  .tag-avoid{background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+  .tag-pick{background:var(--green-bg);color:var(--green);border:1px solid var(--green-line)}
+  .tag-sat{background:#f1f5f9;color:var(--muted);border:1px solid var(--line2)}
+  .tag-accent{background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd}
+  /* ---- callout ---- */
+  .callout{border-radius:16px;padding:20px 24px;border:1px solid var(--sky2);
+    background:linear-gradient(135deg,#e0f2fe 0%,#ecfeff 100%)}
+  .callout .lbl{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#0369a1;margin-bottom:8px}
+  .callout p{font-size:20px;line-height:1.5;font-weight:700;color:var(--ink)}
+  .hl{background:linear-gradient(180deg,transparent 62%,#bae6fd 62%);padding:0 2px;font-weight:800}
+  .src{font-size:12.5px;color:var(--muted2);font-weight:600}
+  /* ---- dark slides ---- */
+  .slide.dark{background:radial-gradient(120% 120% at 15% 0%,#132133 0%,#0b1220 55%,#070c15 100%);color:#e2e8f0}
+  .slide.dark .s-title{color:#f8fafc}
+  .slide.dark .foot{border-top-color:rgba(148,163,184,.2);color:#64748b}
+  .slide.dark .foot .brand{color:#cbd5e1}
+  .deco{position:absolute;border-radius:50%;filter:blur(2px);opacity:.5;pointer-events:none}
+  /* ---- cover ---- */
+  .cover{justify-content:center}
+  .cover .inner{padding:0 90px;position:relative;z-index:2}
+  .cover .eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:15px;font-weight:700;
+    letter-spacing:.12em;color:var(--sky2);margin-bottom:26px}
+  .cover .eyebrow::before{content:"";width:34px;height:3px;background:var(--accent-grad);border-radius:3px}
+  .cover h1{font-size:62px;font-weight:900;line-height:1.08;letter-spacing:-.02em;color:#f8fafc}
+  .cover h1 .grad{background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .cover .lede{font-size:22px;color:#94a3b8;margin-top:22px;font-weight:500}
+  .cover .chips{display:flex;gap:12px;margin-top:34px;flex-wrap:wrap}
+  .chip{padding:9px 18px;border-radius:999px;border:1px solid rgba(56,189,248,.4);
+    background:rgba(14,165,233,.08);color:#bae6fd;font-weight:700;font-size:15px}
+  .cover .who{position:absolute;bottom:52px;left:90px;color:#64748b;font-size:15px;font-weight:600;z-index:2}
+  .cover .date{position:absolute;bottom:52px;right:90px;color:#94a3b8;font-size:15px;font-weight:700;z-index:2;text-align:right}
+  /* map grid */
+  .map{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .mcell{border-radius:13px;border:1px solid var(--line);padding:14px 16px;background:#f8fafc;display:flex;flex-direction:column;gap:8px}
+  .mcell .mind{font-size:16px;font-weight:800;color:var(--ink)}
+  .mcell .mown{font-size:13.5px;color:var(--muted);line-height:1.45}
+  .mcell.pick{background:linear-gradient(135deg,#ecfdf5,#f0fdfa);border-color:var(--green-line);box-shadow:0 6px 18px rgba(5,150,105,.12)}
+  .mcell.pick .mind{color:#047857}
+  /* compare */
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:18px;flex:1}
+  .cmp .col{border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px}
+  .cmp .col.no{background:#fef7f2;border:1px solid #fed7aa}
+  .cmp .col.yes{background:var(--green-bg);border:1px solid var(--green-line)}
+  .cmp .col h3{font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .cmp .col.no h3{color:#c2410c}
+  .cmp .col.yes h3{color:#047857}
+  .cmp .verdict{margin-top:auto;font-size:15px;font-weight:800;padding:11px 14px;border-radius:10px}
+  .cmp .col.no .verdict{background:#fff;color:#c2410c;border:1px solid #fed7aa}
+  .cmp .col.yes .verdict{background:#fff;color:#047857;border:1px solid var(--green-line)}
+  /* placeholder */
+  .ph{flex:1;border:2px dashed var(--line2);border-radius:16px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:10px;color:var(--muted2);background:
+    repeating-linear-gradient(45deg,#f8fafc,#f8fafc 14px,#f1f5f9 14px,#f1f5f9 28px)}
+  .ph .pt{font-size:17px;font-weight:800;color:var(--muted)}
+  .ph .ps{font-size:14px;font-weight:600}
+  /* stat row */
+  .stats{display:flex;gap:16px}
+  .stat{flex:1;border-radius:14px;border:1px solid var(--line);padding:16px 18px;background:#f8fafc}
+  .stat .v{font-size:30px;font-weight:900;color:var(--sky);line-height:1}
+  .stat .k{font-size:13.5px;color:var(--muted);font-weight:700;margin-top:7px;line-height:1.4}
+  /* agenda strip */
+  .agenda{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+  .astep{flex:1;min-width:0;background:#f8fafc;border:1px solid var(--line);border-radius:11px;
+    padding:12px 12px;font-size:13.5px;font-weight:700;color:var(--ink2);text-align:center}
+  /* two-tone strategy */
+  .arrow-flow{display:flex;align-items:center;gap:14px;justify-content:center;margin-top:2px}
+  .flowbox{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px 18px;font-weight:800;font-size:15px;color:var(--ink2)}
+  .flowarr{color:var(--sky);font-size:22px;font-weight:900}
+  /* ---- nav ui ---- */
+  #ui{position:fixed;inset:0;pointer-events:none;z-index:50}
+  #progress{position:fixed;left:0;top:0;height:4px;background:var(--accent-grad);z-index:60;transition:width .35s ease}
+  .navbtn{position:fixed;bottom:22px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(148,163,184,.4);
+    background:rgba(15,23,42,.55);color:#fff;font-size:20px;cursor:pointer;pointer-events:auto;
+    display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:.2s}
+  .navbtn:hover{background:rgba(14,165,233,.8);border-color:transparent}
+  #prev{right:132px}#next{right:80px}
+  #counter{position:fixed;bottom:30px;right:24px;color:#94a3b8;font-size:14px;font-weight:700;
+    pointer-events:none;font-variant-numeric:tabular-nums}
+  #dots{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);display:flex;gap:7px;pointer-events:auto}
+  #dots button{width:9px;height:9px;border-radius:50%;border:none;background:rgba(148,163,184,.45);cursor:pointer;padding:0;transition:.2s}
+  #dots button.on{background:var(--sky);width:24px;border-radius:5px}
+  #hint{position:fixed;bottom:30px;left:24px;color:#475569;font-size:12.5px;font-weight:600;pointer-events:none}
+  /* ---- print / pdf export ---- */
+  @media print{
+    @page{size:1280px 720px;margin:0}
+    body{overflow:visible;background:#fff}
+    #viewport{position:static}
+    #stage{transform:none!important;width:1280px;height:auto}
+    .slide{display:flex!important;position:relative;inset:auto;width:1280px;height:720px;page-break-after:always;break-after:page}
+    #ui,#progress,#dots,#counter,#hint,.navbtn{display:none!important}
+  }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="viewport"><div id="stage">
+
+  <!-- ============ 1 · COVER ============ -->
+  <section class="slide dark cover active" data-title="封面">
+    <div class="deco" style="width:420px;height:420px;background:#0ea5e9;top:-120px;right:-80px;opacity:.25"></div>
+    <div class="deco" style="width:300px;height:300px;background:#06b6d4;bottom:-100px;left:-60px;opacity:.18"></div>
+    <div class="inner">
+      <div class="eyebrow">专题研讨会 · 内部战略决策</div>
+      <h1>数蚕智能<br><span class="grad">产品定位与未来发展方向</span></h1>
+      <div class="lede">明确产品边界 · 锚定核心差异 · 确立市场策略</div>
+      <div class="chips">
+        <span class="chip">透明检测系统</span>
+        <span class="chip">从"无系统"到"有系统"</span>
+        <span class="chip">软硬融合 · 入口级</span>
+      </div>
+    </div>
+    <div class="who">数蚕智能（应敏科技子公司）</div>
+    <div class="date">2026 年 7 月 27 日（周一）下午<br><span style="color:#64748b;font-size:13px">主办：数蚕智能</span></div>
+  </section>
+
+  <!-- ============ 2 · 会议目标 + 议程 ============ -->
+  <section class="slide" data-title="会议目标">
+    <div class="head">
+      <span class="kicker">Why We're Here</span>
+      <h1 class="s-title">会议目标：结束"被碎片化项目牵着走"</h1>
+      <div class="s-sub">为数蚕定一个可长期执行的产品与市场锚点</div>
+    </div>
+    <div class="body">
+      <div class="grid g3">
+        <div class="card"><h3><span class="num sm">1</span>明确产品边界</h3><p>我们做什么、<b>不做什么</b>——划清主线与禁区。</p></div>
+        <div class="card"><h3><span class="num sm">2</span>锚定核心差异</h3><p>凭什么被客户选择——建立清晰的价值锚点。</p></div>
+        <div class="card"><h3><span class="num sm">3</span>确立市场策略</h3><p>打哪个行业、怎么打、怎么定价。</p></div>
+      </div>
+      <div class="callout" style="padding:16px 22px">
+        <p style="font-size:17px">本次会议要产出：<span class="hl">对两条战略方向达成共识</span> ＋ 拍板若干关键决策事项。</p>
+      </div>
+      <div style="margin-top:auto">
+        <div class="src" style="margin-bottom:8px">会议路线</div>
+        <div class="agenda">
+          <div class="astep">现状与困境</div>
+          <div class="astep">市场研判</div>
+          <div class="astep">竞争格局</div>
+          <div class="astep">两条方向</div>
+          <div class="astep">策略结论</div>
+          <div class="astep">决策与行动</div>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>02</span></div>
+  </section>
+
+  <!-- ============ 3 · 现状盘点 ============ -->
+  <section class="slide" data-title="现状盘点">
+    <div class="head">
+      <span class="kicker">现状盘点</span>
+      <h1 class="s-title">LIMS 的能力与边界</h1>
+    </div>
+    <div class="body">
+      <div class="grid g2">
+        <div class="card" style="border-color:var(--green-line);background:var(--green-bg)">
+          <h3 style="color:#047857">优势 · 存量行业"够用"</h3>
+          <ul class="clean">
+            <li>电力检测行业，流程覆盖完整：采样—制样—检验—审核—报告—归档</li>
+            <li>现有 LIMS 功能满足电力检测场景需求</li>
+          </ul>
+        </div>
+        <div class="card" style="border-color:var(--amber-line);background:var(--amber-bg)">
+          <h3 style="color:#b45309">边界 · 增量行业"不够"</h3>
+          <ul class="clean">
+            <li>面向其他行业，功能相对简单</li>
+            <li>难以直接覆盖客户高标准、差异化需求</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout">
+        <div class="lbl">一句话结论</div>
+        <p>产品在<span class="hl">"存量行业够用"</span>，在<span class="hl">"增量行业不够"</span>。</p>
+      </div>
+      <div class="card soft" style="margin-top:auto">
+        <p style="font-size:15px;color:var(--ink2)"><b style="color:var(--red)">关键风险（引出后文）：</b>我们在<b>错误的轴</b>上竞争——用"一客一手工定制"对抗巨头的"低代码自助配置"，成本与交付速度双输。<span class="src">（报告B §2、§4.2）</span></p>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>03</span></div>
+  </section>
+
+  <!-- ============ 4 · 增长困境 ============ -->
+  <section class="slide" data-title="增长困境">
+    <div class="head">
+      <span class="kicker">增长困境</span>
+      <h1 class="s-title">为什么必须转型</h1>
+    </div>
+    <div class="body">
+      <div class="grid g2">
+        <div class="card">
+          <div class="lead">核心矛盾</div>
+          <p>电网检测行业具特殊性——部分<b>国网指定软件供应商</b>，数蚕 LIMS 销路增长遇到天花板。</p>
+          <p style="margin-top:10px"><b>结论：</b>在电网封闭市场内，靠现有产品已难有增量突破。</p>
+        </div>
+        <div class="card">
+          <div class="lead">转型方向</div>
+          <p>从 <span class="tag tag-avoid">电网封闭市场</span> 走向 <span class="tag tag-pick">第三方开放市场</span></p>
+          <ul class="clean tight" style="margin-top:12px">
+            <li>小型第三方检测机构 · 环境检测 · 制造业</li>
+            <li>建筑工程 · 食品 · 化工 · 新能源 …</li>
+          </ul>
+        </div>
+      </div>
+      <div class="stats" style="margin-top:auto">
+        <div class="stat"><div class="v">110 亿+</div><div class="k">2026 年国内 LIMS 市场规模<br><span class="src">报告B §1</span></div></div>
+        <div class="stat"><div class="v">&gt;18%</div><div class="k">国内市场年复合增长率（CAGR）<br><span class="src">报告B §1</span></div></div>
+        <div class="stat"><div class="v">58.5 亿$</div><div class="k">全球 LIMS 市场（2035E，CAGR 8.2%）<br><span class="src">报告A §1</span></div></div>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>04</span></div>
+  </section>
+
+  <!-- ============ 5 · 转型阵痛 ============ -->
+  <section class="slide" data-title="转型阵痛">
+    <div class="head">
+      <span class="kicker">转型阵痛</span>
+      <h1 class="s-title">机会背后的挑战</h1>
+    </div>
+    <div class="body">
+      <div class="grid g3">
+        <div class="card"><h3>确定性丧失</h3><p>从"指定供应商的<b>确定性</b>"进入"充分竞争的<b>不确定性</b>"。</p></div>
+        <div class="card"><h3>需求高压</h3><p>客户需求<b>多样化、标准高</b>，现有产品需高度定制才能满足。</p></div>
+        <div class="card" style="border-color:#fecaca;background:#fef2f2"><h3 style="color:var(--red)">红海风险</h3><p>易陷入"<b>一客一开发</b>"，人力被摊薄，无法沉淀通用产品。</p></div>
+      </div>
+      <div class="callout" style="margin-top:auto">
+        <div class="lbl">本页落点</div>
+        <p>转型不是"<span class="hl">要不要做</span>"，而是"<span class="hl">用什么姿势做</span>"。</p>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>05</span></div>
+  </section>
+
+  <!-- ============ 6 · 市场研判：三条事实 ============ -->
+  <section class="slide" data-title="市场研判">
+    <div class="head">
+      <span class="kicker">市场研判 · 两份行业报告</span>
+      <h1 class="s-title">报告给出的三条决定性事实</h1>
+    </div>
+    <div class="body">
+      <div class="grid g3" style="flex:1">
+        <div class="card">
+          <h3><span class="num sm">1</span>大而快，已"割据"</h3>
+          <p>市场破 110 亿、CAGR&gt;18%；但呈"群雄逐鹿、专业聚焦"——三维天地 / 金现代 / 创腾 / 网星 / 瑞美 / 新威各据壁垒。</p>
+          <p class="src" style="margin-top:8px">报告B §1、§2</p>
+        </div>
+        <div class="card" style="border-color:#fecaca">
+          <h3><span class="num sm">2</span>我们竞争在错误的轴</h3>
+          <p>巨头武器＝低代码自助配置（减码 70%）＋不限用户数＋AI 取数（99%）＋本土生态（钉钉/飞书）；我们＝<b style="color:var(--red)">简单＋高度定制</b>。</p>
+          <p class="src" style="margin-top:8px">报告B §2.1、§4.2</p>
+        </div>
+        <div class="card pick" style="background:var(--green-bg);border-color:var(--green-line)">
+          <h3 style="color:#047857"><span class="num sm">3</span>点名一个低端蓝海</h3>
+          <p><b>中小型第三方检测机构</b>：预算有限、流转快、扩项频繁 → 要低代码＋模板＋最低 TCO；且<b>中大型已普及、中小型空白</b>。</p>
+          <p class="src" style="margin-top:8px">报告A §8.2、§4.2</p>
+        </div>
+      </div>
+      <div class="callout" style="padding:14px 22px">
+        <p style="font-size:16.5px">这三条把方向一从"我方主张"升级为 <span class="hl">有数据支撑的市场事实</span>。</p>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>06</span></div>
+  </section>
+
+  <!-- ============ 7 · 竞争格局地图 ============ -->
+  <section class="slide" data-title="竞争格局">
+    <div class="head">
+      <span class="kicker">竞争格局地图</span>
+      <h1 class="s-title">巨头割据 × 我们的缝隙</h1>
+    </div>
+    <div class="body">
+      <div class="map" style="flex:1">
+        <div class="mcell"><div class="mind">生物医药 / GLP·GMP <span class="tag tag-avoid">避</span></div><div class="mown">创腾、三维天地、国际品牌 · 21CFR/ALCOA+ 重合规</div></div>
+        <div class="mcell"><div class="mind">集团化流程工业 <span class="tag tag-avoid">避</span></div><div class="mown">金现代（华电 70+）· 石化/化工/电力 · <b>乌海属此类</b></div></div>
+        <div class="mcell"><div class="mind">政府 / 环境监测 <span class="tag tag-avoid">避</span></div><div class="mown">三维天地（领导者）+ 网星 · 信创全栈 + GPS 防伪</div></div>
+        <div class="mcell"><div class="mind">医疗临床 <span class="tag tag-avoid">避</span></div><div class="mown">瑞美医疗（1500+ 客户）· ISO15189</div></div>
+        <div class="mcell"><div class="mind">电池测试 <span class="tag tag-avoid">避</span></div><div class="mown">新威 · 垂直壁垒已成</div></div>
+        <div class="mcell"><div class="mind">中大型第三方检测 <span class="tag tag-sat">饱和</span></div><div class="mown">"大部分中大型已普及 LIMS"（报告A §4.2）</div></div>
+        <div class="mcell pick" style="grid-column:1 / -1"><div class="mind">★ 中小型 TIC ＋ 中小制造 QC（无系统） <span class="tag tag-pick">我们的锚点</span></div><div class="mown">被巨头低端忽视的空白地带 · 与"软硬一体透明"能力最契合</div></div>
+      </div>
+      <div class="callout" style="padding:14px 22px">
+        <p style="font-size:16.5px">唯一稳妥的缝隙 ＝ <span class="hl">中小无系统客户 ＋ 软硬一体透明</span>。</p>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>07</span></div>
+  </section>
+
+  <!-- ============ 8 · 商机两难 (图片位) ============ -->
+  <section class="slide" data-title="商机两难">
+    <div class="head">
+      <span class="kicker">在手商机 · 现实两难</span>
+      <h1 class="s-title">乌海 vs 家联：接不接？凭什么接？</h1>
+      <div class="s-sub">应敏销售已有商机咨询，但现有 LIMS 功能不足，普遍需要高度定制</div>
+    </div>
+    <div class="body">
+      <div class="grid g2">
+        <div class="card" style="border-color:#fed7aa;background:#fef7f2">
+          <h3 style="color:#c2410c">乌海项目（图1）</h3>
+          <ul class="clean tight"><li>煤焦化 / 化工，约 <b>76 万</b></li><li>理论上需 <b>5 人全年无休</b></li><li>低毛利 · 高投入</li></ul>
+        </div>
+        <div class="card" style="border-color:#bae6fd;background:#f0f9ff">
+          <h3 style="color:#0369a1">家联科技（制造业）</h3>
+          <ul class="clean tight"><li>明确模块报价 <b>34 万</b></li><li>另含数采（待核算）· CNAS 签章（选配）</li><li>相对简单，但需补齐缺失模块</li></ul>
+        </div>
+      </div>
+      <div class="ph">
+        <div class="pt">图片素材位</div>
+        <div class="ps">在此插入：乌海项目概况图（图1） / 家联需求梳理 / 市场调研图表</div>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>08</span></div>
+  </section>
+
+  <!-- ============ 9 · 核心问题 ============ -->
+  <section class="slide dark" data-title="核心问题">
+    <div class="deco" style="width:360px;height:360px;background:#0ea5e9;top:-120px;right:-60px;opacity:.18"></div>
+    <div class="head">
+      <span class="kicker">The Core Questions</span>
+      <h1 class="s-title" style="font-size:40px">今天必须回答的三件事</h1>
+    </div>
+    <div class="body" style="justify-content:center;gap:22px;padding-bottom:40px">
+      <div style="display:flex;align-items:center;gap:20px"><span class="num">1</span><p style="font-size:26px;font-weight:700;color:#e2e8f0">我们的产品到底是"<span style="color:#38bdf8">定制化 LIMS</span>"，还是别的东西？</p></div>
+      <div style="display:flex;align-items:center;gap:20px"><span class="num">2</span><p style="font-size:26px;font-weight:700;color:#e2e8f0">乌海这类<span style="color:#38bdf8">低毛利高投入</span>项目，接还是不接？标准是什么？</p></div>
+      <div style="display:flex;align-items:center;gap:20px"><span class="num">3</span><p style="font-size:26px;font-weight:700;color:#e2e8f0">先打<span style="color:#38bdf8">哪个行业</span>？用什么方式补齐缺失能力？</p></div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>09</span></div>
+  </section>
+
+  <!-- ============ 10 · 方向一 ============ -->
+  <section class="slide" data-title="战略方向一">
+    <div class="head">
+      <span class="kicker">战略方向一 · 纲</span>
+      <h1 class="s-title">重新定义产品 —— 透明检测系统</h1>
+    </div>
+    <div class="body">
+      <div class="grid g2">
+        <div class="card" style="border-color:#fecaca;background:#fef2f2">
+          <h3 style="color:var(--red)">拒绝</h3>
+          <ul class="clean tight"><li>不以低价卷入定制化红海</li><li>不把自己定义为"传统 LIMS 的定制版"</li></ul>
+        </div>
+        <div class="card" style="border-color:var(--sky2);background:#f0f9ff">
+          <h3 style="color:#0369a1">重新定义</h3>
+          <p>融合<b>软件 + 物联网传感器</b>的 <b>轻量化 · 通用 · 低成本 · 入口级</b> 解决方案。</p>
+        </div>
+      </div>
+      <div class="grid g2" style="flex:1">
+        <div class="card soft"><div class="lead">核心价值</div><p>帮客户从"<b>无系统</b>"快速跨越到"<b>有系统</b>"，而非全面替代成熟复杂的定制大系统。</p></div>
+        <div class="card soft"><div class="lead">生态 + 客户策略</div><p>结合"<b>安全管家</b>"形成差异化生态；<b>主动筛选客户</b>，聚焦认可价值主张者，拒当陪跑。</p></div>
+      </div>
+      <div class="card" style="background:var(--green-bg);border-color:var(--green-line)">
+        <p style="font-size:15px"><b style="color:#047857">报告佐证：</b>AI 取数 / 设备集成是关键战场；应敏的<b>数采与装备能力</b> = 软硬融合的"透明"，正补软件巨头在低端的短板。<span class="src">（报告A §4.4 · 报告B §4.2）</span></p>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>10</span></div>
+  </section>
+
+  <!-- ============ 11 · 方向二 ============ -->
+  <section class="slide" data-title="战略方向二">
+    <div class="head">
+      <span class="kicker">战略方向二 · 路</span>
+      <h1 class="s-title">锚定行业 · 合作共创</h1>
+    </div>
+    <div class="body">
+      <div class="grid g2">
+        <div class="card"><h3>打法</h3><p>先<b>锚定一个行业</b>试水，集中资源打透。</p></div>
+        <div class="card"><h3>能力建设</h3><p>与标杆客户<b>合作共创</b>，共同开发缺失的模块与能力。</p></div>
+        <div class="card"><h3>定价逻辑</h3><p>不只看成本，更看<b>战略意义</b>；某些项目即使亏钱也做——为沉淀能力与案例。</p></div>
+        <div class="card"><h3>目标</h3><p>把一次性定制投入，转化为<b>可复用的产品资产</b>。</p></div>
+      </div>
+      <div class="callout" style="margin-top:auto;border-color:var(--amber-line);background:var(--amber-bg)">
+        <div class="lbl" style="color:#b45309">关键约束（化解两方向矛盾）</div>
+        <p style="font-size:18px"><span class="hl" style="background:linear-gradient(180deg,transparent 62%,#fde68a 62%)">亏可以，但只买"可复用模块 + 标杆案例"，不买"一锤子定制交付"。</span></p>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>11</span></div>
+  </section>
+
+  <!-- ============ 12 · 纲与路 + 最终结论 ============ -->
+  <section class="slide dark" data-title="策略结论">
+    <div class="deco" style="width:420px;height:420px;background:#06b6d4;bottom:-140px;right:-80px;opacity:.16"></div>
+    <div class="head">
+      <span class="kicker">纲 与 路 · 最终结论</span>
+      <h1 class="s-title" style="font-size:36px">两个方向不是二选一，而是一体两面</h1>
+    </div>
+    <div class="body">
+      <div class="arrow-flow">
+        <div class="flowbox">方向一 = <span style="color:var(--sky)">纲</span><br><span style="font-weight:600;font-size:13px;color:#94a3b8">产品是什么 · 长期定位与护栏</span></div>
+        <span class="flowarr">＋</span>
+        <div class="flowbox">方向二 = <span style="color:var(--sky)">路</span><br><span style="font-weight:600;font-size:13px;color:#94a3b8">怎么走到那里 · 落地与能力积累</span></div>
+      </div>
+      <div class="callout" style="margin-top:6px;background:linear-gradient(135deg,#0c2a3f 0%,#0a2230 100%);border-color:rgba(56,189,248,.5)">
+        <div class="lbl" style="color:#7dd3fc">最适合数蚕的策略</div>
+        <p style="color:#f1f5f9;font-size:21px;line-height:1.55">以「<span style="color:#38bdf8">透明检测系统</span>」为纲，首锚 <span style="color:#38bdf8">中小型第三方检测 ＋ 离散制造 QC</span> 低端蓝海；用<b>受约束的共创</b>把家联这类项目沉淀成通用产品，而非逐单定制。<br><span style="display:inline-block;margin-top:10px;font-size:24px;font-weight:900;color:#fff">家联进 · 乌海退</span></p>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>12</span></div>
+  </section>
+
+  <!-- ============ 13 · 决策框架 评分表 ============ -->
+  <section class="slide" data-title="决策框架">
+    <div class="head">
+      <span class="kicker">决策框架</span>
+      <h1 class="s-title">项目"接不接"评分表</h1>
+      <div class="s-sub">所有商机先过这张表，避免拍脑袋接单</div>
+    </div>
+    <div class="body">
+      <ul class="clean" style="gap:11px;flex:1">
+        <li><b>① 模块可复用度</b>（能否沉淀进透明检测系统）　<span class="tag tag-accent">权重最高</span></li>
+        <li><b>② 客户是否认可价值主张</b>（非纯比价 / 非要求替代成熟大系统）</li>
+        <li><b>③ 是否属目标锚定行业 / 标杆价值</b></li>
+        <li><b>④ 毛利 / 人力投入比</b></li>
+        <li><b>⑤ 交付风险与周期</b>（对 5 人小团队的挤占）</li>
+      </ul>
+      <div class="callout" style="border-color:var(--amber-line);background:var(--amber-bg)">
+        <div class="lbl" style="color:#b45309">战略性亏损的唯一豁免条件</div>
+        <p style="font-size:17px">仅当 <span class="hl" style="background:linear-gradient(180deg,transparent 62%,#fde68a 62%)">第 ① 条得分高（买的是可复用资产）</span> 且 第 ② 条通过。</p>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>13</span></div>
+  </section>
+
+  <!-- ============ 14 · 案例研判 裁决 ============ -->
+  <section class="slide" data-title="案例研判">
+    <div class="head">
+      <span class="kicker">案例研判 · 报告直接给出裁决</span>
+      <h1 class="s-title">乌海 vs 家联</h1>
+    </div>
+    <div class="body">
+      <div class="cmp">
+        <div class="col no">
+          <h3>乌海 <span class="tag tag-avoid">退</span></h3>
+          <ul class="clean tight">
+            <li>精确落在"集团化流程工业"（报告A §6.4）+ 危化品重合规</li>
+            <li>金现代等已占的红海，模块偏重、复用度低</li>
+            <li>5 人全年，高投入低毛利</li>
+          </ul>
+          <div class="verdict">谢绝 / 转由应敏主导重报价 · 不作战略锚点</div>
+        </div>
+        <div class="col yes">
+          <h3>家联 <span class="tag tag-pick">进</span></h3>
+          <ul class="clean tight">
+            <li>离散制造 QC；样品/设备/报告/CNAS 选配</li>
+            <li>与中小 TIC 通用模块<b>高度重叠</b>，为它建的也喂通用产品</li>
+            <li>复用度高、投入可控</li>
+          </ul>
+          <div class="verdict">首个共创样板 · 可接受有限战略让利</div>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>14</span></div>
+  </section>
+
+  <!-- ============ 15 · 雷区 ============ -->
+  <section class="slide" data-title="避开雷区">
+    <div class="head">
+      <span class="kicker">战略禁区</span>
+      <h1 class="s-title">要主动避开的雷区（打不过 · 不该打）</h1>
+    </div>
+    <div class="body">
+      <div class="grid g2" style="flex:1">
+        <div class="card"><h3><span class="tag tag-avoid">避</span> 生物医药 / GLP·GMP</h3><p>21CFR Part11 · ALCOA+ · CSV · 动物全生命周期。<span class="src">报告A §6.1</span></p></div>
+        <div class="card"><h3><span class="tag tag-avoid">避</span> 集团化流程工业</h3><p>集团分布式 · 上万样品/日 · MES 工厂模型。<span class="src">报告A §6.4</span></p></div>
+        <div class="card"><h3><span class="tag tag-avoid">避</span> 政府 / 环境监测</h3><p>三维天地领导者 · 信创全栈 · GPS 防伪。<span class="src">报告A §6.5、§7</span></p></div>
+        <div class="card"><h3><span class="tag tag-avoid">避</span> 医疗临床 / 电池</h3><p>瑞美（1500+）· 新威 · 垂直壁垒已成。<span class="src">报告B §2.3</span></p></div>
+      </div>
+      <div class="callout" style="padding:14px 22px">
+        <p style="font-size:16.5px">巨头护城河 ＋ 超小团队能力边界 ＝ <span class="hl">战略禁区</span>。</p>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>15</span></div>
+  </section>
+
+  <!-- ============ 16 · 拍板 + 行动 ============ -->
+  <section class="slide" data-title="拍板与行动">
+    <div class="head">
+      <span class="kicker">今日拍板 · 下一步行动</span>
+      <h1 class="s-title">需达成共识的决策 & 行动项</h1>
+    </div>
+    <div class="body">
+      <div class="grid g2" style="flex:1">
+        <div class="card">
+          <div class="lead">需拍板的决策</div>
+          <ul class="clean tight">
+            <li>确立「透明检测系统」为统一定位与销售话术核心？</li>
+            <li>采用"筛客 + 拒纯比价红海"接单纪律？</li>
+            <li>首锚行业选定（中小 TIC / 制造 QC / 其他）？</li>
+            <li>乌海、家联取舍（建议：<b style="color:#047857">家联进 · 乌海退</b>）</li>
+          </ul>
+        </div>
+        <div class="card soft">
+          <div class="lead">行动项（负责人 / 时间待填）</div>
+          <ul class="clean tight">
+            <li>产品定义文档（透明检测系统边界）</li>
+            <li>销售话术与客户筛选清单</li>
+            <li>"接不接"评分表落地</li>
+            <li>确定首个共创客户</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card" style="background:var(--amber-bg);border-color:var(--amber-line)">
+        <p style="font-size:15px"><b style="color:#b45309">护栏：</b>合同锁定共创产出的<b>知识产权与复用权归数蚕</b>，防止共创沦为免费定制。</p>
+      </div>
+    </div>
+    <div class="foot"><span class="brand"><span class="dot"></span>数蚕智能 · 产品定位专题</span><span>16</span></div>
+  </section>
+
+  <!-- ============ 17 · 结束 ============ -->
+  <section class="slide dark cover" data-title="讨论">
+    <div class="deco" style="width:460px;height:460px;background:#0ea5e9;top:-140px;left:-90px;opacity:.16"></div>
+    <div class="deco" style="width:320px;height:320px;background:#06b6d4;bottom:-120px;right:-70px;opacity:.16"></div>
+    <div class="inner">
+      <div class="eyebrow">讨论 · 收敛</div>
+      <h1 style="font-size:46px">把碎片化项目的<span class="grad">被动接单</span>，<br>变成有边界、有标准、有方向的<span class="grad">主动选择</span></h1>
+      <div class="chips">
+        <span class="chip">① 确立透明检测系统定位</span>
+        <span class="chip">② 接单纪律</span>
+        <span class="chip">③ 首锚行业</span>
+        <span class="chip">④ 家联进 · 乌海退</span>
+      </div>
+    </div>
+    <div class="who">数蚕智能 · 透明检测系统</div>
+    <div class="date">谢谢 · 进入讨论</div>
+  </section>
+
+</div></div>
+
+<!-- ---- nav ui ---- -->
+<div id="ui"></div>
+<button class="navbtn" id="prev" aria-label="上一页">&#8249;</button>
+<button class="navbtn" id="next" aria-label="下一页">&#8250;</button>
+<div id="counter"></div>
+<div id="dots"></div>
+<div id="hint">← → / 空格 翻页 · F 全屏 · Ctrl+P 导出 PDF</div>
+
+<script>
+(function(){
+  var stage=document.getElementById('stage');
+  var slides=Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cur=0, total=slides.length;
+  var progress=document.getElementById('progress');
+  var counter=document.getElementById('counter');
+  var dotsWrap=document.getElementById('dots');
+
+  // dots
+  slides.forEach(function(s,i){
+    var b=document.createElement('button');
+    b.title=(i+1)+' · '+(s.dataset.title||'');
+    b.addEventListener('click',function(){go(i)});
+    dotsWrap.appendChild(b);
+  });
+  var dots=Array.prototype.slice.call(dotsWrap.children);
+
+  function fit(){
+    var pad=0;
+    var sx=window.innerWidth/1280, sy=window.innerHeight/720;
+    var s=Math.min(sx,sy);
+    stage.style.transform='scale('+s+')';
+  }
+  function render(){
+    slides.forEach(function(s,i){s.classList.toggle('active',i===cur)});
+    dots.forEach(function(d,i){d.classList.toggle('on',i===cur)});
+    progress.style.width=((cur+1)/total*100)+'%';
+    counter.textContent=String(cur+1).padStart(2,'0')+' / '+String(total).padStart(2,'0');
+  }
+  function go(i){cur=Math.max(0,Math.min(total-1,i));render()}
+  function next(){go(cur+1)}
+  function prev(){go(cur-1)}
+
+  document.getElementById('next').addEventListener('click',next);
+  document.getElementById('prev').addEventListener('click',prev);
+  window.addEventListener('resize',fit);
+  document.addEventListener('keydown',function(e){
+    if(['ArrowRight','ArrowDown','PageDown',' '].indexOf(e.key)>-1){e.preventDefault();next();}
+    else if(['ArrowLeft','ArrowUp','PageUp'].indexOf(e.key)>-1){e.preventDefault();prev();}
+    else if(e.key==='Home'){go(0);}
+    else if(e.key==='End'){go(total-1);}
+    else if(e.key==='f'||e.key==='F'){
+      if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}
+      else{document.exitFullscreen&&document.exitFullscreen();}
+    }
+  });
+  // click to advance (ignore controls)
+  stage.addEventListener('click',function(e){
+    if(e.target.closest('a,button'))return;
+    next();
+  });
+  fit();render();
+})();
+</script>
+</body>
+</html>
