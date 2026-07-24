@@ -1316,29 +1316,7 @@
   .call-note{margin-top:1vh;padding:1.2vh 1.2vw;background:var(--grey-1);border-left:3px solid var(--accent);font-size:max(14px,.9vw);line-height:1.45;color:var(--text-secondary)}
   .call-note b{color:var(--ink);font-weight:600}
 
-  /* ===== Edit / Save toolbar ===== */
-  #edit-bar{
-    position:fixed;top:12px;left:50%;transform:translateX(-50%);
-    z-index:9999;display:flex;gap:8px;align-items:center;
-    background:rgba(250,250,248,.96);border:1px solid #d4d4d2;
-    padding:8px 12px;box-shadow:0 4px 18px rgba(0,0,0,.08);
-    font-family:var(--sans),var(--sans-zh);font-size:13px;font-weight:500;
-  }
-  #edit-bar button{
-    border:1px solid #d4d4d2;background:#fff;color:#0a0a0a;
-    padding:6px 12px;cursor:pointer;font:inherit;letter-spacing:.02em;
-  }
-  #edit-bar button:hover{border-color:#002FA7;color:#002FA7}
-  #edit-bar button.on{background:#002FA7;color:#fff;border-color:#002FA7}
-  #edit-bar .sep{width:1px;height:18px;background:#d4d4d2}
-  #edit-bar .hint{color:#737373;font-size:12px;max-width:28vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  body.editing [contenteditable="true"]{
-    outline:1px dashed rgba(0,47,167,.35);outline-offset:2px;cursor:text;
-  }
-  body.editing [contenteditable="true"]:focus{
-    outline:2px solid #002FA7;background:rgba(0,47,167,.04);
-  }
-  @media print{#edit-bar{display:none!important}}
+  /* Edit toolbar removed */
 
   /* ===== Seminar extras (architecture / tables / tags) ===== */
   .arch-stack{display:flex;flex-direction:column;gap:1vh;min-height:0;flex:1}
@@ -1410,17 +1388,6 @@
 </style>
 </head>
 <body class="canvas-mode">
-
-<div id="edit-bar" aria-label="编辑工具条">
-  <button type="button" id="btn-edit" title="开启后可直接点选文字修改">编辑</button>
-  <button type="button" id="btn-save" title="保存到本机浏览器">保存</button>
-  <button type="button" id="btn-download" title="下载整份 HTML">下载 HTML</button>
-  <button type="button" id="btn-reset" title="恢复到上次打开时的原始内容">重置</button>
-  <span class="sep"></span>
-  <button type="button" id="btn-proj" title="投屏高对比：强制浅底深字（可选）">投屏模式</button>
-  <span class="sep"></span>
-  <span class="hint" id="edit-hint">提示：点「编辑」后可改文字；「保存」写入浏览器，「下载 HTML」导出文件</span>
-</div>
 
 <script>
   // Windows 平台标记 — 雅黑没有 ExtraLight,需要字重补偿
@@ -3573,126 +3540,8 @@ if(motion){
 
 <script>
 (function(){
-  const KEY = 'shucan-seminar-deck-v15';
-  const barEdit = document.getElementById('btn-edit');
-  const barSave = document.getElementById('btn-save');
-  const barDl = document.getElementById('btn-download');
-  const barReset = document.getElementById('btn-reset');
-  const barProj = document.getElementById('btn-proj');
-  const hint = document.getElementById('edit-hint');
-  const deck = document.getElementById('deck');
-  if(!deck) return;
-
-  // snapshot original deck HTML once
-  const ORIGINAL = deck.innerHTML;
-  try {
-    if(!localStorage.getItem(KEY + ':original')){
-      localStorage.setItem(KEY + ':original', ORIGINAL);
-    }
-  } catch(e){}
-
-  function setHint(msg){ if(hint) hint.textContent = msg; }
-
-  function editableTargets(){
-    return deck.querySelectorAll('h1,h2,h3,h4,p,li,td,th,span.t-meta,span.t-cat,.lead,.bc-main,.bc-note,.mc-t,.mc-d,.call-note,.tag-pill,.chrome-min .l,.chrome-min .r,.arch-hd b,.arch-hd span,.mod b,.mod span,.lbl,.name,.yr');
-  }
-
-  function setEditing(on){
-    document.body.classList.toggle('editing', on);
-    barEdit.classList.toggle('on', on);
-    editableTargets().forEach(el=>{
-      if(on){
-        el.setAttribute('contenteditable','true');
-        el.setAttribute('spellcheck','false');
-      }else{
-        el.removeAttribute('contenteditable');
-      }
-    });
-    setHint(on ? '编辑中：点击文字即可修改；改完请点「保存」或「下载 HTML」' : '已退出编辑。可用「保存」写入浏览器本地。');
-  }
-
-  function saveLocal(){
-    try{
-      localStorage.setItem(KEY, deck.innerHTML);
-      localStorage.setItem(KEY + ':savedAt', new Date().toISOString());
-      setHint('已保存到本机浏览器 · ' + new Date().toLocaleString());
-    }catch(e){
-      setHint('保存失败：' + e.message);
-    }
-  }
-
-  function loadLocal(){
-    try{
-      const html = localStorage.getItem(KEY);
-      if(html){
-        // slideCountGuard: ignore stale saves that predate structural updates
-        const savedN = (html.match(/<section\b[^>]*class=\"[^\"]*\bslide\b/g)||[]).length;
-        const origN = (ORIGINAL.match(/<section\b[^>]*class=\"[^\"]*\bslide\b/g)||[]).length;
-        if(savedN && origN && savedN < origN){
-          localStorage.removeItem(KEY);
-          setHint('检测到旧版保存稿（页数较少），已自动忽略并加载最新结构');
-          return false;
-        }
-        deck.innerHTML = html;
-        setHint('已载入本机保存稿 · ' + (localStorage.getItem(KEY+':savedAt')||''));
-        return true;
-      }
-    }catch(e){}
-    return false;
-  }
-
-  function downloadHtml(){
-    // clone full document with current deck content
-    const clone = document.documentElement.cloneNode(true);
-    const cloneDeck = clone.querySelector('#deck');
-    if(cloneDeck) cloneDeck.innerHTML = deck.innerHTML;
-    // strip edit mode attrs in export
-    clone.querySelectorAll('[contenteditable]').forEach(el=>el.removeAttribute('contenteditable'));
-    clone.querySelector('body')?.classList.remove('editing');
-    const html = '<!DOCTYPE html>\n' + clone.outerHTML;
-    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-    const a = document.createElement('a');
-    const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
-    a.href = URL.createObjectURL(blob);
-    a.download = '数蚕智能-产品定位研讨会-' + ts + '.html';
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(a.href);
-    setHint('已下载 HTML 文件（含当前编辑内容）');
-  }
-
-  function resetDeck(){
-    if(!confirm('确定恢复到原始版本？未下载的修改将丢失。')) return;
-    try{
-      const orig = localStorage.getItem(KEY + ':original') || ORIGINAL;
-      deck.innerHTML = orig;
-      localStorage.removeItem(KEY);
-      setEditing(false);
-      setHint('已重置为原始内容');
-      // re-init icons if needed
-      if(window.lucide && lucide.createIcons) lucide.createIcons();
-    }catch(e){ setHint('重置失败：'+e.message); }
-  }
-
-  barEdit?.addEventListener('click', ()=> setEditing(!document.body.classList.contains('editing')));
-  barSave?.addEventListener('click', saveLocal);
-  barDl?.addEventListener('click', downloadHtml);
-  barReset?.addEventListener('click', resetDeck);
-  barProj?.addEventListener('click', ()=>{
-    const on = document.body.classList.toggle('proj-safe');
-    barProj.classList.toggle('on', on);
-    setHint(on ? '投屏模式开：浅底深字，适合投影' : '投屏模式关：恢复原配色（含深色页）');
-  });
-
-  // Ctrl/Cmd+S save
-  document.addEventListener('keydown', (e)=>{
-    if((e.metaKey || e.ctrlKey) && e.key.toLowerCase()==='s'){
-      e.preventDefault();
-      saveLocal();
-    }
-  });
-
-  // load saved content after DOM ready (before first paint ideally)
-  loadLocal();
+  // 编辑工具条已移除：不再挂载编辑 / 保存 / 下载 / 重置 / 投屏，也不再从 localStorage 覆盖稿面
+  return;
 })();
 </script>
 
