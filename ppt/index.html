@@ -3732,7 +3732,7 @@ if(motion){
 
 <script>
 (function(){
-  const KEY = 'shucan-seminar-deck-v2';
+  const KEY = 'shucan-seminar-deck-v3';
   const barEdit = document.getElementById('btn-edit');
   const barSave = document.getElementById('btn-save');
   const barDl = document.getElementById('btn-download');
@@ -3784,6 +3784,14 @@ if(motion){
     try{
       const html = localStorage.getItem(KEY);
       if(html){
+        // slideCountGuard: ignore stale saves that predate structural updates
+        const savedN = (html.match(/<section\b[^>]*class=\"[^\"]*\bslide\b/g)||[]).length;
+        const origN = (ORIGINAL.match(/<section\b[^>]*class=\"[^\"]*\bslide\b/g)||[]).length;
+        if(savedN && origN && savedN < origN){
+          localStorage.removeItem(KEY);
+          setHint('检测到旧版保存稿（页数较少），已自动忽略并加载最新结构');
+          return false;
+        }
         deck.innerHTML = html;
         setHint('已载入本机保存稿 · ' + (localStorage.getItem(KEY+':savedAt')||''));
         return true;
