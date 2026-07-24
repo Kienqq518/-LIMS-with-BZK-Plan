@@ -1187,6 +1187,13 @@
   .swiss-tbl.gap-mx .c{text-align:center;font-weight:700}
   .swiss-tbl.ind-mx td,.swiss-tbl.ind-mx th{font-size:max(11px,.7vw);padding:.38vh .55vw;line-height:1.28;vertical-align:top}
   .swiss-tbl.ind-mx .sub{display:block;font-size:max(10px,.62vw);color:var(--text-helper);font-weight:400;margin-top:.1vh}
+  .tbl-wrap.sticky-head{overflow:auto;min-height:0}
+  .tbl-wrap.sticky-head .swiss-tbl{border-collapse:separate;border-spacing:0}
+  .tbl-wrap.sticky-head thead th{
+    position:sticky;top:0;z-index:3;
+    background:var(--ink);color:#fff;
+    box-shadow:0 1px 0 var(--border-subtle);
+  }
   .two-col-gap{display:grid;grid-template-columns:1fr 1fr;gap:1.4vh 1.6vw;flex:1;min-height:0}
   .base-block{border:1px solid var(--border-subtle);padding:1.4vh 1.2vw;background:var(--paper);display:flex;flex-direction:column;gap:.6vh}
   .base-block h4{font-size:max(15px,.98vw);font-weight:600;color:var(--ink)}
@@ -1920,7 +1927,7 @@
       <h2 style="font-family:var(--sans),var(--sans-zh);font-weight:200;font-size:min(4.6vw,8.2vh);line-height:1.05;letter-spacing:-.03em;color:var(--text-primary)">候选行业交叉筛选</h2>
       <p data-anim="lead" style="margin-top:1.2vh;max-width:68ch;font-size:max(16px,1.05vw);line-height:1.5;font-weight:400;color:var(--text-secondary)">来源：竞争格局报告渗透表 + 简报表5 合并 · 按无系统池 / 巨头锁定 / 透明检测价值交叉判定</p>
     </div>
-      <div class="tbl-wrap">
+      <div class="tbl-wrap sticky-head">
         <table class="swiss-tbl dense ind-mx">
           <thead>
             <tr><th>候选行业</th><th>无系统池</th><th>巨头锁定</th><th>透明检测价值</th><th>结论</th></tr>
@@ -1983,11 +1990,11 @@
               <td class="warn">△ 谨慎</td>
             </tr>
             <tr>
-              <td>化工<span class="sub">537家 / 81亿</span></td>
-              <td>低<span class="sub">MES / 危化深</span></td>
+              <td>化工 / 煤焦化<span class="sub">537家 / 81亿 · 乌海属此</span></td>
+              <td>低<span class="sub">MES / 危化 / DCS 深</span></td>
               <td>高<span class="sub">创腾 · 网星</span></td>
-              <td>低<span class="sub">乌海属此</span></td>
-              <td class="avoid">✕ 避</td>
+              <td>低<span class="sub">炼焦 2520 + 基础化学品 261</span></td>
+              <td class="avoid">✕ 避 · 乌海</td>
             </tr>
             <tr>
               <td>能源 / 电力<span class="sub">527+612家 / 93+175亿</span></td>
@@ -2011,10 +2018,10 @@
               <td class="avoid">✕ 避</td>
             </tr>
             <tr class="row-pick">
-              <td>轻工制造业<span class="sub">326家 / 96.1亿 · 家联属此</span></td>
+              <td>轻工 / 塑料制品业<span class="sub">326家 / 96.1亿 · 家联属此（301193）</span></td>
               <td>高<span class="sub">分散、方法杂</span></td>
               <td>低<span class="sub">无深度领跑</span></td>
-              <td>高<span class="sub">制造 QC 内检 · 过程可信</span></td>
+              <td>高<span class="sub">餐饮具/日用 · 生物降解新材料 QC</span></td>
               <td class="pick">★ 可延伸 · 家联</td>
             </tr>
             <tr>
@@ -2025,7 +2032,7 @@
               <td class="avoid">✕ 避 · GB38900</td>
             </tr>
             <tr class="row-pick">
-              <td><b>中小型 TIC 跨领域 + 制造 QC 内检</b><span class="sub">5万+机构 · 家联＝轻工制造 QC 内检</span></td>
+              <td><b>中小型 TIC 跨领域 + 制造 QC 内检</b><span class="sub">5万+机构 · 家联＝塑料/轻工制造 QC 内检</span></td>
               <td>极高<span class="sub">从无到有主战场</span></td>
               <td>极低<span class="sub">五家均未主攻</span></td>
               <td>高<span class="sub">快上线 · 过程可信</span></td>
@@ -2034,7 +2041,7 @@
           </tbody>
         </table>
       </div>
-      <p style="font-size:max(14px,.92vw);color:var(--text-secondary);font-weight:500">→ 首锚「中小型 TIC + 制造 QC 内检」；家联属轻工制造业、落在制造 QC 内检；电子/机械谨慎切入</p>
+      <p style="font-size:max(14px,.92vw);color:var(--text-secondary);font-weight:500">→ 家联＝橡胶塑料制品业（餐饮具/家居日用→生物降解新材料），落在「轻工制造 QC 内检」首锚；乌海＝炼焦 2520 / 基础化学品制造，属化工煤焦化，原则不接</p>
     </div>
   </div>
 </section>
@@ -3556,7 +3563,7 @@ if(motion){
 
 <script>
 (function(){
-  const KEY = 'shucan-seminar-deck-v11';
+  const KEY = 'shucan-seminar-deck-v12';
   const barEdit = document.getElementById('btn-edit');
   const barSave = document.getElementById('btn-save');
   const barDl = document.getElementById('btn-download');
