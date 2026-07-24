@@ -95,7 +95,7 @@ slides.append(f'''
         <article class="card-fill sub-card">
           <span class="big-num">03</span>
           <h4>第三环节 · 后续占位</h4>
-          <p>一起探讨数蚕的产品定位、规划和工作重心（本轮先占位，下一轮补齐）</p>
+          <p>一起探讨数蚕的产品定位、规划和工作重心</p>
         </article>
       </div>
     </div>
