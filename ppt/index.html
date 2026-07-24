@@ -1393,9 +1393,12 @@
 <body class="canvas-mode">
 
 <script>
-  // 防御：旧缓存页若仍带编辑工具条，立刻移除
+  // 防御：旧缓存页若仍带编辑工具条，立刻移除；并清掉旧编辑稿缓存
   document.getElementById('edit-bar')?.remove();
   document.querySelectorAll('#btn-edit,#btn-save,#btn-download,#btn-reset,#btn-proj,#edit-hint').forEach(el=>el.remove());
+  try{
+    Object.keys(localStorage).filter(k=>k.startsWith('shucan-seminar-deck')).forEach(k=>localStorage.removeItem(k));
+  }catch(e){}
 </script>
 
 <script>
