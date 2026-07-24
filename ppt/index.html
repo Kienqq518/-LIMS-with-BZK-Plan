@@ -1333,15 +1333,23 @@
   .tag-pill{display:inline-flex;align-self:flex-start;margin-top:auto;padding:.6vh 1vw;font-size:max(13px,.85vw);font-weight:600;letter-spacing:.04em}
   .tag-pill.pick{background:var(--accent);color:var(--accent-on)}
   .tag-pill.avoid{background:var(--ink);color:#fff}
-  .pos-matrix{display:grid;grid-template-columns:auto 1fr;grid-template-rows:1fr auto;gap:1vh 1.2vw;min-height:22vh}
-  .pm-y{writing-mode:vertical-rl;transform:rotate(180deg);font-size:max(13px,.85vw);font-weight:600;color:var(--text-helper);letter-spacing:.12em;text-align:center}
-  .pm-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1vh;min-height:0}
-  .pm-cell{border:1px solid var(--border-subtle);background:var(--grey-1);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:max(15px,1vw);font-weight:500;color:var(--text-primary);line-height:1.35;padding:1vh}
+  .pos-matrix{display:grid;grid-template-columns:72px 1fr;grid-template-rows:auto 1fr auto;gap:.6vh 1vw;min-height:24vh;align-items:stretch}
+  .pm-y-top,.pm-y-bot{font-size:max(13px,.85vw);font-weight:700;color:var(--text-helper);text-align:center;line-height:1.2;align-self:center}
+  .pm-y-mid{display:flex;align-items:center;justify-content:center;font-size:max(12px,.78vw);font-weight:600;color:var(--text-helper);writing-mode:vertical-lr;letter-spacing:.18em}
+  .pm-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1vh;min-height:0;grid-column:2;grid-row:1 / span 2}
+  .pm-cell{border:1px solid var(--border-subtle);background:var(--grey-1);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:max(15px,1vw);font-weight:500;color:var(--text-primary);line-height:1.35;padding:1.2vh .8vw}
   .pm-cell span{display:block;margin-top:.4vh;font-size:max(13px,.85vw);font-weight:400;color:var(--text-helper)}
-  .pm-cell.muted{opacity:.55}
-  .pm-cell.pick{background:var(--accent);color:var(--accent-on);border-color:var(--accent)}
-  .pm-cell.pick span{color:rgba(255,255,255,.8)}
-  .pm-x{grid-column:2;display:flex;justify-content:space-between;font-size:max(13px,.85vw);font-weight:600;color:var(--text-helper);letter-spacing:.06em}
+  .pm-cell.muted{opacity:.72}
+  .pm-cell.pick{background:rgba(var(--accent-rgb),.1);color:var(--ink);border:2px solid var(--accent)}
+  .pm-cell.pick span{color:var(--text-secondary)}
+  .pm-x{grid-column:2;display:flex;justify-content:space-between;align-items:center;font-size:max(13px,.85vw);font-weight:700;color:var(--text-helper);letter-spacing:.04em;padding-top:.4vh}
+  .pm-x .pm-arrow{flex:1;text-align:center;font-weight:500;color:var(--text-placeholder);letter-spacing:0}
+
+  .pdf-link{display:flex;align-items:flex-start;gap:1vw;padding:1.4vh 1.2vw;border:1px solid var(--border-subtle);background:var(--grey-1);text-decoration:none;color:var(--ink)}
+  .pdf-link:hover{border-color:var(--accent);background:rgba(var(--accent-rgb),.06)}
+  .pdf-tag{flex:none;font-family:var(--mono);font-size:max(12px,.78vw);font-weight:700;letter-spacing:.08em;color:var(--accent);padding-top:.15em}
+  .pdf-name{font-size:max(14px,.9vw);line-height:1.45;font-weight:500;color:var(--text-primary);word-break:break-all}
+  .pm-caption{grid-column:1 / -1;font-size:max(13px,.85vw);color:var(--text-secondary);line-height:1.4;margin-top:.4vh}
   .matrix-cell .mc-t{font-size:max(15px,1.05vw);font-weight:500;color:inherit;margin-bottom:.8vh}
   .matrix-cell .mc-d{font-size:max(14px,.9vw);line-height:1.4;font-weight:400;color:inherit;opacity:.85}
   .matrix-cell.card-accent .mc-d{opacity:.92}
@@ -1835,14 +1843,16 @@
         <div class="matrix-cell card-fill"><div class="mc-t">生态协同</div><div class="mc-d">结合「安全管家」，形成纯软件玩家给不了的差异化可信溢价</div></div>
       </div>
       <div class="pos-matrix">
-        <div class="pm-y">高投入</div>
+        <div class="pm-y-top">高投入<br/>↑</div>
         <div class="pm-grid">
-          <div class="pm-cell">全面定制<br/><span>高投入</span></div>
-          <div class="pm-cell">重平台<br/><span>高投入</span></div>
-          <div class="pm-cell muted">廉价定制<br/><span>低投入红海</span></div>
+          <div class="pm-cell muted">轻量但重交付<br/><span>高投入 · 难规模化</span></div>
+          <div class="pm-cell muted">重平台 / 全面定制<br/><span>高投入 · 巨头主战场</span></div>
           <div class="pm-cell pick">★ 透明检测系统<br/><span>轻量入口 · 低成本</span></div>
+          <div class="pm-cell muted">廉价纯软件定制<br/><span>低投入红海 · 不进</span></div>
         </div>
-        <div class="pm-x"><span>轻量入口</span><span>全面定制</span></div>
+        <div class="pm-y-bot">低成本</div>
+        <div class="pm-x"><span>← 轻量入口</span><span class="pm-arrow">产品形态</span><span>全面定制 →</span></div>
+        <div class="pm-caption"><b>读法：</b>横轴＝定制深度（左轻右重）；纵轴＝投入（上高下低）。我们落在左下角：用软硬一体做「轻量入口 + 低成本」的透明检测，不打右下廉价红海，也不追右上重平台。</div>
       </div>
       <p style="font-size:max(14px,.95vw);color:var(--text-helper);font-weight:500">客户策略：主动筛选认可价值主张的群体，拒绝当「陪跑者」。本页为后续销售话术与产品演进的核心指导思想。</p>
     </div>
@@ -1887,10 +1897,20 @@
       <div class="l">数蚕智能 · 产品定位研讨会</div>
       <div class="r">INDUSTRY</div>
     </div>
-    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:2.4vh;position:relative;z-index:1">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:2vh;position:relative;z-index:1">
       <div class="t-meta" style="color:var(--text-secondary)">08 · 锚定哪个行业</div>
-      <h1 style="font-weight:200;font-size:min(5.2vw,9.2vh);line-height:1.05;color:var(--ink);letter-spacing:-.03em">三报告交叉筛选</h1>
-      <p style="max-width:54ch;font-size:max(16px,1.1vw);color:var(--text-secondary);line-height:1.55">筛选轴：无系统客户密度 · 未被巨头深度领跑 · 透明/数采价值感知强 · 有在手线索 · 合规可承受</p>
+      <h1 style="font-weight:200;font-size:min(4.2vw,7.6vh);line-height:1.08;color:var(--ink);letter-spacing:-.03em">先来看看 LIMS 行业发展<br/>与研究报告</h1>
+      <p style="max-width:60ch;font-size:max(16px,1.05vw);color:var(--text-secondary);line-height:1.5">下面两份报告支撑后续行业筛选（无系统密度 · 巨头锁定 · 价格带 · 合规反噬）。点击文件名可打开 PDF。</p>
+      <div style="display:flex;flex-direction:column;gap:1vh;max-width:72ch;margin-top:.6vh">
+        <a class="pdf-link" href="files/中国实验室业务管理系统（LIMS）行业发展与本土厂商竞争格局深度研究报告.pdf" target="_blank" rel="noopener">
+          <span class="pdf-tag">报告 01</span>
+          <span class="pdf-name">中国实验室业务管理系统（LIMS）行业发展与本土厂商竞争格局深度研究报告.pdf</span>
+        </a>
+        <a class="pdf-link" href="files/中国检验检测行业轻量化LIMS-SaaS市场深度研究报告.pdf" target="_blank" rel="noopener">
+          <span class="pdf-tag">报告 02</span>
+          <span class="pdf-name">中国检验检测行业轻量化 LIMS SaaS 市场深度研究报告：细分行业客户密度、价格可行性与合规反噬破局.pdf</span>
+        </a>
+      </div>
     </div>
   </div>
 </section>
@@ -3466,7 +3486,7 @@ if(motion){
 
 <script>
 (function(){
-  const KEY = 'shucan-seminar-deck-v4';
+  const KEY = 'shucan-seminar-deck-v5';
   const barEdit = document.getElementById('btn-edit');
   const barSave = document.getElementById('btn-save');
   const barDl = document.getElementById('btn-download');
