@@ -1,22 +1,17 @@
-# 数蚕智能 · 产品定位与未来发展方向 专题研讨会
+# 数蚕智能产品定位与未来发展方向ppt
 
-Guizang PPT Skill · Swiss Style · IKB（默认开启「投屏模式」：浅底深字）
+Guizang PPT Skill · Swiss Style · IKB
 
 ## 打开
+
+主文件：`ppt/数蚕智能产品定位与未来发展方向ppt.html`  
+兼容入口：`ppt/index.html`、`strategy-seminar.html`（均为软链）
 
 ```bash
 cd ppt && python3 -m http.server 8765
 # http://127.0.0.1:8765/
+# 或 http://127.0.0.1:8765/数蚕智能产品定位与未来发展方向ppt.html
 ```
-
-## 编辑 / 保存
-
-顶部工具条：
-- **编辑**：开启后可直接点选文字修改
-- **保存**：写入浏览器 localStorage（Ctrl/Cmd+S）
-- **下载 HTML**：导出含当前修改的完整文件
-- **重置**：恢复原始内容
-- **投屏模式**：浅底深字（默认开）
 
 ## 操作
 
