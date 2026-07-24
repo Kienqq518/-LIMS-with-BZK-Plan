@@ -12,8 +12,8 @@
     /* ============ 主题色(默认: 🔵 克莱因蓝 IKB) ============
        切换主题: 从 references/themes-swiss.md 复制对应的 :root 块
        整体替换标有"主题色"注释的所有变量,其他散落的 var() 引用无需逐处改 */
-    --paper:#fafaf8;          /* 主底色: 高级灰白 */
-    --paper-rgb:250,250,248;
+    --paper:#ffffff;          /* 主底色: 纯白 Swiss */
+    --paper-rgb:255,255,255;
     --ink:#0a0a0a;            /* 文字主色: 近黑 */
     --ink-rgb:10,10,10;
     --grey-1:#f0f0ee;         /* 浅灰底 */
@@ -560,7 +560,7 @@
   #overview .slide *{animation:none!important;transition:none!important}
 
   /* 统一卡片样式 token: card-fill (默认灰底 · 中性) + card-ink (反转高对比) + card-accent (单一焦点) */
-  .card-fill{background:#f5f5f4;border:0;color:var(--text-primary)}
+  .card-fill{background:var(--grey-1);border:0;color:var(--text-primary)}
   .card-ink{background:var(--ink);border:0;color:var(--paper)}
   .card-ink .t-meta,.card-ink .t-cat{color:rgba(255,255,255,.6)}
   .card-accent{background:var(--accent);border:0;color:var(--accent-on)}
@@ -1167,26 +1167,12 @@
 
 
 
-  /* projection-friendly accent cards (dark text) */
-  .card-accent{background:rgba(var(--accent-rgb),.08);border:1px solid rgba(var(--accent-rgb),.35);color:var(--ink)}
-  .card-accent .t-meta,.card-accent .t-cat,.card-accent .force-num,.card-accent h4,.card-accent p,.card-accent .big-num{color:var(--ink)}
-  .brief-card.is-accent{background:rgba(var(--accent-rgb),.08);border:1px solid rgba(var(--accent-rgb),.35);color:var(--ink)}
-  .brief-card.is-accent .bc-main,.brief-card.is-accent .bc-note{color:var(--ink);opacity:1}
-  .sub-card.card-accent,.card-accent.sub-card{background:rgba(var(--accent-rgb),.08);color:var(--ink);border:1px solid rgba(var(--accent-rgb),.35)}
-  .sub-card.card-accent .big-num,.card-accent.sub-card .big-num{color:var(--accent)}
-  .tag-pill.pick{background:rgba(var(--accent-rgb),.12);color:var(--ink);border:1px solid rgba(var(--accent-rgb),.4)}
-  .pm-cell.pick{background:rgba(var(--accent-rgb),.1);color:var(--ink);border:1px solid rgba(var(--accent-rgb),.4)}
-  .pm-cell.pick span{color:var(--text-secondary)}
-  .half.b-accent{background:var(--grey-1)!important;color:var(--ink)!important}
-  .half.b-accent .t-meta,.half.b-accent h2,.half.b-accent div{color:var(--ink)!important}
-  .half.b-accent canvas.ascii-bg{opacity:.15}
-
-
+  /* IKB accent cards stay solid blue; projection mode handled only by body.proj-safe */
   /* ===== Gap analysis extras ===== */
   .gap-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2vh 1.2vw;flex:1;min-height:0}
-  .gap-card{background:var(--grey-1);border:1px solid var(--border-subtle);padding:1.6vh 1.2vw;display:flex;flex-direction:column;gap:.8vh;min-height:0}
-  .gap-card h4{font-size:max(16px,1.05vw);font-weight:600;color:var(--ink);letter-spacing:-.01em}
-  .gap-card p,.gap-card li{font-size:max(14px,.88vw);line-height:1.4;color:var(--text-secondary);font-weight:400}
+  .gap-card{background:var(--grey-1);border:1px solid var(--border-subtle);padding:1.8vh 1.2vw;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.7vh;min-height:0}
+  .gap-card h4{font-size:max(16px,1.05vw);font-weight:600;color:var(--ink);letter-spacing:-.01em;text-align:center}
+  .gap-card p,.gap-card li{font-size:max(14px,.88vw);line-height:1.45;color:var(--text-secondary);font-weight:400;text-align:center;max-width:28ch}
   .gap-card ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.55vh}
   .gap-card li{padding-left:0.9vw;position:relative}
   .gap-card li::before{content:"";position:absolute;left:0;top:.55em;width:5px;height:5px;background:var(--accent)}
@@ -1199,6 +1185,8 @@
   .swiss-tbl.gap-mx td,.swiss-tbl.gap-mx th{font-size:max(11px,.72vw);padding:.32vh .5vw;line-height:1.28}
   .swiss-tbl.gap-mx th{white-space:nowrap}
   .swiss-tbl.gap-mx .c{text-align:center;font-weight:700}
+  .swiss-tbl.ind-mx td,.swiss-tbl.ind-mx th{font-size:max(11px,.7vw);padding:.38vh .55vw;line-height:1.28;vertical-align:top}
+  .swiss-tbl.ind-mx .sub{display:block;font-size:max(10px,.62vw);color:var(--text-helper);font-weight:400;margin-top:.1vh}
   .two-col-gap{display:grid;grid-template-columns:1fr 1fr;gap:1.4vh 1.6vw;flex:1;min-height:0}
   .base-block{border:1px solid var(--border-subtle);padding:1.4vh 1.2vw;background:var(--paper);display:flex;flex-direction:column;gap:.6vh}
   .base-block h4{font-size:max(15px,.98vw);font-weight:600;color:var(--ink)}
@@ -1340,8 +1328,8 @@
   .pm-cell{border:1px solid var(--border-subtle);background:var(--grey-1);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:max(15px,1vw);font-weight:500;color:var(--text-primary);line-height:1.35;padding:1.2vh .8vw}
   .pm-cell span{display:block;margin-top:.4vh;font-size:max(13px,.85vw);font-weight:400;color:var(--text-helper)}
   .pm-cell.muted{opacity:.72}
-  .pm-cell.pick{background:rgba(var(--accent-rgb),.1);color:var(--ink);border:2px solid var(--accent)}
-  .pm-cell.pick span{color:var(--text-secondary)}
+  .pm-cell.pick{background:var(--accent);color:var(--accent-on);border:2px solid var(--accent)}
+  .pm-cell.pick span{color:rgba(255,255,255,.85)}
   .pm-x{grid-column:2;display:flex;justify-content:space-between;align-items:center;font-size:max(13px,.85vw);font-weight:700;color:var(--text-helper);letter-spacing:.04em;padding-top:.4vh}
   .pm-x .pm-arrow{flex:1;text-align:center;font-weight:500;color:var(--text-placeholder);letter-spacing:0}
 
@@ -1379,7 +1367,7 @@
 
 </style>
 </head>
-<body class="canvas-mode proj-safe">
+<body class="canvas-mode">
 
 <div id="edit-bar" aria-label="编辑工具条">
   <button type="button" id="btn-edit" title="开启后可直接点选文字修改">编辑</button>
@@ -1735,15 +1723,21 @@
       <div class="gap-3">
         <div class="gap-card emphasis">
           <h4>① 数据源与外部连接层</h4>
-          <p style="font-size:max(13px,.84vw)"><b>差距最大、投入最重。</b>仪器数采/互联；ERP/MES/PLM/大宗物流/仓库集成；移动端（PDA/平板）。乌海报价里「仪器互联」单项就占 <b>125 人天 / 25 万</b>，是所有条目里最贵的一项。</p>
+          <p><b>差距最大 · 投入最重</b></p>
+          <p>仪器数采 / 互联<br/>ERP · MES · PLM · 大宗物流 · 仓库<br/>移动端（PDA / 平板）</p>
+          <p>乌海「仪器互联」单项<br/><b>125 人天 / 25 万</b><br/>（全表最贵）</p>
         </div>
         <div class="gap-card">
           <h4>② 实验室资源与质量体系深度</h4>
-          <p style="font-size:max(13px,.84vw)"><b>家联重、现系统几乎空白。</b>人员能力/上岗证；标准物质、试剂耗材、危化品与危废；设备全生命周期（点检/维保/维修/报废/现场仪器出入库）；CNAS 体系全套流程（内审/管评/不符合项/纠正/监督/质控计划）；CNAS 合规电子签章。</p>
+          <p><b>家联重 · 现系统几乎空白</b></p>
+          <p>人员能力 / 上岗证<br/>标物 · 试剂耗材 · 危化品 / 危废<br/>设备全生命周期</p>
+          <p>CNAS 全套流程<br/>合规电子签章</p>
         </div>
         <div class="gap-card">
           <h4>③ 智能化与决策层</h4>
-          <p style="font-size:max(13px,.84vw)"><b>两个项目都要、现系统偏弱。</b>智能采样/制样/留样；任务自动调度；多级预警；异常复测 OCAP 闭环；SPC/CPK 统计；全链路追溯；供应链协作门户。<b class="mk-ok">检验方案链式建模已有，可复用。</b></p>
+          <p><b>两项目都要 · 现系统偏弱</b></p>
+          <p>智能采样 / 制样 / 留样<br/>任务自动调度 · 多级预警<br/>异常复测 OCAP · SPC / CPK</p>
+          <p>全链路追溯 · 供应链门户<br/><span class="mk-ok">链式建模已有，可复用</span></p>
         </div>
       </div>
     </div>
@@ -1804,7 +1798,7 @@
         <p style="font-size:max(16px,1.05vw);line-height:1.5;color:var(--text-secondary);max-width:28ch">根据现状，先立两条战略方向，再用评分表做接单裁决。</p>
       </div>
       <div class="sub-card-stack">
-        <article class="card-accent sub-card">
+        <article class="card-fill sub-card">
           <span class="big-num">A</span>
           <h4>战略方向一 · 重新定义产品</h4>
           <p>不做「传统 LIMS 定制版」，做软硬一体的「透明检测系统」——轻量、通用、低成本、入口级。</p>
@@ -1813,11 +1807,6 @@
           <span class="big-num">B</span>
           <h4>战略方向二 · 锚定行业共创</h4>
           <p>先锚定一个行业试水；与标杆客户共创缺失能力；把一次性定制转化为可复用资产。</p>
-        </article>
-        <article class="card-fill sub-card">
-          <span class="big-num">C</span>
-          <h4>接单硬标准（预告）</h4>
-          <p>可复用度（最高权重）· 认可价值主张 · 属锚定行业 · 毛利/人天 · 交付挤占。</p>
         </article>
       </div>
     </div>
@@ -1838,7 +1827,7 @@
     </div>
       <div class="matrix-fill" style="grid-template-columns:repeat(4,1fr);gap:1.2vh">
         <div class="matrix-cell card-fill"><div class="mc-t">拒绝</div><div class="mc-d">不以低价卷入定制化红海；不把自己定义为「传统 LIMS 的定制版」</div></div>
-        <div class="matrix-cell card-accent"><div class="mc-t">重新定义</div><div class="mc-d">软件 + IoT · 轻量化 · 通用性 · 低成本 · 入口级 = 透明检测系统</div></div>
+        <div class="matrix-cell card-fill"><div class="mc-t">重新定义</div><div class="mc-d">软件 + IoT · 轻量化 · 通用性 · 低成本 · 入口级 = 透明检测系统</div></div>
         <div class="matrix-cell card-fill"><div class="mc-t">核心价值</div><div class="mc-d">帮客户从「无系统」快速跨越到「有系统」，而非全面替代重系统</div></div>
         <div class="matrix-cell card-fill"><div class="mc-t">生态协同</div><div class="mc-d">结合「安全管家」，形成纯软件玩家给不了的差异化可信溢价</div></div>
       </div>
@@ -1881,9 +1870,9 @@
           <div class="t-meta">定价逻辑</div>
           <p style="margin-top:1vh;font-size:max(16px,1.05vw);line-height:1.45;color:var(--text-secondary)">不只看成本，更看战略意义——可复用度够高时允许战略性亏损。</p>
         </div>
-        <div class="card-accent" style="padding:2vh 1.6vw">
-          <div class="t-meta" style="color:var(--accent-on)">目标</div>
-          <p style="margin-top:1vh;font-size:max(16px,1.05vw);line-height:1.45;color:var(--accent-on)">一次性定制 → 可复用产品资产</p>
+        <div class="card-fill" style="padding:2vh 1.6vw">
+          <div class="t-meta">目标</div>
+          <p style="margin-top:1vh;font-size:max(16px,1.05vw);line-height:1.45;color:var(--text-secondary)">一次性定制 → 可复用产品资产</p>
         </div>
       </div>
     </div>
@@ -1929,46 +1918,123 @@
     <div data-anim="head" style="display:grid;gap:1vh">
       <div class="t-meta">08 · 插图5</div>
       <h2 style="font-family:var(--sans),var(--sans-zh);font-weight:200;font-size:min(4.6vw,8.2vh);line-height:1.05;letter-spacing:-.03em;color:var(--text-primary)">候选行业交叉筛选</h2>
-      <p data-anim="lead" style="margin-top:1.2vh;max-width:68ch;font-size:max(16px,1.05vw);line-height:1.5;font-weight:400;color:var(--text-secondary)">来源：竞争格局报告 × SaaS 报告 × 检验检测统计简报</p>
+      <p data-anim="lead" style="margin-top:1.2vh;max-width:68ch;font-size:max(16px,1.05vw);line-height:1.5;font-weight:400;color:var(--text-secondary)">来源：竞争格局报告渗透表 + 简报表5 合并 · 按无系统池 / 巨头锁定 / 透明检测价值交叉判定</p>
     </div>
       <div class="tbl-wrap">
-        <table class="swiss-tbl">
+        <table class="swiss-tbl dense ind-mx">
           <thead>
-            <tr><th>候选</th><th>无系统池</th><th>巨头锁定</th><th>透明检测价值</th><th>结论</th></tr>
+            <tr><th>候选行业</th><th>无系统池</th><th>巨头锁定</th><th>透明检测价值</th><th>结论</th></tr>
           </thead>
           <tbody>
+            <tr>
+              <td>药品<span class="sub">351家 / 70.9亿</span></td>
+              <td>低<span class="sub">合规强渗透</span></td>
+              <td>高<span class="sub">创腾 · 金现代</span></td>
+              <td>低<span class="sub">21CFR / GMP 锁死</span></td>
+              <td class="avoid">✕ 避</td>
+            </tr>
+            <tr>
+              <td>环境监测<span class="sub">7,089家 / 551.7亿</span></td>
+              <td>中<span class="sub">机构多、系统化深</span></td>
+              <td>高<span class="sub">网星 · 金现代</span></td>
+              <td>低<span class="sub">GPS / HJ / 信创</span></td>
+              <td class="avoid">✕ 避</td>
+            </tr>
+            <tr>
+              <td>建筑工程<span class="sub">5,299家 / 748.3亿</span></td>
+              <td>高但白热化<span class="sub">降本 / 退 Excel</span></td>
+              <td>高<span class="sub">金现代（中铁）</span></td>
+              <td>低<span class="sub">价格血战难溢价</span></td>
+              <td class="warn">△ 谨慎</td>
+            </tr>
+            <tr>
+              <td>建筑材料<span class="sub">3,799家 / 415.6亿</span></td>
+              <td>高<span class="sub">机构密度大</span></td>
+              <td>高<span class="sub">金现代</span></td>
+              <td>中<span class="sub">IoT 养护可沾边</span></td>
+              <td class="warn">△ 谨慎</td>
+            </tr>
+            <tr>
+              <td>卫生疾控<span class="sub">1,831家 / 109.2亿</span></td>
+              <td>低<span class="sub">体系壁垒高</span></td>
+              <td>高<span class="sub">三维天地 · 网星</span></td>
+              <td>低<span class="sub">生物安全</span></td>
+              <td class="avoid">✕ 避</td>
+            </tr>
+            <tr>
+              <td>食品及接触材料<span class="sub">1,740家 / 244.3亿</span></td>
+              <td>中<span class="sub">多站点并存</span></td>
+              <td>高<span class="sub">金现代 · 网星</span></td>
+              <td>中<span class="sub">全链路 / HACCP</span></td>
+              <td class="warn">△ 谨慎</td>
+            </tr>
+            <tr>
+              <td>电子电器<span class="sub">888家 / 330.2亿</span></td>
+              <td>中高<span class="sub">中小内检空白</span></td>
+              <td>中<span class="sub">三维天地 · 白码</span></td>
+              <td>高<span class="sub">制造 QC 举证</span></td>
+              <td class="warn">△ 制造QC相关</td>
+            </tr>
+            <tr>
+              <td>机械（含汽车）<span class="sub">579家 / 258.5亿</span></td>
+              <td>中高<span class="sub">内检分散</span></td>
+              <td>中<span class="sub">金现代（长城）</span></td>
+              <td>高<span class="sub">家联所属制造类</span></td>
+              <td class="warn">△ 家联所属</td>
+            </tr>
+            <tr>
+              <td>化工<span class="sub">537家 / 81亿</span></td>
+              <td>低<span class="sub">MES / 危化深</span></td>
+              <td>高<span class="sub">创腾 · 网星</span></td>
+              <td>低<span class="sub">乌海属此</span></td>
+              <td class="avoid">✕ 避</td>
+            </tr>
+            <tr>
+              <td>能源 / 电力<span class="sub">527+612家 / 93+175亿</span></td>
+              <td>低<span class="sub">存量为主</span></td>
+              <td>高<span class="sub">金现代 · 国网指定</span></td>
+              <td>中<span class="sub">我们现有盘</span></td>
+              <td>维持 · 存量</td>
+            </tr>
+            <tr>
+              <td>计量校准<span class="sub">519家 / 170.2亿</span></td>
+              <td>中<span class="sub">机构规模中等</span></td>
+              <td>中高<span class="sub">网星</span></td>
+              <td>中<span class="sub">ISO17025 引擎重</span></td>
+              <td class="warn">△ 谨慎</td>
+            </tr>
+            <tr>
+              <td>采矿冶金<span class="sub">388家 / 55.6亿</span></td>
+              <td>中<span class="sub">现场工况重</span></td>
+              <td>中<span class="sub">网星广泛</span></td>
+              <td>低<span class="sub">48h脱机 / DCS</span></td>
+              <td class="avoid">✕ 避</td>
+            </tr>
             <tr class="row-pick">
-              <td>制造 QC<br/><span class="sub">电子电器/机械/材料 + 区域小型第三方</span></td>
-              <td>中高<br/><span class="sub">新兴上升、方法更新快</span></td>
-              <td>巨头攻头部集团<br/><span class="sub">中小内检空白</span></td>
-              <td>高<br/><span class="sub">对下游/品牌举证与数采强</span></td>
+              <td>轻工<span class="sub">326家 / 96.1亿</span></td>
+              <td>高<span class="sub">分散、方法杂</span></td>
+              <td>低<span class="sub">无深度领跑</span></td>
+              <td>中高<span class="sub">SaaS / 低 TCO</span></td>
+              <td class="pick">★ 可延伸</td>
+            </tr>
+            <tr>
+              <td>机动车检验<span class="sub">17,349家 / 321.7亿</span></td>
+              <td>极高<span class="sub">站点极多</span></td>
+              <td>低<span class="sub">无深度领跑</span></td>
+              <td>中<span class="sub">造假痛点但垂直</span></td>
+              <td class="avoid">✕ 避 · GB38900</td>
+            </tr>
+            <tr class="row-pick">
+              <td><b>中小型 TIC 跨领域 + 制造 QC 内检</b><span class="sub">5万+机构 · 大量小微</span></td>
+              <td>极高<span class="sub">从无到有主战场</span></td>
+              <td>极低<span class="sub">五家均未主攻</span></td>
+              <td>高<span class="sub">快上线 · 过程可信</span></td>
               <td class="pick">★★ 首锚</td>
-            </tr>
-            <tr>
-              <td>机动车检验</td>
-              <td>极高<br/><span class="sub">14,880 / 25.2%</span></td>
-              <td>金现代 / 网星广泛</td>
-              <td>中高<br/><span class="sub">造假痛点，但诉求单一、工位数采壁垒</span></td>
-              <td class="warn">观察 · 第二波</td>
-            </tr>
-            <tr>
-              <td>建筑工程 / 环境</td>
-              <td>极高但白热化<br/><span class="sub">退回 Excel、降本压力大</span></td>
-              <td>金现代 / 网星深度领跑</td>
-              <td>低<br/><span class="sub">价格血战，溢价难被接受</span></td>
-              <td class="avoid">△ / ×</td>
-            </tr>
-            <tr>
-              <td>化工 / 药品 / 疾控 / 采矿</td>
-              <td>—</td>
-              <td>创腾 / 网星 / 三维天地<br/><span class="sub">强壁垒</span></td>
-              <td>—</td>
-              <td class="avoid">× 避</td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p style="font-size:max(15px,1vw);color:var(--text-secondary);font-weight:500">→ 首锚「制造业质检（内检 QC + 区域小型第三方检测）」</p>
+      <p style="font-size:max(14px,.92vw);color:var(--text-secondary);font-weight:500">→ 首锚「中小型 TIC 跨领域 + 制造 QC 内检」；轻工可延伸；电子/机械作制造 QC 相关谨慎切入</p>
     </div>
   </div>
 </section>
@@ -3490,7 +3556,7 @@ if(motion){
 
 <script>
 (function(){
-  const KEY = 'shucan-seminar-deck-v8';
+  const KEY = 'shucan-seminar-deck-v9';
   const barEdit = document.getElementById('btn-edit');
   const barSave = document.getElementById('btn-save');
   const barDl = document.getElementById('btn-download');
