@@ -517,22 +517,28 @@
     </div>
   </div>
 
-  <!-- 记录单公共模版 新增/编辑（无关联绑定） -->
+  <!-- 记录单公共模版 新增/编辑（无关联绑定；编辑不改文件实体） -->
   <div id="recordPublicModal" class="modal-mask">
     <div class="modal-box">
       <div class="modal-head"><span id="recordPublicModalTitle">新增公共模版</span><button onclick="closeModal('recordPublicModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
       <div class="modal-body">
-        <div class="form-row" data-annotate="record-public-content-style"><label><span class="req">*</span> 模版内容样式</label><div class="ctrl"><select id="rp_content"><option>组合记录单模版</option><option>试验项模版</option></select></div></div>
-        <div class="form-row" id="recordPublicFileRow"><label><span class="req">*</span> 模板文件</label><div class="ctrl">
-          <div class="radio-group mb-2"><label><input type="radio" name="rpFileMode" value="upload" checked onchange="toggleRecordPublicFileMode()" /> 上传</label><label><input type="radio" name="rpFileMode" value="copy" onchange="toggleRecordPublicFileMode()" /> 复制</label></div>
-          <div id="recordPublicUploadZone" class="upload-zone" onclick="openMockFilePicker('recordPublicAdd')"><i class="fa fa-cloud-upload block"></i><div>点击上传 .doc/.docx</div></div>
+        <div class="form-row" data-annotate="record-public-content-style"><label><span class="req">*</span> 模版内容样式</label><div class="ctrl"><select id="rp_content"><option>组合记录单模版</option><option>试验项模版</option></select><div id="rp_contentHint" class="mt-1 text-xs text-slate-400 hidden">已被记录单模版引用时不可更改内容样式。</div></div></div>
+        <div class="form-row" id="recordPublicFileRow" data-annotate="record-public-file"><label id="recordPublicFileLabel"><span class="req">*</span> 模板文件</label><div class="ctrl">
+          <div id="recordPublicFileAddControls">
+            <div class="radio-group mb-2"><label><input type="radio" name="rpFileMode" value="upload" checked onchange="toggleRecordPublicFileMode()" /> 上传</label><label><input type="radio" name="rpFileMode" value="copy" onchange="toggleRecordPublicFileMode()" /> 复制</label></div>
+            <div id="recordPublicUploadZone" class="upload-zone" onclick="openMockFilePicker('recordPublicAdd')"><i class="fa fa-cloud-upload block"></i><div>点击上传 .doc/.docx</div></div>
+            <button id="recordPublicCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openRecordPublicCopyPicker()"><i class="fa fa-copy"></i> 复制</button>
+          </div>
           <div id="recordPublicFilePreview" class="hidden public-file-preview rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
             <span class="file-name"><i class="fa fa-file-word-o mr-1 text-blue-500"></i><span id="recordPublicFileName"></span></span>
-            <button type="button" class="file-del" onclick="clearRecordPublicFile()" title="删除文件"><i class="fa fa-trash-o"></i></button>
+            <button type="button" id="recordPublicFileDel" class="file-del" onclick="clearRecordPublicFile()" title="删除文件"><i class="fa fa-trash-o"></i></button>
           </div>
-          <button id="recordPublicCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openRecordPublicCopyPicker()"><i class="fa fa-copy"></i> 复制</button>
+          <div id="recordPublicFileEditHint" class="hidden mt-1 text-xs text-slate-400">当前启用文件只读展示；上传、复制、启用与改文件名请到操作列「版本」管理。</div>
         </div></div>
-        <div class="form-row" id="recordPublicNameRow"><label><span class="req">*</span> 模版名称</label><div class="ctrl"><div class="name-ext"><input type="text" id="rp_templateName" placeholder="上传后自动回显文件名（不含后缀）" /><span class="ext-suffix" id="rp_fileExt">.docx</span></div><div class="mt-1 text-xs text-slate-400">名称可编辑；后缀固定显示在框外，不可修改。公共模版无需关联绑定，由记录单模版侧选择引用。</div></div></div>
+        <div class="form-row" id="recordPublicNameRow"><label><span class="req">*</span> 模版名称</label><div class="ctrl">
+          <div id="rp_nameAddWrap" class="name-ext"><input type="text" id="rp_templateName" placeholder="上传后自动回显文件名（不含后缀）" /><span class="ext-suffix" id="rp_fileExt">.docx</span></div>
+          <div id="rp_nameHint" class="mt-1 text-xs text-slate-400">新增时名称可随上传回显并编辑；后缀固定。公共模版无需关联绑定，由记录单模版侧选择引用。</div>
+        </div></div>
       </div>
       <div class="modal-foot"><button onclick="closeModal('recordPublicModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="saveRecordPublicModal()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
     </div>
@@ -3098,7 +3104,8 @@
       if (row.templates[idx].enabled) {
         row.file = row.templates[idx].name;
         row.ext = ext;
-        row.templateName = base;
+        // 记录单公共模版：模版名称与启用文件名解耦；报告公共仍同步名称便于兼容旧交互
+        if (state.publicLib !== 'record') row.templateName = base;
         syncActivePublicRefs(row.id);
       }
       closeModal('publicVersionRenameModal');
@@ -3354,50 +3361,85 @@
       openRecordCopyPicker();
     }
 
+    function countRecordPublicRefs(publicId) {
+      var n = 0;
+      RECORD_DATA.forEach(function (r) { if (r.refPublicId === publicId) n++; });
+      RECORD_COMBINED_DATA.forEach(function (r) { if (r.refPublicId === publicId) n++; });
+      return n;
+    }
+
+    function applyRecordPublicModalMode(isEdit, row) {
+      var addControls = document.getElementById('recordPublicFileAddControls');
+      var preview = document.getElementById('recordPublicFilePreview');
+      var delBtn = document.getElementById('recordPublicFileDel');
+      var editHint = document.getElementById('recordPublicFileEditHint');
+      var contentHint = document.getElementById('rp_contentHint');
+      var contentSel = document.getElementById('rp_content');
+      var fileLabel = document.getElementById('recordPublicFileLabel');
+      var nameHint = document.getElementById('rp_nameHint');
+      var extSuffix = document.getElementById('rp_fileExt');
+      if (isEdit) {
+        addControls.classList.add('hidden');
+        preview.classList.remove('hidden');
+        delBtn.classList.add('hidden');
+        editHint.classList.remove('hidden');
+        fileLabel.innerHTML = '当前启用文件';
+        document.getElementById('recordPublicFileName').textContent = (row && row.file) || '—';
+        extSuffix.classList.add('hidden');
+        nameHint.textContent = '模版名称为库内展示名，与启用版本文件名相互独立；文件上传/复制/启用/改名请到「版本」。';
+        var refCount = row ? countRecordPublicRefs(row.id) : 0;
+        contentHint.classList.toggle('hidden', refCount === 0);
+        contentSel.disabled = refCount > 0;
+      } else {
+        addControls.classList.remove('hidden');
+        preview.classList.add('hidden');
+        delBtn.classList.remove('hidden');
+        editHint.classList.add('hidden');
+        fileLabel.innerHTML = '<span class="req">*</span> 模板文件';
+        extSuffix.classList.remove('hidden');
+        nameHint.textContent = '新增时名称可随上传回显并编辑；后缀固定。文件实体以首个版本写入；后续文件变更请到「版本」。公共模版无需关联绑定，由记录单模版侧选择引用。';
+        contentHint.classList.add('hidden');
+        contentSel.disabled = false;
+        document.querySelector('input[name=rpFileMode][value=upload]').checked = true;
+        toggleRecordPublicFileMode();
+      }
+    }
+
     function openRecordPublicModal() {
       state.recordPublicRowId = null;
       document.getElementById('recordPublicModalTitle').textContent = '新增公共模版';
       document.getElementById('rp_content').value = '组合记录单模版';
-      document.querySelector('input[name=rpFileMode][value=upload]').checked = true;
       document.getElementById('rp_templateName').value = '';
       document.getElementById('rp_fileExt').textContent = '.docx';
       document.getElementById('recordPublicFileName').textContent = '';
-      document.getElementById('recordPublicFilePreview').classList.add('hidden');
-      toggleRecordPublicFileMode();
+      applyRecordPublicModalMode(false);
       openModal('recordPublicModal');
     }
 
     function openRecordPublicEdit(id) {
       var row = findRecordPublic(id);
       if (!row) return;
+      ensureRecordPublicTemplates(row);
       state.recordPublicRowId = id;
       document.getElementById('recordPublicModalTitle').textContent = '编辑公共模版';
       document.getElementById('rp_content').value = row.contentStyle;
-      document.getElementById('rp_templateName').value = row.templateName;
+      document.getElementById('rp_templateName').value = row.templateName || '';
       document.getElementById('rp_fileExt').textContent = row.ext || '.docx';
-      document.getElementById('recordPublicFileName').textContent = row.file || '';
-      document.getElementById('recordPublicUploadZone').classList.add('hidden');
-      document.getElementById('recordPublicCopyBtn').classList.add('hidden');
-      document.getElementById('recordPublicFilePreview').classList.remove('hidden');
+      applyRecordPublicModalMode(true, row);
       openModal('recordPublicModal');
     }
 
     function toggleRecordPublicFileMode() {
+      if (state.recordPublicRowId) return; // 编辑态不改文件
       var copy = document.querySelector('input[name=rpFileMode]:checked').value === 'copy';
-      if (state.recordPublicRowId && (document.getElementById('recordPublicFileName').textContent || '').trim()) {
-        document.getElementById('recordPublicUploadZone').classList.add('hidden');
-        document.getElementById('recordPublicCopyBtn').classList.add('hidden');
-        document.getElementById('recordPublicFilePreview').classList.remove('hidden');
-        return;
-      }
       document.getElementById('recordPublicUploadZone').classList.toggle('hidden', copy);
       document.getElementById('recordPublicCopyBtn').classList.toggle('hidden', !copy);
-      if (copy || !(document.getElementById('recordPublicFileName').textContent || '').trim()) {
-        document.getElementById('recordPublicFilePreview').classList.add('hidden');
-      }
+      var hasFile = !!(document.getElementById('recordPublicFileName').textContent || '').trim();
+      document.getElementById('recordPublicFilePreview').classList.toggle('hidden', !hasFile || copy);
     }
 
     function clearRecordPublicFile() {
+      if (state.recordPublicRowId) return; // 编辑态禁止清除文件
       document.getElementById('recordPublicFileName').textContent = '';
       document.getElementById('rp_templateName').value = '';
       document.getElementById('recordPublicFilePreview').classList.add('hidden');
@@ -3408,33 +3450,36 @@
     function saveRecordPublicModal() {
       var contentStyle = document.getElementById('rp_content').value;
       var templateName = (document.getElementById('rp_templateName').value || '').trim();
-      var ext = document.getElementById('rp_fileExt').textContent || '.docx';
-      var fileShown = (document.getElementById('recordPublicFileName').textContent || '').trim();
-      if (!state.recordPublicRowId && !fileShown && !templateName) { alert('请上传模板文件'); return; }
       if (!templateName) { alert('请填写模版名称'); return; }
-      var fullFile = templateName + ext;
+
       if (state.recordPublicRowId) {
         var row = findRecordPublic(state.recordPublicRowId);
-        if (row) {
-          row.contentStyle = contentStyle;
-          row.templateName = templateName;
-          row.ext = ext;
-          row.file = fullFile;
-          row.cat = state.cat || row.cat;
-          ensureRecordPublicTemplates(row);
-          var enabled = (row.templates || []).find(function (t) { return t.enabled; });
-          if (enabled) enabled.name = row.file;
-          else row.templates = [{ name: row.file, time: formatNowTs(), enabled: true, uploader: 'admin' }];
-          syncRecordRefsFromPublic(row.id);
+        if (!row) return;
+        var refCount = countRecordPublicRefs(row.id);
+        if (refCount > 0 && contentStyle !== row.contentStyle) {
+          alert('该公共模版已被 ' + refCount + ' 处记录单模版引用，不可更改内容样式。请先解除引用。');
+          return;
         }
-      } else {
-        var newId = RECORD_PUBLIC_DATA.reduce(function (m, r) { return Math.max(m, r.id); }, 0) + 1;
-        RECORD_PUBLIC_DATA.push({
-          id: newId, contentStyle: contentStyle, templateName: templateName, file: fullFile, ext: ext,
-          cat: state.cat || 'dlwz',
-          templates: [{ name: fullFile, time: formatNowTs(), enabled: true, uploader: 'admin' }]
-        });
+        // 编辑仅改元数据；文件实体与启用版本只通过「版本」管理
+        row.contentStyle = contentStyle;
+        row.templateName = templateName;
+        row.cat = state.cat || row.cat;
+        closeModal('recordPublicModal');
+        renderView();
+        return;
       }
+
+      var ext = document.getElementById('rp_fileExt').textContent || '.docx';
+      var fileShown = (document.getElementById('recordPublicFileName').textContent || '').trim();
+      if (!fileShown) { alert('请上传或复制模板文件'); return; }
+      var fullFile = fileShown.indexOf('.') >= 0 ? fileShown : (templateName + ext);
+      var parts = splitFileName(fullFile);
+      var newId = RECORD_PUBLIC_DATA.reduce(function (m, r) { return Math.max(m, r.id); }, 0) + 1;
+      RECORD_PUBLIC_DATA.push({
+        id: newId, contentStyle: contentStyle, templateName: templateName, file: fullFile, ext: parts.ext || ext,
+        cat: state.cat || 'dlwz',
+        templates: [{ name: fullFile, time: formatNowTs(), enabled: true, uploader: 'admin' }]
+      });
       closeModal('recordPublicModal');
       renderView();
     }
