@@ -149,7 +149,33 @@
     .form-row > label .req { color: #ef4444; }
     .form-row .ctrl { flex: 1; min-width: 0; }
     .form-row input[type=text], .form-row select, .form-row textarea { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; }
-    .form-row select[multiple] { min-height: 132px; padding: 4px 6px; }
+    .ms-dropdown { position: relative; width: 100%; }
+    .ms-trigger {
+      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; background: #fff; color: #334155;
+      cursor: pointer; text-align: left; line-height: 1.4;
+    }
+    .ms-trigger:hover { border-color: #c0c4cc; }
+    .ms-dropdown.open .ms-trigger { border-color: #409eff; box-shadow: 0 0 0 2px rgba(64,158,255,.12); }
+    .ms-trigger-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ms-trigger-text.is-placeholder { color: #94a3b8; }
+    .ms-caret { color: #94a3b8; font-size: 12px; flex-shrink: 0; transition: transform .15s; }
+    .ms-dropdown.open .ms-caret { transform: rotate(180deg); }
+    .ms-panel {
+      position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30;
+      max-height: 220px; overflow-y: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 4px;
+      box-shadow: 0 8px 24px rgba(15,23,42,.12);
+    }
+    .ms-option {
+      display: flex; align-items: flex-start; gap: 8px; padding: 7px 10px; font-size: 13px; color: #334155; cursor: pointer;
+    }
+    .ms-option:hover { background: #f5f7fa; }
+    .ms-option input { margin-top: 2px; flex-shrink: 0; }
+    .ms-option .ms-label { flex: 1; min-width: 0; line-height: 1.4; word-break: break-all; }
+    .ms-option.is-empty { color: #94a3b8; cursor: default; }
+    .ms-option.is-empty:hover { background: transparent; }
+    #publicModal .modal-box { overflow: visible; }
+    #publicModal .modal-body { overflow: visible; }
     .form-row .name-ext { display: flex; align-items: stretch; }
     .form-row .name-ext input { flex: 1; border-radius: 4px 0 0 4px; border-right: none; }
     .form-row .name-ext .ext-suffix { display: flex; align-items: center; padding: 0 10px; border: 1px solid #dcdfe6; border-left: none; border-radius: 0 4px 4px 0; background: #f8fafc; color: #64748b; font-size: 13px; white-space: nowrap; }
@@ -537,7 +563,17 @@
       <div class="modal-body">
         <div class="form-row" data-annotate="public-content-style"><label><span class="req">*</span> 模版内容样式</label><div class="ctrl"><select id="p_content" onchange="onPublicContentStyleChange()"><option>模板头</option><option>模板尾</option><option>正文</option></select></div></div>
         <div class="form-row" data-annotate="public-bind-type"><label><span class="req">*</span> 关联绑定</label><div class="ctrl radio-group"><label id="p_scopeCategoryLabel"><input type="radio" name="p_scope" value="category" checked onchange="togglePublicScope()" /> 样品分类</label><label id="p_scopeSampleLabel"><input type="radio" name="p_scope" value="sample" onchange="togglePublicScope()" /> 样品名称(型号)</label></div></div>
-        <div class="form-row" id="p_bindRow" data-annotate="public-bind-target"><label id="p_bindLabel"><span class="req">*</span> 样品分类</label><div class="ctrl"><select id="p_bindSelect" style="width:100%"></select><div class="mt-1 text-xs text-slate-400" id="p_bindHint">可选任意层级分类，加载至样品层级的上一级</div></div></div>
+        <div class="form-row" id="p_bindRow" data-annotate="public-bind-target"><label id="p_bindLabel"><span class="req">*</span> 样品分类</label><div class="ctrl">
+          <select id="p_bindSelect" style="width:100%"></select>
+          <div id="p_bindMulti" class="ms-dropdown hidden">
+            <button type="button" class="ms-trigger" id="p_bindMultiTrigger" onclick="togglePublicBindMultiPanel(event)">
+              <span class="ms-trigger-text is-placeholder" id="p_bindMultiText">请选择样品名称(型号)</span>
+              <i class="fa fa-angle-down ms-caret"></i>
+            </button>
+            <div class="ms-panel hidden" id="p_bindMultiPanel" onclick="event.stopPropagation()"></div>
+          </div>
+          <div class="mt-1 text-xs text-slate-400" id="p_bindHint">可选任意层级分类，加载至样品层级的上一级</div>
+        </div></div>
         <div class="form-row" id="publicFileRow" data-annotate="public-file"><label><span class="req">*</span> 模板文件</label><div class="ctrl">
           <div class="radio-group mb-2"><label><input type="radio" name="pubFileMode" value="upload" checked onchange="togglePublicFileMode()" /> 上传</label><label><input type="radio" name="pubFileMode" value="copy" onchange="togglePublicFileMode()" /> 复制</label></div>
           <div id="publicUploadZone" class="upload-zone" onclick="mockPublicUpload()"><i class="fa fa-cloud-upload block"></i><div>点击上传 .doc/.docx</div></div>
@@ -2115,6 +2151,7 @@
       if (idx >= 0) modalStack.splice(idx, 1);
       syncModalZIndex();
       if (id === 'publicVersionModal') state.versionFromBodyRef = false;
+      if (id === 'publicModal') closePublicBindMultiPanel();
       if (window.PrototypeAnnotation) {
         if (PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
         else if (PrototypeAnnotation.applyFocusScope) PrototypeAnnotation.applyFocusScope();
@@ -2518,9 +2555,54 @@
       return (style || document.getElementById('p_content').value) === '正文';
     }
 
-    function getPublicBindSelectedValues() {
+    function closePublicBindMultiPanel() {
+      var panel = document.getElementById('p_bindMultiPanel');
+      var wrap = document.getElementById('p_bindMulti');
+      if (panel) panel.classList.add('hidden');
+      if (wrap) wrap.classList.remove('open');
+    }
+
+    function togglePublicBindMultiPanel(e) {
+      if (e) e.stopPropagation();
+      var panel = document.getElementById('p_bindMultiPanel');
+      var wrap = document.getElementById('p_bindMulti');
+      if (!panel || !wrap || wrap.classList.contains('hidden')) return;
+      var willOpen = panel.classList.contains('hidden');
+      if (willOpen) {
+        panel.classList.remove('hidden');
+        wrap.classList.add('open');
+      } else {
+        closePublicBindMultiPanel();
+      }
+    }
+
+    function syncPublicBindMultiTriggerText() {
+      var textEl = document.getElementById('p_bindMultiText');
+      if (!textEl) return;
+      var pairs = getPublicBindSelectedPairs();
+      if (!pairs.length) {
+        textEl.textContent = '请选择样品名称(型号)';
+        textEl.classList.add('is-placeholder');
+        return;
+      }
+      textEl.textContent = pairs.map(function (p) { return p.label; }).join('、');
+      textEl.classList.remove('is-placeholder');
+    }
+
+    function getPublicBindSelectedPairs() {
+      if (isPublicBodyContentStyle()) {
+        return Array.prototype.slice.call(document.querySelectorAll('#p_bindMultiPanel input[type=checkbox]:checked')).map(function (cb) {
+          return { value: cb.value, label: cb.getAttribute('data-label') || cb.value };
+        }).filter(function (p) { return !!p.value; });
+      }
       var sel = document.getElementById('p_bindSelect');
-      return Array.prototype.slice.call(sel.selectedOptions || []).map(function (o) { return o.value; }).filter(Boolean);
+      return Array.prototype.slice.call(sel.selectedOptions || []).filter(function (o) { return !!o.value; }).map(function (o) {
+        return { value: o.value, label: o.text.replace(/^\s+/, '') };
+      });
+    }
+
+    function getPublicBindSelectedValues() {
+      return getPublicBindSelectedPairs().map(function (p) { return p.value; });
     }
 
     function syncPublicBindTypeByContentStyle() {
@@ -2531,6 +2613,10 @@
       if (catLabel) catLabel.classList.toggle('hidden', isBody);
       if (catRadio) catRadio.disabled = isBody;
       if (isBody && sampleRadio) sampleRadio.checked = true;
+    }
+
+    function onPublicBindMultiChange() {
+      syncPublicBindMultiTriggerText();
     }
 
     function renderPublicBindOptions(selectedValues) {
@@ -2544,29 +2630,45 @@
       var hint = cat
         ? '可选任意层级分类，加载至样品层级的上一级（当前大类内）'
         : (isBody
-          ? '正文仅可绑定样品名称(型号)，支持多选（按住 Ctrl/⌘ 多选）；加载样品/型号层（当前大类内）'
+          ? '正文仅可绑定样品名称(型号)；点击下拉勾选，支持多选（当前大类内）'
           : '选至样品层或型号层；有型号的可停在样品层，也可下钻到型号层（当前大类内）');
       var sel = document.getElementById('p_bindSelect');
+      var multiWrap = document.getElementById('p_bindMulti');
+      var multiPanel = document.getElementById('p_bindMultiPanel');
       document.getElementById('p_bindLabel').innerHTML = '<span class="req">*</span> ' + label;
       document.getElementById('p_bindHint').textContent = hint;
+      sel.classList.toggle('hidden', isBody);
+      multiWrap.classList.toggle('hidden', !isBody);
+      closePublicBindMultiPanel();
+      sel.removeAttribute('multiple');
+      sel.removeAttribute('size');
+
+      var selectedSet = {};
+      selectedValues.forEach(function (v) { selectedSet[v] = true; });
+
       if (isBody) {
-        sel.setAttribute('multiple', 'multiple');
-        sel.size = Math.min(8, Math.max(4, options.length || 4));
-      } else {
-        sel.removeAttribute('multiple');
-        sel.removeAttribute('size');
+        if (!options.length) {
+          multiPanel.innerHTML = '<div class="ms-option is-empty">当前大类暂无可选</div>';
+          syncPublicBindMultiTriggerText();
+          return;
+        }
+        multiPanel.innerHTML = options.map(function (o) {
+          var checked = selectedSet[o.value] ? ' checked' : '';
+          return '<label class="ms-option"><input type="checkbox" value="' + o.value + '" data-label="' + escHtml(o.label) + '"' + checked + ' onchange="onPublicBindMultiChange()" /><span class="ms-label">' + publicBindIndent(o.depth) + escHtml(o.label) + '</span></label>';
+        }).join('');
+        syncPublicBindMultiTriggerText();
+        return;
       }
+
       if (!options.length) {
         sel.innerHTML = '<option value="">当前大类暂无可选</option>';
         return;
       }
-      var selectedSet = {};
-      selectedValues.forEach(function (v) { selectedSet[v] = true; });
       var hasSelected = options.some(function (o) { return selectedSet[o.value]; });
       sel.innerHTML = options.map(function (o, i) {
         var selAttr = '';
         if (hasSelected) selAttr = selectedSet[o.value] ? ' selected' : '';
-        else if (!isBody && i === 0) selAttr = ' selected';
+        else if (i === 0) selAttr = ' selected';
         return '<option value="' + o.value + '"' + selAttr + '>' + publicBindIndent(o.depth) + o.label + '</option>';
       }).join('');
     }
@@ -2649,14 +2751,13 @@
         alert('正文模版的关联绑定仅支持「样品名称(型号)」');
         return;
       }
-      var bindSelect = document.getElementById('p_bindSelect');
-      var selectedOpts = Array.prototype.slice.call(bindSelect.selectedOptions || []).filter(function (o) { return !!o.value; });
-      if (!selectedOpts.length) {
+      var selectedPairs = getPublicBindSelectedPairs();
+      if (!selectedPairs.length) {
         alert('请选择' + (bindType === 'category' ? '样品分类' : '样品名称(型号)') + (isBody ? '（可多选）' : ''));
         return;
       }
-      var bindValues = selectedOpts.map(function (o) { return o.value; });
-      var bindLabels = selectedOpts.map(function (o) { return o.text.replace(/^\s+/, ''); });
+      var bindValues = selectedPairs.map(function (p) { return p.value; });
+      var bindLabels = selectedPairs.map(function (p) { return p.label; });
       var templateName = (document.getElementById('p_templateName').value || '').trim();
       var ext = document.getElementById('p_fileExt').textContent || '.doc';
       var fileShown = (document.getElementById('publicFileName').textContent || '').trim();
@@ -2872,6 +2973,9 @@
     });
     document.getElementById('m_sample').addEventListener('change', function () {
       if (!state.bodyRowId) applyDefaultPublicRefs(this.value);
+    });
+    document.addEventListener('click', function () {
+      closePublicBindMultiPanel();
     });
 
     function openCopyPicker(from) {
@@ -3767,7 +3871,7 @@
         { id: 'public-delete', selector: '[data-annotate="public-delete"]', position: 'top-right', title: '删除', content: '删除公共模版时<strong>不受是否被报告模版引用</strong>的影响；确认后删除，引用该正文的报告变体将清空正文关联。', tag: '报告模板' },
         { id: 'public-content-style', selector: '[data-annotate="public-content-style"]', position: 'top-right', title: '模版内容样式', content: '选择本模板是「模板头」「模板尾」或「正文」。正文可供报告模版变体以「引用」方式共用；选正文后关联绑定锁定为样品名称(型号)且可多选。', tag: '报告模板' },
         { id: 'public-bind-type', selector: '[data-annotate="public-bind-type"]', position: 'top-right', title: '关联绑定', wide: true, content: '头/尾可选<strong>样品分类</strong>或<strong>样品名称(型号)</strong>。内容样式为<strong>正文</strong>时，关联绑定固定为「样品名称(型号)」，不可选样品分类。', tag: '报告模板' },
-        { id: 'public-bind-target', selector: '[data-annotate="public-bind-target"]', position: 'top-right', title: '绑定对象（必填）', wide: true, content: '下拉选项已按当前进入的大类过滤。头/尾：选「样品分类」加载至样品上一级；选「样品名称(型号)」加载样品/型号层。正文：仅样品名称(型号)，且<strong>支持多选</strong>。', tag: '报告模板' },
+        { id: 'public-bind-target', selector: '[data-annotate="public-bind-target"]', position: 'top-right', title: '绑定对象（必填）', wide: true, content: '下拉选项已按当前进入的大类过滤。头/尾：普通下拉单选。正文：下拉多选勾选样品名称(型号)，触发器展示已选项。', tag: '报告模板' },
         { id: 'public-file', selector: '[data-annotate="public-file"]', position: 'top-right', title: '模板文件', wide: true, content: '新增时可上传或复制模板文件；编辑时展示已关联的文件实体。上传后模版名称自动回显文件名（不含后缀）。', tag: '报告模板' },
         { id: 'public-template-name', selector: '[data-annotate="public-template-name"]', position: 'top-right', title: '模版名称', wide: true, content: '上传文件后自动回显文件名（不含后缀）；后缀（如 .doc）固定显示在输入框右侧，不可修改；输入框内名称允许用户编辑。', tag: '报告模板' }
       ]
