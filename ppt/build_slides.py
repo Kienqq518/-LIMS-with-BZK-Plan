@@ -329,7 +329,7 @@ slides.append(f'''
         </div>
         <div class="pm-x"><span>轻量入口</span><span>全面定制</span></div>
       </div>
-      <p style="font-size:max(14px,.95vw);color:var(--text-helper);font-weight:500">客户策略：主动筛选认可价值主张的群体，拒绝当「陪跑者」。本页为后续销售话术与产品演进的核心指导思想。</p>
+      <p style="font-size:max(14px,.95vw);color:var(--text-helper);font-weight:500">客户策略：主动筛选认可价值主张的群体，拒绝当「陪跑者」。</p>
     </div>
   </div>
 </section>
