@@ -149,6 +149,7 @@
     .form-row > label .req { color: #ef4444; }
     .form-row .ctrl { flex: 1; min-width: 0; }
     .form-row input[type=text], .form-row select, .form-row textarea { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; }
+    .form-row select[multiple] { min-height: 132px; padding: 4px 6px; }
     .form-row .name-ext { display: flex; align-items: stretch; }
     .form-row .name-ext input { flex: 1; border-radius: 4px 0 0 4px; border-right: none; }
     .form-row .name-ext .ext-suffix { display: flex; align-items: center; padding: 0 10px; border: 1px solid #dcdfe6; border-left: none; border-radius: 0 4px 4px 0; background: #f8fafc; color: #64748b; font-size: 13px; white-space: nowrap; }
@@ -534,8 +535,8 @@
     <div class="modal-box">
       <div class="modal-head"><span id="publicModalTitle">新增公共模版</span><button onclick="closeModal('publicModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
       <div class="modal-body">
-        <div class="form-row" data-annotate="public-content-style"><label><span class="req">*</span> 模版内容样式</label><div class="ctrl"><select id="p_content"><option>模板头</option><option>模板尾</option><option>正文</option></select></div></div>
-        <div class="form-row" data-annotate="public-bind-type"><label><span class="req">*</span> 关联绑定</label><div class="ctrl radio-group"><label><input type="radio" name="p_scope" value="category" checked onchange="togglePublicScope()" /> 样品分类</label><label><input type="radio" name="p_scope" value="sample" onchange="togglePublicScope()" /> 样品名称(型号)</label></div></div>
+        <div class="form-row" data-annotate="public-content-style"><label><span class="req">*</span> 模版内容样式</label><div class="ctrl"><select id="p_content" onchange="onPublicContentStyleChange()"><option>模板头</option><option>模板尾</option><option>正文</option></select></div></div>
+        <div class="form-row" data-annotate="public-bind-type"><label><span class="req">*</span> 关联绑定</label><div class="ctrl radio-group"><label id="p_scopeCategoryLabel"><input type="radio" name="p_scope" value="category" checked onchange="togglePublicScope()" /> 样品分类</label><label id="p_scopeSampleLabel"><input type="radio" name="p_scope" value="sample" onchange="togglePublicScope()" /> 样品名称(型号)</label></div></div>
         <div class="form-row" id="p_bindRow" data-annotate="public-bind-target"><label id="p_bindLabel"><span class="req">*</span> 样品分类</label><div class="ctrl"><select id="p_bindSelect" style="width:100%"></select><div class="mt-1 text-xs text-slate-400" id="p_bindHint">可选任意层级分类，加载至样品层级的上一级</div></div></div>
         <div class="form-row" id="publicFileRow" data-annotate="public-file"><label><span class="req">*</span> 模板文件</label><div class="ctrl">
           <div class="radio-group mb-2"><label><input type="radio" name="pubFileMode" value="upload" checked onchange="togglePublicFileMode()" /> 上传</label><label><input type="radio" name="pubFileMode" value="copy" onchange="togglePublicFileMode()" /> 复制</label></div>
@@ -935,14 +936,20 @@
         templates: [{ name: '电缆导管通用模板尾.doc', time: '2026-01-12 10:20', enabled: true, uploader: 'admin' }] },
       { id: 6, contentStyle: '模板头', bindType: 'sample', bindValue: 'glove', bindLabel: '01绝缘手套', templateName: '绝缘手套专用模板头', file: '绝缘手套专用模板头.docx', ext: '.docx', cat: 'aqgqj',
         templates: [{ name: '绝缘手套专用模板头.docx', time: '2026-01-15 11:00', enabled: true, uploader: 'admin' }] },
-      { id: 7, contentStyle: '正文', bindType: 'category', bindValue: 'wz', bindLabel: 'WZ电网物资', templateName: '电网物资通用报告正文', file: '电网物资通用报告正文.doc', ext: '.doc', cat: 'dlwz',
+      { id: 7, contentStyle: '正文', bindType: 'sample', bindValue: 'cable-duct-sample', bindLabel: '实壁类塑料电缆导管_直管',
+        bindValues: ['cable-duct-sample', 'pvc-c', 'pvc-u'], bindLabels: ['实壁类塑料电缆导管_直管', 'PVC-C', 'PVC-U'],
+        templateName: '电网物资通用报告正文', file: '电网物资通用报告正文.doc', ext: '.doc', cat: 'dlwz',
         templates: [
           { name: '电网物资通用报告正文.doc', time: '2026-03-01 09:00', enabled: true, uploader: 'admin' },
           { name: '电网物资通用报告正文_v2.doc', time: '2026-03-20 14:00', enabled: false, uploader: 'lisi' }
         ]},
-      { id: 8, contentStyle: '正文', bindType: 'category', bindValue: 'gqj', bindLabel: 'GQJ安全工器具', templateName: '安全工器具通用报告正文', file: '安全工器具通用报告正文.doc', ext: '.doc', cat: 'aqgqj',
+      { id: 8, contentStyle: '正文', bindType: 'sample', bindValue: 'glove', bindLabel: '01绝缘手套',
+        bindValues: ['glove', 'rod'], bindLabels: ['01绝缘手套', '02绝缘操作杆'],
+        templateName: '安全工器具通用报告正文', file: '安全工器具通用报告正文.doc', ext: '.doc', cat: 'aqgqj',
         templates: [{ name: '安全工器具通用报告正文.doc', time: '2026-03-02 10:00', enabled: true, uploader: 'admin' }] },
-      { id: 9, contentStyle: '正文', bindType: 'sample', bindValue: 'pvc-c', bindLabel: 'PVC-C', templateName: 'PVC-C专用报告正文', file: 'PVC-C专用报告正文.doc', ext: '.doc', cat: 'dlwz',
+      { id: 9, contentStyle: '正文', bindType: 'sample', bindValue: 'pvc-c', bindLabel: 'PVC-C',
+        bindValues: ['pvc-c'], bindLabels: ['PVC-C'],
+        templateName: 'PVC-C专用报告正文', file: 'PVC-C专用报告正文.doc', ext: '.doc', cat: 'dlwz',
         templates: [{ name: 'PVC-C专用报告正文.doc', time: '2026-03-08 16:00', enabled: true, uploader: 'wangwu' }] }
     ];
 
@@ -1405,15 +1412,35 @@
         String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     }
 
+    function getPublicBindValues(r) {
+      if (r && r.bindValues && r.bindValues.length) return r.bindValues.slice();
+      return r && r.bindValue ? [r.bindValue] : [];
+    }
+
+    function getPublicBindLabels(r) {
+      if (r && r.bindLabels && r.bindLabels.length) return r.bindLabels.slice();
+      return r && r.bindLabel ? [r.bindLabel] : [];
+    }
+
+    function applyPublicBindFields(row, bindType, values, labels) {
+      row.bindType = bindType;
+      row.bindValues = values.slice();
+      row.bindLabels = labels.slice();
+      row.bindValue = values[0] || '';
+      row.bindLabel = labels[0] || '';
+    }
+
     function publicBindMatchesTree(pub, treeId) {
       var pathNodes = getTreePathNodes(treeId);
       var pathIds = pathNodes.map(function (n) { return n.id; });
-      if (pub.bindType === 'sample' && pub.bindValue === treeId) return true;
+      var bindValues = getPublicBindValues(pub);
+      var bindLabels = getPublicBindLabels(pub);
+      if (pub.bindType === 'sample') return bindValues.indexOf(treeId) >= 0;
       if (pub.bindType !== 'category') return false;
-      if (pathIds.indexOf(pub.bindValue) >= 0) return true;
-      if (pathNodes.some(function (n) { return n.label === pub.bindLabel; })) return true;
-      if (pub.bindValue === 'wz' && pathIds.indexOf('cat-dlwz') >= 0) return true;
-      if (pub.bindValue === 'cable-duct' && pathIds.some(function (id) { return id === 'ds-s' || id === 'bhg'; })) return true;
+      if (bindValues.some(function (v) { return pathIds.indexOf(v) >= 0; })) return true;
+      if (pathNodes.some(function (n) { return bindLabels.indexOf(n.label) >= 0; })) return true;
+      if (bindValues.indexOf('wz') >= 0 && pathIds.indexOf('cat-dlwz') >= 0) return true;
+      if (bindValues.indexOf('cable-duct') >= 0 && pathIds.some(function (id) { return id === 'ds-s' || id === 'bhg'; })) return true;
       return false;
     }
 
@@ -1610,15 +1637,25 @@
         if (state.main === 'report' && state.sub === 'body') return getBodySampleDisplay(r.tree).includes(sample.value.trim());
         if (state.main === 'report' && state.sub === 'public') {
           if (r.bindType !== 'sample') return false;
-          return getPublicSampleBindFull(r.bindValue, r.bindLabel).includes(sample.value.trim());
+          var sampleKw = sample.value.trim();
+          var values = getPublicBindValues(r);
+          var labels = getPublicBindLabels(r);
+          return values.some(function (v, i) {
+            return getPublicSampleBindFull(v, labels[i] || '').includes(sampleKw);
+          });
         }
         return (r.sample || r.bindLabel || '').includes(sample.value.trim());
       });
       if (category && category.value.trim()) rows = rows.filter(function (r) {
         if (state.main === 'report' && state.sub === 'body') return getBodyCategoryPath(r.tree).includes(category.value.trim());
         if (state.main === 'report' && state.sub === 'public') {
-          var catText = r.bindType === 'sample' ? getBodyCategoryPath(r.bindValue) : (r.bindLabel || '');
-          return catText.includes(category.value.trim());
+          var catKw = category.value.trim();
+          if (r.bindType === 'sample') {
+            return getPublicBindValues(r).some(function (v) {
+              return getBodyCategoryPath(v).includes(catKw);
+            });
+          }
+          return getPublicBindLabels(r).some(function (lb) { return (lb || '').includes(catKw); });
         }
         return (r.category || r.bindLabel || '').includes(category.value.trim());
       });
@@ -1704,12 +1741,17 @@
 
     function publicBindDisplay(r) {
       var typeLabel = r.bindType === 'sample' ? '样品名称(型号)' : '样品分类';
+      var values = getPublicBindValues(r);
+      var labels = getPublicBindLabels(r);
       if (r.bindType === 'sample') {
-        var fullText = getPublicSampleBindFull(r.bindValue, r.bindLabel);
-        return '<div class="text-slate-500 text-xs">' + typeLabel + '</div>' +
+        var fullTexts = values.map(function (v, i) {
+          return getPublicSampleBindFull(v, labels[i] || '');
+        });
+        var fullText = fullTexts.join('；') || '—';
+        return '<div class="text-slate-500 text-xs">' + typeLabel + (values.length > 1 ? '（' + values.length + '）' : '') + '</div>' +
           '<div class="cell-category-path" title="' + escHtml(fullText) + '">' + fullText + '</div>';
       }
-      return '<span class="text-slate-500 text-xs">' + typeLabel + ' · </span>' + (r.bindLabel || '—');
+      return '<span class="text-slate-500 text-xs">' + typeLabel + ' · </span>' + (labels.join('、') || '—');
     }
 
     function publicOps(r) {
@@ -2429,7 +2471,7 @@
       document.getElementById('copyTableBody').innerHTML = sources.map(function (r, i) {
         return '<tr><td><input type="radio" name="copyPick" value="' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
           '<td>' + r.file + '</td><td>' + r.contentStyle + '</td><td>' + (r.bindType === 'category' ? '样品分类' : '样品名称(型号)') + '</td>' +
-          '<td>' + r.bindLabel + '</td><td><button class="text-blue-600">预览</button></td></tr>';
+          '<td>' + (getPublicBindLabels(r).join('、') || '—') + '</td><td><button class="text-blue-600">预览</button></td></tr>';
       }).join('') || '<tr><td colspan="7" class="py-6 text-center text-slate-400">暂无可复制的公共模版</td></tr>';
     }
 
@@ -2466,25 +2508,71 @@
       return depth > 0 ? '\u3000\u3000'.repeat(depth) : '';
     }
 
-    function renderPublicBindOptions(selectedValue) {
-      var cat = document.querySelector('input[name=p_scope]:checked').value === 'category';
+    function normalizeBindSelectedValues(selectedValues) {
+      if (Array.isArray(selectedValues)) return selectedValues.filter(Boolean);
+      if (typeof selectedValues === 'string' && selectedValues) return [selectedValues];
+      return [];
+    }
+
+    function isPublicBodyContentStyle(style) {
+      return (style || document.getElementById('p_content').value) === '正文';
+    }
+
+    function getPublicBindSelectedValues() {
+      var sel = document.getElementById('p_bindSelect');
+      return Array.prototype.slice.call(sel.selectedOptions || []).map(function (o) { return o.value; }).filter(Boolean);
+    }
+
+    function syncPublicBindTypeByContentStyle() {
+      var isBody = isPublicBodyContentStyle();
+      var catLabel = document.getElementById('p_scopeCategoryLabel');
+      var catRadio = document.querySelector('input[name=p_scope][value=category]');
+      var sampleRadio = document.querySelector('input[name=p_scope][value=sample]');
+      if (catLabel) catLabel.classList.toggle('hidden', isBody);
+      if (catRadio) catRadio.disabled = isBody;
+      if (isBody && sampleRadio) sampleRadio.checked = true;
+    }
+
+    function renderPublicBindOptions(selectedValues) {
+      selectedValues = normalizeBindSelectedValues(selectedValues);
+      syncPublicBindTypeByContentStyle();
+      var isBody = isPublicBodyContentStyle();
+      var cat = !isBody && document.querySelector('input[name=p_scope]:checked').value === 'category';
       var allOptions = cat ? PUBLIC_CATEGORY_BIND_OPTIONS : PUBLIC_SAMPLE_BIND_OPTIONS;
       var options = allOptions.filter(function (o) { return !state.cat || o.cat === state.cat; });
       var label = cat ? '样品分类' : '样品名称(型号)';
       var hint = cat
         ? '可选任意层级分类，加载至样品层级的上一级（当前大类内）'
-        : '选至样品层或型号层；有型号的可停在样品层，也可下钻到型号层（当前大类内）';
+        : (isBody
+          ? '正文仅可绑定样品名称(型号)，支持多选（按住 Ctrl/⌘ 多选）；加载样品/型号层（当前大类内）'
+          : '选至样品层或型号层；有型号的可停在样品层，也可下钻到型号层（当前大类内）');
+      var sel = document.getElementById('p_bindSelect');
       document.getElementById('p_bindLabel').innerHTML = '<span class="req">*</span> ' + label;
       document.getElementById('p_bindHint').textContent = hint;
+      if (isBody) {
+        sel.setAttribute('multiple', 'multiple');
+        sel.size = Math.min(8, Math.max(4, options.length || 4));
+      } else {
+        sel.removeAttribute('multiple');
+        sel.removeAttribute('size');
+      }
       if (!options.length) {
-        document.getElementById('p_bindSelect').innerHTML = '<option value="">当前大类暂无可选</option>';
+        sel.innerHTML = '<option value="">当前大类暂无可选</option>';
         return;
       }
-      var hasSelected = options.some(function (o) { return o.value === selectedValue; });
-      document.getElementById('p_bindSelect').innerHTML = options.map(function (o, i) {
-        var sel = (selectedValue && hasSelected ? selectedValue === o.value : i === 0) ? ' selected' : '';
-        return '<option value="' + o.value + '"' + sel + '>' + publicBindIndent(o.depth) + o.label + '</option>';
+      var selectedSet = {};
+      selectedValues.forEach(function (v) { selectedSet[v] = true; });
+      var hasSelected = options.some(function (o) { return selectedSet[o.value]; });
+      sel.innerHTML = options.map(function (o, i) {
+        var selAttr = '';
+        if (hasSelected) selAttr = selectedSet[o.value] ? ' selected' : '';
+        else if (!isBody && i === 0) selAttr = ' selected';
+        return '<option value="' + o.value + '"' + selAttr + '>' + publicBindIndent(o.depth) + o.label + '</option>';
       }).join('');
+    }
+
+    function onPublicContentStyleChange() {
+      renderPublicBindOptions(getPublicBindSelectedValues());
     }
 
     function resetPublicModalForm() {
@@ -2493,7 +2581,7 @@
       document.querySelector('input[name=pubFileMode][value=upload]').checked = true;
       togglePublicFileMode();
       var defaultBind = state.cat === 'aqgqj' ? 'gqj' : (state.cat === 'gcjc' ? 'cement' : 'wz');
-      renderPublicBindOptions(defaultBind);
+      renderPublicBindOptions([defaultBind]);
       document.getElementById('p_templateName').value = '';
       document.getElementById('p_fileExt').textContent = '.doc';
       document.getElementById('publicFileRow').classList.remove('hidden');
@@ -2505,8 +2593,9 @@
 
     function fillPublicModal(row) {
       document.getElementById('p_content').value = row.contentStyle;
-      document.querySelector('input[name=p_scope][value=' + row.bindType + ']').checked = true;
-      renderPublicBindOptions(row.bindValue);
+      var bindType = row.contentStyle === '正文' ? 'sample' : row.bindType;
+      document.querySelector('input[name=p_scope][value=' + bindType + ']').checked = true;
+      renderPublicBindOptions(getPublicBindValues(row));
       document.getElementById('p_templateName').value = row.templateName;
       document.getElementById('p_fileExt').textContent = row.ext || '.doc';
       document.getElementById('publicFileRow').classList.remove('hidden');
@@ -2554,11 +2643,20 @@
 
     function savePublicModal() {
       var contentStyle = document.getElementById('p_content').value;
-      var bindType = document.querySelector('input[name=p_scope]:checked').value;
+      var isBody = contentStyle === '正文';
+      var bindType = isBody ? 'sample' : document.querySelector('input[name=p_scope]:checked').value;
+      if (isBody && bindType !== 'sample') {
+        alert('正文模版的关联绑定仅支持「样品名称(型号)」');
+        return;
+      }
       var bindSelect = document.getElementById('p_bindSelect');
-      var bindValue = bindSelect.value;
-      if (!bindValue) { alert('请选择' + (bindType === 'category' ? '样品分类' : '样品名称(型号)')); return; }
-      var bindLabel = bindSelect.options[bindSelect.selectedIndex].text.replace(/^\s+/, '');
+      var selectedOpts = Array.prototype.slice.call(bindSelect.selectedOptions || []).filter(function (o) { return !!o.value; });
+      if (!selectedOpts.length) {
+        alert('请选择' + (bindType === 'category' ? '样品分类' : '样品名称(型号)') + (isBody ? '（可多选）' : ''));
+        return;
+      }
+      var bindValues = selectedOpts.map(function (o) { return o.value; });
+      var bindLabels = selectedOpts.map(function (o) { return o.text.replace(/^\s+/, ''); });
       var templateName = (document.getElementById('p_templateName').value || '').trim();
       var ext = document.getElementById('p_fileExt').textContent || '.doc';
       var fileShown = (document.getElementById('publicFileName').textContent || '').trim();
@@ -2569,9 +2667,7 @@
         var row = findPublic(state.publicRowId);
         if (row) {
           row.contentStyle = contentStyle;
-          row.bindType = bindType;
-          row.bindValue = bindValue;
-          row.bindLabel = bindLabel;
+          applyPublicBindFields(row, bindType, bindValues, bindLabels);
           row.templateName = templateName;
           row.ext = ext;
           row.file = templateName + ext;
@@ -2591,11 +2687,13 @@
       } else {
         var newId = PUBLIC_DATA.reduce(function (m, r) { return Math.max(m, r.id); }, 0) + 1;
         var fullFile = templateName + ext;
-        PUBLIC_DATA.push({
-          id: newId, contentStyle: contentStyle, bindType: bindType, bindValue: bindValue, bindLabel: bindLabel,
+        var newRow = {
+          id: newId, contentStyle: contentStyle,
           templateName: templateName, file: fullFile, ext: ext, cat: state.cat || 'dlwz',
           templates: [{ name: fullFile, time: formatNowTs(), enabled: true, uploader: 'admin' }]
-        });
+        };
+        applyPublicBindFields(newRow, bindType, bindValues, bindLabels);
+        PUBLIC_DATA.push(newRow);
       }
       closeModal('publicModal');
       renderTable();
@@ -3667,9 +3765,9 @@
         { id: 'public-edit', selector: '[data-annotate="public-edit"]', position: 'top-right', title: '编辑公共模版', wide: true, content: '回填模版内容样式、关联绑定、绑定对象、模版文件与模版名称；编辑时可查看已关联的模板文件实体。', tag: '报告模板' },
         { id: 'public-version', selector: '[data-annotate="public-version"]', position: 'top-right', title: '公共模版版本', wide: true, content: '头/尾/正文均可多版本单启用。公共正文被报告模版引用时，启用版本变更后引用方列表同步展示新文件。', tag: '报告模板' },
         { id: 'public-delete', selector: '[data-annotate="public-delete"]', position: 'top-right', title: '删除', content: '删除公共模版时<strong>不受是否被报告模版引用</strong>的影响；确认后删除，引用该正文的报告变体将清空正文关联。', tag: '报告模板' },
-        { id: 'public-content-style', selector: '[data-annotate="public-content-style"]', position: 'top-right', title: '模版内容样式', content: '选择本模板是「模板头」「模板尾」或「正文」。正文可供报告模版变体以「引用」方式共用。', tag: '报告模板' },
-        { id: 'public-bind-type', selector: '[data-annotate="public-bind-type"]', position: 'top-right', title: '关联绑定', wide: true, content: '决定第三行绑定对象的维度：<strong>样品分类</strong> 或 <strong>样品名称(型号)</strong>。切换后第三行字段名与下拉选项联动切换。', tag: '报告模板' },
-        { id: 'public-bind-target', selector: '[data-annotate="public-bind-target"]', position: 'top-right', title: '绑定对象（必填）', wide: true, content: '下拉选项已按当前进入的大类过滤。选「样品分类」时加载至样品上一级；选「样品名称(型号)」时加载样品/型号层。', tag: '报告模板' },
+        { id: 'public-content-style', selector: '[data-annotate="public-content-style"]', position: 'top-right', title: '模版内容样式', content: '选择本模板是「模板头」「模板尾」或「正文」。正文可供报告模版变体以「引用」方式共用；选正文后关联绑定锁定为样品名称(型号)且可多选。', tag: '报告模板' },
+        { id: 'public-bind-type', selector: '[data-annotate="public-bind-type"]', position: 'top-right', title: '关联绑定', wide: true, content: '头/尾可选<strong>样品分类</strong>或<strong>样品名称(型号)</strong>。内容样式为<strong>正文</strong>时，关联绑定固定为「样品名称(型号)」，不可选样品分类。', tag: '报告模板' },
+        { id: 'public-bind-target', selector: '[data-annotate="public-bind-target"]', position: 'top-right', title: '绑定对象（必填）', wide: true, content: '下拉选项已按当前进入的大类过滤。头/尾：选「样品分类」加载至样品上一级；选「样品名称(型号)」加载样品/型号层。正文：仅样品名称(型号)，且<strong>支持多选</strong>。', tag: '报告模板' },
         { id: 'public-file', selector: '[data-annotate="public-file"]', position: 'top-right', title: '模板文件', wide: true, content: '新增时可上传或复制模板文件；编辑时展示已关联的文件实体。上传后模版名称自动回显文件名（不含后缀）。', tag: '报告模板' },
         { id: 'public-template-name', selector: '[data-annotate="public-template-name"]', position: 'top-right', title: '模版名称', wide: true, content: '上传文件后自动回显文件名（不含后缀）；后缀（如 .doc）固定显示在输入框右侧，不可修改；输入框内名称允许用户编辑。', tag: '报告模板' }
       ]
