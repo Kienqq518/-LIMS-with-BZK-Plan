@@ -105,17 +105,31 @@
     return testNames.filter(function (t) { return !hasTemplate(templateIndex, sample, t); });
   }
 
-  function resolveCombinedTemplate(modelTreeKey, combinedData, sampleAncestorId) {
+  function resolveCombinedTemplate(modelTreeKey, combinedData, sampleAncestorId, publicData) {
     combinedData = combinedData || [];
+    publicData = publicData || [];
+    function resolveFile(row) {
+      if (!row) return null;
+      if (row.refPublicId) {
+        for (var p = 0; p < publicData.length; p++) {
+          if (publicData[p].id === row.refPublicId && publicData[p].file) return publicData[p].file;
+        }
+        return null;
+      }
+      return row.file || null;
+    }
+    function usable(row) {
+      return !!(row && row.configured && resolveFile(row));
+    }
     var i;
     for (i = 0; i < combinedData.length; i++) {
       var row = combinedData[i];
-      if (row.bindType === 'model' && row.bindTarget === modelTreeKey && row.configured && row.file) return row;
+      if (row.bindType === 'model' && row.bindTarget === modelTreeKey && usable(row)) return row;
     }
     if (sampleAncestorId) {
       for (i = 0; i < combinedData.length; i++) {
         row = combinedData[i];
-        if (row.bindType === 'sample' && row.bindTarget === sampleAncestorId && row.configured && row.file) return row;
+        if (row.bindType === 'sample' && row.bindTarget === sampleAncestorId && usable(row)) return row;
       }
     }
     return null;

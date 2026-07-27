@@ -347,7 +347,12 @@
         <div class="sub-switch-item" data-sub="public">公共模版</div>
       </div>
     </div>
-    <div id="recordSubBar" class="hidden"></div>
+    <div id="recordSubBar" class="sub-switch-bar hidden">
+      <div class="sub-switch" id="recordSubSwitch">
+        <div class="sub-switch-item active" data-sub="record">记录单模版</div>
+        <div class="sub-switch-item" data-sub="public">公共模版</div>
+      </div>
+    </div>
 
     <div class="tpl-layout" id="tableLayout">
       <aside class="tpl-tree" id="treePanel">
@@ -444,7 +449,7 @@
   <!-- 记录单 · 单试验项复制模板 -->
   <div id="recordCopyModal" class="modal-mask">
     <div class="modal-box lg">
-      <div class="modal-head"><span>记录单模板复制</span><button onclick="closeModal('recordCopyModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-head"><span id="recordCopyModalTitle">记录单模板复制</span><button onclick="closeModal('recordCopyModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
       <div class="modal-body">
         <div class="tpl-toolbar" style="padding:0 0 12px;border:none">
           <label>样品名称(型号)</label><input id="rc_sample" placeholder="请输入" />
@@ -458,6 +463,51 @@
         </table>
       </div>
       <div class="modal-foot"><button onclick="closeModal('recordCopyModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="confirmRecordCopy()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
+    </div>
+  </div>
+
+  <!-- 记录单模版 · 编辑（上传/复制/引用） -->
+  <div id="recordEditModal" class="modal-mask">
+    <div class="modal-box">
+      <div class="modal-head"><span id="recordEditModalTitle">编辑记录单模版</span><button onclick="closeModal('recordEditModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <div class="form-row"><label>绑定对象</label><div class="ctrl"><div id="re_bindInfo" class="text-sm text-slate-700"></div></div></div>
+        <div class="form-row" data-annotate="record-file-source"><label>模版文件</label><div class="ctrl">
+          <div class="radio-group mb-2">
+            <label><input type="radio" name="recordFileMode" value="upload" checked onchange="toggleRecordFileMode()" /> 上传</label>
+            <label><input type="radio" name="recordFileMode" value="copy" onchange="toggleRecordFileMode()" /> 复制</label>
+            <label><input type="radio" name="recordFileMode" value="ref" onchange="toggleRecordFileMode()" /> 引用</label>
+          </div>
+          <div id="recordLocalHint" class="hidden mb-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">已配置本地文件，也可通过操作列「版本」管理；可切换为「引用」公共模版。</div>
+          <div id="recordUploadZone" class="upload-zone" onclick="openMockFilePicker('recordEdit')"><i class="fa fa-cloud-upload block"></i><div>上传</div></div>
+          <button id="recordCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openRecordEditCopyPicker()"><i class="fa fa-copy"></i> 复制</button>
+          <select id="re_refPublic" class="hidden w-full rounded border border-slate-200 px-3 py-2 text-sm" onchange="onRecordRefPublicChange()"></select>
+          <div id="recordRefEmpty" class="hidden mb-1 text-xs text-amber-600">暂无对应类型的公共模版，请先在「公共模版」中上传。</div>
+          <div class="form-row" style="margin:12px 0 0;padding:0"><label style="width:80px;padding-top:8px">模版文件名</label><div class="ctrl"><div class="name-ext"><input type="text" id="re_fileName" placeholder="上传后自动回显文件名（不含后缀）" /><span class="ext-suffix" id="re_fileExt">.docx</span></div><div id="re_fileNameHint" class="mt-1 text-xs text-slate-400">名称可编辑；后缀固定显示在框外，不可修改</div></div></div>
+        </div></div>
+      </div>
+      <div class="modal-foot"><button onclick="closeModal('recordEditModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="saveRecordEditModal()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
+    </div>
+  </div>
+
+  <!-- 记录单公共模版 新增/编辑（无关联绑定） -->
+  <div id="recordPublicModal" class="modal-mask">
+    <div class="modal-box">
+      <div class="modal-head"><span id="recordPublicModalTitle">新增公共模版</span><button onclick="closeModal('recordPublicModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <div class="form-row" data-annotate="record-public-content-style"><label><span class="req">*</span> 模版内容样式</label><div class="ctrl"><select id="rp_content"><option>组合记录单模版</option><option>试验项模版</option></select></div></div>
+        <div class="form-row" id="recordPublicFileRow"><label><span class="req">*</span> 模板文件</label><div class="ctrl">
+          <div class="radio-group mb-2"><label><input type="radio" name="rpFileMode" value="upload" checked onchange="toggleRecordPublicFileMode()" /> 上传</label><label><input type="radio" name="rpFileMode" value="copy" onchange="toggleRecordPublicFileMode()" /> 复制</label></div>
+          <div id="recordPublicUploadZone" class="upload-zone" onclick="openMockFilePicker('recordPublicAdd')"><i class="fa fa-cloud-upload block"></i><div>点击上传 .doc/.docx</div></div>
+          <div id="recordPublicFilePreview" class="hidden public-file-preview rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <span class="file-name"><i class="fa fa-file-word-o mr-1 text-blue-500"></i><span id="recordPublicFileName"></span></span>
+            <button type="button" class="file-del" onclick="clearRecordPublicFile()" title="删除文件"><i class="fa fa-trash-o"></i></button>
+          </div>
+          <button id="recordPublicCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openRecordPublicCopyPicker()"><i class="fa fa-copy"></i> 复制</button>
+        </div></div>
+        <div class="form-row" id="recordPublicNameRow"><label><span class="req">*</span> 模版名称</label><div class="ctrl"><div class="name-ext"><input type="text" id="rp_templateName" placeholder="上传后自动回显文件名（不含后缀）" /><span class="ext-suffix" id="rp_fileExt">.docx</span></div><div class="mt-1 text-xs text-slate-400">名称可编辑；后缀固定显示在框外，不可修改。公共模版无需关联绑定，由记录单模版侧选择引用。</div></div></div>
+      </div>
+      <div class="modal-foot"><button onclick="closeModal('recordPublicModal')" class="rounded border border-slate-300 px-5 py-1.5 text-sm">取消</button><button onclick="saveRecordPublicModal()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button></div>
     </div>
   </div>
 
@@ -644,7 +694,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
-    var state = { view: 'landing', main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, configContext: 'test-item', combinedConfigKey: null, bodyRowId: null, publicRowId: null, poType: 'report', poTab: 'center', cat: 'dlwz', openIds: {}, copyMode: 'public', copyTarget: null, filePickerTarget: null, bodyVersionRenameIndex: null, publicVersionRenameIndex: null, recordVersionRenameIndex: null, docDirty: false, docSavedSnapshots: {}, unsavedAction: null, docUploadType: null, docErrorTypes: [], versionFromBodyRef: false };
+    var state = { view: 'landing', main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, configContext: 'test-item', combinedConfigKey: null, bodyRowId: null, publicRowId: null, recordPublicRowId: null, recordEditKind: null, recordEditId: null, recordEditBindType: null, recordEditBindTarget: null, recordCopyTarget: 'version', publicLib: 'report', poType: 'report', poTab: 'center', cat: 'dlwz', openIds: {}, copyMode: 'public', copyTarget: null, filePickerTarget: null, bodyVersionRenameIndex: null, publicVersionRenameIndex: null, recordVersionRenameIndex: null, docDirty: false, docSavedSnapshots: {}, unsavedAction: null, docUploadType: null, docErrorTypes: [], versionFromBodyRef: false, versionFromRecordRef: false };
     var modalStack = [];
 
     function syncModalZIndex() {
@@ -947,20 +997,20 @@
     ];
 
     var RECORD_DATA = [
-      { id: 1, tree: 'pvc-c', test: '颜色外观', file: '颜色外观.docx', configured: true, templates: [
+      { id: 1, tree: 'pvc-c', test: '颜色外观', file: '颜色外观.docx', configured: true, refPublicId: null, templates: [
         { name: '颜色外观.docx', time: '2025-11-20 10:12', enabled: true, uploader: 'admin' },
         { name: '颜色外观_新版.docx', time: '2026-01-08 15:30', enabled: false, uploader: 'zhangsan' }
       ]},
-      { id: 2, tree: 'pvc-c', test: '尺寸检查', file: '尺寸检查.docx', configured: true, templates: [
+      { id: 2, tree: 'pvc-c', test: '尺寸检查', file: '尺寸检查.docx', configured: true, refPublicId: null, templates: [
         { name: '尺寸检查.docx', time: '2025-11-20 10:15', enabled: true, uploader: 'admin' }
       ]},
-      { id: 3, tree: 'pvc-c', test: '环刚度', file: null, configured: false, templates: [] },
-      { id: 4, tree: 'pvc-c', test: '压扁试验', file: '压扁试验.docx', configured: true, templates: [
+      { id: 3, tree: 'pvc-c', test: '环刚度', file: '公共试验项_环刚度.docx', configured: true, refPublicId: 3, templates: [] },
+      { id: 4, tree: 'pvc-c', test: '压扁试验', file: '压扁试验.docx', configured: true, refPublicId: null, templates: [
         { name: '压扁试验.docx', time: '2025-12-01 09:00', enabled: true, uploader: 'lisi' }
       ]},
-      { id: 5, tree: 'pvc-c', test: '落锤冲击', file: null, configured: false, templates: [] },
-      { id: 6, tree: 'pvc-c', test: '维卡软化', file: null, configured: false, templates: [] },
-      { id: 7, tree: 'pvc-c', test: '密度测定', file: '密度测定.docx', configured: true, templates: [
+      { id: 5, tree: 'pvc-c', test: '落锤冲击', file: null, configured: false, refPublicId: null, templates: [] },
+      { id: 6, tree: 'pvc-c', test: '维卡软化', file: null, configured: false, refPublicId: null, templates: [] },
+      { id: 7, tree: 'pvc-c', test: '密度测定', file: '密度测定.docx', configured: true, refPublicId: null, templates: [
         { name: '密度测定.docx', time: '2026-02-14 11:20', enabled: true, uploader: 'wangwu' }
       ]},
       { id: 8, tree: 'glove', test: '工频耐压试验', file: null, configured: false, templates: [] },
@@ -1031,20 +1081,36 @@
 
     var RECORD_COMBINED_DATA = [
       { id: 101, bindType: 'sample', bindTarget: 'ds-s', bindLabel: 'DS实壁类塑料电缆导管_直管',
-        file: '实壁导管_全套记录单.docx', configured: true,
+        file: '实壁导管_全套记录单.docx', configured: true, refPublicId: null,
         templates: [{ name: '实壁导管_全套记录单.docx', time: '2026-03-01 10:00', enabled: true, uploader: 'admin' }] },
       { id: 102, bindType: 'sample', bindTarget: 'ds-k', bindLabel: 'DS实壁类塑料电缆导管_带承口',
-        file: '带承口_全套记录单.docx', configured: true,
+        file: '带承口_全套记录单.docx', configured: true, refPublicId: null,
         templates: [{ name: '带承口_全套记录单.docx', time: '2026-03-08 09:00', enabled: true, uploader: 'admin' }] },
       { id: 103, bindType: 'model', bindTarget: 'pvc-u', bindLabel: 'DS实壁类塑料电缆导管_直管【PVC-U】',
-        file: 'PVC-U_全套记录单.docx', configured: true,
+        file: 'PVC-U_全套记录单.docx', configured: true, refPublicId: null,
         templates: [{ name: 'PVC-U_全套记录单.docx', time: '2026-02-20 16:00', enabled: true, uploader: 'lisi' }] },
       { id: 104, bindType: 'model', bindTarget: 'pvc-c', bindLabel: 'DS实壁类塑料电缆导管_直管【PVC-C】',
-        file: 'PVC-C_全套记录单.docx', configured: true,
-        templates: [{ name: 'PVC-C_全套记录单.docx', time: '2026-02-15 14:30', enabled: true, uploader: 'admin' }] },
+        file: '公共组合记录单_通用.docx', configured: true, refPublicId: 1,
+        templates: [] },
       { id: 105, bindType: 'model', bindTarget: 'dk-pvc-u', bindLabel: 'DS实壁类塑料电缆导管_带承口【PVC-U】',
-        file: '带承口PVC-U_全套记录单.docx', configured: true,
+        file: '带承口PVC-U_全套记录单.docx', configured: true, refPublicId: null,
         templates: [{ name: '带承口PVC-U_全套记录单.docx', time: '2026-03-09 11:30', enabled: true, uploader: 'zhangsan' }] }
+    ];
+
+    var RECORD_PUBLIC_DATA = [
+      { id: 1, contentStyle: '组合记录单模版', templateName: '公共组合记录单_通用', file: '公共组合记录单_通用.docx', ext: '.docx', cat: 'dlwz',
+        templates: [
+          { name: '公共组合记录单_通用.docx', time: '2026-03-10 09:00', enabled: true, uploader: 'admin' },
+          { name: '公共组合记录单_通用_v2.docx', time: '2026-03-18 11:00', enabled: false, uploader: 'lisi' }
+        ]},
+      { id: 2, contentStyle: '组合记录单模版', templateName: '安全工器具组合记录单', file: '安全工器具组合记录单.docx', ext: '.docx', cat: 'aqgqj',
+        templates: [{ name: '安全工器具组合记录单.docx', time: '2026-03-11 10:00', enabled: true, uploader: 'admin' }] },
+      { id: 3, contentStyle: '试验项模版', templateName: '公共试验项_环刚度', file: '公共试验项_环刚度.docx', ext: '.docx', cat: 'dlwz',
+        templates: [{ name: '公共试验项_环刚度.docx', time: '2026-03-12 14:00', enabled: true, uploader: 'admin' }] },
+      { id: 4, contentStyle: '试验项模版', templateName: '公共试验项_颜色外观', file: '公共试验项_颜色外观.docx', ext: '.docx', cat: 'dlwz',
+        templates: [{ name: '公共试验项_颜色外观.docx', time: '2026-03-12 14:10', enabled: true, uploader: 'zhangsan' }] },
+      { id: 5, contentStyle: '试验项模版', templateName: '公共试验项_外观检查', file: '公共试验项_外观检查.docx', ext: '.docx', cat: 'aqgqj',
+        templates: [{ name: '公共试验项_外观检查.docx', time: '2026-03-13 09:30', enabled: true, uploader: 'admin' }] }
     ];
 
     var RECORD_TABLE_SECTION_SUB = '用于「单种样品单种试验生成一份文件」「单个样品单种试验生成一份文件」；「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」无本型号/上级样品组合模版时，按试验项单模版动态拼接。';
@@ -1095,7 +1161,7 @@
     function getOrCreateCombinedRecord(bindType, bindTarget, bindLabel) {
       var row = findCombinedRecord(bindType, bindTarget);
       if (row) return row;
-      row = { id: Date.now(), bindType: bindType, bindTarget: bindTarget, bindLabel: bindLabel || getReportTreeModelLabel(bindTarget), file: null, configured: false, templates: [] };
+      row = { id: Date.now(), bindType: bindType, bindTarget: bindTarget, bindLabel: bindLabel || getReportTreeModelLabel(bindTarget), file: null, configured: false, refPublicId: null, templates: [] };
       RECORD_COMBINED_DATA.push(row);
       return row;
     }
@@ -1204,9 +1270,59 @@
       return rows;
     }
 
+    function findRecordPublic(id) {
+      return RECORD_PUBLIC_DATA.find(function (r) { return r.id === id; });
+    }
+
+    function resolveRecordFile(row) {
+      if (row && row.refPublicId) {
+        var pub = findRecordPublic(row.refPublicId);
+        return pub ? pub.file : null;
+      }
+      return row ? row.file : null;
+    }
+
+    function syncRecordRefsFromPublic(publicId) {
+      var pub = findRecordPublic(publicId);
+      if (!pub) return;
+      RECORD_DATA.forEach(function (r) {
+        if (r.refPublicId === publicId) {
+          r.file = pub.file;
+          r.configured = !!pub.file;
+        }
+      });
+      RECORD_COMBINED_DATA.forEach(function (r) {
+        if (r.refPublicId === publicId) {
+          r.file = pub.file;
+          r.configured = !!pub.file;
+        }
+      });
+    }
+
+    function ensureRecordPublicTemplates(row) {
+      if (!row) return;
+      if (!row.templates || !row.templates.length) {
+        if (row.file) {
+          row.templates = [{ name: row.file, time: formatNowTs(), enabled: true, uploader: 'admin' }];
+        } else {
+          row.templates = [];
+        }
+      }
+      if (!row.templates.some(function (t) { return t.enabled; }) && row.templates.length) {
+        var lastIdx = row.templates.length - 1;
+        row.templates.forEach(function (t, i) { t.enabled = i === lastIdx; });
+      }
+      var enabled = row.templates.find(function (t) { return t.enabled; });
+      row.file = enabled ? enabled.name : (row.file || null);
+      if (enabled) {
+        var parts = splitFileName(enabled.name);
+        row.ext = parts.ext || row.ext || '.docx';
+      }
+    }
+
     function ensureCombinedEnabled(row) {
       if (!row || !row.templates || !row.templates.length) {
-        if (row) { row.file = null; row.configured = false; }
+        if (row && !row.refPublicId) { row.file = null; row.configured = false; }
         return;
       }
       if (!row.templates.some(function (t) { return t.enabled; })) {
@@ -1228,26 +1344,35 @@
     }
 
     function combinedFileCell(row) {
-      return row.file
-        ? '<span class="link">' + row.file + '</span>' + (row.templates && row.templates.length > 1 ? '<span class="badge-enabled">启用中</span>' : '')
+      var file = resolveRecordFile(row);
+      return file
+        ? '<span class="link">' + file + '</span>' + (row.refPublicId ? '<span class="badge-enabled" title="引用公共模版">引用</span>' : '')
         : '<span class="badge-none">未上传</span>';
     }
 
     function combinedOps(row) {
-      var cfgDisabled = !row.configured || !row.file;
+      var file = resolveRecordFile(row);
+      var configured = !!(row.configured && file);
+      var editFn = row.id
+        ? 'openRecordEditCombined(' + row.id + ')'
+        : 'openRecordEditCombinedByBind(\'' + row.bindType + '\',\'' + row.bindTarget + '\')';
+      var editBtn = '<button type="button" onclick="' + editFn + '" class="text-blue-600 hover:underline" data-annotate="record-edit">编辑</button><span class="op-sep"></span>';
+      var cfgDisabled = !configured;
       var cfgBtn = cfgDisabled
         ? '<button type="button" disabled class="text-slate-400">配置</button>'
         : '<button type="button" onclick="openCombinedPageOffice(' + row.id + ')" class="text-blue-600 hover:underline" data-annotate="po-config">配置</button>';
-      var versionFn = row.id
-        ? 'openCombinedConfig(' + row.id + ')'
-        : 'openCombinedConfigByBind(\'' + row.bindType + '\',\'' + row.bindTarget + '\')';
-      if (row.configured && row.file) {
-        return cfgBtn + '<span class="op-sep"></span>' +
+      var versionFn = row.refPublicId
+        ? 'openRecordPublicVersion(' + row.refPublicId + ', true)'
+        : (row.id
+          ? 'openCombinedConfig(' + row.id + ')'
+          : 'openCombinedConfigByBind(\'' + row.bindType + '\',\'' + row.bindTarget + '\')');
+      if (configured) {
+        return editBtn + cfgBtn + '<span class="op-sep"></span>' +
           '<button type="button" onclick="' + versionFn + '" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button><span class="op-sep"></span>' +
           '<button type="button" onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button><span class="op-sep"></span>' +
           '<button type="button" onclick="clearCombined(' + (row.id || 'null') + ',\'' + row.bindType + '\',\'' + row.bindTarget + '\')" class="text-red-500 hover:underline">清除</button>';
       }
-      return '<button type="button" onclick="' + versionFn + '" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button>';
+      return editBtn + '<button type="button" onclick="' + versionFn + '" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button>';
     }
 
     function getRecordTestRowsInScope(treeId) {
@@ -1556,6 +1681,15 @@
             '<button onclick="resetFilters()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
           '</div>' +
           '<button onclick="openPublicModal()" class="ml-auto rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="public-add"><i class="fa fa-plus"></i> 新增</button>';
+      } else if (state.main === 'record' && state.sub === 'public') {
+        el.innerHTML =
+          '<label data-annotate="record-public-filter">模版内容样式</label><select id="f_content"><option value="">全部</option><option>组合记录单模版</option><option>试验项模版</option></select>' +
+          '<label>模版文件名</label><input id="f_file" placeholder="请输入" />' +
+          '<div class="tpl-toolbar-query">' +
+            '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>' +
+            '<button onclick="resetFilters()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
+          '</div>' +
+          '<button onclick="openRecordPublicModal()" class="ml-auto rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="record-public-add"><i class="fa fa-plus"></i> 新增</button>';
       } else if (state.main === 'record') {
         el.className = 'tpl-toolbar tpl-toolbar-record';
         el.innerHTML =
@@ -1572,7 +1706,9 @@
 
     function getFilteredRows() {
       var rows;
-      if (state.main === 'record') {
+      if (state.main === 'record' && state.sub === 'public') {
+        rows = RECORD_PUBLIC_DATA.filter(function (r) { return !state.cat || r.cat === state.cat; });
+      } else if (state.main === 'record') {
         rows = buildRecordDisplayRows(state.treeId);
       }
       else if (state.sub === 'public') {
@@ -1596,14 +1732,14 @@
       var configured = document.getElementById('f_configured');
       var bindType = document.getElementById('f_bindType');
       if (name && name.value.trim()) rows = rows.filter(function (r) {
-        if (state.main === 'record') {
+        if (state.main === 'record' && state.sub === 'record') {
           if (r.rowType !== 'test') return false;
           return (r.data.name || '').includes(name.value.trim());
         }
         return (r.name || '').includes(name.value.trim());
       });
       if (sample && sample.value.trim()) rows = rows.filter(function (r) {
-        if (state.main === 'record') {
+        if (state.main === 'record' && state.sub === 'record') {
           if (r.rowType === 'group') return r.label.includes(sample.value.trim());
           return getBodySampleDisplay(r.data.tree).includes(sample.value.trim());
         }
@@ -1623,7 +1759,7 @@
         return (r.category || r.bindLabel || '').includes(category.value.trim());
       });
       if (test && test.value.trim()) rows = rows.filter(function (r) {
-        if (state.main === 'record') {
+        if (state.main === 'record' && state.sub === 'record') {
           if (r.rowType !== 'test') return false;
           return (r.data.test || '').includes(test.value.trim());
         }
@@ -1631,23 +1767,23 @@
         return t.includes(test.value.trim());
       });
       if (file && file.value.trim()) rows = rows.filter(function (r) {
-        if (state.main === 'record') {
+        if (state.main === 'record' && state.sub === 'record') {
           if (r.rowType === 'group') return false;
-          return ((r.data && r.data.file) || '').includes(file.value.trim());
+          return (resolveRecordFile(r.data) || '').includes(file.value.trim());
         }
         return (r.file || r.templateName || '').includes(file.value.trim());
       });
       if (content && content.value) rows = rows.filter(function (r) { return (r.contentStyle || r.content) === content.value; });
       if (bindType && bindType.value) rows = rows.filter(function (r) { return r.bindType === bindType.value; });
       if (configured && configured.value === 'yes') rows = rows.filter(function (r) {
-        if (state.main === 'record') {
+        if (state.main === 'record' && state.sub === 'record') {
           if (r.rowType === 'group') return false;
           return !!r.data.configured;
         }
         return r.configured;
       });
       if (configured && configured.value === 'no') rows = rows.filter(function (r) {
-        if (state.main === 'record') {
+        if (state.main === 'record' && state.sub === 'record') {
           if (r.rowType === 'group') return false;
           return !r.data.configured;
         }
@@ -1655,6 +1791,7 @@
       });
       if (state.cat && state.main !== 'doc') {
         rows = rows.filter(function (r) {
+          if (state.main === 'record' && state.sub === 'public') return !r.cat || r.cat === state.cat;
           if (state.main === 'record') {
             if (r.rowType === 'group') return true;
             var treeKey = r.rowType === 'combined' ? r.data.bindTarget : r.data.tree;
@@ -1669,13 +1806,27 @@
     }
 
     function recordOps(r) {
-      if (r.configured && r.file) {
-        return '<button onclick="openPageOffice(\'record\',' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="po-config">配置</button><span class="op-sep"></span>' +
-          '<button onclick="openConfig(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button><span class="op-sep"></span>' +
+      var file = resolveRecordFile(r);
+      var editBtn = '<button onclick="openRecordEditTest(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-edit">编辑</button><span class="op-sep"></span>';
+      var versionFn = r.refPublicId
+        ? 'openRecordPublicVersion(' + r.refPublicId + ', true)'
+        : 'openConfig(' + r.id + ')';
+      if (r.configured && file) {
+        return editBtn +
+          '<button onclick="openPageOffice(\'record\',' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="po-config">配置</button><span class="op-sep"></span>' +
+          '<button onclick="' + versionFn + '" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button><span class="op-sep"></span>' +
           '<button onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button><span class="op-sep"></span>' +
           '<button onclick="clearRecord(' + r.id + ')" class="text-red-500 hover:underline" data-annotate="record-clear">清除</button>';
       }
-      return '<button onclick="openConfig(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button>';
+      return editBtn + '<button onclick="' + versionFn + '" class="text-blue-600 hover:underline" data-annotate="record-config">版本</button>';
+    }
+
+    function recordPublicOps(r) {
+      return '<button onclick="openRecordPublicEdit(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-public-edit">编辑</button><span class="op-sep"></span>' +
+        '<button onclick="openRecordPublicVersion(' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="record-public-version">版本</button><span class="op-sep"></span>' +
+        '<button onclick="openPageOffice(\'record-public\',' + r.id + ')" class="text-blue-600 hover:underline" data-annotate="po-config">配置</button><span class="op-sep"></span>' +
+        '<button onclick="alert(\'预览（原型演示）\')" class="text-blue-600 hover:underline">预览</button><span class="op-sep"></span>' +
+        '<button onclick="deleteRecordPublic(' + r.id + ')" class="text-red-500 hover:underline" data-annotate="record-public-delete">删除</button>';
     }
 
     function bodyOps(r) {
@@ -1837,6 +1988,14 @@
           return '<tr><td>' + (i + 1) + '</td><td>' + r.contentStyle + '</td><td>' + publicBindDisplay(r) + '</td>' +
             '<td>' + fileCell + '</td><td class="cell-ops">' + publicOps(r) + '</td></tr>';
         }).join('');
+      } else if (state.main === 'record' && state.sub === 'public') {
+        document.getElementById('dataTable').classList.remove('tpl-table-pin', 'record-tpl-table');
+        head.innerHTML = '<tr data-annotate="record-public-table"><th>序号</th><th>模版内容样式</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
+        body.innerHTML = rows.map(function (r, i) {
+          ensureRecordPublicTemplates(r);
+          var fileCell = r.file ? '<span class="link">' + r.file + '</span>' : '<span class="badge-none">未配置</span>';
+          return '<tr><td>' + (i + 1) + '</td><td>' + r.contentStyle + '</td><td>' + fileCell + '</td><td class="cell-ops">' + recordPublicOps(r) + '</td></tr>';
+        }).join('');
       } else if (state.main === 'record') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin');
         document.getElementById('dataTable').classList.add('record-tpl-table');
@@ -1849,8 +2008,9 @@
           }
           seq++;
           var r = row.data;
-          var fileCell = r.file
-            ? '<span class="link">' + r.file + '</span>' + (r.templates && r.templates.length > 1 ? '<span class="badge-enabled">启用中</span>' : '')
+          var resolved = resolveRecordFile(r);
+          var fileCell = resolved
+            ? '<span class="link">' + resolved + '</span>' + (r.refPublicId ? '<span class="badge-enabled" title="引用公共模版">引用</span>' : '')
             : '<span class="badge-none">未上传</span>';
           var sampleDisplay2 = getBodySampleDisplay(r.tree);
           var categoryPath2 = getBodyCategoryPath(r.tree);
@@ -1870,7 +2030,7 @@
       var combinedSectionHead = document.getElementById('recordCombinedSectionHead');
       var combinedSectionSub = document.getElementById('recordCombinedSectionSub');
       var sectionSub = document.getElementById('recordTableSectionSub');
-      if (!panel || state.main !== 'record') {
+      if (!panel || state.main !== 'record' || state.sub === 'public') {
         if (panel) panel.classList.add('hidden');
         if (sectionHead) sectionHead.classList.add('hidden');
         if (combinedSectionHead) combinedSectionHead.classList.add('hidden');
@@ -1908,10 +2068,15 @@
       } else if (state.main === 'report' && state.sub === 'public') {
         bar.classList.add('hidden');
         bar.innerHTML = '';
+      } else if (state.main === 'record' && state.sub === 'public') {
+        bar.classList.remove('hidden');
+        bar.removeAttribute('data-annotate');
+        bar.innerHTML = '<i class="fa fa-info-circle"></i> 记录单<strong>公共模版</strong>按内容样式分为「组合记录单模版」与「试验项模版」，<strong>无需关联绑定</strong>；在「记录单模版」Tab 中通过编辑弹窗选择<strong>引用</strong>（活引用）。';
       } else if (state.main === 'record') {
         bar.classList.remove('hidden');
         bar.setAttribute('data-annotate', 'record-export-logic');
         bar.innerHTML = '<i class="fa fa-info-circle"></i> 记录单模版支持 <strong>样品层 / 型号层组合模版</strong>（一份 Word 含全部试验项），以及各 <strong>试验项单模版</strong>。分类层不支持上传组合模版。' +
+          '可通过「编辑」上传/复制/引用公共模版。' +
           '<strong>「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」</strong>：优先本型号组合模版；若无则上级样品组合模版；若仍无则按试验项单模版动态拼接；拼接时缺任一试验项模版则报错。' +
           '<strong>「单种样品单种试验生成一份文件」「单个样品单种试验生成一份文件」</strong>：始终使用各试验项单模版，忽略组合模版。' +
           '导出切分规则由「业务流程配置 › 记录单设置」决定。同一模版可存多个版本，同时仅启用一个。';
@@ -1963,9 +2128,14 @@
           t.classList.toggle('active', t.getAttribute('data-sub') === state.sub);
         });
       }
+      if (tab === 'record') {
+        document.querySelectorAll('#recordSubSwitch .sub-switch-item').forEach(function (t) {
+          t.classList.toggle('active', t.getAttribute('data-sub') === state.sub);
+        });
+      }
       if (isDoc) renderDocView();
       else {
-        document.getElementById('treePanel').classList.toggle('hidden', tab === 'report' && state.sub === 'public');
+        document.getElementById('treePanel').classList.toggle('hidden', state.sub === 'public');
         renderTree();
         renderView();
       }
@@ -2040,15 +2210,26 @@
 
     function switchSub(sub) {
       state.sub = sub;
-      document.querySelectorAll('#reportSubSwitch .sub-switch-item').forEach(function (t) {
-        t.classList.toggle('active', t.getAttribute('data-sub') === sub);
-      });
-      document.getElementById('treePanel').classList.toggle('hidden', state.main === 'report' && sub === 'public');
+      if (state.main === 'report') {
+        document.querySelectorAll('#reportSubSwitch .sub-switch-item').forEach(function (t) {
+          t.classList.toggle('active', t.getAttribute('data-sub') === sub);
+        });
+      }
+      if (state.main === 'record') {
+        document.querySelectorAll('#recordSubSwitch .sub-switch-item').forEach(function (t) {
+          t.classList.toggle('active', t.getAttribute('data-sub') === sub);
+        });
+      }
+      document.getElementById('treePanel').classList.toggle('hidden', sub === 'public');
       renderView();
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     document.getElementById('reportSubSwitch').addEventListener('click', function (e) {
+      var t = e.target.closest('.sub-switch-item');
+      if (t) switchSub(t.getAttribute('data-sub'));
+    });
+    document.getElementById('recordSubSwitch').addEventListener('click', function (e) {
       var t = e.target.closest('.sub-switch-item');
       if (t) switchSub(t.getAttribute('data-sub'));
     });
@@ -2072,7 +2253,10 @@
       var idx = modalStack.indexOf(id);
       if (idx >= 0) modalStack.splice(idx, 1);
       syncModalZIndex();
-      if (id === 'publicVersionModal') state.versionFromBodyRef = false;
+      if (id === 'publicVersionModal') {
+        state.versionFromBodyRef = false;
+        state.versionFromRecordRef = false;
+      }
       if (window.PrototypeAnnotation) {
         if (PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
         else if (PrototypeAnnotation.applyFocusScope) PrototypeAnnotation.applyFocusScope();
@@ -2324,6 +2508,20 @@
         applyBodyVersionUpload(fileName);
       } else if (state.filePickerTarget === 'publicVersion') {
         applyPublicVersionUpload(fileName);
+      } else if (state.filePickerTarget === 'recordEdit') {
+        var reParts = splitFileName(fileName);
+        document.getElementById('re_fileName').value = reParts.base;
+        document.getElementById('re_fileExt').textContent = reParts.ext;
+        document.querySelector('input[name=recordFileMode][value=upload]').checked = true;
+        toggleRecordFileMode();
+      } else if (state.filePickerTarget === 'recordPublicAdd') {
+        var rpParts = splitFileName(fileName);
+        document.getElementById('rp_templateName').value = rpParts.base;
+        document.getElementById('rp_fileExt').textContent = rpParts.ext;
+        document.getElementById('recordPublicFileName').textContent = fileName;
+        document.getElementById('recordPublicUploadZone').classList.add('hidden');
+        document.getElementById('recordPublicCopyBtn').classList.add('hidden');
+        document.getElementById('recordPublicFilePreview').classList.remove('hidden');
       } else if (state.filePickerTarget === 'recordVersion' || state.filePickerTarget === 'combinedVersion') {
         applyRecordVersionUpload(fileName);
       } else if (state.filePickerTarget === 'docVersion') {
@@ -2616,24 +2814,61 @@
       renderTable();
     }
 
+    function getPublicStore() {
+      return state.publicLib === 'record' ? RECORD_PUBLIC_DATA : PUBLIC_DATA;
+    }
+
+    function findActivePublic(id) {
+      return getPublicStore().find(function (r) { return r.id === id; });
+    }
+
+    function ensureActivePublicTemplates(row) {
+      if (state.publicLib === 'record') ensureRecordPublicTemplates(row);
+      else ensurePublicTemplates(row);
+    }
+
+    function syncActivePublicRefs(publicId) {
+      if (state.publicLib === 'record') syncRecordRefsFromPublic(publicId);
+      else syncBodyRefsFromPublic(publicId);
+    }
+
     function openPublicVersion(id) {
-      var row = findPublic(id);
+      state.publicLib = 'report';
+      state.versionFromRecordRef = false;
+      openSharedPublicVersion(id);
+    }
+
+    function openRecordPublicVersion(id, fromRef) {
+      state.publicLib = 'record';
+      state.versionFromBodyRef = false;
+      state.versionFromRecordRef = !!fromRef;
+      openSharedPublicVersion(id);
+    }
+
+    function openSharedPublicVersion(id) {
+      var row = findActivePublic(id);
       if (!row) return;
-      ensurePublicTemplates(row);
+      ensureActivePublicTemplates(row);
       state.publicRowId = id;
-      var suffix = state.versionFromBodyRef ? '（报告模版引用）' : '';
+      var suffix = state.versionFromBodyRef ? '（报告模版引用）' : (state.versionFromRecordRef ? '（记录单模版引用）' : '');
       document.getElementById('publicVersionTitle').textContent = '公共模版版本 · ' + (row.templateName || '') + suffix;
-      document.getElementById('publicVersionHint').innerHTML = state.versionFromBodyRef
-        ? '该报告模版变体<strong class="text-slate-700">引用</strong>此公共正文；版本在公共模版侧管理，启用版本变更后引用方同步跟随。'
-        : '同一公共模版可上传多个版本，<strong class="text-slate-700">同时只能启用一个</strong>。被报告模版「引用」的公共正文，启用版本变更后引用方同步跟随。';
+      if (state.versionFromBodyRef) {
+        document.getElementById('publicVersionHint').innerHTML = '该报告模版变体<strong class="text-slate-700">引用</strong>此公共正文；版本在公共模版侧管理，启用版本变更后引用方同步跟随。';
+      } else if (state.versionFromRecordRef) {
+        document.getElementById('publicVersionHint').innerHTML = '该记录单模版<strong class="text-slate-700">引用</strong>此公共模版；版本在公共模版侧管理，启用版本变更后引用方同步跟随。';
+      } else if (state.publicLib === 'record') {
+        document.getElementById('publicVersionHint').innerHTML = '同一公共模版可上传多个版本，<strong class="text-slate-700">同时只能启用一个</strong>。被记录单模版「引用」后，启用版本变更将同步跟随。';
+      } else {
+        document.getElementById('publicVersionHint').innerHTML = '同一公共模版可上传多个版本，<strong class="text-slate-700">同时只能启用一个</strong>。被报告模版「引用」的公共正文，启用版本变更后引用方同步跟随。';
+      }
       renderPublicVersionTable();
       openModal('publicVersionModal');
     }
 
     function renderPublicVersionTable() {
-      var row = findPublic(state.publicRowId);
+      var row = findActivePublic(state.publicRowId);
       if (!row) return;
-      ensurePublicTemplates(row);
+      ensureActivePublicTemplates(row);
       document.getElementById('publicVersionTableBody').innerHTML = (row.templates || []).map(function (t, i) {
         return '<tr><td class="text-center"><input type="radio" name="enabledPublicTpl" ' + (t.enabled ? 'checked' : '') + ' onchange="setEnabledPublicTpl(' + i + ')" /></td>' +
           '<td><span class="link">' + t.name + '</span></td><td>' + t.time + '</td><td>' + (t.uploader || '—') + '</td>' +
@@ -2644,7 +2879,7 @@
     }
 
     function openPublicVersionRename(index) {
-      var row = findPublic(state.publicRowId);
+      var row = findActivePublic(state.publicRowId);
       if (!row || !row.templates[index]) return;
       state.publicVersionRenameIndex = index;
       var parts = splitFileName(row.templates[index].name);
@@ -2654,7 +2889,7 @@
     }
 
     function savePublicVersionRename() {
-      var row = findPublic(state.publicRowId);
+      var row = findActivePublic(state.publicRowId);
       var idx = state.publicVersionRenameIndex;
       if (!row || idx == null || !row.templates[idx]) return;
       var base = (document.getElementById('publicVersionRenameInput').value || '').trim();
@@ -2665,11 +2900,11 @@
         row.file = row.templates[idx].name;
         row.ext = ext;
         row.templateName = base;
-        syncBodyRefsFromPublic(row.id);
+        syncActivePublicRefs(row.id);
       }
       closeModal('publicVersionRenameModal');
       renderPublicVersionTable();
-      renderTable();
+      renderView();
     }
 
     function addPublicTemplateVersion(row, tpl) {
@@ -2680,19 +2915,19 @@
       row.file = tpl.name;
       var parts = splitFileName(tpl.name);
       row.ext = parts.ext || row.ext || '.doc';
-      syncBodyRefsFromPublic(row.id);
+      syncActivePublicRefs(row.id);
     }
 
     function applyPublicVersionUpload(fileName) {
-      var row = findPublic(state.publicRowId);
+      var row = findActivePublic(state.publicRowId);
       if (!row) return;
       addPublicTemplateVersion(row, { name: fileName, time: formatNowTs(), enabled: true, uploader: 'admin' });
       renderPublicVersionTable();
-      renderTable();
+      renderView();
     }
 
     function setEnabledPublicTpl(index) {
-      var row = findPublic(state.publicRowId);
+      var row = findActivePublic(state.publicRowId);
       if (!row) return;
       row.templates.forEach(function (t, i) { t.enabled = i === index; });
       var enabled = row.templates[index];
@@ -2701,31 +2936,345 @@
         var parts = splitFileName(enabled.name);
         row.ext = parts.ext || row.ext || '.doc';
       }
-      syncBodyRefsFromPublic(row.id);
-      renderTable();
+      syncActivePublicRefs(row.id);
+      renderView();
     }
 
     function removePublicTpl(index) {
-      var row = findPublic(state.publicRowId);
+      var row = findActivePublic(state.publicRowId);
       if (!row || !confirm('确定删除该模板版本？')) return;
       row.templates.splice(index, 1);
-      ensurePublicTemplates(row);
-      syncBodyRefsFromPublic(row.id);
+      ensureActivePublicTemplates(row);
+      syncActivePublicRefs(row.id);
       renderPublicVersionTable();
-      renderTable();
+      renderView();
     }
 
     function savePublicVersion() {
       state.versionFromBodyRef = false;
+      state.versionFromRecordRef = false;
       closeModal('publicVersionModal');
-      renderTable();
+      renderView();
     }
 
     function openPublicCopyPickerForVersion() {
-      state.copyMode = 'public';
+      state.copyMode = state.publicLib === 'record' ? 'recordPublic' : 'public';
       state.copyTarget = 'version';
-      renderPublicCopyModal();
+      if (state.publicLib === 'record') renderRecordPublicCopyModal();
+      else renderPublicCopyModal();
       openModal('copyModal');
+    }
+
+    /* ========== 记录单公共模版 / 编辑引用 ========== */
+
+    function getRecordPublicOptions(style) {
+      return RECORD_PUBLIC_DATA.filter(function (r) {
+        return r.contentStyle === style && (!state.cat || r.cat === state.cat);
+      });
+    }
+
+    function getActiveRecordEditRow() {
+      if (state.recordEditKind === 'combined') {
+        if (state.recordEditId) return findCombinedById(state.recordEditId);
+        return findCombinedRecord(state.recordEditBindType, state.recordEditBindTarget);
+      }
+      return findRecord(state.recordEditId);
+    }
+
+    function populateRecordRefSelect(selectedId) {
+      var style = state.recordEditKind === 'combined' ? '组合记录单模版' : '试验项模版';
+      var options = getRecordPublicOptions(style);
+      var sel = document.getElementById('re_refPublic');
+      var empty = document.getElementById('recordRefEmpty');
+      if (!options.length) {
+        sel.innerHTML = '<option value="">暂无公共模版</option>';
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      var hasSelected = options.some(function (o) { return String(o.id) === String(selectedId); });
+      sel.innerHTML = options.map(function (o, i) {
+        var selAttr = (selectedId && hasSelected ? String(o.id) === String(selectedId) : i === 0) ? ' selected' : '';
+        return '<option value="' + o.id + '"' + selAttr + '>' + o.templateName + '（' + o.file + '）</option>';
+      }).join('');
+    }
+
+    function onRecordRefPublicChange() {
+      var id = parseInt(document.getElementById('re_refPublic').value, 10);
+      var pub = findRecordPublic(id);
+      if (!pub) {
+        document.getElementById('re_fileName').value = '';
+        document.getElementById('re_fileExt').textContent = '.docx';
+        return;
+      }
+      var parts = splitFileName(pub.file);
+      document.getElementById('re_fileName').value = parts.base;
+      document.getElementById('re_fileExt').textContent = parts.ext;
+    }
+
+    function toggleRecordFileMode() {
+      var mode = document.querySelector('input[name=recordFileMode]:checked').value;
+      var isRef = mode === 'ref';
+      var isCopy = mode === 'copy';
+      var isUpload = mode === 'upload';
+      var editRow = getActiveRecordEditRow();
+      var showLocalHint = !!editRow && !editRow.refPublicId && !isRef && !!(resolveRecordFile(editRow));
+      document.getElementById('recordLocalHint').classList.toggle('hidden', !showLocalHint);
+      document.getElementById('recordUploadZone').classList.toggle('hidden', !isUpload);
+      document.getElementById('recordCopyBtn').classList.toggle('hidden', !isCopy);
+      document.getElementById('re_refPublic').classList.toggle('hidden', !isRef);
+      var style = state.recordEditKind === 'combined' ? '组合记录单模版' : '试验项模版';
+      document.getElementById('recordRefEmpty').classList.toggle('hidden', !isRef || getRecordPublicOptions(style).length > 0);
+      var fileInput = document.getElementById('re_fileName');
+      fileInput.readOnly = isRef;
+      fileInput.classList.toggle('bg-slate-50', isRef);
+      document.getElementById('re_fileNameHint').textContent = isRef
+        ? '引用公共模版时文件名不可修改，随所选公共模版自动回填'
+        : '名称可编辑；后缀固定显示在框外，不可修改';
+      if (isRef) {
+        populateRecordRefSelect(editRow && editRow.refPublicId ? editRow.refPublicId : null);
+        onRecordRefPublicChange();
+      }
+    }
+
+    function fillRecordEditModal(row, title, bindInfo) {
+      document.getElementById('recordEditModalTitle').textContent = title;
+      document.getElementById('re_bindInfo').textContent = bindInfo;
+      populateRecordRefSelect(row && row.refPublicId ? row.refPublicId : null);
+      if (row && row.refPublicId) {
+        document.querySelector('input[name=recordFileMode][value=ref]').checked = true;
+        onRecordRefPublicChange();
+      } else {
+        document.querySelector('input[name=recordFileMode][value=upload]').checked = true;
+        var resolved = resolveRecordFile(row);
+        if (resolved) {
+          var parts = splitFileName(resolved);
+          document.getElementById('re_fileName').value = parts.base;
+          document.getElementById('re_fileExt').textContent = parts.ext;
+        } else {
+          document.getElementById('re_fileName').value = '';
+          document.getElementById('re_fileExt').textContent = '.docx';
+        }
+      }
+      toggleRecordFileMode();
+      openModal('recordEditModal');
+    }
+
+    function openRecordEditTest(id) {
+      var row = findRecord(id);
+      if (!row) return;
+      state.recordEditKind = 'test-item';
+      state.recordEditId = id;
+      state.recordEditBindType = null;
+      state.recordEditBindTarget = null;
+      fillRecordEditModal(row, '编辑试验项模版', getBodySampleDisplay(row.tree) + ' · ' + row.test);
+    }
+
+    function openRecordEditCombined(id) {
+      var row = findCombinedById(id);
+      if (!row) return;
+      state.recordEditKind = 'combined';
+      state.recordEditId = id;
+      state.recordEditBindType = row.bindType;
+      state.recordEditBindTarget = row.bindTarget;
+      fillRecordEditModal(row, '编辑组合记录单模版', combinedBindLevelLabel(row.bindType) + ' · ' + (row.bindLabel || ''));
+    }
+
+    function openRecordEditCombinedByBind(bindType, bindTarget) {
+      var row = getOrCreateCombinedRecord(bindType, bindTarget);
+      openRecordEditCombined(row.id);
+    }
+
+    function readRecordFileSourceFromForm() {
+      var mode = document.querySelector('input[name=recordFileMode]:checked').value;
+      if (mode === 'ref') {
+        var refId = parseInt(document.getElementById('re_refPublic').value, 10);
+        var pub = findRecordPublic(refId);
+        if (!pub) return { error: '请选择要引用的公共模版' };
+        return { mode: 'ref', refPublicId: pub.id, file: pub.file, templates: [] };
+      }
+      var fileName = (document.getElementById('re_fileName').value || '').trim();
+      var fileExt = document.getElementById('re_fileExt').textContent || '.docx';
+      var fullFile = fileName ? fileName + fileExt : null;
+      return { mode: mode, refPublicId: null, file: fullFile, templates: fullFile ? [{ name: fullFile, time: formatNowTs(), enabled: true, uploader: 'admin' }] : [] };
+    }
+
+    function applyRecordSourceToRow(row, source) {
+      var wasRef = !!row.refPublicId;
+      if (source.mode === 'ref') {
+        row.refPublicId = source.refPublicId;
+        row.file = source.file;
+        row.templates = [];
+        row.configured = !!source.file;
+        return true;
+      }
+      if (wasRef) {
+        if (!source.file) { alert('切换为本地文件时请上传或复制模版文件'); return false; }
+        row.refPublicId = null;
+        row.templates = source.templates.slice();
+        row.file = source.file;
+        row.configured = !!source.file;
+        return true;
+      }
+      if ((source.mode === 'upload' || source.mode === 'copy') && source.file && source.file !== row.file) {
+        row.refPublicId = null;
+        if (state.recordEditKind === 'combined') addCombinedTemplateVersion(row, { name: source.file, time: formatNowTs(), enabled: true, uploader: 'admin' });
+        else addRecordTemplateVersion(row, { name: source.file, time: formatNowTs(), enabled: true, uploader: 'admin' });
+        return true;
+      }
+      if (!row.file && source.file) {
+        row.refPublicId = null;
+        row.templates = source.templates.slice();
+        row.file = source.file;
+        row.configured = true;
+      }
+      return true;
+    }
+
+    function saveRecordEditModal() {
+      var source = readRecordFileSourceFromForm();
+      if (source.error) { alert(source.error); return; }
+      var row;
+      if (state.recordEditKind === 'combined') {
+        row = state.recordEditId
+          ? findCombinedById(state.recordEditId)
+          : getOrCreateCombinedRecord(state.recordEditBindType, state.recordEditBindTarget);
+      } else {
+        row = findRecord(state.recordEditId);
+      }
+      if (!row) return;
+      if (!applyRecordSourceToRow(row, source)) return;
+      closeModal('recordEditModal');
+      renderView();
+    }
+
+    function openRecordEditCopyPicker() {
+      state.recordCopyTarget = 'edit';
+      state.configContext = state.recordEditKind === 'combined' ? 'combined' : 'test-item';
+      state.configRowId = state.recordEditId;
+      openRecordCopyPicker();
+    }
+
+    function openRecordPublicModal() {
+      state.recordPublicRowId = null;
+      document.getElementById('recordPublicModalTitle').textContent = '新增公共模版';
+      document.getElementById('rp_content').value = '组合记录单模版';
+      document.querySelector('input[name=rpFileMode][value=upload]').checked = true;
+      document.getElementById('rp_templateName').value = '';
+      document.getElementById('rp_fileExt').textContent = '.docx';
+      document.getElementById('recordPublicFileName').textContent = '';
+      document.getElementById('recordPublicFilePreview').classList.add('hidden');
+      toggleRecordPublicFileMode();
+      openModal('recordPublicModal');
+    }
+
+    function openRecordPublicEdit(id) {
+      var row = findRecordPublic(id);
+      if (!row) return;
+      state.recordPublicRowId = id;
+      document.getElementById('recordPublicModalTitle').textContent = '编辑公共模版';
+      document.getElementById('rp_content').value = row.contentStyle;
+      document.getElementById('rp_templateName').value = row.templateName;
+      document.getElementById('rp_fileExt').textContent = row.ext || '.docx';
+      document.getElementById('recordPublicFileName').textContent = row.file || '';
+      document.getElementById('recordPublicUploadZone').classList.add('hidden');
+      document.getElementById('recordPublicCopyBtn').classList.add('hidden');
+      document.getElementById('recordPublicFilePreview').classList.remove('hidden');
+      openModal('recordPublicModal');
+    }
+
+    function toggleRecordPublicFileMode() {
+      var copy = document.querySelector('input[name=rpFileMode]:checked').value === 'copy';
+      if (state.recordPublicRowId && (document.getElementById('recordPublicFileName').textContent || '').trim()) {
+        document.getElementById('recordPublicUploadZone').classList.add('hidden');
+        document.getElementById('recordPublicCopyBtn').classList.add('hidden');
+        document.getElementById('recordPublicFilePreview').classList.remove('hidden');
+        return;
+      }
+      document.getElementById('recordPublicUploadZone').classList.toggle('hidden', copy);
+      document.getElementById('recordPublicCopyBtn').classList.toggle('hidden', !copy);
+      if (copy || !(document.getElementById('recordPublicFileName').textContent || '').trim()) {
+        document.getElementById('recordPublicFilePreview').classList.add('hidden');
+      }
+    }
+
+    function clearRecordPublicFile() {
+      document.getElementById('recordPublicFileName').textContent = '';
+      document.getElementById('rp_templateName').value = '';
+      document.getElementById('recordPublicFilePreview').classList.add('hidden');
+      document.querySelector('input[name=rpFileMode][value=upload]').checked = true;
+      toggleRecordPublicFileMode();
+    }
+
+    function saveRecordPublicModal() {
+      var contentStyle = document.getElementById('rp_content').value;
+      var templateName = (document.getElementById('rp_templateName').value || '').trim();
+      var ext = document.getElementById('rp_fileExt').textContent || '.docx';
+      var fileShown = (document.getElementById('recordPublicFileName').textContent || '').trim();
+      if (!state.recordPublicRowId && !fileShown && !templateName) { alert('请上传模板文件'); return; }
+      if (!templateName) { alert('请填写模版名称'); return; }
+      var fullFile = templateName + ext;
+      if (state.recordPublicRowId) {
+        var row = findRecordPublic(state.recordPublicRowId);
+        if (row) {
+          row.contentStyle = contentStyle;
+          row.templateName = templateName;
+          row.ext = ext;
+          row.file = fullFile;
+          row.cat = state.cat || row.cat;
+          ensureRecordPublicTemplates(row);
+          var enabled = (row.templates || []).find(function (t) { return t.enabled; });
+          if (enabled) enabled.name = row.file;
+          else row.templates = [{ name: row.file, time: formatNowTs(), enabled: true, uploader: 'admin' }];
+          syncRecordRefsFromPublic(row.id);
+        }
+      } else {
+        var newId = RECORD_PUBLIC_DATA.reduce(function (m, r) { return Math.max(m, r.id); }, 0) + 1;
+        RECORD_PUBLIC_DATA.push({
+          id: newId, contentStyle: contentStyle, templateName: templateName, file: fullFile, ext: ext,
+          cat: state.cat || 'dlwz',
+          templates: [{ name: fullFile, time: formatNowTs(), enabled: true, uploader: 'admin' }]
+        });
+      }
+      closeModal('recordPublicModal');
+      renderView();
+    }
+
+    function deleteRecordPublic(id) {
+      var row = findRecordPublic(id);
+      if (!row || !confirm('确定删除公共模版「' + row.templateName + '」？')) return;
+      var idx = RECORD_PUBLIC_DATA.indexOf(row);
+      if (idx >= 0) RECORD_PUBLIC_DATA.splice(idx, 1);
+      RECORD_DATA.forEach(function (r) {
+        if (r.refPublicId === id) { r.refPublicId = null; r.file = null; r.configured = false; r.templates = []; }
+      });
+      RECORD_COMBINED_DATA.forEach(function (r) {
+        if (r.refPublicId === id) { r.refPublicId = null; r.file = null; r.configured = false; r.templates = []; }
+      });
+      renderView();
+    }
+
+    function openRecordPublicCopyPicker() {
+      state.copyMode = 'recordPublic';
+      state.copyTarget = 'add';
+      renderRecordPublicCopyModal();
+      openModal('copyModal');
+    }
+
+    function renderRecordPublicCopyModal() {
+      document.getElementById('copyModalTitle').textContent = '记录单公共模版复制';
+      document.getElementById('copyBodyToolbar').classList.add('hidden');
+      document.getElementById('copyPublicToolbar').classList.add('hidden');
+      document.getElementById('copyTableHead').innerHTML = '<tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>模版内容样式</th><th>操作</th></tr>';
+      var sources = RECORD_PUBLIC_DATA.filter(function (r) {
+        if (state.copyTarget === 'version' && r.id === state.publicRowId) return false;
+        return !!r.file;
+      });
+      document.getElementById('copyTableBody').innerHTML = sources.map(function (r, i) {
+        return '<tr><td><input type="radio" name="copyPick" value="' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
+          '<td>' + r.file + '</td><td>' + r.contentStyle + '</td>' +
+          '<td><button class="text-blue-600">预览</button></td></tr>';
+      }).join('') || '<tr><td colspan="5" class="py-6 text-center text-slate-400">暂无可复制的公共模版</td></tr>';
     }
 
     function toggleBodyFileMode() {
@@ -2794,7 +3343,7 @@
 
     function ensureRecordEnabled(row) {
       if (!row || !row.templates || !row.templates.length) {
-        if (row) { row.file = null; row.configured = false; }
+        if (row && !row.refPublicId) { row.file = null; row.configured = false; }
         return;
       }
       if (!row.templates.some(function (t) { return t.enabled; })) {
@@ -2929,7 +3478,7 @@
     function clearRecord(id) {
       if (!confirm('清除将移除模板文件关联，试验项数据行保留。确定清除？')) return;
       var row = findRecord(id);
-      if (row) { row.file = null; row.configured = false; row.templates = []; }
+      if (row) { row.file = null; row.configured = false; row.refPublicId = null; row.templates = []; }
       renderView();
     }
 
@@ -2951,16 +3500,18 @@
       var list = [];
       if (state.configContext === 'combined') {
         RECORD_COMBINED_DATA.forEach(function (r) {
-          if (r.configured && r.file && r.id !== state.configRowId) {
-            list.push({ kind: 'combined', id: r.id, file: r.file, bindType: r.bindType, bindTarget: r.bindTarget, bindLabel: r.bindLabel });
-          }
+          var f = resolveRecordFile(r);
+          if (r.refPublicId || !r.configured || !f || r.id === state.configRowId) return;
+          list.push({ kind: 'combined', id: r.id, file: f, bindType: r.bindType, bindTarget: r.bindTarget, bindLabel: r.bindLabel });
         });
         return list;
       }
       RECORD_DATA.forEach(function (r) {
-        if (!r.file || !r.configured) return;
+        var f = resolveRecordFile(r);
+        if (r.refPublicId || !f || !r.configured) return;
         if (state.recordRowId && r.id === state.recordRowId) return;
-        list.push({ kind: 'test', id: r.id, file: r.file, tree: r.tree, test: r.test });
+        if (state.recordCopyTarget === 'edit' && state.recordEditId && r.id === state.recordEditId) return;
+        list.push({ kind: 'test', id: r.id, file: f, tree: r.tree, test: r.test });
       });
       return list;
     }
@@ -3047,17 +3598,41 @@
     function confirmRecordCopy() {
       var pick = document.querySelector('input[name=recordCopyPick]:checked');
       var pickVal = pick ? pick.value : '';
+      if (state.recordCopyTarget === 'edit') {
+        var srcFile = null;
+        if (state.configContext === 'combined') {
+          var srcC = pickVal.indexOf('c') === 0 ? findCombinedById(parseInt(pickVal.slice(1), 10)) : null;
+          srcFile = srcC ? resolveRecordFile(srcC) : null;
+        } else {
+          var srcR = pickVal ? findRecord(parseInt(pickVal, 10)) : null;
+          srcFile = srcR ? resolveRecordFile(srcR) : null;
+        }
+        if (srcFile) {
+          var ep = splitFileName(srcFile);
+          document.getElementById('re_fileName').value = ep.base;
+          document.getElementById('re_fileExt').textContent = ep.ext;
+          document.querySelector('input[name=recordFileMode][value=copy]').checked = true;
+          toggleRecordFileMode();
+        }
+        closeModal('recordCopyModal');
+        state.recordCopyTarget = 'version';
+        return;
+      }
       if (state.configContext === 'combined') {
         var target = findCombinedById(state.configRowId);
         var sourceCombined = pickVal.indexOf('c') === 0 ? findCombinedById(parseInt(pickVal.slice(1), 10)) : null;
-        if (target && sourceCombined && sourceCombined.file) {
-          addCombinedTemplateVersion(target, { name: '复制_' + sourceCombined.file, time: formatNowTs(), enabled: true, uploader: 'admin' });
+        var cFile = sourceCombined ? resolveRecordFile(sourceCombined) : null;
+        if (target && cFile) {
+          target.refPublicId = null;
+          addCombinedTemplateVersion(target, { name: '复制_' + cFile, time: formatNowTs(), enabled: true, uploader: 'admin' });
         }
       } else {
         var targetRow = findRecord(state.recordRowId);
         var source = pickVal ? findRecord(parseInt(pickVal, 10)) : null;
-        if (targetRow && source && source.file) {
-          addRecordTemplateVersion(targetRow, { name: '复制_' + source.file, time: formatNowTs(), enabled: true, uploader: 'admin' });
+        var tFile = source ? resolveRecordFile(source) : null;
+        if (targetRow && tFile) {
+          targetRow.refPublicId = null;
+          addRecordTemplateVersion(targetRow, { name: '复制_' + tFile, time: formatNowTs(), enabled: true, uploader: 'admin' });
         }
       }
       closeModal('recordCopyModal');
@@ -3096,6 +3671,26 @@
         var pubSource = pubPick ? findPublic(parseInt(pubPick.value, 10)) : null;
         if (pubSource && pubSource.file) {
           applyPublicVersionUpload('复制_' + pubSource.file);
+        }
+        closeModal('copyModal');
+        return;
+      }
+      if (state.copyMode === 'recordPublic') {
+        var rpPick = document.querySelector('input[name=copyPick]:checked');
+        var rpSource = rpPick ? findRecordPublic(parseInt(rpPick.value, 10)) : null;
+        if (rpSource && rpSource.file) {
+          if (state.copyTarget === 'version') {
+            applyPublicVersionUpload('复制_' + rpSource.file);
+          } else {
+            var rpParts = splitFileName(rpSource.file);
+            document.getElementById('rp_templateName').value = rpParts.base;
+            document.getElementById('rp_fileExt').textContent = rpParts.ext;
+            document.getElementById('recordPublicFileName').textContent = rpSource.file;
+            document.getElementById('recordPublicUploadZone').classList.add('hidden');
+            document.getElementById('recordPublicCopyBtn').classList.add('hidden');
+            document.getElementById('recordPublicFilePreview').classList.remove('hidden');
+            document.querySelector('input[name=rpFileMode][value=copy]').checked = true;
+          }
         }
         closeModal('copyModal');
         return;
@@ -3260,10 +3855,15 @@
       var fileName = '模板.docx';
       if (type === 'record-combined' && rowId) {
         var crow = findCombinedById(rowId);
-        if (crow && crow.file) fileName = crow.file;
+        var cfile = resolveRecordFile(crow);
+        if (cfile) fileName = cfile;
       } else if (type === 'record' && rowId) {
         var row = findRecord(rowId);
-        if (row && row.file) fileName = row.file;
+        var rfile = resolveRecordFile(row);
+        if (rfile) fileName = rfile;
+      } else if (type === 'record-public' && rowId) {
+        var rprow = findRecordPublic(rowId);
+        if (rprow && rprow.file) fileName = rprow.file;
       } else if (type === 'doc') {
         var dcard = state.poDocType ? getDocCard(state.poDocCat || state.cat, state.poDocType) : null;
         if (dcard) {
