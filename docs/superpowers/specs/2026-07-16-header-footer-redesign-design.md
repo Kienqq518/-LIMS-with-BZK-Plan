@@ -57,9 +57,8 @@ Landing 保留 3 张卡片：报告模版 / 记录单模版 / 单据模版。移
 | `task_flow` | 检测任务及流转单 |
 | `return_confirm` | 还样退库确认表 |
 | `return_apply` | 退样申请表 |
-| `pre_notice` | 产品检测预通知书 |
 
-不按业务大类（DLWZ/AQGQJ 等）区分。
+不按业务大类（DLWZ/AQGQJ 等）区分。`pre_notice`（产品检测预通知书）已随单据模版下线移除。
 
 ### 状态文案
 
