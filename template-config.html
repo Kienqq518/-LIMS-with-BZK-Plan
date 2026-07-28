@@ -484,7 +484,7 @@
       <button type="button" onclick="saveDocConfig()" class="rounded bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-700" data-annotate="doc-save">保存</button>
     </div>
     <div class="info-bar mx-5 mb-4" data-annotate="doc-logic">
-      <i class="fa fa-info-circle"></i> <strong>单据模版：</strong>左侧选择单据类型，右侧配置生成开关、字段分流与版本。可绑定委托信息设置中除「合同信息」外的系统必填下拉字段，按选项分流；未命中选项时回退「默认」桶。
+      <i class="fa fa-info-circle"></i> <strong>单据模版：</strong>左侧选择单据类型，右侧配置生成开关、字段分流与版本。按字段分流固定取任务类型等 9 个字典下拉字段；未命中选项时回退「默认」桶。
     </div>
   </div>
 
@@ -4025,24 +4025,27 @@
       return null;
     }
 
+    /** 按字段分流：固定取委托信息设置中可绑字典的 9 个下拉字段 */
+    var DOC_BIND_FIELD_IDS = [
+      'taskType', 'priority', 'detectType', 'detectNature', 'payMethod',
+      'reportDelivery', 'reportQual', 'reportDesc', 'resultFormat'
+    ];
+
     function listDocBindFields() {
-      if (!window.EntrustFieldConfig) return [];
-      var sections = EntrustFieldConfig.load();
-      var fields = [];
-      sections.forEach(function (sec) {
-        // 排除「合同信息」区域；仅系统必填（locked）下拉可分流
-        if (sec.id === 'contract') return;
-        (sec.fields || []).forEach(function (f) {
-          if (f.fieldType === 'select' && f.locked) {
-            fields.push({
-              id: f.id,
-              label: f.placeholder || f.label || f.id,
-              dictType: f.dictType || null
-            });
-          }
+      if (!window.EntrustFieldConfig) {
+        return DOC_BIND_FIELD_IDS.map(function (id) {
+          return { id: id, label: id, dictType: null };
         });
+      }
+      var sections = EntrustFieldConfig.load();
+      return DOC_BIND_FIELD_IDS.map(function (id) {
+        var f = EntrustFieldConfig.findField(sections, id);
+        return {
+          id: id,
+          label: f ? (f.placeholder || f.label || id) : id,
+          dictType: f && f.dictType ? f.dictType : null
+        };
       });
-      return fields;
     }
 
     function getDocFieldOptions(fieldId) {
@@ -4620,13 +4623,13 @@
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 6 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },
         { id: 'doc-nav', selector: '[data-annotate="doc-nav"]', position: 'top-right', title: '单据列表', wide: true, content: '左侧列出 6 种单据。副文案展示状态：统一模版 / 按某字段分流进度 / 缺默认模版 / 已关闭。点击切换右侧详情；保存校验失败时对应项标红。', tag: '单据模版' },
         { id: 'doc-card-switch', selector: '[data-annotate="doc-card-switch"]', position: 'top-right', title: '系统生成开关', wide: true, content: '控制该单据类型是否支持系统生成。关闭时右侧详情置灰，但保留已上传模版及启用记忆；关闭状态下保存时不校验「默认」桶是否已上传模版。', tag: '单据模版' },
-        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '仅列出委托信息设置中<strong>除「合同信息」区域外</strong>、灰色勾选的<strong>系统必填</strong>下拉字段。绑定后右侧出现选项列表；选「不分流」则全委托共用一套版本列表（默认桶）。', tag: '单据模版' },
+        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '固定可选委托信息设置中已绑字典的 9 个下拉字段：任务类型、优先等级、检测类型、检测类别、付款方式、报告交付方式、报告资质、报告说明、结果格式。显示名随字段别名变化。绑定后右侧出现选项列表；选「不分流」则全委托共用一套版本列表（默认桶）。', tag: '单据模版' },
         { id: 'doc-option-tabs', selector: '[data-annotate="doc-option-tabs"]', position: 'top-right', title: '选项列表', wide: true, content: '「默认」用于未命中选项时的回退；其余项对应该字段各选项。长文案纵向展示，不再横向挤兑。点击切换右侧版本列表。', tag: '单据模版' },
         { id: 'doc-card-version', selector: '[data-annotate="doc-card-version"]', position: 'top-right', title: '版本启用', wide: true, content: '当前选项桶内可存多个模版版本，通过单选启用其中一个；新上传的版本默认启用最新版。可直接配置、预览、删除。', tag: '单据模版' },
         { id: 'doc-upload', selector: '[data-annotate="doc-upload"]', position: 'top-right', title: '上传模版', content: '打开文件选择弹窗上传 .docx 模版；新上传版本自动启用，原启用版本取消选中。', tag: '单据模版' },
         { id: 'doc-config', selector: '[data-annotate="doc-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 打开该单据的 Word 模版，右侧字段面板可插入占位符。', tag: '模板管理' },
         { id: 'doc-save', selector: '[data-annotate="doc-save"]', position: 'top-left', title: '保存校验', wide: true, content: '<strong>校验范围：</strong>仅校验<strong>当前大类</strong>下 6 种单据。<br><br><strong>规则：</strong>系统生成为「开启」且「默认」桶无模版 → 保存失败。选项桶可为空（生成时回退默认）。<br><br><strong>失败表现：</strong>① toast 提示；② 左侧列表对应项标红并自动选中；③ 滚动定位到该项。', tag: '单据模版' },
-        { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模版逻辑', wide: true, content: '<strong>主从布局：</strong>左选单据、右配详情。<br><br><strong>字段分流：</strong>可绑定委托信息设置中除「合同信息」区域外的系统必填下拉字段，按选项分桶配置版本；未命中回退默认桶。<br><br><strong>保存：</strong>仅保存当前大类。', tag: '模板管理' },
+        { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模版逻辑', wide: true, content: '<strong>主从布局：</strong>左选单据、右配详情。<br><br><strong>字段分流：</strong>固定绑定任务类型等 9 个字典下拉字段，按选项分桶配置版本；未命中回退默认桶。<br><br><strong>保存：</strong>仅保存当前大类。', tag: '模板管理' },
         { id: 'public-filter', selector: '[data-annotate="public-filter"]', position: 'top-left', title: '公共模版筛选', wide: true, content: '筛选字段：<strong>模版内容样式</strong>（模板头/模板尾/正文）、<strong>模版文件名</strong>。无关联绑定筛选。', tag: '报告模板' },
         { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共模版列表', wide: true, content: '表头：<strong>模版内容样式</strong>、<strong>模版文件</strong>。无关联绑定列。操作列含版本管理。列表已按当前大类过滤。', tag: '报告模板' },
         { id: 'public-add', selector: '[data-annotate="public-add"]', position: 'top-left', title: '新增公共模版', content: '打开新增弹窗：配置模版内容样式、上传/复制文件并填写模版名称。无需关联绑定，由报告模版侧直接引用。', tag: '报告模板' },

@@ -16,7 +16,7 @@
 | 议题 | 决策 |
 |------|------|
 | 单据种类 | 固定 6 类：检测委托书、收费通知单、检测任务单、检测任务及流转单、还样退库确认表、退样申请表 |
-| 可绑定字段 | 委托信息设置中 **除「合同信息」区域外**、灰色勾选（`locked`=系统必填）的下拉字段；合同信息区、可选字段与文本字段不参与分流 |
+| 可绑定字段 | 固定 9 个已绑字典的委托下拉：任务类型、优先等级、检测类型、检测类别、付款方式、报告交付方式、报告资质、报告说明、结果格式；显示名取字段别名 |
 | 绑定粒度 | 每个「大类 × 单据类型」独立绑定字段；六种单据互不影响 |
 | 未绑定时 | 等同现有行为：单一模版列表（内部落在 `__default__` 桶） |
 | 绑定时 | 自动按字段选项生成分流桶 + 始终保留「默认」桶 |
@@ -72,14 +72,21 @@ DOC_CONFIG[catKey][docType] = {
 
 ### 可绑定字段来源
 
-读取 `EntrustFieldConfig` 中 **非 `contract`（合同信息）区域**、且 `fieldType === 'select'`、`locked === true` 的字段（灰色勾选的系统必填项；含字典绑定与主数据下拉）。
+固定以下 9 个字段（与委托信息设置中可绑字典的下拉一致）；选项来自对应 `dictType`：
 
-| 来源 | 选项获取 |
-|------|----------|
-| 已绑字典 (`dictType`) | `MockDictStore.getActiveItems` |
-| 未绑字典的主数据 select | 原型内置 mock 选项（合同编号、委托单位等） |
+| id | 系统标签 | dictType |
+|----|----------|----------|
+| taskType | 任务类型 | lims_task_type |
+| priority | 优先等级 | lims_priority |
+| detectType | 检测类型 | lims_detect_type |
+| detectNature | 检测类别 | lims_detect_category |
+| payMethod | 付款方式 | lims_pay_method |
+| reportDelivery | 报告交付方式 | lims_report_delivery |
+| reportQual | 报告资质 | lims_report_qual |
+| reportDesc | 报告说明 | lims_report_desc |
+| resultFormat | 结果格式 | lims_result_format |
 
-显示名优先用字段别名 `placeholder`，否则 `label`。
+显示名优先用字段别名 `placeholder`，否则 `label`。主数据下拉（合同编号、委托单位等）不参与分流。
 
 ### 运行时解析（生成单据时）
 
