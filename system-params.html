@@ -607,18 +607,18 @@
 
     <!-- ========== 编号规则 ========== -->
     <div id="panel-numbering" class="param-panel">
-      <div class="rounded bg-white shadow-sm overflow-hidden">
+      <div class="rounded bg-white shadow-sm overflow-hidden" data-annotate="numbering-panel">
         <div class="num-cat-tabs" id="numberingCatTabs" data-annotate="numbering-cat-tabs">
           <div class="num-cat-tab active" data-cat="dlwz">电力物资类</div>
           <div class="num-cat-tab" data-cat="aqgqj">安全工器具类</div>
           <div class="num-cat-tab" data-cat="hjjc">环境检测</div>
           <div class="num-cat-tab" data-cat="gcjc">工程检测</div>
         </div>
-        <div class="mx-4 mt-4 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+        <div class="mx-4 mt-4 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800" data-annotate="numbering-hint">
           <i class="fa fa-info-circle mt-0.5 text-blue-500"></i>
           <span>按<strong>样品大类</strong>分别配置业务编号规则。当前：<strong id="numberingCatLabel">电力物资类</strong>。点击「修改」组合令牌并配置类型参数，实时预览生成示例。</span>
         </div>
-        <div class="p-4" id="numberingList"></div>
+        <div class="p-4" id="numberingList" data-annotate="numbering-list"></div>
       </div>
     </div>
   </div>
@@ -627,28 +627,28 @@
   <div id="numberingModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
     <div class="flex max-h-[90vh] w-[760px] max-w-full flex-col rounded-lg bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
-        <h3 class="text-base font-medium text-slate-800" id="numberingModalTitle">修改编号规则</h3>
+        <h3 class="text-base font-medium text-slate-800" id="numberingModalTitle" data-annotate="numbering-modal-title">修改编号规则</h3>
         <button type="button" onclick="closeNumberingModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="flex-1 overflow-auto px-6 py-4">
-        <div class="mb-4">
+        <div class="mb-4" data-annotate="numbering-rule-preview">
           <div class="mb-2 text-sm font-medium text-slate-600">当前规则</div>
           <div id="ruleChipPreview"></div>
         </div>
         <div class="mb-4" data-annotate="numbering-token-editor">
           <div class="mb-2 flex items-center justify-between">
             <div class="text-sm font-medium text-slate-600">规则组成</div>
-            <button type="button" onclick="addTokenSegment()" class="rounded border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-600 hover:bg-blue-100"><i class="fa fa-plus"></i> 添加令牌</button>
+            <button type="button" onclick="addTokenSegment()" class="rounded border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-600 hover:bg-blue-100" data-annotate="numbering-add-token"><i class="fa fa-plus"></i> 添加令牌</button>
           </div>
-          <div id="tokenSegmentList"></div>
+          <div id="tokenSegmentList" data-annotate="numbering-token-list"></div>
         </div>
-        <div class="rounded border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div class="rounded border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" data-annotate="numbering-gen-preview">
           <span class="mr-2 font-medium">生成预览：</span><span id="rulePreview" class="font-mono">—</span>
         </div>
       </div>
       <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
         <button type="button" onclick="closeNumberingModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
-        <button type="button" onclick="saveNumbering()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white">确定</button>
+        <button type="button" onclick="saveNumbering()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white" data-annotate="numbering-save">确定</button>
       </div>
     </div>
   </div>
@@ -813,6 +813,12 @@
       if (panel === 'record') renderRecords();
       if (panel === 'report') renderReportExports();
       if (panel === 'header-footer') renderHeaderFooterPanel();
+      if (panel === 'numbering') {
+        renderNumbering();
+        requestAnimationFrame(function () {
+          if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+        });
+      }
     });
 
     /* ===== 签名与印章 ===== */
@@ -2095,9 +2101,7 @@
       });
       document.getElementById('numberingCatLabel').textContent = catName(key);
       renderNumbering();
-      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) {
-        requestAnimationFrame(function () { PrototypeAnnotation.refresh(); });
-      }
+      refreshNumberingAnnotations();
     }
 
     document.getElementById('numberingCatTabs').addEventListener('click', function (e) {
@@ -2107,12 +2111,14 @@
     });
 
     function renderNumbering() {
-      document.getElementById('numberingList').innerHTML = currentRules().map(function (r) {
-        return '<div class="num-card">' +
+      document.getElementById('numberingList').innerHTML = currentRules().map(function (r, idx) {
+        var cardAnno = idx === 0 ? ' data-annotate="numbering-card"' : '';
+        var btnAnno = idx === 0 ? ' data-annotate="numbering-edit-btn"' : '';
+        return '<div class="num-card"' + cardAnno + '>' +
           '<div class="num-info"><div class="num-title">当前' + r.name + '</div>' +
           '<div class="num-rule">' + ruleChipsHtml(r.tokens) + '</div>' +
           '<div class="mt-2 text-xs text-slate-400">生成示例：<span class="font-mono text-slate-500">' + rulePreview(r.tokens) + '</span></div></div>' +
-          '<button type="button" onclick="openNumberingModal(\'' + r.id + '\')" class="flex-shrink-0 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">修改' + r.name.replace('规则', '') + '规则</button>' +
+          '<button type="button" onclick="openNumberingModal(\'' + r.id + '\')" class="flex-shrink-0 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"' + btnAnno + '>修改' + r.name.replace('规则', '') + '规则</button>' +
           '</div>';
       }).join('');
     }
@@ -2219,15 +2225,17 @@
         box.innerHTML = '<div class="rounded border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">请点击右上角「添加令牌」开始组合规则</div>';
       } else {
         box.innerHTML = editingTokens.map(function (tk, i) {
+          var typeAnno = i === 0 ? ' data-annotate="numbering-token-type"' : '';
+          var fieldsAnno = i === 0 ? ' data-annotate="numbering-token-fields"' : '';
           return '<div class="token-seg">' +
             '<div class="token-seg-head">' +
             '<span class="token-seg-idx">' + (i + 1) + '</span>' +
             '<div class="token-seg-body">' +
-            '<div class="token-field" style="margin-top:0"><label><span class="req">*</span>类型</label>' +
+            '<div class="token-field" style="margin-top:0"' + typeAnno + '><label><span class="req">*</span>类型</label>' +
             '<select onchange="changeTokenType(' + i + ',this.value)">' + typeOptionsHtml(tk.type) + '</select></div>' +
-            customFieldsHtml(tk, i) +
+            '<div' + fieldsAnno + '>' + customFieldsHtml(tk, i) + '</div>' +
             '</div>' +
-            '<div class="token-seg-actions">' +
+            '<div class="token-seg-actions"' + (i === 0 ? ' data-annotate="numbering-token-actions"' : '') + '>' +
             '<button type="button" title="上移" onclick="moveTokenSegment(' + i + ',-1)"' + (i === 0 ? ' disabled style="opacity:.35"' : '') + '><i class="fa fa-arrow-up"></i></button>' +
             '<button type="button" title="下移" onclick="moveTokenSegment(' + i + ',1)"' + (i === editingTokens.length - 1 ? ' disabled style="opacity:.35"' : '') + '><i class="fa fa-arrow-down"></i></button>' +
             '<button type="button" class="danger" title="删除" onclick="removeTokenSegment(' + i + ')"><i class="fa fa-trash"></i></button>' +
@@ -2241,6 +2249,12 @@
       document.getElementById('rulePreview').textContent = rulePreview(editingTokens);
     }
 
+    function refreshNumberingAnnotations() {
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) {
+        requestAnimationFrame(function () { PrototypeAnnotation.refresh(); });
+      }
+    }
+
     function openNumberingModal(id) {
       var rule = currentRules().find(function (r) { return r.id === id; });
       if (!rule) return;
@@ -2250,24 +2264,25 @@
       renderTokenSegments();
       var m = document.getElementById('numberingModal');
       m.classList.remove('hidden'); m.classList.add('flex');
-      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) {
-        requestAnimationFrame(function () { PrototypeAnnotation.refresh(); });
-      }
+      refreshNumberingAnnotations();
     }
 
     function closeNumberingModal() {
       var m = document.getElementById('numberingModal');
       m.classList.add('hidden'); m.classList.remove('flex');
+      refreshNumberingAnnotations();
     }
 
     function addTokenSegment() {
       editingTokens.push(defaultToken('literal_custom'));
       renderTokenSegments();
+      refreshNumberingAnnotations();
     }
 
     function removeTokenSegment(index) {
       editingTokens.splice(index, 1);
       renderTokenSegments();
+      refreshNumberingAnnotations();
     }
 
     function moveTokenSegment(index, delta) {
@@ -2276,11 +2291,13 @@
       var moved = editingTokens.splice(index, 1)[0];
       editingTokens.splice(to, 0, moved);
       renderTokenSegments();
+      refreshNumberingAnnotations();
     }
 
     function changeTokenType(index, type) {
       editingTokens[index] = defaultToken(type);
       renderTokenSegments();
+      refreshNumberingAnnotations();
     }
 
     function updateTokenField(index, key, value) {
@@ -2475,8 +2492,16 @@
           position: 'top-right',
           title: '编号规则',
           wide: true,
-          content: '按<strong>样品大类</strong>分套配置编号规则。指定字符分「自定义 / 固定拼接符号」；日期级联配置；自增序号仅 2/3/4 位；新增「报告数量」；引用编号保留委托编号/样品编号（已去除行号）。',
+          content: '业务流程配置末位 Tab。按<strong>样品大类</strong>分套维护委托 / 委托单 / 样品 / 试验记录单 / 原始记录单 / 报告共 6 类编号规则；各大类相互独立。',
           tag: '业务流程配置'
+        },
+        {
+          id: 'numbering-panel',
+          selector: '[data-annotate="numbering-panel"]',
+          position: 'top-right',
+          title: '编号规则面板',
+          content: '大类 Tab + 说明条 + 规则卡片列表。开启批注模式后可逐项查看交互说明。',
+          tag: '编号规则'
         },
         {
           id: 'numbering-cat-tabs',
@@ -2484,17 +2509,127 @@
           position: 'top-left',
           title: '大类 Tab',
           wide: true,
-          content: '与模板管理一致的四大类横向 Tab。各大类编号规则相互独立；切换后下方卡片与预览样例随大类变化（安全工器具类演示了不同的委托编号前缀）。',
+          content: '与模板管理一致：电力物资类 / 安全工器具类 / 环境检测 / 工程检测。切换后下方规则卡片与生成示例随大类变化（安全工器具类演示了不同的委托编号前缀）。点弹窗「确定」即写入当前大类，切换无需未保存拦截。',
           tag: '编号规则'
+        },
+        {
+          id: 'numbering-hint',
+          selector: '[data-annotate="numbering-hint"]',
+          position: 'top-right',
+          title: '配置说明',
+          content: '提示当前大类上下文：修改仅影响该大类下<strong>新生成</strong>的编号，历史号码不重算。',
+          tag: '编号规则'
+        },
+        {
+          id: 'numbering-list',
+          selector: '[data-annotate="numbering-list"]',
+          position: 'top-right',
+          title: '规则卡片列表',
+          wide: true,
+          content: '每张卡片展示：规则名称、令牌芯片序列、生成示例。右侧「修改 xxx 规则」打开编辑弹窗。',
+          tag: '编号规则'
+        },
+        {
+          id: 'numbering-card',
+          selector: '[data-annotate="numbering-card"]',
+          position: 'top-left',
+          title: '规则芯片与示例',
+          wide: true,
+          content: '芯片颜色区分语义：琥珀色=自定义字符、灰色=拼接符、蓝色=日期/引用、紫色=自增序号、绿色=分类/试样、橙色=报告数量。下方等宽字体为实时生成示例。',
+          tag: '编号规则'
+        },
+        {
+          id: 'numbering-edit-btn',
+          selector: '[data-annotate="numbering-edit-btn"]',
+          position: 'left',
+          title: '修改规则',
+          content: '打开编辑弹窗。标题带当前大类后缀，避免配错大类。',
+          tag: '编号规则'
+        },
+        {
+          id: 'numbering-modal-title',
+          selector: '[data-annotate="numbering-modal-title"]',
+          position: 'top-right',
+          title: '弹窗标题',
+          content: '格式：「修改{规则名} · {大类名}」。确认当前编辑的是哪一大类下的哪条规则。',
+          tag: '编号规则·弹窗'
+        },
+        {
+          id: 'numbering-rule-preview',
+          selector: '[data-annotate="numbering-rule-preview"]',
+          position: 'top-right',
+          title: '当前规则预览',
+          wide: true,
+          content: '只读芯片条，随下方规则组成同步更新。芯片固定在预览容器内（本地 flex，不依赖 Tailwind），避免漂出浮层。',
+          tag: '编号规则·弹窗'
+        },
+        {
+          id: 'numbering-add-token',
+          selector: '[data-annotate="numbering-add-token"]',
+          position: 'left',
+          title: '添加令牌',
+          content: '在规则末尾追加一段，默认类型为「自定义」。可用右侧上移/下移调整顺序。',
+          tag: '编号规则·弹窗'
         },
         {
           id: 'numbering-token-editor',
           selector: '[data-annotate="numbering-token-editor"]',
           position: 'top-right',
-          title: '类型化令牌编辑',
+          title: '规则组成',
           wide: true,
-          content: '有序「规则组成」列表：类型下拉按分组。<br><br>· <strong>指定字符</strong>→ 自定义（输入框）/ 固定拼接符号（仅 / - _）<br>· 日期：来源 → 年/月/日 → 年再选 2/4 位<br>· 自增序号：仅 2/3/4 位快捷<br>· 报告数量：维度（样品大类 / 样品分类层级1）+ 当年/当月 + 拼接+1 + 3/4/5 位<br>· 分类名称/编号：仅层级 1；试样类别代码<br>· 引用编号：委托编号 / 样品编号（无行号）',
-          tag: '编号规则'
+          content: '有序令牌段列表。每段选择类型后下方出现对应自定义区；支持上移 / 下移 / 删除。',
+          tag: '编号规则·弹窗'
+        },
+        {
+          id: 'numbering-token-list',
+          selector: '[data-annotate="numbering-token-list"]',
+          position: 'top-left',
+          title: '令牌段列表',
+          content: '按 1、2、3… 顺序拼接最终编号。空态时提示点击「添加令牌」。',
+          tag: '编号规则·弹窗'
+        },
+        {
+          id: 'numbering-token-type',
+          selector: '[data-annotate="numbering-token-type"]',
+          position: 'top-left',
+          title: '类型下拉（分组）',
+          wide: true,
+          content: '<strong>指定字符</strong>→ 自定义 / 固定拼接符号（/ - _）<br><strong>日期</strong>→ 来源（委托登记日/送样日）→ 年/月/日 → 年再选 2/4 位<br><strong>分类与试样</strong>→ 分类名称、分类编号（仅层级1）、试样类别代码<br><strong>序号与数量</strong>→ 自增序号（2/3/4 位）、报告数量<br><strong>引用编号</strong>→ 委托编号、样品编号（无行号）<br><br>已去除：客户编码、样品类型、行号。',
+          tag: '编号规则·弹窗'
+        },
+        {
+          id: 'numbering-token-fields',
+          selector: '[data-annotate="numbering-token-fields"]',
+          position: 'top-right',
+          title: '类型自定义区',
+          wide: true,
+          content: '随类型变化：<br>· 自定义：文本输入<br>· 固定拼接符号：仅 / - _ 三键<br>· 日期：级联三步<br>· 自增序号：仅 2/3/4 位快捷（无步进器）<br>· 报告数量：维度（样品大类/样品分类层级1）+ 当年/当月 + 固定「拼接 +1」+ 3/4/5 位<br>· 分类/试样：说明文案',
+          tag: '编号规则·弹窗'
+        },
+        {
+          id: 'numbering-token-actions',
+          selector: '[data-annotate="numbering-token-actions"]',
+          position: 'left',
+          title: '排序与删除',
+          content: '上移 / 下移调整令牌在编号中的先后顺序；垃圾桶删除本段。',
+          tag: '编号规则·弹窗'
+        },
+        {
+          id: 'numbering-gen-preview',
+          selector: '[data-annotate="numbering-gen-preview"]',
+          position: 'top-right',
+          title: '生成预览',
+          content: '按当前大类的 Mock 上下文（登记日、层级1分类、试样类别代码、报告数量等）实时拼接示例串。',
+          tag: '编号规则·弹窗'
+        },
+        {
+          id: 'numbering-save',
+          selector: '[data-annotate="numbering-save"]',
+          position: 'top-left',
+          title: '确定保存',
+          wide: true,
+          content: '校验：至少一段；自定义非空；拼接符必选；自增仅一个且位数 2/3/4；报告数量位数 3/4/5；委托编号规则不宜引用样品编号或试样类别代码。通过后写入<strong>当前大类</strong>并关闭弹窗。',
+          tag: '编号规则·弹窗'
         },
         {
           id: 'entrust-tab',
