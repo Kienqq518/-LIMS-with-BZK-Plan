@@ -119,4 +119,4 @@
 
 - 后端 API / 数据库迁移
 - 公共模版按样品/试验项自动推荐（无绑定列）
-- 报告侧公共模版编辑/版本职责收口（同类问题，另案处理）
+- 报告侧公共模版已对齐本方案（无关联绑定 + 编辑/版本职责收口），见 [`2026-07-27-report-public-template-ref-design.md`](2026-07-27-report-public-template-ref-design.md)
