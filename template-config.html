@@ -82,8 +82,9 @@
     .tpl-table tr:hover td { background: #fafafa; }
     .tpl-table .link { color: #2563eb; cursor: pointer; }
     .tpl-table .link:hover { text-decoration: underline; }
-    .tpl-table-pin { border-collapse: separate; border-spacing: 0; min-width: 1164px; width: max-content; }
+    .tpl-table-pin { border-collapse: separate; border-spacing: 0; min-width: 1200px; width: max-content; }
     .tpl-table-pin th, .tpl-table-pin td { box-sizing: border-box; }
+    .tpl-table-pin th.cell-check, .tpl-table-pin td.cell-check,
     .tpl-table-pin th.cell-seq, .tpl-table-pin td.cell-seq,
     .tpl-table-pin th.cell-tpl-name, .tpl-table-pin td.cell-tpl-name,
     .tpl-table-pin th.cell-sample-name, .tpl-table-pin td.cell-sample-name,
@@ -91,22 +92,28 @@
       position: sticky;
       z-index: 2;
     }
-    .tpl-table-pin th.cell-seq, .tpl-table-pin th.cell-tpl-name, .tpl-table-pin th.cell-sample-name, .tpl-table-pin th.cell-ops { z-index: 4; }
-    .tpl-table-pin td.cell-seq, .tpl-table-pin td.cell-tpl-name, .tpl-table-pin td.cell-sample-name, .tpl-table-pin td.cell-ops { background: #fff; }
-    .tpl-table-pin th.cell-seq, .tpl-table-pin th.cell-tpl-name, .tpl-table-pin th.cell-sample-name, .tpl-table-pin th.cell-ops { background: #f8fafc; }
+    .tpl-table-pin th.cell-check, .tpl-table-pin th.cell-seq, .tpl-table-pin th.cell-tpl-name, .tpl-table-pin th.cell-sample-name, .tpl-table-pin th.cell-ops { z-index: 4; }
+    .tpl-table-pin td.cell-check, .tpl-table-pin td.cell-seq, .tpl-table-pin td.cell-tpl-name, .tpl-table-pin td.cell-sample-name, .tpl-table-pin td.cell-ops { background: #fff; }
+    .tpl-table-pin th.cell-check, .tpl-table-pin th.cell-seq, .tpl-table-pin th.cell-tpl-name, .tpl-table-pin th.cell-sample-name, .tpl-table-pin th.cell-ops { background: #f8fafc; }
+    .tpl-table-pin tr:hover td.cell-check,
     .tpl-table-pin tr:hover td.cell-seq,
     .tpl-table-pin tr:hover td.cell-tpl-name,
     .tpl-table-pin tr:hover td.cell-sample-name,
     .tpl-table-pin tr:hover td.cell-ops { background: #fafafa; }
-    .tpl-table-pin th.cell-seq, .tpl-table-pin td.cell-seq { left: 0; }
-    .tpl-table-pin th.cell-tpl-name, .tpl-table-pin td.cell-tpl-name { left: 48px; }
-    .tpl-table-pin th.cell-sample-name, .tpl-table-pin td.cell-sample-name { left: 120px; box-shadow: 4px 0 8px -4px rgba(15,23,42,.12); }
+    .tpl-table-pin th.cell-check, .tpl-table-pin td.cell-check { left: 0; }
+    .tpl-table-pin th.cell-seq, .tpl-table-pin td.cell-seq { left: 36px; }
+    .tpl-table-pin th.cell-tpl-name, .tpl-table-pin td.cell-tpl-name { left: 84px; }
+    .tpl-table-pin th.cell-sample-name, .tpl-table-pin td.cell-sample-name { left: 156px; box-shadow: 4px 0 8px -4px rgba(15,23,42,.12); }
     .tpl-table-pin th.cell-ops, .tpl-table-pin td.cell-ops { right: 0; width: 188px; min-width: 188px; max-width: 188px; box-shadow: -4px 0 8px -4px rgba(15,23,42,.12); }
+    .cell-check { width: 36px; min-width: 36px; max-width: 36px; text-align: center; vertical-align: middle; }
     .cell-ops { width: 188px; min-width: 188px; max-width: 188px; font-size: 12px; padding: 6px 6px !important; white-space: nowrap; vertical-align: middle; }
     .cell-ops button { font-size: 12px; }
     .cell-ops .op-sep { display: inline-block; width: 2px; }
     .cell-sample-name { width: 220px; min-width: 220px; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cell-seq { width: 48px; min-width: 48px; max-width: 48px; text-align: center; white-space: nowrap; }
+    #btnBatchDownload[disabled] { background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; cursor: not-allowed; }
+    #btnBatchDownload:not([disabled]) { background: #2563eb; color: #fff; border: 1px solid #2563eb; cursor: pointer; }
+    #btnBatchDownload:not([disabled]):hover { background: #1d4ed8; border-color: #1d4ed8; }
     .cell-tpl-name { width: 72px; min-width: 72px; max-width: 72px; white-space: nowrap; }
     .cell-default { width: 56px; min-width: 56px; text-align: center; white-space: nowrap; vertical-align: middle; }
     .cell-version { width: 220px; min-width: 220px; white-space: nowrap; vertical-align: middle; }
@@ -1672,6 +1679,57 @@
       renderView();
     }
 
+    function batchDownloadBtnHtml(withMlAuto) {
+      return '<button type="button" id="btnBatchDownload" disabled onclick="batchDownloadTemplates()" class="rounded px-3 py-1.5 text-sm' +
+        (withMlAuto ? ' ml-auto' : '') +
+        '" data-annotate="batch-download"><i class="fa fa-download"></i> 批量下载</button>';
+    }
+
+    function getRowChecks() {
+      return document.querySelectorAll('#dataTable .row-check:not(:disabled)');
+    }
+
+    function getSelectedRowChecks() {
+      return document.querySelectorAll('#dataTable .row-check:checked:not(:disabled)');
+    }
+
+    function updateBatchDownloadBtn() {
+      var btn = document.getElementById('btnBatchDownload');
+      if (!btn) return;
+      var selected = getSelectedRowChecks().length;
+      btn.disabled = selected === 0;
+      var checkAll = document.getElementById('checkAll');
+      if (checkAll) {
+        var total = getRowChecks().length;
+        checkAll.checked = total > 0 && selected === total;
+        checkAll.indeterminate = selected > 0 && selected < total;
+        checkAll.disabled = total === 0;
+      }
+    }
+
+    function toggleCheckAll(checked) {
+      getRowChecks().forEach(function (cb) { cb.checked = checked; });
+      updateBatchDownloadBtn();
+    }
+
+    function onRowCheck() {
+      updateBatchDownloadBtn();
+    }
+
+    function batchDownloadTemplates() {
+      var selected = Array.prototype.slice.call(getSelectedRowChecks());
+      if (!selected.length) return;
+      var names = selected.map(function (cb) { return cb.getAttribute('data-file') || ('#' + cb.value); });
+      alert('批量下载（原型演示）\n已选 ' + selected.length + ' 个模版：\n' + names.join('\n'));
+    }
+
+    function rowCheckCellHtml(id, fileName) {
+      var hasFile = !!fileName;
+      return '<td class="cell-check"><input type="checkbox" class="row-check accent-blue-600" value="' + id + '"' +
+        (hasFile ? ' data-file="' + escHtml(fileName) + '" onchange="onRowCheck()"' : ' disabled') +
+        ' /></td>';
+    }
+
     function renderToolbar() {
       var el = document.getElementById('toolbar');
       el.className = 'tpl-toolbar';
@@ -1685,7 +1743,8 @@
             '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
             '<button onclick="resetFilters()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
           '</div>' +
-          '<button onclick="openBodyModal()" class="ml-auto rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="btn-add"><i class="fa fa-plus"></i> 新增</button>';
+          batchDownloadBtnHtml(true) +
+          '<button onclick="openBodyModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="btn-add"><i class="fa fa-plus"></i> 新增</button>';
       } else if (state.main === 'report' && state.sub === 'public') {
         el.innerHTML =
           '<label data-annotate="public-filter">模版内容样式</label><select id="f_content"><option value="">全部</option><option>模板头</option><option>模板尾</option><option>正文</option></select>' +
@@ -1714,7 +1773,8 @@
           '<div class="tpl-toolbar-query">' +
             '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>' +
             '<button onclick="resetFilters(true)" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
-          '</div>';
+          '</div>' +
+          batchDownloadBtnHtml(false);
       }
     }
 
@@ -1945,7 +2005,7 @@
       if (state.main === 'report' && state.sub === 'body') {
         document.getElementById('dataTable').classList.remove('record-tpl-table');
         document.getElementById('dataTable').classList.add('tpl-table-pin');
-        head.innerHTML = '<tr><th class="cell-seq">序号</th><th class="cell-tpl-name">模板名称</th><th class="cell-sample-name">样品名称(型号)</th><th style="width:240px">样品分类</th><th class="cell-default">默认</th><th class="cell-version">当前启用版本</th><th class="cell-public-ref">引用公共模版头</th><th class="cell-public-ref">引用公共模版尾</th><th class="cell-ops">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="report-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th class="cell-seq">序号</th><th class="cell-tpl-name">模板名称</th><th class="cell-sample-name">样品名称(型号)</th><th style="width:240px">样品分类</th><th class="cell-default">默认</th><th class="cell-version">当前启用版本</th><th class="cell-public-ref">引用公共模版头</th><th class="cell-public-ref">引用公共模版尾</th><th class="cell-ops">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           var defaultCell = r.isDefault
             ? '<span class="badge-default">默认</span>'
@@ -1957,11 +2017,12 @@
             : '<span class="badge-none">未配置</span>';
           var sampleDisplay = getBodySampleDisplay(r.tree);
           var categoryPath = getBodyCategoryPath(r.tree);
-          return '<tr><td class="cell-seq">' + (i + 1) + '</td><td class="cell-tpl-name">' + r.name + '</td><td class="cell-sample-name">' + sampleDisplay + '</td>' +
+          return '<tr>' + rowCheckCellHtml(r.id, resolvedFile) + '<td class="cell-seq">' + (i + 1) + '</td><td class="cell-tpl-name">' + r.name + '</td><td class="cell-sample-name">' + sampleDisplay + '</td>' +
             '<td><div class="cell-category-path" title="' + escHtml(categoryPath) + '">' + categoryPath + '</div></td><td class="cell-default">' + defaultCell + '</td>' +
             '<td class="cell-version">' + fileCell + '</td><td class="cell-public-ref"><span class="link">' + r.head + '</span></td><td class="cell-public-ref"><span class="link">' + r.tail + '</span></td>' +
             '<td class="cell-ops whitespace-nowrap">' + bodyOps(r) + '</td></tr>';
         }).join('');
+        updateBatchDownloadBtn();
       } else if (state.main === 'report' && state.sub === 'public') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin', 'record-tpl-table');
         head.innerHTML = '<tr data-annotate="public-table"><th>序号</th><th>模版内容样式</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
@@ -1981,7 +2042,7 @@
       } else if (state.main === 'record') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin');
         document.getElementById('dataTable').classList.add('record-tpl-table');
-        head.innerHTML = '<tr data-annotate="record-table"><th style="width:36px"><input type="checkbox" /></th><th style="width:48px">序号</th><th class="cell-record-sample">样品名称(型号)</th><th style="width:240px">样品分类</th><th style="width:88px">试验项</th><th class="cell-record-file">模板文件</th><th class="cell-ops-tight">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="record-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th style="width:48px">序号</th><th class="cell-record-sample">样品名称(型号)</th><th style="width:240px">样品分类</th><th style="width:88px">试验项</th><th class="cell-record-file">模板文件</th><th class="cell-ops-tight">操作</th></tr>';
         var seq = 0;
         body.innerHTML = rows.map(function (row) {
           if (row.rowType === 'group') {
@@ -1996,11 +2057,12 @@
             : '<span class="badge-none">未上传</span>';
           var sampleDisplay2 = getBodySampleDisplay(r.tree);
           var categoryPath2 = getBodyCategoryPath(r.tree);
-          return '<tr><td><input type="checkbox" /></td><td>' + seq + '</td><td class="cell-record-sample">' + sampleDisplay2 + '</td>' +
+          return '<tr>' + rowCheckCellHtml(r.id, resolved) + '<td>' + seq + '</td><td class="cell-record-sample">' + sampleDisplay2 + '</td>' +
             '<td><div class="cell-category-path" title="' + escHtml(categoryPath2) + '">' + categoryPath2 + '</div></td><td>' + r.test + '</td>' +
             '<td class="cell-record-file">' + fileCell + '</td><td class="cell-ops-tight">' + recordOps(r) + '</td></tr>';
         }).join('');
         document.getElementById('pageTotal').textContent = '共 ' + seq + ' 条';
+        updateBatchDownloadBtn();
         return;
       }
       document.getElementById('pageTotal').textContent = '共 ' + rows.length + ' 条';
@@ -4505,11 +4567,12 @@
         { id: 'record-file-source', selector: '[data-annotate="record-file-source"]', position: 'top-right', title: '记录单模版文件', wide: true, content: '支持<strong>上传</strong>、<strong>复制</strong>、<strong>引用</strong>。已有本地文件时，重新上传/复制会追加为新版本并启用；也可到操作列「版本」管理。选「引用」时文件名只读，活引用随公共启用版本同步。', tag: '记录单' },
         { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 插件打开编辑窗口：左侧为 Word 模板预览区，右侧为配置字段面板（检测中心信息、合同信息、报告信息、设备信息、样品信息、试验结果集）。记录单与报告模板左侧内容不同。', tag: '模板配置' },
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
-        { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '试验项模版列表', wide: true, content: '仅展示<strong>试验项单模版</strong>；组合模版在上方表格区域管理。样品层选中时按型号分组。', tag: '记录单' },
+        { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '试验项模版列表', wide: true, content: '仅展示<strong>试验项单模版</strong>；组合模版在上方表格区域管理。样品层选中时按型号分组。首列复选框勾选已上传模版行，配合工具栏「批量下载」。未上传行复选框禁用。', tag: '记录单' },
         { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '版本弹窗内提供「复制其他项」，可从其他样品/试验项复制已有模板；列表操作列在未上传时仅展示「版本」。', tag: '记录单' },
         { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出模版逻辑', wide: true, content: '支持样品层/型号层<strong>组合模版</strong>与各<strong>试验项单模版</strong>并存。「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」优先本型号组合模版，否则上级样品组合模版，否则试验项动态拼接；切分类两种模式始终用试验项单模版。UI 仅显示 xxx.docx/未上传，继承在导出时自动解析。', tag: '产品逻辑' },
         { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版表格', wide: true, content: '按左侧选中节点展示<strong>本层级及以下</strong>全部组合模版：分类层汇总下属样品层与型号层；样品层展示本样品 + 其下各型号；型号层仅本型号。试验项节点不展示此区域。', tag: '记录单' },
-        { id: 'record-no-download', selector: '#toolbar', position: 'top-left', title: '移除下载按钮', wide: true, content: '模版管理各 Tab 工具栏已移除「下载」按钮；点击列表中蓝色的模板文件链接即可触发下载。', tag: '模板管理' },
+        { id: 'batch-download', selector: '[data-annotate="batch-download"]', position: 'top-left', title: '批量下载', wide: true, content: '「报告模版 / 公共模版」与「记录单模版 / 公共模版」工具栏均提供<strong>批量下载</strong>。列表首列复选框勾选后按钮高亮可点；未选中任意行时按钮置灰不高亮。仅已配置/已上传文件的行可选；点击后按勾选模版批量下载（原型以提示演示）。单文件仍可点蓝色模板文件链接下载。', tag: '模板管理' },
+        { id: 'report-table', selector: '[data-annotate="report-table"]', position: 'top-right', title: '报告模版列表', wide: true, content: '表头增加复选框列，配合工具栏「批量下载」。未配置正文文件的行复选框禁用。其余列：模板名称、样品名称(型号)、样品分类、默认、当前启用版本、引用公共头/尾、操作。', tag: '报告模板' },
         { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 6 类流程单据模版。进入后通过顶部横向 Tab 切换四大类，每类固定 6 张卡片；可绑定委托登记字段，按选项分流配置多版本模版。', tag: '模板管理' },
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 6 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },
         { id: 'doc-card-switch', selector: '[data-annotate="doc-card-switch"]', position: 'top-right', title: '卡片开关', wide: true, content: '控制该单据类型是否支持系统生成。关闭时整卡置灰，但保留已上传模版及启用记忆；关闭状态下保存时不校验「默认」桶是否已上传模版。', tag: '单据模版' },
@@ -4521,7 +4584,7 @@
         { id: 'doc-save', selector: '[data-annotate="doc-save"]', position: 'top-left', title: '保存校验', wide: true, content: '<strong>校验范围：</strong>仅校验<strong>当前大类</strong>下 6 张卡片。<br><br><strong>规则：</strong>卡片开关为「开启」且「默认」桶无模版文件 → 保存失败。选项桶可为空（生成时回退默认）。<br><br><strong>失败表现：</strong>① toast 提示「以下开启的单据未配置「默认」模版：xxx」；② 卡片边框标红；③ 滚动定位到第一张失败卡片。<br><br><strong>通过：</strong>写入当前大类快照、清除未保存标记与错误态。', tag: '单据模版' },
         { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模版逻辑', wide: true, content: '<strong>按大类分套：</strong>DLWZ / AQGQJ / HJJC / GCJC 各自独立配置 6 类单据。<br><br><strong>字段分流：</strong>可绑定委托登记下拉字段，按选项分桶配置版本；未命中回退默认桶。<br><br><strong>卡片开关：</strong>控制是否支持系统生成；关闭时整卡置灰但保留配置。<br><br><strong>保存：</strong>仅保存当前大类；详见「保存」批注。', tag: '模板管理' },
         { id: 'public-filter', selector: '[data-annotate="public-filter"]', position: 'top-left', title: '公共模版筛选', wide: true, content: '筛选字段：<strong>模版内容样式</strong>（模板头/模板尾/正文）、<strong>模版文件名</strong>。无关联绑定筛选。', tag: '报告模板' },
-        { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共模版列表', wide: true, content: '表头：<strong>模版内容样式</strong>、<strong>模版文件</strong>。无关联绑定列。操作列含版本管理。列表已按当前大类过滤。', tag: '报告模板' },
+        { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共模版列表', wide: true, content: '表头：复选框、<strong>模版内容样式</strong>、<strong>模版文件</strong>、操作。无关联绑定列。首列复选框配合工具栏「批量下载」；未配置文件行禁用。列表已按当前大类过滤。', tag: '报告模板' },
         { id: 'public-add', selector: '[data-annotate="public-add"]', position: 'top-left', title: '新增公共模版', content: '打开新增弹窗：配置模版内容样式、上传/复制文件并填写模版名称。无需关联绑定，由报告模版侧直接引用。', tag: '报告模板' },
         { id: 'public-edit', selector: '[data-annotate="public-edit"]', position: 'top-right', title: '编辑公共模版', wide: true, content: '仅改<strong>模版内容样式</strong>与<strong>模版名称</strong>；当前启用文件只读。文件上传/复制/启用/改名请到「版本」。已被引用时不可改内容样式。', tag: '报告模板' },
         { id: 'public-version', selector: '[data-annotate="public-version"]', position: 'top-right', title: '公共模版版本', wide: true, content: '头/尾/正文均可多版本单启用；是唯一改文件实体的入口。公共正文被报告模版引用时，启用版本变更后引用方同步跟随。', tag: '报告模板' },
@@ -4530,7 +4593,7 @@
         { id: 'public-file', selector: '[data-annotate="public-file"]', position: 'top-right', title: '模板文件', wide: true, content: '新增：上传或复制，写入首个启用版本。编辑：只读展示当前启用文件；后续文件变更一律走「版本」。', tag: '报告模板' },
         { id: 'public-template-name', selector: '[data-annotate="public-template-name"]', position: 'top-right', title: '模版名称', wide: true, content: '库内展示名，与启用版本文件名相互独立。新增时可随上传回显并编辑；编辑时可单独改名称而不改文件。', tag: '报告模板' },
         { id: 'record-public-filter', selector: '[data-annotate="record-public-filter"]', position: 'top-left', title: '记录单公共模版筛选', wide: true, content: '筛选：<strong>模版内容样式</strong>（组合记录单模版 / 试验项模版）、<strong>模版文件名</strong>。无关联绑定。', tag: '记录单' },
-        { id: 'record-public-table', selector: '[data-annotate="record-public-table"]', position: 'top-right', title: '记录单公共模版列表', wide: true, content: '表头：模版内容样式、模版文件、操作。操作列：编辑 | 版本 | 配置 | 预览 | 删除。按当前大类过滤。', tag: '记录单' },
+        { id: 'record-public-table', selector: '[data-annotate="record-public-table"]', position: 'top-right', title: '记录单公共模版列表', wide: true, content: '表头：复选框、模版内容样式、模版文件、操作。操作列：编辑 | 版本 | 配置 | 预览 | 删除。首列复选框配合工具栏「批量下载」。按当前大类过滤。', tag: '记录单' },
         { id: 'record-public-add', selector: '[data-annotate="record-public-add"]', position: 'top-left', title: '新增记录单公共模版', content: '配置内容样式、上传/复制文件并填写模版名称。无需关联绑定，由「记录单模版」Tab 选择引用。', tag: '记录单' },
         { id: 'record-public-edit', selector: '[data-annotate="record-public-edit"]', position: 'top-right', title: '编辑记录单公共模版', wide: true, content: '仅改内容样式与模版名称；当前启用文件只读。文件变更请到「版本」。已被引用时不可改内容样式。', tag: '记录单' },
         { id: 'record-public-version', selector: '[data-annotate="record-public-version"]', position: 'top-right', title: '记录单公共模版版本', wide: true, content: '多版本单启用；唯一改文件实体入口。被记录单模版引用后，启用版本变更同步跟随。', tag: '记录单' },
