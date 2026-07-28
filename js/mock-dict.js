@@ -70,10 +70,23 @@
     return JSON.parse(JSON.stringify(list));
   }
 
+  function migrateTaskTypeItems(dictTypes) {
+    var d = findByType(dictTypes, 'lims_task_type');
+    var def = findByType(DEFAULT_DICT_TYPES, 'lims_task_type');
+    if (!d || !def) return dictTypes;
+    var need = def.items.map(function (it) { return it.value; });
+    var have = (d.items || []).map(function (it) { return it.value; });
+    var outdated = have.indexOf('entrust') >= 0 || need.some(function (v) { return have.indexOf(v) < 0; });
+    if (outdated) {
+      d.items = cloneDictTypes(def.items);
+    }
+    return dictTypes;
+  }
+
   function load() {
     try {
       var raw = global.localStorage && global.localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) return migrateTaskTypeItems(JSON.parse(raw));
     } catch (e) { /* ignore */ }
     return cloneDictTypes(DEFAULT_DICT_TYPES);
   }
