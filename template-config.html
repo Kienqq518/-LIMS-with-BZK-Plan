@@ -505,7 +505,7 @@
             <label><input type="radio" name="recordFileMode" value="copy" onchange="toggleRecordFileMode()" /> 复制</label>
             <label><input type="radio" name="recordFileMode" value="ref" onchange="toggleRecordFileMode()" /> 引用</label>
           </div>
-          <div id="recordLocalHint" class="hidden mb-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">已配置本地文件，也可通过操作列「版本」管理；可切换为「引用」公共模版。</div>
+          <div id="recordLocalHint" class="hidden mb-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">已配置本地文件。可在此重新上传/复制（将追加为新版本并启用），也可到操作列「版本」管理；或切换为「引用」公共模版。</div>
           <div id="recordUploadZone" class="upload-zone" onclick="openMockFilePicker('recordEdit')"><i class="fa fa-cloud-upload block"></i><div>上传</div></div>
           <button id="recordCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openRecordEditCopyPicker()"><i class="fa fa-copy"></i> 复制</button>
           <select id="re_refPublic" class="hidden w-full rounded border border-slate-200 px-3 py-2 text-sm" onchange="onRecordRefPublicChange()"></select>
@@ -596,7 +596,7 @@
             <label><input type="radio" name="bodyFileMode" value="copy" onchange="toggleBodyFileMode()" /> 复制</label>
             <label><input type="radio" name="bodyFileMode" value="ref" onchange="toggleBodyFileMode()" /> 引用</label>
           </div>
-          <div id="bodyLocalHint" class="hidden mb-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">已配置本地正文文件，请通过操作列「版本」管理文件；也可切换为「引用」公共正文模版。</div>
+          <div id="bodyLocalHint" class="hidden mb-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">已配置本地正文文件。可在此重新上传/复制（将追加为新版本并启用），也可到操作列「版本」管理；或切换为「引用」公共正文模版。</div>
           <div id="bodyUploadZone" class="upload-zone" onclick="openMockFilePicker('bodyAdd')"><i class="fa fa-cloud-upload block"></i><div>上传</div></div>
           <button id="bodyCopyBtn" type="button" class="hidden rounded border border-slate-300 px-4 py-2 text-sm" onclick="openCopyPicker('body')"><i class="fa fa-copy"></i> 复制</button>
           <select id="m_refPublic" class="hidden w-full rounded border border-slate-200 px-3 py-2 text-sm" onchange="onBodyRefPublicChange()"></select>
@@ -4227,13 +4227,15 @@
         { id: 'tree-count', selector: '[data-annotate="tree-count"]', position: 'top-right', title: '关联模板数量', content: '括号内数字表示该分类/型号下已配置的报告模板变体数量。左侧树已按当前进入的大类过滤。', tag: '报告模板' },
         { id: 'record-tree-tests', selector: '[data-annotate="record-tree-tests"]', position: 'top-right', title: '型号下展开试验项', wide: true, content: '左侧树层级与「报告模版 › 报告模版」一致，并在型号节点下增加试验项层级；绿点表示已上传模板。点击某一试验项可快速定位右侧列表，括号内为（已配置数 / 试验项总数）。试验项名称不再拼接 A/B 等前缀字母。', tag: '记录单' },
         { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板变体', content: '打开新增弹窗，配置样品、模板名称、是否默认、模版正文文件（上传/复制/引用公共正文）及公共头尾引用。', tag: '报告模板' },
-        { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑模板名称、是否默认、引用公共头尾，以及正文来源（本地/引用）。本地文件通过「版本」管理；引用时可改公共正文目标。', tag: '操作说明' },
-        { id: 'body-file-source', selector: '[data-annotate="body-file-source"]', position: 'top-right', title: '模版正文文件', wide: true, content: '支持<strong>上传</strong>、<strong>复制</strong>、<strong>引用</strong>三种来源。选「引用」时从「公共模版」中选择内容样式为「正文」的模版，文件名只读；为活引用，公共正文启用版本变更后同步跟随。', tag: '报告模板' },
+        { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑模板名称、是否默认、引用公共头尾，以及正文来源（本地/引用）。本地正文可在此重新上传/复制（追加为新版本并启用），也可到操作列「版本」管理；引用时可改公共正文目标。', tag: '操作说明' },
+        { id: 'body-file-source', selector: '[data-annotate="body-file-source"]', position: 'top-right', title: '模版正文文件', wide: true, content: '支持<strong>上传</strong>、<strong>复制</strong>、<strong>引用</strong>三种来源。已有本地文件时，重新上传/复制会追加为新版本并启用；也可到操作列「版本」管理。选「引用」时从「公共模版」选择正文，文件名只读，活引用随公共启用版本同步。', tag: '报告模板' },
         { id: 'body-public-ref', selector: '[data-annotate="body-public-ref"]', position: 'top-right', title: '引用公共模版头/尾', wide: true, content: '公共模版<strong>无关联绑定</strong>；头/尾下拉列出当前大类下全部对应内容样式的公共模版，由本变体直接勾选引用。新增时若库内已有头/尾则软默认选中首条，可手动改选（切换不会回写公共库）。', tag: '报告模板' },
         { id: 'body-version', selector: '[data-annotate="body-version"]', position: 'top-right', title: '版本管理', wide: true, content: '本地正文：同一变体可存多个版本，单选启用。<strong>若变体引用公共正文</strong>，则打开被引用公共模版的版本管理（版本归属公共侧）。', tag: '报告模板' },
         { id: 'body-default', selector: '[data-annotate="body-default"]', position: 'top-right', title: '设为默认', content: '同一样品型号下可设一个默认模板变体（<strong>可选</strong>）。报告生成时若已设默认则默认选中该变体，用户可切换其他变体；未设默认时生成报告需用户手动选择。', tag: '报告模板' },
         { id: 'row-delete', selector: '[data-annotate="row-delete"]', position: 'top-right', title: '删除', content: '删除该模板变体及其全部版本。不受是否设为默认、版本是否启用影响。', tag: '操作说明' },
-        { id: 'record-config', selector: '[data-annotate="record-config"]', position: 'top-right', title: '版本管理', wide: true, content: '同一试验项可存多个模板版本，通过单选启用其中一个；<strong>新上传/复制的版本默认启用最新版</strong>，有文件则必有一版启用。弹窗内可上传、复制其他项、修改文件名；含「上传人」列。删除版本不受是否启用影响。', tag: '记录单' },
+        { id: 'record-config', selector: '[data-annotate="record-config"]', position: 'top-right', title: '版本管理', wide: true, content: '同一试验项可存多个模板版本，通过单选启用其中一个；<strong>新上传/复制的版本默认启用最新版</strong>，有文件则必有一版启用。弹窗内可上传、复制其他项、修改文件名；含「上传人」列。删除版本不受是否启用影响。也可在「编辑」弹窗内重新上传/复制追加新版本。', tag: '记录单' },
+        { id: 'record-edit', selector: '[data-annotate="record-edit"]', position: 'top-right', title: '编辑记录单模版', wide: true, content: '配置模版文件来源：上传 / 复制 / 引用公共模版。已有本地文件时，可在此重新上传/复制（追加为新版本并启用），也可到操作列「版本」管理；可切换为「引用」。', tag: '记录单' },
+        { id: 'record-file-source', selector: '[data-annotate="record-file-source"]', position: 'top-right', title: '记录单模版文件', wide: true, content: '支持<strong>上传</strong>、<strong>复制</strong>、<strong>引用</strong>。已有本地文件时，重新上传/复制会追加为新版本并启用；也可到操作列「版本」管理。选「引用」时文件名只读，活引用随公共启用版本同步。', tag: '记录单' },
         { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 插件打开编辑窗口：左侧为 Word 模板预览区，右侧为配置字段面板（检测中心信息、合同信息、报告信息、设备信息、样品信息、试验结果集）。记录单与报告模板左侧内容不同。', tag: '模板配置' },
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
         { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '试验项模版列表', wide: true, content: '仅展示<strong>试验项单模版</strong>；组合模版在上方表格区域管理。样品层选中时按型号分组。', tag: '记录单' },
