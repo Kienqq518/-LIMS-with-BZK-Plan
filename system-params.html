@@ -184,9 +184,18 @@
     }
     .num-cat-tab:hover { color: #2563eb; }
     .num-cat-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
-    /* 弹窗显隐不依赖 Tailwind CDN 加载顺序；z-index 高于原型批注层 */
+    /* 弹窗显隐/定位不依赖 Tailwind CDN */
     #numberingModal.hidden { display: none !important; }
-    #numberingModal.flex { display: flex !important; z-index: 10050; }
+    #numberingModal.flex {
+      display: flex !important;
+      position: fixed;
+      inset: 0;
+      z-index: 10050;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 16px;
+    }
     .num-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; margin-bottom: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
     .num-card:hover { border-color: #bfdbfe; box-shadow: 0 1px 4px rgba(37,99,235,.06); }
     .num-card .num-info { min-width: 0; }
@@ -1803,10 +1812,10 @@
 
     /* Mock 预览上下文：取样品分类层级1 + 试样类别代码等 */
     var NUM_PREVIEW_CTX = {
-      dlwz: { entrustYear: 2026, submitYear: 2026, month: '03', day: '18', categoryName: '电力电缆类', categoryCode: 'DLDL', sampleType: '电缆', specimenCategoryCode: 'DL-JY', rowNo: '01', seq: 37 },
-      aqgqj: { entrustYear: 2026, submitYear: 2026, month: '02', day: '11', categoryName: '绝缘手套', categoryCode: 'JYST', sampleType: '安全工器具', specimenCategoryCode: 'AQ-JY', rowNo: '02', seq: 12 },
-      hjjc: { entrustYear: 2026, submitYear: 2026, month: '01', day: '08', categoryName: '水质检测', categoryCode: 'SZ', sampleType: '环境', specimenCategoryCode: 'HJ-SZ', rowNo: '01', seq: 5 },
-      gcjc: { entrustYear: 2026, submitYear: 2026, month: '04', day: '02', categoryName: '通用硅酸盐水泥', categoryCode: 'SN', sampleType: '建材', specimenCategoryCode: 'GC-SN', rowNo: '03', seq: 9 }
+      dlwz: { entrustYear: 2026, entrustMonth: '03', entrustDay: '18', submitYear: 2026, submitMonth: '03', submitDay: '20', categoryName: '电力电缆类', categoryCode: 'DLDL', specimenCategoryCode: 'DL-JY', rowNo: '01', seq: 37 },
+      aqgqj: { entrustYear: 2026, entrustMonth: '02', entrustDay: '11', submitYear: 2026, submitMonth: '02', submitDay: '12', categoryName: '绝缘手套', categoryCode: 'JYST', specimenCategoryCode: 'AQ-JY', rowNo: '02', seq: 12 },
+      hjjc: { entrustYear: 2026, entrustMonth: '01', entrustDay: '08', submitYear: 2026, submitMonth: '01', submitDay: '09', categoryName: '水质检测', categoryCode: 'SZ', specimenCategoryCode: 'HJ-SZ', rowNo: '01', seq: 5 },
+      gcjc: { entrustYear: 2026, entrustMonth: '04', entrustDay: '02', submitYear: 2026, submitMonth: '04', submitDay: '03', categoryName: '通用硅酸盐水泥', categoryCode: 'SN', specimenCategoryCode: 'GC-SN', rowNo: '03', seq: 9 }
     };
 
     var TOKEN_TYPE_GROUPS = [
@@ -1815,27 +1824,14 @@
         options: [{ type: 'literal', label: '指定字符' }]
       },
       {
-        label: '委托日期',
-        options: [
-          { type: 'entrust_year', label: '委托年份' },
-          { type: 'entrust_month', label: '委托月份' },
-          { type: 'entrust_day', label: '委托日期' }
-        ]
+        label: '日期',
+        options: [{ type: 'date', label: '日期' }]
       },
       {
-        label: '送样日期',
-        options: [
-          { type: 'submit_year', label: '送样年份' },
-          { type: 'submit_month', label: '送样月份' },
-          { type: 'submit_day', label: '送样日期' }
-        ]
-      },
-      {
-        label: '分类与样品',
+        label: '分类与试样',
         options: [
           { type: 'category_name', label: '分类名称' },
           { type: 'category_code', label: '分类编号' },
-          { type: 'sample_type', label: '样品类型' },
           { type: 'specimen_category_code', label: '试样类别代码' }
         ]
       },
@@ -1860,7 +1856,7 @@
 
     function defaultToken(type) {
       if (type === 'literal') return { type: 'literal', value: '' };
-      if (type === 'entrust_year' || type === 'submit_year') return { type: type, digits: 4 };
+      if (type === 'date') return { type: 'date', source: 'entrust', part: 'year', digits: 4 };
       if (type === 'seq') return { type: 'seq', digits: 4 };
       return { type: type };
     }
@@ -1870,6 +1866,8 @@
         var n = { type: t.type };
         if (t.value != null) n.value = t.value;
         if (t.digits != null) n.digits = t.digits;
+        if (t.source != null) n.source = t.source;
+        if (t.part != null) n.part = t.part;
         return n;
       });
     }
@@ -1885,11 +1883,25 @@
       return digits === 2 ? s.slice(-2) : s;
     }
 
+    function dateSourceLabel(source) {
+      return source === 'submit' ? '送样日期' : '委托日期';
+    }
+
+    function datePartLabel(part) {
+      if (part === 'month') return '月';
+      if (part === 'day') return '日';
+      return '年';
+    }
+
     function tokenLabel(tk) {
       var meta = TOKEN_META[tk.type];
-      if (!meta) return tk.type;
+      if (!meta && tk.type !== 'date') return tk.type;
       if (tk.type === 'literal') return '指定字符「' + (tk.value || '') + '」';
-      if (tk.type === 'entrust_year' || tk.type === 'submit_year') return meta.label + '·' + (tk.digits || 4) + '位';
+      if (tk.type === 'date') {
+        var base = dateSourceLabel(tk.source) + '·' + datePartLabel(tk.part);
+        if (tk.part === 'year') base += '·' + (tk.digits || 4) + '位';
+        return base;
+      }
       if (tk.type === 'seq') return '自增序号·' + (tk.digits || 4) + '位';
       return meta.label;
     }
@@ -1899,7 +1911,7 @@
         return (/^[\/\-_]$/).test(tk.value || '') ? 'rule-chip sep' : 'rule-chip fixed';
       }
       if (tk.type === 'seq') return 'rule-chip seq';
-      if (tk.type === 'category_name' || tk.type === 'category_code' || tk.type === 'sample_type' || tk.type === 'specimen_category_code') return 'rule-chip cat';
+      if (tk.type === 'category_name' || tk.type === 'category_code' || tk.type === 'specimen_category_code') return 'rule-chip cat';
       return 'rule-chip';
     }
 
@@ -1913,15 +1925,14 @@
     function tokenSample(tk, ctx) {
       switch (tk.type) {
         case 'literal': return tk.value || '';
-        case 'entrust_year': return yearSample(ctx.entrustYear, tk.digits || 4);
-        case 'submit_year': return yearSample(ctx.submitYear, tk.digits || 4);
-        case 'entrust_month':
-        case 'submit_month': return ctx.month;
-        case 'entrust_day':
-        case 'submit_day': return ctx.day;
+        case 'date': {
+          var isSubmit = tk.source === 'submit';
+          if (tk.part === 'month') return isSubmit ? ctx.submitMonth : ctx.entrustMonth;
+          if (tk.part === 'day') return isSubmit ? ctx.submitDay : ctx.entrustDay;
+          return yearSample(isSubmit ? ctx.submitYear : ctx.entrustYear, tk.digits || 4);
+        }
         case 'category_name': return ctx.categoryName;
         case 'category_code': return ctx.categoryCode;
-        case 'sample_type': return ctx.sampleType;
         case 'specimen_category_code': return ctx.specimenCategoryCode;
         case 'seq': return padNum(ctx.seq, tk.digits || 4);
         case 'ref_entrust': return buildRefEntrust(ctx);
@@ -1948,7 +1959,7 @@
       return [
         { id: 'entrust', name: '委托编号规则', tokens: [
           { type: 'literal', value: 'SC' },
-          { type: 'entrust_year', digits: 4 },
+          { type: 'date', source: 'entrust', part: 'year', digits: 4 },
           { type: 'literal', value: '/' },
           { type: 'seq', digits: 4 }
         ]},
@@ -1970,8 +1981,8 @@
           { type: 'seq', digits: 2 }
         ]},
         { id: 'origin-record', name: '原始记录单编号规则', tokens: [
-          { type: 'entrust_year', digits: 4 },
-          { type: 'entrust_month' },
+          { type: 'date', source: 'entrust', part: 'year', digits: 4 },
+          { type: 'date', source: 'entrust', part: 'month' },
           { type: 'seq', digits: 3 }
         ]},
         { id: 'report', name: '报告编号规则', tokens: [
@@ -2002,7 +2013,7 @@
       { type: 'literal', value: 'AQ' },
       { type: 'category_code' },
       { type: 'literal', value: '-' },
-      { type: 'entrust_year', digits: 2 },
+      { type: 'date', source: 'entrust', part: 'year', digits: 2 },
       { type: 'seq', digits: 4 }
     ];
 
@@ -2065,13 +2076,31 @@
           '<button type="button" onclick="fillLiteralQuick(' + index + ',\'_\')">_</button>' +
           '</div></div>';
       }
-      if (tk.type === 'entrust_year' || tk.type === 'submit_year') {
+      if (tk.type === 'date') {
+        var src = tk.source || 'entrust';
+        var part = tk.part || 'year';
         var d = tk.digits || 4;
-        return '<div class="token-field"><label><span class="req">*</span>年份位数</label>' +
+        var html = '';
+        html += '<div class="token-field"><label><span class="req">*</span>日期来源</label>' +
           '<div class="token-radios">' +
-          '<label><input type="radio" name="yearDigits' + index + '" ' + (d === 2 ? 'checked' : '') + ' onchange="updateTokenField(' + index + ',\'digits\',2)" /> 2位</label>' +
-          '<label><input type="radio" name="yearDigits' + index + '" ' + (d === 4 ? 'checked' : '') + ' onchange="updateTokenField(' + index + ',\'digits\',4)" /> 4位</label>' +
+          '<label><input type="radio" name="dateSource' + index + '" ' + (src === 'entrust' ? 'checked' : '') + ' onchange="updateDateSource(' + index + ',\'entrust\')" /> 委托日期</label>' +
+          '<label><input type="radio" name="dateSource' + index + '" ' + (src === 'submit' ? 'checked' : '') + ' onchange="updateDateSource(' + index + ',\'submit\')" /> 送样日期</label>' +
+          '</div>' +
+          '<div class="token-hint" style="margin-top:8px"><i class="fa fa-info-circle text-blue-500"></i> 「委托日期」取<strong>委托登记</strong>日期。</div></div>';
+        html += '<div class="token-field"><label><span class="req">*</span>日期部分</label>' +
+          '<div class="token-radios">' +
+          '<label><input type="radio" name="datePart' + index + '" ' + (part === 'year' ? 'checked' : '') + ' onchange="updateDatePart(' + index + ',\'year\')" /> 年</label>' +
+          '<label><input type="radio" name="datePart' + index + '" ' + (part === 'month' ? 'checked' : '') + ' onchange="updateDatePart(' + index + ',\'month\')" /> 月</label>' +
+          '<label><input type="radio" name="datePart' + index + '" ' + (part === 'day' ? 'checked' : '') + ' onchange="updateDatePart(' + index + ',\'day\')" /> 日</label>' +
           '</div></div>';
+        if (part === 'year') {
+          html += '<div class="token-field"><label><span class="req">*</span>位数</label>' +
+            '<div class="token-radios">' +
+            '<label><input type="radio" name="dateDigits' + index + '" ' + (d === 2 ? 'checked' : '') + ' onchange="updateTokenField(' + index + ',\'digits\',2)" /> 2位</label>' +
+            '<label><input type="radio" name="dateDigits' + index + '" ' + (d === 4 ? 'checked' : '') + ' onchange="updateTokenField(' + index + ',\'digits\',4)" /> 4位</label>' +
+            '</div></div>';
+        }
+        return html;
       }
       if (tk.type === 'seq') {
         var sd = tk.digits || 4;
@@ -2092,9 +2121,6 @@
       }
       if (tk.type === 'category_code') {
         return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 生成时取当前样品所属<strong>样品分类 · 层级 1</strong>的「分类编号」（如图：DLDL）。仅第一层编号口径统一。</div>';
-      }
-      if (tk.type === 'sample_type') {
-        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 取样品数据中维护的「样品类型」字段值。</div>';
       }
       if (tk.type === 'specimen_category_code') {
         return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 取<strong>样品数据</strong>中该试验配置的「试样类别代码」。无试验上下文的单据请勿使用本令牌。</div>';
@@ -2178,6 +2204,25 @@
       renderTokenSegments();
     }
 
+    function updateDateSource(index, source) {
+      var tk = editingTokens[index];
+      if (!tk || tk.type !== 'date') return;
+      tk.source = source;
+      renderTokenSegments();
+    }
+
+    function updateDatePart(index, part) {
+      var tk = editingTokens[index];
+      if (!tk || tk.type !== 'date') return;
+      tk.part = part;
+      if (part === 'year') {
+        if (tk.digits !== 2 && tk.digits !== 4) tk.digits = 4;
+      } else {
+        delete tk.digits;
+      }
+      renderTokenSegments();
+    }
+
     function fillLiteralQuick(index, ch) {
       if (!editingTokens[index]) return;
       editingTokens[index].value = ch;
@@ -2200,12 +2245,14 @@
       for (var i = 0; i < editingTokens.length; i++) {
         var tk = editingTokens[i];
         if (tk.type === 'literal' && !String(tk.value || '').trim()) return '第 ' + (i + 1) + ' 段：请填写指定字符';
+        if (tk.type === 'date') {
+          if (tk.source !== 'entrust' && tk.source !== 'submit') return '第 ' + (i + 1) + ' 段：请选择日期来源';
+          if (tk.part !== 'year' && tk.part !== 'month' && tk.part !== 'day') return '第 ' + (i + 1) + ' 段：请选择日期部分';
+          if (tk.part === 'year' && tk.digits !== 2 && tk.digits !== 4) return '第 ' + (i + 1) + ' 段：年份位数仅支持 2 或 4';
+        }
         if (tk.type === 'seq') {
           seqCount++;
           if (!tk.digits || tk.digits < 2 || tk.digits > 8) return '第 ' + (i + 1) + ' 段：序号位数需在 2–8';
-        }
-        if ((tk.type === 'entrust_year' || tk.type === 'submit_year') && tk.digits !== 2 && tk.digits !== 4) {
-          return '第 ' + (i + 1) + ' 段：年份位数仅支持 2 或 4';
         }
       }
       if (seqCount > 1) return '同一规则内仅允许一个「自增序号」';
@@ -2347,7 +2394,7 @@
           position: 'top-right',
           title: '编号规则',
           wide: true,
-          content: '按<strong>样品大类</strong>（电力物资类 / 安全工器具类 / 环境检测 / 工程检测）分套配置委托、样品、记录单、报告等编号规则。令牌按类型分组；年份仅 2/4 位；「分类名称/分类编号」仅取样品分类层级 1；支持「试样类别代码」。已去除「客户编码」。',
+          content: '按<strong>样品大类</strong>（电力物资类 / 安全工器具类 / 环境检测 / 工程检测）分套配置委托、样品、记录单、报告等编号规则。令牌按类型分组；「日期」级联：来源（委托登记日/送样日）→ 年/月/日 → 年再选 2/4 位；「分类名称/分类编号」仅取层级 1；支持「试样类别代码」。已去除「客户编码」「样品类型」。引用编号保留。',
           tag: '业务流程配置'
         },
         {
@@ -2365,7 +2412,7 @@
           position: 'top-right',
           title: '类型化令牌编辑',
           wide: true,
-          content: '有序「规则组成」列表：每段选择<strong>类型</strong>（分组：固定字符 / 委托日期 / 送样日期 / 分类与样品 / 序号 / 引用编号），下方出现对应自定义区。<br><br>· 指定字符：文本 + / - _ 快捷<br>· 年份：仅 2 位 / 4 位<br>· 自增序号：位数 2–8<br>· 分类名称/编号：说明「仅层级 1」<br>· 试样类别代码：来自样品数据试验配置<br><br>无「客户编码」。',
+          content: '有序「规则组成」列表：每段选择<strong>类型</strong>（分组：固定字符 / 日期 / 分类与试样 / 序号 / 引用编号），下方出现对应自定义区。<br><br>· 指定字符：文本 + / - _ 快捷<br>· 日期：先选委托日期或送样日期 → 再选年/月/日 → 年再选 2/4 位（委托日期=委托登记日）<br>· 自增序号：位数 2–8<br>· 分类名称/编号：说明「仅层级 1」<br>· 试样类别代码：来自样品数据试验配置<br>· 引用编号：委托编号 / 样品编号 / 行号<br><br>无「客户编码」「样品类型」。',
           tag: '编号规则'
         },
         {
