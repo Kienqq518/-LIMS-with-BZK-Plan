@@ -4204,6 +4204,8 @@
         common.forEach(function (item) {
           setDocBucketTemplates(cat[item.type], DOC_DEFAULT_OPTION, item.templates);
         });
+        // 无模版时默认关闭生成，左侧灰点表示已关闭（避免红点「缺默认」）
+        cat['退样申请表'].cardEnabled = false;
       }
       var dlwz = buildEmptyDocCat();
       dlwz['检测委托书'].bindFieldId = 'taskType';
@@ -4713,7 +4715,7 @@
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 6 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },
         { id: 'doc-nav', selector: '[data-annotate="doc-nav"]', position: 'top-right', title: '单据列表', wide: true, content: '左侧列出 6 种单据。副文案展示状态：统一模版 / 按某字段分流进度 / 缺默认模版 / 已关闭。点击切换右侧详情；保存校验失败时对应项标红。', tag: '单据模版' },
         { id: 'doc-card-switch', selector: '[data-annotate="doc-card-switch"]', position: 'top-right', title: '系统生成开关', wide: true, content: '控制该单据类型是否支持系统生成。关闭时右侧详情置灰，但保留已上传模版及启用记忆；关闭状态下保存时不校验「默认」桶是否已上传模版。', tag: '单据模版' },
-        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '固定可选委托信息设置中已绑字典的 9 个下拉字段：任务类型、优先等级、检测类型、检测类别、付款方式、报告交付方式、报告资质、报告说明、结果格式。显示名随字段别名变化。绑定后右侧出现选项列表；选「不分流」则全委托共用一套版本列表（默认桶）。', tag: '单据模版' },
+        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '固定可选委托信息设置中已绑字典的 9 个下拉字段：任务类型、优先等级、检测类型、检测类别、付款方式、报告交付方式、报告资质、报告说明、结果格式。显示名随字段别名变化。<br><br><strong>开启分流：</strong>右侧出现「默认」+ 各选项列表；上传/启用仅作用于当前选项桶；生成时按委托单该字段值匹配，未命中回退「默认」。<br><br><strong>改回「不分流（统一模版）」：</strong>弹出确认；确认后仅保留「默认」桶中的模版版本，各选项桶内已上传文件清空；右侧选项列表收起，版本区恢复为统一列表。<br><br><strong>更换分流字段：</strong>同样需确认；保留默认桶，按新字段重建空选项桶并清空旧选项桶。', tag: '单据模版' },
         { id: 'doc-option-tabs', selector: '[data-annotate="doc-option-tabs"]', position: 'top-right', title: '选项列表', wide: true, content: '「默认」用于未命中选项时的回退；其余项对应该字段各选项。长文案纵向展示，不再横向挤兑。点击切换右侧版本列表。', tag: '单据模版' },
         { id: 'doc-card-version', selector: '[data-annotate="doc-card-version"]', position: 'top-right', title: '版本启用', wide: true, content: '当前选项桶内可存多个模版版本，通过单选启用其中一个；新上传的版本默认启用最新版。可直接配置、预览、删除。', tag: '单据模版' },
         { id: 'doc-upload', selector: '[data-annotate="doc-upload"]', position: 'top-right', title: '上传模版', content: '打开文件选择弹窗上传 .docx 模版；新上传版本自动启用，原启用版本取消选中。', tag: '单据模版' },
