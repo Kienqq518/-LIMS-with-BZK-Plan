@@ -21,8 +21,75 @@
     .tree-node { padding: 7px 12px; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; user-select: none; }
     .tree-node:hover { background: #f8fafc; }
     .tree-node.active { background: #eef2f7; color: #1e293b; font-weight: 500; }
-    .tree-toggle { width: 14px; flex-shrink: 0; color: #94a3b8; font-size: 10px; text-align: center; }
-    .main-panel { flex: 1; min-width: 0; background: #f8fafc; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 14px; }
+    .tree-node.branch { cursor: default; }
+    .tree-node.branch .tree-label { cursor: pointer; }
+    .tree-toggle { width: 14px; flex-shrink: 0; color: #94a3b8; font-size: 10px; text-align: center; cursor: pointer; }
+    .main-panel { flex: 1; min-width: 0; background: #f8fafc; display: flex; flex-direction: column; overflow: hidden; }
+    .main-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 14px; gap: 6px; }
+    .main-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .content-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+    .param-tabs { display: flex; gap: 4px; padding: 0 16px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+    .param-tab { border-bottom: 2px solid transparent; color: #64748b; padding: 10px 16px; cursor: pointer; font-size: 14px; }
+    .param-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
+    .param-panel { display: none; flex: 1; min-height: 0; overflow: auto; padding: 16px; }
+    .param-panel.active { display: block; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; max-width: 960px; }
+    .form-item label { display: block; font-size: 13px; color: #64748b; margin-bottom: 6px; }
+    .form-item .req { color: #ef4444; margin-right: 2px; }
+    .form-item input, .form-item select, .form-item textarea {
+      width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; background: #fff;
+    }
+    .form-item input:focus, .form-item select:focus, .form-item textarea:focus { border-color: #3b82f6; }
+    .upload-box { width: 120px; height: 120px; border: 1px dashed #cbd5e1; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 12px; cursor: pointer; background: #fff; }
+    .upload-box:hover { border-color: #2563eb; color: #2563eb; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; }
+    .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; vertical-align: top; }
+    .data-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
+    .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #eff6ff; color: #2563eb; font-size: 12px; }
+    .ov-badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: #fef3c7; color: #b45309; font-size: 11px; vertical-align: middle; }
+    .modal-mask { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+    .modal-box { width: 960px; max-width: 100%; max-height: calc(100vh - 32px); background: #fff; border-radius: 8px; box-shadow: 0 20px 50px rgba(15,23,42,.2); display: flex; flex-direction: column; }
+    .modal-box.sm { width: 520px; }
+    .modal-head, .modal-foot { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .modal-foot { border-bottom: none; border-top: 1px solid #e2e8f0; justify-content: flex-end; gap: 8px; }
+    .modal-body { padding: 16px; overflow: auto; flex: 1; min-height: 0; }
+    .split-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 420px; }
+    .split-edit .pane { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; background: #fff; }
+    .split-edit .pane-title { font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+    .field-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+    .field-row > label { width: 108px; flex-shrink: 0; text-align: right; font-size: 13px; color: #64748b; padding-top: 8px; }
+    .field-row .ctrl { flex: 1; min-width: 0; }
+    .field-row input, .field-row select, .field-row textarea { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; }
+    .seg-type { display: inline-flex; border: 1px solid #dcdfe6; border-radius: 4px; overflow: hidden; }
+    .seg-type button { border: 0; background: #fff; padding: 6px 10px; font-size: 12px; color: #64748b; cursor: pointer; }
+    .seg-type button.on { background: #2563eb; color: #fff; }
+    .item-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #f8fafc; }
+    .item-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .concat-builder { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; background: #f8fafc; }
+    .concat-seg { display: inline-flex; align-items: center; gap: 4px; margin: 0 4px 6px 0; padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #fff; border: 1px solid #e2e8f0; }
+    .concat-seg.field { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+    .concat-seg.text { background: #f1f5f9; color: #475569; }
+    .option-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+    .option-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #eff6ff; color: #2563eb; border-radius: 999px; font-size: 12px; }
+    .toggle { position: relative; display: inline-block; width: 40px; height: 22px; vertical-align: middle; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 11px; cursor: pointer; transition: .2s; }
+    .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+    .toggle input:checked + .toggle-slider { background: #2563eb; }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .toggle input:disabled + .toggle-slider { opacity: .5; cursor: not-allowed; }
+    .tip { font-size: 12px; color: #64748b; margin-top: 8px; }
+    .sync-tip { margin: 0 16px 12px; padding: 8px 12px; background: #eff6ff; color: #1d4ed8; border-radius: 6px; font-size: 12px; display: none; }
+    .tooltip-wrap { position: relative; display: inline-block; }
+    .tooltip-wrap .tip-bubble {
+      display: none; position: absolute; left: 0; top: calc(100% + 6px); z-index: 20; width: 260px;
+      background: #1e293b; color: #fff; font-size: 12px; line-height: 1.5; padding: 8px 10px; border-radius: 6px;
+    }
+    .tooltip-wrap:hover .tip-bubble { display: block; }
+    .readonly-hint { font-size: 12px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 8px 10px; margin-bottom: 12px; }
+    .multi-select { min-height: 34px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 4px 8px; background: #fff; cursor: pointer; }
+    .multi-select .ph { color: #94a3b8; font-size: 13px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -47,10 +114,212 @@
       </div>
       <div class="tree-body" id="treeBody"></div>
     </aside>
-    <div class="main-panel" id="mainPanel">右侧内容区（空白占位）</div>
+
+    <div class="main-panel" id="mainPanel">
+      <div class="main-empty" id="emptyState">
+        <i class="fa fa-sitemap text-3xl text-slate-300"></i>
+        <div>请选择具体样品</div>
+        <div class="text-xs text-slate-400">当前选中的是分类/标准节点，请在左侧选择样品叶节点后进行配置</div>
+      </div>
+
+      <div class="main-body hidden" id="sampleWorkspace">
+        <div class="content-head">
+          <div>
+            <div class="text-base font-medium text-slate-800" id="sampleTitle">-</div>
+            <div class="mt-1 text-xs text-slate-400">后台编码仅调度使用，前端不展示</div>
+          </div>
+          <div class="tooltip-wrap">
+            <button onclick="syncToDa()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">
+              <i class="fa fa-refresh"></i> 一键同步样品试验数据
+            </button>
+            <div class="tip-bubble">将 LIMS 样品数据结构同步至直连数采系统</div>
+          </div>
+        </div>
+        <div class="param-tabs">
+          <div class="param-tab active" data-tab="basic" onclick="switchTab('basic')">基本信息</div>
+          <div class="param-tab" data-tab="model" onclick="switchTab('model')">型号</div>
+          <div class="param-tab" data-tab="test" onclick="switchTab('test')">试验</div>
+        </div>
+        <div id="syncTip" class="sync-tip"></div>
+
+        <div class="param-panel active" id="panel-basic">
+          <div class="rounded bg-white p-5 shadow-sm">
+            <div class="form-grid">
+              <div class="form-item"><label><span class="req">*</span>样品分类</label><select id="b_category"></select></div>
+              <div class="form-item"><label><span class="req">*</span>名称</label><input id="b_name" type="text" /></div>
+              <div class="form-item"><label><span class="req">*</span>排序</label><input id="b_sort" type="number" min="1" /></div>
+              <div class="form-item"><label><span class="req">*</span>再检期限(月)</label><input id="b_recheck" type="number" min="0" /></div>
+              <div class="form-item"><label>单位</label><input id="b_unit" type="text" /></div>
+              <div class="form-item" style="grid-column:1 / -1"><label>样品描述</label><textarea id="b_desc" rows="3"></textarea></div>
+              <div class="form-item"><label>图片</label><div class="upload-box" onclick="toast('原型：选择图片')"><i class="fa fa-plus mb-1"></i>添加图片</div></div>
+              <div class="form-item"><label>附件</label><button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50" onclick="toast('原型：上传附件')"><i class="fa fa-upload"></i> 上传附件</button></div>
+            </div>
+            <div class="mt-6 text-center"><button onclick="saveBasic()" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">保存</button></div>
+          </div>
+        </div>
+
+        <div class="param-panel" id="panel-model">
+          <div class="mb-3 flex items-center justify-between">
+            <button onclick="openModelEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 添加型号</button>
+            <span class="text-xs text-slate-400">是否制样在试验项级配置；制备流程看委托所选试验</span>
+          </div>
+          <div class="overflow-x-auto rounded bg-white shadow-sm">
+            <table class="data-table min-w-[880px]">
+              <thead>
+                <tr>
+                  <th style="width:60px">序号</th>
+                  <th>型号名称</th>
+                  <th style="width:80px">排序</th>
+                  <th style="width:120px">再检期限(月)</th>
+                  <th style="width:80px">单位</th>
+                  <th>描述</th>
+                  <th style="width:100px">已配试验</th>
+                  <th style="width:220px">操作</th>
+                </tr>
+              </thead>
+              <tbody id="modelTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="param-panel" id="panel-test">
+          <div class="mb-3 flex items-center gap-2">
+            <button onclick="openTestEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 手动添加</button>
+            <button onclick="copyAddTest()" class="rounded border border-slate-300 px-4 py-1.5 text-sm hover:bg-slate-50">复制添加</button>
+          </div>
+          <div class="overflow-x-auto rounded bg-white shadow-sm">
+            <table class="data-table min-w-[960px]">
+              <thead>
+                <tr>
+                  <th style="width:60px">序号</th>
+                  <th>名称</th>
+                  <th id="thDetectCategory">检测类别</th>
+                  <th>检测依据</th>
+                  <th>检测数据项</th>
+                  <th style="width:90px">是否制样</th>
+                  <th style="width:180px">操作</th>
+                </tr>
+              </thead>
+              <tbody id="testTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑试验 -->
+  <div id="testModal" class="modal-mask">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="testModalTitle" class="text-base font-medium">编辑试验</h3>
+        <button onclick="closeModal('testModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div id="overrideReadonlyHint" class="readonly-hint hidden">结构字段只读：请在样品默认试验中修改结构（增减检测项、改类型/名称）。试验名称不可覆盖。</div>
+        <div class="split-edit">
+          <div class="pane">
+            <div class="pane-title">试验信息</div>
+            <div class="field-row"><label><span class="req">*</span>试验名称</label><div class="ctrl"><input id="t_name" type="text" /><div id="t_nameOv" class="hidden"></div></div></div>
+            <div class="field-row"><label><span class="req">*</span>检测依据</label><div class="ctrl"><select id="t_basis" multiple size="3"><option>DLT 976-2017</option><option>DLT 1476-2023</option><option>GB/T 12706.1-2020</option><option>DLT 802.3-2023</option></select></div></div>
+            <div class="field-row"><label><span class="req">*</span>判定依据</label><div class="ctrl"><select id="t_judge" multiple size="3"><option>DLT 976-2017</option><option>DLT 1476-2023</option><option>GB/T 12706.1-2020</option><option>DLT 802.3-2023</option></select></div></div>
+            <div class="field-row"><label id="lblDetectCategory"><span class="req">*</span>检测类别</label><div class="ctrl"><select id="t_detectCategory"></select><div id="t_detectCategoryOv"></div></div></div>
+            <div class="field-row"><label>试样类别代码</label><div class="ctrl"><input id="t_sampleCatCode" type="text" placeholder="非必填" /><div id="t_sampleCatCodeOv"></div></div></div>
+            <div class="field-row"><label>试样色号</label><div class="ctrl"><select id="t_colors" multiple size="4"></select><div class="tip">选项来自字典管理「试样色号」</div><div id="t_colorsOv"></div></div></div>
+            <div class="field-row"><label><span class="req">*</span>是否制样</label><div class="ctrl"><select id="t_needPrepare" onchange="toggleSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="t_needPrepareOv"></div></div></div>
+            <div class="field-row" id="rowSampleQty"><label><span class="req">*</span>试样数量</label><div class="ctrl"><input id="t_sampleQty" type="number" min="1" /><div id="t_sampleQtyOv"></div></div></div>
+            <div class="field-row"><label><span class="req">*</span>默认费用</label><div class="ctrl"><input id="t_fee" type="number" min="0" /><div id="t_feeOv"></div></div></div>
+            <div class="field-row"><label>检测设备</label><div class="ctrl"><input id="t_equip" type="text" placeholder="如 [YFG-150A] 绝缘安全工器具试验装置" /><div id="t_equipOv"></div></div></div>
+            <div class="field-row"><label>标准要求</label><div class="ctrl">
+              <div class="concat-builder" id="stdBuilder"></div>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <button type="button" class="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-white" onclick="addStdSeg('field')">+ 字段</button>
+                <button type="button" class="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-white" onclick="addStdSeg('text')">+ 文字</button>
+              </div>
+              <div class="tip mt-2">预览：<span id="stdPreview" class="text-slate-700">（空）</span></div>
+              <div id="t_stdOv"></div>
+            </div></div>
+            <div class="field-row"><label><span class="req">*</span>排序</label><div class="ctrl"><input id="t_sort" type="number" min="1" /><div id="t_sortOv"></div></div></div>
+            <div class="field-row"><label>备注</label><div class="ctrl"><input id="t_remark" type="text" /><div id="t_remarkOv"></div></div></div>
+          </div>
+          <div class="pane">
+            <div class="pane-title flex items-center justify-between">
+              <span>检测项</span>
+              <button type="button" id="btnAddItem" class="rounded bg-blue-600 px-2 py-1 text-xs text-white" onclick="addDetectItem()">+ 添加检测项</button>
+            </div>
+            <div id="detectItems"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="resetTestForm()">重置</button>
+        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="confirmTestEdit()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增试验同步决策 -->
+  <div id="syncNewTestModal" class="modal-mask">
+    <div class="modal-box sm">
+      <div class="modal-head"><h3 class="text-base font-medium">同步到已有型号</h3><button onclick="closeModal('syncNewTestModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body text-sm space-y-3">
+        <p>已新增默认试验「<span id="syncNewTestName" class="font-medium"></span>」。是否同步关联到已有型号？</p>
+        <label class="flex items-center gap-2"><input type="radio" name="syncMode" value="all" checked /> 全部型号</label>
+        <label class="flex items-center gap-2"><input type="radio" name="syncMode" value="pick" /> 选择型号</label>
+        <div id="syncModelPick" class="ml-6 hidden space-y-1"></div>
+        <label class="flex items-center gap-2"><input type="radio" name="syncMode" value="none" /> 不同步（仅默认模板）</label>
+      </div>
+      <div class="modal-foot">
+        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('syncNewTestModal')">取消</button>
+        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="confirmSyncNewTest()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 型号编辑 -->
+  <div id="modelModal" class="modal-mask">
+    <div class="modal-box sm">
+      <div class="modal-head"><h3 id="modelModalTitle" class="text-base font-medium">添加型号</h3><button onclick="closeModal('modelModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body space-y-3 text-sm">
+        <div class="field-row"><label><span class="req">*</span>型号名称</label><div class="ctrl"><input id="m_name" type="text" /></div></div>
+        <div class="field-row"><label>排序</label><div class="ctrl"><input id="m_sort" type="number" min="1" value="1" /></div></div>
+        <div class="field-row"><label>再检期限(月)</label><div class="ctrl"><input id="m_recheck" type="number" min="0" /></div></div>
+        <div class="field-row"><label>单位</label><div class="ctrl"><input id="m_unit" type="text" /></div></div>
+        <div class="field-row"><label>描述</label><div class="ctrl"><textarea id="m_desc" rows="3"></textarea></div></div>
+        <div class="field-row"><label>图片</label><div class="ctrl"><button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm" onclick="toast('原型：上传图片')">上传图片</button></div></div>
+        <div class="field-row"><label>附件</label><div class="ctrl"><button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm" onclick="toast('原型：上传附件')">上传附件</button></div></div>
+      </div>
+      <div class="modal-foot">
+        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('modelModal')">取消</button>
+        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="confirmModelEdit()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 配置试验 -->
+  <div id="cfgTestModal" class="modal-mask">
+    <div class="modal-box">
+      <div class="modal-head"><h3 id="cfgTestTitle" class="text-base font-medium">配置试验</h3><button onclick="closeModal('cfgTestModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body">
+        <div class="mb-3 text-sm text-slate-500">从样品默认试验中勾选本型号要做的试验；首次勾选将快照复制可覆盖取值，之后型号侧修改不回写默认。</div>
+        <div id="cfgTestList" class="space-y-2"></div>
+        <div class="mt-4 overflow-x-auto">
+          <table class="data-table">
+            <thead><tr><th>已关联试验</th><th>是否制样</th><th>检测数据项</th><th>操作</th></tr></thead>
+            <tbody id="cfgLinkedBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('cfgTestModal')">关闭</button>
+        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="saveCfgTests()">保存勾选</button>
+      </div>
+    </div>
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/mock-dict.js"></script>
+  <script src="js/entrust-field-config.js"></script>
   <script>
     var CAT_META = {
       dlwz: { name: '电力物资类' },
@@ -59,7 +328,6 @@
       gcjc: { name: '工程检测' }
     };
 
-    /* 图1 电力物资类 */
     var TREE_DLWZ = [
       { id: 'dldl', label: 'DLDL电力电缆类', open: true, children: [
         { id: 'v1', label: '额定电压 1kV 和 3kV', open: true, children: [
@@ -117,7 +385,6 @@
       ]}
     ];
 
-    /* 图2 安全工器具类 */
     var TREE_AQGQJ = [
       { id: 'dlt976', label: 'DLT 976-2017', open: true, children: [
         { id: 'rod', label: '绝缘操作杆', leaf: true },
@@ -142,7 +409,6 @@
       ]}
     ];
 
-    /* 图3 工程检测 */
     var TREE_GCJC = [
       { id: 'cement', label: '通用硅酸盐水泥', open: true, children: [
         { id: 'gb175', label: 'GB 175-2023', open: true, children: [
@@ -155,19 +421,164 @@
         ]}
       ]}
     ];
-
     var TREE_HJJC = [];
-
     var TREES = { dlwz: TREE_DLWZ, aqgqj: TREE_AQGQJ, hjjc: TREE_HJJC, gcjc: TREE_GCJC };
 
     var params = new URLSearchParams(window.location.search);
     var cat = params.get('cat') || 'dlwz';
     if (!CAT_META[cat]) cat = 'dlwz';
 
+    var dictTypes = MockDictStore.load();
+    var fieldSections = EntrustFieldConfig.load();
+    var uidSeq = 1000;
+    function uid(prefix) { return (prefix || 'id') + '_' + (++uidSeq); }
+    function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+    function toast(msg) { alert(msg); }
+
+    function detectCategoryLabel() {
+      var f = EntrustFieldConfig.findField(fieldSections, 'detectNature');
+      return (f && (f.placeholder || f.label)) || '检测类别';
+    }
+
+    function applyDetectCategoryLabels() {
+      var label = detectCategoryLabel();
+      document.getElementById('thDetectCategory').textContent = label;
+      document.getElementById('lblDetectCategory').innerHTML = '<span class="req">*</span>' + label;
+    }
+
+    function fillDictSelect(sel, type, multi) {
+      var items = MockDictStore.getActiveItems(dictTypes, type);
+      sel.innerHTML = items.map(function (it) {
+        return '<option value="' + it.value + '">' + it.label + '</option>';
+      }).join('');
+    }
+
+    function makeItem(partial) {
+      return Object.assign({
+        id: uid('di'), code: uid('DIC'), type: '文字', name: '', defaultValue: '', unit: '',
+        testCount: '1', calc: '', decimals: '', min: '', max: '', required: false, hidden: false, options: []
+      }, partial || {});
+    }
+
+    function makeTest(partial) {
+      return Object.assign({
+        id: uid('test'), code: uid('TST'), name: '', basis: ['DLT 976-2017'], judge: ['DLT 976-2017'],
+        detectCategory: 'routine', sampleCatCode: '', colors: [], needPrepare: '否', sampleQty: 1,
+        fee: 40, equip: '', sort: 1, remark: '',
+        stdReq: [],
+        items: []
+      }, partial || {});
+    }
+
+    function makeModel(partial) {
+      return Object.assign({
+        id: uid('model'), name: '', sort: 1, recheck: '', unit: '', desc: '',
+        linkedTestIds: [], overrides: {}
+      }, partial || {});
+    }
+
+    function emptySample(label, categoryLabel) {
+      return {
+        basic: {
+          category: categoryLabel || '',
+          name: label || '',
+          sort: 1,
+          recheck: 12,
+          unit: '',
+          desc: ''
+        },
+        models: [],
+        tests: []
+      };
+    }
+
+    function seedRod() {
+      var t1 = makeTest({
+        id: 't_ac', code: 'TST_AC', name: '交流耐压试验', detectCategory: 'routine',
+        basis: ['DLT 976-2017'], judge: ['DLT 976-2017'], colors: ['yellow'], needPrepare: '否',
+        fee: 40, equip: '[YFG-150A] 绝缘安全工器具试验装置', sort: 1,
+        stdReq: [
+          { type: 'field', value: '标称值', sep: '/' },
+          { type: 'field', value: '试验值', sep: '' },
+          { type: 'text', value: '，应无击穿、无闪络、无过热', sep: '' }
+        ],
+        items: [
+          makeItem({ id: 'di1', code: 'DIC1', type: '数字', name: '标称值', defaultValue: '', unit: 'kV', required: true }),
+          makeItem({ id: 'di2', code: 'DIC2', type: '数字', name: '试验值', unit: 'kV', required: true }),
+          makeItem({ id: 'di3', code: 'DIC3', type: '数字', name: '时间', unit: 'min', defaultValue: '1' }),
+          makeItem({ id: 'di4', code: 'DIC4', type: '文字', name: '结论', required: true }),
+          makeItem({ id: 'di5', code: 'DIC5', type: '数字', name: '试验电极间距离', unit: 'm', defaultValue: '', hidden: true })
+        ]
+      });
+      var t2 = makeTest({
+        id: 't_look', code: 'TST_LOOK', name: '外观及尺寸', detectCategory: 'routine', sort: 2, fee: 20,
+        needPrepare: '否',
+        items: [
+          makeItem({ id: 'di6', code: 'DIC6', type: '文字', name: '外观描述', required: true }),
+          makeItem({ id: 'di7', code: 'DIC7', type: '下拉', name: '状态', options: ['合格', '不合格'], required: true })
+        ]
+      });
+      var t3 = makeTest({
+        id: 't_bend', code: 'TST_BEND', name: '挠度载荷', detectCategory: 'type', sort: 3, fee: 30, needPrepare: '是', sampleQty: 1,
+        items: [makeItem({ id: 'di8', code: 'DIC8', type: '数字', name: '载荷值', unit: 'N', required: true })]
+      });
+      var m1 = makeModel({
+        id: 'm_10', name: '10kV', sort: 1, recheck: 12, unit: '根', desc: '',
+        linkedTestIds: ['t_ac', 't_look'],
+        overrides: {
+          t_ac: {
+            values: { fee: 40 },
+            items: { di1: { defaultValue: '10' } }
+          }
+        }
+      });
+      var m2 = makeModel({
+        id: 'm_20', name: '20kV', sort: 2, recheck: 12, unit: '根',
+        linkedTestIds: ['t_ac', 't_look', 't_bend'],
+        overrides: {
+          t_ac: { items: { di1: { defaultValue: '20' } } },
+          t_bend: { values: { needPrepare: '是', sampleQty: 2 } }
+        }
+      });
+      return {
+        basic: { category: 'DLT 976-2017', name: '绝缘操作杆', sort: 1, recheck: 12, unit: '根', desc: '带电作业用绝缘操作杆' },
+        models: [m1, m2],
+        tests: [t1, t2, t3]
+      };
+    }
+
+    function seedBelt976() {
+      return {
+        basic: { category: 'DLT 976-2017', name: '安全带', sort: 3, recheck: 12, unit: '条', desc: '' },
+        models: [],
+        tests: [
+          makeTest({
+            id: 't_belt_look', name: '外观检查', detectCategory: 'routine', sort: 1, fee: 15,
+            items: [makeItem({ name: '外观结论', type: '下拉', options: ['合格', '不合格'], required: true })]
+          })
+        ]
+      };
+    }
+
+    var SAMPLE_STORE = {
+      rod: seedRod(),
+      belt976: seedBelt976()
+    };
+
     var state = {
       cat: cat,
-      selectedId: cat === 'dlwz' ? 'cu6-3c' : (cat === 'aqgqj' ? 'belt976' : (cat === 'gcjc' ? 'p' : null)),
-      openIds: {}
+      selectedId: cat === 'dlwz' ? 'cu6-3c' : (cat === 'aqgqj' ? 'rod' : (cat === 'gcjc' ? 'p' : null)),
+      selectedIsLeaf: true,
+      openIds: {},
+      activeTab: 'basic',
+      editingTestId: null,
+      editingModelId: null,
+      overrideMode: false,
+      overrideModelId: null,
+      pendingNewTestId: null,
+      draft: null,
+      stdSegs: [],
+      draftItems: []
     };
 
     function collectOpen(nodes) {
@@ -181,6 +592,60 @@
     document.getElementById('catTitle').textContent = CAT_META[cat].name;
     document.getElementById('tabCatName').textContent = CAT_META[cat].name;
 
+    function findNode(nodes, id) {
+      for (var i = 0; i < (nodes || []).length; i++) {
+        if (nodes[i].id === id) return nodes[i];
+        var c = findNode(nodes[i].children, id);
+        if (c) return c;
+      }
+      return null;
+    }
+
+    function findParentLabel(nodes, id, parentLabel) {
+      for (var i = 0; i < (nodes || []).length; i++) {
+        var n = nodes[i];
+        if (n.id === id) return parentLabel || '';
+        if (n.children) {
+          var hit = findParentLabel(n.children, id, n.label);
+          if (hit !== null && hit !== undefined && (n.children.some(function (c) { return c.id === id; }) || findNode(n.children, id))) {
+            if (n.children.some(function (c) { return c.id === id; })) return n.label;
+            var deeper = findParentLabel(n.children, id, n.label);
+            if (deeper) return deeper;
+          }
+        }
+      }
+      return '';
+    }
+
+    function getParentCategory(sampleId) {
+      function walk(nodes, trail) {
+        for (var i = 0; i < (nodes || []).length; i++) {
+          var n = nodes[i];
+          var next = trail.concat(n.label);
+          if (n.id === sampleId) return trail.length ? trail[trail.length - 1] : '';
+          if (n.children) {
+            var r = walk(n.children, next);
+            if (r !== null) return r;
+          }
+        }
+        return null;
+      }
+      return walk(TREES[state.cat], '') || '';
+    }
+
+    function ensureSample(id) {
+      if (!SAMPLE_STORE[id]) {
+        var node = findNode(TREES[state.cat], id);
+        SAMPLE_STORE[id] = emptySample(node ? node.label : id, getParentCategory(id));
+      }
+      return SAMPLE_STORE[id];
+    }
+
+    function currentSample() {
+      if (!state.selectedId || !state.selectedIsLeaf) return null;
+      return ensureSample(state.selectedId);
+    }
+
     function matchKw(n, kw) {
       if (!kw) return true;
       if ((n.label || '').toLowerCase().indexOf(kw) >= 0) return true;
@@ -192,14 +657,19 @@
       (nodes || []).forEach(function (n) {
         if (kw && !matchKw(n, kw)) return;
         var hasChild = n.children && n.children.length;
+        var isLeaf = !!n.leaf && !hasChild;
         var isOpen = !!state.openIds[n.id];
         var pad = depth * 16 + 12;
-        var active = state.selectedId === n.id ? ' active' : '';
+        var active = (state.selectedIsLeaf && state.selectedId === n.id) ? ' active' : '';
         var toggle = hasChild
-          ? '<span class="tree-toggle">' + (isOpen ? '▼' : '▶') + '</span>'
+          ? '<span class="tree-toggle" onclick="toggleNode(event,\'' + n.id + '\')">' + (isOpen ? '▼' : '▶') + '</span>'
           : '<span class="tree-toggle"></span>';
-        html += '<div class="tree-node' + active + '" style="padding-left:' + pad + 'px" onclick="onTreeClick(event,\'' + n.id + '\',' + !!n.leaf + ',' + !!hasChild + ')">' +
-          toggle + '<span>' + n.label + '</span></div>';
+        var cls = 'tree-node' + active + (hasChild && !isLeaf ? ' branch' : '');
+        var click = isLeaf
+          ? 'onclick="selectLeaf(\'' + n.id + '\')"'
+          : (hasChild ? 'onclick="toggleNode(event,\'' + n.id + '\')"' : '');
+        html += '<div class="' + cls + '" style="padding-left:' + pad + 'px" ' + click + '>' +
+          toggle + '<span class="tree-label">' + n.label + '</span></div>';
         if (hasChild && isOpen) html += renderNodes(n.children, depth + 1, kw);
       });
       return html;
@@ -207,23 +677,764 @@
 
     function renderTree() {
       var kw = (document.getElementById('treeSearch').value || '').trim().toLowerCase();
-      var nodes = TREES[state.cat] || [];
-      var html = renderNodes(nodes, 0, kw);
+      var html = renderNodes(TREES[state.cat] || [], 0, kw);
       document.getElementById('treeBody').innerHTML = html || '<div class="px-4 py-10 text-center text-slate-400 text-sm">暂无样品分类数据</div>';
     }
 
-    function onTreeClick(e, id, isLeaf, hasChild) {
-      e.stopPropagation();
-      if (hasChild) state.openIds[id] = !state.openIds[id];
-      if (isLeaf || !hasChild) state.selectedId = id;
+    function toggleNode(e, id) {
+      if (e) e.stopPropagation();
+      state.openIds[id] = !state.openIds[id];
       renderTree();
     }
 
-    function goBack() {
-      window.location.href = 'sample-data.html';
+    function selectLeaf(id) {
+      state.selectedId = id;
+      state.selectedIsLeaf = true;
+      state.activeTab = 'basic';
+      hideSyncTip();
+      renderTree();
+      renderWorkspace();
     }
 
+    function goBack() { window.location.href = 'sample-data.html'; }
+
+    function switchTab(tab) {
+      state.activeTab = tab;
+      document.querySelectorAll('.param-tab').forEach(function (el) {
+        el.classList.toggle('active', el.getAttribute('data-tab') === tab);
+      });
+      document.querySelectorAll('.param-panel').forEach(function (el) {
+        el.classList.toggle('active', el.id === 'panel-' + tab);
+      });
+      if (tab === 'model') renderModelTable();
+      if (tab === 'test') renderTestTable();
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    function hideSyncTip() {
+      var el = document.getElementById('syncTip');
+      el.style.display = 'none';
+      el.textContent = '';
+    }
+
+    function showSyncTip(msg) {
+      var el = document.getElementById('syncTip');
+      el.style.display = 'block';
+      el.textContent = msg;
+    }
+
+    function renderWorkspace() {
+      applyDetectCategoryLabels();
+      var sample = currentSample();
+      if (!sample) {
+        document.getElementById('emptyState').classList.remove('hidden');
+        document.getElementById('sampleWorkspace').classList.add('hidden');
+        return;
+      }
+      document.getElementById('emptyState').classList.add('hidden');
+      document.getElementById('sampleWorkspace').classList.remove('hidden');
+      var node = findNode(TREES[state.cat], state.selectedId);
+      document.getElementById('sampleTitle').textContent = sample.basic.name || (node && node.label) || state.selectedId;
+      fillBasicForm(sample);
+      switchTab(state.activeTab);
+      renderModelTable();
+      renderTestTable();
+    }
+
+    function fillCategoryOptions(selected) {
+      var sel = document.getElementById('b_category');
+      var opts = [];
+      function walk(nodes) {
+        (nodes || []).forEach(function (n) {
+          if (n.children && n.children.length) {
+            if (!n.leaf) opts.push(n.label);
+            walk(n.children);
+          }
+        });
+      }
+      walk(TREES[state.cat]);
+      opts = opts.filter(function (v, i, a) { return a.indexOf(v) === i; });
+      if (selected && opts.indexOf(selected) < 0) opts.unshift(selected);
+      sel.innerHTML = opts.map(function (o) {
+        return '<option value="' + o + '"' + (o === selected ? ' selected' : '') + '>' + o + '</option>';
+      }).join('');
+    }
+
+    function fillBasicForm(sample) {
+      fillCategoryOptions(sample.basic.category || getParentCategory(state.selectedId));
+      document.getElementById('b_name').value = sample.basic.name || '';
+      document.getElementById('b_sort').value = sample.basic.sort || 1;
+      document.getElementById('b_recheck').value = sample.basic.recheck || '';
+      document.getElementById('b_unit').value = sample.basic.unit || '';
+      document.getElementById('b_desc').value = sample.basic.desc || '';
+    }
+
+    function saveBasic() {
+      var sample = currentSample();
+      if (!sample) return;
+      var name = document.getElementById('b_name').value.trim();
+      var sort = document.getElementById('b_sort').value;
+      var recheck = document.getElementById('b_recheck').value;
+      if (!name || !sort || recheck === '') { toast('请填写必填字段'); return; }
+      sample.basic.category = document.getElementById('b_category').value;
+      sample.basic.name = name;
+      sample.basic.sort = Number(sort);
+      sample.basic.recheck = Number(recheck);
+      sample.basic.unit = document.getElementById('b_unit').value.trim();
+      sample.basic.desc = document.getElementById('b_desc').value.trim();
+      document.getElementById('sampleTitle').textContent = name;
+      toast('基本信息已保存');
+    }
+
+    function syncToDa() {
+      toast('已触发同步：将当前样品数据结构推送至直连数采系统（原型演示）');
+    }
+
+    function renderModelTable() {
+      var sample = currentSample();
+      var body = document.getElementById('modelTableBody');
+      if (!sample) { body.innerHTML = ''; return; }
+      if (!sample.models.length) {
+        body.innerHTML = '<tr><td colspan="8" class="text-center text-slate-400 py-8">暂无型号，请点击「添加型号」</td></tr>';
+        return;
+      }
+      body.innerHTML = sample.models.map(function (m, idx) {
+        return '<tr>' +
+          '<td>' + (idx + 1) + '</td>' +
+          '<td>' + esc(m.name) + '</td>' +
+          '<td>' + (m.sort || '') + '</td>' +
+          '<td>' + (m.recheck || '') + '</td>' +
+          '<td>' + esc(m.unit || '') + '</td>' +
+          '<td>' + esc(m.desc || '') + '</td>' +
+          '<td><span class="tag">' + (m.linkedTestIds || []).length + ' 项</span></td>' +
+          '<td class="space-x-2 whitespace-nowrap">' +
+            '<button class="text-blue-600 hover:underline" onclick="openModelEdit(\'' + m.id + '\')">编辑</button>' +
+            '<button class="text-blue-600 hover:underline" onclick="openCfgTests(\'' + m.id + '\')">配置试验</button>' +
+            '<button class="text-blue-600 hover:underline" onclick="toast(\'原型：附件\')">附件</button>' +
+            '<button class="text-red-500 hover:underline" onclick="deleteModel(\'' + m.id + '\')">删除</button>' +
+          '</td></tr>';
+      }).join('');
+    }
+
+    function renderTestTable() {
+      var sample = currentSample();
+      var body = document.getElementById('testTableBody');
+      if (!sample) { body.innerHTML = ''; return; }
+      if (!sample.tests.length) {
+        body.innerHTML = '<tr><td colspan="7" class="text-center text-slate-400 py-8">暂无默认试验，请手动添加</td></tr>';
+        return;
+      }
+      var catMap = {};
+      MockDictStore.getActiveItems(dictTypes, 'lims_detect_category').forEach(function (it) { catMap[it.value] = it.label; });
+      body.innerHTML = sample.tests.map(function (t, idx) {
+        var names = (t.items || []).map(function (i) { return i.name; }).filter(Boolean);
+        return '<tr>' +
+          '<td>' + (idx + 1) + '</td>' +
+          '<td>' + esc(t.name) + '</td>' +
+          '<td>' + esc(catMap[t.detectCategory] || t.detectCategory || '') + '</td>' +
+          '<td>' + esc((t.basis || []).join('、')) + '</td>' +
+          '<td><span class="tag" title="' + esc(names.join('，')) + '">' + names.length + ' 项</span></td>' +
+          '<td>' + esc(t.needPrepare || '否') + '</td>' +
+          '<td class="space-x-2 whitespace-nowrap">' +
+            '<button class="text-blue-600 hover:underline" onclick="openTestEdit(\'' + t.id + '\')">编辑</button>' +
+            '<button class="text-blue-600 hover:underline" onclick="moveTest(\'' + t.id + '\',-1)">↑</button>' +
+            '<button class="text-blue-600 hover:underline" onclick="moveTest(\'' + t.id + '\',1)">↓</button>' +
+            '<button class="text-red-500 hover:underline" onclick="deleteTest(\'' + t.id + '\')">删除</button>' +
+          '</td></tr>';
+      }).join('');
+    }
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+      });
+    }
+
+    function openModelEdit(id) {
+      state.editingModelId = id || null;
+      document.getElementById('modelModalTitle').textContent = id ? '编辑型号' : '添加型号';
+      var m = id ? currentSample().models.find(function (x) { return x.id === id; }) : null;
+      document.getElementById('m_name').value = m ? m.name : '';
+      document.getElementById('m_sort').value = m ? m.sort : ((currentSample().models.length || 0) + 1);
+      document.getElementById('m_recheck').value = m ? (m.recheck || '') : (currentSample().basic.recheck || '');
+      document.getElementById('m_unit').value = m ? (m.unit || '') : (currentSample().basic.unit || '');
+      document.getElementById('m_desc').value = m ? (m.desc || '') : '';
+      openModal('modelModal');
+    }
+
+    function confirmModelEdit() {
+      var name = document.getElementById('m_name').value.trim();
+      if (!name) { toast('请填写型号名称'); return; }
+      var sample = currentSample();
+      if (state.editingModelId) {
+        var m = sample.models.find(function (x) { return x.id === state.editingModelId; });
+        m.name = name;
+        m.sort = Number(document.getElementById('m_sort').value || 1);
+        m.recheck = document.getElementById('m_recheck').value;
+        m.unit = document.getElementById('m_unit').value.trim();
+        m.desc = document.getElementById('m_desc').value.trim();
+      } else {
+        sample.models.push(makeModel({
+          name: name,
+          sort: Number(document.getElementById('m_sort').value || 1),
+          recheck: document.getElementById('m_recheck').value,
+          unit: document.getElementById('m_unit').value.trim(),
+          desc: document.getElementById('m_desc').value.trim()
+        }));
+      }
+      closeModal('modelModal');
+      renderModelTable();
+    }
+
+    function deleteModel(id) {
+      if (!confirm('确认删除该型号？')) return;
+      var sample = currentSample();
+      sample.models = sample.models.filter(function (m) { return m.id !== id; });
+      renderModelTable();
+    }
+
+    function openCfgTests(modelId) {
+      state.editingModelId = modelId;
+      var sample = currentSample();
+      var model = sample.models.find(function (m) { return m.id === modelId; });
+      document.getElementById('cfgTestTitle').textContent = '配置试验 · ' + model.name;
+      var html = sample.tests.map(function (t) {
+        var checked = (model.linkedTestIds || []).indexOf(t.id) >= 0 ? 'checked' : '';
+        return '<label class="flex items-center gap-2 rounded border border-slate-200 px-3 py-2 text-sm">' +
+          '<input type="checkbox" class="cfg-test-cb" value="' + t.id + '" ' + checked + ' /> ' + esc(t.name) +
+          '</label>';
+      }).join('') || '<div class="text-slate-400 text-sm">请先在「试验」Tab 配置默认试验</div>';
+      document.getElementById('cfgTestList').innerHTML = html;
+      renderCfgLinked(model);
+      openModal('cfgTestModal');
+    }
+
+    function effectiveTestForModel(sample, model, testId) {
+      var base = sample.tests.find(function (t) { return t.id === testId; });
+      if (!base) return null;
+      var merged = deepClone(base);
+      var ov = (model.overrides && model.overrides[testId]) || {};
+      Object.assign(merged, ov.values || {});
+      (merged.items || []).forEach(function (it) {
+        if (ov.items && ov.items[it.id]) Object.assign(it, ov.items[it.id]);
+      });
+      return merged;
+    }
+
+    function renderCfgLinked(model) {
+      var sample = currentSample();
+      var body = document.getElementById('cfgLinkedBody');
+      if (!(model.linkedTestIds || []).length) {
+        body.innerHTML = '<tr><td colspan="4" class="text-center text-slate-400">尚未关联试验</td></tr>';
+        return;
+      }
+      body.innerHTML = model.linkedTestIds.map(function (tid) {
+        var t = effectiveTestForModel(sample, model, tid);
+        if (!t) return '';
+        var n = (t.items || []).length;
+        return '<tr><td>' + esc(t.name) + '</td><td>' + esc(t.needPrepare || '否') + '</td><td><span class="tag">' + n + ' 项</span></td>' +
+          '<td class="space-x-2"><button class="text-blue-600 hover:underline" onclick="openTestEdit(\'' + tid + '\', true, \'' + model.id + '\')">编辑</button>' +
+          '<button class="text-red-500 hover:underline" onclick="unlinkTest(\'' + model.id + '\',\'' + tid + '\')">取消关联</button></td></tr>';
+      }).join('');
+    }
+
+    function saveCfgTests() {
+      var sample = currentSample();
+      var model = sample.models.find(function (m) { return m.id === state.editingModelId; });
+      var selected = Array.prototype.slice.call(document.querySelectorAll('.cfg-test-cb:checked')).map(function (el) { return el.value; });
+      var prev = model.linkedTestIds || [];
+      selected.forEach(function (tid) {
+        if (prev.indexOf(tid) < 0) {
+          // 首次勾选：快照复制可覆盖取值到 overrides（保留空覆盖对象以便后续编辑；默认值已在试验上）
+          if (!model.overrides[tid]) model.overrides[tid] = { values: {}, items: {} };
+          var base = sample.tests.find(function (t) { return t.id === tid; });
+          if (base) {
+            (base.items || []).forEach(function (it) {
+              if (it.defaultValue !== '' && it.defaultValue != null) {
+                model.overrides[tid].items[it.id] = { defaultValue: it.defaultValue };
+              }
+            });
+          }
+        }
+      });
+      // 取消勾选的清理 overrides
+      Object.keys(model.overrides || {}).forEach(function (tid) {
+        if (selected.indexOf(tid) < 0) delete model.overrides[tid];
+      });
+      model.linkedTestIds = selected;
+      renderCfgLinked(model);
+      renderModelTable();
+      toast('已保存型号试验关联（默认侧模板值保留，快照已复制到型号）');
+    }
+
+    function unlinkTest(modelId, testId) {
+      var model = currentSample().models.find(function (m) { return m.id === modelId; });
+      model.linkedTestIds = (model.linkedTestIds || []).filter(function (id) { return id !== testId; });
+      if (model.overrides) delete model.overrides[testId];
+      renderCfgLinked(model);
+      renderModelTable();
+    }
+
+    function getSelectedOptions(sel) {
+      return Array.prototype.slice.call(sel.selectedOptions).map(function (o) { return o.value; });
+    }
+
+    function setSelectedOptions(sel, values) {
+      var set = {};
+      (values || []).forEach(function (v) { set[v] = true; });
+      Array.prototype.slice.call(sel.options).forEach(function (o) { o.selected = !!set[o.value]; });
+    }
+
+    function openTestEdit(testId, overrideMode, modelId) {
+      var sample = currentSample();
+      state.overrideMode = !!overrideMode;
+      state.overrideModelId = modelId || null;
+      state.editingTestId = testId || null;
+      document.getElementById('overrideReadonlyHint').classList.toggle('hidden', !state.overrideMode);
+      document.getElementById('btnAddItem').style.display = state.overrideMode ? 'none' : '';
+      document.getElementById('testModalTitle').textContent = state.overrideMode
+        ? ('编辑试验（型号：' + (sample.models.find(function (m) { return m.id === modelId; }) || {}).name + '）')
+        : (testId ? '编辑试验' : '添加试验');
+
+      fillDictSelect(document.getElementById('t_detectCategory'), 'lims_detect_category');
+      fillDictSelect(document.getElementById('t_colors'), 'lims_sample_color');
+
+      var base = testId ? sample.tests.find(function (t) { return t.id === testId; }) : null;
+      var data = base ? deepClone(base) : makeTest({ sort: (sample.tests.length || 0) + 1 });
+      if (state.overrideMode && modelId) {
+        var model = sample.models.find(function (m) { return m.id === modelId; });
+        data = effectiveTestForModel(sample, model, testId) || data;
+      }
+      state.draft = deepClone(base || data);
+      state.stdSegs = deepClone(data.stdReq || []);
+      state.draftItems = deepClone(data.items || []);
+
+      document.getElementById('t_name').value = data.name || '';
+      document.getElementById('t_name').disabled = !!state.overrideMode;
+      setSelectedOptions(document.getElementById('t_basis'), data.basis);
+      setSelectedOptions(document.getElementById('t_judge'), data.judge);
+      document.getElementById('t_detectCategory').value = data.detectCategory || '';
+      document.getElementById('t_sampleCatCode').value = data.sampleCatCode || '';
+      setSelectedOptions(document.getElementById('t_colors'), data.colors || []);
+      document.getElementById('t_needPrepare').value = data.needPrepare || '否';
+      document.getElementById('t_sampleQty').value = data.sampleQty || 1;
+      document.getElementById('t_fee').value = data.fee || '';
+      document.getElementById('t_equip').value = data.equip || '';
+      document.getElementById('t_sort').value = data.sort || 1;
+      document.getElementById('t_remark').value = data.remark || '';
+      toggleSampleQty();
+      renderStdBuilder();
+      renderDetectItems();
+      renderOverrideBadges(base);
+      openModal('testModal');
+    }
+
+    function renderOverrideBadges(base) {
+      ['t_detectCategoryOv','t_sampleCatCodeOv','t_colorsOv','t_needPrepareOv','t_sampleQtyOv','t_feeOv','t_equipOv','t_stdOv','t_sortOv','t_remarkOv','t_nameOv'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+      });
+      if (!state.overrideMode || !base) return;
+      var model = currentSample().models.find(function (m) { return m.id === state.overrideModelId; });
+      var ov = (model && model.overrides && model.overrides[state.editingTestId]) || { values: {}, items: {} };
+      function badge(targetId, key) {
+        if (!ov.values || ov.values[key] === undefined) return;
+        document.getElementById(targetId).innerHTML = '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600 hover:underline" onclick="restoreOverrideValue(\'' + key + '\')">恢复默认</button>';
+      }
+      badge('t_detectCategoryOv', 'detectCategory');
+      badge('t_sampleCatCodeOv', 'sampleCatCode');
+      badge('t_needPrepareOv', 'needPrepare');
+      badge('t_sampleQtyOv', 'sampleQty');
+      badge('t_feeOv', 'fee');
+      badge('t_equipOv', 'equip');
+      badge('t_sortOv', 'sort');
+      badge('t_remarkOv', 'remark');
+      if (ov.values && ov.values.stdReq) {
+        document.getElementById('t_stdOv').innerHTML = '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600 hover:underline" onclick="restoreOverrideValue(\'stdReq\')">恢复默认</button>';
+      }
+      if (ov.values && ov.values.colors) {
+        document.getElementById('t_colorsOv').innerHTML = '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600 hover:underline" onclick="restoreOverrideValue(\'colors\')">恢复默认</button>';
+      }
+    }
+
+    function restoreOverrideValue(key) {
+      var sample = currentSample();
+      var model = sample.models.find(function (m) { return m.id === state.overrideModelId; });
+      var base = sample.tests.find(function (t) { return t.id === state.editingTestId; });
+      if (!model || !base) return;
+      if (model.overrides[state.editingTestId] && model.overrides[state.editingTestId].values) {
+        delete model.overrides[state.editingTestId].values[key];
+      }
+      openTestEdit(state.editingTestId, true, state.overrideModelId);
+    }
+
+    function toggleSampleQty() {
+      var show = document.getElementById('t_needPrepare').value === '是';
+      document.getElementById('rowSampleQty').style.display = show ? 'flex' : 'none';
+    }
+
+    function renderStdBuilder() {
+      var box = document.getElementById('stdBuilder');
+      if (!state.stdSegs.length) {
+        box.innerHTML = '<span class="text-slate-400 text-xs">点击下方按钮添加字段或文字段，段间连接符可选 - / _</span>';
+      } else {
+        box.innerHTML = state.stdSegs.map(function (seg, idx) {
+          var typeCls = seg.type === 'field' ? 'field' : 'text';
+          var body = seg.type === 'field'
+            ? ('<select onchange="updateStdSeg(' + idx + ',\'value\',this.value)">' + fieldOptionsHtml(seg.value) + '</select>')
+            : ('<input style="width:120px" value="' + esc(seg.value || '') + '" onchange="updateStdSeg(' + idx + ',\'value\',this.value)" placeholder="文字" />');
+          var sep = idx < state.stdSegs.length - 1
+            ? ('<select onchange="updateStdSeg(' + idx + ',\'sep\',this.value)">' +
+                ['','-','/','_'].map(function (s) {
+                  return '<option value="' + s + '"' + ((seg.sep || '') === s ? ' selected' : '') + '>' + (s || '无') + '</option>';
+                }).join('') + '</select>')
+            : '';
+          return '<span class="concat-seg ' + typeCls + '"><span class="text-[10px] opacity-70">' + (seg.type === 'field' ? '字段' : '文字') + '</span> ' +
+            body + sep +
+            ' <button type="button" onclick="removeStdSeg(' + idx + ')" class="text-slate-400 hover:text-red-500"><i class="fa fa-times"></i></button></span>';
+        }).join('');
+      }
+      document.getElementById('stdPreview').textContent = previewStd(state.stdSegs) || '（空）';
+    }
+
+    function fieldOptionsHtml(selected) {
+      var names = state.draftItems.map(function (i) { return i.name; }).filter(Boolean);
+      if (selected && names.indexOf(selected) < 0) names.unshift(selected);
+      return '<option value="">请选择字段</option>' + names.map(function (n) {
+        return '<option value="' + esc(n) + '"' + (n === selected ? ' selected' : '') + '>' + esc(n) + '</option>';
+      }).join('');
+    }
+
+    function previewStd(segs) {
+      return (segs || []).map(function (seg, idx) {
+        var v = seg.type === 'field' ? ('{' + (seg.value || '字段') + '}') : (seg.value || '');
+        var sep = idx < segs.length - 1 ? (seg.sep || '') : '';
+        return v + sep;
+      }).join('');
+    }
+
+    function addStdSeg(type) {
+      state.stdSegs.push({ type: type, value: type === 'field' ? '' : '', sep: '/' });
+      renderStdBuilder();
+    }
+    function updateStdSeg(idx, key, val) { state.stdSegs[idx][key] = val; renderStdBuilder(); }
+    function removeStdSeg(idx) { state.stdSegs.splice(idx, 1); renderStdBuilder(); }
+
+    function renderDetectItems() {
+      var box = document.getElementById('detectItems');
+      if (!state.draftItems.length) {
+        box.innerHTML = '<div class="text-sm text-slate-400 py-6 text-center">暂无检测项</div>';
+        return;
+      }
+      box.innerHTML = state.draftItems.map(function (it, idx) {
+        var lockedReq = !!it.hidden;
+        var ovHtml = '';
+        if (state.overrideMode) {
+          var model = currentSample().models.find(function (m) { return m.id === state.overrideModelId; });
+          var ovi = model && model.overrides[state.editingTestId] && model.overrides[state.editingTestId].items && model.overrides[state.editingTestId].items[it.id];
+          if (ovi && Object.keys(ovi).length) {
+            ovHtml = '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600" onclick="restoreItemOverride(\'' + it.id + '\')">恢复默认</button>';
+          }
+        }
+        var structDisabled = state.overrideMode ? 'disabled' : '';
+        return '<div class="item-card">' +
+          '<div class="item-card-head"><div class="text-sm font-medium text-slate-700">检测项 ' + (idx + 1) + ' ' + ovHtml + '</div>' +
+          '<div class="space-x-2 text-slate-400">' +
+            (state.overrideMode ? '' : ('<button type="button" onclick="moveItem(' + idx + ',-1)"><i class="fa fa-arrow-up"></i></button>' +
+            '<button type="button" onclick="moveItem(' + idx + ',1)"><i class="fa fa-arrow-down"></i></button>' +
+            '<button type="button" onclick="dupItem(' + idx + ')"><i class="fa fa-copy"></i></button>' +
+            '<button type="button" class="text-red-500" onclick="removeItem(' + idx + ')"><i class="fa fa-trash"></i></button>')) +
+          '</div></div>' +
+          '<div class="field-row"><label><span class="req">*</span>类型</label><div class="ctrl"><div class="seg-type">' +
+            ['文字','数字','下拉'].map(function (tp) {
+              return '<button type="button" class="' + (it.type === tp ? 'on' : '') + '" ' + structDisabled + ' onclick="setItemType(' + idx + ',\'' + tp + '\')">' + tp + '</button>';
+            }).join('') +
+          '</div></div></div>' +
+          '<div class="field-row"><label><span class="req">*</span>名称</label><div class="ctrl"><input ' + structDisabled + ' value="' + esc(it.name) + '" onchange="setItemField(' + idx + ',\'name\',this.value)" /></div></div>' +
+          (it.type === '下拉' ? ('<div class="field-row"><label>可选项</label><div class="ctrl">' +
+            '<div class="option-tags">' + (it.options || []).map(function (op, oi) {
+              return '<span class="option-tag">' + esc(op) + (state.overrideMode ? '' : (' <i class="fa fa-times cursor-pointer" onclick="removeOption(' + idx + ',' + oi + ')"></i>')) + '</span>';
+            }).join('') + '</div>' +
+            (state.overrideMode ? '' : '<div class="flex gap-2"><input id="opt_input_' + idx + '" placeholder="输入选项后回车或点击添加" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addOption(' + idx + ');}" /><button type="button" class="rounded border px-2 text-xs" onclick="addOption(' + idx + ')">添加</button></div>') +
+          '</div></div>') : '') +
+          '<div class="field-row"><label>默认值</label><div class="ctrl"><input value="' + esc(it.defaultValue || '') + '" onchange="setItemField(' + idx + ',\'defaultValue\',this.value)" placeholder="非必填，如标称值可留空" /></div></div>' +
+          '<div class="field-row"><label>单位</label><div class="ctrl"><input value="' + esc(it.unit || '') + '" onchange="setItemField(' + idx + ',\'unit\',this.value)" /></div></div>' +
+          '<div class="field-row"><label>试验次数</label><div class="ctrl"><input value="' + esc(it.testCount || '') + '" onchange="setItemField(' + idx + ',\'testCount\',this.value)" /></div></div>' +
+          '<div class="field-row"><label>计算方式</label><div class="ctrl"><input value="' + esc(it.calc || '') + '" onchange="setItemField(' + idx + ',\'calc\',this.value)" /></div></div>' +
+          '<div class="field-row"><label>保留小数</label><div class="ctrl"><input value="' + esc(it.decimals || '') + '" onchange="setItemField(' + idx + ',\'decimals\',this.value)" placeholder="请输入保留的小数位数" /></div></div>' +
+          '<div class="field-row"><label>取值范围</label><div class="ctrl flex gap-2"><input placeholder="最小值" value="' + esc(it.min || '') + '" onchange="setItemField(' + idx + ',\'min\',this.value)" /><input placeholder="最大值" value="' + esc(it.max || '') + '" onchange="setItemField(' + idx + ',\'max\',this.value)" /></div></div>' +
+          '<div class="field-row"><label>是否必填</label><div class="ctrl flex items-center gap-2">' +
+            '<label class="toggle"><input type="checkbox" ' + (it.required && !lockedReq ? 'checked' : '') + ' ' + (lockedReq ? 'disabled' : '') + ' onchange="setItemField(' + idx + ',\'required\',this.checked)" /><span class="toggle-slider"></span></label>' +
+            (lockedReq ? '<span class="text-xs text-slate-400">隐藏字段不可设为必填</span>' : '<span class="text-xs text-slate-400">约束试验检测提交</span>') +
+          '</div></div>' +
+          '<div class="field-row"><label>隐藏字段</label><div class="ctrl flex items-center gap-2">' +
+            '<label class="toggle"><input type="checkbox" ' + (it.hidden ? 'checked' : '') + ' onchange="setItemHidden(' + idx + ',this.checked)" /><span class="toggle-slider"></span></label>' +
+            '<span class="text-xs text-slate-400">隐藏后试验检测页不展示</span>' +
+          '</div></div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function addDetectItem() {
+      if (state.overrideMode) return;
+      state.draftItems.push(makeItem({ name: '新检测项' }));
+      renderDetectItems();
+      renderStdBuilder();
+    }
+    function setItemType(idx, type) {
+      if (state.overrideMode) return;
+      state.draftItems[idx].type = type;
+      if (type !== '下拉') state.draftItems[idx].options = [];
+      renderDetectItems();
+    }
+    function setItemField(idx, key, val) { state.draftItems[idx][key] = val; if (key === 'name') renderStdBuilder(); }
+    function setItemHidden(idx, hidden) {
+      state.draftItems[idx].hidden = hidden;
+      if (hidden) state.draftItems[idx].required = false;
+      renderDetectItems();
+    }
+    function moveItem(idx, dir) {
+      var j = idx + dir; if (j < 0 || j >= state.draftItems.length) return;
+      var t = state.draftItems[idx]; state.draftItems[idx] = state.draftItems[j]; state.draftItems[j] = t;
+      renderDetectItems();
+    }
+    function dupItem(idx) {
+      var c = deepClone(state.draftItems[idx]);
+      c.id = uid('di'); c.code = uid('DIC');
+      state.draftItems.splice(idx + 1, 0, c);
+      renderDetectItems();
+    }
+    function removeItem(idx) {
+      var name = state.draftItems[idx].name;
+      var referenced = state.stdSegs.some(function (s) { return s.type === 'field' && s.value === name; });
+      if (referenced && !confirm('标准要求仍引用该检测项字段，确认删除？')) return;
+      state.draftItems.splice(idx, 1);
+      renderDetectItems();
+      renderStdBuilder();
+    }
+    function addOption(idx) {
+      var input = document.getElementById('opt_input_' + idx);
+      var v = (input && input.value || '').trim();
+      if (!v) return;
+      state.draftItems[idx].options = state.draftItems[idx].options || [];
+      state.draftItems[idx].options.push(v);
+      renderDetectItems();
+    }
+    function removeOption(idx, oi) {
+      state.draftItems[idx].options.splice(oi, 1);
+      renderDetectItems();
+    }
+    function restoreItemOverride(itemId) {
+      var model = currentSample().models.find(function (m) { return m.id === state.overrideModelId; });
+      if (model && model.overrides[state.editingTestId]) delete model.overrides[state.editingTestId].items[itemId];
+      openTestEdit(state.editingTestId, true, state.overrideModelId);
+    }
+
+    function resetTestForm() {
+      if (state.editingTestId) openTestEdit(state.editingTestId, state.overrideMode, state.overrideModelId);
+      else openTestEdit();
+    }
+
+    function collectTestForm() {
+      return {
+        name: document.getElementById('t_name').value.trim(),
+        basis: getSelectedOptions(document.getElementById('t_basis')),
+        judge: getSelectedOptions(document.getElementById('t_judge')),
+        detectCategory: document.getElementById('t_detectCategory').value,
+        sampleCatCode: document.getElementById('t_sampleCatCode').value.trim(),
+        colors: getSelectedOptions(document.getElementById('t_colors')),
+        needPrepare: document.getElementById('t_needPrepare').value,
+        sampleQty: Number(document.getElementById('t_sampleQty').value || 1),
+        fee: Number(document.getElementById('t_fee').value || 0),
+        equip: document.getElementById('t_equip').value.trim(),
+        sort: Number(document.getElementById('t_sort').value || 1),
+        remark: document.getElementById('t_remark').value.trim(),
+        stdReq: deepClone(state.stdSegs),
+        items: deepClone(state.draftItems)
+      };
+    }
+
+    function validateTestForm(data) {
+      if (!data.name) return '请填写试验名称';
+      if (!data.basis.length) return '请选择检测依据';
+      if (!data.judge.length) return '请选择判定依据';
+      if (!data.detectCategory) return '请选择' + detectCategoryLabel();
+      if (data.needPrepare === '是' && !data.sampleQty) return '制样时请填写试样数量';
+      if (data.fee === '' || data.fee == null || isNaN(data.fee)) return '请填写默认费用';
+      if (!data.items.length) return '请至少添加一个检测项';
+      for (var i = 0; i < data.items.length; i++) {
+        if (!data.items[i].name) return '检测项名称不能为空';
+        if (data.items[i].type === '下拉' && !(data.items[i].options || []).length) return '下拉类型请配置可选项';
+        if (data.items[i].hidden && data.items[i].required) return '隐藏字段不可设为必填';
+      }
+      return '';
+    }
+
+    function confirmTestEdit() {
+      var data = collectTestForm();
+      var err = validateTestForm(data);
+      if (err) { toast(err); return; }
+      var sample = currentSample();
+
+      if (state.overrideMode) {
+        var model = sample.models.find(function (m) { return m.id === state.overrideModelId; });
+        var base = sample.tests.find(function (t) { return t.id === state.editingTestId; });
+        if (!model.overrides[state.editingTestId]) model.overrides[state.editingTestId] = { values: {}, items: {} };
+        var ov = model.overrides[state.editingTestId];
+        var valueKeys = ['detectCategory','sampleCatCode','colors','needPrepare','sampleQty','fee','equip','sort','remark','stdReq'];
+        valueKeys.forEach(function (k) {
+          if (JSON.stringify(data[k]) !== JSON.stringify(base[k])) ov.values[k] = deepClone(data[k]);
+          else delete ov.values[k];
+        });
+        data.items.forEach(function (it) {
+          var bi = (base.items || []).find(function (x) { return x.id === it.id; }) || {};
+          var diff = {};
+          ['defaultValue','unit','testCount','calc','decimals','min','max','required','hidden','options'].forEach(function (k) {
+            if (JSON.stringify(it[k]) !== JSON.stringify(bi[k])) diff[k] = deepClone(it[k]);
+          });
+          if (Object.keys(diff).length) ov.items[it.id] = diff;
+          else delete ov.items[it.id];
+        });
+        closeModal('testModal');
+        openCfgTests(model.id);
+        toast('型号试验覆盖已保存（不会回写默认试验）');
+        return;
+      }
+
+      var isNew = !state.editingTestId;
+      var testObj;
+      if (isNew) {
+        testObj = makeTest(data);
+        sample.tests.push(testObj);
+      } else {
+        testObj = sample.tests.find(function (t) { return t.id === state.editingTestId; });
+        var oldItems = deepClone(testObj.items || []);
+        Object.assign(testObj, data);
+        // 结构同步到已关联型号：补齐新检测项覆盖槽，清理已删项
+        sample.models.forEach(function (m) {
+          if ((m.linkedTestIds || []).indexOf(testObj.id) < 0) return;
+          if (!m.overrides[testObj.id]) m.overrides[testObj.id] = { values: {}, items: {} };
+          var itemIds = (testObj.items || []).map(function (i) { return i.id; });
+          Object.keys(m.overrides[testObj.id].items || {}).forEach(function (iid) {
+            if (itemIds.indexOf(iid) < 0) delete m.overrides[testObj.id].items[iid];
+          });
+          (testObj.items || []).forEach(function (it) {
+            var wasNew = !oldItems.some(function (o) { return o.id === it.id; });
+            if (wasNew && it.defaultValue) {
+              m.overrides[testObj.id].items[it.id] = Object.assign({}, m.overrides[testObj.id].items[it.id] || {}, { defaultValue: it.defaultValue });
+            }
+          });
+        });
+      }
+
+      closeModal('testModal');
+      renderTestTable();
+      renderModelTable();
+
+      var linkedCount = sample.models.filter(function (m) { return (m.linkedTestIds || []).indexOf(testObj.id) >= 0; }).length;
+      if (!isNew && sample.models.length) {
+        showSyncTip('结构已同步至 ' + linkedCount + ' 个型号；取值类修改不会覆盖型号已有配置');
+      }
+      if (isNew && sample.models.length) {
+        state.pendingNewTestId = testObj.id;
+        document.getElementById('syncNewTestName').textContent = testObj.name;
+        var pick = document.getElementById('syncModelPick');
+        pick.innerHTML = sample.models.map(function (m) {
+          return '<label class="flex items-center gap-2"><input type="checkbox" class="sync-model-cb" value="' + m.id + '" /> ' + esc(m.name) + '</label>';
+        }).join('');
+        document.querySelectorAll('input[name=syncMode]').forEach(function (r) {
+          r.onchange = function () {
+            pick.classList.toggle('hidden', document.querySelector('input[name=syncMode]:checked').value !== 'pick');
+          };
+        });
+        document.querySelector('input[name=syncMode][value=all]').checked = true;
+        pick.classList.add('hidden');
+        openModal('syncNewTestModal');
+      } else {
+        toast('试验已保存');
+      }
+    }
+
+    function confirmSyncNewTest() {
+      var sample = currentSample();
+      var mode = document.querySelector('input[name=syncMode]:checked').value;
+      var tid = state.pendingNewTestId;
+      var targets = [];
+      if (mode === 'all') targets = sample.models.slice();
+      else if (mode === 'pick') {
+        var ids = Array.prototype.slice.call(document.querySelectorAll('.sync-model-cb:checked')).map(function (el) { return el.value; });
+        targets = sample.models.filter(function (m) { return ids.indexOf(m.id) >= 0; });
+      }
+      targets.forEach(function (m) {
+        if ((m.linkedTestIds || []).indexOf(tid) < 0) m.linkedTestIds.push(tid);
+        if (!m.overrides[tid]) m.overrides[tid] = { values: {}, items: {} };
+        var base = sample.tests.find(function (t) { return t.id === tid; });
+        (base.items || []).forEach(function (it) {
+          if (it.defaultValue !== '' && it.defaultValue != null) {
+            m.overrides[tid].items[it.id] = Object.assign({}, m.overrides[tid].items[it.id] || {}, { defaultValue: it.defaultValue });
+          }
+        });
+      });
+      closeModal('syncNewTestModal');
+      renderModelTable();
+      if (mode === 'none') toast('已保存默认试验（未同步到型号）');
+      else toast('已同步关联到 ' + targets.length + ' 个型号');
+    }
+
+    function copyAddTest() {
+      var sample = currentSample();
+      if (!sample.tests.length) { toast('暂无试验可复制'); return; }
+      var last = deepClone(sample.tests[sample.tests.length - 1]);
+      last.id = uid('test');
+      last.code = uid('TST');
+      last.name = last.name + '（副本）';
+      last.items = (last.items || []).map(function (it) {
+        it.id = uid('di'); it.code = uid('DIC'); return it;
+      });
+      sample.tests.push(last);
+      renderTestTable();
+      if (sample.models.length) {
+        state.pendingNewTestId = last.id;
+        document.getElementById('syncNewTestName').textContent = last.name;
+        openModal('syncNewTestModal');
+      } else toast('已复制添加');
+    }
+
+    function moveTest(id, dir) {
+      var sample = currentSample();
+      var idx = sample.tests.findIndex(function (t) { return t.id === id; });
+      var j = idx + dir;
+      if (idx < 0 || j < 0 || j >= sample.tests.length) return;
+      var t = sample.tests[idx]; sample.tests[idx] = sample.tests[j]; sample.tests[j] = t;
+      renderTestTable();
+    }
+
+    function deleteTest(id) {
+      var sample = currentSample();
+      var used = sample.models.filter(function (m) { return (m.linkedTestIds || []).indexOf(id) >= 0; });
+      if (used.length) {
+        if (!confirm('有 ' + used.length + ' 个型号正在使用该试验，删除将级联取消关联。确认删除？')) return;
+      } else if (!confirm('确认删除该默认试验？')) return;
+      sample.tests = sample.tests.filter(function (t) { return t.id !== id; });
+      sample.models.forEach(function (m) {
+        m.linkedTestIds = (m.linkedTestIds || []).filter(function (tid) { return tid !== id; });
+        if (m.overrides) delete m.overrides[id];
+      });
+      renderTestTable();
+      renderModelTable();
+    }
+
+    // init: leaf-only selection
+    if (state.selectedId) {
+      var n = findNode(TREES[state.cat], state.selectedId);
+      state.selectedIsLeaf = !!(n && n.leaf);
+      if (!state.selectedIsLeaf) state.selectedId = null;
+    }
+    applyDetectCategoryLabels();
     renderTree();
+    renderWorkspace();
   </script>
 </body>
 </html>

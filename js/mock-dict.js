@@ -26,7 +26,21 @@
       items: [ item(1, '常规', 'normal', 1, '') ]
     },
     { id: 4, name: '检测类别', type: 'lims_detect_category', status: '正常', time: '2026-07-15 08:00:00', remark: '检测类别', expanded: false,
-      items: [ item(1, '例行试验', 'routine', 1, '') ]
+      items: [
+        item(1, '例行试验', 'routine', 1, ''),
+        item(2, '型式试验', 'type', 2, ''),
+        item(3, '抽样试验', 'sampling', 3, '')
+      ]
+    },
+    { id: 19, name: '试样色号', type: 'lims_sample_color', status: '正常', time: '2026-07-28 08:00:00', remark: '样品试验配置-试样色号', expanded: false,
+      items: [
+        item(1, '黄', 'yellow', 1, ''),
+        item(2, '绿', 'green', 2, ''),
+        item(3, '红', 'red', 3, ''),
+        item(4, '蓝', 'blue', 4, ''),
+        item(5, '中性', 'neutral', 5, ''),
+        item(6, '/', 'none', 6, '')
+      ]
     },
     { id: 5, name: '付款方式', type: 'lims_pay_method', status: '正常', time: '2026-07-15 08:00:00', remark: '付款方式', expanded: false,
       items: [
@@ -83,10 +97,27 @@
     return dictTypes;
   }
 
+  function migrateMissingDictTypes(dictTypes) {
+    DEFAULT_DICT_TYPES.forEach(function (def) {
+      if (!findByType(dictTypes, def.type)) {
+        dictTypes.push(cloneDictTypes(def));
+      }
+    });
+    var cat = findByType(dictTypes, 'lims_detect_category');
+    var catDef = findByType(DEFAULT_DICT_TYPES, 'lims_detect_category');
+    if (cat && catDef && (cat.items || []).length < catDef.items.length) {
+      var have = (cat.items || []).map(function (it) { return it.value; });
+      catDef.items.forEach(function (it) {
+        if (have.indexOf(it.value) < 0) cat.items.push(cloneDictTypes(it));
+      });
+    }
+    return dictTypes;
+  }
+
   function load() {
     try {
       var raw = global.localStorage && global.localStorage.getItem(STORAGE_KEY);
-      if (raw) return migrateTaskTypeItems(JSON.parse(raw));
+      if (raw) return migrateMissingDictTypes(migrateTaskTypeItems(JSON.parse(raw)));
     } catch (e) { /* ignore */ }
     return cloneDictTypes(DEFAULT_DICT_TYPES);
   }
