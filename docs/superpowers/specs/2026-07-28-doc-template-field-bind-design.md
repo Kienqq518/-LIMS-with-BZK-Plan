@@ -117,8 +117,8 @@ resolveDocTemplate(cat, docType, entrust):
 ## Seed 演示数据（电力物资类 · 检测委托书）
 
 - 绑定字段：`taskType`（任务类型）
-- `electrical`：DLWZ V1（停用）+ V2（启用）
-- `entrust`：空（演示回退默认）
+- `electrical`（电气·输配电类）：DLWZ V1（停用）+ V2（启用）
+- 其余任务类型选项：空桶（演示回退默认）
 - `__default__`：保留一份通用委托书（可选）
 
 其余单据默认 `bindFieldId: null`，行为与改造前一致。

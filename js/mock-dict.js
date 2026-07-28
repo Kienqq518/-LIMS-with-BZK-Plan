@@ -9,7 +9,11 @@
     { id: 1, name: '任务类型', type: 'lims_task_type', status: '正常', time: '2026-07-15 08:00:00', remark: '委托任务类型', expanded: false,
       items: [
         item(1, '电气（输配电类）', 'electrical', 1, ''),
-        item(2, '委托检测', 'entrust', 2, '')
+        item(2, '电气（低压电器类）', 'electrical_lv', 2, ''),
+        item(3, '电气（电工电子产品类）', 'electrical_ee', 3, ''),
+        item(4, '电气（抗震检测类）', 'electrical_seismic', 4, ''),
+        item(5, '材料（安全工器具类）', 'material_safety', 5, ''),
+        item(6, '材料（电线电缆、金具、金属材料类）', 'material_cable', 6, '')
       ]
     },
     { id: 2, name: '优先等级', type: 'lims_priority', status: '正常', time: '2026-07-15 08:00:00', remark: '委托优先等级', expanded: false,
