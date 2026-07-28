@@ -148,7 +148,17 @@
               <div class="form-item"><label><span class="req">*</span>样品分类</label><select id="b_category"></select></div>
               <div class="form-item"><label><span class="req">*</span>名称</label><input id="b_name" type="text" /></div>
               <div class="form-item"><label><span class="req">*</span>排序</label><input id="b_sort" type="number" min="1" /></div>
-              <div class="form-item"><label><span class="req">*</span>再检期限(月)</label><input id="b_recheck" type="number" min="0" /></div>
+              <div class="form-item">
+                <label><span class="req">*</span>再检周期</label>
+                <div class="flex gap-2">
+                  <select id="b_recheckMode" class="w-24 flex-shrink-0" onchange="onRecheckModeChange('b')">
+                    <option value="数值">数值</option>
+                    <option value="文本">文本</option>
+                  </select>
+                  <input id="b_recheck" type="text" class="min-w-0 flex-1" placeholder="请输入再检周期" />
+                </div>
+                <div class="tip" id="b_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）</div>
+              </div>
               <div class="form-item"><label>单位</label><input id="b_unit" type="text" /></div>
               <div class="form-item" style="grid-column:1 / -1"><label>样品描述</label><textarea id="b_desc" rows="3"></textarea></div>
               <div class="form-item"><label>图片</label><div class="upload-box" onclick="toast('原型：选择图片')"><i class="fa fa-plus mb-1"></i>添加图片</div></div>
@@ -170,7 +180,7 @@
                   <th style="width:60px">序号</th>
                   <th>型号名称</th>
                   <th style="width:80px">排序</th>
-                  <th style="width:120px">再检期限(月)</th>
+                  <th style="width:160px">再检周期</th>
                   <th style="width:80px">单位</th>
                   <th>描述</th>
                   <th style="width:100px">已配试验</th>
@@ -283,7 +293,16 @@
       <div class="modal-body space-y-3 text-sm">
         <div class="field-row"><label><span class="req">*</span>型号名称</label><div class="ctrl"><input id="m_name" type="text" /></div></div>
         <div class="field-row"><label>排序</label><div class="ctrl"><input id="m_sort" type="number" min="1" value="1" /></div></div>
-        <div class="field-row"><label>再检期限(月)</label><div class="ctrl"><input id="m_recheck" type="number" min="0" /></div></div>
+        <div class="field-row"><label>再检周期</label><div class="ctrl">
+          <div class="flex gap-2">
+            <select id="m_recheckMode" class="w-24 flex-shrink-0" onchange="onRecheckModeChange('m')">
+              <option value="数值">数值</option>
+              <option value="文本">文本</option>
+            </select>
+            <input id="m_recheck" type="text" class="min-w-0 flex-1" placeholder="请输入再检周期" />
+          </div>
+          <div class="tip" id="m_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）</div>
+        </div></div>
         <div class="field-row"><label>单位</label><div class="ctrl"><input id="m_unit" type="text" /></div></div>
         <div class="field-row"><label>描述</label><div class="ctrl"><textarea id="m_desc" rows="3"></textarea></div></div>
         <div class="field-row"><label>图片</label><div class="ctrl"><button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm" onclick="toast('原型：上传图片')">上传图片</button></div></div>
@@ -470,9 +489,69 @@
       }, partial || {});
     }
 
+    function makeRecheck(mode, value) {
+      return { mode: mode === '文本' ? '文本' : '数值', value: value == null ? '' : String(value) };
+    }
+
+    function normalizeRecheck(raw) {
+      if (raw && typeof raw === 'object') return makeRecheck(raw.mode, raw.value);
+      if (raw === '' || raw == null) return makeRecheck('数值', '');
+      return makeRecheck('数值', raw);
+    }
+
+    function formatRecheck(raw) {
+      var r = normalizeRecheck(raw);
+      if (!r.value) return '';
+      return r.mode === '数值' ? (r.value + ' 月') : r.value;
+    }
+
+    function onRecheckModeChange(prefix) {
+      var mode = document.getElementById(prefix + '_recheckMode').value;
+      var input = document.getElementById(prefix + '_recheck');
+      var tip = document.getElementById(prefix + '_recheckTip');
+      if (mode === '数值') {
+        input.setAttribute('inputmode', 'numeric');
+        input.placeholder = '请输入月数（仅数字）';
+        tip.textContent = '数值：合格证再检日期 = 检测日期 + 再检周期（月）';
+        // 切换时清掉非数字内容
+        if (input.value && !/^\d+(\.\d+)?$/.test(input.value.trim())) input.value = '';
+      } else {
+        input.removeAttribute('inputmode');
+        input.placeholder = '请输入文字，将加载到合格证';
+        tip.textContent = '文本：无固定再检日期，该文字直接展示在合格证上';
+      }
+    }
+
+    function bindRecheckNumericFilter(prefix) {
+      var input = document.getElementById(prefix + '_recheck');
+      input.addEventListener('input', function () {
+        if (document.getElementById(prefix + '_recheckMode').value !== '数值') return;
+        var v = input.value;
+        // 允许数字与一个小数点
+        var cleaned = v.replace(/[^\d.]/g, '');
+        var parts = cleaned.split('.');
+        if (parts.length > 2) cleaned = parts[0] + '.' + parts.slice(1).join('');
+        if (cleaned !== v) input.value = cleaned;
+      });
+    }
+
+    function readRecheckFromForm(prefix) {
+      var mode = document.getElementById(prefix + '_recheckMode').value;
+      var value = document.getElementById(prefix + '_recheck').value.trim();
+      if (mode === '数值' && value && !/^\d+(\.\d+)?$/.test(value)) return null;
+      return makeRecheck(mode, value);
+    }
+
+    function writeRecheckToForm(prefix, raw) {
+      var r = normalizeRecheck(raw);
+      document.getElementById(prefix + '_recheckMode').value = r.mode;
+      document.getElementById(prefix + '_recheck').value = r.value;
+      onRecheckModeChange(prefix);
+    }
+
     function makeModel(partial) {
       return Object.assign({
-        id: uid('model'), name: '', sort: 1, recheck: '', unit: '', desc: '',
+        id: uid('model'), name: '', sort: 1, recheck: makeRecheck('数值', ''), unit: '', desc: '',
         linkedTestIds: [], overrides: {}
       }, partial || {});
     }
@@ -483,7 +562,7 @@
           category: categoryLabel || '',
           name: label || '',
           sort: 1,
-          recheck: 12,
+          recheck: makeRecheck('数值', '12'),
           unit: '',
           desc: ''
         },
@@ -523,7 +602,7 @@
         items: [makeItem({ id: 'di8', code: 'DIC8', type: '数字', name: '载荷值', unit: 'N', required: true })]
       });
       var m1 = makeModel({
-        id: 'm_10', name: '10kV', sort: 1, recheck: 12, unit: '根', desc: '',
+        id: 'm_10', name: '10kV', sort: 1, recheck: makeRecheck('数值', '12'), unit: '根', desc: '',
         linkedTestIds: ['t_ac', 't_look'],
         overrides: {
           t_ac: {
@@ -533,7 +612,7 @@
         }
       });
       var m2 = makeModel({
-        id: 'm_20', name: '20kV', sort: 2, recheck: 12, unit: '根',
+        id: 'm_20', name: '20kV', sort: 2, recheck: makeRecheck('数值', '12'), unit: '根',
         linkedTestIds: ['t_ac', 't_look', 't_bend'],
         overrides: {
           t_ac: { items: { di1: { defaultValue: '20' } } },
@@ -541,7 +620,7 @@
         }
       });
       return {
-        basic: { category: 'DLT 976-2017', name: '绝缘操作杆', sort: 1, recheck: 12, unit: '根', desc: '带电作业用绝缘操作杆' },
+        basic: { category: 'DLT 976-2017', name: '绝缘操作杆', sort: 1, recheck: makeRecheck('数值', '12'), unit: '根', desc: '带电作业用绝缘操作杆' },
         models: [m1, m2],
         tests: [t1, t2, t3]
       };
@@ -549,7 +628,7 @@
 
     function seedBelt976() {
       return {
-        basic: { category: 'DLT 976-2017', name: '安全带', sort: 3, recheck: 12, unit: '条', desc: '' },
+        basic: { category: 'DLT 976-2017', name: '安全带', sort: 3, recheck: makeRecheck('文本', '按使用说明书要求再检'), unit: '条', desc: '' },
         models: [],
         tests: [
           makeTest({
@@ -766,7 +845,7 @@
       fillCategoryOptions(sample.basic.category || getParentCategory(state.selectedId));
       document.getElementById('b_name').value = sample.basic.name || '';
       document.getElementById('b_sort').value = sample.basic.sort || 1;
-      document.getElementById('b_recheck').value = sample.basic.recheck || '';
+      writeRecheckToForm('b', sample.basic.recheck);
       document.getElementById('b_unit').value = sample.basic.unit || '';
       document.getElementById('b_desc').value = sample.basic.desc || '';
     }
@@ -776,12 +855,14 @@
       if (!sample) return;
       var name = document.getElementById('b_name').value.trim();
       var sort = document.getElementById('b_sort').value;
-      var recheck = document.getElementById('b_recheck').value;
-      if (!name || !sort || recheck === '') { toast('请填写必填字段'); return; }
+      var recheck = readRecheckFromForm('b');
+      if (!name || !sort) { toast('请填写必填字段'); return; }
+      if (recheck === null) { toast('再检周期为数值时仅可输入数字'); return; }
+      if (!recheck.value) { toast('请填写再检周期'); return; }
       sample.basic.category = document.getElementById('b_category').value;
       sample.basic.name = name;
       sample.basic.sort = Number(sort);
-      sample.basic.recheck = Number(recheck);
+      sample.basic.recheck = recheck;
       sample.basic.unit = document.getElementById('b_unit').value.trim();
       sample.basic.desc = document.getElementById('b_desc').value.trim();
       document.getElementById('sampleTitle').textContent = name;
@@ -805,7 +886,7 @@
           '<td>' + (idx + 1) + '</td>' +
           '<td>' + esc(m.name) + '</td>' +
           '<td>' + (m.sort || '') + '</td>' +
-          '<td>' + (m.recheck || '') + '</td>' +
+          '<td>' + esc(formatRecheck(m.recheck)) + '</td>' +
           '<td>' + esc(m.unit || '') + '</td>' +
           '<td>' + esc(m.desc || '') + '</td>' +
           '<td><span class="tag">' + (m.linkedTestIds || []).length + ' 项</span></td>' +
@@ -858,7 +939,7 @@
       var m = id ? currentSample().models.find(function (x) { return x.id === id; }) : null;
       document.getElementById('m_name').value = m ? m.name : '';
       document.getElementById('m_sort').value = m ? m.sort : ((currentSample().models.length || 0) + 1);
-      document.getElementById('m_recheck').value = m ? (m.recheck || '') : (currentSample().basic.recheck || '');
+      writeRecheckToForm('m', m ? m.recheck : currentSample().basic.recheck);
       document.getElementById('m_unit').value = m ? (m.unit || '') : (currentSample().basic.unit || '');
       document.getElementById('m_desc').value = m ? (m.desc || '') : '';
       openModal('modelModal');
@@ -867,19 +948,21 @@
     function confirmModelEdit() {
       var name = document.getElementById('m_name').value.trim();
       if (!name) { toast('请填写型号名称'); return; }
+      var recheck = readRecheckFromForm('m');
+      if (recheck === null) { toast('再检周期为数值时仅可输入数字'); return; }
       var sample = currentSample();
       if (state.editingModelId) {
         var m = sample.models.find(function (x) { return x.id === state.editingModelId; });
         m.name = name;
         m.sort = Number(document.getElementById('m_sort').value || 1);
-        m.recheck = document.getElementById('m_recheck').value;
+        m.recheck = recheck;
         m.unit = document.getElementById('m_unit').value.trim();
         m.desc = document.getElementById('m_desc').value.trim();
       } else {
         sample.models.push(makeModel({
           name: name,
           sort: Number(document.getElementById('m_sort').value || 1),
-          recheck: document.getElementById('m_recheck').value,
+          recheck: recheck,
           unit: document.getElementById('m_unit').value.trim(),
           desc: document.getElementById('m_desc').value.trim()
         }));
@@ -1433,6 +1516,8 @@
       if (!state.selectedIsLeaf) state.selectedId = null;
     }
     applyDetectCategoryLabels();
+    bindRecheckNumericFilter('b');
+    bindRecheckNumericFilter('m');
     renderTree();
     renderWorkspace();
   </script>
