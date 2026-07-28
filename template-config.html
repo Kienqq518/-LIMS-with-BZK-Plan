@@ -3958,7 +3958,6 @@
     var DOC_CAT_KEYS = ['dlwz', 'aqgqj', 'hjjc', 'gcjc'];
     var DOC_DEFAULT_OPTION = '__default__';
     var DOC_BIND_FALLBACK_OPTIONS = {
-      contractNo: [{ value: 'HT-2025-001', label: 'HT-2025-001' }, { value: 'HT-2025-002', label: 'HT-2025-002' }],
       clientUnit: [{ value: 'unit_a', label: '华东电力物资公司' }, { value: 'unit_b', label: '南方电网物资部' }],
       contact: [{ value: 'zhang', label: '张工' }, { value: 'li', label: '李工' }],
       salesman: [{ value: 'wang', label: '王经理' }, { value: 'zhao', label: '赵经理' }],
@@ -4031,8 +4030,9 @@
       var sections = EntrustFieldConfig.load();
       var fields = [];
       sections.forEach(function (sec) {
+        // 排除「合同信息」区域；仅系统必填（locked）下拉可分流
+        if (sec.id === 'contract') return;
         (sec.fields || []).forEach(function (f) {
-          // 仅委托信息设置中灰色勾选（locked=系统必填）的下拉字段可分流
           if (f.fieldType === 'select' && f.locked) {
             fields.push({
               id: f.id,
@@ -4620,7 +4620,7 @@
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 6 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },
         { id: 'doc-nav', selector: '[data-annotate="doc-nav"]', position: 'top-right', title: '单据列表', wide: true, content: '左侧列出 6 种单据。副文案展示状态：统一模版 / 按某字段分流进度 / 缺默认模版 / 已关闭。点击切换右侧详情；保存校验失败时对应项标红。', tag: '单据模版' },
         { id: 'doc-card-switch', selector: '[data-annotate="doc-card-switch"]', position: 'top-right', title: '系统生成开关', wide: true, content: '控制该单据类型是否支持系统生成。关闭时右侧详情置灰，但保留已上传模版及启用记忆；关闭状态下保存时不校验「默认」桶是否已上传模版。', tag: '单据模版' },
-        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '仅列出委托信息设置中灰色勾选的<strong>系统必填</strong>下拉字段。绑定后右侧出现选项列表；选「不分流」则全委托共用一套版本列表（默认桶）。', tag: '单据模版' },
+        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '仅列出委托信息设置中<strong>除「合同信息」区域外</strong>、灰色勾选的<strong>系统必填</strong>下拉字段。绑定后右侧出现选项列表；选「不分流」则全委托共用一套版本列表（默认桶）。', tag: '单据模版' },
         { id: 'doc-option-tabs', selector: '[data-annotate="doc-option-tabs"]', position: 'top-right', title: '选项列表', wide: true, content: '「默认」用于未命中选项时的回退；其余项对应该字段各选项。长文案纵向展示，不再横向挤兑。点击切换右侧版本列表。', tag: '单据模版' },
         { id: 'doc-card-version', selector: '[data-annotate="doc-card-version"]', position: 'top-right', title: '版本启用', wide: true, content: '当前选项桶内可存多个模版版本，通过单选启用其中一个；新上传的版本默认启用最新版。可直接配置、预览、删除。', tag: '单据模版' },
         { id: 'doc-upload', selector: '[data-annotate="doc-upload"]', position: 'top-right', title: '上传模版', content: '打开文件选择弹窗上传 .docx 模版；新上传版本自动启用，原启用版本取消选中。', tag: '单据模版' },
