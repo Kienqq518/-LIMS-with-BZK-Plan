@@ -1268,7 +1268,7 @@
     function combinedTableHeadHtml(withPickCols) {
       var cols = '<th style="width:88px">绑定层级</th><th class="cell-combined-bind">绑定对象</th><th style="width:132px">覆盖范围</th><th style="width:168px">模板文件</th><th class="cell-ops-tight">操作</th>';
       if (withPickCols) return '<tr><th style="width:40px"></th><th>序号</th>' + cols + '</tr>';
-      return '<tr>' + cols + '</tr>';
+      return '<tr><th class="cell-check"><input type="checkbox" id="combinedCheckAll" class="accent-blue-600" onchange="toggleCombinedCheckAll(this.checked)" /></th>' + cols + '</tr>';
     }
 
     function combinedTableShell(tbodyHtml) {
@@ -1295,8 +1295,17 @@
       });
     }
 
+    function combinedRowCheckCellHtml(row) {
+      var file = resolveRecordFile(row);
+      var id = row.id != null ? String(row.id) : (row.bindType + '_' + row.bindTarget);
+      return '<td class="cell-check"><input type="checkbox" class="combined-row-check accent-blue-600" value="' + escHtml(id) + '"' +
+        (file ? ' data-file="' + escHtml(file) + '" onchange="onRowCheck()"' : ' disabled') +
+        ' /></td>';
+    }
+
     function renderCombinedTableRow(row) {
       return '<tr class="row-combined">' +
+        combinedRowCheckCellHtml(row) +
         '<td>' + combinedBindLevelLabel(row.bindType) + '</td>' +
         '<td class="cell-combined-bind">' + escHtml(row.bindLabel || getReportTreeModelLabel(row.bindTarget)) + '</td>' +
         '<td>' + combinedCoverageLabel(row.bindType, row.bindTarget) + '</td>' +
@@ -1721,30 +1730,43 @@
         '" data-annotate="batch-download"><i class="fa fa-download"></i> 批量下载</button>';
     }
 
-    function getRowChecks() {
-      return document.querySelectorAll('#dataTable .row-check:not(:disabled)');
+    function getTableChecks(scopeSel) {
+      return document.querySelectorAll(scopeSel);
+    }
+
+    function syncCheckAllState(checkAllId, rowSel) {
+      var checkAll = document.getElementById(checkAllId);
+      if (!checkAll) return;
+      var rows = getTableChecks(rowSel);
+      var checked = 0;
+      rows.forEach(function (cb) { if (cb.checked) checked++; });
+      var total = rows.length;
+      checkAll.checked = total > 0 && checked === total;
+      checkAll.indeterminate = checked > 0 && checked < total;
+      checkAll.disabled = total === 0;
     }
 
     function getSelectedRowChecks() {
-      return document.querySelectorAll('#dataTable .row-check:checked:not(:disabled)');
+      return document.querySelectorAll(
+        '#dataTable .row-check:checked:not(:disabled), .combined-tpl-table .combined-row-check:checked:not(:disabled)'
+      );
     }
 
     function updateBatchDownloadBtn() {
       var btn = document.getElementById('btnBatchDownload');
       if (!btn) return;
-      var selected = getSelectedRowChecks().length;
-      btn.disabled = selected === 0;
-      var checkAll = document.getElementById('checkAll');
-      if (checkAll) {
-        var total = getRowChecks().length;
-        checkAll.checked = total > 0 && selected === total;
-        checkAll.indeterminate = selected > 0 && selected < total;
-        checkAll.disabled = total === 0;
-      }
+      btn.disabled = getSelectedRowChecks().length === 0;
+      syncCheckAllState('checkAll', '#dataTable .row-check:not(:disabled)');
+      syncCheckAllState('combinedCheckAll', '.combined-tpl-table .combined-row-check:not(:disabled)');
     }
 
     function toggleCheckAll(checked) {
-      getRowChecks().forEach(function (cb) { cb.checked = checked; });
+      getTableChecks('#dataTable .row-check:not(:disabled)').forEach(function (cb) { cb.checked = checked; });
+      updateBatchDownloadBtn();
+    }
+
+    function toggleCombinedCheckAll(checked) {
+      getTableChecks('.combined-tpl-table .combined-row-check:not(:disabled)').forEach(function (cb) { cb.checked = checked; });
       updateBatchDownloadBtn();
     }
 
@@ -1756,7 +1778,7 @@
       var selected = Array.prototype.slice.call(getSelectedRowChecks());
       if (!selected.length) return;
       var names = selected.map(function (cb) { return cb.getAttribute('data-file') || ('#' + cb.value); });
-      alert('批量下载（原型演示）\n已选 ' + selected.length + ' 个模版：\n' + names.join('\n'));
+      alert('批量下载（原型演示）\n仅下载当前启用版本\n已选 ' + selected.length + ' 个模版：\n' + names.join('\n'));
     }
 
     function rowCheckCellHtml(id, fileName) {
@@ -2135,13 +2157,14 @@
       var scopeRows = sortCombinedScopeRows(collectCombinedRowsInScope(state.treeId), state.treeId);
       var tbody = '';
       if (kind === 'category' && !scopeRows.length) {
-        tbody = '<tr class="row-combined row-info"><td colspan="5">' +
+        tbody = '<tr class="row-combined row-info"><td colspan="6">' +
           '分类层不支持上传组合模版。请在<strong>样品层</strong>或<strong>型号层</strong>上传；一份 Word 含绑定范围内全部试验项。' +
           '适用：' + RECORD_COMBINED_APPLY_MODES + '（导出时自动解析型号 → 样品）。</td></tr>';
       } else {
         tbody = scopeRows.map(renderCombinedTableRow).join('');
       }
       panel.innerHTML = combinedTableShell(tbody);
+      updateBatchDownloadBtn();
     }
 
     function renderInfoBar() {
@@ -4683,8 +4706,8 @@
         { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '试验项模版列表', wide: true, content: '仅展示<strong>试验项单模版</strong>；组合模版在上方表格区域管理。样品层选中时按型号分组。首列复选框勾选已上传模版行，配合工具栏「批量下载」。未上传行复选框禁用。', tag: '记录单' },
         { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '版本弹窗内提供「复制其他项」，可从其他样品/试验项复制已有模板；列表操作列在未上传时仅展示「版本」。', tag: '记录单' },
         { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出模版逻辑', wide: true, content: '支持样品层/型号层<strong>组合模版</strong>与各<strong>试验项单模版</strong>并存。「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」优先本型号组合模版，否则上级样品组合模版，否则试验项动态拼接；切分类两种模式始终用试验项单模版。UI 仅显示 xxx.docx/未上传，继承在导出时自动解析。', tag: '产品逻辑' },
-        { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版表格', wide: true, content: '按左侧选中节点展示<strong>本层级及以下</strong>全部组合模版：分类层汇总下属样品层与型号层；样品层展示本样品 + 其下各型号；型号层仅本型号。试验项节点不展示此区域。', tag: '记录单' },
-        { id: 'batch-download', selector: '[data-annotate="batch-download"]', position: 'top-left', title: '批量下载', wide: true, content: '「报告模版 / 公共模版」与「记录单模版 / 公共模版」工具栏均提供<strong>批量下载</strong>。列表首列复选框勾选后按钮高亮可点；未选中任意行时按钮置灰不高亮。仅已配置/已上传文件的行可选；点击后按勾选模版批量下载（原型以提示演示）。单文件仍可点蓝色模板文件链接下载。', tag: '模板管理' },
+        { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版表格', wide: true, content: '按左侧选中节点展示<strong>本层级及以下</strong>全部组合模版：分类层汇总下属样品层与型号层；样品层展示本样品 + 其下各型号；型号层仅本型号。试验项节点不展示此区域。首列复选框配合工具栏「批量下载」；未上传行禁用。可与下方试验项表一并勾选后批量下载（仅当前启用版本）。', tag: '记录单' },
+        { id: 'batch-download', selector: '[data-annotate="batch-download"]', position: 'top-left', title: '批量下载', wide: true, content: '报告/记录单及其公共模版、以及记录单<strong>组合模版表</strong>均支持批量下载。勾选后按钮高亮；未选置灰。仅已配置/已上传行可选。<strong>默认只下载当前启用版本</strong>，不含历史版本（历史版本请到「版本」弹窗单条下载）。原型以提示演示。', tag: '模板管理' },
         { id: 'report-table', selector: '[data-annotate="report-table"]', position: 'top-right', title: '报告模版列表', wide: true, content: '表头增加复选框列，配合工具栏「批量下载」。未配置正文文件的行复选框禁用。其余列：模板名称、样品名称(型号)、样品分类、默认、当前启用版本、引用公共头/尾、操作。', tag: '报告模板' },
         { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 6 类流程单据模版。进入后通过顶部横向 Tab 切换四大类；页面采用<strong>左列表 + 右详情</strong>：左侧选单据，右侧配置生成开关、字段分流与版本。', tag: '模板管理' },
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 6 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },
