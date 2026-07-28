@@ -1753,7 +1753,8 @@
             '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>' +
             '<button onclick="resetFilters()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
           '</div>' +
-          '<button onclick="openPublicModal()" class="ml-auto rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="public-add"><i class="fa fa-plus"></i> 新增</button>';
+          batchDownloadBtnHtml(true) +
+          '<button onclick="openPublicModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="public-add"><i class="fa fa-plus"></i> 新增</button>';
       } else if (state.main === 'record' && state.sub === 'public') {
         el.innerHTML =
           '<label data-annotate="record-public-filter">模版内容样式</label><select id="f_content"><option value="">全部</option><option>组合记录单模版</option><option>试验项模版</option></select>' +
@@ -1762,7 +1763,8 @@
             '<button onclick="renderView()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>' +
             '<button onclick="resetFilters()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600">重置</button>' +
           '</div>' +
-          '<button onclick="openRecordPublicModal()" class="ml-auto rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="record-public-add"><i class="fa fa-plus"></i> 新增</button>';
+          batchDownloadBtnHtml(true) +
+          '<button onclick="openRecordPublicModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white" data-annotate="record-public-add"><i class="fa fa-plus"></i> 新增</button>';
       } else if (state.main === 'record') {
         el.className = 'tpl-toolbar tpl-toolbar-record';
         el.innerHTML =
@@ -2025,20 +2027,22 @@
         updateBatchDownloadBtn();
       } else if (state.main === 'report' && state.sub === 'public') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin', 'record-tpl-table');
-        head.innerHTML = '<tr data-annotate="public-table"><th>序号</th><th>模版内容样式</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="public-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th>序号</th><th>模版内容样式</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           ensurePublicTemplates(r);
           var fileCell = r.file ? '<span class="link">' + r.file + '</span>' : '<span class="badge-none">未配置</span>';
-          return '<tr><td>' + (i + 1) + '</td><td>' + r.contentStyle + '</td><td>' + fileCell + '</td><td class="cell-ops">' + publicOps(r) + '</td></tr>';
+          return '<tr>' + rowCheckCellHtml(r.id, r.file) + '<td>' + (i + 1) + '</td><td>' + r.contentStyle + '</td><td>' + fileCell + '</td><td class="cell-ops">' + publicOps(r) + '</td></tr>';
         }).join('');
+        updateBatchDownloadBtn();
       } else if (state.main === 'record' && state.sub === 'public') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin', 'record-tpl-table');
-        head.innerHTML = '<tr data-annotate="record-public-table"><th>序号</th><th>模版内容样式</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="record-public-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th>序号</th><th>模版内容样式</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           ensureRecordPublicTemplates(r);
           var fileCell = r.file ? '<span class="link">' + r.file + '</span>' : '<span class="badge-none">未配置</span>';
-          return '<tr><td>' + (i + 1) + '</td><td>' + r.contentStyle + '</td><td>' + fileCell + '</td><td class="cell-ops">' + recordPublicOps(r) + '</td></tr>';
+          return '<tr>' + rowCheckCellHtml(r.id, r.file) + '<td>' + (i + 1) + '</td><td>' + r.contentStyle + '</td><td>' + fileCell + '</td><td class="cell-ops">' + recordPublicOps(r) + '</td></tr>';
         }).join('');
+        updateBatchDownloadBtn();
       } else if (state.main === 'record') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin');
         document.getElementById('dataTable').classList.add('record-tpl-table');
