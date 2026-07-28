@@ -266,20 +266,42 @@
     }
     .cat-tab:hover { color: #2563eb; }
     .cat-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
-    /* 单据卡片 */
+    /* 单据模版 · 主从布局 */
     .doc-view-wrap { padding: 16px 20px 80px; background: #f8fafc; min-height: calc(100vh - 170px); }
-    .doc-card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    .doc-card {
-      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
-      display: flex; flex-direction: column; max-height: 380px; transition: opacity .2s, border-color .2s, background .2s;
+    .doc-md {
+      display: flex; gap: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+      min-height: calc(100vh - 260px); overflow: hidden;
     }
-    .doc-card.card-off { opacity: .55; background: #f8fafc; }
-    .doc-card.card-error { border-color: #f87171; background: #fef2f2; }
-    .doc-card-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 14px; border-bottom: 1px solid #f1f5f9; flex-shrink: 0;
+    .doc-md-nav {
+      width: 220px; flex-shrink: 0; border-right: 1px solid #e2e8f0; background: #f8fafc;
+      overflow-y: auto; padding: 8px 0;
     }
-    .doc-card-head .name { font-size: 14px; font-weight: 600; color: #334155; }
+    .doc-nav-item {
+      display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left;
+      padding: 10px 14px; border: none; background: transparent; cursor: pointer;
+      border-left: 3px solid transparent; color: #334155;
+    }
+    .doc-nav-item:hover { background: #f1f5f9; }
+    .doc-nav-item.active { background: #eff6ff; border-left-color: #2563eb; }
+    .doc-nav-item.is-off .doc-nav-name { color: #94a3b8; }
+    .doc-nav-item.is-error { background: #fef2f2; }
+    .doc-nav-item.is-error.active { background: #fee2e2; border-left-color: #ef4444; }
+    .doc-nav-name { font-size: 13px; font-weight: 500; line-height: 1.35; }
+    .doc-nav-meta { font-size: 11px; color: #94a3b8; line-height: 1.3; display: flex; align-items: center; gap: 6px; }
+    .doc-nav-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: #cbd5e1; }
+    .doc-nav-dot.on { background: #22c55e; }
+    .doc-nav-dot.warn { background: #f59e0b; }
+    .doc-nav-dot.off { background: #94a3b8; }
+    .doc-nav-dot.err { background: #ef4444; }
+    .doc-md-detail { flex: 1; min-width: 0; display: flex; flex-direction: column; background: #fff; }
+    .doc-md-detail.is-off { opacity: .72; }
+    .doc-detail-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 20px; border-bottom: 1px solid #f1f5f9; flex-shrink: 0;
+    }
+    .doc-detail-head .name { font-size: 16px; font-weight: 600; color: #1e293b; }
+    .doc-detail-head .head-right { display: flex; align-items: center; gap: 10px; }
+    .doc-detail-head .switch-label { font-size: 12px; color: #64748b; }
     .doc-switch { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
     .doc-switch input { opacity: 0; width: 0; height: 0; }
     .doc-switch .slider {
@@ -292,43 +314,54 @@
     .doc-switch input:checked + .slider { background: #2563eb; }
     .doc-switch input:checked + .slider::before { transform: translateX(16px); }
     .doc-bind-row {
-      display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px solid #f1f5f9;
-      flex-shrink: 0; font-size: 12px; color: #64748b; background: #fafbfc;
+      display: flex; align-items: center; gap: 10px; padding: 10px 20px; border-bottom: 1px solid #f1f5f9;
+      flex-shrink: 0; font-size: 13px; color: #64748b; background: #fafbfc;
     }
-    .doc-bind-row label { flex-shrink: 0; white-space: nowrap; }
+    .doc-bind-row label { flex-shrink: 0; white-space: nowrap; font-weight: 500; color: #475569; }
     .doc-bind-row select {
-      flex: 1; min-width: 0; border: 1px solid #dcdfe6; border-radius: 4px; padding: 4px 8px;
-      font-size: 12px; color: #334155; background: #fff; outline: none;
+      width: 280px; max-width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px;
+      font-size: 13px; color: #334155; background: #fff; outline: none;
     }
     .doc-bind-row select:focus { border-color: #2563eb; }
-    .doc-opt-tabs {
-      display: flex; gap: 0; padding: 0 10px; border-bottom: 1px solid #f1f5f9; flex-shrink: 0;
-      overflow-x: auto; background: #fff;
+    .doc-detail-body { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+    .doc-opt-nav {
+      width: 200px; flex-shrink: 0; border-right: 1px solid #f1f5f9; overflow-y: auto;
+      padding: 8px 0; background: #fff;
     }
-    .doc-opt-tab {
-      flex-shrink: 0; padding: 7px 10px; font-size: 12px; color: #64748b; cursor: pointer;
-      border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; user-select: none;
+    .doc-opt-item {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+      width: 100%; text-align: left; padding: 8px 12px; border: none; background: transparent;
+      cursor: pointer; font-size: 12px; color: #64748b; line-height: 1.35;
     }
-    .doc-opt-tab:hover { color: #2563eb; }
-    .doc-opt-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
-    .doc-opt-tab .cnt { margin-left: 4px; color: #94a3b8; font-size: 11px; }
-    .doc-opt-tab.orphan { color: #b45309; }
-    .doc-opt-tab.orphan.active { color: #b45309; border-bottom-color: #f59e0b; }
-    .doc-card-body { flex: 1; overflow-y: auto; padding: 8px 14px; min-height: 80px; }
+    .doc-opt-item:hover { background: #f8fafc; color: #334155; }
+    .doc-opt-item.active { background: #eff6ff; color: #2563eb; font-weight: 500; }
+    .doc-opt-item.orphan { color: #b45309; }
+    .doc-opt-item.orphan.active { background: #fffbeb; color: #b45309; }
+    .doc-opt-item .lbl { flex: 1; min-width: 0; word-break: break-all; }
+    .doc-opt-item .cnt { flex-shrink: 0; color: #94a3b8; font-size: 11px; font-weight: 400; }
+    .doc-opt-item.active .cnt { color: #93c5fd; }
+    .doc-version-pane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .doc-version-pane .pane-head {
+      padding: 10px 16px 0; font-size: 12px; color: #94a3b8; flex-shrink: 0;
+    }
+    .doc-version-list { flex: 1; overflow-y: auto; padding: 8px 16px; min-height: 120px; }
     .doc-tpl-row {
-      display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; font-size: 12px;
+      display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; font-size: 13px;
     }
     .doc-tpl-row:hover { background: #f8fafc; }
     .doc-tpl-row.enabled { background: #eff6ff; }
     .doc-tpl-row .radio { flex-shrink: 0; }
     .doc-tpl-row .fname { flex: 1; min-width: 0; color: #2563eb; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .doc-tpl-row .time { flex-shrink: 0; color: #94a3b8; font-size: 11px; }
+    .doc-tpl-row .time { flex-shrink: 0; color: #94a3b8; font-size: 12px; }
     .doc-tpl-row .ops { flex-shrink: 0; white-space: nowrap; }
-    .doc-tpl-row .ops button { font-size: 11px; color: #2563eb; background: none; border: none; cursor: pointer; padding: 0 2px; }
+    .doc-tpl-row .ops button { font-size: 12px; color: #2563eb; background: none; border: none; cursor: pointer; padding: 0 4px; }
     .doc-tpl-row .ops button.del { color: #ef4444; }
-    .doc-card-foot { padding: 8px 14px 12px; border-top: 1px solid #f1f5f9; flex-shrink: 0; }
-    .doc-empty { padding: 16px 8px; text-align: center; color: #94a3b8; font-size: 12px; }
-    .doc-fallback-hint { padding: 0 8px 8px; font-size: 11px; color: #94a3b8; line-height: 1.4; }
+    .doc-version-foot {
+      padding: 10px 16px 14px; border-top: 1px solid #f1f5f9; flex-shrink: 0;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .doc-empty { padding: 28px 8px; text-align: center; color: #94a3b8; font-size: 13px; }
+    .doc-fallback-hint { padding: 0 8px 12px; font-size: 12px; color: #94a3b8; line-height: 1.5; text-align: center; }
     .doc-save-bar {
       position: sticky; bottom: 0; display: flex; justify-content: flex-end; align-items: center;
       gap: 12px; padding: 12px 20px; background: #fff; border-top: 1px solid #e2e8f0;
@@ -369,7 +402,7 @@
       </div>
       <div class="type-card" onclick="enterTplType('doc')" data-annotate="doc-entry">
         <div class="title">单据模版</div>
-        <div class="desc">配置 6 类流程单据的生成模版、字段分流与开关</div>
+        <div class="desc">左列表选单据，右侧配置分流与版本</div>
         <div class="illus"><i class="fa fa-file-o"></i></div>
       </div>
     </div>
@@ -441,14 +474,17 @@
   <!-- ============ 单据模板 ============ -->
   <div id="docView" class="hidden">
     <div class="doc-view-wrap">
-      <div class="doc-card-grid" id="docCardGrid"></div>
+      <div class="doc-md" id="docMasterDetail">
+        <aside class="doc-md-nav" id="docNavList" data-annotate="doc-nav"></aside>
+        <main class="doc-md-detail" id="docDetailPanel"></main>
+      </div>
     </div>
     <div class="doc-save-bar" data-annotate="doc-save-bar">
       <span class="text-xs text-slate-400" id="docDirtyHint"></span>
       <button type="button" onclick="saveDocConfig()" class="rounded bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-700" data-annotate="doc-save">保存</button>
     </div>
     <div class="info-bar mx-5 mb-4" data-annotate="doc-logic">
-      <i class="fa fa-info-circle"></i> <strong>单据模版：</strong>每大类固定 6 类流程单据。可绑定委托登记任一字段，按选项分流配置模版；每个选项下可上传多版本、同时仅启用一个。未命中选项时回退「默认」桶。卡片开关控制是否支持系统生成。
+      <i class="fa fa-info-circle"></i> <strong>单据模版：</strong>左侧选择单据类型，右侧配置生成开关、字段分流与版本。可绑定委托信息设置中的系统必填下拉字段，按选项分流；未命中选项时回退「默认」桶。
     </div>
   </div>
 
@@ -756,7 +792,7 @@
   <script src="js/mock-dict.js"></script>
   <script src="js/entrust-field-config.js"></script>
   <script>
-    var state = { view: 'landing', main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, configContext: 'test-item', combinedConfigKey: null, bodyRowId: null, publicRowId: null, recordPublicRowId: null, recordEditKind: null, recordEditId: null, recordEditBindType: null, recordEditBindTarget: null, recordCopyTarget: 'version', publicLib: 'report', poType: 'report', poTab: 'center', cat: 'dlwz', openIds: {}, copyMode: 'public', copyTarget: null, filePickerTarget: null, bodyVersionRenameIndex: null, publicVersionRenameIndex: null, recordVersionRenameIndex: null, docDirty: false, docSavedSnapshots: {}, unsavedAction: null, docUploadType: null, docUploadOptionKey: null, docErrorTypes: [], versionFromBodyRef: false, versionFromRecordRef: false };
+    var state = { view: 'landing', main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, configContext: 'test-item', combinedConfigKey: null, bodyRowId: null, publicRowId: null, recordPublicRowId: null, recordEditKind: null, recordEditId: null, recordEditBindType: null, recordEditBindTarget: null, recordCopyTarget: 'version', publicLib: 'report', poType: 'report', poTab: 'center', cat: 'dlwz', openIds: {}, copyMode: 'public', copyTarget: null, filePickerTarget: null, bodyVersionRenameIndex: null, publicVersionRenameIndex: null, recordVersionRenameIndex: null, docDirty: false, docSavedSnapshots: {}, unsavedAction: null, docUploadType: null, docUploadOptionKey: null, docErrorTypes: [], docSelectedType: null, versionFromBodyRef: false, versionFromRecordRef: false };
     var modalStack = [];
 
     function syncModalZIndex() {
@@ -4153,6 +4189,9 @@
       if (!state.docSavedSnapshots[state.cat]) state.docSavedSnapshots[state.cat] = snapshotDocCat(state.cat);
       state.docDirty = false;
       state.docErrorTypes = [];
+      if (!state.docSelectedType || DOC_TYPES.indexOf(state.docSelectedType) < 0) {
+        state.docSelectedType = DOC_TYPES[0];
+      }
       updateDocDirtyHint();
       renderDocCards();
     }
@@ -4161,68 +4200,130 @@
       return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     }
 
+    function getDocBindFieldLabel(fieldId) {
+      if (!fieldId) return '';
+      var hit = listDocBindFields().find(function (f) { return f.id === fieldId; });
+      return hit ? hit.label : fieldId;
+    }
+
+    function getDocNavStatus(card) {
+      syncDocCardBuckets(card);
+      if (!card.cardEnabled) return { dot: 'off', text: '已关闭生成' };
+      var defList = getDocBucketTemplates(card, DOC_DEFAULT_OPTION);
+      if (!defList.length) return { dot: 'err', text: '缺默认模版' };
+      if (card.bindFieldId) {
+        var label = getDocBindFieldLabel(card.bindFieldId);
+        var tabs = listDocOptionTabs(card);
+        var filled = tabs.filter(function (t) {
+          return t.key !== DOC_DEFAULT_OPTION && getDocBucketTemplates(card, t.key).length > 0;
+        }).length;
+        var optTotal = Math.max(0, tabs.length - 1);
+        return { dot: 'on', text: '按' + label + '分流 · ' + filled + '/' + optTotal };
+      }
+      var n = defList.length;
+      return { dot: 'on', text: '统一模版 · ' + n + ' 个版本' };
+    }
+
+    function selectDocType(type) {
+      if (DOC_TYPES.indexOf(type) < 0) return;
+      state.docSelectedType = type;
+      renderDocCards();
+    }
+
     function renderDocCards() {
       var cat = state.cat;
+      var type = state.docSelectedType || DOC_TYPES[0];
+      if (DOC_TYPES.indexOf(type) < 0) type = DOC_TYPES[0];
+      state.docSelectedType = type;
+
+      var navHtml = DOC_TYPES.map(function (t) {
+        var card = getDocCard(cat, t);
+        var st = getDocNavStatus(card);
+        var active = t === type ? ' active' : '';
+        var off = card.cardEnabled ? '' : ' is-off';
+        var err = state.docErrorTypes.indexOf(t) >= 0 ? ' is-error' : '';
+        var dot = state.docErrorTypes.indexOf(t) >= 0 ? 'err' : st.dot;
+        return '<button type="button" class="doc-nav-item' + active + off + err + '" id="docNav_' + escHtml(t) + '" onclick="selectDocType(\'' + escAttr(t) + '\')">' +
+          '<span class="doc-nav-name">' + escHtml(t) + '</span>' +
+          '<span class="doc-nav-meta"><span class="doc-nav-dot ' + dot + '"></span>' + escHtml(st.text) + '</span>' +
+          '</button>';
+      }).join('');
+      document.getElementById('docNavList').innerHTML = navHtml;
+
+      var card = getDocCard(cat, type);
+      syncDocCardBuckets(card);
       var bindFields = listDocBindFields();
-      var html = DOC_TYPES.map(function (type, idx) {
-        var card = getDocCard(cat, type);
-        syncDocCardBuckets(card);
-        var offClass = card.cardEnabled ? '' : ' card-off';
-        var errClass = state.docErrorTypes.indexOf(type) >= 0 ? ' card-error' : '';
-        var optionKey = card.bindFieldId ? (card.uiOptionKey || DOC_DEFAULT_OPTION) : DOC_DEFAULT_OPTION;
-        var templates = getDocBucketTemplates(card, optionKey);
-        var radioName = 'docEn_' + type + '_' + optionKey;
+      var optionKey = card.bindFieldId ? (card.uiOptionKey || DOC_DEFAULT_OPTION) : DOC_DEFAULT_OPTION;
+      var templates = getDocBucketTemplates(card, optionKey);
+      var radioName = 'docEn_' + type + '_' + optionKey;
 
-        var bindOptions = '<option value="">不分流（统一模版）</option>' + bindFields.map(function (f) {
-          return '<option value="' + escHtml(f.id) + '"' + (card.bindFieldId === f.id ? ' selected' : '') + '>' + escHtml(f.label) + '</option>';
-        }).join('');
+      var bindOptions = '<option value="">不分流（统一模版）</option>' + bindFields.map(function (f) {
+        return '<option value="' + escHtml(f.id) + '"' + (card.bindFieldId === f.id ? ' selected' : '') + '>' + escHtml(f.label) + '</option>';
+      }).join('');
 
-        var tabsHtml = '';
-        if (card.bindFieldId) {
-          var tabs = listDocOptionTabs(card);
-          tabsHtml = '<div class="doc-opt-tabs"' + (idx === 0 ? ' data-annotate="doc-option-tabs"' : '') + '>' + tabs.map(function (tab) {
-            var cnt = (getDocBucketTemplates(card, tab.key) || []).length;
-            var active = optionKey === tab.key ? ' active' : '';
-            var orphan = tab.orphan ? ' orphan' : '';
-            return '<button type="button" class="doc-opt-tab' + active + orphan + '" onclick="setDocOptionTab(\'' + escAttr(type) + '\',\'' + escAttr(tab.key) + '\')">' +
-              escHtml(tab.label) + '<span class="cnt">' + cnt + '</span></button>';
-          }).join('') + '</div>';
+      var optNavHtml = '';
+      var paneLabel = '模版版本';
+      if (card.bindFieldId) {
+        var tabs = listDocOptionTabs(card);
+        var activeTab = tabs.find(function (tab) { return tab.key === optionKey; });
+        paneLabel = activeTab ? ('当前选项：' + activeTab.label) : '模版版本';
+        optNavHtml = '<aside class="doc-opt-nav" data-annotate="doc-option-tabs">' + tabs.map(function (tab) {
+          var cnt = (getDocBucketTemplates(card, tab.key) || []).length;
+          var activeOpt = optionKey === tab.key ? ' active' : '';
+          var orphan = tab.orphan ? ' orphan' : '';
+          return '<button type="button" class="doc-opt-item' + activeOpt + orphan + '" onclick="setDocOptionTab(\'' + escAttr(type) + '\',\'' + escAttr(tab.key) + '\')">' +
+            '<span class="lbl">' + escHtml(tab.label) + '</span><span class="cnt">' + cnt + '</span></button>';
+        }).join('') + '</aside>';
+      }
+
+      var listHtml = templates.map(function (t, i) {
+        return '<div class="doc-tpl-row' + (t.enabled ? ' enabled' : '') + '"' + (i === 0 ? ' data-annotate="doc-card-version"' : '') + '>' +
+          '<input class="radio" type="radio" name="' + escHtml(radioName) + '" ' + (t.enabled ? 'checked' : '') + ' onchange="setDocTplEnabled(\'' + escAttr(type) + '\',\'' + escAttr(optionKey) + '\',' + i + ')" />' +
+          '<span class="fname" onclick="alert(\'预览（原型演示）\')" title="' + escHtml(t.name) + '">' + escHtml(t.name) + '</span>' +
+          '<span class="time">' + escHtml(t.time) + '</span>' +
+          '<span class="ops">' +
+          '<button type="button" onclick="openDocPageOffice(\'' + escAttr(type) + '\')"' + (i === 0 ? ' data-annotate="doc-config"' : '') + '>配置</button>' +
+          '<button type="button" onclick="alert(\'预览（原型演示）\')">预览</button>' +
+          '<button type="button" class="del" onclick="removeDocTpl(\'' + escAttr(type) + '\',\'' + escAttr(optionKey) + '\',' + i + ')">删除</button>' +
+          '</span></div>';
+      }).join('');
+      if (!listHtml) {
+        listHtml = '<div class="doc-empty">暂无模版，请上传</div>';
+        if (card.bindFieldId && optionKey !== DOC_DEFAULT_OPTION) {
+          listHtml += '<div class="doc-fallback-hint">生成时若本选项无启用模版，将回退使用「默认」桶。</div>';
         }
+      }
 
-        var listHtml = templates.map(function (t, i) {
-          var versionAnn = idx === 1 && i === 0 ? ' data-annotate="doc-card-version"' : '';
-          return '<div class="doc-tpl-row' + (t.enabled ? ' enabled' : '') + '"' + versionAnn + '>' +
-            '<input class="radio" type="radio" name="' + escHtml(radioName) + '" ' + (t.enabled ? 'checked' : '') + ' onchange="setDocTplEnabled(\'' + escAttr(type) + '\',\'' + escAttr(optionKey) + '\',' + i + ')" />' +
-            '<span class="fname" onclick="alert(\'预览（原型演示）\')" title="' + escHtml(t.name) + '">' + escHtml(t.name) + '</span>' +
-            '<span class="time">' + escHtml(t.time) + '</span>' +
-            '<span class="ops">' +
-            '<button type="button" onclick="openDocPageOffice(\'' + escAttr(type) + '\')" data-annotate="' + (idx === 1 && i === 0 ? 'doc-config' : '') + '">配置</button>' +
-            '<button type="button" onclick="alert(\'预览（原型演示）\')">预览</button>' +
-            '<button type="button" class="del" onclick="removeDocTpl(\'' + escAttr(type) + '\',\'' + escAttr(optionKey) + '\',' + i + ')">删除</button>' +
-            '</span></div>';
-        }).join('');
-        if (!listHtml) {
-          listHtml = '<div class="doc-empty">暂无模版，请上传</div>';
-          if (card.bindFieldId && optionKey !== DOC_DEFAULT_OPTION) {
-            listHtml += '<div class="doc-fallback-hint">生成时若本选项无启用模版，将回退使用「默认」桶。</div>';
-          }
-        }
-
-        return '<div class="doc-card' + offClass + errClass + '" id="docCard_' + escHtml(type) + '" data-type="' + escHtml(type) + '">' +
-          '<div class="doc-card-head"><span class="name">' + escHtml(type) + '</span>' +
-          '<label class="doc-switch" title="控制是否支持系统生成该单据"' + (idx === 0 ? ' data-annotate="doc-card-switch"' : '') + '>' +
-          '<input type="checkbox" ' + (card.cardEnabled ? 'checked' : '') + ' onchange="toggleDocCard(\'' + escAttr(type) + '\', this.checked)" />' +
-          '<span class="slider"></span></label></div>' +
-          '<div class="doc-bind-row"' + (idx === 0 ? ' data-annotate="doc-bind-field"' : '') + '>' +
+      var detailOff = card.cardEnabled ? '' : ' is-off';
+      var detailHtml =
+        '<div class="doc-detail-head">' +
+          '<span class="name">' + escHtml(type) + '</span>' +
+          '<div class="head-right">' +
+            '<span class="switch-label">系统生成</span>' +
+            '<label class="doc-switch" title="控制是否支持系统生成该单据" data-annotate="doc-card-switch">' +
+              '<input type="checkbox" ' + (card.cardEnabled ? 'checked' : '') + ' onchange="toggleDocCard(\'' + escAttr(type) + '\', this.checked)" />' +
+              '<span class="slider"></span>' +
+            '</label>' +
+          '</div>' +
+        '</div>' +
+        '<div class="doc-bind-row" data-annotate="doc-bind-field">' +
           '<label>按字段分流</label>' +
           '<select onchange="changeDocBindField(\'' + escAttr(type) + '\', this.value)">' + bindOptions + '</select>' +
+        '</div>' +
+        '<div class="doc-detail-body">' +
+          optNavHtml +
+          '<div class="doc-version-pane">' +
+            '<div class="pane-head">' + escHtml(paneLabel) + '</div>' +
+            '<div class="doc-version-list">' + listHtml + '</div>' +
+            '<div class="doc-version-foot">' +
+              '<button type="button" onclick="openDocUpload(\'' + escAttr(type) + '\',\'' + escAttr(optionKey) + '\')" data-annotate="doc-upload" class="rounded border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:border-blue-400 hover:text-blue-600"><i class="fa fa-upload"></i> 上传模版</button>' +
+            '</div>' +
           '</div>' +
-          tabsHtml +
-          '<div class="doc-card-body">' + listHtml + '</div>' +
-          '<div class="doc-card-foot"><button type="button" onclick="openDocUpload(\'' + escAttr(type) + '\',\'' + escAttr(optionKey) + '\')" ' + (idx === 0 ? 'data-annotate="doc-upload"' : '') + ' class="rounded border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:border-blue-400 hover:text-blue-600"><i class="fa fa-upload"></i> 上传模版</button></div>' +
-          '</div>';
-      }).join('');
-      document.getElementById('docCardGrid').innerHTML = html;
+        '</div>';
+
+      var detailEl = document.getElementById('docDetailPanel');
+      detailEl.className = 'doc-md-detail' + detailOff;
+      detailEl.innerHTML = detailHtml;
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
@@ -4269,6 +4370,7 @@
     function setDocOptionTab(type, optionKey) {
       var card = getDocCard(state.cat, type);
       card.uiOptionKey = optionKey || DOC_DEFAULT_OPTION;
+      state.docSelectedType = type;
       renderDocCards();
     }
 
@@ -4318,6 +4420,7 @@
       list.forEach(function (t) { t.enabled = false; });
       list.push({ name: fileName, time: formatNowTs(), enabled: true });
       card.uiOptionKey = optionKey;
+      state.docSelectedType = type;
       state.docUploadType = null;
       state.docUploadOptionKey = null;
       markDocDirty();
@@ -4343,19 +4446,22 @@
     function saveDocConfig(silent) {
       var cat = state.cat;
       var missing = [];
-      DOC_TYPES.forEach(function (type) {
-        var card = getDocCard(cat, type);
+      DOC_TYPES.forEach(function (docType) {
+        var card = getDocCard(cat, docType);
         syncDocCardBuckets(card);
         var defList = getDocBucketTemplates(card, DOC_DEFAULT_OPTION);
-        if (card.cardEnabled && (!defList || !defList.length)) missing.push(type);
+        if (card.cardEnabled && (!defList || !defList.length)) missing.push(docType);
       });
       state.docErrorTypes = missing.slice();
+      if (missing.length && DOC_TYPES.indexOf(missing[0]) >= 0) {
+        state.docSelectedType = missing[0];
+      }
       renderDocCards();
       if (missing.length) {
         var msg = '以下开启的单据未配置「默认」模版：' + missing.join('、');
         showDocToast(msg, 'error');
-        var first = document.getElementById('docCard_' + missing[0]);
-        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var first = document.getElementById('docNav_' + missing[0]);
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         return false;
       }
       state.docSavedSnapshots[cat] = snapshotDocCat(cat);
@@ -4510,16 +4616,17 @@
         { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出模版逻辑', wide: true, content: '支持样品层/型号层<strong>组合模版</strong>与各<strong>试验项单模版</strong>并存。「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」优先本型号组合模版，否则上级样品组合模版，否则试验项动态拼接；切分类两种模式始终用试验项单模版。UI 仅显示 xxx.docx/未上传，继承在导出时自动解析。', tag: '产品逻辑' },
         { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版表格', wide: true, content: '按左侧选中节点展示<strong>本层级及以下</strong>全部组合模版：分类层汇总下属样品层与型号层；样品层展示本样品 + 其下各型号；型号层仅本型号。试验项节点不展示此区域。', tag: '记录单' },
         { id: 'record-no-download', selector: '#toolbar', position: 'top-left', title: '移除下载按钮', wide: true, content: '模版管理各 Tab 工具栏已移除「下载」按钮；点击列表中蓝色的模板文件链接即可触发下载。', tag: '模板管理' },
-        { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 6 类流程单据模版。进入后通过顶部横向 Tab 切换四大类，每类固定 6 张卡片；可绑定委托登记字段，按选项分流配置多版本模版。', tag: '模板管理' },
+        { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 6 类流程单据模版。进入后通过顶部横向 Tab 切换四大类；页面采用<strong>左列表 + 右详情</strong>：左侧选单据，右侧配置生成开关、字段分流与版本。', tag: '模板管理' },
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 6 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },
-        { id: 'doc-card-switch', selector: '[data-annotate="doc-card-switch"]', position: 'top-right', title: '卡片开关', wide: true, content: '控制该单据类型是否支持系统生成。关闭时整卡置灰，但保留已上传模版及启用记忆；关闭状态下保存时不校验「默认」桶是否已上传模版。', tag: '单据模版' },
-        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '仅列出委托信息设置中灰色勾选的<strong>系统必填</strong>下拉字段。绑定后可按该字段不同选项分别配置模版；选「不分流」则全委托共用一套版本列表（默认桶）。', tag: '单据模版' },
-        { id: 'doc-option-tabs', selector: '[data-annotate="doc-option-tabs"]', position: 'top-right', title: '选项桶', wide: true, content: '「默认」桶用于未命中选项时的回退；其余 Tab 对应该字段各选项。每个 Tab 内独立维护多版本并单选启用。', tag: '单据模版' },
-        { id: 'doc-card-version', selector: '[data-annotate="doc-card-version"]', position: 'top-right', title: '版本启用', wide: true, content: '当前选项桶内可存多个模版版本，通过单选启用其中一个；新上传的版本默认启用最新版。卡片内可直接配置、预览、删除。', tag: '单据模版' },
+        { id: 'doc-nav', selector: '[data-annotate="doc-nav"]', position: 'top-right', title: '单据列表', wide: true, content: '左侧列出 6 种单据。副文案展示状态：统一模版 / 按某字段分流进度 / 缺默认模版 / 已关闭。点击切换右侧详情；保存校验失败时对应项标红。', tag: '单据模版' },
+        { id: 'doc-card-switch', selector: '[data-annotate="doc-card-switch"]', position: 'top-right', title: '系统生成开关', wide: true, content: '控制该单据类型是否支持系统生成。关闭时右侧详情置灰，但保留已上传模版及启用记忆；关闭状态下保存时不校验「默认」桶是否已上传模版。', tag: '单据模版' },
+        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '仅列出委托信息设置中灰色勾选的<strong>系统必填</strong>下拉字段。绑定后右侧出现选项列表；选「不分流」则全委托共用一套版本列表（默认桶）。', tag: '单据模版' },
+        { id: 'doc-option-tabs', selector: '[data-annotate="doc-option-tabs"]', position: 'top-right', title: '选项列表', wide: true, content: '「默认」用于未命中选项时的回退；其余项对应该字段各选项。长文案纵向展示，不再横向挤兑。点击切换右侧版本列表。', tag: '单据模版' },
+        { id: 'doc-card-version', selector: '[data-annotate="doc-card-version"]', position: 'top-right', title: '版本启用', wide: true, content: '当前选项桶内可存多个模版版本，通过单选启用其中一个；新上传的版本默认启用最新版。可直接配置、预览、删除。', tag: '单据模版' },
         { id: 'doc-upload', selector: '[data-annotate="doc-upload"]', position: 'top-right', title: '上传模版', content: '打开文件选择弹窗上传 .docx 模版；新上传版本自动启用，原启用版本取消选中。', tag: '单据模版' },
         { id: 'doc-config', selector: '[data-annotate="doc-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 打开该单据的 Word 模版，右侧字段面板可插入占位符。', tag: '模板管理' },
-        { id: 'doc-save', selector: '[data-annotate="doc-save"]', position: 'top-left', title: '保存校验', wide: true, content: '<strong>校验范围：</strong>仅校验<strong>当前大类</strong>下 6 张卡片。<br><br><strong>规则：</strong>卡片开关为「开启」且「默认」桶无模版文件 → 保存失败。选项桶可为空（生成时回退默认）。<br><br><strong>失败表现：</strong>① toast 提示「以下开启的单据未配置「默认」模版：xxx」；② 卡片边框标红；③ 滚动定位到第一张失败卡片。<br><br><strong>通过：</strong>写入当前大类快照、清除未保存标记与错误态。', tag: '单据模版' },
-        { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模版逻辑', wide: true, content: '<strong>按大类分套：</strong>DLWZ / AQGQJ / HJJC / GCJC 各自独立配置 6 类单据。<br><br><strong>字段分流：</strong>可绑定委托登记下拉字段，按选项分桶配置版本；未命中回退默认桶。<br><br><strong>卡片开关：</strong>控制是否支持系统生成；关闭时整卡置灰但保留配置。<br><br><strong>保存：</strong>仅保存当前大类；详见「保存」批注。', tag: '模板管理' },
+        { id: 'doc-save', selector: '[data-annotate="doc-save"]', position: 'top-left', title: '保存校验', wide: true, content: '<strong>校验范围：</strong>仅校验<strong>当前大类</strong>下 6 种单据。<br><br><strong>规则：</strong>系统生成为「开启」且「默认」桶无模版 → 保存失败。选项桶可为空（生成时回退默认）。<br><br><strong>失败表现：</strong>① toast 提示；② 左侧列表对应项标红并自动选中；③ 滚动定位到该项。', tag: '单据模版' },
+        { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模版逻辑', wide: true, content: '<strong>主从布局：</strong>左选单据、右配详情。<br><br><strong>字段分流：</strong>可绑定系统必填下拉字段，按选项分桶配置版本；未命中回退默认桶。<br><br><strong>保存：</strong>仅保存当前大类。', tag: '模板管理' },
         { id: 'public-filter', selector: '[data-annotate="public-filter"]', position: 'top-left', title: '公共模版筛选', wide: true, content: '筛选字段：<strong>模版内容样式</strong>（模板头/模板尾/正文）、<strong>模版文件名</strong>。无关联绑定筛选。', tag: '报告模板' },
         { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共模版列表', wide: true, content: '表头：<strong>模版内容样式</strong>、<strong>模版文件</strong>。无关联绑定列。操作列含版本管理。列表已按当前大类过滤。', tag: '报告模板' },
         { id: 'public-add', selector: '[data-annotate="public-add"]', position: 'top-left', title: '新增公共模版', content: '打开新增弹窗：配置模版内容样式、上传/复制文件并填写模版名称。无需关联绑定，由报告模版侧直接引用。', tag: '报告模板' },
