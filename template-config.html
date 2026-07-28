@@ -3996,7 +3996,8 @@
       var fields = [];
       sections.forEach(function (sec) {
         (sec.fields || []).forEach(function (f) {
-          if (f.fieldType === 'select') {
+          // 仅委托信息设置中灰色勾选（locked=系统必填）的下拉字段可分流
+          if (f.fieldType === 'select' && f.locked) {
             fields.push({
               id: f.id,
               label: f.placeholder || f.label || f.id,
@@ -4009,13 +4010,9 @@
     }
 
     function getDocFieldOptions(fieldId) {
-      if (!fieldId) return [];
-      var field = null;
-      listDocBindFields().some(function (f) {
-        if (f.id === fieldId) { field = f; return true; }
-        return false;
-      });
-      if (!field) return [];
+      if (!fieldId || !window.EntrustFieldConfig) return [];
+      var field = EntrustFieldConfig.findField(EntrustFieldConfig.load(), fieldId);
+      if (!field || field.fieldType !== 'select') return [];
       if (field.dictType && window.MockDictStore) {
         var items = MockDictStore.getActiveItems(MockDictStore.load(), field.dictType) || [];
         return items.map(function (it) { return { value: String(it.value), label: it.label }; });
@@ -4517,7 +4514,7 @@
         { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 6 类流程单据模版。进入后通过顶部横向 Tab 切换四大类，每类固定 6 张卡片；可绑定委托登记字段，按选项分流配置多版本模版。', tag: '模板管理' },
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 6 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },
         { id: 'doc-card-switch', selector: '[data-annotate="doc-card-switch"]', position: 'top-right', title: '卡片开关', wide: true, content: '控制该单据类型是否支持系统生成。关闭时整卡置灰，但保留已上传模版及启用记忆；关闭状态下保存时不校验「默认」桶是否已上传模版。', tag: '单据模版' },
-        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '绑定委托登记中的下拉字段后，可按该字段不同选项分别配置模版；选「不分流」则全委托共用一套版本列表（默认桶）。', tag: '单据模版' },
+        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '仅列出委托信息设置中灰色勾选的<strong>系统必填</strong>下拉字段。绑定后可按该字段不同选项分别配置模版；选「不分流」则全委托共用一套版本列表（默认桶）。', tag: '单据模版' },
         { id: 'doc-option-tabs', selector: '[data-annotate="doc-option-tabs"]', position: 'top-right', title: '选项桶', wide: true, content: '「默认」桶用于未命中选项时的回退；其余 Tab 对应该字段各选项。每个 Tab 内独立维护多版本并单选启用。', tag: '单据模版' },
         { id: 'doc-card-version', selector: '[data-annotate="doc-card-version"]', position: 'top-right', title: '版本启用', wide: true, content: '当前选项桶内可存多个模版版本，通过单选启用其中一个；新上传的版本默认启用最新版。卡片内可直接配置、预览、删除。', tag: '单据模版' },
         { id: 'doc-upload', selector: '[data-annotate="doc-upload"]', position: 'top-right', title: '上传模版', content: '打开文件选择弹窗上传 .docx 模版；新上传版本自动启用，原启用版本取消选中。', tag: '单据模版' },
