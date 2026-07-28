@@ -175,6 +175,15 @@
     .cfg-toggle input:checked + .cfg-toggle-slider::before { transform: translateX(22px); }
     .cfg-toggle-text { margin-left: 10px; font-size: 13px; color: #64748b; }
     /* 编号规则 */
+    .num-cat-tabs {
+      display: flex; gap: 0; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 16px;
+    }
+    .num-cat-tab {
+      padding: 12px 18px; font-size: 14px; color: #64748b; cursor: pointer; white-space: nowrap;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; user-select: none;
+    }
+    .num-cat-tab:hover { color: #2563eb; }
+    .num-cat-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
     .num-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; margin-bottom: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
     .num-card:hover { border-color: #bfdbfe; box-shadow: 0 1px 4px rgba(37,99,235,.06); }
     .num-card .num-info { min-width: 0; }
@@ -183,12 +192,45 @@
     .rule-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 4px; font-size: 12px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; white-space: nowrap; }
     .rule-chip.sep { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
     .rule-chip.fixed { background: #fef3c7; color: #92400e; border-color: #fde68a; }
-    #ruleBuilder .rule-chip { cursor: move; padding-right: 6px; }
-    #ruleBuilder .rule-chip .chip-del { cursor: pointer; color: #94a3b8; font-size: 11px; }
-    #ruleBuilder .rule-chip .chip-del:hover { color: #ef4444; }
-    #ruleBuilder .rule-chip.dragging { opacity: .4; }
-    .token-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 6px; font-size: 12px; background: #fff; border: 1px solid #cbd5e1; color: #475569; cursor: pointer; }
-    .token-btn:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+    .rule-chip.cat { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+    .rule-chip.seq { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+    .token-seg {
+      border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 14px 12px; margin-bottom: 10px; background: #fff;
+    }
+    .token-seg-head { display: flex; align-items: flex-start; gap: 10px; }
+    .token-seg-idx {
+      flex-shrink: 0; width: 22px; height: 22px; margin-top: 6px; border-radius: 50%;
+      background: #eff6ff; color: #2563eb; font-size: 12px; font-weight: 600;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .token-seg-body { flex: 1; min-width: 0; }
+    .token-seg-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+    .token-seg-actions button {
+      width: 28px; height: 28px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff;
+      color: #64748b; cursor: pointer; font-size: 12px;
+    }
+    .token-seg-actions button:hover { border-color: #93c5fd; color: #2563eb; }
+    .token-seg-actions button.danger:hover { border-color: #fca5a5; color: #dc2626; }
+    .token-field { margin-top: 10px; }
+    .token-field label { display: block; font-size: 13px; color: #64748b; margin-bottom: 6px; }
+    .token-field label .req { color: #ef4444; margin-right: 2px; }
+    .token-field input[type="text"], .token-field select {
+      width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px 10px; font-size: 13px; outline: none;
+    }
+    .token-field input[type="text"]:focus, .token-field select:focus { border-color: #2563eb; }
+    .token-hint { margin-top: 8px; font-size: 12px; color: #64748b; line-height: 1.5; background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 6px; padding: 8px 10px; }
+    .token-radios { display: flex; gap: 16px; align-items: center; font-size: 13px; color: #334155; }
+    .token-radios label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; color: #334155; }
+    .token-stepper { display: inline-flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; }
+    .token-stepper button { width: 32px; height: 32px; border: none; background: #f8fafc; color: #475569; cursor: pointer; }
+    .token-stepper button:hover { background: #eff6ff; color: #2563eb; }
+    .token-stepper span { min-width: 40px; text-align: center; font-size: 13px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; line-height: 32px; }
+    .token-quick { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .token-quick button {
+      padding: 2px 10px; font-size: 12px; border-radius: 4px; border: 1px solid #e2e8f0;
+      background: #fff; color: #64748b; cursor: pointer; font-family: ui-monospace, monospace;
+    }
+    .token-quick button:hover { border-color: #93c5fd; color: #2563eb; }
     /* 签名与印章（复用模板管理印章样式） */
     .stamp-upload-row { display: flex; flex-wrap: wrap; gap: 28px; }
     .stamp-upload-box { text-align: center; }
@@ -520,10 +562,16 @@
 
     <!-- ========== 编号规则 ========== -->
     <div id="panel-numbering" class="param-panel">
-      <div class="rounded bg-white shadow-sm">
+      <div class="rounded bg-white shadow-sm overflow-hidden">
+        <div class="num-cat-tabs" id="numberingCatTabs" data-annotate="numbering-cat-tabs">
+          <div class="num-cat-tab active" data-cat="dlwz">电力物资类</div>
+          <div class="num-cat-tab" data-cat="aqgqj">安全工器具类</div>
+          <div class="num-cat-tab" data-cat="hjjc">环境检测</div>
+          <div class="num-cat-tab" data-cat="gcjc">工程检测</div>
+        </div>
         <div class="mx-4 mt-4 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           <i class="fa fa-info-circle mt-0.5 text-blue-500"></i>
-          <span>配置系统各类业务单据的编号生成规则。点击「修改」可用令牌拖拽/增删组合规则，并实时预览生成示例。</span>
+          <span>按<strong>样品大类</strong>分别配置业务编号规则。当前：<strong id="numberingCatLabel">电力物资类</strong>。点击「修改」组合令牌并配置类型参数，实时预览生成示例。</span>
         </div>
         <div class="p-4" id="numberingList"></div>
       </div>
@@ -532,27 +580,30 @@
 
   <!-- 编号规则编辑弹窗 -->
   <div id="numberingModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-    <div class="flex max-h-[88vh] w-[720px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+    <div class="flex max-h-[90vh] w-[760px] max-w-full flex-col rounded-lg bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <h3 class="text-base font-medium text-slate-800" id="numberingModalTitle">修改编号规则</h3>
-        <button onclick="closeNumberingModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+        <button type="button" onclick="closeNumberingModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="flex-1 overflow-auto px-6 py-4">
         <div class="mb-4">
           <div class="mb-2 text-sm font-medium text-slate-600">当前规则</div>
-          <div id="ruleBuilder" class="flex min-h-[52px] flex-wrap items-center gap-2 rounded border border-dashed border-slate-300 bg-slate-50 p-3"></div>
+          <div id="ruleChipPreview" class="flex min-h-[52px] flex-wrap items-center gap-2 rounded border border-dashed border-slate-300 bg-slate-50 p-3"></div>
         </div>
-        <div class="mb-4">
-          <div class="mb-2 text-sm font-medium text-slate-600">添加令牌</div>
-          <div id="tokenPalette" class="flex flex-wrap gap-2"></div>
+        <div class="mb-4" data-annotate="numbering-token-editor">
+          <div class="mb-2 flex items-center justify-between">
+            <div class="text-sm font-medium text-slate-600">规则组成</div>
+            <button type="button" onclick="addTokenSegment()" class="rounded border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-600 hover:bg-blue-100"><i class="fa fa-plus"></i> 添加令牌</button>
+          </div>
+          <div id="tokenSegmentList"></div>
         </div>
         <div class="rounded border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           <span class="mr-2 font-medium">生成预览：</span><span id="rulePreview" class="font-mono">—</span>
         </div>
       </div>
       <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
-        <button onclick="closeNumberingModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
-        <button onclick="saveNumbering()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white">确定</button>
+        <button type="button" onclick="closeNumberingModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
+        <button type="button" onclick="saveNumbering()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white">确定</button>
       </div>
     </div>
   </div>
@@ -1738,57 +1789,254 @@
       if (e.target === this) closeVersionModal();
     });
 
-    /* ===== 编号规则 ===== */
-    // token 类型定义：{ type, label, value?, digits? }
-    var TOKEN_DEFS = [
-      { type: 'prefix', label: '前缀文本', sample: 'SC' },
-      { type: 'year4', label: '年份(4位)', sample: '2026' },
-      { type: 'year2', label: '年份(2位)', sample: '26' },
-      { type: 'month', label: '月份', sample: '02' },
-      { type: 'day', label: '日期', sample: '24' },
-      { type: 'ref-entrust', label: '委托编号', sample: 'SC2026/0037' },
-      { type: 'ref-sample', label: '样品编号', sample: 'SC2026/00370101' },
-      { type: 'rowno', label: '行号', sample: '01' },
-      { type: 'seq2', label: '2位自增序号', sample: '01' },
-      { type: 'seq3', label: '3位自增序号', sample: '001' },
-      { type: 'seq4', label: '4位自增序号', sample: '0037' },
-      { type: 'sep-slash', label: '分隔符 /', sample: '/' },
-      { type: 'sep-dash', label: '分隔符 -', sample: '-' },
-      { type: 'sep-underline', label: '分隔符 _', sample: '_' }
+    /* ===== 编号规则（按大类分套 + 类型化令牌） ===== */
+    var NUM_CATS = [
+      { key: 'dlwz', name: '电力物资类' },
+      { key: 'aqgqj', name: '安全工器具类' },
+      { key: 'hjjc', name: '环境检测' },
+      { key: 'gcjc', name: '工程检测' }
+    ];
+    var numberingCat = 'dlwz';
+
+    /* Mock 预览上下文：取样品分类层级1 + 试样类别代码等 */
+    var NUM_PREVIEW_CTX = {
+      dlwz: { entrustYear: 2026, submitYear: 2026, month: '03', day: '18', categoryName: '电力电缆类', categoryCode: 'DLDL', sampleType: '电缆', specimenCategoryCode: 'DL-JY', rowNo: '01', seq: 37 },
+      aqgqj: { entrustYear: 2026, submitYear: 2026, month: '02', day: '11', categoryName: '绝缘手套', categoryCode: 'JYST', sampleType: '安全工器具', specimenCategoryCode: 'AQ-JY', rowNo: '02', seq: 12 },
+      hjjc: { entrustYear: 2026, submitYear: 2026, month: '01', day: '08', categoryName: '水质检测', categoryCode: 'SZ', sampleType: '环境', specimenCategoryCode: 'HJ-SZ', rowNo: '01', seq: 5 },
+      gcjc: { entrustYear: 2026, submitYear: 2026, month: '04', day: '02', categoryName: '通用硅酸盐水泥', categoryCode: 'SN', sampleType: '建材', specimenCategoryCode: 'GC-SN', rowNo: '03', seq: 9 }
+    };
+
+    var TOKEN_TYPE_GROUPS = [
+      {
+        label: '固定字符',
+        options: [{ type: 'literal', label: '指定字符' }]
+      },
+      {
+        label: '委托日期',
+        options: [
+          { type: 'entrust_year', label: '委托年份' },
+          { type: 'entrust_month', label: '委托月份' },
+          { type: 'entrust_day', label: '委托日期' }
+        ]
+      },
+      {
+        label: '送样日期',
+        options: [
+          { type: 'submit_year', label: '送样年份' },
+          { type: 'submit_month', label: '送样月份' },
+          { type: 'submit_day', label: '送样日期' }
+        ]
+      },
+      {
+        label: '分类与样品',
+        options: [
+          { type: 'category_name', label: '分类名称' },
+          { type: 'category_code', label: '分类编号' },
+          { type: 'sample_type', label: '样品类型' },
+          { type: 'specimen_category_code', label: '试样类别代码' }
+        ]
+      },
+      {
+        label: '序号',
+        options: [{ type: 'seq', label: '自增序号' }]
+      },
+      {
+        label: '引用编号',
+        options: [
+          { type: 'ref_entrust', label: '委托编号' },
+          { type: 'ref_sample', label: '样品编号' },
+          { type: 'row_no', label: '行号' }
+        ]
+      }
     ];
 
-    function tokenDef(type) { return TOKEN_DEFS.find(function (t) { return t.type === type; }); }
-    function tokenLabel(tk) { return tk.type === 'prefix' ? '前缀「' + (tk.value || '') + '」' : tokenDef(tk.type).label; }
-    function tokenSample(tk) { return tk.type === 'prefix' ? (tk.value || '') : tokenDef(tk.type).sample; }
-    function isSep(tk) { return tk.type.indexOf('sep-') === 0; }
+    var TOKEN_META = {};
+    TOKEN_TYPE_GROUPS.forEach(function (g) {
+      g.options.forEach(function (o) { TOKEN_META[o.type] = { label: o.label, group: g.label }; });
+    });
 
-    var NUMBERING_RULES = [
-      { id: 'entrust', name: '委托编号规则', tokens: [ { type: 'year4' }, { type: 'sep-slash' }, { type: 'seq4' } ] },
-      { id: 'entrust-order', name: '委托单编号规则', tokens: [ { type: 'ref-entrust' }, { type: 'sep-dash' }, { type: 'seq2' } ] },
-      { id: 'sample', name: '样品编号规则', tokens: [ { type: 'ref-entrust' }, { type: 'rowno' }, { type: 'seq2' } ] },
-      { id: 'test-record', name: '试验记录单编号规则', tokens: [ { type: 'ref-sample' }, { type: 'sep-dash' }, { type: 'seq2' } ] },
-      { id: 'origin-record', name: '原始记录单编号规则', tokens: [ { type: 'year4' }, { type: 'month' }, { type: 'seq3' } ] },
-      { id: 'report', name: '报告编号规则', tokens: [ { type: 'ref-entrust' }, { type: 'sep-dash' }, { type: 'seq2' } ] }
-    ];
+    function defaultToken(type) {
+      if (type === 'literal') return { type: 'literal', value: '' };
+      if (type === 'entrust_year' || type === 'submit_year') return { type: type, digits: 4 };
+      if (type === 'seq') return { type: 'seq', digits: 4 };
+      return { type: type };
+    }
+
+    function cloneTokens(tokens) {
+      return tokens.map(function (t) {
+        var n = { type: t.type };
+        if (t.value != null) n.value = t.value;
+        if (t.digits != null) n.digits = t.digits;
+        return n;
+      });
+    }
+
+    function padNum(n, digits) {
+      var s = String(n);
+      while (s.length < digits) s = '0' + s;
+      return s;
+    }
+
+    function yearSample(year, digits) {
+      var s = String(year);
+      return digits === 2 ? s.slice(-2) : s;
+    }
+
+    function tokenLabel(tk) {
+      var meta = TOKEN_META[tk.type];
+      if (!meta) return tk.type;
+      if (tk.type === 'literal') return '指定字符「' + (tk.value || '') + '」';
+      if (tk.type === 'entrust_year' || tk.type === 'submit_year') return meta.label + '·' + (tk.digits || 4) + '位';
+      if (tk.type === 'seq') return '自增序号·' + (tk.digits || 4) + '位';
+      return meta.label;
+    }
+
+    function tokenChipClass(tk) {
+      if (tk.type === 'literal') {
+        return (/^[\/\-_]$/).test(tk.value || '') ? 'rule-chip sep' : 'rule-chip fixed';
+      }
+      if (tk.type === 'seq') return 'rule-chip seq';
+      if (tk.type === 'category_name' || tk.type === 'category_code' || tk.type === 'sample_type' || tk.type === 'specimen_category_code') return 'rule-chip cat';
+      return 'rule-chip';
+    }
+
+    function buildRefEntrust(ctx) {
+      return 'SC' + yearSample(ctx.entrustYear, 4) + '/' + padNum(ctx.seq, 4);
+    }
+    function buildRefSample(ctx) {
+      return buildRefEntrust(ctx) + ctx.rowNo + padNum(1, 2);
+    }
+
+    function tokenSample(tk, ctx) {
+      switch (tk.type) {
+        case 'literal': return tk.value || '';
+        case 'entrust_year': return yearSample(ctx.entrustYear, tk.digits || 4);
+        case 'submit_year': return yearSample(ctx.submitYear, tk.digits || 4);
+        case 'entrust_month':
+        case 'submit_month': return ctx.month;
+        case 'entrust_day':
+        case 'submit_day': return ctx.day;
+        case 'category_name': return ctx.categoryName;
+        case 'category_code': return ctx.categoryCode;
+        case 'sample_type': return ctx.sampleType;
+        case 'specimen_category_code': return ctx.specimenCategoryCode;
+        case 'seq': return padNum(ctx.seq, tk.digits || 4);
+        case 'ref_entrust': return buildRefEntrust(ctx);
+        case 'ref_sample': return buildRefSample(ctx);
+        case 'row_no': return ctx.rowNo;
+        default: return '';
+      }
+    }
 
     function ruleChipsHtml(tokens) {
+      if (!tokens || !tokens.length) return '<span class="text-sm text-slate-400">尚未配置</span>';
       return tokens.map(function (tk) {
-        var cls = 'rule-chip' + (isSep(tk) ? ' sep' : (tk.type === 'prefix' ? ' fixed' : ''));
-        return '<span class="' + cls + '">' + tokenLabel(tk) + '</span>';
+        return '<span class="' + tokenChipClass(tk) + '">' + tokenLabel(tk) + '</span>';
       }).join('');
     }
 
     function rulePreview(tokens) {
-      return tokens.map(tokenSample).join('') || '—';
+      var ctx = NUM_PREVIEW_CTX[numberingCat] || NUM_PREVIEW_CTX.dlwz;
+      if (!tokens || !tokens.length) return '—';
+      return tokens.map(function (tk) { return tokenSample(tk, ctx); }).join('') || '—';
     }
 
+    function defaultRuleSet() {
+      return [
+        { id: 'entrust', name: '委托编号规则', tokens: [
+          { type: 'literal', value: 'SC' },
+          { type: 'entrust_year', digits: 4 },
+          { type: 'literal', value: '/' },
+          { type: 'seq', digits: 4 }
+        ]},
+        { id: 'entrust-order', name: '委托单编号规则', tokens: [
+          { type: 'ref_entrust' },
+          { type: 'literal', value: '-' },
+          { type: 'seq', digits: 2 }
+        ]},
+        { id: 'sample', name: '样品编号规则', tokens: [
+          { type: 'ref_entrust' },
+          { type: 'row_no' },
+          { type: 'seq', digits: 2 }
+        ]},
+        { id: 'test-record', name: '试验记录单编号规则', tokens: [
+          { type: 'category_code' },
+          { type: 'literal', value: '-' },
+          { type: 'ref_sample' },
+          { type: 'literal', value: '-' },
+          { type: 'seq', digits: 2 }
+        ]},
+        { id: 'origin-record', name: '原始记录单编号规则', tokens: [
+          { type: 'entrust_year', digits: 4 },
+          { type: 'entrust_month' },
+          { type: 'seq', digits: 3 }
+        ]},
+        { id: 'report', name: '报告编号规则', tokens: [
+          { type: 'specimen_category_code' },
+          { type: 'literal', value: '-' },
+          { type: 'ref_entrust' },
+          { type: 'literal', value: '-' },
+          { type: 'seq', digits: 2 }
+        ]}
+      ];
+    }
+
+    function cloneRuleSet(rules) {
+      return rules.map(function (r) {
+        return { id: r.id, name: r.name, tokens: cloneTokens(r.tokens) };
+      });
+    }
+
+    var NUMBERING_BY_CAT = {
+      dlwz: cloneRuleSet(defaultRuleSet()),
+      aqgqj: cloneRuleSet(defaultRuleSet()),
+      hjjc: cloneRuleSet(defaultRuleSet()),
+      gcjc: cloneRuleSet(defaultRuleSet())
+    };
+
+    /* 安全工器具类示例差异，便于演示「按大类独立」 */
+    NUMBERING_BY_CAT.aqgqj[0].tokens = [
+      { type: 'literal', value: 'AQ' },
+      { type: 'category_code' },
+      { type: 'literal', value: '-' },
+      { type: 'entrust_year', digits: 2 },
+      { type: 'seq', digits: 4 }
+    ];
+
+    function currentRules() {
+      return NUMBERING_BY_CAT[numberingCat] || NUMBERING_BY_CAT.dlwz;
+    }
+
+    function catName(key) {
+      var hit = NUM_CATS.find(function (c) { return c.key === key; });
+      return hit ? hit.name : key;
+    }
+
+    function switchNumberingCat(key) {
+      numberingCat = key;
+      document.querySelectorAll('#numberingCatTabs .num-cat-tab').forEach(function (t) {
+        t.classList.toggle('active', t.getAttribute('data-cat') === key);
+      });
+      document.getElementById('numberingCatLabel').textContent = catName(key);
+      renderNumbering();
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) {
+        requestAnimationFrame(function () { PrototypeAnnotation.refresh(); });
+      }
+    }
+
+    document.getElementById('numberingCatTabs').addEventListener('click', function (e) {
+      var tab = e.target.closest('.num-cat-tab');
+      if (!tab) return;
+      switchNumberingCat(tab.getAttribute('data-cat'));
+    });
+
     function renderNumbering() {
-      document.getElementById('numberingList').innerHTML = NUMBERING_RULES.map(function (r) {
+      document.getElementById('numberingList').innerHTML = currentRules().map(function (r) {
         return '<div class="num-card">' +
           '<div class="num-info"><div class="num-title">当前' + r.name + '</div>' +
           '<div class="num-rule">' + ruleChipsHtml(r.tokens) + '</div>' +
           '<div class="mt-2 text-xs text-slate-400">生成示例：<span class="font-mono text-slate-500">' + rulePreview(r.tokens) + '</span></div></div>' +
-          '<button onclick="openNumberingModal(\'' + r.id + '\')" class="flex-shrink-0 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">修改' + r.name.replace('规则', '') + '规则</button>' +
+          '<button type="button" onclick="openNumberingModal(\'' + r.id + '\')" class="flex-shrink-0 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">修改' + r.name.replace('规则', '') + '规则</button>' +
           '</div>';
       }).join('');
     }
@@ -1796,16 +2044,101 @@
     var editingRuleId = null;
     var editingTokens = [];
 
+    function typeOptionsHtml(selected) {
+      return TOKEN_TYPE_GROUPS.map(function (g) {
+        return '<optgroup label="' + g.label + '">' + g.options.map(function (o) {
+          return '<option value="' + o.type + '"' + (o.type === selected ? ' selected' : '') + '>' + o.label + '</option>';
+        }).join('') + '</optgroup>';
+      }).join('');
+    }
+
+    function customFieldsHtml(tk, index) {
+      if (tk.type === 'literal') {
+        return '<div class="token-field"><label><span class="req">*</span>指定字符</label>' +
+          '<input type="text" maxlength="20" value="' + (tk.value || '').replace(/"/g, '&quot;') + '" oninput="updateTokenField(' + index + ',\'value\',this.value)" placeholder="如 SC、NJYN-、/ " />' +
+          '<div class="token-quick">' +
+          '<button type="button" onclick="fillLiteralQuick(' + index + ',\'/\')">/</button>' +
+          '<button type="button" onclick="fillLiteralQuick(' + index + ',\'-\')">-</button>' +
+          '<button type="button" onclick="fillLiteralQuick(' + index + ',\'_\')">_</button>' +
+          '</div></div>';
+      }
+      if (tk.type === 'entrust_year' || tk.type === 'submit_year') {
+        var d = tk.digits || 4;
+        return '<div class="token-field"><label><span class="req">*</span>年份位数</label>' +
+          '<div class="token-radios">' +
+          '<label><input type="radio" name="yearDigits' + index + '" ' + (d === 2 ? 'checked' : '') + ' onchange="updateTokenField(' + index + ',\'digits\',2)" /> 2位</label>' +
+          '<label><input type="radio" name="yearDigits' + index + '" ' + (d === 4 ? 'checked' : '') + ' onchange="updateTokenField(' + index + ',\'digits\',4)" /> 4位</label>' +
+          '</div></div>';
+      }
+      if (tk.type === 'seq') {
+        var sd = tk.digits || 4;
+        return '<div class="token-field"><label><span class="req">*</span>序号位数</label>' +
+          '<div class="token-stepper">' +
+          '<button type="button" onclick="stepSeqDigits(' + index + ',-1)">−</button>' +
+          '<span id="seqDigits' + index + '">' + sd + '</span>' +
+          '<button type="button" onclick="stepSeqDigits(' + index + ',1)">+</button>' +
+          '</div>' +
+          '<div class="token-quick" style="margin-top:10px">' +
+          '<button type="button" onclick="updateTokenField(' + index + ',\'digits\',2)">2位</button>' +
+          '<button type="button" onclick="updateTokenField(' + index + ',\'digits\',3)">3位</button>' +
+          '<button type="button" onclick="updateTokenField(' + index + ',\'digits\',4)">4位</button>' +
+          '</div></div>';
+      }
+      if (tk.type === 'category_name') {
+        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 生成时取当前样品所属<strong>样品分类 · 层级 1</strong>的「分类名称」（如图：电力电缆类）。更深层级不参与编号。</div>';
+      }
+      if (tk.type === 'category_code') {
+        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 生成时取当前样品所属<strong>样品分类 · 层级 1</strong>的「分类编号」（如图：DLDL）。仅第一层编号口径统一。</div>';
+      }
+      if (tk.type === 'sample_type') {
+        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 取样品数据中维护的「样品类型」字段值。</div>';
+      }
+      if (tk.type === 'specimen_category_code') {
+        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 取<strong>样品数据</strong>中该试验配置的「试样类别代码」。无试验上下文的单据请勿使用本令牌。</div>';
+      }
+      return '';
+    }
+
+    function renderTokenSegments() {
+      var box = document.getElementById('tokenSegmentList');
+      if (!editingTokens.length) {
+        box.innerHTML = '<div class="rounded border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">请点击右上角「添加令牌」开始组合规则</div>';
+      } else {
+        box.innerHTML = editingTokens.map(function (tk, i) {
+          return '<div class="token-seg">' +
+            '<div class="token-seg-head">' +
+            '<span class="token-seg-idx">' + (i + 1) + '</span>' +
+            '<div class="token-seg-body">' +
+            '<div class="token-field" style="margin-top:0"><label><span class="req">*</span>类型</label>' +
+            '<select onchange="changeTokenType(' + i + ',this.value)">' + typeOptionsHtml(tk.type) + '</select></div>' +
+            customFieldsHtml(tk, i) +
+            '</div>' +
+            '<div class="token-seg-actions">' +
+            '<button type="button" title="上移" onclick="moveTokenSegment(' + i + ',-1)"' + (i === 0 ? ' disabled style="opacity:.35"' : '') + '><i class="fa fa-arrow-up"></i></button>' +
+            '<button type="button" title="下移" onclick="moveTokenSegment(' + i + ',1)"' + (i === editingTokens.length - 1 ? ' disabled style="opacity:.35"' : '') + '><i class="fa fa-arrow-down"></i></button>' +
+            '<button type="button" class="danger" title="删除" onclick="removeTokenSegment(' + i + ')"><i class="fa fa-trash"></i></button>' +
+            '</div></div></div>';
+        }).join('');
+      }
+      var chipBox = document.getElementById('ruleChipPreview');
+      chipBox.innerHTML = editingTokens.length
+        ? editingTokens.map(function (tk) { return '<span class="' + tokenChipClass(tk) + '">' + tokenLabel(tk) + '</span>'; }).join('')
+        : '<span class="text-sm text-slate-400">请从下方添加令牌组合编号规则</span>';
+      document.getElementById('rulePreview').textContent = rulePreview(editingTokens);
+    }
+
     function openNumberingModal(id) {
-      var rule = NUMBERING_RULES.find(function (r) { return r.id === id; });
+      var rule = currentRules().find(function (r) { return r.id === id; });
       if (!rule) return;
       editingRuleId = id;
-      editingTokens = rule.tokens.map(function (t) { return { type: t.type, value: t.value }; });
-      document.getElementById('numberingModalTitle').textContent = '修改' + rule.name;
-      renderTokenPalette();
-      renderRuleBuilder();
+      editingTokens = cloneTokens(rule.tokens);
+      document.getElementById('numberingModalTitle').textContent = '修改' + rule.name + ' · ' + catName(numberingCat);
+      renderTokenSegments();
       var m = document.getElementById('numberingModal');
       m.classList.remove('hidden'); m.classList.add('flex');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) {
+        requestAnimationFrame(function () { PrototypeAnnotation.refresh(); });
+      }
     }
 
     function closeNumberingModal() {
@@ -1813,67 +2146,83 @@
       m.classList.add('hidden'); m.classList.remove('flex');
     }
 
-    function renderTokenPalette() {
-      document.getElementById('tokenPalette').innerHTML = TOKEN_DEFS.map(function (t) {
-        return '<button type="button" class="token-btn" onclick="addToken(\'' + t.type + '\')"><i class="fa fa-plus text-xs"></i>' + t.label + '</button>';
-      }).join('');
+    function addTokenSegment() {
+      editingTokens.push(defaultToken('literal'));
+      renderTokenSegments();
     }
 
-    function addToken(type) {
-      var tk = { type: type };
-      if (type === 'prefix') {
-        var v = prompt('请输入前缀文本', 'SC');
-        if (v === null) return;
-        tk.value = v;
-      }
-      editingTokens.push(tk);
-      renderRuleBuilder();
-    }
-
-    function removeToken(index) {
+    function removeTokenSegment(index) {
       editingTokens.splice(index, 1);
-      renderRuleBuilder();
+      renderTokenSegments();
     }
 
-    function renderRuleBuilder() {
-      var box = document.getElementById('ruleBuilder');
-      if (!editingTokens.length) {
-        box.innerHTML = '<span class="text-sm text-slate-400">请从下方添加令牌组合编号规则</span>';
-      } else {
-        box.innerHTML = editingTokens.map(function (tk, i) {
-          var cls = 'rule-chip' + (isSep(tk) ? ' sep' : (tk.type === 'prefix' ? ' fixed' : ''));
-          return '<span class="' + cls + '" draggable="true" data-index="' + i + '">' + tokenLabel(tk) +
-            '<i class="fa fa-times chip-del" onclick="removeToken(' + i + ')"></i></span>';
-        }).join('');
-        bindDrag();
+    function moveTokenSegment(index, delta) {
+      var to = index + delta;
+      if (to < 0 || to >= editingTokens.length) return;
+      var moved = editingTokens.splice(index, 1)[0];
+      editingTokens.splice(to, 0, moved);
+      renderTokenSegments();
+    }
+
+    function changeTokenType(index, type) {
+      editingTokens[index] = defaultToken(type);
+      renderTokenSegments();
+    }
+
+    function updateTokenField(index, key, value) {
+      if (!editingTokens[index]) return;
+      editingTokens[index][key] = value;
+      renderTokenSegments();
+    }
+
+    function fillLiteralQuick(index, ch) {
+      if (!editingTokens[index]) return;
+      editingTokens[index].value = ch;
+      renderTokenSegments();
+    }
+
+    function stepSeqDigits(index, delta) {
+      var tk = editingTokens[index];
+      if (!tk || tk.type !== 'seq') return;
+      var next = (tk.digits || 4) + delta;
+      if (next < 2) next = 2;
+      if (next > 8) next = 8;
+      tk.digits = next;
+      renderTokenSegments();
+    }
+
+    function validateEditingTokens() {
+      if (!editingTokens.length) return '请至少添加一个令牌';
+      var seqCount = 0;
+      for (var i = 0; i < editingTokens.length; i++) {
+        var tk = editingTokens[i];
+        if (tk.type === 'literal' && !String(tk.value || '').trim()) return '第 ' + (i + 1) + ' 段：请填写指定字符';
+        if (tk.type === 'seq') {
+          seqCount++;
+          if (!tk.digits || tk.digits < 2 || tk.digits > 8) return '第 ' + (i + 1) + ' 段：序号位数需在 2–8';
+        }
+        if ((tk.type === 'entrust_year' || tk.type === 'submit_year') && tk.digits !== 2 && tk.digits !== 4) {
+          return '第 ' + (i + 1) + ' 段：年份位数仅支持 2 或 4';
+        }
       }
-      document.getElementById('rulePreview').textContent = rulePreview(editingTokens);
-    }
-
-    function bindDrag() {
-      var chips = document.querySelectorAll('#ruleBuilder .rule-chip');
-      var dragIdx = null;
-      chips.forEach(function (chip) {
-        chip.addEventListener('dragstart', function () { dragIdx = +chip.getAttribute('data-index'); chip.classList.add('dragging'); });
-        chip.addEventListener('dragend', function () { chip.classList.remove('dragging'); });
-        chip.addEventListener('dragover', function (e) { e.preventDefault(); });
-        chip.addEventListener('drop', function (e) {
-          e.preventDefault();
-          var dropIdx = +chip.getAttribute('data-index');
-          if (dragIdx === null || dragIdx === dropIdx) return;
-          var moved = editingTokens.splice(dragIdx, 1)[0];
-          editingTokens.splice(dropIdx, 0, moved);
-          renderRuleBuilder();
+      if (seqCount > 1) return '同一规则内仅允许一个「自增序号」';
+      if (editingRuleId === 'entrust') {
+        var bad = editingTokens.find(function (t) {
+          return t.type === 'ref_sample' || t.type === 'specimen_category_code';
         });
-      });
+        if (bad) return '委托编号规则不宜引用样品编号或试样类别代码';
+      }
+      return null;
     }
 
     function saveNumbering() {
-      var rule = NUMBERING_RULES.find(function (r) { return r.id === editingRuleId; });
-      if (rule) rule.tokens = editingTokens.map(function (t) { return { type: t.type, value: t.value }; });
+      var err = validateEditingTokens();
+      if (err) { alert(err); return; }
+      var rule = currentRules().find(function (r) { return r.id === editingRuleId; });
+      if (rule) rule.tokens = cloneTokens(editingTokens);
       closeNumberingModal();
       renderNumbering();
-      alert('编号规则已保存（原型演示）');
+      alert('编号规则已保存（' + catName(numberingCat) + ' · 原型演示）');
     }
 
     document.getElementById('numberingModal').addEventListener('click', function (e) {
@@ -1995,8 +2344,26 @@
           position: 'top-right',
           title: '编号规则',
           wide: true,
-          content: '各类业务单据（委托/委托单/样品/试验记录单/原始记录单/报告）的编号生成规则。点击「修改」用令牌（前缀、年份、月份、引用编号、行号、自增序号、分隔符）拖拽组合，并实时预览生成示例。<br><br>编号规则属于业务流程相关配置，故置于此页。',
+          content: '按<strong>样品大类</strong>（电力物资类 / 安全工器具类 / 环境检测 / 工程检测）分套配置委托、样品、记录单、报告等编号规则。令牌按类型分组；年份仅 2/4 位；「分类名称/分类编号」仅取样品分类层级 1；支持「试样类别代码」。已去除「客户编码」。',
           tag: '业务流程配置'
+        },
+        {
+          id: 'numbering-cat-tabs',
+          selector: '[data-annotate="numbering-cat-tabs"]',
+          position: 'top-left',
+          title: '大类 Tab',
+          wide: true,
+          content: '与模板管理一致的四大类横向 Tab。各大类编号规则相互独立；切换后下方卡片与预览样例随大类变化（安全工器具类演示了不同的委托编号前缀）。',
+          tag: '编号规则'
+        },
+        {
+          id: 'numbering-token-editor',
+          selector: '[data-annotate="numbering-token-editor"]',
+          position: 'top-right',
+          title: '类型化令牌编辑',
+          wide: true,
+          content: '有序「规则组成」列表：每段选择<strong>类型</strong>（分组：固定字符 / 委托日期 / 送样日期 / 分类与样品 / 序号 / 引用编号），下方出现对应自定义区。<br><br>· 指定字符：文本 + / - _ 快捷<br>· 年份：仅 2 位 / 4 位<br>· 自增序号：位数 2–8<br>· 分类名称/编号：说明「仅层级 1」<br>· 试样类别代码：来自样品数据试验配置<br><br>无「客户编码」。',
+          tag: '编号规则'
         },
         {
           id: 'entrust-tab',
