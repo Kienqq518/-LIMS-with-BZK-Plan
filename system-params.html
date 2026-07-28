@@ -200,12 +200,47 @@
     .num-card:hover { border-color: #bfdbfe; box-shadow: 0 1px 4px rgba(37,99,235,.06); }
     .num-card .num-info { min-width: 0; }
     .num-card .num-title { font-size: 14px; font-weight: 500; color: #334155; margin-bottom: 8px; }
-    .num-card .num-rule { display: flex; flex-wrap: wrap; gap: 6px; }
-    .rule-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 4px; font-size: 12px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; white-space: nowrap; }
+    .num-card .num-rule,
+    #ruleChipPreview {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      align-content: flex-start;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    #ruleChipPreview {
+      min-height: 52px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
+      padding: 12px;
+    }
+    .rule-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+      white-space: nowrap;
+      position: static !important;
+      float: none !important;
+      transform: none !important;
+      flex: 0 1 auto;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
     .rule-chip.sep { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
     .rule-chip.fixed { background: #fef3c7; color: #92400e; border-color: #fde68a; }
     .rule-chip.cat { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
     .rule-chip.seq { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+    .rule-chip.report { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
     .token-seg {
       border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 14px 12px; margin-bottom: 10px; background: #fff;
     }
@@ -231,18 +266,16 @@
     }
     .token-field input[type="text"]:focus, .token-field select:focus { border-color: #2563eb; }
     .token-hint { margin-top: 8px; font-size: 12px; color: #64748b; line-height: 1.5; background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 6px; padding: 8px 10px; }
-    .token-radios { display: flex; gap: 16px; align-items: center; font-size: 13px; color: #334155; }
+    .token-radios { display: flex; gap: 16px; align-items: center; font-size: 13px; color: #334155; flex-wrap: wrap; }
     .token-radios label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; color: #334155; }
-    .token-stepper { display: inline-flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; }
-    .token-stepper button { width: 32px; height: 32px; border: none; background: #f8fafc; color: #475569; cursor: pointer; }
-    .token-stepper button:hover { background: #eff6ff; color: #2563eb; }
-    .token-stepper span { min-width: 40px; text-align: center; font-size: 13px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; line-height: 32px; }
+    .token-static { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 6px; background: #f1f5f9; border: 1px solid #e2e8f0; font-size: 13px; color: #334155; }
     .token-quick { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
     .token-quick button {
-      padding: 2px 10px; font-size: 12px; border-radius: 4px; border: 1px solid #e2e8f0;
+      padding: 4px 12px; font-size: 12px; border-radius: 4px; border: 1px solid #e2e8f0;
       background: #fff; color: #64748b; cursor: pointer; font-family: ui-monospace, monospace;
     }
     .token-quick button:hover { border-color: #93c5fd; color: #2563eb; }
+    .token-quick button.active { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
     /* 签名与印章（复用模板管理印章样式） */
     .stamp-upload-row { display: flex; flex-wrap: wrap; gap: 28px; }
     .stamp-upload-box { text-align: center; }
@@ -600,7 +633,7 @@
       <div class="flex-1 overflow-auto px-6 py-4">
         <div class="mb-4">
           <div class="mb-2 text-sm font-medium text-slate-600">当前规则</div>
-          <div id="ruleChipPreview" class="flex min-h-[52px] flex-wrap items-center gap-2 rounded border border-dashed border-slate-300 bg-slate-50 p-3"></div>
+          <div id="ruleChipPreview"></div>
         </div>
         <div class="mb-4" data-annotate="numbering-token-editor">
           <div class="mb-2 flex items-center justify-between">
@@ -1812,16 +1845,19 @@
 
     /* Mock 预览上下文：取样品分类层级1 + 试样类别代码等 */
     var NUM_PREVIEW_CTX = {
-      dlwz: { entrustYear: 2026, entrustMonth: '03', entrustDay: '18', submitYear: 2026, submitMonth: '03', submitDay: '20', categoryName: '电力电缆类', categoryCode: 'DLDL', specimenCategoryCode: 'DL-JY', rowNo: '01', seq: 37 },
-      aqgqj: { entrustYear: 2026, entrustMonth: '02', entrustDay: '11', submitYear: 2026, submitMonth: '02', submitDay: '12', categoryName: '绝缘手套', categoryCode: 'JYST', specimenCategoryCode: 'AQ-JY', rowNo: '02', seq: 12 },
-      hjjc: { entrustYear: 2026, entrustMonth: '01', entrustDay: '08', submitYear: 2026, submitMonth: '01', submitDay: '09', categoryName: '水质检测', categoryCode: 'SZ', specimenCategoryCode: 'HJ-SZ', rowNo: '01', seq: 5 },
-      gcjc: { entrustYear: 2026, entrustMonth: '04', entrustDay: '02', submitYear: 2026, submitMonth: '04', submitDay: '03', categoryName: '通用硅酸盐水泥', categoryCode: 'SN', specimenCategoryCode: 'GC-SN', rowNo: '03', seq: 9 }
+      dlwz: { entrustYear: 2026, entrustMonth: '03', entrustDay: '18', submitYear: 2026, submitMonth: '03', submitDay: '20', categoryName: '电力电缆类', categoryCode: 'DLDL', specimenCategoryCode: 'DL-JY', seq: 37, reportCount: 12 },
+      aqgqj: { entrustYear: 2026, entrustMonth: '02', entrustDay: '11', submitYear: 2026, submitMonth: '02', submitDay: '12', categoryName: '绝缘手套', categoryCode: 'JYST', specimenCategoryCode: 'AQ-JY', seq: 12, reportCount: 5 },
+      hjjc: { entrustYear: 2026, entrustMonth: '01', entrustDay: '08', submitYear: 2026, submitMonth: '01', submitDay: '09', categoryName: '水质检测', categoryCode: 'SZ', specimenCategoryCode: 'HJ-SZ', seq: 5, reportCount: 3 },
+      gcjc: { entrustYear: 2026, entrustMonth: '04', entrustDay: '02', submitYear: 2026, submitMonth: '04', submitDay: '03', categoryName: '通用硅酸盐水泥', categoryCode: 'SN', specimenCategoryCode: 'GC-SN', seq: 9, reportCount: 8 }
     };
 
     var TOKEN_TYPE_GROUPS = [
       {
-        label: '固定字符',
-        options: [{ type: 'literal', label: '指定字符' }]
+        label: '指定字符',
+        options: [
+          { type: 'literal_custom', label: '自定义' },
+          { type: 'literal_sep', label: '固定拼接符号' }
+        ]
       },
       {
         label: '日期',
@@ -1836,15 +1872,17 @@
         ]
       },
       {
-        label: '序号',
-        options: [{ type: 'seq', label: '自增序号' }]
+        label: '序号与数量',
+        options: [
+          { type: 'seq', label: '自增序号' },
+          { type: 'report_count', label: '报告数量' }
+        ]
       },
       {
         label: '引用编号',
         options: [
           { type: 'ref_entrust', label: '委托编号' },
-          { type: 'ref_sample', label: '样品编号' },
-          { type: 'row_no', label: '行号' }
+          { type: 'ref_sample', label: '样品编号' }
         ]
       }
     ];
@@ -1854,22 +1892,34 @@
       g.options.forEach(function (o) { TOKEN_META[o.type] = { label: o.label, group: g.label }; });
     });
 
+    function normalizeToken(t) {
+      /* 兼容旧 literal */
+      if (t.type === 'literal') {
+        if (/^[\/\-_]$/.test(t.value || '')) return { type: 'literal_sep', value: t.value };
+        return { type: 'literal_custom', value: t.value || '' };
+      }
+      if (t.type === 'row_no') return null;
+      var n = { type: t.type };
+      if (t.value != null) n.value = t.value;
+      if (t.digits != null) n.digits = t.digits;
+      if (t.source != null) n.source = t.source;
+      if (t.part != null) n.part = t.part;
+      if (t.dimension != null) n.dimension = t.dimension;
+      if (t.range != null) n.range = t.range;
+      return n;
+    }
+
     function defaultToken(type) {
-      if (type === 'literal') return { type: 'literal', value: '' };
+      if (type === 'literal_custom') return { type: 'literal_custom', value: '' };
+      if (type === 'literal_sep') return { type: 'literal_sep', value: '-' };
       if (type === 'date') return { type: 'date', source: 'entrust', part: 'year', digits: 4 };
       if (type === 'seq') return { type: 'seq', digits: 4 };
+      if (type === 'report_count') return { type: 'report_count', dimension: 'major_cat', range: 'year', digits: 4 };
       return { type: type };
     }
 
     function cloneTokens(tokens) {
-      return tokens.map(function (t) {
-        var n = { type: t.type };
-        if (t.value != null) n.value = t.value;
-        if (t.digits != null) n.digits = t.digits;
-        if (t.source != null) n.source = t.source;
-        if (t.part != null) n.part = t.part;
-        return n;
-      });
+      return tokens.map(normalizeToken).filter(Boolean);
     }
 
     function padNum(n, digits) {
@@ -1893,24 +1943,35 @@
       return '年';
     }
 
+    function reportDimLabel(dim) {
+      return dim === 'sample_cat_l1' ? '样品分类(层级1)' : '样品大类';
+    }
+
+    function reportRangeLabel(range) {
+      return range === 'month' ? '当月' : '当年';
+    }
+
     function tokenLabel(tk) {
       var meta = TOKEN_META[tk.type];
-      if (!meta && tk.type !== 'date') return tk.type;
-      if (tk.type === 'literal') return '指定字符「' + (tk.value || '') + '」';
+      if (tk.type === 'literal_custom') return '自定义「' + (tk.value || '') + '」';
+      if (tk.type === 'literal_sep') return '拼接符「' + (tk.value || '') + '」';
       if (tk.type === 'date') {
         var base = dateSourceLabel(tk.source) + '·' + datePartLabel(tk.part);
         if (tk.part === 'year') base += '·' + (tk.digits || 4) + '位';
         return base;
       }
       if (tk.type === 'seq') return '自增序号·' + (tk.digits || 4) + '位';
-      return meta.label;
+      if (tk.type === 'report_count') {
+        return '报告数量·' + reportDimLabel(tk.dimension) + '·' + reportRangeLabel(tk.range) + '·' + (tk.digits || 4) + '位';
+      }
+      return meta ? meta.label : tk.type;
     }
 
     function tokenChipClass(tk) {
-      if (tk.type === 'literal') {
-        return (/^[\/\-_]$/).test(tk.value || '') ? 'rule-chip sep' : 'rule-chip fixed';
-      }
+      if (tk.type === 'literal_sep') return 'rule-chip sep';
+      if (tk.type === 'literal_custom') return 'rule-chip fixed';
       if (tk.type === 'seq') return 'rule-chip seq';
+      if (tk.type === 'report_count') return 'rule-chip report';
       if (tk.type === 'category_name' || tk.type === 'category_code' || tk.type === 'specimen_category_code') return 'rule-chip cat';
       return 'rule-chip';
     }
@@ -1919,12 +1980,14 @@
       return 'SC' + yearSample(ctx.entrustYear, 4) + '/' + padNum(ctx.seq, 4);
     }
     function buildRefSample(ctx) {
-      return buildRefEntrust(ctx) + ctx.rowNo + padNum(1, 2);
+      return buildRefEntrust(ctx) + padNum(1, 2);
     }
 
     function tokenSample(tk, ctx) {
       switch (tk.type) {
-        case 'literal': return tk.value || '';
+        case 'literal_custom':
+        case 'literal_sep':
+          return tk.value || '';
         case 'date': {
           var isSubmit = tk.source === 'submit';
           if (tk.part === 'month') return isSubmit ? ctx.submitMonth : ctx.entrustMonth;
@@ -1935,9 +1998,9 @@
         case 'category_code': return ctx.categoryCode;
         case 'specimen_category_code': return ctx.specimenCategoryCode;
         case 'seq': return padNum(ctx.seq, tk.digits || 4);
+        case 'report_count': return padNum(ctx.reportCount || 1, tk.digits || 4);
         case 'ref_entrust': return buildRefEntrust(ctx);
         case 'ref_sample': return buildRefSample(ctx);
-        case 'row_no': return ctx.rowNo;
         default: return '';
       }
     }
@@ -1958,26 +2021,25 @@
     function defaultRuleSet() {
       return [
         { id: 'entrust', name: '委托编号规则', tokens: [
-          { type: 'literal', value: 'SC' },
+          { type: 'literal_custom', value: 'SC' },
           { type: 'date', source: 'entrust', part: 'year', digits: 4 },
-          { type: 'literal', value: '/' },
+          { type: 'literal_sep', value: '/' },
           { type: 'seq', digits: 4 }
         ]},
         { id: 'entrust-order', name: '委托单编号规则', tokens: [
           { type: 'ref_entrust' },
-          { type: 'literal', value: '-' },
+          { type: 'literal_sep', value: '-' },
           { type: 'seq', digits: 2 }
         ]},
         { id: 'sample', name: '样品编号规则', tokens: [
           { type: 'ref_entrust' },
-          { type: 'row_no' },
           { type: 'seq', digits: 2 }
         ]},
         { id: 'test-record', name: '试验记录单编号规则', tokens: [
           { type: 'category_code' },
-          { type: 'literal', value: '-' },
+          { type: 'literal_sep', value: '-' },
           { type: 'ref_sample' },
-          { type: 'literal', value: '-' },
+          { type: 'literal_sep', value: '-' },
           { type: 'seq', digits: 2 }
         ]},
         { id: 'origin-record', name: '原始记录单编号规则', tokens: [
@@ -1987,10 +2049,10 @@
         ]},
         { id: 'report', name: '报告编号规则', tokens: [
           { type: 'specimen_category_code' },
-          { type: 'literal', value: '-' },
-          { type: 'ref_entrust' },
-          { type: 'literal', value: '-' },
-          { type: 'seq', digits: 2 }
+          { type: 'literal_sep', value: '-' },
+          { type: 'report_count', dimension: 'major_cat', range: 'year', digits: 4 },
+          { type: 'literal_sep', value: '-' },
+          { type: 'ref_entrust' }
         ]}
       ];
     }
@@ -2010,9 +2072,9 @@
 
     /* 安全工器具类示例差异，便于演示「按大类独立」 */
     NUMBERING_BY_CAT.aqgqj[0].tokens = [
-      { type: 'literal', value: 'AQ' },
+      { type: 'literal_custom', value: 'AQ' },
       { type: 'category_code' },
-      { type: 'literal', value: '-' },
+      { type: 'literal_sep', value: '-' },
       { type: 'date', source: 'entrust', part: 'year', digits: 2 },
       { type: 'seq', digits: 4 }
     ];
@@ -2067,13 +2129,17 @@
     }
 
     function customFieldsHtml(tk, index) {
-      if (tk.type === 'literal') {
-        return '<div class="token-field"><label><span class="req">*</span>指定字符</label>' +
-          '<input type="text" maxlength="20" value="' + (tk.value || '').replace(/"/g, '&quot;') + '" oninput="updateTokenField(' + index + ',\'value\',this.value)" placeholder="如 SC、NJYN-、/ " />' +
-          '<div class="token-quick">' +
-          '<button type="button" onclick="fillLiteralQuick(' + index + ',\'/\')">/</button>' +
-          '<button type="button" onclick="fillLiteralQuick(' + index + ',\'-\')">-</button>' +
-          '<button type="button" onclick="fillLiteralQuick(' + index + ',\'_\')">_</button>' +
+      if (tk.type === 'literal_custom') {
+        return '<div class="token-field"><label><span class="req">*</span>自定义字符</label>' +
+          '<input type="text" maxlength="20" value="' + (tk.value || '').replace(/"/g, '&quot;') + '" oninput="updateTokenField(' + index + ',\'value\',this.value)" placeholder="如 SC、NJYN- " /></div>';
+      }
+      if (tk.type === 'literal_sep') {
+        var v = tk.value || '-';
+        return '<div class="token-field"><label><span class="req">*</span>固定拼接符号</label>' +
+          '<div class="token-quick" style="margin-top:0">' +
+          '<button type="button" class="' + (v === '/' ? 'active' : '') + '" onclick="fillLiteralQuick(' + index + ',\'/\')">/</button>' +
+          '<button type="button" class="' + (v === '-' ? 'active' : '') + '" onclick="fillLiteralQuick(' + index + ',\'-\')">-</button>' +
+          '<button type="button" class="' + (v === '_' ? 'active' : '') + '" onclick="fillLiteralQuick(' + index + ',\'_\')">_</button>' +
           '</div></div>';
       }
       if (tk.type === 'date') {
@@ -2105,15 +2171,34 @@
       if (tk.type === 'seq') {
         var sd = tk.digits || 4;
         return '<div class="token-field"><label><span class="req">*</span>序号位数</label>' +
-          '<div class="token-stepper">' +
-          '<button type="button" onclick="stepSeqDigits(' + index + ',-1)">−</button>' +
-          '<span id="seqDigits' + index + '">' + sd + '</span>' +
-          '<button type="button" onclick="stepSeqDigits(' + index + ',1)">+</button>' +
-          '</div>' +
-          '<div class="token-quick" style="margin-top:10px">' +
-          '<button type="button" onclick="updateTokenField(' + index + ',\'digits\',2)">2位</button>' +
-          '<button type="button" onclick="updateTokenField(' + index + ',\'digits\',3)">3位</button>' +
-          '<button type="button" onclick="updateTokenField(' + index + ',\'digits\',4)">4位</button>' +
+          '<div class="token-quick" style="margin-top:0">' +
+          '<button type="button" class="' + (sd === 2 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',2)">2位</button>' +
+          '<button type="button" class="' + (sd === 3 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',3)">3位</button>' +
+          '<button type="button" class="' + (sd === 4 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',4)">4位</button>' +
+          '</div></div>';
+      }
+      if (tk.type === 'report_count') {
+        var dim = tk.dimension || 'major_cat';
+        var range = tk.range || 'year';
+        var rd = tk.digits || 4;
+        return '<div class="token-field"><label><span class="req">*</span>统计维度</label>' +
+          '<select onchange="updateTokenField(' + index + ',\'dimension\',this.value)">' +
+          '<option value="major_cat"' + (dim === 'major_cat' ? ' selected' : '') + '>样品大类</option>' +
+          '<option value="sample_cat_l1"' + (dim === 'sample_cat_l1' ? ' selected' : '') + '>样品分类（层级1）</option>' +
+          '</select></div>' +
+          '<div class="token-field"><label><span class="req">*</span>统计范围</label>' +
+          '<select onchange="updateTokenField(' + index + ',\'range\',this.value)">' +
+          '<option value="year"' + (range === 'year' ? ' selected' : '') + '>当年</option>' +
+          '<option value="month"' + (range === 'month' ? ' selected' : '') + '>当月</option>' +
+          '</select></div>' +
+          '<div class="token-field"><label>数值处理</label>' +
+          '<div class="token-static">拼接 +1</div>' +
+          '<div class="token-hint" style="margin-top:8px"><i class="fa fa-info-circle text-blue-500"></i> 表示该维度在统计范围内已有报告数量 +1（第 N 份）。</div></div>' +
+          '<div class="token-field"><label><span class="req">*</span>指定位数</label>' +
+          '<div class="token-quick" style="margin-top:0">' +
+          '<button type="button" class="' + (rd === 3 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',3)">3位</button>' +
+          '<button type="button" class="' + (rd === 4 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',4)">4位</button>' +
+          '<button type="button" class="' + (rd === 5 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',5)">5位</button>' +
           '</div></div>';
       }
       if (tk.type === 'category_name') {
@@ -2123,7 +2208,7 @@
         return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 生成时取当前样品所属<strong>样品分类 · 层级 1</strong>的「分类编号」（如图：DLDL）。仅第一层编号口径统一。</div>';
       }
       if (tk.type === 'specimen_category_code') {
-        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 取<strong>样品数据</strong>中该试验配置的「试样类别代码」。无试验上下文的单据请勿使用本令牌。</div>';
+        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 取<strong>样品数据</strong>中该试验配置的「试样类别代码」。</div>';
       }
       return '';
     }
@@ -2176,7 +2261,7 @@
     }
 
     function addTokenSegment() {
-      editingTokens.push(defaultToken('literal'));
+      editingTokens.push(defaultToken('literal_custom'));
       renderTokenSegments();
     }
 
@@ -2229,22 +2314,13 @@
       renderTokenSegments();
     }
 
-    function stepSeqDigits(index, delta) {
-      var tk = editingTokens[index];
-      if (!tk || tk.type !== 'seq') return;
-      var next = (tk.digits || 4) + delta;
-      if (next < 2) next = 2;
-      if (next > 8) next = 8;
-      tk.digits = next;
-      renderTokenSegments();
-    }
-
     function validateEditingTokens() {
       if (!editingTokens.length) return '请至少添加一个令牌';
       var seqCount = 0;
       for (var i = 0; i < editingTokens.length; i++) {
         var tk = editingTokens[i];
-        if (tk.type === 'literal' && !String(tk.value || '').trim()) return '第 ' + (i + 1) + ' 段：请填写指定字符';
+        if (tk.type === 'literal_custom' && !String(tk.value || '').trim()) return '第 ' + (i + 1) + ' 段：请填写自定义字符';
+        if (tk.type === 'literal_sep' && !/^[\/\-_]$/.test(tk.value || '')) return '第 ' + (i + 1) + ' 段：请选择固定拼接符号';
         if (tk.type === 'date') {
           if (tk.source !== 'entrust' && tk.source !== 'submit') return '第 ' + (i + 1) + ' 段：请选择日期来源';
           if (tk.part !== 'year' && tk.part !== 'month' && tk.part !== 'day') return '第 ' + (i + 1) + ' 段：请选择日期部分';
@@ -2252,7 +2328,12 @@
         }
         if (tk.type === 'seq') {
           seqCount++;
-          if (!tk.digits || tk.digits < 2 || tk.digits > 8) return '第 ' + (i + 1) + ' 段：序号位数需在 2–8';
+          if ([2, 3, 4].indexOf(tk.digits) < 0) return '第 ' + (i + 1) + ' 段：序号位数仅支持 2 / 3 / 4';
+        }
+        if (tk.type === 'report_count') {
+          if (tk.dimension !== 'major_cat' && tk.dimension !== 'sample_cat_l1') return '第 ' + (i + 1) + ' 段：请选择统计维度';
+          if (tk.range !== 'year' && tk.range !== 'month') return '第 ' + (i + 1) + ' 段：请选择统计范围';
+          if ([3, 4, 5].indexOf(tk.digits) < 0) return '第 ' + (i + 1) + ' 段：报告数量位数仅支持 3 / 4 / 5';
         }
       }
       if (seqCount > 1) return '同一规则内仅允许一个「自增序号」';
@@ -2394,7 +2475,7 @@
           position: 'top-right',
           title: '编号规则',
           wide: true,
-          content: '按<strong>样品大类</strong>（电力物资类 / 安全工器具类 / 环境检测 / 工程检测）分套配置委托、样品、记录单、报告等编号规则。令牌按类型分组；「日期」级联：来源（委托登记日/送样日）→ 年/月/日 → 年再选 2/4 位；「分类名称/分类编号」仅取层级 1；支持「试样类别代码」。已去除「客户编码」「样品类型」。引用编号保留。',
+          content: '按<strong>样品大类</strong>分套配置编号规则。指定字符分「自定义 / 固定拼接符号」；日期级联配置；自增序号仅 2/3/4 位；新增「报告数量」；引用编号保留委托编号/样品编号（已去除行号）。',
           tag: '业务流程配置'
         },
         {
@@ -2412,7 +2493,7 @@
           position: 'top-right',
           title: '类型化令牌编辑',
           wide: true,
-          content: '有序「规则组成」列表：每段选择<strong>类型</strong>（分组：固定字符 / 日期 / 分类与试样 / 序号 / 引用编号），下方出现对应自定义区。<br><br>· 指定字符：文本 + / - _ 快捷<br>· 日期：先选委托日期或送样日期 → 再选年/月/日 → 年再选 2/4 位（委托日期=委托登记日）<br>· 自增序号：位数 2–8<br>· 分类名称/编号：说明「仅层级 1」<br>· 试样类别代码：来自样品数据试验配置<br>· 引用编号：委托编号 / 样品编号 / 行号<br><br>无「客户编码」「样品类型」。',
+          content: '有序「规则组成」列表：类型下拉按分组。<br><br>· <strong>指定字符</strong>→ 自定义（输入框）/ 固定拼接符号（仅 / - _）<br>· 日期：来源 → 年/月/日 → 年再选 2/4 位<br>· 自增序号：仅 2/3/4 位快捷<br>· 报告数量：维度（样品大类 / 样品分类层级1）+ 当年/当月 + 拼接+1 + 3/4/5 位<br>· 分类名称/编号：仅层级 1；试样类别代码<br>· 引用编号：委托编号 / 样品编号（无行号）',
           tag: '编号规则'
         },
         {
