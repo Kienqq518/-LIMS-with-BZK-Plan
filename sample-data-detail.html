@@ -517,8 +517,8 @@
       { id: 'dldl', label: 'DLDL电力电缆类', open: true, children: [
         { id: 'v1', label: '额定电压 1kV 和 3kV', open: true, children: [
           { id: 'gbt1', label: 'GBT 12706.1-2020', open: true, children: [
-            { id: 'cu1', label: '铜芯', leaf: true },
-            { id: 'al1', label: '铝芯', leaf: true }
+            { id: 'cu1', label: '铜芯', children: [] },
+            { id: 'al1', label: '铝芯', children: [] }
           ]}
         ]},
         { id: 'v6', label: '额定电压 6kV-30kV', open: true, children: [
@@ -527,13 +527,13 @@
               { id: 'cu6-3c', label: '10kV3芯电力电缆', leaf: true },
               { id: 'cu6-1c', label: '10kV单芯电力电缆', leaf: true }
             ]},
-            { id: 'al6', label: '铝芯', leaf: true }
+            { id: 'al6', label: '铝芯', children: [] }
           ]}
         ]},
         { id: 'v35', label: '额定电压 35kV', open: true, children: [
           { id: 'gbt3', label: 'GB_T 12706.3-2020', open: true, children: [
-            { id: 'cu35', label: '铜芯', leaf: true },
-            { id: 'al35', label: '铝芯', leaf: true }
+            { id: 'cu35', label: '铜芯', children: [] },
+            { id: 'al35', label: '铝芯', children: [] }
           ]}
         ]}
       ]},
@@ -1037,10 +1037,10 @@
         var toggle = hasChild
           ? '<span class="tree-toggle" onclick="toggleNode(event,\'' + n.id + '\')">' + (isOpen ? '▼' : '▶') + '</span>'
           : '<span class="tree-toggle"></span>';
-        var cls = 'tree-node' + active + (hasChild && !isLeaf ? ' branch' : '');
+        var cls = 'tree-node' + active + (!isLeaf ? ' branch' : '');
         var click = isLeaf
           ? 'onclick="selectLeaf(\'' + n.id + '\')"'
-          : (hasChild ? 'onclick="selectBranch(\'' + n.id + '\')"' : '');
+          : 'onclick="selectBranch(\'' + n.id + '\')"';
         html += '<div class="' + cls + '" style="padding-left:' + pad + 'px" ' + click + '>' +
           toggle + '<span class="tree-label">' + n.label + '</span></div>';
         if (hasChild && isOpen) html += renderNodes(n.children, depth + 1, kw);
