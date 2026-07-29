@@ -66,6 +66,12 @@
       box-shadow: -8px 0 32px rgba(15,23,42,.18); animation: drawerIn .2s ease;
     }
     .modal-box.drawer.wide { width: 860px; }
+    .modal-box.drawer.xwide { width: 980px; max-width: 96vw; }
+    .split-edit.drawer-split { grid-template-columns: minmax(300px, 0.95fr) minmax(340px, 1.05fr); gap: 14px; min-height: 0; align-items: start; }
+    .split-edit.drawer-split .pane { max-height: none; }
+    .drawer-section { margin-bottom: 14px; padding-bottom: 4px; border-bottom: 1px dashed #e2e8f0; }
+    .drawer-section:last-child { border-bottom: none; margin-bottom: 0; }
+    .drawer-section-title { font-size: 12px; font-weight: 600; color: #94a3b8; letter-spacing: .04em; margin-bottom: 10px; text-transform: none; }
     @keyframes drawerIn { from { transform: translateX(24px); opacity: .6; } to { transform: none; opacity: 1; } }
     .modal-head, .modal-foot { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
     .modal-foot { border-bottom: none; border-top: 1px solid #e2e8f0; justify-content: flex-end; gap: 8px; }
@@ -242,7 +248,7 @@
         </div>
 
         <div class="param-panel" id="panel-test">
-          <div class="mb-3 flex items-center gap-2">
+          <div class="mb-3 flex items-center justify-end gap-2">
             <button onclick="openTestEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 手动添加</button>
             <button onclick="copyAddTest()" class="rounded border border-slate-300 px-4 py-1.5 text-sm hover:bg-slate-50">复制添加</button>
           </div>
@@ -267,50 +273,69 @@
     </div>
   </div>
 
-  <!-- 编辑试验 -->
-  <div id="testModal" class="modal-mask">
-    <div class="modal-box">
+  <!-- 编辑试验抽屉 -->
+  <div id="testModal" class="modal-mask drawer-mask">
+    <div class="modal-box drawer xwide">
       <div class="modal-head">
-        <h3 id="testModalTitle" class="text-base font-medium">编辑试验</h3>
+        <div>
+          <h3 id="testModalTitle" class="text-base font-medium">编辑试验</h3>
+          <div id="testModalSub" class="cfg-drawer-sub"></div>
+        </div>
         <button onclick="closeModal('testModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="modal-body">
         <div id="overrideReadonlyHint" class="readonly-hint hidden">结构字段只读：请在样品默认试验中修改结构（增减检测项、改类型/名称）。试验名称不可覆盖。</div>
-        <div class="split-edit">
+        <div class="split-edit drawer-split">
           <div class="pane">
             <div class="pane-title">试验信息</div>
-            <div class="field-row"><label><span class="req">*</span>试验名称</label><div class="ctrl"><input id="t_name" type="text" /><div id="t_nameOv" class="hidden"></div></div></div>
-            <div class="field-row"><label><span class="req">*</span>检测依据</label><div class="ctrl"><select id="t_basis" multiple size="3"><option>DLT 976-2017</option><option>DLT 1476-2023</option><option>GB/T 12706.1-2020</option><option>DLT 802.3-2023</option></select></div></div>
-            <div class="field-row"><label><span class="req">*</span>判定依据</label><div class="ctrl"><select id="t_judge" multiple size="3"><option>DLT 976-2017</option><option>DLT 1476-2023</option><option>GB/T 12706.1-2020</option><option>DLT 802.3-2023</option></select></div></div>
-            <div class="field-row"><label id="lblDetectCategory"><span class="req">*</span>检测类别</label><div class="ctrl"><select id="t_detectCategory"></select><div id="t_detectCategoryOv"></div></div></div>
-            <div class="field-row"><label>试样类别代码</label><div class="ctrl"><input id="t_sampleCatCode" type="text" placeholder="非必填" /><div id="t_sampleCatCodeOv"></div></div></div>
-            <div class="field-row"><label>试样色号</label><div class="ctrl"><select id="t_colors" multiple size="4"></select><div class="tip">选项来自字典管理「试样色号」</div><div id="t_colorsOv"></div></div></div>
-            <div class="field-row"><label><span class="req">*</span>是否制样</label><div class="ctrl"><select id="t_needPrepare" onchange="toggleSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="t_needPrepareOv"></div></div></div>
-            <div class="field-row" id="rowSampleQty"><label><span class="req">*</span>试样数量</label><div class="ctrl"><input id="t_sampleQty" type="number" min="1" /><div id="t_sampleQtyOv"></div></div></div>
-            <div class="field-row"><label><span class="req">*</span>默认费用</label><div class="ctrl"><input id="t_fee" type="number" min="0" /><div id="t_feeOv"></div></div></div>
-            <div class="field-row"><label>检测设备</label><div class="ctrl"><input id="t_equip" type="text" placeholder="如 [YFG-150A] 绝缘安全工器具试验装置" /><div id="t_equipOv"></div></div></div>
-            <div class="field-row"><label>标准要求</label><div class="ctrl">
-              <div class="concat-builder" id="stdBuilder"></div>
-              <div class="mt-2 flex flex-wrap gap-2">
-                <button type="button" class="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-white" onclick="addStdSeg('field')">+ 字段</button>
-                <button type="button" class="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-white" onclick="addStdSeg('text')">+ 文字</button>
+            <div class="drawer-section">
+              <div class="drawer-section-title">基础</div>
+              <div class="field-row"><label><span class="req">*</span>试验名称</label><div class="ctrl"><input id="t_name" type="text" /><div id="t_nameOv" class="hidden"></div></div></div>
+              <div class="field-row"><label id="lblDetectCategory"><span class="req">*</span>检测类别</label><div class="ctrl"><select id="t_detectCategory"></select><div id="t_detectCategoryOv"></div></div></div>
+              <div class="field-row"><label><span class="req">*</span>排序</label><div class="ctrl"><input id="t_sort" type="number" min="1" /><div id="t_sortOv"></div></div></div>
+            </div>
+            <div class="drawer-section">
+              <div class="drawer-section-title">依据与标准</div>
+              <div class="field-row"><label><span class="req">*</span>检测依据</label><div class="ctrl"><select id="t_basis" multiple size="3"><option>DLT 976-2017</option><option>DLT 1476-2023</option><option>GB/T 12706.1-2020</option><option>DLT 802.3-2023</option></select></div></div>
+              <div class="field-row"><label><span class="req">*</span>判定依据</label><div class="ctrl"><select id="t_judge" multiple size="3"><option>DLT 976-2017</option><option>DLT 1476-2023</option><option>GB/T 12706.1-2020</option><option>DLT 802.3-2023</option></select></div></div>
+              <div class="field-row"><label>标准要求</label><div class="ctrl">
+                <div class="concat-builder" id="stdBuilder"></div>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <button type="button" class="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-white" onclick="addStdSeg('field')">+ 字段</button>
+                  <button type="button" class="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-white" onclick="addStdSeg('text')">+ 文字</button>
+                </div>
+                <div class="tip mt-2">预览：<span id="stdPreview" class="text-slate-700">（空）</span></div>
+                <div id="t_stdOv"></div>
+              </div></div>
+            </div>
+            <div class="drawer-section">
+              <div class="drawer-section-title">制样与费用</div>
+              <div class="field-row"><label><span class="req">*</span>是否制样</label><div class="ctrl"><select id="t_needPrepare" onchange="toggleSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="t_needPrepareOv"></div></div></div>
+              <div class="field-row" id="rowSampleQty"><label><span class="req">*</span>试样数量</label><div class="ctrl"><input id="t_sampleQty" type="number" min="1" /><div id="t_sampleQtyOv"></div></div></div>
+              <div class="field-row"><label><span class="req">*</span>默认费用</label><div class="ctrl"><input id="t_fee" type="number" min="0" /><div id="t_feeOv"></div></div></div>
+              <div class="field-row"><label>检测设备</label><div class="ctrl"><input id="t_equip" type="text" placeholder="如 [YFG-150A] 绝缘安全工器具试验装置" /><div id="t_equipOv"></div></div></div>
+              <div class="field-row">
+                <label class="label-tip">试样色号
+                  <span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「试样色号」</span></span>
+                </label>
+                <div class="ctrl"><select id="t_colors" multiple size="3"></select><div id="t_colorsOv"></div></div>
               </div>
-              <div class="tip mt-2">预览：<span id="stdPreview" class="text-slate-700">（空）</span></div>
-              <div id="t_stdOv"></div>
-            </div></div>
-            <div class="field-row"><label><span class="req">*</span>排序</label><div class="ctrl"><input id="t_sort" type="number" min="1" /><div id="t_sortOv"></div></div></div>
-            <div class="field-row"><label>备注</label><div class="ctrl"><input id="t_remark" type="text" /><div id="t_remarkOv"></div></div></div>
+              <div class="field-row"><label>试样类别代码</label><div class="ctrl"><input id="t_sampleCatCode" type="text" placeholder="非必填" /><div id="t_sampleCatCodeOv"></div></div></div>
+              <div class="field-row"><label>备注</label><div class="ctrl"><input id="t_remark" type="text" /><div id="t_remarkOv"></div></div></div>
+            </div>
           </div>
           <div class="pane">
             <div class="pane-title flex items-center justify-between">
-              <span>检测项</span>
+              <span>检测项 / 参数项</span>
               <button type="button" id="btnAddItem" class="rounded bg-blue-600 px-2 py-1 text-xs text-white" onclick="addDetectItem()">+ 添加检测项</button>
             </div>
+            <div class="tip mb-2" style="margin-top:0">右侧维护检测字段结构；下拉类型请配置可选项。隐藏字段不可设为必填。</div>
             <div id="detectItems"></div>
           </div>
         </div>
       </div>
       <div class="modal-foot">
+        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('testModal')">取消</button>
         <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="resetTestForm()">重置</button>
         <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="confirmTestEdit()">确定</button>
       </div>
@@ -1126,6 +1151,8 @@
           '<td class="space-x-2 whitespace-nowrap">' +
             '<button class="text-blue-600 hover:underline" onclick="openModelEdit(\'' + m.id + '\')">编辑</button>' +
             '<button class="text-blue-600 hover:underline" onclick="openCfgTests(\'' + m.id + '\')">配置试验</button>' +
+            '<button class="text-blue-600 hover:underline" onclick="moveModel(\'' + m.id + '\',-1)" title="上移">↑</button>' +
+            '<button class="text-blue-600 hover:underline" onclick="moveModel(\'' + m.id + '\',1)" title="下移">↓</button>' +
             '<button class="text-red-500 hover:underline" onclick="deleteModel(\'' + m.id + '\')">删除</button>' +
           '</td></tr>';
       }).join('');
@@ -1221,6 +1248,18 @@
       if (!confirm('确认删除该型号？')) return;
       var sample = currentSample();
       sample.models = sample.models.filter(function (m) { return m.id !== id; });
+      renderModelTable();
+    }
+
+    function moveModel(id, dir) {
+      var sample = currentSample();
+      var idx = sample.models.findIndex(function (m) { return m.id === id; });
+      var j = idx + dir;
+      if (idx < 0 || j < 0 || j >= sample.models.length) return;
+      var t = sample.models[idx];
+      sample.models[idx] = sample.models[j];
+      sample.models[j] = t;
+      sample.models.forEach(function (m, i) { m.sort = i + 1; });
       renderModelTable();
     }
 
@@ -1552,6 +1591,8 @@
       document.getElementById('overrideReadonlyHint').classList.add('hidden');
       document.getElementById('btnAddItem').style.display = '';
       document.getElementById('testModalTitle').textContent = testId ? '编辑试验' : '添加试验';
+      var sampleName = (sample.basic && sample.basic.name) || document.getElementById('sampleTitle').textContent || '';
+      document.getElementById('testModalSub').textContent = sampleName ? ('样品：' + sampleName) : '';
 
       fillDictSelect(document.getElementById('t_detectCategory'), 'lims_detect_category');
       fillDictSelect(document.getElementById('t_colors'), 'lims_sample_color');
@@ -1716,13 +1757,15 @@
           '<div class="field-row"><label>计算方式</label><div class="ctrl"><input value="' + esc(it.calc || '') + '" onchange="setItemField(' + idx + ',\'calc\',this.value)" /></div></div>' +
           '<div class="field-row"><label>保留小数</label><div class="ctrl"><input value="' + esc(it.decimals || '') + '" onchange="setItemField(' + idx + ',\'decimals\',this.value)" placeholder="请输入保留的小数位数" /></div></div>' +
           '<div class="field-row"><label>取值范围</label><div class="ctrl flex gap-2"><input placeholder="最小值" value="' + esc(it.min || '') + '" onchange="setItemField(' + idx + ',\'min\',this.value)" /><input placeholder="最大值" value="' + esc(it.max || '') + '" onchange="setItemField(' + idx + ',\'max\',this.value)" /></div></div>' +
-          '<div class="field-row"><label>是否必填</label><div class="ctrl flex items-center gap-2">' +
+          '<div class="field-row"><label class="label-tip">是否必填' +
+            '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">' + (lockedReq ? '隐藏字段不可设为必填' : '约束试验检测提交') + '</span></span>' +
+          '</label><div class="ctrl flex items-center gap-2">' +
             '<label class="toggle"><input type="checkbox" ' + (it.required && !lockedReq ? 'checked' : '') + ' ' + (lockedReq ? 'disabled' : '') + ' onchange="setItemField(' + idx + ',\'required\',this.checked)" /><span class="toggle-slider"></span></label>' +
-            (lockedReq ? '<span class="text-xs text-slate-400">隐藏字段不可设为必填</span>' : '<span class="text-xs text-slate-400">约束试验检测提交</span>') +
           '</div></div>' +
-          '<div class="field-row"><label>隐藏字段</label><div class="ctrl flex items-center gap-2">' +
+          '<div class="field-row"><label class="label-tip">隐藏字段' +
+            '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">隐藏后试验检测页不展示</span></span>' +
+          '</label><div class="ctrl flex items-center gap-2">' +
             '<label class="toggle"><input type="checkbox" ' + (it.hidden ? 'checked' : '') + ' onchange="setItemHidden(' + idx + ',this.checked)" /><span class="toggle-slider"></span></label>' +
-            '<span class="text-xs text-slate-400">隐藏后试验检测页不展示</span>' +
           '</div></div>' +
         '</div>';
       }).join('');
