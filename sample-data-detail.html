@@ -1844,7 +1844,6 @@
           '<div class="space-x-2 text-slate-400">' +
             (state.overrideMode ? '' : ('<button type="button" onclick="moveItem(' + idx + ',-1)"><i class="fa fa-arrow-up"></i></button>' +
             '<button type="button" onclick="moveItem(' + idx + ',1)"><i class="fa fa-arrow-down"></i></button>' +
-            '<button type="button" onclick="dupItem(' + idx + ')"><i class="fa fa-copy"></i></button>' +
             '<button type="button" class="text-red-500" onclick="removeItem(' + idx + ')"><i class="fa fa-trash"></i></button>')) +
           '</div></div>' +
           '<div class="field-row"><label><span class="req">*</span>类型</label><div class="ctrl"><div class="seg-type">' +
@@ -1903,12 +1902,6 @@
     function moveItem(idx, dir) {
       var j = idx + dir; if (j < 0 || j >= state.draftItems.length) return;
       var t = state.draftItems[idx]; state.draftItems[idx] = state.draftItems[j]; state.draftItems[j] = t;
-      renderDetectItems();
-    }
-    function dupItem(idx) {
-      var c = deepClone(state.draftItems[idx]);
-      c.id = uid('di'); c.code = uid('DIC');
-      state.draftItems.splice(idx + 1, 0, c);
       renderDetectItems();
     }
     function removeItem(idx) {
