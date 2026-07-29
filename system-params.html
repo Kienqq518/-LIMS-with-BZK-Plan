@@ -2128,7 +2128,14 @@
 
     function typeOptionsHtml(selected) {
       return TOKEN_TYPE_GROUPS.map(function (g) {
-        return '<optgroup label="' + g.label + '">' + g.options.map(function (o) {
+        var opts = g.options.filter(function (o) {
+          // 禁止自引用：编辑样品编号不可选样品编号；编辑委托编号不可选委托编号
+          if (editingRuleId === 'sample' && o.type === 'ref_sample') return false;
+          if (editingRuleId === 'entrust' && o.type === 'ref_entrust') return false;
+          return true;
+        });
+        if (!opts.length) return '';
+        return '<optgroup label="' + g.label + '">' + opts.map(function (o) {
           return '<option value="' + o.type + '"' + (o.type === selected ? ' selected' : '') + '>' + o.label + '</option>';
         }).join('') + '</optgroup>';
       }).join('');
@@ -2354,7 +2361,15 @@
         }
       }
       if (seqCount > 1) return '同一规则内仅允许一个「自增序号」';
+      if (editingRuleId === 'sample') {
+        if (editingTokens.some(function (t) { return t.type === 'ref_sample'; })) {
+          return '样品编号规则不能引用样品编号本身';
+        }
+      }
       if (editingRuleId === 'entrust') {
+        if (editingTokens.some(function (t) { return t.type === 'ref_entrust'; })) {
+          return '委托编号规则不能引用委托编号本身';
+        }
         var bad = editingTokens.find(function (t) {
           return t.type === 'ref_sample' || t.type === 'specimen_category_code';
         });

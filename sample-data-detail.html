@@ -71,12 +71,16 @@
     .modal-foot { border-bottom: none; border-top: 1px solid #e2e8f0; justify-content: flex-end; gap: 8px; }
     .modal-body { padding: 16px; overflow: auto; flex: 1; min-height: 0; }
     .label-tip { display: inline-flex; align-items: center; gap: 4px; }
-    .label-tip .tip-ico { position: relative; color: #94a3b8; cursor: help; font-size: 12px; }
+    .label-tip .tip-ico { position: relative; color: #94a3b8; cursor: help; font-size: 12px; display: inline-block; }
     .label-tip .tip-ico .tip-bubble {
-      display: none; position: absolute; left: 50%; transform: translateX(-50%); top: calc(100% + 6px); z-index: 30; width: 180px;
+      display: none; position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); z-index: 40; width: 160px;
       background: #1e293b; color: #fff; font-size: 12px; line-height: 1.5; padding: 8px 10px; border-radius: 6px; text-align: left; font-weight: 400;
+      white-space: normal; pointer-events: none; box-shadow: 0 4px 12px rgba(15,23,42,.2);
     }
     .label-tip .tip-ico:hover .tip-bubble { display: block; }
+    .modal-box.drawer .modal-body { overflow-x: visible; }
+    .param-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #475569; font-size: 13px; }
+    .cfg-drawer-sub { font-size: 12px; font-weight: 400; color: #64748b; margin-top: 2px; }
     .chip-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .chip-check {
       display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid #e2e8f0;
@@ -375,7 +379,13 @@
   <!-- 配置试验抽屉 -->
   <div id="cfgTestModal" class="modal-mask drawer-mask">
     <div class="modal-box drawer wide">
-      <div class="modal-head"><h3 id="cfgTestTitle" class="text-base font-medium">配置试验</h3><button onclick="closeCfgDrawer()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-head">
+        <div>
+          <h3 id="cfgTestTitle" class="text-base font-medium">配置试验</h3>
+          <div id="cfgTestSub" class="cfg-drawer-sub"></div>
+        </div>
+        <button onclick="closeCfgDrawer()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
       <div class="modal-body">
         <div class="mb-3 text-sm text-slate-500">从默认试验中勾选本型号要做的试验。勾选与下方「取消关联」联动；保存时才会落库。首次勾选会快照复制取值，型号侧修改不回写默认。</div>
         <div class="mb-2 text-xs font-medium text-slate-500">可选试验</div>
@@ -386,7 +396,7 @@
         </div>
         <div class="overflow-x-auto">
           <table class="data-table">
-            <thead><tr><th>已关联试验</th><th>是否制样</th><th>检测数据项</th><th>操作</th></tr></thead>
+            <thead><tr><th>已关联试验</th><th>是否制样</th><th>参数项</th><th>操作</th></tr></thead>
             <tbody id="cfgLinkedBody"></tbody>
           </table>
         </div>
@@ -1220,7 +1230,9 @@
       var sample = currentSample();
       var model = sample.models.find(function (m) { return m.id === modelId; });
       state.cfgPendingIds = (model.linkedTestIds || []).slice();
-      document.getElementById('cfgTestTitle').textContent = '配置试验 · ' + model.name;
+      var sampleName = (sample.basic && sample.basic.name) || document.getElementById('sampleTitle').textContent || '';
+      document.getElementById('cfgTestTitle').textContent = '配置试验 · ' + sampleName;
+      document.getElementById('cfgTestSub').textContent = '型号：' + (model.name || '');
       renderCfgChips();
       renderCfgLinked();
       clearCfgInlineEdit();
@@ -1287,13 +1299,17 @@
       body.innerHTML = state.cfgPendingIds.map(function (tid) {
         var t = effectiveTestForModel(sample, model, tid);
         if (!t) return '';
-        var n = (t.items || []).length;
+        var names = (t.items || []).map(function (i) { return i.name; }).filter(Boolean);
+        var full = names.join('，');
         var active = state.cfgEditingTestId === tid ? ' active' : '';
         var ovMark = hasModelOverride(model, tid) ? ' <span class="ov-badge">有覆盖</span>' : '';
+        var paramHtml = full
+          ? ('<div class="param-cell" title="' + esc(full) + '">' + esc(full) + '</div>')
+          : '<span class="text-slate-400">-</span>';
         return '<tr class="cfg-linked-row' + active + '" onclick="selectCfgTest(\'' + tid + '\')">' +
           '<td>' + esc(t.name) + ovMark + '</td>' +
           '<td>' + esc(t.needPrepare || '否') + '</td>' +
-          '<td><span class="tag">' + n + ' 项</span></td>' +
+          '<td>' + paramHtml + '</td>' +
           '<td class="space-x-2" onclick="event.stopPropagation()">' +
             '<button class="text-blue-600 hover:underline" onclick="selectCfgTest(\'' + tid + '\')">编辑</button>' +
             '<button class="text-red-500 hover:underline" onclick="unlinkCfgTest(\'' + tid + '\')">取消关联</button>' +
@@ -1382,8 +1398,20 @@
         var ovHtml = (ovi && Object.keys(ovi).length)
           ? '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600" onclick="restoreCfgItemOverride(\'' + it.id + '\')">恢复默认</button>'
           : '';
+        var optionsHtml = '';
+        if (it.type === '下拉') {
+          optionsHtml = '<div class="field-row"><label>可选项</label><div class="ctrl">' +
+            '<div class="option-tags">' + (it.options || []).map(function (op, oi) {
+              return '<span class="option-tag">' + esc(op) +
+                ' <i class="fa fa-times cursor-pointer" onclick="removeCfgOption(' + idx + ',' + oi + ')"></i></span>';
+            }).join('') + '</div>' +
+            '<div class="flex gap-2"><input id="cfg_opt_input_' + idx + '" placeholder="输入选项后回车或点击添加" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addCfgOption(' + idx + ');}" />' +
+            '<button type="button" class="rounded border px-2 text-xs" onclick="addCfgOption(' + idx + ')">添加</button></div>' +
+            '<div class="tip">下拉类型需配置可选项</div></div></div>';
+        }
         return '<div class="item-card">' +
           '<div class="item-card-head"><div class="text-sm font-medium">' + esc(it.name || ('检测项 ' + (idx + 1))) + ' <span class="text-xs text-slate-400">(' + esc(it.type) + ')</span> ' + ovHtml + '</div></div>' +
+          optionsHtml +
           '<div class="field-row"><label>默认值</label><div class="ctrl"><input value="' + esc(it.defaultValue || '') + '" onchange="setCfgItemField(' + idx + ',\'defaultValue\',this.value)" placeholder="非必填" /></div></div>' +
           '<div class="field-row"><label>单位</label><div class="ctrl"><input value="' + esc(it.unit || '') + '" onchange="setCfgItemField(' + idx + ',\'unit\',this.value)" /></div></div>' +
           '<div class="field-row"><label>试验次数</label><div class="ctrl"><input value="' + esc(it.testCount || '') + '" onchange="setCfgItemField(' + idx + ',\'testCount\',this.value)" /></div></div>' +
@@ -1400,6 +1428,18 @@
     function setCfgItemHidden(idx, hidden) {
       state.cfgDraftItems[idx].hidden = hidden;
       if (hidden) state.cfgDraftItems[idx].required = false;
+      renderCfgDetectItems();
+    }
+    function addCfgOption(idx) {
+      var input = document.getElementById('cfg_opt_input_' + idx);
+      var v = (input && input.value || '').trim();
+      if (!v) return;
+      state.cfgDraftItems[idx].options = state.cfgDraftItems[idx].options || [];
+      state.cfgDraftItems[idx].options.push(v);
+      renderCfgDetectItems();
+    }
+    function removeCfgOption(idx, oi) {
+      state.cfgDraftItems[idx].options.splice(oi, 1);
       renderCfgDetectItems();
     }
     function restoreCfgItemOverride(itemId) {
@@ -1439,7 +1479,7 @@
       state.cfgDraftItems.forEach(function (it) {
         var bi = (base.items || []).find(function (x) { return x.id === it.id; }) || {};
         var diff = {};
-        ['defaultValue','unit','testCount','min','max','required','hidden'].forEach(function (k) {
+        ['defaultValue','unit','testCount','min','max','required','hidden','options'].forEach(function (k) {
           if (JSON.stringify(it[k]) !== JSON.stringify(bi[k])) diff[k] = deepClone(it[k]);
         });
         if (Object.keys(diff).length) ov.items[it.id] = diff;
