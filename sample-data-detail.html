@@ -21,8 +21,8 @@
     .tree-node { padding: 7px 12px; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; user-select: none; }
     .tree-node:hover { background: #f8fafc; }
     .tree-node.active { background: #eef2f7; color: #1e293b; font-weight: 500; }
-    .tree-node.branch { cursor: default; }
-    .tree-node.branch .tree-label { cursor: pointer; }
+    .tree-node.branch { color: #64748b; }
+    .tree-node.branch.active { color: #1e293b; }
     .tree-toggle { width: 14px; flex-shrink: 0; color: #94a3b8; font-size: 10px; text-align: center; cursor: pointer; }
     .main-panel { flex: 1; min-width: 0; background: #f8fafc; display: flex; flex-direction: column; overflow: hidden; }
     .main-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 14px; gap: 6px; }
@@ -1030,14 +1030,14 @@
         var isLeaf = !!n.leaf && !hasChild;
         var isOpen = !!state.openIds[n.id];
         var pad = depth * 16 + 12;
-        var active = (state.selectedIsLeaf && state.selectedId === n.id) ? ' active' : '';
+        var active = (state.selectedId === n.id) ? ' active' : '';
         var toggle = hasChild
           ? '<span class="tree-toggle" onclick="toggleNode(event,\'' + n.id + '\')">' + (isOpen ? '▼' : '▶') + '</span>'
           : '<span class="tree-toggle"></span>';
         var cls = 'tree-node' + active + (hasChild && !isLeaf ? ' branch' : '');
         var click = isLeaf
           ? 'onclick="selectLeaf(\'' + n.id + '\')"'
-          : (hasChild ? 'onclick="toggleNode(event,\'' + n.id + '\')"' : '');
+          : (hasChild ? 'onclick="selectBranch(\'' + n.id + '\')"' : '');
         html += '<div class="' + cls + '" style="padding-left:' + pad + 'px" ' + click + '>' +
           toggle + '<span class="tree-label">' + n.label + '</span></div>';
         if (hasChild && isOpen) html += renderNodes(n.children, depth + 1, kw);
@@ -1061,6 +1061,14 @@
       state.selectedId = id;
       state.selectedIsLeaf = true;
       state.activeTab = 'basic';
+      hideSyncTip();
+      renderTree();
+      renderWorkspace();
+    }
+
+    function selectBranch(id) {
+      state.selectedId = id;
+      state.selectedIsLeaf = false;
       hideSyncTip();
       renderTree();
       renderWorkspace();
@@ -2108,11 +2116,10 @@
       renderModelTable();
     }
 
-    // init: leaf-only selection
+    // init: leaf-only workspace; non-leaf shows empty state
     if (state.selectedId) {
       var n = findNode(TREES[state.cat], state.selectedId);
-      state.selectedIsLeaf = !!(n && n.leaf);
-      if (!state.selectedIsLeaf) state.selectedId = null;
+      state.selectedIsLeaf = !!(n && n.leaf && !(n.children && n.children.length));
     }
     applyDetectCategoryLabels();
     renderTree();
