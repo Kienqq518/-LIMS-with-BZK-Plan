@@ -1788,27 +1788,9 @@
       var sample = currentSample();
 
       if (state.overrideMode) {
-        var model = sample.models.find(function (m) { return m.id === state.overrideModelId; });
-        var base = sample.tests.find(function (t) { return t.id === state.editingTestId; });
-        if (!model.overrides[state.editingTestId]) model.overrides[state.editingTestId] = { values: {}, items: {} };
-        var ov = model.overrides[state.editingTestId];
-        var valueKeys = ['detectCategory','sampleCatCode','colors','needPrepare','sampleQty','fee','equip','sort','remark','stdReq'];
-        valueKeys.forEach(function (k) {
-          if (JSON.stringify(data[k]) !== JSON.stringify(base[k])) ov.values[k] = deepClone(data[k]);
-          else delete ov.values[k];
-        });
-        data.items.forEach(function (it) {
-          var bi = (base.items || []).find(function (x) { return x.id === it.id; }) || {};
-          var diff = {};
-          ['defaultValue','unit','testCount','calc','decimals','min','max','required','hidden','options'].forEach(function (k) {
-            if (JSON.stringify(it[k]) !== JSON.stringify(bi[k])) diff[k] = deepClone(it[k]);
-          });
-          if (Object.keys(diff).length) ov.items[it.id] = diff;
-          else delete ov.items[it.id];
-        });
+        // 兼容旧路径：覆盖编辑已迁至配置试验抽屉
         closeModal('testModal');
-        openCfgTests(model.id);
-        toast('型号试验覆盖已保存（不会回写默认试验）');
+        if (state.overrideModelId) openCfgTests(state.overrideModelId);
         return;
       }
 
