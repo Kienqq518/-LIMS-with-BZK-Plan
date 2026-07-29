@@ -104,10 +104,48 @@
     .split-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 420px; }
     .split-edit .pane { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; background: #fff; }
     .split-edit .pane-title { font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
-    .field-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
-    .field-row > label { width: 108px; flex-shrink: 0; text-align: right; font-size: 13px; color: #64748b; padding-top: 8px; }
+    .field-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+    .field-row > label { width: 100px; flex-shrink: 0; text-align: right; font-size: 13px; color: #64748b; padding-top: 8px; line-height: 1.3; }
+    .field-row > label .req { color: #ef4444; margin-right: 2px; font-weight: 500; }
     .field-row .ctrl { flex: 1; min-width: 0; }
-    .field-row input, .field-row select, .field-row textarea { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; }
+    .field-row input, .field-row select, .field-row textarea {
+      width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; background: #fff;
+    }
+    .field-row input:focus, .field-row select:focus, .field-row textarea:focus { border-color: #3b82f6; }
+    .chip-multi {
+      display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start;
+      min-height: 38px; max-height: 120px; overflow-y: auto; padding: 6px;
+      border: 1px solid #dcdfe6; border-radius: 6px; background: #fff;
+    }
+    .chip-multi:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.12); }
+    .chip-multi .cm-item {
+      display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px; border: 1px solid #e2e8f0;
+      background: #f8fafc; color: #64748b; font-size: 12px; line-height: 1.3; cursor: pointer; user-select: none; transition: .15s;
+    }
+    .chip-multi .cm-item::before {
+      content: ''; width: 12px; height: 12px; border-radius: 3px; border: 1px solid #cbd5e1; background: #fff; flex-shrink: 0;
+    }
+    .chip-multi .cm-item:hover { border-color: #93c5fd; color: #2563eb; background: #f8fbff; }
+    .chip-multi .cm-item.on { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; font-weight: 500; }
+    .chip-multi .cm-item.on::before {
+      border-color: #2563eb; background: #2563eb;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' d='M2.5 6.2l2.4 2.3 4.6-4.8'/%3E%3C/svg%3E");
+      background-size: 10px 10px; background-position: center; background-repeat: no-repeat;
+    }
+    .model-table { table-layout: fixed; width: 100%; min-width: 820px; }
+    .model-table th, .model-table td { vertical-align: middle; }
+    .model-table .col-idx { width: 48px; text-align: center; padding-left: 6px; padding-right: 6px; }
+    .model-table .col-name { width: 78px; padding-left: 8px; padding-right: 8px; }
+    .model-table .col-recheck { width: 78px; white-space: nowrap; padding-left: 8px; padding-right: 8px; }
+    .model-table .col-unit { width: 48px; text-align: center; padding-left: 6px; padding-right: 6px; }
+    .model-table .col-desc { width: 100px; }
+    .model-table .col-files { width: 168px; }
+    .model-table .col-tests { width: auto; }
+    .model-table .col-ops { width: 200px; }
+    .model-table .cell-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .split-edit.drawer-split .pane .field-row > label { width: 100px; }
+    .item-card .field-row > label { width: 100px; }
+    .field-row > label.label-tip { justify-content: flex-end; flex-wrap: wrap; }
     .seg-type { display: inline-flex; border: 1px solid #dcdfe6; border-radius: 4px; overflow: hidden; }
     .seg-type button { border: 0; background: #fff; padding: 6px 10px; font-size: 12px; color: #64748b; cursor: pointer; }
     .seg-type button.on { background: #2563eb; color: #fff; }
@@ -229,17 +267,17 @@
             <button onclick="openModelEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 添加型号</button>
           </div>
           <div class="overflow-x-auto rounded bg-white shadow-sm">
-            <table class="data-table min-w-[880px]">
+            <table class="data-table model-table">
               <thead>
                 <tr>
-                  <th style="width:60px">序号</th>
-                  <th>型号名称</th>
-                  <th style="width:140px">再检周期</th>
-                  <th style="width:80px">单位</th>
-                  <th>描述</th>
-                  <th style="width:180px">附件</th>
-                  <th style="min-width:180px">已配试验</th>
-                  <th style="width:180px">操作</th>
+                  <th class="col-idx">序号</th>
+                  <th class="col-name">型号名称</th>
+                  <th class="col-recheck">再检周期</th>
+                  <th class="col-unit">单位</th>
+                  <th class="col-desc">描述</th>
+                  <th class="col-files">附件</th>
+                  <th class="col-tests">已配试验</th>
+                  <th class="col-ops">操作</th>
                 </tr>
               </thead>
               <tbody id="modelTableBody"></tbody>
@@ -292,12 +330,13 @@
               <div class="drawer-section-title">基础</div>
               <div class="field-row"><label><span class="req">*</span>试验名称</label><div class="ctrl"><input id="t_name" type="text" /><div id="t_nameOv" class="hidden"></div></div></div>
               <div class="field-row"><label id="lblDetectCategory"><span class="req">*</span>检测类别</label><div class="ctrl"><select id="t_detectCategory"></select><div id="t_detectCategoryOv"></div></div></div>
+              <div class="field-row"><label><span class="req">*</span>默认费用</label><div class="ctrl"><input id="t_fee" type="number" min="0" /><div id="t_feeOv"></div></div></div>
               <div class="field-row"><label><span class="req">*</span>排序</label><div class="ctrl"><input id="t_sort" type="number" min="1" /><div id="t_sortOv"></div></div></div>
             </div>
             <div class="drawer-section">
               <div class="drawer-section-title">依据与标准</div>
-              <div class="field-row"><label><span class="req">*</span>检测依据</label><div class="ctrl"><select id="t_basis" multiple size="3"><option>DLT 976-2017</option><option>DLT 1476-2023</option><option>GB/T 12706.1-2020</option><option>DLT 802.3-2023</option></select></div></div>
-              <div class="field-row"><label><span class="req">*</span>判定依据</label><div class="ctrl"><select id="t_judge" multiple size="3"><option>DLT 976-2017</option><option>DLT 1476-2023</option><option>GB/T 12706.1-2020</option><option>DLT 802.3-2023</option></select></div></div>
+              <div class="field-row"><label><span class="req">*</span>检测依据</label><div class="ctrl"><div class="chip-multi" id="t_basisChips"></div></div></div>
+              <div class="field-row"><label><span class="req">*</span>判定依据</label><div class="ctrl"><div class="chip-multi" id="t_judgeChips"></div></div></div>
               <div class="field-row"><label>标准要求</label><div class="ctrl">
                 <div class="concat-builder" id="stdBuilder"></div>
                 <div class="mt-2 flex flex-wrap gap-2">
@@ -309,16 +348,15 @@
               </div></div>
             </div>
             <div class="drawer-section">
-              <div class="drawer-section-title">制样与费用</div>
+              <div class="drawer-section-title">制样与其他</div>
               <div class="field-row"><label><span class="req">*</span>是否制样</label><div class="ctrl"><select id="t_needPrepare" onchange="toggleSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="t_needPrepareOv"></div></div></div>
               <div class="field-row" id="rowSampleQty"><label><span class="req">*</span>试样数量</label><div class="ctrl"><input id="t_sampleQty" type="number" min="1" /><div id="t_sampleQtyOv"></div></div></div>
-              <div class="field-row"><label><span class="req">*</span>默认费用</label><div class="ctrl"><input id="t_fee" type="number" min="0" /><div id="t_feeOv"></div></div></div>
               <div class="field-row"><label>检测设备</label><div class="ctrl"><input id="t_equip" type="text" placeholder="如 [YFG-150A] 绝缘安全工器具试验装置" /><div id="t_equipOv"></div></div></div>
               <div class="field-row">
                 <label class="label-tip">试样色号
                   <span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「试样色号」</span></span>
                 </label>
-                <div class="ctrl"><select id="t_colors" multiple size="3"></select><div id="t_colorsOv"></div></div>
+                <div class="ctrl"><div class="chip-multi" id="t_colorsChips"></div><div id="t_colorsOv"></div></div>
               </div>
               <div class="field-row"><label>试样类别代码</label><div class="ctrl"><input id="t_sampleCatCode" type="text" placeholder="非必填" /><div id="t_sampleCatCodeOv"></div></div></div>
               <div class="field-row"><label>备注</label><div class="ctrl"><input id="t_remark" type="text" /><div id="t_remarkOv"></div></div></div>
@@ -582,9 +620,18 @@
     function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
     function toast(msg) { alert(msg); }
 
+    function detectCategoryField() {
+      return EntrustFieldConfig.findField(fieldSections, 'detectNature');
+    }
+
     function detectCategoryLabel() {
-      var f = EntrustFieldConfig.findField(fieldSections, 'detectNature');
+      var f = detectCategoryField();
       return (f && (f.placeholder || f.label)) || '检测类别';
+    }
+
+    function detectCategoryDictType() {
+      var f = detectCategoryField();
+      return (f && f.dictType) || 'lims_detect_category';
     }
 
     function applyDetectCategoryLabels() {
@@ -593,11 +640,13 @@
       document.getElementById('lblDetectCategory').innerHTML = '<span class="req">*</span>' + label;
     }
 
-    function fillDictSelect(sel, type, multi) {
+    function fillDictSelect(sel, type, keepEmpty) {
       var items = MockDictStore.getActiveItems(dictTypes, type);
-      sel.innerHTML = items.map(function (it) {
+      var html = keepEmpty ? '<option value="">请选择</option>' : '';
+      html += items.map(function (it) {
         return '<option value="' + it.value + '">' + it.label + '</option>';
       }).join('');
+      sel.innerHTML = html || '<option value="">暂无选项</option>';
     }
 
     function makeItem(partial) {
@@ -1141,14 +1190,14 @@
           ? ('<div class="test-names">' + testNames + '</div>')
           : '<span class="text-slate-400">未配置</span>';
         return '<tr>' +
-          '<td>' + (idx + 1) + '</td>' +
-          '<td>' + esc(m.name) + '</td>' +
-          '<td>' + esc(formatRecheck(m.recheck)) + '</td>' +
-          '<td>' + esc(m.unit || '') + '</td>' +
-          '<td>' + esc(m.desc || '') + '</td>' +
-          '<td>' + fileHtml + '</td>' +
-          '<td>' + testHtml + '</td>' +
-          '<td class="space-x-2 whitespace-nowrap">' +
+          '<td class="col-idx">' + (idx + 1) + '</td>' +
+          '<td class="col-name"><div class="cell-ellipsis" title="' + esc(m.name) + '">' + esc(m.name) + '</div></td>' +
+          '<td class="col-recheck">' + esc(formatRecheck(m.recheck)) + '</td>' +
+          '<td class="col-unit">' + esc(m.unit || '') + '</td>' +
+          '<td class="col-desc"><div class="cell-ellipsis" title="' + esc(m.desc || '') + '">' + esc(m.desc || '') + '</div></td>' +
+          '<td class="col-files">' + fileHtml + '</td>' +
+          '<td class="col-tests">' + testHtml + '</td>' +
+          '<td class="col-ops space-x-2 whitespace-nowrap">' +
             '<button class="text-blue-600 hover:underline" onclick="openModelEdit(\'' + m.id + '\')">编辑</button>' +
             '<button class="text-blue-600 hover:underline" onclick="openCfgTests(\'' + m.id + '\')">配置试验</button>' +
             '<button class="text-blue-600 hover:underline" onclick="moveModel(\'' + m.id + '\',-1)" title="上移">↑</button>' +
@@ -1167,7 +1216,7 @@
         return;
       }
       var catMap = {};
-      MockDictStore.getActiveItems(dictTypes, 'lims_detect_category').forEach(function (it) { catMap[it.value] = it.label; });
+      MockDictStore.getActiveItems(dictTypes, detectCategoryDictType()).forEach(function (it) { catMap[it.value] = it.label; });
       body.innerHTML = sample.tests.map(function (t, idx) {
         var names = (t.items || []).map(function (i) { return i.name; }).filter(Boolean);
         return '<tr>' +
@@ -1270,8 +1319,8 @@
       var model = sample.models.find(function (m) { return m.id === modelId; });
       state.cfgPendingIds = (model.linkedTestIds || []).slice();
       var sampleName = (sample.basic && sample.basic.name) || document.getElementById('sampleTitle').textContent || '';
-      document.getElementById('cfgTestTitle').textContent = '配置试验 · ' + sampleName;
-      document.getElementById('cfgTestSub').textContent = '型号：' + (model.name || '');
+      document.getElementById('cfgTestTitle').textContent = '配置试验';
+      document.getElementById('cfgTestSub').textContent = '样品：' + sampleName + (model.name ? '　·　型号：' + model.name : '');
       renderCfgChips();
       renderCfgLinked();
       clearCfgInlineEdit();
@@ -1375,7 +1424,7 @@
       document.getElementById('cfgEditPanel').classList.remove('hidden');
       document.getElementById('cfgEditTitle').textContent = '编辑试验 · ' + (data ? data.name : '');
       document.getElementById('c_lblDetectCategory').textContent = detectCategoryLabel();
-      fillDictSelect(document.getElementById('c_detectCategory'), 'lims_detect_category');
+      fillDictSelect(document.getElementById('c_detectCategory'), detectCategoryDictType(), true);
       document.getElementById('c_name').value = data.name || '';
       document.getElementById('c_detectCategory').value = data.detectCategory || '';
       document.getElementById('c_sampleCatCode').value = data.sampleCatCode || '';
@@ -1451,7 +1500,7 @@
         return '<div class="item-card">' +
           '<div class="item-card-head"><div class="text-sm font-medium">' + esc(it.name || ('检测项 ' + (idx + 1))) + ' <span class="text-xs text-slate-400">(' + esc(it.type) + ')</span> ' + ovHtml + '</div></div>' +
           optionsHtml +
-          '<div class="field-row"><label>默认值</label><div class="ctrl"><input value="' + esc(it.defaultValue || '') + '" onchange="setCfgItemField(' + idx + ',\'defaultValue\',this.value)" placeholder="非必填" /></div></div>' +
+          '<div class="field-row"><label>默认值</label><div class="ctrl">' + defaultValueCtrlHtml(it, idx, true) + '</div></div>' +
           '<div class="field-row"><label>单位</label><div class="ctrl"><input value="' + esc(it.unit || '') + '" onchange="setCfgItemField(' + idx + ',\'unit\',this.value)" /></div></div>' +
           '<div class="field-row"><label>试验次数</label><div class="ctrl"><input value="' + esc(it.testCount || '') + '" onchange="setCfgItemField(' + idx + ',\'testCount\',this.value)" /></div></div>' +
           '<div class="field-row"><label>取值范围</label><div class="ctrl flex gap-2"><input placeholder="最小" value="' + esc(it.min || '') + '" onchange="setCfgItemField(' + idx + ',\'min\',this.value)" /><input placeholder="最大" value="' + esc(it.max || '') + '" onchange="setCfgItemField(' + idx + ',\'max\',this.value)" /></div></div>' +
@@ -1482,7 +1531,9 @@
       renderCfgDetectItems();
     }
     function removeCfgOption(idx, oi) {
+      var removed = state.cfgDraftItems[idx].options[oi];
       state.cfgDraftItems[idx].options.splice(oi, 1);
+      if (state.cfgDraftItems[idx].defaultValue === removed) state.cfgDraftItems[idx].defaultValue = '';
       renderCfgDetectItems();
     }
     function restoreCfgItemOverride(itemId) {
@@ -1569,14 +1620,46 @@
       toast('已保存型号试验关联');
     }
 
-    function getSelectedOptions(sel) {
-      return Array.prototype.slice.call(sel.selectedOptions).map(function (o) { return o.value; });
+    var STD_REF_OPTIONS = [
+      { value: 'DLT 976-2017', label: 'DLT 976-2017' },
+      { value: 'DLT 1476-2023', label: 'DLT 1476-2023' },
+      { value: 'GB/T 12706.1-2020', label: 'GB/T 12706.1-2020' },
+      { value: 'DLT 802.3-2023', label: 'DLT 802.3-2023' }
+    ];
+
+    function renderChipMulti(elId, options, selected) {
+      var el = document.getElementById(elId);
+      if (!el) return;
+      var opts = (options || []).map(function (o) {
+        return typeof o === 'string' ? { value: o, label: o } : o;
+      });
+      var sel = (selected || []).slice();
+      el.setAttribute('data-options', JSON.stringify(opts));
+      el.setAttribute('data-selected', JSON.stringify(sel));
+      var set = {};
+      sel.forEach(function (v) { set[v] = true; });
+      el.innerHTML = opts.map(function (o) {
+        var on = !!set[o.value];
+        return '<span class="cm-item' + (on ? ' on' : '') + '" data-value="' + esc(o.value) + '" onclick="toggleChipMulti(\'' + elId + '\', this)" title="' + esc(o.label) + '">' +
+          esc(o.label) + '</span>';
+      }).join('') || '<span class="text-xs text-slate-400 px-1 py-1">暂无选项</span>';
     }
 
-    function setSelectedOptions(sel, values) {
-      var set = {};
-      (values || []).forEach(function (v) { set[v] = true; });
-      Array.prototype.slice.call(sel.options).forEach(function (o) { o.selected = !!set[o.value]; });
+    function toggleChipMulti(elId, node) {
+      var el = document.getElementById(elId);
+      var selected = JSON.parse(el.getAttribute('data-selected') || '[]');
+      var opts = JSON.parse(el.getAttribute('data-options') || '[]');
+      var val = node.getAttribute('data-value');
+      var i = selected.indexOf(val);
+      if (i >= 0) selected.splice(i, 1);
+      else selected.push(val);
+      renderChipMulti(elId, opts, selected);
+    }
+
+    function getChipMulti(elId) {
+      var el = document.getElementById(elId);
+      if (!el) return [];
+      try { return JSON.parse(el.getAttribute('data-selected') || '[]'); } catch (e) { return []; }
     }
 
     function openTestEdit(testId, overrideMode, modelId) {
@@ -1598,8 +1681,7 @@
       var sampleName = (sample.basic && sample.basic.name) || document.getElementById('sampleTitle').textContent || '';
       document.getElementById('testModalSub').textContent = sampleName ? ('样品：' + sampleName) : '';
 
-      fillDictSelect(document.getElementById('t_detectCategory'), 'lims_detect_category');
-      fillDictSelect(document.getElementById('t_colors'), 'lims_sample_color');
+      fillDictSelect(document.getElementById('t_detectCategory'), detectCategoryDictType(), true);
 
       var base = testId ? sample.tests.find(function (t) { return t.id === testId; }) : null;
       var data = base ? deepClone(base) : makeTest({ sort: (sample.tests.length || 0) + 1 });
@@ -1609,11 +1691,14 @@
 
       document.getElementById('t_name').value = data.name || '';
       document.getElementById('t_name').disabled = false;
-      setSelectedOptions(document.getElementById('t_basis'), data.basis);
-      setSelectedOptions(document.getElementById('t_judge'), data.judge);
+      renderChipMulti('t_basisChips', STD_REF_OPTIONS, data.basis || []);
+      renderChipMulti('t_judgeChips', STD_REF_OPTIONS, data.judge || []);
       document.getElementById('t_detectCategory').value = data.detectCategory || '';
       document.getElementById('t_sampleCatCode').value = data.sampleCatCode || '';
-      setSelectedOptions(document.getElementById('t_colors'), data.colors || []);
+      var colorOpts = MockDictStore.getActiveItems(dictTypes, 'lims_sample_color').map(function (it) {
+        return { value: it.value, label: it.label };
+      });
+      renderChipMulti('t_colorsChips', colorOpts, data.colors || []);
       document.getElementById('t_needPrepare').value = data.needPrepare || '否';
       document.getElementById('t_sampleQty').value = data.sampleQty || 1;
       document.getElementById('t_fee').value = data.fee || '';
@@ -1718,6 +1803,25 @@
     function updateStdSeg(idx, key, val) { state.stdSegs[idx][key] = val; renderStdBuilder(); }
     function removeStdSeg(idx) { state.stdSegs.splice(idx, 1); renderStdBuilder(); }
 
+    function defaultValueCtrlHtml(it, idx, isCfg) {
+      var setter = isCfg ? 'setCfgItemField' : 'setItemField';
+      if (it.type === '下拉') {
+        var opts = it.options || [];
+        var html = '<select onchange="' + setter + '(' + idx + ',\'defaultValue\',this.value)">';
+        html += '<option value="">请选择默认值（非必填）</option>';
+        opts.forEach(function (op) {
+          html += '<option value="' + esc(op) + '"' + (it.defaultValue === op ? ' selected' : '') + '>' + esc(op) + '</option>';
+        });
+        if (it.defaultValue && opts.indexOf(it.defaultValue) < 0) {
+          html += '<option value="' + esc(it.defaultValue) + '" selected>' + esc(it.defaultValue) + '（已失效）</option>';
+        }
+        html += '</select>';
+        if (!opts.length) html += '<div class="tip" style="margin-top:4px">请先配置可选项</div>';
+        return html;
+      }
+      return '<input value="' + esc(it.defaultValue || '') + '" onchange="' + setter + '(' + idx + ',\'defaultValue\',this.value)" placeholder="非必填，如标称值可留空" />';
+    }
+
     function renderDetectItems() {
       var box = document.getElementById('detectItems');
       if (!state.draftItems.length) {
@@ -1755,7 +1859,7 @@
             }).join('') + '</div>' +
             (state.overrideMode ? '' : '<div class="flex gap-2"><input id="opt_input_' + idx + '" placeholder="输入选项后回车或点击添加" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addOption(' + idx + ');}" /><button type="button" class="rounded border px-2 text-xs" onclick="addOption(' + idx + ')">添加</button></div>') +
           '</div></div>') : '') +
-          '<div class="field-row"><label>默认值</label><div class="ctrl"><input value="' + esc(it.defaultValue || '') + '" onchange="setItemField(' + idx + ',\'defaultValue\',this.value)" placeholder="非必填，如标称值可留空" /></div></div>' +
+          '<div class="field-row"><label>默认值</label><div class="ctrl">' + defaultValueCtrlHtml(it, idx, false) + '</div></div>' +
           '<div class="field-row"><label>单位</label><div class="ctrl"><input value="' + esc(it.unit || '') + '" onchange="setItemField(' + idx + ',\'unit\',this.value)" /></div></div>' +
           '<div class="field-row"><label>试验次数</label><div class="ctrl"><input value="' + esc(it.testCount || '') + '" onchange="setItemField(' + idx + ',\'testCount\',this.value)" /></div></div>' +
           '<div class="field-row"><label>保留小数</label><div class="ctrl"><input value="' + esc(it.decimals || '') + '" onchange="setItemField(' + idx + ',\'decimals\',this.value)" placeholder="请输入保留的小数位数" /></div></div>' +
@@ -1783,7 +1887,11 @@
     function setItemType(idx, type) {
       if (state.overrideMode) return;
       state.draftItems[idx].type = type;
-      if (type !== '下拉') state.draftItems[idx].options = [];
+      if (type !== '下拉') {
+        state.draftItems[idx].options = [];
+      } else if (state.draftItems[idx].defaultValue && (state.draftItems[idx].options || []).indexOf(state.draftItems[idx].defaultValue) < 0) {
+        state.draftItems[idx].defaultValue = '';
+      }
       renderDetectItems();
     }
     function setItemField(idx, key, val) { state.draftItems[idx][key] = val; if (key === 'name') renderStdBuilder(); }
@@ -1820,7 +1928,9 @@
       renderDetectItems();
     }
     function removeOption(idx, oi) {
+      var removed = state.draftItems[idx].options[oi];
       state.draftItems[idx].options.splice(oi, 1);
+      if (state.draftItems[idx].defaultValue === removed) state.draftItems[idx].defaultValue = '';
       renderDetectItems();
     }
     function restoreItemOverride(itemId) {
@@ -1837,11 +1947,11 @@
     function collectTestForm() {
       return {
         name: document.getElementById('t_name').value.trim(),
-        basis: getSelectedOptions(document.getElementById('t_basis')),
-        judge: getSelectedOptions(document.getElementById('t_judge')),
+        basis: getChipMulti('t_basisChips'),
+        judge: getChipMulti('t_judgeChips'),
         detectCategory: document.getElementById('t_detectCategory').value,
         sampleCatCode: document.getElementById('t_sampleCatCode').value.trim(),
-        colors: getSelectedOptions(document.getElementById('t_colors')),
+        colors: getChipMulti('t_colorsChips'),
         needPrepare: document.getElementById('t_needPrepare').value,
         sampleQty: Number(document.getElementById('t_sampleQty').value || 1),
         fee: Number(document.getElementById('t_fee').value || 0),
