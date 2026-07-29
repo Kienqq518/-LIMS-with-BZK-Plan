@@ -40,8 +40,17 @@
       width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; background: #fff;
     }
     .form-item input:focus, .form-item select:focus, .form-item textarea:focus { border-color: #3b82f6; }
-    .upload-box { width: 120px; height: 120px; border: 1px dashed #cbd5e1; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 12px; cursor: pointer; background: #fff; }
+    .upload-box { width: 96px; height: 96px; border: 1px dashed #cbd5e1; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 12px; cursor: pointer; background: #fff; flex-shrink: 0; }
     .upload-box:hover { border-color: #2563eb; color: #2563eb; }
+    .upload-list { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+    .img-thumb { width: 96px; height: 96px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; position: relative; color: #64748b; font-size: 11px; text-align: center; padding: 4px; }
+    .img-thumb .rm, .file-chip .rm { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: #ef4444; color: #fff; font-size: 10px; line-height: 18px; text-align: center; cursor: pointer; }
+    .file-chip { position: relative; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 4px; background: #eff6ff; font-size: 12px; }
+    .file-link { color: #2563eb; text-decoration: underline; cursor: pointer; }
+    .file-link:hover { color: #1d4ed8; }
+    .file-links { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+    .test-names { display: flex; flex-wrap: wrap; gap: 4px; }
+    .test-names .tag { margin: 0; }
     .data-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; }
     .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; vertical-align: top; }
     .data-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
@@ -92,7 +101,9 @@
     .multi-select .ph { color: #94a3b8; font-size: 13px; }
     .recheck-combo { display: flex; gap: 8px; align-items: center; }
     .recheck-combo select { width: 88px; flex-shrink: 0; }
-    .recheck-combo input { flex: 1; min-width: 0; width: auto !important; }
+    .recheck-combo .recheck-num { width: 120px !important; flex-shrink: 0; }
+    .recheck-combo .recheck-text { flex: 1; min-width: 0; width: auto !important; }
+    .recheck-combo .hidden { display: none !important; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -127,10 +138,7 @@
 
       <div class="main-body hidden" id="sampleWorkspace">
         <div class="content-head">
-          <div>
-            <div class="text-base font-medium text-slate-800" id="sampleTitle">-</div>
-            <div class="mt-1 text-xs text-slate-400">后台编码仅调度使用，前端不展示</div>
-          </div>
+          <div class="text-base font-medium text-slate-800" id="sampleTitle">-</div>
           <div class="tooltip-wrap">
             <button onclick="syncToDa()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">
               <i class="fa fa-refresh"></i> 一键同步样品试验数据
@@ -151,6 +159,8 @@
               <div class="form-item"><label><span class="req">*</span>样品分类</label><select id="b_category"></select></div>
               <div class="form-item"><label><span class="req">*</span>名称</label><input id="b_name" type="text" /></div>
               <div class="form-item"><label><span class="req">*</span>排序</label><input id="b_sort" type="number" min="1" /></div>
+              <div class="form-item"><label>单位</label><input id="b_unit" type="text" /></div>
+              <div class="form-item"><label>样品描述</label><textarea id="b_desc" rows="3"></textarea></div>
               <div class="form-item">
                 <label><span class="req">*</span>再检周期</label>
                 <div class="recheck-combo">
@@ -158,14 +168,19 @@
                     <option value="数值">数值</option>
                     <option value="文本">文本</option>
                   </select>
-                  <input id="b_recheck" type="text" placeholder="请输入再检周期" />
+                  <input id="b_recheckNum" class="recheck-num" type="number" min="0" step="1" placeholder="月" />
+                  <input id="b_recheckText" class="recheck-text hidden" type="text" placeholder="请输入文字，将加载到合格证" />
                 </div>
                 <div class="tip" id="b_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）</div>
               </div>
-              <div class="form-item"><label>单位</label><input id="b_unit" type="text" /></div>
-              <div class="form-item" style="grid-column:1 / -1"><label>样品描述</label><textarea id="b_desc" rows="3"></textarea></div>
-              <div class="form-item"><label>图片</label><div class="upload-box" onclick="toast('原型：选择图片')"><i class="fa fa-plus mb-1"></i>添加图片</div></div>
-              <div class="form-item"><label>附件</label><button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50" onclick="toast('原型：上传附件')"><i class="fa fa-upload"></i> 上传附件</button></div>
+              <div class="form-item">
+                <label>图片<span class="text-slate-400 font-normal">（可多张）</span></label>
+                <div class="upload-list" id="b_images"></div>
+              </div>
+              <div class="form-item">
+                <label>附件<span class="text-slate-400 font-normal">（可多个）</span></label>
+                <div class="upload-list" id="b_attachments"></div>
+              </div>
             </div>
             <div class="mt-6 text-center"><button onclick="saveBasic()" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">保存</button></div>
           </div>
@@ -182,12 +197,12 @@
                 <tr>
                   <th style="width:60px">序号</th>
                   <th>型号名称</th>
-                  <th style="width:80px">排序</th>
-                  <th style="width:160px">再检周期</th>
+                  <th style="width:140px">再检周期</th>
                   <th style="width:80px">单位</th>
                   <th>描述</th>
-                  <th style="width:100px">已配试验</th>
-                  <th style="width:220px">操作</th>
+                  <th style="width:180px">附件</th>
+                  <th style="min-width:180px">已配试验</th>
+                  <th style="width:180px">操作</th>
                 </tr>
               </thead>
               <tbody id="modelTableBody"></tbody>
@@ -296,20 +311,21 @@
       <div class="modal-body space-y-3 text-sm">
         <div class="field-row"><label><span class="req">*</span>型号名称</label><div class="ctrl"><input id="m_name" type="text" /></div></div>
         <div class="field-row"><label>排序</label><div class="ctrl"><input id="m_sort" type="number" min="1" value="1" /></div></div>
+        <div class="field-row"><label>单位</label><div class="ctrl"><input id="m_unit" type="text" /></div></div>
         <div class="field-row"><label>再检周期</label><div class="ctrl">
           <div class="recheck-combo">
             <select id="m_recheckMode" onchange="onRecheckModeChange('m')">
               <option value="数值">数值</option>
               <option value="文本">文本</option>
             </select>
-            <input id="m_recheck" type="text" placeholder="请输入再检周期" />
+            <input id="m_recheckNum" class="recheck-num" type="number" min="0" step="1" placeholder="月" />
+            <input id="m_recheckText" class="recheck-text hidden" type="text" placeholder="请输入文字，将加载到合格证" />
           </div>
           <div class="tip" id="m_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）</div>
         </div></div>
-        <div class="field-row"><label>单位</label><div class="ctrl"><input id="m_unit" type="text" /></div></div>
         <div class="field-row"><label>描述</label><div class="ctrl"><textarea id="m_desc" rows="3"></textarea></div></div>
-        <div class="field-row"><label>图片</label><div class="ctrl"><button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm" onclick="toast('原型：上传图片')">上传图片</button></div></div>
-        <div class="field-row"><label>附件</label><div class="ctrl"><button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm" onclick="toast('原型：上传附件')">上传附件</button></div></div>
+        <div class="field-row"><label>图片</label><div class="ctrl"><div class="upload-list" id="m_images"></div><div class="tip">可上传多张</div></div></div>
+        <div class="field-row"><label>附件</label><div class="ctrl"><div class="upload-list" id="m_attachments"></div><div class="tip">可上传多个</div></div></div>
       </div>
       <div class="modal-foot">
         <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('modelModal')">取消</button>
@@ -508,53 +524,149 @@
       return r.mode === '数值' ? (r.value + ' 月') : r.value;
     }
 
-    function onRecheckModeChange(prefix) {
+    var recheckUiCache = { b: { num: '12', text: '' }, m: { num: '', text: '' } };
+
+    function onRecheckModeChange(prefix, opts) {
+      opts = opts || {};
       var mode = document.getElementById(prefix + '_recheckMode').value;
-      var input = document.getElementById(prefix + '_recheck');
+      var numEl = document.getElementById(prefix + '_recheckNum');
+      var textEl = document.getElementById(prefix + '_recheckText');
       var tip = document.getElementById(prefix + '_recheckTip');
+      if (!recheckUiCache[prefix]) recheckUiCache[prefix] = { num: '', text: '' };
       if (mode === '数值') {
-        input.setAttribute('inputmode', 'numeric');
-        input.placeholder = '请输入月数（仅数字）';
+        // 切回数值：展示步进器，不把文本带入
+        numEl.classList.remove('hidden');
+        textEl.classList.add('hidden');
+        if (!opts.keepValues) {
+          // 保留缓存中的数值；文本框清空且隐藏
+          numEl.value = recheckUiCache[prefix].num || '';
+          textEl.value = '';
+        }
         tip.textContent = '数值：合格证再检日期 = 检测日期 + 再检周期（月）';
-        // 切换时清掉非数字内容
-        if (input.value && !/^\d+(\.\d+)?$/.test(input.value.trim())) input.value = '';
       } else {
-        input.removeAttribute('inputmode');
-        input.placeholder = '请输入文字，将加载到合格证';
+        // 切换到文本：隐藏步进器，文本框不展示之前的数值
+        if (!opts.keepValues) {
+          recheckUiCache[prefix].num = numEl.value;
+          textEl.value = '';
+        }
+        numEl.classList.add('hidden');
+        textEl.classList.remove('hidden');
         tip.textContent = '文本：无固定再检日期，该文字直接展示在合格证上';
       }
     }
 
-    function bindRecheckNumericFilter(prefix) {
-      var input = document.getElementById(prefix + '_recheck');
-      input.addEventListener('input', function () {
-        if (document.getElementById(prefix + '_recheckMode').value !== '数值') return;
-        var v = input.value;
-        // 允许数字与一个小数点
-        var cleaned = v.replace(/[^\d.]/g, '');
-        var parts = cleaned.split('.');
-        if (parts.length > 2) cleaned = parts[0] + '.' + parts.slice(1).join('');
-        if (cleaned !== v) input.value = cleaned;
-      });
-    }
-
     function readRecheckFromForm(prefix) {
       var mode = document.getElementById(prefix + '_recheckMode').value;
-      var value = document.getElementById(prefix + '_recheck').value.trim();
+      var value = mode === '数值'
+        ? String(document.getElementById(prefix + '_recheckNum').value || '').trim()
+        : document.getElementById(prefix + '_recheckText').value.trim();
       if (mode === '数值' && value && !/^\d+(\.\d+)?$/.test(value)) return null;
+      if (mode === '数值') recheckUiCache[prefix].num = value;
+      else recheckUiCache[prefix].text = value;
       return makeRecheck(mode, value);
     }
 
     function writeRecheckToForm(prefix, raw) {
       var r = normalizeRecheck(raw);
       document.getElementById(prefix + '_recheckMode').value = r.mode;
-      document.getElementById(prefix + '_recheck').value = r.value;
-      onRecheckModeChange(prefix);
+      var numEl = document.getElementById(prefix + '_recheckNum');
+      var textEl = document.getElementById(prefix + '_recheckText');
+      if (r.mode === '数值') {
+        recheckUiCache[prefix] = { num: r.value, text: '' };
+        numEl.value = r.value;
+        textEl.value = '';
+      } else {
+        recheckUiCache[prefix] = { num: '', text: r.value };
+        numEl.value = '';
+        textEl.value = r.value;
+      }
+      onRecheckModeChange(prefix, { keepValues: true });
+    }
+
+    function makeFile(name) {
+      return { id: uid('file'), name: name };
+    }
+
+    function renderFileList(containerId, files, kind, ownerKey) {
+      var el = document.getElementById(containerId);
+      if (!el) return;
+      files = files || [];
+      var html = files.map(function (f, idx) {
+        if (kind === 'image') {
+          return '<div class="img-thumb">' + esc(f.name) +
+            '<span class="rm" title="删除" onclick="removeUploadFile(\'' + ownerKey + '\',\'image\',' + idx + ')">×</span></div>';
+        }
+        return '<div class="file-chip"><a class="file-link" href="javascript:void(0)" onclick="downloadFile(\'' + esc(f.name) + '\')">' + esc(f.name) + '</a>' +
+          '<span class="rm" title="删除" onclick="removeUploadFile(\'' + ownerKey + '\',\'file\',' + idx + ')">×</span></div>';
+      }).join('');
+      html += '<div class="upload-box" onclick="addUploadFile(\'' + ownerKey + '\',\'' + (kind === 'image' ? 'image' : 'file') + '\')">' +
+        '<i class="fa fa-plus mb-1"></i>' + (kind === 'image' ? '添加图片' : '添加附件') + '</div>';
+      el.innerHTML = html;
+    }
+
+    function getUploadOwner(ownerKey) {
+      var sample = currentSample();
+      if (!sample) return null;
+      if (ownerKey === 'basic') {
+        if (!sample.basic.images) sample.basic.images = [];
+        if (!sample.basic.attachments) sample.basic.attachments = [];
+        return sample.basic;
+      }
+      if (ownerKey.indexOf('model:') === 0) {
+        var mid = ownerKey.slice(6);
+        var m = sample.models.find(function (x) { return x.id === mid; });
+        if (!m) return null;
+        if (!m.images) m.images = [];
+        if (!m.attachments) m.attachments = [];
+        return m;
+      }
+      if (ownerKey === 'modelDraft') {
+        if (!state.modelDraft) state.modelDraft = { images: [], attachments: [] };
+        return state.modelDraft;
+      }
+      return null;
+    }
+
+    function addUploadFile(ownerKey, kind) {
+      var owner = getUploadOwner(ownerKey);
+      if (!owner) return;
+      var name = kind === 'image'
+        ? ('图片' + ((owner.images || []).length + 1) + '.jpg')
+        : ('附件' + ((owner.attachments || []).length + 1) + '.pdf');
+      if (kind === 'image') owner.images.push(makeFile(name));
+      else owner.attachments.push(makeFile(name));
+      refreshUploadLists(ownerKey);
+    }
+
+    function removeUploadFile(ownerKey, kind, idx) {
+      var owner = getUploadOwner(ownerKey);
+      if (!owner) return;
+      if (kind === 'image') owner.images.splice(idx, 1);
+      else owner.attachments.splice(idx, 1);
+      refreshUploadLists(ownerKey);
+      if (ownerKey.indexOf('model:') === 0 || ownerKey === 'basic') renderModelTable();
+    }
+
+    function refreshUploadLists(ownerKey) {
+      var owner = getUploadOwner(ownerKey);
+      if (!owner) return;
+      if (ownerKey === 'basic') {
+        renderFileList('b_images', owner.images, 'image', 'basic');
+        renderFileList('b_attachments', owner.attachments, 'file', 'basic');
+      } else if (ownerKey === 'modelDraft' || ownerKey.indexOf('model:') === 0) {
+        renderFileList('m_images', owner.images, 'image', ownerKey);
+        renderFileList('m_attachments', owner.attachments, 'file', ownerKey);
+      }
+    }
+
+    function downloadFile(name) {
+      toast('原型：下载「' + name + '」');
     }
 
     function makeModel(partial) {
       return Object.assign({
         id: uid('model'), name: '', sort: 1, recheck: makeRecheck('数值', ''), unit: '', desc: '',
+        images: [], attachments: [],
         linkedTestIds: [], overrides: {}
       }, partial || {});
     }
@@ -567,7 +679,9 @@
           sort: 1,
           recheck: makeRecheck('数值', '12'),
           unit: '',
-          desc: ''
+          desc: '',
+          images: [],
+          attachments: []
         },
         models: [],
         tests: []
@@ -606,6 +720,8 @@
       });
       var m1 = makeModel({
         id: 'm_10', name: '10kV', sort: 1, recheck: makeRecheck('数值', '12'), unit: '根', desc: '',
+        attachments: [makeFile('10kV说明书.pdf'), makeFile('10kV型式报告.pdf')],
+        images: [makeFile('10kV外观.jpg')],
         linkedTestIds: ['t_ac', 't_look'],
         overrides: {
           t_ac: {
@@ -616,6 +732,8 @@
       });
       var m2 = makeModel({
         id: 'm_20', name: '20kV', sort: 2, recheck: makeRecheck('数值', '12'), unit: '根',
+        attachments: [makeFile('20kV技术规格.docx')],
+        images: [],
         linkedTestIds: ['t_ac', 't_look', 't_bend'],
         overrides: {
           t_ac: { items: { di1: { defaultValue: '20' } } },
@@ -623,7 +741,12 @@
         }
       });
       return {
-        basic: { category: 'DLT 976-2017', name: '绝缘操作杆', sort: 1, recheck: makeRecheck('数值', '12'), unit: '根', desc: '带电作业用绝缘操作杆' },
+        basic: {
+          category: 'DLT 976-2017', name: '绝缘操作杆', sort: 1, recheck: makeRecheck('数值', '12'), unit: '根',
+          desc: '带电作业用绝缘操作杆',
+          images: [makeFile('样品正面.jpg'), makeFile('样品侧面.jpg')],
+          attachments: [makeFile('样品技术要求.pdf')]
+        },
         models: [m1, m2],
         tests: [t1, t2, t3]
       };
@@ -631,7 +754,10 @@
 
     function seedBelt976() {
       return {
-        basic: { category: 'DLT 976-2017', name: '安全带', sort: 3, recheck: makeRecheck('文本', '按使用说明书要求再检'), unit: '条', desc: '' },
+        basic: {
+          category: 'DLT 976-2017', name: '安全带', sort: 3, recheck: makeRecheck('文本', '按使用说明书要求再检'), unit: '条', desc: '',
+          images: [], attachments: []
+        },
         models: [],
         tests: [
           makeTest({
@@ -848,9 +974,12 @@
       fillCategoryOptions(sample.basic.category || getParentCategory(state.selectedId));
       document.getElementById('b_name').value = sample.basic.name || '';
       document.getElementById('b_sort').value = sample.basic.sort || 1;
-      writeRecheckToForm('b', sample.basic.recheck);
       document.getElementById('b_unit').value = sample.basic.unit || '';
       document.getElementById('b_desc').value = sample.basic.desc || '';
+      writeRecheckToForm('b', sample.basic.recheck);
+      if (!sample.basic.images) sample.basic.images = [];
+      if (!sample.basic.attachments) sample.basic.attachments = [];
+      refreshUploadLists('basic');
     }
 
     function saveBasic() {
@@ -885,18 +1014,30 @@
         return;
       }
       body.innerHTML = sample.models.map(function (m, idx) {
+        var files = (m.attachments || []).map(function (f) {
+          return '<a class="file-link" href="javascript:void(0)" onclick="downloadFile(\'' + esc(f.name) + '\')">' + esc(f.name) + '</a>';
+        }).join('');
+        var fileHtml = files
+          ? ('<div class="file-links">' + files + '</div>')
+          : '<span class="text-slate-400">-</span>';
+        var testNames = (m.linkedTestIds || []).map(function (tid) {
+          var t = sample.tests.find(function (x) { return x.id === tid; });
+          return t ? ('<span class="tag">' + esc(t.name) + '</span>') : '';
+        }).filter(Boolean).join('');
+        var testHtml = testNames
+          ? ('<div class="test-names">' + testNames + '</div>')
+          : '<span class="text-slate-400">未配置</span>';
         return '<tr>' +
           '<td>' + (idx + 1) + '</td>' +
           '<td>' + esc(m.name) + '</td>' +
-          '<td>' + (m.sort || '') + '</td>' +
           '<td>' + esc(formatRecheck(m.recheck)) + '</td>' +
           '<td>' + esc(m.unit || '') + '</td>' +
           '<td>' + esc(m.desc || '') + '</td>' +
-          '<td><span class="tag">' + (m.linkedTestIds || []).length + ' 项</span></td>' +
+          '<td>' + fileHtml + '</td>' +
+          '<td>' + testHtml + '</td>' +
           '<td class="space-x-2 whitespace-nowrap">' +
             '<button class="text-blue-600 hover:underline" onclick="openModelEdit(\'' + m.id + '\')">编辑</button>' +
             '<button class="text-blue-600 hover:underline" onclick="openCfgTests(\'' + m.id + '\')">配置试验</button>' +
-            '<button class="text-blue-600 hover:underline" onclick="toast(\'原型：附件\')">附件</button>' +
             '<button class="text-red-500 hover:underline" onclick="deleteModel(\'' + m.id + '\')">删除</button>' +
           '</td></tr>';
       }).join('');
@@ -942,9 +1083,17 @@
       var m = id ? currentSample().models.find(function (x) { return x.id === id; }) : null;
       document.getElementById('m_name').value = m ? m.name : '';
       document.getElementById('m_sort').value = m ? m.sort : ((currentSample().models.length || 0) + 1);
-      writeRecheckToForm('m', m ? m.recheck : currentSample().basic.recheck);
       document.getElementById('m_unit').value = m ? (m.unit || '') : (currentSample().basic.unit || '');
+      writeRecheckToForm('m', m ? m.recheck : currentSample().basic.recheck);
       document.getElementById('m_desc').value = m ? (m.desc || '') : '';
+      if (m) {
+        if (!m.images) m.images = [];
+        if (!m.attachments) m.attachments = [];
+        refreshUploadLists('model:' + m.id);
+      } else {
+        state.modelDraft = { images: [], attachments: [] };
+        refreshUploadLists('modelDraft');
+      }
       openModal('modelModal');
     }
 
@@ -962,13 +1111,17 @@
         m.unit = document.getElementById('m_unit').value.trim();
         m.desc = document.getElementById('m_desc').value.trim();
       } else {
+        var draft = state.modelDraft || { images: [], attachments: [] };
         sample.models.push(makeModel({
           name: name,
           sort: Number(document.getElementById('m_sort').value || 1),
           recheck: recheck,
           unit: document.getElementById('m_unit').value.trim(),
-          desc: document.getElementById('m_desc').value.trim()
+          desc: document.getElementById('m_desc').value.trim(),
+          images: deepClone(draft.images || []),
+          attachments: deepClone(draft.attachments || [])
         }));
+        state.modelDraft = null;
       }
       closeModal('modelModal');
       renderModelTable();
@@ -1519,8 +1672,6 @@
       if (!state.selectedIsLeaf) state.selectedId = null;
     }
     applyDetectCategoryLabels();
-    bindRecheckNumericFilter('b');
-    bindRecheckNumericFilter('m');
     renderTree();
     renderWorkspace();
   </script>
