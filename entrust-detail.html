@@ -26,10 +26,18 @@
     .timeline-item:last-child { padding-bottom: 0; }
     .timeline-item::before { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #3b82f6; background: #fff; }
     .notice-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
-    .notice-table th, .notice-table td { border: 1px solid #333; padding: 6px 8px; text-align: center; vertical-align: middle; word-break: break-all; }
+    .notice-table th, .notice-table td { border: 1px solid #333; padding: 6px 8px; text-align: center; vertical-align: middle; word-break: break-word; overflow-wrap: anywhere; }
     .notice-table th { background: #f8fafc; font-weight: 500; }
-    .notice-table .lbl { background: #f8fafc; color: #475569; white-space: nowrap; width: 72px; }
+    .notice-table .lbl { background: #f8fafc; color: #475569; white-space: nowrap; word-break: keep-all; overflow-wrap: normal; }
     .notice-table .text-left { text-align: left; }
+    /* 预通知书：元信息行与样品明细分表，避免共用 9 列导致标签挤叠 */
+    .notice-doc { border: 1px solid #333; }
+    .notice-doc .notice-table { margin: 0; }
+    .notice-doc .notice-meta + .notice-data,
+    .notice-doc .notice-data + .notice-meta { margin-top: -1px; }
+    .notice-meta .lbl { width: 14%; min-width: 5.5em; }
+    .notice-meta .val { width: 26%; }
+    .notice-meta .val-wide { width: 46%; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -331,9 +339,25 @@
         <button onclick="closeModal('noticeModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="flex-1 overflow-y-auto px-8 py-6">
-        <div class="border border-slate-800 p-4">
+        <div class="p-4">
           <h4 class="mb-4 text-center text-lg font-semibold text-slate-800">产品检测预通知书</h4>
-          <table class="notice-table mb-0">
+          <div class="notice-doc">
+          <!-- 表头元信息：独立 4 列，避免与样品明细列宽冲突导致标签重叠 -->
+          <table class="notice-table notice-meta">
+            <colgroup>
+              <col style="width:14%" />
+              <col style="width:26%" />
+              <col style="width:14%" />
+              <col style="width:46%" />
+            </colgroup>
+            <tr>
+              <td class="lbl">委托编号</td>
+              <td class="val">SC2026/0073</td>
+              <td class="lbl">委托单位</td>
+              <td class="val-wide text-left">杭州数蚕智能科技有限公司</td>
+            </tr>
+          </table>
+          <table class="notice-table notice-data mb-0">
             <colgroup>
               <col style="width:5%" />
               <col style="width:12%" />
@@ -345,12 +369,6 @@
               <col style="width:10%" />
               <col style="width:12%" />
             </colgroup>
-            <tr>
-              <td class="lbl">委托编号</td>
-              <td colspan="2">SC2026/0073</td>
-              <td class="lbl">委托单位</td>
-              <td colspan="5" class="text-left">杭州数蚕智能科技有限公司</td>
-            </tr>
             <tr>
               <th>编号</th>
               <th>样品名称</th>
@@ -373,13 +391,22 @@
               <td><span class="inline-block rounded bg-green-100 px-2 py-0.5 text-xs text-green-600">不加急</span></td>
               <td></td>
             </tr>
+          </table>
+          <table class="notice-table notice-meta">
+            <colgroup>
+              <col style="width:14%" />
+              <col style="width:26%" />
+              <col style="width:14%" />
+              <col style="width:46%" />
+            </colgroup>
             <tr>
               <td class="lbl">编制人</td>
-              <td colspan="2">admin</td>
+              <td class="val">admin</td>
               <td class="lbl">受理日期</td>
-              <td colspan="5" class="text-left">2026-06-10</td>
+              <td class="val-wide text-left">2026-06-10</td>
             </tr>
           </table>
+          </div>
         </div>
       </div>
     </div>
