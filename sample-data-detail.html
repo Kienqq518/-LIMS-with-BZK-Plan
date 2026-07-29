@@ -58,11 +58,39 @@
     .ov-badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: #fef3c7; color: #b45309; font-size: 11px; vertical-align: middle; }
     .modal-mask { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
     .modal-mask.open { display: flex; }
+    .modal-mask.drawer-mask { align-items: stretch; justify-content: flex-end; padding: 0; }
     .modal-box { width: 960px; max-width: 100%; max-height: calc(100vh - 32px); background: #fff; border-radius: 8px; box-shadow: 0 20px 50px rgba(15,23,42,.2); display: flex; flex-direction: column; }
     .modal-box.sm { width: 520px; }
+    .modal-box.drawer {
+      width: 480px; max-width: 92vw; height: 100%; max-height: 100%; border-radius: 0;
+      box-shadow: -8px 0 32px rgba(15,23,42,.18); animation: drawerIn .2s ease;
+    }
+    .modal-box.drawer.wide { width: 860px; }
+    @keyframes drawerIn { from { transform: translateX(24px); opacity: .6; } to { transform: none; opacity: 1; } }
     .modal-head, .modal-foot { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
     .modal-foot { border-bottom: none; border-top: 1px solid #e2e8f0; justify-content: flex-end; gap: 8px; }
     .modal-body { padding: 16px; overflow: auto; flex: 1; min-height: 0; }
+    .label-tip { display: inline-flex; align-items: center; gap: 4px; }
+    .label-tip .tip-ico { position: relative; color: #94a3b8; cursor: help; font-size: 12px; }
+    .label-tip .tip-ico .tip-bubble {
+      display: none; position: absolute; left: 50%; transform: translateX(-50%); top: calc(100% + 6px); z-index: 30; width: 180px;
+      background: #1e293b; color: #fff; font-size: 12px; line-height: 1.5; padding: 8px 10px; border-radius: 6px; text-align: left; font-weight: 400;
+    }
+    .label-tip .tip-ico:hover .tip-bubble { display: block; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .chip-check {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid #e2e8f0;
+      border-radius: 999px; background: #fff; font-size: 13px; color: #475569; cursor: pointer; user-select: none;
+    }
+    .chip-check:hover { border-color: #93c5fd; }
+    .chip-check.on { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+    .chip-check input { margin: 0; }
+    .cfg-linked-row { cursor: pointer; }
+    .cfg-linked-row.active { background: #eff6ff; }
+    .cfg-edit-panel { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; overflow: hidden; }
+    .cfg-edit-panel .cfg-edit-head { padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 13px; font-weight: 600; color: #334155; display: flex; justify-content: space-between; align-items: center; }
+    .cfg-edit-panel .cfg-edit-body { padding: 12px; }
+    .cfg-edit-empty { padding: 28px 16px; text-align: center; color: #94a3b8; font-size: 13px; border: 1px dashed #e2e8f0; border-radius: 8px; margin-top: 16px; }
     .split-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 420px; }
     .split-edit .pane { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; background: #fff; }
     .split-edit .pane-title { font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
@@ -304,9 +332,9 @@
     </div>
   </div>
 
-  <!-- 型号编辑 -->
-  <div id="modelModal" class="modal-mask">
-    <div class="modal-box sm">
+  <!-- 型号编辑抽屉 -->
+  <div id="modelModal" class="modal-mask drawer-mask">
+    <div class="modal-box drawer">
       <div class="modal-head"><h3 id="modelModalTitle" class="text-base font-medium">添加型号</h3><button onclick="closeModal('modelModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
       <div class="modal-body space-y-3 text-sm">
         <div class="field-row"><label><span class="req">*</span>型号名称</label><div class="ctrl"><input id="m_name" type="text" /></div></div>
@@ -324,8 +352,18 @@
           <div class="tip" id="m_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）</div>
         </div></div>
         <div class="field-row"><label>描述</label><div class="ctrl"><textarea id="m_desc" rows="3"></textarea></div></div>
-        <div class="field-row"><label>图片</label><div class="ctrl"><div class="upload-list" id="m_images"></div><div class="tip">可上传多张</div></div></div>
-        <div class="field-row"><label>附件</label><div class="ctrl"><div class="upload-list" id="m_attachments"></div><div class="tip">可上传多个</div></div></div>
+        <div class="field-row">
+          <label class="label-tip">图片
+            <span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">可上传多张图片</span></span>
+          </label>
+          <div class="ctrl"><div class="upload-list" id="m_images"></div></div>
+        </div>
+        <div class="field-row">
+          <label class="label-tip">附件
+            <span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">可上传多个附件</span></span>
+          </label>
+          <div class="ctrl"><div class="upload-list" id="m_attachments"></div></div>
+        </div>
       </div>
       <div class="modal-foot">
         <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('modelModal')">取消</button>
@@ -334,23 +372,59 @@
     </div>
   </div>
 
-  <!-- 配置试验 -->
-  <div id="cfgTestModal" class="modal-mask">
-    <div class="modal-box">
-      <div class="modal-head"><h3 id="cfgTestTitle" class="text-base font-medium">配置试验</h3><button onclick="closeModal('cfgTestModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+  <!-- 配置试验抽屉 -->
+  <div id="cfgTestModal" class="modal-mask drawer-mask">
+    <div class="modal-box drawer wide">
+      <div class="modal-head"><h3 id="cfgTestTitle" class="text-base font-medium">配置试验</h3><button onclick="closeCfgDrawer()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
       <div class="modal-body">
-        <div class="mb-3 text-sm text-slate-500">从样品默认试验中勾选本型号要做的试验；首次勾选将快照复制可覆盖取值，之后型号侧修改不回写默认。</div>
-        <div id="cfgTestList" class="space-y-2"></div>
-        <div class="mt-4 overflow-x-auto">
+        <div class="mb-3 text-sm text-slate-500">从默认试验中勾选本型号要做的试验。勾选与下方「取消关联」联动；保存时才会落库。首次勾选会快照复制取值，型号侧修改不回写默认。</div>
+        <div class="mb-2 text-xs font-medium text-slate-500">可选试验</div>
+        <div id="cfgTestList" class="chip-row mb-4"></div>
+        <div class="mb-2 flex items-center justify-between">
+          <div class="text-xs font-medium text-slate-500">已选试验（点击行可在下方编辑）</div>
+          <div class="text-xs text-slate-400">取消关联 = 取消勾选，需点保存后生效</div>
+        </div>
+        <div class="overflow-x-auto">
           <table class="data-table">
             <thead><tr><th>已关联试验</th><th>是否制样</th><th>检测数据项</th><th>操作</th></tr></thead>
             <tbody id="cfgLinkedBody"></tbody>
           </table>
         </div>
+        <div id="cfgEditEmpty" class="cfg-edit-empty">请点击上方已选试验进行编辑配置</div>
+        <div id="cfgEditPanel" class="cfg-edit-panel hidden">
+          <div class="cfg-edit-head">
+            <span id="cfgEditTitle">编辑试验</span>
+            <button type="button" class="text-xs text-slate-500 hover:text-slate-700" onclick="clearCfgInlineEdit()">收起</button>
+          </div>
+          <div class="cfg-edit-body">
+            <div class="readonly-hint">结构字段只读：请在样品默认试验中修改结构。试验名称不可覆盖。下方修改仅作用于本型号。</div>
+            <div class="split-edit" style="min-height:280px">
+              <div class="pane">
+                <div class="pane-title">试验信息（型号覆盖）</div>
+                <div class="field-row"><label>试验名称</label><div class="ctrl"><input id="c_name" type="text" disabled /></div></div>
+                <div class="field-row"><label id="c_lblDetectCategory">检测类别</label><div class="ctrl"><select id="c_detectCategory"></select><div id="c_detectCategoryOv"></div></div></div>
+                <div class="field-row"><label>试样类别代码</label><div class="ctrl"><input id="c_sampleCatCode" type="text" /><div id="c_sampleCatCodeOv"></div></div></div>
+                <div class="field-row"><label>是否制样</label><div class="ctrl"><select id="c_needPrepare" onchange="toggleCfgSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="c_needPrepareOv"></div></div></div>
+                <div class="field-row" id="c_rowSampleQty"><label>试样数量</label><div class="ctrl"><input id="c_sampleQty" type="number" min="1" /><div id="c_sampleQtyOv"></div></div></div>
+                <div class="field-row"><label>默认费用</label><div class="ctrl"><input id="c_fee" type="number" min="0" /><div id="c_feeOv"></div></div></div>
+                <div class="field-row"><label>检测设备</label><div class="ctrl"><input id="c_equip" type="text" /><div id="c_equipOv"></div></div></div>
+                <div class="field-row"><label>备注</label><div class="ctrl"><input id="c_remark" type="text" /><div id="c_remarkOv"></div></div></div>
+              </div>
+              <div class="pane">
+                <div class="pane-title">检测项取值（可覆盖）</div>
+                <div id="c_detectItems"></div>
+              </div>
+            </div>
+            <div class="mt-3 flex justify-end gap-2">
+              <button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm" onclick="clearCfgInlineEdit()">取消编辑</button>
+              <button type="button" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white" onclick="saveCfgInlineEdit()">保存本试验覆盖</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-foot">
-        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('cfgTestModal')">关闭</button>
-        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="saveCfgTests()">保存勾选</button>
+        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeCfgDrawer()">关闭</button>
+        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="saveCfgTests()">保存关联</button>
       </div>
     </div>
   </div>
@@ -786,6 +860,9 @@
       pendingNewTestId: null,
       draft: null,
       modelDraft: null,
+      cfgPendingIds: [],
+      cfgEditingTestId: null,
+      cfgDraftItems: [],
       stdSegs: [],
       draftItems: []
     };
@@ -1137,18 +1214,44 @@
 
     function openCfgTests(modelId) {
       state.editingModelId = modelId;
+      state.cfgEditingTestId = null;
       var sample = currentSample();
       var model = sample.models.find(function (m) { return m.id === modelId; });
+      state.cfgPendingIds = (model.linkedTestIds || []).slice();
       document.getElementById('cfgTestTitle').textContent = '配置试验 · ' + model.name;
-      var html = sample.tests.map(function (t) {
-        var checked = (model.linkedTestIds || []).indexOf(t.id) >= 0 ? 'checked' : '';
-        return '<label class="flex items-center gap-2 rounded border border-slate-200 px-3 py-2 text-sm">' +
-          '<input type="checkbox" class="cfg-test-cb" value="' + t.id + '" ' + checked + ' /> ' + esc(t.name) +
-          '</label>';
-      }).join('') || '<div class="text-slate-400 text-sm">请先在「试验」Tab 配置默认试验</div>';
-      document.getElementById('cfgTestList').innerHTML = html;
-      renderCfgLinked(model);
+      renderCfgChips();
+      renderCfgLinked();
+      clearCfgInlineEdit();
       openModal('cfgTestModal');
+    }
+
+    function closeCfgDrawer() {
+      clearCfgInlineEdit();
+      closeModal('cfgTestModal');
+    }
+
+    function renderCfgChips() {
+      var sample = currentSample();
+      var box = document.getElementById('cfgTestList');
+      if (!sample.tests.length) {
+        box.innerHTML = '<div class="text-slate-400 text-sm">请先在「试验」Tab 配置默认试验</div>';
+        return;
+      }
+      box.innerHTML = sample.tests.map(function (t) {
+        var on = state.cfgPendingIds.indexOf(t.id) >= 0;
+        return '<label class="chip-check' + (on ? ' on' : '') + '">' +
+          '<input type="checkbox" class="cfg-test-cb" value="' + t.id + '" ' + (on ? 'checked' : '') + ' onchange="onCfgChipChange(\'' + t.id + '\', this.checked)" />' +
+          esc(t.name) + '</label>';
+      }).join('');
+    }
+
+    function onCfgChipChange(testId, checked) {
+      var idx = state.cfgPendingIds.indexOf(testId);
+      if (checked && idx < 0) state.cfgPendingIds.push(testId);
+      if (!checked && idx >= 0) state.cfgPendingIds.splice(idx, 1);
+      if (!checked && state.cfgEditingTestId === testId) clearCfgInlineEdit();
+      renderCfgChips();
+      renderCfgLinked();
     }
 
     function effectiveTestForModel(sample, model, testId) {
@@ -1163,31 +1266,204 @@
       return merged;
     }
 
-    function renderCfgLinked(model) {
+    function hasModelOverride(model, testId) {
+      var ov = model.overrides && model.overrides[testId];
+      if (!ov) return false;
+      if (ov.values && Object.keys(ov.values).length) return true;
+      if (ov.items && Object.keys(ov.items).some(function (k) { return ov.items[k] && Object.keys(ov.items[k]).length; })) return true;
+      return false;
+    }
+
+    function renderCfgLinked() {
       var sample = currentSample();
+      var model = sample.models.find(function (m) { return m.id === state.editingModelId; });
       var body = document.getElementById('cfgLinkedBody');
-      if (!(model.linkedTestIds || []).length) {
-        body.innerHTML = '<tr><td colspan="4" class="text-center text-slate-400">尚未关联试验</td></tr>';
+      if (!state.cfgPendingIds.length) {
+        body.innerHTML = '<tr><td colspan="4" class="text-center text-slate-400">尚未选择试验</td></tr>';
         return;
       }
-      body.innerHTML = model.linkedTestIds.map(function (tid) {
+      body.innerHTML = state.cfgPendingIds.map(function (tid) {
         var t = effectiveTestForModel(sample, model, tid);
         if (!t) return '';
         var n = (t.items || []).length;
-        return '<tr><td>' + esc(t.name) + '</td><td>' + esc(t.needPrepare || '否') + '</td><td><span class="tag">' + n + ' 项</span></td>' +
-          '<td class="space-x-2"><button class="text-blue-600 hover:underline" onclick="openTestEdit(\'' + tid + '\', true, \'' + model.id + '\')">编辑</button>' +
-          '<button class="text-red-500 hover:underline" onclick="unlinkTest(\'' + model.id + '\',\'' + tid + '\')">取消关联</button></td></tr>';
+        var active = state.cfgEditingTestId === tid ? ' active' : '';
+        var ovMark = hasModelOverride(model, tid) ? ' <span class="ov-badge">有覆盖</span>' : '';
+        return '<tr class="cfg-linked-row' + active + '" onclick="selectCfgTest(\'' + tid + '\')">' +
+          '<td>' + esc(t.name) + ovMark + '</td>' +
+          '<td>' + esc(t.needPrepare || '否') + '</td>' +
+          '<td><span class="tag">' + n + ' 项</span></td>' +
+          '<td class="space-x-2" onclick="event.stopPropagation()">' +
+            '<button class="text-blue-600 hover:underline" onclick="selectCfgTest(\'' + tid + '\')">编辑</button>' +
+            '<button class="text-red-500 hover:underline" onclick="unlinkCfgTest(\'' + tid + '\')">取消关联</button>' +
+          '</td></tr>';
       }).join('');
+    }
+
+    function unlinkCfgTest(testId) {
+      // 与取消勾选联动：仅改待保存状态，真正清除覆盖在保存时确认
+      onCfgChipChange(testId, false);
+    }
+
+    function selectCfgTest(testId) {
+      if (state.cfgPendingIds.indexOf(testId) < 0) return;
+      state.cfgEditingTestId = testId;
+      state.overrideMode = true;
+      state.overrideModelId = state.editingModelId;
+      state.editingTestId = testId;
+      var sample = currentSample();
+      var model = sample.models.find(function (m) { return m.id === state.editingModelId; });
+      var data = effectiveTestForModel(sample, model, testId);
+      state.cfgDraftItems = deepClone((data && data.items) || []);
+      document.getElementById('cfgEditEmpty').classList.add('hidden');
+      document.getElementById('cfgEditPanel').classList.remove('hidden');
+      document.getElementById('cfgEditTitle').textContent = '编辑试验 · ' + (data ? data.name : '');
+      document.getElementById('c_lblDetectCategory').textContent = detectCategoryLabel();
+      fillDictSelect(document.getElementById('c_detectCategory'), 'lims_detect_category');
+      document.getElementById('c_name').value = data.name || '';
+      document.getElementById('c_detectCategory').value = data.detectCategory || '';
+      document.getElementById('c_sampleCatCode').value = data.sampleCatCode || '';
+      document.getElementById('c_needPrepare').value = data.needPrepare || '否';
+      document.getElementById('c_sampleQty').value = data.sampleQty || 1;
+      document.getElementById('c_fee').value = data.fee || '';
+      document.getElementById('c_equip').value = data.equip || '';
+      document.getElementById('c_remark').value = data.remark || '';
+      toggleCfgSampleQty();
+      renderCfgOverrideBadges(sample.tests.find(function (t) { return t.id === testId; }), model);
+      renderCfgDetectItems();
+      renderCfgLinked();
+      var panel = document.getElementById('cfgEditPanel');
+      if (panel && panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function toggleCfgSampleQty() {
+      document.getElementById('c_rowSampleQty').style.display = document.getElementById('c_needPrepare').value === '是' ? 'flex' : 'none';
+    }
+
+    function renderCfgOverrideBadges(base, model) {
+      ['c_detectCategoryOv','c_sampleCatCodeOv','c_needPrepareOv','c_sampleQtyOv','c_feeOv','c_equipOv','c_remarkOv'].forEach(function (id) {
+        var el = document.getElementById(id); if (el) el.innerHTML = '';
+      });
+      if (!base || !model) return;
+      var ov = (model.overrides && model.overrides[state.cfgEditingTestId]) || { values: {} };
+      function badge(targetId, key) {
+        if (!ov.values || ov.values[key] === undefined) return;
+        document.getElementById(targetId).innerHTML = '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600 hover:underline" onclick="restoreCfgOverrideValue(\'' + key + '\')">恢复默认</button>';
+      }
+      badge('c_detectCategoryOv', 'detectCategory');
+      badge('c_sampleCatCodeOv', 'sampleCatCode');
+      badge('c_needPrepareOv', 'needPrepare');
+      badge('c_sampleQtyOv', 'sampleQty');
+      badge('c_feeOv', 'fee');
+      badge('c_equipOv', 'equip');
+      badge('c_remarkOv', 'remark');
+    }
+
+    function restoreCfgOverrideValue(key) {
+      var sample = currentSample();
+      var model = sample.models.find(function (m) { return m.id === state.editingModelId; });
+      if (model.overrides[state.cfgEditingTestId] && model.overrides[state.cfgEditingTestId].values) {
+        delete model.overrides[state.cfgEditingTestId].values[key];
+      }
+      selectCfgTest(state.cfgEditingTestId);
+    }
+
+    function renderCfgDetectItems() {
+      var box = document.getElementById('c_detectItems');
+      var model = currentSample().models.find(function (m) { return m.id === state.editingModelId; });
+      if (!state.cfgDraftItems.length) {
+        box.innerHTML = '<div class="text-sm text-slate-400 py-4 text-center">无检测项</div>';
+        return;
+      }
+      box.innerHTML = state.cfgDraftItems.map(function (it, idx) {
+        var lockedReq = !!it.hidden;
+        var ovi = model && model.overrides[state.cfgEditingTestId] && model.overrides[state.cfgEditingTestId].items && model.overrides[state.cfgEditingTestId].items[it.id];
+        var ovHtml = (ovi && Object.keys(ovi).length)
+          ? '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600" onclick="restoreCfgItemOverride(\'' + it.id + '\')">恢复默认</button>'
+          : '';
+        return '<div class="item-card">' +
+          '<div class="item-card-head"><div class="text-sm font-medium">' + esc(it.name || ('检测项 ' + (idx + 1))) + ' <span class="text-xs text-slate-400">(' + esc(it.type) + ')</span> ' + ovHtml + '</div></div>' +
+          '<div class="field-row"><label>默认值</label><div class="ctrl"><input value="' + esc(it.defaultValue || '') + '" onchange="setCfgItemField(' + idx + ',\'defaultValue\',this.value)" placeholder="非必填" /></div></div>' +
+          '<div class="field-row"><label>单位</label><div class="ctrl"><input value="' + esc(it.unit || '') + '" onchange="setCfgItemField(' + idx + ',\'unit\',this.value)" /></div></div>' +
+          '<div class="field-row"><label>试验次数</label><div class="ctrl"><input value="' + esc(it.testCount || '') + '" onchange="setCfgItemField(' + idx + ',\'testCount\',this.value)" /></div></div>' +
+          '<div class="field-row"><label>取值范围</label><div class="ctrl flex gap-2"><input placeholder="最小" value="' + esc(it.min || '') + '" onchange="setCfgItemField(' + idx + ',\'min\',this.value)" /><input placeholder="最大" value="' + esc(it.max || '') + '" onchange="setCfgItemField(' + idx + ',\'max\',this.value)" /></div></div>' +
+          '<div class="field-row"><label>是否必填</label><div class="ctrl flex items-center gap-2">' +
+            '<label class="toggle"><input type="checkbox" ' + (it.required && !lockedReq ? 'checked' : '') + ' ' + (lockedReq ? 'disabled' : '') + ' onchange="setCfgItemField(' + idx + ',\'required\',this.checked)" /><span class="toggle-slider"></span></label>' +
+          '</div></div>' +
+          '<div class="field-row"><label>隐藏字段</label><div class="ctrl"><label class="toggle"><input type="checkbox" ' + (it.hidden ? 'checked' : '') + ' onchange="setCfgItemHidden(' + idx + ',this.checked)" /><span class="toggle-slider"></span></label></div></div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function setCfgItemField(idx, key, val) { state.cfgDraftItems[idx][key] = val; }
+    function setCfgItemHidden(idx, hidden) {
+      state.cfgDraftItems[idx].hidden = hidden;
+      if (hidden) state.cfgDraftItems[idx].required = false;
+      renderCfgDetectItems();
+    }
+    function restoreCfgItemOverride(itemId) {
+      var model = currentSample().models.find(function (m) { return m.id === state.editingModelId; });
+      if (model && model.overrides[state.cfgEditingTestId]) delete model.overrides[state.cfgEditingTestId].items[itemId];
+      selectCfgTest(state.cfgEditingTestId);
+    }
+
+    function clearCfgInlineEdit() {
+      state.cfgEditingTestId = null;
+      state.cfgDraftItems = [];
+      document.getElementById('cfgEditPanel').classList.add('hidden');
+      document.getElementById('cfgEditEmpty').classList.remove('hidden');
+      renderCfgLinked();
+    }
+
+    function saveCfgInlineEdit() {
+      if (!state.cfgEditingTestId) return;
+      var sample = currentSample();
+      var model = sample.models.find(function (m) { return m.id === state.editingModelId; });
+      var base = sample.tests.find(function (t) { return t.id === state.cfgEditingTestId; });
+      if (!model.overrides[state.cfgEditingTestId]) model.overrides[state.cfgEditingTestId] = { values: {}, items: {} };
+      var ov = model.overrides[state.cfgEditingTestId];
+      var data = {
+        detectCategory: document.getElementById('c_detectCategory').value,
+        sampleCatCode: document.getElementById('c_sampleCatCode').value.trim(),
+        needPrepare: document.getElementById('c_needPrepare').value,
+        sampleQty: Number(document.getElementById('c_sampleQty').value || 1),
+        fee: Number(document.getElementById('c_fee').value || 0),
+        equip: document.getElementById('c_equip').value.trim(),
+        remark: document.getElementById('c_remark').value.trim()
+      };
+      Object.keys(data).forEach(function (k) {
+        if (JSON.stringify(data[k]) !== JSON.stringify(base[k])) ov.values[k] = deepClone(data[k]);
+        else delete ov.values[k];
+      });
+      state.cfgDraftItems.forEach(function (it) {
+        var bi = (base.items || []).find(function (x) { return x.id === it.id; }) || {};
+        var diff = {};
+        ['defaultValue','unit','testCount','min','max','required','hidden'].forEach(function (k) {
+          if (JSON.stringify(it[k]) !== JSON.stringify(bi[k])) diff[k] = deepClone(it[k]);
+        });
+        if (Object.keys(diff).length) ov.items[it.id] = diff;
+        else delete ov.items[it.id];
+      });
+      renderCfgLinked();
+      selectCfgTest(state.cfgEditingTestId);
+      toast('本试验型号覆盖已保存（未回写默认试验）');
     }
 
     function saveCfgTests() {
       var sample = currentSample();
       var model = sample.models.find(function (m) { return m.id === state.editingModelId; });
-      var selected = Array.prototype.slice.call(document.querySelectorAll('.cfg-test-cb:checked')).map(function (el) { return el.value; });
+      var selected = state.cfgPendingIds.slice();
       var prev = model.linkedTestIds || [];
+      var removed = prev.filter(function (tid) { return selected.indexOf(tid) < 0; });
+      var removedWithOverride = removed.filter(function (tid) { return hasModelOverride(model, tid); });
+      if (removedWithOverride.length) {
+        var names = removedWithOverride.map(function (tid) {
+          var t = sample.tests.find(function (x) { return x.id === tid; });
+          return t ? t.name : tid;
+        }).join('、');
+        if (!confirm('取消关联将清除本型号下以下试验的个性化配置，请谨慎操作：\n\n' + names + '\n\n是否确认保存？')) return;
+      }
       selected.forEach(function (tid) {
         if (prev.indexOf(tid) < 0) {
-          // 首次勾选：快照复制可覆盖取值到 overrides（保留空覆盖对象以便后续编辑；默认值已在试验上）
           if (!model.overrides[tid]) model.overrides[tid] = { values: {}, items: {} };
           var base = sample.tests.find(function (t) { return t.id === tid; });
           if (base) {
@@ -1199,22 +1475,13 @@
           }
         }
       });
-      // 取消勾选的清理 overrides
       Object.keys(model.overrides || {}).forEach(function (tid) {
         if (selected.indexOf(tid) < 0) delete model.overrides[tid];
       });
       model.linkedTestIds = selected;
-      renderCfgLinked(model);
+      renderCfgLinked();
       renderModelTable();
-      toast('已保存型号试验关联（默认侧模板值保留，快照已复制到型号）');
-    }
-
-    function unlinkTest(modelId, testId) {
-      var model = currentSample().models.find(function (m) { return m.id === modelId; });
-      model.linkedTestIds = (model.linkedTestIds || []).filter(function (id) { return id !== testId; });
-      if (model.overrides) delete model.overrides[testId];
-      renderCfgLinked(model);
-      renderModelTable();
+      toast('已保存型号试验关联');
     }
 
     function getSelectedOptions(sel) {
@@ -1228,31 +1495,33 @@
     }
 
     function openTestEdit(testId, overrideMode, modelId) {
+      // 型号覆盖编辑统一走配置试验抽屉内联区
+      if (overrideMode && modelId) {
+        if (state.editingModelId !== modelId || !document.getElementById('cfgTestModal').classList.contains('open')) {
+          openCfgTests(modelId);
+        }
+        selectCfgTest(testId);
+        return;
+      }
       var sample = currentSample();
-      state.overrideMode = !!overrideMode;
-      state.overrideModelId = modelId || null;
+      state.overrideMode = false;
+      state.overrideModelId = null;
       state.editingTestId = testId || null;
-      document.getElementById('overrideReadonlyHint').classList.toggle('hidden', !state.overrideMode);
-      document.getElementById('btnAddItem').style.display = state.overrideMode ? 'none' : '';
-      document.getElementById('testModalTitle').textContent = state.overrideMode
-        ? ('编辑试验（型号：' + (sample.models.find(function (m) { return m.id === modelId; }) || {}).name + '）')
-        : (testId ? '编辑试验' : '添加试验');
+      document.getElementById('overrideReadonlyHint').classList.add('hidden');
+      document.getElementById('btnAddItem').style.display = '';
+      document.getElementById('testModalTitle').textContent = testId ? '编辑试验' : '添加试验';
 
       fillDictSelect(document.getElementById('t_detectCategory'), 'lims_detect_category');
       fillDictSelect(document.getElementById('t_colors'), 'lims_sample_color');
 
       var base = testId ? sample.tests.find(function (t) { return t.id === testId; }) : null;
       var data = base ? deepClone(base) : makeTest({ sort: (sample.tests.length || 0) + 1 });
-      if (state.overrideMode && modelId) {
-        var model = sample.models.find(function (m) { return m.id === modelId; });
-        data = effectiveTestForModel(sample, model, testId) || data;
-      }
       state.draft = deepClone(base || data);
       state.stdSegs = deepClone(data.stdReq || []);
       state.draftItems = deepClone(data.items || []);
 
       document.getElementById('t_name').value = data.name || '';
-      document.getElementById('t_name').disabled = !!state.overrideMode;
+      document.getElementById('t_name').disabled = false;
       setSelectedOptions(document.getElementById('t_basis'), data.basis);
       setSelectedOptions(document.getElementById('t_judge'), data.judge);
       document.getElementById('t_detectCategory').value = data.detectCategory || '';
