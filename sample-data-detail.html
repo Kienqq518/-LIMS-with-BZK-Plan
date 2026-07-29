@@ -215,9 +215,8 @@
         </div>
 
         <div class="param-panel" id="panel-model">
-          <div class="mb-3 flex items-center justify-between">
+          <div class="mb-3 flex items-center justify-end">
             <button onclick="openModelEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 添加型号</button>
-            <span class="text-xs text-slate-400">是否制样在试验项级配置；制备流程看委托所选试验</span>
           </div>
           <div class="overflow-x-auto rounded bg-white shadow-sm">
             <table class="data-table min-w-[880px]">
@@ -337,6 +336,7 @@
     <div class="modal-box drawer">
       <div class="modal-head"><h3 id="modelModalTitle" class="text-base font-medium">添加型号</h3><button onclick="closeModal('modelModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
       <div class="modal-body space-y-3 text-sm">
+        <div class="field-row"><label>样品名称</label><div class="ctrl"><input id="m_sampleName" type="text" disabled class="bg-slate-50 text-slate-600" /></div></div>
         <div class="field-row"><label><span class="req">*</span>型号名称</label><div class="ctrl"><input id="m_name" type="text" /></div></div>
         <div class="field-row"><label>排序</label><div class="ctrl"><input id="m_sort" type="number" min="1" value="1" /></div></div>
         <div class="field-row"><label>单位</label><div class="ctrl"><input id="m_unit" type="text" /></div></div>
@@ -1158,11 +1158,13 @@
     function openModelEdit(id) {
       state.editingModelId = id || null;
       document.getElementById('modelModalTitle').textContent = id ? '编辑型号' : '添加型号';
-      var m = id ? currentSample().models.find(function (x) { return x.id === id; }) : null;
+      var sample = currentSample();
+      var m = id ? sample.models.find(function (x) { return x.id === id; }) : null;
+      document.getElementById('m_sampleName').value = (sample && sample.basic && sample.basic.name) || document.getElementById('sampleTitle').textContent || '';
       document.getElementById('m_name').value = m ? m.name : '';
-      document.getElementById('m_sort').value = m ? m.sort : ((currentSample().models.length || 0) + 1);
-      document.getElementById('m_unit').value = m ? (m.unit || '') : (currentSample().basic.unit || '');
-      writeRecheckToForm('m', m ? m.recheck : currentSample().basic.recheck);
+      document.getElementById('m_sort').value = m ? m.sort : ((sample.models.length || 0) + 1);
+      document.getElementById('m_unit').value = m ? (m.unit || '') : (sample.basic.unit || '');
+      writeRecheckToForm('m', m ? m.recheck : sample.basic.recheck);
       document.getElementById('m_desc').value = m ? (m.desc || '') : '';
       if (m) {
         if (!m.images) m.images = [];
