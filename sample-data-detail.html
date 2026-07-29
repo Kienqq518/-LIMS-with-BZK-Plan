@@ -329,8 +329,8 @@
             <div class="drawer-section">
               <div class="drawer-section-title">基础</div>
               <div class="field-row"><label><span class="req">*</span>试验名称</label><div class="ctrl"><input id="t_name" type="text" /><div id="t_nameOv" class="hidden"></div></div></div>
-              <div class="field-row"><label id="lblDetectCategory"><span class="req">*</span>检测类别</label><div class="ctrl"><select id="t_detectCategory"></select><div id="t_detectCategoryOv"></div></div></div>
-              <div class="field-row"><label><span class="req">*</span>默认费用</label><div class="ctrl"><input id="t_fee" type="number" min="0" /><div id="t_feeOv"></div></div></div>
+              <div class="field-row"><label id="lblDetectCategory" class="label-tip"><span class="req">*</span>检测类别<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span></label><div class="ctrl"><select id="t_detectCategory"></select><div id="t_detectCategoryOv"></div></div></div>
+              <div class="field-row"><label><span class="req">*</span>默认费用（元）</label><div class="ctrl"><input id="t_fee" type="number" min="0" /><div id="t_feeOv"></div></div></div>
               <div class="field-row"><label><span class="req">*</span>排序</label><div class="ctrl"><input id="t_sort" type="number" min="1" /><div id="t_sortOv"></div></div></div>
             </div>
             <div class="drawer-section">
@@ -475,11 +475,11 @@
               <div class="pane">
                 <div class="pane-title">试验信息（型号覆盖）</div>
                 <div class="field-row"><label>试验名称</label><div class="ctrl"><input id="c_name" type="text" disabled /></div></div>
-                <div class="field-row"><label id="c_lblDetectCategory">检测类别</label><div class="ctrl"><select id="c_detectCategory"></select><div id="c_detectCategoryOv"></div></div></div>
+                <div class="field-row"><label id="c_lblDetectCategory" class="label-tip">检测类别<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span></label><div class="ctrl"><select id="c_detectCategory"></select><div id="c_detectCategoryOv"></div></div></div>
                 <div class="field-row"><label>试样类别代码</label><div class="ctrl"><input id="c_sampleCatCode" type="text" /><div id="c_sampleCatCodeOv"></div></div></div>
                 <div class="field-row"><label>是否制样</label><div class="ctrl"><select id="c_needPrepare" onchange="toggleCfgSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="c_needPrepareOv"></div></div></div>
                 <div class="field-row" id="c_rowSampleQty"><label>试样数量</label><div class="ctrl"><input id="c_sampleQty" type="number" min="1" /><div id="c_sampleQtyOv"></div></div></div>
-                <div class="field-row"><label>默认费用</label><div class="ctrl"><input id="c_fee" type="number" min="0" /><div id="c_feeOv"></div></div></div>
+                <div class="field-row"><label>默认费用（元）</label><div class="ctrl"><input id="c_fee" type="number" min="0" /><div id="c_feeOv"></div></div></div>
                 <div class="field-row"><label>检测设备</label><div class="ctrl"><input id="c_equip" type="text" /><div id="c_equipOv"></div></div></div>
                 <div class="field-row"><label>备注</label><div class="ctrl"><input id="c_remark" type="text" /><div id="c_remarkOv"></div></div></div>
               </div>
@@ -636,8 +636,11 @@
 
     function applyDetectCategoryLabels() {
       var label = detectCategoryLabel();
+      var tip = '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span>';
       document.getElementById('thDetectCategory').textContent = label;
-      document.getElementById('lblDetectCategory').innerHTML = '<span class="req">*</span>' + label;
+      document.getElementById('lblDetectCategory').innerHTML = '<span class="req">*</span>' + label + tip;
+      var cfgLbl = document.getElementById('c_lblDetectCategory');
+      if (cfgLbl) cfgLbl.innerHTML = label + tip;
     }
 
     function fillDictSelect(sel, type, keepEmpty) {
@@ -1431,7 +1434,8 @@
       document.getElementById('cfgEditEmpty').classList.add('hidden');
       document.getElementById('cfgEditPanel').classList.remove('hidden');
       document.getElementById('cfgEditTitle').textContent = '编辑试验 · ' + (data ? data.name : '');
-      document.getElementById('c_lblDetectCategory').textContent = detectCategoryLabel();
+      document.getElementById('c_lblDetectCategory').innerHTML = detectCategoryLabel() +
+        '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span>';
       fillDictSelect(document.getElementById('c_detectCategory'), detectCategoryDictType(), true);
       document.getElementById('c_name').value = data.name || '';
       document.getElementById('c_detectCategory').value = data.detectCategory || '';
@@ -1970,7 +1974,7 @@
       if (!data.judge.length) return '请选择判定依据';
       if (!data.detectCategory) return '请选择' + detectCategoryLabel();
       if (data.needPrepare === '是' && !data.sampleQty) return '制样时请填写试样数量';
-      if (data.fee === '' || data.fee == null || isNaN(data.fee)) return '请填写默认费用';
+      if (data.fee === '' || data.fee == null || isNaN(data.fee)) return '请填写默认费用（元）';
       if (!data.items.length) return '请至少添加一个检测项';
       for (var i = 0; i < data.items.length; i++) {
         if (!data.items[i].name) return '检测项名称不能为空';
