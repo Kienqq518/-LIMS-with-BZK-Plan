@@ -2130,8 +2130,9 @@
       return TOKEN_TYPE_GROUPS.map(function (g) {
         var opts = g.options.filter(function (o) {
           // 禁止自引用：编辑样品编号不可选样品编号；编辑委托编号不可选委托编号
-          if (editingRuleId === 'sample' && o.type === 'ref_sample') return false;
-          if (editingRuleId === 'entrust' && o.type === 'ref_entrust') return false;
+          // 若历史令牌已是该类型，仍保留当前选中项以便改掉
+          if (editingRuleId === 'sample' && o.type === 'ref_sample' && o.type !== selected) return false;
+          if (editingRuleId === 'entrust' && o.type === 'ref_entrust' && o.type !== selected) return false;
           return true;
         });
         if (!opts.length) return '';
@@ -2643,7 +2644,7 @@
           position: 'top-left',
           title: '确定保存',
           wide: true,
-          content: '校验：至少一段；自定义非空；拼接符必选；自增仅一个且位数 2/3/4；报告数量位数 3/4/5；委托编号规则不宜引用样品编号或试样类别代码。通过后写入<strong>当前大类</strong>并关闭弹窗。',
+          content: '校验：至少一段；自定义非空；拼接符必选；自增仅一个且位数 2/3/4；报告数量位数 3/4/5；样品编号不可自引用样品编号；委托编号不可自引用委托编号，且不宜引用样品编号或试样类别代码。通过后写入<strong>当前大类</strong>并关闭弹窗。',
           tag: '编号规则·弹窗'
         },
         {
