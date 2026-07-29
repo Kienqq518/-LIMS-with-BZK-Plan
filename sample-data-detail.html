@@ -1455,10 +1455,14 @@
           '<div class="field-row"><label>单位</label><div class="ctrl"><input value="' + esc(it.unit || '') + '" onchange="setCfgItemField(' + idx + ',\'unit\',this.value)" /></div></div>' +
           '<div class="field-row"><label>试验次数</label><div class="ctrl"><input value="' + esc(it.testCount || '') + '" onchange="setCfgItemField(' + idx + ',\'testCount\',this.value)" /></div></div>' +
           '<div class="field-row"><label>取值范围</label><div class="ctrl flex gap-2"><input placeholder="最小" value="' + esc(it.min || '') + '" onchange="setCfgItemField(' + idx + ',\'min\',this.value)" /><input placeholder="最大" value="' + esc(it.max || '') + '" onchange="setCfgItemField(' + idx + ',\'max\',this.value)" /></div></div>' +
-          '<div class="field-row"><label>是否必填</label><div class="ctrl flex items-center gap-2">' +
+          '<div class="field-row"><label class="label-tip">是否必填' +
+            '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">' + (lockedReq ? '隐藏字段不可设为必填' : '约束试验检测提交') + '</span></span>' +
+          '</label><div class="ctrl flex items-center gap-2">' +
             '<label class="toggle"><input type="checkbox" ' + (it.required && !lockedReq ? 'checked' : '') + ' ' + (lockedReq ? 'disabled' : '') + ' onchange="setCfgItemField(' + idx + ',\'required\',this.checked)" /><span class="toggle-slider"></span></label>' +
           '</div></div>' +
-          '<div class="field-row"><label>隐藏字段</label><div class="ctrl"><label class="toggle"><input type="checkbox" ' + (it.hidden ? 'checked' : '') + ' onchange="setCfgItemHidden(' + idx + ',this.checked)" /><span class="toggle-slider"></span></label></div></div>' +
+          '<div class="field-row"><label class="label-tip">隐藏字段' +
+            '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">隐藏后试验检测页不展示</span></span>' +
+          '</label><div class="ctrl"><label class="toggle"><input type="checkbox" ' + (it.hidden ? 'checked' : '') + ' onchange="setCfgItemHidden(' + idx + ',this.checked)" /><span class="toggle-slider"></span></label></div></div>' +
         '</div>';
       }).join('');
     }
