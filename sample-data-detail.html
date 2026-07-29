@@ -90,6 +90,9 @@
     .readonly-hint { font-size: 12px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 8px 10px; margin-bottom: 12px; }
     .multi-select { min-height: 34px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 4px 8px; background: #fff; cursor: pointer; }
     .multi-select .ph { color: #94a3b8; font-size: 13px; }
+    .recheck-combo { display: flex; gap: 8px; align-items: center; }
+    .recheck-combo select { width: 88px; flex-shrink: 0; }
+    .recheck-combo input { flex: 1; min-width: 0; width: auto !important; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -150,12 +153,12 @@
               <div class="form-item"><label><span class="req">*</span>排序</label><input id="b_sort" type="number" min="1" /></div>
               <div class="form-item">
                 <label><span class="req">*</span>再检周期</label>
-                <div class="flex gap-2">
-                  <select id="b_recheckMode" class="w-24 flex-shrink-0" onchange="onRecheckModeChange('b')">
+                <div class="recheck-combo">
+                  <select id="b_recheckMode" onchange="onRecheckModeChange('b')">
                     <option value="数值">数值</option>
                     <option value="文本">文本</option>
                   </select>
-                  <input id="b_recheck" type="text" class="min-w-0 flex-1" placeholder="请输入再检周期" />
+                  <input id="b_recheck" type="text" placeholder="请输入再检周期" />
                 </div>
                 <div class="tip" id="b_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）</div>
               </div>
@@ -294,12 +297,12 @@
         <div class="field-row"><label><span class="req">*</span>型号名称</label><div class="ctrl"><input id="m_name" type="text" /></div></div>
         <div class="field-row"><label>排序</label><div class="ctrl"><input id="m_sort" type="number" min="1" value="1" /></div></div>
         <div class="field-row"><label>再检周期</label><div class="ctrl">
-          <div class="flex gap-2">
-            <select id="m_recheckMode" class="w-24 flex-shrink-0" onchange="onRecheckModeChange('m')">
+          <div class="recheck-combo">
+            <select id="m_recheckMode" onchange="onRecheckModeChange('m')">
               <option value="数值">数值</option>
               <option value="文本">文本</option>
             </select>
-            <input id="m_recheck" type="text" class="min-w-0 flex-1" placeholder="请输入再检周期" />
+            <input id="m_recheck" type="text" placeholder="请输入再检周期" />
           </div>
           <div class="tip" id="m_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）</div>
         </div></div>
