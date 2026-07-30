@@ -329,6 +329,7 @@
     <div class="param-tab" data-panel="record" data-annotate="record-tab">记录单设置</div>
     <div class="param-tab" data-panel="report" data-annotate="report-tab">报告设置</div>
     <div class="param-tab" data-panel="numbering" data-annotate="numbering-tab">编号规则</div>
+    <div class="param-tab" data-panel="run-mode" data-annotate="run-mode-tab">运行模式</div>
   </div>
 
   <div class="p-4">
@@ -621,6 +622,60 @@
         <div class="p-4" id="numberingList" data-annotate="numbering-list"></div>
       </div>
     </div>
+
+    <!-- ========== 运行模式（合规版 / 实务版） ========== -->
+    <div id="panel-run-mode" class="param-panel">
+      <div class="rounded bg-white shadow-sm p-6" data-annotate="run-mode-panel">
+        <div class="cfg-section-title">实验室运行模式</div>
+        <p class="mb-4 text-sm text-slate-500 leading-relaxed">
+          整套系统一套模式。合规版强制 17025 底线（禁止手编、历史只展示系统主版本）；实务版可配置白名单弹性项。切换留审计，实务配置在合规版下隐藏并强制覆盖，数据保留。
+        </p>
+
+        <div class="mb-6 rounded border border-slate-200 p-4" data-annotate="run-mode-switch">
+          <div class="mb-3 text-sm font-medium text-slate-700">当前模式</div>
+          <div class="flex flex-wrap items-center gap-6 text-sm">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="labRunMode" value="compliance" id="rmCompliance" />
+              <span>合规版</span>
+              <span class="rounded bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">迎检</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="labRunMode" value="practical" id="rmPractical" checked />
+              <span>实务版</span>
+              <span class="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">客户实际</span>
+            </label>
+          </div>
+          <div class="mt-4 flex flex-wrap items-start gap-3">
+            <label class="text-sm text-slate-600 pt-1.5 w-20 shrink-0">切换原因</label>
+            <input id="rmSwitchReason" type="text" placeholder="建议填写（迎检 / 恢复日常作业等）" class="flex-1 min-w-[200px] rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+            <button type="button" onclick="applyRunModeSwitch()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="run-mode-apply">确认切换</button>
+          </div>
+          <p id="rmSwitchHint" class="mt-3 text-xs text-slate-400">切换时若存在未关闭的 PageOffice：允许再保存关闭落最后一次次版本，随后锁定（M3=C）。</p>
+          <p id="rmStatusLine" class="mt-2 text-xs text-slate-500"></p>
+        </div>
+
+        <div id="rmFlexBlock" class="rounded border border-dashed border-amber-200 bg-amber-50/40 p-4" data-annotate="run-mode-flex">
+          <div class="cfg-section-title">实务弹性配置</div>
+          <p class="mb-3 text-xs text-amber-800/80">仅实务版可见；修改需配置权限（原型默认当前用户可改）。</p>
+          <label class="flex items-start gap-3 text-sm text-slate-700 cursor-pointer">
+            <input type="checkbox" id="rmAllowEditAfterIssue" class="mt-1 accent-blue-600" onchange="saveRunModeFlexibility()" />
+            <span>
+              <span class="font-medium">报告签发后允许在线编辑</span>
+              <span class="block text-xs text-slate-500 mt-1">不合规项。合规版下本入口隐藏且强制不允许；仅流程退回后方可再编。</span>
+            </span>
+          </label>
+        </div>
+
+        <div class="mt-6 rounded border border-slate-100 bg-slate-50 p-4 text-xs text-slate-600 leading-relaxed" data-annotate="run-mode-rules">
+          <div class="font-medium text-slate-700 mb-2">合规版简版规则摘要</div>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>禁止全部手动编辑；流程前进/回退只产生系统主版本</li>
+            <li>「查看历史」仅 admin 可见，且只展示 <code>V*.0</code>；次版本不展示，数据库保留</li>
+            <li>SYSTEM 更新始终基于最新 current（可含次版本内容）生成新主版本</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 编号规则编辑弹窗 -->
@@ -794,6 +849,7 @@
   <script src="js/prototype-annotation.js"></script>
   <script src="js/mock-dict.js"></script>
   <script src="js/entrust-field-config.js"></script>
+  <script src="js/lab-run-mode.js"></script>
   <script>
     /* ===== Tab 切换 ===== */
     document.getElementById('paramTabBar').addEventListener('click', function (e) {
@@ -819,7 +875,61 @@
           if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
         });
       }
+      if (panel === 'run-mode') {
+        renderRunModePanel();
+        requestAnimationFrame(function () {
+          if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+        });
+      }
     });
+
+    /* ===== 运行模式 ===== */
+    function renderRunModePanel() {
+      if (!window.LimsLabRunMode) return;
+      var s = LimsLabRunMode.getState();
+      document.getElementById('rmCompliance').checked = s.mode === 'compliance';
+      document.getElementById('rmPractical').checked = s.mode === 'practical';
+      document.getElementById('rmAllowEditAfterIssue').checked = !!s.allowReportEditAfterIssue;
+      var flex = document.getElementById('rmFlexBlock');
+      flex.style.display = s.mode === 'practical' ? 'block' : 'none';
+      var line = '当前：' + (s.mode === 'compliance' ? '合规版' : '实务版');
+      if (s.switchedAt) {
+        line += ' · 上次切换 ' + s.switchedAt.replace('T', ' ').slice(0, 19) + ' · ' + (s.switchedBy || '');
+        if (s.reason) line += ' · 原因：' + s.reason;
+      }
+      document.getElementById('rmStatusLine').textContent = line;
+    }
+
+    function applyRunModeSwitch() {
+      var next = document.querySelector('input[name="labRunMode"]:checked');
+      if (!next) return;
+      var reason = (document.getElementById('rmSwitchReason').value || '').trim();
+      var cur = LimsLabRunMode.getState().mode;
+      if (next.value === cur) {
+        alert('已是当前模式，无需切换（原型）');
+        return;
+      }
+      if (next.value === 'compliance') {
+        var ok = confirm('切换到合规版将：禁止手动编辑、历史仅展示系统主版本、隐藏实务弹性配置。\n若有未关闭 PageOffice，将允许再保存关闭落最后一次次版本后锁定。\n确认切换？');
+        if (!ok) return;
+      }
+      LimsLabRunMode.switchMode(next.value, { by: 'admin', reason: reason });
+      document.getElementById('rmSwitchReason').value = '';
+      renderRunModePanel();
+      alert('已切换为' + (next.value === 'compliance' ? '合规版' : '实务版') + '（原型；状态已写入本机）');
+    }
+
+    function saveRunModeFlexibility() {
+      if (LimsLabRunMode.isCompliance()) {
+        alert('合规版不可修改实务弹性项（原型）');
+        renderRunModePanel();
+        return;
+      }
+      LimsLabRunMode.setFlexibility({
+        allowReportEditAfterIssue: document.getElementById('rmAllowEditAfterIssue').checked
+      });
+      renderRunModePanel();
+    }
 
     /* ===== 签名与印章 ===== */
     var SEAL_META = {
@@ -2788,6 +2898,31 @@
           wide: true,
           content: '选择关联模式、绑定对象与 2 种默认导出模式之一。保存时不做模版预检。',
           tag: '报告设置'
+        },
+        {
+          id: 'run-mode-tab',
+          selector: '[data-annotate="run-mode-tab"]',
+          position: 'bottom',
+          title: '运行模式',
+          wide: true,
+          content: '整套系统一套：合规版 / 实务版一键切换。合规版禁手编；业务人员不显示「查看历史」，admin 可见且只显示系统主版本；实务版可配置「签发后允许编辑」等弹性项。',
+          tag: '运行模式'
+        },
+        {
+          id: 'run-mode-switch',
+          selector: '[data-annotate="run-mode-switch"]',
+          position: 'top-right',
+          title: '模式切换',
+          content: '切换需权限；建议填原因。若有未关 PageOffice：可再保存关闭落最后一次次版本后锁定（M3=C）。',
+          tag: '运行模式'
+        },
+        {
+          id: 'run-mode-flex',
+          selector: '[data-annotate="run-mode-flex"]',
+          position: 'top-left',
+          title: '实务弹性配置',
+          content: '仅实务版可见。合规版隐藏本区并强制覆盖；配置数据保留以便切回。',
+          tag: '运行模式'
         }
       ]
     });
