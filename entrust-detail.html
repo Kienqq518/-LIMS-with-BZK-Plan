@@ -52,7 +52,17 @@
   </div>
 
   <!-- 右上角操作栏 -->
-  <div class="flex items-center justify-end border-b border-slate-200 bg-white px-4 py-2">
+  <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2">
+    <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+      <span>运行模式：<strong id="runModeBadge" class="text-slate-700">实务版</strong></span>
+      <span class="text-slate-300">|</span>
+      <span>历史视角（原型）：</span>
+      <select id="historyRoleSelect" onchange="onHistoryRoleChange()" class="rounded border border-slate-300 px-2 py-1 text-xs outline-none focus:border-blue-500">
+        <option value="business">业务人员</option>
+        <option value="quality">质量负责人</option>
+      </select>
+      <a href="system-params.html" class="text-blue-600 hover:underline">去配置运行模式</a>
+    </div>
     <div class="relative" id="viewMoreWrap">
       <button onclick="toggleViewMore()" class="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">
         查看更多 <i class="fa fa-angle-down text-xs"></i>
@@ -161,12 +171,12 @@
         <table class="data-table min-w-[640px]">
           <thead><tr><th>序号</th><th>报告文件</th><th>PDF文件</th><th>生成时间</th><th>操作</th></tr></thead>
           <tbody>
-            <tr>
+            <tr data-doc="entrust_form">
               <td>1</td>
-              <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-word-o"></i> SC2026/0212-委托单.docx</a></td>
-              <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-pdf-o"></i> SC2026/0212-委托单.pdf</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="previewDoc('entrust_form');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-委托单.docx</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="downloadDoc('entrust_form');return false;"><i class="fa fa-file-pdf-o"></i> SC2026/0212-委托单.pdf</a></td>
               <td>2026-07-08</td>
-              <td><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">下载</button></td>
+              <td class="doc-ops whitespace-nowrap"></td>
             </tr>
           </tbody>
         </table>
@@ -180,11 +190,11 @@
         <table class="data-table min-w-[560px]">
           <thead><tr><th>序号</th><th>检测任务单</th><th>生成时间</th><th>操作</th></tr></thead>
           <tbody>
-            <tr>
+            <tr data-doc="task_sheet">
               <td>1</td>
-              <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-word-o"></i> SC2026/0212-检测任务单.docx</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="previewDoc('task_sheet');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-检测任务单.docx</a></td>
               <td>2026-07-08</td>
-              <td><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">下载</button></td>
+              <td class="doc-ops whitespace-nowrap"></td>
             </tr>
           </tbody>
         </table>
@@ -198,7 +208,7 @@
         <table class="data-table min-w-[560px]">
           <thead><tr><th>序号</th><th>检测任务及样品流转单</th><th>生成时间</th><th>操作</th></tr></thead>
           <tbody>
-            <tr>
+            <tr data-doc="flow_sheet">
               <td>1</td>
               <td>
                 <button onclick="openFlowSheetModal()" class="text-blue-600 hover:underline" data-annotate="flow-sheet-entry">
@@ -207,10 +217,7 @@
                 <span class="ml-2 rounded bg-green-50 px-2 py-0.5 text-xs text-green-600">系统自动生成</span>
               </td>
               <td>2026-07-08</td>
-              <td>
-                <button onclick="openFlowSheetModal()" class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">查看</button>
-                <button onclick="alert('下载（原型演示）')" class="ml-2 rounded border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50">下载</button>
-              </td>
+              <td class="doc-ops whitespace-nowrap"></td>
             </tr>
           </tbody>
         </table>
@@ -224,11 +231,11 @@
         <table class="data-table min-w-[560px]">
           <thead><tr><th>序号</th><th>收费通知单</th><th>生成时间</th><th>操作</th></tr></thead>
           <tbody>
-            <tr>
+            <tr data-doc="fee_notice">
               <td>1</td>
-              <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-pdf-o"></i> SC2026/0212-收费通知单.pdf</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="previewDoc('fee_notice');return false;"><i class="fa fa-file-pdf-o"></i> SC2026/0212-收费通知单.pdf</a></td>
               <td>2026-07-08</td>
-              <td><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">下载</button></td>
+              <td class="doc-ops whitespace-nowrap"></td>
             </tr>
           </tbody>
         </table>
@@ -242,12 +249,12 @@
         <table class="data-table min-w-[640px]">
           <thead><tr><th>序号</th><th>报告名称</th><th>PDF报告</th><th>生成时间</th><th>操作</th></tr></thead>
           <tbody>
-            <tr>
+            <tr data-doc="report" data-issued="1">
               <td>1</td>
-              <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-word-o"></i> SC2026/0212-检测报告.docx</a></td>
-              <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-pdf-o"></i> SC2026/0212-检测报告.pdf</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="previewDoc('report');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-检测报告.docx</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="downloadDoc('report');return false;"><i class="fa fa-file-pdf-o"></i> SC2026/0212-检测报告.pdf</a></td>
               <td>2026-07-08</td>
-              <td><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">下载</button></td>
+              <td class="doc-ops whitespace-nowrap"></td>
             </tr>
           </tbody>
         </table>
@@ -276,11 +283,11 @@
         <table class="data-table min-w-[560px]">
           <thead><tr><th>序号</th><th>快递设备单</th><th>生成时间</th><th>操作</th></tr></thead>
           <tbody>
-            <tr>
+            <tr data-doc="mail_sheet">
               <td>1</td>
-              <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-word-o"></i> SC2026/0212-邮寄单.docx</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="previewDoc('mail_sheet');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-邮寄单.docx</a></td>
               <td>2026-07-08</td>
-              <td><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">下载</button></td>
+              <td class="doc-ops whitespace-nowrap"></td>
             </tr>
           </tbody>
         </table>
@@ -487,7 +494,37 @@
     </div>
   </div>
 
+  <!-- 文件版本历史弹窗 -->
+  <div id="docHistoryModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[86vh] w-[860px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <div>
+          <h3 class="text-base font-medium text-slate-800">查看历史 · <span id="docHistoryTitle">—</span></h3>
+          <p id="docHistoryMeta" class="mt-0.5 text-xs text-slate-400"></p>
+        </div>
+        <button onclick="closeModal('docHistoryModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <table class="data-table w-full">
+          <thead>
+            <tr>
+              <th>版本</th>
+              <th>来源</th>
+              <th>操作人</th>
+              <th>时间</th>
+              <th>说明</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="docHistoryBody"></tbody>
+        </table>
+        <p class="mt-3 text-xs text-slate-400">历史版仅支持在线查看；不可下载/编辑。回滚仅同主版本次版本，并再生成一版。</p>
+      </div>
+    </div>
+  </div>
+
   <script src="js/tab-bar.js"></script>
+  <script src="js/lab-run-mode.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     var ledgerLogs = [
@@ -503,6 +540,47 @@
       { time: '2026-06-10 09:24:13', text: 'admin 在 样品收样 完成了样品收样操作' },
       { time: '2026-06-10 09:20:05', text: 'admin 在 委托登记 创建了合同' }
     ];
+
+    /** 原型：各文件版本链（文件名列表不展示版本号） */
+    var DOC_META = {
+      entrust_form: { title: '委托单', currentMajor: 2, reportIssued: false },
+      task_sheet: { title: '检测任务单', currentMajor: 1, reportIssued: false },
+      flow_sheet: { title: '检测任务及样品流转单', currentMajor: 3, reportIssued: false },
+      fee_notice: { title: '收费通知单', currentMajor: 1, reportIssued: false },
+      report: { title: '检测报告', currentMajor: 2, reportIssued: true },
+      mail_sheet: { title: '邮寄单', currentMajor: 1, reportIssued: false }
+    };
+
+    var DOC_VERSIONS = {
+      entrust_form: [
+        { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-01 10:00', note: '委托确认生成' },
+        { major: 1, minor: 1, label: 'V1.1', source: 'MANUAL', origin: 'edit_close', operator: 'admin', time: '2026-07-02 11:20', note: 'PageOffice 关闭落版' },
+        { major: 2, minor: 0, label: 'V2.0', source: 'SYSTEM', origin: 'node_backfill', operator: 'system', time: '2026-07-08 09:00', note: '信息变更回填' },
+        { major: 2, minor: 1, label: 'V2.1', source: 'MANUAL', origin: 'edit_close', operator: 'admin', time: '2026-07-08 15:30', note: 'PageOffice 关闭落版', current: true }
+      ],
+      task_sheet: [
+        { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-08 09:05', note: '首次生成', current: true }
+      ],
+      flow_sheet: [
+        { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-08 09:10', note: '收样生成' },
+        { major: 2, minor: 0, label: 'V2.0', source: 'SYSTEM', origin: 'node_backfill', operator: 'system', time: '2026-07-08 14:00', note: '领样回填' },
+        { major: 2, minor: 1, label: 'V2.1', source: 'MANUAL', origin: 'edit_close', operator: 'admin', time: '2026-07-08 16:00', note: '人工微调' },
+        { major: 3, minor: 0, label: 'V3.0', source: 'SYSTEM', origin: 'node_backfill', operator: 'system', time: '2026-07-09 10:00', note: '还样回填', current: true }
+      ],
+      fee_notice: [
+        { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-08 09:12', note: '首次生成', current: true }
+      ],
+      report: [
+        { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-08 18:00', note: '报告导出' },
+        { major: 1, minor: 1, label: 'V1.1', source: 'MANUAL', origin: 'edit_close', operator: 'admin', time: '2026-07-08 19:00', note: '签发前修订' },
+        { major: 2, minor: 0, label: 'V2.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-09 09:00', note: '审核通过重出', current: true }
+      ],
+      mail_sheet: [
+        { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-08 20:00', note: '首次生成', current: true }
+      ]
+    };
+
+    var _historyDocKey = null;
 
     function renderTimeline(containerId, items) {
       document.getElementById(containerId).innerHTML = items.map(function (item) {
@@ -560,18 +638,121 @@
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
+    function refreshRunModeChrome() {
+      var badge = document.getElementById('runModeBadge');
+      var compliance = LimsLabRunMode.isCompliance();
+      badge.textContent = compliance ? '合规版' : '实务版';
+      badge.className = compliance ? 'text-emerald-700' : 'text-amber-700';
+      var sel = document.getElementById('historyRoleSelect');
+      sel.value = LimsLabRunMode.getHistoryRole();
+      renderAllDocOps();
+    }
+
+    function onHistoryRoleChange() {
+      LimsLabRunMode.setHistoryRole(document.getElementById('historyRoleSelect').value);
+      if (_historyDocKey) openDocHistory(_historyDocKey);
+    }
+
+    function renderAllDocOps() {
+      document.querySelectorAll('tr[data-doc]').forEach(function (tr) {
+        var key = tr.getAttribute('data-doc');
+        var issued = tr.getAttribute('data-issued') === '1';
+        var cell = tr.querySelector('.doc-ops');
+        if (!cell) return;
+        var canEdit = LimsLabRunMode.canManualEdit(key, issued);
+        var html = '';
+        if (key === 'flow_sheet') {
+          html += '<button onclick="openFlowSheetModal()" class="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700">查看</button>';
+        } else {
+          html += '<button onclick="previewDoc(\'' + key + '\')" class="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700">查看</button>';
+        }
+        html += '<button onclick="downloadDoc(\'' + key + '\')" class="ml-1 rounded border border-slate-300 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50">下载</button>';
+        if (canEdit) {
+          html += '<button onclick="editDoc(\'' + key + '\')" class="ml-1 rounded border border-blue-300 px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50" data-annotate="doc-edit">编辑</button>';
+        } else {
+          html += '<button disabled title="当前运行模式或阶段不允许编辑" class="ml-1 cursor-not-allowed rounded border border-slate-200 px-2.5 py-1 text-xs text-slate-300">编辑</button>';
+        }
+        html += '<button onclick="openDocHistory(\'' + key + '\')" class="ml-1 rounded border border-slate-300 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50" data-annotate="doc-history">查看历史</button>';
+        cell.innerHTML = html;
+      });
+    }
+
+    function previewDoc(key) {
+      alert('在线查看最新版「' + (DOC_META[key] && DOC_META[key].title) + '」（原型 · PageOffice/预览）');
+    }
+
+    function downloadDoc(key) {
+      alert('下载最新版「' + (DOC_META[key] && DOC_META[key].title) + '」（原型）');
+    }
+
+    function editDoc(key) {
+      var meta = DOC_META[key];
+      if (!LimsLabRunMode.canManualEdit(key, !!(meta && meta.reportIssued))) {
+        alert('当前不允许编辑：合规版禁止手编，或报告签发后未开启实务弹性项。');
+        return;
+      }
+      alert('打开 PageOffice 编辑「' + meta.title + '」\n会话内保存不落版；保存并关闭后生成次版本（原型）。');
+    }
+
+    function openDocHistory(key) {
+      _historyDocKey = key;
+      var meta = DOC_META[key];
+      var all = DOC_VERSIONS[key] || [];
+      var filtered = LimsLabRunMode.filterHistory(all, meta.currentMajor);
+      document.getElementById('docHistoryTitle').textContent = meta.title;
+      var mode = LimsLabRunMode.isCompliance() ? '合规版' : '实务版';
+      var role = LimsLabRunMode.getHistoryRole() === 'quality' ? '质量负责人' : '业务人员';
+      document.getElementById('docHistoryMeta').textContent =
+        mode + ' · 视角 ' + role + ' · 当前主版本 V' + meta.currentMajor + '.x · 共展示 ' + filtered.length + ' 条';
+
+      var currentLabel = (all.filter(function (v) { return v.current; })[0] || {}).label;
+      var body = document.getElementById('docHistoryBody');
+      if (!filtered.length) {
+        body.innerHTML = '<tr><td colspan="6" class="text-center text-slate-400 py-8">暂无可见历史</td></tr>';
+      } else {
+        body.innerHTML = filtered.slice().reverse().map(function (v) {
+          var src = v.source === 'SYSTEM' ? '系统' : (v.origin === 'content_rollback' ? '回滚' : '人工');
+          var note = v.note || '';
+          if (v.rollbackFrom) note += (note ? ' · ' : '') + '回滚自 ' + v.rollbackFrom;
+          var isCurrent = v.current || v.label === currentLabel;
+          var ops = '<button onclick="alert(\'在线查看 ' + v.label + '（不可下载）\')" class="text-blue-600 hover:underline text-xs">在线查看</button>';
+          if (!isCurrent && v.source === 'MANUAL' && !LimsLabRunMode.isCompliance() && Number(v.major) === meta.currentMajor) {
+            ops += ' <button onclick="rollbackDoc(\'' + key + '\',\'' + v.label + '\')" class="ml-2 text-amber-600 hover:underline text-xs">回滚</button>';
+          }
+          return '<tr class="' + (isCurrent ? 'bg-blue-50/40' : '') + '">' +
+            '<td>' + v.label + (isCurrent ? ' <span class="text-xs text-blue-600">当前</span>' : '') + '</td>' +
+            '<td>' + src + '</td>' +
+            '<td>' + v.operator + '</td>' +
+            '<td>' + v.time + '</td>' +
+            '<td class="text-xs">' + note + '</td>' +
+            '<td class="whitespace-nowrap">' + ops + '</td></tr>';
+        }).join('');
+      }
+      showModal('docHistoryModal');
+    }
+
+    function rollbackDoc(key, fromLabel) {
+      alert('将基于 ' + fromLabel + ' 再生成同主版本下一最新次版本（不删中间历史）。原型演示。');
+    }
+
     document.addEventListener('click', function (e) {
       if (!e.target.closest('#viewMoreWrap')) closeViewMoreMenu();
     });
 
-    ['ledgerModal', 'noticeModal', 'sysLogModal', 'flowSheetModal'].forEach(function (id) {
+    ['ledgerModal', 'noticeModal', 'sysLogModal', 'flowSheetModal', 'docHistoryModal'].forEach(function (id) {
       document.getElementById(id).addEventListener('click', function (e) {
         if (e.target === this) closeModal(id);
       });
     });
 
+    window.addEventListener('lims-run-mode-change', refreshRunModeChrome);
+    window.addEventListener('storage', function (e) {
+      if (e.key === 'lims_lab_run_mode_v1' || e.key === 'lims_history_role_v1') refreshRunModeChrome();
+    });
+
     renderTimeline('ledgerTimeline', ledgerLogs);
     renderTimeline('sysLogTimeline', sysLogs);
+    refreshRunModeChrome();
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
@@ -579,7 +760,9 @@
           { id: 'flow-sheet-entry', selector: '[data-annotate="flow-sheet-entry"]', position: 'top-right', title: '检测任务及样品流转单', wide: true, content: '入口位于委托详情页「检测任务及样品流转单」区块（收样后<strong>系统自动生成</strong>）。点击文档链接或「查看」打开流转单；各业务节点操作完成时自动追加回填检测流程行。', tag: '流转单' },
           { id: 'flow-sheet-auto', selector: '[data-annotate="flow-sheet-auto"]', position: 'bottom-left', title: '自动生成', content: '委托受理/收样后系统自动生成本单，样品编号、检测项目、检测依据等自动带入。', tag: '流转单' },
           { id: 'flow-sheet-process', selector: '[data-annotate="flow-sheet-process"]', position: 'top-right', title: '检测流程回填表', wide: true, content: '<strong>完整流转节点示例：</strong><br>① 样品制备（可选，部门+样品制备）<br>② 发样领样（部门+领样）<br>③ 接收试样（检测员部门+接收试样，可多行）<br>④ 还样（检测员部门+还样，可多行）<br>⑤ 退样（自取：委托单位取回余样签收+联系人；快递：余样快递退回委托单位+操作员电子签）', tag: '流转单' },
-          { id: 'flow-sheet-rules', selector: '[data-annotate="flow-sheet-rules"]', position: 'top-left', title: '回填规则总览', wide: true, content: '各节点回填时机见对应业务页面批注。多检测员接收/还样同一样品下不同试样时，按检测员人数各回填一行。', tag: '流转单' }
+          { id: 'flow-sheet-rules', selector: '[data-annotate="flow-sheet-rules"]', position: 'top-left', title: '回填规则总览', wide: true, content: '各节点回填时机见对应业务页面批注。多检测员接收/还样同一样品下不同试样时，按检测员人数各回填一行。', tag: '流转单' },
+          { id: 'doc-history', selector: '[data-annotate="doc-history"]', position: 'top-left', title: '查看历史', wide: true, content: '权限控制。实务版：业务看当前主版本全链，质量负责人可看旧主版本；合规版：所有人仅见系统主版本 V*.0。历史仅在线查看。', tag: '版本' },
+          { id: 'doc-edit', selector: '[data-annotate="doc-edit"]', position: 'top-right', title: '编辑', content: 'PageOffice 在线编辑；会话内保存不落版，关闭落次版本。合规版禁用。', tag: '版本' }
         ]
       });
     }
