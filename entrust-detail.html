@@ -59,7 +59,7 @@
       <span>历史视角（原型）：</span>
       <select id="historyRoleSelect" onchange="onHistoryRoleChange()" class="rounded border border-slate-300 px-2 py-1 text-xs outline-none focus:border-blue-500">
         <option value="business">业务人员</option>
-        <option value="quality">质量负责人</option>
+        <option value="admin">admin 管理员</option>
       </select>
       <a href="system-params.html" class="text-blue-600 hover:underline">去配置运行模式</a>
     </div>
@@ -672,7 +672,9 @@
         } else {
           html += '<button disabled title="当前运行模式或阶段不允许编辑" class="ml-1 cursor-not-allowed rounded border border-slate-200 px-2.5 py-1 text-xs text-slate-300">编辑</button>';
         }
-        html += '<button onclick="openDocHistory(\'' + key + '\')" class="ml-1 rounded border border-slate-300 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50" data-annotate="doc-history">查看历史</button>';
+        if (LimsLabRunMode.canShowHistoryButton()) {
+          html += '<button onclick="openDocHistory(\'' + key + '\')" class="ml-1 rounded border border-slate-300 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50" data-annotate="doc-history">查看历史</button>';
+        }
         cell.innerHTML = html;
       });
     }
@@ -695,13 +697,17 @@
     }
 
     function openDocHistory(key) {
+      if (!LimsLabRunMode.canShowHistoryButton()) {
+        alert('当前角色在合规版下无权查看历史（原型）');
+        return;
+      }
       _historyDocKey = key;
       var meta = DOC_META[key];
       var all = DOC_VERSIONS[key] || [];
       var filtered = LimsLabRunMode.filterHistory(all, meta.currentMajor);
       document.getElementById('docHistoryTitle').textContent = meta.title;
       var mode = LimsLabRunMode.isCompliance() ? '合规版' : '实务版';
-      var role = LimsLabRunMode.getHistoryRole() === 'quality' ? '质量负责人' : '业务人员';
+      var role = LimsLabRunMode.getHistoryRole() === 'admin' ? 'admin 管理员' : '业务人员';
       document.getElementById('docHistoryMeta').textContent =
         mode + ' · 视角 ' + role + ' · 当前主版本 V' + meta.currentMajor + '.x · 共展示 ' + filtered.length + ' 条';
 
@@ -761,7 +767,7 @@
           { id: 'flow-sheet-auto', selector: '[data-annotate="flow-sheet-auto"]', position: 'bottom-left', title: '自动生成', content: '委托受理/收样后系统自动生成本单，样品编号、检测项目、检测依据等自动带入。', tag: '流转单' },
           { id: 'flow-sheet-process', selector: '[data-annotate="flow-sheet-process"]', position: 'top-right', title: '检测流程回填表', wide: true, content: '<strong>完整流转节点示例：</strong><br>① 样品制备（可选，部门+样品制备）<br>② 发样领样（部门+领样）<br>③ 接收试样（检测员部门+接收试样，可多行）<br>④ 还样（检测员部门+还样，可多行）<br>⑤ 退样（自取：委托单位取回余样签收+联系人；快递：余样快递退回委托单位+操作员电子签）', tag: '流转单' },
           { id: 'flow-sheet-rules', selector: '[data-annotate="flow-sheet-rules"]', position: 'top-left', title: '回填规则总览', wide: true, content: '各节点回填时机见对应业务页面批注。多检测员接收/还样同一样品下不同试样时，按检测员人数各回填一行。', tag: '流转单' },
-          { id: 'doc-history', selector: '[data-annotate="doc-history"]', position: 'top-left', title: '查看历史', wide: true, content: '权限控制。实务版：业务看当前主版本全链，质量负责人可看旧主版本；合规版：所有人仅见系统主版本 V*.0。历史仅在线查看。', tag: '版本' },
+          { id: 'doc-history', selector: '[data-annotate="doc-history"]', position: 'top-left', title: '查看历史', wide: true, content: '权限控制。实务版：业务看当前主版本全链，admin 可看旧主版本；合规版：业务人员不显示本按钮，admin 可见且仅展示系统主版本 V*.0。', tag: '版本' },
           { id: 'doc-edit', selector: '[data-annotate="doc-edit"]', position: 'top-right', title: '编辑', content: 'PageOffice 在线编辑；会话内保存不落版，关闭落次版本。合规版禁用。', tag: '版本' }
         ]
       });
