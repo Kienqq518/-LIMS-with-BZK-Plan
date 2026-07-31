@@ -369,7 +369,7 @@
             <div class="drawer-section">
               <div class="drawer-section-title">制样与其他</div>
               <div class="field-row"><label><span class="req">*</span>是否制样</label><div class="ctrl"><select id="t_needPrepare" onchange="toggleSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="t_needPrepareOv"></div></div></div>
-              <div class="field-row" id="rowSampleQty" data-annotate="test-sample-qty"><label><span class="req">*</span>试样数量</label><div class="ctrl">
+              <div class="field-row" id="rowSampleQty" data-annotate="test-sample-qty" style="display:none"><label><span class="req">*</span>试样数量</label><div class="ctrl">
                 <div class="num-stepper">
                   <button type="button" aria-label="减少" onclick="stepSampleQty(-1)">−</button>
                   <input id="t_sampleQty" type="number" min="1" step="1" value="1" />
@@ -505,7 +505,7 @@
                 <div class="field-row"><label id="c_lblDetectCategory" class="label-tip">检测类别<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span></label><div class="ctrl"><select id="c_detectCategory"></select><div id="c_detectCategoryOv"></div></div></div>
                 <div class="field-row"><label>试样类别代码</label><div class="ctrl"><input id="c_sampleCatCode" type="text" /><div id="c_sampleCatCodeOv"></div></div></div>
                 <div class="field-row"><label>是否制样</label><div class="ctrl"><select id="c_needPrepare" onchange="toggleCfgSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="c_needPrepareOv"></div></div></div>
-                <div class="field-row" id="c_rowSampleQty"><label>试样数量</label><div class="ctrl">
+                <div class="field-row" id="c_rowSampleQty" style="display:none"><label>试样数量</label><div class="ctrl">
                   <div class="num-stepper">
                     <button type="button" aria-label="减少" onclick="stepCfgSampleQty(-1)">−</button>
                     <input id="c_sampleQty" type="number" min="1" step="1" value="1" />
@@ -1489,7 +1489,9 @@
 
     function toggleCfgSampleQty() {
       var cRow = document.getElementById('c_rowSampleQty');
-      if (cRow) cRow.style.display = 'flex';
+      if (cRow) {
+        cRow.style.display = document.getElementById('c_needPrepare').value === '是' ? 'flex' : 'none';
+      }
     }
 
     function renderCfgOverrideBadges(base, model) {
@@ -1799,15 +1801,11 @@
     }
 
     function toggleSampleQty() {
-      // 试样数量始终展示在「制样与其他」；是否制样=是时为必填
+      var show = document.getElementById('t_needPrepare').value === '是';
       var row = document.getElementById('rowSampleQty');
-      if (row) row.style.display = 'flex';
+      if (row) row.style.display = show ? 'flex' : 'none';
       var tip = document.getElementById('t_sampleQtyTip');
-      if (tip) {
-        tip.textContent = document.getElementById('t_needPrepare').value === '是'
-          ? '是否制样为「是」时必填；用步进器调整试样数量（≥1）。'
-          : '是否制样为「否」时可不填；需要制样时请先改为「是」。';
-      }
+      if (tip) tip.textContent = '是否制样为「是」时必填；用步进器调整试样数量（≥1）。';
     }
 
     function stepNumberInput(inputId, delta, minVal) {
