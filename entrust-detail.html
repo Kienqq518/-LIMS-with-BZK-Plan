@@ -51,18 +51,8 @@
     </span>
   </div>
 
-  <!-- 右上角操作栏 -->
-  <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2">
-    <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-      <span>运行模式：<strong id="runModeBadge" class="text-slate-700">实务版</strong></span>
-      <span class="text-slate-300">|</span>
-      <span>历史视角（原型）：</span>
-      <select id="historyRoleSelect" onchange="onHistoryRoleChange()" class="rounded border border-slate-300 px-2 py-1 text-xs outline-none focus:border-blue-500">
-        <option value="business">业务人员</option>
-        <option value="admin">admin 管理员</option>
-      </select>
-      <a href="system-params.html" class="text-blue-600 hover:underline">去配置运行模式</a>
-    </div>
+  <!-- 右上角操作栏（运行模式切换暂隐藏，固定实务版） -->
+  <div class="flex items-center justify-end border-b border-slate-200 bg-white px-4 py-2">
     <div class="relative" id="viewMoreWrap">
       <button onclick="toggleViewMore()" class="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">
         查看更多 <i class="fa fa-angle-down text-xs"></i>
@@ -639,18 +629,8 @@
     }
 
     function refreshRunModeChrome() {
-      var badge = document.getElementById('runModeBadge');
-      var compliance = LimsLabRunMode.isCompliance();
-      badge.textContent = compliance ? '合规版' : '实务版';
-      badge.className = compliance ? 'text-emerald-700' : 'text-amber-700';
-      var sel = document.getElementById('historyRoleSelect');
-      sel.value = LimsLabRunMode.getHistoryRole();
+      // 本期固定实务版；模式切换 UI 已隐藏
       renderAllDocOps();
-    }
-
-    function onHistoryRoleChange() {
-      LimsLabRunMode.setHistoryRole(document.getElementById('historyRoleSelect').value);
-      if (_historyDocKey) openDocHistory(_historyDocKey);
     }
 
     function renderAllDocOps() {
@@ -706,10 +686,9 @@
       var all = DOC_VERSIONS[key] || [];
       var filtered = LimsLabRunMode.filterHistory(all, meta.currentMajor);
       document.getElementById('docHistoryTitle').textContent = meta.title;
-      var mode = LimsLabRunMode.isCompliance() ? '合规版' : '实务版';
       var role = LimsLabRunMode.getHistoryRole() === 'admin' ? 'admin 管理员' : '业务人员';
       document.getElementById('docHistoryMeta').textContent =
-        mode + ' · 视角 ' + role + ' · 当前主版本 V' + meta.currentMajor + '.x · 共展示 ' + filtered.length + ' 条';
+        '实务版 · ' + role + ' · 当前主版本 V' + meta.currentMajor + '.x · 共展示 ' + filtered.length + ' 条';
 
       var currentLabel = (all.filter(function (v) { return v.current; })[0] || {}).label;
       var body = document.getElementById('docHistoryBody');
@@ -767,8 +746,8 @@
           { id: 'flow-sheet-auto', selector: '[data-annotate="flow-sheet-auto"]', position: 'bottom-left', title: '自动生成', content: '委托受理/收样后系统自动生成本单，样品编号、检测项目、检测依据等自动带入。', tag: '流转单' },
           { id: 'flow-sheet-process', selector: '[data-annotate="flow-sheet-process"]', position: 'top-right', title: '检测流程回填表', wide: true, content: '<strong>完整流转节点示例：</strong><br>① 样品制备（可选，部门+样品制备）<br>② 发样领样（部门+领样）<br>③ 接收试样（检测员部门+接收试样，可多行）<br>④ 还样（检测员部门+还样，可多行）<br>⑤ 退样（自取：委托单位取回余样签收+联系人；快递：余样快递退回委托单位+操作员电子签）', tag: '流转单' },
           { id: 'flow-sheet-rules', selector: '[data-annotate="flow-sheet-rules"]', position: 'top-left', title: '回填规则总览', wide: true, content: '各节点回填时机见对应业务页面批注。多检测员接收/还样同一样品下不同试样时，按检测员人数各回填一行。', tag: '流转单' },
-          { id: 'doc-history', selector: '[data-annotate="doc-history"]', position: 'top-left', title: '查看历史', wide: true, content: '权限控制。实务版：业务看当前主版本全链，admin 可看旧主版本；合规版：业务人员不显示本按钮，admin 可见且仅展示系统主版本 V*.0。', tag: '版本' },
-          { id: 'doc-edit', selector: '[data-annotate="doc-edit"]', position: 'top-right', title: '编辑', content: 'PageOffice 在线编辑；会话内保存不落版，关闭落次版本。合规版禁用。', tag: '版本' }
+          { id: 'doc-history', selector: '[data-annotate="doc-history"]', position: 'top-left', title: '查看历史', wide: true, content: '本期固定实务版。业务人员看当前主版本全链；admin 可看旧主版本。历史仅在线查看，不可下载/编辑。', tag: '版本' },
+          { id: 'doc-edit', selector: '[data-annotate="doc-edit"]', position: 'top-right', title: '编辑', content: 'PageOffice 在线编辑；会话内保存不落版，关闭落次版本。本期按实务版规则。', tag: '版本' }
         ]
       });
     }

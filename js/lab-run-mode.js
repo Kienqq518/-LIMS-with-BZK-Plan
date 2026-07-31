@@ -1,7 +1,9 @@
 /**
  * 实验室运行模式（原型）
  * compliance = 合规版；practical = 实务版
- * 整套系统一套；localStorage 跨页共享
+ *
+ * 【本期】强制实务版：不安排运行模式切换开发；切换 UI 已隐藏。
+ * 合规版逻辑与切换能力保留在代码/设计里，后续再启用 FORCE_PRACTICAL。
  *
  * 历史视角角色：business = 业务人员；admin = 管理员
  */
@@ -9,9 +11,12 @@
   var KEY = 'lims_lab_run_mode_v1';
   var ROLE_KEY = 'lims_history_role_v1'; // business | admin
 
+  /** 为 true 时忽略 localStorage 中的 mode，一律按实务版运行 */
+  var FORCE_PRACTICAL = true;
+
   var DEFAULTS = {
     mode: 'practical',
-    allowReportEditAfterIssue: false,
+    allowReportEditAfterIssue: true, // 实务版原型：签发后默认可编（配置入口暂隐藏）
     switchedAt: null,
     switchedBy: null,
     reason: ''
@@ -20,14 +25,16 @@
   function read() {
     try {
       var raw = localStorage.getItem(KEY);
-      if (!raw) return Object.assign({}, DEFAULTS);
-      return Object.assign({}, DEFAULTS, JSON.parse(raw));
+      var state = raw ? Object.assign({}, DEFAULTS, JSON.parse(raw)) : Object.assign({}, DEFAULTS);
+      if (FORCE_PRACTICAL) state.mode = 'practical';
+      return state;
     } catch (e) {
       return Object.assign({}, DEFAULTS);
     }
   }
 
   function write(state) {
+    if (FORCE_PRACTICAL) state.mode = 'practical';
     localStorage.setItem(KEY, JSON.stringify(state));
     try {
       global.dispatchEvent(new CustomEvent('lims-run-mode-change', { detail: state }));
@@ -39,6 +46,7 @@
   }
 
   function isCompliance() {
+    if (FORCE_PRACTICAL) return false;
     return read().mode === 'compliance';
   }
 
@@ -79,6 +87,12 @@
   }
 
   function switchMode(nextMode, meta) {
+    // 本期未开放切换：强制保持实务版
+    if (FORCE_PRACTICAL) {
+      var frozen = read();
+      write(frozen);
+      return { from: 'practical', to: 'practical', state: frozen, forced: true };
+    }
     var s = read();
     var from = s.mode;
     s.mode = nextMode === 'compliance' ? 'compliance' : 'practical';
