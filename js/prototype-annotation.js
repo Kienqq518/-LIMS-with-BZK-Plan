@@ -182,9 +182,10 @@
     if (position === 'left' || (position === 'bottom-left' && nearRight)) {
       point = toDocPoint(rect.left - size - 4, rect.top + rect.height / 2 - 11);
     } else if (position === 'top-right') {
-      point = toDocPoint(rect.right - 10, rect.top - 6);
+      // 锚在目标右上角外侧，避免与相邻按钮左上角打点重叠
+      point = toDocPoint(rect.right - 2, rect.top - 8);
     } else if (position === 'top-left') {
-      point = toDocPoint(rect.left - 10, rect.top - 6);
+      point = toDocPoint(rect.left - 12, rect.top - 8);
     } else if (position === 'bottom-right') {
       point = toDocPoint(rect.right - 10, rect.bottom - 14);
     } else if (position === 'bottom-left') {
