@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>标签与合格证模版 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    .hidden { display: none !important; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .type-nav { border-left: 3px solid transparent; }
+    .type-nav.active { border-left-color: #2563eb; background: #eff6ff; color: #1d4ed8; font-weight: 500; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid #e2e8f0; border-radius: 999px; font-size: 12px; cursor: pointer; user-select: none; }
+    .chip.on { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+    .field-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; margin-bottom: 6px; }
+    .field-item.dragging { opacity: .5; }
+    .modal-mask { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700 h-screen flex flex-col overflow-hidden">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap flex-shrink-0" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      标签与合格证模版
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2 flex-shrink-0">
+    <label class="text-sm text-slate-600">样品大类</label>
+    <select id="catSelect" class="rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500"></select>
+    <button onclick="resetConfig()" class="ml-auto rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">恢复预置</button>
+  </div>
+
+  <div class="flex flex-1 min-h-0">
+    <aside class="w-48 flex-shrink-0 border-r border-slate-200 bg-white py-2">
+      <button type="button" class="type-nav active block w-full px-4 py-2.5 text-left text-sm" data-type="certificate" onclick="switchType('certificate')">合格证</button>
+      <button type="button" class="type-nav block w-full px-4 py-2.5 text-left text-sm text-slate-600" data-type="sample_label" onclick="switchType('sample_label')">样品标签</button>
+    </aside>
+
+    <main class="flex-1 min-w-0 overflow-auto p-4">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 id="listTitle" class="text-base font-medium text-slate-800">合格证模版</h2>
+        <button onclick="openEditor()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新建模版</button>
+      </div>
+      <div class="overflow-x-auto rounded border border-slate-200 bg-white">
+        <table class="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-50 text-slate-600">
+              <th class="border-b border-slate-200 px-3 py-2 font-medium">名称</th>
+              <th class="border-b border-slate-200 px-3 py-2 font-medium">布局预设</th>
+              <th class="border-b border-slate-200 px-3 py-2 font-medium">纸张(mm)</th>
+              <th class="border-b border-slate-200 px-3 py-2 font-medium">已绑样品</th>
+              <th class="border-b border-slate-200 px-3 py-2 font-medium">默认</th>
+              <th class="border-b border-slate-200 px-3 py-2 font-medium">启用</th>
+              <th class="border-b border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tplBody"></tbody>
+        </table>
+      </div>
+      <p class="mt-3 text-xs text-slate-400">按样品叶节点绑定模版；未绑定样品打印时回退「默认」模版。同大类同类型下一样品不可属于两个启用模版。</p>
+    </main>
+  </div>
+
+  <!-- 编辑抽屉/弹层 -->
+  <div id="editModal" class="modal-mask">
+    <div class="flex h-[92vh] w-[1100px] max-w-[96vw] flex-col rounded-lg bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <h3 id="editTitle" class="text-base font-medium">编辑模版</h3>
+        <button onclick="closeEditor()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex flex-1 min-h-0">
+        <div class="flex-1 overflow-y-auto border-r border-slate-100 p-4 space-y-4">
+          <section>
+            <h4 class="mb-2 text-sm font-semibold text-slate-700">基本信息</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-sm text-slate-600">模版名称<input id="e_name" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+              <label class="text-sm text-slate-600">布局预设
+                <select id="e_preset" onchange="onPresetChange()" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm"></select>
+              </label>
+              <label class="text-sm text-slate-600">纸张宽(mm)<input id="e_w" type="number" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+              <label class="text-sm text-slate-600">纸张高(mm)<input id="e_h" type="number" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+              <label class="text-sm text-slate-600">字号档
+                <select id="e_font" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm">
+                  <option value="normal">标准</option>
+                  <option value="compact">紧凑</option>
+                </select>
+              </label>
+              <label class="flex items-center gap-2 text-sm text-slate-600 pt-6"><input id="e_enabled" type="checkbox" checked /> 启用</label>
+            </div>
+          </section>
+
+          <section>
+            <h4 class="mb-2 text-sm font-semibold text-slate-700">品牌区</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-sm text-slate-600 col-span-2">单位名称（默认检测机构）<input id="e_org" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+              <label class="text-sm text-slate-600">标题<input id="e_title" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+              <label class="text-sm text-slate-600">Logo
+                <select id="e_logo" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm">
+                  <option value="system">显示系统 Logo</option>
+                  <option value="custom">自定义（原型用系统图标）</option>
+                  <option value="hidden">不显示</option>
+                </select>
+              </label>
+              <label class="flex items-center gap-2 text-sm text-slate-600"><input id="e_wm" type="checkbox" /> 样式1「格」底纹</label>
+              <label class="text-sm text-slate-600 col-span-2">底部警示文案（样式2）<input id="e_warn" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+            </div>
+          </section>
+
+          <section>
+            <h4 class="mb-2 text-sm font-semibold text-slate-700">字段槽位 <span class="font-normal text-slate-400">（勾选 · 拖拽排序 · 改显示名）</span></h4>
+            <div id="fieldPool" class="mb-2 flex flex-wrap gap-2"></div>
+            <div id="fieldList"></div>
+          </section>
+
+          <section>
+            <h4 class="mb-2 text-sm font-semibold text-slate-700">二维码</h4>
+            <div class="grid grid-cols-3 gap-3">
+              <label class="flex items-center gap-2 text-sm"><input id="e_qr" type="checkbox" checked /> 启用二维码</label>
+              <label class="text-sm text-slate-600">尺寸(px)<input id="e_qrSize" type="number" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+              <label class="text-sm text-slate-600">位置
+                <select id="e_qrPlace" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm">
+                  <option value="right">右侧</option>
+                  <option value="corner">角部</option>
+                  <option value="center">中置</option>
+                  <option value="none">无</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section>
+            <h4 class="mb-2 text-sm font-semibold text-slate-700">绑定样品（叶节点，可多选）</h4>
+            <div id="bindSamples" class="flex flex-wrap gap-2"></div>
+            <p id="bindHint" class="mt-2 text-xs text-amber-600"></p>
+          </section>
+
+          <section>
+            <h4 class="mb-2 text-sm font-semibold text-slate-700">备注（不渲染）</h4>
+            <div class="grid grid-cols-3 gap-3">
+              <label class="text-sm text-slate-600">材质<input id="e_mat" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+              <label class="text-sm text-slate-600">安装方式<input id="e_mount" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+              <label class="text-sm text-slate-600">赋码打印<input id="e_print" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+            </div>
+          </section>
+        </div>
+
+        <div class="w-[360px] flex-shrink-0 overflow-y-auto bg-slate-50 p-4">
+          <div class="mb-2 flex items-center justify-between">
+            <h4 class="text-sm font-semibold text-slate-700">实时预览</h4>
+            <button onclick="refreshPreview()" class="text-xs text-blue-600 hover:underline">刷新</button>
+          </div>
+          <div id="previewBox" class="flex justify-center overflow-auto rounded border border-slate-200 bg-slate-100 p-3"></div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-200 px-5 py-3">
+        <button onclick="closeEditor()" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
+        <button onclick="saveEditor()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/label-cert-config.js"></script>
+  <script src="js/label-cert-render.js"></script>
+  <script src="js/short-link-qr.js"></script>
+  <script>
+    var cfg = LabelCertConfig.load();
+    var state = { cat: 'aqgqj', type: 'certificate', editingId: null, draft: null, selectedFields: [] };
+    var dragFrom = -1;
+
+    LabelCertRender.ensureStyles();
+
+    function initCats() {
+      var sel = document.getElementById('catSelect');
+      sel.innerHTML = LabelCertConfig.CATEGORIES.map(function (c) {
+        return '<option value="' + c.key + '">' + c.name + '</option>';
+      }).join('');
+      sel.value = state.cat;
+      sel.onchange = function () {
+        state.cat = sel.value;
+        renderList();
+      };
+    }
+
+    function switchType(type) {
+      state.type = type;
+      document.querySelectorAll('.type-nav').forEach(function (el) {
+        el.classList.toggle('active', el.getAttribute('data-type') === type);
+      });
+      document.getElementById('listTitle').textContent = type === 'certificate' ? '合格证模版' : '样品标签模版';
+      renderList();
+    }
+
+    function sampleName(id) {
+      var leaves = LabelCertConfig.SAMPLE_LEAVES[state.cat] || [];
+      for (var i = 0; i < leaves.length; i++) if (leaves[i].id === id) return leaves[i].name;
+      return id;
+    }
+
+    function renderList() {
+      var bucket = LabelCertConfig.getBucket(cfg, state.cat, state.type);
+      var rows = bucket.templates || [];
+      document.getElementById('tplBody').innerHTML = rows.length ? rows.map(function (t) {
+        var preset = LabelCertConfig.PRESETS[t.layoutPreset] || {};
+        var binds = (t.bindSampleIds || []).map(sampleName).join('、') || '—';
+        var isDef = bucket.defaultTemplateId === t.id;
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border-b border-slate-100 px-3 py-2">' + t.name + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2">' + (preset.name || t.layoutPreset) + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2">' + (t.paper.wMm + '×' + t.paper.hMm) + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2 max-w-[220px] truncate" title="' + binds + '">' + binds + ' <span class="text-slate-400">(' + (t.bindSampleIds || []).length + ')</span></td>' +
+          '<td class="border-b border-slate-100 px-3 py-2">' + (isDef ? '<span class="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700">默认</span>' : '<button class="text-xs text-blue-600 hover:underline" onclick="setDefault(\'' + t.id + '\')">设为默认</button>') + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2">' + (t.enabled ? '<span class="text-green-600">启用</span>' : '<span class="text-slate-400">停用</span>') + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2 whitespace-nowrap">' +
+            '<button class="text-blue-600 hover:underline mr-2" onclick="openEditor(\'' + t.id + '\')">编辑</button>' +
+            '<button class="text-blue-600 hover:underline mr-2" onclick="previewOne(\'' + t.id + '\')">预览</button>' +
+            '<button class="text-red-500 hover:underline" onclick="removeTpl(\'' + t.id + '\')">删除</button>' +
+          '</td></tr>';
+      }).join('') : '<tr><td colspan="7" class="px-3 py-10 text-center text-slate-400">暂无模版，请新建</td></tr>';
+    }
+
+    function setDefault(id) {
+      var bucket = LabelCertConfig.getBucket(cfg, state.cat, state.type);
+      bucket.defaultTemplateId = id;
+      LabelCertConfig.save(cfg);
+      renderList();
+    }
+
+    function removeTpl(id) {
+      if (!confirm('确认删除该模版？')) return;
+      var bucket = LabelCertConfig.getBucket(cfg, state.cat, state.type);
+      bucket.templates = bucket.templates.filter(function (t) { return t.id !== id; });
+      if (bucket.defaultTemplateId === id) bucket.defaultTemplateId = (bucket.templates[0] && bucket.templates[0].id) || null;
+      LabelCertConfig.save(cfg);
+      renderList();
+    }
+
+    function openEditor(id) {
+      state.editingId = id || null;
+      var bucket = LabelCertConfig.getBucket(cfg, state.cat, state.type);
+      var tpl = null;
+      if (id) {
+        for (var i = 0; i < bucket.templates.length; i++) if (bucket.templates[i].id === id) tpl = LabelCertConfig.clone(bucket.templates[i]);
+      }
+      if (!tpl) {
+        var defaultPreset = state.type === 'sample_label' ? 'label_style_1' : 'cert_style_3';
+        tpl = LabelCertConfig.createTemplate({ type: state.type, layoutPreset: defaultPreset, name: state.type === 'sample_label' ? '新样品标签模版' : '新合格证模版' });
+      }
+      state.draft = tpl;
+      document.getElementById('editTitle').textContent = id ? '编辑模版' : '新建模版';
+      fillEditor(tpl);
+      document.getElementById('editModal').classList.add('open');
+      refreshPreview();
+    }
+
+    function closeEditor() {
+      document.getElementById('editModal').classList.remove('open');
+      state.draft = null;
+    }
+
+    function fillEditor(tpl) {
+      var presetSel = document.getElementById('e_preset');
+      presetSel.innerHTML = Object.keys(LabelCertConfig.PRESETS).filter(function (k) {
+        return LabelCertConfig.PRESETS[k].type === state.type;
+      }).map(function (k) {
+        return '<option value="' + k + '">' + LabelCertConfig.PRESETS[k].name + '</option>';
+      }).join('');
+      presetSel.value = tpl.layoutPreset;
+      document.getElementById('e_name').value = tpl.name;
+      document.getElementById('e_w').value = tpl.paper.wMm;
+      document.getElementById('e_h').value = tpl.paper.hMm;
+      document.getElementById('e_font').value = (tpl.style && tpl.style.fontScale) || 'normal';
+      document.getElementById('e_enabled').checked = !!tpl.enabled;
+      document.getElementById('e_org').value = tpl.brand.orgName || '';
+      document.getElementById('e_title').value = tpl.brand.title || '';
+      document.getElementById('e_logo').value = tpl.brand.logoMode || 'system';
+      document.getElementById('e_wm').checked = !!tpl.brand.showWatermarkGe;
+      document.getElementById('e_warn').value = tpl.brand.footerWarning || '';
+      document.getElementById('e_qr').checked = !tpl.qr || tpl.qr.enabled !== false;
+      document.getElementById('e_qrSize').value = (tpl.qr && tpl.qr.sizePx) || 90;
+      document.getElementById('e_qrPlace').value = (tpl.qr && tpl.qr.placement) || 'right';
+      document.getElementById('e_mat').value = (tpl.meta && tpl.meta.material) || '';
+      document.getElementById('e_mount').value = (tpl.meta && tpl.meta.mount) || '';
+      document.getElementById('e_print').value = (tpl.meta && tpl.meta.printMethod) || '';
+      renderFieldUI(tpl);
+      renderBindUI(tpl);
+    }
+
+    function renderFieldUI(tpl) {
+      var pool = LabelCertConfig.poolForType(state.type);
+      var selectedMap = {};
+      (tpl.fields || []).forEach(function (f) { if (f.visible !== false) selectedMap[f.id] = f; });
+      document.getElementById('fieldPool').innerHTML = pool.map(function (f) {
+        var on = !!selectedMap[f.id];
+        return '<span class="chip ' + (on ? 'on' : '') + '" data-id="' + f.id + '" onclick="toggleField(\'' + f.id + '\')">' + f.label + '</span>';
+      }).join('');
+      var ordered = (tpl.fields || []).filter(function (f) { return f.visible !== false; });
+      document.getElementById('fieldList').innerHTML = ordered.map(function (f, idx) {
+        return '<div class="field-item" draggable="true" data-idx="' + idx + '" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)">' +
+          '<i class="fa fa-bars text-slate-300"></i>' +
+          '<span class="w-28 text-xs text-slate-400">' + f.id + '</span>' +
+          '<input class="flex-1 rounded border border-slate-200 px-2 py-1 text-sm" value="' + f.label.replace(/"/g, '&quot;') + '" onchange="renameField(' + idx + ', this.value)" />' +
+          '<button class="text-slate-400 hover:text-red-500" onclick="toggleField(\'' + f.id + '\')"><i class="fa fa-times"></i></button></div>';
+      }).join('') || '<p class="text-sm text-slate-400">请从上方字段池勾选</p>';
+    }
+
+    function toggleField(id) {
+      var tpl = collectDraft(false);
+      var pool = LabelCertConfig.poolForType(state.type);
+      var label = id;
+      pool.forEach(function (f) { if (f.id === id) label = f.label; });
+      var idx = -1;
+      for (var i = 0; i < tpl.fields.length; i++) if (tpl.fields[i].id === id) { idx = i; break; }
+      if (idx >= 0) tpl.fields.splice(idx, 1);
+      else tpl.fields.push({ id: id, label: label, visible: true });
+      state.draft = tpl;
+      renderFieldUI(tpl);
+      refreshPreview();
+    }
+
+    function renameField(idx, val) {
+      state.draft = collectDraft(false);
+      if (state.draft.fields[idx]) state.draft.fields[idx].label = val;
+      refreshPreview();
+    }
+
+    function onDragStart(e) { dragFrom = parseInt(e.currentTarget.getAttribute('data-idx'), 10); }
+    function onDragOver(e) { e.preventDefault(); }
+    function onDrop(e) {
+      e.preventDefault();
+      var to = parseInt(e.currentTarget.getAttribute('data-idx'), 10);
+      var tpl = collectDraft(false);
+      if (dragFrom < 0 || to < 0 || dragFrom === to) return;
+      var item = tpl.fields.splice(dragFrom, 1)[0];
+      tpl.fields.splice(to, 0, item);
+      state.draft = tpl;
+      renderFieldUI(tpl);
+      refreshPreview();
+    }
+
+    function renderBindUI(tpl) {
+      var leaves = LabelCertConfig.SAMPLE_LEAVES[state.cat] || [];
+      var set = {};
+      (tpl.bindSampleIds || []).forEach(function (id) { set[id] = true; });
+      document.getElementById('bindSamples').innerHTML = leaves.length ? leaves.map(function (s) {
+        return '<span class="chip ' + (set[s.id] ? 'on' : '') + '" onclick="toggleBind(\'' + s.id + '\')">' + s.name + '</span>';
+      }).join('') : '<span class="text-sm text-slate-400">该大类暂无样品叶节点</span>';
+      var conflicts = LabelCertConfig.findBindConflicts(state.cat, state.type, tpl.id, tpl.bindSampleIds || []);
+      document.getElementById('bindHint').textContent = conflicts.length
+        ? ('冲突：' + conflicts.map(function (c) { return sampleName(c.sampleId) + ' 已绑定「' + c.templateName + '」'; }).join('；'))
+        : '';
+    }
+
+    function toggleBind(id) {
+      var tpl = collectDraft(false);
+      var arr = tpl.bindSampleIds || [];
+      var i = arr.indexOf(id);
+      if (i >= 0) arr.splice(i, 1); else arr.push(id);
+      tpl.bindSampleIds = arr;
+      state.draft = tpl;
+      renderBindUI(tpl);
+    }
+
+    function onPresetChange() {
+      var presetId = document.getElementById('e_preset').value;
+      var preset = LabelCertConfig.PRESETS[presetId];
+      document.getElementById('e_w').value = preset.paper.wMm;
+      document.getElementById('e_h').value = preset.paper.hMm;
+      document.getElementById('e_title').value = preset.title;
+      document.getElementById('e_wm').checked = !!preset.showWatermarkGe;
+      document.getElementById('e_warn').value = preset.footerWarning || '';
+      document.getElementById('e_qr').checked = preset.qr.enabled !== false;
+      document.getElementById('e_qrSize').value = preset.qr.sizePx;
+      document.getElementById('e_qrPlace').value = preset.qr.placement;
+      var tpl = collectDraft(false);
+      tpl.layoutPreset = presetId;
+      tpl.fields = LabelCertConfig.buildFieldsFromPreset(presetId);
+      tpl.qr = LabelCertConfig.clone(preset.qr);
+      state.draft = tpl;
+      renderFieldUI(tpl);
+      refreshPreview();
+    }
+
+    function collectDraft(fromDom) {
+      var base = state.draft || LabelCertConfig.createTemplate({ type: state.type });
+      if (!fromDom) return base;
+      base.name = document.getElementById('e_name').value.trim() || base.name;
+      base.layoutPreset = document.getElementById('e_preset').value;
+      base.paper = { wMm: Number(document.getElementById('e_w').value) || 90, hMm: Number(document.getElementById('e_h').value) || 50 };
+      base.style = { fontScale: document.getElementById('e_font').value, marginMm: 2 };
+      base.enabled = document.getElementById('e_enabled').checked;
+      base.brand = {
+        orgName: document.getElementById('e_org').value.trim() || LabelCertConfig.DEFAULT_ORG,
+        title: document.getElementById('e_title').value,
+        logoMode: document.getElementById('e_logo').value,
+        logoUrl: null,
+        showWatermarkGe: document.getElementById('e_wm').checked,
+        footerWarning: document.getElementById('e_warn').value || null
+      };
+      var preset = LabelCertConfig.PRESETS[base.layoutPreset];
+      base.qr = {
+        enabled: document.getElementById('e_qr').checked,
+        sizePx: Number(document.getElementById('e_qrSize').value) || 90,
+        payloadType: (preset && preset.qr.payloadType) || (state.type === 'sample_label' ? 'sample_flow' : 'cert_shortlink'),
+        placement: document.getElementById('e_qrPlace').value
+      };
+      if (base.layoutPreset === 'cert_style_2') {
+        base.qr.enabled = true;
+        base.qr.placement = 'center';
+      }
+      base.meta = {
+        material: document.getElementById('e_mat').value,
+        mount: document.getElementById('e_mount').value,
+        printMethod: document.getElementById('e_print').value
+      };
+      base.updatedAt = LabelCertConfig.formatNow();
+      return base;
+    }
+
+    function demoData() {
+      return {
+        sampleNo: 'SC2026/00790101',
+        name: '绝缘操作杆',
+        spec: '',
+        model: '10kV',
+        inspectDate: '2026-07-09',
+        reinspectDate: '2027-07-08',
+        inspectors: ['张三', '李四'],
+        receiveDate: '2026-07-09',
+        clientName: '杭州数蚕智能科技有限公司',
+        detectStatus: '报告发放'
+      };
+    }
+
+    function refreshPreview() {
+      var tpl = collectDraft(true);
+      state.draft = tpl;
+      var box = document.getElementById('previewBox');
+      box.innerHTML = LabelCertRender.renderSheet(tpl, demoData(), { suffix: '-pv' });
+      LabelCertRender.mountQrs(box);
+    }
+
+    function saveEditor() {
+      var tpl = collectDraft(true);
+      if (!tpl.name) { alert('请填写模版名称'); return; }
+      var conflicts = LabelCertConfig.findBindConflicts(state.cat, state.type, tpl.id, tpl.bindSampleIds || []);
+      if (conflicts.length) {
+        alert('样品绑定冲突：\n' + conflicts.map(function (c) { return sampleName(c.sampleId) + ' → ' + c.templateName; }).join('\n'));
+        return;
+      }
+      var bucket = LabelCertConfig.getBucket(cfg, state.cat, state.type);
+      var idx = -1;
+      for (var i = 0; i < bucket.templates.length; i++) if (bucket.templates[i].id === tpl.id) idx = i;
+      if (idx >= 0) bucket.templates[idx] = tpl;
+      else bucket.templates.push(tpl);
+      if (!bucket.defaultTemplateId) bucket.defaultTemplateId = tpl.id;
+      LabelCertConfig.save(cfg);
+      closeEditor();
+      renderList();
+    }
+
+    function previewOne(id) {
+      openEditor(id);
+    }
+
+    function resetConfig() {
+      if (!confirm('恢复预置模版？将覆盖当前配置。')) return;
+      cfg = LabelCertConfig.resetDefaults();
+      renderList();
+    }
+
+    // live preview hooks
+    ['e_name','e_w','e_h','e_font','e_org','e_title','e_logo','e_wm','e_warn','e_qr','e_qrSize','e_qrPlace'].forEach(function (id) {
+      document.getElementById(id).addEventListener('change', refreshPreview);
+      document.getElementById(id).addEventListener('input', function () {
+        if (id === 'e_org' || id === 'e_title' || id === 'e_warn') refreshPreview();
+      });
+    });
+
+    initCats();
+    renderList();
+  </script>
+</body>
+</html>
