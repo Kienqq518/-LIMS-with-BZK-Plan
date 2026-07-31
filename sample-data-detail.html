@@ -375,7 +375,7 @@
                   <input id="t_sampleQty" type="number" min="1" step="1" value="1" />
                   <button type="button" aria-label="增加" onclick="stepSampleQty(1)">+</button>
                 </div>
-                <div class="tip mt-1" style="margin-top:6px">是否制样为「是」时必填；步进器调整试样数量（≥1）。</div>
+                <div class="tip mt-1" id="t_sampleQtyTip" style="margin-top:6px">是否制样为「是」时必填；用步进器调整试样数量（≥1）。</div>
                 <div id="t_sampleQtyOv"></div>
               </div></div>
               <div class="field-row"><label>检测设备</label><div class="ctrl"><input id="t_equip" type="text" placeholder="如 [YFG-150A] 绝缘安全工器具试验装置" /><div id="t_equipOv"></div></div></div>
@@ -1488,7 +1488,8 @@
     }
 
     function toggleCfgSampleQty() {
-      document.getElementById('c_rowSampleQty').style.display = document.getElementById('c_needPrepare').value === '是' ? 'flex' : 'none';
+      var cRow = document.getElementById('c_rowSampleQty');
+      if (cRow) cRow.style.display = 'flex';
     }
 
     function renderCfgOverrideBadges(base, model) {
@@ -1798,8 +1799,15 @@
     }
 
     function toggleSampleQty() {
-      var show = document.getElementById('t_needPrepare').value === '是';
-      document.getElementById('rowSampleQty').style.display = show ? 'flex' : 'none';
+      // 试样数量始终展示在「制样与其他」；是否制样=是时为必填
+      var row = document.getElementById('rowSampleQty');
+      if (row) row.style.display = 'flex';
+      var tip = document.getElementById('t_sampleQtyTip');
+      if (tip) {
+        tip.textContent = document.getElementById('t_needPrepare').value === '是'
+          ? '是否制样为「是」时必填；用步进器调整试样数量（≥1）。'
+          : '是否制样为「否」时可不填；需要制样时请先改为「是」。';
+      }
     }
 
     function stepNumberInput(inputId, delta, minVal) {

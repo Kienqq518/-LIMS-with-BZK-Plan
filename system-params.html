@@ -200,6 +200,12 @@
     .num-card:hover { border-color: #bfdbfe; box-shadow: 0 1px 4px rgba(37,99,235,.06); }
     .num-card .num-info { min-width: 0; }
     .num-card .num-title { font-size: 14px; font-weight: 500; color: #334155; margin-bottom: 8px; }
+    .num-card .num-edit-btn {
+      flex-shrink: 0; width: 200px; box-sizing: border-box; text-align: center;
+      white-space: nowrap; border-radius: 4px; background: #2563eb; color: #fff;
+      font-size: 14px; padding: 6px 12px; border: 0; cursor: pointer;
+    }
+    .num-card .num-edit-btn:hover { background: #1d4ed8; }
     .num-card .num-rule,
     #ruleChipPreview {
       display: flex;
@@ -2152,7 +2158,7 @@
           { type: 'ref_entrust' },
           { type: 'seq', digits: 2 }
         ]},
-        { id: 'test-record', name: '试验记录单编号规则', tokens: [
+        { id: 'test-record', name: '试样编号规则', tokens: [
           { type: 'category_code' },
           { type: 'literal_sep', value: '-' },
           { type: 'ref_sample' },
@@ -2229,7 +2235,7 @@
           '<div class="num-info"><div class="num-title">当前' + r.name + '</div>' +
           '<div class="num-rule">' + ruleChipsHtml(r.tokens) + '</div>' +
           '<div class="mt-2 text-xs text-slate-400">生成示例：<span class="font-mono text-slate-500">' + rulePreview(r.tokens) + '</span></div></div>' +
-          '<button type="button" onclick="openNumberingModal(\'' + r.id + '\')" class="flex-shrink-0 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"' + btnAnno + '>修改' + r.name.replace('规则', '') + '规则</button>' +
+          '<button type="button" onclick="openNumberingModal(\'' + r.id + '\')" class="num-edit-btn"' + btnAnno + '>修改' + r.name.replace('规则', '') + '规则</button>' +
           '</div>';
       }).join('');
     }
@@ -2619,7 +2625,7 @@
           position: 'top-right',
           title: '编号规则',
           wide: true,
-          content: '业务流程配置末位 Tab。按<strong>样品大类</strong>分套维护委托 / 委托单 / 样品 / 试验记录单 / 原始记录单 / 报告共 6 类编号规则；各大类相互独立。',
+          content: '业务流程配置末位 Tab。按<strong>样品大类</strong>分套维护委托 / 委托单 / 样品 / 试样 / 原始记录单 / 报告共 6 类编号规则；各大类相互独立。',
           tag: '业务流程配置'
         },
         {
