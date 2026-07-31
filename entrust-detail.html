@@ -38,6 +38,18 @@
     .notice-meta .lbl { width: 14%; min-width: 5.5em; }
     .notice-meta .val { width: 26%; }
     .notice-meta .val-wide { width: 46%; }
+    /* 检测信息：样品块 + 试验信息嵌套表 */
+    .detect-card { border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; }
+    .detect-card + .detect-card { margin-top: 12px; }
+    .detect-card .info-table { border: none; }
+    .detect-card .info-table td { border-color: #e5e7eb; }
+    .detect-idx { width: 48px; text-align: center; background: #f8fafc; color: #64748b; font-size: 13px; border-right: 1px solid #e5e7eb; vertical-align: top; padding-top: 12px; }
+    .detect-subhead { background: #f1f5f9; color: #64748b; font-size: 13px; font-weight: 500; padding: 8px 12px; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+    .detect-card .data-table { border: none; }
+    .detect-card .data-table th, .detect-card .data-table td { border-color: #e5e7eb; }
+    .status-chip { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 12px; border: 1px solid #fdba74; color: #c2410c; background: #fff7ed; }
+    .empty-box { padding: 28px 0; text-align: center; color: #94a3b8; }
+    .empty-box i { font-size: 28px; color: #e2e8f0; display: block; margin-bottom: 6px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -73,7 +85,8 @@
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>合同信息</h2>
       <table class="info-table">
         <tr><td class="lbl">合同编号</td><td class="val">/</td><td class="lbl">合同名称</td><td class="val">/</td><td class="lbl">签订时间</td><td class="val">/</td></tr>
-        <tr><td class="lbl">服务年限</td><td class="val">/</td><td class="lbl">中标价</td><td class="val">/</td><td class="lbl">送样方式</td><td class="val">送样</td></tr>
+        <tr><td class="lbl">服务年限</td><td class="val">/</td><td class="lbl">中标价</td><td class="val">/</td><td class="lbl">合同样品</td><td class="val">/</td></tr>
+        <tr><td class="lbl">合同备注</td><td class="val" colspan="5">/</td></tr>
       </table>
     </section>
 
@@ -82,12 +95,11 @@
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
       <table class="info-table">
         <tr><td class="lbl">委托编号</td><td class="val">SC2026/0073</td><td class="lbl">任务类型</td><td class="val">电气（输配电类）</td><td class="lbl">优先等级</td><td class="val">常规</td></tr>
-        <tr><td class="lbl">检测标准</td><td class="val">GB/T 12706</td><td class="lbl">客户单位</td><td class="val">杭州数蚕智能科技有限公司</td><td class="lbl">委托单位</td><td class="val">杭州数蚕智能科技有限公司</td></tr>
-        <tr><td class="lbl">样品名称</td><td class="val">绝缘操作杆</td><td class="lbl">样品类型</td><td class="val">安全工器具</td><td class="lbl">样品数量</td><td class="val">1</td></tr>
-        <tr><td class="lbl">样品状态</td><td class="val">完好</td><td class="lbl">业务员</td><td class="val">业务员A</td><td class="lbl">检测类别</td><td class="val">例行试验</td></tr>
-        <tr><td class="lbl">受理日期</td><td class="val">2026-07-08</td><td class="lbl">报告日期</td><td class="val">2026-07-10</td><td class="lbl">样品编号</td><td class="val">SC2026/0212</td></tr>
-        <tr><td class="lbl">留样处理</td><td class="val">是</td><td class="lbl">样品处置日期</td><td class="val">2026-08-10</td><td class="lbl">客户要求完成日期</td><td class="val">2026-07-10</td></tr>
-        <tr><td class="lbl">备注</td><td class="val" colspan="5">/</td></tr>
+        <tr><td class="lbl">检测类型</td><td class="val">常规</td><td class="lbl">检测类别</td><td class="val">委托检测</td><td class="lbl">委托单位</td><td class="val">杭州数蚕智能科技有限公司</td></tr>
+        <tr><td class="lbl">地址</td><td class="val">杭州市西湖区文三路西溪银座E座</td><td class="lbl">邮政编码</td><td class="val">310000</td><td class="lbl">联系人</td><td class="val">安可</td></tr>
+        <tr><td class="lbl">联系方式</td><td class="val">17835503262</td><td class="lbl">签约地点</td><td class="val">湖北</td><td class="lbl">检测中心</td><td class="val">应敏科技有限公司</td></tr>
+        <tr><td class="lbl">受理日期</td><td class="val">2026-07-08</td><td class="lbl">客户要求完成日期</td><td class="val"></td><td class="lbl">要求检测完成天数</td><td class="val">2</td></tr>
+        <tr><td class="lbl">要求检测完成时间</td><td class="val">2026-08-01</td><td class="lbl">编制人</td><td class="val">admin</td><td class="lbl"></td><td class="val"></td></tr>
       </table>
     </section>
 
@@ -95,8 +107,8 @@
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>付款信息</h2>
       <table class="info-table">
-        <tr><td class="lbl">税前费用(元)</td><td class="val">0</td><td class="lbl">实际费用(元)</td><td class="val">0</td><td class="lbl">开票信息</td><td class="val">未开票</td></tr>
-        <tr><td class="lbl">付款方式</td><td class="val">对公转账</td><td class="lbl">开票单位</td><td class="val">杭州数蚕智能科技有限公司</td><td class="lbl">费用备注</td><td class="val">/</td></tr>
+        <tr><td class="lbl">样品检测总价(元)</td><td class="val">2</td><td class="lbl">实际费用(元)</td><td class="val">2</td><td class="lbl">折扣率(%)</td><td class="val">0</td></tr>
+        <tr><td class="lbl">付款方式</td><td class="val"></td><td class="lbl">付款单位</td><td class="val">杭州数蚕智能科技有限公司</td><td class="lbl">业务备注</td><td class="val"></td></tr>
       </table>
     </section>
 
@@ -104,50 +116,116 @@
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>报告信息</h2>
       <table class="info-table">
-        <tr><td class="lbl">报告形式</td><td class="val">纸质</td><td class="lbl">报告份数</td><td class="val">1</td><td class="lbl">报告方式</td><td class="val">自取</td></tr>
-        <tr><td class="lbl">纸质报告</td><td class="val">1</td><td class="lbl">预留报告</td><td class="val">1</td><td class="lbl">送达方式</td><td class="val">自取</td></tr>
+        <tr><td class="lbl">报告传送方式</td><td class="val">邮寄</td><td class="lbl">报告资质</td><td class="val">CNAS CMA</td><td class="lbl">报告描述</td><td class="val">全部生成一份</td></tr>
+        <tr><td class="lbl">结果方式</td><td class="val"></td><td class="lbl">判定</td><td class="val"></td><td class="lbl"></td><td class="val"></td></tr>
       </table>
     </section>
 
-    <!-- ========== 收件信息 ========== -->
+    <!-- ========== 收样信息 ========== -->
     <section class="rounded bg-white p-4 shadow-sm">
-      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>收件信息</h2>
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>收样信息</h2>
       <table class="info-table">
-        <tr><td class="lbl">收件人</td><td class="val">admin</td><td class="lbl">联系电话</td><td class="val">13800000000</td><td class="lbl">邮箱</td><td class="val">admin@example.com</td></tr>
-        <tr><td class="lbl">联系方式</td><td class="val">13800000000</td><td class="lbl">送样地址</td><td class="val">浙江省杭州市</td><td class="lbl">收件地址</td><td class="val">浙江省杭州市</td></tr>
+        <tr><td class="lbl">收样人</td><td class="val">admin</td><td class="lbl">收样状态</td><td class="val">完好</td><td class="lbl">送样时间</td><td class="val">2026-07-30</td></tr>
+        <tr><td class="lbl">送样人</td><td class="val"></td><td class="lbl">送样人电话</td><td class="val"></td><td class="lbl">送样方式</td><td class="val">送样</td></tr>
+        <tr><td class="lbl">还样方式</td><td class="val"></td><td class="lbl">退样地址</td><td class="val"></td><td class="lbl"></td><td class="val"></td></tr>
       </table>
     </section>
 
     <!-- ========== 检测信息 ========== -->
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测信息</h2>
-      <div class="overflow-x-auto">
-        <table class="data-table min-w-[900px]">
-          <thead>
-            <tr><th>序号</th><th>名称</th><th>型号规格</th><th>生产厂家</th><th>检测标准</th><th>样品状态</th><th>检测参数</th><th>检测备注</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>1</td><td>绝缘操作杆</td><td></td><td>/</td><td>DL/T 976-2017</td><td>完好</td><td>交流耐压试验、外观及尺寸、抗弯动负荷试验、抗弯静负荷试验</td><td>admin</td></tr>
-          </tbody>
+      <div class="detect-card overflow-x-auto">
+        <table class="w-full border-collapse">
+          <tr>
+            <td class="detect-idx" rowspan="2">1</td>
+            <td class="p-0">
+              <table class="info-table">
+                <tr>
+                  <td class="lbl">样品名称</td><td class="val">绝缘操作杆</td>
+                  <td class="lbl">型号关联(规格型号)</td><td class="val"></td>
+                  <td class="lbl">样品数量</td><td class="val">1</td>
+                  <td class="lbl">试样制备数量</td><td class="val"></td>
+                </tr>
+                <tr>
+                  <td class="lbl">生产厂家</td><td class="val"></td>
+                  <td class="lbl">生产厂家地址</td><td class="val"></td>
+                  <td class="lbl">制造商</td><td class="val"></td>
+                  <td class="lbl">制造商地址</td><td class="val"></td>
+                </tr>
+                <tr>
+                  <td class="lbl">需要制样</td><td class="val">否</td>
+                  <td class="lbl">备注</td><td class="val"></td>
+                  <td class="lbl">样品长度</td><td class="val"></td>
+                  <td class="lbl"></td><td class="val"></td>
+                </tr>
+              </table>
+              <div class="detect-subhead">试验信息</div>
+              <div class="overflow-x-auto">
+                <table class="data-table min-w-[960px]">
+                  <thead>
+                    <tr>
+                      <th>序号</th>
+                      <th>名称</th>
+                      <th>检测依据</th>
+                      <th>判定依据</th>
+                      <th>标准要求</th>
+                      <th>负责人</th>
+                      <th>状态</th>
+                      <th>备注</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>1</td>
+                      <td>交流耐压试验</td>
+                      <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
+                      <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
+                      <td class="text-xs text-slate-600">按标准要求执行</td>
+                      <td>暂无</td>
+                      <td><span class="status-chip">未领样</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td>2</td>
+                      <td>外观及尺寸</td>
+                      <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
+                      <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
+                      <td class="text-xs text-slate-600">按标准要求执行</td>
+                      <td>暂无</td>
+                      <td><span class="status-chip">未领样</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </td>
+          </tr>
         </table>
       </div>
     </section>
 
-    <!-- ========== 进度信息 ========== -->
+    <!-- ========== 还样记录 ========== -->
     <section class="rounded bg-white p-4 shadow-sm">
-      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>进度信息</h2>
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>还样记录</h2>
       <div class="overflow-x-auto">
-        <table class="data-table min-w-[720px]">
+        <table class="data-table min-w-[960px]">
           <thead>
-            <tr><th>序号</th><th>样品名称</th><th>图片</th><th>送样人</th><th>日期</th><th>当前检测项</th><th>操作</th></tr>
+            <tr>
+              <th>序号</th>
+              <th>样品名称(数量)</th>
+              <th>图片</th>
+              <th>还样人</th>
+              <th>日期</th>
+              <th>还样退库确认表</th>
+              <th>退样申请表</th>
+              <th>操作</th>
+            </tr>
           </thead>
           <tbody>
             <tr>
-              <td>1</td><td>绝缘操作杆</td>
-              <td><i class="fa fa-picture-o text-2xl text-slate-300"></i></td>
-              <td>admin</td><td>2026-07-08</td>
-              <td><a href="#" class="text-blue-600 hover:underline">SC2026/0212 报告处理阶段</a></td>
-              <td><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">查看</button></td>
+              <td colspan="8">
+                <div class="empty-box"><i class="fa fa-inbox"></i>暂无数据</div>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -255,12 +333,27 @@
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>报告发放记录表</h2>
       <div class="overflow-x-auto">
-        <table class="data-table min-w-[840px]">
-          <thead><tr><th>序号</th><th>关联报告</th><th>快递名称</th><th>签收人</th><th>快递地址</th><th>地址</th><th>日期</th></tr></thead>
+        <table class="data-table min-w-[640px]">
+          <thead><tr><th>序号</th><th>关联报告</th><th>快递名称</th><th>签收人</th><th>快递地址</th><th>地址</th><th>日期</th><th>操作</th></tr></thead>
           <tbody>
-            <tr><td colspan="7" class="text-center text-slate-400">
-              <div class="py-6"><i class="fa fa-inbox text-3xl text-slate-200"></i><div class="mt-1">暂无数据</div></div>
-            </td></tr>
+            <tr>
+              <td colspan="8"><div class="empty-box"><i class="fa fa-inbox"></i>暂无数据</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========== 原始记录表（空态） ========== -->
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>原始记录表</h2>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[560px]">
+          <thead><tr><th>序号</th><th>原始记录名称</th><th>生成时间</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td colspan="4"><div class="empty-box"><i class="fa fa-inbox"></i>暂无数据</div></td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -289,11 +382,11 @@
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>开票记录</h2>
       <div class="overflow-x-auto">
         <table class="data-table min-w-[720px]">
-          <thead><tr><th>序号</th><th>发票编号</th><th>开票日期</th><th>发票金额</th><th>备注</th><th>操作</th></tr></thead>
+          <thead><tr><th>序号</th><th>发票编号</th><th>开票金额</th><th>收费日期</th><th>备注</th><th>操作</th></tr></thead>
           <tbody>
-            <tr><td colspan="6" class="text-center text-slate-400">
-              <div class="py-6"><i class="fa fa-inbox text-3xl text-slate-200"></i><div class="mt-1">暂无数据</div></div>
-            </td></tr>
+            <tr>
+              <td colspan="6"><div class="empty-box"><i class="fa fa-inbox"></i>暂无数据</div></td>
+            </tr>
           </tbody>
         </table>
       </div>
