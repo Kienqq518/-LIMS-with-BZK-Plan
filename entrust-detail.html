@@ -253,6 +253,20 @@
       </div>
     </section>
 
+    <!-- ========== 批量导出（置于还样记录上方） ========== -->
+    <div class="export-bar" data-annotate="batch-export-bar">
+      <div class="min-w-0">
+        <div class="export-title"><i class="fa fa-download mr-1"></i>批量导出本委托文件</div>
+        <div class="export-desc">
+          范围：委托 <strong class="text-slate-700">SC2026/0073</strong> 下「委托单文件 → 原始记录表」各区块，以及<strong class="text-slate-700">还样记录</strong>中的「还样退库确认表 / 退样申请表」；
+          导出<strong class="text-slate-700">已勾选类型</strong>的<strong class="text-slate-700">当前最新版</strong>（打包 ZIP）。历史版本不在批量导出内。
+        </div>
+      </div>
+      <button type="button" onclick="openBatchExportModal()" class="shrink-0 rounded bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+        <i class="fa fa-files-o mr-1"></i>选择类型并导出
+      </button>
+    </div>
+
     <!-- ========== 还样记录（含可批量导出文件） ========== -->
     <section class="rounded bg-white p-4 shadow-sm" data-annotate="return-record">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>还样记录</h2>
@@ -286,21 +300,8 @@
       </div>
     </section>
 
-    <!-- ========== 文件区：批量导出 ========== -->
+    <!-- ========== 文件区 ========== -->
     <div id="docFilesZone" class="space-y-4" data-annotate="doc-files-zone">
-    <div class="export-bar" data-annotate="batch-export-bar">
-      <div class="min-w-0">
-        <div class="export-title"><i class="fa fa-download mr-1"></i>批量导出本委托文件</div>
-        <div class="export-desc">
-          范围：委托 <strong class="text-slate-700">SC2026/0073</strong> 下「委托单文件 → 原始记录表」各区块，以及<strong class="text-slate-700">还样记录</strong>中的「还样退库确认表 / 退样申请表」；
-          导出<strong class="text-slate-700">已勾选类型</strong>的<strong class="text-slate-700">当前最新版</strong>（打包 ZIP）。历史版本不在批量导出内。
-        </div>
-      </div>
-      <button type="button" onclick="openBatchExportModal()" class="shrink-0 rounded bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
-        <i class="fa fa-files-o mr-1"></i>选择类型并导出
-      </button>
-    </div>
-
     <!-- ========== 委托单文件 ========== -->
     <section class="rounded bg-white p-4 shadow-sm" data-annotate="doc-ops-col">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托单文件</h2>
@@ -1005,8 +1006,8 @@
           { id: 'detect-info', selector: '[data-annotate="detect-info"]', position: 'top-left', title: '检测信息', wide: true, content: '详情页样品信息精简展示（嵌套「试验信息」表）。试验行含「制样信息」列。不含型号关联、试样制备数量及是否合并/单价等编辑态字段。', tag: '检测' },
           { id: 'detect-sample-fields', selector: '[data-annotate="detect-sample-fields"]', position: 'bottom-right', title: '样品字段', wide: true, content: '详情展示：样品名称/别名、规格型号、数量、单位、是否制样、厂家与地址、制造商与地址、备注信息。已去除型号关联、试样制备数量（制样数量改由试验行「制样信息」展示）。', tag: '检测' },
           { id: 'detect-prep-info', selector: '[data-annotate="detect-prep-info"]', position: 'top-left', title: '制样信息', wide: true, content: '来自样品数据试验配置：不制样显示「无需制样」；制样则显示「试样数量-N」（N 为编辑试验抽屉中「试样数量」步进器取值）。', tag: '检测' },
-          { id: 'batch-export-bar', selector: '[data-annotate="batch-export-bar"]', position: 'bottom-left', title: '批量导出入口', wide: true, content: '置顶高亮条。范围含「委托单文件」→「原始记录表」，以及还样记录中的<strong>还样退库确认表 / 退样申请表</strong>。勾选类型打包 ZIP；仅最新版。', tag: '导出' },
-          { id: 'doc-files-zone', selector: '[data-annotate="doc-files-zone"]', position: 'top-right', title: '可导出文件区', content: '本区域为委托单→原始记录表主文件区；另含上方「还样记录」中的退库确认表/退样申请表。开票记录不在范围内；已去除邮寄记录表。', tag: '导出' },
+          { id: 'batch-export-bar', selector: '[data-annotate="batch-export-bar"]', position: 'bottom-left', title: '批量导出入口', wide: true, content: '位于「还样记录」上方的高亮条。范围含下方还样记录中的<strong>还样退库确认表 / 退样申请表</strong>，以及「委托单文件」→「原始记录表」。勾选类型打包 ZIP；仅最新版。', tag: '导出' },
+          { id: 'doc-files-zone', selector: '[data-annotate="doc-files-zone"]', position: 'top-right', title: '可导出文件区', content: '本区域为委托单→原始记录表主文件区；还样记录在批量导出条下方、本区上方，其退库确认表/退样申请表亦纳入导出。开票记录不在范围内。', tag: '导出' },
           { id: 'batch-export-scope', selector: '[data-annotate="batch-export-scope"]', position: 'top-left', title: '导出范围说明', wide: true, content: '对象=当前委托；版本=各类型最新版；格式=ZIP；空态跳过。可选类型见下方勾选（不含报告发放记录表）。', tag: '导出' },
           { id: 'batch-export-types', selector: '[data-annotate="batch-export-types"]', position: 'bottom-right', title: '自选文件类型', wide: true, content: '八类可选：委托单、任务单、流转单、收费通知单、报告、原始记录表，以及还样记录中的<strong>还样退库确认表、退样申请表</strong>。不含报告发放记录表。支持全选。', tag: '导出' },
           { id: 'return-record', selector: '[data-annotate="return-record"]', position: 'top-right', title: '还样记录文件', content: '「还样退库确认表」「退样申请表」纳入批量导出可选类型；行内「导出」为单条快捷导出（原型）。', tag: '导出' },
