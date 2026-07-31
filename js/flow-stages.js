@@ -23,10 +23,18 @@
     return POST_SIGN_STAGES.indexOf(status) !== -1;
   }
 
-  /** 是否展示合格证入口 */
+  /** 样品是否判定合格（未提供 judgment 时兼容旧数据：默认视为合格） */
+  function isJudgmentPassed(item) {
+    if (!item) return false;
+    if (item.judgment == null || item.judgment === '') return true;
+    return item.judgment === '合格' || item.judgment === 'pass' || item.judgment === true;
+  }
+
+  /** 是否展示/允许打印合格证：报告签发及后续 + 判定合格 + 短链未作废 */
   function canShowCert(item) {
     if (!item || !isPostReportSign(item.status)) return false;
     if (item.certRevoked) return false;
+    if (!isJudgmentPassed(item)) return false;
     return true;
   }
 
@@ -35,6 +43,7 @@
     POST_SIGN_STAGES: POST_SIGN_STAGES,
     PRE_SIGN_STAGES: PRE_SIGN_STAGES,
     isPostReportSign: isPostReportSign,
+    isJudgmentPassed: isJudgmentPassed,
     canShowCert: canShowCert
   };
 })(window);

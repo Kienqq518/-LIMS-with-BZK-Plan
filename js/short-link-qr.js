@@ -138,6 +138,17 @@
     container.setAttribute('data-sample-no', sampleNo);
   }
 
+  function renderUrlQR(container, url, opts) {
+    if (typeof container === 'string') container = document.querySelector(container);
+    if (!container) return;
+    opts = opts || {};
+    var size = opts.size || 120;
+    container.innerHTML =
+      '<a href="' + url + '" target="_blank" title="扫码打开" class="block">' +
+        '<img src="' + qrImageUrl(url, size) + '" alt="二维码" width="' + size + '" height="' + size + '" class="rounded border border-slate-200 bg-white" />' +
+      '</a>';
+  }
+
   global.ShortLinkQR = {
     BASE: BASE,
     registry: registry,
@@ -148,6 +159,7 @@
     getEntry: getEntry,
     getVerifyResult: getVerifyResult,
     qrImageUrl: qrImageUrl,
-    renderQRBlock: renderQRBlock
+    renderQRBlock: renderQRBlock,
+    renderUrlQR: renderUrlQR
   };
 })(window);

@@ -132,7 +132,10 @@
       { id: 11, name: '检测报告默认导出格式', key: 'report.export.format', value: 'pdf', type: 'N', remark: '支持 pdf / docx', time: '2023-03-12 09:12:20' },
       { id: 12, name: '附件上传大小限制(MB)', key: 'upload.max.size', value: '20', type: 'Y', remark: '单个附件上传上限，单位 MB', time: '2023-05-08 14:22:31' },
       { id: 13, name: '合格证短链有效期(天)', key: 'cert.shortlink.days', value: '365', type: 'N', remark: '合格证二维码短链默认有效天数', time: '2023-09-20 16:40:05' },
-      { id: 14, name: '系统名称', key: 'sys.name', value: '智慧实验室', type: 'Y', remark: '登录页与顶部展示的系统名称', time: '2024-01-15 08:30:00' }
+      { id: 14, name: '系统名称', key: 'sys.name', value: '智慧实验室', type: 'Y', remark: '登录页与顶部展示的系统名称', time: '2024-01-15 08:30:00' },
+      { id: 15, name: '合格证检验人员上限', key: 'cert.inspector.max', value: '2', type: 'Y', remark: '打印合格证时最多可选检验人员数', time: '2026-07-31 09:00:00' },
+      { id: 16, name: '合格证短链 Base URL', key: 'cert.shortlink.base', value: 'https://lab.sc/', type: 'N', remark: '合格证二维码短链前缀', time: '2026-07-31 09:00:00' },
+      { id: 17, name: '样品标签扫码落地 Base', key: 'label.qr.base', value: 'label-scan.html', type: 'N', remark: '样品标签二维码跳转页（相对或绝对）', time: '2026-07-31 09:00:00' }
     ];
 
     var editingId = null;
@@ -199,6 +202,12 @@
     }
     function closeEdit() { document.getElementById('editModal').classList.remove('open'); }
 
+    function syncParamOverrides() {
+      var map = {};
+      DATA.forEach(function (d) { map[d.key] = d.value; });
+      try { localStorage.setItem('lims.paramOverrides', JSON.stringify(map)); } catch (e) { /* ignore */ }
+    }
+
     function saveEdit() {
       var name = document.getElementById('m_name').value.trim();
       var key = document.getElementById('m_key').value.trim();
@@ -213,6 +222,7 @@
         var newId = Math.max.apply(null, DATA.map(function (d) { return d.id; })) + 1;
         DATA.push({ id: newId, name: name, key: key, value: value, type: type, remark: remark, time: '2026-07-14 10:00:00' });
       }
+      syncParamOverrides();
       closeEdit();
       render();
       alert('参数已保存（原型演示）');
@@ -244,6 +254,7 @@
       if (e.target === this) closeEdit();
     });
 
+    syncParamOverrides();
     render();
 
     PrototypeAnnotation.init({

@@ -35,6 +35,9 @@
       <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5">
         <a href="label-print.html" class="text-sm text-blue-600 hover:underline"><i class="fa fa-arrow-left"></i> 返回</a>
         <div class="flex items-center gap-3">
+          <label class="flex items-center gap-1 text-xs text-slate-500">单位名
+            <input id="orgOverride" type="text" class="w-40 rounded border border-slate-300 px-2 py-0.5 text-xs" onchange="renderPreview()" />
+          </label>
           <div class="flex items-center gap-2 text-sm text-slate-600">
             <span id="toggleLabel">开</span>
             <div id="previewToggle" class="toggle-switch on" onclick="togglePreview(this)"></div>
@@ -90,39 +93,37 @@
 
   <script src="js/short-link-qr.js"></script>
   <script src="js/inspector-select.js"></script>
+  <script src="js/label-cert-config.js"></script>
+  <script src="js/label-cert-render.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
+    LabelCertRender.ensureStyles();
     var params = new URLSearchParams(location.search);
     var entrustCode = params.get('code') || 'SC2026/0079';
-    var urlInspectors = (params.get('inspectors') || 'cs222,cs3').split(',').filter(Boolean).slice(0, 2);
+    var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
+    var urlInspectors = (params.get('inspectors') || 'cs222,cs3').split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
 
     var allSamples = [
-      { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), entrust: 'SC2026/0079' }
+      { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', spec: '', model: '10kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'rod', judgment: '合格', status: '报告发放' }
     ];
 
     var samples = allSamples.slice();
     var previewEnabled = true;
-    var MAX_INSPECTORS = 2;
     var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
+    document.getElementById('orgOverride').value = LabelCertConfig.DEFAULT_ORG;
 
-    function buildCertHtml(item) {
-      var inspectors = item.inspectors.join('、');
-      return '<div class="cert-sheet mx-auto" data-sample="' + item.sampleNo + '">' +
-        '<div class="cert-header">' +
-          '<i class="fa fa-building text-blue-500"></i>' +
-          '<div><div class="text-sm font-medium text-slate-800">杭州数蚕智能科技有限公司</div><div class="text-center text-base font-semibold tracking-widest text-slate-700">合 格 证</div></div>' +
-        '</div>' +
-        '<div class="cert-body">' +
-          '<dl class="cert-fields">' +
-            '<div><dt>试样编号：</dt><dd>' + item.sampleNo + '</dd></div>' +
-            '<div><dt>试样名称：</dt><dd>' + item.name + '</dd></div>' +
-            '<div><dt>型号规格：</dt><dd>' + (item.spec || item.model || '') + '</dd></div>' +
-            '<div><dt>检验日期：</dt><dd>' + item.inspectDate + '</dd></div>' +
-            '<div><dt>再检日期：</dt><dd>' + item.reinspectDate + '</dd></div>' +
-            '<div><dt>检验人员：</dt><dd>' + inspectors + '</dd></div>' +
-          '</dl>' +
-          '<div class="cert-qr-wrap flex-shrink-0" data-annotate="qr-area" id="qr-' + item.sampleNo.replace(/[/]/g, '') + '"></div>' +
-        '</div></div>';
+    function buildCertHtml(item, idx) {
+      var masterId = item.masterId || LabelCertConfig.masterIdFromName(item.name);
+      var tpl = LabelCertConfig.resolveTemplate(item.cat || 'aqgqj', 'certificate', masterId);
+      if (!tpl) {
+        return '<div class="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">未配置合格证模版：' + item.sampleNo + '</div>';
+      }
+      tpl = LabelCertConfig.clone(tpl);
+      var org = document.getElementById('orgOverride').value.trim();
+      if (org) tpl.brand.orgName = org;
+      var html = LabelCertRender.renderSheet(tpl, item, { suffix: '-' + (idx || 0) });
+      if (idx === 0) html = html.replace('class="lc-qr"', 'class="lc-qr" data-annotate="qr-area"');
+      return '<div class="mb-2 text-center text-[11px] text-slate-400">模版：' + LabelCertRender.esc(tpl.name) + ' · ' + (LabelCertConfig.PRESETS[tpl.layoutPreset] || {}).name + '</div>' + html;
     }
 
     function renderPreview() {
@@ -132,11 +133,8 @@
         container.innerHTML = '<p class="text-center text-sm text-slate-400 py-12">暂无待打印合格证</p>';
         return;
       }
-      container.innerHTML = selected.map(buildCertHtml).join('');
-      selected.forEach(function (item) {
-        var id = 'qr-' + item.sampleNo.replace(/[/]/g, '');
-        ShortLinkQR.renderQRBlock('#' + id, item.sampleNo, { size: 110, showHint: true });
-      });
+      container.innerHTML = selected.map(function (item, i) { return buildCertHtml(item, i); }).join('');
+      LabelCertRender.mountQrs(container);
     }
 
     function renderSampleTable() {

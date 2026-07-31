@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>样品标签信息 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+</head>
+<body class="bg-slate-100 text-slate-700 min-h-screen">
+  <div class="mx-auto max-w-md px-4 py-6">
+    <div class="mb-4 text-center">
+      <div class="text-xs text-slate-400">实验室内部流转</div>
+      <h1 class="mt-1 text-lg font-semibold text-slate-800">样品标签信息</h1>
+    </div>
+    <div id="card" class="rounded-xl bg-white p-5 shadow-sm">
+      <p class="text-sm text-slate-400">加载中…</p>
+    </div>
+    <p class="mt-4 text-center text-xs text-slate-400">展示字段与样品标签模版左侧配置一致</p>
+  </div>
+
+  <script src="js/label-cert-config.js"></script>
+  <script src="js/label-cert-render.js"></script>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var no = params.get('no') || 'SC2026/00790101';
+
+    var MOCK = {
+      'SC2026/00790101': { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', model: '10kV', receiveDate: '2026-07-09', clientName: '杭州数蚕智能科技有限公司', detectStatus: '报告发放', cat: 'aqgqj', masterId: 'rod' },
+      'SC2026/00730101': { sampleNo: 'SC2026/00730101', name: '安全带', model: '', receiveDate: '2026-06-10', clientName: '杭州数蚕智能科技有限公司', detectStatus: '任务完成', cat: 'aqgqj', masterId: 'belt976' },
+      'SC2026/00800101': { sampleNo: 'SC2026/00800101', name: '安全帽', model: '', receiveDate: '2026-07-09', clientName: '杭州数蚕智能科技有限公司', detectStatus: '样品收样', cat: 'aqgqj', masterId: 'helmet' }
+    };
+
+    var data = MOCK[no] || {
+      sampleNo: no,
+      name: '绝缘操作杆',
+      model: '10kV',
+      receiveDate: '2026-07-01',
+      clientName: '杭州数蚕智能科技有限公司',
+      detectStatus: '试验检测',
+      cat: 'aqgqj',
+      masterId: LabelCertConfig.masterIdFromName('绝缘操作杆') || 'rod'
+    };
+
+    var tpl = LabelCertConfig.resolveTemplate(data.cat || 'aqgqj', 'sample_label', data.masterId);
+    var card = document.getElementById('card');
+    if (!tpl) {
+      card.innerHTML = '<p class="text-sm text-amber-600">未配置样品标签模版</p>';
+    } else {
+      var fields = LabelCertRender.visibleFields(tpl);
+      card.innerHTML =
+        '<div class="mb-3 text-xs text-slate-400">模版：' + LabelCertRender.esc(tpl.name) + '</div>' +
+        fields.map(function (f) {
+          return '<div class="flex border-b border-slate-100 py-2.5 text-sm">' +
+            '<div class="w-24 flex-shrink-0 text-slate-500">' + LabelCertRender.esc(f.label) + '</div>' +
+            '<div class="flex-1 font-medium text-slate-800">' + LabelCertRender.esc(LabelCertRender.fieldValue(f.id, data)) + '</div></div>';
+        }).join('') +
+        '<div class="mt-4 rounded bg-slate-50 px-3 py-2 text-xs text-slate-500">样品编号：' + LabelCertRender.esc(data.sampleNo) + '</div>';
+    }
+  </script>
+</body>
+</html>

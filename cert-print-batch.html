@@ -33,8 +33,11 @@
     <!-- 左侧预览 -->
     <div class="cert-preview-area flex w-[480px] flex-shrink-0 flex-col border-r border-slate-200 bg-slate-50">
       <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5">
-        <a href="label-print.html" class="text-sm text-blue-600 hover:underline"><i class="fa fa-arrow-left"></i> 返回</a>
+        <a id="backLink" href="label-print.html" class="text-sm text-blue-600 hover:underline"><i class="fa fa-arrow-left"></i> 返回</a>
         <div class="flex items-center gap-3">
+          <label class="flex items-center gap-1 text-xs text-slate-500">单位名
+            <input id="orgOverride" type="text" class="w-36 rounded border border-slate-300 px-2 py-0.5 text-xs" onchange="renderPreview()" />
+          </label>
           <div class="flex items-center gap-2 text-sm text-slate-600">
             <span id="toggleLabel">开</span>
             <div id="previewToggle" class="toggle-switch on" onclick="togglePreview(this)"></div>
@@ -93,75 +96,81 @@
 
   <script src="js/short-link-qr.js"></script>
   <script src="js/inspector-select.js"></script>
+  <script src="js/label-cert-config.js"></script>
+  <script src="js/label-cert-render.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
+    LabelCertRender.ensureStyles();
     var params = new URLSearchParams(location.search);
-    var entrustCodes = (params.get('codes') || 'SC2026/0074,SC2026/0073,SC2026/0072').split(',');
-    var defaultInspectors = (params.get('inspectors') || 'admin').split(',').filter(Boolean).slice(0, 2);
+    var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
+    var entrustCodes = (params.get('codes') || 'SC2026/0073,SC2026/0072').split(',').filter(Boolean);
+    var sampleNos = (params.get('nos') || '').split(',').filter(Boolean);
+    var defaultInspectors = (params.get('inspectors') || 'admin').split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
+    if (params.get('from') === 'qualified') document.getElementById('backLink').href = 'cert-qualified-print.html';
+    document.getElementById('orgOverride').value = LabelCertConfig.DEFAULT_ORG;
+
+    var SAMPLE_BY_NO = {
+      'SC2026/00790101': { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', model: '10kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', masterId: 'rod', cat: 'aqgqj' },
+      'SC2026/00730101': { sampleNo: 'SC2026/00730101', name: '安全带', model: '', inspectDate: '2026-06-10', reinspectDate: '2027-06-09', masterId: 'belt976', cat: 'aqgqj' },
+      'SC2026/00720501': { sampleNo: 'SC2026/00720501', name: '安全绳', model: '', inspectDate: '2026-06-09', reinspectDate: '2027-06-08', masterId: 'rope1476', cat: 'aqgqj' },
+      'SC2026/00710101': { sampleNo: 'SC2026/00710101', name: '绝缘操作杆', model: '20kV', inspectDate: '2026-06-08', reinspectDate: '2027-06-07', masterId: 'rod', cat: 'aqgqj' },
+      'SC2026/00700101': { sampleNo: 'SC2026/00700101', name: '安全帽', model: '', inspectDate: '2026-06-07', reinspectDate: '2027-06-06', masterId: 'helmet', cat: 'aqgqj' }
+    };
 
     var SAMPLE_CATALOG = {
-      'SC2026/0074': [{ sampleNo: 'SC2026/00740101', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-06-11', reinspectDate: '2027-06-10' }],
-      'SC2026/0073': [{ sampleNo: 'SC2026/00730101', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-06-10', reinspectDate: '2027-06-09' }],
-      'SC2026/0072': [{ sampleNo: 'SC2026/00730201', name: '验电器', spec: '', model: '', inspectDate: '2026-06-10', reinspectDate: '2027-06-09' }],
-      'SC2026/0070': [{ sampleNo: 'SC2026/00730301', name: '绝缘毯', spec: '', model: '', inspectDate: '2026-06-09', reinspectDate: '2027-06-08' }],
-      'SC2026/0068': [{ sampleNo: 'SC2026/00730401', name: '安全带', spec: '', model: '', inspectDate: '2026-06-08', reinspectDate: '2027-06-07' }]
+      'SC2026/0079': [SAMPLE_BY_NO['SC2026/00790101']],
+      'SC2026/0073': [SAMPLE_BY_NO['SC2026/00730101']],
+      'SC2026/0072': [{ sampleNo: 'SC2026/00730201', name: '验电器', model: '', inspectDate: '2026-06-10', reinspectDate: '2027-06-09', masterId: 'rod', cat: 'aqgqj' }],
+      'SC2026/0071': [SAMPLE_BY_NO['SC2026/00710101']],
+      'SC2026/0070': [SAMPLE_BY_NO['SC2026/00700101']],
+      'SC2026/0074': [{ sampleNo: 'SC2026/00740101', name: '绝缘操作杆', model: '', inspectDate: '2026-06-11', reinspectDate: '2027-06-10', masterId: 'rod', cat: 'aqgqj' }]
     };
 
     var EXTRA = [
-      { sampleNo: 'SC2026/00730501', name: '卡线器', spec: '', model: '', inspectDate: '2026-06-08', reinspectDate: '2027-06-07', inspectors: defaultInspectors.slice() },
-      { sampleNo: 'SC2026/00730601', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-06-07', reinspectDate: '2027-06-06', inspectors: defaultInspectors.slice() },
-      { sampleNo: 'SC2026/00730701', name: '验电器', spec: '', model: '', inspectDate: '2026-06-07', reinspectDate: '2027-06-06', inspectors: defaultInspectors.slice() },
-      { sampleNo: 'SC2026/00730801', name: '绝缘毯', spec: '', model: '', inspectDate: '2026-06-06', reinspectDate: '2027-06-05', inspectors: defaultInspectors.slice() },
-      { sampleNo: 'SC2026/00730901', name: '安全带', spec: '', model: '', inspectDate: '2026-06-06', reinspectDate: '2027-06-05', inspectors: defaultInspectors.slice() },
-      { sampleNo: 'SC2026/00731001', name: '绝缘操作杆', spec: '', model: '', inspectDate: '2026-06-05', reinspectDate: '2027-06-04', inspectors: defaultInspectors.slice() },
-      { sampleNo: 'SC2026/00731101', name: '验电器', spec: '', model: '', inspectDate: '2026-06-05', reinspectDate: '2027-06-04', inspectors: defaultInspectors.slice() }
+      { sampleNo: 'SC2026/00730501', name: '卡线器', model: '', inspectDate: '2026-06-08', reinspectDate: '2027-06-07', masterId: 'shackle', cat: 'aqgqj' },
+      { sampleNo: 'SC2026/00730901', name: '安全带', model: '', inspectDate: '2026-06-06', reinspectDate: '2027-06-05', masterId: 'belt976', cat: 'aqgqj' }
     ];
 
     var allSamples = [];
-    entrustCodes.forEach(function (code) {
-      var list = SAMPLE_CATALOG[code.trim()];
-      if (list) {
-        list.forEach(function (s) {
-          allSamples.push({
-            sampleNo: s.sampleNo,
-            name: s.name,
-            spec: s.spec,
-            model: s.model,
-            inspectDate: s.inspectDate,
-            reinspectDate: s.reinspectDate,
-            inspectors: defaultInspectors.slice(),
-            _checked: true
-          });
-        });
-      }
-    });
-    EXTRA.forEach(function (s) { allSamples.push(Object.assign({}, s, { _checked: true })); });
+    function pushSample(s) {
+      allSamples.push({
+        sampleNo: s.sampleNo, name: s.name, spec: s.spec || '', model: s.model || '',
+        inspectDate: s.inspectDate, reinspectDate: s.reinspectDate,
+        inspectors: defaultInspectors.slice(), masterId: s.masterId || LabelCertConfig.masterIdFromName(s.name),
+        cat: s.cat || 'aqgqj', _checked: true
+      });
+    }
+
+    if (sampleNos.length) {
+      sampleNos.forEach(function (no) {
+        var s = SAMPLE_BY_NO[no.trim()];
+        if (s) pushSample(s);
+        else pushSample({ sampleNo: no.trim(), name: '绝缘操作杆', model: '', inspectDate: '2026-07-01', reinspectDate: '2027-07-01', masterId: 'rod', cat: 'aqgqj' });
+      });
+    } else {
+      entrustCodes.forEach(function (code) {
+        var list = SAMPLE_CATALOG[code.trim()];
+        if (list) list.forEach(pushSample);
+      });
+      if (!allSamples.length) EXTRA.forEach(pushSample);
+    }
 
     var samples = allSamples.slice();
     var previewEnabled = true;
     var currentPage = 1;
     var pageSize = 10;
     var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
-    var MAX_INSPECTORS = 2;
 
-    function buildCertHtml(item, isFirst) {
-      var annotate = isFirst ? ' data-annotate="qr-area"' : '';
-      return '<div class="cert-sheet mx-auto" data-sample="' + item.sampleNo + '">' +
-        '<div class="cert-header">' +
-          '<i class="fa fa-building text-blue-500"></i>' +
-          '<div><div class="text-sm font-medium text-slate-800">杭州数蚕智能科技有限公司</div><div class="text-center text-base font-semibold tracking-widest text-slate-700">合 格 证</div></div>' +
-        '</div>' +
-        '<div class="cert-body">' +
-          '<dl class="cert-fields">' +
-            '<div><dt>试样编号：</dt><dd>' + item.sampleNo + '</dd></div>' +
-            '<div><dt>试样名称：</dt><dd>' + item.name + '</dd></div>' +
-            '<div><dt>型号规格：</dt><dd>' + (item.spec || item.model || '') + '</dd></div>' +
-            '<div><dt>检验日期：</dt><dd>' + item.inspectDate + '</dd></div>' +
-            '<div><dt>再检日期：</dt><dd>' + item.reinspectDate + '</dd></div>' +
-            '<div><dt>检验人员：</dt><dd>' + item.inspectors.join('、') + '</dd></div>' +
-          '</dl>' +
-          '<div class="cert-qr-wrap flex-shrink-0"' + annotate + ' id="qr-' + item.sampleNo.replace(/[/]/g, '') + '"></div>' +
-        '</div></div>';
+    function buildCertHtml(item, idx) {
+      var tpl = LabelCertConfig.resolveTemplate(item.cat || 'aqgqj', 'certificate', item.masterId);
+      if (!tpl) return '<div class="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">未配置模版：' + item.sampleNo + '</div>';
+      tpl = LabelCertConfig.clone(tpl);
+      var org = document.getElementById('orgOverride').value.trim();
+      if (org) tpl.brand.orgName = org;
+      var html = LabelCertRender.renderSheet(tpl, item, { suffix: '-b' + idx });
+      if (idx === 0) html = html.replace('class="lc-qr"', 'class="lc-qr" data-annotate="qr-area"');
+      return '<div class="mb-4">' +
+        '<div class="mb-1 text-center text-[11px] text-slate-400">' + LabelCertRender.esc(tpl.name) + '</div>' + html + '</div>';
     }
 
     function renderPreview() {
@@ -171,10 +180,8 @@
         container.innerHTML = '<p class="text-center text-sm text-slate-400 py-12">暂无待打印合格证</p>';
         return;
       }
-      container.innerHTML = selected.map(function (item, i) { return buildCertHtml(item, i === 0); }).join('');
-      selected.forEach(function (item) {
-        ShortLinkQR.renderQRBlock('#qr-' + item.sampleNo.replace(/[/]/g, ''), item.sampleNo, { size: 100, showHint: false });
-      });
+      container.innerHTML = selected.map(function (item, i) { return buildCertHtml(item, i); }).join('');
+      LabelCertRender.mountQrs(container);
     }
 
     function inspectorCell(item, globalIdx) {

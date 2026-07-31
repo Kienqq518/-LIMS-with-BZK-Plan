@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>样品标签打印 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    @media print { .no-print { display: none !important; } .preview-area { background: #fff !important; padding: 0 !important; } }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700 h-screen flex flex-col overflow-hidden">
+  <div class="no-print flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5">
+    <a id="backLink" href="label-print.html" class="text-sm text-blue-600 hover:underline"><i class="fa fa-arrow-left"></i> 返回</a>
+    <div class="flex items-center gap-2">
+      <span class="text-sm text-slate-500" id="tplInfo"></span>
+      <button onclick="window.print()" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">打印</button>
+    </div>
+  </div>
+  <div class="preview-area flex-1 overflow-y-auto p-4">
+    <div id="previewContainer" class="mx-auto flex max-w-3xl flex-col items-center gap-4"></div>
+  </div>
+
+  <script src="js/label-cert-config.js"></script>
+  <script src="js/label-cert-render.js"></script>
+  <script src="js/short-link-qr.js"></script>
+  <script>
+    LabelCertRender.ensureStyles();
+    var params = new URLSearchParams(location.search);
+    var codes = (params.get('codes') || params.get('code') || 'SC2026/0079').split(',').filter(Boolean);
+    if (params.get('from') === 'qualified') document.getElementById('backLink').href = 'cert-qualified-print.html';
+
+    var ENTRUST_SAMPLES = {
+      'SC2026/0079': [{ sampleNo: 'SC2026/00790101', name: '绝缘操作杆', model: '10kV', receiveDate: '2026-07-09', clientName: '杭州数蚕智能科技有限公司', detectStatus: '报告发放', cat: 'aqgqj', masterId: 'rod' }],
+      'SC2026/0073': [{ sampleNo: 'SC2026/00730101', name: '安全带', model: '', receiveDate: '2026-06-10', clientName: '杭州数蚕智能科技有限公司', detectStatus: '任务完成', cat: 'aqgqj', masterId: 'belt976' }],
+      'SC2026/0080': [{ sampleNo: 'SC2026/00800101', name: '安全帽', model: '', receiveDate: '2026-07-09', clientName: '杭州数蚕智能科技有限公司', detectStatus: '样品收样', cat: 'aqgqj', masterId: 'helmet' }],
+      'SC2026/0078': [{ sampleNo: 'SC2026/00780101', name: '绝缘操作杆', model: '10kV', receiveDate: '2026-07-08', clientName: '杭州数蚕智能科技有限公司', detectStatus: '委托登记', cat: 'aqgqj', masterId: 'rod' }]
+    };
+
+    var items = [];
+    codes.forEach(function (code) {
+      var list = ENTRUST_SAMPLES[code.trim()];
+      if (list) list.forEach(function (s) { items.push(s); });
+      else {
+        items.push({
+          sampleNo: code.trim() + '0101',
+          name: '绝缘操作杆',
+          model: '10kV',
+          receiveDate: '2026-07-01',
+          clientName: '杭州数蚕智能科技有限公司',
+          detectStatus: '试验检测',
+          cat: 'aqgqj',
+          masterId: 'rod'
+        });
+      }
+    });
+
+    var container = document.getElementById('previewContainer');
+    var names = [];
+    container.innerHTML = items.map(function (item, i) {
+      var tpl = LabelCertConfig.resolveTemplate(item.cat || 'aqgqj', 'sample_label', item.masterId || LabelCertConfig.masterIdFromName(item.name));
+      if (tpl && names.indexOf(tpl.name) === -1) names.push(tpl.name);
+      if (!tpl) return '<div class="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">样品 ' + item.sampleNo + ' 未配置标签模版</div>';
+      return LabelCertRender.renderSheet(tpl, item, { suffix: '-' + i });
+    }).join('');
+    document.getElementById('tplInfo').textContent = names.length ? ('模版：' + names.join('、')) : '';
+    LabelCertRender.mountQrs(container);
+  </script>
+</body>
+</html>
