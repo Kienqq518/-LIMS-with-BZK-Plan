@@ -99,8 +99,9 @@
         </div>
         <div class="mb-2 text-sm text-slate-600">领样人：</div>
         <div id="receiverList" class="receiver-list"></div>
-        <div class="mt-4 rounded border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 leading-relaxed" data-annotate="distribute-note">
-          本操作将试样指派给检测员，任务进入「待接收」状态。流转单「接收试样」行在<strong>试验检测</strong>页检测员点击「接收」时回填。
+        <div class="mt-4 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800 leading-relaxed" data-annotate="distribute-note">
+          <strong>发放时将生成检测任务单：</strong>按所选领样人（检测员）一人一单；下发人/日期写入，接收人与接收日期置空。<br>
+          任务进入「待接收」。流转单「接收试样」行仍在<strong>试验检测</strong>页检测员点击「接收」时回填。
         </div>
       </div>
       <div class="flex justify-center border-t border-slate-100 px-6 py-4">
@@ -230,7 +231,18 @@
       var dept = sel.getAttribute('data-dept');
       var count = issueAllMode ? displayData.length : getSelectedIndexes().length;
       var modeText = issueAllMode ? '全部 ' + count + ' 条试样' : '已选 ' + count + ' 条试样';
-      alert('试样分发成功（原型演示）。\n' + modeText + ' 已发放给 ' + sel.value + ' — ' + dept + '\n检测时效：' + deadline + '\n检测员在试验检测页可见「待接收」任务。');
+      var today = new Date().toISOString().slice(0, 10);
+      alert(
+        '试样分发成功（原型演示）。\n' +
+        modeText + ' 已发放给 ' + sel.value + ' — ' + dept + '\n' +
+        '检测时效：' + deadline + '\n\n' +
+        '已生成「检测任务单」：\n' +
+        '· 检测员：' + sel.value + '\n' +
+        '· 下发人/日期：当前操作人 / ' + today + '\n' +
+        '· 接收人/日期：置空（待检测员接收回填）\n' +
+        '· 同检测员已有有效任务单时合并进原单\n\n' +
+        '检测员在试验检测页可见「待接收」任务。'
+      );
       closeIssueModal();
     }
 
@@ -240,10 +252,10 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
-          { id: 'issue-btn', selector: '[data-annotate="issue-btn"]', position: 'bottom-left', title: '发样', wide: true, content: '勾选至少一条试样后按钮点亮。点击后弹出「试样分发」弹窗，选择检测时效与领样人完成发放。', tag: '流转单' },
-          { id: 'issue-all-btn', selector: '[data-annotate="issue-all-btn"]', position: 'bottom-left', title: '全部发样', wide: true, content: '无需勾选，将当前列表全部试样一次性分发给同一领样人。', tag: '流转单' },
-          { id: 'distribute-note', selector: '[data-annotate="distribute-note"]', position: 'top-left', title: '回填时机说明', wide: true, content: '流转单「接收试样」行在<strong>试验检测</strong>页检测员点击「接收」时回填：检测流程 = 检测员部门 +「接收试样」；签名/日期 = 检测员电子签名 + 接收日期。', tag: '流转单' },
-          { id: 'issue-confirm', selector: '[data-annotate="issue-confirm"]', position: 'top-left', title: '发放', content: '确认后将试样指派给所选领样人（检测员），任务进入「待接收」状态。', tag: '流转单' }
+          { id: 'issue-btn', selector: '[data-annotate="issue-btn"]', position: 'bottom-left', title: '发样', wide: true, content: '勾选至少一条试样后按钮点亮。点击后弹出「试样分发」弹窗，选择检测时效与领样人完成发放。', tag: '任务单' },
+          { id: 'issue-all-btn', selector: '[data-annotate="issue-all-btn"]', position: 'bottom-left', title: '全部发样', wide: true, content: '无需勾选，将当前列表全部试样一次性分发给同一领样人，并生成/合并该检测员的检测任务单。', tag: '任务单' },
+          { id: 'distribute-note', selector: '[data-annotate="distribute-note"]', position: 'top-left', title: '任务单生成 + 流转单时机', wide: true, content: '<strong>检测任务单：</strong>点击「发放」瞬间按检测员生成（一人一单）；内容仅含分给此人的试样/项目；接收人/日期置空。同检测员已有有效单则合并。<br><strong>流转单：</strong>「接收试样」行仍在试验检测页点「接收」时回填。', tag: '任务单' },
+          { id: 'issue-confirm', selector: '[data-annotate="issue-confirm"]', position: 'top-left', title: '发放', wide: true, content: '确认后：① 试样指派给领样人并进入「待接收」；② 生成或合并该检测员的检测任务单（下发人/日期写入，接收栏空）。', tag: '任务单' }
         ]
       });
     }

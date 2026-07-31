@@ -77,12 +77,12 @@
       <div class="px-6 py-5 text-sm">
         <p class="mb-3 text-slate-600">确认接收试样 <strong id="recvSampleName">—</strong>？</p>
         <div class="rounded border border-blue-100 bg-blue-50 px-4 py-3 text-blue-800" data-annotate="receive-writeback">
-          <div class="mb-1 font-medium"><i class="fa fa-magic"></i> 将自动回填「检测任务及流转单」：</div>
+          <div class="mb-1 font-medium"><i class="fa fa-magic"></i> 将自动回填：</div>
           <ul class="ml-5 list-disc space-y-0.5 text-xs leading-relaxed">
-            <li>检测流程 = <span id="pv_flow" class="font-medium">电气试验室 接收试样</span></li>
-            <li>样品交接人签名/日期 = <span id="pv_sign" class="font-medium">检测员电子签名 / 2026-06-02</span></li>
+            <li><strong>检测任务单</strong>（分给 <span id="pv_tester" class="font-medium">潘哲宁</span> 的那张）：接收人 = <span id="pv_task_sign" class="font-medium">电子签名</span>；接收日期 = <span id="pv_task_date" class="font-medium">—</span></li>
+            <li><strong>检测任务及流转单</strong>：检测流程 = <span id="pv_flow" class="font-medium">电气试验室 接收试样</span>；签名/日期 = <span id="pv_sign" class="font-medium">检测员电子签名 / —</span></li>
           </ul>
-          <p class="mt-2 text-xs text-blue-700">同一委托下多名检测员接收不同试样时，各生成独立一行。</p>
+          <p class="mt-2 text-xs text-blue-700">多名检测员各有独立任务单；接收只写自己那张，不覆盖他人。</p>
         </div>
       </div>
       <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
@@ -141,9 +141,13 @@
       currentIndex = index;
       var item = listData[index];
       var t = item.tester || CURRENT_USER;
+      var today = new Date().toISOString().slice(0, 10);
       document.getElementById('recvSampleName').textContent = item.sample + '（' + item.code + '）';
+      document.getElementById('pv_tester').textContent = t.name;
+      document.getElementById('pv_task_sign').textContent = t.name + '电子签名';
+      document.getElementById('pv_task_date').textContent = today;
       document.getElementById('pv_flow').textContent = t.dept + ' 接收试样';
-      document.getElementById('pv_sign').textContent = '检测员电子签名 / ' + new Date().toISOString().slice(0, 10);
+      document.getElementById('pv_sign').textContent = '检测员电子签名 / ' + today;
       showModal('receiveModal');
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
@@ -153,7 +157,12 @@
     function confirmReceive() {
       var item = listData[currentIndex];
       var t = item.tester || CURRENT_USER;
-      alert('试样接收成功。\n检测任务及流转单已追加「' + t.dept + ' 接收试样」行（原型演示）。');
+      var today = new Date().toISOString().slice(0, 10);
+      alert(
+        '试样接收成功（原型演示）。\n\n' +
+        '① 检测任务单（' + t.name + '）：已回填接收人电子签名与接收日期 ' + today + '\n' +
+        '② 检测任务及流转单：已追加「' + t.dept + ' 接收试样」行'
+      );
       item.status = '检测中';
       item.canReceive = false;
       renderTable();
@@ -166,9 +175,9 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
-          { id: 'receive-btn', selector: '[data-annotate="receive-btn"]', position: 'bottom-left', title: '接收试样', wide: true, content: '流程节点：<strong>试样分发 → 试验检测接收</strong>。检测员在「待接收」状态点击「接收」触发流转单回填。', tag: '流转单' },
-          { id: 'receive-writeback', selector: '[data-annotate="receive-writeback"]', position: 'top-left', title: '接收试样回填规则', wide: true, content: '检测流程 = 检测员所在部门 +「接收试样」<br>样品交接人签名/日期 = 检测员电子签名 + 接收日期<br>若多名检测员接收同一样品下不同试样，按检测员人数各回填一行。', tag: '流转单' },
-          { id: 'receive-confirm', selector: '[data-annotate="receive-confirm"]', position: 'top-left', title: '确认接收', content: '回填时机：点击「确认接收」瞬间写入流转单。', tag: '流转单' }
+          { id: 'receive-btn', selector: '[data-annotate="receive-btn"]', position: 'bottom-left', title: '接收试样', wide: true, content: '流程节点：<strong>试样分发 → 试验检测接收</strong>。点击「接收」同时回填：① 分给该检测员的<strong>检测任务单</strong>接收人/日期；② 流转单「接收试样」行。', tag: '任务单' },
+          { id: 'receive-writeback', selector: '[data-annotate="receive-writeback"]', position: 'top-left', title: '接收回填规则', wide: true, content: '<strong>检测任务单：</strong>只写分给当前检测员的那张（电子签名 + 接收日期），升系统主版本；不覆盖其他检测员任务单。<br><strong>流转单：</strong>检测流程 = 部门 +「接收试样」；签名/日期 = 电子签名 + 接收日期；多检测员各一行。', tag: '任务单' },
+          { id: 'receive-confirm', selector: '[data-annotate="receive-confirm"]', position: 'top-left', title: '确认接收', content: '回填时机：点击「确认接收」瞬间写入对应任务单与流转单。', tag: '任务单' }
         ]
       });
     }
