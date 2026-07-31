@@ -338,16 +338,26 @@
     </section>
 
     <!-- ========== 检测任务单 ========== -->
-    <section class="rounded bg-white p-4 shadow-sm">
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="task-sheet-section">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测任务单</h2>
       <div class="overflow-x-auto">
-        <table class="data-table min-w-[560px]">
-          <thead><tr><th>序号</th><th>检测任务单</th><th>生成时间</th><th>操作</th></tr></thead>
+        <table class="data-table min-w-[720px]">
+          <thead><tr><th>序号</th><th>检测任务单</th><th>检测员</th><th>生成时间</th><th>接收时间</th><th>操作</th></tr></thead>
           <tbody>
-            <tr data-doc="task_sheet">
+            <tr data-doc="task_sheet__pan" data-tester="潘哲宁">
               <td>1</td>
-              <td><a href="#" class="text-blue-600 hover:underline" onclick="previewDoc('task_sheet');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-检测任务单.docx</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="openTaskSheetModal('pan');return false;" data-annotate="task-sheet-entry"><i class="fa fa-file-word-o"></i> SC2026/0212-检测任务单-潘哲宁.docx</a></td>
+              <td>潘哲宁</td>
               <td>2026-07-08</td>
+              <td>2026-07-09</td>
+              <td class="doc-ops whitespace-nowrap"></td>
+            </tr>
+            <tr data-doc="task_sheet__li" data-tester="李四">
+              <td>2</td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="openTaskSheetModal('li');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-检测任务单-李四.docx</a></td>
+              <td>李四</td>
+              <td>2026-07-08</td>
+              <td class="text-slate-400">—</td>
               <td class="doc-ops whitespace-nowrap"></td>
             </tr>
           </tbody>
@@ -596,6 +606,41 @@
     </div>
   </div>
 
+  <!-- 检测任务单弹窗（试样分发按检测员生成） -->
+  <div id="taskSheetModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[90vh] w-[860px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">检测任务单</h3>
+        <div class="flex items-center gap-3">
+          <span class="rounded bg-green-50 px-2 py-0.5 text-xs text-green-600" data-annotate="task-sheet-auto">试样分发时生成</span>
+          <button onclick="alert('打印（原型演示）')" class="text-sm text-blue-600 hover:underline"><i class="fa fa-print"></i> 打印</button>
+          <button onclick="closeModal('taskSheetModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto px-8 py-6">
+        <div class="border border-slate-800 p-4" data-annotate="task-sheet-preview">
+          <div class="mb-1 flex items-center justify-between text-xs text-slate-600">
+            <span>杭州数蚕智能科技有限公司</span>
+            <span>SL/ZJ15-01　<span id="tsVerLabel">1/0</span></span>
+          </div>
+          <h4 class="mb-2 text-center text-lg font-semibold tracking-widest text-slate-800">检测任务单</h4>
+          <div class="mb-3 text-sm text-slate-600">送检时间： <span id="tsDeliverDate">2026-07-08</span></div>
+          <table class="notice-table mb-4">
+            <tr>
+              <th>委托合同编号</th><th>样品名称</th><th>规格型号</th><th>样品数量</th>
+              <th>标准试样制备数量</th><th>样品编号</th><th>试验项目</th><th>试验标准</th><th>备注</th>
+            </tr>
+            <tbody id="tsBodyRows"></tbody>
+          </table>
+          <div class="mt-4 flex flex-wrap justify-between gap-4 text-sm text-slate-700" data-annotate="task-sheet-sign">
+            <div>下发人：<span id="tsIssuer">admin</span>　　日期：<span id="tsIssueDate">2026-07-08</span></div>
+            <div>接收人：<span id="tsReceiver" class="italic text-blue-700">（空）</span>　　日期：<span id="tsReceiveDate">__________</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 检测任务及流转单弹窗（系统自动生成） -->
   <div id="flowSheetModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
     <div class="flex max-h-[90vh] w-[820px] max-w-full flex-col rounded-lg bg-white shadow-xl">
@@ -731,7 +776,7 @@
           </label>
           <label class="export-type-item">
             <input type="checkbox" name="exportType" value="task_sheet" data-label="检测任务单" checked onchange="syncBatchExportSummary()" />
-            <span><span class="t">检测任务单</span><span class="s block">任务单最新版</span></span>
+            <span><span class="t">检测任务单</span><span class="s block">各检测员任务单最新版</span></span>
           </label>
           <label class="export-type-item">
             <input type="checkbox" name="exportType" value="flow_sheet" data-label="检测任务及样品流转单" checked onchange="syncBatchExportSummary()" />
@@ -790,10 +835,40 @@
     /** 原型：各文件版本链（文件名列表不展示版本号） */
     var DOC_META = {
       entrust_form: { title: '委托单', currentMajor: 2, reportIssued: false },
-      task_sheet: { title: '检测任务单', currentMajor: 1, reportIssued: false },
+      task_sheet__pan: { title: '检测任务单 · 潘哲宁', currentMajor: 2, reportIssued: false },
+      task_sheet__li: { title: '检测任务单 · 李四', currentMajor: 1, reportIssued: false },
       flow_sheet: { title: '检测任务及样品流转单', currentMajor: 3, reportIssued: false },
       fee_notice: { title: '收费通知单', currentMajor: 1, reportIssued: false },
       report: { title: '检测报告', currentMajor: 2, reportIssued: true }
+    };
+
+    var TASK_SHEET_PREVIEW = {
+      pan: {
+        ver: '2/0',
+        tester: '潘哲宁',
+        issuer: 'admin',
+        issueDate: '2026-07-08',
+        receiver: '潘哲宁电子签名',
+        receiveDate: '2026-07-09',
+        received: true,
+        rows: [
+          { contract: 'SC2026/0212', sample: '绝缘操作杆', model: '300', qty: '1', prep: '/', code: 'SC2026/02120101', item: '外观及尺寸', std: 'DL/T 976-2017', remark: '/' },
+          { contract: 'SC2026/0212', sample: '绝缘操作杆', model: '300', qty: '1', prep: '/', code: 'SC2026/02120101', item: '交流耐压试验', std: 'DL/T 976-2017', remark: '/' }
+        ]
+      },
+      li: {
+        ver: '1/0',
+        tester: '李四',
+        issuer: 'admin',
+        issueDate: '2026-07-08',
+        receiver: '',
+        receiveDate: '',
+        received: false,
+        rows: [
+          { contract: 'SC2026/0212', sample: '绝缘操作杆', model: '300', qty: '1', prep: '/', code: 'SC2026/02120101', item: '抗弯动负荷试验', std: 'DL/T 976-2017', remark: '/' },
+          { contract: 'SC2026/0212', sample: '绝缘操作杆', model: '300', qty: '1', prep: '/', code: 'SC2026/02120101', item: '抗弯静负荷试验', std: 'DL/T 976-2017', remark: '/' }
+        ]
+      }
     };
 
     var DOC_VERSIONS = {
@@ -803,8 +878,12 @@
         { major: 2, minor: 0, label: 'V2.0', source: 'SYSTEM', origin: 'node_backfill', operator: 'system', time: '2026-07-08 09:00', node: '变更审批通过' },
         { major: 2, minor: 1, label: 'V2.1', source: 'MANUAL', origin: 'edit_close', operator: 'admin', time: '2026-07-08 15:30', current: true }
       ],
-      task_sheet: [
-        { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-08 09:05', node: '委托确认', current: true }
+      task_sheet__pan: [
+        { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-08 09:05', node: '试样分发' },
+        { major: 2, minor: 0, label: 'V2.0', source: 'SYSTEM', origin: 'node_backfill', operator: 'system', time: '2026-07-09 10:20', node: '试验检测接收', current: true }
+      ],
+      task_sheet__li: [
+        { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-08 09:08', node: '试样分发', current: true }
       ],
       flow_sheet: [
         { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-08 09:10', node: '样品收样' },
@@ -880,6 +959,32 @@
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
+    function openTaskSheetModal(key) {
+      var data = TASK_SHEET_PREVIEW[key] || TASK_SHEET_PREVIEW.pan;
+      document.getElementById('tsVerLabel').textContent = data.ver;
+      document.getElementById('tsIssuer').textContent = data.issuer;
+      document.getElementById('tsIssueDate').textContent = data.issueDate;
+      var recvEl = document.getElementById('tsReceiver');
+      var recvDateEl = document.getElementById('tsReceiveDate');
+      if (data.received) {
+        recvEl.textContent = data.receiver;
+        recvEl.className = 'italic text-blue-700';
+        recvDateEl.textContent = data.receiveDate;
+        recvDateEl.className = '';
+      } else {
+        recvEl.textContent = '（空）';
+        recvEl.className = 'text-slate-400';
+        recvDateEl.textContent = '__________';
+        recvDateEl.className = 'text-slate-400';
+      }
+      document.getElementById('tsBodyRows').innerHTML = data.rows.map(function (r) {
+        return '<tr><td>' + r.contract + '</td><td>' + r.sample + '</td><td>' + r.model + '</td><td>' + r.qty + '</td><td>' + r.prep +
+          '</td><td>' + r.code + '</td><td>' + r.item + '</td><td>' + r.std + '</td><td>' + r.remark + '</td></tr>';
+      }).join('');
+      showModal('taskSheetModal');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
     function refreshRunModeChrome() {
       // 本期固定实务版；模式切换 UI 已隐藏
       renderAllDocOps();
@@ -895,6 +1000,9 @@
         var html = '';
         if (key === 'flow_sheet') {
           html += '<button onclick="openFlowSheetModal()" class="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700">查看</button>';
+        } else if (key.indexOf('task_sheet') === 0) {
+          var tsKey = key === 'task_sheet__li' ? 'li' : 'pan';
+          html += '<button onclick="openTaskSheetModal(\'' + tsKey + '\')" class="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700">查看</button>';
         } else {
           html += '<button onclick="previewDoc(\'' + key + '\')" class="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700">查看</button>';
         }
@@ -1064,7 +1172,7 @@
       if (!e.target.closest('#viewMoreWrap')) closeViewMoreMenu();
     });
 
-    ['ledgerModal', 'noticeModal', 'sysLogModal', 'flowSheetModal', 'docHistoryModal', 'batchExportModal'].forEach(function (id) {
+    ['ledgerModal', 'noticeModal', 'sysLogModal', 'taskSheetModal', 'flowSheetModal', 'docHistoryModal', 'batchExportModal'].forEach(function (id) {
       document.getElementById(id).addEventListener('click', function (e) {
         if (e.target === this) closeModal(id);
       });
@@ -1096,6 +1204,11 @@
           { id: 'return-record', selector: '[data-annotate="return-record"]', position: 'top-right', title: '还样记录文件', content: '「还样退库确认表」「退样申请表」纳入批量导出可选类型；行内「导出」为单条快捷导出（原型）。', tag: '导出' },
           { id: 'entrust-form-change', selector: '[data-annotate="entrust-form-change"]', position: 'top-left', title: '委托变更与委托单落版', wide: true, content: '委托变更包含四种：<strong>基本信息变更</strong>、<strong>样品修改变更</strong>、<strong>删除样品</strong>、<strong>变更添加样品</strong>。<br>其中<strong>基本信息变更</strong>在变更审批完成后，系统自动生成新版委托单文件（系统更新 → 新主版本）。', tag: '委托单' },
           { id: 'doc-ops-col', selector: '[data-annotate="doc-ops-col"]', position: 'bottom-left', title: '文件操作列', wide: true, content: '<strong>版本号</strong>：语义化 V{主}.{次}；列表文件名不带版本后缀。<br><strong>系统更新</strong>→新主版本并成为当前；<strong>人工编辑</strong>（PageOffice 关闭保存）→次版本。<br><strong>查看历史</strong>：全员列表一致，含全部系统主版本；来源「系统更新/人工编辑」；系统说明写流程节点；历史仅在线查看，无下载、无回滚。', tag: '版本' },
+          { id: 'task-sheet-section', selector: '[data-annotate="task-sheet-section"]', position: 'top-right', title: '检测任务单（按人分单）', wide: true, content: '在<strong>试样分发</strong>确认发放时按检测员生成：分给几人就有几张。表增加「检测员」「接收时间」列。未接收时接收时间为「—」。批量导出打包各检测员当前最新版。', tag: '任务单' },
+          { id: 'task-sheet-entry', selector: '[data-annotate="task-sheet-entry"]', position: 'top-left', title: '一人一单', wide: true, content: '每张任务单只含分给该检测员的试样/试验项目。生成时接收人与接收日期置空；检测员在试验检测页「接收」后回填到<strong>对应自己的那张</strong>，不再覆盖他人任务单。', tag: '任务单' },
+          { id: 'task-sheet-auto', selector: '[data-annotate="task-sheet-auto"]', position: 'bottom-left', title: '生成时机', content: '不再在委托确认/样品发样生成。试样分发「发放」瞬间生成；下发人=分发操作人，下发日期=分发日。', tag: '任务单' },
+          { id: 'task-sheet-preview', selector: '[data-annotate="task-sheet-preview"]', position: 'top-right', title: '单据内容范围', wide: true, content: '表格行仅展示该检测员被分发的试验项目。同一委托下同一检测员多次分发且任务单仍有效时合并进同一张（升主版本）。', tag: '任务单' },
+          { id: 'task-sheet-sign', selector: '[data-annotate="task-sheet-sign"]', position: 'bottom-left', title: '签收留痕', wide: true, content: '落款：下发人/日期 + 接收人/日期。接收时写检测员电子签名与接收日期，并升系统主版本（节点=试验检测接收）。与流转单「接收试样」行回填并行，互不替代。', tag: '任务单' },
           { id: 'flow-sheet-entry', selector: '[data-annotate="flow-sheet-entry"]', position: 'top-right', title: '检测任务及样品流转单', wide: true, content: '入口位于委托详情页「检测任务及样品流转单」区块（收样后<strong>系统自动生成</strong>）。点击文档链接或「查看」打开流转单；各业务节点操作完成时自动追加回填检测流程行。', tag: '流转单' },
           { id: 'flow-sheet-auto', selector: '[data-annotate="flow-sheet-auto"]', position: 'bottom-left', title: '自动生成', content: '委托受理/收样后系统自动生成本单，样品编号、检测项目、检测依据等自动带入。', tag: '流转单' },
           { id: 'flow-sheet-process', selector: '[data-annotate="flow-sheet-process"]', position: 'top-right', title: '检测流程回填表', wide: true, content: '<strong>完整流转节点示例：</strong><br>① 样品制备（可选，部门+样品制备）<br>② 发样领样（部门+领样）<br>③ 接收试样（检测员部门+接收试样，可多行）<br>④ 还样（检测员部门+还样，可多行）<br>⑤ 退样（自取：委托单位取回余样签收+联系人；快递：余样快递退回委托单位+操作员电子签）', tag: '流转单' },
