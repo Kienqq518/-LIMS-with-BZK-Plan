@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>组内审核 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      组内审核
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label>
+          <input id="f_code" type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">是否关联框架合同</label>
+          <select id="f_frame" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-500 outline-none focus:border-blue-500">
+            <option value="">请选择是否关联框架合同</option>
+            <option>是</option>
+            <option>否</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">合同编号</label>
+          <input id="f_contract" type="text" placeholder="请输入框架合同编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
+          <input id="f_sample" type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托单位</label>
+          <input id="f_customer" type="text" placeholder="请输入委托单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">受理日期</label>
+          <div class="relative flex-1">
+            <input id="f_accept" type="text" placeholder="开始日期 ~ 结束日期" class="w-full rounded border border-slate-300 px-3 py-1.5 pr-8 text-sm outline-none focus:border-blue-500" />
+            <i class="fa fa-calendar-o absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">检测员</label>
+          <input id="f_tester" type="text" placeholder="请输入检测员" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2 xl:justify-end">
+          <button onclick="doSearch()" class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>
+          <button onclick="doReset()" class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i>重置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1800px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">受理日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">到样时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">财务进度</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">付款单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">任务进度</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测员</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="totalText">共 0 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-right"></i></button>
+        <select class="rounded border border-slate-200 px-2 py-1"><option>50条/页</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 退回弹窗 -->
+  <div id="returnModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-[520px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">退回</h3>
+        <button onclick="closeReturnModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="space-y-3 px-6 py-5 text-sm">
+        <p class="text-slate-600">确认退回委托 <strong id="returnCode">—</strong>？</p>
+        <div>
+          <label class="mb-1 block text-slate-600"><span class="text-red-500">*</span> 退回原因</label>
+          <textarea id="returnReason" rows="4" placeholder="请输入退回原因" class="w-full rounded border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeReturnModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="confirmReturn()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确认退回</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var STAGE = '组内审核';
+    var listData = [
+      { code: 'SC2026/0062', contract: '/', sample: '绝缘硬梯', customer: '杭州数蚕智能科技有限公司', acceptDate: '2026-06-01', arriveDate: '2026-06-01', requireDate: '', finance: '', payer: '杭州数蚕智能科技有限公司', detectStatus: STAGE, progress: STAGE, tester: '潘哲宁', editor: 'admin' },
+      { code: 'SC2026/0060', contract: '/', sample: '绝缘操作杆', customer: '东集西造有限公司', acceptDate: '2026-05-28', arriveDate: '2026-05-28', requireDate: '2026-06-10', finance: '已付款', payer: '东集西造有限公司', detectStatus: STAGE, progress: STAGE, tester: '李四', editor: 'admin' },
+      { code: 'SC2026/0058', contract: 'HT2026-001', sample: '安全带', customer: '宇宙设想有限公司', acceptDate: '2026-05-20', arriveDate: '2026-05-21', requireDate: '2026-06-05', finance: '待付款', payer: '宇宙设想有限公司', detectStatus: STAGE, progress: STAGE, tester: '张三', editor: 'admin' }
+    ];
+    var filtered = listData.slice();
+    var returnIndex = -1;
+
+    function editUrl(item) {
+      return 'test-audit-edit.html?type=group&code=' + encodeURIComponent(item.code) +
+        '&sample=' + encodeURIComponent(item.sample) +
+        '&customer=' + encodeURIComponent(item.customer);
+    }
+
+    function renderTable() {
+      document.getElementById('tableBody').innerHTML = filtered.map(function (item, i) {
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.acceptDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.arriveDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (item.requireDate || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (item.finance || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.payer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.detectStatus + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.progress + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.tester + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
+            '<a href="' + editUrl(item) + '" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 审核</a>' +
+            '<button onclick="openReturnModal(' + i + ')" class="ml-3 text-orange-500 hover:underline"><i class="fa fa-reply"></i> 退回</button>' +
+          '</td></tr>';
+      }).join('');
+      document.getElementById('totalText').textContent = '共' + filtered.length + '条';
+    }
+
+    function doSearch() {
+      var code = document.getElementById('f_code').value.trim();
+      var contract = document.getElementById('f_contract').value.trim();
+      var sample = document.getElementById('f_sample').value.trim();
+      var customer = document.getElementById('f_customer').value.trim();
+      var tester = document.getElementById('f_tester').value.trim();
+      filtered = listData.filter(function (item) {
+        if (code && item.code.indexOf(code) === -1) return false;
+        if (contract && item.contract.indexOf(contract) === -1) return false;
+        if (sample && item.sample.indexOf(sample) === -1) return false;
+        if (customer && item.customer.indexOf(customer) === -1) return false;
+        if (tester && item.tester.indexOf(tester) === -1) return false;
+        return true;
+      });
+      renderTable();
+    }
+
+    function doReset() {
+      ['f_code', 'f_contract', 'f_sample', 'f_customer', 'f_accept', 'f_tester'].forEach(function (id) {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('f_frame').value = '';
+      filtered = listData.slice();
+      renderTable();
+    }
+
+    function showModal(id) {
+      var m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+    function hideModal(id) {
+      var m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function openReturnModal(index) {
+      returnIndex = index;
+      document.getElementById('returnCode').textContent = filtered[index].code;
+      document.getElementById('returnReason').value = '';
+      showModal('returnModal');
+    }
+    function closeReturnModal() { hideModal('returnModal'); }
+    function confirmReturn() {
+      var reason = document.getElementById('returnReason').value.trim();
+      if (!reason) {
+        alert('请填写退回原因');
+        return;
+      }
+      alert('已退回 ' + filtered[returnIndex].code + '（原型演示）');
+      closeReturnModal();
+    }
+
+    document.getElementById('returnModal').addEventListener('click', function (e) {
+      if (e.target === this) closeReturnModal();
+    });
+
+    renderTable();
+  </script>
+</body>
+</html>

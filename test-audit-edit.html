@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>审核编辑 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+
+    .sample-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 3px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .test-group {
+      margin-bottom: 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .test-group-header {
+      padding: 10px 14px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .audit-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .audit-table th, .audit-table td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      text-align: center;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .audit-table th {
+      background: #f8fafc;
+      color: #64748b;
+      font-weight: 500;
+    }
+    .audit-table tbody tr:hover { background: #f8fafc; }
+    .audit-table .batch-row td {
+      background: #fafbfc;
+      text-align: left;
+      color: #64748b;
+    }
+
+    .status-audited { color: #dc2626; font-weight: 500; }
+    .status-pending { color: #2563eb; font-weight: 500; }
+    .concl-pass { color: #15803d; font-weight: 500; }
+
+    .op-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      color: #2563eb;
+    }
+    .op-btn.reject { color: #ea580c; }
+    .op-btn:hover { background: #eff6ff; }
+    .op-btn.reject:hover { background: #fff7ed; }
+
+    .record-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .record-table th, .record-table td {
+      border: 1px solid #e2e8f0;
+      padding: 10px 12px;
+      text-align: left;
+    }
+    .record-table th {
+      background: #f8fafc;
+      color: #64748b;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700 pb-20">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="group-audit.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a id="listTab" href="group-audit.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">组内审核</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      <span id="editTabTitle">组内审核编辑</span>
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <div class="mb-3 rounded bg-white px-4 py-3 shadow-sm">
+      <div class="mb-2">
+        <span class="sample-tag" id="sampleTag">绝缘硬梯</span>
+      </div>
+      <p class="text-sm text-slate-600">
+        <span class="font-medium text-slate-700">注：</span>
+        将鼠标悬浮在 <i class="fa fa-question-circle text-orange-500" title="不合格原因示例"></i> 图标上，可查看不合格原因。
+      </p>
+      <div class="mt-2 text-xs text-slate-400">
+        委托编号：<span id="entrustCode" class="text-slate-600">—</span>
+        <span class="mx-2 text-slate-300">|</span>
+        委托单位：<span id="customerName" class="text-slate-600">—</span>
+      </div>
+    </div>
+
+    <div id="groups"></div>
+
+    <div class="rounded bg-white p-4 shadow-sm">
+      <h3 class="mb-3 text-sm font-semibold text-slate-700">原始记录表</h3>
+      <div class="overflow-x-auto">
+        <table class="record-table">
+          <thead>
+            <tr>
+              <th style="width:80px">序号</th>
+              <th>原始记录名称</th>
+              <th style="width:220px">生成时间</th>
+            </tr>
+          </thead>
+          <tbody id="recordBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-3 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-right"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-center gap-3 border-t border-slate-200 bg-white px-6 py-3 shadow-lg">
+    <button onclick="auditAll(false)" class="rounded border border-slate-300 px-8 py-2 text-sm text-slate-600 hover:bg-slate-50">全部不通过</button>
+    <button onclick="auditAll(true)" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">全部通过</button>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var auditType = params.get('type') === 'data' ? 'data' : 'group';
+    var entrustCode = params.get('code') || 'SC2026/0062';
+    var sampleName = params.get('sample') || '绝缘硬梯';
+    var customer = params.get('customer') || '杭州数蚕智能科技有限公司';
+
+    var listPage = auditType === 'data' ? 'data-audit.html' : 'group-audit.html';
+    var listTitle = auditType === 'data' ? '数据审核' : '组内审核';
+    var editTitle = listTitle + '编辑';
+
+    document.title = editTitle + ' - 智慧实验室';
+    document.getElementById('pageTabs').setAttribute('data-close-target', listPage);
+    document.getElementById('listTab').href = listPage;
+    document.getElementById('listTab').textContent = listTitle;
+    document.getElementById('editTabTitle').textContent = editTitle;
+    document.getElementById('sampleTag').textContent = sampleName.split('、')[0] || sampleName;
+    document.getElementById('entrustCode').textContent = entrustCode;
+    document.getElementById('customerName').textContent = customer;
+
+    function specimenId(seq) {
+      var n = String(seq);
+      if (n.length < 2) n = '0' + n;
+      return entrustCode + '0101-' + n;
+    }
+
+    var groups = [
+      {
+        title: sampleName.split('、')[0] + '—外观及尺寸',
+        columns: ['试样编号', '试验设备', '外观', '有效绝缘长度 / mm', '备注', '状态', '操作'],
+        rows: [
+          { cells: [specimenId(1), '设备', '无缺陷', ' / ', ''], status: '已审核' }
+        ]
+      },
+      {
+        title: sampleName.split('、')[0] + '—交流耐压试验',
+        columns: ['试样编号', '试验设备', '电极间距离 / m', '标称值 / kV', '试验值 / kV', '时间 / min', '状态描述', '结论', '室温 / ℃', '气压 / hPa', '湿度 / %RH', '备注', '状态', '操作'],
+        rows: [
+          { cells: [specimenId(2), '设备', '1', '2', '3', '4', '无异常', '合格', '5', '6', '7', ''], status: '已审核' }
+        ]
+      },
+      {
+        title: sampleName.split('、')[0] + '—水平强度试验',
+        columns: ['试样编号', '试验设备', '标称值 / N', '试验值 / N', '时间 / min', '状态描述', '结论', '温度 / ℃', '气压 / hPa', '湿度 / %RH', '备注', '状态', '操作'],
+        rows: [
+          { cells: [specimenId(3), '设备', '1000', '100', '1', '无异常', '合格', '1', '2', '3', ''], status: '已审核' }
+        ]
+      }
+    ];
+
+    var records = [
+      { name: 'SC202606001绝缘硬梯记录单.docx', time: '2026-06-01 17:05:04' }
+    ];
+
+    function statusHtml(status) {
+      if (status === '已审核') return '<span class="status-audited">已审核</span>';
+      if (status === '待审核') return '<span class="status-pending">待审核</span>';
+      return status || '';
+    }
+
+    function cellHtml(col, value) {
+      if (col === '试验设备') {
+        return '<button onclick="alert(\'查看设备（原型演示）\')" class="rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-blue-600 hover:bg-blue-100">' + (value || '设备') + '</button>';
+      }
+      if (col === '结论') {
+        if (value === '合格') return '<span class="concl-pass">合格</span>';
+        if (value === '不合格') {
+          return '<span class="text-red-600 font-medium">不合格</span> <i class="fa fa-question-circle text-orange-500 cursor-help" title="不合格原因：变形超限"></i>';
+        }
+      }
+      return value === '' || value == null ? '' : value;
+    }
+
+    function setRowStatus(groupIndex, rowIndex, pass) {
+      groups[groupIndex].rows[rowIndex].status = '已审核';
+      groups[groupIndex].rows[rowIndex].pass = pass;
+      renderGroups();
+    }
+
+    function batchGroup(groupIndex, pass) {
+      groups[groupIndex].rows.forEach(function (row) {
+        row.status = '已审核';
+        row.pass = pass;
+      });
+      renderGroups();
+      alert((pass ? '本表全部通过' : '本表全部不通过') + '（原型演示）');
+    }
+
+    function auditAll(pass) {
+      groups.forEach(function (g) {
+        g.rows.forEach(function (row) {
+          row.status = '已审核';
+          row.pass = pass;
+        });
+      });
+      renderGroups();
+      alert((pass ? '全部通过' : '全部不通过') + '（原型演示）\n将返回「' + listTitle + '」列表。');
+      setTimeout(function () { location.href = listPage; }, 300);
+    }
+
+    function renderGroups() {
+      var html = '';
+      groups.forEach(function (g, gi) {
+        html += '<section class="test-group">';
+        html += '<div class="test-group-header">' + g.title + '</div>';
+        html += '<div class="overflow-x-auto">';
+        html += '<table class="audit-table min-w-full"><thead><tr>';
+        g.columns.forEach(function (c) { html += '<th>' + c + '</th>'; });
+        html += '</tr></thead><tbody>';
+        g.rows.forEach(function (row, ri) {
+          html += '<tr>';
+          g.columns.forEach(function (col) {
+            if (col === '状态') {
+              html += '<td>' + statusHtml(row.status) + '</td>';
+            } else if (col === '操作') {
+              html += '<td class="whitespace-nowrap">' +
+                '<button class="op-btn" title="通过" onclick="setRowStatus(' + gi + ',' + ri + ',true)"><i class="fa fa-check"></i></button>' +
+                '<button class="op-btn reject" title="不通过" onclick="setRowStatus(' + gi + ',' + ri + ',false)"><i class="fa fa-times"></i></button>' +
+                '</td>';
+            } else {
+              var dataCols = g.columns.filter(function (c) { return c !== '状态' && c !== '操作'; });
+              var dataIdx = dataCols.indexOf(col);
+              html += '<td>' + cellHtml(col, row.cells[dataIdx]) + '</td>';
+            }
+          });
+          html += '</tr>';
+        });
+        html += '<tr class="batch-row"><td colspan="' + g.columns.length + '">' +
+          '批量审核：' +
+          '<button onclick="batchGroup(' + gi + ',false)" class="ml-3 text-blue-600 hover:underline"><i class="fa fa-times"></i> 全部不通过</button>' +
+          '<button onclick="batchGroup(' + gi + ',true)" class="ml-4 text-blue-600 hover:underline"><i class="fa fa-check"></i> 全部通过</button>' +
+          '</td></tr>';
+        html += '</tbody></table></div></section>';
+      });
+      document.getElementById('groups').innerHTML = html;
+    }
+
+    function renderRecords() {
+      document.getElementById('recordBody').innerHTML = records.map(function (r, i) {
+        return '<tr>' +
+          '<td>' + (i + 1) + '</td>' +
+          '<td><a href="javascript:void(0)" onclick="alert(\'打开原始记录（原型演示）\')" class="inline-flex items-center gap-2 text-blue-600 hover:underline">' +
+          '<i class="fa fa-file-word-o text-blue-500"></i>' + r.name + '</a></td>' +
+          '<td>' + r.time + '</td></tr>';
+      }).join('');
+    }
+
+    renderGroups();
+    renderRecords();
+  </script>
+</body>
+</html>
