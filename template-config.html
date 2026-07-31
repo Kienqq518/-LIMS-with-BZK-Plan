@@ -253,6 +253,17 @@
     }
     .type-card:nth-child(2) .illus { color: #059669; }
     .type-card:nth-child(3) .illus { color: #7c3aed; }
+    .type-card:nth-child(4) .illus { color: #d97706; }
+    .type-card:nth-child(4) { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%); }
+    .type-card:nth-child(4) .title { color: #92400e; }
+    /* 标签/合格证模版 */
+    .lc-type-nav { border-left: 3px solid transparent; }
+    .lc-type-nav.active { border-left-color: #2563eb; background: #eff6ff; color: #1d4ed8; font-weight: 500; }
+    .lc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid #e2e8f0; border-radius: 999px; font-size: 12px; cursor: pointer; user-select: none; }
+    .lc-chip.on { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+    .lc-field-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; margin-bottom: 6px; }
+    .lc-modal-mask { position: fixed; inset: 0; z-index: 80; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .lc-modal-mask.open { display: flex; }
     /* 详情顶栏 + 大类横向 Tab */
     .detail-header {
       display: flex; align-items: center; gap: 16px; padding: 12px 20px;
@@ -396,13 +407,13 @@
   <!-- 模版类型 Landing -->
   <div id="tplLandingView" class="cat-hub">
     <h1 class="mb-10 text-2xl font-semibold tracking-wide text-slate-800">模板管理</h1>
-    <div class="grid w-full max-w-5xl grid-cols-1 gap-6 sm:grid-cols-3">
+    <div class="grid w-full max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2">
       <div class="type-card" onclick="enterTplType('report')">
         <div class="title">报告模版</div>
         <div class="desc">配置报告模版与公共模版，按大类分套管理</div>
         <div class="illus"><i class="fa fa-file-text-o"></i></div>
       </div>
-        <div class="type-card" onclick="enterTplType('record')">
+      <div class="type-card" onclick="enterTplType('record')">
         <div class="title">记录单模版</div>
         <div class="desc">配置组合模版与试验项模版，支持多版本单启用</div>
         <div class="illus"><i class="fa fa-list-alt"></i></div>
@@ -411,6 +422,11 @@
         <div class="title">单据模版</div>
         <div class="desc">左列表选单据，右侧配置分流与版本</div>
         <div class="illus"><i class="fa fa-file-o"></i></div>
+      </div>
+      <div class="type-card" onclick="enterTplType('labelCert')" data-annotate="label-cert-entry">
+        <div class="title">标签与合格证模版</div>
+        <div class="desc">配置样品标签与合格证版式，按大类绑定样品</div>
+        <div class="illus"><i class="fa fa-qrcode"></i></div>
       </div>
     </div>
     <p class="mt-8 text-sm text-slate-400">选择模版类型进入配置（原型演示）</p>
@@ -423,7 +439,7 @@
       <span class="detail-title" id="detailTitle">报告模版</span>
     </div>
 
-    <!-- 大类横向 Tab（报告/记录单/单据） -->
+    <!-- 大类横向 Tab（报告/记录单/单据/标签合格证） -->
     <div id="catTabBar" class="cat-tab-bar" data-annotate="doc-cat-tabs">
       <div class="cat-tab active" data-cat="dlwz" onclick="switchCatTab('dlwz')">电力物资类</div>
       <div class="cat-tab" data-cat="aqgqj" onclick="switchCatTab('aqgqj')">安全工器具类</div>
@@ -492,6 +508,133 @@
     </div>
     <div class="info-bar mx-5 mb-4" data-annotate="doc-logic">
       <i class="fa fa-info-circle"></i> <strong>单据模版：</strong>左侧选择单据类型，右侧配置生成开关、字段分流与版本。按字段分流固定取任务类型等 9 个字典下拉字段；未命中选项时回退「默认」桶。
+    </div>
+  </div>
+
+  <!-- ============ 标签与合格证模版 ============ -->
+  <div id="labelCertView" class="hidden">
+    <div class="flex items-stretch min-h-[calc(100vh-170px)] bg-white border-t border-slate-100">
+      <aside class="w-44 flex-shrink-0 border-r border-slate-200 py-2">
+        <button type="button" class="lc-type-nav active block w-full px-4 py-2.5 text-left text-sm" data-type="certificate">合格证</button>
+        <button type="button" class="lc-type-nav block w-full px-4 py-2.5 text-left text-sm text-slate-600" data-type="sample_label">样品标签</button>
+      </aside>
+      <main class="flex-1 min-w-0 overflow-auto p-4">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <h2 id="lc_listTitle" class="text-base font-medium text-slate-800">合格证模版</h2>
+          <div class="flex items-center gap-2">
+            <button type="button" data-lc-reset title="将全部大类的标签/合格证模版恢复为系统预置（覆盖已改配置）" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">恢复系统预置</button>
+            <button type="button" data-lc-new class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新建模版</button>
+          </div>
+        </div>
+        <div class="overflow-x-auto rounded border border-slate-200 bg-white">
+          <table class="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr class="bg-slate-50 text-slate-600">
+                <th class="border-b border-slate-200 px-3 py-2 font-medium">名称</th>
+                <th class="border-b border-slate-200 px-3 py-2 font-medium">布局预设</th>
+                <th class="border-b border-slate-200 px-3 py-2 font-medium">纸张(mm)</th>
+                <th class="border-b border-slate-200 px-3 py-2 font-medium">已绑样品</th>
+                <th class="border-b border-slate-200 px-3 py-2 font-medium">默认</th>
+                <th class="border-b border-slate-200 px-3 py-2 font-medium">启用</th>
+                <th class="border-b border-slate-200 px-3 py-2 font-medium">操作</th>
+              </tr>
+            </thead>
+            <tbody id="lc_tplBody"></tbody>
+          </table>
+        </div>
+        <p class="mt-3 text-xs text-slate-400">顶部大类 Tab 切换配置空间；左侧切换合格证/样品标签。未绑定样品打印时回退「默认」模版。</p>
+      </main>
+    </div>
+
+    <div id="lc_editModal" class="lc-modal-mask">
+      <div class="flex h-[92vh] w-[1100px] max-w-[96vw] flex-col rounded-lg bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+          <h3 id="lc_editTitle" class="text-base font-medium">编辑模版</h3>
+          <button type="button" data-lc-close class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+        </div>
+        <div class="flex flex-1 min-h-0">
+          <div class="flex-1 overflow-y-auto border-r border-slate-100 p-4 space-y-4">
+            <section>
+              <h4 class="mb-2 text-sm font-semibold text-slate-700">基本信息</h4>
+              <div class="grid grid-cols-2 gap-3">
+                <label class="text-sm text-slate-600">模版名称<input id="lc_e_name" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+                <label class="text-sm text-slate-600">布局预设
+                  <select id="lc_e_preset" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm"></select>
+                </label>
+                <label class="text-sm text-slate-600">纸张宽(mm)<input id="lc_e_w" type="number" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+                <label class="text-sm text-slate-600">纸张高(mm)<input id="lc_e_h" type="number" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+                <label class="text-sm text-slate-600">字号档
+                  <select id="lc_e_font" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm">
+                    <option value="normal">标准</option>
+                    <option value="compact">紧凑</option>
+                  </select>
+                </label>
+                <label class="flex items-center gap-2 text-sm text-slate-600 pt-6"><input id="lc_e_enabled" type="checkbox" checked /> 启用</label>
+              </div>
+            </section>
+            <section>
+              <h4 class="mb-2 text-sm font-semibold text-slate-700">品牌区</h4>
+              <div class="grid grid-cols-2 gap-3">
+                <label class="text-sm text-slate-600 col-span-2">单位名称（默认检测机构）<input id="lc_e_org" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+                <label class="text-sm text-slate-600">标题<input id="lc_e_title" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+                <label class="text-sm text-slate-600">Logo
+                  <select id="lc_e_logo" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm">
+                    <option value="system">显示系统 Logo</option>
+                    <option value="custom">自定义（原型用系统图标）</option>
+                    <option value="hidden">不显示</option>
+                  </select>
+                </label>
+                <label class="flex items-center gap-2 text-sm text-slate-600"><input id="lc_e_wm" type="checkbox" /> 样式1「格」底纹</label>
+                <label class="text-sm text-slate-600 col-span-2">底部警示文案（样式2）<input id="lc_e_warn" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+              </div>
+            </section>
+            <section>
+              <h4 class="mb-2 text-sm font-semibold text-slate-700">字段槽位 <span class="font-normal text-slate-400">（勾选 · 拖拽排序 · 改显示名）</span></h4>
+              <div id="lc_fieldPool" class="mb-2 flex flex-wrap gap-2"></div>
+              <div id="lc_fieldList"></div>
+            </section>
+            <section>
+              <h4 class="mb-2 text-sm font-semibold text-slate-700">二维码</h4>
+              <div class="grid grid-cols-3 gap-3">
+                <label class="flex items-center gap-2 text-sm"><input id="lc_e_qr" type="checkbox" checked /> 启用二维码</label>
+                <label class="text-sm text-slate-600">尺寸(px)<input id="lc_e_qrSize" type="number" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+                <label class="text-sm text-slate-600">位置
+                  <select id="lc_e_qrPlace" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm">
+                    <option value="right">右侧</option>
+                    <option value="corner">角部</option>
+                    <option value="center">中置</option>
+                    <option value="none">无</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+            <section>
+              <h4 class="mb-2 text-sm font-semibold text-slate-700">绑定样品（叶节点，可多选）</h4>
+              <div id="lc_bindSamples" class="flex flex-wrap gap-2"></div>
+              <p id="lc_bindHint" class="mt-2 text-xs text-amber-600"></p>
+            </section>
+            <section>
+              <h4 class="mb-2 text-sm font-semibold text-slate-700">备注（不渲染）</h4>
+              <div class="grid grid-cols-3 gap-3">
+                <label class="text-sm text-slate-600">材质<input id="lc_e_mat" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+                <label class="text-sm text-slate-600">安装方式<input id="lc_e_mount" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+                <label class="text-sm text-slate-600">赋码打印<input id="lc_e_print" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
+              </div>
+            </section>
+          </div>
+          <div class="w-[360px] flex-shrink-0 overflow-y-auto bg-slate-50 p-4">
+            <div class="mb-2 flex items-center justify-between">
+              <h4 class="text-sm font-semibold text-slate-700">实时预览</h4>
+              <button type="button" data-lc-refresh class="text-xs text-blue-600 hover:underline">刷新</button>
+            </div>
+            <div id="lc_previewBox" class="flex justify-center overflow-auto rounded border border-slate-200 bg-slate-100 p-3"></div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 border-t border-slate-200 px-5 py-3">
+          <button type="button" data-lc-close class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
+          <button type="button" data-lc-save class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">保存</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -798,6 +941,10 @@
   <script src="js/prototype-annotation.js"></script>
   <script src="js/mock-dict.js"></script>
   <script src="js/entrust-field-config.js"></script>
+  <script src="js/short-link-qr.js"></script>
+  <script src="js/label-cert-config.js"></script>
+  <script src="js/label-cert-render.js"></script>
+  <script src="js/label-cert-ui.js"></script>
   <script>
     var state = { view: 'landing', main: 'report', sub: 'body', treeId: 'pvc-c', recordRowId: null, configRowId: null, configContext: 'test-item', combinedConfigKey: null, bodyRowId: null, publicRowId: null, recordPublicRowId: null, recordEditKind: null, recordEditId: null, recordEditBindType: null, recordEditBindTarget: null, recordCopyTarget: 'version', publicLib: 'report', poType: 'report', poTab: 'center', cat: 'dlwz', openIds: {}, copyMode: 'public', copyTarget: null, filePickerTarget: null, bodyVersionRenameIndex: null, publicVersionRenameIndex: null, recordVersionRenameIndex: null, docDirty: false, docSavedSnapshots: {}, unsavedAction: null, docUploadType: null, docUploadOptionKey: null, docErrorTypes: [], docSelectedType: null, versionFromBodyRef: false, versionFromRecordRef: false };
     var modalStack = [];
@@ -2216,11 +2363,12 @@
       renderView();
     }
 
-    var TPL_TYPE_TITLES = { report: '报告模版', record: '记录单模版', doc: '单据模版' };
+    var TPL_TYPE_TITLES = { report: '报告模版', record: '记录单模版', doc: '单据模版', labelCert: '标签与合格证模版' };
 
     function renderDetailPanels() {
       var tab = state.main;
       var isDoc = tab === 'doc';
+      var isLabelCert = tab === 'labelCert';
       var isTable = tab === 'report' || tab === 'record';
       document.getElementById('catTabBar').classList.remove('hidden');
       document.getElementById('detailTitle').textContent = TPL_TYPE_TITLES[tab] || '模板管理';
@@ -2228,6 +2376,7 @@
       document.getElementById('recordSubBar').classList.toggle('hidden', tab !== 'record');
       document.getElementById('tableLayout').classList.toggle('hidden', !isTable);
       document.getElementById('docView').classList.toggle('hidden', !isDoc);
+      document.getElementById('labelCertView').classList.toggle('hidden', !isLabelCert);
       document.querySelectorAll('#catTabBar .cat-tab').forEach(function (t) {
         t.classList.toggle('active', t.getAttribute('data-cat') === state.cat);
       });
@@ -2241,8 +2390,17 @@
           t.classList.toggle('active', t.getAttribute('data-sub') === state.sub);
         });
       }
+      if (isLabelCert) {
+        if (window.LabelCertUI) {
+          LabelCertUI.init({ cat: state.cat });
+          LabelCertUI.setCat(state.cat);
+          LabelCertUI.show();
+        }
+      } else if (window.LabelCertUI) {
+        LabelCertUI.hide();
+      }
       if (isDoc) renderDocView();
-      else {
+      else if (isTable) {
         document.getElementById('treePanel').classList.toggle('hidden', state.sub === 'public');
         renderTree();
         renderView();
@@ -2253,9 +2411,10 @@
     function enterTplType(type) {
       state.main = type;
       state.sub = type === 'record' ? 'record' : 'body';
-      state.cat = state.cat || 'dlwz';
+      if (type === 'labelCert' && !state.cat) state.cat = 'aqgqj';
+      state.cat = state.cat || (type === 'labelCert' ? 'aqgqj' : 'dlwz');
       state.treeId = resolveTreeIdForCat(state.cat);
-      openReportTreeDefaultsForCat(state.cat);
+      if (type !== 'labelCert') openReportTreeDefaultsForCat(state.cat);
       document.getElementById('tplLandingView').classList.add('hidden');
       document.getElementById('tplDetailView').classList.remove('hidden');
       renderDetailPanels();
@@ -2288,7 +2447,8 @@
     function applyCatSwitch(cat) {
       state.cat = cat;
       state.treeId = resolveTreeIdForCat(cat);
-      openReportTreeDefaultsForCat(cat);
+      if (state.main !== 'labelCert') openReportTreeDefaultsForCat(cat);
+      if (state.main === 'labelCert' && window.LabelCertUI) LabelCertUI.setCat(cat);
       renderDetailPanels();
     }
 

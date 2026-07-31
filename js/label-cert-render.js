@@ -167,7 +167,7 @@
           el.innerHTML = '<img alt="qr" width="' + size + '" height="' + size + '" src="https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&data=' + encodeURIComponent(url) + '" />';
         }
       } else if (global.ShortLinkQR) {
-        ShortLinkQR.renderQRBlock('#' + id, sampleNo, { size: size, showHint: false });
+        ShortLinkQR.renderQRBlock('#' + id, sampleNo, { size: size, showHint: false, showLabel: false });
       }
     });
   }
