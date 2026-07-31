@@ -50,6 +50,30 @@
     .status-chip { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 12px; border: 1px solid #fdba74; color: #c2410c; background: #fff7ed; }
     .empty-box { padding: 28px 0; text-align: center; color: #94a3b8; }
     .empty-box i { font-size: 28px; color: #e2e8f0; display: block; margin-bottom: 6px; }
+    /* 批量导出条 */
+    .export-bar {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 16px; border: 1px solid #bfdbfe; border-radius: 8px;
+      background: linear-gradient(90deg, #eff6ff 0%, #f8fafc 55%, #fff 100%);
+      box-shadow: 0 1px 2px rgba(37, 99, 235, .06);
+    }
+    .export-bar .export-title { font-size: 14px; font-weight: 600; color: #1e40af; }
+    .export-bar .export-desc { font-size: 12px; color: #64748b; margin-top: 2px; line-height: 1.45; }
+    .export-type-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
+    @media (min-width: 720px) { .export-type-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .export-type-item {
+      display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px;
+      border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; cursor: pointer;
+    }
+    .export-type-item:hover { border-color: #93c5fd; background: #f8fbff; }
+    .export-type-item input { margin-top: 2px; accent-color: #2563eb; }
+    .export-type-item .t { font-size: 13px; color: #334155; font-weight: 500; }
+    .export-type-item .s { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .export-scope {
+      margin-top: 14px; padding: 10px 12px; border-radius: 6px;
+      background: #f8fafc; border: 1px dashed #cbd5e1; font-size: 12px; color: #475569; line-height: 1.5;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -117,7 +141,7 @@
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>报告信息</h2>
       <table class="info-table">
         <tr><td class="lbl">报告传送方式</td><td class="val">邮寄</td><td class="lbl">报告资质</td><td class="val">CNAS CMA</td><td class="lbl">报告描述</td><td class="val">全部生成一份</td></tr>
-        <tr><td class="lbl">结果方式</td><td class="val"></td><td class="lbl">判定</td><td class="val"></td><td class="lbl"></td><td class="val"></td></tr>
+        <tr data-annotate="report-result-mode"><td class="lbl">结果方式</td><td class="val">判定</td><td class="lbl"></td><td class="val"></td><td class="lbl"></td><td class="val"></td></tr>
       </table>
     </section>
 
@@ -132,30 +156,47 @@
     </section>
 
     <!-- ========== 检测信息 ========== -->
-    <section class="rounded bg-white p-4 shadow-sm">
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="detect-info">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测信息</h2>
       <div class="detect-card overflow-x-auto">
         <div class="flex">
           <div class="detect-idx shrink-0">1</div>
           <div class="min-w-0 flex-1">
-            <table class="info-table">
+            <!-- 样品字段对齐编辑样品弹窗（不含「是否合并」） -->
+            <table class="info-table" data-annotate="detect-sample-fields">
               <tr>
                 <td class="lbl">样品名称</td><td class="val">绝缘操作杆</td>
-                <td class="lbl">型号关联(规格型号)</td><td class="val"></td>
+                <td class="lbl">样品别名</td><td class="val">绝缘操作杆</td>
+                <td class="lbl">型号关联</td><td class="val">型号关联</td>
+              </tr>
+              <tr>
+                <td class="lbl">规格型号</td><td class="val">300</td>
+                <td class="lbl">样品单价/元</td><td class="val">160</td>
                 <td class="lbl">样品数量</td><td class="val">1</td>
-                <td class="lbl">试样制备数量</td><td class="val"></td>
               </tr>
               <tr>
-                <td class="lbl">生产厂家</td><td class="val"></td>
-                <td class="lbl">生产厂家地址</td><td class="val"></td>
-                <td class="lbl">制造商</td><td class="val"></td>
-                <td class="lbl">制造商地址</td><td class="val"></td>
+                <td class="lbl">总价</td><td class="val">160</td>
+                <td class="lbl">生产厂家</td><td class="val">生产厂家</td>
+                <td class="lbl">生产厂家地址</td><td class="val">生产厂家地址</td>
               </tr>
               <tr>
-                <td class="lbl">需要制样</td><td class="val">否</td>
-                <td class="lbl">备注</td><td class="val"></td>
-                <td class="lbl">样品长度</td><td class="val"></td>
-                <td class="lbl"></td><td class="val"></td>
+                <td class="lbl">生产日期</td><td class="val">2026-06-08</td>
+                <td class="lbl">制造商</td><td class="val">制造商</td>
+                <td class="lbl">制造商地址</td><td class="val">制造商地址</td>
+              </tr>
+              <tr>
+                <td class="lbl">样品状态</td><td class="val">完好</td>
+                <td class="lbl">试样制备数量</td><td class="val">1</td>
+                <td class="lbl">是否加急</td><td class="val">否</td>
+              </tr>
+              <tr>
+                <td class="lbl">是否制样</td><td class="val">否</td>
+                <td class="lbl">样品单位</td><td class="val">根</td>
+                <td class="lbl">样品排序</td><td class="val">1</td>
+              </tr>
+              <tr>
+                <td class="lbl">样品长度</td><td class="val">1</td>
+                <td class="lbl">备注信息</td><td class="val" colspan="3">备注</td>
               </tr>
             </table>
             <div class="detect-subhead">试验信息</div>
@@ -187,6 +228,26 @@
                   <tr>
                     <td>2</td>
                     <td>外观及尺寸</td>
+                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
+                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
+                    <td class="text-xs text-slate-600">按标准要求执行</td>
+                    <td>暂无</td>
+                    <td><span class="status-chip">未领样</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>3</td>
+                    <td>抗弯动负荷试验</td>
+                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
+                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
+                    <td class="text-xs text-slate-600">按标准要求执行</td>
+                    <td>暂无</td>
+                    <td><span class="status-chip">未领样</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>4</td>
+                    <td>抗弯静负荷试验</td>
                     <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
                     <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
                     <td class="text-xs text-slate-600">按标准要求执行</td>
@@ -230,8 +291,23 @@
       </div>
     </section>
 
+    <!-- ========== 文件区：批量导出 ========== -->
+    <div id="docFilesZone" class="space-y-4" data-annotate="doc-files-zone">
+    <div class="export-bar" data-annotate="batch-export-bar">
+      <div class="min-w-0">
+        <div class="export-title"><i class="fa fa-download mr-1"></i>批量导出本委托文件</div>
+        <div class="export-desc">
+          范围：委托 <strong class="text-slate-700">SC2026/0073</strong> 下「委托单文件 → 原始记录表」各区块中，
+          <strong class="text-slate-700">已勾选类型</strong>的<strong class="text-slate-700">当前最新版</strong>文件（打包 ZIP）。历史版本不在批量导出内。
+        </div>
+      </div>
+      <button type="button" onclick="openBatchExportModal()" class="shrink-0 rounded bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+        <i class="fa fa-files-o mr-1"></i>选择类型并导出
+      </button>
+    </div>
+
     <!-- ========== 委托单文件 ========== -->
-    <section class="rounded bg-white p-4 shadow-sm">
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="doc-ops-col">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托单文件</h2>
       <div class="overflow-x-auto">
         <table class="data-table min-w-[640px]">
@@ -356,24 +432,7 @@
         </table>
       </div>
     </section>
-
-    <!-- ========== 邮寄记录表 ========== -->
-    <section class="rounded bg-white p-4 shadow-sm">
-      <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>邮寄记录表</h2>
-      <div class="overflow-x-auto">
-        <table class="data-table min-w-[560px]">
-          <thead><tr><th>序号</th><th>快递设备单</th><th>生成时间</th><th>操作</th></tr></thead>
-          <tbody>
-            <tr data-doc="mail_sheet">
-              <td>1</td>
-              <td><a href="#" class="text-blue-600 hover:underline" onclick="previewDoc('mail_sheet');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-邮寄单.docx</a></td>
-              <td>2026-07-08</td>
-              <td class="doc-ops whitespace-nowrap"></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    </div><!-- /docFilesZone -->
 
     <!-- ========== 开票记录（空态） ========== -->
     <section class="rounded bg-white p-4 shadow-sm">
@@ -604,6 +663,72 @@
     </div>
   </div>
 
+
+  <!-- 批量导出文件弹窗 -->
+  <div id="batchExportModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[90vh] w-[640px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <div>
+          <h3 class="text-base font-medium text-slate-800">批量导出本委托文件</h3>
+          <p class="mt-0.5 text-xs text-slate-400">勾选文件类型后打包 ZIP；仅含各类型最新版本</p>
+        </div>
+        <button onclick="closeModal('batchExportModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <div class="export-scope" data-annotate="batch-export-scope">
+          <div><strong>导出对象：</strong>委托单 <code class="rounded bg-white px-1">SC2026/0073</code></div>
+          <div class="mt-1"><strong>文件范围：</strong>「委托单文件」→「原始记录表」区块内、下方已勾选的类型。</div>
+          <div class="mt-1"><strong>版本规则：</strong>仅导出各类型<strong>当前最新版</strong>（历史版本不纳入；历史请在「查看历史」中在线查看）。</div>
+          <div class="mt-1"><strong>输出格式：</strong>ZIP（按文件类型分子目录）。空态区块无文件时自动跳过。</div>
+        </div>
+        <div class="mt-4 flex items-center justify-between gap-3">
+          <div class="text-sm font-semibold text-slate-700">选择要导出的文件类型</div>
+          <label class="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+            <input type="checkbox" id="batchExportSelectAll" checked onchange="toggleBatchExportSelectAll(this.checked)" />
+            全选
+          </label>
+        </div>
+        <div class="export-type-grid mt-3" id="batchExportTypes" data-annotate="batch-export-types">
+          <label class="export-type-item">
+            <input type="checkbox" name="exportType" value="entrust_form" data-label="委托单文件" checked onchange="syncBatchExportSummary()" />
+            <span><span class="t">委托单文件</span><span class="s block">Word / PDF 最新版</span></span>
+          </label>
+          <label class="export-type-item">
+            <input type="checkbox" name="exportType" value="task_sheet" data-label="检测任务单" checked onchange="syncBatchExportSummary()" />
+            <span><span class="t">检测任务单</span><span class="s block">任务单最新版</span></span>
+          </label>
+          <label class="export-type-item">
+            <input type="checkbox" name="exportType" value="flow_sheet" data-label="检测任务及样品流转单" checked onchange="syncBatchExportSummary()" />
+            <span><span class="t">检测任务及样品流转单</span><span class="s block">流转单最新版</span></span>
+          </label>
+          <label class="export-type-item">
+            <input type="checkbox" name="exportType" value="fee_notice" data-label="收费通知单" checked onchange="syncBatchExportSummary()" />
+            <span><span class="t">收费通知单</span><span class="s block">通知单最新版</span></span>
+          </label>
+          <label class="export-type-item">
+            <input type="checkbox" name="exportType" value="report" data-label="报告文件" checked onchange="syncBatchExportSummary()" />
+            <span><span class="t">报告文件</span><span class="s block">报告 Word / PDF 最新版</span></span>
+          </label>
+          <label class="export-type-item">
+            <input type="checkbox" name="exportType" value="report_issue" data-label="报告发放记录表" checked onchange="syncBatchExportSummary()" />
+            <span><span class="t">报告发放记录表</span><span class="s block">有数据时纳入</span></span>
+          </label>
+          <label class="export-type-item">
+            <input type="checkbox" name="exportType" value="raw_record" data-label="原始记录表" checked onchange="syncBatchExportSummary()" />
+            <span><span class="t">原始记录表</span><span class="s block">有数据时纳入</span></span>
+          </label>
+        </div>
+        <p id="batchExportSummary" class="mt-4 text-xs text-slate-500">已选 7 类 · 将打包导出最新版本 ZIP。</p>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button type="button" onclick="closeModal('batchExportModal')" class="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button type="button" onclick="confirmBatchExport()" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+          <i class="fa fa-download mr-1"></i>确认导出 ZIP
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/tab-bar.js"></script>
   <script src="js/lab-run-mode.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -628,8 +753,7 @@
       task_sheet: { title: '检测任务单', currentMajor: 1, reportIssued: false },
       flow_sheet: { title: '检测任务及样品流转单', currentMajor: 3, reportIssued: false },
       fee_notice: { title: '收费通知单', currentMajor: 1, reportIssued: false },
-      report: { title: '检测报告', currentMajor: 2, reportIssued: true },
-      mail_sheet: { title: '邮寄单', currentMajor: 1, reportIssued: false }
+      report: { title: '检测报告', currentMajor: 2, reportIssued: true }
     };
 
     var DOC_VERSIONS = {
@@ -655,9 +779,6 @@
         { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-08 18:00', node: '报告编制' },
         { major: 1, minor: 1, label: 'V1.1', source: 'MANUAL', origin: 'edit_close', operator: 'admin', time: '2026-07-08 19:00' },
         { major: 2, minor: 0, label: 'V2.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-09 09:00', node: '报告审核', current: true }
-      ],
-      mail_sheet: [
-        { major: 1, minor: 0, label: 'V1.0', source: 'SYSTEM', origin: 'generate', operator: 'system', time: '2026-07-08 20:00', node: '报告发放', current: true }
       ]
     };
 
@@ -802,11 +923,69 @@
       showModal('docHistoryModal');
     }
 
+
+    var BATCH_EXPORT_EMPTY = { report_issue: true, raw_record: true };
+
+    function openBatchExportModal() {
+      syncBatchExportSummary();
+      showModal('batchExportModal');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function getBatchExportChecked() {
+      return Array.prototype.slice.call(document.querySelectorAll('input[name="exportType"]:checked'));
+    }
+
+    function syncBatchExportSummary() {
+      var boxes = document.querySelectorAll('input[name="exportType"]');
+      var checked = getBatchExportChecked();
+      var all = document.getElementById('batchExportSelectAll');
+      if (all) all.checked = checked.length === boxes.length && boxes.length > 0;
+      var el = document.getElementById('batchExportSummary');
+      if (!el) return;
+      if (!checked.length) {
+        el.textContent = '请至少勾选一类文件后再导出。';
+        el.className = 'mt-4 text-xs text-amber-600';
+        return;
+      }
+      var skip = checked.filter(function (c) { return BATCH_EXPORT_EMPTY[c.value]; }).length;
+      var part = skip ? ('（其中 ' + skip + ' 类当前无文件，导出时将跳过）') : '';
+      el.textContent = '已选 ' + checked.length + ' 类 · 将打包导出最新版本 ZIP' + part + '。';
+      el.className = 'mt-4 text-xs text-slate-500';
+    }
+
+    function toggleBatchExportSelectAll(on) {
+      document.querySelectorAll('input[name="exportType"]').forEach(function (c) { c.checked = !!on; });
+      syncBatchExportSummary();
+    }
+
+    function confirmBatchExport() {
+      var checked = getBatchExportChecked();
+      if (!checked.length) {
+        alert('请至少勾选一类文件类型。');
+        return;
+      }
+      var labels = checked.map(function (c) { return c.getAttribute('data-label'); });
+      var active = checked.filter(function (c) { return !BATCH_EXPORT_EMPTY[c.value]; });
+      var skipped = checked.filter(function (c) { return BATCH_EXPORT_EMPTY[c.value]; });
+      var msg = '【原型演示】批量导出\n\n委托：SC2026/0073\n版本：各类型最新版（不含历史）\n输出：ZIP\n\n已选类型：\n- ' +
+        labels.join('\n- ');
+      if (skipped.length) {
+        msg += '\n\n将跳过（当前无文件）：\n- ' + skipped.map(function (c) { return c.getAttribute('data-label'); }).join('\n- ');
+      }
+      if (!active.length) {
+        alert(msg + '\n\n所选类型均无文件，未生成 ZIP。');
+        return;
+      }
+      alert(msg + '\n\n将生成：SC2026_0073_files_latest.zip');
+      closeModal('batchExportModal');
+    }
+
     document.addEventListener('click', function (e) {
       if (!e.target.closest('#viewMoreWrap')) closeViewMoreMenu();
     });
 
-    ['ledgerModal', 'noticeModal', 'sysLogModal', 'flowSheetModal', 'docHistoryModal'].forEach(function (id) {
+    ['ledgerModal', 'noticeModal', 'sysLogModal', 'flowSheetModal', 'docHistoryModal', 'batchExportModal'].forEach(function (id) {
       document.getElementById(id).addEventListener('click', function (e) {
         if (e.target === this) closeModal(id);
       });
@@ -824,12 +1003,20 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
+          { id: 'report-result-mode', selector: '[data-annotate="report-result-mode"]', position: 'top-right', title: '结果方式', content: '「判定」是<strong>结果方式</strong>字段的取值，不是独立参数标签。勿再拆成「结果方式 / 判定」两列标签。', tag: '字段' },
+          { id: 'detect-info', selector: '[data-annotate="detect-info"]', position: 'top-left', title: '检测信息', wide: true, content: '样品信息与「编辑样品」弹窗字段对齐展示（嵌套「试验信息」表）。<strong>不含「是否合并」</strong>：该字段仅编辑态使用，详情页不展示。', tag: '检测' },
+          { id: 'detect-sample-fields', selector: '[data-annotate="detect-sample-fields"]', position: 'bottom-right', title: '样品字段', wide: true, content: '含样品名称/别名、型号关联、规格型号、单价、数量、总价、厂家与地址、生产日期、制造商与地址、样品状态、试样制备数量、是否加急、是否制样、样品单位、排序、长度、备注信息等；与编辑弹窗一致。', tag: '检测' },
+          { id: 'batch-export-bar', selector: '[data-annotate="batch-export-bar"]', position: 'bottom-left', title: '批量导出入口', wide: true, content: '置顶高亮条，覆盖「委托单文件」至「原始记录表」。点击后勾选类型打包 ZIP；文案已说明范围=本委托 + 勾选类型 + <strong>仅最新版</strong>。', tag: '导出' },
+          { id: 'doc-files-zone', selector: '[data-annotate="doc-files-zone"]', position: 'top-right', title: '可导出文件区', content: '批量导出仅包含本区域内文件区块；其下「开票记录」等不在范围内。本页已去除「邮寄记录表」。', tag: '导出' },
+          { id: 'batch-export-scope', selector: '[data-annotate="batch-export-scope"]', position: 'top-left', title: '导出范围说明', wide: true, content: '对象=当前委托；范围=勾选类型；版本=各类型最新版（历史不导出）；格式=ZIP 分目录；空态类型跳过。', tag: '导出' },
+          { id: 'batch-export-types', selector: '[data-annotate="batch-export-types"]', position: 'bottom-right', title: '自选文件类型', content: '七类可选：委托单、任务单、流转单、收费通知单、报告、报告发放记录表、原始记录表。支持全选/反选。', tag: '导出' },
+          { id: 'doc-ops-col', selector: '[data-annotate="doc-ops-col"]', position: 'top-right', title: '文件操作列', wide: true, content: '<strong>版本号</strong>：语义化 V{主}.{次}；列表文件名不带版本后缀。<br><strong>系统更新</strong>→新主版本并成为当前；<strong>人工编辑</strong>（PageOffice 关闭保存）→次版本。<br><strong>查看历史</strong>：全员列表一致，含全部系统主版本；来源「系统更新/人工编辑」；系统说明写流程节点；历史仅在线查看，无下载、无回滚。', tag: '版本' },
           { id: 'flow-sheet-entry', selector: '[data-annotate="flow-sheet-entry"]', position: 'top-right', title: '检测任务及样品流转单', wide: true, content: '入口位于委托详情页「检测任务及样品流转单」区块（收样后<strong>系统自动生成</strong>）。点击文档链接或「查看」打开流转单；各业务节点操作完成时自动追加回填检测流程行。', tag: '流转单' },
           { id: 'flow-sheet-auto', selector: '[data-annotate="flow-sheet-auto"]', position: 'bottom-left', title: '自动生成', content: '委托受理/收样后系统自动生成本单，样品编号、检测项目、检测依据等自动带入。', tag: '流转单' },
           { id: 'flow-sheet-process', selector: '[data-annotate="flow-sheet-process"]', position: 'top-right', title: '检测流程回填表', wide: true, content: '<strong>完整流转节点示例：</strong><br>① 样品制备（可选，部门+样品制备）<br>② 发样领样（部门+领样）<br>③ 接收试样（检测员部门+接收试样，可多行）<br>④ 还样（检测员部门+还样，可多行）<br>⑤ 退样（自取：委托单位取回余样签收+联系人；快递：余样快递退回委托单位+操作员电子签）', tag: '流转单' },
           { id: 'flow-sheet-rules', selector: '[data-annotate="flow-sheet-rules"]', position: 'top-left', title: '回填规则总览', wide: true, content: '各节点回填时机见对应业务页面批注。多检测员接收/还样同一样品下不同试样时，按检测员人数各回填一行。', tag: '流转单' },
-          { id: 'doc-history', selector: '[data-annotate="doc-history"]', position: 'top-left', title: '查看历史', wide: true, content: '全员看到的历史条数一致，含全部系统主版本。来源为「系统更新 / 人工编辑」；系统更新说明写流程节点；不支持回滚。', tag: '版本' },
-          { id: 'doc-edit', selector: '[data-annotate="doc-edit"]', position: 'top-right', title: '编辑', content: 'PageOffice 在线编辑；会话内保存不落版，关闭落次版本。操作列无下载按钮。', tag: '版本' }
+          { id: 'doc-history', selector: '[data-annotate="doc-history"]', position: 'top-left', title: '查看历史', wide: true, content: '全员看到的历史条数一致，含全部系统主版本。来源为「系统更新 / 人工编辑」；系统更新说明写流程节点；不支持回滚；历史版不可下载。', tag: '版本' },
+          { id: 'doc-edit', selector: '[data-annotate="doc-edit"]', position: 'top-right', title: '编辑', content: 'PageOffice 在线编辑；会话内保存不落版，关闭落次版本。操作列无下载按钮（批量导出另见顶部导出条）。', tag: '版本' }
         ]
       });
     }
