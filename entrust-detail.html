@@ -323,7 +323,7 @@
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800" data-annotate="entrust-form-change"><span class="h-4 w-1 rounded bg-blue-500"></span>委托单文件</h2>
       <div class="overflow-x-auto">
         <table class="data-table min-w-[640px]">
-          <thead><tr><th>序号</th><th>报告文件</th><th>PDF文件</th><th>生成时间</th><th data-annotate="doc-ops-col">操作</th></tr></thead>
+          <thead><tr><th>序号</th><th>WORD文件</th><th>PDF文件</th><th>生成时间</th><th data-annotate="doc-ops-col">操作</th></tr></thead>
           <tbody>
             <tr data-doc="entrust_form">
               <td>1</td>
@@ -405,19 +405,19 @@
       </div>
       <div class="overflow-x-auto">
         <table class="data-table min-w-[640px]" id="reportFilesTable">
-          <thead><tr><th>序号</th><th>报告名称</th><th>PDF报告</th><th>生成时间</th><th>操作</th></tr></thead>
+          <thead><tr><th>序号</th><th>WORD报告</th><th>PDF报告</th><th>生成时间</th><th>操作</th></tr></thead>
           <tbody>
             <tr data-doc="report" data-issued="1" data-file-row="report">
               <td>1</td>
-              <td><a href="#" class="text-blue-600 hover:underline" onclick="previewDoc('report');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-检测报告.docx</a></td>
-              <td><a href="#" class="text-blue-600 hover:underline" onclick="downloadDoc('report');return false;"><i class="fa fa-file-pdf-o"></i> SC2026/0212-检测报告.pdf</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="previewDoc('report');return false;"><i class="fa fa-file-word-o"></i> SC2026-0111-01检测报告.docx</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="downloadDoc('report');return false;"><i class="fa fa-file-pdf-o"></i> SC2026-0111-01检测报告.pdf</a></td>
               <td>2026-07-08</td>
               <td class="doc-ops whitespace-nowrap"></td>
             </tr>
             <tr data-doc="report" data-issued="1" data-file-row="report">
               <td>2</td>
-              <td><a href="#" class="text-blue-600 hover:underline" onclick="previewDoc('report');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-检测报告-附录.docx</a></td>
-              <td><a href="#" class="text-blue-600 hover:underline" onclick="downloadDoc('report');return false;"><i class="fa fa-file-pdf-o"></i> SC2026/0212-检测报告-附录.pdf</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="previewDoc('report');return false;"><i class="fa fa-file-word-o"></i> SC2026-0111-02检测报告.docx</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="downloadDoc('report');return false;"><i class="fa fa-file-pdf-o"></i> SC2026-0111-02检测报告.pdf</a></td>
               <td>2026-07-09</td>
               <td class="doc-ops whitespace-nowrap"></td>
             </tr>
@@ -908,6 +908,7 @@
         }
         cell.innerHTML = html;
       });
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function previewDoc(key) {
@@ -1099,8 +1100,8 @@
           { id: 'flow-sheet-auto', selector: '[data-annotate="flow-sheet-auto"]', position: 'bottom-left', title: '自动生成', content: '委托受理/收样后系统自动生成本单，样品编号、检测项目、检测依据等自动带入。', tag: '流转单' },
           { id: 'flow-sheet-process', selector: '[data-annotate="flow-sheet-process"]', position: 'top-right', title: '检测流程回填表', wide: true, content: '<strong>完整流转节点示例：</strong><br>① 样品制备（可选，部门+样品制备）<br>② 发样领样（部门+领样）<br>③ 接收试样（检测员部门+接收试样，可多行）<br>④ 还样（检测员部门+还样，可多行）<br>⑤ 退样（自取：委托单位取回余样签收+联系人；快递：余样快递退回委托单位+操作员电子签）', tag: '流转单' },
           { id: 'flow-sheet-rules', selector: '[data-annotate="flow-sheet-rules"]', position: 'top-left', title: '回填规则总览', wide: true, content: '各节点回填时机见对应业务页面批注。多检测员接收/还样同一样品下不同试样时，按检测员人数各回填一行。', tag: '流转单' },
-          { id: 'doc-history', selector: '[data-annotate="doc-history"]', position: 'top-left', title: '查看历史', wide: true, content: '全员看到的历史条数一致，含全部系统主版本。来源为「系统更新 / 人工编辑」；系统更新说明写流程节点；不支持回滚；历史版不可下载。', tag: '版本' },
-          { id: 'doc-edit', selector: '[data-annotate="doc-edit"]', position: 'top-right', title: '编辑', content: 'PageOffice 在线编辑；会话内保存不落版，关闭落次版本。操作列无下载按钮（批量导出另见顶部导出条）。', tag: '版本' }
+          { id: 'doc-edit', selector: '[data-annotate="doc-edit"]', position: 'top-left', title: '编辑', content: 'PageOffice 在线编辑；会话内保存不落版，关闭落次版本。操作列无下载按钮（批量导出另见顶部导出条）。', tag: '版本' },
+          { id: 'doc-history', selector: '[data-annotate="doc-history"]', position: 'top-right', title: '查看历史', wide: true, content: '全员看到的历史条数一致，含全部系统主版本。来源为「系统更新 / 人工编辑」；系统更新说明写流程节点；不支持回滚；历史版不可下载。', tag: '版本' }
         ]
       });
     }
