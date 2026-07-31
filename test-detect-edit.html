@@ -396,20 +396,25 @@
       background: transparent;
     }
 
-    /* 产品检测通知书附件弹窗 */
+    /* 产品检测通知书：元信息与样品明细分表，避免共用 9 列导致标签挤叠 */
+    .task-notice-doc { border: 1px solid #334155; }
     .task-doc-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
       table-layout: fixed;
+      margin: 0;
     }
+    .task-notice-doc .task-doc-meta + .task-doc-data,
+    .task-notice-doc .task-doc-data + .task-doc-meta { margin-top: -1px; }
     .task-doc-table th,
     .task-doc-table td {
       border: 1px solid #334155;
       padding: 8px 10px;
       text-align: center;
       vertical-align: middle;
-      word-break: break-all;
+      word-break: break-word;
+      overflow-wrap: anywhere;
       color: #1e293b;
     }
     .task-doc-table th {
@@ -421,6 +426,8 @@
       background: #f8fafc;
       color: #475569;
       white-space: nowrap;
+      word-break: keep-all;
+      overflow-wrap: normal;
       font-weight: 500;
     }
     .task-doc-table .text-left { text-align: left; }
@@ -429,6 +436,11 @@
       font-size: 12px;
       line-height: 1.7;
     }
+    .task-doc-meta .lbl { width: 14%; min-width: 5.5em; }
+    .task-doc-meta .val { width: 19%; }
+    .task-doc-meta .val-wide { width: 53%; }
+    .task-doc-meta-3 .lbl { width: 12%; min-width: 5em; }
+    .task-doc-meta-3 .val { width: 21.33%; }
     .tag-done {
       display: inline-block;
       border-radius: 3px;
@@ -476,7 +488,7 @@
             <i class="fa fa-download"></i> 导出管理
           </button>
           <button type="button" onclick="openTaskSheetModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="task-sheet">
-            <i class="fa fa-file-text-o"></i> 检测任务单
+            <i class="fa fa-file-text-o"></i> 产品检测通知书
           </button>
         </div>
       </div>
@@ -511,7 +523,7 @@
     </div>
   </div>
 
-  <!-- 检测任务单 · 产品检测通知书附件 -->
+  <!-- 产品检测通知书弹窗 -->
   <div id="taskSheetModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/40 p-4">
     <div class="flex max-h-[92vh] w-[980px] max-w-full flex-col rounded-lg bg-white shadow-xl" onclick="event.stopPropagation()">
       <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
@@ -521,23 +533,45 @@
         </button>
       </div>
       <div class="flex-1 overflow-y-auto px-6 py-5">
-        <div class="border border-slate-700 bg-white p-4">
+        <div class="bg-white p-4">
           <h4 class="mb-4 text-center text-lg font-semibold tracking-widest text-slate-800">产品检测通知书</h4>
-          <table class="task-doc-table" id="taskSheetTable">
-            <colgroup>
-              <col style="width:5%" />
-              <col style="width:12%" />
-              <col style="width:8%" />
-              <col style="width:6%" />
-              <col style="width:26%" />
-              <col style="width:12%" />
-              <col style="width:10%" />
-              <col style="width:10%" />
-              <col style="width:11%" />
-            </colgroup>
-            <thead></thead>
-            <tbody id="taskSheetBody"></tbody>
-          </table>
+          <div class="task-notice-doc" id="taskSheetDoc">
+            <table class="task-doc-table task-doc-meta" id="taskSheetMetaTop">
+              <colgroup>
+                <col style="width:14%" />
+                <col style="width:33%" />
+                <col style="width:14%" />
+                <col style="width:39%" />
+              </colgroup>
+              <tbody id="taskSheetMetaTopBody"></tbody>
+            </table>
+            <table class="task-doc-table task-doc-data" id="taskSheetTable">
+              <colgroup>
+                <col style="width:5%" />
+                <col style="width:12%" />
+                <col style="width:8%" />
+                <col style="width:6%" />
+                <col style="width:26%" />
+                <col style="width:12%" />
+                <col style="width:10%" />
+                <col style="width:10%" />
+                <col style="width:11%" />
+              </colgroup>
+              <thead id="taskSheetHead"></thead>
+              <tbody id="taskSheetBody"></tbody>
+            </table>
+            <table class="task-doc-table task-doc-meta task-doc-meta-3" id="taskSheetMetaBottom">
+              <colgroup>
+                <col style="width:12%" />
+                <col style="width:21%" />
+                <col style="width:14%" />
+                <col style="width:20%" />
+                <col style="width:12%" />
+                <col style="width:21%" />
+              </colgroup>
+              <tbody id="taskSheetMetaBottomBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
       <div class="flex items-center justify-center gap-3 border-t border-slate-100 px-5 py-4">
@@ -844,22 +878,25 @@
       if (e.target === this) closeRowEdit();
     });
 
-    /* ===== 检测任务单 · 产品检测通知书 ===== */
+    /* ===== 产品检测通知书 ===== */
     function sampleModelOf(sample) {
       return sample.model || (sample.name === '绝缘操作杆' ? '10kV' : sample.name === '绝缘硬梯' ? '折叠式' : '通用型');
     }
 
     function renderTaskSheet() {
-      var rowsHtml = '';
-      rowsHtml += '<tr>' +
-        '<td class="lbl">委托编号</td><td colspan="2">' + entrustCode + '</td>' +
-        '<td class="lbl">客户单位</td><td colspan="5" class="text-left">' + customer + '</td>' +
-        '</tr>';
-      rowsHtml += '<tr>' +
-        '<th>编号</th><th>样品名称</th><th>型号</th><th>数量</th><th>检测项目</th>' +
-        '<th>生产厂/制造商</th><th>试验状态</th><th>是否加急</th><th>备注信息</th>' +
+      document.getElementById('taskSheetMetaTopBody').innerHTML =
+        '<tr>' +
+          '<td class="lbl">委托编号</td><td class="val">' + entrustCode + '</td>' +
+          '<td class="lbl">客户单位</td><td class="val-wide text-left">' + customer + '</td>' +
         '</tr>';
 
+      document.getElementById('taskSheetHead').innerHTML =
+        '<tr>' +
+          '<th>编号</th><th>样品名称</th><th>型号</th><th>数量</th><th>检测项目</th>' +
+          '<th>生产厂/制造商</th><th>试验状态</th><th>是否加急</th><th>备注信息</th>' +
+        '</tr>';
+
+      var rowsHtml = '';
       pageData.samples.forEach(function (sample, i) {
         var qty = sample.groups.length ? sample.groups[0].rows.length : 0;
         var items = sample.groups.map(function (g) { return g.title; }).join('|');
@@ -879,14 +916,14 @@
         rowsHtml += '<td></td>';
         rowsHtml += '</tr>';
       });
-
-      rowsHtml += '<tr>' +
-        '<td class="lbl">编制人</td><td colspan="2">admin</td>' +
-        '<td class="lbl">委托受理日期</td><td colspan="2" class="text-left">2026-04-14</td>' +
-        '<td class="lbl">完成期限</td><td colspan="2" class="text-left"></td>' +
-        '</tr>';
-
       document.getElementById('taskSheetBody').innerHTML = rowsHtml;
+
+      document.getElementById('taskSheetMetaBottomBody').innerHTML =
+        '<tr>' +
+          '<td class="lbl">编制人</td><td class="val">admin</td>' +
+          '<td class="lbl">委托受理日期</td><td class="val text-left">2026-04-14</td>' +
+          '<td class="lbl">完成期限</td><td class="val text-left"></td>' +
+        '</tr>';
     }
 
     function openTaskSheetModal() {
