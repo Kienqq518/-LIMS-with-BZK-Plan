@@ -162,17 +162,17 @@
         <div class="flex">
           <div class="detect-idx shrink-0">1</div>
           <div class="min-w-0 flex-1">
-            <!-- 样品字段：详情展示精简（不含是否合并/单价/总价/生产日期/样品状态/长度/加急/排序） -->
+            <!-- 样品字段：详情精简（不含型号关联/试样制备数量等） -->
             <table class="info-table" data-annotate="detect-sample-fields">
               <tr>
                 <td class="lbl">样品名称</td><td class="val">绝缘操作杆</td>
                 <td class="lbl">样品别名</td><td class="val">绝缘操作杆</td>
-                <td class="lbl">型号关联</td><td class="val">型号关联</td>
+                <td class="lbl">规格型号</td><td class="val">300</td>
               </tr>
               <tr>
-                <td class="lbl">规格型号</td><td class="val">300</td>
                 <td class="lbl">样品数量</td><td class="val">1</td>
                 <td class="lbl">样品单位</td><td class="val">根</td>
+                <td class="lbl">是否制样</td><td class="val">否</td>
               </tr>
               <tr>
                 <td class="lbl">生产厂家</td><td class="val">生产厂家</td>
@@ -181,20 +181,17 @@
               </tr>
               <tr>
                 <td class="lbl">制造商地址</td><td class="val">制造商地址</td>
-                <td class="lbl">是否制样</td><td class="val">否</td>
-                <td class="lbl">试样制备数量</td><td class="val">1</td>
-              </tr>
-              <tr>
-                <td class="lbl">备注信息</td><td class="val" colspan="5">备注</td>
+                <td class="lbl">备注信息</td><td class="val" colspan="3">备注</td>
               </tr>
             </table>
             <div class="detect-subhead">试验信息</div>
             <div class="overflow-x-auto">
-              <table class="data-table min-w-[960px]">
+              <table class="data-table min-w-[1040px]" data-annotate="detect-prep-info">
                 <thead>
                   <tr>
                     <th>序号</th>
                     <th>名称</th>
+                    <th>制样信息</th>
                     <th>检测依据</th>
                     <th>判定依据</th>
                     <th>标准要求</th>
@@ -207,6 +204,7 @@
                   <tr>
                     <td>1</td>
                     <td>交流耐压试验</td>
+                    <td>无需制样</td>
                     <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
                     <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
                     <td class="text-xs text-slate-600">按标准要求执行</td>
@@ -217,6 +215,7 @@
                   <tr>
                     <td>2</td>
                     <td>外观及尺寸</td>
+                    <td>无需制样</td>
                     <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
                     <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
                     <td class="text-xs text-slate-600">按标准要求执行</td>
@@ -227,6 +226,7 @@
                   <tr>
                     <td>3</td>
                     <td>抗弯动负荷试验</td>
+                    <td>试样数量-3</td>
                     <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
                     <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
                     <td class="text-xs text-slate-600">按标准要求执行</td>
@@ -237,6 +237,7 @@
                   <tr>
                     <td>4</td>
                     <td>抗弯静负荷试验</td>
+                    <td>试样数量-2</td>
                     <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
                     <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
                     <td class="text-xs text-slate-600">按标准要求执行</td>
@@ -1001,8 +1002,9 @@
       PrototypeAnnotation.init({
         annotations: [
           { id: 'report-result-mode', selector: '[data-annotate="report-result-mode"]', position: 'top-right', title: '结果方式', content: '「判定」是<strong>结果方式</strong>字段的取值，不是独立参数标签。勿再拆成「结果方式 / 判定」两列标签。', tag: '字段' },
-          { id: 'detect-info', selector: '[data-annotate="detect-info"]', position: 'top-left', title: '检测信息', wide: true, content: '详情页样品信息精简展示（嵌套「试验信息」表）。不含「是否合并」，亦不展示单价/总价/生产日期/样品状态/长度/加急/排序（编辑弹窗可仍保留这些项）。', tag: '检测' },
-          { id: 'detect-sample-fields', selector: '[data-annotate="detect-sample-fields"]', position: 'bottom-right', title: '样品字段', wide: true, content: '详情展示：样品名称/别名、型号关联、规格型号、数量、单位、厂家与地址、制造商与地址、是否制样、试样制备数量、备注信息。已去除单价、总价、生产日期、样品状态、样品长度、是否加急、样品排序。', tag: '检测' },
+          { id: 'detect-info', selector: '[data-annotate="detect-info"]', position: 'top-left', title: '检测信息', wide: true, content: '详情页样品信息精简展示（嵌套「试验信息」表）。试验行含「制样信息」列。不含型号关联、试样制备数量及是否合并/单价等编辑态字段。', tag: '检测' },
+          { id: 'detect-sample-fields', selector: '[data-annotate="detect-sample-fields"]', position: 'bottom-right', title: '样品字段', wide: true, content: '详情展示：样品名称/别名、规格型号、数量、单位、是否制样、厂家与地址、制造商与地址、备注信息。已去除型号关联、试样制备数量（制样数量改由试验行「制样信息」展示）。', tag: '检测' },
+          { id: 'detect-prep-info', selector: '[data-annotate="detect-prep-info"]', position: 'top-left', title: '制样信息', wide: true, content: '来自样品数据试验配置：不制样显示「无需制样」；制样则显示「试样数量-N」（N 为编辑试验抽屉中「试样数量」步进器取值）。', tag: '检测' },
           { id: 'batch-export-bar', selector: '[data-annotate="batch-export-bar"]', position: 'bottom-left', title: '批量导出入口', wide: true, content: '置顶高亮条。范围含「委托单文件」→「原始记录表」，以及还样记录中的<strong>还样退库确认表 / 退样申请表</strong>。勾选类型打包 ZIP；仅最新版。', tag: '导出' },
           { id: 'doc-files-zone', selector: '[data-annotate="doc-files-zone"]', position: 'top-right', title: '可导出文件区', content: '本区域为委托单→原始记录表主文件区；另含上方「还样记录」中的退库确认表/退样申请表。开票记录不在范围内；已去除邮寄记录表。', tag: '导出' },
           { id: 'batch-export-scope', selector: '[data-annotate="batch-export-scope"]', position: 'top-left', title: '导出范围说明', wide: true, content: '对象=当前委托；版本=各类型最新版；格式=ZIP；空态跳过。可选类型见下方勾选（不含报告发放记录表）。', tag: '导出' },

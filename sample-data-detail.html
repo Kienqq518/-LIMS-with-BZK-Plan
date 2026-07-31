@@ -112,6 +112,25 @@
       width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; background: #fff;
     }
     .field-row input:focus, .field-row select:focus, .field-row textarea:focus { border-color: #3b82f6; }
+    .num-stepper {
+      display: inline-flex; align-items: stretch; border: 1px solid #dcdfe6; border-radius: 4px;
+      overflow: hidden; background: #fff; width: 140px; max-width: 100%;
+    }
+    .num-stepper:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.12); }
+    .num-stepper button {
+      width: 34px; flex-shrink: 0; border: 0; background: #f8fafc; color: #475569;
+      font-size: 16px; line-height: 1; cursor: pointer; user-select: none;
+    }
+    .num-stepper button:hover { background: #eff6ff; color: #2563eb; }
+    .num-stepper button:active { background: #dbeafe; }
+    .num-stepper input[type="number"] {
+      width: 72px !important; border: 0 !important; border-left: 1px solid #e2e8f0 !important;
+      border-right: 1px solid #e2e8f0 !important; border-radius: 0 !important;
+      text-align: center; padding: 7px 4px !important; box-shadow: none !important;
+      -moz-appearance: textfield;
+    }
+    .num-stepper input[type="number"]::-webkit-outer-spin-button,
+    .num-stepper input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .chip-multi {
       display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start;
       min-height: 38px; max-height: 120px; overflow-y: auto; padding: 6px;
@@ -350,7 +369,15 @@
             <div class="drawer-section">
               <div class="drawer-section-title">制样与其他</div>
               <div class="field-row"><label><span class="req">*</span>是否制样</label><div class="ctrl"><select id="t_needPrepare" onchange="toggleSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="t_needPrepareOv"></div></div></div>
-              <div class="field-row" id="rowSampleQty"><label><span class="req">*</span>试样数量</label><div class="ctrl"><input id="t_sampleQty" type="number" min="1" /><div id="t_sampleQtyOv"></div></div></div>
+              <div class="field-row" id="rowSampleQty" data-annotate="test-sample-qty"><label><span class="req">*</span>试样数量</label><div class="ctrl">
+                <div class="num-stepper">
+                  <button type="button" aria-label="减少" onclick="stepSampleQty(-1)">−</button>
+                  <input id="t_sampleQty" type="number" min="1" step="1" value="1" />
+                  <button type="button" aria-label="增加" onclick="stepSampleQty(1)">+</button>
+                </div>
+                <div class="tip mt-1" style="margin-top:6px">是否制样为「是」时必填；步进器调整试样数量（≥1）。</div>
+                <div id="t_sampleQtyOv"></div>
+              </div></div>
               <div class="field-row"><label>检测设备</label><div class="ctrl"><input id="t_equip" type="text" placeholder="如 [YFG-150A] 绝缘安全工器具试验装置" /><div id="t_equipOv"></div></div></div>
               <div class="field-row">
                 <label class="label-tip">试样色号
@@ -478,7 +505,14 @@
                 <div class="field-row"><label id="c_lblDetectCategory" class="label-tip">检测类别<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span></label><div class="ctrl"><select id="c_detectCategory"></select><div id="c_detectCategoryOv"></div></div></div>
                 <div class="field-row"><label>试样类别代码</label><div class="ctrl"><input id="c_sampleCatCode" type="text" /><div id="c_sampleCatCodeOv"></div></div></div>
                 <div class="field-row"><label>是否制样</label><div class="ctrl"><select id="c_needPrepare" onchange="toggleCfgSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="c_needPrepareOv"></div></div></div>
-                <div class="field-row" id="c_rowSampleQty"><label>试样数量</label><div class="ctrl"><input id="c_sampleQty" type="number" min="1" /><div id="c_sampleQtyOv"></div></div></div>
+                <div class="field-row" id="c_rowSampleQty"><label>试样数量</label><div class="ctrl">
+                  <div class="num-stepper">
+                    <button type="button" aria-label="减少" onclick="stepCfgSampleQty(-1)">−</button>
+                    <input id="c_sampleQty" type="number" min="1" step="1" value="1" />
+                    <button type="button" aria-label="增加" onclick="stepCfgSampleQty(1)">+</button>
+                  </div>
+                  <div id="c_sampleQtyOv"></div>
+                </div></div>
                 <div class="field-row"><label>默认费用（元）</label><div class="ctrl"><input id="c_fee" type="number" min="0" /><div id="c_feeOv"></div></div></div>
                 <div class="field-row"><label>检测设备</label><div class="ctrl"><input id="c_equip" type="text" /><div id="c_equipOv"></div></div></div>
                 <div class="field-row"><label>备注</label><div class="ctrl"><input id="c_remark" type="text" /><div id="c_remarkOv"></div></div></div>
@@ -1767,6 +1801,20 @@
       var show = document.getElementById('t_needPrepare').value === '是';
       document.getElementById('rowSampleQty').style.display = show ? 'flex' : 'none';
     }
+
+    function stepNumberInput(inputId, delta, minVal) {
+      var el = document.getElementById(inputId);
+      if (!el || el.disabled) return;
+      var min = minVal == null ? 1 : minVal;
+      var n = parseInt(el.value, 10);
+      if (isNaN(n)) n = min;
+      n = Math.max(min, n + delta);
+      el.value = n;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function stepSampleQty(delta) { stepNumberInput('t_sampleQty', delta, 1); }
+    function stepCfgSampleQty(delta) { stepNumberInput('c_sampleQty', delta, 1); }
 
     function renderStdBuilder() {
       var box = document.getElementById('stdBuilder');
