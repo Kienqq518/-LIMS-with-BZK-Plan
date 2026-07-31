@@ -136,6 +136,7 @@
   }
 
   global.LimsLabRunMode = {
+    FORCE_PRACTICAL: FORCE_PRACTICAL,
     getState: getState,
     isCompliance: isCompliance,
     isAdmin: isAdmin,
