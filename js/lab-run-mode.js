@@ -114,24 +114,16 @@
 
   /**
    * 过滤历史版本列表（原型）
-   * versions: [{ major, minor, label, source, ... }]
-   * currentMajor: number
+   * 实务版：所有人看到的历史一致，含全部系统主版本 + 人工次版本
+   * 合规版（未启用）：仅 admin，且只含系统主版本
    */
   function filterHistory(versions, currentMajor) {
     var list = versions.slice();
-    var compliance = isCompliance();
-    var admin = isAdmin();
-
-    if (compliance) {
-      // 合规版：仅 admin 能打开历史；内容只含系统主版本
-      if (!admin) return [];
+    if (isCompliance()) {
+      if (!isAdmin()) return [];
       return list.filter(function (v) { return Number(v.minor) === 0; });
     }
-
-    // 实务版：业务只看当前 major；admin 看全链
-    if (!admin) {
-      list = list.filter(function (v) { return Number(v.major) === Number(currentMajor); });
-    }
+    // 实务版：不做角色过滤，系统主版本全部展示
     return list;
   }
 
