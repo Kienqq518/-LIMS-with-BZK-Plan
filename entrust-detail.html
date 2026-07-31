@@ -671,7 +671,6 @@
       <div class="flex-1 overflow-y-auto px-6 py-4">
         <div class="export-scope" data-annotate="batch-export-scope">
           <div><strong>导出对象：</strong>委托单 <code class="rounded bg-white px-1">SC2026/0073</code></div>
-          <div class="mt-1"><strong>文件范围：</strong>「委托单文件」→「原始记录表」，以及还样记录中的「还样退库确认表」「退样申请表」；以下已勾选类型。</div>
           <div class="mt-1"><strong>版本规则：</strong>仅导出各类型<strong>当前最新版</strong>（历史版本不纳入；历史请在「查看历史」中在线查看）。</div>
           <div class="mt-1"><strong>输出格式：</strong>ZIP（按文件类型分子目录）。空态区块无文件时自动跳过。</div>
         </div>
@@ -704,10 +703,6 @@
             <span><span class="t">报告文件</span><span class="s block">报告 Word / PDF 最新版</span></span>
           </label>
           <label class="export-type-item">
-            <input type="checkbox" name="exportType" value="report_issue" data-label="报告发放记录表" checked onchange="syncBatchExportSummary()" />
-            <span><span class="t">报告发放记录表</span><span class="s block">有数据时纳入</span></span>
-          </label>
-          <label class="export-type-item">
             <input type="checkbox" name="exportType" value="raw_record" data-label="原始记录表" checked onchange="syncBatchExportSummary()" />
             <span><span class="t">原始记录表</span><span class="s block">有数据时纳入</span></span>
           </label>
@@ -720,7 +715,7 @@
             <span><span class="t">退样申请表</span><span class="s block">来自还样记录 · 有数据时纳入</span></span>
           </label>
         </div>
-        <p id="batchExportSummary" class="mt-4 text-xs text-slate-500">已选 9 类 · 将打包导出最新版本 ZIP。</p>
+        <p id="batchExportSummary" class="mt-4 text-xs text-slate-500">已选 8 类 · 将打包导出最新版本 ZIP。</p>
       </div>
       <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
         <button type="button" onclick="closeModal('batchExportModal')" class="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">取消</button>
@@ -926,7 +921,7 @@
     }
 
 
-    var BATCH_EXPORT_EMPTY = { report_issue: true, raw_record: true, return_apply: true };
+    var BATCH_EXPORT_EMPTY = { raw_record: true, return_apply: true };
 
     function openBatchExportModal() {
       syncBatchExportSummary();
@@ -1010,8 +1005,8 @@
           { id: 'detect-sample-fields', selector: '[data-annotate="detect-sample-fields"]', position: 'bottom-right', title: '样品字段', wide: true, content: '详情展示：样品名称/别名、型号关联、规格型号、数量、单位、厂家与地址、制造商与地址、是否制样、试样制备数量、备注信息。已去除单价、总价、生产日期、样品状态、样品长度、是否加急、样品排序。', tag: '检测' },
           { id: 'batch-export-bar', selector: '[data-annotate="batch-export-bar"]', position: 'bottom-left', title: '批量导出入口', wide: true, content: '置顶高亮条。范围含「委托单文件」→「原始记录表」，以及还样记录中的<strong>还样退库确认表 / 退样申请表</strong>。勾选类型打包 ZIP；仅最新版。', tag: '导出' },
           { id: 'doc-files-zone', selector: '[data-annotate="doc-files-zone"]', position: 'top-right', title: '可导出文件区', content: '本区域为委托单→原始记录表主文件区；另含上方「还样记录」中的退库确认表/退样申请表。开票记录不在范围内；已去除邮寄记录表。', tag: '导出' },
-          { id: 'batch-export-scope', selector: '[data-annotate="batch-export-scope"]', position: 'top-left', title: '导出范围说明', wide: true, content: '对象=当前委托；范围=文件区类型 + 还样记录两类表；版本=各类型最新版；格式=ZIP；空态跳过。', tag: '导出' },
-          { id: 'batch-export-types', selector: '[data-annotate="batch-export-types"]', position: 'bottom-right', title: '自选文件类型', wide: true, content: '九类可选：委托单、任务单、流转单、收费通知单、报告、报告发放记录表、原始记录表，以及还样记录中的<strong>还样退库确认表、退样申请表</strong>。支持全选。', tag: '导出' },
+          { id: 'batch-export-scope', selector: '[data-annotate="batch-export-scope"]', position: 'top-left', title: '导出范围说明', wide: true, content: '对象=当前委托；版本=各类型最新版；格式=ZIP；空态跳过。可选类型见下方勾选（不含报告发放记录表）。', tag: '导出' },
+          { id: 'batch-export-types', selector: '[data-annotate="batch-export-types"]', position: 'bottom-right', title: '自选文件类型', wide: true, content: '八类可选：委托单、任务单、流转单、收费通知单、报告、原始记录表，以及还样记录中的<strong>还样退库确认表、退样申请表</strong>。不含报告发放记录表。支持全选。', tag: '导出' },
           { id: 'return-record', selector: '[data-annotate="return-record"]', position: 'top-right', title: '还样记录文件', content: '「还样退库确认表」「退样申请表」纳入批量导出可选类型；行内「导出」为单条快捷导出（原型）。', tag: '导出' },
           { id: 'doc-ops-col', selector: '[data-annotate="doc-ops-col"]', position: 'top-right', title: '文件操作列', wide: true, content: '<strong>版本号</strong>：语义化 V{主}.{次}；列表文件名不带版本后缀。<br><strong>系统更新</strong>→新主版本并成为当前；<strong>人工编辑</strong>（PageOffice 关闭保存）→次版本。<br><strong>查看历史</strong>：全员列表一致，含全部系统主版本；来源「系统更新/人工编辑」；系统说明写流程节点；历史仅在线查看，无下载、无回滚。', tag: '版本' },
           { id: 'flow-sheet-entry', selector: '[data-annotate="flow-sheet-entry"]', position: 'top-right', title: '检测任务及样品流转单', wide: true, content: '入口位于委托详情页「检测任务及样品流转单」区块（收样后<strong>系统自动生成</strong>）。点击文档链接或「查看」打开流转单；各业务节点操作完成时自动追加回填检测流程行。', tag: '流转单' },
