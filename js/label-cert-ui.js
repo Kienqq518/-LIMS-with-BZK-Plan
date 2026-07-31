@@ -278,12 +278,6 @@
     renderList();
   }
 
-  function resetConfig() {
-    if (!confirm('将当前全部大类的标签/合格证模版恢复为系统预置（覆盖已改配置），是否继续？')) return;
-    cfg = LabelCertConfig.resetDefaults();
-    renderList();
-  }
-
   function bindEvents() {
     var root = $('labelCertView');
     if (!root || root.getAttribute('data-bound') === '1') return;
@@ -306,7 +300,6 @@
         return;
       }
       if (e.target.closest('[data-lc-new]')) { openEditor(); return; }
-      if (e.target.closest('[data-lc-reset]')) { resetConfig(); return; }
       var field = e.target.closest('[data-lc-field]');
       if (field) { toggleField(field.getAttribute('data-lc-field')); return; }
       var bind = e.target.closest('[data-lc-bind]');
