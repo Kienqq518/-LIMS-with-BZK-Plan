@@ -216,7 +216,7 @@
       'model-1c': { '例行试验': 1, '抽样试验': 1, '出厂检验': 1, '型式检验': 1 },
       'ds': { '例行试验': 0, '抽样试验': 0, '出厂检验': 0, '型式检验': 0 },
       'pipe-s': { '例行试验': 0, '抽样试验': 1, '出厂检验': 0, '型式检验': 1 },
-      'rod': { '例行试验': 0, '抽样试验': 0, '出厂检验': 0, '型式检验': 0 },
+      'rod': { '例行试验': 1, '抽样试验': 1, '出厂检验': 1, '型式检验': 1 },
       'cement': { '例行试验': 0, '抽样试验': 0, '出厂检验': 0, '型式检验': 0 }
     };
 
@@ -268,10 +268,15 @@
       if (isLeaf) renderConfig();
     }
 
+    function isAqgqjLeaf(id) {
+      return flattenLeaves(TREES.aqgqj, []).some(function (n) { return n.id === id; });
+    }
+
     function ensureConfig(id) {
       if (!CONFIG[id]) {
+        var def = isAqgqjLeaf(id) ? 1 : 0;
         CONFIG[id] = {};
-        TEST_TYPES.forEach(function (t) { CONFIG[id][t] = 0; });
+        TEST_TYPES.forEach(function (t) { CONFIG[id][t] = def; });
       }
       return CONFIG[id];
     }
@@ -317,7 +322,8 @@
     function batchSet() {
       fillBatchCategory();
       document.getElementById('b_testType').value = '';
-      document.querySelector('input[name=b_scheme][value="0"]').checked = true;
+      var defScheme = state.cat === 'aqgqj' ? '1' : '0';
+      document.querySelector('input[name=b_scheme][value="' + defScheme + '"]').checked = true;
       document.getElementById('batchModal').classList.add('open');
     }
 
