@@ -32,6 +32,8 @@
         return data.clientName || data.customer || '';
       case 'detectStatus':
         return data.detectStatus || data.status || '';
+      case 'entrustNo':
+        return data.entrustNo || data.orderNo || data.委托编号 || '';
       default:
         return data[id] || '';
     }
@@ -47,12 +49,79 @@
     return Math.round(mm * 3.78);
   }
 
+  function brandType(brand) {
+    if (global.LabelCertConfig && LabelCertConfig.normalizeBrandType) {
+      return LabelCertConfig.normalizeBrandType(brand || {});
+    }
+    return {
+      orgFontSize: 12, orgColor: '#1e293b',
+      titleFontSize: 14, titleColor: '#1e293b',
+      logoSize: 16, warnFontSize: 10, warnColor: '#dc2626'
+    };
+  }
+
   function logoHtml(brand) {
     if (!brand || brand.logoMode === 'hidden') return '';
+    var bt = brandType(brand);
+    var size = bt.logoSize;
     if (brand.logoMode === 'custom' && brand.logoUrl) {
-      return '<img class="lc-logo" src="' + esc(brand.logoUrl) + '" alt="logo" />';
+      return '<img class="lc-logo" src="' + esc(brand.logoUrl) + '" alt="logo" style="width:' + size + 'px;height:' + size + 'px" />';
     }
-    return '<i class="fa fa-building lc-logo-ico"></i>';
+    return '<i class="fa fa-building lc-logo-ico" style="font-size:' + size + 'px;color:' + esc(bt.orgColor) + '"></i>';
+  }
+
+  function brandHeadHtml(brand, opts) {
+    opts = opts || {};
+    var bt = brandType(brand);
+    var orgStyle = 'font-size:' + bt.orgFontSize + 'px;color:' + esc(bt.orgColor) + ';';
+    var titleStyle = 'font-size:' + bt.titleFontSize + 'px;color:' + esc(bt.titleColor) + ';';
+    var title = brand.title || opts.defaultTitle || '';
+    var center = opts.center ? ' center' : (opts.compact ? ' compact' : '');
+    if (opts.compact && !(brand.orgName || brand.title)) return '';
+    var titleBlock = title
+      ? ('<div class="lc-title" style="' + titleStyle + '">' + esc(title) + '</div>')
+      : '';
+    if (opts.compact) {
+      return '<div class="lc-brand' + center + '">' + logoHtml(brand) +
+        '<div class="lc-org" style="' + orgStyle + '">' + esc(brand.orgName || brand.title || '') + '</div></div>';
+    }
+    return '<div class="lc-brand' + center + '">' + logoHtml(brand) +
+      '<div><div class="lc-org" style="' + orgStyle + '">' + esc(brand.orgName || '') + '</div>' +
+      titleBlock + '</div></div>';
+  }
+
+  function warnHtml(brand, opts) {
+    opts = opts || {};
+    var text = brand.footerWarning;
+    if (text == null || text === '') {
+      if (!opts.fallback) return '';
+      text = opts.fallback;
+    }
+    var bt = brandType(brand);
+    return '<div class="lc-warn" style="font-size:' + bt.warnFontSize + 'px;color:' + esc(bt.warnColor) + '">' +
+      esc(text) + '</div>';
+  }
+
+  function normalizeQrPlacement(placement, preset) {
+    var p = placement || '';
+    if (preset === 'cert_style_2') return 'center';
+    if (p === 'none') return 'none';
+    if (p === 'center') return 'center';
+    if (p === 'right') return 'right';
+    if (p === 'corner') return 'bottom_right';
+    if (p === 'top_left' || p === 'top_right' || p === 'bottom_left' || p === 'bottom_right') return p;
+    if (preset === 'cert_style_1') return 'bottom_right';
+    return 'right';
+  }
+
+  function qrPlacementHtml(tpl, data, opts) {
+    if (!tpl.qr || tpl.qr.enabled === false) return { side: '', overlay: '' };
+    var place = normalizeQrPlacement(tpl.qr.placement, tpl.layoutPreset);
+    if (place === 'none') return { side: '', overlay: '' };
+    var slot = renderQrSlot(tpl, data, opts);
+    if (place === 'right') return { side: '<div class="lc-qr-side">' + slot + '</div>', overlay: '' };
+    if (place === 'center') return { side: '', overlay: '<div class="lc-qr-abs lc-qr-abs-center">' + slot + '</div>' };
+    return { side: '', overlay: '<div class="lc-qr-abs lc-qr-abs-' + place + '">' + slot + '</div>' };
   }
 
   function qrHostId(sampleNo, suffix) {
@@ -100,7 +169,8 @@
 
   function watermarkMarkHtml(brand, wm) {
     if (wm.type === 'seal') return sealMarkHtml(brand, wm);
-    return '<div class="lc-wm-text">' + esc(wm.text || '合格') + '</div>';
+    var color = wm.color || '#16a34a';
+    return '<div class="lc-wm-text" style="color:' + esc(color) + '">' + esc(wm.text || '合格') + '</div>';
   }
 
   function renderWatermark(brand) {
@@ -130,29 +200,30 @@
     var rows = visibleFields(tpl).map(function (f) {
       return '<div class="lc-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
     }).join('');
-    var qr = (tpl.qr && tpl.qr.enabled !== false) ? ('<div class="lc-qr-corner">' + renderQrSlot(tpl, data, opts) + '</div>') : '';
+    var qr = qrPlacementHtml(tpl, data, opts);
     return wrapSheet('lc-s1', tpl, data,
-      '<div class="lc-brand">' + logoHtml(brand) +
-      '<div><div class="lc-org">' + esc(brand.orgName || '') + '</div>' +
-      '<div class="lc-title">' + esc(brand.title || '检验合格证') + '</div></div></div>' +
-      '<div class="lc-body">' + rows + '</div>' + qr);
+      brandHeadHtml(brand, { defaultTitle: '检验合格证' }) +
+      '<div class="lc-body">' + rows + '</div>' +
+      warnHtml(brand) +
+      qr.side + qr.overlay);
   }
 
   function renderStyle2(tpl, data, opts) {
     var brand = tpl.brand || {};
     var until = fieldValue('validUntil', data) || fieldValue('reinspectDate', data);
-    var warn = brand.footerWarning || '无法扫码视为过期';
     return wrapSheet('lc-s2', tpl, data,
       '<div class="lc-hole"></div>' +
-      '<div class="lc-brand center">' +
-      '<div class="lc-org">' + esc(brand.orgName || '') + '</div>' +
-      '<div class="lc-title">' + esc(brand.title || '检验合格证') + '</div></div>' +
+      brandHeadHtml(brand, { center: true, defaultTitle: '检验合格证' }) +
       '<div class="lc-center-pass">' +
       '<span class="lc-pass-char">合</span>' +
-      '<div class="lc-center-qr"><div class="lc-scan-tip">扫一扫</div>' + renderQrSlot(tpl, data, opts) + '<div class="lc-scan-tip">查信息</div></div>' +
+      '<div class="lc-center-qr">' +
+        '<div class="lc-scan-tip lc-scan-tip-v">扫一扫</div>' +
+        renderQrSlot(tpl, data, opts) +
+        '<div class="lc-scan-tip lc-scan-tip-v">查信息</div>' +
+      '</div>' +
       '<span class="lc-pass-char">格</span></div>' +
       '<div class="lc-valid">检测有效期：' + esc(until) + ' 止</div>' +
-      '<div class="lc-warn">' + esc(warn) + '</div>');
+      warnHtml(brand, { fallback: '无法扫码视为过期' }));
   }
 
   function renderStyle3(tpl, data, opts) {
@@ -160,14 +231,13 @@
     var rows = visibleFields(tpl).map(function (f) {
       return '<div class="lc-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
     }).join('');
+    var qr = qrPlacementHtml(tpl, data, opts);
+    var body = qr.side
+      ? ('<div class="lc-split"><div class="lc-fields">' + rows + '</div>' + qr.side + '</div>')
+      : ('<div class="lc-fields">' + rows + '</div>');
     return wrapSheet('lc-s3', tpl, data,
-      '<div class="lc-brand">' + logoHtml(brand) +
-      '<div><div class="lc-org">' + esc(brand.orgName || '') + '</div>' +
-      '<div class="lc-title">' + esc(brand.title || '合 格 证') + '</div></div></div>' +
-      '<div class="lc-split">' +
-      '<div class="lc-fields">' + rows + '</div>' +
-      ((tpl.qr && tpl.qr.enabled !== false) ? ('<div class="lc-qr-side">' + renderQrSlot(tpl, data, opts) + '</div>') : '') +
-      '</div>');
+      brandHeadHtml(brand, { defaultTitle: '合 格 证' }) +
+      body + warnHtml(brand) + qr.overlay);
   }
 
   function renderLabel(tpl, data, opts) {
@@ -175,15 +245,13 @@
     var rows = visibleFields(tpl).map(function (f) {
       return '<div class="lc-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
     }).join('');
-    var head = (brand.orgName || brand.title)
-      ? ('<div class="lc-brand compact">' + logoHtml(brand) + '<div class="lc-org">' + esc(brand.orgName || brand.title || '') + '</div></div>')
-      : '';
+    var qr = qrPlacementHtml(tpl, data, opts);
+    var body = qr.side
+      ? ('<div class="lc-split"><div class="lc-fields">' + rows + '</div>' + qr.side + '</div>')
+      : ('<div class="lc-fields">' + rows + '</div>');
     return wrapSheet('lc-label', tpl, data,
-      head +
-      '<div class="lc-split">' +
-      '<div class="lc-fields">' + rows + '</div>' +
-      ((tpl.qr && tpl.qr.enabled !== false) ? ('<div class="lc-qr-side">' + renderQrSlot(tpl, data, opts) + '</div>') : '') +
-      '</div>');
+      brandHeadHtml(brand, { compact: true }) +
+      body + warnHtml(brand) + qr.overlay);
   }
 
   function renderSheet(tpl, data, opts) {
@@ -226,10 +294,10 @@
     '.lc-brand{display:flex;align-items:center;gap:6px;margin-bottom:6px}',
     '.lc-brand.center{flex-direction:column;text-align:center;gap:2px}',
     '.lc-brand.compact{margin-bottom:4px}',
-    '.lc-org{font-size:12px;font-weight:600;line-height:1.3}',
-    '.lc-title{font-size:14px;font-weight:700;letter-spacing:.2em;text-align:center}',
-    '.lc-logo-ico{color:#2563eb;font-size:16px}',
-    '.lc-logo{width:22px;height:22px;object-fit:contain}',
+    '.lc-org{font-weight:600;line-height:1.3}',
+    '.lc-title{font-weight:700;letter-spacing:.2em;text-align:center}',
+    '.lc-logo-ico{line-height:1}',
+    '.lc-logo{object-fit:contain;display:block}',
     '.lc-row{line-height:1.55;display:flex;gap:2px}',
     '.lc-k{color:#475569;white-space:nowrap}',
     '.lc-v{flex:1;border-bottom:1px dotted #cbd5e1;min-height:1.2em}',
@@ -239,21 +307,27 @@
     '.lc-qr{display:flex;align-items:center;justify-content:center;background:#fff}',
     '.lc-qr img{display:block;width:100%;height:100%}',
     '.lc-s1{border-color:#2563eb}',
-    '.lc-qr-corner{position:absolute;right:6px;bottom:6px}',
-    '.lc-s2{border-radius:6px;padding-top:14px}',
+    '.lc-qr-abs{position:absolute;z-index:2}',
+    '.lc-qr-abs-top_left{left:6px;top:6px}',
+    '.lc-qr-abs-top_right{right:6px;top:6px}',
+    '.lc-qr-abs-bottom_left{left:6px;bottom:6px}',
+    '.lc-qr-abs-bottom_right{right:6px;bottom:6px}',
+    '.lc-qr-abs-center{left:50%;top:50%;transform:translate(-50%,-50%)}',
+    '.lc-s2{border-radius:6px;padding-top:14px;padding-bottom:10px}',
     '.lc-hole{position:absolute;left:8px;top:8px;width:10px;height:10px;border-radius:50%;border:1px solid #94a3b8;background:#f8fafc;z-index:2}',
     '.lc-center-pass{display:flex;align-items:center;justify-content:center;gap:6px;margin:6px 0}',
     '.lc-pass-char{font-size:28px;font-weight:800;color:#16a34a;line-height:1}',
-    '.lc-center-qr{display:flex;flex-direction:column;align-items:center;gap:2px}',
-    '.lc-scan-tip{font-size:10px;color:#64748b}',
+    '.lc-center-qr{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px}',
+    '.lc-scan-tip{font-size:10px;color:#64748b;line-height:1.1}',
+    '.lc-scan-tip-v{writing-mode:vertical-rl;text-orientation:upright;letter-spacing:.12em;white-space:nowrap}',
     '.lc-valid{text-align:center;font-size:11px;margin-top:2px}',
-    '.lc-warn{text-align:center;font-size:10px;color:#dc2626;margin-top:2px}',
+    '.lc-warn{text-align:center;margin-top:4px;line-height:1.35;word-break:break-all;padding:0 2px}',
     '.lc-label{border-style:dashed}',
     '.lc-missing{padding:24px;color:#94a3b8;text-align:center}',
     /* 水印层 */
     '.lc-wm-layer{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}',
     '.lc-wm-rot{display:inline-flex;align-items:center;justify-content:center;transform:rotate(var(--lc-wm-angle,0deg));transform-origin:center center}',
-    '.lc-wm-text{color:#16a34a;font-weight:700;line-height:1;white-space:nowrap;font-family:SimSun,"Songti SC",serif}',
+    '.lc-wm-text{font-weight:700;line-height:1;white-space:nowrap;font-family:SimSun,"Songti SC",serif}',
     '.lc-wm-size-sm .lc-wm-text{font-size:28px}',
     '.lc-wm-size-md .lc-wm-text{font-size:42px}',
     '.lc-wm-size-lg .lc-wm-text{font-size:64px}',
@@ -303,6 +377,7 @@
     ensureStyles: ensureStyles,
     fieldValue: fieldValue,
     visibleFields: visibleFields,
+    normalizeQrPlacement: normalizeQrPlacement,
     esc: esc
   };
 })(window);

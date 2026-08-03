@@ -4,7 +4,10 @@
  */
 (function (global) {
   var cfg = null;
-  var state = { cat: 'aqgqj', type: 'certificate', editingId: null, draft: null, editingIsDefault: false };
+  var state = {
+    cat: 'aqgqj', type: 'certificate', editingId: null, draft: null,
+    editingIsDefault: false, previewId: null, bindOpen: false, bindKw: ''
+  };
   var dragFrom = -1;
 
   function $(id) { return document.getElementById(id); }
@@ -42,7 +45,7 @@
         '</div>' +
         '<div class="flex items-center gap-3 flex-shrink-0">' +
           '<button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-white" data-lc-act="edit" data-id="' + def.id + '">编辑版式</button>' +
-          '<button type="button" class="text-sm text-blue-600 hover:underline" data-lc-act="edit" data-id="' + def.id + '">预览</button>' +
+          '<button type="button" class="text-sm text-blue-600 hover:underline" data-lc-act="preview" data-id="' + def.id + '">预览</button>' +
         '</div>';
     }
 
@@ -66,7 +69,7 @@
         '</td>' +
         '<td class="border-b border-slate-100 px-3 py-2 whitespace-nowrap">' +
           '<button type="button" class="text-blue-600 hover:underline mr-2" data-lc-act="edit" data-id="' + t.id + '">编辑</button>' +
-          '<button type="button" class="text-blue-600 hover:underline mr-2" data-lc-act="edit" data-id="' + t.id + '">预览</button>' +
+          '<button type="button" class="text-blue-600 hover:underline mr-2" data-lc-act="preview" data-id="' + t.id + '">预览</button>' +
           '<button type="button" class="text-red-500 hover:underline" data-lc-act="del" data-id="' + t.id + '">删除</button>' +
         '</td></tr>';
     }).join('') : '<tr><td colspan="6" class="px-3 py-10 text-center text-slate-400">尚未配置个性化模版，全部样品使用上方默认模版</td></tr>';
@@ -122,6 +125,8 @@
   function openEditor(id) {
     var bucket = currentBucket();
     state.editingId = id || null;
+    state.bindOpen = false;
+    state.bindKw = '';
     var tpl = null;
     if (id) {
       tpl = LabelCertConfig.findTemplate(bucket, id);
@@ -155,6 +160,31 @@
     state.editingIsDefault = false;
   }
 
+  function openPreview(id) {
+    if (!id) return;
+    var bucket = currentBucket();
+    var tpl = LabelCertConfig.findTemplate(bucket, id);
+    if (!tpl) { alert('模版不存在'); return; }
+    state.previewId = id;
+    var preset = LabelCertConfig.PRESETS[tpl.layoutPreset] || {};
+    var isDef = LabelCertConfig.isDefaultTemplate(bucket, tpl);
+    $('lc_pvTitle').textContent = '预览 · ' + tpl.name;
+    $('lc_pvSub').textContent = (isDef ? '默认模版 · ' : '个性化模版 · ') +
+      (preset.name || tpl.layoutPreset) + ' · ' + tpl.paper.wMm + '×' + tpl.paper.hMm + ' mm';
+    var box = $('lc_pvBox');
+    box.innerHTML = LabelCertRender.renderSheet(tpl, demoData(), { suffix: '-ro' });
+    LabelCertRender.mountQrs(box);
+    $('lc_previewModal').classList.add('open');
+  }
+
+  function closePreview() {
+    var modal = $('lc_previewModal');
+    if (modal) modal.classList.remove('open');
+    var box = $('lc_pvBox');
+    if (box) box.innerHTML = '';
+    state.previewId = null;
+  }
+
   function fillEditor(tpl, isDefault) {
     var presetSel = $('lc_e_preset');
     presetSel.innerHTML = Object.keys(LabelCertConfig.PRESETS).filter(function (k) {
@@ -171,13 +201,27 @@
     $('lc_e_title').value = tpl.brand.title || '';
     $('lc_e_logo').value = tpl.brand.logoMode || 'system';
     $('lc_e_warn').value = tpl.brand.footerWarning || '';
+    var bt = LabelCertConfig.normalizeBrandType(tpl.brand);
+    $('lc_e_orgSize').value = bt.orgFontSize;
+    $('lc_e_orgColor').value = bt.orgColor;
+    $('lc_e_titleSize').value = bt.titleFontSize;
+    $('lc_e_titleColor').value = bt.titleColor;
+    $('lc_e_logoSize').value = bt.logoSize;
+    $('lc_e_warnSize').value = bt.warnFontSize;
+    $('lc_e_warnColor').value = bt.warnColor;
     $('lc_e_qr').checked = !tpl.qr || tpl.qr.enabled !== false;
     $('lc_e_qrSize').value = (tpl.qr && tpl.qr.sizePx) || 90;
-    $('lc_e_qrPlace').value = (tpl.qr && tpl.qr.placement) || 'right';
+    var place = LabelCertRender.normalizeQrPlacement((tpl.qr && tpl.qr.placement) || 'right', tpl.layoutPreset);
+    if (place === 'none') $('lc_e_qrPlace').value = 'none';
+    else if (place === 'center') $('lc_e_qrPlace').value = 'center';
+    else if (place === 'right') $('lc_e_qrPlace').value = 'right';
+    else $('lc_e_qrPlace').value = place;
     $('lc_e_mat').value = (tpl.meta && tpl.meta.material) || '';
     $('lc_e_mount').value = (tpl.meta && tpl.meta.mount) || '';
     $('lc_e_print').value = (tpl.meta && tpl.meta.printMethod) || '';
     fillWatermarkUI(tpl.brand);
+    syncQrPlaceUi(tpl.layoutPreset);
+    syncLabelBrandUi();
 
     var role = $('lc_e_roleHint');
     if (role) {
@@ -192,6 +236,22 @@
     if (!isDefault) renderBindUI(tpl);
   }
 
+  function syncLabelBrandUi() {
+    var isLabel = state.type === 'sample_label';
+    var warnWrap = $('lc_e_warnWrap');
+    if (warnWrap) warnWrap.style.display = isLabel ? 'none' : '';
+    var orgLabel = $('lc_e_org') && $('lc_e_org').closest('label');
+    if (orgLabel && orgLabel.firstChild) {
+      // keep structure; hint via placeholder
+    }
+    if ($('lc_e_org')) {
+      $('lc_e_org').placeholder = isLabel ? '留空则预览不显示单位名称' : '默认检测机构';
+    }
+    if ($('lc_e_title')) {
+      $('lc_e_title').placeholder = isLabel ? '留空则预览不显示标题' : '';
+    }
+  }
+
   function fillWatermarkUI(brand) {
     var preset = null;
     var wm = LabelCertConfig.normalizeWatermark(brand && brand.watermark, brand || {}, preset);
@@ -201,6 +261,7 @@
     $('lc_e_wmType').value = wm.type;
     $('lc_e_wmLayout').value = wm.layout;
     $('lc_e_wmText').value = wm.text || '';
+    if ($('lc_e_wmColor')) $('lc_e_wmColor').value = wm.color || '#16a34a';
     $('lc_e_wmSealMode').value = wm.sealMode;
     $('lc_e_wmPos').value = wm.position;
     $('lc_e_wmSize').value = wm.size;
@@ -223,6 +284,21 @@
     if (file) file.disabled = !custom;
   }
 
+  function syncQrPlaceUi(presetId) {
+    var place = $('lc_e_qrPlace');
+    var hint = $('lc_e_qrPlaceHint');
+    var isHang = presetId === 'cert_style_2';
+    if (place) {
+      place.disabled = isHang;
+      if (isHang) place.value = 'center';
+    }
+    if (hint) {
+      hint.textContent = isHang
+        ? 'PVC 悬挂样式二维码固定中置'
+        : '切换位置后右侧预览即时更新';
+    }
+  }
+
   function collectWatermarkFromDom(brand) {
     var opacityPct = Number($('lc_e_wmOpacity').value);
     if (isNaN(opacityPct)) opacityPct = 22;
@@ -231,6 +307,7 @@
       enabled: $('lc_e_wmOn').checked,
       type: $('lc_e_wmType').value,
       text: $('lc_e_wmText').value.trim(),
+      color: $('lc_e_wmColor') ? $('lc_e_wmColor').value : '#16a34a',
       sealMode: $('lc_e_wmSealMode').value,
       sealUrl: sealUrl,
       opacity: opacityPct / 100,
@@ -247,14 +324,21 @@
     (tpl.fields || []).forEach(function (f) { if (f.visible !== false) selectedMap[f.id] = f; });
     $('lc_fieldPool').innerHTML = pool.map(function (f) {
       var on = !!selectedMap[f.id];
-      return '<span class="lc-chip ' + (on ? 'on' : '') + '" data-lc-field="' + f.id + '">' + f.label + '</span>';
+      var tip = (f.id === 'detectStatus' && state.type === 'sample_label')
+        ? ' title="取值：未检测 / 检测中 / 已检测"'
+        : '';
+      return '<span class="lc-chip ' + (on ? 'on' : '') + '" data-lc-field="' + f.id + '"' + tip + '>' + f.label + '</span>';
     }).join('');
-    var ordered = (tpl.fields || []).filter(function (f) { return f.visible !== false; });
+    var ordered = (tpl.fields || []).filter(function (f) { return f.visible !== false && f.id !== 'qrCode'; });
     $('lc_fieldList').innerHTML = ordered.map(function (f, idx) {
+      var hint = (f.id === 'detectStatus' && state.type === 'sample_label')
+        ? '<span class="text-[11px] text-slate-400 ml-1">未检测/检测中/已检测</span>'
+        : '';
       return '<div class="lc-field-item" draggable="true" data-idx="' + idx + '">' +
         '<i class="fa fa-bars text-slate-300"></i>' +
         '<span class="w-28 text-xs text-slate-400">' + f.id + '</span>' +
         '<input class="flex-1 rounded border border-slate-200 px-2 py-1 text-sm" value="' + f.label.replace(/"/g, '&quot;') + '" data-lc-rename="' + idx + '" />' +
+        hint +
         '<button type="button" class="text-slate-400 hover:text-red-500" data-lc-field="' + f.id + '"><i class="fa fa-times"></i></button></div>';
     }).join('') || '<p class="text-sm text-slate-400">请从上方字段池勾选</p>';
   }
@@ -280,15 +364,54 @@
   }
 
   function renderBindUI(tpl) {
+    var root = $('lc_bindSamples');
+    if (!root) return;
     var leaves = LabelCertConfig.SAMPLE_LEAVES[state.cat] || [];
+    var selected = tpl.bindSampleIds || [];
     var set = {};
-    (tpl.bindSampleIds || []).forEach(function (id) { set[id] = true; });
-    $('lc_bindSamples').innerHTML = leaves.length ? leaves.map(function (s) {
-      return '<span class="lc-chip ' + (set[s.id] ? 'on' : '') + '" data-lc-bind="' + s.id + '">' + s.name + '</span>';
-    }).join('') : '<span class="text-sm text-slate-400">该大类暂无样品叶节点</span>';
-    var conflicts = LabelCertConfig.findBindConflicts(state.cat, state.type, tpl.id, tpl.bindSampleIds || []);
+    selected.forEach(function (id) { set[id] = true; });
+    var kw = (state.bindKw || '').trim().toLowerCase();
+    var filtered = leaves.filter(function (s) {
+      if (!kw) return true;
+      return String(s.name).toLowerCase().indexOf(kw) !== -1 || String(s.id).toLowerCase().indexOf(kw) !== -1;
+    });
+
+    if (!leaves.length) {
+      root.innerHTML = '<span class="text-sm text-slate-400">该大类暂无样品叶节点</span>';
+    } else {
+      var triggerText = selected.length
+        ? ('已选 ' + selected.length + ' 项：' + selected.map(sampleName).slice(0, 3).join('、') + (selected.length > 3 ? ' 等' : ''))
+        : '<span class="ph">请选择要绑定的样品</span>';
+      var listHtml = filtered.length ? filtered.map(function (s) {
+        return '<label class="lc-ms-item">' +
+          '<input type="checkbox" data-lc-bind="' + s.id + '" ' + (set[s.id] ? 'checked' : '') + ' />' +
+          '<span>' + s.name + '</span></label>';
+      }).join('') : '<div class="lc-ms-empty">无匹配样品</div>';
+      root.innerHTML =
+        '<div class="lc-ms' + (state.bindOpen ? ' open' : '') + '" id="lc_msRoot">' +
+          '<button type="button" class="lc-ms-trigger" data-lc-ms-toggle>' +
+            '<span class="truncate">' + triggerText + '</span><i class="fa fa-angle-down"></i>' +
+          '</button>' +
+          '<div class="lc-ms-panel">' +
+            '<input type="text" class="lc-ms-search" id="lc_msSearch" placeholder="搜索样品名称" value="' +
+              String(state.bindKw || '').replace(/"/g, '&quot;') + '" />' +
+            '<div class="lc-ms-list">' + listHtml + '</div>' +
+            '<div class="lc-ms-foot">' +
+              '<span>共 ' + leaves.length + ' 项 · 已选 ' + selected.length + '</span>' +
+              '<button type="button" class="text-blue-600 hover:underline" data-lc-ms-clear>清空</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      var search = $('lc_msSearch');
+      if (search && state.bindOpen) {
+        search.focus();
+        try { search.setSelectionRange(search.value.length, search.value.length); } catch (e) { /* ignore */ }
+      }
+    }
+
+    var conflicts = LabelCertConfig.findBindConflicts(state.cat, state.type, tpl.id, selected);
     var hint = '';
-    if (!(tpl.bindSampleIds || []).length) hint = '请至少选择 1 个样品';
+    if (!selected.length) hint = '请至少选择 1 个样品';
     else if (conflicts.length) {
       hint = '冲突：' + conflicts.map(function (c) {
         return sampleName(c.sampleId) + ' 已绑定「' + c.templateName + '」';
@@ -308,6 +431,14 @@
     renderBindUI(tpl);
   }
 
+  function clearBind() {
+    if (state.editingIsDefault) return;
+    var tpl = collectDraft(false);
+    tpl.bindSampleIds = [];
+    state.draft = tpl;
+    renderBindUI(tpl);
+  }
+
   function onPresetChange() {
     var presetId = $('lc_e_preset').value;
     var preset = LabelCertConfig.PRESETS[presetId];
@@ -317,7 +448,9 @@
     $('lc_e_warn').value = preset.footerWarning || '';
     $('lc_e_qr').checked = preset.qr.enabled !== false;
     $('lc_e_qrSize').value = preset.qr.sizePx;
-    $('lc_e_qrPlace').value = preset.qr.placement;
+    var place = LabelCertRender.normalizeQrPlacement(preset.qr.placement, presetId);
+    $('lc_e_qrPlace').value = place === 'corner' ? 'bottom_right' : place;
+    syncQrPlaceUi(presetId);
     var tpl = collectDraft(false);
     tpl.layoutPreset = presetId;
     tpl.fields = LabelCertConfig.buildFieldsFromPreset(presetId);
@@ -329,8 +462,19 @@
       tpl.brand.watermark.sealUrl = keepSeal;
       tpl.brand.watermark.sealMode = 'custom';
     }
+    if (preset.type === 'sample_label') {
+      tpl.brand.orgName = '';
+      tpl.brand.title = '';
+      tpl.brand.logoMode = 'hidden';
+      tpl.brand.footerWarning = null;
+      $('lc_e_org').value = '';
+      $('lc_e_title').value = '';
+      $('lc_e_logo').value = 'hidden';
+      $('lc_e_warn').value = '';
+    }
     state.draft = tpl;
     fillWatermarkUI(tpl.brand);
+    syncLabelBrandUi();
     renderFieldUI(tpl);
     refreshPreview();
   }
@@ -343,21 +487,40 @@
     base.paper = { wMm: Number($('lc_e_w').value) || 90, hMm: Number($('lc_e_h').value) || 50 };
     base.style = { fontScale: $('lc_e_font').value, marginMm: 2 };
     var watermark = collectWatermarkFromDom(base.brand);
+    var typeStyle = LabelCertConfig.normalizeBrandType({
+      orgFontSize: $('lc_e_orgSize').value,
+      orgColor: $('lc_e_orgColor').value,
+      titleFontSize: $('lc_e_titleSize').value,
+      titleColor: $('lc_e_titleColor').value,
+      logoSize: $('lc_e_logoSize').value,
+      warnFontSize: $('lc_e_warnSize').value,
+      warnColor: $('lc_e_warnColor').value
+    });
+    var isLabel = state.type === 'sample_label' || base.layoutPreset === 'label_style_1';
+    var orgVal = $('lc_e_org').value.trim();
     base.brand = {
-      orgName: $('lc_e_org').value.trim() || LabelCertConfig.DEFAULT_ORG,
+      orgName: isLabel ? orgVal : (orgVal || LabelCertConfig.DEFAULT_ORG),
       title: $('lc_e_title').value,
       logoMode: $('lc_e_logo').value,
       logoUrl: null,
       showWatermarkGe: watermark.enabled && watermark.type === 'text' && watermark.text === '格',
-      footerWarning: $('lc_e_warn').value || null,
-      watermark: watermark
+      footerWarning: isLabel ? null : $('lc_e_warn').value,
+      watermark: watermark,
+      orgFontSize: typeStyle.orgFontSize,
+      orgColor: typeStyle.orgColor,
+      titleFontSize: typeStyle.titleFontSize,
+      titleColor: typeStyle.titleColor,
+      logoSize: typeStyle.logoSize,
+      warnFontSize: typeStyle.warnFontSize,
+      warnColor: typeStyle.warnColor
     };
     var preset = LabelCertConfig.PRESETS[base.layoutPreset];
+    var place = LabelCertRender.normalizeQrPlacement($('lc_e_qrPlace').value, base.layoutPreset);
     base.qr = {
       enabled: $('lc_e_qr').checked,
       sizePx: Number($('lc_e_qrSize').value) || 90,
       payloadType: (preset && preset.qr.payloadType) || (state.type === 'sample_label' ? 'sample_flow' : 'cert_shortlink'),
-      placement: $('lc_e_qrPlace').value
+      placement: place
     };
     if (base.layoutPreset === 'cert_style_2') {
       base.qr.enabled = true;
@@ -377,8 +540,10 @@
   }
 
   function demoData() {
+    var isLabel = state.type === 'sample_label';
     return {
       sampleNo: 'SC2026/00790101',
+      entrustNo: 'WT2026/007901',
       name: '绝缘操作杆',
       spec: '',
       model: '10kV',
@@ -387,7 +552,7 @@
       inspectors: ['张三', '李四'],
       receiveDate: '2026-07-09',
       clientName: '杭州数蚕智能科技有限公司',
-      detectStatus: '报告发放'
+      detectStatus: isLabel ? '检测中' : '报告发放'
     };
   }
 
@@ -456,16 +621,34 @@
         var id = act.getAttribute('data-id');
         var a = act.getAttribute('data-lc-act');
         if (a === 'edit') openEditor(id);
+        else if (a === 'preview') openPreview(id);
         else if (a === 'del') removeTpl(id);
         return;
       }
       if (e.target.closest('[data-lc-new]')) { openEditor(); return; }
       var field = e.target.closest('[data-lc-field]');
       if (field) { toggleField(field.getAttribute('data-lc-field')); return; }
-      var bind = e.target.closest('[data-lc-bind]');
-      if (bind) { toggleBind(bind.getAttribute('data-lc-bind')); return; }
-      if (e.target.closest('[data-lc-close]')) { closeEditor(); return; }
-      if (e.target.closest('[data-lc-save]')) { saveEditor(); return; }
+      if (e.target.closest('[data-lc-ms-toggle]')) {
+        e.stopPropagation();
+        state.bindOpen = !state.bindOpen;
+        renderBindUI(collectDraft(false));
+        return;
+      }
+      if (e.target.closest('[data-lc-ms-clear]')) {
+        e.stopPropagation();
+        clearBind();
+        return;
+      }
+      if (e.target.closest('#lc_msRoot')) e.stopPropagation();
+      if (e.target.closest('[data-lc-pv-close]')) { closePreview(); return; }
+      if (e.target.closest('[data-lc-pv-edit]')) {
+        var pid = state.previewId;
+        closePreview();
+        if (pid) openEditor(pid);
+        return;
+      }
+      if (e.target.closest('[data-lc-close]')) { state.bindOpen = false; closeEditor(); return; }
+      if (e.target.closest('[data-lc-save]')) { state.bindOpen = false; saveEditor(); return; }
       if (e.target.closest('[data-lc-refresh]')) { refreshPreview(); return; }
     });
 
@@ -473,6 +656,10 @@
       var enableId = e.target.getAttribute('data-lc-enable');
       if (enableId) {
         setEnabled(enableId, e.target.checked);
+        return;
+      }
+      if (e.target.getAttribute('data-lc-bind')) {
+        toggleBind(e.target.getAttribute('data-lc-bind'));
         return;
       }
       if (e.target.id === 'lc_e_preset') { onPresetChange(); return; }
@@ -504,18 +691,38 @@
       }
       var rename = e.target.getAttribute('data-lc-rename');
       if (rename != null) renameField(parseInt(rename, 10), e.target.value);
-      if (/^lc_e_/.test(e.target.id)) refreshPreview();
+      if (/^lc_e_/.test(e.target.id)) {
+        if (e.target.id === 'lc_e_qrPlace') syncQrPlaceUi($('lc_e_preset').value);
+        refreshPreview();
+      }
     });
     root.addEventListener('input', function (e) {
+      if (e.target.id === 'lc_msSearch') {
+        state.bindKw = e.target.value;
+        renderBindUI(collectDraft(false));
+        return;
+      }
       if (e.target.id === 'lc_e_wmOpacity') {
         $('lc_e_wmOpacityVal').textContent = e.target.value + '%';
         refreshPreview();
         return;
       }
       if (e.target.id === 'lc_e_org' || e.target.id === 'lc_e_title' || e.target.id === 'lc_e_warn' ||
-          e.target.id === 'lc_e_wmText' || e.target.id === 'lc_e_wmAngle') {
+          e.target.id === 'lc_e_wmText' || e.target.id === 'lc_e_wmAngle' ||
+          e.target.id === 'lc_e_orgSize' || e.target.id === 'lc_e_titleSize' ||
+          e.target.id === 'lc_e_logoSize' || e.target.id === 'lc_e_warnSize' ||
+          e.target.id === 'lc_e_orgColor' || e.target.id === 'lc_e_titleColor' ||
+          e.target.id === 'lc_e_warnColor' || e.target.id === 'lc_e_wmColor' ||
+          e.target.id === 'lc_e_qrSize') {
         refreshPreview();
       }
+    });
+
+    document.addEventListener('mousedown', function (e) {
+      if (!state.bindOpen) return;
+      if (e.target.closest('#lc_msRoot') || e.target.closest('#lc_bindSamples')) return;
+      state.bindOpen = false;
+      if (state.draft) renderBindUI(state.draft);
     });
 
     root.addEventListener('dragstart', function (e) {
@@ -574,6 +781,7 @@
     var el = $('labelCertView');
     if (el) el.classList.add('hidden');
     closeEditor();
+    closePreview();
   }
 
   global.LabelCertUI = {
@@ -583,6 +791,7 @@
     show: show,
     hide: hide,
     renderList: renderList,
-    openEditor: openEditor
+    openEditor: openEditor,
+    openPreview: openPreview
   };
 })(window);

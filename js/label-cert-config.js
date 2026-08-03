@@ -48,14 +48,17 @@
     { id: 'qrCode', label: '二维码' }
   ];
 
+  /** 样品标签检测状态枚举 */
+  var LABEL_DETECT_STATUS = ['未检测', '检测中', '已检测'];
+
   var LABEL_FIELD_POOL = [
     { id: 'sampleNo', label: '样品编号' },
+    { id: 'entrustNo', label: '委托编号' },
     { id: 'sampleName', label: '样品名称' },
     { id: 'specModel', label: '型号规格' },
     { id: 'receiveDate', label: '收样日期' },
     { id: 'clientName', label: '送检单位' },
-    { id: 'detectStatus', label: '检测状态' },
-    { id: 'qrCode', label: '二维码' }
+    { id: 'detectStatus', label: '检测状态' }
   ];
 
   var PRESETS = {
@@ -97,7 +100,7 @@
       qr: { enabled: true, sizePx: 90, payloadType: 'sample_flow', placement: 'right' },
       showWatermarkGe: false,
       footerWarning: null,
-      fieldIds: ['sampleNo', 'sampleName', 'specModel', 'receiveDate', 'clientName', 'detectStatus', 'qrCode']
+      fieldIds: ['sampleNo', 'entrustNo', 'sampleName', 'specModel', 'receiveDate', 'clientName', 'detectStatus']
     }
   };
 
@@ -137,17 +140,57 @@
 
   function defaultWatermark(preset) {
     var fromGe = !!(preset && preset.showWatermarkGe);
+    var isLabel = !!(preset && preset.type === 'sample_label');
     return {
-      enabled: fromGe,
+      enabled: isLabel ? false : fromGe,
       type: 'text',           // text | seal
-      text: fromGe ? '格' : '合格',
+      text: isLabel ? '样品标签' : (fromGe ? '格' : '合格'),
+      color: '#16a34a',
       sealMode: 'system',     // system | custom
       sealUrl: null,
       opacity: fromGe ? 0.18 : 0.22,
-      angle: fromGe ? 0 : -28,
-      position: fromGe ? 'right' : 'center',
+      angle: isLabel ? -28 : (fromGe ? 0 : -28),
+      position: isLabel ? 'center' : (fromGe ? 'right' : 'center'),
       size: fromGe ? 'lg' : 'md', // sm | md | lg
       layout: 'single'        // single | tile
+    };
+  }
+
+  function clampInt(n, min, max, fallback) {
+    n = Number(n);
+    if (isNaN(n)) return fallback;
+    return Math.max(min, Math.min(max, Math.round(n)));
+  }
+
+  function normalizeColor(c, fallback) {
+    c = String(c == null ? '' : c).trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(c) || /^#[0-9a-fA-F]{3}$/.test(c)) return c;
+    return fallback;
+  }
+
+  function defaultBrandType() {
+    return {
+      orgFontSize: 12,
+      orgColor: '#1e293b',
+      titleFontSize: 14,
+      titleColor: '#1e293b',
+      logoSize: 16,
+      warnFontSize: 10,
+      warnColor: '#dc2626'
+    };
+  }
+
+  function normalizeBrandType(brand) {
+    var d = defaultBrandType();
+    brand = brand || {};
+    return {
+      orgFontSize: clampInt(brand.orgFontSize, 8, 28, d.orgFontSize),
+      orgColor: normalizeColor(brand.orgColor, d.orgColor),
+      titleFontSize: clampInt(brand.titleFontSize, 10, 32, d.titleFontSize),
+      titleColor: normalizeColor(brand.titleColor, d.titleColor),
+      logoSize: clampInt(brand.logoSize, 10, 40, d.logoSize),
+      warnFontSize: clampInt(brand.warnFontSize, 8, 20, d.warnFontSize),
+      warnColor: normalizeColor(brand.warnColor, d.warnColor)
     };
   }
 
@@ -155,7 +198,7 @@
     var base = defaultWatermark(preset);
     // 兼容旧字段 showWatermarkGe
     if ((!wm || typeof wm !== 'object') && brand && brand.showWatermarkGe) {
-      wm = { enabled: true, type: 'text', text: '格', position: 'right', size: 'lg', angle: 0, opacity: 0.18, layout: 'single' };
+      wm = { enabled: true, type: 'text', text: '格', color: '#16a34a', position: 'right', size: 'lg', angle: 0, opacity: 0.18, layout: 'single' };
     }
     wm = wm && typeof wm === 'object' ? wm : {};
     var hasType = wm.type === 'seal' || wm.type === 'text';
@@ -175,6 +218,7 @@
       enabled: wm.enabled != null ? !!wm.enabled : !!base.enabled,
       type: type === 'seal' ? 'seal' : 'text',
       text: (wm.text != null ? String(wm.text) : base.text).slice(0, 24),
+      color: normalizeColor(wm.color, base.color || '#16a34a'),
       sealMode: wm.sealMode === 'custom' ? 'custom' : (wm.sealMode === 'system' ? 'system' : base.sealMode),
       sealUrl: wm.sealUrl || null,
       opacity: opacity,
@@ -189,8 +233,17 @@
     opts = opts || {};
     var presetId = opts.layoutPreset || (opts.type === 'sample_label' ? 'label_style_1' : 'cert_style_3');
     var preset = PRESETS[presetId];
+    var isLabel = preset.type === 'sample_label' || opts.type === 'sample_label';
     var brandIn = opts.brand || {};
     var watermark = normalizeWatermark(brandIn.watermark, brandIn, preset);
+    var typeStyle = normalizeBrandType(brandIn);
+    var orgName;
+    if (brandIn.orgName != null) orgName = brandIn.orgName;
+    else orgName = isLabel ? '' : DEFAULT_ORG;
+    var title;
+    if (brandIn.title != null) title = brandIn.title;
+    else title = isLabel ? '' : preset.title;
+    var logoMode = brandIn.logoMode || (isLabel ? 'hidden' : 'system');
     return {
       id: opts.id || uid('tpl'),
       name: opts.name || (preset.name + '模版'),
@@ -200,13 +253,20 @@
       paper: clone(opts.paper || preset.paper),
       style: opts.style || { fontScale: 'normal', marginMm: 2 },
       brand: {
-        orgName: brandIn.orgName || DEFAULT_ORG,
-        title: brandIn.title != null ? brandIn.title : preset.title,
-        logoMode: brandIn.logoMode || 'system',
+        orgName: orgName,
+        title: title,
+        logoMode: logoMode,
         logoUrl: brandIn.logoUrl || null,
         showWatermarkGe: watermark.enabled && watermark.type === 'text' && watermark.text === '格',
-        footerWarning: brandIn.footerWarning != null ? brandIn.footerWarning : preset.footerWarning,
-        watermark: watermark
+        footerWarning: isLabel ? null : (brandIn.footerWarning != null ? brandIn.footerWarning : preset.footerWarning),
+        watermark: watermark,
+        orgFontSize: typeStyle.orgFontSize,
+        orgColor: typeStyle.orgColor,
+        titleFontSize: typeStyle.titleFontSize,
+        titleColor: typeStyle.titleColor,
+        logoSize: typeStyle.logoSize,
+        warnFontSize: typeStyle.warnFontSize,
+        warnColor: typeStyle.warnColor
       },
       fields: opts.fields || buildFieldsFromPreset(presetId),
       qr: clone(opts.qr || preset.qr),
@@ -308,12 +368,53 @@
     return !!id && bucket.defaultTemplateId === id;
   }
 
+  function normalizeLabelFields(tpl) {
+    if (!tpl) return tpl;
+    var preset = PRESETS[tpl.layoutPreset];
+    if (!preset || preset.type !== 'sample_label') return tpl;
+    var fields = (tpl.fields || []).filter(function (f) { return f.id !== 'qrCode'; });
+    var hasEntrust = fields.some(function (f) { return f.id === 'entrustNo'; });
+    if (!hasEntrust) {
+      var item = { id: 'entrustNo', label: '委托编号', visible: true };
+      var idx = -1;
+      for (var i = 0; i < fields.length; i++) if (fields[i].id === 'sampleNo') { idx = i; break; }
+      if (idx >= 0) fields.splice(idx + 1, 0, item);
+      else fields.unshift(item);
+    }
+    tpl.fields = fields;
+    if (!tpl.brand) tpl.brand = {};
+    tpl.brand.footerWarning = null;
+    // 旧默认「机构名+系统Logo」迁移为标签默认不展示品牌
+    if ((tpl.brand.orgName === DEFAULT_ORG || tpl.brand.orgName == null) &&
+        (!tpl.brand.logoMode || tpl.brand.logoMode === 'system') &&
+        !tpl.brand.title) {
+      tpl.brand.orgName = '';
+      tpl.brand.title = '';
+      tpl.brand.logoMode = 'hidden';
+    }
+    if (!tpl.brand.watermark || typeof tpl.brand.watermark !== 'object') {
+      tpl.brand.watermark = defaultWatermark(preset);
+    } else if (!tpl.brand.watermark.text || tpl.brand.watermark.text === '合格' || tpl.brand.watermark.text === '格') {
+      if (!tpl.brand.watermark.enabled) tpl.brand.watermark.text = '样品标签';
+    }
+    return tpl;
+  }
+
   function normalizeTemplateBrand(tpl) {
     if (!tpl) return tpl;
     if (!tpl.brand) tpl.brand = {};
     var preset = PRESETS[tpl.layoutPreset] || PRESETS.cert_style_3;
     tpl.brand.watermark = normalizeWatermark(tpl.brand.watermark, tpl.brand, preset);
     tpl.brand.showWatermarkGe = !!(tpl.brand.watermark.enabled && tpl.brand.watermark.type === 'text' && tpl.brand.watermark.text === '格');
+    var ts = normalizeBrandType(tpl.brand);
+    tpl.brand.orgFontSize = ts.orgFontSize;
+    tpl.brand.orgColor = ts.orgColor;
+    tpl.brand.titleFontSize = ts.titleFontSize;
+    tpl.brand.titleColor = ts.titleColor;
+    tpl.brand.logoSize = ts.logoSize;
+    tpl.brand.warnFontSize = ts.warnFontSize;
+    tpl.brand.warnColor = ts.warnColor;
+    normalizeLabelFields(tpl);
     return tpl;
   }
 
@@ -463,6 +564,7 @@
     SAMPLE_LEAVES: SAMPLE_LEAVES,
     CERT_FIELD_POOL: CERT_FIELD_POOL,
     LABEL_FIELD_POOL: LABEL_FIELD_POOL,
+    LABEL_DETECT_STATUS: LABEL_DETECT_STATUS,
     PRESETS: PRESETS,
     load: load,
     save: save,
@@ -481,6 +583,8 @@
     findBindConflicts: findBindConflicts,
     defaultWatermark: defaultWatermark,
     normalizeWatermark: normalizeWatermark,
+    normalizeBrandType: normalizeBrandType,
+    defaultBrandType: defaultBrandType,
     normalizeTemplateBrand: normalizeTemplateBrand,
     WATERMARK_POSITIONS: WATERMARK_POSITIONS,
     formatNow: formatNow,
