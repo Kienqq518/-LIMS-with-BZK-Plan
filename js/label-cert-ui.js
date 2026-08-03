@@ -330,21 +330,14 @@
     (tpl.fields || []).forEach(function (f) { if (f.visible !== false) selectedMap[f.id] = f; });
     $('lc_fieldPool').innerHTML = pool.map(function (f) {
       var on = !!selectedMap[f.id];
-      var tip = (f.id === 'detectStatus' && state.type === 'sample_label')
-        ? ' title="取值：未检测 / 检测中 / 已检测"'
-        : '';
-      return '<span class="lc-chip ' + (on ? 'on' : '') + '" data-lc-field="' + f.id + '"' + tip + '>' + f.label + '</span>';
+      return '<span class="lc-chip ' + (on ? 'on' : '') + '" data-lc-field="' + f.id + '">' + f.label + '</span>';
     }).join('');
     var ordered = (tpl.fields || []).filter(function (f) { return f.visible !== false && f.id !== 'qrCode'; });
     $('lc_fieldList').innerHTML = ordered.map(function (f, idx) {
-      var hint = (f.id === 'detectStatus' && state.type === 'sample_label')
-        ? '<span class="text-[11px] text-slate-400 ml-1">未检测/检测中/已检测</span>'
-        : '';
       return '<div class="lc-field-item" draggable="true" data-idx="' + idx + '">' +
         '<i class="fa fa-bars text-slate-300"></i>' +
         '<span class="w-28 text-xs text-slate-400">' + f.id + '</span>' +
         '<input class="flex-1 rounded border border-slate-200 px-2 py-1 text-sm" value="' + f.label.replace(/"/g, '&quot;') + '" data-lc-rename="' + idx + '" />' +
-        hint +
         '<button type="button" class="text-slate-400 hover:text-red-500" data-lc-field="' + f.id + '"><i class="fa fa-times"></i></button></div>';
     }).join('') || '<p class="text-sm text-slate-400">请从上方字段池勾选</p>';
   }
