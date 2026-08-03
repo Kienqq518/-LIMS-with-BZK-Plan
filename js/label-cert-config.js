@@ -14,7 +14,7 @@
   ];
 
   /** 系统 Logo（合格证品牌区，图2） */
-  var SYSTEM_LOGO_URL = 'assets/label-cert/system-logo.svg';
+  var SYSTEM_LOGO_URL = 'assets/label-cert/system-logo.png';
   /** 配置中上传的机构检测章（图8） */
   var SYSTEM_SEAL_URL = 'assets/label-cert/system-seal.svg';
 
@@ -129,7 +129,7 @@
       styleDefault: {
         fieldAlign: 'left', fieldFontSize: 12, fieldColor: '#1e293b',
         fieldUnderline: true, fieldUnderlineStyle: 'solid',
-        borderColor: '#2e7d32', borderWidthPx: 2,
+        borderEnabled: true, borderColor: '#2e7d32', borderWidthPx: 2,
         titleBgColor: '#2e7d32', footerBgColor: '#f1f8e9'
       }
     },
@@ -145,7 +145,7 @@
       styleDefault: {
         fieldAlign: 'center', fieldFontSize: 11, fieldColor: '#1e293b',
         fieldUnderline: true, fieldUnderlineStyle: 'dotted',
-        borderColor: '#cbd5e1', borderWidthPx: 1,
+        borderEnabled: true, borderColor: '#cbd5e1', borderWidthPx: 1,
         titleBgColor: '#ffffff', footerBgColor: '#fff8f6'
       }
     },
@@ -161,7 +161,7 @@
       styleDefault: {
         fieldAlign: 'left', fieldFontSize: 12, fieldColor: '#1e293b',
         fieldUnderline: true, fieldUnderlineStyle: 'dotted',
-        borderColor: '#cbd5e1', borderWidthPx: 1,
+        borderEnabled: true, borderColor: '#cbd5e1', borderWidthPx: 1,
         titleBgColor: '#ffffff', footerBgColor: '#ffffff'
       }
     },
@@ -222,6 +222,7 @@
       fieldColor: from.fieldColor || '#1e293b',
       fieldUnderline: from.fieldUnderline !== false,
       fieldUnderlineStyle: from.fieldUnderlineStyle || 'dotted',
+      borderEnabled: from.borderEnabled !== false,
       borderColor: from.borderColor || (isStick ? '#2e7d32' : '#cbd5e1'),
       borderWidthPx: from.borderWidthPx != null ? from.borderWidthPx : (isStick ? 2 : 1),
       titleBgColor: from.titleBgColor || (isStick ? '#2e7d32' : '#ffffff'),
@@ -249,6 +250,7 @@
       fieldColor: normalizeColor(style.fieldColor, d.fieldColor),
       fieldUnderline: underlineOn,
       fieldUnderlineStyle: uStyle,
+      borderEnabled: style.borderEnabled != null ? !!style.borderEnabled : d.borderEnabled,
       borderColor: normalizeColor(style.borderColor, d.borderColor),
       borderWidthPx: clampInt(style.borderWidthPx, 0, 8, d.borderWidthPx),
       titleBgColor: normalizeColor(style.titleBgColor || d.titleBgColor, d.titleBgColor || '#ffffff'),

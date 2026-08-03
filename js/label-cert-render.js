@@ -67,7 +67,7 @@
   }
 
   function systemLogoUrl() {
-    return (global.LabelCertConfig && LabelCertConfig.SYSTEM_LOGO_URL) || 'assets/label-cert/system-logo.svg';
+    return (global.LabelCertConfig && LabelCertConfig.SYSTEM_LOGO_URL) || 'assets/label-cert/system-logo.png';
   }
 
   function systemSealUrl() {
@@ -81,7 +81,7 @@
     return {
       fieldAlign: 'left', fieldFontSize: 12, fieldColor: '#1e293b',
       fieldUnderline: true, fieldUnderlineStyle: 'dotted',
-      borderColor: '#cbd5e1', borderWidthPx: 1, titleBgColor: '', footerBgColor: ''
+      borderEnabled: true, borderColor: '#cbd5e1', borderWidthPx: 1, titleBgColor: '', footerBgColor: ''
     };
   }
 
@@ -207,8 +207,10 @@
     var w = mmToPx((tpl.paper && tpl.paper.wMm) || 90);
     var h = mmToPx((tpl.paper && tpl.paper.hMm) || 50);
     var st = styleOf(tpl);
-    return 'width:' + w + 'px;min-height:' + h + 'px;font-size:' + st.fieldFontSize + 'px;' +
-      'border-color:' + esc(st.borderColor) + ';border-width:' + st.borderWidthPx + 'px;border-style:solid;';
+    var border = st.borderEnabled
+      ? ('border-color:' + esc(st.borderColor) + ';border-width:' + st.borderWidthPx + 'px;border-style:solid;')
+      : 'border:none;';
+    return 'width:' + w + 'px;min-height:' + h + 'px;font-size:' + st.fieldFontSize + 'px;' + border;
   }
 
   function watermarkConfig(brand) {
@@ -274,9 +276,25 @@
     var brand = tpl.brand || {};
     var st = styleOf(tpl);
     var until = fieldValue('validUntil', data) || fieldValue('reinspectDate', data);
-    var fields = visibleFields(tpl).filter(function (f) { return f.id !== 'validUntil'; });
+    var untilField = null;
+    var fields = visibleFields(tpl).filter(function (f) {
+      if (f.id === 'validUntil') { untilField = f; return false; }
+      return true;
+    });
     var tmp = { fields: fields, style: tpl.style, layoutPreset: tpl.layoutPreset };
     var rows = fieldRowsHtml(tmp, data, 'lc-s2-row');
+    var untilRow = '';
+    if (untilField) {
+      var untilData = {};
+      for (var k in data) if (Object.prototype.hasOwnProperty.call(data, k)) untilData[k] = data[k];
+      untilData.validUntil = until ? (until + ' 止') : '';
+      untilData.reinspectDate = untilData.validUntil;
+      untilRow = fieldRowsHtml(
+        { fields: [untilField], style: tpl.style, layoutPreset: tpl.layoutPreset },
+        untilData,
+        'lc-s2-row'
+      );
+    }
     var footBg = st.footerBgColor ? ('background:' + esc(st.footerBgColor) + ';') : '';
     return wrapSheet('lc-s2', tpl, data,
       '<div class="lc-hole"></div>' +
@@ -291,7 +309,7 @@
       '<span class="lc-pass-char">格</span></div>' +
       (rows ? ('<div class="lc-s2-fields">' + rows + '</div>') : '') +
       '<div class="lc-s2-foot" style="' + footBg + 'padding:4px 6px;margin:2px -2px 0;">' +
-        '<div class="lc-valid">检测有效期：' + esc(until) + ' 止</div>' +
+        untilRow +
         warnHtml(brand, { fallback: '无法扫码视为过期', style: {} }) +
       '</div>');
   }
