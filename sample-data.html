@@ -47,7 +47,7 @@
 
   <div class="flex min-h-[calc(100vh-80px)] flex-col items-center justify-start px-6 py-10">
     <h1 class="mb-10 text-2xl font-semibold tracking-wide text-slate-800">样品数据</h1>
-    <div class="grid w-full max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2">
+    <div class="grid w-full max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2" data-annotate="cat-cards">
       <div class="cat-card" onclick="enterCategory('dlwz')">
         <div class="title">电力物资类</div>
         <div class="illus"><i class="fa fa-bolt"></i></div>
@@ -69,9 +69,26 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
   <script>
     function enterCategory(id) {
       window.location.href = 'sample-data-detail.html?cat=' + encodeURIComponent(id);
+    }
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'cat-cards',
+            selector: '[data-annotate="cat-cards"]',
+            position: 'bottom-left',
+            title: '大类卡片入口',
+            wide: true,
+            content: '样品数据按<strong>大类卡片</strong>进入维护页（入口保留）。点击卡片进入左右分栏详情：左树为参考标准→样品，右栏配置基本信息 / 规格型号 / 试验。',
+            tag: '结构'
+          }
+        ]
+      });
     }
   </script>
 </body>

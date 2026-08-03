@@ -213,7 +213,7 @@
   </div>
 
   <div class="layout">
-    <aside class="tree-panel">
+    <aside class="tree-panel" data-annotate="tree-leaf-only">
       <div class="tree-head">
         <div class="back" onclick="goBack()"><i class="fa fa-angle-left"></i> <span id="catTitle">电力物资类</span></div>
         <div class="tree-search">
@@ -225,7 +225,7 @@
     </aside>
 
     <div class="main-panel" id="mainPanel">
-      <div class="main-empty" id="emptyState">
+      <div class="main-empty" id="emptyState" data-annotate="empty-non-leaf">
         <i class="fa fa-sitemap text-3xl text-slate-300"></i>
         <div>请选择具体样品</div>
         <div class="text-xs text-slate-400">当前选中的是分类/标准节点，请在左侧选择样品叶节点后进行配置</div>
@@ -234,21 +234,21 @@
       <div class="main-body hidden" id="sampleWorkspace">
         <div class="content-head">
           <div class="text-base font-medium text-slate-800" id="sampleTitle">-</div>
-          <div class="tooltip-wrap">
+          <div class="tooltip-wrap" data-annotate="sync-to-da">
             <button onclick="syncToDa()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">
               <i class="fa fa-refresh"></i> 一键同步样品试验数据
             </button>
             <div class="tip-bubble">将 LIMS 样品数据结构同步至直连数采系统</div>
           </div>
         </div>
-        <div class="param-tabs">
+        <div class="param-tabs" data-annotate="param-tabs">
           <div class="param-tab active" data-tab="basic" onclick="switchTab('basic')">基本信息</div>
           <div class="param-tab" data-tab="model" onclick="switchTab('model')">规格型号</div>
           <div class="param-tab" data-tab="test" onclick="switchTab('test')">试验</div>
         </div>
         <div id="syncTip" class="sync-tip"></div>
 
-        <div class="param-panel active" id="panel-basic">
+        <div class="param-panel active" id="panel-basic" data-annotate="basic-fields">
           <div class="rounded bg-white p-5 shadow-sm">
             <div class="form-grid">
               <div class="form-item"><label><span class="req">*</span>样品分类</label><select id="b_category"></select></div>
@@ -256,7 +256,7 @@
               <div class="form-item"><label><span class="req">*</span>排序</label><input id="b_sort" type="number" min="1" /></div>
               <div class="form-item"><label>单位</label><input id="b_unit" type="text" /></div>
               <div class="form-item"><label>样品描述</label><textarea id="b_desc" rows="3"></textarea></div>
-              <div class="form-item">
+              <div class="form-item" data-annotate="recheck-cycle">
                 <label><span class="req">*</span>再检周期</label>
                 <div class="recheck-combo">
                   <select id="b_recheckMode" onchange="onRecheckModeChange('b')">
@@ -281,7 +281,7 @@
           </div>
         </div>
 
-        <div class="param-panel" id="panel-model">
+        <div class="param-panel" id="panel-model" data-annotate="model-table">
           <div class="mb-3 flex items-center justify-end">
             <button onclick="openModelEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 添加规格型号</button>
           </div>
@@ -304,8 +304,8 @@
           </div>
         </div>
 
-        <div class="param-panel" id="panel-test">
-          <div class="mb-3 flex items-center justify-end gap-2">
+        <div class="param-panel" id="panel-test" data-annotate="test-tab">
+          <div class="mb-3 flex items-center justify-end gap-2" data-annotate="copy-add-test">
             <button onclick="openTestEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 手动添加</button>
             <button onclick="copyAddTest()" class="rounded border border-slate-300 px-4 py-1.5 text-sm hover:bg-slate-50">复制添加</button>
           </div>
@@ -340,7 +340,7 @@
         </div>
         <button onclick="closeModal('testModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" data-annotate="test-edit-drawer">
         <div id="overrideReadonlyHint" class="readonly-hint hidden">结构字段只读：请在样品默认试验中修改结构（增减检测项、改类型/名称）。试验名称不可覆盖。</div>
         <div class="split-edit drawer-split">
           <div class="pane">
@@ -356,7 +356,7 @@
               <div class="drawer-section-title">依据与标准</div>
               <div class="field-row"><label><span class="req">*</span>检测依据</label><div class="ctrl"><div class="chip-multi" id="t_basisChips"></div></div></div>
               <div class="field-row"><label><span class="req">*</span>判定依据</label><div class="ctrl"><div class="chip-multi" id="t_judgeChips"></div></div></div>
-              <div class="field-row"><label>标准要求</label><div class="ctrl">
+              <div class="field-row" data-annotate="std-builder"><label>标准要求</label><div class="ctrl">
                 <div class="concat-builder" id="stdBuilder"></div>
                 <div class="mt-2 flex flex-wrap gap-2">
                   <button type="button" class="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-white" onclick="addStdSeg('field')">+ 字段</button>
@@ -366,7 +366,7 @@
                 <div id="t_stdOv"></div>
               </div></div>
             </div>
-            <div class="drawer-section">
+            <div class="drawer-section" data-annotate="test-prepare">
               <div class="drawer-section-title">制样与其他</div>
               <div class="field-row"><label><span class="req">*</span>是否制样</label><div class="ctrl"><select id="t_needPrepare" onchange="toggleSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="t_needPrepareOv"></div></div></div>
               <div class="field-row" id="rowSampleQty" data-annotate="test-sample-qty" style="display:none"><label><span class="req">*</span>试样数量</label><div class="ctrl">
@@ -389,7 +389,7 @@
               <div class="field-row"><label>备注</label><div class="ctrl"><input id="t_remark" type="text" /><div id="t_remarkOv"></div></div></div>
             </div>
           </div>
-          <div class="pane">
+          <div class="pane" data-annotate="detect-items">
             <div class="pane-title flex items-center justify-between">
               <span>检测项 / 参数项</span>
               <button type="button" id="btnAddItem" class="rounded bg-blue-600 px-2 py-1 text-xs text-white" onclick="addDetectItem()">+ 添加检测项</button>
@@ -411,7 +411,7 @@
   <div id="copyTestModal" class="modal-mask">
     <div class="modal-box sm">
       <div class="modal-head"><h3 class="text-base font-medium">复制添加试验</h3><button onclick="closeModal('copyTestModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
-      <div class="modal-body text-sm space-y-3">
+      <div class="modal-body text-sm space-y-3" data-annotate="copy-test-modal">
         <p class="text-slate-500">请选择其他样品的试验进行复制（不可选择当前样品的试验）。</p>
         <div class="field-row" style="margin:0">
           <label style="width:auto;min-width:72px"><span class="req">*</span>试验项</label>
@@ -433,7 +433,7 @@
   <div id="syncNewTestModal" class="modal-mask">
     <div class="modal-box sm">
       <div class="modal-head"><h3 class="text-base font-medium">同步到已有规格型号</h3><button onclick="closeModal('syncNewTestModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
-      <div class="modal-body text-sm space-y-3">
+      <div class="modal-body text-sm space-y-3" data-annotate="sync-new-test">
         <p>已新增默认试验「<span id="syncNewTestName" class="font-medium"></span>」。是否同步关联到已有规格型号？</p>
         <label class="flex items-center gap-2"><input type="radio" name="syncMode" value="all" checked /> 全部规格型号</label>
         <label class="flex items-center gap-2"><input type="radio" name="syncMode" value="pick" /> 选择规格型号</label>
@@ -451,7 +451,7 @@
   <div id="modelModal" class="modal-mask drawer-mask">
     <div class="modal-box drawer">
       <div class="modal-head"><h3 id="modelModalTitle" class="text-base font-medium">添加规格型号</h3><button onclick="closeModal('modelModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
-      <div class="modal-body space-y-3 text-sm">
+      <div class="modal-body space-y-3 text-sm" data-annotate="model-edit-drawer">
         <div class="field-row"><label>样品名称</label><div class="ctrl"><input id="m_sampleName" type="text" disabled class="bg-slate-50 text-slate-600" /></div></div>
         <div class="field-row"><label><span class="req">*</span>规格型号名称</label><div class="ctrl"><input id="m_name" type="text" /></div></div>
         <div class="field-row"><label>排序</label><div class="ctrl"><input id="m_sort" type="number" min="1" value="1" /></div></div>
@@ -498,7 +498,7 @@
         </div>
         <button onclick="closeCfgDrawer()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" data-annotate="cfg-tests-drawer">
         <div class="mb-3 text-sm text-slate-500">从默认试验中勾选本规格型号要做的试验。勾选与下方「取消关联」联动；保存时才会落库。首次勾选会快照复制取值，规格型号侧修改不回写默认。</div>
         <div class="mb-2 text-xs font-medium text-slate-500">可选试验</div>
         <div id="cfgTestList" class="chip-row mb-4"></div>
@@ -513,7 +513,7 @@
           </table>
         </div>
         <div id="cfgEditEmpty" class="cfg-edit-empty">请点击上方已选试验进行编辑配置</div>
-        <div id="cfgEditPanel" class="cfg-edit-panel hidden">
+        <div id="cfgEditPanel" class="cfg-edit-panel hidden" data-annotate="cfg-override">
           <div class="cfg-edit-head">
             <span id="cfgEditTitle">编辑试验</span>
             <button type="button" class="text-xs text-slate-500 hover:text-slate-700" onclick="clearCfgInlineEdit()">收起</button>
@@ -561,6 +561,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/mock-dict.js"></script>
   <script src="js/entrust-field-config.js"></script>
+  <script src="js/prototype-annotation.js"></script>
   <script>
     var CAT_META = {
       dlwz: { name: '电力物资类' },
@@ -1145,6 +1146,7 @@
       });
       if (tab === 'model') renderModelTable();
       if (tab === 'test') renderTestTable();
+      refreshAnnotations();
     }
 
     function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -1162,12 +1164,19 @@
       el.textContent = msg;
     }
 
+    function refreshAnnotations() {
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) {
+        requestAnimationFrame(function () { PrototypeAnnotation.refresh(); });
+      }
+    }
+
     function renderWorkspace() {
       applyDetectCategoryLabels();
       var sample = currentSample();
       if (!sample) {
         document.getElementById('emptyState').classList.remove('hidden');
         document.getElementById('sampleWorkspace').classList.add('hidden');
+        refreshAnnotations();
         return;
       }
       document.getElementById('emptyState').classList.add('hidden');
@@ -1489,6 +1498,7 @@
       state.cfgDraftItems = deepClone((data && data.items) || []);
       document.getElementById('cfgEditEmpty').classList.add('hidden');
       document.getElementById('cfgEditPanel').classList.remove('hidden');
+      refreshAnnotations();
       document.getElementById('cfgEditTitle').textContent = '编辑试验 · ' + (data ? data.name : '');
       document.getElementById('c_lblDetectCategory').innerHTML = detectCategoryLabel() +
         '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span>';
@@ -1619,6 +1629,7 @@
       document.getElementById('cfgEditPanel').classList.add('hidden');
       document.getElementById('cfgEditEmpty').classList.remove('hidden');
       renderCfgLinked();
+      refreshAnnotations();
     }
 
     function saveCfgInlineEdit() {
@@ -1828,6 +1839,7 @@
       if (row) row.style.display = show ? 'flex' : 'none';
       var tip = document.getElementById('t_sampleQtyTip');
       if (tip) tip.textContent = '是否制样为「是」时必填；用步进器调整试样数量（≥1）。';
+      refreshAnnotations();
     }
 
     function stepNumberInput(inputId, delta, minVal) {
@@ -2293,6 +2305,181 @@
     applyDetectCategoryLabels();
     renderTree();
     renderWorkspace();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'tree-leaf-only',
+            selector: '[data-annotate="tree-leaf-only"]',
+            position: 'top-right',
+            title: '左树仅样品可选',
+            wide: true,
+            content: '层级为<strong>参考标准 → 样品</strong>。中间节点（标准/分类）只负责展开；<strong>仅样品叶节点可选</strong>后进入右侧配置。<br>同名样品在不同标准下为不同主数据（后台编码不同，前端不展示编码）。',
+            tag: '结构'
+          },
+          {
+            id: 'empty-non-leaf',
+            selector: '[data-annotate="empty-non-leaf"]',
+            position: 'top-left',
+            title: '非叶空态',
+            content: '选中分类/标准节点时右侧展示空态，提示先选择样品叶节点再维护基本信息、规格型号与试验。',
+            tag: '结构'
+          },
+          {
+            id: 'sync-to-da',
+            selector: '[data-annotate="sync-to-da"]',
+            position: 'bottom-left',
+            title: '一键同步样品试验数据',
+            wide: true,
+            content: '已移除「导出」。保留本按钮，hover 提示：将 LIMS 样品数据结构同步至<strong>直连数采系统</strong>。',
+            tag: '同步'
+          },
+          {
+            id: 'param-tabs',
+            selector: '[data-annotate="param-tabs"]',
+            position: 'bottom-right',
+            title: '右侧三 Tab',
+            wide: true,
+            content: '<strong>基本信息</strong>｜<strong>规格型号</strong>｜<strong>试验</strong>。<br>试验 Tab = 样品默认试验模板（结构唯一真相）；规格型号 Tab = 型号档案 +「配置试验」关联默认试验并快照取值。',
+            tag: '结构'
+          },
+          {
+            id: 'basic-fields',
+            selector: '[data-annotate="basic-fields"]',
+            position: 'top-right',
+            title: '基本信息字段',
+            wide: true,
+            content: '含样品分类、名称、排序、单位、描述、再检周期、图片、附件。<strong>已去掉编码与是否制样</strong>（是否制样下沉到试验项级）。图片/附件均支持多文件。',
+            tag: '字段'
+          },
+          {
+            id: 'recheck-cycle',
+            selector: '[data-annotate="recheck-cycle"]',
+            position: 'left',
+            title: '再检周期',
+            wide: true,
+            content: '下拉「数值 / 文本」组合：<br>· <strong>数值</strong>：步进器（月）；合格证再检日期 = 检测日期 + 再检周期<br>· <strong>文本</strong>：隐藏步进器，文字直接加载到合格证（不带入原数值）<br>规格型号编辑同样使用该组件。',
+            tag: '字段'
+          },
+          {
+            id: 'model-table',
+            selector: '[data-annotate="model-table"]',
+            position: 'top-right',
+            title: '规格型号列表',
+            wide: true,
+            content: '列表<strong>不含是否制样、不含标准要求</strong>。操作「关联」已改为<strong>配置试验</strong>：从默认试验勾选并允许规格型号侧覆盖取值。',
+            tag: '规格型号'
+          },
+          {
+            id: 'model-edit-drawer',
+            selector: '[data-annotate="model-edit-drawer"]',
+            position: 'top-left',
+            title: '规格型号编辑',
+            wide: true,
+            content: '右侧抽屉维护型号档案。再检周期同基本信息组合控件；图片/附件字段旁 tips 提示「可上传多个」。无规格型号时首次添加会保留默认模板值并复制到型号。',
+            tag: '规格型号'
+          },
+          {
+            id: 'cfg-tests-drawer',
+            selector: '[data-annotate="cfg-tests-drawer"]',
+            position: 'top-left',
+            title: '配置试验',
+            wide: true,
+            content: '可选试验为单行 chips；勾选与「取消关联」联动为待保存。点击已选试验在下方编辑覆盖。<br>首次勾选<strong>快照复制取值</strong>；规格型号侧修改<strong>永不回写</strong>默认。保存时若取消项含个性化配置则二次确认。',
+            tag: '规格型号'
+          },
+          {
+            id: 'cfg-override',
+            selector: '[data-annotate="cfg-override"]',
+            position: 'bottom-left',
+            title: '规格型号覆盖',
+            wide: true,
+            content: '可覆盖取值类字段；结构字段只读，须在样品默认试验中修改结构。默认试验改取值<strong>不覆盖</strong>已关联型号；改结构则<strong>强同步</strong>到已关联型号。',
+            tag: '数据关系'
+          },
+          {
+            id: 'test-tab',
+            selector: '[data-annotate="test-tab"]',
+            position: 'top-right',
+            title: '默认试验模板',
+            wide: true,
+            content: '本 Tab 是样品默认试验的<strong>结构唯一真相</strong>。试验编码、检测项编码仅后台调度用，前端不可见。新增试验后若已有规格型号，会弹出同步决策。',
+            tag: '试验'
+          },
+          {
+            id: 'copy-add-test',
+            selector: '[data-annotate="copy-add-test"]',
+            position: 'bottom-left',
+            title: '手动添加 / 复制添加',
+            wide: true,
+            content: '<strong>手动添加</strong>：打开试验编辑抽屉新建。<br><strong>复制添加</strong>：下拉单选<strong>其他样品</strong>的试验（不可选当前样品），复制后再弹出「同步到已有规格型号」。',
+            tag: '试验'
+          },
+          {
+            id: 'copy-test-modal',
+            selector: '[data-annotate="copy-test-modal"]',
+            position: 'top-right',
+            title: '复制其他样品试验',
+            wide: true,
+            content: '下拉按「样品分类 · 样品」分组列出可复制试验项，支持单选。排除当前样品全部试验，避免同样品自我复制。',
+            tag: '试验'
+          },
+          {
+            id: 'sync-new-test',
+            selector: '[data-annotate="sync-new-test"]',
+            position: 'top-right',
+            title: '新增试验同步决策',
+            wide: true,
+            content: '默认新增一条试验后询问是否同步关联：<br>· 全部规格型号<br>· 选择规格型号（下方加载当前样品型号列表）<br>· 不同步（仅默认模板）',
+            tag: '数据关系'
+          },
+          {
+            id: 'test-edit-drawer',
+            selector: '[data-annotate="test-edit-drawer"]',
+            position: 'top-left',
+            title: '试验编辑抽屉',
+            wide: true,
+            content: '维护试验级字段：检测类别（字典，标签受委托字段名控制）、试样类别代码、试样色号（字典）、是否制样、试样数量、标准要求拼接器等。<strong>已去掉试验编码、检测周期</strong>。',
+            tag: '字段'
+          },
+          {
+            id: 'std-builder',
+            selector: '[data-annotate="std-builder"]',
+            position: 'left',
+            title: '标准要求拼接',
+            content: '支持多段「字段 + 文字」拼接预览。检测项级不再维护项级标准要求。',
+            tag: '字段'
+          },
+          {
+            id: 'test-prepare',
+            selector: '[data-annotate="test-prepare"]',
+            position: 'top-right',
+            title: '是否制样（试验级）',
+            wide: true,
+            content: '「是否制样」仅在<strong>试验项级</strong>（默认试验 + 规格型号覆盖态）。业务流转看委托登记时该样品（规格型号）勾选的试验：任一有效「是」→ 走样品制备；全否 → 不走制备。',
+            tag: '制样'
+          },
+          {
+            id: 'test-sample-qty',
+            selector: '[data-annotate="test-sample-qty"]',
+            position: 'left',
+            title: '试样数量',
+            content: '是否制样为「是」时显示并必填；步进器调整（≥1）。委托详情「制样信息」取此值展示为「试样数量-N」。',
+            tag: '制样'
+          },
+          {
+            id: 'detect-items',
+            selector: '[data-annotate="detect-items"]',
+            position: 'top-left',
+            title: '检测项规则',
+            wide: true,
+            content: '无编码、无项级标准要求。支持是否必填、隐藏（隐藏则必填锁定为否）；类型=下拉时配置可选项。<strong>默认值（含标称值）永远非必填</strong>。',
+            tag: '检测项'
+          }
+        ]
+      });
+    }
   </script>
 </body>
 </html>
