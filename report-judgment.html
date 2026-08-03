@@ -176,9 +176,26 @@
         ]}
       ],
       aqgqj: [
-        { id: 'tool', label: '安全工器具', children: [
-          { id: 'glove', label: '绝缘手套', leaf: true },
-          { id: 'rod', label: '绝缘操作杆', leaf: true }
+        { id: 'dlt976', label: 'DLT 976-2017', children: [
+          { id: 'rod', label: '绝缘操作杆', leaf: true },
+          { id: 'ladder', label: '绝缘软梯', leaf: true },
+          { id: 'belt976', label: '安全带', leaf: true }
+        ]},
+        { id: 'dlt1476', label: 'DLT 1476-2023', children: [
+          { id: 'rope1476', label: '安全绳', leaf: true },
+          { id: 'rod1476', label: '绝缘杆', leaf: true },
+          { id: 'belt1476', label: '安全带', leaf: true },
+          { id: 'helmet', label: '安全帽', leaf: true },
+          { id: 'board1476', label: '登高板', leaf: true },
+          { id: 'spur', label: '登杆脚扣', leaf: true }
+        ]},
+        { id: 'dlt1741', label: 'DLT 1741-2017', children: [
+          { id: 'sling', label: '吊装带', leaf: true },
+          { id: 'shackle', label: '卸扣', leaf: true },
+          { id: 'belt1741', label: '安全带', leaf: true },
+          { id: 'jack', label: '千斤顶', leaf: true },
+          { id: 'board1741', label: '登高板（升降板）', leaf: true },
+          { id: 'rope1741', label: '安全绳', leaf: true }
         ]}
       ],
       hjjc: [
@@ -199,7 +216,7 @@
       'model-1c': { '例行试验': 1, '抽样试验': 1, '出厂检验': 1, '型式检验': 1 },
       'ds': { '例行试验': 0, '抽样试验': 0, '出厂检验': 0, '型式检验': 0 },
       'pipe-s': { '例行试验': 0, '抽样试验': 1, '出厂检验': 0, '型式检验': 1 },
-      'glove': { '例行试验': 1, '抽样试验': 1, '出厂检验': 1, '型式检验': 1 },
+      'rod': { '例行试验': 0, '抽样试验': 0, '出厂检验': 0, '型式检验': 0 },
       'cement': { '例行试验': 0, '抽样试验': 0, '出厂检验': 0, '型式检验': 0 }
     };
 
@@ -342,6 +359,16 @@
       alert('报告判定配置已保存（原型演示）');
     }
 
+    function collectOpenIds(nodes, out) {
+      (nodes || []).forEach(function (n) {
+        if (n.children && n.children.length) {
+          out[n.id] = true;
+          collectOpenIds(n.children, out);
+        }
+      });
+      return out;
+    }
+
     function switchCat(cat) {
       state.cat = cat;
       document.querySelectorAll('#catTabBar .cat-tab').forEach(function (t) {
@@ -349,6 +376,7 @@
       });
       var leaves = flattenLeaves(TREES[cat], []);
       state.selectedId = leaves.length ? leaves[0].id : null;
+      state.openIds = collectOpenIds(TREES[cat], {});
       fillCategorySelect();
       renderTree();
       renderConfig();
