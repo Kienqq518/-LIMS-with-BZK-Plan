@@ -326,6 +326,13 @@
       '</div>');
   }
 
+  function footerBarHtml(st) {
+    if (!st || !st.footerBgColor) return '';
+    // 字段区下方一条底色边，用于体现「底部栏背景色」
+    return '<div class="lc-footer-bar" style="height:5px;margin-top:8px;background:' +
+      esc(st.footerBgColor) + ';"></div>';
+  }
+
   function renderStyle3(tpl, data, opts) {
     var brand = tpl.brand || {};
     var st = styleOf(tpl);
@@ -334,8 +341,9 @@
     var body = qr.side
       ? ('<div class="lc-split"><div class="lc-fields">' + rows + '</div>' + qr.side + '</div>')
       : ('<div class="lc-fields">' + rows + '</div>');
-    // 仅有警示文案时才渲染底部栏，避免空白底栏留下绿色分隔线
     var foot = warnHtml(brand, { style: st });
+    // 无警示文案时仍渲染底色条，保证「底部栏背景色」实时预览可见
+    if (!foot) foot = footerBarHtml(st);
     return wrapSheet('lc-s3', tpl, data,
       brandHeadHtml(brand, { defaultTitle: '合 格 证', style: st }) +
       body + foot + qr.overlay);
