@@ -317,7 +317,7 @@ resolveTemplate(catKey, type, sampleMasterId):
 | 客户要求完成时间 |
 | 操作（打印合格证；支持多选批量） |
 
-流程：勾选 → 检验人员（首次必选/其后记忆，≤N）→ `resolveTemplate(certificate)` → 预览（单位名可本次编辑）→ `window.print()` → 短链签发/复用。
+流程：勾选 → 检验人员（首次必选/其后记忆，≤N）→ `resolveTemplate(certificate)` → 左预览右列表（单位名取模版品牌区，打印页不再临时改写）→ `window.print()` → 短链签发/复用。
 
 ---
 

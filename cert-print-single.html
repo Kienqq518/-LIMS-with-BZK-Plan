@@ -16,10 +16,6 @@
     .cert-fields { flex: 1; font-size: 13px; line-height: 1.9; color: #334155; }
     .cert-fields dt { display: inline; color: #64748b; }
     .cert-fields dd { display: inline; margin: 0; }
-    .toggle-switch { position: relative; width: 44px; height: 22px; background: #cbd5e1; border-radius: 11px; cursor: pointer; transition: background .2s; }
-    .toggle-switch.on { background: #3b82f6; }
-    .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform .2s; }
-    .toggle-switch.on::after { transform: translateX(22px); }
     @media print {
       .no-print { display: none !important; }
       .cert-preview-area { background: #fff !important; padding: 0 !important; }
@@ -35,13 +31,6 @@
       <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5">
         <a href="label-print.html" class="text-sm text-blue-600 hover:underline"><i class="fa fa-arrow-left"></i> 返回</a>
         <div class="flex items-center gap-3">
-          <label class="flex items-center gap-1 text-xs text-slate-500">单位名
-            <input id="orgOverride" type="text" class="w-40 rounded border border-slate-300 px-2 py-0.5 text-xs" onchange="renderPreview()" />
-          </label>
-          <div class="flex items-center gap-2 text-sm text-slate-600">
-            <span id="toggleLabel">开</span>
-            <div id="previewToggle" class="toggle-switch on" onclick="togglePreview(this)"></div>
-          </div>
           <button onclick="clearPreview()" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">清空待打印区域</button>
           <button onclick="window.print()" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">打印</button>
         </div>
@@ -108,9 +97,7 @@
     ];
 
     var samples = allSamples.slice();
-    var previewEnabled = true;
     var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
-    document.getElementById('orgOverride').value = LabelCertConfig.DEFAULT_ORG;
 
     function buildCertHtml(item, idx) {
       var masterId = item.masterId || LabelCertConfig.masterIdFromName(item.name);
@@ -119,8 +106,6 @@
         return '<div class="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">未配置合格证模版：' + item.sampleNo + '</div>';
       }
       tpl = LabelCertConfig.clone(tpl);
-      var org = document.getElementById('orgOverride').value.trim();
-      if (org) tpl.brand.orgName = org;
       var html = LabelCertRender.renderSheet(tpl, item, { suffix: '-' + (idx || 0) });
       if (idx === 0) html = html.replace('class="lc-qr"', 'class="lc-qr" data-annotate="qr-area"');
       return '<div class="mb-2 text-center text-[11px] text-slate-400">模版：' + LabelCertRender.esc(tpl.name) + ' · ' + (LabelCertConfig.PRESETS[tpl.layoutPreset] || {}).name + '</div>' + html;
@@ -129,7 +114,7 @@
     function renderPreview() {
       var container = document.getElementById('previewContainer');
       var selected = samples.filter(function (s) { return s._checked; });
-      if (!previewEnabled || !selected.length) {
+      if (!selected.length) {
         container.innerHTML = '<p class="text-center text-sm text-slate-400 py-12">暂无待打印合格证</p>';
         return;
       }
@@ -202,13 +187,6 @@
       document.getElementById('s_name').value = '';
       samples = allSamples.slice();
       renderSampleTable();
-    }
-
-    function togglePreview(el) {
-      previewEnabled = !previewEnabled;
-      el.classList.toggle('on', previewEnabled);
-      document.getElementById('toggleLabel').textContent = previewEnabled ? '开' : '关';
-      renderPreview();
     }
 
     function clearPreview() {
