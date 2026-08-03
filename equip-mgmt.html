@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>设备管理 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+
+    .toggle { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 11px; cursor: pointer; transition: .2s; }
+    .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+    .toggle input:checked + .toggle-slider { background: #2563eb; }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+    .modal-mask { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+
+    #namePop {
+      position: fixed; z-index: 200; display: none;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+      box-shadow: 0 6px 28px rgba(0,0,0,.14); width: 360px; font-size: 13px;
+      overflow: hidden;
+    }
+    #namePop.show { display: block; }
+
+    .linked-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px;
+      padding: 3px 8px; font-size: 12px; color: #1e40af;
+      max-width: 100%; word-break: break-all;
+    }
+    .linked-tag button {
+      color: #93c5fd; cursor: pointer; border: none;
+      background: none; padding: 0; line-height: 1; font-size: 15px; flex-shrink: 0;
+    }
+    .linked-tag button:hover { color: #1d4ed8; }
+
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; vertical-align: middle; flex-shrink: 0; }
+
+    #toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; background: rgba(0,0,0,.76); color: #fff;
+      padding: 8px 22px; border-radius: 6px; font-size: 13px;
+      opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; }
+
+    .tree-leaf-row { display: flex; align-items: center; padding: 2px 0; border-radius: 4px; }
+    .tree-leaf-row:hover { background: #eff6ff; }
+    .tree-parent-row { display: flex; align-items: center; padding: 2px 0; border-radius: 4px; cursor: pointer; user-select: none; }
+    .tree-parent-row:hover { background: #f8fafc; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <!-- Tab Bar -->
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      设备管理
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4 space-y-4">
+
+    <!-- Filter Card -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <div class="flex items-center gap-2">
+          <label class="w-20 flex-shrink-0 text-right text-sm text-slate-600">设备编号</label>
+          <input id="f_code" class="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-20 flex-shrink-0 text-right text-sm text-slate-600">设备名称</label>
+          <input id="f_name" class="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-20 flex-shrink-0 text-right text-sm text-slate-600">设备型号</label>
+          <input id="f_model" class="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-20 flex-shrink-0 text-right text-sm text-slate-600">所属部门</label>
+          <select id="f_dept" class="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">请选择</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-20 flex-shrink-0 text-right text-sm text-slate-600">所在区域</label>
+          <select id="f_area" class="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">请选择</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-20 flex-shrink-0 text-right text-sm text-slate-600">校准状态</label>
+          <select id="f_calibStatus" class="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">请选择</option>
+            <option value="正常">正常</option>
+            <option value="预警期">预警期</option>
+            <option value="已过期">已过期</option>
+          </select>
+        </div>
+        <div class="col-span-2 flex items-center justify-end gap-2">
+          <button onclick="renderTable()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+          <button onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center gap-2">
+        <button onclick="openEditModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新增</button>
+        <button onclick="showToast('导入功能暂未开放')" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-upload"></i> 导入</button>
+        <button onclick="showToast('导出功能暂未开放')" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-download"></i> 导出</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1540px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-50 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium w-12">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">型号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">下次校准时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">校准状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">设备精度</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">所属部门</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">所在区域</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">证书编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-20">启用状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">备注</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-48">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-3 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="totalText">共 0 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white text-xs">1</button>
+        <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>50条/页</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Edit / Add Modal ===== -->
+  <div id="editModal" class="modal-mask">
+    <div class="w-[720px] max-w-full rounded-lg bg-white shadow-xl flex flex-col" style="max-height:92vh">
+      <div class="flex-shrink-0 flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 id="editModalTitle" class="text-base font-medium">新增设备</h3>
+        <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-5 py-4 text-sm">
+        <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+          <div class="flex items-center gap-2">
+            <label class="w-24 flex-shrink-0 text-right text-slate-600"><span class="text-red-500">*</span> 设备编号</label>
+            <input id="m_code" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="请输入" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="w-24 flex-shrink-0 text-right text-slate-600"><span class="text-red-500">*</span> 设备名称</label>
+            <input id="m_name" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="请输入" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="w-24 flex-shrink-0 text-right text-slate-600">设备型号</label>
+            <input id="m_model" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="请输入" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="w-24 flex-shrink-0 text-right text-slate-600">所属部门</label>
+            <select id="m_dept" class="flex-1 min-w-0 rounded border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-500">
+              <option value="">请选择</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="w-24 flex-shrink-0 text-right text-slate-600">设备位置</label>
+            <select id="m_area" class="flex-1 min-w-0 rounded border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-500">
+              <option value="">请选择</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="w-24 flex-shrink-0 text-right text-slate-600">证书编号</label>
+            <input id="m_certNo" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="请输入" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="w-24 flex-shrink-0 text-right text-slate-600">设备信息</label>
+            <input id="m_info" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="请输入" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="w-24 flex-shrink-0 text-right text-slate-600">设备精度</label>
+            <input id="m_accuracy" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="请输入" />
+          </div>
+          <div class="flex items-start gap-2">
+            <label class="w-24 flex-shrink-0 pt-1.5 text-right text-slate-600">备注信息</label>
+            <textarea id="m_remark" rows="2" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500 resize-none"></textarea>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="w-24 flex-shrink-0 text-right text-slate-600">是否校准</label>
+            <select id="m_needCalib" onchange="onCalibChange()" class="flex-1 min-w-0 rounded border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-500">
+              <option value="yes">是</option>
+              <option value="no">否</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Calibration fields (shown when 是否校准=是) -->
+        <div id="calibSection" class="mt-4 border-t border-slate-100 pt-4">
+          <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+            <div class="flex items-center gap-2">
+              <label class="w-24 flex-shrink-0 text-right text-slate-600">上次校准时间</label>
+              <input id="m_lastCalib" type="date" onchange="updateNextCalib()" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" />
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="w-24 flex-shrink-0 text-right text-slate-600">校准周期</label>
+              <div class="flex flex-1 items-center gap-1">
+                <input id="m_cycleY" type="number" min="0" oninput="updateNextCalib()" class="w-12 rounded border border-slate-300 px-1.5 py-1.5 text-center text-sm outline-none focus:border-blue-500" placeholder="0" />
+                <span class="text-xs text-slate-500">年</span>
+                <input id="m_cycleM" type="number" min="0" oninput="updateNextCalib()" class="w-12 rounded border border-slate-300 px-1.5 py-1.5 text-center text-sm outline-none focus:border-blue-500" placeholder="0" />
+                <span class="text-xs text-slate-500">月</span>
+                <input id="m_cycleD" type="number" min="0" oninput="updateNextCalib()" class="w-12 rounded border border-slate-300 px-1.5 py-1.5 text-center text-sm outline-none focus:border-blue-500" placeholder="0" />
+                <span class="text-xs text-slate-500">日</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="w-24 flex-shrink-0 text-right text-slate-600">下次校准时间</label>
+              <input id="m_nextCalib" readonly class="flex-1 min-w-0 rounded border border-slate-100 bg-slate-50 px-2 py-1.5 text-slate-500 outline-none" placeholder="自动计算" />
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="w-24 flex-shrink-0 text-right text-slate-600">校准机构</label>
+              <input id="m_agency" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="请输入" />
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="w-24 flex-shrink-0 text-right text-slate-600">预警提前期</label>
+              <div class="flex flex-1 items-center gap-1">
+                <input id="m_warnDays" type="number" min="0" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="0" />
+                <span class="text-xs text-slate-500 whitespace-nowrap">天</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="w-24 flex-shrink-0 text-right text-slate-600">最大允许误差</label>
+              <input id="m_maxError" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="请输入" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex-shrink-0 flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="resetEditModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+        <button onclick="saveEditModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Associate Tests Modal ===== -->
+  <div id="linkModal" class="modal-mask">
+    <div class="rounded-lg bg-white shadow-xl flex flex-col" style="width:min(1040px,96vw);height:min(720px,92vh)">
+      <!-- Header -->
+      <div class="flex-shrink-0 flex items-start justify-between border-b border-slate-100 px-5 py-3">
+        <div>
+          <h3 class="text-base font-medium">关联试验</h3>
+          <p id="linkSubtitle" class="text-xs text-slate-500 mt-0.5"></p>
+        </div>
+        <button onclick="closeLinkModal()" class="text-slate-400 hover:text-slate-600 mt-0.5 ml-4"><i class="fa fa-times"></i></button>
+      </div>
+      <!-- Meta grid -->
+      <div id="linkMetaGrid" class="flex-shrink-0 border-b border-slate-100 px-5 py-3 grid grid-cols-4 gap-x-6 gap-y-1.5 text-xs bg-slate-50"></div>
+      <!-- Body -->
+      <div class="flex flex-1 min-h-0 overflow-hidden">
+        <!-- Left tree panel -->
+        <div class="flex flex-col border-r border-slate-200" style="width:290px;flex-shrink:0">
+          <div class="p-3 border-b border-slate-100 flex-shrink-0">
+            <input id="linkTreeSearch" oninput="filterTree()" class="w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入样品名称或试验项搜索" />
+          </div>
+          <div id="linkTree" class="flex-1 overflow-y-auto p-2"></div>
+        </div>
+        <!-- Right tags panel -->
+        <div class="flex flex-col flex-1 min-w-0">
+          <div class="flex-shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-slate-100">
+            <span id="linkRightTitle" class="text-sm font-medium text-slate-700">关联试验 (已关联: 0)</span>
+            <div class="flex items-center gap-4 text-sm">
+              <button onclick="openSyncModal()" class="text-blue-600 hover:underline">同步</button>
+              <button onclick="resetLinked()" class="text-blue-600 hover:underline">重置</button>
+              <button onclick="clearLinked()" class="text-blue-600 hover:underline">清空</button>
+            </div>
+          </div>
+          <div id="linkTagsArea" class="flex-1 overflow-y-auto p-4 flex flex-wrap content-start gap-1.5"></div>
+        </div>
+      </div>
+      <!-- Footer -->
+      <div class="flex-shrink-0 flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeLinkModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="saveLinkModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Sync Nested Modal ===== -->
+  <div id="syncModal" class="modal-mask" style="z-index:60">
+    <div class="w-[700px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 class="text-base font-medium">同步试验项关联</h3>
+        <button onclick="closeSyncModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4 text-sm space-y-3">
+        <div class="rounded bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
+          <i class="fa fa-info-circle mr-1"></i>
+          选择其他设备，将该设备已关联的试验项同步合并到当前设备的关联中（自动去重）。
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="text-slate-600 text-xs whitespace-nowrap">设备编号/名称/型号</label>
+          <input id="sync_kw" class="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" style="width:180px" placeholder="请输入" />
+          <button onclick="renderSyncTable()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+          <button onclick="resetSyncFilter()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+        </div>
+        <div style="max-height:260px;overflow-y:auto">
+          <table class="w-full border-collapse text-sm">
+            <thead>
+              <tr class="bg-slate-50 text-slate-600 sticky top-0">
+                <th class="border border-slate-200 px-2 py-2 w-10 text-center">
+                  <input type="checkbox" id="syncCheckAll" onchange="syncCheckAllToggle(this.checked)" />
+                </th>
+                <th class="border border-slate-200 px-2 py-2 w-10 text-center">序号</th>
+                <th class="border border-slate-200 px-2 py-2">编号</th>
+                <th class="border border-slate-200 px-2 py-2">名称</th>
+                <th class="border border-slate-200 px-2 py-2">型号</th>
+                <th class="border border-slate-200 px-2 py-2">设备精度</th>
+              </tr>
+            </thead>
+            <tbody id="syncTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeSyncModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="confirmSync()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== History Modal ===== -->
+  <div id="histModal" class="modal-mask">
+    <div class="w-[840px] max-w-full rounded-lg bg-white shadow-xl flex flex-col" style="max-height:86vh">
+      <div class="flex-shrink-0 flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <div class="flex items-center gap-3">
+          <h3 class="text-base font-medium">设备履历</h3>
+          <button onclick="openHistFormModal(null)" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新增履历</button>
+        </div>
+        <button onclick="closeHistModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-5 py-4">
+        <table class="w-full border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-50 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium w-12">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">事件</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">起始时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">结束时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">备注</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">校准报告</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-28">操作</th>
+            </tr>
+          </thead>
+          <tbody id="histTableBody"></tbody>
+        </table>
+      </div>
+      <div class="flex-shrink-0 flex justify-end border-t border-slate-100 px-5 py-3">
+        <button onclick="closeHistModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== History Form Modal ===== -->
+  <div id="histFormModal" class="modal-mask" style="z-index:60">
+    <div class="w-[500px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 id="histFormTitle" class="text-base font-medium">新增履历</h3>
+        <button onclick="closeHistFormModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="space-y-3 px-5 py-4 text-sm">
+        <div class="flex items-center gap-3">
+          <label class="w-24 flex-shrink-0 text-right text-slate-600"><span class="text-red-500">*</span> 事件</label>
+          <input id="hf_event" class="flex-1 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="如：设备校准" />
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="w-24 flex-shrink-0 text-right text-slate-600">起始时间</label>
+          <input id="hf_start" type="date" class="flex-1 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="w-24 flex-shrink-0 text-right text-slate-600">结束时间</label>
+          <input id="hf_end" type="date" class="flex-1 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-start gap-3">
+          <label class="w-24 flex-shrink-0 pt-1.5 text-right text-slate-600">备注</label>
+          <textarea id="hf_remark" rows="2" class="flex-1 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500 resize-none"></textarea>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="w-24 flex-shrink-0 text-right text-slate-600">校准报告</label>
+          <input id="hf_report" class="flex-1 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="文件名（如 校准报告.pdf）" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeHistFormModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="saveHistForm()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Name Hover Popover ===== -->
+  <div id="namePop" onmouseenter="cancelHidePop()" onmouseleave="scheduleHidePop()">
+    <div class="px-4 py-3 border-b border-slate-100">
+      <div class="flex items-start gap-2 flex-wrap">
+        <span id="popName" class="font-medium text-slate-800 text-sm leading-snug"></span>
+        <span id="popCode" class="inline-block rounded px-1.5 py-0.5 text-xs bg-blue-50 text-blue-700 border border-blue-200 leading-snug"></span>
+        <span id="popModel" class="inline-block rounded px-1.5 py-0.5 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 leading-snug"></span>
+      </div>
+    </div>
+    <div id="popGrid" class="grid grid-cols-2 gap-x-4 gap-y-1.5 px-4 py-3 text-xs border-b border-slate-100"></div>
+    <div class="px-4 py-3">
+      <div class="flex items-center gap-1.5 mb-2 text-xs font-medium text-slate-600">
+        <i class="fa fa-paperclip text-slate-400"></i>
+        <span id="popFilesTitle">设备文件 (0)</span>
+      </div>
+      <div id="popFiles" class="space-y-1 text-xs" style="max-height:120px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/equip-store.js"></script>
+  <script>
+    // ==================== UTILS ====================
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    var _toastTimer = null;
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      if (_toastTimer) clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+    }
+
+    // ==================== CALIB UTILS ====================
+    function computeNextCalib(lastCalib, cycleY, cycleM, cycleD) {
+      if (!lastCalib) return '';
+      var d = new Date(lastCalib);
+      if (isNaN(d.getTime())) return '';
+      d.setFullYear(d.getFullYear() + (parseInt(cycleY, 10) || 0));
+      d.setMonth(d.getMonth() + (parseInt(cycleM, 10) || 0));
+      d.setDate(d.getDate() + (parseInt(cycleD, 10) || 0));
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+
+    function computeCalibStatus(dev) {
+      if (!dev.needCalib || !dev.nextCalib) return '正常';
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      var next = new Date(dev.nextCalib);
+      if (isNaN(next.getTime())) return '正常';
+      if (next < today) return '已过期';
+      var warn = parseInt(dev.warnDays, 10) || 0;
+      var warnDate = new Date(next);
+      warnDate.setDate(warnDate.getDate() - warn);
+      if (today >= warnDate) return '预警期';
+      return '正常';
+    }
+
+    var CALIB_COLOR = { '正常': '#2563eb', '预警期': '#f59e0b', '已过期': '#ef4444' };
+    function calibDot(status) {
+      var c = CALIB_COLOR[status] || '#94a3b8';
+      return '<span class="dot" style="background:' + c + '"></span>' + esc(status || '-');
+    }
+
+    // ==================== INIT ====================
+    function populateSelects() {
+      var depts = EquipStore.DEPTS;
+      var areas = EquipStore.AREAS;
+      ['f_dept', 'm_dept'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        while (el.options.length > 1) el.remove(1);
+        depts.forEach(function (d) { el.add(new Option(d, d)); });
+      });
+      ['f_area', 'm_area'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        while (el.options.length > 1) el.remove(1);
+        areas.forEach(function (a) { el.add(new Option(a, a)); });
+      });
+    }
+
+    // ==================== TABLE ====================
+    function getFiltered() {
+      var code = document.getElementById('f_code').value.trim();
+      var name = document.getElementById('f_name').value.trim();
+      var model = document.getElementById('f_model').value.trim();
+      var dept = document.getElementById('f_dept').value;
+      var area = document.getElementById('f_area').value;
+      var cs = document.getElementById('f_calibStatus').value;
+      return EquipStore.listAll().filter(function (d) {
+        if (code && !(d.code || '').includes(code)) return false;
+        if (name && !(d.name || '').includes(name)) return false;
+        if (model && !(d.model || '').includes(model)) return false;
+        if (dept && d.dept !== dept) return false;
+        if (area && d.area !== area) return false;
+        if (cs && d.calibStatus !== cs) return false;
+        return true;
+      });
+    }
+
+    function renderTable() {
+      var rows = getFiltered();
+      document.getElementById('tableBody').innerHTML = rows.map(function (d, i) {
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 font-mono text-xs">' + esc(d.code) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' +
+            '<span class="text-blue-600 cursor-pointer hover:underline text-sm" ' +
+              'onmouseenter="showNamePop(event,\'' + d.id + '\')" ' +
+              'onmouseleave="scheduleHidePop()">' + esc(d.name) + '</span>' +
+          '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-xs">' + esc(d.model || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap text-xs">' + esc(d.nextCalib || '-') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap text-xs">' + calibDot(d.calibStatus) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-xs">' + esc(d.accuracy || '-') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-xs">' + esc(d.dept || '-') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-xs">' + esc(d.area || '-') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-xs">' + esc(d.certNo || '-') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' +
+            '<label class="toggle"><input type="checkbox" ' + (d.enabled ? 'checked' : '') +
+              ' onchange="toggleEnabled(\'' + d.id + '\',this.checked)" /><span class="toggle-slider"></span></label>' +
+          '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-xs max-w-[140px] truncate" title="' + esc(d.remark) + '">' + esc(d.remark || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
+            '<button onclick="openLinkModal(\'' + d.id + '\')" class="text-blue-600 hover:underline text-xs">关联试验</button>' +
+            ' <button onclick="openHistModal(\'' + d.id + '\')" class="text-blue-600 hover:underline text-xs">履历</button>' +
+            ' <button onclick="openEditModal(\'' + d.id + '\')" class="text-blue-600 hover:underline text-xs">编辑</button>' +
+            ' <button onclick="removeDevice(\'' + d.id + '\')" class="text-red-500 hover:underline text-xs">删除</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+      document.getElementById('totalText').textContent = '共 ' + rows.length + ' 条';
+    }
+
+    function resetFilter() {
+      ['f_code', 'f_name', 'f_model'].forEach(function (id) { document.getElementById(id).value = ''; });
+      document.getElementById('f_dept').value = '';
+      document.getElementById('f_area').value = '';
+      document.getElementById('f_calibStatus').value = '';
+      renderTable();
+    }
+
+    function toggleEnabled(id, checked) {
+      var dev = EquipStore.findById(id);
+      if (!dev) return;
+      dev.enabled = checked;
+      EquipStore.upsert(dev);
+    }
+
+    function removeDevice(id) {
+      if (!confirm('确定删除该设备？此操作不可恢复。')) return;
+      EquipStore.remove(id);
+      renderTable();
+    }
+
+    // ==================== EDIT MODAL ====================
+    var _editId = null;
+
+    function openEditModal(id) {
+      _editId = id || null;
+      document.getElementById('editModalTitle').textContent = id ? '编辑设备' : '新增设备';
+      var dev = id ? EquipStore.findById(id) : null;
+      document.getElementById('m_code').value = dev ? (dev.code || '') : '';
+      document.getElementById('m_name').value = dev ? (dev.name || '') : '';
+      document.getElementById('m_model').value = dev ? (dev.model || '') : '';
+      document.getElementById('m_dept').value = dev ? (dev.dept || '') : '';
+      document.getElementById('m_area').value = dev ? (dev.area || '') : '';
+      document.getElementById('m_certNo').value = dev ? (dev.certNo || '') : '';
+      document.getElementById('m_info').value = dev ? (dev.info || '') : '';
+      document.getElementById('m_accuracy').value = dev ? (dev.accuracy || '') : '';
+      document.getElementById('m_remark').value = dev ? (dev.remark || '') : '';
+      document.getElementById('m_needCalib').value = (dev && dev.needCalib === false) ? 'no' : 'yes';
+      document.getElementById('m_lastCalib').value = dev ? (dev.lastCalib || '') : '';
+      document.getElementById('m_cycleY').value = dev ? (dev.cycleY != null ? dev.cycleY : 1) : 1;
+      document.getElementById('m_cycleM').value = dev ? (dev.cycleM || 0) : 0;
+      document.getElementById('m_cycleD').value = dev ? (dev.cycleD || 0) : 0;
+      document.getElementById('m_nextCalib').value = dev ? (dev.nextCalib || '') : '';
+      document.getElementById('m_agency').value = dev ? (dev.agency || '') : '';
+      document.getElementById('m_warnDays').value = dev ? (dev.warnDays || 0) : 30;
+      document.getElementById('m_maxError').value = dev ? (dev.maxError || '') : '';
+      onCalibChange();
+      document.getElementById('editModal').classList.add('open');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('open');
+    }
+
+    function resetEditModal() {
+      openEditModal(_editId);
+    }
+
+    function onCalibChange() {
+      var show = document.getElementById('m_needCalib').value === 'yes';
+      document.getElementById('calibSection').style.display = show ? '' : 'none';
+    }
+
+    function updateNextCalib() {
+      var last = document.getElementById('m_lastCalib').value;
+      var y = document.getElementById('m_cycleY').value;
+      var m = document.getElementById('m_cycleM').value;
+      var dd = document.getElementById('m_cycleD').value;
+      document.getElementById('m_nextCalib').value = computeNextCalib(last, y, m, dd);
+    }
+
+    function saveEditModal() {
+      var code = document.getElementById('m_code').value.trim();
+      var name = document.getElementById('m_name').value.trim();
+      if (!code) { alert('请输入设备编号'); return; }
+      if (!name) { alert('请输入设备名称'); return; }
+
+      var needCalib = document.getElementById('m_needCalib').value === 'yes';
+      var lastCalib = document.getElementById('m_lastCalib').value;
+      var cycleY = parseInt(document.getElementById('m_cycleY').value, 10) || 0;
+      var cycleM = parseInt(document.getElementById('m_cycleM').value, 10) || 0;
+      var cycleD = parseInt(document.getElementById('m_cycleD').value, 10) || 0;
+      var nextCalib = needCalib ? computeNextCalib(lastCalib, cycleY, cycleM, cycleD) : '';
+
+      var existing = _editId ? EquipStore.findById(_editId) : null;
+      var row = existing
+        ? EquipStore.clone(existing)
+        : { id: 'eq_' + Date.now(), files: [], linkedTests: [], history: [], enabled: true };
+
+      row.code = code;
+      row.name = name;
+      row.model = document.getElementById('m_model').value.trim();
+      row.dept = document.getElementById('m_dept').value;
+      row.area = document.getElementById('m_area').value;
+      row.certNo = document.getElementById('m_certNo').value.trim();
+      row.info = document.getElementById('m_info').value.trim();
+      row.accuracy = document.getElementById('m_accuracy').value.trim();
+      row.remark = document.getElementById('m_remark').value.trim();
+      row.needCalib = needCalib;
+      row.lastCalib = needCalib ? lastCalib : '';
+      row.cycleY = needCalib ? cycleY : 0;
+      row.cycleM = needCalib ? cycleM : 0;
+      row.cycleD = needCalib ? cycleD : 0;
+      row.nextCalib = nextCalib;
+      row.agency = needCalib ? document.getElementById('m_agency').value.trim() : '';
+      row.warnDays = needCalib ? (parseInt(document.getElementById('m_warnDays').value, 10) || 0) : 0;
+      row.maxError = needCalib ? document.getElementById('m_maxError').value.trim() : '';
+      row.calibStatus = computeCalibStatus(row);
+
+      EquipStore.upsert(row);
+      closeEditModal();
+      renderTable();
+      showToast(_editId ? '设备信息已更新' : '设备已新增');
+    }
+
+    // ==================== LINK MODAL ====================
+    var _linkDevId = null;
+    var _pendingLinked = [];
+    var _savedLinked = [];
+    var _treeSearchKw = '';
+    var _filterTreeTimer = null;
+
+    function openLinkModal(id) {
+      _linkDevId = id;
+      var dev = EquipStore.findById(id);
+      if (!dev) return;
+      _savedLinked = EquipStore.clone(dev.linkedTests || []);
+      _pendingLinked = EquipStore.clone(_savedLinked);
+      document.getElementById('linkSubtitle').textContent =
+        dev.name + ' [' + dev.code + ']' + (dev.model ? '  ' + dev.model : '');
+      renderLinkMeta(dev);
+      document.getElementById('linkTreeSearch').value = '';
+      _treeSearchKw = '';
+      renderTree();
+      renderLinkedTags();
+      document.getElementById('linkModal').classList.add('open');
+    }
+
+    function closeLinkModal() {
+      document.getElementById('linkModal').classList.remove('open');
+    }
+
+    function renderLinkMeta(dev) {
+      var items = [
+        ['下次校准时间', esc(dev.nextCalib || '-')],
+        ['校准状态', calibDot(dev.calibStatus || '-')],
+        ['所属部门', esc(dev.dept || '-')],
+        ['所在区域', esc(dev.area || '-')],
+        ['备注', esc(dev.remark || '-')],
+        ['设备精度', esc(dev.accuracy || '-')],
+        ['证书编号', esc(dev.certNo || '-')]
+      ];
+      document.getElementById('linkMetaGrid').innerHTML = items.map(function (f) {
+        return '<div class="flex items-center gap-1 min-w-0">' +
+          '<span class="text-slate-500 flex-shrink-0">' + f[0] + '：</span>' +
+          '<span class="text-slate-700 truncate">' + f[1] + '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    function isPathLinked(path) {
+      return _pendingLinked.some(function (l) { return l.path === path; });
+    }
+
+    function leafToLinkedItem(leaf) {
+      var trail = leaf.trail || [];
+      var len = trail.length;
+      return {
+        path: leaf.path,
+        sample: len >= 2 ? trail[len - 2] : '',
+        model: len >= 3 ? trail[len - 3] : '',
+        test: leaf.label
+      };
+    }
+
+    function onLeafCheckById(leafId, checked) {
+      var leaf = EquipStore.allTestLeaves().find(function (l) { return l.id === leafId; });
+      if (!leaf) return;
+      if (checked) {
+        if (!isPathLinked(leaf.path)) _pendingLinked.push(leafToLinkedItem(leaf));
+      } else {
+        _pendingLinked = _pendingLinked.filter(function (l) { return l.path !== leaf.path; });
+      }
+      renderLinkedTags();
+    }
+
+    function removeLinkedByIdx(idx) {
+      var item = _pendingLinked[idx];
+      _pendingLinked.splice(idx, 1);
+      if (item) {
+        var leaf = EquipStore.allTestLeaves().find(function (l) { return l.path === item.path; });
+        if (leaf) {
+          var cb = document.getElementById('cb_' + leaf.id);
+          if (cb) cb.checked = false;
+        }
+      }
+      renderLinkedTags();
+    }
+
+    function clearLinked() {
+      _pendingLinked = [];
+      document.querySelectorAll('#linkTree input[data-leaf-id]').forEach(function (cb) { cb.checked = false; });
+      renderLinkedTags();
+    }
+
+    function resetLinked() {
+      _pendingLinked = EquipStore.clone(_savedLinked);
+      renderTree();
+      renderLinkedTags();
+    }
+
+    function saveLinkModal() {
+      var dev = EquipStore.findById(_linkDevId);
+      if (!dev) return;
+      dev.linkedTests = EquipStore.clone(_pendingLinked);
+      EquipStore.upsert(dev);
+      closeLinkModal();
+      showToast('关联试验已保存');
+    }
+
+    function renderLinkedTags() {
+      document.getElementById('linkRightTitle').textContent =
+        '关联试验 (已关联: ' + _pendingLinked.length + ')';
+      document.getElementById('linkTagsArea').innerHTML = _pendingLinked.map(function (lt, idx) {
+        return '<span class="linked-tag">' +
+          esc(lt.path) +
+          '<button onclick="removeLinkedByIdx(' + idx + ')" title="移除">×</button>' +
+        '</span>';
+      }).join('');
+    }
+
+    // ==================== TREE ====================
+    function hasLinkedInSubtree(node) {
+      if (node.leaf) {
+        var leaf = EquipStore.allTestLeaves().find(function (l) { return l.id === node.id; });
+        return leaf ? isPathLinked(leaf.path) : false;
+      }
+      return (node.children || []).some(hasLinkedInSubtree);
+    }
+
+    function buildTreeHTML(nodes, level) {
+      if (!nodes || !nodes.length) return '';
+      var allLeaves = EquipStore.allTestLeaves();
+      var html = '';
+      var indent = level * 16;
+
+      nodes.forEach(function (n) {
+        if (n.leaf) {
+          var leaf = allLeaves.find(function (l) { return l.id === n.id; });
+          var path = leaf ? leaf.path : '';
+          var chk = isPathLinked(path);
+          html +=
+            '<div class="tree-leaf-row" style="padding-left:' + (indent + 20) + 'px">' +
+              '<input type="checkbox" id="cb_' + n.id + '" data-leaf-id="' + n.id + '"' +
+                (chk ? ' checked' : '') +
+                ' onchange="onLeafCheckById(\'' + n.id + '\',this.checked)"' +
+                ' class="cursor-pointer flex-shrink-0" />' +
+              '<label for="cb_' + n.id + '" class="cursor-pointer select-none text-xs text-slate-600 ml-1.5 flex-1">' +
+                esc(n.label) +
+              '</label>' +
+            '</div>';
+        } else {
+          var expanded = hasLinkedInSubtree(n) || _treeSearchKw.length > 0;
+          html +=
+            '<div id="tnode_' + n.id + '">' +
+              '<div class="tree-parent-row" style="padding-left:' + indent + 'px"' +
+                ' onclick="toggleTreeNode(\'' + n.id + '\')">' +
+                '<i id="tcaret_' + n.id + '" class="fa fa-caret-' + (expanded ? 'down' : 'right') +
+                  ' text-xs text-slate-400 flex-shrink-0" style="width:14px;text-align:center"></i>' +
+                '<input type="checkbox" id="pcb_' + n.id + '"' +
+                  ' onclick="event.stopPropagation();toggleNodeCheck(\'' + n.id + '\',this.checked)"' +
+                  ' class="cursor-pointer flex-shrink-0 ml-0.5" />' +
+                '<span class="text-xs font-medium text-slate-700 ml-1.5 select-none">' + esc(n.label) + '</span>' +
+              '</div>' +
+              '<div id="tchildren_' + n.id + '"' + (expanded ? '' : ' class="hidden"') + '>' +
+                buildTreeHTML(n.children, level + 1) +
+              '</div>' +
+            '</div>';
+        }
+      });
+      return html;
+    }
+
+    function toggleTreeNode(nodeId) {
+      var children = document.getElementById('tchildren_' + nodeId);
+      var caret = document.getElementById('tcaret_' + nodeId);
+      if (!children) return;
+      var hidden = children.classList.contains('hidden');
+      children.classList.toggle('hidden', !hidden);
+      if (caret) {
+        caret.classList.toggle('fa-caret-right', !hidden);
+        caret.classList.toggle('fa-caret-down', hidden);
+      }
+    }
+
+    function toggleNodeCheck(nodeId, checked) {
+      var container = document.getElementById('tchildren_' + nodeId);
+      if (!container) return;
+      var allLeaves = EquipStore.allTestLeaves();
+      container.querySelectorAll('input[data-leaf-id]').forEach(function (cb) {
+        var leafId = cb.getAttribute('data-leaf-id');
+        var leaf = allLeaves.find(function (l) { return l.id === leafId; });
+        if (!leaf) return;
+        cb.checked = checked;
+        if (checked) {
+          if (!isPathLinked(leaf.path)) _pendingLinked.push(leafToLinkedItem(leaf));
+        } else {
+          _pendingLinked = _pendingLinked.filter(function (l) { return l.path !== leaf.path; });
+        }
+      });
+      renderLinkedTags();
+    }
+
+    function filterTree() {
+      clearTimeout(_filterTreeTimer);
+      _filterTreeTimer = setTimeout(function () {
+        _treeSearchKw = (document.getElementById('linkTreeSearch').value || '').trim().toLowerCase();
+        var tree = _treeSearchKw ? filterTreeNodes(EquipStore.TEST_TREE, _treeSearchKw) : EquipStore.TEST_TREE;
+        document.getElementById('linkTree').innerHTML = buildTreeHTML(tree, 0);
+      }, 180);
+    }
+
+    function filterTreeNodes(nodes, kw) {
+      var result = [];
+      (nodes || []).forEach(function (n) {
+        if (n.leaf) {
+          if (n.label.toLowerCase().includes(kw)) result.push(n);
+        } else {
+          var nodeMatch = n.label.toLowerCase().includes(kw);
+          var filteredChildren = filterTreeNodes(n.children, kw);
+          if (nodeMatch || filteredChildren.length > 0) {
+            var copy = {};
+            for (var k in n) copy[k] = n[k];
+            copy.children = nodeMatch ? n.children : filteredChildren;
+            result.push(copy);
+          }
+        }
+      });
+      return result;
+    }
+
+    function renderTree() {
+      _treeSearchKw = (document.getElementById('linkTreeSearch').value || '').trim().toLowerCase();
+      var tree = _treeSearchKw ? filterTreeNodes(EquipStore.TEST_TREE, _treeSearchKw) : EquipStore.TEST_TREE;
+      document.getElementById('linkTree').innerHTML = buildTreeHTML(tree, 0);
+    }
+
+    // ==================== SYNC MODAL ====================
+    var _syncDevIds = {};
+
+    function openSyncModal() {
+      _syncDevIds = {};
+      document.getElementById('sync_kw').value = '';
+      renderSyncTable();
+      document.getElementById('syncModal').classList.add('open');
+    }
+
+    function closeSyncModal() {
+      document.getElementById('syncModal').classList.remove('open');
+    }
+
+    function renderSyncTable() {
+      var kw = (document.getElementById('sync_kw').value || '').trim().toLowerCase();
+      var all = EquipStore.listAll().filter(function (d) {
+        if (d.id === _linkDevId) return false;
+        if (!kw) return true;
+        return (d.code || '').toLowerCase().includes(kw) ||
+          (d.name || '').toLowerCase().includes(kw) ||
+          (d.model || '').toLowerCase().includes(kw);
+      });
+      document.getElementById('syncCheckAll').checked = false;
+      document.getElementById('syncTableBody').innerHTML = all.length ? all.map(function (d, i) {
+        var chk = !!_syncDevIds[d.id];
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-2 py-2 text-center">' +
+            '<input type="checkbox" data-devid="' + d.id + '"' + (chk ? ' checked' : '') +
+              ' onchange="syncRowCheck(\'' + d.id + '\',this.checked)" />' +
+          '</td>' +
+          '<td class="border border-slate-200 px-2 py-2 text-center text-xs">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-2 py-2 text-xs font-mono">' + esc(d.code) + '</td>' +
+          '<td class="border border-slate-200 px-2 py-2"><span class="text-blue-600 text-xs">' + esc(d.name) + '</span></td>' +
+          '<td class="border border-slate-200 px-2 py-2 text-xs">' + esc(d.model || '-') + '</td>' +
+          '<td class="border border-slate-200 px-2 py-2 text-xs">' + esc(d.accuracy || '-') + '</td>' +
+        '</tr>';
+      }).join('') :
+        '<tr><td colspan="6" class="border border-slate-200 px-3 py-4 text-center text-xs text-slate-400">暂无其他设备</td></tr>';
+    }
+
+    function resetSyncFilter() {
+      document.getElementById('sync_kw').value = '';
+      renderSyncTable();
+    }
+
+    function syncRowCheck(devId, checked) {
+      if (checked) _syncDevIds[devId] = true;
+      else delete _syncDevIds[devId];
+    }
+
+    function syncCheckAllToggle(checked) {
+      document.querySelectorAll('#syncTableBody input[data-devid]').forEach(function (cb) {
+        cb.checked = checked;
+        var id = cb.getAttribute('data-devid');
+        if (id) { if (checked) _syncDevIds[id] = true; else delete _syncDevIds[id]; }
+      });
+    }
+
+    function confirmSync() {
+      var ids = Object.keys(_syncDevIds);
+      if (!ids.length) { showToast('请先勾选至少一个设备'); return; }
+      var added = 0;
+      ids.forEach(function (devId) {
+        var dev = EquipStore.findById(devId);
+        if (!dev || !dev.linkedTests) return;
+        dev.linkedTests.forEach(function (lt) {
+          if (!isPathLinked(lt.path)) {
+            _pendingLinked.push(EquipStore.clone(lt));
+            added++;
+          }
+        });
+      });
+      var allLeaves = EquipStore.allTestLeaves();
+      _pendingLinked.forEach(function (lt) {
+        var leaf = allLeaves.find(function (l) { return l.path === lt.path; });
+        if (leaf) {
+          var cb = document.getElementById('cb_' + leaf.id);
+          if (cb) cb.checked = true;
+        }
+      });
+      renderLinkedTags();
+      closeSyncModal();
+      showToast('已合并同步 ' + added + ' 条关联试验');
+    }
+
+    // ==================== HISTORY MODAL ====================
+    var _histDevId = null;
+
+    function openHistModal(id) {
+      _histDevId = id;
+      renderHistTable();
+      document.getElementById('histModal').classList.add('open');
+    }
+
+    function closeHistModal() {
+      document.getElementById('histModal').classList.remove('open');
+    }
+
+    function renderHistTable() {
+      var dev = EquipStore.findById(_histDevId);
+      if (!dev) return;
+      var hist = dev.history || [];
+      document.getElementById('histTableBody').innerHTML = hist.length ? hist.map(function (h, i) {
+        var reportCell = h.report
+          ? '<a href="#" onclick="showToast(\'预览功能暂未开放\');return false;" class="text-blue-600 hover:underline">' + esc(h.report) + '</a>'
+          : '<span class="text-slate-400">-</span>';
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + esc(h.event) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + esc(h.start || '-') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + esc(h.end || '-') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-xs">' + esc(h.remark || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + reportCell + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
+            '<button onclick="openHistFormModal(\'' + h.id + '\')" class="text-blue-600 hover:underline text-xs">编辑</button>' +
+            ' <button onclick="deleteHistEntry(\'' + h.id + '\')" class="text-red-500 hover:underline text-xs">删除</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('') :
+        '<tr><td colspan="7" class="border border-slate-200 px-3 py-6 text-center text-sm text-slate-400">暂无履历数据</td></tr>';
+    }
+
+    function deleteHistEntry(histId) {
+      if (!confirm('确定删除该履历记录？')) return;
+      var dev = EquipStore.findById(_histDevId);
+      if (!dev) return;
+      dev.history = (dev.history || []).filter(function (h) { return h.id !== histId; });
+      EquipStore.upsert(dev);
+      renderHistTable();
+    }
+
+    // ==================== HISTORY FORM MODAL ====================
+    var _histEntryId = null;
+
+    function openHistFormModal(histId) {
+      _histEntryId = histId;
+      var dev = EquipStore.findById(_histDevId);
+      var entry = histId && dev
+        ? (dev.history || []).find(function (h) { return h.id === histId; })
+        : null;
+      document.getElementById('histFormTitle').textContent = histId ? '编辑履历' : '新增履历';
+      document.getElementById('hf_event').value = entry ? (entry.event || '') : '';
+      document.getElementById('hf_start').value = entry ? (entry.start || '') : '';
+      document.getElementById('hf_end').value = entry ? (entry.end || '') : '';
+      document.getElementById('hf_remark').value = entry ? (entry.remark || '') : '';
+      document.getElementById('hf_report').value = entry ? (entry.report || '') : '';
+      document.getElementById('histFormModal').classList.add('open');
+    }
+
+    function closeHistFormModal() {
+      document.getElementById('histFormModal').classList.remove('open');
+    }
+
+    function saveHistForm() {
+      var event = document.getElementById('hf_event').value.trim();
+      if (!event) { alert('请输入事件名称'); return; }
+      var dev = EquipStore.findById(_histDevId);
+      if (!dev) return;
+      if (!dev.history) dev.history = [];
+      if (_histEntryId) {
+        var entry = dev.history.find(function (h) { return h.id === _histEntryId; });
+        if (entry) {
+          entry.event = event;
+          entry.start = document.getElementById('hf_start').value;
+          entry.end = document.getElementById('hf_end').value;
+          entry.remark = document.getElementById('hf_remark').value.trim();
+          entry.report = document.getElementById('hf_report').value.trim();
+        }
+      } else {
+        dev.history.push({
+          id: 'h_' + Date.now(),
+          event: event,
+          start: document.getElementById('hf_start').value,
+          end: document.getElementById('hf_end').value,
+          remark: document.getElementById('hf_remark').value.trim(),
+          report: document.getElementById('hf_report').value.trim()
+        });
+      }
+      EquipStore.upsert(dev);
+      closeHistFormModal();
+      renderHistTable();
+    }
+
+    // ==================== NAME HOVER POPOVER ====================
+    var _popHideTimer = null;
+    var FILE_ICONS = { pdf: 'fa-file-pdf-o', img: 'fa-file-image-o', doc: 'fa-file-word-o', xls: 'fa-file-excel-o' };
+
+    function showNamePop(e, id) {
+      cancelHidePop();
+      var dev = EquipStore.findById(id);
+      if (!dev) return;
+      var pop = document.getElementById('namePop');
+
+      document.getElementById('popName').textContent = dev.name;
+      document.getElementById('popCode').textContent = dev.code;
+      document.getElementById('popModel').textContent = dev.model || '';
+
+      var metaFields = [
+        ['下次校准时间', esc(dev.nextCalib || '-')],
+        ['校准状态', calibDot(dev.calibStatus || '-')],
+        ['所属部门', esc(dev.dept || '-')],
+        ['所在区域', esc(dev.area || '-')],
+        ['备注', esc(dev.remark || '-')],
+        ['设备精度', esc(dev.accuracy || '-')],
+        ['证书编号', esc(dev.certNo || '-')]
+      ];
+      document.getElementById('popGrid').innerHTML = metaFields.map(function (f) {
+        return '<div class="flex items-start gap-1 min-w-0">' +
+          '<span class="text-slate-500 flex-shrink-0 whitespace-nowrap">' + f[0] + '：</span>' +
+          '<span class="text-slate-700">' + f[1] + '</span>' +
+        '</div>';
+      }).join('');
+
+      var files = dev.files || [];
+      document.getElementById('popFilesTitle').textContent = '设备文件 (' + files.length + ')';
+      document.getElementById('popFiles').innerHTML = files.length ? files.map(function (f) {
+        var icon = FILE_ICONS[f.type] || 'fa-file-o';
+        return '<div class="flex items-center justify-between gap-2 py-0.5">' +
+          '<span class="flex items-center gap-1.5 min-w-0">' +
+            '<i class="fa ' + icon + ' text-slate-400 flex-shrink-0"></i>' +
+            '<span class="truncate text-slate-600">' + esc(f.name) + '</span>' +
+          '</span>' +
+          '<span class="flex gap-2 flex-shrink-0">' +
+            '<a href="#" onclick="showToast(\'预览功能暂未开放\');return false;" class="text-blue-600 hover:underline">预览</a>' +
+            '<a href="#" onclick="showToast(\'下载功能暂未开放\');return false;" class="text-blue-600 hover:underline">下载</a>' +
+          '</span>' +
+        '</div>';
+      }).join('') : '<span class="text-slate-400">暂无文件</span>';
+
+      pop.classList.add('show');
+
+      // Position the popover near the hovered element, staying within viewport
+      var target = e.target;
+      var rect = target.getBoundingClientRect();
+      var popW = 360;
+      var popH = pop.offsetHeight || 320;
+      var x = rect.left;
+      var y = rect.bottom + 6;
+
+      if (x + popW > window.innerWidth - 8) x = window.innerWidth - popW - 8;
+      if (x < 8) x = 8;
+      if (y + popH > window.innerHeight - 8) y = rect.top - popH - 6;
+      if (y < 8) y = 8;
+
+      pop.style.left = x + 'px';
+      pop.style.top = y + 'px';
+    }
+
+    function scheduleHidePop() {
+      _popHideTimer = setTimeout(function () {
+        document.getElementById('namePop').classList.remove('show');
+      }, 200);
+    }
+
+    function cancelHidePop() {
+      if (_popHideTimer) { clearTimeout(_popHideTimer); _popHideTimer = null; }
+    }
+
+    // ==================== CLICK-OUTSIDE CLOSE ====================
+    document.getElementById('editModal').addEventListener('click', function (e) {
+      if (e.target === this) closeEditModal();
+    });
+    document.getElementById('linkModal').addEventListener('click', function (e) {
+      if (e.target === this) closeLinkModal();
+    });
+    document.getElementById('histModal').addEventListener('click', function (e) {
+      if (e.target === this) closeHistModal();
+    });
+    document.getElementById('syncModal').addEventListener('click', function (e) {
+      if (e.target === this) closeSyncModal();
+    });
+    document.getElementById('histFormModal').addEventListener('click', function (e) {
+      if (e.target === this) closeHistFormModal();
+    });
+
+    // ==================== STARTUP ====================
+    populateSelects();
+    renderTable();
+  </script>
+</body>
+</html>
