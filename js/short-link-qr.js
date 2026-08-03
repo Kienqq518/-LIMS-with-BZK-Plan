@@ -2,8 +2,36 @@
  * 合格证短链 & 二维码 Mock 服务
  */
 (function (global) {
-  var BASE = 'https://lims-plan.vercel.app/l/';
+  /** 方案 3 / 方案 2 对外：公网短链 Base */
+  var BASE_PUBLIC = 'https://lims-plan.vercel.app/l/';
+  /** 方案 1 / 方案 2 对内：内网短链 Base */
+  var BASE_INTERNAL = 'http://lims.local/l/';
+  var BASE = BASE_PUBLIC;
   var VERIFY_BASE = 'cert-verify.html?code=';
+
+  function normalizeBase(url) {
+    if (!url) return BASE_PUBLIC;
+    return url.slice(-1) === '/' ? url : url + '/';
+  }
+
+  function getBase() {
+    return BASE;
+  }
+
+  /** 打印前切换短链 Base（方案 2：对内 / 对外） */
+  function setBase(url) {
+    BASE = normalizeBase(url);
+    global.ShortLinkQR.BASE = BASE;
+    return BASE;
+  }
+
+  function setBaseMode(mode) {
+    return setBase(mode === 'internal' ? BASE_INTERNAL : BASE_PUBLIC);
+  }
+
+  function getBaseMode() {
+    return BASE === BASE_INTERNAL || BASE.indexOf('lims.local') >= 0 ? 'internal' : 'public';
+  }
 
   /** status: valid | expired | revoked */
   var registry = {
@@ -151,6 +179,12 @@
 
   global.ShortLinkQR = {
     BASE: BASE,
+    BASE_PUBLIC: BASE_PUBLIC,
+    BASE_INTERNAL: BASE_INTERNAL,
+    getBase: getBase,
+    setBase: setBase,
+    setBaseMode: setBaseMode,
+    getBaseMode: getBaseMode,
     registry: registry,
     getShortUrl: getShortUrl,
     getVerifyPageUrl: getVerifyPageUrl,

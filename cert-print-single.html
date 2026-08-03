@@ -28,13 +28,21 @@
   <div class="no-print flex h-full">
     <!-- 左侧：预览区 -->
     <div class="cert-preview-area flex w-[480px] flex-shrink-0 flex-col border-r border-slate-200 bg-slate-50">
-      <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-2.5">
         <a href="label-print.html" class="text-sm text-blue-600 hover:underline"><i class="fa fa-arrow-left"></i> 返回</a>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <div data-annotate="shortlink-base" class="flex items-center gap-1.5 rounded border border-slate-200 bg-slate-50 px-2 py-1">
+            <label for="shortlinkBaseMode" class="whitespace-nowrap text-xs text-slate-500">短链 Base</label>
+            <select id="shortlinkBaseMode" class="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-xs text-slate-700 outline-none focus:border-blue-500" onchange="onShortlinkBaseChange()">
+              <option value="public">对外（公网）</option>
+              <option value="internal">对内（内网）</option>
+            </select>
+          </div>
           <button onclick="clearPreview()" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">清空待打印区域</button>
           <button onclick="window.print()" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">打印</button>
         </div>
       </div>
+      <p id="shortlinkBaseHint" class="no-print border-b border-slate-100 bg-white px-4 py-1 text-[11px] text-slate-400 truncate"></p>
       <div id="previewContainer" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
     </div>
 
@@ -87,10 +95,37 @@
   <script src="js/prototype-annotation.js"></script>
   <script>
     LabelCertRender.ensureStyles();
+    var SHORTLINK_BASE_KEY = 'lims.shortlink.baseMode';
     var params = new URLSearchParams(location.search);
     var entrustCode = params.get('code') || 'SC2026/0079';
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
     var urlInspectors = (params.get('inspectors') || 'cs222,cs3').split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
+
+    function syncShortlinkBaseHint() {
+      var mode = ShortLinkQR.getBaseMode();
+      var hint = document.getElementById('shortlinkBaseHint');
+      var sel = document.getElementById('shortlinkBaseMode');
+      if (sel) sel.value = mode;
+      if (hint) {
+        hint.textContent = (mode === 'internal' ? '对内打印 · QR 写入 ' : '对外发放 · QR 写入 ') + ShortLinkQR.getBase() + '{code}（code 内外共用）';
+      }
+    }
+
+    function onShortlinkBaseChange() {
+      var mode = document.getElementById('shortlinkBaseMode').value;
+      ShortLinkQR.setBaseMode(mode);
+      try { sessionStorage.setItem(SHORTLINK_BASE_KEY, mode); } catch (e) {}
+      syncShortlinkBaseHint();
+      renderPreview();
+      if (window.PrototypeAnnotation) PrototypeAnnotation.refresh();
+    }
+
+    (function initShortlinkBase() {
+      var saved = '';
+      try { saved = sessionStorage.getItem(SHORTLINK_BASE_KEY) || ''; } catch (e) {}
+      ShortLinkQR.setBaseMode(saved === 'internal' ? 'internal' : 'public');
+      syncShortlinkBaseHint();
+    })();
 
     // 00790101 → 个性化不粘胶纸；00790201 → 未绑定个性化，走默认左文右码版式 mock
     var allSamples = [
@@ -232,6 +267,19 @@
           title: '短链地址展示',
           content: '预览区二维码下方展示短链地址，便于打印前核对。点击 QR 可模拟扫码，打开验真页查看实际展示内容。',
           tag: '交互说明'
+        },
+        {
+          id: 'shortlink-base',
+          selector: '[data-annotate="shortlink-base"]',
+          position: 'bottom-left',
+          title: '方案2：打印前切换短链 Base',
+          wide: true,
+          content: '<strong>场景：</strong>局域网部署 + 对外发放标签时，内网扫码与外网 4G 扫码需要不同的短链域名前缀。<br><br>' +
+            '<strong>做法：</strong>打印前在此切换「对内（内网）」/「对外（公网）」Base，再点打印。QR 写入 <code>Base + code</code>，因此<strong>二维码图案会随 Base 变化</strong>。<br><br>' +
+            '<strong>不变：</strong>同一试样的短码 <code>code</code> 内外共用一张映射表，不会生成两套短码。<br><br>' +
+            '<strong>示例：</strong>对内 <code>http://lims.local/l/Ab3K9</code> · 对外 <code>https://lims-plan.vercel.app/l/Ab3K9</code><br><br>' +
+            '<strong>注意：</strong>外网扫到内网 Base 的标签打不开；对外发放请选「对外（公网）」。',
+          tag: '方案2'
         },
         {
           id: 'inspector-edit',
