@@ -13,8 +13,18 @@
     { key: 'gcjc', name: '工程检测' }
   ];
 
-  /** 系统 Logo（合格证品牌区） */
+  /** 系统 Logo（合格证品牌区，图2） */
   var SYSTEM_LOGO_URL = 'assets/label-cert/system-logo.svg';
+  /** 配置中上传的机构检测章（图8） */
+  var SYSTEM_SEAL_URL = 'assets/label-cert/system-seal.svg';
+
+  var FIELD_UNDERLINE_STYLES = [
+    { id: 'none', name: '无' },
+    { id: 'solid', name: '直线' },
+    { id: 'dotted', name: '断点' },
+    { id: 'dashed', name: '断线' },
+    { id: 'double', name: '双线' }
+  ];
 
   /**
    * 大类下样品树（分类层级 → 叶节点），绑定 UI 按层级展示
@@ -115,7 +125,13 @@
       fieldIds: ['sampleName', 'specimenNo', 'inspectDate', 'reinspectDate', 'inspectors'],
       watermarkDefault: {
         enabled: true, type: 'seal', sealMode: 'system', text: '试验专用章',
-        opacity: 0.38, angle: -12, position: 'center', size: 'lg', layout: 'single', color: '#dc2626'
+        opacity: 0.42, angle: -12, position: 'center', size: 'lg', layout: 'single', color: '#dc2626'
+      },
+      styleDefault: {
+        fieldAlign: 'left', fieldFontSize: 12, fieldColor: '#1e293b',
+        fieldUnderline: true, fieldUnderlineStyle: 'solid',
+        borderColor: '#2e7d32', borderWidthPx: 2,
+        titleBgColor: '#2e7d32', footerBgColor: '#f1f8e9'
       }
     },
     cert_style_2: {
@@ -184,6 +200,50 @@
     { id: 'bottom_right', name: '右下' }
   ];
 
+  function defaultStyle(presetId, preset) {
+    preset = preset || (presetId && PRESETS[presetId]) || null;
+    var isStick = presetId === 'cert_style_1';
+    var from = (preset && preset.styleDefault) || {};
+    return {
+      marginMm: 2,
+      fieldAlign: from.fieldAlign || 'left',
+      fieldFontSize: from.fieldFontSize != null ? from.fieldFontSize : 12,
+      fieldColor: from.fieldColor || '#1e293b',
+      fieldUnderline: from.fieldUnderline !== false,
+      fieldUnderlineStyle: from.fieldUnderlineStyle || 'dotted',
+      borderColor: from.borderColor || (isStick ? '#2e7d32' : '#cbd5e1'),
+      borderWidthPx: from.borderWidthPx != null ? from.borderWidthPx : (isStick ? 2 : 1),
+      titleBgColor: from.titleBgColor || (isStick ? '#2e7d32' : ''),
+      footerBgColor: from.footerBgColor || (isStick ? '#f1f8e9' : '')
+    };
+  }
+
+  function normalizeUnderlineStyle(v, fallback) {
+    var ok = FIELD_UNDERLINE_STYLES.some(function (s) { return s.id === v; });
+    return ok ? v : fallback;
+  }
+
+  function normalizeStyle(style, presetId) {
+    var d = defaultStyle(presetId, PRESETS[presetId]);
+    style = style || {};
+    var underlineOn = style.fieldUnderline != null ? !!style.fieldUnderline : d.fieldUnderline;
+    var uStyle = normalizeUnderlineStyle(style.fieldUnderlineStyle, d.fieldUnderlineStyle);
+    if (!underlineOn) uStyle = 'none';
+    if (uStyle === 'none') underlineOn = false;
+    return {
+      marginMm: clampInt(style.marginMm != null ? style.marginMm : d.marginMm, 0, 10, d.marginMm),
+      fieldAlign: normalizeAlign(style.fieldAlign, d.fieldAlign),
+      fieldFontSize: clampInt(style.fieldFontSize, 8, 22, d.fieldFontSize),
+      fieldColor: normalizeColor(style.fieldColor, d.fieldColor),
+      fieldUnderline: underlineOn,
+      fieldUnderlineStyle: uStyle,
+      borderColor: normalizeColor(style.borderColor, d.borderColor),
+      borderWidthPx: clampInt(style.borderWidthPx, 0, 8, d.borderWidthPx),
+      titleBgColor: style.titleBgColor ? normalizeColor(style.titleBgColor, d.titleBgColor || '#2e7d32') : (d.titleBgColor || ''),
+      footerBgColor: style.footerBgColor ? normalizeColor(style.footerBgColor, d.footerBgColor || '#f1f8e9') : (d.footerBgColor || '')
+    };
+  }
+
   function defaultWatermark(preset) {
     var isLabel = !!(preset && preset.type === 'sample_label');
     if (preset && preset.watermarkDefault) {
@@ -238,7 +298,7 @@
       titleFontSize: 14,
       titleColor: '#1e293b',
       titleAlign: 'center',
-      logoSize: 18,
+      logoSize: 28,
       warnFontSize: 10,
       warnColor: '#dc2626',
       warnAlign: 'center'
@@ -324,7 +384,7 @@
       updatedAt: opts.updatedAt || formatNow(),
       layoutPreset: presetId,
       paper: clone(opts.paper || preset.paper),
-      style: opts.style || { fontScale: 'normal', marginMm: 2 },
+      style: normalizeStyle(opts.style || {}, presetId),
       brand: {
         orgName: orgName,
         title: title,
@@ -380,7 +440,7 @@
     });
     var stick = createTemplate({
       id: 'tpl_aq_stick',
-      name: '不粘胶纸合格证（粘贴类）',
+      name: '不粘胶纸合格证',
       layoutPreset: 'cert_style_1',
       bindSampleIds: ['rod', 'ladder', 'helmet', 'board1476', 'spur', 'sling', 'shackle'],
       meta: { material: '不粘胶纸', mount: '粘贴', printMethod: '喷墨' }
@@ -494,6 +554,10 @@
     tpl.brand.warnColor = ts.warnColor;
     tpl.brand.warnAlign = ts.warnAlign;
     if (tpl.brand.logoMode === 'custom') tpl.brand.logoMode = 'system';
+    tpl.style = normalizeStyle(tpl.style, tpl.layoutPreset);
+    if (tpl.id === 'tpl_aq_stick' || /不粘胶纸合格证[（(]/.test(tpl.name || '')) {
+      tpl.name = '不粘胶纸合格证';
+    }
     normalizeLabelFields(tpl);
     normalizeCertFields(tpl);
     return tpl;
@@ -666,6 +730,8 @@
     SAMPLE_LEAVES: SAMPLE_LEAVES,
     SAMPLE_TREE: SAMPLE_TREE,
     SYSTEM_LOGO_URL: SYSTEM_LOGO_URL,
+    SYSTEM_SEAL_URL: SYSTEM_SEAL_URL,
+    FIELD_UNDERLINE_STYLES: FIELD_UNDERLINE_STYLES,
     CERT_FIELD_POOL: CERT_FIELD_POOL,
     LABEL_FIELD_POOL: LABEL_FIELD_POOL,
     LABEL_DETECT_STATUS: LABEL_DETECT_STATUS,
@@ -689,6 +755,8 @@
     normalizeWatermark: normalizeWatermark,
     normalizeBrandType: normalizeBrandType,
     defaultBrandType: defaultBrandType,
+    defaultStyle: defaultStyle,
+    normalizeStyle: normalizeStyle,
     normalizeTemplateBrand: normalizeTemplateBrand,
     WATERMARK_POSITIONS: WATERMARK_POSITIONS,
     formatNow: formatNow,

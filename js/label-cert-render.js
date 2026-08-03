@@ -70,17 +70,34 @@
     return (global.LabelCertConfig && LabelCertConfig.SYSTEM_LOGO_URL) || 'assets/label-cert/system-logo.svg';
   }
 
+  function systemSealUrl() {
+    return (global.LabelCertConfig && LabelCertConfig.SYSTEM_SEAL_URL) || 'assets/label-cert/system-seal.svg';
+  }
+
+  function styleOf(tpl) {
+    if (global.LabelCertConfig && LabelCertConfig.normalizeStyle) {
+      return LabelCertConfig.normalizeStyle((tpl && tpl.style) || {}, tpl && tpl.layoutPreset);
+    }
+    return {
+      fieldAlign: 'left', fieldFontSize: 12, fieldColor: '#1e293b',
+      fieldUnderline: true, fieldUnderlineStyle: 'dotted',
+      borderColor: '#cbd5e1', borderWidthPx: 1, titleBgColor: '', footerBgColor: ''
+    };
+  }
+
   function logoHtml(brand) {
     if (!brand || brand.logoMode === 'hidden') return '';
     var bt = brandType(brand);
     var size = bt.logoSize;
     var src = (brand.logoMode === 'custom' && brand.logoUrl) ? brand.logoUrl : systemLogoUrl();
-    return '<img class="lc-logo" src="' + esc(src) + '" alt="logo" style="width:' + size + 'px;height:' + size + 'px" />';
+    return '<img class="lc-logo" src="' + esc(src) + '" alt="logo" width="' + size + '" height="' + size +
+      '" style="width:' + size + 'px;height:' + size + 'px;background:#000;object-fit:cover;display:block;flex-shrink:0" />';
   }
 
   function brandHeadHtml(brand, opts) {
     opts = opts || {};
     var bt = brandType(brand);
+    var st = opts.style || {};
     var orgStyle = 'font-size:' + bt.orgFontSize + 'px;color:' + esc(bt.orgColor) + ';' + alignCss(bt.orgAlign);
     var titleStyle = 'font-size:' + bt.titleFontSize + 'px;color:' + esc(bt.titleColor) + ';' + alignCss(bt.titleAlign);
     var title = brand.title || opts.defaultTitle || '';
@@ -96,12 +113,15 @@
     if (opts.titleOnly) {
       var barTitle = title || '检验合格证';
       var barColor = bt.titleColor || '#ffffff';
-      // 标题色默认偏深时，顶栏用白字；用户显式浅色则保留
       var barFg = (barColor === '#1e293b' || barColor === '#000000' || barColor === '#111111')
         ? '#ffffff' : barColor;
-      return (logoHtml(brand) ? ('<div class="lc-s1-logo">' + logoHtml(brand) + '</div>') : '') +
-        '<div class="lc-s1-titlebar" style="font-size:' + bt.titleFontSize + 'px;color:' + esc(barFg) + ';' +
-          alignCss(bt.titleAlign) + '">' + esc(barTitle) + '</div>';
+      var bg = st.titleBgColor || '#2e7d32';
+      var logo = logoHtml(brand);
+      var justify = bt.titleAlign === 'left' ? 'flex-start' : (bt.titleAlign === 'right' ? 'flex-end' : 'center');
+      return '<div class="lc-s1-titlebar" style="background:' + esc(bg) + ';font-size:' + bt.titleFontSize +
+        'px;color:' + esc(barFg) + ';justify-content:' + justify + '">' +
+        (logo ? ('<span class="lc-s1-logo-inline">' + logo + '</span>') : '') +
+        '<span class="lc-s1-title-text">' + esc(barTitle) + '</span></div>';
     }
     return '<div class="lc-brand' + center + '">' + logoHtml(brand) +
       '<div style="flex:1;min-width:0">' +
@@ -109,12 +129,29 @@
       titleBlock + '</div></div>';
   }
 
-  function orgFootHtml(brand) {
+  function orgFootHtml(brand, st) {
     var name = brand.orgName || '';
     if (!name) return '';
     var bt = brandType(brand);
     var style = 'font-size:' + bt.orgFontSize + 'px;color:' + esc(bt.orgColor) + ';' + alignCss(bt.orgAlign);
+    if (st && st.footerBgColor) style += 'background:' + esc(st.footerBgColor) + ';';
     return '<div class="lc-org-foot" style="' + style + '">检测单位：' + esc(name) + '</div>';
+  }
+
+  function underlineCss(st) {
+    if (!st.fieldUnderline || st.fieldUnderlineStyle === 'none') return 'border-bottom:none;';
+    return 'border-bottom:1px ' + st.fieldUnderlineStyle + ' ' + esc(st.fieldColor) + ';';
+  }
+
+  function fieldRowsHtml(tpl, data, extraClass) {
+    var st = styleOf(tpl);
+    var align = alignCss(st.fieldAlign);
+    var base = 'font-size:' + st.fieldFontSize + 'px;color:' + esc(st.fieldColor) + ';' + align;
+    return visibleFields(tpl).map(function (f) {
+      return '<div class="lc-row ' + (extraClass || '') + '" style="' + base + '">' +
+        '<span class="lc-k">' + esc(f.label) + '：</span>' +
+        '<span class="lc-v" style="' + underlineCss(st) + '">' + esc(fieldValue(f.id, data)) + '</span></div>';
+    }).join('');
   }
 
   function warnHtml(brand, opts) {
@@ -166,8 +203,9 @@
   function sheetStyle(tpl) {
     var w = mmToPx((tpl.paper && tpl.paper.wMm) || 90);
     var h = mmToPx((tpl.paper && tpl.paper.hMm) || 50);
-    var compact = tpl.style && tpl.style.fontScale === 'compact';
-    return 'width:' + w + 'px;min-height:' + h + 'px;font-size:' + (compact ? '11px' : '12px') + ';';
+    var st = styleOf(tpl);
+    return 'width:' + w + 'px;min-height:' + h + 'px;font-size:' + st.fieldFontSize + 'px;' +
+      'border-color:' + esc(st.borderColor) + ';border-width:' + st.borderWidthPx + 'px;border-style:solid;';
   }
 
   function watermarkConfig(brand) {
@@ -182,34 +220,9 @@
   }
 
   function sealMarkHtml(brand, wm) {
-    if (wm.sealMode === 'custom' && wm.sealUrl) {
-      return '<img class="lc-wm-seal-img" src="' + esc(wm.sealUrl) + '" alt="seal" />';
-    }
-    // 图5：圆形双环 + 上弧单位名 + 中心★ + 「试验专用章」
-    var org = String(brand.orgName || '某某某有限责任公司').slice(0, 16);
-    var sub = wm.text || '试验专用章';
-    var chars = org.split('');
-    var arc = '';
-    var n = chars.length;
-    for (var i = 0; i < n; i++) {
-      var t = n === 1 ? 0 : (i / (n - 1) - 0.5) * 2.0;
-      var ang = -Math.PI / 2 + t;
-      var x = 60 + 40 * Math.cos(ang);
-      var y = 60 + 40 * Math.sin(ang);
-      var deg = (ang * 180) / Math.PI + 90;
-      arc +=
-        '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) +
-        '" fill="#dc2626" font-size="8" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(' +
-        deg.toFixed(1) + ' ' + x.toFixed(1) + ' ' + y.toFixed(1) + ')">' + esc(chars[i]) + '</text>';
-    }
-    return '<div class="lc-wm-seal">' +
-      '<svg class="lc-wm-seal-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-        '<circle cx="60" cy="60" r="56" fill="none" stroke="#dc2626" stroke-width="3.5"/>' +
-        '<circle cx="60" cy="60" r="50" fill="none" stroke="#dc2626" stroke-width="1.5"/>' +
-        arc +
-        '<polygon points="60,42 64,54 76,54 66,62 70,74 60,67 50,74 54,62 44,54 56,54" fill="#dc2626"/>' +
-        '<text x="60" y="88" text-anchor="middle" fill="#dc2626" font-size="9" font-weight="700">' + esc(sub) + '</text>' +
-      '</svg></div>';
+    // custom=自定义上传章图；system/配置中上传=使用图8资源
+    var src = (wm.sealMode === 'custom' && wm.sealUrl) ? wm.sealUrl : systemSealUrl();
+    return '<div class="lc-wm-seal"><img class="lc-wm-seal-img" src="' + esc(src) + '" alt="seal" /></div>';
   }
 
   function watermarkMarkHtml(brand, wm) {
@@ -236,36 +249,34 @@
 
   function wrapSheet(className, tpl, data, innerHtml) {
     return '<div class="lc-sheet ' + className + '" style="' + sheetStyle(tpl) + '" data-sample="' + esc(data.sampleNo) + '">' +
+      '<div class="lc-sheet-content">' + innerHtml + '</div>' +
       renderWatermark(tpl.brand || {}) +
-      '<div class="lc-sheet-content">' + innerHtml + '</div></div>';
+      '</div>';
   }
 
   function renderStyle1(tpl, data, opts) {
     var brand = tpl.brand || {};
-    // 图4骨架：上标题 → 中字段 → 下检测单位；水印为圆形试验专用章
-    var rows = visibleFields(tpl).map(function (f) {
-      return '<div class="lc-row lc-s1-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
-    }).join('');
+    var st = styleOf(tpl);
+    var rows = fieldRowsHtml(tpl, data, 'lc-s1-row');
     var qr = qrPlacementHtml(tpl, data, opts);
     return wrapSheet('lc-s1', tpl, data,
-      brandHeadHtml(brand, { titleOnly: true, defaultTitle: '检验合格证' }) +
+      brandHeadHtml(brand, { titleOnly: true, defaultTitle: '检验合格证', style: st }) +
       '<div class="lc-body lc-s1-body">' + rows + '</div>' +
-      orgFootHtml(brand) +
+      orgFootHtml(brand, st) +
       warnHtml(brand) +
       qr.side + qr.overlay);
   }
 
   function renderStyle2(tpl, data, opts) {
     var brand = tpl.brand || {};
+    var st = styleOf(tpl);
     var until = fieldValue('validUntil', data) || fieldValue('reinspectDate', data);
-    var rows = visibleFields(tpl).filter(function (f) {
-      return f.id !== 'validUntil';
-    }).map(function (f) {
-      return '<div class="lc-row lc-s2-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
-    }).join('');
+    var fields = visibleFields(tpl).filter(function (f) { return f.id !== 'validUntil'; });
+    var tmp = { fields: fields, style: tpl.style, layoutPreset: tpl.layoutPreset };
+    var rows = fieldRowsHtml(tmp, data, 'lc-s2-row');
     return wrapSheet('lc-s2', tpl, data,
       '<div class="lc-hole"></div>' +
-      brandHeadHtml(brand, { center: true, defaultTitle: '检验合格证' }) +
+      brandHeadHtml(brand, { center: true, defaultTitle: '检验合格证', style: st }) +
       '<div class="lc-center-pass">' +
       '<span class="lc-pass-char">合</span>' +
       '<div class="lc-center-qr">' +
@@ -281,29 +292,25 @@
 
   function renderStyle3(tpl, data, opts) {
     var brand = tpl.brand || {};
-    var rows = visibleFields(tpl).map(function (f) {
-      return '<div class="lc-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
-    }).join('');
+    var rows = fieldRowsHtml(tpl, data, '');
     var qr = qrPlacementHtml(tpl, data, opts);
     var body = qr.side
       ? ('<div class="lc-split"><div class="lc-fields">' + rows + '</div>' + qr.side + '</div>')
       : ('<div class="lc-fields">' + rows + '</div>');
     return wrapSheet('lc-s3', tpl, data,
-      brandHeadHtml(brand, { defaultTitle: '合 格 证' }) +
+      brandHeadHtml(brand, { defaultTitle: '合 格 证', style: styleOf(tpl) }) +
       body + warnHtml(brand) + qr.overlay);
   }
 
   function renderLabel(tpl, data, opts) {
     var brand = tpl.brand || {};
-    var rows = visibleFields(tpl).map(function (f) {
-      return '<div class="lc-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
-    }).join('');
+    var rows = fieldRowsHtml(tpl, data, '');
     var qr = qrPlacementHtml(tpl, data, opts);
     var body = qr.side
       ? ('<div class="lc-split"><div class="lc-fields">' + rows + '</div>' + qr.side + '</div>')
       : ('<div class="lc-fields">' + rows + '</div>');
     return wrapSheet('lc-label', tpl, data,
-      brandHeadHtml(brand, { compact: true }) +
+      brandHeadHtml(brand, { compact: true, style: styleOf(tpl) }) +
       body + warnHtml(brand) + qr.overlay);
   }
 
@@ -350,23 +357,24 @@
     '.lc-org{font-weight:600;line-height:1.3}',
     '.lc-title{font-weight:700;letter-spacing:.2em;text-align:center}',
     '.lc-logo-ico{line-height:1}',
-    '.lc-logo{object-fit:contain;display:block}',
+    '.lc-logo{object-fit:cover;display:block;background:#000}',
     '.lc-row{line-height:1.55;display:flex;gap:2px}',
-    '.lc-k{color:#475569;white-space:nowrap}',
-    '.lc-v{flex:1;border-bottom:1px dotted #cbd5e1;min-height:1.2em}',
+    '.lc-k{white-space:nowrap}',
+    '.lc-v{flex:1;min-height:1.2em}',
     '.lc-split{display:flex;gap:8px;align-items:stretch}',
     '.lc-fields{flex:1;min-width:0}',
     '.lc-qr-side{flex-shrink:0;display:flex;align-items:center;justify-content:center}',
     '.lc-qr{display:flex;align-items:center;justify-content:center;background:#fff}',
     '.lc-qr img{display:block;width:100%;height:100%}',
-    '.lc-s1{border:2px solid #2e7d32;padding:0;display:flex;flex-direction:column}',
+    '.lc-s1{padding:0;display:flex;flex-direction:column}',
     '.lc-s1 .lc-sheet-content{display:flex;flex-direction:column;min-height:100%;padding:0}',
-    '.lc-s1-logo{display:flex;justify-content:center;padding:4px 0 2px;background:#fff}',
-    '.lc-s1-logo .lc-logo{background:#000}',
-    '.lc-s1-titlebar{background:#2e7d32;color:#fff;font-weight:800;letter-spacing:.2em;padding:8px 10px;line-height:1.25}',
+    '.lc-s1-titlebar{display:flex;align-items:center;gap:8px;background:#2e7d32;color:#fff;font-weight:800;letter-spacing:.15em;padding:8px 10px;line-height:1.25}',
+    '.lc-s1-logo-inline{display:inline-flex;align-items:center;flex-shrink:0}',
+    '.lc-s1-logo-inline .lc-logo{border-radius:2px}',
+    '.lc-s1-title-text{min-width:0}',
     '.lc-s1-body{flex:1;padding:8px 10px;background:#fff}',
-    '.lc-s1-row{border-bottom:1px solid #e2e8f0;padding:3px 0;min-height:18px}',
-    '.lc-s1 .lc-k{color:#334155}',
+    '.lc-s1-row{padding:3px 0;min-height:18px}',
+    '.lc-s1 .lc-k{color:inherit}',
     '.lc-org-foot{margin-top:auto;padding:7px 10px;font-weight:600;line-height:1.35;border-top:1px solid #c8e6c9;background:#f1f8e9;color:#1b5e20}',
     '.lc-s1 .lc-warn{padding:4px 10px 8px;margin:0}',
     '.lc-s2-fields{margin:4px 0 2px;font-size:10px}',
@@ -393,7 +401,8 @@
     '.lc-label{border-style:dashed}',
     '.lc-missing{padding:24px;color:#94a3b8;text-align:center}',
     /* 水印层 */
-    '.lc-wm-layer{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}',
+    '.lc-wm-layer{position:absolute;inset:0;z-index:20;pointer-events:none;overflow:hidden}',
+    '.lc-qr-abs{z-index:2}',
     '.lc-wm-rot{display:inline-flex;align-items:center;justify-content:center;transform:rotate(var(--lc-wm-angle,0deg));transform-origin:center center}',
     '.lc-wm-text{font-weight:700;line-height:1;white-space:nowrap;font-family:SimSun,"Songti SC",serif}',
     '.lc-wm-size-sm .lc-wm-text{font-size:28px}',

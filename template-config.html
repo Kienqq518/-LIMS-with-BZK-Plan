@@ -640,12 +640,6 @@
                 </label>
                 <label class="text-sm text-slate-600">纸张宽(mm)<input id="lc_e_w" type="number" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
                 <label class="text-sm text-slate-600">纸张高(mm)<input id="lc_e_h" type="number" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
-                <label class="text-sm text-slate-600">字号档
-                  <select id="lc_e_font" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm">
-                    <option value="normal">标准</option>
-                    <option value="compact">紧凑</option>
-                  </select>
-                </label>
                 <div id="lc_e_roleHint" class="col-span-2 text-xs text-slate-500 pt-1"></div>
               </div>
             </section>
@@ -733,14 +727,15 @@
                 <div id="lc_e_wmSealWrap" class="col-span-2 grid grid-cols-2 gap-3 hidden">
                   <label class="text-sm text-slate-600">检测章来源
                     <select id="lc_e_wmSealMode" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm">
-                      <option value="system">系统生成（按单位名）</option>
-                      <option value="custom">上传章图</option>
+                      <option value="system">配置中上传</option>
+                      <option value="custom">自定义上传</option>
                     </select>
                   </label>
-                  <label class="text-sm text-slate-600">上传章图
+                  <label id="lc_e_wmSealUploadWrap" class="text-sm text-slate-600 hidden">上传章图
                     <input id="lc_e_wmSealFile" type="file" accept="image/*" class="mt-1 block w-full text-xs text-slate-500" />
-                    <span id="lc_e_wmSealHint" class="mt-1 block text-xs text-slate-400">未上传时使用系统章</span>
+                    <span id="lc_e_wmSealHint" class="mt-1 block text-xs text-slate-400">选择本地章图替换</span>
                   </label>
+                  <p id="lc_e_wmSealConfigHint" class="col-span-2 text-xs text-slate-400">使用配置中的机构检测章资源，实时预览可见</p>
                 </div>
                 <label class="text-sm text-slate-600">位置
                   <select id="lc_e_wmPos" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm">
@@ -772,9 +767,50 @@
               </div>
             </section>
             <section>
-              <h4 class="mb-2 text-sm font-semibold text-slate-700">字段槽位 <span class="font-normal text-slate-400">（勾选 · 拖拽排序 · 改显示名）</span></h4>
+              <h4 class="mb-2 text-sm font-semibold text-slate-700">字段槽位 <span class="font-normal text-slate-400">（勾选 · 拖拽排序 · 改显示名 · 整体样式）</span></h4>
+              <div class="mb-3 grid grid-cols-2 gap-3 rounded border border-slate-100 bg-slate-50/70 p-3">
+                <label class="text-sm text-slate-600">整体对齐
+                  <select id="lc_e_fieldAlign" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm">
+                    <option value="left">居左</option>
+                    <option value="center">居中</option>
+                    <option value="right">居右</option>
+                  </select>
+                </label>
+                <label class="text-sm text-slate-600">字体大小(px)
+                  <input id="lc_e_fieldSize" type="number" min="8" max="22" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm" />
+                </label>
+                <label class="text-sm text-slate-600">字体颜色
+                  <input id="lc_e_fieldColor" type="color" class="mt-1 block h-9 w-full rounded border border-slate-300 bg-white px-1" />
+                </label>
+                <label class="text-sm text-slate-600">下划线
+                  <select id="lc_e_fieldUnderline" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm">
+                    <option value="none">无</option>
+                    <option value="solid">直线</option>
+                    <option value="dotted">断点</option>
+                    <option value="dashed">断线</option>
+                    <option value="double">双线</option>
+                  </select>
+                </label>
+              </div>
               <div id="lc_fieldPool" class="mb-2 flex flex-wrap gap-2"></div>
               <div id="lc_fieldList"></div>
+            </section>
+            <section id="lc_e_skinSection">
+              <h4 class="mb-2 text-sm font-semibold text-slate-700">外观 <span class="font-normal text-slate-400">（边框 · 标题底色 · 底部栏）</span></h4>
+              <div class="grid grid-cols-2 gap-3">
+                <label class="text-sm text-slate-600">边框颜色
+                  <input id="lc_e_borderColor" type="color" class="mt-1 block h-9 w-full rounded border border-slate-300 bg-white px-1" />
+                </label>
+                <label class="text-sm text-slate-600">边框粗细(px)
+                  <input id="lc_e_borderWidth" type="number" min="0" max="8" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm" />
+                </label>
+                <label id="lc_e_titleBgWrap" class="text-sm text-slate-600">标题背景色
+                  <input id="lc_e_titleBg" type="color" class="mt-1 block h-9 w-full rounded border border-slate-300 bg-white px-1" />
+                </label>
+                <label id="lc_e_footerBgWrap" class="text-sm text-slate-600">底部栏背景色
+                  <input id="lc_e_footerBg" type="color" class="mt-1 block h-9 w-full rounded border border-slate-300 bg-white px-1" />
+                </label>
+              </div>
             </section>
             <section>
               <h4 class="mb-2 text-sm font-semibold text-slate-700">二维码</h4>
