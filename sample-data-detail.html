@@ -151,6 +151,34 @@
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' d='M2.5 6.2l2.4 2.3 4.6-4.8'/%3E%3C/svg%3E");
       background-size: 10px 10px; background-position: center; background-repeat: no-repeat;
     }
+    .equip-ms { position: relative; width: 100%; }
+    .equip-ms-trigger {
+      min-height: 34px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff;
+      padding: 4px 28px 4px 8px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+    }
+    .equip-ms-trigger:hover, .equip-ms.open .equip-ms-trigger { border-color: #3b82f6; }
+    .equip-ms-trigger::after {
+      content: '\f0d7'; font-family: FontAwesome; position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      color: #94a3b8; font-size: 12px; pointer-events: none;
+    }
+    .equip-ms-trigger .ph { color: #94a3b8; font-size: 13px; }
+    .equip-ms-trigger .eq-tag {
+      display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px;
+      background: #eff6ff; color: #2563eb; font-size: 12px; max-width: 100%;
+    }
+    .equip-ms-trigger .eq-tag .rm { cursor: pointer; color: #64748b; }
+    .equip-ms-trigger .eq-tag .rm:hover { color: #ef4444; }
+    .equip-ms-panel {
+      display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 40;
+      max-height: 220px; overflow-y: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(15,23,42,.12); padding: 6px 0;
+    }
+    .equip-ms.open .equip-ms-panel { display: block; }
+    .equip-ms-panel label {
+      display: flex; align-items: center; gap: 8px; padding: 7px 12px; font-size: 13px; color: #334155; cursor: pointer;
+    }
+    .equip-ms-panel label:hover { background: #f8fafc; }
+    .equip-ms-panel .empty { padding: 12px; text-align: center; color: #94a3b8; font-size: 12px; }
     .model-table { table-layout: fixed; width: 100%; min-width: 820px; }
     .model-table th, .model-table td { vertical-align: middle; }
     .model-table .col-idx { width: 48px; text-align: center; padding-left: 6px; padding-right: 6px; }
@@ -378,7 +406,13 @@
                 <div class="tip mt-1" id="t_sampleQtyTip" style="margin-top:6px">是否制样为「是」时必填；用步进器调整试样数量（≥1）。</div>
                 <div id="t_sampleQtyOv"></div>
               </div></div>
-              <div class="field-row"><label>检测设备</label><div class="ctrl"><input id="t_equip" type="text" placeholder="如 [YFG-150A] 绝缘安全工器具试验装置" /><div id="t_equipOv"></div></div></div>
+              <div class="field-row"><label>检测设备</label><div class="ctrl">
+                <div class="equip-ms" id="t_equipMs" data-selected="[]">
+                  <div class="equip-ms-trigger" onclick="toggleEquipMs('t_equipMs')"><span class="ph">请选择启用设备（可多选）</span></div>
+                  <div class="equip-ms-panel" id="t_equipMsPanel"></div>
+                </div>
+                <div id="t_equipOv"></div>
+              </div></div>
               <div class="field-row">
                 <label class="label-tip">试样色号
                   <span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「试样色号」</span></span>
@@ -536,7 +570,13 @@
                   <div id="c_sampleQtyOv"></div>
                 </div></div>
                 <div class="field-row"><label>默认费用（元）</label><div class="ctrl"><input id="c_fee" type="number" min="0" /><div id="c_feeOv"></div></div></div>
-                <div class="field-row"><label>检测设备</label><div class="ctrl"><input id="c_equip" type="text" /><div id="c_equipOv"></div></div></div>
+                <div class="field-row"><label>检测设备</label><div class="ctrl">
+                  <div class="equip-ms" id="c_equipMs" data-selected="[]">
+                    <div class="equip-ms-trigger" onclick="toggleEquipMs('c_equipMs')"><span class="ph">请选择启用设备（可多选）</span></div>
+                    <div class="equip-ms-panel" id="c_equipMsPanel"></div>
+                  </div>
+                  <div id="c_equipOv"></div>
+                </div></div>
                 <div class="field-row"><label>备注</label><div class="ctrl"><input id="c_remark" type="text" /><div id="c_remarkOv"></div></div></div>
               </div>
               <div class="pane">
@@ -561,6 +601,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/mock-dict.js"></script>
   <script src="js/entrust-field-config.js"></script>
+  <script src="js/equip-store.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     var CAT_META = {
@@ -720,7 +761,7 @@
       return Object.assign({
         id: uid('test'), code: uid('TST'), name: '', basis: ['DLT 976-2017'], judge: ['DLT 976-2017'],
         detectCategory: 'routine', sampleCatCode: '', colors: [], needPrepare: '否', sampleQty: 1,
-        fee: 40, equip: '', sort: 1, remark: '',
+        fee: 40, equip: [], sort: 1, remark: '',
         stdReq: [],
         items: []
       }, partial || {});
@@ -910,7 +951,7 @@
       var t1 = makeTest({
         id: 't_ac', code: 'TST_AC', name: '交流耐压试验', detectCategory: 'routine',
         basis: ['DLT 976-2017'], judge: ['DLT 976-2017'], colors: ['yellow'], needPrepare: '否',
-        fee: 40, equip: '[YFG-150A] 绝缘安全工器具试验装置', sort: 1,
+        fee: 40, equip: ['eq_yfg150'], sort: 1,
         stdReq: [
           { type: 'field', value: '标称值', sep: '/' },
           { type: 'field', value: '试验值', sep: '' },
@@ -1509,7 +1550,7 @@
       document.getElementById('c_needPrepare').value = data.needPrepare || '否';
       document.getElementById('c_sampleQty').value = data.sampleQty || 1;
       document.getElementById('c_fee').value = data.fee || '';
-      document.getElementById('c_equip').value = data.equip || '';
+      renderEquipMs('c_equipMs', data.equip);
       document.getElementById('c_remark').value = data.remark || '';
       toggleCfgSampleQty();
       renderCfgOverrideBadges(sample.tests.find(function (t) { return t.id === testId; }), model);
@@ -1645,7 +1686,7 @@
         needPrepare: document.getElementById('c_needPrepare').value,
         sampleQty: Number(document.getElementById('c_sampleQty').value || 1),
         fee: Number(document.getElementById('c_fee').value || 0),
-        equip: document.getElementById('c_equip').value.trim(),
+        equip: getEquipMs('c_equipMs'),
         remark: document.getElementById('c_remark').value.trim()
       };
       Object.keys(data).forEach(function (k) {
@@ -1744,6 +1785,90 @@
       try { return JSON.parse(el.getAttribute('data-selected') || '[]'); } catch (e) { return []; }
     }
 
+    /** 规范化试验.equip：兼容旧字符串，统一为启用设备 id 数组 */
+    function normalizeEquipIds(raw) {
+      if (Array.isArray(raw)) return raw.filter(Boolean);
+      if (raw == null || raw === '') return [];
+      var s = String(raw).trim();
+      if (!s) return [];
+      var all = (window.EquipStore && EquipStore.listAll()) || [];
+      var hit = all.find(function (d) {
+        return EquipStore.displayLabel(d) === s || d.code === s || ('[' + d.code + '] ' + d.name) === s;
+      });
+      return hit ? [hit.id] : [];
+    }
+
+    function renderEquipMs(elId, selectedIds) {
+      var root = document.getElementById(elId);
+      if (!root) return;
+      var enabled = (window.EquipStore && EquipStore.listEnabled()) || [];
+      var selected = normalizeEquipIds(selectedIds);
+      // 仅保留仍启用的 id；已选但停用的仍展示（避免丢数据），勾选面板只列启用
+      var selectedSet = {};
+      selected.forEach(function (id) { selectedSet[id] = true; });
+      root.setAttribute('data-selected', JSON.stringify(selected));
+
+      var trigger = root.querySelector('.equip-ms-trigger');
+      if (selected.length) {
+        trigger.innerHTML = selected.map(function (id) {
+          var d = EquipStore.findById(id);
+          var label = d ? EquipStore.displayLabel(d) : id;
+          return '<span class="eq-tag" title="' + esc(label) + '">' + esc(label) +
+            ' <i class="fa fa-times rm" onclick="event.stopPropagation();removeEquipMs(\'' + elId + '\',\'' + esc(id) + '\')"></i></span>';
+        }).join('');
+      } else {
+        trigger.innerHTML = '<span class="ph">请选择启用设备（可多选）</span>';
+      }
+
+      var panel = root.querySelector('.equip-ms-panel');
+      if (!enabled.length) {
+        panel.innerHTML = '<div class="empty">暂无启用设备，请先在「设备管理」启用</div>';
+      } else {
+        panel.innerHTML = enabled.map(function (d) {
+          var checked = selectedSet[d.id] ? ' checked' : '';
+          return '<label><input type="checkbox" value="' + esc(d.id) + '"' + checked +
+            ' onchange="onEquipMsCheck(\'' + elId + '\', this)" /> ' + esc(EquipStore.displayLabel(d)) + '</label>';
+        }).join('');
+      }
+    }
+
+    function toggleEquipMs(elId) {
+      var root = document.getElementById(elId);
+      if (!root) return;
+      var willOpen = !root.classList.contains('open');
+      document.querySelectorAll('.equip-ms.open').forEach(function (el) { el.classList.remove('open'); });
+      if (willOpen) root.classList.add('open');
+    }
+
+    function onEquipMsCheck(elId, cb) {
+      var root = document.getElementById(elId);
+      var selected = normalizeEquipIds(JSON.parse(root.getAttribute('data-selected') || '[]'));
+      var id = cb.value;
+      var i = selected.indexOf(id);
+      if (cb.checked && i < 0) selected.push(id);
+      if (!cb.checked && i >= 0) selected.splice(i, 1);
+      renderEquipMs(elId, selected);
+      root.classList.add('open');
+    }
+
+    function removeEquipMs(elId, id) {
+      var root = document.getElementById(elId);
+      var selected = normalizeEquipIds(JSON.parse(root.getAttribute('data-selected') || '[]')).filter(function (x) { return x !== id; });
+      renderEquipMs(elId, selected);
+    }
+
+    function getEquipMs(elId) {
+      var root = document.getElementById(elId);
+      if (!root) return [];
+      try { return normalizeEquipIds(JSON.parse(root.getAttribute('data-selected') || '[]')); } catch (e) { return []; }
+    }
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.equip-ms')) {
+        document.querySelectorAll('.equip-ms.open').forEach(function (el) { el.classList.remove('open'); });
+      }
+    });
+
     function openTestEdit(testId, overrideMode, modelId) {
       // 规格型号覆盖编辑统一走配置试验抽屉内联区
       if (overrideMode && modelId) {
@@ -1784,7 +1909,7 @@
       document.getElementById('t_needPrepare').value = data.needPrepare || '否';
       document.getElementById('t_sampleQty').value = data.sampleQty || 1;
       document.getElementById('t_fee').value = data.fee || '';
-      document.getElementById('t_equip').value = data.equip || '';
+      renderEquipMs('t_equipMs', data.equip);
       document.getElementById('t_sort').value = data.sort || 1;
       document.getElementById('t_remark').value = data.remark || '';
       toggleSampleQty();
@@ -2048,7 +2173,7 @@
         needPrepare: document.getElementById('t_needPrepare').value,
         sampleQty: Number(document.getElementById('t_sampleQty').value || 1),
         fee: Number(document.getElementById('t_fee').value || 0),
-        equip: document.getElementById('t_equip').value.trim(),
+        equip: getEquipMs('t_equipMs'),
         sort: Number(document.getElementById('t_sort').value || 1),
         remark: document.getElementById('t_remark').value.trim(),
         stdReq: deepClone(state.stdSegs),
