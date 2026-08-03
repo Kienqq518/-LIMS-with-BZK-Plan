@@ -170,7 +170,6 @@
     $('lc_e_org').value = tpl.brand.orgName || '';
     $('lc_e_title').value = tpl.brand.title || '';
     $('lc_e_logo').value = tpl.brand.logoMode || 'system';
-    $('lc_e_wm').checked = !!tpl.brand.showWatermarkGe;
     $('lc_e_warn').value = tpl.brand.footerWarning || '';
     $('lc_e_qr').checked = !tpl.qr || tpl.qr.enabled !== false;
     $('lc_e_qrSize').value = (tpl.qr && tpl.qr.sizePx) || 90;
@@ -178,6 +177,7 @@
     $('lc_e_mat').value = (tpl.meta && tpl.meta.material) || '';
     $('lc_e_mount').value = (tpl.meta && tpl.meta.mount) || '';
     $('lc_e_print').value = (tpl.meta && tpl.meta.printMethod) || '';
+    fillWatermarkUI(tpl.brand);
 
     var role = $('lc_e_roleHint');
     if (role) {
@@ -190,6 +190,55 @@
 
     renderFieldUI(tpl);
     if (!isDefault) renderBindUI(tpl);
+  }
+
+  function fillWatermarkUI(brand) {
+    var preset = null;
+    var wm = LabelCertConfig.normalizeWatermark(brand && brand.watermark, brand || {}, preset);
+    if (state.draft && !state.draft.brand) state.draft.brand = {};
+    if (state.draft) state.draft.brand.watermark = wm;
+    $('lc_e_wmOn').checked = !!wm.enabled;
+    $('lc_e_wmType').value = wm.type;
+    $('lc_e_wmLayout').value = wm.layout;
+    $('lc_e_wmText').value = wm.text || '';
+    $('lc_e_wmSealMode').value = wm.sealMode;
+    $('lc_e_wmPos').value = wm.position;
+    $('lc_e_wmSize').value = wm.size;
+    $('lc_e_wmAngle').value = wm.angle;
+    var pct = Math.round(wm.opacity * 100);
+    $('lc_e_wmOpacity').value = pct;
+    $('lc_e_wmOpacityVal').textContent = pct + '%';
+    $('lc_e_wmSealHint').textContent = wm.sealUrl ? '已上传自定义章图' : '未上传时使用系统章';
+    syncWatermarkTypeUI();
+  }
+
+  function syncWatermarkTypeUI() {
+    var isSeal = $('lc_e_wmType').value === 'seal';
+    var textWrap = $('lc_e_wmTextWrap');
+    var sealWrap = $('lc_e_wmSealWrap');
+    if (textWrap) textWrap.classList.toggle('hidden', isSeal);
+    if (sealWrap) sealWrap.classList.toggle('hidden', !isSeal);
+    var custom = $('lc_e_wmSealMode').value === 'custom';
+    var file = $('lc_e_wmSealFile');
+    if (file) file.disabled = !custom;
+  }
+
+  function collectWatermarkFromDom(brand) {
+    var opacityPct = Number($('lc_e_wmOpacity').value);
+    if (isNaN(opacityPct)) opacityPct = 22;
+    var sealUrl = (brand && brand.watermark && brand.watermark.sealUrl) || null;
+    return LabelCertConfig.normalizeWatermark({
+      enabled: $('lc_e_wmOn').checked,
+      type: $('lc_e_wmType').value,
+      text: $('lc_e_wmText').value.trim(),
+      sealMode: $('lc_e_wmSealMode').value,
+      sealUrl: sealUrl,
+      opacity: opacityPct / 100,
+      angle: Number($('lc_e_wmAngle').value),
+      position: $('lc_e_wmPos').value,
+      size: $('lc_e_wmSize').value,
+      layout: $('lc_e_wmLayout').value
+    }, brand || {}, null);
   }
 
   function renderFieldUI(tpl) {
@@ -265,7 +314,6 @@
     $('lc_e_w').value = preset.paper.wMm;
     $('lc_e_h').value = preset.paper.hMm;
     $('lc_e_title').value = preset.title;
-    $('lc_e_wm').checked = !!preset.showWatermarkGe;
     $('lc_e_warn').value = preset.footerWarning || '';
     $('lc_e_qr').checked = preset.qr.enabled !== false;
     $('lc_e_qrSize').value = preset.qr.sizePx;
@@ -274,7 +322,15 @@
     tpl.layoutPreset = presetId;
     tpl.fields = LabelCertConfig.buildFieldsFromPreset(presetId);
     tpl.qr = LabelCertConfig.clone(preset.qr);
+    // 切换预设时同步默认水印（保留已上传章图）
+    var keepSeal = tpl.brand && tpl.brand.watermark && tpl.brand.watermark.sealUrl;
+    tpl.brand.watermark = LabelCertConfig.defaultWatermark(preset);
+    if (keepSeal) {
+      tpl.brand.watermark.sealUrl = keepSeal;
+      tpl.brand.watermark.sealMode = 'custom';
+    }
     state.draft = tpl;
+    fillWatermarkUI(tpl.brand);
     renderFieldUI(tpl);
     refreshPreview();
   }
@@ -286,13 +342,15 @@
     base.layoutPreset = $('lc_e_preset').value;
     base.paper = { wMm: Number($('lc_e_w').value) || 90, hMm: Number($('lc_e_h').value) || 50 };
     base.style = { fontScale: $('lc_e_font').value, marginMm: 2 };
+    var watermark = collectWatermarkFromDom(base.brand);
     base.brand = {
       orgName: $('lc_e_org').value.trim() || LabelCertConfig.DEFAULT_ORG,
       title: $('lc_e_title').value,
       logoMode: $('lc_e_logo').value,
       logoUrl: null,
-      showWatermarkGe: $('lc_e_wm').checked,
-      footerWarning: $('lc_e_warn').value || null
+      showWatermarkGe: watermark.enabled && watermark.type === 'text' && watermark.text === '格',
+      footerWarning: $('lc_e_warn').value || null,
+      watermark: watermark
     };
     var preset = LabelCertConfig.PRESETS[base.layoutPreset];
     base.qr = {
@@ -417,13 +475,47 @@
         setEnabled(enableId, e.target.checked);
         return;
       }
-      if (e.target.id === 'lc_e_preset') onPresetChange();
+      if (e.target.id === 'lc_e_preset') { onPresetChange(); return; }
+      if (e.target.id === 'lc_e_wmType' || e.target.id === 'lc_e_wmSealMode') {
+        syncWatermarkTypeUI();
+        refreshPreview();
+        return;
+      }
+      if (e.target.id === 'lc_e_wmSealFile') {
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          var draft = collectDraft(false);
+          if (!draft.brand) draft.brand = {};
+          if (!draft.brand.watermark) draft.brand.watermark = LabelCertConfig.defaultWatermark(null);
+          draft.brand.watermark.sealUrl = reader.result;
+          draft.brand.watermark.sealMode = 'custom';
+          draft.brand.watermark.type = 'seal';
+          state.draft = draft;
+          $('lc_e_wmSealMode').value = 'custom';
+          $('lc_e_wmType').value = 'seal';
+          $('lc_e_wmSealHint').textContent = '已上传自定义章图';
+          syncWatermarkTypeUI();
+          refreshPreview();
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
       var rename = e.target.getAttribute('data-lc-rename');
       if (rename != null) renameField(parseInt(rename, 10), e.target.value);
       if (/^lc_e_/.test(e.target.id)) refreshPreview();
     });
     root.addEventListener('input', function (e) {
-      if (e.target.id === 'lc_e_org' || e.target.id === 'lc_e_title' || e.target.id === 'lc_e_warn') refreshPreview();
+      if (e.target.id === 'lc_e_wmOpacity') {
+        $('lc_e_wmOpacityVal').textContent = e.target.value + '%';
+        refreshPreview();
+        return;
+      }
+      if (e.target.id === 'lc_e_org' || e.target.id === 'lc_e_title' || e.target.id === 'lc_e_warn' ||
+          e.target.id === 'lc_e_wmText' || e.target.id === 'lc_e_wmAngle') {
+        refreshPreview();
+      }
     });
 
     root.addEventListener('dragstart', function (e) {

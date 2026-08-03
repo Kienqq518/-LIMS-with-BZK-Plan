@@ -123,10 +123,74 @@
     });
   }
 
+  var WATERMARK_POSITIONS = [
+    { id: 'top_left', name: '左上' },
+    { id: 'top', name: '上方' },
+    { id: 'top_right', name: '右上' },
+    { id: 'left', name: '左侧' },
+    { id: 'center', name: '居中' },
+    { id: 'right', name: '右侧' },
+    { id: 'bottom_left', name: '左下' },
+    { id: 'bottom', name: '下方' },
+    { id: 'bottom_right', name: '右下' }
+  ];
+
+  function defaultWatermark(preset) {
+    var fromGe = !!(preset && preset.showWatermarkGe);
+    return {
+      enabled: fromGe,
+      type: 'text',           // text | seal
+      text: fromGe ? '格' : '合格',
+      sealMode: 'system',     // system | custom
+      sealUrl: null,
+      opacity: fromGe ? 0.18 : 0.22,
+      angle: fromGe ? 0 : -28,
+      position: fromGe ? 'right' : 'center',
+      size: fromGe ? 'lg' : 'md', // sm | md | lg
+      layout: 'single'        // single | tile
+    };
+  }
+
+  function normalizeWatermark(wm, brand, preset) {
+    var base = defaultWatermark(preset);
+    // 兼容旧字段 showWatermarkGe
+    if ((!wm || typeof wm !== 'object') && brand && brand.showWatermarkGe) {
+      wm = { enabled: true, type: 'text', text: '格', position: 'right', size: 'lg', angle: 0, opacity: 0.18, layout: 'single' };
+    }
+    wm = wm && typeof wm === 'object' ? wm : {};
+    var hasType = wm.type === 'seal' || wm.type === 'text';
+    var type = hasType ? wm.type : base.type;
+    var pos = wm.position || base.position;
+    var validPos = WATERMARK_POSITIONS.some(function (p) { return p.id === pos; });
+    if (!validPos) pos = base.position || 'center';
+    var size = (wm.size === 'sm' || wm.size === 'md' || wm.size === 'lg') ? wm.size : (base.size || 'md');
+    var opacity = Number(wm.opacity);
+    if (isNaN(opacity)) opacity = base.opacity;
+    opacity = Math.max(0.05, Math.min(0.8, opacity));
+    var angle = Number(wm.angle);
+    if (isNaN(angle)) angle = base.angle;
+    angle = Math.max(-90, Math.min(90, Math.round(angle)));
+    var layout = wm.layout === 'tile' || wm.layout === 'single' ? wm.layout : (base.layout || 'single');
+    return {
+      enabled: wm.enabled != null ? !!wm.enabled : !!base.enabled,
+      type: type === 'seal' ? 'seal' : 'text',
+      text: (wm.text != null ? String(wm.text) : base.text).slice(0, 24),
+      sealMode: wm.sealMode === 'custom' ? 'custom' : (wm.sealMode === 'system' ? 'system' : base.sealMode),
+      sealUrl: wm.sealUrl || null,
+      opacity: opacity,
+      angle: angle,
+      position: pos,
+      size: size,
+      layout: layout === 'tile' ? 'tile' : 'single'
+    };
+  }
+
   function createTemplate(opts) {
     opts = opts || {};
     var presetId = opts.layoutPreset || (opts.type === 'sample_label' ? 'label_style_1' : 'cert_style_3');
     var preset = PRESETS[presetId];
+    var brandIn = opts.brand || {};
+    var watermark = normalizeWatermark(brandIn.watermark, brandIn, preset);
     return {
       id: opts.id || uid('tpl'),
       name: opts.name || (preset.name + '模版'),
@@ -136,12 +200,13 @@
       paper: clone(opts.paper || preset.paper),
       style: opts.style || { fontScale: 'normal', marginMm: 2 },
       brand: {
-        orgName: (opts.brand && opts.brand.orgName) || DEFAULT_ORG,
-        title: (opts.brand && opts.brand.title != null) ? opts.brand.title : preset.title,
-        logoMode: (opts.brand && opts.brand.logoMode) || 'system',
-        logoUrl: (opts.brand && opts.brand.logoUrl) || null,
-        showWatermarkGe: opts.brand && opts.brand.showWatermarkGe != null ? opts.brand.showWatermarkGe : !!preset.showWatermarkGe,
-        footerWarning: opts.brand && opts.brand.footerWarning != null ? opts.brand.footerWarning : preset.footerWarning
+        orgName: brandIn.orgName || DEFAULT_ORG,
+        title: brandIn.title != null ? brandIn.title : preset.title,
+        logoMode: brandIn.logoMode || 'system',
+        logoUrl: brandIn.logoUrl || null,
+        showWatermarkGe: watermark.enabled && watermark.type === 'text' && watermark.text === '格',
+        footerWarning: brandIn.footerWarning != null ? brandIn.footerWarning : preset.footerWarning,
+        watermark: watermark
       },
       fields: opts.fields || buildFieldsFromPreset(presetId),
       qr: clone(opts.qr || preset.qr),
@@ -243,6 +308,15 @@
     return !!id && bucket.defaultTemplateId === id;
   }
 
+  function normalizeTemplateBrand(tpl) {
+    if (!tpl) return tpl;
+    if (!tpl.brand) tpl.brand = {};
+    var preset = PRESETS[tpl.layoutPreset] || PRESETS.cert_style_3;
+    tpl.brand.watermark = normalizeWatermark(tpl.brand.watermark, tpl.brand, preset);
+    tpl.brand.showWatermarkGe = !!(tpl.brand.watermark.enabled && tpl.brand.watermark.type === 'text' && tpl.brand.watermark.text === '格');
+    return tpl;
+  }
+
   /**
    * 保证每桶恰有 1 个默认：永启用、不绑样品。
    * 缺省时优先选无绑定行，否则新建。
@@ -272,6 +346,7 @@
     bucket.defaultTemplateId = def.id;
     def.enabled = true;
     def.bindSampleIds = [];
+    bucket.templates.forEach(normalizeTemplateBrand);
     return bucket;
   }
 
@@ -404,6 +479,10 @@
     masterIdFromName: masterIdFromName,
     getInspectorMax: getInspectorMax,
     findBindConflicts: findBindConflicts,
+    defaultWatermark: defaultWatermark,
+    normalizeWatermark: normalizeWatermark,
+    normalizeTemplateBrand: normalizeTemplateBrand,
+    WATERMARK_POSITIONS: WATERMARK_POSITIONS,
     formatNow: formatNow,
     uid: uid,
     clone: clone
