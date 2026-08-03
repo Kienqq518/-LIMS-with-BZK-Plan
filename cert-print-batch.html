@@ -28,13 +28,21 @@
   <div class="no-print flex h-full">
     <!-- 左侧预览 -->
     <div class="cert-preview-area flex w-[480px] flex-shrink-0 flex-col border-r border-slate-200 bg-slate-50">
-      <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-2.5">
         <a id="backLink" href="label-print.html" class="text-sm text-blue-600 hover:underline"><i class="fa fa-arrow-left"></i> 返回</a>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <div data-annotate="shortlink-base" class="flex items-center gap-1.5 rounded border border-slate-200 bg-slate-50 px-2 py-1">
+            <label for="shortlinkBaseMode" class="whitespace-nowrap text-xs text-slate-500">短链 Base</label>
+            <select id="shortlinkBaseMode" class="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-xs text-slate-700 outline-none focus:border-blue-500" onchange="onShortlinkBaseChange()">
+              <option value="public">对外（公网）</option>
+              <option value="internal">对内（内网）</option>
+            </select>
+          </div>
           <button onclick="clearPreview()" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">清空待打印区域</button>
           <button onclick="window.print()" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">打印</button>
         </div>
       </div>
+      <p id="shortlinkBaseHint" class="no-print border-b border-slate-100 bg-white px-4 py-1 text-[11px] text-slate-400 truncate"></p>
       <div id="previewContainer" class="flex-1 overflow-y-auto p-4"></div>
     </div>
 
@@ -90,12 +98,39 @@
   <script src="js/prototype-annotation.js"></script>
   <script>
     LabelCertRender.ensureStyles();
+    var SHORTLINK_BASE_KEY = 'lims.shortlink.baseMode';
     var params = new URLSearchParams(location.search);
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
     var entrustCodes = (params.get('codes') || 'SC2026/0073,SC2026/0072').split(',').filter(Boolean);
     var sampleNos = (params.get('nos') || '').split(',').filter(Boolean);
     var defaultInspectors = (params.get('inspectors') || 'admin').split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
     if (params.get('from') === 'qualified') document.getElementById('backLink').href = 'cert-qualified-print.html';
+
+    function syncShortlinkBaseHint() {
+      var mode = ShortLinkQR.getBaseMode();
+      var hint = document.getElementById('shortlinkBaseHint');
+      var sel = document.getElementById('shortlinkBaseMode');
+      if (sel) sel.value = mode;
+      if (hint) {
+        hint.textContent = (mode === 'internal' ? '对内打印 · QR 写入 ' : '对外发放 · QR 写入 ') + ShortLinkQR.getBase() + '{code}（code 内外共用）';
+      }
+    }
+
+    function onShortlinkBaseChange() {
+      var mode = document.getElementById('shortlinkBaseMode').value;
+      ShortLinkQR.setBaseMode(mode);
+      try { sessionStorage.setItem(SHORTLINK_BASE_KEY, mode); } catch (e) {}
+      syncShortlinkBaseHint();
+      renderPreview();
+      if (window.PrototypeAnnotation) PrototypeAnnotation.refresh();
+    }
+
+    (function initShortlinkBase() {
+      var saved = '';
+      try { saved = sessionStorage.getItem(SHORTLINK_BASE_KEY) || ''; } catch (e) {}
+      ShortLinkQR.setBaseMode(saved === 'internal' ? 'internal' : 'public');
+      syncShortlinkBaseHint();
+    })();
 
     var SAMPLE_BY_NO = {
       'SC2026/00790101': { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', model: '10kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', masterId: 'rod', cat: 'aqgqj' },
@@ -294,6 +329,18 @@
             '<strong>原型演示码：</strong>有效 Ab3K9 · 过期 Ex1p1 · 回退作废 Rv0k1 · 不存在 cert-verify.html?code=XXXXX<br><br>' +
             '<strong>预期效果：</strong>① 扫码成功率提升 ② QR 面积可缩小 ③ 验真 URL 变更时仅更新短链映射',
           tag: '核心整改'
+        },
+        {
+          id: 'shortlink-base',
+          selector: '[data-annotate="shortlink-base"]',
+          position: 'bottom-left',
+          title: '方案2：打印前切换短链 Base',
+          wide: true,
+          content: '<strong>场景：</strong>局域网部署 + 对外发放时，批量打印也需按发放对象选择短链域名。<br><br>' +
+            '<strong>做法：</strong>打印前切换「对内（内网）」/「对外（公网）」后，左侧全部待打合格证的 QR 统一按当前 Base 重绘。<br><br>' +
+            '<strong>不变：</strong>各试样 <code>code</code> 仍一一映射、内外共用；变的是 URL 前缀，因此会形成对内/对外两套二维码图案。<br><br>' +
+            '<strong>示例：</strong>对内 <code>http://lims.local/l/Xk7m2</code> · 对外 <code>https://lims-plan.vercel.app/l/Xk7m2</code>',
+          tag: '方案2'
         },
         {
           id: 'default-inspector',
