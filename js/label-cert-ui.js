@@ -297,11 +297,12 @@
   }
 
   function syncSkinUi(presetId) {
-    var isStick = presetId === 'cert_style_1';
+    // 三种合格证布局预设均提供标题/底部栏背景色；样品标签隐藏外观底色项
+    var isCert = presetId === 'cert_style_1' || presetId === 'cert_style_2' || presetId === 'cert_style_3';
     var titleBg = $('lc_e_titleBgWrap');
     var footBg = $('lc_e_footerBgWrap');
-    if (titleBg) titleBg.style.display = isStick ? '' : 'none';
-    if (footBg) footBg.style.display = isStick ? '' : 'none';
+    if (titleBg) titleBg.style.display = isCert ? '' : 'none';
+    if (footBg) footBg.style.display = isCert ? '' : 'none';
   }
 
   function syncWatermarkTypeUI() {
