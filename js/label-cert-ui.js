@@ -1,11 +1,11 @@
 /**
  * 标签与合格证模版 UI（挂到模板管理第四类型）
+ * 布局：默认固定区 + 个性化列表
  */
 (function (global) {
   var cfg = null;
-  var state = { cat: 'aqgqj', type: 'certificate', editingId: null, draft: null };
+  var state = { cat: 'aqgqj', type: 'certificate', editingId: null, draft: null, editingIsDefault: false };
   var dragFrom = -1;
-  var boundPreview = false;
 
   function $(id) { return document.getElementById(id); }
 
@@ -15,31 +15,61 @@
     return id;
   }
 
-  function renderList() {
+  function currentBucket() {
     var bucket = LabelCertConfig.getBucket(cfg, state.cat, state.type);
-    var rows = bucket.templates || [];
+    return LabelCertConfig.ensureBucketShape(bucket, state.type);
+  }
+
+  function renderList() {
+    var bucket = currentBucket();
+    LabelCertConfig.save(cfg);
+
+    var def = LabelCertConfig.findTemplate(bucket, bucket.defaultTemplateId);
+    var personal = (bucket.templates || []).filter(function (t) { return t.id !== bucket.defaultTemplateId; });
+
+    var card = $('lc_defaultCard');
+    if (card && def) {
+      var preset = LabelCertConfig.PRESETS[def.layoutPreset] || {};
+      card.innerHTML =
+        '<div class="meta">' +
+          '<div class="name">' + def.name +
+            '<span class="lc-default-badge"><i class="fa fa-lock"></i> 默认 · 兜底</span>' +
+          '</div>' +
+          '<div class="sub">' + (preset.name || def.layoutPreset) +
+            ' · ' + def.paper.wMm + '×' + def.paper.hMm + ' mm' +
+            ' · 覆盖全部未单独配置的样品' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex items-center gap-3 flex-shrink-0">' +
+          '<button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-white" data-lc-act="edit" data-id="' + def.id + '">编辑版式</button>' +
+          '<button type="button" class="text-sm text-blue-600 hover:underline" data-lc-act="edit" data-id="' + def.id + '">预览</button>' +
+        '</div>';
+    }
+
     var body = $('lc_tplBody');
     if (!body) return;
-    body.innerHTML = rows.length ? rows.map(function (t) {
-      var preset = LabelCertConfig.PRESETS[t.layoutPreset] || {};
+    body.innerHTML = personal.length ? personal.map(function (t) {
+      var p = LabelCertConfig.PRESETS[t.layoutPreset] || {};
       var binds = (t.bindSampleIds || []).map(sampleName).join('、') || '—';
-      var isDef = bucket.defaultTemplateId === t.id;
+      var n = (t.bindSampleIds || []).length;
       return '<tr class="hover:bg-slate-50">' +
         '<td class="border-b border-slate-100 px-3 py-2">' + t.name + '</td>' +
-        '<td class="border-b border-slate-100 px-3 py-2">' + (preset.name || t.layoutPreset) + '</td>' +
+        '<td class="border-b border-slate-100 px-3 py-2">' + (p.name || t.layoutPreset) + '</td>' +
         '<td class="border-b border-slate-100 px-3 py-2">' + (t.paper.wMm + '×' + t.paper.hMm) + '</td>' +
-        '<td class="border-b border-slate-100 px-3 py-2 max-w-[220px] truncate" title="' + binds + '">' + binds +
-        ' <span class="text-slate-400">(' + (t.bindSampleIds || []).length + ')</span></td>' +
-        '<td class="border-b border-slate-100 px-3 py-2">' + (isDef
-          ? '<span class="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700">默认</span>'
-          : '<button type="button" class="text-xs text-blue-600 hover:underline" data-lc-act="default" data-id="' + t.id + '">设为默认</button>') + '</td>' +
-        '<td class="border-b border-slate-100 px-3 py-2">' + (t.enabled ? '<span class="text-green-600">启用</span>' : '<span class="text-slate-400">停用</span>') + '</td>' +
+        '<td class="border-b border-slate-100 px-3 py-2 max-w-[240px] truncate" title="' + binds + '">' + binds +
+          ' <span class="text-slate-400">(' + n + ')</span></td>' +
+        '<td class="border-b border-slate-100 px-3 py-2">' +
+          '<label class="lc-switch" title="' + (t.enabled ? '启用中，停用后回退默认' : '已停用，使用默认模版') + '">' +
+            '<input type="checkbox" data-lc-enable="' + t.id + '"' + (t.enabled ? ' checked' : '') + ' />' +
+            '<span class="slider"></span>' +
+          '</label>' +
+        '</td>' +
         '<td class="border-b border-slate-100 px-3 py-2 whitespace-nowrap">' +
           '<button type="button" class="text-blue-600 hover:underline mr-2" data-lc-act="edit" data-id="' + t.id + '">编辑</button>' +
           '<button type="button" class="text-blue-600 hover:underline mr-2" data-lc-act="edit" data-id="' + t.id + '">预览</button>' +
           '<button type="button" class="text-red-500 hover:underline" data-lc-act="del" data-id="' + t.id + '">删除</button>' +
         '</td></tr>';
-    }).join('') : '<tr><td colspan="7" class="px-3 py-10 text-center text-slate-400">暂无模版，请新建</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="px-3 py-10 text-center text-slate-400">尚未配置个性化模版，全部样品使用上方默认模版</td></tr>';
 
     $('lc_listTitle').textContent = state.type === 'certificate' ? '合格证模版' : '样品标签模版';
     document.querySelectorAll('#labelCertView .lc-type-nav').forEach(function (el) {
@@ -47,40 +77,74 @@
     });
   }
 
-  function setDefault(id) {
-    var bucket = LabelCertConfig.getBucket(cfg, state.cat, state.type);
-    bucket.defaultTemplateId = id;
+  function setEnabled(id, enabled) {
+    var bucket = currentBucket();
+    if (LabelCertConfig.isDefaultTemplate(bucket, id)) {
+      alert('默认模版不可停用');
+      renderList();
+      return;
+    }
+    var tpl = LabelCertConfig.findTemplate(bucket, id);
+    if (!tpl) return;
+    if (enabled && !(tpl.bindSampleIds || []).length) {
+      alert('个性化模版需先绑定至少一个样品才能启用');
+      renderList();
+      return;
+    }
+    if (enabled) {
+      var conflicts = LabelCertConfig.findBindConflicts(state.cat, state.type, tpl.id, tpl.bindSampleIds || []);
+      if (conflicts.length) {
+        alert('无法启用：样品绑定冲突\n' + conflicts.map(function (c) {
+          return sampleName(c.sampleId) + ' → ' + c.templateName;
+        }).join('\n'));
+        renderList();
+        return;
+      }
+    }
+    tpl.enabled = !!enabled;
+    tpl.updatedAt = LabelCertConfig.formatNow();
     LabelCertConfig.save(cfg);
     renderList();
   }
 
   function removeTpl(id) {
-    if (!confirm('确认删除该模版？')) return;
-    var bucket = LabelCertConfig.getBucket(cfg, state.cat, state.type);
+    var bucket = currentBucket();
+    if (LabelCertConfig.isDefaultTemplate(bucket, id)) {
+      alert('默认模版不可删除');
+      return;
+    }
+    if (!confirm('删除后，已绑样品将回退使用默认模版。确认删除？')) return;
     bucket.templates = bucket.templates.filter(function (t) { return t.id !== id; });
-    if (bucket.defaultTemplateId === id) bucket.defaultTemplateId = (bucket.templates[0] && bucket.templates[0].id) || null;
     LabelCertConfig.save(cfg);
     renderList();
   }
 
   function openEditor(id) {
+    var bucket = currentBucket();
     state.editingId = id || null;
-    var bucket = LabelCertConfig.getBucket(cfg, state.cat, state.type);
     var tpl = null;
     if (id) {
-      for (var i = 0; i < bucket.templates.length; i++) if (bucket.templates[i].id === id) tpl = LabelCertConfig.clone(bucket.templates[i]);
+      tpl = LabelCertConfig.findTemplate(bucket, id);
+      if (tpl) tpl = LabelCertConfig.clone(tpl);
     }
+    var isDefault = !!(tpl && LabelCertConfig.isDefaultTemplate(bucket, tpl));
     if (!tpl) {
       var defaultPreset = state.type === 'sample_label' ? 'label_style_1' : 'cert_style_3';
       tpl = LabelCertConfig.createTemplate({
         type: state.type,
         layoutPreset: defaultPreset,
-        name: state.type === 'sample_label' ? '新样品标签模版' : '新合格证模版'
+        name: state.type === 'sample_label' ? '新个性化样品标签' : '新个性化合格证',
+        enabled: true,
+        bindSampleIds: []
       });
+      isDefault = false;
     }
+    state.editingIsDefault = isDefault;
     state.draft = tpl;
-    $('lc_editTitle').textContent = id ? '编辑模版' : '新建模版';
-    fillEditor(tpl);
+    $('lc_editTitle').textContent = isDefault
+      ? '编辑默认模版'
+      : (id ? '编辑个性化模版' : '新增个性化模版');
+    fillEditor(tpl, isDefault);
     $('lc_editModal').classList.add('open');
     refreshPreview();
   }
@@ -88,9 +152,10 @@
   function closeEditor() {
     $('lc_editModal').classList.remove('open');
     state.draft = null;
+    state.editingIsDefault = false;
   }
 
-  function fillEditor(tpl) {
+  function fillEditor(tpl, isDefault) {
     var presetSel = $('lc_e_preset');
     presetSel.innerHTML = Object.keys(LabelCertConfig.PRESETS).filter(function (k) {
       return LabelCertConfig.PRESETS[k].type === state.type;
@@ -102,11 +167,9 @@
     $('lc_e_w').value = tpl.paper.wMm;
     $('lc_e_h').value = tpl.paper.hMm;
     $('lc_e_font').value = (tpl.style && tpl.style.fontScale) || 'normal';
-    $('lc_e_enabled').checked = !!tpl.enabled;
     $('lc_e_org').value = tpl.brand.orgName || '';
     $('lc_e_title').value = tpl.brand.title || '';
     $('lc_e_logo').value = tpl.brand.logoMode || 'system';
-    $('lc_e_wm').checked = !!tpl.brand.showWatermarkGe;
     $('lc_e_warn').value = tpl.brand.footerWarning || '';
     $('lc_e_qr').checked = !tpl.qr || tpl.qr.enabled !== false;
     $('lc_e_qrSize').value = (tpl.qr && tpl.qr.sizePx) || 90;
@@ -114,8 +177,68 @@
     $('lc_e_mat').value = (tpl.meta && tpl.meta.material) || '';
     $('lc_e_mount').value = (tpl.meta && tpl.meta.mount) || '';
     $('lc_e_print').value = (tpl.meta && tpl.meta.printMethod) || '';
+    fillWatermarkUI(tpl.brand);
+
+    var role = $('lc_e_roleHint');
+    if (role) {
+      role.innerHTML = isDefault
+        ? '<span class="lc-role-tag">默认模版</span> 可改版式与字段；身份锁定为兜底，不绑定样品，不可停用/删除。'
+        : '<span class="lc-role-tag">个性化模版</span> 必须绑定至少一个样品；停用后相关样品使用默认模版。';
+    }
+    var bindSec = $('lc_bindSection');
+    if (bindSec) bindSec.style.display = isDefault ? 'none' : '';
+
     renderFieldUI(tpl);
-    renderBindUI(tpl);
+    if (!isDefault) renderBindUI(tpl);
+  }
+
+  function fillWatermarkUI(brand) {
+    var preset = null;
+    var wm = LabelCertConfig.normalizeWatermark(brand && brand.watermark, brand || {}, preset);
+    if (state.draft && !state.draft.brand) state.draft.brand = {};
+    if (state.draft) state.draft.brand.watermark = wm;
+    $('lc_e_wmOn').checked = !!wm.enabled;
+    $('lc_e_wmType').value = wm.type;
+    $('lc_e_wmLayout').value = wm.layout;
+    $('lc_e_wmText').value = wm.text || '';
+    $('lc_e_wmSealMode').value = wm.sealMode;
+    $('lc_e_wmPos').value = wm.position;
+    $('lc_e_wmSize').value = wm.size;
+    $('lc_e_wmAngle').value = wm.angle;
+    var pct = Math.round(wm.opacity * 100);
+    $('lc_e_wmOpacity').value = pct;
+    $('lc_e_wmOpacityVal').textContent = pct + '%';
+    $('lc_e_wmSealHint').textContent = wm.sealUrl ? '已上传自定义章图' : '未上传时使用系统章';
+    syncWatermarkTypeUI();
+  }
+
+  function syncWatermarkTypeUI() {
+    var isSeal = $('lc_e_wmType').value === 'seal';
+    var textWrap = $('lc_e_wmTextWrap');
+    var sealWrap = $('lc_e_wmSealWrap');
+    if (textWrap) textWrap.classList.toggle('hidden', isSeal);
+    if (sealWrap) sealWrap.classList.toggle('hidden', !isSeal);
+    var custom = $('lc_e_wmSealMode').value === 'custom';
+    var file = $('lc_e_wmSealFile');
+    if (file) file.disabled = !custom;
+  }
+
+  function collectWatermarkFromDom(brand) {
+    var opacityPct = Number($('lc_e_wmOpacity').value);
+    if (isNaN(opacityPct)) opacityPct = 22;
+    var sealUrl = (brand && brand.watermark && brand.watermark.sealUrl) || null;
+    return LabelCertConfig.normalizeWatermark({
+      enabled: $('lc_e_wmOn').checked,
+      type: $('lc_e_wmType').value,
+      text: $('lc_e_wmText').value.trim(),
+      sealMode: $('lc_e_wmSealMode').value,
+      sealUrl: sealUrl,
+      opacity: opacityPct / 100,
+      angle: Number($('lc_e_wmAngle').value),
+      position: $('lc_e_wmPos').value,
+      size: $('lc_e_wmSize').value,
+      layout: $('lc_e_wmLayout').value
+    }, brand || {}, null);
   }
 
   function renderFieldUI(tpl) {
@@ -164,12 +287,18 @@
       return '<span class="lc-chip ' + (set[s.id] ? 'on' : '') + '" data-lc-bind="' + s.id + '">' + s.name + '</span>';
     }).join('') : '<span class="text-sm text-slate-400">该大类暂无样品叶节点</span>';
     var conflicts = LabelCertConfig.findBindConflicts(state.cat, state.type, tpl.id, tpl.bindSampleIds || []);
-    $('lc_bindHint').textContent = conflicts.length
-      ? ('冲突：' + conflicts.map(function (c) { return sampleName(c.sampleId) + ' 已绑定「' + c.templateName + '」'; }).join('；'))
-      : '';
+    var hint = '';
+    if (!(tpl.bindSampleIds || []).length) hint = '请至少选择 1 个样品';
+    else if (conflicts.length) {
+      hint = '冲突：' + conflicts.map(function (c) {
+        return sampleName(c.sampleId) + ' 已绑定「' + c.templateName + '」';
+      }).join('；');
+    }
+    $('lc_bindHint').textContent = hint;
   }
 
   function toggleBind(id) {
+    if (state.editingIsDefault) return;
     var tpl = collectDraft(false);
     var arr = tpl.bindSampleIds || [];
     var i = arr.indexOf(id);
@@ -185,7 +314,6 @@
     $('lc_e_w').value = preset.paper.wMm;
     $('lc_e_h').value = preset.paper.hMm;
     $('lc_e_title').value = preset.title;
-    $('lc_e_wm').checked = !!preset.showWatermarkGe;
     $('lc_e_warn').value = preset.footerWarning || '';
     $('lc_e_qr').checked = preset.qr.enabled !== false;
     $('lc_e_qrSize').value = preset.qr.sizePx;
@@ -194,7 +322,15 @@
     tpl.layoutPreset = presetId;
     tpl.fields = LabelCertConfig.buildFieldsFromPreset(presetId);
     tpl.qr = LabelCertConfig.clone(preset.qr);
+    // 切换预设时同步默认水印（保留已上传章图）
+    var keepSeal = tpl.brand && tpl.brand.watermark && tpl.brand.watermark.sealUrl;
+    tpl.brand.watermark = LabelCertConfig.defaultWatermark(preset);
+    if (keepSeal) {
+      tpl.brand.watermark.sealUrl = keepSeal;
+      tpl.brand.watermark.sealMode = 'custom';
+    }
     state.draft = tpl;
+    fillWatermarkUI(tpl.brand);
     renderFieldUI(tpl);
     refreshPreview();
   }
@@ -206,14 +342,15 @@
     base.layoutPreset = $('lc_e_preset').value;
     base.paper = { wMm: Number($('lc_e_w').value) || 90, hMm: Number($('lc_e_h').value) || 50 };
     base.style = { fontScale: $('lc_e_font').value, marginMm: 2 };
-    base.enabled = $('lc_e_enabled').checked;
+    var watermark = collectWatermarkFromDom(base.brand);
     base.brand = {
       orgName: $('lc_e_org').value.trim() || LabelCertConfig.DEFAULT_ORG,
       title: $('lc_e_title').value,
       logoMode: $('lc_e_logo').value,
       logoUrl: null,
-      showWatermarkGe: $('lc_e_wm').checked,
-      footerWarning: $('lc_e_warn').value || null
+      showWatermarkGe: watermark.enabled && watermark.type === 'text' && watermark.text === '格',
+      footerWarning: $('lc_e_warn').value || null,
+      watermark: watermark
     };
     var preset = LabelCertConfig.PRESETS[base.layoutPreset];
     base.qr = {
@@ -231,6 +368,10 @@
       mount: $('lc_e_mount').value,
       printMethod: $('lc_e_print').value
     };
+    if (state.editingIsDefault) {
+      base.enabled = true;
+      base.bindSampleIds = [];
+    }
     base.updatedAt = LabelCertConfig.formatNow();
     return base;
   }
@@ -262,17 +403,37 @@
   function saveEditor() {
     var tpl = collectDraft(true);
     if (!tpl.name) { alert('请填写模版名称'); return; }
-    var conflicts = LabelCertConfig.findBindConflicts(state.cat, state.type, tpl.id, tpl.bindSampleIds || []);
-    if (conflicts.length) {
-      alert('样品绑定冲突：\n' + conflicts.map(function (c) { return sampleName(c.sampleId) + ' → ' + c.templateName; }).join('\n'));
-      return;
+
+    if (state.editingIsDefault) {
+      tpl.enabled = true;
+      tpl.bindSampleIds = [];
+    } else {
+      if (!(tpl.bindSampleIds || []).length) {
+        alert('个性化模版必须至少绑定 1 个样品');
+        return;
+      }
+      var conflicts = LabelCertConfig.findBindConflicts(state.cat, state.type, tpl.id, tpl.bindSampleIds || []);
+      if (conflicts.length) {
+        alert('样品绑定冲突：\n' + conflicts.map(function (c) {
+          return sampleName(c.sampleId) + ' → ' + c.templateName;
+        }).join('\n'));
+        return;
+      }
     }
-    var bucket = LabelCertConfig.getBucket(cfg, state.cat, state.type);
+
+    var bucket = currentBucket();
     var idx = -1;
     for (var i = 0; i < bucket.templates.length; i++) if (bucket.templates[i].id === tpl.id) idx = i;
     if (idx >= 0) bucket.templates[idx] = tpl;
     else bucket.templates.push(tpl);
-    if (!bucket.defaultTemplateId) bucket.defaultTemplateId = tpl.id;
+
+    // 默认身份不可被新建个性化顶替
+    if (state.editingIsDefault) {
+      bucket.defaultTemplateId = tpl.id;
+      tpl.enabled = true;
+      tpl.bindSampleIds = [];
+    }
+    LabelCertConfig.ensureBucketShape(bucket, state.type);
     LabelCertConfig.save(cfg);
     closeEditor();
     renderList();
@@ -295,7 +456,6 @@
         var id = act.getAttribute('data-id');
         var a = act.getAttribute('data-lc-act');
         if (a === 'edit') openEditor(id);
-        else if (a === 'default') setDefault(id);
         else if (a === 'del') removeTpl(id);
         return;
       }
@@ -310,13 +470,52 @@
     });
 
     root.addEventListener('change', function (e) {
-      if (e.target.id === 'lc_e_preset') onPresetChange();
+      var enableId = e.target.getAttribute('data-lc-enable');
+      if (enableId) {
+        setEnabled(enableId, e.target.checked);
+        return;
+      }
+      if (e.target.id === 'lc_e_preset') { onPresetChange(); return; }
+      if (e.target.id === 'lc_e_wmType' || e.target.id === 'lc_e_wmSealMode') {
+        syncWatermarkTypeUI();
+        refreshPreview();
+        return;
+      }
+      if (e.target.id === 'lc_e_wmSealFile') {
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          var draft = collectDraft(false);
+          if (!draft.brand) draft.brand = {};
+          if (!draft.brand.watermark) draft.brand.watermark = LabelCertConfig.defaultWatermark(null);
+          draft.brand.watermark.sealUrl = reader.result;
+          draft.brand.watermark.sealMode = 'custom';
+          draft.brand.watermark.type = 'seal';
+          state.draft = draft;
+          $('lc_e_wmSealMode').value = 'custom';
+          $('lc_e_wmType').value = 'seal';
+          $('lc_e_wmSealHint').textContent = '已上传自定义章图';
+          syncWatermarkTypeUI();
+          refreshPreview();
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
       var rename = e.target.getAttribute('data-lc-rename');
       if (rename != null) renameField(parseInt(rename, 10), e.target.value);
       if (/^lc_e_/.test(e.target.id)) refreshPreview();
     });
     root.addEventListener('input', function (e) {
-      if (e.target.id === 'lc_e_org' || e.target.id === 'lc_e_title' || e.target.id === 'lc_e_warn') refreshPreview();
+      if (e.target.id === 'lc_e_wmOpacity') {
+        $('lc_e_wmOpacityVal').textContent = e.target.value + '%';
+        refreshPreview();
+        return;
+      }
+      if (e.target.id === 'lc_e_org' || e.target.id === 'lc_e_title' || e.target.id === 'lc_e_warn' ||
+          e.target.id === 'lc_e_wmText' || e.target.id === 'lc_e_wmAngle') {
+        refreshPreview();
+      }
     });
 
     root.addEventListener('dragstart', function (e) {

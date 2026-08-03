@@ -74,27 +74,75 @@
     return 'width:' + w + 'px;min-height:' + h + 'px;font-size:' + (compact ? '11px' : '12px') + ';';
   }
 
+  function watermarkConfig(brand) {
+    brand = brand || {};
+    if (global.LabelCertConfig && LabelCertConfig.normalizeWatermark) {
+      return LabelCertConfig.normalizeWatermark(brand.watermark, brand, null);
+    }
+    if (brand.showWatermarkGe) {
+      return { enabled: true, type: 'text', text: '格', opacity: 0.18, angle: 0, position: 'right', size: 'lg', layout: 'single', sealMode: 'system', sealUrl: null };
+    }
+    return { enabled: false };
+  }
+
+  function sealMarkHtml(brand, wm) {
+    if (wm.sealMode === 'custom' && wm.sealUrl) {
+      return '<img class="lc-wm-seal-img" src="' + esc(wm.sealUrl) + '" alt="seal" />';
+    }
+    var org = (brand.orgName || '检测机构').slice(0, 10);
+    return '<div class="lc-wm-seal">' +
+      '<div class="lc-wm-seal-ring">' +
+        '<div class="lc-wm-seal-org">' + esc(org) + '</div>' +
+        '<div class="lc-wm-seal-star">★</div>' +
+        '<div class="lc-wm-seal-sub">检验专用章</div>' +
+      '</div></div>';
+  }
+
+  function watermarkMarkHtml(brand, wm) {
+    if (wm.type === 'seal') return sealMarkHtml(brand, wm);
+    return '<div class="lc-wm-text">' + esc(wm.text || '合格') + '</div>';
+  }
+
+  function renderWatermark(brand) {
+    var wm = watermarkConfig(brand);
+    if (!wm.enabled) return '';
+    var sizeClass = 'lc-wm-size-' + (wm.size || 'md');
+    var posClass = 'lc-wm-pos-' + (wm.position || 'center');
+    var style = 'opacity:' + wm.opacity + ';--lc-wm-angle:' + wm.angle + 'deg;';
+    if (wm.layout === 'tile') {
+      var cell = watermarkMarkHtml(brand, wm);
+      var tiles = '';
+      for (var i = 0; i < 6; i++) tiles += '<div class="lc-wm-tile">' + cell + '</div>';
+      return '<div class="lc-wm-layer lc-wm-tile-layer ' + sizeClass + '" style="' + style + '" aria-hidden="true">' + tiles + '</div>';
+    }
+    return '<div class="lc-wm-layer ' + sizeClass + ' ' + posClass + '" style="' + style + '" aria-hidden="true">' +
+      '<div class="lc-wm-rot">' + watermarkMarkHtml(brand, wm) + '</div></div>';
+  }
+
+  function wrapSheet(className, tpl, data, innerHtml) {
+    return '<div class="lc-sheet ' + className + '" style="' + sheetStyle(tpl) + '" data-sample="' + esc(data.sampleNo) + '">' +
+      renderWatermark(tpl.brand || {}) +
+      '<div class="lc-sheet-content">' + innerHtml + '</div></div>';
+  }
+
   function renderStyle1(tpl, data, opts) {
     var brand = tpl.brand || {};
     var rows = visibleFields(tpl).map(function (f) {
       return '<div class="lc-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
     }).join('');
     var qr = (tpl.qr && tpl.qr.enabled !== false) ? ('<div class="lc-qr-corner">' + renderQrSlot(tpl, data, opts) + '</div>') : '';
-    var wm = brand.showWatermarkGe ? '<div class="lc-wm">格</div>' : '';
-    return '<div class="lc-sheet lc-s1" style="' + sheetStyle(tpl) + '" data-sample="' + esc(data.sampleNo) + '">' +
-      wm +
+    return wrapSheet('lc-s1', tpl, data,
       '<div class="lc-brand">' + logoHtml(brand) +
       '<div><div class="lc-org">' + esc(brand.orgName || '') + '</div>' +
       '<div class="lc-title">' + esc(brand.title || '检验合格证') + '</div></div></div>' +
-      '<div class="lc-body">' + rows + '</div>' + qr +
-      '</div>';
+      '<div class="lc-body">' + rows + '</div>' + qr);
   }
 
   function renderStyle2(tpl, data, opts) {
     var brand = tpl.brand || {};
     var until = fieldValue('validUntil', data) || fieldValue('reinspectDate', data);
     var warn = brand.footerWarning || '无法扫码视为过期';
-    return '<div class="lc-sheet lc-s2" style="' + sheetStyle(tpl) + '" data-sample="' + esc(data.sampleNo) + '">' +
+    return wrapSheet('lc-s2', tpl, data,
       '<div class="lc-hole"></div>' +
       '<div class="lc-brand center">' +
       '<div class="lc-org">' + esc(brand.orgName || '') + '</div>' +
@@ -104,7 +152,7 @@
       '<div class="lc-center-qr"><div class="lc-scan-tip">扫一扫</div>' + renderQrSlot(tpl, data, opts) + '<div class="lc-scan-tip">查信息</div></div>' +
       '<span class="lc-pass-char">格</span></div>' +
       '<div class="lc-valid">检测有效期：' + esc(until) + ' 止</div>' +
-      '<div class="lc-warn">' + esc(warn) + '</div></div>';
+      '<div class="lc-warn">' + esc(warn) + '</div>');
   }
 
   function renderStyle3(tpl, data, opts) {
@@ -112,14 +160,14 @@
     var rows = visibleFields(tpl).map(function (f) {
       return '<div class="lc-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
     }).join('');
-    return '<div class="lc-sheet lc-s3" style="' + sheetStyle(tpl) + '" data-sample="' + esc(data.sampleNo) + '">' +
+    return wrapSheet('lc-s3', tpl, data,
       '<div class="lc-brand">' + logoHtml(brand) +
       '<div><div class="lc-org">' + esc(brand.orgName || '') + '</div>' +
       '<div class="lc-title">' + esc(brand.title || '合 格 证') + '</div></div></div>' +
       '<div class="lc-split">' +
       '<div class="lc-fields">' + rows + '</div>' +
       ((tpl.qr && tpl.qr.enabled !== false) ? ('<div class="lc-qr-side">' + renderQrSlot(tpl, data, opts) + '</div>') : '') +
-      '</div></div>';
+      '</div>');
   }
 
   function renderLabel(tpl, data, opts) {
@@ -130,12 +178,12 @@
     var head = (brand.orgName || brand.title)
       ? ('<div class="lc-brand compact">' + logoHtml(brand) + '<div class="lc-org">' + esc(brand.orgName || brand.title || '') + '</div></div>')
       : '';
-    return '<div class="lc-sheet lc-label" style="' + sheetStyle(tpl) + '" data-sample="' + esc(data.sampleNo) + '">' +
+    return wrapSheet('lc-label', tpl, data,
       head +
       '<div class="lc-split">' +
       '<div class="lc-fields">' + rows + '</div>' +
       ((tpl.qr && tpl.qr.enabled !== false) ? ('<div class="lc-qr-side">' + renderQrSlot(tpl, data, opts) + '</div>') : '') +
-      '</div></div>';
+      '</div>');
   }
 
   function renderSheet(tpl, data, opts) {
@@ -174,6 +222,7 @@
 
   var CSS_TEXT = [
     '.lc-sheet{position:relative;background:#fff;border:1px solid #cbd5e1;box-sizing:border-box;padding:8px 10px;overflow:hidden;page-break-after:always;color:#1e293b;font-family:SimSun,"Songti SC",serif}',
+    '.lc-sheet-content{position:relative;z-index:1;min-height:100%}',
     '.lc-brand{display:flex;align-items:center;gap:6px;margin-bottom:6px}',
     '.lc-brand.center{flex-direction:column;text-align:center;gap:2px}',
     '.lc-brand.compact{margin-bottom:4px}',
@@ -190,11 +239,9 @@
     '.lc-qr{display:flex;align-items:center;justify-content:center;background:#fff}',
     '.lc-qr img{display:block;width:100%;height:100%}',
     '.lc-s1{border-color:#2563eb}',
-    '.lc-s1 .lc-wm{position:absolute;right:18%;top:42%;font-size:64px;color:rgba(34,197,94,.18);font-weight:700;pointer-events:none;z-index:0}',
-    '.lc-s1 .lc-body,.lc-s1 .lc-brand,.lc-s1 .lc-qr-corner{position:relative;z-index:1}',
     '.lc-qr-corner{position:absolute;right:6px;bottom:6px}',
     '.lc-s2{border-radius:6px;padding-top:14px}',
-    '.lc-hole{position:absolute;left:8px;top:8px;width:10px;height:10px;border-radius:50%;border:1px solid #94a3b8;background:#f8fafc}',
+    '.lc-hole{position:absolute;left:8px;top:8px;width:10px;height:10px;border-radius:50%;border:1px solid #94a3b8;background:#f8fafc;z-index:2}',
     '.lc-center-pass{display:flex;align-items:center;justify-content:center;gap:6px;margin:6px 0}',
     '.lc-pass-char{font-size:28px;font-weight:800;color:#16a34a;line-height:1}',
     '.lc-center-qr{display:flex;flex-direction:column;align-items:center;gap:2px}',
@@ -203,15 +250,51 @@
     '.lc-warn{text-align:center;font-size:10px;color:#dc2626;margin-top:2px}',
     '.lc-label{border-style:dashed}',
     '.lc-missing{padding:24px;color:#94a3b8;text-align:center}',
+    /* 水印层 */
+    '.lc-wm-layer{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}',
+    '.lc-wm-rot{display:inline-flex;align-items:center;justify-content:center;transform:rotate(var(--lc-wm-angle,0deg));transform-origin:center center}',
+    '.lc-wm-text{color:#16a34a;font-weight:700;line-height:1;white-space:nowrap;font-family:SimSun,"Songti SC",serif}',
+    '.lc-wm-size-sm .lc-wm-text{font-size:28px}',
+    '.lc-wm-size-md .lc-wm-text{font-size:42px}',
+    '.lc-wm-size-lg .lc-wm-text{font-size:64px}',
+    '.lc-wm-seal{display:flex;align-items:center;justify-content:center}',
+    '.lc-wm-seal-ring{border:2px solid #dc2626;border-radius:50%;color:#dc2626;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;background:rgba(255,255,255,.08)}',
+    '.lc-wm-size-sm .lc-wm-seal-ring{width:52px;height:52px}',
+    '.lc-wm-size-md .lc-wm-seal-ring{width:72px;height:72px}',
+    '.lc-wm-size-lg .lc-wm-seal-ring{width:92px;height:92px}',
+    '.lc-wm-seal-org{font-size:8px;line-height:1.15;padding:0 4px;font-weight:600;max-width:90%;overflow:hidden}',
+    '.lc-wm-size-lg .lc-wm-seal-org{font-size:9px}',
+    '.lc-wm-seal-star{font-size:12px;line-height:1;margin:1px 0}',
+    '.lc-wm-size-lg .lc-wm-seal-star{font-size:14px}',
+    '.lc-wm-seal-sub{font-size:9px;font-weight:700;letter-spacing:.05em}',
+    '.lc-wm-size-lg .lc-wm-seal-sub{font-size:10px}',
+    '.lc-wm-seal-img{object-fit:contain;display:block}',
+    '.lc-wm-size-sm .lc-wm-seal-img{width:52px;height:52px}',
+    '.lc-wm-size-md .lc-wm-seal-img{width:72px;height:72px}',
+    '.lc-wm-size-lg .lc-wm-seal-img{width:92px;height:92px}',
+    '.lc-wm-pos-top_left,.lc-wm-pos-top,.lc-wm-pos-top_right,.lc-wm-pos-left,.lc-wm-pos-center,.lc-wm-pos-right,.lc-wm-pos-bottom_left,.lc-wm-pos-bottom,.lc-wm-pos-bottom_right{display:flex;padding:6px}',
+    '.lc-wm-pos-top_left{align-items:flex-start;justify-content:flex-start}',
+    '.lc-wm-pos-top{align-items:flex-start;justify-content:center}',
+    '.lc-wm-pos-top_right{align-items:flex-start;justify-content:flex-end}',
+    '.lc-wm-pos-left{align-items:center;justify-content:flex-start}',
+    '.lc-wm-pos-center{align-items:center;justify-content:center}',
+    '.lc-wm-pos-right{align-items:center;justify-content:flex-end}',
+    '.lc-wm-pos-bottom_left{align-items:flex-end;justify-content:flex-start}',
+    '.lc-wm-pos-bottom{align-items:flex-end;justify-content:center}',
+    '.lc-wm-pos-bottom_right{align-items:flex-end;justify-content:flex-end}',
+    '.lc-wm-tile-layer{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);align-items:center;justify-items:center;padding:4px}',
+    '.lc-wm-tile .lc-wm-text,.lc-wm-tile .lc-wm-seal,.lc-wm-tile .lc-wm-seal-img{transform:rotate(var(--lc-wm-angle,0deg))}',
     '@media print{.lc-sheet{box-shadow:none;border-color:#94a3b8}}'
   ].join('');
 
   function ensureStyles() {
-    if (document.getElementById('label-cert-render-css')) return;
-    var style = document.createElement('style');
-    style.id = 'label-cert-render-css';
+    var style = document.getElementById('label-cert-render-css');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'label-cert-render-css';
+      document.head.appendChild(style);
+    }
     style.textContent = CSS_TEXT;
-    document.head.appendChild(style);
   }
 
   global.LabelCertRender = {
