@@ -204,11 +204,17 @@
     var bt = LabelCertConfig.normalizeBrandType(tpl.brand);
     $('lc_e_orgSize').value = bt.orgFontSize;
     $('lc_e_orgColor').value = bt.orgColor;
+    if ($('lc_e_orgAlign')) $('lc_e_orgAlign').value = bt.orgAlign;
     $('lc_e_titleSize').value = bt.titleFontSize;
     $('lc_e_titleColor').value = bt.titleColor;
+    if ($('lc_e_titleAlign')) $('lc_e_titleAlign').value = bt.titleAlign;
     $('lc_e_logoSize').value = bt.logoSize;
     $('lc_e_warnSize').value = bt.warnFontSize;
     $('lc_e_warnColor').value = bt.warnColor;
+    if ($('lc_e_warnAlign')) $('lc_e_warnAlign').value = bt.warnAlign;
+    if ($('lc_e_logo') && ($('lc_e_logo').value === 'custom' || !tpl.brand.logoMode)) {
+      $('lc_e_logo').value = tpl.brand.logoMode === 'hidden' ? 'hidden' : 'system';
+    }
     $('lc_e_qr').checked = !tpl.qr || tpl.qr.enabled !== false;
     $('lc_e_qrSize').value = (tpl.qr && tpl.qr.sizePx) || 90;
     var place = LabelCertRender.normalizeQrPlacement((tpl.qr && tpl.qr.placement) || 'right', tpl.layoutPreset);
@@ -366,15 +372,19 @@
   function renderBindUI(tpl) {
     var root = $('lc_bindSamples');
     if (!root) return;
+    var tree = (LabelCertConfig.SAMPLE_TREE && LabelCertConfig.SAMPLE_TREE[state.cat]) || [];
     var leaves = LabelCertConfig.SAMPLE_LEAVES[state.cat] || [];
     var selected = tpl.bindSampleIds || [];
     var set = {};
     selected.forEach(function (id) { set[id] = true; });
     var kw = (state.bindKw || '').trim().toLowerCase();
-    var filtered = leaves.filter(function (s) {
+
+    function leafMatch(leaf, group) {
       if (!kw) return true;
-      return String(s.name).toLowerCase().indexOf(kw) !== -1 || String(s.id).toLowerCase().indexOf(kw) !== -1;
-    });
+      return String(leaf.name).toLowerCase().indexOf(kw) !== -1 ||
+        String(leaf.id).toLowerCase().indexOf(kw) !== -1 ||
+        String(group.name).toLowerCase().indexOf(kw) !== -1;
+    }
 
     if (!leaves.length) {
       root.innerHTML = '<span class="text-sm text-slate-400">该大类暂无样品叶节点</span>';
@@ -382,22 +392,31 @@
       var triggerText = selected.length
         ? ('已选 ' + selected.length + ' 项：' + selected.map(sampleName).slice(0, 3).join('、') + (selected.length > 3 ? ' 等' : ''))
         : '<span class="ph">请选择要绑定的样品</span>';
-      var listHtml = filtered.length ? filtered.map(function (s) {
-        return '<label class="lc-ms-item">' +
-          '<input type="checkbox" data-lc-bind="' + s.id + '" ' + (set[s.id] ? 'checked' : '') + ' />' +
-          '<span>' + s.name + '</span></label>';
-      }).join('') : '<div class="lc-ms-empty">无匹配样品</div>';
+      var listHtml = '';
+      var matchCount = 0;
+      tree.forEach(function (group) {
+        var kids = (group.children || []).filter(function (leaf) { return leafMatch(leaf, group); });
+        if (!kids.length) return;
+        listHtml += '<div class="lc-ms-group">' + group.name + '</div>';
+        kids.forEach(function (leaf) {
+          matchCount++;
+          listHtml += '<label class="lc-ms-item indent">' +
+            '<input type="checkbox" data-lc-bind="' + leaf.id + '" ' + (set[leaf.id] ? 'checked' : '') + ' />' +
+            '<span>' + leaf.name + '</span></label>';
+        });
+      });
+      if (!listHtml) listHtml = '<div class="lc-ms-empty">无匹配样品</div>';
       root.innerHTML =
         '<div class="lc-ms' + (state.bindOpen ? ' open' : '') + '" id="lc_msRoot">' +
           '<button type="button" class="lc-ms-trigger" data-lc-ms-toggle>' +
             '<span class="truncate">' + triggerText + '</span><i class="fa fa-angle-down"></i>' +
           '</button>' +
           '<div class="lc-ms-panel">' +
-            '<input type="text" class="lc-ms-search" id="lc_msSearch" placeholder="搜索样品名称" value="' +
+            '<input type="text" class="lc-ms-search" id="lc_msSearch" placeholder="搜索分类或样品名称" value="' +
               String(state.bindKw || '').replace(/"/g, '&quot;') + '" />' +
             '<div class="lc-ms-list">' + listHtml + '</div>' +
             '<div class="lc-ms-foot">' +
-              '<span>共 ' + leaves.length + ' 项 · 已选 ' + selected.length + '</span>' +
+              '<span>共 ' + leaves.length + ' 项 · 已选 ' + selected.length + (kw ? (' · 匹配 ' + matchCount) : '') + '</span>' +
               '<button type="button" class="text-blue-600 hover:underline" data-lc-ms-clear>清空</button>' +
             '</div>' +
           '</div>' +
@@ -490,29 +509,37 @@
     var typeStyle = LabelCertConfig.normalizeBrandType({
       orgFontSize: $('lc_e_orgSize').value,
       orgColor: $('lc_e_orgColor').value,
+      orgAlign: $('lc_e_orgAlign') ? $('lc_e_orgAlign').value : 'center',
       titleFontSize: $('lc_e_titleSize').value,
       titleColor: $('lc_e_titleColor').value,
+      titleAlign: $('lc_e_titleAlign') ? $('lc_e_titleAlign').value : 'center',
       logoSize: $('lc_e_logoSize').value,
       warnFontSize: $('lc_e_warnSize').value,
-      warnColor: $('lc_e_warnColor').value
+      warnColor: $('lc_e_warnColor').value,
+      warnAlign: $('lc_e_warnAlign') ? $('lc_e_warnAlign').value : 'center'
     });
     var isLabel = state.type === 'sample_label' || base.layoutPreset === 'label_style_1';
     var orgVal = $('lc_e_org').value.trim();
+    var logoMode = $('lc_e_logo').value;
+    if (logoMode !== 'hidden') logoMode = 'system';
     base.brand = {
       orgName: isLabel ? orgVal : (orgVal || LabelCertConfig.DEFAULT_ORG),
       title: $('lc_e_title').value,
-      logoMode: $('lc_e_logo').value,
+      logoMode: logoMode,
       logoUrl: null,
       showWatermarkGe: watermark.enabled && watermark.type === 'text' && watermark.text === '格',
       footerWarning: isLabel ? null : $('lc_e_warn').value,
       watermark: watermark,
       orgFontSize: typeStyle.orgFontSize,
       orgColor: typeStyle.orgColor,
+      orgAlign: typeStyle.orgAlign,
       titleFontSize: typeStyle.titleFontSize,
       titleColor: typeStyle.titleColor,
+      titleAlign: typeStyle.titleAlign,
       logoSize: typeStyle.logoSize,
       warnFontSize: typeStyle.warnFontSize,
-      warnColor: typeStyle.warnColor
+      warnColor: typeStyle.warnColor,
+      warnAlign: typeStyle.warnAlign
     };
     var preset = LabelCertConfig.PRESETS[base.layoutPreset];
     var place = LabelCertRender.normalizeQrPlacement($('lc_e_qrPlace').value, base.layoutPreset);

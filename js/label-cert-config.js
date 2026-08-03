@@ -13,28 +13,71 @@
     { key: 'gcjc', name: '工程检测' }
   ];
 
-  /** 大类下可选样品叶节点（与样品数据树对齐的演示子集） */
-  var SAMPLE_LEAVES = {
+  /** 系统 Logo（合格证品牌区） */
+  var SYSTEM_LOGO_URL = 'assets/label-cert/system-logo.svg';
+
+  /**
+   * 大类下样品树（分类层级 → 叶节点），绑定 UI 按层级展示
+   */
+  var SAMPLE_TREE = {
     aqgqj: [
-      { id: 'rod', name: '绝缘操作杆' },
-      { id: 'ladder', name: '绝缘软梯' },
-      { id: 'belt976', name: '安全带' },
-      { id: 'rope1476', name: '安全绳' },
-      { id: 'helmet', name: '安全帽' },
-      { id: 'board1476', name: '登高板' },
-      { id: 'spur', name: '登杆脚扣' },
-      { id: 'sling', name: '吊装带' },
-      { id: 'shackle', name: '卸扣' }
+      {
+        id: 'std_976', name: 'DLT 976-2017',
+        children: [
+          { id: 'belt976', name: '安全带' },
+          { id: 'rope1476', name: '安全绳' }
+        ]
+      },
+      {
+        id: 'std_1476', name: 'DLT 1476-2017',
+        children: [
+          { id: 'rod', name: '绝缘操作杆' },
+          { id: 'ladder', name: '绝缘软梯' },
+          { id: 'helmet', name: '安全帽' },
+          { id: 'board1476', name: '登高板' },
+          { id: 'spur', name: '登杆脚扣' },
+          { id: 'sling', name: '吊装带' },
+          { id: 'shackle', name: '卸扣' }
+        ]
+      }
     ],
     dlwz: [
-      { id: 'cable', name: '电力电缆' },
-      { id: 'transformer', name: '变压器' }
+      {
+        id: 'dlwz_cable', name: '电缆类',
+        children: [{ id: 'cable', name: '电力电缆' }]
+      },
+      {
+        id: 'dlwz_eq', name: '设备类',
+        children: [{ id: 'transformer', name: '变压器' }]
+      }
     ],
     hjjc: [],
     gcjc: [
-      { id: 'p', name: '硅酸盐水泥' },
-      { id: 'po', name: '普通硅酸盐水泥' }
+      {
+        id: 'gcjc_cement', name: '通用硅酸盐水泥',
+        children: [
+          { id: 'p', name: '硅酸盐水泥' },
+          { id: 'po', name: '普通硅酸盐水泥' }
+        ]
+      }
     ]
+  };
+
+  function flattenSampleLeaves(tree) {
+    var out = [];
+    (tree || []).forEach(function (group) {
+      (group.children || []).forEach(function (leaf) {
+        out.push({ id: leaf.id, name: leaf.name, groupId: group.id, groupName: group.name });
+      });
+    });
+    return out;
+  }
+
+  var SAMPLE_LEAVES = {
+    aqgqj: flattenSampleLeaves(SAMPLE_TREE.aqgqj),
+    dlwz: flattenSampleLeaves(SAMPLE_TREE.dlwz),
+    hjjc: flattenSampleLeaves(SAMPLE_TREE.hjjc),
+    gcjc: flattenSampleLeaves(SAMPLE_TREE.gcjc)
   };
 
   var CERT_FIELD_POOL = [
@@ -44,8 +87,7 @@
     { id: 'inspectors', label: '检查员' },
     { id: 'inspectDate', label: '本次检测日期' },
     { id: 'reinspectDate', label: '下次检测日期' },
-    { id: 'validUntil', label: '检测有效期' },
-    { id: 'qrCode', label: '二维码' }
+    { id: 'validUntil', label: '检测有效期' }
   ];
 
   /** 样品标签检测状态枚举 */
@@ -65,12 +107,16 @@
     cert_style_1: {
       type: 'certificate',
       name: '不粘胶纸·字段表',
-      paper: { wMm: 65, hMm: 30 },
-      title: '检验合格证',
-      qr: { enabled: true, sizePx: 72, payloadType: 'cert_shortlink', placement: 'corner' },
-      showWatermarkGe: true,
+      paper: { wMm: 65, hMm: 45 },
+      title: '安全工器具试验合格证',
+      qr: { enabled: false, sizePx: 64, payloadType: 'cert_shortlink', placement: 'none' },
+      showWatermarkGe: false,
       footerWarning: null,
-      fieldIds: ['sampleName', 'specModel', 'specimenNo', 'inspectors', 'inspectDate', 'reinspectDate']
+      fieldIds: ['sampleName', 'specimenNo', 'inspectDate', 'reinspectDate', 'inspectors'],
+      watermarkDefault: {
+        enabled: true, type: 'seal', sealMode: 'system', text: '试验专用章',
+        opacity: 0.38, angle: -12, position: 'center', size: 'lg', layout: 'single', color: '#dc2626'
+      }
     },
     cert_style_2: {
       type: 'certificate',
@@ -80,7 +126,7 @@
       qr: { enabled: true, sizePx: 64, payloadType: 'cert_shortlink', placement: 'center' },
       showWatermarkGe: false,
       footerWarning: '无法扫码视为过期',
-      fieldIds: ['validUntil', 'qrCode']
+      fieldIds: ['validUntil', 'sampleName', 'specimenNo']
     },
     cert_style_3: {
       type: 'certificate',
@@ -90,7 +136,7 @@
       qr: { enabled: true, sizePx: 100, payloadType: 'cert_shortlink', placement: 'right' },
       showWatermarkGe: false,
       footerWarning: null,
-      fieldIds: ['specimenNo', 'sampleName', 'specModel', 'inspectDate', 'reinspectDate', 'inspectors', 'qrCode']
+      fieldIds: ['specimenNo', 'sampleName', 'specModel', 'inspectDate', 'reinspectDate', 'inspectors']
     },
     label_style_1: {
       type: 'sample_label',
@@ -139,8 +185,24 @@
   ];
 
   function defaultWatermark(preset) {
-    var fromGe = !!(preset && preset.showWatermarkGe);
     var isLabel = !!(preset && preset.type === 'sample_label');
+    if (preset && preset.watermarkDefault) {
+      var wd = preset.watermarkDefault;
+      return {
+        enabled: wd.enabled !== false,
+        type: wd.type === 'seal' ? 'seal' : 'text',
+        text: wd.text || '试验专用章',
+        color: wd.color || '#dc2626',
+        sealMode: wd.sealMode === 'custom' ? 'custom' : 'system',
+        sealUrl: wd.sealUrl || null,
+        opacity: wd.opacity != null ? wd.opacity : 0.34,
+        angle: wd.angle != null ? wd.angle : -8,
+        position: wd.position || 'center',
+        size: wd.size || 'lg',
+        layout: wd.layout === 'tile' ? 'tile' : 'single'
+      };
+    }
+    var fromGe = !!(preset && preset.showWatermarkGe);
     return {
       enabled: isLabel ? false : fromGe,
       type: 'text',           // text | seal
@@ -172,12 +234,19 @@
     return {
       orgFontSize: 12,
       orgColor: '#1e293b',
+      orgAlign: 'center',
       titleFontSize: 14,
       titleColor: '#1e293b',
-      logoSize: 16,
+      titleAlign: 'center',
+      logoSize: 18,
       warnFontSize: 10,
-      warnColor: '#dc2626'
+      warnColor: '#dc2626',
+      warnAlign: 'center'
     };
+  }
+
+  function normalizeAlign(v, fallback) {
+    return (v === 'left' || v === 'center' || v === 'right') ? v : fallback;
   }
 
   function normalizeBrandType(brand) {
@@ -186,11 +255,14 @@
     return {
       orgFontSize: clampInt(brand.orgFontSize, 8, 28, d.orgFontSize),
       orgColor: normalizeColor(brand.orgColor, d.orgColor),
+      orgAlign: normalizeAlign(brand.orgAlign, d.orgAlign),
       titleFontSize: clampInt(brand.titleFontSize, 10, 32, d.titleFontSize),
       titleColor: normalizeColor(brand.titleColor, d.titleColor),
+      titleAlign: normalizeAlign(brand.titleAlign, d.titleAlign),
       logoSize: clampInt(brand.logoSize, 10, 40, d.logoSize),
       warnFontSize: clampInt(brand.warnFontSize, 8, 20, d.warnFontSize),
-      warnColor: normalizeColor(brand.warnColor, d.warnColor)
+      warnColor: normalizeColor(brand.warnColor, d.warnColor),
+      warnAlign: normalizeAlign(brand.warnAlign, d.warnAlign)
     };
   }
 
@@ -244,6 +316,7 @@
     if (brandIn.title != null) title = brandIn.title;
     else title = isLabel ? '' : preset.title;
     var logoMode = brandIn.logoMode || (isLabel ? 'hidden' : 'system');
+    if (logoMode === 'custom') logoMode = 'system';
     return {
       id: opts.id || uid('tpl'),
       name: opts.name || (preset.name + '模版'),
@@ -262,11 +335,14 @@
         watermark: watermark,
         orgFontSize: typeStyle.orgFontSize,
         orgColor: typeStyle.orgColor,
+        orgAlign: typeStyle.orgAlign,
         titleFontSize: typeStyle.titleFontSize,
         titleColor: typeStyle.titleColor,
+        titleAlign: typeStyle.titleAlign,
         logoSize: typeStyle.logoSize,
         warnFontSize: typeStyle.warnFontSize,
-        warnColor: typeStyle.warnColor
+        warnColor: typeStyle.warnColor,
+        warnAlign: typeStyle.warnAlign
       },
       fields: opts.fields || buildFieldsFromPreset(presetId),
       qr: clone(opts.qr || preset.qr),
@@ -409,12 +485,38 @@
     var ts = normalizeBrandType(tpl.brand);
     tpl.brand.orgFontSize = ts.orgFontSize;
     tpl.brand.orgColor = ts.orgColor;
+    tpl.brand.orgAlign = ts.orgAlign;
     tpl.brand.titleFontSize = ts.titleFontSize;
     tpl.brand.titleColor = ts.titleColor;
+    tpl.brand.titleAlign = ts.titleAlign;
     tpl.brand.logoSize = ts.logoSize;
     tpl.brand.warnFontSize = ts.warnFontSize;
     tpl.brand.warnColor = ts.warnColor;
+    tpl.brand.warnAlign = ts.warnAlign;
+    if (tpl.brand.logoMode === 'custom') tpl.brand.logoMode = 'system';
     normalizeLabelFields(tpl);
+    normalizeCertFields(tpl);
+    return tpl;
+  }
+
+  function normalizeCertFields(tpl) {
+    if (!tpl) return tpl;
+    var preset = PRESETS[tpl.layoutPreset];
+    if (!preset || preset.type !== 'certificate') return tpl;
+    tpl.fields = (tpl.fields || []).filter(function (f) { return f.id !== 'qrCode'; });
+    // 不粘胶纸·字段表：旧版与左文右码骨架相近，迁移为顶栏标题 + 底栏检测单位 + 圆形章
+    if (tpl.layoutPreset === 'cert_style_1' && preset.watermarkDefault) {
+      var wm = tpl.brand && tpl.brand.watermark;
+      var needSeal = !wm || wm.type !== 'seal' || (!wm.enabled && !wm.sealUrl);
+      if (needSeal) {
+        var keep = wm && wm.sealUrl;
+        tpl.brand.watermark = defaultWatermark(preset);
+        if (keep) {
+          tpl.brand.watermark.sealUrl = keep;
+          tpl.brand.watermark.sealMode = 'custom';
+        }
+      }
+    }
     return tpl;
   }
 
@@ -562,6 +664,8 @@
     DEFAULT_ORG: DEFAULT_ORG,
     CATEGORIES: CATEGORIES,
     SAMPLE_LEAVES: SAMPLE_LEAVES,
+    SAMPLE_TREE: SAMPLE_TREE,
+    SYSTEM_LOGO_URL: SYSTEM_LOGO_URL,
     CERT_FIELD_POOL: CERT_FIELD_POOL,
     LABEL_FIELD_POOL: LABEL_FIELD_POOL,
     LABEL_DETECT_STATUS: LABEL_DETECT_STATUS,

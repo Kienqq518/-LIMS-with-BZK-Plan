@@ -54,27 +54,35 @@
       return LabelCertConfig.normalizeBrandType(brand || {});
     }
     return {
-      orgFontSize: 12, orgColor: '#1e293b',
-      titleFontSize: 14, titleColor: '#1e293b',
-      logoSize: 16, warnFontSize: 10, warnColor: '#dc2626'
+      orgFontSize: 12, orgColor: '#1e293b', orgAlign: 'center',
+      titleFontSize: 14, titleColor: '#1e293b', titleAlign: 'center',
+      logoSize: 18, warnFontSize: 10, warnColor: '#dc2626', warnAlign: 'center'
     };
+  }
+
+  function alignCss(align) {
+    if (align === 'left') return 'text-align:left;justify-content:flex-start;';
+    if (align === 'right') return 'text-align:right;justify-content:flex-end;';
+    return 'text-align:center;justify-content:center;';
+  }
+
+  function systemLogoUrl() {
+    return (global.LabelCertConfig && LabelCertConfig.SYSTEM_LOGO_URL) || 'assets/label-cert/system-logo.svg';
   }
 
   function logoHtml(brand) {
     if (!brand || brand.logoMode === 'hidden') return '';
     var bt = brandType(brand);
     var size = bt.logoSize;
-    if (brand.logoMode === 'custom' && brand.logoUrl) {
-      return '<img class="lc-logo" src="' + esc(brand.logoUrl) + '" alt="logo" style="width:' + size + 'px;height:' + size + 'px" />';
-    }
-    return '<i class="fa fa-building lc-logo-ico" style="font-size:' + size + 'px;color:' + esc(bt.orgColor) + '"></i>';
+    var src = (brand.logoMode === 'custom' && brand.logoUrl) ? brand.logoUrl : systemLogoUrl();
+    return '<img class="lc-logo" src="' + esc(src) + '" alt="logo" style="width:' + size + 'px;height:' + size + 'px" />';
   }
 
   function brandHeadHtml(brand, opts) {
     opts = opts || {};
     var bt = brandType(brand);
-    var orgStyle = 'font-size:' + bt.orgFontSize + 'px;color:' + esc(bt.orgColor) + ';';
-    var titleStyle = 'font-size:' + bt.titleFontSize + 'px;color:' + esc(bt.titleColor) + ';';
+    var orgStyle = 'font-size:' + bt.orgFontSize + 'px;color:' + esc(bt.orgColor) + ';' + alignCss(bt.orgAlign);
+    var titleStyle = 'font-size:' + bt.titleFontSize + 'px;color:' + esc(bt.titleColor) + ';' + alignCss(bt.titleAlign);
     var title = brand.title || opts.defaultTitle || '';
     var center = opts.center ? ' center' : (opts.compact ? ' compact' : '');
     if (opts.compact && !(brand.orgName || brand.title)) return '';
@@ -85,9 +93,28 @@
       return '<div class="lc-brand' + center + '">' + logoHtml(brand) +
         '<div class="lc-org" style="' + orgStyle + '">' + esc(brand.orgName || brand.title || '') + '</div></div>';
     }
+    if (opts.titleOnly) {
+      var barTitle = title || '检验合格证';
+      var barColor = bt.titleColor || '#ffffff';
+      // 标题色默认偏深时，顶栏用白字；用户显式浅色则保留
+      var barFg = (barColor === '#1e293b' || barColor === '#000000' || barColor === '#111111')
+        ? '#ffffff' : barColor;
+      return (logoHtml(brand) ? ('<div class="lc-s1-logo">' + logoHtml(brand) + '</div>') : '') +
+        '<div class="lc-s1-titlebar" style="font-size:' + bt.titleFontSize + 'px;color:' + esc(barFg) + ';' +
+          alignCss(bt.titleAlign) + '">' + esc(barTitle) + '</div>';
+    }
     return '<div class="lc-brand' + center + '">' + logoHtml(brand) +
-      '<div><div class="lc-org" style="' + orgStyle + '">' + esc(brand.orgName || '') + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+      '<div class="lc-org" style="' + orgStyle + '">' + esc(brand.orgName || '') + '</div>' +
       titleBlock + '</div></div>';
+  }
+
+  function orgFootHtml(brand) {
+    var name = brand.orgName || '';
+    if (!name) return '';
+    var bt = brandType(brand);
+    var style = 'font-size:' + bt.orgFontSize + 'px;color:' + esc(bt.orgColor) + ';' + alignCss(bt.orgAlign);
+    return '<div class="lc-org-foot" style="' + style + '">检测单位：' + esc(name) + '</div>';
   }
 
   function warnHtml(brand, opts) {
@@ -98,8 +125,8 @@
       text = opts.fallback;
     }
     var bt = brandType(brand);
-    return '<div class="lc-warn" style="font-size:' + bt.warnFontSize + 'px;color:' + esc(bt.warnColor) + '">' +
-      esc(text) + '</div>';
+    return '<div class="lc-warn" style="font-size:' + bt.warnFontSize + 'px;color:' + esc(bt.warnColor) + ';' +
+      alignCss(bt.warnAlign) + '">' + esc(text) + '</div>';
   }
 
   function normalizeQrPlacement(placement, preset) {
@@ -158,13 +185,31 @@
     if (wm.sealMode === 'custom' && wm.sealUrl) {
       return '<img class="lc-wm-seal-img" src="' + esc(wm.sealUrl) + '" alt="seal" />';
     }
-    var org = (brand.orgName || '检测机构').slice(0, 10);
+    // 图5：圆形双环 + 上弧单位名 + 中心★ + 「试验专用章」
+    var org = String(brand.orgName || '某某某有限责任公司').slice(0, 16);
+    var sub = wm.text || '试验专用章';
+    var chars = org.split('');
+    var arc = '';
+    var n = chars.length;
+    for (var i = 0; i < n; i++) {
+      var t = n === 1 ? 0 : (i / (n - 1) - 0.5) * 2.0;
+      var ang = -Math.PI / 2 + t;
+      var x = 60 + 40 * Math.cos(ang);
+      var y = 60 + 40 * Math.sin(ang);
+      var deg = (ang * 180) / Math.PI + 90;
+      arc +=
+        '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) +
+        '" fill="#dc2626" font-size="8" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(' +
+        deg.toFixed(1) + ' ' + x.toFixed(1) + ' ' + y.toFixed(1) + ')">' + esc(chars[i]) + '</text>';
+    }
     return '<div class="lc-wm-seal">' +
-      '<div class="lc-wm-seal-ring">' +
-        '<div class="lc-wm-seal-org">' + esc(org) + '</div>' +
-        '<div class="lc-wm-seal-star">★</div>' +
-        '<div class="lc-wm-seal-sub">检验专用章</div>' +
-      '</div></div>';
+      '<svg class="lc-wm-seal-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+        '<circle cx="60" cy="60" r="56" fill="none" stroke="#dc2626" stroke-width="3.5"/>' +
+        '<circle cx="60" cy="60" r="50" fill="none" stroke="#dc2626" stroke-width="1.5"/>' +
+        arc +
+        '<polygon points="60,42 64,54 76,54 66,62 70,74 60,67 50,74 54,62 44,54 56,54" fill="#dc2626"/>' +
+        '<text x="60" y="88" text-anchor="middle" fill="#dc2626" font-size="9" font-weight="700">' + esc(sub) + '</text>' +
+      '</svg></div>';
   }
 
   function watermarkMarkHtml(brand, wm) {
@@ -197,13 +242,15 @@
 
   function renderStyle1(tpl, data, opts) {
     var brand = tpl.brand || {};
+    // 图4骨架：上标题 → 中字段 → 下检测单位；水印为圆形试验专用章
     var rows = visibleFields(tpl).map(function (f) {
-      return '<div class="lc-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
+      return '<div class="lc-row lc-s1-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
     }).join('');
     var qr = qrPlacementHtml(tpl, data, opts);
     return wrapSheet('lc-s1', tpl, data,
-      brandHeadHtml(brand, { defaultTitle: '检验合格证' }) +
-      '<div class="lc-body">' + rows + '</div>' +
+      brandHeadHtml(brand, { titleOnly: true, defaultTitle: '检验合格证' }) +
+      '<div class="lc-body lc-s1-body">' + rows + '</div>' +
+      orgFootHtml(brand) +
       warnHtml(brand) +
       qr.side + qr.overlay);
   }
@@ -211,6 +258,11 @@
   function renderStyle2(tpl, data, opts) {
     var brand = tpl.brand || {};
     var until = fieldValue('validUntil', data) || fieldValue('reinspectDate', data);
+    var rows = visibleFields(tpl).filter(function (f) {
+      return f.id !== 'validUntil';
+    }).map(function (f) {
+      return '<div class="lc-row lc-s2-row"><span class="lc-k">' + esc(f.label) + '：</span><span class="lc-v">' + esc(fieldValue(f.id, data)) + '</span></div>';
+    }).join('');
     return wrapSheet('lc-s2', tpl, data,
       '<div class="lc-hole"></div>' +
       brandHeadHtml(brand, { center: true, defaultTitle: '检验合格证' }) +
@@ -222,6 +274,7 @@
         '<div class="lc-scan-tip lc-scan-tip-v">查信息</div>' +
       '</div>' +
       '<span class="lc-pass-char">格</span></div>' +
+      (rows ? ('<div class="lc-s2-fields">' + rows + '</div>') : '') +
       '<div class="lc-valid">检测有效期：' + esc(until) + ' 止</div>' +
       warnHtml(brand, { fallback: '无法扫码视为过期' }));
   }
@@ -306,7 +359,22 @@
     '.lc-qr-side{flex-shrink:0;display:flex;align-items:center;justify-content:center}',
     '.lc-qr{display:flex;align-items:center;justify-content:center;background:#fff}',
     '.lc-qr img{display:block;width:100%;height:100%}',
-    '.lc-s1{border-color:#2563eb}',
+    '.lc-s1{border:2px solid #2e7d32;padding:0;display:flex;flex-direction:column}',
+    '.lc-s1 .lc-sheet-content{display:flex;flex-direction:column;min-height:100%;padding:0}',
+    '.lc-s1-logo{display:flex;justify-content:center;padding:4px 0 2px;background:#fff}',
+    '.lc-s1-logo .lc-logo{background:#000}',
+    '.lc-s1-titlebar{background:#2e7d32;color:#fff;font-weight:800;letter-spacing:.2em;padding:8px 10px;line-height:1.25}',
+    '.lc-s1-body{flex:1;padding:8px 10px;background:#fff}',
+    '.lc-s1-row{border-bottom:1px solid #e2e8f0;padding:3px 0;min-height:18px}',
+    '.lc-s1 .lc-k{color:#334155}',
+    '.lc-org-foot{margin-top:auto;padding:7px 10px;font-weight:600;line-height:1.35;border-top:1px solid #c8e6c9;background:#f1f8e9;color:#1b5e20}',
+    '.lc-s1 .lc-warn{padding:4px 10px 8px;margin:0}',
+    '.lc-s2-fields{margin:4px 0 2px;font-size:10px}',
+    '.lc-s2-row{line-height:1.35}',
+    '.lc-wm-seal-svg{width:100%;height:100%;display:block}',
+    '.lc-wm-size-sm .lc-wm-seal-svg{width:52px;height:52px}',
+    '.lc-wm-size-md .lc-wm-seal-svg{width:72px;height:72px}',
+    '.lc-wm-size-lg .lc-wm-seal-svg{width:96px;height:96px}',
     '.lc-qr-abs{position:absolute;z-index:2}',
     '.lc-qr-abs-top_left{left:6px;top:6px}',
     '.lc-qr-abs-top_right{right:6px;top:6px}',
