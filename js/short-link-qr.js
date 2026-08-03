@@ -2,7 +2,7 @@
  * 合格证短链 & 二维码 Mock 服务
  */
 (function (global) {
-  var BASE = 'https://lab.sc/';
+  var BASE = 'https://lims-plan.vercel.app/l/';
   var VERIFY_BASE = 'cert-verify.html?code=';
 
   /** status: valid | expired | revoked */
