@@ -13,7 +13,7 @@
     { key: 'gcjc', name: '工程检测' }
   ];
 
-  /** 系统 Logo（合格证品牌区，图2） */
+  /** 系统 Logo（合格证品牌区，图1） */
   var SYSTEM_LOGO_URL = 'assets/label-cert/system-logo.png';
   /** 配置中上传的机构检测章（图8） */
   var SYSTEM_SEAL_URL = 'assets/label-cert/system-seal.svg';
