@@ -23,6 +23,10 @@
     return LabelCertConfig.ensureBucketShape(bucket, state.type);
   }
 
+  function refreshAnnotations() {
+    if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+  }
+
   function renderList() {
     var bucket = currentBucket();
     LabelCertConfig.save(cfg);
@@ -44,17 +48,19 @@
           '</div>' +
         '</div>' +
         '<div class="flex items-center gap-3 flex-shrink-0">' +
-          '<button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-white" data-lc-act="edit" data-id="' + def.id + '">编辑版式</button>' +
+          '<button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-white" data-lc-act="edit" data-id="' + def.id + '" data-annotate="label-cert-default-edit">编辑版式</button>' +
           '<button type="button" class="text-sm text-blue-600 hover:underline" data-lc-act="preview" data-id="' + def.id + '">预览</button>' +
         '</div>';
     }
 
     var body = $('lc_tplBody');
     if (!body) return;
-    body.innerHTML = personal.length ? personal.map(function (t) {
+    body.innerHTML = personal.length ? personal.map(function (t, idx) {
       var p = LabelCertConfig.PRESETS[t.layoutPreset] || {};
       var binds = (t.bindSampleIds || []).map(sampleName).join('、') || '—';
       var n = (t.bindSampleIds || []).length;
+      var enableAnno = idx === 0 ? ' data-annotate="label-cert-enable"' : '';
+      var opsAnno = idx === 0 ? ' data-annotate="label-cert-ops"' : '';
       return '<tr class="hover:bg-slate-50">' +
         '<td class="border-b border-slate-100 px-3 py-2">' + t.name + '</td>' +
         '<td class="border-b border-slate-100 px-3 py-2">' + (p.name || t.layoutPreset) + '</td>' +
@@ -62,12 +68,12 @@
         '<td class="border-b border-slate-100 px-3 py-2 max-w-[240px] truncate" title="' + binds + '">' + binds +
           ' <span class="text-slate-400">(' + n + ')</span></td>' +
         '<td class="border-b border-slate-100 px-3 py-2">' +
-          '<label class="lc-switch" title="' + (t.enabled ? '启用中，停用后回退默认' : '已停用，使用默认模版') + '">' +
+          '<label class="lc-switch"' + enableAnno + ' title="' + (t.enabled ? '启用中，停用后回退默认' : '已停用，使用默认模版') + '">' +
             '<input type="checkbox" data-lc-enable="' + t.id + '"' + (t.enabled ? ' checked' : '') + ' />' +
             '<span class="slider"></span>' +
           '</label>' +
         '</td>' +
-        '<td class="border-b border-slate-100 px-3 py-2 whitespace-nowrap">' +
+        '<td class="border-b border-slate-100 px-3 py-2 whitespace-nowrap"' + opsAnno + '>' +
           '<button type="button" class="text-blue-600 hover:underline mr-2" data-lc-act="edit" data-id="' + t.id + '">编辑</button>' +
           '<button type="button" class="text-blue-600 hover:underline mr-2" data-lc-act="preview" data-id="' + t.id + '">预览</button>' +
           '<button type="button" class="text-red-500 hover:underline" data-lc-act="del" data-id="' + t.id + '">删除</button>' +
@@ -78,6 +84,7 @@
     document.querySelectorAll('#labelCertView .lc-type-nav').forEach(function (el) {
       el.classList.toggle('active', el.getAttribute('data-type') === state.type);
     });
+    refreshAnnotations();
   }
 
   function setEnabled(id, enabled) {
@@ -152,12 +159,14 @@
     fillEditor(tpl, isDefault);
     $('lc_editModal').classList.add('open');
     refreshPreview();
+    refreshAnnotations();
   }
 
   function closeEditor() {
     $('lc_editModal').classList.remove('open');
     state.draft = null;
     state.editingIsDefault = false;
+    refreshAnnotations();
   }
 
   function openPreview(id) {
@@ -175,6 +184,7 @@
     box.innerHTML = LabelCertRender.renderSheet(tpl, demoData(), { suffix: '-ro' });
     LabelCertRender.mountQrs(box);
     $('lc_previewModal').classList.add('open');
+    refreshAnnotations();
   }
 
   function closePreview() {
@@ -183,6 +193,7 @@
     var box = $('lc_pvBox');
     if (box) box.innerHTML = '';
     state.previewId = null;
+    refreshAnnotations();
   }
 
   function fillEditor(tpl, isDefault) {
