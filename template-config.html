@@ -299,20 +299,26 @@
     .lc-inline-pair input[type=color] { width: 36px; height: 28px; padding: 0; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; }
     /* 编辑弹窗 · 左侧配置分区 */
     .lc-edit-form {
-      flex: 1; overflow-y: auto; border-right: 1px solid #e2e8f0;
+      flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto;
+      border-right: 1px solid #e2e8f0;
       padding: 16px; background: #f1f5f9;
       display: flex; flex-direction: column; gap: 14px;
+      align-items: stretch;
     }
     .lc-edit-block {
+      flex: 0 0 auto; /* 禁止被父级 flex 压扁导致内容裁切 */
+      min-height: auto;
+      width: 100%;
       background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
       box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-      overflow: hidden;
+      overflow: visible;
     }
     .lc-edit-block-head {
       display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
       padding: 11px 14px; background: #f8fafc;
       border-bottom: 1px solid #eef2f7;
       border-left: 3px solid #94a3b8;
+      border-radius: 10px 10px 0 0;
     }
     .lc-edit-block-head h4 {
       margin: 0; font-size: 13px; font-weight: 650; color: #0f172a; letter-spacing: 0.02em;
@@ -335,7 +341,7 @@
     }
     .lc-edit-subpanel:last-child { margin-bottom: 0; }
     .lc-edit-preview {
-      width: 360px; flex-shrink: 0; overflow-y: auto;
+      width: 360px; flex: 0 0 360px; min-height: 0; overflow-y: auto;
       background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
       padding: 16px; border-left: 1px solid #e2e8f0;
     }
