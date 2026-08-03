@@ -92,9 +92,16 @@
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
     var urlInspectors = (params.get('inspectors') || 'cs222,cs3').split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
 
+    // 00790101 → 个性化不粘胶纸；00790201 → 未绑定个性化，走默认左文右码版式 mock
     var allSamples = [
-      { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', spec: '', model: '10kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'rod', judgment: '合格', status: '报告发放' }
+      { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', spec: '', model: '10kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'rod', judgment: '合格', status: '报告发放' },
+      { sampleNo: 'SC2026/00790201', name: '验电器', spec: '', model: '35kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'electroscope', judgment: '合格', status: '报告发放' }
     ];
+    if (entrustCode !== 'SC2026/0079') {
+      allSamples = [
+        { sampleNo: entrustCode + '0101', name: '验电器', spec: '', model: '10kV', inspectDate: '2026-07-01', reinspectDate: '2027-07-01', inspectors: urlInspectors.slice(), entrust: entrustCode, cat: 'aqgqj', masterId: 'electroscope', judgment: '合格', status: '报告签发' }
+      ];
+    }
 
     var samples = allSamples.slice();
     var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
@@ -108,7 +115,7 @@
       tpl = LabelCertConfig.clone(tpl);
       var html = LabelCertRender.renderSheet(tpl, item, { suffix: '-' + (idx || 0) });
       if (idx === 0) html = html.replace('class="lc-qr"', 'class="lc-qr" data-annotate="qr-area"');
-      return '<div class="mb-2 text-center text-[11px] text-slate-400">模版：' + LabelCertRender.esc(tpl.name) + ' · ' + (LabelCertConfig.PRESETS[tpl.layoutPreset] || {}).name + '</div>' + html;
+      return html;
     }
 
     function renderPreview() {

@@ -173,7 +173,8 @@
       qr: { enabled: true, sizePx: 90, payloadType: 'sample_flow', placement: 'right' },
       showWatermarkGe: false,
       footerWarning: null,
-      fieldIds: ['sampleNo', 'entrustNo', 'sampleName', 'specModel', 'receiveDate', 'clientName', 'detectStatus']
+      // 默认字段包对齐项目部约定（不含委托编号；可在字段池中自行勾选）
+      fieldIds: ['sampleNo', 'sampleName', 'specModel', 'receiveDate', 'clientName', 'detectStatus']
     }
   };
 
@@ -522,16 +523,8 @@
     if (!tpl) return tpl;
     var preset = PRESETS[tpl.layoutPreset];
     if (!preset || preset.type !== 'sample_label') return tpl;
-    var fields = (tpl.fields || []).filter(function (f) { return f.id !== 'qrCode'; });
-    var hasEntrust = fields.some(function (f) { return f.id === 'entrustNo'; });
-    if (!hasEntrust) {
-      var item = { id: 'entrustNo', label: '委托编号', visible: true };
-      var idx = -1;
-      for (var i = 0; i < fields.length; i++) if (fields[i].id === 'sampleNo') { idx = i; break; }
-      if (idx >= 0) fields.splice(idx + 1, 0, item);
-      else fields.unshift(item);
-    }
-    tpl.fields = fields;
+    // 尊重模版配置中的字段槽位：不再强制回填委托编号等已移除字段
+    tpl.fields = (tpl.fields || []).filter(function (f) { return f.id !== 'qrCode'; });
     if (!tpl.brand) tpl.brand = {};
     tpl.brand.footerWarning = null;
     // 旧默认「机构名+系统Logo」迁移为标签默认不展示品牌
@@ -701,8 +694,9 @@
     '登杆脚扣': 'spur',
     '吊装带': 'sling',
     '卸扣': 'shackle',
-    '验电器': 'rod',
-    '绝缘毯': 'rod',
+    // 未绑个性化 → 走默认合格证版式（左文右码）演示
+    '验电器': 'electroscope',
+    '绝缘毯': 'blanket',
     '卡线器': 'shackle'
   };
 

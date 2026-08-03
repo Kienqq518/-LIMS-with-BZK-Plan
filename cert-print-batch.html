@@ -99,6 +99,7 @@
 
     var SAMPLE_BY_NO = {
       'SC2026/00790101': { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', model: '10kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', masterId: 'rod', cat: 'aqgqj' },
+      'SC2026/00790201': { sampleNo: 'SC2026/00790201', name: '验电器', model: '35kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', masterId: 'electroscope', cat: 'aqgqj' },
       'SC2026/00730101': { sampleNo: 'SC2026/00730101', name: '安全带', model: '', inspectDate: '2026-06-10', reinspectDate: '2027-06-09', masterId: 'belt976', cat: 'aqgqj' },
       'SC2026/00720501': { sampleNo: 'SC2026/00720501', name: '安全绳', model: '', inspectDate: '2026-06-09', reinspectDate: '2027-06-08', masterId: 'rope1476', cat: 'aqgqj' },
       'SC2026/00710101': { sampleNo: 'SC2026/00710101', name: '绝缘操作杆', model: '20kV', inspectDate: '2026-06-08', reinspectDate: '2027-06-07', masterId: 'rod', cat: 'aqgqj' },
@@ -106,16 +107,17 @@
     };
 
     var SAMPLE_CATALOG = {
-      'SC2026/0079': [SAMPLE_BY_NO['SC2026/00790101']],
+      // 0079：个性化不粘胶纸 + 默认左文右码（验电器未绑个性化）
+      'SC2026/0079': [SAMPLE_BY_NO['SC2026/00790101'], SAMPLE_BY_NO['SC2026/00790201']],
       'SC2026/0073': [SAMPLE_BY_NO['SC2026/00730101']],
-      'SC2026/0072': [{ sampleNo: 'SC2026/00730201', name: '验电器', model: '', inspectDate: '2026-06-10', reinspectDate: '2027-06-09', masterId: 'rod', cat: 'aqgqj' }],
+      'SC2026/0072': [{ sampleNo: 'SC2026/00730201', name: '验电器', model: '10kV', inspectDate: '2026-06-10', reinspectDate: '2027-06-09', masterId: 'electroscope', cat: 'aqgqj' }],
       'SC2026/0071': [SAMPLE_BY_NO['SC2026/00710101']],
       'SC2026/0070': [SAMPLE_BY_NO['SC2026/00700101']],
-      'SC2026/0074': [{ sampleNo: 'SC2026/00740101', name: '绝缘操作杆', model: '', inspectDate: '2026-06-11', reinspectDate: '2027-06-10', masterId: 'rod', cat: 'aqgqj' }]
+      'SC2026/0074': [{ sampleNo: 'SC2026/00740101', name: '绝缘毯', model: '', inspectDate: '2026-06-11', reinspectDate: '2027-06-10', masterId: 'blanket', cat: 'aqgqj' }]
     };
 
     var EXTRA = [
-      { sampleNo: 'SC2026/00730501', name: '卡线器', model: '', inspectDate: '2026-06-08', reinspectDate: '2027-06-07', masterId: 'shackle', cat: 'aqgqj' },
+      { sampleNo: 'SC2026/00730501', name: '验电器', model: '10kV', inspectDate: '2026-06-08', reinspectDate: '2027-06-07', masterId: 'electroscope', cat: 'aqgqj' },
       { sampleNo: 'SC2026/00730901', name: '安全带', model: '', inspectDate: '2026-06-06', reinspectDate: '2027-06-05', masterId: 'belt976', cat: 'aqgqj' }
     ];
 
@@ -154,8 +156,7 @@
       tpl = LabelCertConfig.clone(tpl);
       var html = LabelCertRender.renderSheet(tpl, item, { suffix: '-b' + idx });
       if (idx === 0) html = html.replace('class="lc-qr"', 'class="lc-qr" data-annotate="qr-area"');
-      return '<div class="mb-4">' +
-        '<div class="mb-1 text-center text-[11px] text-slate-400">' + LabelCertRender.esc(tpl.name) + '</div>' + html + '</div>';
+      return '<div class="mb-4">' + html + '</div>';
     }
 
     function renderPreview() {
