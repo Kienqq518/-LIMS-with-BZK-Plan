@@ -460,6 +460,13 @@
       </div>
     </div>
     <div id="popGrid" class="grid grid-cols-2 gap-x-4 gap-y-1.5 px-4 py-3 text-xs border-b border-slate-100"></div>
+    <div class="px-4 py-3 border-b border-slate-100">
+      <div class="flex items-center gap-1.5 mb-2 text-xs font-medium text-slate-600">
+        <i class="fa fa-file-text-o text-slate-400"></i>
+        <span>校准报告</span>
+      </div>
+      <div id="popCalibReport" class="text-xs"></div>
+    </div>
     <div class="px-4 py-3">
       <div class="flex items-center gap-1.5 mb-2 text-xs font-medium text-slate-600">
         <i class="fa fa-paperclip text-slate-400"></i>
@@ -1221,6 +1228,37 @@
           '<span class="text-slate-700">' + f[1] + '</span>' +
         '</div>';
       }).join('');
+
+      // 履历中最新一条带校准报告的记录
+      var latestReport = null;
+      var latestKey = '';
+      (dev.history || []).forEach(function (h) {
+        if (!h || !h.report) return;
+        var key = String(h.end || h.start || '');
+        if (!latestReport || key > latestKey) {
+          latestReport = h;
+          latestKey = key;
+        }
+      });
+      var reportEl = document.getElementById('popCalibReport');
+      if (latestReport) {
+        reportEl.innerHTML =
+          '<div class="flex items-center justify-between gap-2 py-0.5">' +
+            '<span class="flex items-center gap-1.5 min-w-0">' +
+              '<i class="fa fa-file-pdf-o text-slate-400 flex-shrink-0"></i>' +
+              '<span class="truncate text-slate-600" title="' + esc(latestReport.report) + '">' + esc(latestReport.report) + '</span>' +
+            '</span>' +
+            '<span class="flex gap-2 flex-shrink-0">' +
+              '<a href="#" onclick="showToast(\'预览功能暂未开放\');return false;" class="text-blue-600 hover:underline">预览</a>' +
+              '<a href="#" onclick="showToast(\'下载功能暂未开放\');return false;" class="text-blue-600 hover:underline">下载</a>' +
+            '</span>' +
+          '</div>' +
+          (latestReport.end || latestReport.start
+            ? '<div class="mt-1 text-slate-400">校准时间：' + esc(latestReport.end || latestReport.start) + '</div>'
+            : '');
+      } else {
+        reportEl.innerHTML = '<span class="text-slate-400">暂无校准报告</span>';
+      }
 
       var files = dev.files || [];
       document.getElementById('popFilesTitle').textContent = '设备文件 (' + files.length + ')';
