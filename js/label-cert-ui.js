@@ -196,7 +196,6 @@
     $('lc_e_name').value = tpl.name;
     $('lc_e_w').value = tpl.paper.wMm;
     $('lc_e_h').value = tpl.paper.hMm;
-    $('lc_e_font').value = (tpl.style && tpl.style.fontScale) || 'normal';
     $('lc_e_org').value = tpl.brand.orgName || '';
     $('lc_e_title').value = tpl.brand.title || '';
     $('lc_e_logo').value = tpl.brand.logoMode || 'system';
@@ -215,6 +214,7 @@
     if ($('lc_e_logo') && ($('lc_e_logo').value === 'custom' || !tpl.brand.logoMode)) {
       $('lc_e_logo').value = tpl.brand.logoMode === 'hidden' ? 'hidden' : 'system';
     }
+    fillStyleUI(tpl);
     $('lc_e_qr').checked = !tpl.qr || tpl.qr.enabled !== false;
     $('lc_e_qrSize').value = (tpl.qr && tpl.qr.sizePx) || 90;
     var place = LabelCertRender.normalizeQrPlacement((tpl.qr && tpl.qr.placement) || 'right', tpl.layoutPreset);
@@ -228,6 +228,7 @@
     fillWatermarkUI(tpl.brand);
     syncQrPlaceUi(tpl.layoutPreset);
     syncLabelBrandUi();
+    syncSkinUi(tpl.layoutPreset);
 
     var role = $('lc_e_roleHint');
     if (role) {
@@ -275,8 +276,32 @@
     var pct = Math.round(wm.opacity * 100);
     $('lc_e_wmOpacity').value = pct;
     $('lc_e_wmOpacityVal').textContent = pct + '%';
-    $('lc_e_wmSealHint').textContent = wm.sealUrl ? '已上传自定义章图' : '未上传时使用系统章';
+    if ($('lc_e_wmSealHint')) {
+      $('lc_e_wmSealHint').textContent = wm.sealUrl ? '已上传自定义章图' : '请选择本地章图';
+    }
     syncWatermarkTypeUI();
+  }
+
+  function fillStyleUI(tpl) {
+    var st = LabelCertConfig.normalizeStyle(tpl.style, tpl.layoutPreset);
+    if ($('lc_e_fieldAlign')) $('lc_e_fieldAlign').value = st.fieldAlign;
+    if ($('lc_e_fieldSize')) $('lc_e_fieldSize').value = st.fieldFontSize;
+    if ($('lc_e_fieldColor')) $('lc_e_fieldColor').value = st.fieldColor;
+    if ($('lc_e_fieldUnderline')) {
+      $('lc_e_fieldUnderline').value = st.fieldUnderline ? st.fieldUnderlineStyle : 'none';
+    }
+    if ($('lc_e_borderColor')) $('lc_e_borderColor').value = st.borderColor || '#cbd5e1';
+    if ($('lc_e_borderWidth')) $('lc_e_borderWidth').value = st.borderWidthPx;
+    if ($('lc_e_titleBg')) $('lc_e_titleBg').value = st.titleBgColor || '#2e7d32';
+    if ($('lc_e_footerBg')) $('lc_e_footerBg').value = st.footerBgColor || '#f1f8e9';
+  }
+
+  function syncSkinUi(presetId) {
+    var isStick = presetId === 'cert_style_1';
+    var titleBg = $('lc_e_titleBgWrap');
+    var footBg = $('lc_e_footerBgWrap');
+    if (titleBg) titleBg.style.display = isStick ? '' : 'none';
+    if (footBg) footBg.style.display = isStick ? '' : 'none';
   }
 
   function syncWatermarkTypeUI() {
@@ -286,6 +311,10 @@
     if (textWrap) textWrap.classList.toggle('hidden', isSeal);
     if (sealWrap) sealWrap.classList.toggle('hidden', !isSeal);
     var custom = $('lc_e_wmSealMode').value === 'custom';
+    var uploadWrap = $('lc_e_wmSealUploadWrap');
+    var configHint = $('lc_e_wmSealConfigHint');
+    if (uploadWrap) uploadWrap.classList.toggle('hidden', !custom);
+    if (configHint) configHint.classList.toggle('hidden', custom);
     var file = $('lc_e_wmSealFile');
     if (file) file.disabled = !custom;
   }
@@ -467,6 +496,7 @@
     tpl.layoutPreset = presetId;
     tpl.fields = LabelCertConfig.buildFieldsFromPreset(presetId);
     tpl.qr = LabelCertConfig.clone(preset.qr);
+    tpl.style = LabelCertConfig.defaultStyle(presetId, preset);
     // 切换预设时同步默认水印（保留已上传章图）
     var keepSeal = tpl.brand && tpl.brand.watermark && tpl.brand.watermark.sealUrl;
     tpl.brand.watermark = LabelCertConfig.defaultWatermark(preset);
@@ -486,7 +516,9 @@
     }
     state.draft = tpl;
     fillWatermarkUI(tpl.brand);
+    fillStyleUI(tpl);
     syncLabelBrandUi();
+    syncSkinUi(presetId);
     renderFieldUI(tpl);
     refreshPreview();
   }
@@ -497,7 +529,19 @@
     base.name = $('lc_e_name').value.trim() || base.name;
     base.layoutPreset = $('lc_e_preset').value;
     base.paper = { wMm: Number($('lc_e_w').value) || 90, hMm: Number($('lc_e_h').value) || 50 };
-    base.style = { fontScale: $('lc_e_font').value, marginMm: 2 };
+    var uStyle = $('lc_e_fieldUnderline') ? $('lc_e_fieldUnderline').value : 'dotted';
+    base.style = LabelCertConfig.normalizeStyle({
+      marginMm: 2,
+      fieldAlign: $('lc_e_fieldAlign') ? $('lc_e_fieldAlign').value : 'left',
+      fieldFontSize: $('lc_e_fieldSize') ? $('lc_e_fieldSize').value : 12,
+      fieldColor: $('lc_e_fieldColor') ? $('lc_e_fieldColor').value : '#1e293b',
+      fieldUnderline: uStyle !== 'none',
+      fieldUnderlineStyle: uStyle === 'none' ? 'dotted' : uStyle,
+      borderColor: $('lc_e_borderColor') ? $('lc_e_borderColor').value : '#cbd5e1',
+      borderWidthPx: $('lc_e_borderWidth') ? $('lc_e_borderWidth').value : 1,
+      titleBgColor: $('lc_e_titleBg') ? $('lc_e_titleBg').value : '',
+      footerBgColor: $('lc_e_footerBg') ? $('lc_e_footerBg').value : ''
+    }, base.layoutPreset);
     var watermark = collectWatermarkFromDom(base.brand);
     var typeStyle = LabelCertConfig.normalizeBrandType({
       orgFontSize: $('lc_e_orgSize').value,
@@ -733,7 +777,10 @@
           e.target.id === 'lc_e_logoSize' || e.target.id === 'lc_e_warnSize' ||
           e.target.id === 'lc_e_orgColor' || e.target.id === 'lc_e_titleColor' ||
           e.target.id === 'lc_e_warnColor' || e.target.id === 'lc_e_wmColor' ||
-          e.target.id === 'lc_e_qrSize') {
+          e.target.id === 'lc_e_qrSize' || e.target.id === 'lc_e_fieldSize' ||
+          e.target.id === 'lc_e_fieldColor' || e.target.id === 'lc_e_borderColor' ||
+          e.target.id === 'lc_e_borderWidth' || e.target.id === 'lc_e_titleBg' ||
+          e.target.id === 'lc_e_footerBg') {
         refreshPreview();
       }
     });
