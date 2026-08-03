@@ -221,6 +221,7 @@
     $('lc_e_print').value = (tpl.meta && tpl.meta.printMethod) || '';
     fillWatermarkUI(tpl.brand);
     syncQrPlaceUi(tpl.layoutPreset);
+    syncLabelBrandUi();
 
     var role = $('lc_e_roleHint');
     if (role) {
@@ -233,6 +234,22 @@
 
     renderFieldUI(tpl);
     if (!isDefault) renderBindUI(tpl);
+  }
+
+  function syncLabelBrandUi() {
+    var isLabel = state.type === 'sample_label';
+    var warnWrap = $('lc_e_warnWrap');
+    if (warnWrap) warnWrap.style.display = isLabel ? 'none' : '';
+    var orgLabel = $('lc_e_org') && $('lc_e_org').closest('label');
+    if (orgLabel && orgLabel.firstChild) {
+      // keep structure; hint via placeholder
+    }
+    if ($('lc_e_org')) {
+      $('lc_e_org').placeholder = isLabel ? '留空则预览不显示单位名称' : '默认检测机构';
+    }
+    if ($('lc_e_title')) {
+      $('lc_e_title').placeholder = isLabel ? '留空则预览不显示标题' : '';
+    }
   }
 
   function fillWatermarkUI(brand) {
@@ -307,14 +324,21 @@
     (tpl.fields || []).forEach(function (f) { if (f.visible !== false) selectedMap[f.id] = f; });
     $('lc_fieldPool').innerHTML = pool.map(function (f) {
       var on = !!selectedMap[f.id];
-      return '<span class="lc-chip ' + (on ? 'on' : '') + '" data-lc-field="' + f.id + '">' + f.label + '</span>';
+      var tip = (f.id === 'detectStatus' && state.type === 'sample_label')
+        ? ' title="取值：未检测 / 检测中 / 已检测"'
+        : '';
+      return '<span class="lc-chip ' + (on ? 'on' : '') + '" data-lc-field="' + f.id + '"' + tip + '>' + f.label + '</span>';
     }).join('');
-    var ordered = (tpl.fields || []).filter(function (f) { return f.visible !== false; });
+    var ordered = (tpl.fields || []).filter(function (f) { return f.visible !== false && f.id !== 'qrCode'; });
     $('lc_fieldList').innerHTML = ordered.map(function (f, idx) {
+      var hint = (f.id === 'detectStatus' && state.type === 'sample_label')
+        ? '<span class="text-[11px] text-slate-400 ml-1">未检测/检测中/已检测</span>'
+        : '';
       return '<div class="lc-field-item" draggable="true" data-idx="' + idx + '">' +
         '<i class="fa fa-bars text-slate-300"></i>' +
         '<span class="w-28 text-xs text-slate-400">' + f.id + '</span>' +
         '<input class="flex-1 rounded border border-slate-200 px-2 py-1 text-sm" value="' + f.label.replace(/"/g, '&quot;') + '" data-lc-rename="' + idx + '" />' +
+        hint +
         '<button type="button" class="text-slate-400 hover:text-red-500" data-lc-field="' + f.id + '"><i class="fa fa-times"></i></button></div>';
     }).join('') || '<p class="text-sm text-slate-400">请从上方字段池勾选</p>';
   }
@@ -438,8 +462,19 @@
       tpl.brand.watermark.sealUrl = keepSeal;
       tpl.brand.watermark.sealMode = 'custom';
     }
+    if (preset.type === 'sample_label') {
+      tpl.brand.orgName = '';
+      tpl.brand.title = '';
+      tpl.brand.logoMode = 'hidden';
+      tpl.brand.footerWarning = null;
+      $('lc_e_org').value = '';
+      $('lc_e_title').value = '';
+      $('lc_e_logo').value = 'hidden';
+      $('lc_e_warn').value = '';
+    }
     state.draft = tpl;
     fillWatermarkUI(tpl.brand);
+    syncLabelBrandUi();
     renderFieldUI(tpl);
     refreshPreview();
   }
@@ -461,13 +496,15 @@
       warnFontSize: $('lc_e_warnSize').value,
       warnColor: $('lc_e_warnColor').value
     });
+    var isLabel = state.type === 'sample_label' || base.layoutPreset === 'label_style_1';
+    var orgVal = $('lc_e_org').value.trim();
     base.brand = {
-      orgName: $('lc_e_org').value.trim() || LabelCertConfig.DEFAULT_ORG,
+      orgName: isLabel ? orgVal : (orgVal || LabelCertConfig.DEFAULT_ORG),
       title: $('lc_e_title').value,
       logoMode: $('lc_e_logo').value,
       logoUrl: null,
       showWatermarkGe: watermark.enabled && watermark.type === 'text' && watermark.text === '格',
-      footerWarning: $('lc_e_warn').value,
+      footerWarning: isLabel ? null : $('lc_e_warn').value,
       watermark: watermark,
       orgFontSize: typeStyle.orgFontSize,
       orgColor: typeStyle.orgColor,
@@ -503,8 +540,10 @@
   }
 
   function demoData() {
+    var isLabel = state.type === 'sample_label';
     return {
       sampleNo: 'SC2026/00790101',
+      entrustNo: 'WT2026/007901',
       name: '绝缘操作杆',
       spec: '',
       model: '10kV',
@@ -513,7 +552,7 @@
       inspectors: ['张三', '李四'],
       receiveDate: '2026-07-09',
       clientName: '杭州数蚕智能科技有限公司',
-      detectStatus: '报告发放'
+      detectStatus: isLabel ? '检测中' : '报告发放'
     };
   }
 

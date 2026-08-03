@@ -32,6 +32,8 @@
         return data.clientName || data.customer || '';
       case 'detectStatus':
         return data.detectStatus || data.status || '';
+      case 'entrustNo':
+        return data.entrustNo || data.orderNo || data.委托编号 || '';
       default:
         return data[id] || '';
     }
