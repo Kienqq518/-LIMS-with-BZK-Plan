@@ -4,7 +4,7 @@
  */
 (function (global) {
   var cfg = null;
-  var state = { cat: 'aqgqj', type: 'certificate', editingId: null, draft: null, editingIsDefault: false };
+  var state = { cat: 'aqgqj', type: 'certificate', editingId: null, draft: null, editingIsDefault: false, previewId: null };
   var dragFrom = -1;
 
   function $(id) { return document.getElementById(id); }
@@ -42,7 +42,7 @@
         '</div>' +
         '<div class="flex items-center gap-3 flex-shrink-0">' +
           '<button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-white" data-lc-act="edit" data-id="' + def.id + '">编辑版式</button>' +
-          '<button type="button" class="text-sm text-blue-600 hover:underline" data-lc-act="edit" data-id="' + def.id + '">预览</button>' +
+          '<button type="button" class="text-sm text-blue-600 hover:underline" data-lc-act="preview" data-id="' + def.id + '">预览</button>' +
         '</div>';
     }
 
@@ -66,7 +66,7 @@
         '</td>' +
         '<td class="border-b border-slate-100 px-3 py-2 whitespace-nowrap">' +
           '<button type="button" class="text-blue-600 hover:underline mr-2" data-lc-act="edit" data-id="' + t.id + '">编辑</button>' +
-          '<button type="button" class="text-blue-600 hover:underline mr-2" data-lc-act="edit" data-id="' + t.id + '">预览</button>' +
+          '<button type="button" class="text-blue-600 hover:underline mr-2" data-lc-act="preview" data-id="' + t.id + '">预览</button>' +
           '<button type="button" class="text-red-500 hover:underline" data-lc-act="del" data-id="' + t.id + '">删除</button>' +
         '</td></tr>';
     }).join('') : '<tr><td colspan="6" class="px-3 py-10 text-center text-slate-400">尚未配置个性化模版，全部样品使用上方默认模版</td></tr>';
@@ -153,6 +153,31 @@
     $('lc_editModal').classList.remove('open');
     state.draft = null;
     state.editingIsDefault = false;
+  }
+
+  function openPreview(id) {
+    if (!id) return;
+    var bucket = currentBucket();
+    var tpl = LabelCertConfig.findTemplate(bucket, id);
+    if (!tpl) { alert('模版不存在'); return; }
+    state.previewId = id;
+    var preset = LabelCertConfig.PRESETS[tpl.layoutPreset] || {};
+    var isDef = LabelCertConfig.isDefaultTemplate(bucket, tpl);
+    $('lc_pvTitle').textContent = '预览 · ' + tpl.name;
+    $('lc_pvSub').textContent = (isDef ? '默认模版 · ' : '个性化模版 · ') +
+      (preset.name || tpl.layoutPreset) + ' · ' + tpl.paper.wMm + '×' + tpl.paper.hMm + ' mm';
+    var box = $('lc_pvBox');
+    box.innerHTML = LabelCertRender.renderSheet(tpl, demoData(), { suffix: '-ro' });
+    LabelCertRender.mountQrs(box);
+    $('lc_previewModal').classList.add('open');
+  }
+
+  function closePreview() {
+    var modal = $('lc_previewModal');
+    if (modal) modal.classList.remove('open');
+    var box = $('lc_pvBox');
+    if (box) box.innerHTML = '';
+    state.previewId = null;
   }
 
   function fillEditor(tpl, isDefault) {
@@ -456,6 +481,7 @@
         var id = act.getAttribute('data-id');
         var a = act.getAttribute('data-lc-act');
         if (a === 'edit') openEditor(id);
+        else if (a === 'preview') openPreview(id);
         else if (a === 'del') removeTpl(id);
         return;
       }
@@ -464,6 +490,13 @@
       if (field) { toggleField(field.getAttribute('data-lc-field')); return; }
       var bind = e.target.closest('[data-lc-bind]');
       if (bind) { toggleBind(bind.getAttribute('data-lc-bind')); return; }
+      if (e.target.closest('[data-lc-pv-close]')) { closePreview(); return; }
+      if (e.target.closest('[data-lc-pv-edit]')) {
+        var pid = state.previewId;
+        closePreview();
+        if (pid) openEditor(pid);
+        return;
+      }
       if (e.target.closest('[data-lc-close]')) { closeEditor(); return; }
       if (e.target.closest('[data-lc-save]')) { saveEditor(); return; }
       if (e.target.closest('[data-lc-refresh]')) { refreshPreview(); return; }
@@ -574,6 +607,7 @@
     var el = $('labelCertView');
     if (el) el.classList.add('hidden');
     closeEditor();
+    closePreview();
   }
 
   global.LabelCertUI = {
@@ -583,6 +617,7 @@
     show: show,
     hide: hide,
     renderList: renderList,
-    openEditor: openEditor
+    openEditor: openEditor,
+    openPreview: openPreview
   };
 })(window);
