@@ -50,6 +50,34 @@
     }
     #toast.show { opacity: 1; }
 
+    .upload-list { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+    .upload-box {
+      min-width: 96px; height: 72px; padding: 0 12px; border: 1px dashed #cbd5e1; border-radius: 6px;
+      display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+      color: #94a3b8; font-size: 12px; cursor: pointer; background: #fff; flex-shrink: 0; gap: 4px;
+    }
+    .upload-box:hover { border-color: #2563eb; color: #2563eb; }
+    .file-chip {
+      position: relative; display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 28px 6px 10px; border-radius: 4px; background: #eff6ff; font-size: 12px; color: #1e40af;
+      max-width: 240px;
+    }
+    .file-chip .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-chip .rm {
+      position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%;
+      background: #ef4444; color: #fff; font-size: 10px; line-height: 18px; text-align: center; cursor: pointer;
+    }
+    .file-upload-row {
+      flex: 1; min-width: 0; border: 1px dashed #cbd5e1; border-radius: 6px; background: #f8fafc;
+      padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+    .file-upload-row .upload-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 4px;
+      border: 1px solid #93c5fd; background: #eff6ff; color: #2563eb; font-size: 12px; cursor: pointer;
+    }
+    .file-upload-row .upload-btn:hover { background: #dbeafe; }
+    .file-upload-row .hint { font-size: 12px; color: #94a3b8; }
+
     .tree-leaf-row { display: flex; align-items: center; padding: 2px 0; border-radius: 4px; }
     .tree-leaf-row:hover { background: #eff6ff; }
     .tree-parent-row { display: flex; align-items: center; padding: 2px 0; border-radius: 4px; cursor: pointer; user-select: none; }
@@ -246,6 +274,16 @@
             </div>
           </div>
         </div>
+
+        <div class="mt-4 border-t border-slate-100 pt-4">
+          <div class="flex items-start gap-2">
+            <label class="w-24 flex-shrink-0 pt-2 text-right text-slate-600">附件</label>
+            <div class="flex-1 min-w-0">
+              <div class="upload-list" id="m_filesList"></div>
+              <div class="mt-1 text-xs text-slate-400">支持上传多个附件（原型演示：点击添加模拟文件）</div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="flex-shrink-0 flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
         <button onclick="resetEditModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
@@ -396,9 +434,13 @@
           <label class="w-24 flex-shrink-0 pt-1.5 text-right text-slate-600">备注</label>
           <textarea id="hf_remark" rows="2" class="flex-1 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500 resize-none"></textarea>
         </div>
-        <div class="flex items-center gap-3">
-          <label class="w-24 flex-shrink-0 text-right text-slate-600">校准报告</label>
-          <input id="hf_report" class="flex-1 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="文件名（如 校准报告.pdf）" />
+        <div class="flex items-start gap-3">
+          <label class="w-24 flex-shrink-0 pt-2 text-right text-slate-600">校准报告</label>
+          <div class="file-upload-row" id="hf_reportBox">
+            <div id="hf_reportChip"></div>
+            <button type="button" class="upload-btn" onclick="uploadHistReport()"><i class="fa fa-cloud-upload"></i> 上传文件</button>
+            <span class="hint" id="hf_reportHint">支持 pdf / doc / jpg 等（原型演示）</span>
+          </div>
         </div>
       </div>
       <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
@@ -577,6 +619,39 @@
 
     // ==================== EDIT MODAL ====================
     var _editId = null;
+    var _editFiles = [];
+
+    function guessFileType(name) {
+      var lower = String(name || '').toLowerCase();
+      if (/\.(png|jpg|jpeg|gif|webp|bmp)$/.test(lower)) return 'img';
+      if (/\.(xls|xlsx|csv)$/.test(lower)) return 'xls';
+      if (/\.(doc|docx)$/.test(lower)) return 'doc';
+      return 'pdf';
+    }
+
+    function renderEditFiles() {
+      var box = document.getElementById('m_filesList');
+      if (!box) return;
+      var html = (_editFiles || []).map(function (f, idx) {
+        return '<div class="file-chip" title="' + esc(f.name) + '">' +
+          '<i class="fa fa-paperclip"></i><span class="fname">' + esc(f.name) + '</span>' +
+          '<span class="rm" title="删除" onclick="removeEditFile(' + idx + ')">×</span></div>';
+      }).join('');
+      html += '<div class="upload-box" onclick="addEditFile()"><i class="fa fa-plus"></i><span>上传附件</span></div>';
+      box.innerHTML = html;
+    }
+
+    function addEditFile() {
+      var n = (_editFiles || []).length + 1;
+      _editFiles.push({ name: '设备附件_' + n + '.pdf', type: 'pdf' });
+      renderEditFiles();
+      showToast('已添加附件（原型演示）');
+    }
+
+    function removeEditFile(idx) {
+      _editFiles.splice(idx, 1);
+      renderEditFiles();
+    }
 
     function openEditModal(id) {
       _editId = id || null;
@@ -600,6 +675,8 @@
       document.getElementById('m_agency').value = dev ? (dev.agency || '') : '';
       document.getElementById('m_warnDays').value = dev ? (dev.warnDays || 0) : 30;
       document.getElementById('m_maxError').value = dev ? (dev.maxError || '') : '';
+      _editFiles = EquipStore.clone((dev && dev.files) || []);
+      renderEditFiles();
       onCalibChange();
       document.getElementById('editModal').classList.add('open');
     }
@@ -662,6 +739,7 @@
       row.warnDays = needCalib ? (parseInt(document.getElementById('m_warnDays').value, 10) || 0) : 0;
       row.maxError = needCalib ? document.getElementById('m_maxError').value.trim() : '';
       row.calibStatus = computeCalibStatus(row);
+      row.files = EquipStore.clone(_editFiles || []);
 
       EquipStore.upsert(row);
       closeEditModal();
@@ -1035,6 +1113,34 @@
 
     // ==================== HISTORY FORM MODAL ====================
     var _histEntryId = null;
+    var _histReportName = '';
+
+    function renderHistReportUpload() {
+      var chip = document.getElementById('hf_reportChip');
+      var hint = document.getElementById('hf_reportHint');
+      if (!chip) return;
+      if (_histReportName) {
+        chip.innerHTML = '<div class="file-chip" title="' + esc(_histReportName) + '">' +
+          '<i class="fa fa-file-pdf-o"></i><span class="fname">' + esc(_histReportName) + '</span>' +
+          '<span class="rm" title="删除" onclick="clearHistReport()">×</span></div>';
+        if (hint) hint.style.display = 'none';
+      } else {
+        chip.innerHTML = '';
+        if (hint) hint.style.display = '';
+      }
+    }
+
+    function uploadHistReport() {
+      var stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      _histReportName = '校准报告_' + stamp + '.pdf';
+      renderHistReportUpload();
+      showToast('已上传校准报告（原型演示）');
+    }
+
+    function clearHistReport() {
+      _histReportName = '';
+      renderHistReportUpload();
+    }
 
     function openHistFormModal(histId) {
       _histEntryId = histId;
@@ -1047,7 +1153,8 @@
       document.getElementById('hf_start').value = entry ? (entry.start || '') : '';
       document.getElementById('hf_end').value = entry ? (entry.end || '') : '';
       document.getElementById('hf_remark').value = entry ? (entry.remark || '') : '';
-      document.getElementById('hf_report').value = entry ? (entry.report || '') : '';
+      _histReportName = entry ? (entry.report || '') : '';
+      renderHistReportUpload();
       document.getElementById('histFormModal').classList.add('open');
     }
 
@@ -1068,7 +1175,7 @@
           entry.start = document.getElementById('hf_start').value;
           entry.end = document.getElementById('hf_end').value;
           entry.remark = document.getElementById('hf_remark').value.trim();
-          entry.report = document.getElementById('hf_report').value.trim();
+          entry.report = _histReportName || '';
         }
       } else {
         dev.history.push({
@@ -1077,7 +1184,7 @@
           start: document.getElementById('hf_start').value,
           end: document.getElementById('hf_end').value,
           remark: document.getElementById('hf_remark').value.trim(),
-          report: document.getElementById('hf_report').value.trim()
+          report: _histReportName || ''
         });
       }
       EquipStore.upsert(dev);
