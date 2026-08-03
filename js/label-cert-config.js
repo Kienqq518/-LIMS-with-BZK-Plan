@@ -141,6 +141,7 @@
       enabled: fromGe,
       type: 'text',           // text | seal
       text: fromGe ? '格' : '合格',
+      color: '#16a34a',
       sealMode: 'system',     // system | custom
       sealUrl: null,
       opacity: fromGe ? 0.18 : 0.22,
@@ -151,11 +152,49 @@
     };
   }
 
+  function clampInt(n, min, max, fallback) {
+    n = Number(n);
+    if (isNaN(n)) return fallback;
+    return Math.max(min, Math.min(max, Math.round(n)));
+  }
+
+  function normalizeColor(c, fallback) {
+    c = String(c == null ? '' : c).trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(c) || /^#[0-9a-fA-F]{3}$/.test(c)) return c;
+    return fallback;
+  }
+
+  function defaultBrandType() {
+    return {
+      orgFontSize: 12,
+      orgColor: '#1e293b',
+      titleFontSize: 14,
+      titleColor: '#1e293b',
+      logoSize: 16,
+      warnFontSize: 10,
+      warnColor: '#dc2626'
+    };
+  }
+
+  function normalizeBrandType(brand) {
+    var d = defaultBrandType();
+    brand = brand || {};
+    return {
+      orgFontSize: clampInt(brand.orgFontSize, 8, 28, d.orgFontSize),
+      orgColor: normalizeColor(brand.orgColor, d.orgColor),
+      titleFontSize: clampInt(brand.titleFontSize, 10, 32, d.titleFontSize),
+      titleColor: normalizeColor(brand.titleColor, d.titleColor),
+      logoSize: clampInt(brand.logoSize, 10, 40, d.logoSize),
+      warnFontSize: clampInt(brand.warnFontSize, 8, 20, d.warnFontSize),
+      warnColor: normalizeColor(brand.warnColor, d.warnColor)
+    };
+  }
+
   function normalizeWatermark(wm, brand, preset) {
     var base = defaultWatermark(preset);
     // 兼容旧字段 showWatermarkGe
     if ((!wm || typeof wm !== 'object') && brand && brand.showWatermarkGe) {
-      wm = { enabled: true, type: 'text', text: '格', position: 'right', size: 'lg', angle: 0, opacity: 0.18, layout: 'single' };
+      wm = { enabled: true, type: 'text', text: '格', color: '#16a34a', position: 'right', size: 'lg', angle: 0, opacity: 0.18, layout: 'single' };
     }
     wm = wm && typeof wm === 'object' ? wm : {};
     var hasType = wm.type === 'seal' || wm.type === 'text';
@@ -175,6 +214,7 @@
       enabled: wm.enabled != null ? !!wm.enabled : !!base.enabled,
       type: type === 'seal' ? 'seal' : 'text',
       text: (wm.text != null ? String(wm.text) : base.text).slice(0, 24),
+      color: normalizeColor(wm.color, base.color || '#16a34a'),
       sealMode: wm.sealMode === 'custom' ? 'custom' : (wm.sealMode === 'system' ? 'system' : base.sealMode),
       sealUrl: wm.sealUrl || null,
       opacity: opacity,
@@ -191,6 +231,7 @@
     var preset = PRESETS[presetId];
     var brandIn = opts.brand || {};
     var watermark = normalizeWatermark(brandIn.watermark, brandIn, preset);
+    var typeStyle = normalizeBrandType(brandIn);
     return {
       id: opts.id || uid('tpl'),
       name: opts.name || (preset.name + '模版'),
@@ -206,7 +247,14 @@
         logoUrl: brandIn.logoUrl || null,
         showWatermarkGe: watermark.enabled && watermark.type === 'text' && watermark.text === '格',
         footerWarning: brandIn.footerWarning != null ? brandIn.footerWarning : preset.footerWarning,
-        watermark: watermark
+        watermark: watermark,
+        orgFontSize: typeStyle.orgFontSize,
+        orgColor: typeStyle.orgColor,
+        titleFontSize: typeStyle.titleFontSize,
+        titleColor: typeStyle.titleColor,
+        logoSize: typeStyle.logoSize,
+        warnFontSize: typeStyle.warnFontSize,
+        warnColor: typeStyle.warnColor
       },
       fields: opts.fields || buildFieldsFromPreset(presetId),
       qr: clone(opts.qr || preset.qr),
@@ -314,6 +362,14 @@
     var preset = PRESETS[tpl.layoutPreset] || PRESETS.cert_style_3;
     tpl.brand.watermark = normalizeWatermark(tpl.brand.watermark, tpl.brand, preset);
     tpl.brand.showWatermarkGe = !!(tpl.brand.watermark.enabled && tpl.brand.watermark.type === 'text' && tpl.brand.watermark.text === '格');
+    var ts = normalizeBrandType(tpl.brand);
+    tpl.brand.orgFontSize = ts.orgFontSize;
+    tpl.brand.orgColor = ts.orgColor;
+    tpl.brand.titleFontSize = ts.titleFontSize;
+    tpl.brand.titleColor = ts.titleColor;
+    tpl.brand.logoSize = ts.logoSize;
+    tpl.brand.warnFontSize = ts.warnFontSize;
+    tpl.brand.warnColor = ts.warnColor;
     return tpl;
   }
 
@@ -481,6 +537,8 @@
     findBindConflicts: findBindConflicts,
     defaultWatermark: defaultWatermark,
     normalizeWatermark: normalizeWatermark,
+    normalizeBrandType: normalizeBrandType,
+    defaultBrandType: defaultBrandType,
     normalizeTemplateBrand: normalizeTemplateBrand,
     WATERMARK_POSITIONS: WATERMARK_POSITIONS,
     formatNow: formatNow,
