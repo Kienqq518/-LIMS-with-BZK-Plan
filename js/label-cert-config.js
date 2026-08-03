@@ -504,11 +504,11 @@
     var preset = PRESETS[tpl.layoutPreset];
     if (!preset || preset.type !== 'certificate') return tpl;
     tpl.fields = (tpl.fields || []).filter(function (f) { return f.id !== 'qrCode'; });
-    // 不粘胶纸·字段表：旧版与左文右码骨架相近，迁移为顶栏标题 + 底栏检测单位 + 圆形章
+    // 不粘胶纸·字段表：旧默认文本水印迁移为圆形试验专用章
     if (tpl.layoutPreset === 'cert_style_1' && preset.watermarkDefault) {
       var wm = tpl.brand && tpl.brand.watermark;
-      var needSeal = !wm || wm.type !== 'seal' || (!wm.enabled && !wm.sealUrl);
-      if (needSeal) {
+      var legacyText = !wm || (wm.type === 'text' && (!wm.text || wm.text === '合格' || wm.text === '格'));
+      if (legacyText) {
         var keep = wm && wm.sealUrl;
         tpl.brand.watermark = defaultWatermark(preset);
         if (keep) {
