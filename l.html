@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>短链跳转中…</title>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var code = (params.get('code') || '').trim();
+      if (!code) {
+        var parts = location.pathname.replace(/\/+$/, '').split('/');
+        var last = parts[parts.length - 1] || '';
+        if (last && last !== 'l' && last !== 'l.html') code = last;
+      }
+      if (!code) {
+        location.replace('shortlink-demo.html');
+        return;
+      }
+      location.replace('cert-verify.html?code=' + encodeURIComponent(code));
+    })();
+  </script>
+</head>
+<body>
+  <p style="font-family: sans-serif; padding: 2rem; color: #64748b;">正在跳转验真页…</p>
+</body>
+</html>
