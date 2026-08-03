@@ -85,13 +85,15 @@
     };
   }
 
-  function logoHtml(brand) {
+  function logoHtml(brand, bgColor) {
     if (!brand || brand.logoMode === 'hidden') return '';
     var bt = brandType(brand);
     var size = bt.logoSize;
     var src = (brand.logoMode === 'custom' && brand.logoUrl) ? brand.logoUrl : systemLogoUrl();
+    // Logo 原图黑底已透出；背景跟随标题栏颜色，避免出现黑方块
+    var bg = bgColor ? ('background:' + esc(bgColor) + ';') : 'background:transparent;';
     return '<img class="lc-logo" src="' + esc(src) + '" alt="logo" width="' + size + '" height="' + size +
-      '" style="width:' + size + 'px;height:' + size + 'px;background:#000;object-fit:cover;display:block;flex-shrink:0" />';
+      '" style="width:' + size + 'px;height:' + size + 'px;' + bg + 'object-fit:cover;display:block;flex-shrink:0" />';
   }
 
   function brandHeadHtml(brand, opts) {
@@ -106,9 +108,10 @@
     var titleBlock = title
       ? ('<div class="lc-title" style="' + titleStyle + '">' + esc(title) + '</div>')
       : '';
-    var titleBg = st.titleBgColor ? ('background:' + esc(st.titleBgColor) + ';') : '';
+    var titleBgColor = st.titleBgColor || '';
+    var titleBg = titleBgColor ? ('background:' + esc(titleBgColor) + ';') : '';
     if (opts.compact) {
-      return '<div class="lc-brand' + center + '" style="' + titleBg + '">' + logoHtml(brand) +
+      return '<div class="lc-brand' + center + '" style="' + titleBg + '">' + logoHtml(brand, titleBgColor) +
         '<div class="lc-org" style="' + orgStyle + '">' + esc(brand.orgName || brand.title || '') + '</div></div>';
     }
     if (opts.titleOnly) {
@@ -117,14 +120,14 @@
       var barFg = (barColor === '#1e293b' || barColor === '#000000' || barColor === '#111111')
         ? '#ffffff' : barColor;
       var bg = st.titleBgColor || '#2e7d32';
-      var logo = logoHtml(brand);
+      var logo = logoHtml(brand, bg);
       var justify = bt.titleAlign === 'left' ? 'flex-start' : (bt.titleAlign === 'right' ? 'flex-end' : 'center');
       return '<div class="lc-s1-titlebar" style="background:' + esc(bg) + ';font-size:' + bt.titleFontSize +
         'px;color:' + esc(barFg) + ';justify-content:' + justify + '">' +
         (logo ? ('<span class="lc-s1-logo-inline">' + logo + '</span>') : '') +
         '<span class="lc-s1-title-text">' + esc(barTitle) + '</span></div>';
     }
-    return '<div class="lc-brand' + center + '" style="' + titleBg + 'padding:4px 6px;margin:0 -2px 6px;">' + logoHtml(brand) +
+    return '<div class="lc-brand' + center + '" style="' + titleBg + 'padding:4px 6px;margin:0 -2px 6px;">' + logoHtml(brand, titleBgColor) +
       '<div style="flex:1;min-width:0">' +
       '<div class="lc-org" style="' + orgStyle + '">' + esc(brand.orgName || '') + '</div>' +
       titleBlock + '</div></div>';
@@ -404,7 +407,7 @@
     '.lc-org{font-weight:600;line-height:1.3}',
     '.lc-title{font-weight:700;letter-spacing:.2em;text-align:center}',
     '.lc-logo-ico{line-height:1}',
-    '.lc-logo{object-fit:cover;display:block;background:#000}',
+    '.lc-logo{object-fit:cover;display:block;background:transparent}',
     '.lc-row{line-height:1.55;display:flex;gap:2px}',
     '.lc-k{white-space:nowrap}',
     '.lc-v{flex:1;min-height:1.2em}',
