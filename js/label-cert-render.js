@@ -146,12 +146,20 @@
 
   function fieldRowsHtml(tpl, data, extraClass) {
     var st = styleOf(tpl);
-    var align = alignCss(st.fieldAlign);
-    var base = 'font-size:' + st.fieldFontSize + 'px;color:' + esc(st.fieldColor) + ';' + align;
+    var align = st.fieldAlign || 'left';
+    // 居中/居右时标签与值成组排布，避免 .lc-v flex:1 把间距拉得过宽
+    var rowAlign = align === 'right'
+      ? 'justify-content:flex-end;text-align:right;'
+      : (align === 'center' ? 'justify-content:center;text-align:center;' : 'justify-content:flex-start;text-align:left;');
+    var vFlex = (align === 'center' || align === 'right')
+      ? 'flex:0 1 auto;width:auto;max-width:70%;'
+      : 'flex:1;min-width:0;';
+    var base = 'display:flex;align-items:baseline;gap:2px;font-size:' + st.fieldFontSize +
+      'px;color:' + esc(st.fieldColor) + ';' + rowAlign;
     return visibleFields(tpl).map(function (f) {
       return '<div class="lc-row ' + (extraClass || '') + '" style="' + base + '">' +
-        '<span class="lc-k">' + esc(f.label) + '：</span>' +
-        '<span class="lc-v" style="' + underlineCss(st) + '">' + esc(fieldValue(f.id, data)) + '</span></div>';
+        '<span class="lc-k" style="flex:0 0 auto;">' + esc(f.label) + '：</span>' +
+        '<span class="lc-v" style="' + vFlex + underlineCss(st) + '">' + esc(fieldValue(f.id, data)) + '</span></div>';
     }).join('');
   }
 
@@ -264,12 +272,16 @@
     var st = styleOf(tpl);
     var rows = fieldRowsHtml(tpl, data, 'lc-s1-row');
     var qr = qrPlacementHtml(tpl, data, opts);
+    // 右侧二维码需与字段区并排，不能直接追加在底部
+    var body = qr.side
+      ? ('<div class="lc-split lc-s1-split"><div class="lc-fields">' + rows + '</div>' + qr.side + '</div>')
+      : rows;
     return wrapSheet('lc-s1', tpl, data,
       brandHeadHtml(brand, { titleOnly: true, defaultTitle: '检验合格证', style: st }) +
-      '<div class="lc-body lc-s1-body">' + rows + '</div>' +
+      '<div class="lc-body lc-s1-body">' + body + '</div>' +
       orgFootHtml(brand, st) +
       warnHtml(brand, { style: st }) +
-      qr.side + qr.overlay);
+      qr.overlay);
   }
 
   function renderStyle2(tpl, data, opts) {
@@ -322,10 +334,8 @@
     var body = qr.side
       ? ('<div class="lc-split"><div class="lc-fields">' + rows + '</div>' + qr.side + '</div>')
       : ('<div class="lc-fields">' + rows + '</div>');
+    // 仅有警示文案时才渲染底部栏，避免空白底栏留下绿色分隔线
     var foot = warnHtml(brand, { style: st });
-    if (!foot && st.footerBgColor) {
-      foot = '<div class="lc-org-foot" style="background:' + esc(st.footerBgColor) + ';min-height:10px;"></div>';
-    }
     return wrapSheet('lc-s3', tpl, data,
       brandHeadHtml(brand, { defaultTitle: '合 格 证', style: st }) +
       body + foot + qr.overlay);
@@ -404,8 +414,11 @@
     '.lc-s1-body{flex:1;padding:8px 10px;background:#fff}',
     '.lc-s1-row{padding:3px 0;min-height:18px}',
     '.lc-s1 .lc-k{color:inherit}',
-    '.lc-org-foot{margin-top:auto;padding:7px 10px;font-weight:600;line-height:1.35;border-top:1px solid #c8e6c9;background:#f1f8e9;color:#1b5e20}',
+    '.lc-org-foot{margin-top:auto;padding:7px 10px;font-weight:600;line-height:1.35;border-top:none;background:#f1f8e9;color:#1b5e20}',
+    '.lc-s1 .lc-org-foot{border-top:1px solid rgba(0,0,0,.06)}',
     '.lc-s1 .lc-warn{padding:4px 10px 8px;margin:0}',
+    '.lc-s1-split{align-items:flex-start;margin-top:2px}',
+    '.lc-s1-split .lc-qr-side{padding-top:2px}',
     '.lc-s2-fields{margin:4px 0 2px;font-size:10px}',
     '.lc-s2-row{line-height:1.35}',
     '.lc-wm-seal-svg{width:100%;height:100%;display:block}',
