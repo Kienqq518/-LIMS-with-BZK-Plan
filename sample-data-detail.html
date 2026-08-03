@@ -407,6 +407,28 @@
     </div>
   </div>
 
+  <!-- 复制添加：选择其他样品的试验 -->
+  <div id="copyTestModal" class="modal-mask">
+    <div class="modal-box sm">
+      <div class="modal-head"><h3 class="text-base font-medium">复制添加试验</h3><button onclick="closeModal('copyTestModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
+      <div class="modal-body text-sm space-y-3">
+        <p class="text-slate-500">请选择其他样品的试验进行复制（不可选择当前样品的试验）。</p>
+        <div class="field-row" style="margin:0">
+          <label style="width:auto;min-width:72px"><span class="req">*</span>试验项</label>
+          <div class="ctrl">
+            <select id="copyTestSelect" class="w-full">
+              <option value="">请选择样品分类 / 样品 / 试验项</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('copyTestModal')">取消</button>
+        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="confirmCopyTest()">确定</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 新增试验同步决策 -->
   <div id="syncNewTestModal" class="modal-mask">
     <div class="modal-box sm">
@@ -2086,23 +2108,30 @@
         showSyncTip('结构已同步至 ' + linkedCount + ' 个规格型号；取值类修改不会覆盖规格型号已有配置');
       }
       if (isNew && sample.models.length) {
-        state.pendingNewTestId = testObj.id;
-        document.getElementById('syncNewTestName').textContent = testObj.name;
-        var pick = document.getElementById('syncModelPick');
-        pick.innerHTML = sample.models.map(function (m) {
-          return '<label class="flex items-center gap-2"><input type="checkbox" class="sync-model-cb" value="' + m.id + '" /> ' + esc(m.name) + '</label>';
-        }).join('');
-        document.querySelectorAll('input[name=syncMode]').forEach(function (r) {
-          r.onchange = function () {
-            pick.classList.toggle('hidden', document.querySelector('input[name=syncMode]:checked').value !== 'pick');
-          };
-        });
-        document.querySelector('input[name=syncMode][value=all]').checked = true;
-        pick.classList.add('hidden');
-        openModal('syncNewTestModal');
+        openSyncNewTestModal(testObj);
       } else {
         toast('试验已保存');
       }
+    }
+
+    function openSyncNewTestModal(testObj) {
+      var sample = currentSample();
+      if (!sample || !testObj) return;
+      state.pendingNewTestId = testObj.id;
+      document.getElementById('syncNewTestName').textContent = testObj.name;
+      var pick = document.getElementById('syncModelPick');
+      pick.innerHTML = (sample.models || []).map(function (m) {
+        return '<label class="flex items-center gap-2"><input type="checkbox" class="sync-model-cb" value="' + esc(m.id) + '" /> ' + esc(m.name) + '</label>';
+      }).join('') || '<div class="text-slate-400">暂无规格型号</div>';
+      document.querySelectorAll('input[name=syncMode]').forEach(function (r) {
+        r.onchange = function () {
+          var mode = document.querySelector('input[name=syncMode]:checked').value;
+          pick.classList.toggle('hidden', mode !== 'pick');
+        };
+      });
+      document.querySelector('input[name=syncMode][value=all]').checked = true;
+      pick.classList.add('hidden');
+      openModal('syncNewTestModal');
     }
 
     function confirmSyncNewTest() {
@@ -2114,6 +2143,7 @@
       else if (mode === 'pick') {
         var ids = Array.prototype.slice.call(document.querySelectorAll('.sync-model-cb:checked')).map(function (el) { return el.value; });
         targets = sample.models.filter(function (m) { return ids.indexOf(m.id) >= 0; });
+        if (!targets.length) { toast('请选择至少一个规格型号'); return; }
       }
       targets.forEach(function (m) {
         if ((m.linkedTestIds || []).indexOf(tid) < 0) m.linkedTestIds.push(tid);
@@ -2131,23 +2161,104 @@
       else toast('已同步关联到 ' + targets.length + ' 个规格型号');
     }
 
+    /** 收集其他样品可复制的试验，按「样品分类 · 样品」分组（排除当前样品） */
+    function collectCopyableTests(excludeSampleId) {
+      var groups = [];
+      var groupMap = {};
+      function walk(nodes, trail) {
+        (nodes || []).forEach(function (n) {
+          var hasChild = n.children && n.children.length;
+          var isLeaf = !!n.leaf && !hasChild;
+          var nextTrail = trail.concat(n.label);
+          if (isLeaf) {
+            if (n.id === excludeSampleId) return;
+            var sample = SAMPLE_STORE[n.id];
+            if (!sample || !(sample.tests || []).length) return;
+            var categoryLabel = (sample.basic && sample.basic.category)
+              || (trail.length ? trail[trail.length - 1] : '');
+            var groupLabel = (categoryLabel ? categoryLabel + ' · ' : '') + n.label;
+            if (!groupMap[groupLabel]) {
+              groupMap[groupLabel] = { label: groupLabel, options: [] };
+              groups.push(groupMap[groupLabel]);
+            }
+            sample.tests.forEach(function (t) {
+              groupMap[groupLabel].options.push({
+                value: n.id + '|' + t.id,
+                text: t.name
+              });
+            });
+            return;
+          }
+          if (hasChild) walk(n.children, nextTrail);
+        });
+      }
+      Object.keys(TREES).forEach(function (catKey) {
+        walk(TREES[catKey] || [], CAT_META[catKey] ? [CAT_META[catKey].name] : []);
+      });
+      return groups;
+    }
+
+    function fillCopyTestSelect() {
+      var sel = document.getElementById('copyTestSelect');
+      var groups = collectCopyableTests(state.selectedId);
+      var html = '<option value="">请选择样品分类 / 样品 / 试验项</option>';
+      groups.forEach(function (g) {
+        html += '<optgroup label="' + esc(g.label) + '">';
+        g.options.forEach(function (opt) {
+          html += '<option value="' + esc(opt.value) + '">' + esc(opt.text) + '</option>';
+        });
+        html += '</optgroup>';
+      });
+      sel.innerHTML = html;
+      sel.value = '';
+      return groups.length > 0;
+    }
+
     function copyAddTest() {
       var sample = currentSample();
-      if (!sample.tests.length) { toast('暂无试验可复制'); return; }
-      var last = deepClone(sample.tests[sample.tests.length - 1]);
-      last.id = uid('test');
-      last.code = uid('TST');
-      last.name = last.name + '（副本）';
-      last.items = (last.items || []).map(function (it) {
-        it.id = uid('di'); it.code = uid('DIC'); return it;
+      if (!sample) { toast('请先选择样品'); return; }
+      if (!fillCopyTestSelect()) {
+        toast('暂无其他样品的试验可复制');
+        return;
+      }
+      openModal('copyTestModal');
+    }
+
+    function confirmCopyTest() {
+      var sample = currentSample();
+      if (!sample) { toast('请先选择样品'); return; }
+      var val = document.getElementById('copyTestSelect').value;
+      if (!val) { toast('请选择要复制的试验'); return; }
+      var sep = val.indexOf('|');
+      if (sep < 0) { toast('请选择要复制的试验'); return; }
+      var srcSampleId = val.slice(0, sep);
+      var srcTestId = val.slice(sep + 1);
+      if (srcSampleId === state.selectedId) {
+        toast('不允许复制当前样品的试验');
+        return;
+      }
+      var srcSample = SAMPLE_STORE[srcSampleId];
+      var srcTest = srcSample && (srcSample.tests || []).find(function (t) { return t.id === srcTestId; });
+      if (!srcTest) { toast('所选试验不存在'); return; }
+
+      var copied = deepClone(srcTest);
+      copied.id = uid('test');
+      copied.code = uid('TST');
+      copied.name = copied.name + '（副本）';
+      copied.sort = (sample.tests.length || 0) + 1;
+      copied.items = (copied.items || []).map(function (it) {
+        it.id = uid('di');
+        it.code = uid('DIC');
+        return it;
       });
-      sample.tests.push(last);
+      sample.tests.push(copied);
+      closeModal('copyTestModal');
       renderTestTable();
       if (sample.models.length) {
-        state.pendingNewTestId = last.id;
-        document.getElementById('syncNewTestName').textContent = last.name;
-        openModal('syncNewTestModal');
-      } else toast('已复制添加');
+        openSyncNewTestModal(copied);
+      } else {
+        toast('已复制添加');
+      }
     }
 
     function moveTest(id, dir) {
