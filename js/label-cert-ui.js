@@ -290,18 +290,30 @@
     if ($('lc_e_fieldUnderline')) {
       $('lc_e_fieldUnderline').value = st.fieldUnderline ? st.fieldUnderlineStyle : 'none';
     }
+    if ($('lc_e_borderOn')) $('lc_e_borderOn').value = st.borderEnabled ? '1' : '0';
     if ($('lc_e_borderColor')) $('lc_e_borderColor').value = st.borderColor || '#cbd5e1';
     if ($('lc_e_borderWidth')) $('lc_e_borderWidth').value = st.borderWidthPx;
     if ($('lc_e_titleBg')) $('lc_e_titleBg').value = st.titleBgColor || '#2e7d32';
     if ($('lc_e_footerBg')) $('lc_e_footerBg').value = st.footerBgColor || '#f1f8e9';
+    syncBorderUi();
+  }
+
+  function syncBorderUi() {
+    var on = !$('lc_e_borderOn') || $('lc_e_borderOn').value === '1';
+    var colorWrap = $('lc_e_borderColorWrap');
+    var widthWrap = $('lc_e_borderWidthWrap');
+    if (colorWrap) colorWrap.style.display = on ? '' : 'none';
+    if (widthWrap) widthWrap.style.display = on ? '' : 'none';
   }
 
   function syncSkinUi(presetId) {
-    var isStick = presetId === 'cert_style_1';
+    // 三种合格证布局预设均提供标题/底部栏背景色；样品标签隐藏外观底色项
+    var isCert = presetId === 'cert_style_1' || presetId === 'cert_style_2' || presetId === 'cert_style_3';
     var titleBg = $('lc_e_titleBgWrap');
     var footBg = $('lc_e_footerBgWrap');
-    if (titleBg) titleBg.style.display = isStick ? '' : 'none';
-    if (footBg) footBg.style.display = isStick ? '' : 'none';
+    if (titleBg) titleBg.style.display = isCert ? '' : 'none';
+    if (footBg) footBg.style.display = isCert ? '' : 'none';
+    syncBorderUi();
   }
 
   function syncWatermarkTypeUI() {
@@ -537,6 +549,7 @@
       fieldColor: $('lc_e_fieldColor') ? $('lc_e_fieldColor').value : '#1e293b',
       fieldUnderline: uStyle !== 'none',
       fieldUnderlineStyle: uStyle === 'none' ? 'dotted' : uStyle,
+      borderEnabled: !$('lc_e_borderOn') || $('lc_e_borderOn').value === '1',
       borderColor: $('lc_e_borderColor') ? $('lc_e_borderColor').value : '#cbd5e1',
       borderWidthPx: $('lc_e_borderWidth') ? $('lc_e_borderWidth').value : 1,
       titleBgColor: $('lc_e_titleBg') ? $('lc_e_titleBg').value : '',
@@ -757,6 +770,7 @@
       if (rename != null) renameField(parseInt(rename, 10), e.target.value);
       if (/^lc_e_/.test(e.target.id)) {
         if (e.target.id === 'lc_e_qrPlace') syncQrPlaceUi($('lc_e_preset').value);
+        if (e.target.id === 'lc_e_borderOn') syncBorderUi();
         refreshPreview();
       }
     });

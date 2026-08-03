@@ -259,9 +259,10 @@
     /* 标签/合格证模版 */
     .lc-type-nav { border-left: 3px solid transparent; }
     .lc-type-nav.active { border-left-color: #2563eb; background: #eff6ff; color: #1d4ed8; font-weight: 500; }
-    .lc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid #e2e8f0; border-radius: 999px; font-size: 12px; cursor: pointer; user-select: none; }
+    .lc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 11px; border: 1px solid #dbe3ee; border-radius: 999px; font-size: 12px; cursor: pointer; user-select: none; background: #fff; color: #475569; transition: border-color .15s, background .15s, color .15s; }
+    .lc-chip:hover { border-color: #93c5fd; color: #1d4ed8; }
     .lc-chip.on { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
-    .lc-field-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; margin-bottom: 6px; }
+    .lc-field-item { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; margin-bottom: 8px; box-shadow: 0 1px 1px rgba(15,23,42,.03); }
     .lc-modal-mask { position: fixed; inset: 0; z-index: 80; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
     .lc-modal-mask.open { display: flex; }
     .lc-default-card {
@@ -293,9 +294,59 @@
       display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 4px;
       background: #eff6ff; color: #1d4ed8; font-size: 11px; font-weight: 500;
     }
-    .lc-inline-pair { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .lc-inline-pair { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
     .lc-inline-pair input[type=number] { width: 72px; }
     .lc-inline-pair input[type=color] { width: 36px; height: 28px; padding: 0; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; }
+    /* 编辑弹窗 · 左侧配置分区 */
+    .lc-edit-form {
+      flex: 1; overflow-y: auto; border-right: 1px solid #e2e8f0;
+      padding: 16px; background: #f1f5f9;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .lc-edit-block {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      overflow: hidden;
+    }
+    .lc-edit-block-head {
+      display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+      padding: 11px 14px; background: #f8fafc;
+      border-bottom: 1px solid #eef2f7;
+      border-left: 3px solid #94a3b8;
+    }
+    .lc-edit-block-head h4 {
+      margin: 0; font-size: 13px; font-weight: 650; color: #0f172a; letter-spacing: 0.02em;
+    }
+    .lc-edit-block-head .lc-edit-sub {
+      font-size: 12px; font-weight: 400; color: #94a3b8;
+    }
+    .lc-edit-block-body { padding: 14px; }
+    .lc-edit-block[data-tone="base"] .lc-edit-block-head { border-left-color: #64748b; }
+    .lc-edit-block[data-tone="brand"] .lc-edit-block-head { border-left-color: #2563eb; background: #f8fbff; }
+    .lc-edit-block[data-tone="wm"] .lc-edit-block-head { border-left-color: #dc2626; background: #fffafa; }
+    .lc-edit-block[data-tone="field"] .lc-edit-block-head { border-left-color: #0891b2; background: #f0fdfa; }
+    .lc-edit-block[data-tone="skin"] .lc-edit-block-head { border-left-color: #16a34a; background: #f7fdf9; }
+    .lc-edit-block[data-tone="qr"] .lc-edit-block-head { border-left-color: #7c3aed; background: #faf8ff; }
+    .lc-edit-block[data-tone="bind"] .lc-edit-block-head { border-left-color: #ea580c; background: #fffaf5; }
+    .lc-edit-block[data-tone="meta"] .lc-edit-block-head { border-left-color: #94a3b8; }
+    .lc-edit-subpanel {
+      margin-bottom: 12px; padding: 12px; border-radius: 8px;
+      border: 1px dashed #cbd5e1; background: #f8fafc;
+    }
+    .lc-edit-subpanel:last-child { margin-bottom: 0; }
+    .lc-edit-preview {
+      width: 360px; flex-shrink: 0; overflow-y: auto;
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 16px; border-left: 1px solid #e2e8f0;
+    }
+    .lc-edit-preview-card {
+      border: 1px solid #e2e8f0; border-radius: 10px; background: #fff;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); overflow: hidden;
+    }
+    .lc-edit-preview-card .lc-edit-block-head {
+      border-left-color: #2563eb; justify-content: space-between; align-items: center;
+    }
+    .lc-edit-preview-body { padding: 12px; background: #f1f5f9; }
     /* 绑定样品 · 多选下拉 */
     .lc-ms { position: relative; max-width: 520px; }
     .lc-ms-trigger {
@@ -630,10 +681,13 @@
           <button type="button" data-lc-close class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
         </div>
         <div class="flex flex-1 min-h-0">
-          <div class="flex-1 overflow-y-auto border-r border-slate-100 p-4 space-y-4">
-            <section>
-              <h4 class="mb-2 text-sm font-semibold text-slate-700">基本信息</h4>
-              <div class="grid grid-cols-2 gap-3">
+          <div class="lc-edit-form">
+            <section class="lc-edit-block" data-tone="base">
+              <div class="lc-edit-block-head">
+                <h4>基本信息</h4>
+                <span class="lc-edit-sub">名称 · 布局 · 纸张</span>
+              </div>
+              <div class="lc-edit-block-body grid grid-cols-2 gap-3">
                 <label class="text-sm text-slate-600">模版名称<input id="lc_e_name" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
                 <label class="text-sm text-slate-600">布局预设
                   <select id="lc_e_preset" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm"></select>
@@ -643,9 +697,12 @@
                 <div id="lc_e_roleHint" class="col-span-2 text-xs text-slate-500 pt-1"></div>
               </div>
             </section>
-            <section>
-              <h4 class="mb-2 text-sm font-semibold text-slate-700">品牌区</h4>
-              <div class="grid grid-cols-2 gap-3">
+            <section class="lc-edit-block" data-tone="brand">
+              <div class="lc-edit-block-head">
+                <h4>品牌区</h4>
+                <span class="lc-edit-sub">单位 · 标题 · Logo · 警示文案</span>
+              </div>
+              <div class="lc-edit-block-body grid grid-cols-2 gap-3">
                 <label class="text-sm text-slate-600 col-span-2">单位名称（默认检测机构）
                   <input id="lc_e_org" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" />
                   <div class="lc-inline-pair">
@@ -702,9 +759,12 @@
                 </label>
               </div>
             </section>
-            <section>
-              <h4 class="mb-2 text-sm font-semibold text-slate-700">水印 <span class="font-normal text-slate-400">（文本或检测章 · 角度/位置/透明度）</span></h4>
-              <div class="grid grid-cols-2 gap-3">
+            <section class="lc-edit-block" data-tone="wm">
+              <div class="lc-edit-block-head">
+                <h4>水印</h4>
+                <span class="lc-edit-sub">文本或检测章 · 角度 / 位置 / 透明度</span>
+              </div>
+              <div class="lc-edit-block-body grid grid-cols-2 gap-3">
                 <label class="flex items-center gap-2 text-sm text-slate-600 col-span-2"><input id="lc_e_wmOn" type="checkbox" /> 启用水印</label>
                 <label class="text-sm text-slate-600">类型
                   <select id="lc_e_wmType" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm">
@@ -766,43 +826,56 @@
                 </label>
               </div>
             </section>
-            <section>
-              <h4 class="mb-2 text-sm font-semibold text-slate-700">字段槽位 <span class="font-normal text-slate-400">（勾选 · 拖拽排序 · 改显示名 · 整体样式）</span></h4>
-              <div class="mb-3 grid grid-cols-2 gap-3 rounded border border-slate-100 bg-slate-50/70 p-3">
-                <label class="text-sm text-slate-600">整体对齐
-                  <select id="lc_e_fieldAlign" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm">
-                    <option value="left">居左</option>
-                    <option value="center">居中</option>
-                    <option value="right">居右</option>
-                  </select>
-                </label>
-                <label class="text-sm text-slate-600">字体大小(px)
-                  <input id="lc_e_fieldSize" type="number" min="8" max="22" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm" />
-                </label>
-                <label class="text-sm text-slate-600">字体颜色
-                  <input id="lc_e_fieldColor" type="color" class="mt-1 block h-9 w-full rounded border border-slate-300 bg-white px-1" />
-                </label>
-                <label class="text-sm text-slate-600">下划线
-                  <select id="lc_e_fieldUnderline" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm">
-                    <option value="none">无</option>
-                    <option value="solid">直线</option>
-                    <option value="dotted">断点</option>
-                    <option value="dashed">断线</option>
-                    <option value="double">双线</option>
-                  </select>
-                </label>
+            <section class="lc-edit-block" data-tone="field">
+              <div class="lc-edit-block-head">
+                <h4>字段槽位</h4>
+                <span class="lc-edit-sub">勾选 · 拖拽排序 · 改显示名 · 整体样式</span>
               </div>
-              <div id="lc_fieldPool" class="mb-2 flex flex-wrap gap-2"></div>
-              <div id="lc_fieldList"></div>
+              <div class="lc-edit-block-body">
+                <div class="lc-edit-subpanel grid grid-cols-2 gap-3">
+                  <label class="text-sm text-slate-600">整体对齐
+                    <select id="lc_e_fieldAlign" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm">
+                      <option value="left">居左</option>
+                      <option value="center">居中</option>
+                      <option value="right">居右</option>
+                    </select>
+                  </label>
+                  <label class="text-sm text-slate-600">字体大小(px)
+                    <input id="lc_e_fieldSize" type="number" min="8" max="22" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm" />
+                  </label>
+                  <label class="text-sm text-slate-600">字体颜色
+                    <input id="lc_e_fieldColor" type="color" class="mt-1 block h-9 w-full rounded border border-slate-300 bg-white px-1" />
+                  </label>
+                  <label class="text-sm text-slate-600">下划线
+                    <select id="lc_e_fieldUnderline" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm">
+                      <option value="none">无</option>
+                      <option value="solid">直线</option>
+                      <option value="dotted">断点</option>
+                      <option value="dashed">断线</option>
+                    </select>
+                  </label>
+                </div>
+                <div id="lc_fieldPool" class="mb-3 flex flex-wrap gap-2"></div>
+                <div id="lc_fieldList"></div>
+              </div>
             </section>
-            <section id="lc_e_skinSection">
-              <h4 class="mb-2 text-sm font-semibold text-slate-700">外观 <span class="font-normal text-slate-400">（边框 · 标题底色 · 底部栏）</span></h4>
-              <div class="grid grid-cols-2 gap-3">
-                <label class="text-sm text-slate-600">边框颜色
-                  <input id="lc_e_borderColor" type="color" class="mt-1 block h-9 w-full rounded border border-slate-300 bg-white px-1" />
+            <section id="lc_e_skinSection" class="lc-edit-block" data-tone="skin">
+              <div class="lc-edit-block-head">
+                <h4>外观</h4>
+                <span class="lc-edit-sub">边框 · 标题底色 · 底部栏</span>
+              </div>
+              <div class="lc-edit-block-body grid grid-cols-2 gap-3">
+                <label class="text-sm text-slate-600">边框
+                  <select id="lc_e_borderOn" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm">
+                    <option value="1">有</option>
+                    <option value="0">无</option>
+                  </select>
                 </label>
-                <label class="text-sm text-slate-600">边框粗细(px)
+                <label id="lc_e_borderWidthWrap" class="text-sm text-slate-600">边框粗细(px)
                   <input id="lc_e_borderWidth" type="number" min="0" max="8" class="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm" />
+                </label>
+                <label id="lc_e_borderColorWrap" class="text-sm text-slate-600">边框颜色
+                  <input id="lc_e_borderColor" type="color" class="mt-1 block h-9 w-full rounded border border-slate-300 bg-white px-1" />
                 </label>
                 <label id="lc_e_titleBgWrap" class="text-sm text-slate-600">标题背景色
                   <input id="lc_e_titleBg" type="color" class="mt-1 block h-9 w-full rounded border border-slate-300 bg-white px-1" />
@@ -812,9 +885,12 @@
                 </label>
               </div>
             </section>
-            <section>
-              <h4 class="mb-2 text-sm font-semibold text-slate-700">二维码</h4>
-              <div class="grid grid-cols-3 gap-3">
+            <section class="lc-edit-block" data-tone="qr">
+              <div class="lc-edit-block-head">
+                <h4>二维码</h4>
+                <span class="lc-edit-sub">启用 · 尺寸 · 位置</span>
+              </div>
+              <div class="lc-edit-block-body grid grid-cols-3 gap-3">
                 <label class="flex items-center gap-2 text-sm"><input id="lc_e_qr" type="checkbox" checked /> 启用二维码</label>
                 <label class="text-sm text-slate-600">尺寸(px)<input id="lc_e_qrSize" type="number" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
                 <label class="text-sm text-slate-600">位置
@@ -831,27 +907,39 @@
                 </label>
               </div>
             </section>
-            <section id="lc_bindSection">
-              <h4 class="mb-2 text-sm font-semibold text-slate-700">绑定样品（叶节点，可多选）<span class="font-normal text-rose-500">*</span></h4>
-              <p class="mb-2 text-xs text-slate-400">个性化模版必须至少绑定 1 个样品；同一样品仅可属于一个启用中的个性化模版。</p>
-              <div id="lc_bindSamples"></div>
-              <p id="lc_bindHint" class="mt-2 text-xs text-amber-600"></p>
+            <section id="lc_bindSection" class="lc-edit-block" data-tone="bind">
+              <div class="lc-edit-block-head">
+                <h4>绑定样品 <span class="font-normal text-rose-500">*</span></h4>
+                <span class="lc-edit-sub">叶节点，可多选</span>
+              </div>
+              <div class="lc-edit-block-body">
+                <p class="mb-3 text-xs text-slate-400 leading-relaxed">个性化模版必须至少绑定 1 个样品；同一样品仅可属于一个启用中的个性化模版。</p>
+                <div id="lc_bindSamples"></div>
+                <p id="lc_bindHint" class="mt-2 text-xs text-amber-600"></p>
+              </div>
             </section>
-            <section>
-              <h4 class="mb-2 text-sm font-semibold text-slate-700">备注（不渲染）</h4>
-              <div class="grid grid-cols-3 gap-3">
+            <section class="lc-edit-block" data-tone="meta">
+              <div class="lc-edit-block-head">
+                <h4>备注</h4>
+                <span class="lc-edit-sub">仅作记录，不参与渲染</span>
+              </div>
+              <div class="lc-edit-block-body grid grid-cols-3 gap-3">
                 <label class="text-sm text-slate-600">材质<input id="lc_e_mat" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
                 <label class="text-sm text-slate-600">安装方式<input id="lc_e_mount" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
                 <label class="text-sm text-slate-600">赋码打印<input id="lc_e_print" class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" /></label>
               </div>
             </section>
           </div>
-          <div class="w-[360px] flex-shrink-0 overflow-y-auto bg-slate-50 p-4">
-            <div class="mb-2 flex items-center justify-between">
-              <h4 class="text-sm font-semibold text-slate-700">实时预览</h4>
-              <button type="button" data-lc-refresh class="text-xs text-blue-600 hover:underline">刷新</button>
+          <div class="lc-edit-preview">
+            <div class="lc-edit-preview-card">
+              <div class="lc-edit-block-head">
+                <h4>实时预览</h4>
+                <button type="button" data-lc-refresh class="text-xs text-blue-600 hover:underline">刷新</button>
+              </div>
+              <div class="lc-edit-preview-body">
+                <div id="lc_previewBox" class="flex justify-center overflow-auto rounded-lg border border-slate-200 bg-white p-3"></div>
+              </div>
             </div>
-            <div id="lc_previewBox" class="flex justify-center overflow-auto rounded border border-slate-200 bg-slate-100 p-3"></div>
           </div>
         </div>
         <div class="flex justify-end gap-2 border-t border-slate-200 px-5 py-3">

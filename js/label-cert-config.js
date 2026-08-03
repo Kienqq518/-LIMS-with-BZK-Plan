@@ -14,7 +14,7 @@
   ];
 
   /** 系统 Logo（合格证品牌区，图2） */
-  var SYSTEM_LOGO_URL = 'assets/label-cert/system-logo.svg';
+  var SYSTEM_LOGO_URL = 'assets/label-cert/system-logo.png';
   /** 配置中上传的机构检测章（图8） */
   var SYSTEM_SEAL_URL = 'assets/label-cert/system-seal.svg';
 
@@ -22,8 +22,7 @@
     { id: 'none', name: '无' },
     { id: 'solid', name: '直线' },
     { id: 'dotted', name: '断点' },
-    { id: 'dashed', name: '断线' },
-    { id: 'double', name: '双线' }
+    { id: 'dashed', name: '断线' }
   ];
 
   /**
@@ -130,7 +129,7 @@
       styleDefault: {
         fieldAlign: 'left', fieldFontSize: 12, fieldColor: '#1e293b',
         fieldUnderline: true, fieldUnderlineStyle: 'solid',
-        borderColor: '#2e7d32', borderWidthPx: 2,
+        borderEnabled: true, borderColor: '#2e7d32', borderWidthPx: 2,
         titleBgColor: '#2e7d32', footerBgColor: '#f1f8e9'
       }
     },
@@ -142,7 +141,13 @@
       qr: { enabled: true, sizePx: 64, payloadType: 'cert_shortlink', placement: 'center' },
       showWatermarkGe: false,
       footerWarning: '无法扫码视为过期',
-      fieldIds: ['validUntil', 'sampleName', 'specimenNo']
+      fieldIds: ['validUntil', 'sampleName', 'specimenNo'],
+      styleDefault: {
+        fieldAlign: 'center', fieldFontSize: 11, fieldColor: '#1e293b',
+        fieldUnderline: true, fieldUnderlineStyle: 'dotted',
+        borderEnabled: true, borderColor: '#cbd5e1', borderWidthPx: 1,
+        titleBgColor: '#ffffff', footerBgColor: '#fff8f6'
+      }
     },
     cert_style_3: {
       type: 'certificate',
@@ -152,7 +157,13 @@
       qr: { enabled: true, sizePx: 100, payloadType: 'cert_shortlink', placement: 'right' },
       showWatermarkGe: false,
       footerWarning: null,
-      fieldIds: ['specimenNo', 'sampleName', 'specModel', 'inspectDate', 'reinspectDate', 'inspectors']
+      fieldIds: ['specimenNo', 'sampleName', 'specModel', 'inspectDate', 'reinspectDate', 'inspectors'],
+      styleDefault: {
+        fieldAlign: 'left', fieldFontSize: 12, fieldColor: '#1e293b',
+        fieldUnderline: true, fieldUnderlineStyle: 'dotted',
+        borderEnabled: true, borderColor: '#cbd5e1', borderWidthPx: 1,
+        titleBgColor: '#ffffff', footerBgColor: '#ffffff'
+      }
     },
     label_style_1: {
       type: 'sample_label',
@@ -211,14 +222,16 @@
       fieldColor: from.fieldColor || '#1e293b',
       fieldUnderline: from.fieldUnderline !== false,
       fieldUnderlineStyle: from.fieldUnderlineStyle || 'dotted',
+      borderEnabled: from.borderEnabled !== false,
       borderColor: from.borderColor || (isStick ? '#2e7d32' : '#cbd5e1'),
       borderWidthPx: from.borderWidthPx != null ? from.borderWidthPx : (isStick ? 2 : 1),
-      titleBgColor: from.titleBgColor || (isStick ? '#2e7d32' : ''),
-      footerBgColor: from.footerBgColor || (isStick ? '#f1f8e9' : '')
+      titleBgColor: from.titleBgColor || (isStick ? '#2e7d32' : '#ffffff'),
+      footerBgColor: from.footerBgColor || (isStick ? '#f1f8e9' : '#ffffff')
     };
   }
 
   function normalizeUnderlineStyle(v, fallback) {
+    if (v === 'double') v = 'solid'; // 已移除双线，旧数据回落直线
     var ok = FIELD_UNDERLINE_STYLES.some(function (s) { return s.id === v; });
     return ok ? v : fallback;
   }
@@ -237,10 +250,11 @@
       fieldColor: normalizeColor(style.fieldColor, d.fieldColor),
       fieldUnderline: underlineOn,
       fieldUnderlineStyle: uStyle,
+      borderEnabled: style.borderEnabled != null ? !!style.borderEnabled : d.borderEnabled,
       borderColor: normalizeColor(style.borderColor, d.borderColor),
       borderWidthPx: clampInt(style.borderWidthPx, 0, 8, d.borderWidthPx),
-      titleBgColor: style.titleBgColor ? normalizeColor(style.titleBgColor, d.titleBgColor || '#2e7d32') : (d.titleBgColor || ''),
-      footerBgColor: style.footerBgColor ? normalizeColor(style.footerBgColor, d.footerBgColor || '#f1f8e9') : (d.footerBgColor || '')
+      titleBgColor: normalizeColor(style.titleBgColor || d.titleBgColor, d.titleBgColor || '#ffffff'),
+      footerBgColor: normalizeColor(style.footerBgColor || d.footerBgColor, d.footerBgColor || '#ffffff')
     };
   }
 

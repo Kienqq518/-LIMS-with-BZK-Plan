@@ -67,7 +67,7 @@
   }
 
   function systemLogoUrl() {
-    return (global.LabelCertConfig && LabelCertConfig.SYSTEM_LOGO_URL) || 'assets/label-cert/system-logo.svg';
+    return (global.LabelCertConfig && LabelCertConfig.SYSTEM_LOGO_URL) || 'assets/label-cert/system-logo.png';
   }
 
   function systemSealUrl() {
@@ -81,7 +81,7 @@
     return {
       fieldAlign: 'left', fieldFontSize: 12, fieldColor: '#1e293b',
       fieldUnderline: true, fieldUnderlineStyle: 'dotted',
-      borderColor: '#cbd5e1', borderWidthPx: 1, titleBgColor: '', footerBgColor: ''
+      borderEnabled: true, borderColor: '#cbd5e1', borderWidthPx: 1, titleBgColor: '', footerBgColor: ''
     };
   }
 
@@ -106,8 +106,9 @@
     var titleBlock = title
       ? ('<div class="lc-title" style="' + titleStyle + '">' + esc(title) + '</div>')
       : '';
+    var titleBg = st.titleBgColor ? ('background:' + esc(st.titleBgColor) + ';') : '';
     if (opts.compact) {
-      return '<div class="lc-brand' + center + '">' + logoHtml(brand) +
+      return '<div class="lc-brand' + center + '" style="' + titleBg + '">' + logoHtml(brand) +
         '<div class="lc-org" style="' + orgStyle + '">' + esc(brand.orgName || brand.title || '') + '</div></div>';
     }
     if (opts.titleOnly) {
@@ -123,7 +124,7 @@
         (logo ? ('<span class="lc-s1-logo-inline">' + logo + '</span>') : '') +
         '<span class="lc-s1-title-text">' + esc(barTitle) + '</span></div>';
     }
-    return '<div class="lc-brand' + center + '">' + logoHtml(brand) +
+    return '<div class="lc-brand' + center + '" style="' + titleBg + 'padding:4px 6px;margin:0 -2px 6px;">' + logoHtml(brand) +
       '<div style="flex:1;min-width:0">' +
       '<div class="lc-org" style="' + orgStyle + '">' + esc(brand.orgName || '') + '</div>' +
       titleBlock + '</div></div>';
@@ -162,8 +163,10 @@
       text = opts.fallback;
     }
     var bt = brandType(brand);
+    var st = opts.style || {};
+    var bg = st.footerBgColor ? ('background:' + esc(st.footerBgColor) + ';') : '';
     return '<div class="lc-warn" style="font-size:' + bt.warnFontSize + 'px;color:' + esc(bt.warnColor) + ';' +
-      alignCss(bt.warnAlign) + '">' + esc(text) + '</div>';
+      alignCss(bt.warnAlign) + bg + 'padding:4px 6px;">' + esc(text) + '</div>';
   }
 
   function normalizeQrPlacement(placement, preset) {
@@ -204,8 +207,10 @@
     var w = mmToPx((tpl.paper && tpl.paper.wMm) || 90);
     var h = mmToPx((tpl.paper && tpl.paper.hMm) || 50);
     var st = styleOf(tpl);
-    return 'width:' + w + 'px;min-height:' + h + 'px;font-size:' + st.fieldFontSize + 'px;' +
-      'border-color:' + esc(st.borderColor) + ';border-width:' + st.borderWidthPx + 'px;border-style:solid;';
+    var border = st.borderEnabled
+      ? ('border-color:' + esc(st.borderColor) + ';border-width:' + st.borderWidthPx + 'px;border-style:solid;')
+      : 'border:none;';
+    return 'width:' + w + 'px;min-height:' + h + 'px;font-size:' + st.fieldFontSize + 'px;' + border;
   }
 
   function watermarkConfig(brand) {
@@ -263,7 +268,7 @@
       brandHeadHtml(brand, { titleOnly: true, defaultTitle: '检验合格证', style: st }) +
       '<div class="lc-body lc-s1-body">' + rows + '</div>' +
       orgFootHtml(brand, st) +
-      warnHtml(brand) +
+      warnHtml(brand, { style: st }) +
       qr.side + qr.overlay);
   }
 
@@ -271,9 +276,26 @@
     var brand = tpl.brand || {};
     var st = styleOf(tpl);
     var until = fieldValue('validUntil', data) || fieldValue('reinspectDate', data);
-    var fields = visibleFields(tpl).filter(function (f) { return f.id !== 'validUntil'; });
+    var untilField = null;
+    var fields = visibleFields(tpl).filter(function (f) {
+      if (f.id === 'validUntil') { untilField = f; return false; }
+      return true;
+    });
     var tmp = { fields: fields, style: tpl.style, layoutPreset: tpl.layoutPreset };
     var rows = fieldRowsHtml(tmp, data, 'lc-s2-row');
+    var untilRow = '';
+    if (untilField) {
+      var untilData = {};
+      for (var k in data) if (Object.prototype.hasOwnProperty.call(data, k)) untilData[k] = data[k];
+      untilData.validUntil = until ? (until + ' 止') : '';
+      untilData.reinspectDate = untilData.validUntil;
+      untilRow = fieldRowsHtml(
+        { fields: [untilField], style: tpl.style, layoutPreset: tpl.layoutPreset },
+        untilData,
+        'lc-s2-row'
+      );
+    }
+    var footBg = st.footerBgColor ? ('background:' + esc(st.footerBgColor) + ';') : '';
     return wrapSheet('lc-s2', tpl, data,
       '<div class="lc-hole"></div>' +
       brandHeadHtml(brand, { center: true, defaultTitle: '检验合格证', style: st }) +
@@ -286,20 +308,27 @@
       '</div>' +
       '<span class="lc-pass-char">格</span></div>' +
       (rows ? ('<div class="lc-s2-fields">' + rows + '</div>') : '') +
-      '<div class="lc-valid">检测有效期：' + esc(until) + ' 止</div>' +
-      warnHtml(brand, { fallback: '无法扫码视为过期' }));
+      '<div class="lc-s2-foot" style="' + footBg + 'padding:4px 6px;margin:2px -2px 0;">' +
+        untilRow +
+        warnHtml(brand, { fallback: '无法扫码视为过期', style: {} }) +
+      '</div>');
   }
 
   function renderStyle3(tpl, data, opts) {
     var brand = tpl.brand || {};
+    var st = styleOf(tpl);
     var rows = fieldRowsHtml(tpl, data, '');
     var qr = qrPlacementHtml(tpl, data, opts);
     var body = qr.side
       ? ('<div class="lc-split"><div class="lc-fields">' + rows + '</div>' + qr.side + '</div>')
       : ('<div class="lc-fields">' + rows + '</div>');
+    var foot = warnHtml(brand, { style: st });
+    if (!foot && st.footerBgColor) {
+      foot = '<div class="lc-org-foot" style="background:' + esc(st.footerBgColor) + ';min-height:10px;"></div>';
+    }
     return wrapSheet('lc-s3', tpl, data,
-      brandHeadHtml(brand, { defaultTitle: '合 格 证', style: styleOf(tpl) }) +
-      body + warnHtml(brand) + qr.overlay);
+      brandHeadHtml(brand, { defaultTitle: '合 格 证', style: st }) +
+      body + foot + qr.overlay);
   }
 
   function renderLabel(tpl, data, opts) {
