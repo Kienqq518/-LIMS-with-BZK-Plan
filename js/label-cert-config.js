@@ -633,12 +633,27 @@
     return cfg;
   }
 
+  /** 一次性：去掉历史上强制回填的「委托编号」，对齐默认字段包；需要时可在字段池重新勾选 */
+  function migrateStripForcedEntrustNo(cfg) {
+    if (!cfg || cfg._migrateLabelFieldsV2) return cfg;
+    CATEGORIES.forEach(function (c) {
+      var bucket = getBucket(cfg, c.key, 'sample_label');
+      (bucket.templates || []).forEach(function (tpl) {
+        if (!tpl || !tpl.fields) return;
+        tpl.fields = tpl.fields.filter(function (f) { return f.id !== 'entrustNo'; });
+      });
+    });
+    cfg._migrateLabelFieldsV2 = 1;
+    return cfg;
+  }
+
   function load() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
+          migrateStripForcedEntrustNo(parsed);
           normalizeConfig(parsed);
           save(parsed);
           return parsed;
@@ -646,6 +661,7 @@
       }
     } catch (e) { /* ignore */ }
     var cfg = buildDefaultConfig();
+    cfg._migrateLabelFieldsV2 = 1;
     normalizeConfig(cfg);
     save(cfg);
     return cfg;
