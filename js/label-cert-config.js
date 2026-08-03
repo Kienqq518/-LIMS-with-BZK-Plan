@@ -169,10 +169,17 @@
       };
     });
 
-    // 安全工器具类预置
+    // 安全工器具类：1 个默认兜底 + 若干个性化（绑样品）
+    var lr = createTemplate({
+      id: 'tpl_aq_lr',
+      name: '左文右码合格证（默认）',
+      layoutPreset: 'cert_style_3',
+      enabled: true,
+      bindSampleIds: []
+    });
     var stick = createTemplate({
       id: 'tpl_aq_stick',
-      name: '不粘胶纸合格证（默认粘贴类）',
+      name: '不粘胶纸合格证（粘贴类）',
       layoutPreset: 'cert_style_1',
       bindSampleIds: ['rod', 'ladder', 'helmet', 'board1476', 'spur', 'sling', 'shackle'],
       meta: { material: '不粘胶纸', mount: '粘贴', printMethod: '喷墨' }
@@ -184,29 +191,37 @@
       bindSampleIds: ['belt976', 'rope1476'],
       meta: { material: 'PVC', mount: '悬挂', printMethod: '喷墨' }
     });
-    var lr = createTemplate({
-      id: 'tpl_aq_lr',
-      name: '左文右码合格证（回退）',
-      layoutPreset: 'cert_style_3',
-      bindSampleIds: []
-    });
     var label = createTemplate({
       id: 'tpl_aq_label',
       name: '样品标签（默认）',
       type: 'sample_label',
       layoutPreset: 'label_style_1',
+      enabled: true,
       bindSampleIds: []
     });
 
-    cfg.aqgqj.certificate.templates = [stick, hang, lr];
+    cfg.aqgqj.certificate.templates = [lr, stick, hang];
     cfg.aqgqj.certificate.defaultTemplateId = 'tpl_aq_lr';
     cfg.aqgqj.sample_label.templates = [label];
     cfg.aqgqj.sample_label.defaultTemplateId = 'tpl_aq_label';
 
-    // 其他大类给一套左文右码 + 标签默认
+    // 其他大类仅默认模版（无个性化覆盖）
     ['dlwz', 'hjjc', 'gcjc'].forEach(function (k) {
-      var c3 = createTemplate({ id: 'tpl_' + k + '_cert', name: '左文右码合格证（默认）', layoutPreset: 'cert_style_3' });
-      var lb = createTemplate({ id: 'tpl_' + k + '_label', name: '样品标签（默认）', type: 'sample_label', layoutPreset: 'label_style_1' });
+      var c3 = createTemplate({
+        id: 'tpl_' + k + '_cert',
+        name: '左文右码合格证（默认）',
+        layoutPreset: 'cert_style_3',
+        enabled: true,
+        bindSampleIds: []
+      });
+      var lb = createTemplate({
+        id: 'tpl_' + k + '_label',
+        name: '样品标签（默认）',
+        type: 'sample_label',
+        layoutPreset: 'label_style_1',
+        enabled: true,
+        bindSampleIds: []
+      });
       cfg[k].certificate.templates = [c3];
       cfg[k].certificate.defaultTemplateId = c3.id;
       cfg[k].sample_label.templates = [lb];
@@ -216,15 +231,73 @@
     return cfg;
   }
 
+  function findTemplate(bucket, id) {
+    var rows = bucket.templates || [];
+    for (var i = 0; i < rows.length; i++) if (rows[i].id === id) return rows[i];
+    return null;
+  }
+
+  function isDefaultTemplate(bucket, tplOrId) {
+    if (!bucket || !bucket.defaultTemplateId) return false;
+    var id = typeof tplOrId === 'string' ? tplOrId : (tplOrId && tplOrId.id);
+    return !!id && bucket.defaultTemplateId === id;
+  }
+
+  /**
+   * 保证每桶恰有 1 个默认：永启用、不绑样品。
+   * 缺省时优先选无绑定行，否则新建。
+   */
+  function ensureBucketShape(bucket, type) {
+    if (!bucket.templates) bucket.templates = [];
+    var def = bucket.defaultTemplateId ? findTemplate(bucket, bucket.defaultTemplateId) : null;
+    if (!def) {
+      for (var i = 0; i < bucket.templates.length; i++) {
+        if (!(bucket.templates[i].bindSampleIds || []).length) {
+          def = bucket.templates[i];
+          break;
+        }
+      }
+    }
+    if (!def && bucket.templates.length) def = bucket.templates[0];
+    if (!def) {
+      def = createTemplate({
+        type: type,
+        name: type === 'sample_label' ? '样品标签（默认）' : '合格证（默认）',
+        layoutPreset: type === 'sample_label' ? 'label_style_1' : 'cert_style_3',
+        enabled: true,
+        bindSampleIds: []
+      });
+      bucket.templates.unshift(def);
+    }
+    bucket.defaultTemplateId = def.id;
+    def.enabled = true;
+    def.bindSampleIds = [];
+    return bucket;
+  }
+
+  function normalizeConfig(cfg) {
+    CATEGORIES.forEach(function (c) {
+      ['certificate', 'sample_label'].forEach(function (type) {
+        ensureBucketShape(getBucket(cfg, c.key, type), type);
+      });
+    });
+    return cfg;
+  }
+
   function load() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') return parsed;
+        if (parsed && typeof parsed === 'object') {
+          normalizeConfig(parsed);
+          save(parsed);
+          return parsed;
+        }
       }
     } catch (e) { /* ignore */ }
     var cfg = buildDefaultConfig();
+    normalizeConfig(cfg);
     save(cfg);
     return cfg;
   }
@@ -247,24 +320,18 @@
 
   function resolveTemplate(catKey, type, sampleMasterId) {
     var cfg = load();
-    var bucket = getBucket(cfg, catKey, type);
-    var enabled = (bucket.templates || []).filter(function (t) { return t.enabled; });
-    var hit = null;
+    var bucket = ensureBucketShape(getBucket(cfg, catKey, type), type);
+    var defId = bucket.defaultTemplateId;
+    // 个性化：启用且已绑样品
     if (sampleMasterId) {
-      for (var i = 0; i < enabled.length; i++) {
-        if ((enabled[i].bindSampleIds || []).indexOf(sampleMasterId) !== -1) {
-          hit = enabled[i];
-          break;
-        }
+      for (var i = 0; i < bucket.templates.length; i++) {
+        var t = bucket.templates[i];
+        if (!t.enabled || t.id === defId) continue;
+        if ((t.bindSampleIds || []).indexOf(sampleMasterId) !== -1) return t;
       }
     }
-    if (hit) return hit;
-    if (bucket.defaultTemplateId) {
-      for (var j = 0; j < enabled.length; j++) {
-        if (enabled[j].id === bucket.defaultTemplateId) return enabled[j];
-      }
-    }
-    return enabled[0] || null;
+    // 未命中 / 个性化停用 → 默认（始终可用）
+    return findTemplate(bucket, defId) || null;
   }
 
   /** 名称 → 样品主数据 id（演示映射） */
@@ -300,10 +367,11 @@
 
   function findBindConflicts(catKey, type, templateId, bindSampleIds) {
     var cfg = load();
-    var bucket = getBucket(cfg, catKey, type);
+    var bucket = ensureBucketShape(getBucket(cfg, catKey, type), type);
     var conflicts = [];
     (bucket.templates || []).forEach(function (t) {
-      if (!t.enabled || t.id === templateId) return;
+      // 默认不参与绑定冲突；仅与其他「启用的个性化」冲突
+      if (!t.enabled || t.id === templateId || t.id === bucket.defaultTemplateId) return;
       (t.bindSampleIds || []).forEach(function (sid) {
         if (bindSampleIds.indexOf(sid) !== -1) {
           conflicts.push({ sampleId: sid, templateId: t.id, templateName: t.name });
@@ -325,6 +393,10 @@
     save: save,
     resetDefaults: resetDefaults,
     getBucket: getBucket,
+    ensureBucketShape: ensureBucketShape,
+    normalizeConfig: normalizeConfig,
+    findTemplate: findTemplate,
+    isDefaultTemplate: isDefaultTemplate,
     resolveTemplate: resolveTemplate,
     createTemplate: createTemplate,
     buildFieldsFromPreset: buildFieldsFromPreset,
