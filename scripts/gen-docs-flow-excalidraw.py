@@ -8,6 +8,7 @@ from pathlib import Path
 
 NOW = int(time.time() * 1000)
 rng = random.Random(7)
+W = 2120
 
 
 def nid():
@@ -157,115 +158,135 @@ elements.append(
         "模版侧栏 DOC_TYPES：检测委托书 · 收费通知单 · 检测任务单 · 检测任务及流转单 · 还样退库确认表 · 退样申请表",
         fontSize=15,
         color="#64748b",
-        width=1400,
+        width=1800,
     )
 )
 elements.append(
     text(
         60,
         98,
-        "共用骨架：template-config（cardEnabled / 字段分流）→ 业务节点触发 SYSTEM 生成 → entrust-detail 查看/编辑/历史 → 批量 ZIP 导出最新版",
+        "共用骨架：模版卡片开关 → 字段分流 → 桶模版解析 → 业务流程/页眉页脚 → 委托详情版本与导出",
         fontSize=14,
         color="#64748b",
         width=1450,
     )
 )
 
-# ========== ① SHARED CONFIG ==========
+# ========== ① SHARED CONFIG (Fig.1 — 5 nodes) ==========
 Y1 = 140
-elements.append(rect(40, Y1, 1680, 155, bg="#f8fafc", stroke="#94a3b8", sw=1, rough=0))
+elements.append(rect(40, Y1, W - 60, 155, bg="#f8fafc", stroke="#94a3b8", sw=1, rough=0))
 elements.append(text(60, Y1 + 10, "① 共用配置层", fontSize=20, color="#0f172a", width=220))
 elements.append(
     text(220, Y1 + 16, "template-config.html  /  system-params.html（页眉页脚）", fontSize=13, color="#64748b", width=560)
 )
 
 cfg = [
-    (60, 250, "模版卡片\ncardEnabled 系统生成开关\n关闭 →「已关闭生成」"),
-    (340, 280, "字段分流绑定\nbindFieldId + buckets\n仅委托书(电力物资)默认按任务类型"),
-    (650, 280, "resolveDocTemplate\n品类×单据×委托字段\n→ 桶模版 / __default__"),
-    (960, 280, "页眉页脚 HF\nentrust / fee_notice / task\ntask_flow / return_*"),
-    (1270, 280, "版本 / 导出键\nDocumentVersion Vn.m\nbatch export 英文 key"),
-    (1580, 120, "实例粒度\n1 份 or N 份\n见各单据卡片"),
+    (60, 360, "模版卡片\n系统生成开关\n关闭 →「已关闭生成」"),
+    (470, 360, "字段分流绑定\n仅委托书(电力物资)\n默认按任务类型"),
+    (880, 380, "样品大类 × 单据 × 委托字段\n→ 桶模版 / 启用版本"),
+    (1310, 300, "业务流程配置\n页眉页脚"),
+    (1660, 340, "委托详情页\n版本 / 导出键"),
 ]
 for x, w, label in cfg:
-    elements.extend(box(x, Y1 + 45, w, 90, label, bg="#e0f2fe", stroke="#0284c7", fontSize=12))
-for x1, x2 in [(310, 340), (620, 650), (930, 960), (1240, 1270), (1550, 1580)]:
+    elements.extend(box(x, Y1 + 45, w, 90, label, bg="#e0f2fe", stroke="#0284c7", fontSize=13))
+for x1, x2 in [(420, 470), (830, 880), (1260, 1310), (1610, 1660)]:
     elements.append(h_arrow(x1, Y1 + 90, x2, color="#0284c7"))
 
 # ========== ② TIMELINE ==========
 Y2 = 330
-elements.append(rect(40, Y2, 1680, 280, bg="#fffbeb", stroke="#fcd34d", sw=1, rough=0))
-elements.append(text(60, Y2 + 10, "② 业务时间线 · 何时落版 / 回填", fontSize=20, color="#92400e", width=480))
+elements.append(rect(40, Y2, W - 60, 360, bg="#fffbeb", stroke="#fcd34d", sw=1, rough=0))
+elements.append(text(60, Y2 + 10, "② 业务时间线 · 何时生成 / 落版 / 回填", fontSize=20, color="#92400e", width=560))
 elements.append(
     text(
-        520,
+        620,
         Y2 + 16,
-        "色块 = 首次 SYSTEM 生成　　虚线箭头 = 后续回填 / 升版　　灰框 = 不落该单据",
+        "蓝=委托书/收费通知单　　橙=流转单　　绿=任务单　　粉=还样退库确认表　　灰蓝=退样申请表　　灰框=不落版",
         fontSize=13,
         color="#64748b",
-        width=900,
+        width=1300,
     )
 )
 
-# stage headers
 stages = [
-    (60, "委托登记"),
+    (50, "委托登记"),
     (220, "样品收样"),
-    (400, "委托确认"),
-    (620, "费用审核"),
-    (780, "制备/发样"),
-    (980, "试样分发"),
-    (1180, "试验检测"),
-    (1380, "还样确认"),
-    (1560, "样品退样"),
+    (390, "委托确认"),
+    (540, "费用审核"),
+    (690, "制备/发样"),
+    (860, "试样分发"),
+    (1030, "试验检测"),
+    (1200, "数据审核"),
+    (1370, "申请还样"),
+    (1540, "还样确认"),
+    (1710, "申请退样"),
+    (1880, "样品退样"),
 ]
 for x, name in stages:
-    elements.append(text(x, Y2 + 48, name, fontSize=12, color="#78716c", width=120, align="center"))
+    color = "#db2777" if name == "申请还样" else "#78716c"
+    note = "（自动）" if name == "申请还样" else ""
+    elements.append(text(x, Y2 + 48, name + note, fontSize=11, color=color, width=130, align="center"))
 
-# baseline
-elements.append(rect(60, Y2 + 72, 1600, 4, bg="#e7e5e4", stroke="#e7e5e4", sw=0, rough=0))
+elements.append(rect(50, Y2 + 72, 1980, 4, bg="#e7e5e4", stroke="#e7e5e4", sw=0, rough=0))
 
-# chips on timeline rows
-# Row A: entrust + fee
-elements.extend(box(400, Y2 + 90, 180, 55, "委托书 V1.0\n+ 收费通知单 V1.0", bg="#dbeafe", stroke="#2563eb", fontSize=11))
-elements.append(text(160, Y2 + 105, "预览委托单\n（不落版）", fontSize=11, color="#94a3b8", width=100, align="center"))
+# Row A — 委托书 / 收费通知单
+elements.extend(box(40, Y2 + 90, 150, 60, "委托书+收费通知单\n首次生成", bg="#dbeafe", stroke="#2563eb", fontSize=11))
+elements.extend(box(220, Y2 + 90, 140, 60, "委托书+收费通知单\n更新落版", bg="#93c5fd", stroke="#1d4ed8", fontSize=11))
+elements.append(h_arrow(190, Y2 + 120, 220, color="#2563eb", style="dashed"))
+elements.extend(box(390, Y2 + 90, 120, 60, "委托确认\n不更新/不落版", bg="#f1f5f9", stroke="#94a3b8", fontSize=11))
+elements.extend(box(540, Y2 + 90, 120, 60, "费用审核\n不更新/不落版", bg="#f1f5f9", stroke="#94a3b8", fontSize=11))
+elements.append(h_arrow(360, Y2 + 120, 390, color="#94a3b8", style="dashed"))
+elements.append(h_arrow(510, Y2 + 120, 540, color="#94a3b8", style="dashed"))
 
-# Row B: flow
-elements.extend(box(200, Y2 + 155, 150, 50, "流转单 V1.0\n表头+空流程表", bg="#fde68a", stroke="#b45309", fontSize=11))
-elements.extend(box(780, Y2 + 155, 160, 50, "流转单回填\n制备? → 领样", bg="#fef3c7", stroke="#d97706", fontSize=11))
-elements.append(h_arrow(350, Y2 + 180, 780, color="#d97706", style="dashed"))
-elements.extend(box(1180, Y2 + 155, 150, 50, "流转单\n「接收试样」", bg="#fef3c7", stroke="#d97706", fontSize=11))
-elements.append(h_arrow(940, Y2 + 180, 1180, color="#d97706", style="dashed"))
-elements.extend(box(1380, Y2 + 155, 130, 50, "流转单\n「还样」", bg="#fef3c7", stroke="#d97706", fontSize=11))
-elements.append(h_arrow(1330, Y2 + 180, 1380, color="#d97706", style="dashed"))
-elements.extend(box(1560, Y2 + 155, 130, 50, "流转单\n退样行?", bg="#fef3c7", stroke="#d97706", fontSize=11))
-elements.append(h_arrow(1510, Y2 + 180, 1560, color="#d97706", style="dashed"))
+# Row B — 流转单
+elements.extend(box(220, Y2 + 165, 140, 52, "流转单 V1.0\n表头+空流程表", bg="#fde68a", stroke="#b45309", fontSize=11))
+elements.extend(box(690, Y2 + 165, 140, 52, "流转单回填\n制备?→领样", bg="#fef3c7", stroke="#d97706", fontSize=11))
+elements.extend(box(1030, Y2 + 165, 130, 52, "流转单\n「接收试样」", bg="#fef3c7", stroke="#d97706", fontSize=11))
+elements.extend(box(1540, Y2 + 165, 130, 52, "流转单\n「还样」", bg="#fef3c7", stroke="#d97706", fontSize=11))
+elements.extend(box(1880, Y2 + 165, 130, 52, "流转单\n退样行?", bg="#fef3c7", stroke="#d97706", fontSize=11))
+elements.append(h_arrow(360, Y2 + 191, 690, color="#d97706", style="dashed"))
+elements.append(h_arrow(830, Y2 + 191, 1030, color="#d97706", style="dashed"))
+elements.append(h_arrow(1160, Y2 + 191, 1540, color="#d97706", style="dashed"))
+elements.append(h_arrow(1670, Y2 + 191, 1880, color="#d97706", style="dashed"))
 
-# Row C: task
-elements.extend(box(980, Y2 + 215, 160, 50, "任务单 × N\n一人一单 V1.0", bg="#dcfce7", stroke="#16a34a", fontSize=11))
-elements.extend(box(1180, Y2 + 215, 160, 50, "任务单签收\nreceiver + date", bg="#bbf7d0", stroke="#15803d", fontSize=11))
-elements.append(h_arrow(1140, Y2 + 240, 1180, color="#16a34a", style="dashed"))
+# Row C — 任务单
+elements.extend(box(860, Y2 + 230, 140, 52, "任务单 × N\n一人一单 V1.0", bg="#dcfce7", stroke="#16a34a", fontSize=11))
+elements.extend(box(1030, Y2 + 230, 140, 52, "任务单签收\nreceiver+date", bg="#bbf7d0", stroke="#15803d", fontSize=11))
+elements.append(h_arrow(1000, Y2 + 256, 1030, color="#16a34a", style="dashed"))
 
-# Row D: return docs
-elements.extend(box(1320, Y2 + 90, 170, 55, "还样退库确认表\n申请归还时生成", bg="#fce7f3", stroke="#db2777", fontSize=11))
-elements.extend(box(1560, Y2 + 90, 140, 55, "退样申请表?\n默认关闭生成", bg="#f1f5f9", stroke="#64748b", fontSize=11))
+# Row D — return docs + auto node
+elements.extend(box(1200, Y2 + 90, 130, 60, "数据审核完成\n触发自动节点", bg="#f1f5f9", stroke="#64748b", fontSize=11))
+elements.extend(
+    box(1360, Y2 + 90, 155, 70, "还样退库确认表\n申请还样完成时生成\n（节点自动完成）", bg="#fce7f3", stroke="#db2777", fontSize=10)
+)
+elements.extend(box(1710, Y2 + 90, 150, 60, "退样申请表\n申请退样确认后生成", bg="#e2e8f0", stroke="#475569", fontSize=11))
+elements.append(h_arrow(1330, Y2 + 120, 1360, color="#db2777", style="dashed"))
 
-# fee audit note
-elements.extend(box(620, Y2 + 215, 120, 50, "费用审核\n无单据落版", bg="#f1f5f9", stroke="#94a3b8", fontSize=11))
+# Legend note
+elements.append(
+    text(
+        50,
+        Y2 + 300,
+        "关键纠正：委托书/收费通知单在「委托登记」生成，在「样品收样」更新落版；委托确认与费用审核不再落版。"
+        "申请还样为自动节点（数据审核完成后自动完成），完成时生成还样退库确认表。"
+        "退样申请表在「申请退样」确认后生成。",
+        fontSize=12,
+        color="#92400e",
+        width=2000,
+    )
+)
 
 # ========== ③ SIX DOC CARDS ==========
-Y3 = 650
+Y3 = 730
 elements.append(text(60, Y3, "③ 六种单据卡片（键名 · 触发 · 回填 · 渲染）", fontSize=20, color="#0f172a", width=700))
 
 cards = [
-    # row1
     {
         "x": 40,
         "y": Y3 + 40,
         "bg": "#eff6ff",
         "stroke": "#2563eb",
         "title": "1. 检测委托书",
-        "body": "键：entrust_form / HF=entrust\n粒度：委托 1 份\n生成：委托确认 → V1.0\n分流：电力物资默认按任务类型\n回填：基本信息变更审批通过 → major\n渲染：委托详情 Word+PDF\n　　　创建/编辑/历史；批量 entrust_form\n备注：登记页「预览委托单」不落版",
+        "body": "键：entrust_form / HF=entrust\n粒度：委托 1 份\n生成：委托登记 → 首次生成\n落版：样品收样 → 更新落版\n不落版：委托确认、费用审核\n分流：电力物资默认按任务类型\n其它：基本信息变更审批通过可再升 major\n渲染：委托详情 Word+PDF；批量 entrust_form",
     },
     {
         "x": 600,
@@ -273,7 +294,7 @@ cards = [
         "bg": "#f0f9ff",
         "stroke": "#0284c7",
         "title": "2. 收费通知单",
-        "body": "键：fee_notice / HF=fee_notice\n粒度：委托 1 份\n生成：委托确认 → V1.0（与委托书同节点）\n分流：默认统一模版\n回填：原型无节点渐进回填\n渲染：详情以 PDF 为主\n　　　查看/编辑/历史；批量 fee_notice\n备注：HF 可配专用页眉覆盖",
+        "body": "键：fee_notice / HF=fee_notice\n粒度：委托 1 份\n生成：委托登记 → 首次生成（与委托书同节点）\n落版：样品收样 → 更新落版\n不落版：委托确认、费用审核\n分流：默认统一模版\n渲染：详情以 PDF 为主；批量 fee_notice\n备注：HF 可配专用页眉覆盖",
     },
     {
         "x": 1160,
@@ -283,7 +304,6 @@ cards = [
         "title": "3. 检测任务单  SL/ZJ15-01",
         "body": "键：task_sheet / HF=task\n粒度：检测员 N 份（一人一单）\n生成：试样分发「发放」→ 各员 V1.0\n分流：默认统一；同员重发可合并\n回填：试验检测「确认接收」签收 → major\n渲染：HTML 模态+打印 / PageOffice\n　　　详情列含检测员·接收时间；批量全员最新\n备注：分发前详情为空态",
     },
-    # row2
     {
         "x": 40,
         "y": Y3 + 310,
@@ -298,15 +318,15 @@ cards = [
         "bg": "#fdf2f8",
         "stroke": "#db2777",
         "title": "5. 还样退库确认表  2024版",
-        "body": "键：return_confirm / HF=return_confirm\n粒度：按还样记录行\n生成：检测员申请归还样品库时出现\n分流：默认统一；种子开启生成\n回填：还样确认侧样品员签字确认\n　　　同时流转单追加「还样」行\n渲染：委托详情「还样记录」区链接\n　　　导出 / 批量 return_confirm\n备注：不在主单据区，版本 UI 较薄",
+        "body": "键：return_confirm / HF=return_confirm\n粒度：按还样记录行\n生成：试验管理「申请还样」节点完成时\n自动：数据审核完成后自动完成申请还样\n　　　故实际上随数据审核通过后落地\n回填：还样确认侧样品员签字确认\n　　　同时流转单追加「还样」行\n渲染：委托详情「还样记录」；批量 return_confirm",
     },
     {
         "x": 1160,
         "y": Y3 + 310,
         "bg": "#f8fafc",
         "stroke": "#64748b",
-        "title": "6. 退样申请表  2024版（默认关）",
-        "body": "键：return_apply / HF=return_apply\n粒度：按退样记录行\n生成：样品退样节点；需委托需要退样\n分流：cardEnabled 默认 false\n　　　侧栏显示「已关闭生成」\n回填：退样确定主要写流转单退样行\n渲染：待退样列表可查看/生成(PageOffice)\n　　　批量 return_apply（无文件则灰显）\n备注：六种中唯一默认关闭的单据",
+        "title": "6. 退样申请表  2024版",
+        "body": "键：return_apply / HF=return_apply\n粒度：按退样记录行\n生成：申请退样流程确认后生成\n前置：还样确认之后进入申请退样\n分流：cardEnabled 可关闭（关闭→已关闭生成）\n后续：样品退样节点回写流转单退样行\n渲染：待退样/还样记录区；批量 return_apply\n备注：无文件时批量导出灰显",
     },
 ]
 
@@ -315,69 +335,72 @@ for c in cards:
     elements.append(text(c["x"] + 16, c["y"] + 12, c["title"], fontSize=16, color="#0f172a", width=480))
     elements.append(text(c["x"] + 16, c["y"] + 42, c["body"], fontSize=12, color="#334155", width=490))
 
-# ========== ④ FLOW SHEET DETAIL (keep the progressive path) ==========
+# ========== ④ FLOW SHEET DETAIL ==========
 Y4 = Y3 + 600
-elements.append(rect(40, Y4, 1680, 310, bg="#fffbeb", stroke="#fcd34d", sw=1, rough=0))
+elements.append(rect(40, Y4, W - 60, 330, bg="#fffbeb", stroke="#fcd34d", sw=1, rough=0))
 elements.append(
     text(
         60,
         Y4 + 12,
-        "④ 流转单渐进回填详图（其余单据多为「一次生成 + 有限回填」）",
+        "④ 流转单渐进回填详图（其余单据多为「一次生成 + 有限落版/回填」）",
         fontSize=20,
         color="#92400e",
-        width=900,
+        width=1000,
     )
 )
 elements.append(
     text(
         60,
         Y4 + 42,
-        "流程表列：检测流程 | 样品交接人签名/日期 | 样品数量 | 备注　　origin=node_backfill；无内容变化不升版",
+        "流程表列：检测流程 | 样品交接人签名/日期 | 样品数量 | 备注　　· 还样退库确认表 / 退样申请表生成节点见②③",
         fontSize=13,
         color="#64748b",
-        width=1200,
+        width=1400,
     )
 )
 
 RY1 = Y4 + 80
-elements.extend(box(60, RY1, 130, 80, "V1.0\n收样生成", bg="#fef3c7", stroke="#d97706", fontSize=12))
-elements.extend(diamond_label(220, RY1 - 5, 140, 90, "是否\n制备？"))
-elements.extend(box(390, RY1, 160, 80, "① 样品制备\n制备员签+数量", bg="#fde68a", stroke="#b45309", fontSize=12))
-elements.extend(box(580, RY1, 160, 80, "② 领样\n领样人签+发样数", bg="#fde68a", stroke="#b45309", fontSize=12))
-elements.extend(box(770, RY1, 170, 80, "试样分发\n不写流转单", bg="#f1f5f9", stroke="#64748b", fontSize=12))
-elements.extend(box(970, RY1, 170, 80, "③ 接收试样\n检测员签+数量", bg="#fde68a", stroke="#b45309", fontSize=12))
-elements.extend(box(1170, RY1, 160, 80, "∥ 任务单签收\n并行非替代", bg="#dcfce7", stroke="#16a34a", fontSize=12))
-elements.extend(box(1360, RY1, 160, 80, "④ 还样确认\n还样人签可多行", bg="#fde68a", stroke="#b45309", fontSize=12))
-elements.extend(diamond_label(1550, RY1 - 5, 140, 90, "是否\n退样？"))
+elements.extend(box(50, RY1, 120, 80, "V1.0\n收样生成", bg="#fef3c7", stroke="#d97706", fontSize=12))
+elements.extend(diamond_label(195, RY1 - 5, 130, 90, "是否\n制备？"))
+elements.extend(box(350, RY1, 145, 80, "① 样品制备\n制备员签+数量", bg="#fde68a", stroke="#b45309", fontSize=11))
+elements.extend(box(520, RY1, 145, 80, "② 领样\n领样人签+发样数", bg="#fde68a", stroke="#b45309", fontSize=11))
+elements.extend(box(690, RY1, 140, 80, "试样分发\n不写流转单", bg="#f1f5f9", stroke="#64748b", fontSize=11))
+elements.extend(box(855, RY1, 145, 80, "③ 接收试样\n检测员签+数量", bg="#fde68a", stroke="#b45309", fontSize=11))
+elements.extend(box(1025, RY1, 130, 80, "∥ 任务单签收\n并行非替代", bg="#dcfce7", stroke="#16a34a", fontSize=11))
+elements.extend(box(1180, RY1, 120, 80, "数据审核\n→自动申请还样", bg="#fce7f3", stroke="#db2777", fontSize=11))
+elements.extend(box(1325, RY1, 145, 80, "④ 还样确认\n还样人签可多行", bg="#fde68a", stroke="#b45309", fontSize=11))
+elements.extend(box(1495, RY1, 130, 80, "申请退样\n确认→退样申请表", bg="#e2e8f0", stroke="#475569", fontSize=11))
+elements.extend(diamond_label(1650, RY1 - 5, 130, 90, "是否\n退样？"))
+elements.extend(box(1810, RY1, 145, 80, "⑤ 样品退样\n自取/快递", bg="#fde68a", stroke="#b45309", fontSize=11))
 
-elements.append(h_arrow(190, RY1 + 40, 220, color="#d97706"))
-elements.append(h_arrow(360, RY1 + 40, 390, color="#d97706"))
-elements.append(text(365, RY1 + 16, "是", fontSize=12, color="#ea580c", width=24))
-elements.append(h_arrow(550, RY1 + 40, 580, color="#d97706"))
-elements.append(h_arrow(740, RY1 + 40, 770, color="#64748b"))
-elements.append(h_arrow(940, RY1 + 40, 970, color="#d97706"))
-elements.append(h_arrow(1140, RY1 + 40, 1170, color="#16a34a", style="dashed"))
-elements.append(h_arrow(1330, RY1 + 40, 1360, color="#d97706"))
-elements.append(h_arrow(1520, RY1 + 40, 1550, color="#d97706"))
+elements.append(h_arrow(170, RY1 + 40, 195, color="#d97706"))
+elements.append(h_arrow(325, RY1 + 40, 350, color="#d97706"))
+elements.append(text(328, RY1 + 16, "是", fontSize=12, color="#ea580c", width=24))
+elements.append(h_arrow(495, RY1 + 40, 520, color="#d97706"))
+elements.append(h_arrow(665, RY1 + 40, 690, color="#64748b"))
+elements.append(h_arrow(830, RY1 + 40, 855, color="#d97706"))
+elements.append(h_arrow(1000, RY1 + 40, 1025, color="#16a34a", style="dashed"))
+elements.append(h_arrow(1155, RY1 + 40, 1180, color="#db2777", style="dashed"))
+elements.append(h_arrow(1300, RY1 + 40, 1325, color="#d97706"))
+elements.append(h_arrow(1470, RY1 + 40, 1495, color="#475569"))
+elements.append(h_arrow(1625, RY1 + 40, 1650, color="#d97706"))
+elements.append(h_arrow(1780, RY1 + 40, 1810, color="#d97706"))
+elements.append(text(1785, RY1 + 16, "是", fontSize=12, color="#ea580c", width=24))
 
 # skip prepare
-elements.append(arrow(290, RY1 + 85, [[0, 0], [0, 30], [370, 30]], color="#ea580c", style="dashed"))
-elements.append(text(360, RY1 + 95, "否·跳过", fontSize=11, color="#ea580c", width=80))
+elements.append(arrow(260, RY1 + 85, [[0, 0], [0, 28], [320, 28]], color="#ea580c", style="dashed"))
+elements.append(text(300, RY1 + 95, "否·跳过", fontSize=11, color="#ea580c", width=80))
 
-# return branch under
-RY2 = Y4 + 200
-elements.extend(box(1360, RY2, 180, 70, "⑤ 退样\n自取签收 / 快递退回", bg="#fde68a", stroke="#b45309", fontSize=12))
-elements.append(v_arrow(1620, RY1 + 85, RY2 + 35, color="#d97706"))
-elements.append(arrow(1620, RY2 + 35, [[0, 0], [-80, 0]], color="#d97706"))
-elements.append(text(1630, RY1 + 100, "是", fontSize=12, color="#ea580c", width=24))
-elements.extend(box(1550, RY2, 140, 50, "结束流转行", bg="#f1f5f9", stroke="#64748b", fontSize=12))
-elements.append(text(1630, RY2 - 20, "否", fontSize=12, color="#ea580c", width=24))
+# no return
+elements.append(v_arrow(1715, RY1 + 85, RY1 + 130, color="#ea580c", style="dashed"))
+elements.extend(box(1650, RY1 + 130, 130, 45, "结束流转行", bg="#f1f5f9", stroke="#64748b", fontSize=12))
+elements.append(text(1725, RY1 + 100, "否", fontSize=12, color="#ea580c", width=24))
+
 elements.append(
     text(
-        60,
-        RY2,
-        "单据结构：页眉 QD088-2022 → 标题「检测任务及流转单」→ 表头字段区 → 动态流程表\n"
-        "页面：sample-receive → prepare → dispatch → distribute → detect → return-confirm → return-client → entrust-detail",
+        50,
+        RY1 + 200,
+        "单据结构：页眉 QD088-2022 → 标题「检测任务及流转单」→ 表头字段区 → 动态流程表",
         fontSize=12,
         color="#78716c",
         width=1100,
@@ -385,8 +408,8 @@ elements.append(
 )
 
 # ========== ⑤ CONSUME ==========
-Y5 = Y4 + 350
-elements.append(rect(40, Y5, 1680, 200, bg="#eff6ff", stroke="#93c5fd", sw=1, rough=0))
+Y5 = Y4 + 370
+elements.append(rect(40, Y5, W - 60, 200, bg="#eff6ff", stroke="#93c5fd", sw=1, rough=0))
 elements.append(text(60, Y5 + 12, "⑤ 渲染与消费（委托详情 + 批量导出）", fontSize=20, color="#1e40af", width=560))
 
 elements.extend(
@@ -408,7 +431,7 @@ ops = [
     (760, "查看历史\nVn.m 版本链\n可内容回滚(设计)"),
     (980, "打印\n套用对应 HF\n页眉页脚图片"),
     (1200, "批量导出 ZIP\n勾选类型英文 key\n仅打包当前最新"),
-    (1420, "未生成类型\n复选框灰显\n如退样申请表默认空"),
+    (1420, "未生成类型\n复选框灰显\n关闭生成则无文件"),
 ]
 for x, label in ops:
     elements.extend(box(x, Y5 + 60, 190, 100, label, bg="#dbeafe", stroke="#2563eb", fontSize=11))
@@ -416,15 +439,15 @@ for x, label in ops:
 
 # ========== ⑥ VERSION + RELATIONSHIPS ==========
 Y6 = Y5 + 240
-elements.append(rect(40, Y6, 820, 210, bg="#faf5ff", stroke="#d8b4fe", sw=1, rough=0))
+elements.append(rect(40, Y6, 820, 220, bg="#faf5ff", stroke="#d8b4fe", sw=1, rough=0))
 elements.append(text(60, Y6 + 12, "⑥ 版本规则（共用）", fontSize=20, color="#6b21a8", width=280))
 elements.extend(
     box(
         60,
         Y6 + 50,
         380,
-        140,
-        "SYSTEM · major\n· generate　首次生成\n· node_backfill　节点回填有变化\n· workflow_rollback　流程回退改写\n任务单按检测员实例各自成链",
+        150,
+        "SYSTEM · major\n· generate　首次生成\n· 收样更新落版（委托书/收费通知单）\n· node_backfill　节点回填有变化\n· workflow_rollback　流程回退改写\n任务单按检测员实例各自成链",
         bg="#f3e8ff",
         stroke="#9333ea",
         fontSize=12,
@@ -435,7 +458,7 @@ elements.extend(
         460,
         Y6 + 50,
         360,
-        140,
+        150,
         "MANUAL · minor\n· edit_close　人工编辑关闭\n· content_rollback　内容回滚\n列表始终只显示最新文件名\n同版本可挂 Word + PDF",
         bg="#f3e8ff",
         stroke="#9333ea",
@@ -443,56 +466,63 @@ elements.extend(
     )
 )
 
-elements.append(rect(900, Y6, 820, 210, bg="#fdf2f8", stroke="#f9a8d4", sw=1, rough=0))
+elements.append(rect(900, Y6, 1160, 220, bg="#fdf2f8", stroke="#f9a8d4", sw=1, rough=0))
 elements.append(text(920, Y6 + 12, "⑦ 单据关系要点", fontSize=20, color="#9d174d", width=280))
 elements.append(
     text(
         920,
         Y6 + 50,
-        "· 委托书 ∥ 收费通知单：同在「委托确认」首次生成\n"
+        "· 委托书 ∥ 收费通知单：委托登记生成 → 样品收样更新落版；委托确认/费用审核不落版\n"
         "· 流转单 @ 收样  vs  任务单 @ 分发：时间与粒度不同\n"
         "· 交汇点「接收试样」：任务单签收 ∥ 流转单追加行\n"
-        "· 还样退库确认表 → 内部库房交接；退样申请表 → 退委托方\n"
-        "· 还样/退样完成时，同时回写流转单对应流程行\n"
-        "· 基本信息变更审批通过 → 仅再生「检测委托书」major\n"
-        "· 退样申请表默认 cardEnabled=false，其余五种默认开",
+        "· 数据审核完成 → 自动完成「申请还样」→ 生成还样退库确认表\n"
+        "· 申请退样确认后 → 生成退样申请表；样品退样回写流转单退样行\n"
+        "· 还样退库确认表=内部库房交接；退样申请表=退委托方\n"
+        "· 基本信息变更审批通过 → 可再升「检测委托书」major",
         fontSize=13,
         color="#831843",
-        width=760,
+        width=1100,
     )
 )
 
 # ========== KEY MAP ==========
-Y7 = Y6 + 250
-elements.append(rect(40, Y7, 1680, 150, bg="#ffffff", stroke="#cbd5e1", sw=1, rough=0))
-elements.append(text(60, Y7 + 12, "⑧ 键名速查", fontSize=20, color="#0f172a", width=200))
+Y7 = Y6 + 260
+elements.append(rect(40, Y7, W - 60, 160, bg="#ffffff", stroke="#cbd5e1", sw=1, rough=0))
+elements.append(text(60, Y7 + 12, "⑧ 键名速查 · 生成/落版节点", fontSize=20, color="#0f172a", width=400))
 elements.append(
     text(
         60,
         Y7 + 48,
-        "显示名                  导出 key           HF key           表号/版次           详情落点\n"
-        "检测委托书              entrust_form       entrust          （委托单编号规则）   委托单文件\n"
-        "收费通知单              fee_notice         fee_notice       —                   收费通知单\n"
-        "检测任务单              task_sheet         task             SL/ZJ15-01          检测任务单（含检测员列）\n"
-        "检测任务及流转单        flow_sheet         task_flow        QD088-2022          检测任务及样品流转单\n"
-        "还样退库确认表          return_confirm     return_confirm   2024版              还样记录\n"
-        "退样申请表              return_apply       return_apply     2024版              还样记录 / 待退样列表",
+        "显示名                  导出 key           首次生成              更新落版/回填关键点\n"
+        "检测委托书              entrust_form       委托登记              样品收样落版（确认/费用审核不落）\n"
+        "收费通知单              fee_notice         委托登记              样品收样落版（确认/费用审核不落）\n"
+        "检测任务单              task_sheet         试样分发              试验检测签收\n"
+        "检测任务及流转单        flow_sheet         样品收样              制备/领样/接收/还样/退样\n"
+        "还样退库确认表          return_confirm     申请还样(自动完成)    还样确认签字\n"
+        "退样申请表              return_apply       申请退样确认后        样品退样（流转单退样行）",
         fontSize=12,
         color="#334155",
-        width=1600,
+        width=1900,
     )
 )
 
 elements.append(
     text(
         60,
-        Y7 + 165,
+        Y7 + 175,
         "主文件：docs/feishu/六种委托单据-生成渲染整体流程.excalidraw　　生成脚本：scripts/gen-docs-flow-excalidraw.py",
         fontSize=12,
         color="#94a3b8",
         width=1200,
     )
 )
+
+# Final sweep: drop any remaining degenerate arrows
+elements = [
+    e
+    for e in elements
+    if not (e.get("type") == "arrow" and e.get("width", 1) == 0 and e.get("height", 1) == 0)
+]
 
 doc = {
     "type": "excalidraw",
@@ -507,3 +537,4 @@ out = Path("/workspace/docs/feishu/六种委托单据-生成渲染整体流程.e
 out.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
 print("wrote", out)
 print("elements", len(elements))
+print("arrows", sum(1 for e in elements if e["type"] == "arrow"))
