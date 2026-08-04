@@ -98,7 +98,7 @@
   <div class="p-4 space-y-4">
 
     <!-- Filter Card -->
-    <div class="rounded bg-white p-4 shadow-sm">
+    <div class="rounded bg-white p-4 shadow-sm" data-annotate="filter-bar">
       <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <div class="flex items-center gap-2">
           <label class="w-20 flex-shrink-0 text-right text-sm text-slate-600">设备编号</label>
@@ -141,8 +141,8 @@
     </div>
 
     <!-- Table Card -->
-    <div class="rounded bg-white p-4 shadow-sm">
-      <div class="mb-3 flex items-center gap-2">
+    <div class="rounded bg-white p-4 shadow-sm" data-annotate="equip-table">
+      <div class="mb-3 flex items-center gap-2" data-annotate="toolbar">
         <button onclick="openEditModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新增</button>
         <button onclick="showToast('导入功能暂未开放')" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-upload"></i> 导入</button>
         <button onclick="showToast('导出功能暂未开放')" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-download"></i> 导出</button>
@@ -153,17 +153,17 @@
             <tr class="bg-slate-50 text-slate-600">
               <th class="border border-slate-200 px-3 py-2 font-medium w-12">序号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编号</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-name">名称</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">型号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">下次校准时间</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">校准状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-calib-status">校准状态</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">设备精度</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">所属部门</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">所在区域</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">证书编号</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium w-20">启用状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-20" data-annotate="col-enabled">启用状态</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">备注</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium w-48">操作</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-48" data-annotate="col-ops">操作</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -179,7 +179,7 @@
 
   <!-- ===== Edit / Add Modal ===== -->
   <div id="editModal" class="modal-mask">
-    <div class="w-[720px] max-w-full rounded-lg bg-white shadow-xl flex flex-col" style="max-height:92vh">
+    <div class="w-[720px] max-w-full rounded-lg bg-white shadow-xl flex flex-col" style="max-height:92vh" data-annotate="edit-modal">
       <div class="flex-shrink-0 flex items-center justify-between border-b border-slate-100 px-5 py-3">
         <h3 id="editModalTitle" class="text-base font-medium">新增设备</h3>
         <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
@@ -227,7 +227,7 @@
             <textarea id="m_remark" rows="2" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500 resize-none"></textarea>
           </div>
           <div class="flex items-center gap-2">
-            <label class="w-24 flex-shrink-0 text-right text-slate-600">是否校准</label>
+            <label class="w-24 flex-shrink-0 text-right text-slate-600" data-annotate="need-calib">是否校准</label>
             <select id="m_needCalib" onchange="onCalibChange()" class="flex-1 min-w-0 rounded border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-500">
               <option value="yes">是</option>
               <option value="no">否</option>
@@ -236,7 +236,7 @@
         </div>
 
         <!-- Calibration fields (shown when 是否校准=是) -->
-        <div id="calibSection" class="mt-4 border-t border-slate-100 pt-4">
+        <div id="calibSection" class="mt-4 border-t border-slate-100 pt-4" data-annotate="calib-section">
           <div class="grid grid-cols-2 gap-x-6 gap-y-3">
             <div class="flex items-center gap-2">
               <label class="w-24 flex-shrink-0 text-right text-slate-600">上次校准时间</label>
@@ -261,7 +261,7 @@
               <label class="w-24 flex-shrink-0 text-right text-slate-600">校准机构</label>
               <input id="m_agency" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="请输入" />
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2" data-annotate="warn-days">
               <label class="w-24 flex-shrink-0 text-right text-slate-600">提前提醒天数</label>
               <div class="flex flex-1 items-center gap-1">
                 <input id="m_warnDays" type="number" min="0" class="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" placeholder="0" />
@@ -275,7 +275,7 @@
           </div>
         </div>
 
-        <div class="mt-4 border-t border-slate-100 pt-4">
+        <div class="mt-4 border-t border-slate-100 pt-4" data-annotate="edit-files">
           <div class="flex items-start gap-2">
             <label class="w-24 flex-shrink-0 pt-2 text-right text-slate-600">附件</label>
             <div class="flex-1 min-w-0">
@@ -294,7 +294,7 @@
 
   <!-- ===== Associate Tests Modal ===== -->
   <div id="linkModal" class="modal-mask">
-    <div class="rounded-lg bg-white shadow-xl flex flex-col" style="width:min(1040px,96vw);height:min(720px,92vh)">
+    <div class="rounded-lg bg-white shadow-xl flex flex-col" style="width:min(1040px,96vw);height:min(720px,92vh)" data-annotate="link-modal">
       <!-- Header -->
       <div class="flex-shrink-0 flex items-start justify-between border-b border-slate-100 px-5 py-3">
         <div>
@@ -308,17 +308,17 @@
       <!-- Body -->
       <div class="flex flex-1 min-h-0 overflow-hidden">
         <!-- Left tree panel -->
-        <div class="flex flex-col border-r border-slate-200" style="width:290px;flex-shrink:0">
+        <div class="flex flex-col border-r border-slate-200" style="width:290px;flex-shrink:0" data-annotate="link-tree">
           <div class="p-3 border-b border-slate-100 flex-shrink-0">
             <input id="linkTreeSearch" oninput="filterTree()" class="w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入样品名称或试验项搜索" />
           </div>
           <div id="linkTree" class="flex-1 overflow-y-auto p-2"></div>
         </div>
         <!-- Right tags panel -->
-        <div class="flex flex-col flex-1 min-w-0">
+        <div class="flex flex-col flex-1 min-w-0" data-annotate="link-right">
           <div class="flex-shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-slate-100">
             <span id="linkRightTitle" class="text-sm font-medium text-slate-700">关联试验 (已关联: 0)</span>
-            <div class="flex items-center gap-4 text-sm">
+            <div class="flex items-center gap-4 text-sm" data-annotate="link-actions">
               <button onclick="openSyncModal()" class="text-blue-600 hover:underline">同步</button>
               <button onclick="resetLinked()" class="text-blue-600 hover:underline">重置</button>
               <button onclick="clearLinked()" class="text-blue-600 hover:underline">清空</button>
@@ -337,13 +337,13 @@
 
   <!-- ===== Sync Nested Modal ===== -->
   <div id="syncModal" class="modal-mask" style="z-index:60">
-    <div class="w-[700px] max-w-full rounded-lg bg-white shadow-xl">
+    <div class="w-[700px] max-w-full rounded-lg bg-white shadow-xl" data-annotate="sync-modal">
       <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
         <h3 class="text-base font-medium">同步试验项关联</h3>
         <button onclick="closeSyncModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="px-5 py-4 text-sm space-y-3">
-        <div class="rounded bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
+        <div class="rounded bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700" data-annotate="sync-hint">
           <i class="fa fa-info-circle mr-1"></i>
           选择其他设备，将该设备已关联的试验项同步合并到当前设备的关联中（自动去重）。
         </div>
@@ -380,11 +380,11 @@
 
   <!-- ===== History Modal ===== -->
   <div id="histModal" class="modal-mask">
-    <div class="w-[840px] max-w-full rounded-lg bg-white shadow-xl flex flex-col" style="max-height:86vh">
+    <div class="w-[840px] max-w-full rounded-lg bg-white shadow-xl flex flex-col" style="max-height:86vh" data-annotate="hist-modal">
       <div class="flex-shrink-0 flex items-center justify-between border-b border-slate-100 px-5 py-3">
         <div class="flex items-center gap-3">
           <h3 class="text-base font-medium">设备履历</h3>
-          <button onclick="openHistFormModal(null)" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新增履历</button>
+          <button onclick="openHistFormModal(null)" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700" data-annotate="hist-add"><i class="fa fa-plus"></i> 新增履历</button>
         </div>
         <button onclick="closeHistModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
@@ -397,7 +397,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">起始时间</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">结束时间</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">备注</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">校准报告</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="hist-report-col">校准报告</th>
               <th class="border border-slate-200 px-3 py-2 font-medium w-28">操作</th>
             </tr>
           </thead>
@@ -412,7 +412,7 @@
 
   <!-- ===== History Form Modal ===== -->
   <div id="histFormModal" class="modal-mask" style="z-index:60">
-    <div class="w-[500px] max-w-full rounded-lg bg-white shadow-xl">
+    <div class="w-[500px] max-w-full rounded-lg bg-white shadow-xl" data-annotate="hist-form">
       <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
         <h3 id="histFormTitle" class="text-base font-medium">新增履历</h3>
         <button onclick="closeHistFormModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
@@ -434,7 +434,7 @@
           <label class="w-24 flex-shrink-0 pt-1.5 text-right text-slate-600">备注</label>
           <textarea id="hf_remark" rows="2" class="flex-1 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500 resize-none"></textarea>
         </div>
-        <div class="flex items-start gap-3">
+        <div class="flex items-start gap-3" data-annotate="hist-report-upload">
           <label class="w-24 flex-shrink-0 pt-2 text-right text-slate-600">校准报告</label>
           <div class="file-upload-row" id="hf_reportBox">
             <div id="hf_reportChip"></div>
@@ -451,7 +451,7 @@
   </div>
 
   <!-- ===== Name Hover Popover ===== -->
-  <div id="namePop" onmouseenter="cancelHidePop()" onmouseleave="scheduleHidePop()">
+  <div id="namePop" onmouseenter="cancelHidePop()" onmouseleave="scheduleHidePop()" data-annotate="name-pop">
     <div class="px-4 py-3 border-b border-slate-100">
       <div class="flex items-start gap-2 flex-wrap">
         <span id="popName" class="font-medium text-slate-800 text-sm leading-snug"></span>
@@ -460,14 +460,14 @@
       </div>
     </div>
     <div id="popGrid" class="grid grid-cols-2 gap-x-4 gap-y-1.5 px-4 py-3 text-xs border-b border-slate-100"></div>
-    <div class="px-4 py-3 border-b border-slate-100">
+    <div class="px-4 py-3 border-b border-slate-100" data-annotate="pop-calib-report">
       <div class="flex items-center gap-1.5 mb-2 text-xs font-medium text-slate-600">
         <i class="fa fa-file-text-o text-slate-400"></i>
         <span>校准报告</span>
       </div>
       <div id="popCalibReport" class="text-xs"></div>
     </div>
-    <div class="px-4 py-3">
+    <div class="px-4 py-3" data-annotate="pop-files">
       <div class="flex items-center gap-1.5 mb-2 text-xs font-medium text-slate-600">
         <i class="fa fa-paperclip text-slate-400"></i>
         <span id="popFilesTitle">设备文件 (0)</span>
@@ -481,7 +481,14 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/equip-store.js"></script>
+  <script src="js/prototype-annotation.js"></script>
   <script>
+    function refreshPa() {
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) {
+        requestAnimationFrame(function () { PrototypeAnnotation.refresh(); });
+      }
+    }
+
     // ==================== UTILS ====================
     function esc(s) {
       return String(s == null ? '' : s)
@@ -601,6 +608,7 @@
         '</tr>';
       }).join('');
       document.getElementById('totalText').textContent = '共 ' + rows.length + ' 条';
+      refreshPa();
     }
 
     function resetFilter() {
@@ -686,10 +694,12 @@
       renderEditFiles();
       onCalibChange();
       document.getElementById('editModal').classList.add('open');
+      refreshPa();
     }
 
     function closeEditModal() {
       document.getElementById('editModal').classList.remove('open');
+      refreshPa();
     }
 
     function resetEditModal() {
@@ -699,6 +709,7 @@
     function onCalibChange() {
       var show = document.getElementById('m_needCalib').value === 'yes';
       document.getElementById('calibSection').style.display = show ? '' : 'none';
+      refreshPa();
     }
 
     function updateNextCalib() {
@@ -775,10 +786,12 @@
       renderTree();
       renderLinkedTags();
       document.getElementById('linkModal').classList.add('open');
+      refreshPa();
     }
 
     function closeLinkModal() {
       document.getElementById('linkModal').classList.remove('open');
+      refreshPa();
     }
 
     function renderLinkMeta(dev) {
@@ -994,10 +1007,12 @@
       document.getElementById('sync_kw').value = '';
       renderSyncTable();
       document.getElementById('syncModal').classList.add('open');
+      refreshPa();
     }
 
     function closeSyncModal() {
       document.getElementById('syncModal').classList.remove('open');
+      refreshPa();
     }
 
     function renderSyncTable() {
@@ -1079,10 +1094,12 @@
       _histDevId = id;
       renderHistTable();
       document.getElementById('histModal').classList.add('open');
+      refreshPa();
     }
 
     function closeHistModal() {
       document.getElementById('histModal').classList.remove('open');
+      refreshPa();
     }
 
     function renderHistTable() {
@@ -1163,10 +1180,12 @@
       _histReportName = entry ? (entry.report || '') : '';
       renderHistReportUpload();
       document.getElementById('histFormModal').classList.add('open');
+      refreshPa();
     }
 
     function closeHistFormModal() {
       document.getElementById('histFormModal').classList.remove('open');
+      refreshPa();
     }
 
     function saveHistForm() {
@@ -1293,11 +1312,13 @@
 
       pop.style.left = x + 'px';
       pop.style.top = y + 'px';
+      refreshPa();
     }
 
     function scheduleHidePop() {
       _popHideTimer = setTimeout(function () {
         document.getElementById('namePop').classList.remove('show');
+        refreshPa();
       }, 200);
     }
 
@@ -1325,6 +1346,236 @@
     // ==================== STARTUP ====================
     populateSelects();
     renderTable();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'filter-bar',
+            selector: '[data-annotate="filter-bar"]',
+            position: 'bottom-left',
+            title: '筛选区',
+            wide: true,
+            content: '支持按设备编号/名称/型号、所属部门、所在区域、<strong>校准状态</strong>（正常 / 预警期 / 已过期）筛选。',
+            tag: '列表'
+          },
+          {
+            id: 'toolbar',
+            selector: '[data-annotate="toolbar"]',
+            position: 'bottom-right',
+            title: '工具栏',
+            content: '新增打开编辑弹窗；导入/导出为原型占位（暂未开放）。',
+            tag: '列表'
+          },
+          {
+            id: 'equip-table',
+            selector: '[data-annotate="equip-table"]',
+            position: 'top-right',
+            title: '设备台账列表',
+            wide: true,
+            content: '设备管理主列表。<strong>已删除「设备报告」列</strong>；校准状态以色点区分；启用开关控制是否可被样品试验「检测设备」选用。',
+            tag: '列表'
+          },
+          {
+            id: 'col-name',
+            selector: '[data-annotate="col-name"]',
+            position: 'bottom-left',
+            title: '名称悬停气泡',
+            wide: true,
+            content: '悬停设备名称弹出详情：基本信息、<strong>最新校准报告</strong>（取履历中带报告的最近一条，可预览/下载）、以及编辑时上传的<strong>设备文件</strong>。',
+            tag: '气泡'
+          },
+          {
+            id: 'col-calib-status',
+            selector: '[data-annotate="col-calib-status"]',
+            position: 'bottom-left',
+            title: '校准状态',
+            content: '由下次校准时间与提前提醒天数计算：正常 / 预警期 / 已过期，列表以色点展示。',
+            tag: '校准'
+          },
+          {
+            id: 'col-enabled',
+            selector: '[data-annotate="col-enabled"]',
+            position: 'bottom-left',
+            title: '启用状态',
+            wide: true,
+            content: '开关即时保存。样品数据试验编辑的「检测设备」多选<strong>仅加载启用设备</strong>；停用后不可新选（已选历史仍保留展示）。',
+            tag: '启用'
+          },
+          {
+            id: 'col-ops',
+            selector: '[data-annotate="col-ops"]',
+            position: 'bottom-left',
+            title: '行操作',
+            content: '关联试验｜履历｜编辑｜删除。关联试验维护设备↔试验项；履历含校准报告列。',
+            tag: '列表'
+          },
+          {
+            id: 'edit-modal',
+            selector: '[data-annotate="edit-modal"]',
+            position: 'top-left',
+            title: '新增 / 编辑设备',
+            wide: true,
+            content: '维护台账基本信息。「是否校准」控制下方校准字段显隐；底部可上传多个<strong>附件</strong>（写入设备文件，名称悬停气泡可见）。',
+            tag: '编辑'
+          },
+          {
+            id: 'need-calib',
+            selector: '[data-annotate="need-calib"]',
+            position: 'left',
+            title: '是否校准',
+            content: '选「是」展示校准区（周期、下次校准、机构、提前提醒天数等）；选「否」隐藏校准字段。',
+            tag: '编辑'
+          },
+          {
+            id: 'calib-section',
+            selector: '[data-annotate="calib-section"]',
+            position: 'top-right',
+            title: '校准信息区',
+            wide: true,
+            content: '上次校准 + 校准周期 → 自动计算下次校准时间。提前提醒天数用于进入「预警期」。',
+            tag: '校准'
+          },
+          {
+            id: 'warn-days',
+            selector: '[data-annotate="warn-days"]',
+            position: 'left',
+            title: '提前提醒天数',
+            content: '字段文案由「预警提前期」更名为<strong>提前提醒天数</strong>，单位为天。',
+            tag: '文案'
+          },
+          {
+            id: 'edit-files',
+            selector: '[data-annotate="edit-files"]',
+            position: 'top-left',
+            title: '设备附件',
+            wide: true,
+            content: '多附件上传（原型点选添加模拟文件）。保存写入设备 <code>files</code>，列表名称悬停气泡「设备文件」区展示。',
+            tag: '上传'
+          },
+          {
+            id: 'link-modal',
+            selector: '[data-annotate="link-modal"]',
+            position: 'top-left',
+            title: '关联试验',
+            wide: true,
+            content: '为当前设备勾选可关联的试验项。顶部展示设备摘要；左树勾选，右区展示已关联标签。',
+            tag: '关联'
+          },
+          {
+            id: 'link-tree',
+            selector: '[data-annotate="link-tree"]',
+            position: 'top-right',
+            title: '试验树勾选',
+            wide: true,
+            content: '左树按样品/试验层级勾选。支持按样品名称或试验项关键词搜索过滤。',
+            tag: '关联'
+          },
+          {
+            id: 'link-right',
+            selector: '[data-annotate="link-right"]',
+            position: 'top-left',
+            title: '已关联区',
+            content: '右侧以标签展示已关联试验；可单条移除。与左树勾选双向同步。',
+            tag: '关联'
+          },
+          {
+            id: 'link-actions',
+            selector: '[data-annotate="link-actions"]',
+            position: 'bottom-left',
+            title: '同步 / 重置 / 清空',
+            wide: true,
+            content: '<strong>同步</strong>：从其他设备合并关联试验（去重）。<strong>重置</strong>：恢复打开弹窗时的关联。<strong>清空</strong>：清空当前待保存关联。',
+            tag: '关联'
+          },
+          {
+            id: 'sync-modal',
+            selector: '[data-annotate="sync-modal"]',
+            position: 'top-left',
+            title: '同步试验项关联',
+            wide: true,
+            content: '嵌套弹窗：多选其他设备，将其已关联试验合并到当前设备（自动去重）。不含当前设备自身。',
+            tag: '关联'
+          },
+          {
+            id: 'sync-hint',
+            selector: '[data-annotate="sync-hint"]',
+            position: 'bottom-right',
+            title: '同步规则',
+            content: '合并而非覆盖；确定后写回关联区，需再点关联弹窗「保存」落库。',
+            tag: '关联'
+          },
+          {
+            id: 'hist-modal',
+            selector: '[data-annotate="hist-modal"]',
+            position: 'top-left',
+            title: '设备履历',
+            wide: true,
+            content: '记录校准等事件。列表含<strong>校准报告</strong>列（可点文件名预览占位）；支持新增/编辑/删除履历。',
+            tag: '履历'
+          },
+          {
+            id: 'hist-report-col',
+            selector: '[data-annotate="hist-report-col"]',
+            position: 'bottom-left',
+            title: '校准报告列',
+            content: '履历新增列。名称悬停气泡的「校准报告」取本列中带报告的最新一条展示。',
+            tag: '履历'
+          },
+          {
+            id: 'hist-add',
+            selector: '[data-annotate="hist-add"]',
+            position: 'bottom-right',
+            title: '新增履历',
+            content: '打开履历表单；校准报告为上传样式（非文本框）。',
+            tag: '履历'
+          },
+          {
+            id: 'hist-form',
+            selector: '[data-annotate="hist-form"]',
+            position: 'top-left',
+            title: '履历表单',
+            content: '事件必填；起止时间、备注可选。校准报告用上传按钮 + 文件芯片（可删）。',
+            tag: '履历'
+          },
+          {
+            id: 'hist-report-upload',
+            selector: '[data-annotate="hist-report-upload"]',
+            position: 'top-right',
+            title: '校准报告上传',
+            wide: true,
+            content: '由文本框改为<strong>上传文件</strong>样式：上传按钮 + 文件芯片。原型点击即生成模拟 PDF 名。',
+            tag: '上传'
+          },
+          {
+            id: 'name-pop',
+            selector: '[data-annotate="name-pop"]',
+            position: 'left',
+            title: '名称气泡结构',
+            wide: true,
+            content: '悬停名称时显示。自上而下：名称/编号/型号 → 关键字段 → <strong>校准报告</strong> → <strong>设备文件</strong>。',
+            tag: '气泡'
+          },
+          {
+            id: 'pop-calib-report',
+            selector: '[data-annotate="pop-calib-report"]',
+            position: 'left',
+            title: '气泡·最新校准报告',
+            wide: true,
+            content: '从履历取带校准报告的最新一条（按结束/起始时间），展示文件名、校准时间与预览/下载。无报告显示「暂无校准报告」。',
+            tag: '气泡'
+          },
+          {
+            id: 'pop-files',
+            selector: '[data-annotate="pop-files"]',
+            position: 'left',
+            title: '气泡·设备文件',
+            content: '来自编辑弹窗「附件」；无文件显示「暂无文件」。',
+            tag: '气泡'
+          }
+        ]
+      });
+    }
   </script>
 </body>
 </html>
