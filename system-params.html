@@ -2428,6 +2428,12 @@
       if (tk.type === 'specimen_category_code') {
         return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 取<strong>样品数据</strong>中该试验配置的「试样类别代码」。</div>';
       }
+      if (tk.type === 'ref_entrust') {
+        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 引用当前业务关联的<strong>委托编号</strong>原文拼接。</div>';
+      }
+      if (tk.type === 'ref_sample') {
+        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 引用当前业务关联的<strong>样品编号</strong>原文拼接。</div>';
+      }
       return '';
     }
 
@@ -2617,6 +2623,16 @@
           tokens: [
             { type: 'date', source: 'entrust', part: 'day', format: 'YYYYMMDD' },
             { type: 'seq', digits: 4 }
+          ]
+        },
+        {
+          id: 'ref-sample',
+          name: '引用样品编号',
+          desc: '样品编号 + - + 自增3位',
+          tokens: [
+            { type: 'ref_sample' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'seq', digits: 3 }
           ]
         }
       ],
@@ -3091,7 +3107,7 @@
           position: 'top-right',
           title: '类型自定义区',
           wide: true,
-          content: '随类型变化：<br>· 自定义：最长 20 字符，不允许空格<br>· 日期：来源 → 年/月/日 → <strong>输出格式</strong>（年：YYYY / YY；月含 - 与 /，如 YYYY-MM、YYYY/MM；日含 YYYY-MM-DD、YYYY/MM/DD 等）<br>· 自增序号：2/3/4/5 位快捷<br>· 报告数量：维度 + 当年/当月 + 拼接 +1 + 3/4/5 位<br>· 分类/试样：说明文案',
+          content: '随类型变化：<br>· 自定义：最长 20 字符，不允许空格<br>· 日期：来源 → 年/月/日 → <strong>输出格式</strong>（年：YYYY / YY；月含 - 与 /，如 YYYY-MM、YYYY/MM；日含 YYYY-MM-DD、YYYY/MM/DD 等）<br>· 自增序号：2/3/4/5 位快捷<br>· 报告数量：维度 + 当年/当月 + 拼接 +1 + 3/4/5 位<br>· 分类/试样：说明文案<br>· 引用编号：委托 / 样品编号说明文案',
           tag: '编号规则·弹窗'
         },
         {
