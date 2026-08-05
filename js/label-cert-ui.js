@@ -1,14 +1,23 @@
 /**
- * 标签与合格证模版 UI（挂到模板管理第四类型）
- * 布局：默认固定区 + 个性化列表
+ * 标签与合格证模版 UI — 自由设计编辑器
+ * 左：元件库 / 中：画布 / 右：布局|内容双面板
  */
 (function (global) {
   var cfg = null;
   var state = {
-    cat: 'aqgqj', type: 'certificate', editingId: null, draft: null,
-    editingIsDefault: false, previewId: null, bindOpen: false, bindKw: ''
+    cat: 'aqgqj',
+    type: 'certificate',
+    editingId: null,
+    draft: null,
+    editingIsDefault: false,
+    previewId: null,
+    bindOpen: false,
+    bindKw: '',
+    selectedId: null,
+    propTab: 'layout', // layout | content
+    scale: 4, // px per mm in editor canvas
+    drag: null
   };
-  var dragFrom = -1;
 
   function $(id) { return document.getElementById(id); }
 
@@ -27,6 +36,10 @@
     if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
   }
 
+  function elCount(tpl) {
+    return (tpl.elements || []).length;
+  }
+
   function renderList() {
     var bucket = currentBucket();
     LabelCertConfig.save(cfg);
@@ -36,16 +49,13 @@
 
     var card = $('lc_defaultCard');
     if (card && def) {
-      var preset = LabelCertConfig.PRESETS[def.layoutPreset] || {};
       card.innerHTML =
         '<div class="meta">' +
-          '<div class="name">' + def.name +
+          '<div class="name">' + LabelCertRender.esc(def.name) +
             '<span class="lc-default-badge"><i class="fa fa-lock"></i> 默认 · 兜底</span>' +
           '</div>' +
-          '<div class="sub">' + (preset.name || def.layoutPreset) +
-            ' · ' + def.paper.wMm + '×' + def.paper.hMm + ' mm' +
-            ' · 覆盖全部未单独配置的样品' +
-          '</div>' +
+          '<div class="sub">自由设计 · ' + def.paper.wMm + '×' + def.paper.hMm + ' mm · ' +
+            elCount(def) + ' 个元素 · 覆盖全部未单独配置的样品</div>' +
         '</div>' +
         '<div class="flex items-center gap-3 flex-shrink-0">' +
           '<button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-white" data-lc-act="edit" data-id="' + def.id + '" data-annotate="label-cert-default-edit">编辑版式</button>' +
@@ -56,17 +66,16 @@
     var body = $('lc_tplBody');
     if (!body) return;
     body.innerHTML = personal.length ? personal.map(function (t, idx) {
-      var p = LabelCertConfig.PRESETS[t.layoutPreset] || {};
       var binds = (t.bindSampleIds || []).map(sampleName).join('、') || '—';
       var n = (t.bindSampleIds || []).length;
       var enableAnno = idx === 0 ? ' data-annotate="label-cert-enable"' : '';
       var opsAnno = idx === 0 ? ' data-annotate="label-cert-ops"' : '';
       return '<tr class="hover:bg-slate-50">' +
-        '<td class="border-b border-slate-100 px-3 py-2">' + t.name + '</td>' +
-        '<td class="border-b border-slate-100 px-3 py-2">' + (p.name || t.layoutPreset) + '</td>' +
+        '<td class="border-b border-slate-100 px-3 py-2">' + LabelCertRender.esc(t.name) + '</td>' +
+        '<td class="border-b border-slate-100 px-3 py-2">' + elCount(t) + ' 个元素</td>' +
         '<td class="border-b border-slate-100 px-3 py-2">' + (t.paper.wMm + '×' + t.paper.hMm) + '</td>' +
-        '<td class="border-b border-slate-100 px-3 py-2 max-w-[240px] truncate" title="' + binds + '">' + binds +
-          ' <span class="text-slate-400">(' + n + ')</span></td>' +
+        '<td class="border-b border-slate-100 px-3 py-2 max-w-[240px] truncate" title="' + LabelCertRender.esc(binds) + '">' +
+          LabelCertRender.esc(binds) + ' <span class="text-slate-400">(' + n + ')</span></td>' +
         '<td class="border-b border-slate-100 px-3 py-2">' +
           '<label class="lc-switch"' + enableAnno + ' title="' + (t.enabled ? '启用中，停用后回退默认' : '已停用，使用默认模版') + '">' +
             '<input type="checkbox" data-lc-enable="' + t.id + '"' + (t.enabled ? ' checked' : '') + ' />' +
@@ -123,549 +132,575 @@
       alert('默认模版不可删除');
       return;
     }
-    if (!confirm('删除后，已绑样品将回退使用默认模版。确认删除？')) return;
+    if (!confirm('确定删除该个性化模版？相关样品将回退默认模版。')) return;
     bucket.templates = bucket.templates.filter(function (t) { return t.id !== id; });
     LabelCertConfig.save(cfg);
     renderList();
   }
 
+  /* ---------- 新建：空白 / 复制 ---------- */
+
+  function openCreateChooser() {
+    var modal = $('lc_createModal');
+    if (!modal) {
+      openEditorBlank();
+      return;
+    }
+    var sizeSel = $('lc_c_size');
+    if (sizeSel) {
+      var presets = LabelCertConfig.PAPER_SIZE_PRESETS || [];
+      var filtered = presets.filter(function (p) {
+        if (state.type === 'sample_label') return p.id === 'label' || p.id === 'lr';
+        return p.id !== 'label';
+      });
+      sizeSel.innerHTML = filtered.map(function (p) {
+        return '<option value="' + p.id + '">' + p.name + '（' + p.wMm + '×' + p.hMm + '）</option>';
+      }).join('') + '<option value="custom">自定义…</option>';
+    }
+    var srcSel = $('lc_c_source');
+    if (srcSel) {
+      var bucket = currentBucket();
+      srcSel.innerHTML = (bucket.templates || []).map(function (t) {
+        var tag = LabelCertConfig.isDefaultTemplate(bucket, t) ? '（默认）' : '';
+        return '<option value="' + t.id + '">' + LabelCertRender.esc(t.name) + tag +
+          ' · ' + t.paper.wMm + '×' + t.paper.hMm + '</option>';
+      }).join('');
+    }
+    setCreateMode('blank');
+    modal.classList.add('open');
+  }
+
+  function setCreateMode(mode) {
+    var blank = $('lc_c_blankPane');
+    var copy = $('lc_c_copyPane');
+    var tabs = document.querySelectorAll('[data-lc-create-mode]');
+    tabs.forEach(function (t) {
+      t.classList.toggle('active', t.getAttribute('data-lc-create-mode') === mode);
+    });
+    if (blank) blank.classList.toggle('hidden', mode !== 'blank');
+    if (copy) copy.classList.toggle('hidden', mode !== 'copy');
+    var confirm = $('lc_c_confirm');
+    if (confirm) confirm.setAttribute('data-mode', mode);
+  }
+
+  function closeCreateChooser() {
+    var modal = $('lc_createModal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  function confirmCreate() {
+    var mode = ($('lc_c_confirm') && $('lc_c_confirm').getAttribute('data-mode')) || 'blank';
+    if (mode === 'copy') {
+      var sid = $('lc_c_source') && $('lc_c_source').value;
+      var bucket = currentBucket();
+      var src = LabelCertConfig.findTemplate(bucket, sid);
+      if (!src) { alert('请选择源模版'); return; }
+      var name = (($('lc_c_copyName') && $('lc_c_copyName').value) || '').trim() || ((src.name || '模版') + ' 副本');
+      var draft = LabelCertConfig.cloneTemplateAsPersonal(src, { type: state.type, name: name });
+      closeCreateChooser();
+      openEditorWithDraft(draft, false);
+      return;
+    }
+    openEditorBlank();
+    closeCreateChooser();
+  }
+
+  function openEditorBlank() {
+    var sizeId = $('lc_c_size') && $('lc_c_size').value;
+    var paper;
+    if (sizeId === 'custom') {
+      paper = {
+        wMm: parseFloat($('lc_c_w') && $('lc_c_w').value) || 90,
+        hMm: parseFloat($('lc_c_h') && $('lc_c_h').value) || 50
+      };
+    } else {
+      var presets = LabelCertConfig.PAPER_SIZE_PRESETS || [];
+      var hit = null;
+      for (var i = 0; i < presets.length; i++) if (presets[i].id === sizeId) hit = presets[i];
+      if (!hit) {
+        hit = state.type === 'sample_label'
+          ? { wMm: 60, hMm: 40 }
+          : { wMm: 90, hMm: 50 };
+      }
+      paper = { wMm: hit.wMm, hMm: hit.hMm };
+    }
+    var name = (($('lc_c_name') && $('lc_c_name').value) || '').trim() ||
+      (state.type === 'sample_label' ? '新样品标签模版' : '新合格证模版');
+    var draft = LabelCertConfig.createBlankTemplate({
+      type: state.type,
+      name: name,
+      paper: paper,
+      enabled: false
+    });
+    openEditorWithDraft(draft, false);
+  }
+
+  /* ---------- 编辑器 ---------- */
+
   function openEditor(id) {
     var bucket = currentBucket();
-    state.editingId = id || null;
-    state.bindOpen = false;
-    state.bindKw = '';
-    var tpl = null;
-    if (id) {
-      tpl = LabelCertConfig.findTemplate(bucket, id);
-      if (tpl) tpl = LabelCertConfig.clone(tpl);
+    var tpl = LabelCertConfig.findTemplate(bucket, id);
+    if (!tpl) return;
+    var isDef = LabelCertConfig.isDefaultTemplate(bucket, tpl);
+    openEditorWithDraft(LabelCertConfig.clone(tpl), isDef);
+  }
+
+  function openEditorWithDraft(draft, isDefault) {
+    state.draft = draft;
+    state.editingId = draft.id;
+    state.editingIsDefault = !!isDefault;
+    state.selectedId = null;
+    state.propTab = 'layout';
+    if (isDefault) {
+      draft.enabled = true;
+      draft.bindSampleIds = [];
     }
-    var isDefault = !!(tpl && LabelCertConfig.isDefaultTemplate(bucket, tpl));
-    if (!tpl) {
-      var defaultPreset = state.type === 'sample_label' ? 'label_style_1' : 'cert_style_3';
-      tpl = LabelCertConfig.createTemplate({
-        type: state.type,
-        layoutPreset: defaultPreset,
-        name: state.type === 'sample_label' ? '新个性化样品标签' : '新个性化合格证',
-        enabled: true,
-        bindSampleIds: []
-      });
-      isDefault = false;
-    }
-    state.editingIsDefault = isDefault;
-    state.draft = tpl;
-    $('lc_editTitle').textContent = isDefault
-      ? '编辑默认模版'
-      : (id ? '编辑个性化模版' : '新增个性化模版');
-    fillEditor(tpl, isDefault);
+    fillEditor();
     $('lc_editModal').classList.add('open');
-    refreshPreview();
     refreshAnnotations();
   }
 
   function closeEditor() {
     $('lc_editModal').classList.remove('open');
     state.draft = null;
-    state.editingIsDefault = false;
-    refreshAnnotations();
+    state.editingId = null;
+    state.selectedId = null;
+    state.drag = null;
   }
 
-  function openPreview(id) {
-    if (!id) return;
-    var bucket = currentBucket();
-    var tpl = LabelCertConfig.findTemplate(bucket, id);
-    if (!tpl) { alert('模版不存在'); return; }
-    state.previewId = id;
-    var preset = LabelCertConfig.PRESETS[tpl.layoutPreset] || {};
-    var isDef = LabelCertConfig.isDefaultTemplate(bucket, tpl);
-    $('lc_pvTitle').textContent = '预览 · ' + tpl.name;
-    $('lc_pvSub').textContent = (isDef ? '默认模版 · ' : '个性化模版 · ') +
-      (preset.name || tpl.layoutPreset) + ' · ' + tpl.paper.wMm + '×' + tpl.paper.hMm + ' mm';
-    var box = $('lc_pvBox');
-    box.innerHTML = LabelCertRender.renderSheet(tpl, demoData(), { suffix: '-ro' });
-    LabelCertRender.mountQrs(box);
-    $('lc_previewModal').classList.add('open');
-    refreshAnnotations();
+  function selectedEl() {
+    if (!state.draft || !state.selectedId) return null;
+    var els = state.draft.elements || [];
+    for (var i = 0; i < els.length; i++) if (els[i].id === state.selectedId) return els[i];
+    return null;
   }
 
-  function closePreview() {
-    var modal = $('lc_previewModal');
-    if (modal) modal.classList.remove('open');
-    var box = $('lc_pvBox');
-    if (box) box.innerHTML = '';
-    state.previewId = null;
-    refreshAnnotations();
-  }
-
-  function fillEditor(tpl, isDefault) {
-    var presetSel = $('lc_e_preset');
-    presetSel.innerHTML = Object.keys(LabelCertConfig.PRESETS).filter(function (k) {
-      return LabelCertConfig.PRESETS[k].type === state.type;
-    }).map(function (k) {
-      return '<option value="' + k + '">' + LabelCertConfig.PRESETS[k].name + '</option>';
-    }).join('');
-    presetSel.value = tpl.layoutPreset;
-    $('lc_e_name').value = tpl.name;
+  function fillEditor() {
+    var tpl = state.draft;
+    if (!tpl) return;
+    $('lc_editTitle').textContent = state.editingIsDefault
+      ? '编辑默认模版'
+      : (LabelCertConfig.findTemplate(currentBucket(), tpl.id) ? '编辑个性化模版' : '新增个性化模版');
+    $('lc_e_name').value = tpl.name || '';
     $('lc_e_w').value = tpl.paper.wMm;
     $('lc_e_h').value = tpl.paper.hMm;
-    $('lc_e_org').value = tpl.brand.orgName || '';
-    $('lc_e_title').value = tpl.brand.title || '';
-    $('lc_e_logo').value = tpl.brand.logoMode || 'system';
-    $('lc_e_warn').value = tpl.brand.footerWarning || '';
-    var bt = LabelCertConfig.normalizeBrandType(tpl.brand);
-    $('lc_e_orgSize').value = bt.orgFontSize;
-    $('lc_e_orgColor').value = bt.orgColor;
-    if ($('lc_e_orgAlign')) $('lc_e_orgAlign').value = bt.orgAlign;
-    $('lc_e_titleSize').value = bt.titleFontSize;
-    $('lc_e_titleColor').value = bt.titleColor;
-    if ($('lc_e_titleAlign')) $('lc_e_titleAlign').value = bt.titleAlign;
-    $('lc_e_logoSize').value = bt.logoSize;
-    $('lc_e_warnSize').value = bt.warnFontSize;
-    $('lc_e_warnColor').value = bt.warnColor;
-    if ($('lc_e_warnAlign')) $('lc_e_warnAlign').value = bt.warnAlign;
-    if ($('lc_e_logo') && ($('lc_e_logo').value === 'custom' || !tpl.brand.logoMode)) {
-      $('lc_e_logo').value = tpl.brand.logoMode === 'hidden' ? 'hidden' : 'system';
-    }
-    fillStyleUI(tpl);
-    $('lc_e_qr').checked = !tpl.qr || tpl.qr.enabled !== false;
-    $('lc_e_qrSize').value = (tpl.qr && tpl.qr.sizePx) || 90;
-    var place = LabelCertRender.normalizeQrPlacement((tpl.qr && tpl.qr.placement) || 'right', tpl.layoutPreset);
-    if (place === 'none') $('lc_e_qrPlace').value = 'none';
-    else if (place === 'center') $('lc_e_qrPlace').value = 'center';
-    else if (place === 'right') $('lc_e_qrPlace').value = 'right';
-    else $('lc_e_qrPlace').value = place;
+    $('lc_e_borderOn').value = tpl.paper.border && tpl.paper.border.enabled ? '1' : '0';
+    $('lc_e_borderColor').value = (tpl.paper.border && tpl.paper.border.color) || '#cbd5e1';
+    $('lc_e_borderWidth').value = (tpl.paper.border && tpl.paper.border.widthPx) || 1;
     $('lc_e_mat').value = (tpl.meta && tpl.meta.material) || '';
     $('lc_e_mount').value = (tpl.meta && tpl.meta.mount) || '';
     $('lc_e_print').value = (tpl.meta && tpl.meta.printMethod) || '';
-    fillWatermarkUI(tpl.brand);
-    syncQrPlaceUi(tpl.layoutPreset);
-    syncLabelBrandUi();
-    syncSkinUi(tpl.layoutPreset);
-
-    var role = $('lc_e_roleHint');
-    if (role) {
-      role.innerHTML = isDefault
-        ? '<span class="lc-role-tag">默认模版</span> 可改版式与字段；身份锁定为兜底，不绑定样品，不可停用/删除。'
-        : '<span class="lc-role-tag">个性化模版</span> 必须绑定至少一个样品；停用后相关样品使用默认模版。';
-    }
+    $('lc_e_roleHint').textContent = state.editingIsDefault
+      ? '默认模版：自由设计版式；不可删除 / 停用 / 绑定样品。'
+      : '个性化模版：保存并启用前须绑定 ≥1 个样品叶节点。可从空白或复制已有模版而来。';
     var bindSec = $('lc_bindSection');
-    if (bindSec) bindSec.style.display = isDefault ? 'none' : '';
-
-    renderFieldUI(tpl);
-    if (!isDefault) renderBindUI(tpl);
+    if (bindSec) bindSec.classList.toggle('hidden', state.editingIsDefault);
+    renderPalette();
+    renderCanvas();
+    renderPropPanel();
+    renderBind();
+    refreshPreview();
+    syncPropTabs();
   }
 
-  function syncLabelBrandUi() {
-    var isLabel = state.type === 'sample_label';
-    var warnWrap = $('lc_e_warnWrap');
-    if (warnWrap) warnWrap.style.display = isLabel ? 'none' : '';
-    var orgLabel = $('lc_e_org') && $('lc_e_org').closest('label');
-    if (orgLabel && orgLabel.firstChild) {
-      // keep structure; hint via placeholder
-    }
-    if ($('lc_e_org')) {
-      $('lc_e_org').placeholder = isLabel ? '留空则预览不显示单位名称' : '默认检测机构';
-    }
-    if ($('lc_e_title')) {
-      $('lc_e_title').placeholder = isLabel ? '留空则预览不显示标题' : '';
-    }
+  function syncPaperFromDom() {
+    if (!state.draft) return;
+    state.draft.name = ($('lc_e_name').value || '').trim();
+    state.draft.paper.wMm = parseFloat($('lc_e_w').value) || state.draft.paper.wMm;
+    state.draft.paper.hMm = parseFloat($('lc_e_h').value) || state.draft.paper.hMm;
+    if (!state.draft.paper.border) state.draft.paper.border = { enabled: true, color: '#cbd5e1', widthPx: 1 };
+    state.draft.paper.border.enabled = $('lc_e_borderOn').value !== '0';
+    state.draft.paper.border.color = $('lc_e_borderColor').value || '#cbd5e1';
+    state.draft.paper.border.widthPx = parseInt($('lc_e_borderWidth').value, 10) || 1;
+    state.draft.meta = {
+      material: $('lc_e_mat').value || '',
+      mount: $('lc_e_mount').value || '',
+      printMethod: $('lc_e_print').value || ''
+    };
   }
 
-  function fillWatermarkUI(brand) {
-    var preset = null;
-    var wm = LabelCertConfig.normalizeWatermark(brand && brand.watermark, brand || {}, preset);
-    if (state.draft && !state.draft.brand) state.draft.brand = {};
-    if (state.draft) state.draft.brand.watermark = wm;
-    $('lc_e_wmOn').checked = !!wm.enabled;
-    $('lc_e_wmType').value = wm.type;
-    $('lc_e_wmLayout').value = wm.layout;
-    $('lc_e_wmText').value = wm.text || '';
-    if ($('lc_e_wmColor')) $('lc_e_wmColor').value = wm.color || '#16a34a';
-    $('lc_e_wmSealMode').value = wm.sealMode;
-    $('lc_e_wmPos').value = wm.position;
-    $('lc_e_wmSize').value = wm.size;
-    $('lc_e_wmAngle').value = wm.angle;
-    var pct = Math.round(wm.opacity * 100);
-    $('lc_e_wmOpacity').value = pct;
-    $('lc_e_wmOpacityVal').textContent = pct + '%';
-    if ($('lc_e_wmSealHint')) {
-      $('lc_e_wmSealHint').textContent = wm.sealUrl ? '已上传自定义章图' : '请选择本地章图';
-    }
-    syncWatermarkTypeUI();
-  }
-
-  function fillStyleUI(tpl) {
-    var st = LabelCertConfig.normalizeStyle(tpl.style, tpl.layoutPreset);
-    if ($('lc_e_fieldAlign')) $('lc_e_fieldAlign').value = st.fieldAlign;
-    if ($('lc_e_fieldSize')) $('lc_e_fieldSize').value = st.fieldFontSize;
-    if ($('lc_e_fieldColor')) $('lc_e_fieldColor').value = st.fieldColor;
-    if ($('lc_e_fieldUnderline')) {
-      $('lc_e_fieldUnderline').value = st.fieldUnderline ? st.fieldUnderlineStyle : 'none';
-    }
-    if ($('lc_e_borderOn')) $('lc_e_borderOn').value = st.borderEnabled ? '1' : '0';
-    if ($('lc_e_borderColor')) $('lc_e_borderColor').value = st.borderColor || '#cbd5e1';
-    if ($('lc_e_borderWidth')) $('lc_e_borderWidth').value = st.borderWidthPx;
-    if ($('lc_e_titleBg')) $('lc_e_titleBg').value = st.titleBgColor || '#2e7d32';
-    if ($('lc_e_footerBg')) $('lc_e_footerBg').value = st.footerBgColor || '#f1f8e9';
-    syncBorderUi();
-  }
-
-  function syncBorderUi() {
-    var on = !$('lc_e_borderOn') || $('lc_e_borderOn').value === '1';
-    var colorWrap = $('lc_e_borderColorWrap');
-    var widthWrap = $('lc_e_borderWidthWrap');
-    if (colorWrap) colorWrap.style.display = on ? '' : 'none';
-    if (widthWrap) widthWrap.style.display = on ? '' : 'none';
-  }
-
-  function syncSkinUi(presetId) {
-    // 三种合格证布局预设均提供标题/底部栏背景色；样品标签隐藏外观底色项
-    var isCert = presetId === 'cert_style_1' || presetId === 'cert_style_2' || presetId === 'cert_style_3';
-    var titleBg = $('lc_e_titleBgWrap');
-    var footBg = $('lc_e_footerBgWrap');
-    if (titleBg) titleBg.style.display = isCert ? '' : 'none';
-    if (footBg) footBg.style.display = isCert ? '' : 'none';
-    syncBorderUi();
-  }
-
-  function syncWatermarkTypeUI() {
-    var isSeal = $('lc_e_wmType').value === 'seal';
-    var textWrap = $('lc_e_wmTextWrap');
-    var sealWrap = $('lc_e_wmSealWrap');
-    if (textWrap) textWrap.classList.toggle('hidden', isSeal);
-    if (sealWrap) sealWrap.classList.toggle('hidden', !isSeal);
-    var custom = $('lc_e_wmSealMode').value === 'custom';
-    var uploadWrap = $('lc_e_wmSealUploadWrap');
-    var configHint = $('lc_e_wmSealConfigHint');
-    if (uploadWrap) uploadWrap.classList.toggle('hidden', !custom);
-    if (configHint) configHint.classList.toggle('hidden', custom);
-    var file = $('lc_e_wmSealFile');
-    if (file) file.disabled = !custom;
-  }
-
-  function syncQrPlaceUi(presetId) {
-    var place = $('lc_e_qrPlace');
-    var hint = $('lc_e_qrPlaceHint');
-    var isHang = presetId === 'cert_style_2';
-    if (place) {
-      place.disabled = isHang;
-      if (isHang) place.value = 'center';
-    }
-    if (hint) {
-      hint.textContent = isHang
-        ? 'PVC 悬挂样式二维码固定中置'
-        : '切换位置后右侧预览即时更新';
-    }
-  }
-
-  function collectWatermarkFromDom(brand) {
-    var opacityPct = Number($('lc_e_wmOpacity').value);
-    if (isNaN(opacityPct)) opacityPct = 22;
-    var sealUrl = (brand && brand.watermark && brand.watermark.sealUrl) || null;
-    return LabelCertConfig.normalizeWatermark({
-      enabled: $('lc_e_wmOn').checked,
-      type: $('lc_e_wmType').value,
-      text: $('lc_e_wmText').value.trim(),
-      color: $('lc_e_wmColor') ? $('lc_e_wmColor').value : '#16a34a',
-      sealMode: $('lc_e_wmSealMode').value,
-      sealUrl: sealUrl,
-      opacity: opacityPct / 100,
-      angle: Number($('lc_e_wmAngle').value),
-      position: $('lc_e_wmPos').value,
-      size: $('lc_e_wmSize').value,
-      layout: $('lc_e_wmLayout').value
-    }, brand || {}, null);
-  }
-
-  function renderFieldUI(tpl) {
+  function renderPalette() {
+    var box = $('lc_palette');
+    if (!box || !state.draft) return;
+    var usedFields = LabelCertConfig.usedFieldIds(state.draft.elements);
     var pool = LabelCertConfig.poolForType(state.type);
-    var selectedMap = {};
-    (tpl.fields || []).forEach(function (f) { if (f.visible !== false) selectedMap[f.id] = f; });
-    $('lc_fieldPool').innerHTML = pool.map(function (f) {
-      var on = !!selectedMap[f.id];
-      return '<span class="lc-chip ' + (on ? 'on' : '') + '" data-lc-field="' + f.id + '">' + f.label + '</span>';
+    var types = LabelCertConfig.ELEMENT_TYPES;
+
+    function typeBtn(type, extra, disabled, tip) {
+      var meta = types[type];
+      return '<button type="button" class="lc-pal-item' + (disabled ? ' disabled' : '') + '" data-lc-add="' + type + '"' +
+        (extra || '') + (disabled ? ' disabled' : '') + ' title="' + LabelCertRender.esc(tip || meta.name) + '">' +
+        LabelCertRender.esc(meta.name) + '</button>';
+    }
+
+    var brand = ['orgName', 'title', 'logo'].map(function (t) {
+      var blocked = LabelCertConfig.hasElementType(state.draft.elements, t);
+      return typeBtn(t, '', blocked, blocked ? '已存在' : '');
     }).join('');
-    var ordered = (tpl.fields || []).filter(function (f) { return f.visible !== false && f.id !== 'qrCode'; });
-    $('lc_fieldList').innerHTML = ordered.map(function (f, idx) {
-      return '<div class="lc-field-item" draggable="true" data-idx="' + idx + '">' +
-        '<i class="fa fa-bars text-slate-300"></i>' +
-        '<span class="w-28 text-xs text-slate-400">' + f.id + '</span>' +
-        '<input class="flex-1 rounded border border-slate-200 px-2 py-1 text-sm" value="' + f.label.replace(/"/g, '&quot;') + '" data-lc-rename="' + idx + '" />' +
-        '<button type="button" class="text-slate-400 hover:text-red-500" data-lc-field="' + f.id + '"><i class="fa fa-times"></i></button></div>';
-    }).join('') || '<p class="text-sm text-slate-400">请从上方字段池勾选</p>';
+
+    var fields = pool.map(function (f) {
+      var blocked = usedFields.indexOf(f.id) >= 0;
+      return '<button type="button" class="lc-pal-item' + (blocked ? ' disabled' : '') + '" data-lc-add="fieldRow" data-field="' +
+        f.id + '"' + (blocked ? ' disabled' : '') + '>' + LabelCertRender.esc(f.label) + '</button>';
+    }).join('');
+
+    var code = ['qr', 'seal', 'watermarkText'].map(function (t) {
+      var blocked = t === 'qr' && LabelCertConfig.hasElementType(state.draft.elements, 'qr');
+      return typeBtn(t, '', blocked, blocked ? '已存在' : '');
+    }).join('');
+
+    var decor = ['staticText', 'line', 'hangHole'].map(function (t) {
+      return typeBtn(t, '', false, '');
+    }).join('');
+
+    box.innerHTML =
+      '<div class="lc-pal-group"><div class="lc-pal-title">品牌标识</div><div class="lc-pal-items">' + brand + '</div></div>' +
+      '<div class="lc-pal-group"><div class="lc-pal-title">业务字段</div><div class="lc-pal-items">' + fields + '</div></div>' +
+      '<div class="lc-pal-group"><div class="lc-pal-title">码与章</div><div class="lc-pal-items">' + code + '</div></div>' +
+      '<div class="lc-pal-group"><div class="lc-pal-title">装饰辅助</div><div class="lc-pal-items">' + decor + '</div></div>';
   }
 
-  function toggleField(id) {
-    var tpl = collectDraft(false);
-    var pool = LabelCertConfig.poolForType(state.type);
-    var label = id;
-    pool.forEach(function (f) { if (f.id === id) label = f.label; });
-    var idx = -1;
-    for (var i = 0; i < tpl.fields.length; i++) if (tpl.fields[i].id === id) { idx = i; break; }
-    if (idx >= 0) tpl.fields.splice(idx, 1);
-    else tpl.fields.push({ id: id, label: label, visible: true });
-    state.draft = tpl;
-    renderFieldUI(tpl);
+  function addElement(type, fieldId) {
+    if (!state.draft) return;
+    var check = LabelCertConfig.canAddElement(state.draft.elements, type, fieldId);
+    if (!check.ok) { alert(check.reason); return; }
+    var opts = { paper: state.draft.paper, tplType: state.type };
+    if (type === 'fieldRow') {
+      opts.fieldId = fieldId;
+      opts.label = LabelCertConfig.fieldLabel(state.type, fieldId);
+      opts.index = LabelCertConfig.usedFieldIds(state.draft.elements).length;
+      opts.props = { fieldId: fieldId, label: opts.label };
+    }
+    var el = LabelCertConfig.createElement(type, opts);
+    // 简单错位避免完全重叠
+    var n = state.draft.elements.length;
+    el.xMm = Math.min(el.xMm + (n % 3) * 1.5, Math.max(0, state.draft.paper.wMm - el.wMm));
+    el.yMm = Math.min(el.yMm + (n % 4) * 1.2, Math.max(0, state.draft.paper.hMm - el.hMm));
+    state.draft.elements.push(el);
+    state.selectedId = el.id;
+    renderPalette();
+    renderCanvas();
+    renderPropPanel();
     refreshPreview();
   }
 
-  function renameField(idx, val) {
-    state.draft = collectDraft(false);
-    if (state.draft.fields[idx]) state.draft.fields[idx].label = val;
+  function deleteSelected() {
+    if (!state.draft || !state.selectedId) return;
+    var el = selectedEl();
+    if (el && el.locked) { alert('元素已锁定，请先解锁'); return; }
+    state.draft.elements = state.draft.elements.filter(function (e) { return e.id !== state.selectedId; });
+    state.selectedId = null;
+    renderPalette();
+    renderCanvas();
+    renderPropPanel();
     refreshPreview();
   }
 
-  function renderBindUI(tpl) {
-    var root = $('lc_bindSamples');
-    if (!root) return;
-    var tree = (LabelCertConfig.SAMPLE_TREE && LabelCertConfig.SAMPLE_TREE[state.cat]) || [];
-    var leaves = LabelCertConfig.SAMPLE_LEAVES[state.cat] || [];
-    var selected = tpl.bindSampleIds || [];
-    var set = {};
-    selected.forEach(function (id) { set[id] = true; });
-    var kw = (state.bindKw || '').trim().toLowerCase();
+  function renderCanvas() {
+    var host = $('lc_canvas');
+    if (!host || !state.draft) return;
+    syncPaperFromDom();
+    var paper = state.draft.paper;
+    var s = state.scale;
+    var w = paper.wMm * s;
+    var h = paper.hMm * s;
+    var border = paper.border || {};
+    var borderCss = border.enabled
+      ? ('border:' + (border.widthPx || 1) + 'px solid ' + (border.color || '#cbd5e1') + ';')
+      : 'border:1px dashed #cbd5e1;';
 
-    function leafMatch(leaf, group) {
-      if (!kw) return true;
-      return String(leaf.name).toLowerCase().indexOf(kw) !== -1 ||
-        String(leaf.id).toLowerCase().indexOf(kw) !== -1 ||
-        String(group.name).toLowerCase().indexOf(kw) !== -1;
-    }
-
-    if (!leaves.length) {
-      root.innerHTML = '<span class="text-sm text-slate-400">该大类暂无样品叶节点</span>';
-    } else {
-      var triggerText = selected.length
-        ? ('已选 ' + selected.length + ' 项：' + selected.map(sampleName).slice(0, 3).join('、') + (selected.length > 3 ? ' 等' : ''))
-        : '<span class="ph">请选择要绑定的样品</span>';
-      var listHtml = '';
-      var matchCount = 0;
-      tree.forEach(function (group) {
-        var kids = (group.children || []).filter(function (leaf) { return leafMatch(leaf, group); });
-        if (!kids.length) return;
-        listHtml += '<div class="lc-ms-group">' + group.name + '</div>';
-        kids.forEach(function (leaf) {
-          matchCount++;
-          listHtml += '<label class="lc-ms-item indent">' +
-            '<input type="checkbox" data-lc-bind="' + leaf.id + '" ' + (set[leaf.id] ? 'checked' : '') + ' />' +
-            '<span>' + leaf.name + '</span></label>';
-        });
-      });
-      if (!listHtml) listHtml = '<div class="lc-ms-empty">无匹配样品</div>';
-      root.innerHTML =
-        '<div class="lc-ms' + (state.bindOpen ? ' open' : '') + '" id="lc_msRoot">' +
-          '<button type="button" class="lc-ms-trigger" data-lc-ms-toggle>' +
-            '<span class="truncate">' + triggerText + '</span><i class="fa fa-angle-down"></i>' +
-          '</button>' +
-          '<div class="lc-ms-panel">' +
-            '<input type="text" class="lc-ms-search" id="lc_msSearch" placeholder="搜索分类或样品名称" value="' +
-              String(state.bindKw || '').replace(/"/g, '&quot;') + '" />' +
-            '<div class="lc-ms-list">' + listHtml + '</div>' +
-            '<div class="lc-ms-foot">' +
-              '<span>共 ' + leaves.length + ' 项 · 已选 ' + selected.length + (kw ? (' · 匹配 ' + matchCount) : '') + '</span>' +
-              '<button type="button" class="text-blue-600 hover:underline" data-lc-ms-clear>清空</button>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-      var search = $('lc_msSearch');
-      if (search && state.bindOpen) {
-        search.focus();
-        try { search.setSelectionRange(search.value.length, search.value.length); } catch (e) { /* ignore */ }
-      }
-    }
-
-    var conflicts = LabelCertConfig.findBindConflicts(state.cat, state.type, tpl.id, selected);
-    var hint = '';
-    if (!selected.length) hint = '请至少选择 1 个样品';
-    else if (conflicts.length) {
-      hint = '冲突：' + conflicts.map(function (c) {
-        return sampleName(c.sampleId) + ' 已绑定「' + c.templateName + '」';
-      }).join('；');
-    }
-    $('lc_bindHint').textContent = hint;
-  }
-
-  function toggleBind(id) {
-    if (state.editingIsDefault) return;
-    var tpl = collectDraft(false);
-    var arr = tpl.bindSampleIds || [];
-    var i = arr.indexOf(id);
-    if (i >= 0) arr.splice(i, 1); else arr.push(id);
-    tpl.bindSampleIds = arr;
-    state.draft = tpl;
-    renderBindUI(tpl);
-  }
-
-  function clearBind() {
-    if (state.editingIsDefault) return;
-    var tpl = collectDraft(false);
-    tpl.bindSampleIds = [];
-    state.draft = tpl;
-    renderBindUI(tpl);
-  }
-
-  function onPresetChange() {
-    var presetId = $('lc_e_preset').value;
-    var preset = LabelCertConfig.PRESETS[presetId];
-    $('lc_e_w').value = preset.paper.wMm;
-    $('lc_e_h').value = preset.paper.hMm;
-    $('lc_e_title').value = preset.title;
-    $('lc_e_warn').value = preset.footerWarning || '';
-    $('lc_e_qr').checked = preset.qr.enabled !== false;
-    $('lc_e_qrSize').value = preset.qr.sizePx;
-    var place = LabelCertRender.normalizeQrPlacement(preset.qr.placement, presetId);
-    $('lc_e_qrPlace').value = place === 'corner' ? 'bottom_right' : place;
-    syncQrPlaceUi(presetId);
-    var tpl = collectDraft(false);
-    tpl.layoutPreset = presetId;
-    tpl.fields = LabelCertConfig.buildFieldsFromPreset(presetId);
-    tpl.qr = LabelCertConfig.clone(preset.qr);
-    tpl.style = LabelCertConfig.defaultStyle(presetId, preset);
-    // 切换预设时同步默认水印（保留已上传章图）
-    var keepSeal = tpl.brand && tpl.brand.watermark && tpl.brand.watermark.sealUrl;
-    tpl.brand.watermark = LabelCertConfig.defaultWatermark(preset);
-    if (keepSeal) {
-      tpl.brand.watermark.sealUrl = keepSeal;
-      tpl.brand.watermark.sealMode = 'custom';
-    }
-    if (preset.type === 'sample_label') {
-      tpl.brand.orgName = '';
-      tpl.brand.title = '';
-      tpl.brand.logoMode = 'hidden';
-      tpl.brand.footerWarning = null;
-      $('lc_e_org').value = '';
-      $('lc_e_title').value = '';
-      $('lc_e_logo').value = 'hidden';
-      $('lc_e_warn').value = '';
-    }
-    state.draft = tpl;
-    fillWatermarkUI(tpl.brand);
-    fillStyleUI(tpl);
-    syncLabelBrandUi();
-    syncSkinUi(presetId);
-    renderFieldUI(tpl);
-    refreshPreview();
-  }
-
-  function collectDraft(fromDom) {
-    var base = state.draft || LabelCertConfig.createTemplate({ type: state.type });
-    if (!fromDom) return base;
-    base.name = $('lc_e_name').value.trim() || base.name;
-    base.layoutPreset = $('lc_e_preset').value;
-    base.paper = { wMm: Number($('lc_e_w').value) || 90, hMm: Number($('lc_e_h').value) || 50 };
-    var uStyle = $('lc_e_fieldUnderline') ? $('lc_e_fieldUnderline').value : 'dotted';
-    base.style = LabelCertConfig.normalizeStyle({
-      marginMm: 2,
-      fieldAlign: $('lc_e_fieldAlign') ? $('lc_e_fieldAlign').value : 'left',
-      fieldFontSize: $('lc_e_fieldSize') ? $('lc_e_fieldSize').value : 12,
-      fieldColor: $('lc_e_fieldColor') ? $('lc_e_fieldColor').value : '#1e293b',
-      fieldUnderline: uStyle !== 'none',
-      fieldUnderlineStyle: uStyle === 'none' ? 'dotted' : uStyle,
-      borderEnabled: !$('lc_e_borderOn') || $('lc_e_borderOn').value === '1',
-      borderColor: $('lc_e_borderColor') ? $('lc_e_borderColor').value : '#cbd5e1',
-      borderWidthPx: $('lc_e_borderWidth') ? $('lc_e_borderWidth').value : 1,
-      titleBgColor: $('lc_e_titleBg') ? $('lc_e_titleBg').value : '',
-      footerBgColor: $('lc_e_footerBg') ? $('lc_e_footerBg').value : ''
-    }, base.layoutPreset);
-    var watermark = collectWatermarkFromDom(base.brand);
-    var typeStyle = LabelCertConfig.normalizeBrandType({
-      orgFontSize: $('lc_e_orgSize').value,
-      orgColor: $('lc_e_orgColor').value,
-      orgAlign: $('lc_e_orgAlign') ? $('lc_e_orgAlign').value : 'center',
-      titleFontSize: $('lc_e_titleSize').value,
-      titleColor: $('lc_e_titleColor').value,
-      titleAlign: $('lc_e_titleAlign') ? $('lc_e_titleAlign').value : 'center',
-      logoSize: $('lc_e_logoSize').value,
-      warnFontSize: $('lc_e_warnSize').value,
-      warnColor: $('lc_e_warnColor').value,
-      warnAlign: $('lc_e_warnAlign') ? $('lc_e_warnAlign').value : 'center'
+    var els = (state.draft.elements || []).slice().sort(function (a, b) {
+      return (a.zIndex - b.zIndex) || String(a.id).localeCompare(String(b.id));
     });
-    var isLabel = state.type === 'sample_label' || base.layoutPreset === 'label_style_1';
-    var orgVal = $('lc_e_org').value.trim();
-    var logoMode = $('lc_e_logo').value;
-    if (logoMode !== 'hidden') logoMode = 'system';
-    base.brand = {
-      orgName: isLabel ? orgVal : (orgVal || LabelCertConfig.DEFAULT_ORG),
-      title: $('lc_e_title').value,
-      logoMode: logoMode,
-      logoUrl: null,
-      showWatermarkGe: watermark.enabled && watermark.type === 'text' && watermark.text === '格',
-      footerWarning: isLabel ? null : $('lc_e_warn').value,
-      watermark: watermark,
-      orgFontSize: typeStyle.orgFontSize,
-      orgColor: typeStyle.orgColor,
-      orgAlign: typeStyle.orgAlign,
-      titleFontSize: typeStyle.titleFontSize,
-      titleColor: typeStyle.titleColor,
-      titleAlign: typeStyle.titleAlign,
-      logoSize: typeStyle.logoSize,
-      warnFontSize: typeStyle.warnFontSize,
-      warnColor: typeStyle.warnColor,
-      warnAlign: typeStyle.warnAlign
-    };
-    var preset = LabelCertConfig.PRESETS[base.layoutPreset];
-    var place = LabelCertRender.normalizeQrPlacement($('lc_e_qrPlace').value, base.layoutPreset);
-    base.qr = {
-      enabled: $('lc_e_qr').checked,
-      sizePx: Number($('lc_e_qrSize').value) || 90,
-      payloadType: (preset && preset.qr.payloadType) || (state.type === 'sample_label' ? 'sample_flow' : 'cert_shortlink'),
-      placement: place
-    };
-    if (base.layoutPreset === 'cert_style_2') {
-      base.qr.enabled = true;
-      base.qr.placement = 'center';
+
+    var html = '<div class="lc-canvas-paper" style="width:' + w + 'px;height:' + h + 'px;' + borderCss + '" data-lc-paper="1">';
+    els.forEach(function (el) {
+      var sel = el.id === state.selectedId ? ' selected' : '';
+      var lock = el.locked ? ' locked' : '';
+      var label = elementShortLabel(el);
+      html += '<div class="lc-canvas-el' + sel + lock + '" data-el-id="' + el.id + '" style="' +
+        'left:' + (el.xMm * s) + 'px;top:' + (el.yMm * s) + 'px;width:' + (el.wMm * s) +
+        'px;height:' + (el.hMm * s) + 'px;z-index:' + (el.zIndex || 0) + ';' +
+        (el.rotationDeg ? 'transform:rotate(' + el.rotationDeg + 'deg);' : '') +
+        '">' +
+        '<div class="lc-canvas-el-inner">' + LabelCertRender.esc(label) + '</div>' +
+        (el.id === state.selectedId ? '<div class="lc-canvas-handle" data-resize="1"></div>' : '') +
+        '</div>';
+    });
+    html += '</div>';
+    host.innerHTML = html;
+  }
+
+  function elementShortLabel(el) {
+    var meta = LabelCertConfig.ELEMENT_TYPES[el.type] || { name: el.type };
+    if (el.type === 'fieldRow') return (el.props && el.props.label) || meta.name;
+    if (el.type === 'orgName' || el.type === 'title' || el.type === 'staticText' || el.type === 'watermarkText') {
+      var t = (el.props && el.props.text) || meta.name;
+      return t.length > 10 ? t.slice(0, 10) + '…' : t;
     }
-    base.meta = {
-      material: $('lc_e_mat').value,
-      mount: $('lc_e_mount').value,
-      printMethod: $('lc_e_print').value
-    };
-    if (state.editingIsDefault) {
-      base.enabled = true;
-      base.bindSampleIds = [];
+    return meta.name;
+  }
+
+  function syncPropTabs() {
+    document.querySelectorAll('[data-lc-prop-tab]').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-lc-prop-tab') === state.propTab);
+    });
+    var layout = $('lc_propLayout');
+    var content = $('lc_propContent');
+    if (layout) layout.classList.toggle('hidden', state.propTab !== 'layout');
+    if (content) content.classList.toggle('hidden', state.propTab !== 'content');
+  }
+
+  function renderPropPanel() {
+    var el = selectedEl();
+    var empty = $('lc_propEmpty');
+    var layout = $('lc_propLayout');
+    var content = $('lc_propContent');
+    if (!el) {
+      if (empty) empty.classList.remove('hidden');
+      if (layout) layout.innerHTML = '';
+      if (content) content.innerHTML = '';
+      return;
     }
-    base.updatedAt = LabelCertConfig.formatNow();
-    return base;
+    if (empty) empty.classList.add('hidden');
+
+    if (layout) {
+      layout.innerHTML =
+        '<div class="lc-prop-grid">' +
+          numField('X(mm)', 'xMm', el.xMm) + numField('Y(mm)', 'yMm', el.yMm) +
+          numField('宽(mm)', 'wMm', el.wMm) + numField('高(mm)', 'hMm', el.hMm) +
+          numField('层级', 'zIndex', el.zIndex) +
+          numField('旋转°', 'rotationDeg', el.rotationDeg || 0) +
+        '</div>' +
+        '<div class="lc-prop-actions">' +
+          '<label class="text-xs text-slate-600 flex items-center gap-1"><input type="checkbox" data-lc-prop="locked"' +
+            (el.locked ? ' checked' : '') + ' /> 锁定</label>' +
+          '<button type="button" class="lc-mini-btn" data-lc-layer="up">上移一层</button>' +
+          '<button type="button" class="lc-mini-btn" data-lc-layer="down">下移一层</button>' +
+          ((el.type === 'seal' || el.type === 'watermarkText')
+            ? '<button type="button" class="lc-mini-btn" data-lc-layer="bottom">置于底层</button>' +
+              '<button type="button" class="lc-mini-btn" data-lc-layer="top">置于顶层</button>'
+            : '') +
+          '<button type="button" class="lc-mini-btn danger" data-lc-del-el>删除元素</button>' +
+        '</div>';
+    }
+
+    if (content) content.innerHTML = contentFieldsHtml(el);
+  }
+
+  function numField(label, key, val) {
+    return '<label class="text-xs text-slate-600">' + label +
+      '<input type="number" step="0.1" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" data-lc-geom="' +
+      key + '" value="' + val + '" /></label>';
+  }
+
+  function contentFieldsHtml(el) {
+    var p = el.props || {};
+    var html = '';
+    if (el.type === 'fieldRow') {
+      html +=
+        '<label class="text-xs text-slate-600 block mb-2">显示名<input data-lc-c="label" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" value="' +
+        LabelCertRender.esc(p.label || '') + '" /></label>' +
+        '<label class="text-xs text-slate-600 flex items-center gap-1 mb-2"><input type="checkbox" data-lc-c="showLabel"' +
+        (p.showLabel !== false ? ' checked' : '') + ' /> 显示标签</label>' +
+        selectField('值对齐', 'valueAlign', p.valueAlign || 'left', [['left', '居左'], ['center', '居中'], ['right', '居右']]) +
+        selectField('下划线', 'underline', p.underline || 'dotted', [['none', '无'], ['solid', '直线'], ['dotted', '断点'], ['dashed', '断线']]) +
+        numContent('字号', 'fontSize', p.fontSize || 11) +
+        colorField('颜色', 'color', p.color || '#1e293b') +
+        '<p class="text-xs text-slate-400 mt-2">绑定字段：' + LabelCertRender.esc(p.fieldId) + '（不可改；删除后可重新添加）</p>';
+    } else if (el.type === 'orgName' || el.type === 'title' || el.type === 'staticText' || el.type === 'watermarkText') {
+      html +=
+        '<label class="text-xs text-slate-600 block mb-2">文案<textarea data-lc-c="text" rows="2" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm">' +
+        LabelCertRender.esc(p.text || '') + '</textarea></label>' +
+        numContent('字号', 'fontSize', p.fontSize || 11) +
+        colorField('颜色', 'color', p.color || '#1e293b') +
+        selectField('对齐', 'align', p.align || 'center', [['left', '居左'], ['center', '居中'], ['right', '居右']]);
+      if (el.type === 'watermarkText') {
+        html += numContent('透明度', 'opacity', Math.round((p.opacity != null ? p.opacity : 0.18) * 100)) +
+          '<p class="text-[10px] text-slate-400 -mt-1 mb-2">透明度输入 5–80（百分比）</p>' +
+          '<label class="text-xs text-slate-600 flex items-center gap-1 mb-2"><input type="checkbox" data-lc-c="tile"' +
+          (p.tile ? ' checked' : '') + ' /> 平铺</label>';
+      }
+    } else if (el.type === 'logo') {
+      html += selectField('来源', 'source', p.source || 'system', [['system', '系统 Logo'], ['hidden', '隐藏']]);
+    } else if (el.type === 'seal') {
+      html += selectField('来源', 'source', p.source || 'system', [['system', '系统检测章'], ['custom', '自定义（需 url）']]) +
+        numContent('透明度', 'opacity', Math.round((p.opacity != null ? p.opacity : 0.42) * 100)) +
+        '<p class="text-[10px] text-slate-400 -mt-1 mb-2">透明度输入 5–100（百分比）</p>';
+    } else if (el.type === 'qr') {
+      html += '<p class="text-xs text-slate-500 mb-2">载荷类型（只读）：<b>' +
+        (p.payloadType === 'sample_flow' ? '样品流转' : '合格证短链') + '</b></p>' +
+        '<p class="text-xs text-slate-400">尺寸由布局宽高决定。</p>';
+    } else if (el.type === 'line') {
+      html += colorField('颜色', 'color', p.color || '#cbd5e1') +
+        numContent('粗细(px)', 'widthPx', p.widthPx || 1) +
+        selectField('线型', 'style', p.style || 'solid', [['solid', '实线'], ['dashed', '虚线'], ['dotted', '点线']]);
+    } else if (el.type === 'hangHole') {
+      html += '<p class="text-xs text-slate-400">悬挂孔仅几何示意，无业务内容。</p>';
+    }
+    return html || '<p class="text-xs text-slate-400">无可编辑内容</p>';
+  }
+
+  function selectField(label, key, val, options) {
+    return '<label class="text-xs text-slate-600 block mb-2">' + label +
+      '<select data-lc-c="' + key + '" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm">' +
+      options.map(function (o) {
+        return '<option value="' + o[0] + '"' + (o[0] === val ? ' selected' : '') + '>' + o[1] + '</option>';
+      }).join('') + '</select></label>';
+  }
+
+  function numContent(label, key, val) {
+    return '<label class="text-xs text-slate-600 block mb-2">' + label +
+      '<input type="number" data-lc-c="' + key + '" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" value="' +
+      val + '" /></label>';
+  }
+
+  function colorField(label, key, val) {
+    return '<label class="text-xs text-slate-600 block mb-2">' + label +
+      '<input type="color" data-lc-c="' + key + '" class="mt-0.5 block h-9 w-full rounded border border-slate-300 bg-white px-1" value="' +
+      val + '" /></label>';
+  }
+
+  function applyGeomFromInputs() {
+    var el = selectedEl();
+    if (!el) return;
+    document.querySelectorAll('#lc_propLayout [data-lc-geom]').forEach(function (input) {
+      var key = input.getAttribute('data-lc-geom');
+      var v = parseFloat(input.value);
+      if (isNaN(v)) return;
+      el[key] = v;
+    });
+    clampElToPaper(el);
+  }
+
+  function clampElToPaper(el) {
+    var paper = state.draft.paper;
+    el.wMm = Math.max(0.5, Math.min(el.wMm, paper.wMm));
+    el.hMm = Math.max(0.5, Math.min(el.hMm, paper.hMm));
+    el.xMm = Math.max(0, Math.min(el.xMm, paper.wMm - el.wMm));
+    el.yMm = Math.max(0, Math.min(el.yMm, paper.hMm - el.hMm));
+  }
+
+  function applyContentFromInputs() {
+    var el = selectedEl();
+    if (!el) return;
+    if (!el.props) el.props = {};
+    document.querySelectorAll('#lc_propContent [data-lc-c]').forEach(function (input) {
+      var key = input.getAttribute('data-lc-c');
+      if (input.type === 'checkbox') {
+        el.props[key] = input.checked;
+        return;
+      }
+      if (key === 'opacity') {
+        var pct = parseFloat(input.value);
+        if (!isNaN(pct)) el.props.opacity = Math.max(0.05, Math.min(1, pct / 100));
+        return;
+      }
+      if (key === 'fontSize' || key === 'widthPx') {
+        el.props[key] = parseFloat(input.value) || el.props[key];
+        return;
+      }
+      el.props[key] = input.value;
+    });
   }
 
   function demoData() {
-    var isLabel = state.type === 'sample_label';
     return {
-      sampleNo: 'SC2026/00790101',
-      entrustNo: 'WT2026/007901',
+      sampleNo: 'YP-2026-001',
+      specimenNo: 'YP-2026-001',
       name: '绝缘操作杆',
-      spec: '',
-      model: '10kV',
-      inspectDate: '2026-07-09',
-      reinspectDate: '2027-07-08',
+      sampleName: '绝缘操作杆',
+      specModel: '10m',
       inspectors: ['张三', '李四'],
-      receiveDate: '2026-07-09',
-      clientName: '杭州数蚕智能科技有限公司',
-      detectStatus: isLabel ? '检测中' : '报告发放'
+      inspectDate: '2026-07-01',
+      reinspectDate: '2027-07-01',
+      validUntil: '2027-07-01',
+      receiveDate: '2026-06-20',
+      clientName: '某某供电公司',
+      detectStatus: '已检测',
+      entrustNo: 'WT-2026-088'
     };
   }
 
   function refreshPreview() {
-    if (!$('lc_previewBox')) return;
-    var tpl = collectDraft(true);
-    state.draft = tpl;
+    if (!state.draft) return;
+    syncPaperFromDom();
     var box = $('lc_previewBox');
-    box.innerHTML = LabelCertRender.renderSheet(tpl, demoData(), { suffix: '-pv' });
-    LabelCertRender.mountQrs(box);
+    if (!box) return;
+    LabelCertRender.ensureStyles();
+    box.innerHTML = LabelCertRender.renderSheet(state.draft, demoData(), { suffix: '-pv' });
+    LabelCertRender.mountQrs(box, [demoData()]);
+  }
+
+  function renderBind() {
+    var host = $('lc_bindSamples');
+    if (!host || state.editingIsDefault) return;
+    var tree = LabelCertConfig.SAMPLE_TREE[state.cat] || [];
+    var selected = state.draft.bindSampleIds || [];
+    var kw = (state.bindKw || '').trim();
+
+    function checked(id) { return selected.indexOf(id) >= 0; }
+
+    var html = '<div class="lc-ms' + (state.bindOpen ? ' open' : '') + '">' +
+      '<button type="button" class="lc-ms-trigger" data-lc-bind-toggle>' +
+        '<span>' + (selected.length ? ('已选 ' + selected.length + ' 项') : '<span class="ph">请选择样品叶节点</span>') + '</span>' +
+        '<i class="fa fa-angle-down"></i></button>' +
+      '<div class="lc-ms-panel">' +
+        '<input class="lc-ms-search" placeholder="搜索样品" value="' + LabelCertRender.esc(state.bindKw) + '" data-lc-bind-kw />' +
+        '<div class="lc-ms-list">';
+
+    var any = false;
+    tree.forEach(function (group) {
+      var leaves = (group.children || []).filter(function (leaf) {
+        if (!kw) return true;
+        return (leaf.name + group.name).indexOf(kw) >= 0;
+      });
+      if (!leaves.length) return;
+      any = true;
+      html += '<div class="lc-ms-group">' + LabelCertRender.esc(group.name) + '</div>';
+      leaves.forEach(function (leaf) {
+        html += '<label class="lc-ms-item indent"><input type="checkbox" data-lc-bind="' + leaf.id + '"' +
+          (checked(leaf.id) ? ' checked' : '') + ' /> ' + LabelCertRender.esc(leaf.name) + '</label>';
+      });
+    });
+    if (!any) html += '<div class="lc-ms-empty">无匹配样品</div>';
+    html += '</div><div class="lc-ms-foot"><span>叶节点多选</span><button type="button" class="text-blue-600" data-lc-bind-toggle>收起</button></div></div></div>';
+    host.innerHTML = html;
+    var hint = $('lc_bindHint');
+    if (hint) {
+      hint.textContent = selected.length ? '' : '请至少选择一个样品';
+    }
   }
 
   function saveEditor() {
-    var tpl = collectDraft(true);
-    if (!tpl.name) { alert('请填写模版名称'); return; }
-
+    if (!state.draft) return;
+    syncPaperFromDom();
+    applyGeomFromInputs();
+    applyContentFromInputs();
+    state.draft.elements = LabelCertConfig.enforceUniqueness(
+      (state.draft.elements || []).map(function (el) {
+        return LabelCertConfig.normalizeElement(el, state.type);
+      }).filter(Boolean)
+    );
+    state.draft.updatedAt = LabelCertConfig.formatNow();
     if (state.editingIsDefault) {
-      tpl.enabled = true;
-      tpl.bindSampleIds = [];
-    } else {
-      if (!(tpl.bindSampleIds || []).length) {
-        alert('个性化模版必须至少绑定 1 个样品');
-        return;
-      }
-      var conflicts = LabelCertConfig.findBindConflicts(state.cat, state.type, tpl.id, tpl.bindSampleIds || []);
+      state.draft.enabled = true;
+      state.draft.bindSampleIds = [];
+    }
+
+    var errors = LabelCertConfig.validateTemplate(state.draft, {
+      type: state.type,
+      requireBind: !state.editingIsDefault
+    });
+    if (errors.length) {
+      alert(errors.join('\n'));
+      return;
+    }
+
+    if (!state.editingIsDefault) {
+      var conflicts = LabelCertConfig.findBindConflicts(
+        state.cat, state.type, state.draft.id, state.draft.bindSampleIds || []
+      );
       if (conflicts.length) {
         alert('样品绑定冲突：\n' + conflicts.map(function (c) {
           return sampleName(c.sampleId) + ' → ' + c.templateName;
@@ -676,32 +711,126 @@
 
     var bucket = currentBucket();
     var idx = -1;
-    for (var i = 0; i < bucket.templates.length; i++) if (bucket.templates[i].id === tpl.id) idx = i;
-    if (idx >= 0) bucket.templates[idx] = tpl;
-    else bucket.templates.push(tpl);
-
-    // 默认身份不可被新建个性化顶替
-    if (state.editingIsDefault) {
-      bucket.defaultTemplateId = tpl.id;
-      tpl.enabled = true;
-      tpl.bindSampleIds = [];
+    for (var i = 0; i < bucket.templates.length; i++) {
+      if (bucket.templates[i].id === state.draft.id) { idx = i; break; }
     }
+    // 新建个性化：绑定样品后默认启用
+    if (!state.editingIsDefault && idx < 0 && (state.draft.bindSampleIds || []).length) {
+      state.draft.enabled = true;
+    }
+    var saved = LabelCertConfig.clone(state.draft);
+    if (idx >= 0) bucket.templates[idx] = saved;
+    else bucket.templates.push(saved);
+
+    if (state.editingIsDefault) {
+      bucket.defaultTemplateId = saved.id;
+      saved.enabled = true;
+      saved.bindSampleIds = [];
+    }
+
     LabelCertConfig.ensureBucketShape(bucket, state.type);
     LabelCertConfig.save(cfg);
     closeEditor();
     renderList();
   }
 
+  function openPreview(id) {
+    var bucket = currentBucket();
+    var tpl = LabelCertConfig.findTemplate(bucket, id);
+    if (!tpl) return;
+    state.previewId = id;
+    $('lc_pvTitle').textContent = tpl.name;
+    $('lc_pvSub').textContent = tpl.paper.wMm + '×' + tpl.paper.hMm + ' mm · ' + elCount(tpl) + ' 个元素';
+    LabelCertRender.ensureStyles();
+    var box = $('lc_pvBox');
+    box.innerHTML = LabelCertRender.renderSheet(tpl, demoData(), { suffix: '-ro' });
+    LabelCertRender.mountQrs(box, [demoData()]);
+    $('lc_previewModal').classList.add('open');
+    refreshAnnotations();
+  }
+
+  function closePreview() {
+    $('lc_previewModal').classList.remove('open');
+    state.previewId = null;
+  }
+
+  /* ---------- 事件 ---------- */
+
+  function onCanvasPointerDown(e) {
+    var handle = e.target.closest('[data-resize]');
+    var node = e.target.closest('[data-el-id]');
+    var paper = e.target.closest('[data-lc-paper]');
+    if (node) {
+      var id = node.getAttribute('data-el-id');
+      state.selectedId = id;
+      var el = selectedEl();
+      if (!el) return;
+      renderCanvas();
+      renderPropPanel();
+      if (el.locked && !handle) return;
+      var rect = node.getBoundingClientRect();
+      state.drag = {
+        id: id,
+        mode: handle ? 'resize' : 'move',
+        startX: e.clientX,
+        startY: e.clientY,
+        origX: el.xMm,
+        origY: el.yMm,
+        origW: el.wMm,
+        origH: el.hMm,
+        rect: rect
+      };
+      e.preventDefault();
+      return;
+    }
+    if (paper) {
+      state.selectedId = null;
+      renderCanvas();
+      renderPropPanel();
+    }
+  }
+
+  function onCanvasPointerMove(e) {
+    if (!state.drag || !state.draft) return;
+    var el = null;
+    for (var i = 0; i < state.draft.elements.length; i++) {
+      if (state.draft.elements[i].id === state.drag.id) el = state.draft.elements[i];
+    }
+    if (!el || el.locked) return;
+    var dx = (e.clientX - state.drag.startX) / state.scale;
+    var dy = (e.clientY - state.drag.startY) / state.scale;
+    if (state.drag.mode === 'move') {
+      el.xMm = state.drag.origX + dx;
+      el.yMm = state.drag.origY + dy;
+    } else {
+      el.wMm = state.drag.origW + dx;
+      el.hMm = state.drag.origH + dy;
+    }
+    clampElToPaper(el);
+    renderCanvas();
+  }
+
+  function onCanvasPointerUp() {
+    if (!state.drag) return;
+    state.drag = null;
+    renderPropPanel();
+    refreshPreview();
+  }
+
   function bindEvents() {
     var root = $('labelCertView');
-    if (!root || root.getAttribute('data-bound') === '1') return;
-    root.setAttribute('data-bound', '1');
+    if (!root || root._lcBound) return;
+    root._lcBound = true;
 
     root.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-type]');
-      if (t && t.classList.contains('lc-type-nav')) {
-        state.type = t.getAttribute('data-type');
+      var typeNav = e.target.closest('.lc-type-nav');
+      if (typeNav) {
+        state.type = typeNav.getAttribute('data-type');
         renderList();
+        return;
+      }
+      if (e.target.closest('[data-lc-new]')) {
+        openCreateChooser();
         return;
       }
       var act = e.target.closest('[data-lc-act]');
@@ -713,21 +842,9 @@
         else if (a === 'del') removeTpl(id);
         return;
       }
-      if (e.target.closest('[data-lc-new]')) { openEditor(); return; }
-      var field = e.target.closest('[data-lc-field]');
-      if (field) { toggleField(field.getAttribute('data-lc-field')); return; }
-      if (e.target.closest('[data-lc-ms-toggle]')) {
-        e.stopPropagation();
-        state.bindOpen = !state.bindOpen;
-        renderBindUI(collectDraft(false));
-        return;
-      }
-      if (e.target.closest('[data-lc-ms-clear]')) {
-        e.stopPropagation();
-        clearBind();
-        return;
-      }
-      if (e.target.closest('#lc_msRoot')) e.stopPropagation();
+      if (e.target.closest('[data-lc-close]')) { closeEditor(); return; }
+      if (e.target.closest('[data-lc-save]')) { saveEditor(); return; }
+      if (e.target.closest('[data-lc-refresh]')) { refreshPreview(); return; }
       if (e.target.closest('[data-lc-pv-close]')) { closePreview(); return; }
       if (e.target.closest('[data-lc-pv-edit]')) {
         var pid = state.previewId;
@@ -735,145 +852,136 @@
         if (pid) openEditor(pid);
         return;
       }
-      if (e.target.closest('[data-lc-close]')) { state.bindOpen = false; closeEditor(); return; }
-      if (e.target.closest('[data-lc-save]')) { state.bindOpen = false; saveEditor(); return; }
-      if (e.target.closest('[data-lc-refresh]')) { refreshPreview(); return; }
+
+      // create modal
+      var modeBtn = e.target.closest('[data-lc-create-mode]');
+      if (modeBtn) { setCreateMode(modeBtn.getAttribute('data-lc-create-mode')); return; }
+      if (e.target.closest('[data-lc-create-close]')) { closeCreateChooser(); return; }
+      if (e.target.closest('#lc_c_confirm')) { confirmCreate(); return; }
+
+      var addBtn = e.target.closest('[data-lc-add]');
+      if (addBtn && !addBtn.disabled) {
+        addElement(addBtn.getAttribute('data-lc-add'), addBtn.getAttribute('data-field'));
+        return;
+      }
+
+      var tab = e.target.closest('[data-lc-prop-tab]');
+      if (tab) {
+        state.propTab = tab.getAttribute('data-lc-prop-tab');
+        syncPropTabs();
+        return;
+      }
+
+      var layer = e.target.closest('[data-lc-layer]');
+      if (layer && state.selectedId) {
+        LabelCertConfig.bringToLayer(state.draft.elements, state.selectedId, layer.getAttribute('data-lc-layer'));
+        renderCanvas();
+        renderPropPanel();
+        refreshPreview();
+        return;
+      }
+      if (e.target.closest('[data-lc-del-el]')) { deleteSelected(); return; }
+
+      if (e.target.closest('[data-lc-bind-toggle]')) {
+        state.bindOpen = !state.bindOpen;
+        renderBind();
+        return;
+      }
     });
 
     root.addEventListener('change', function (e) {
-      var enableId = e.target.getAttribute('data-lc-enable');
-      if (enableId) {
-        setEnabled(enableId, e.target.checked);
-        return;
-      }
+      var en = e.target.getAttribute('data-lc-enable');
+      if (en) { setEnabled(en, e.target.checked); return; }
       if (e.target.getAttribute('data-lc-bind')) {
-        toggleBind(e.target.getAttribute('data-lc-bind'));
+        var sid = e.target.getAttribute('data-lc-bind');
+        var list = state.draft.bindSampleIds || (state.draft.bindSampleIds = []);
+        var ix = list.indexOf(sid);
+        if (e.target.checked && ix < 0) list.push(sid);
+        if (!e.target.checked && ix >= 0) list.splice(ix, 1);
+        renderBind();
         return;
       }
-      if (e.target.id === 'lc_e_preset') { onPresetChange(); return; }
-      if (e.target.id === 'lc_e_wmType' || e.target.id === 'lc_e_wmSealMode') {
-        syncWatermarkTypeUI();
+      if (e.target.getAttribute('data-lc-prop') === 'locked') {
+        var el = selectedEl();
+        if (el) { el.locked = e.target.checked; renderCanvas(); }
+        return;
+      }
+      if (e.target.closest('#lc_propContent') && e.target.getAttribute('data-lc-c')) {
+        applyContentFromInputs();
+        renderCanvas();
         refreshPreview();
         return;
       }
-      if (e.target.id === 'lc_e_wmSealFile') {
-        var file = e.target.files && e.target.files[0];
-        if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function () {
-          var draft = collectDraft(false);
-          if (!draft.brand) draft.brand = {};
-          if (!draft.brand.watermark) draft.brand.watermark = LabelCertConfig.defaultWatermark(null);
-          draft.brand.watermark.sealUrl = reader.result;
-          draft.brand.watermark.sealMode = 'custom';
-          draft.brand.watermark.type = 'seal';
-          state.draft = draft;
-          $('lc_e_wmSealMode').value = 'custom';
-          $('lc_e_wmType').value = 'seal';
-          $('lc_e_wmSealHint').textContent = '已上传自定义章图';
-          syncWatermarkTypeUI();
-          refreshPreview();
-        };
-        reader.readAsDataURL(file);
+      if (e.target.id === 'lc_c_size') {
+        var custom = e.target.value === 'custom';
+        var wrap = $('lc_c_customSize');
+        if (wrap) wrap.classList.toggle('hidden', !custom);
         return;
       }
-      var rename = e.target.getAttribute('data-lc-rename');
-      if (rename != null) renameField(parseInt(rename, 10), e.target.value);
-      if (/^lc_e_/.test(e.target.id)) {
-        if (e.target.id === 'lc_e_qrPlace') syncQrPlaceUi($('lc_e_preset').value);
-        if (e.target.id === 'lc_e_borderOn') syncBorderUi();
+      if (e.target.id === 'lc_e_w' || e.target.id === 'lc_e_h' || e.target.id === 'lc_e_borderOn' ||
+          e.target.id === 'lc_e_borderColor' || e.target.id === 'lc_e_borderWidth') {
+        syncPaperFromDom();
+        renderCanvas();
         refreshPreview();
       }
     });
+
     root.addEventListener('input', function (e) {
-      if (e.target.id === 'lc_msSearch') {
-        state.bindKw = e.target.value;
-        renderBindUI(collectDraft(false));
+      if (e.target.getAttribute('data-lc-bind-kw') != null) {
+        state.bindKw = e.target.value || '';
+        renderBind();
         return;
       }
-      if (e.target.id === 'lc_e_wmOpacity') {
-        $('lc_e_wmOpacityVal').textContent = e.target.value + '%';
+      if (e.target.closest('#lc_propLayout') && e.target.getAttribute('data-lc-geom')) {
+        applyGeomFromInputs();
+        renderCanvas();
         refreshPreview();
         return;
       }
-      if (e.target.id === 'lc_e_org' || e.target.id === 'lc_e_title' || e.target.id === 'lc_e_warn' ||
-          e.target.id === 'lc_e_wmText' || e.target.id === 'lc_e_wmAngle' ||
-          e.target.id === 'lc_e_orgSize' || e.target.id === 'lc_e_titleSize' ||
-          e.target.id === 'lc_e_logoSize' || e.target.id === 'lc_e_warnSize' ||
-          e.target.id === 'lc_e_orgColor' || e.target.id === 'lc_e_titleColor' ||
-          e.target.id === 'lc_e_warnColor' || e.target.id === 'lc_e_wmColor' ||
-          e.target.id === 'lc_e_qrSize' || e.target.id === 'lc_e_fieldSize' ||
-          e.target.id === 'lc_e_fieldColor' || e.target.id === 'lc_e_borderColor' ||
-          e.target.id === 'lc_e_borderWidth' || e.target.id === 'lc_e_titleBg' ||
-          e.target.id === 'lc_e_footerBg') {
+      if (e.target.closest('#lc_propContent') && e.target.getAttribute('data-lc-c')) {
+        applyContentFromInputs();
+        renderCanvas();
         refreshPreview();
       }
     });
 
-    document.addEventListener('mousedown', function (e) {
-      if (!state.bindOpen) return;
-      if (e.target.closest('#lc_msRoot') || e.target.closest('#lc_bindSamples')) return;
-      state.bindOpen = false;
-      if (state.draft) renderBindUI(state.draft);
+    root.addEventListener('mousedown', function (e) {
+      if (e.target.closest('#lc_canvas')) onCanvasPointerDown(e);
     });
-
-    root.addEventListener('dragstart', function (e) {
-      var item = e.target.closest('.lc-field-item');
-      if (item) dragFrom = parseInt(item.getAttribute('data-idx'), 10);
-    });
-    root.addEventListener('dragover', function (e) {
-      if (e.target.closest('.lc-field-item')) e.preventDefault();
-    });
-    root.addEventListener('drop', function (e) {
-      var item = e.target.closest('.lc-field-item');
-      if (!item) return;
-      e.preventDefault();
-      var to = parseInt(item.getAttribute('data-idx'), 10);
-      var tpl = collectDraft(false);
-      if (dragFrom < 0 || to < 0 || dragFrom === to) return;
-      var moved = tpl.fields.splice(dragFrom, 1)[0];
-      tpl.fields.splice(to, 0, moved);
-      state.draft = tpl;
-      renderFieldUI(tpl);
-      refreshPreview();
-    });
+    document.addEventListener('mousemove', onCanvasPointerMove);
+    document.addEventListener('mouseup', onCanvasPointerUp);
   }
 
-  function setCat(cat) {
-    if (!cat) return;
-    state.cat = cat;
-    if (cfg) renderList();
-  }
-
-  function setType(type) {
-    if (type === 'sample_label' || type === 'certificate') {
-      state.type = type;
-      if (cfg) renderList();
-    }
-  }
-
-  function init(opts) {
-    opts = opts || {};
-    LabelCertRender.ensureStyles();
+  function init(cat) {
     cfg = LabelCertConfig.load();
-    if (opts.cat) state.cat = opts.cat;
-    if (opts.type) state.type = opts.type;
+    if (cat) state.cat = cat;
     bindEvents();
     renderList();
   }
 
+  function setCat(cat) {
+    state.cat = cat || state.cat;
+    if (cfg) renderList();
+  }
+
+  function setType(type) {
+    state.type = type === 'sample_label' ? 'sample_label' : 'certificate';
+    if (cfg) renderList();
+  }
+
   function show() {
-    var el = $('labelCertView');
-    if (el) el.classList.remove('hidden');
-    if (!cfg) init();
+    var view = $('labelCertView');
+    if (view) view.classList.remove('hidden');
+    if (!cfg) init(state.cat);
     else renderList();
   }
 
   function hide() {
-    var el = $('labelCertView');
-    if (el) el.classList.add('hidden');
+    var view = $('labelCertView');
+    if (view) view.classList.add('hidden');
     closeEditor();
     closePreview();
+    closeCreateChooser();
   }
 
   global.LabelCertUI = {

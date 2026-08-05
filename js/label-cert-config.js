@@ -1,10 +1,13 @@
 /**
  * 样品标签 / 合格证模版配置（原型）
+ * 自由设计：paper + elements[]
  * localStorage key: lims.labelCertConfig
  */
 (function (global) {
   var STORAGE_KEY = 'lims.labelCertConfig';
   var DEFAULT_ORG = '杭州数蚕智能科技有限公司';
+  var SYSTEM_LOGO_URL = 'assets/label-cert/system-logo.png?v=transparent';
+  var SYSTEM_SEAL_URL = 'assets/label-cert/system-seal.svg';
 
   var CATEGORIES = [
     { key: 'aqgqj', name: '安全工器具类' },
@@ -13,11 +16,6 @@
     { key: 'gcjc', name: '工程检测' }
   ];
 
-  /** 系统 Logo（合格证品牌区，图1；黑底已透出，跟随标题背景色） */
-  var SYSTEM_LOGO_URL = 'assets/label-cert/system-logo.png?v=transparent';
-  /** 配置中上传的机构检测章（图8） */
-  var SYSTEM_SEAL_URL = 'assets/label-cert/system-seal.svg';
-
   var FIELD_UNDERLINE_STYLES = [
     { id: 'none', name: '无' },
     { id: 'solid', name: '直线' },
@@ -25,9 +23,27 @@
     { id: 'dashed', name: '断线' }
   ];
 
-  /**
-   * 大类下样品树（分类层级 → 叶节点），绑定 UI 按层级展示
-   */
+  var PAPER_SIZE_PRESETS = [
+    { id: 'stick_compact', name: '粘贴证（紧凑）', wMm: 65, hMm: 30 },
+    { id: 'stick', name: '粘贴证', wMm: 65, hMm: 45 },
+    { id: 'hang', name: '悬挂牌', wMm: 50, hMm: 25 },
+    { id: 'lr', name: '左文右码', wMm: 90, hMm: 50 },
+    { id: 'label', name: '样品标签', wMm: 60, hMm: 40 }
+  ];
+
+  var ELEMENT_TYPES = {
+    orgName: { category: 'brand', name: '单位名称', unique: true },
+    title: { category: 'brand', name: '标题', unique: true },
+    logo: { category: 'brand', name: 'Logo', unique: true },
+    fieldRow: { category: 'field', name: '字段行', uniqueField: true },
+    qr: { category: 'code', name: '二维码', unique: true },
+    seal: { category: 'code', name: '检测章' },
+    watermarkText: { category: 'code', name: '文本水印' },
+    staticText: { category: 'decor', name: '静态文本' },
+    line: { category: 'decor', name: '分割线' },
+    hangHole: { category: 'decor', name: '悬挂孔' }
+  };
+
   var SAMPLE_TREE = {
     aqgqj: [
       {
@@ -51,14 +67,8 @@
       }
     ],
     dlwz: [
-      {
-        id: 'dlwz_cable', name: '电缆类',
-        children: [{ id: 'cable', name: '电力电缆' }]
-      },
-      {
-        id: 'dlwz_eq', name: '设备类',
-        children: [{ id: 'transformer', name: '变压器' }]
-      }
+      { id: 'dlwz_cable', name: '电缆类', children: [{ id: 'cable', name: '电力电缆' }] },
+      { id: 'dlwz_eq', name: '设备类', children: [{ id: 'transformer', name: '变压器' }] }
     ],
     hjjc: [],
     gcjc: [
@@ -96,10 +106,10 @@
     { id: 'inspectors', label: '检查员' },
     { id: 'inspectDate', label: '本次检测日期' },
     { id: 'reinspectDate', label: '下次检测日期' },
-    { id: 'validUntil', label: '检测有效期' }
+    { id: 'validUntil', label: '检测有效期' },
+    { id: 'clientName', label: '送检单位' }
   ];
 
-  /** 样品标签检测状态枚举 */
   var LABEL_DETECT_STATUS = ['未检测', '检测中', '已检测'];
 
   var LABEL_FIELD_POOL = [
@@ -112,69 +122,32 @@
     { id: 'detectStatus', label: '检测状态' }
   ];
 
-  var PRESETS = {
+  /** 旧布局预设 → 展开参考（仅迁移用，非 UI 选项） */
+  var LEGACY_PRESETS = {
     cert_style_1: {
-      type: 'certificate',
-      name: '不粘胶纸·字段表',
-      paper: { wMm: 65, hMm: 45 },
+      type: 'certificate', name: '不粘胶纸·字段表', paper: { wMm: 65, hMm: 45 },
       title: '安全工器具试验合格证',
-      qr: { enabled: false, sizePx: 64, payloadType: 'cert_shortlink', placement: 'none' },
-      showWatermarkGe: false,
-      footerWarning: null,
       fieldIds: ['sampleName', 'specimenNo', 'inspectDate', 'reinspectDate', 'inspectors'],
-      watermarkDefault: {
-        enabled: true, type: 'seal', sealMode: 'system', text: '试验专用章',
-        opacity: 0.42, angle: -12, position: 'center', size: 'lg', layout: 'single', color: '#dc2626'
-      },
-      styleDefault: {
-        fieldAlign: 'left', fieldFontSize: 12, fieldColor: '#1e293b',
-        fieldUnderline: true, fieldUnderlineStyle: 'solid',
-        borderEnabled: true, borderColor: '#2e7d32', borderWidthPx: 2,
-        titleBgColor: '#2e7d32', footerBgColor: '#f1f8e9'
-      }
+      qr: false, border: { enabled: true, color: '#2e7d32', widthPx: 2 }
     },
     cert_style_2: {
-      type: 'certificate',
-      name: 'PVC·悬挂中置码',
-      paper: { wMm: 50, hMm: 25 },
+      type: 'certificate', name: 'PVC·悬挂中置码', paper: { wMm: 50, hMm: 25 },
       title: '检验合格证',
-      qr: { enabled: true, sizePx: 64, payloadType: 'cert_shortlink', placement: 'center' },
-      showWatermarkGe: false,
-      footerWarning: '无法扫码视为过期',
-      fieldIds: ['validUntil', 'sampleName', 'specimenNo'],
-      styleDefault: {
-        fieldAlign: 'center', fieldFontSize: 11, fieldColor: '#1e293b',
-        fieldUnderline: true, fieldUnderlineStyle: 'dotted',
-        borderEnabled: true, borderColor: '#cbd5e1', borderWidthPx: 1,
-        titleBgColor: '#ffffff', footerBgColor: '#fff8f6'
-      }
+      fieldIds: ['validUntil'],
+      qr: true, warn: '无法扫码视为过期', hangHole: true,
+      border: { enabled: true, color: '#cbd5e1', widthPx: 1 }
     },
     cert_style_3: {
-      type: 'certificate',
-      name: '左文右码',
-      paper: { wMm: 90, hMm: 50 },
+      type: 'certificate', name: '左文右码', paper: { wMm: 90, hMm: 50 },
       title: '合 格 证',
-      qr: { enabled: true, sizePx: 100, payloadType: 'cert_shortlink', placement: 'right' },
-      showWatermarkGe: false,
-      footerWarning: null,
       fieldIds: ['specimenNo', 'sampleName', 'specModel', 'inspectDate', 'reinspectDate', 'inspectors'],
-      styleDefault: {
-        fieldAlign: 'left', fieldFontSize: 12, fieldColor: '#1e293b',
-        fieldUnderline: true, fieldUnderlineStyle: 'dotted',
-        borderEnabled: true, borderColor: '#cbd5e1', borderWidthPx: 1,
-        titleBgColor: '#ffffff', footerBgColor: '#ffffff'
-      }
+      qr: true, border: { enabled: true, color: '#cbd5e1', widthPx: 1 }
     },
     label_style_1: {
-      type: 'sample_label',
-      name: '左文右码（流转）',
-      paper: { wMm: 60, hMm: 40 },
+      type: 'sample_label', name: '左文右码（流转）', paper: { wMm: 60, hMm: 40 },
       title: '',
-      qr: { enabled: true, sizePx: 90, payloadType: 'sample_flow', placement: 'right' },
-      showWatermarkGe: false,
-      footerWarning: null,
-      // 默认字段包对齐项目部约定（不含委托编号；可在字段池中自行勾选）
-      fieldIds: ['sampleNo', 'sampleName', 'specModel', 'receiveDate', 'clientName', 'detectStatus']
+      fieldIds: ['sampleNo', 'sampleName', 'specModel', 'receiveDate', 'clientName', 'detectStatus'],
+      qr: true, border: { enabled: true, color: '#cbd5e1', widthPx: 1 }
     }
   };
 
@@ -182,254 +155,500 @@
     return (prefix || 'tpl') + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
 
+  function elUid() {
+    return 'el_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
   function clone(obj) {
     return JSON.parse(JSON.stringify(obj));
-  }
-
-  function poolForType(type) {
-    return type === 'sample_label' ? LABEL_FIELD_POOL : CERT_FIELD_POOL;
-  }
-
-  function buildFieldsFromPreset(presetId) {
-    var preset = PRESETS[presetId];
-    var pool = poolForType(preset.type);
-    var map = {};
-    pool.forEach(function (f) { map[f.id] = f.label; });
-    return preset.fieldIds.map(function (id) {
-      return { id: id, label: map[id] || id, visible: true };
-    });
-  }
-
-  var WATERMARK_POSITIONS = [
-    { id: 'top_left', name: '左上' },
-    { id: 'top', name: '上方' },
-    { id: 'top_right', name: '右上' },
-    { id: 'left', name: '左侧' },
-    { id: 'center', name: '居中' },
-    { id: 'right', name: '右侧' },
-    { id: 'bottom_left', name: '左下' },
-    { id: 'bottom', name: '下方' },
-    { id: 'bottom_right', name: '右下' }
-  ];
-
-  function defaultStyle(presetId, preset) {
-    preset = preset || (presetId && PRESETS[presetId]) || null;
-    var isStick = presetId === 'cert_style_1';
-    var from = (preset && preset.styleDefault) || {};
-    return {
-      marginMm: 2,
-      fieldAlign: from.fieldAlign || 'left',
-      fieldFontSize: from.fieldFontSize != null ? from.fieldFontSize : 12,
-      fieldColor: from.fieldColor || '#1e293b',
-      fieldUnderline: from.fieldUnderline !== false,
-      fieldUnderlineStyle: from.fieldUnderlineStyle || 'dotted',
-      borderEnabled: from.borderEnabled !== false,
-      borderColor: from.borderColor || (isStick ? '#2e7d32' : '#cbd5e1'),
-      borderWidthPx: from.borderWidthPx != null ? from.borderWidthPx : (isStick ? 2 : 1),
-      titleBgColor: from.titleBgColor || (isStick ? '#2e7d32' : '#ffffff'),
-      footerBgColor: from.footerBgColor || (isStick ? '#f1f8e9' : '#ffffff')
-    };
-  }
-
-  function normalizeUnderlineStyle(v, fallback) {
-    if (v === 'double') v = 'solid'; // 已移除双线，旧数据回落直线
-    var ok = FIELD_UNDERLINE_STYLES.some(function (s) { return s.id === v; });
-    return ok ? v : fallback;
-  }
-
-  function normalizeStyle(style, presetId) {
-    var d = defaultStyle(presetId, PRESETS[presetId]);
-    style = style || {};
-    var underlineOn = style.fieldUnderline != null ? !!style.fieldUnderline : d.fieldUnderline;
-    var uStyle = normalizeUnderlineStyle(style.fieldUnderlineStyle, d.fieldUnderlineStyle);
-    if (!underlineOn) uStyle = 'none';
-    if (uStyle === 'none') underlineOn = false;
-    return {
-      marginMm: clampInt(style.marginMm != null ? style.marginMm : d.marginMm, 0, 10, d.marginMm),
-      fieldAlign: normalizeAlign(style.fieldAlign, d.fieldAlign),
-      fieldFontSize: clampInt(style.fieldFontSize, 8, 22, d.fieldFontSize),
-      fieldColor: normalizeColor(style.fieldColor, d.fieldColor),
-      fieldUnderline: underlineOn,
-      fieldUnderlineStyle: uStyle,
-      borderEnabled: style.borderEnabled != null ? !!style.borderEnabled : d.borderEnabled,
-      borderColor: normalizeColor(style.borderColor, d.borderColor),
-      borderWidthPx: clampInt(style.borderWidthPx, 0, 8, d.borderWidthPx),
-      titleBgColor: normalizeColor(style.titleBgColor || d.titleBgColor, d.titleBgColor || '#ffffff'),
-      footerBgColor: normalizeColor(style.footerBgColor || d.footerBgColor, d.footerBgColor || '#ffffff')
-    };
-  }
-
-  function defaultWatermark(preset) {
-    var isLabel = !!(preset && preset.type === 'sample_label');
-    if (preset && preset.watermarkDefault) {
-      var wd = preset.watermarkDefault;
-      return {
-        enabled: wd.enabled !== false,
-        type: wd.type === 'seal' ? 'seal' : 'text',
-        text: wd.text || '试验专用章',
-        color: wd.color || '#dc2626',
-        sealMode: wd.sealMode === 'custom' ? 'custom' : 'system',
-        sealUrl: wd.sealUrl || null,
-        opacity: wd.opacity != null ? wd.opacity : 0.34,
-        angle: wd.angle != null ? wd.angle : -8,
-        position: wd.position || 'center',
-        size: wd.size || 'lg',
-        layout: wd.layout === 'tile' ? 'tile' : 'single'
-      };
-    }
-    var fromGe = !!(preset && preset.showWatermarkGe);
-    return {
-      enabled: isLabel ? false : fromGe,
-      type: 'text',           // text | seal
-      text: isLabel ? '样品标签' : (fromGe ? '格' : '合格'),
-      color: '#16a34a',
-      sealMode: 'system',     // system | custom
-      sealUrl: null,
-      opacity: fromGe ? 0.18 : 0.22,
-      angle: isLabel ? -28 : (fromGe ? 0 : -28),
-      position: isLabel ? 'center' : (fromGe ? 'right' : 'center'),
-      size: fromGe ? 'lg' : 'md', // sm | md | lg
-      layout: 'single'        // single | tile
-    };
-  }
-
-  function clampInt(n, min, max, fallback) {
-    n = Number(n);
-    if (isNaN(n)) return fallback;
-    return Math.max(min, Math.min(max, Math.round(n)));
-  }
-
-  function normalizeColor(c, fallback) {
-    c = String(c == null ? '' : c).trim();
-    if (/^#[0-9a-fA-F]{6}$/.test(c) || /^#[0-9a-fA-F]{3}$/.test(c)) return c;
-    return fallback;
-  }
-
-  function defaultBrandType() {
-    return {
-      orgFontSize: 12,
-      orgColor: '#1e293b',
-      orgAlign: 'center',
-      titleFontSize: 14,
-      titleColor: '#1e293b',
-      titleAlign: 'center',
-      logoSize: 28,
-      warnFontSize: 10,
-      warnColor: '#dc2626',
-      warnAlign: 'center'
-    };
-  }
-
-  function normalizeAlign(v, fallback) {
-    return (v === 'left' || v === 'center' || v === 'right') ? v : fallback;
-  }
-
-  function normalizeBrandType(brand) {
-    var d = defaultBrandType();
-    brand = brand || {};
-    return {
-      orgFontSize: clampInt(brand.orgFontSize, 8, 28, d.orgFontSize),
-      orgColor: normalizeColor(brand.orgColor, d.orgColor),
-      orgAlign: normalizeAlign(brand.orgAlign, d.orgAlign),
-      titleFontSize: clampInt(brand.titleFontSize, 10, 32, d.titleFontSize),
-      titleColor: normalizeColor(brand.titleColor, d.titleColor),
-      titleAlign: normalizeAlign(brand.titleAlign, d.titleAlign),
-      logoSize: clampInt(brand.logoSize, 10, 40, d.logoSize),
-      warnFontSize: clampInt(brand.warnFontSize, 8, 20, d.warnFontSize),
-      warnColor: normalizeColor(brand.warnColor, d.warnColor),
-      warnAlign: normalizeAlign(brand.warnAlign, d.warnAlign)
-    };
-  }
-
-  function normalizeWatermark(wm, brand, preset) {
-    var base = defaultWatermark(preset);
-    // 兼容旧字段 showWatermarkGe
-    if ((!wm || typeof wm !== 'object') && brand && brand.showWatermarkGe) {
-      wm = { enabled: true, type: 'text', text: '格', color: '#16a34a', position: 'right', size: 'lg', angle: 0, opacity: 0.18, layout: 'single' };
-    }
-    wm = wm && typeof wm === 'object' ? wm : {};
-    var hasType = wm.type === 'seal' || wm.type === 'text';
-    var type = hasType ? wm.type : base.type;
-    var pos = wm.position || base.position;
-    var validPos = WATERMARK_POSITIONS.some(function (p) { return p.id === pos; });
-    if (!validPos) pos = base.position || 'center';
-    var size = (wm.size === 'sm' || wm.size === 'md' || wm.size === 'lg') ? wm.size : (base.size || 'md');
-    var opacity = Number(wm.opacity);
-    if (isNaN(opacity)) opacity = base.opacity;
-    opacity = Math.max(0.05, Math.min(0.8, opacity));
-    var angle = Number(wm.angle);
-    if (isNaN(angle)) angle = base.angle;
-    angle = Math.max(-90, Math.min(90, Math.round(angle)));
-    var layout = wm.layout === 'tile' || wm.layout === 'single' ? wm.layout : (base.layout || 'single');
-    return {
-      enabled: wm.enabled != null ? !!wm.enabled : !!base.enabled,
-      type: type === 'seal' ? 'seal' : 'text',
-      text: (wm.text != null ? String(wm.text) : base.text).slice(0, 24),
-      color: normalizeColor(wm.color, base.color || '#16a34a'),
-      sealMode: wm.sealMode === 'custom' ? 'custom' : (wm.sealMode === 'system' ? 'system' : base.sealMode),
-      sealUrl: wm.sealUrl || null,
-      opacity: opacity,
-      angle: angle,
-      position: pos,
-      size: size,
-      layout: layout === 'tile' ? 'tile' : 'single'
-    };
-  }
-
-  function createTemplate(opts) {
-    opts = opts || {};
-    var presetId = opts.layoutPreset || (opts.type === 'sample_label' ? 'label_style_1' : 'cert_style_3');
-    var preset = PRESETS[presetId];
-    var isLabel = preset.type === 'sample_label' || opts.type === 'sample_label';
-    var brandIn = opts.brand || {};
-    var watermark = normalizeWatermark(brandIn.watermark, brandIn, preset);
-    var typeStyle = normalizeBrandType(brandIn);
-    var orgName;
-    if (brandIn.orgName != null) orgName = brandIn.orgName;
-    else orgName = isLabel ? '' : DEFAULT_ORG;
-    var title;
-    if (brandIn.title != null) title = brandIn.title;
-    else title = isLabel ? '' : preset.title;
-    var logoMode = brandIn.logoMode || (isLabel ? 'hidden' : 'system');
-    if (logoMode === 'custom') logoMode = 'system';
-    return {
-      id: opts.id || uid('tpl'),
-      name: opts.name || (preset.name + '模版'),
-      enabled: opts.enabled !== false,
-      updatedAt: opts.updatedAt || formatNow(),
-      layoutPreset: presetId,
-      paper: clone(opts.paper || preset.paper),
-      style: normalizeStyle(opts.style || {}, presetId),
-      brand: {
-        orgName: orgName,
-        title: title,
-        logoMode: logoMode,
-        logoUrl: brandIn.logoUrl || null,
-        showWatermarkGe: watermark.enabled && watermark.type === 'text' && watermark.text === '格',
-        footerWarning: isLabel ? null : (brandIn.footerWarning != null ? brandIn.footerWarning : preset.footerWarning),
-        watermark: watermark,
-        orgFontSize: typeStyle.orgFontSize,
-        orgColor: typeStyle.orgColor,
-        orgAlign: typeStyle.orgAlign,
-        titleFontSize: typeStyle.titleFontSize,
-        titleColor: typeStyle.titleColor,
-        titleAlign: typeStyle.titleAlign,
-        logoSize: typeStyle.logoSize,
-        warnFontSize: typeStyle.warnFontSize,
-        warnColor: typeStyle.warnColor,
-        warnAlign: typeStyle.warnAlign
-      },
-      fields: opts.fields || buildFieldsFromPreset(presetId),
-      qr: clone(opts.qr || preset.qr),
-      meta: opts.meta || { material: '', mount: '', printMethod: '' },
-      bindSampleIds: opts.bindSampleIds || []
-    };
   }
 
   function formatNow() {
     var d = new Date();
     function p(n) { return n < 10 ? '0' + n : '' + n; }
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function clamp(n, min, max, fallback) {
+    n = Number(n);
+    if (isNaN(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function normalizeColor(v, fallback) {
+    if (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)) return v;
+    return fallback || '#1e293b';
+  }
+
+  function normalizeAlign(v, fallback) {
+    if (v === 'left' || v === 'center' || v === 'right') return v;
+    return fallback || 'left';
+  }
+
+  function poolForType(type) {
+    return type === 'sample_label' ? LABEL_FIELD_POOL : CERT_FIELD_POOL;
+  }
+
+  function payloadTypeFor(type) {
+    return type === 'sample_label' ? 'sample_flow' : 'cert_shortlink';
+  }
+
+  function templateTypeOf(tpl) {
+    if (!tpl) return 'certificate';
+    if (tpl._type === 'sample_label' || tpl._type === 'certificate') return tpl._type;
+    if (tpl.layoutPreset && LEGACY_PRESETS[tpl.layoutPreset]) return LEGACY_PRESETS[tpl.layoutPreset].type;
+    var els = tpl.elements || [];
+    for (var i = 0; i < els.length; i++) {
+      if (els[i].type === 'qr' && els[i].props && els[i].props.payloadType === 'sample_flow') return 'sample_label';
+    }
+    return 'certificate';
+  }
+
+  function defaultProps(type, opts) {
+    opts = opts || {};
+    var tplType = opts.tplType || 'certificate';
+    switch (type) {
+      case 'orgName':
+        return { text: tplType === 'sample_label' ? '' : DEFAULT_ORG, fontSize: 11, color: '#1e293b', align: 'center' };
+      case 'title':
+        return { text: tplType === 'sample_label' ? '' : '检验合格证', fontSize: 13, color: '#1e293b', align: 'center' };
+      case 'logo':
+        return { source: 'system', url: null };
+      case 'fieldRow':
+        return {
+          fieldId: opts.fieldId || 'sampleName',
+          label: opts.label || '试样名称',
+          showLabel: true,
+          valueAlign: 'left',
+          underline: 'dotted',
+          fontSize: 11,
+          color: '#1e293b'
+        };
+      case 'qr':
+        return { payloadType: payloadTypeFor(tplType) };
+      case 'seal':
+        return { source: 'system', url: null, opacity: 0.42 };
+      case 'watermarkText':
+        return { text: '格', fontSize: 28, color: '#16a34a', opacity: 0.18, tile: false, align: 'center' };
+      case 'staticText':
+        return { text: '无法扫码视为过期', fontSize: 9, color: '#dc2626', align: 'center' };
+      case 'line':
+        return { color: '#cbd5e1', widthPx: 1, style: 'solid' };
+      case 'hangHole':
+        return {};
+      default:
+        return {};
+    }
+  }
+
+  function defaultBox(type, paper, opts) {
+    opts = opts || {};
+    var w = (paper && paper.wMm) || 90;
+    var h = (paper && paper.hMm) || 50;
+    switch (type) {
+      case 'orgName': return { xMm: 2, yMm: 2, wMm: Math.max(20, w - 4), hMm: 5 };
+      case 'title': return { xMm: 2, yMm: 7, wMm: Math.max(20, w - 4), hMm: 6 };
+      case 'logo': return { xMm: 2, yMm: 2, wMm: 8, hMm: 8 };
+      case 'fieldRow': {
+        var idx = opts.index || 0;
+        return { xMm: 2, yMm: 14 + idx * 4.5, wMm: Math.max(24, w * 0.55), hMm: 4 };
+      }
+      case 'qr': {
+        var size = Math.min(18, h - 4, w * 0.35);
+        return { xMm: Math.max(2, w - size - 2), yMm: Math.max(2, (h - size) / 2), wMm: size, hMm: size };
+      }
+      case 'seal': return { xMm: w * 0.55, yMm: h * 0.35, wMm: 16, hMm: 16 };
+      case 'watermarkText': return { xMm: w * 0.35, yMm: h * 0.3, wMm: 20, hMm: 16 };
+      case 'staticText': return { xMm: 2, yMm: h - 6, wMm: w - 4, hMm: 4 };
+      case 'line': return { xMm: 2, yMm: 12, wMm: w - 4, hMm: 1 };
+      case 'hangHole': return { xMm: w - 5, yMm: 1.5, wMm: 3.5, hMm: 3.5 };
+      default: return { xMm: 2, yMm: 2, wMm: 20, hMm: 6 };
+    }
+  }
+
+  function createElement(type, opts) {
+    opts = opts || {};
+    var paper = opts.paper || { wMm: 90, hMm: 50 };
+    var meta = ELEMENT_TYPES[type];
+    if (!meta) throw new Error('unknown element type: ' + type);
+    var box = opts.box || defaultBox(type, paper, opts);
+    var z = opts.zIndex != null ? opts.zIndex : (type === 'seal' || type === 'watermarkText' ? 0 : 10);
+    return {
+      id: opts.id || elUid(),
+      category: meta.category,
+      type: type,
+      xMm: clamp(box.xMm, 0, 200, 0),
+      yMm: clamp(box.yMm, 0, 200, 0),
+      wMm: clamp(box.wMm, 1, 200, 10),
+      hMm: clamp(box.hMm, 0.5, 200, 4),
+      zIndex: clamp(z, -999, 999, 10),
+      locked: !!opts.locked,
+      rotationDeg: clamp(opts.rotationDeg != null ? opts.rotationDeg : (type === 'seal' || type === 'watermarkText' ? -12 : 0), -90, 90, 0),
+      props: Object.assign(defaultProps(type, opts), opts.props || {})
+    };
+  }
+
+  function fieldLabel(type, fieldId) {
+    var pool = poolForType(type);
+    for (var i = 0; i < pool.length; i++) if (pool[i].id === fieldId) return pool[i].label;
+    return fieldId;
+  }
+
+  /** 从旧 layoutPreset 模版展开为 elements[] */
+  function expandLegacyToElements(tpl, tplType) {
+    var legacyId = tpl.layoutPreset || (tplType === 'sample_label' ? 'label_style_1' : 'cert_style_3');
+    var legacy = LEGACY_PRESETS[legacyId] || LEGACY_PRESETS.cert_style_3;
+    var paper = tpl.paper || clone(legacy.paper);
+    var w = paper.wMm;
+    var h = paper.hMm;
+    var els = [];
+    var brand = tpl.brand || {};
+    var fields = (tpl.fields || []).filter(function (f) { return f.visible !== false && f.id !== 'qrCode'; });
+    if (!fields.length) {
+      fields = (legacy.fieldIds || []).map(function (id) {
+        return { id: id, label: fieldLabel(tplType, id), visible: true };
+      });
+    }
+    var z = 10;
+
+    if (legacyId === 'cert_style_1') {
+      if (brand.logoMode !== 'hidden') {
+        els.push(createElement('logo', { paper: paper, box: { xMm: 2, yMm: 1.5, wMm: 7, hMm: 7 }, zIndex: z++, props: { source: 'system' } }));
+      }
+      els.push(createElement('title', {
+        paper: paper, tplType: tplType, zIndex: z++,
+        box: { xMm: 10, yMm: 1.5, wMm: w - 12, hMm: 7 },
+        props: { text: brand.title || legacy.title, fontSize: 12, color: '#ffffff', align: 'center' }
+      }));
+      els.push(createElement('line', { paper: paper, box: { xMm: 0, yMm: 9.5, wMm: w, hMm: 0.8 }, zIndex: z++, props: { color: '#2e7d32', widthPx: 8, style: 'solid' } }));
+      fields.forEach(function (f, i) {
+        els.push(createElement('fieldRow', {
+          paper: paper, tplType: tplType, fieldId: f.id, label: f.label, index: i, zIndex: z++,
+          box: { xMm: 3, yMm: 12 + i * 4.8, wMm: w - 6, hMm: 4.2 },
+          props: { fieldId: f.id, label: f.label || fieldLabel(tplType, f.id), showLabel: true, valueAlign: 'left', underline: 'solid', fontSize: 11, color: '#1e293b' }
+        }));
+      });
+      if (brand.orgName) {
+        els.push(createElement('orgName', {
+          paper: paper, tplType: tplType, zIndex: z++,
+          box: { xMm: 2, yMm: h - 6, wMm: w - 4, hMm: 4 },
+          props: { text: brand.orgName, fontSize: 9, color: '#334155', align: 'center' }
+        }));
+      }
+      var wm = brand.watermark;
+      if (!wm || wm.enabled !== false) {
+        els.push(createElement('seal', {
+          paper: paper, zIndex: 0, rotationDeg: -12,
+          box: { xMm: w * 0.55, yMm: h * 0.4, wMm: 14, hMm: 14 },
+          props: { source: (wm && wm.sealMode === 'custom') ? 'custom' : 'system', url: (wm && wm.sealUrl) || null, opacity: (wm && wm.opacity) || 0.42 }
+        }));
+      }
+      if (tpl.qr && tpl.qr.enabled) {
+        var q = Math.min(12, h * 0.35);
+        els.push(createElement('qr', {
+          paper: paper, tplType: tplType, zIndex: z++,
+          box: { xMm: w - q - 2, yMm: h - q - 2, wMm: q, hMm: q }
+        }));
+      }
+    } else if (legacyId === 'cert_style_2') {
+      els.push(createElement('hangHole', { paper: paper, box: { xMm: w - 5, yMm: 1.2, wMm: 3.2, hMm: 3.2 }, zIndex: z++ }));
+      els.push(createElement('orgName', {
+        paper: paper, tplType: tplType, zIndex: z++,
+        box: { xMm: 2, yMm: 1.5, wMm: w - 8, hMm: 3.5 },
+        props: { text: brand.orgName || DEFAULT_ORG, fontSize: 9, color: '#1e293b', align: 'center' }
+      }));
+      els.push(createElement('title', {
+        paper: paper, tplType: tplType, zIndex: z++,
+        box: { xMm: 2, yMm: 5, wMm: w - 4, hMm: 3.5 },
+        props: { text: brand.title || legacy.title, fontSize: 11, color: '#1e293b', align: 'center' }
+      }));
+      var qrSize = Math.min(12, h * 0.45);
+      els.push(createElement('qr', {
+        paper: paper, tplType: tplType, zIndex: z++,
+        box: { xMm: (w - qrSize) / 2, yMm: 9, wMm: qrSize, hMm: qrSize }
+      }));
+      fields.forEach(function (f, i) {
+        els.push(createElement('fieldRow', {
+          paper: paper, tplType: tplType, fieldId: f.id, label: f.label, zIndex: z++,
+          box: { xMm: 2, yMm: 9 + qrSize + 1 + i * 3.5, wMm: w - 4, hMm: 3.2 },
+          props: { fieldId: f.id, label: f.label || fieldLabel(tplType, f.id), showLabel: true, valueAlign: 'center', underline: 'dotted', fontSize: 9, color: '#1e293b' }
+        }));
+      });
+      var warn = brand.footerWarning != null ? brand.footerWarning : legacy.warn;
+      if (warn) {
+        els.push(createElement('staticText', {
+          paper: paper, zIndex: z++,
+          box: { xMm: 1, yMm: h - 4, wMm: w - 2, hMm: 3.2 },
+          props: { text: warn, fontSize: 8, color: '#dc2626', align: 'center' }
+        }));
+      }
+    } else if (legacyId === 'label_style_1') {
+      var fieldW = w * 0.58;
+      fields.forEach(function (f, i) {
+        els.push(createElement('fieldRow', {
+          paper: paper, tplType: tplType, fieldId: f.id, label: f.label, zIndex: z++,
+          box: { xMm: 2, yMm: 2 + i * 5.2, wMm: fieldW, hMm: 4.5 },
+          props: { fieldId: f.id, label: f.label || fieldLabel(tplType, f.id), showLabel: true, valueAlign: 'left', underline: 'dotted', fontSize: 10, color: '#1e293b' }
+        }));
+      });
+      var lq = Math.min(18, h - 4);
+      els.push(createElement('qr', {
+        paper: paper, tplType: tplType, zIndex: z++,
+        box: { xMm: w - lq - 2, yMm: (h - lq) / 2, wMm: lq, hMm: lq }
+      }));
+    } else {
+      // cert_style_3 / fallback：左文右码
+      els.push(createElement('orgName', {
+        paper: paper, tplType: tplType, zIndex: z++,
+        box: { xMm: 2, yMm: 1.5, wMm: w - 4, hMm: 4 },
+        props: { text: brand.orgName || DEFAULT_ORG, fontSize: 10, color: '#1e293b', align: 'center' }
+      }));
+      els.push(createElement('title', {
+        paper: paper, tplType: tplType, zIndex: z++,
+        box: { xMm: 2, yMm: 5.5, wMm: w - 4, hMm: 5 },
+        props: { text: brand.title || legacy.title, fontSize: 14, color: '#1e293b', align: 'center' }
+      }));
+      if (brand.logoMode !== 'hidden') {
+        els.push(createElement('logo', { paper: paper, box: { xMm: 2, yMm: 1.5, wMm: 7, hMm: 7 }, zIndex: z++, props: { source: 'system' } }));
+      }
+      var fw = w * 0.55;
+      fields.forEach(function (f, i) {
+        els.push(createElement('fieldRow', {
+          paper: paper, tplType: tplType, fieldId: f.id, label: f.label, zIndex: z++,
+          box: { xMm: 3, yMm: 12 + i * 5, wMm: fw, hMm: 4.5 },
+          props: { fieldId: f.id, label: f.label || fieldLabel(tplType, f.id), showLabel: true, valueAlign: 'left', underline: 'dotted', fontSize: 11, color: '#1e293b' }
+        }));
+      });
+      var cq = Math.min(22, h - 8);
+      els.push(createElement('qr', {
+        paper: paper, tplType: tplType, zIndex: z++,
+        box: { xMm: w - cq - 3, yMm: 14, wMm: cq, hMm: cq }
+      }));
+    }
+    return els;
+  }
+
+  function normalizePaper(paper, fallback) {
+    fallback = fallback || { wMm: 90, hMm: 50 };
+    paper = paper || {};
+    var borderIn = paper.border || {};
+    return {
+      wMm: clamp(paper.wMm, 20, 200, fallback.wMm),
+      hMm: clamp(paper.hMm, 15, 200, fallback.hMm),
+      border: {
+        enabled: borderIn.enabled !== false,
+        color: normalizeColor(borderIn.color, '#cbd5e1'),
+        widthPx: clamp(borderIn.widthPx, 0, 8, 1)
+      }
+    };
+  }
+
+  function normalizeElement(el, tplType) {
+    if (!el || !ELEMENT_TYPES[el.type]) return null;
+    var meta = ELEMENT_TYPES[el.type];
+    var props = Object.assign(defaultProps(el.type, { tplType: tplType, fieldId: el.props && el.props.fieldId }), el.props || {});
+    if (el.type === 'qr') props.payloadType = payloadTypeFor(tplType);
+    if (el.type === 'fieldRow') {
+      props.fieldId = props.fieldId || 'sampleName';
+      props.label = props.label || fieldLabel(tplType, props.fieldId);
+      props.underline = ['none', 'solid', 'dotted', 'dashed'].indexOf(props.underline) >= 0 ? props.underline : 'dotted';
+      props.valueAlign = normalizeAlign(props.valueAlign, 'left');
+      props.fontSize = clamp(props.fontSize, 7, 22, 11);
+      props.color = normalizeColor(props.color, '#1e293b');
+      props.showLabel = props.showLabel !== false;
+    }
+    if (el.type === 'orgName' || el.type === 'title' || el.type === 'staticText' || el.type === 'watermarkText') {
+      props.text = props.text != null ? String(props.text) : '';
+      props.fontSize = clamp(props.fontSize, 7, 48, props.fontSize || 11);
+      props.color = normalizeColor(props.color, '#1e293b');
+      props.align = normalizeAlign(props.align, 'center');
+    }
+    if (el.type === 'logo' || el.type === 'seal') {
+      props.source = props.source === 'custom' || props.source === 'hidden' ? props.source : 'system';
+      if (el.type === 'seal' && props.source === 'hidden') props.source = 'system';
+      props.opacity = clamp(props.opacity, 0.05, 1, el.type === 'seal' ? 0.42 : 1);
+    }
+    if (el.type === 'watermarkText') {
+      props.opacity = clamp(props.opacity, 0.05, 0.8, 0.18);
+      props.tile = !!props.tile;
+    }
+    if (el.type === 'line') {
+      props.color = normalizeColor(props.color, '#cbd5e1');
+      props.widthPx = clamp(props.widthPx, 1, 8, 1);
+      props.style = props.style === 'dashed' || props.style === 'dotted' ? props.style : 'solid';
+    }
+    return {
+      id: el.id || elUid(),
+      category: meta.category,
+      type: el.type,
+      xMm: clamp(el.xMm, 0, 200, 0),
+      yMm: clamp(el.yMm, 0, 200, 0),
+      wMm: clamp(el.wMm, 0.5, 200, 10),
+      hMm: clamp(el.hMm, 0.5, 200, 4),
+      zIndex: clamp(el.zIndex, -999, 999, 10),
+      locked: !!el.locked,
+      rotationDeg: clamp(el.rotationDeg, -90, 90, 0),
+      props: props
+    };
+  }
+
+  function enforceUniqueness(elements) {
+    var seenType = {};
+    var seenField = {};
+    var out = [];
+    (elements || []).forEach(function (el) {
+      var meta = ELEMENT_TYPES[el.type];
+      if (!meta) return;
+      if (meta.unique) {
+        if (seenType[el.type]) return;
+        seenType[el.type] = true;
+      }
+      if (el.type === 'fieldRow') {
+        var fid = el.props && el.props.fieldId;
+        if (!fid || seenField[fid]) return;
+        seenField[fid] = true;
+      }
+      out.push(el);
+    });
+    return out;
+  }
+
+  function canAddElement(elements, type, fieldId) {
+    var meta = ELEMENT_TYPES[type];
+    if (!meta) return { ok: false, reason: '未知元素类型' };
+    if (meta.unique) {
+      for (var i = 0; i < elements.length; i++) if (elements[i].type === type) {
+        return { ok: false, reason: meta.name + '已存在（最多 1 个）' };
+      }
+    }
+    if (type === 'fieldRow') {
+      if (!fieldId) return { ok: false, reason: '请选择字段' };
+      for (var j = 0; j < elements.length; j++) {
+        if (elements[j].type === 'fieldRow' && elements[j].props && elements[j].props.fieldId === fieldId) {
+          return { ok: false, reason: '该业务字段已在画布上' };
+        }
+      }
+    }
+    return { ok: true };
+  }
+
+  function migrateTemplateToFree(tpl, typeHint) {
+    if (!tpl) return tpl;
+    var tplType = typeHint || templateTypeOf(tpl);
+    tpl._type = tplType;
+
+    var legacy = LEGACY_PRESETS[tpl.layoutPreset] || null;
+    var paperFallback = (legacy && legacy.paper) || { wMm: 90, hMm: 50 };
+    var paper = normalizePaper(tpl.paper, paperFallback);
+    if (!tpl.paper || !tpl.paper.border) {
+      if (legacy && legacy.border) paper.border = clone(legacy.border);
+      else if (tpl.style) {
+        paper.border = {
+          enabled: tpl.style.borderEnabled !== false,
+          color: tpl.style.borderColor || '#cbd5e1',
+          widthPx: tpl.style.borderWidthPx != null ? tpl.style.borderWidthPx : 1
+        };
+      }
+    }
+    tpl.paper = normalizePaper(paper, paperFallback);
+
+    if (!Array.isArray(tpl.elements) || !tpl.elements.length) {
+      tpl.elements = expandLegacyToElements(tpl, tplType);
+    }
+    tpl.elements = enforceUniqueness(
+      tpl.elements.map(function (el) { return normalizeElement(el, tplType); }).filter(Boolean)
+    );
+
+    if (!tpl.meta) tpl.meta = { material: '', mount: '', printMethod: '' };
+    if (!Array.isArray(tpl.bindSampleIds)) tpl.bindSampleIds = [];
+    if (tpl.enabled == null) tpl.enabled = true;
+    if (!tpl.updatedAt) tpl.updatedAt = formatNow();
+
+    // 清理旧主路径字段（保留 layoutPreset 仅作溯源可选）
+    delete tpl.fields;
+    delete tpl.brand;
+    delete tpl.qr;
+    delete tpl.style;
+    return tpl;
+  }
+
+  function createBlankTemplate(opts) {
+    opts = opts || {};
+    var type = opts.type === 'sample_label' ? 'sample_label' : 'certificate';
+    var size = opts.paper || { wMm: type === 'sample_label' ? 60 : 90, hMm: type === 'sample_label' ? 40 : 50 };
+    var paper = normalizePaper(size, size);
+    return {
+      id: opts.id || uid('tpl'),
+      name: opts.name || (type === 'sample_label' ? '新样品标签模版' : '新合格证模版'),
+      enabled: opts.enabled === true, // 个性化默认未启用，需绑样品
+      updatedAt: formatNow(),
+      _type: type,
+      paper: paper,
+      meta: opts.meta || { material: '', mount: '', printMethod: '' },
+      bindSampleIds: [],
+      elements: []
+    };
+  }
+
+  /** 兼容旧 createTemplate 调用：空白或按旧预设展开 */
+  function createTemplate(opts) {
+    opts = opts || {};
+    var type = opts.type === 'sample_label' ? 'sample_label' : 'certificate';
+    if (opts.layoutPreset && LEGACY_PRESETS[opts.layoutPreset]) {
+      var legacy = LEGACY_PRESETS[opts.layoutPreset];
+      type = legacy.type;
+      var tpl = {
+        id: opts.id || uid('tpl'),
+        name: opts.name || (legacy.name + '模版'),
+        enabled: opts.enabled !== false,
+        updatedAt: opts.updatedAt || formatNow(),
+        layoutPreset: opts.layoutPreset,
+        paper: clone(opts.paper || legacy.paper),
+        brand: opts.brand || {
+          orgName: type === 'sample_label' ? '' : DEFAULT_ORG,
+          title: legacy.title,
+          logoMode: type === 'sample_label' ? 'hidden' : 'system',
+          footerWarning: legacy.warn || null
+        },
+        fields: (opts.fields) || (legacy.fieldIds || []).map(function (id) {
+          return { id: id, label: fieldLabel(type, id), visible: true };
+        }),
+        qr: opts.qr || { enabled: !!legacy.qr, sizePx: 90, payloadType: payloadTypeFor(type), placement: legacy.qr ? 'right' : 'none' },
+        meta: opts.meta || { material: '', mount: '', printMethod: '' },
+        bindSampleIds: opts.bindSampleIds || []
+      };
+      return migrateTemplateToFree(tpl, type);
+    }
+    var blank = createBlankTemplate({
+      id: opts.id,
+      name: opts.name,
+      type: type,
+      paper: opts.paper,
+      enabled: opts.enabled !== false,
+      meta: opts.meta
+    });
+    if (opts.bindSampleIds) blank.bindSampleIds = opts.bindSampleIds.slice();
+    if (opts.elements) {
+      blank.elements = enforceUniqueness(
+        opts.elements.map(function (el) { return normalizeElement(el, type); }).filter(Boolean)
+      );
+    }
+    return blank;
+  }
+
+  function cloneTemplateAsPersonal(source, opts) {
+    opts = opts || {};
+    if (!source) throw new Error('source required');
+    var type = opts.type || templateTypeOf(source);
+    var copy = clone(source);
+    copy.id = opts.id || uid('tpl');
+    copy.name = opts.name || ((source.name || '模版') + ' 副本');
+    copy.enabled = false;
+    copy.updatedAt = formatNow();
+    copy.bindSampleIds = [];
+    copy._type = type;
+    delete copy.layoutPreset;
+    return migrateTemplateToFree(copy, type);
   }
 
   function emptyBucket() {
@@ -439,41 +658,26 @@
   function buildDefaultConfig() {
     var cfg = {};
     CATEGORIES.forEach(function (c) {
-      cfg[c.key] = {
-        sample_label: emptyBucket(),
-        certificate: emptyBucket()
-      };
+      cfg[c.key] = { sample_label: emptyBucket(), certificate: emptyBucket() };
     });
 
-    // 安全工器具类：1 个默认兜底 + 若干个性化（绑样品）
     var lr = createTemplate({
-      id: 'tpl_aq_lr',
-      name: '左文右码合格证（默认）',
-      layoutPreset: 'cert_style_3',
-      enabled: true,
-      bindSampleIds: []
+      id: 'tpl_aq_lr', name: '左文右码合格证（默认）', layoutPreset: 'cert_style_3',
+      enabled: true, bindSampleIds: []
     });
     var stick = createTemplate({
-      id: 'tpl_aq_stick',
-      name: '不粘胶纸合格证',
-      layoutPreset: 'cert_style_1',
+      id: 'tpl_aq_stick', name: '不粘胶纸合格证', layoutPreset: 'cert_style_1',
       bindSampleIds: ['rod', 'ladder', 'helmet', 'board1476', 'spur', 'sling', 'shackle'],
       meta: { material: '不粘胶纸', mount: '粘贴', printMethod: '喷墨' }
     });
     var hang = createTemplate({
-      id: 'tpl_aq_hang',
-      name: 'PVC悬挂合格证',
-      layoutPreset: 'cert_style_2',
+      id: 'tpl_aq_hang', name: 'PVC悬挂合格证', layoutPreset: 'cert_style_2',
       bindSampleIds: ['belt976', 'rope1476'],
       meta: { material: 'PVC', mount: '悬挂', printMethod: '喷墨' }
     });
     var label = createTemplate({
-      id: 'tpl_aq_label',
-      name: '样品标签（默认）',
-      type: 'sample_label',
-      layoutPreset: 'label_style_1',
-      enabled: true,
-      bindSampleIds: []
+      id: 'tpl_aq_label', name: '样品标签（默认）', type: 'sample_label',
+      layoutPreset: 'label_style_1', enabled: true, bindSampleIds: []
     });
 
     cfg.aqgqj.certificate.templates = [lr, stick, hang];
@@ -481,22 +685,14 @@
     cfg.aqgqj.sample_label.templates = [label];
     cfg.aqgqj.sample_label.defaultTemplateId = 'tpl_aq_label';
 
-    // 其他大类仅默认模版（无个性化覆盖）
     ['dlwz', 'hjjc', 'gcjc'].forEach(function (k) {
       var c3 = createTemplate({
-        id: 'tpl_' + k + '_cert',
-        name: '左文右码合格证（默认）',
-        layoutPreset: 'cert_style_3',
-        enabled: true,
-        bindSampleIds: []
+        id: 'tpl_' + k + '_cert', name: '左文右码合格证（默认）',
+        layoutPreset: 'cert_style_3', enabled: true, bindSampleIds: []
       });
       var lb = createTemplate({
-        id: 'tpl_' + k + '_label',
-        name: '样品标签（默认）',
-        type: 'sample_label',
-        layoutPreset: 'label_style_1',
-        enabled: true,
-        bindSampleIds: []
+        id: 'tpl_' + k + '_label', name: '样品标签（默认）', type: 'sample_label',
+        layoutPreset: 'label_style_1', enabled: true, bindSampleIds: []
       });
       cfg[k].certificate.templates = [c3];
       cfg[k].certificate.defaultTemplateId = c3.id;
@@ -504,6 +700,8 @@
       cfg[k].sample_label.defaultTemplateId = lb.id;
     });
 
+    cfg._migrateFreeLayoutV1 = 1;
+    cfg._migrateLabelFieldsV2 = 1;
     return cfg;
   }
 
@@ -519,82 +717,6 @@
     return !!id && bucket.defaultTemplateId === id;
   }
 
-  function normalizeLabelFields(tpl) {
-    if (!tpl) return tpl;
-    var preset = PRESETS[tpl.layoutPreset];
-    if (!preset || preset.type !== 'sample_label') return tpl;
-    // 尊重模版配置中的字段槽位：不再强制回填委托编号等已移除字段
-    tpl.fields = (tpl.fields || []).filter(function (f) { return f.id !== 'qrCode'; });
-    if (!tpl.brand) tpl.brand = {};
-    tpl.brand.footerWarning = null;
-    // 旧默认「机构名+系统Logo」迁移为标签默认不展示品牌
-    if ((tpl.brand.orgName === DEFAULT_ORG || tpl.brand.orgName == null) &&
-        (!tpl.brand.logoMode || tpl.brand.logoMode === 'system') &&
-        !tpl.brand.title) {
-      tpl.brand.orgName = '';
-      tpl.brand.title = '';
-      tpl.brand.logoMode = 'hidden';
-    }
-    if (!tpl.brand.watermark || typeof tpl.brand.watermark !== 'object') {
-      tpl.brand.watermark = defaultWatermark(preset);
-    } else if (!tpl.brand.watermark.text || tpl.brand.watermark.text === '合格' || tpl.brand.watermark.text === '格') {
-      if (!tpl.brand.watermark.enabled) tpl.brand.watermark.text = '样品标签';
-    }
-    return tpl;
-  }
-
-  function normalizeTemplateBrand(tpl) {
-    if (!tpl) return tpl;
-    if (!tpl.brand) tpl.brand = {};
-    var preset = PRESETS[tpl.layoutPreset] || PRESETS.cert_style_3;
-    tpl.brand.watermark = normalizeWatermark(tpl.brand.watermark, tpl.brand, preset);
-    tpl.brand.showWatermarkGe = !!(tpl.brand.watermark.enabled && tpl.brand.watermark.type === 'text' && tpl.brand.watermark.text === '格');
-    var ts = normalizeBrandType(tpl.brand);
-    tpl.brand.orgFontSize = ts.orgFontSize;
-    tpl.brand.orgColor = ts.orgColor;
-    tpl.brand.orgAlign = ts.orgAlign;
-    tpl.brand.titleFontSize = ts.titleFontSize;
-    tpl.brand.titleColor = ts.titleColor;
-    tpl.brand.titleAlign = ts.titleAlign;
-    tpl.brand.logoSize = ts.logoSize;
-    tpl.brand.warnFontSize = ts.warnFontSize;
-    tpl.brand.warnColor = ts.warnColor;
-    tpl.brand.warnAlign = ts.warnAlign;
-    if (tpl.brand.logoMode === 'custom') tpl.brand.logoMode = 'system';
-    tpl.style = normalizeStyle(tpl.style, tpl.layoutPreset);
-    if (tpl.id === 'tpl_aq_stick' || /不粘胶纸合格证[（(]/.test(tpl.name || '')) {
-      tpl.name = '不粘胶纸合格证';
-    }
-    normalizeLabelFields(tpl);
-    normalizeCertFields(tpl);
-    return tpl;
-  }
-
-  function normalizeCertFields(tpl) {
-    if (!tpl) return tpl;
-    var preset = PRESETS[tpl.layoutPreset];
-    if (!preset || preset.type !== 'certificate') return tpl;
-    tpl.fields = (tpl.fields || []).filter(function (f) { return f.id !== 'qrCode'; });
-    // 不粘胶纸·字段表：旧默认文本水印迁移为圆形试验专用章
-    if (tpl.layoutPreset === 'cert_style_1' && preset.watermarkDefault) {
-      var wm = tpl.brand && tpl.brand.watermark;
-      var legacyText = !wm || (wm.type === 'text' && (!wm.text || wm.text === '合格' || wm.text === '格'));
-      if (legacyText) {
-        var keep = wm && wm.sealUrl;
-        tpl.brand.watermark = defaultWatermark(preset);
-        if (keep) {
-          tpl.brand.watermark.sealUrl = keep;
-          tpl.brand.watermark.sealMode = 'custom';
-        }
-      }
-    }
-    return tpl;
-  }
-
-  /**
-   * 保证每桶恰有 1 个默认：永启用、不绑样品。
-   * 缺省时优先选无绑定行，否则新建。
-   */
   function ensureBucketShape(bucket, type) {
     if (!bucket.templates) bucket.templates = [];
     var def = bucket.defaultTemplateId ? findTemplate(bucket, bucket.defaultTemplateId) : null;
@@ -620,7 +742,7 @@
     bucket.defaultTemplateId = def.id;
     def.enabled = true;
     def.bindSampleIds = [];
-    bucket.templates.forEach(normalizeTemplateBrand);
+    bucket.templates.forEach(function (t) { migrateTemplateToFree(t, type); });
     return bucket;
   }
 
@@ -633,17 +755,15 @@
     return cfg;
   }
 
-  /** 一次性：去掉历史上强制回填的「委托编号」，对齐默认字段包；需要时可在字段池重新勾选 */
-  function migrateStripForcedEntrustNo(cfg) {
-    if (!cfg || cfg._migrateLabelFieldsV2) return cfg;
+  function migrateFreeLayout(cfg) {
+    if (!cfg || cfg._migrateFreeLayoutV1) return cfg;
     CATEGORIES.forEach(function (c) {
-      var bucket = getBucket(cfg, c.key, 'sample_label');
-      (bucket.templates || []).forEach(function (tpl) {
-        if (!tpl || !tpl.fields) return;
-        tpl.fields = tpl.fields.filter(function (f) { return f.id !== 'entrustNo'; });
+      ['certificate', 'sample_label'].forEach(function (type) {
+        var bucket = getBucket(cfg, c.key, type);
+        (bucket.templates || []).forEach(function (t) { migrateTemplateToFree(t, type); });
       });
     });
-    cfg._migrateLabelFieldsV2 = 1;
+    cfg._migrateFreeLayoutV1 = 1;
     return cfg;
   }
 
@@ -653,7 +773,7 @@
       if (raw) {
         var parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
-          migrateStripForcedEntrustNo(parsed);
+          migrateFreeLayout(parsed);
           normalizeConfig(parsed);
           save(parsed);
           return parsed;
@@ -661,7 +781,6 @@
       }
     } catch (e) { /* ignore */ }
     var cfg = buildDefaultConfig();
-    cfg._migrateLabelFieldsV2 = 1;
     normalizeConfig(cfg);
     save(cfg);
     return cfg;
@@ -687,7 +806,6 @@
     var cfg = load();
     var bucket = ensureBucketShape(getBucket(cfg, catKey, type), type);
     var defId = bucket.defaultTemplateId;
-    // 个性化：启用且已绑样品
     if (sampleMasterId) {
       for (var i = 0; i < bucket.templates.length; i++) {
         var t = bucket.templates[i];
@@ -695,25 +813,13 @@
         if ((t.bindSampleIds || []).indexOf(sampleMasterId) !== -1) return t;
       }
     }
-    // 未命中 / 个性化停用 → 默认（始终可用）
     return findTemplate(bucket, defId) || null;
   }
 
-  /** 名称 → 样品主数据 id（演示映射） */
   var NAME_TO_MASTER = {
-    '绝缘操作杆': 'rod',
-    '绝缘软梯': 'ladder',
-    '安全带': 'belt976',
-    '安全绳': 'rope1476',
-    '安全帽': 'helmet',
-    '登高板': 'board1476',
-    '登杆脚扣': 'spur',
-    '吊装带': 'sling',
-    '卸扣': 'shackle',
-    // 未绑个性化 → 走默认合格证版式（左文右码）演示
-    '验电器': 'electroscope',
-    '绝缘毯': 'blanket',
-    '卡线器': 'shackle'
+    '绝缘操作杆': 'rod', '绝缘软梯': 'ladder', '安全带': 'belt976', '安全绳': 'rope1476',
+    '安全帽': 'helmet', '登高板': 'board1476', '登杆脚扣': 'spur', '吊装带': 'sling', '卸扣': 'shackle',
+    '验电器': 'electroscope', '绝缘毯': 'blanket', '卡线器': 'shackle'
   };
 
   function masterIdFromName(name) {
@@ -736,7 +842,6 @@
     var bucket = ensureBucketShape(getBucket(cfg, catKey, type), type);
     var conflicts = [];
     (bucket.templates || []).forEach(function (t) {
-      // 默认不参与绑定冲突；仅与其他「启用的个性化」冲突
       if (!t.enabled || t.id === templateId || t.id === bucket.defaultTemplateId) return;
       (t.bindSampleIds || []).forEach(function (sid) {
         if (bindSampleIds.indexOf(sid) !== -1) {
@@ -745,6 +850,48 @@
       });
     });
     return conflicts;
+  }
+
+  function validateTemplate(tpl, opts) {
+    opts = opts || {};
+    var errors = [];
+    var type = opts.type || templateTypeOf(tpl);
+    if (!tpl || !String(tpl.name || '').trim()) errors.push('请填写模版名称');
+    var paper = tpl.paper || {};
+    if (!(paper.wMm >= 20 && paper.wMm <= 200 && paper.hMm >= 15 && paper.hMm <= 200)) {
+      errors.push('纸张尺寸需在 20–200 × 15–200 mm');
+    }
+    (tpl.elements || []).forEach(function (el) {
+      if (el.xMm < 0 || el.yMm < 0 || el.xMm + el.wMm > paper.wMm + 0.05 || el.yMm + el.hMm > paper.hMm + 0.05) {
+        errors.push('元素越界：' + ((ELEMENT_TYPES[el.type] && ELEMENT_TYPES[el.type].name) || el.type));
+      }
+    });
+    if (opts.requireBind && !(tpl.bindSampleIds || []).length) {
+      errors.push('个性化模版须至少绑定 1 个样品');
+    }
+    return errors;
+  }
+
+  function usedFieldIds(elements) {
+    return (elements || []).filter(function (e) { return e.type === 'fieldRow'; })
+      .map(function (e) { return e.props.fieldId; });
+  }
+
+  function hasElementType(elements, type) {
+    return (elements || []).some(function (e) { return e.type === type; });
+  }
+
+  function bringToLayer(elements, id, mode) {
+    var list = elements || [];
+    var target = null;
+    list.forEach(function (e) { if (e.id === id) target = e; });
+    if (!target) return list;
+    var zs = list.map(function (e) { return e.zIndex; });
+    if (mode === 'bottom') target.zIndex = Math.min.apply(null, zs.concat([0])) - 1;
+    else if (mode === 'top') target.zIndex = Math.max.apply(null, zs.concat([0])) + 1;
+    else if (mode === 'up') target.zIndex += 1;
+    else if (mode === 'down') target.zIndex -= 1;
+    return list;
   }
 
   global.LabelCertConfig = {
@@ -756,10 +903,13 @@
     SYSTEM_LOGO_URL: SYSTEM_LOGO_URL,
     SYSTEM_SEAL_URL: SYSTEM_SEAL_URL,
     FIELD_UNDERLINE_STYLES: FIELD_UNDERLINE_STYLES,
+    PAPER_SIZE_PRESETS: PAPER_SIZE_PRESETS,
+    ELEMENT_TYPES: ELEMENT_TYPES,
     CERT_FIELD_POOL: CERT_FIELD_POOL,
     LABEL_FIELD_POOL: LABEL_FIELD_POOL,
     LABEL_DETECT_STATUS: LABEL_DETECT_STATUS,
-    PRESETS: PRESETS,
+    LEGACY_PRESETS: LEGACY_PRESETS,
+    PRESETS: LEGACY_PRESETS,
     load: load,
     save: save,
     resetDefaults: resetDefaults,
@@ -770,21 +920,27 @@
     isDefaultTemplate: isDefaultTemplate,
     resolveTemplate: resolveTemplate,
     createTemplate: createTemplate,
-    buildFieldsFromPreset: buildFieldsFromPreset,
+    createBlankTemplate: createBlankTemplate,
+    cloneTemplateAsPersonal: cloneTemplateAsPersonal,
+    createElement: createElement,
+    normalizeElement: normalizeElement,
+    migrateTemplateToFree: migrateTemplateToFree,
+    canAddElement: canAddElement,
+    enforceUniqueness: enforceUniqueness,
+    validateTemplate: validateTemplate,
+    usedFieldIds: usedFieldIds,
+    hasElementType: hasElementType,
+    bringToLayer: bringToLayer,
     poolForType: poolForType,
+    payloadTypeFor: payloadTypeFor,
+    templateTypeOf: templateTypeOf,
+    fieldLabel: fieldLabel,
     masterIdFromName: masterIdFromName,
     getInspectorMax: getInspectorMax,
     findBindConflicts: findBindConflicts,
-    defaultWatermark: defaultWatermark,
-    normalizeWatermark: normalizeWatermark,
-    normalizeBrandType: normalizeBrandType,
-    defaultBrandType: defaultBrandType,
-    defaultStyle: defaultStyle,
-    normalizeStyle: normalizeStyle,
-    normalizeTemplateBrand: normalizeTemplateBrand,
-    WATERMARK_POSITIONS: WATERMARK_POSITIONS,
     formatNow: formatNow,
     uid: uid,
+    elUid: elUid,
     clone: clone
   };
 })(window);
