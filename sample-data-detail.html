@@ -222,11 +222,17 @@
     .readonly-hint { font-size: 12px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 8px 10px; margin-bottom: 12px; }
     .multi-select { min-height: 34px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 4px 8px; background: #fff; cursor: pointer; }
     .multi-select .ph { color: #94a3b8; font-size: 13px; }
-    .recheck-combo { display: flex; gap: 8px; align-items: center; }
+    .recheck-combo { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .recheck-combo select { width: 88px; flex-shrink: 0; }
-    .recheck-combo .recheck-num { width: 120px !important; flex-shrink: 0; }
-    .recheck-combo .recheck-text { flex: 1; min-width: 0; width: auto !important; }
+    .recheck-combo .recheck-num-wrap { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .recheck-combo .recheck-num-wrap .num-stepper { width: 128px; }
+    .recheck-combo .recheck-unit { font-size: 13px; color: #64748b; flex-shrink: 0; }
+    .recheck-combo .recheck-text { flex: 1; min-width: 160px; width: auto !important; }
     .recheck-combo .hidden { display: none !important; }
+    .field-row input.readonly-code,
+    .form-item input.readonly-code {
+      background: #f8fafc; color: #64748b; cursor: default;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -283,6 +289,14 @@
               <div class="form-item"><label><span class="req">*</span>名称</label><input id="b_name" type="text" /></div>
               <div class="form-item"><label><span class="req">*</span>排序</label><input id="b_sort" type="number" min="1" /></div>
               <div class="form-item"><label>单位</label><input id="b_unit" type="text" /></div>
+              <div class="form-item" data-annotate="sample-need-prepare">
+                <label><span class="req">*</span>是否制样</label>
+                <select id="b_needPrepare">
+                  <option value="否">否</option>
+                  <option value="是">是</option>
+                </select>
+                <div class="tip">样品制备节点按本字段流转：选「是」走样品制备；选「否」跳过制备环节。</div>
+              </div>
               <div class="form-item"><label>样品描述</label><textarea id="b_desc" rows="3"></textarea></div>
               <div class="form-item" data-annotate="recheck-cycle">
                 <label><span class="req">*</span>再检周期</label>
@@ -291,10 +305,17 @@
                     <option value="数值">数值</option>
                     <option value="文本">文本</option>
                   </select>
-                  <input id="b_recheckNum" class="recheck-num" type="number" min="0" step="1" placeholder="月" />
+                  <span id="b_recheckNumWrap" class="recheck-num-wrap">
+                    <span class="num-stepper">
+                      <button type="button" aria-label="减少" onclick="stepRecheckNum('b',-1)">−</button>
+                      <input id="b_recheckNum" type="number" min="0" step="1" value="12" />
+                      <button type="button" aria-label="增加" onclick="stepRecheckNum('b',1)">+</button>
+                    </span>
+                    <span class="recheck-unit">月</span>
+                  </span>
                   <input id="b_recheckText" class="recheck-text hidden" type="text" placeholder="请输入文字，将加载到合格证" />
                 </div>
-                <div class="tip" id="b_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）</div>
+                <div class="tip" id="b_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）-1（天）</div>
               </div>
               <div class="form-item">
                 <label>图片<span class="text-slate-400 font-normal">（可多张）</span></label>
@@ -375,6 +396,7 @@
             <div class="pane-title">试验信息</div>
             <div class="drawer-section">
               <div class="drawer-section-title">基础</div>
+              <div class="field-row" data-annotate="test-code"><label>试验项编码</label><div class="ctrl"><input id="t_code" type="text" class="readonly-code" readonly tabindex="-1" placeholder="系统生成" /><div class="tip mt-1" style="margin-top:6px">系统生成，仅回显，不可编辑。</div></div></div>
               <div class="field-row"><label><span class="req">*</span>试验名称</label><div class="ctrl"><input id="t_name" type="text" /><div id="t_nameOv" class="hidden"></div></div></div>
               <div class="field-row"><label id="lblDetectCategory" class="label-tip"><span class="req">*</span>检测类别<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span></label><div class="ctrl"><select id="t_detectCategory"></select><div id="t_detectCategoryOv"></div></div></div>
               <div class="field-row"><label><span class="req">*</span>默认费用（元）</label><div class="ctrl"><input id="t_fee" type="number" min="0" /><div id="t_feeOv"></div></div></div>
@@ -496,10 +518,17 @@
               <option value="数值">数值</option>
               <option value="文本">文本</option>
             </select>
-            <input id="m_recheckNum" class="recheck-num" type="number" min="0" step="1" placeholder="月" />
+            <span id="m_recheckNumWrap" class="recheck-num-wrap">
+              <span class="num-stepper">
+                <button type="button" aria-label="减少" onclick="stepRecheckNum('m',-1)">−</button>
+                <input id="m_recheckNum" type="number" min="0" step="1" value="" />
+                <button type="button" aria-label="增加" onclick="stepRecheckNum('m',1)">+</button>
+              </span>
+              <span class="recheck-unit">月</span>
+            </span>
             <input id="m_recheckText" class="recheck-text hidden" type="text" placeholder="请输入文字，将加载到合格证" />
           </div>
-          <div class="tip" id="m_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）</div>
+          <div class="tip" id="m_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）-1（天）</div>
         </div></div>
         <div class="field-row"><label>描述</label><div class="ctrl"><textarea id="m_desc" rows="3"></textarea></div></div>
         <div class="field-row">
@@ -789,29 +818,42 @@
       opts = opts || {};
       var mode = document.getElementById(prefix + '_recheckMode').value;
       var numEl = document.getElementById(prefix + '_recheckNum');
+      var numWrap = document.getElementById(prefix + '_recheckNumWrap');
       var textEl = document.getElementById(prefix + '_recheckText');
       var tip = document.getElementById(prefix + '_recheckTip');
       if (!recheckUiCache[prefix]) recheckUiCache[prefix] = { num: '', text: '' };
       if (mode === '数值') {
-        // 切回数值：展示步进器，不把文本带入
-        numEl.classList.remove('hidden');
+        // 切回数值：展示步进器 +「月」，不把文本带入
+        if (numWrap) numWrap.classList.remove('hidden');
+        else numEl.classList.remove('hidden');
         textEl.classList.add('hidden');
         if (!opts.keepValues) {
-          // 保留缓存中的数值；文本框清空且隐藏
           numEl.value = recheckUiCache[prefix].num || '';
           textEl.value = '';
         }
-        tip.textContent = '数值：合格证再检日期 = 检测日期 + 再检周期（月）';
+        tip.textContent = '数值：合格证再检日期 = 检测日期 + 再检周期（月）-1（天）';
       } else {
         // 切换到文本：隐藏步进器，文本框不展示之前的数值
         if (!opts.keepValues) {
           recheckUiCache[prefix].num = numEl.value;
           textEl.value = '';
         }
-        numEl.classList.add('hidden');
+        if (numWrap) numWrap.classList.add('hidden');
+        else numEl.classList.add('hidden');
         textEl.classList.remove('hidden');
         tip.textContent = '文本：无固定再检日期，该文字直接展示在合格证上';
       }
+    }
+
+    function stepRecheckNum(prefix, delta) {
+      var el = document.getElementById(prefix + '_recheckNum');
+      if (!el || el.closest('.hidden')) return;
+      var n = parseInt(el.value, 10);
+      if (isNaN(n)) n = 0;
+      n = Math.max(0, n + delta);
+      el.value = String(n);
+      if (!recheckUiCache[prefix]) recheckUiCache[prefix] = { num: '', text: '' };
+      recheckUiCache[prefix].num = el.value;
     }
 
     function readRecheckFromForm(prefix) {
@@ -936,6 +978,7 @@
           category: categoryLabel || '',
           name: label || '',
           sort: 1,
+          needPrepare: '否',
           recheck: makeRecheck('数值', '12'),
           unit: '',
           desc: '',
@@ -1001,7 +1044,8 @@
       });
       return {
         basic: {
-          category: 'DLT 976-2017', name: '绝缘操作杆', sort: 1, recheck: makeRecheck('数值', '12'), unit: '根',
+          category: 'DLT 976-2017', name: '绝缘操作杆', sort: 1, needPrepare: '是',
+          recheck: makeRecheck('数值', '12'), unit: '根',
           desc: '带电作业用绝缘操作杆',
           images: [makeFile('样品正面.jpg'), makeFile('样品侧面.jpg')],
           attachments: [makeFile('样品技术要求.pdf')]
@@ -1014,7 +1058,8 @@
     function seedBelt976() {
       return {
         basic: {
-          category: 'DLT 976-2017', name: '安全带', sort: 3, recheck: makeRecheck('文本', '按使用说明书要求再检'), unit: '条', desc: '',
+          category: 'DLT 976-2017', name: '安全带', sort: 3, needPrepare: '否',
+          recheck: makeRecheck('文本', '按使用说明书要求再检'), unit: '条', desc: '',
           images: [], attachments: []
         },
         models: [],
@@ -1254,6 +1299,7 @@
       document.getElementById('b_name').value = sample.basic.name || '';
       document.getElementById('b_sort').value = sample.basic.sort || 1;
       document.getElementById('b_unit').value = sample.basic.unit || '';
+      document.getElementById('b_needPrepare').value = sample.basic.needPrepare === '是' ? '是' : '否';
       document.getElementById('b_desc').value = sample.basic.desc || '';
       writeRecheckToForm('b', sample.basic.recheck);
       if (!sample.basic.images) sample.basic.images = [];
@@ -1273,6 +1319,7 @@
       sample.basic.category = document.getElementById('b_category').value;
       sample.basic.name = name;
       sample.basic.sort = Number(sort);
+      sample.basic.needPrepare = document.getElementById('b_needPrepare').value === '是' ? '是' : '否';
       sample.basic.recheck = recheck;
       sample.basic.unit = document.getElementById('b_unit').value.trim();
       sample.basic.desc = document.getElementById('b_desc').value.trim();
@@ -1896,6 +1943,7 @@
       state.stdSegs = deepClone(data.stdReq || []);
       state.draftItems = deepClone(data.items || []);
 
+      document.getElementById('t_code').value = data.code || '';
       document.getElementById('t_name').value = data.name || '';
       document.getElementById('t_name').disabled = false;
       renderChipMulti('t_basisChips', STD_REF_OPTIONS, data.basis || []);
@@ -2064,6 +2112,7 @@
           }
         }
         var structDisabled = state.overrideMode ? 'disabled' : '';
+        if (!it.code) it.code = uid('DIC');
         return '<div class="item-card">' +
           '<div class="item-card-head"><div class="text-sm font-medium text-slate-700">检测项 ' + (idx + 1) + ' ' + ovHtml + '</div>' +
           '<div class="space-x-2 text-slate-400">' +
@@ -2071,6 +2120,7 @@
             '<button type="button" onclick="moveItem(' + idx + ',1)"><i class="fa fa-arrow-down"></i></button>' +
             '<button type="button" class="text-red-500" onclick="removeItem(' + idx + ')"><i class="fa fa-trash"></i></button>')) +
           '</div></div>' +
+          '<div class="field-row"><label>检测项编码</label><div class="ctrl"><input class="readonly-code" type="text" readonly tabindex="-1" value="' + esc(it.code || '') + '" /><div class="tip mt-1" style="margin-top:6px">系统生成，仅回显，不可编辑。</div></div></div>' +
           '<div class="field-row"><label><span class="req">*</span>类型</label><div class="ctrl"><div class="seg-type">' +
             ['文字','数字','下拉'].map(function (tp) {
               return '<button type="button" class="' + (it.type === tp ? 'on' : '') + '" ' + structDisabled + ' onclick="setItemType(' + idx + ',\'' + tp + '\')">' + tp + '</button>';
@@ -2163,7 +2213,7 @@
     }
 
     function collectTestForm() {
-      return {
+      var data = {
         name: document.getElementById('t_name').value.trim(),
         basis: getChipMulti('t_basisChips'),
         judge: getChipMulti('t_judgeChips'),
@@ -2179,6 +2229,9 @@
         stdReq: deepClone(state.stdSegs),
         items: deepClone(state.draftItems)
       };
+      var code = document.getElementById('t_code').value;
+      if (code) data.code = code;
+      return data;
     }
 
     function validateTestForm(data) {
@@ -2475,8 +2528,17 @@
             position: 'top-right',
             title: '基本信息字段',
             wide: true,
-            content: '含样品分类、名称、排序、单位、描述、再检周期、图片、附件。<strong>已去掉编码与是否制样</strong>（是否制样下沉到试验项级）。图片/附件均支持多文件。',
+            content: '含样品分类、名称、排序、单位、<strong>是否制样</strong>、描述、再检周期、图片、附件。图片/附件均支持多文件。',
             tag: '字段'
+          },
+          {
+            id: 'sample-need-prepare',
+            selector: '[data-annotate="sample-need-prepare"]',
+            position: 'left',
+            title: '是否制样（样品级）',
+            wide: true,
+            content: '样品主数据字段，直接决定<strong>样品制备流程是否走</strong>：选「是」→ 委托后进入样品制备；选「否」→ 跳过制备、流转单不生成制备行。',
+            tag: '制样'
           },
           {
             id: 'recheck-cycle',
@@ -2484,7 +2546,7 @@
             position: 'left',
             title: '再检周期',
             wide: true,
-            content: '下拉「数值 / 文本」组合：<br>· <strong>数值</strong>：步进器（月）；合格证再检日期 = 检测日期 + 再检周期<br>· <strong>文本</strong>：隐藏步进器，文字直接加载到合格证（不带入原数值）<br>规格型号编辑同样使用该组件。',
+            content: '下拉「数值 / 文本」组合：<br>· <strong>数值</strong>：步进器 + 单位「月」；合格证再检日期 = 检测日期 + 再检周期（月）-1（天）<br>· <strong>文本</strong>：隐藏步进器，文字直接加载到合格证（不带入原数值）<br>规格型号编辑同样使用该组件。',
             tag: '字段'
           },
           {
@@ -2529,7 +2591,7 @@
             position: 'top-right',
             title: '默认试验模板',
             wide: true,
-            content: '本 Tab 是样品默认试验的<strong>结构唯一真相</strong>。试验编码、检测项编码仅后台调度用，前端不可见。新增试验后若已有规格型号，会弹出同步决策。',
+            content: '本 Tab 是样品默认试验的<strong>结构唯一真相</strong>。试验项编码 / 检测项编码系统生成，编辑抽屉内只读回显。新增试验后若已有规格型号，会弹出同步决策。',
             tag: '试验'
           },
           {
@@ -2565,8 +2627,16 @@
             position: 'top-left',
             title: '试验编辑抽屉',
             wide: true,
-            content: '维护试验级字段：检测类别（字典，标签受委托字段名控制）、试样类别代码、试样色号（字典）、是否制样、试样数量、标准要求拼接器等。<strong>已去掉试验编码、检测周期</strong>。',
+            content: '维护试验级字段：<strong>试验项编码</strong>（只读回显）、检测类别、试样类别代码、试样色号、是否制样、试样数量、标准要求拼接器等。右侧每个检测项含<strong>检测项编码</strong>（只读回显）。',
             tag: '字段'
+          },
+          {
+            id: 'test-code',
+            selector: '[data-annotate="test-code"]',
+            position: 'left',
+            title: '试验项编码',
+            content: '系统生成（如 TST_AC），仅回显，用户不可编辑。新建时自动分配。',
+            tag: '编码'
           },
           {
             id: 'std-builder',
@@ -2582,7 +2652,7 @@
             position: 'top-right',
             title: '是否制样（试验级）',
             wide: true,
-            content: '「是否制样」仅在<strong>试验项级</strong>（默认试验 + 规格型号覆盖态）。业务流转看委托登记时该样品（规格型号）勾选的试验：任一有效「是」→ 走样品制备；全否 → 不走制备。',
+            content: '试验级「是否制样」控制本试验的试样数量等配置。样品制备<strong>流程是否走</strong>以基本信息 Tab 的样品级「是否制样」为准。',
             tag: '制样'
           },
           {
@@ -2617,7 +2687,7 @@
             position: 'top-left',
             title: '检测项规则',
             wide: true,
-            content: '无编码、无项级标准要求。支持是否必填、隐藏（隐藏则必填锁定为否）；类型=下拉时配置可选项。<strong>默认值（含标称值）永远非必填</strong>。',
+            content: '每个检测项展示<strong>检测项编码</strong>（系统生成、只读）。无项级标准要求。支持是否必填、隐藏（隐藏则必填锁定为否）；类型=下拉时配置可选项。<strong>默认值（含标称值）永远非必填</strong>。',
             tag: '检测项'
           }
         ]

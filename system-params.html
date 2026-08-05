@@ -1978,8 +1978,7 @@
       {
         label: '指定字符',
         options: [
-          { type: 'literal_custom', label: '自定义' },
-          { type: 'literal_sep', label: '固定拼接符号' }
+          { type: 'literal_custom', label: '自定义' }
         ]
       },
       {
@@ -2016,9 +2015,8 @@
     });
 
     function normalizeToken(t) {
-      /* 兼容旧 literal */
-      if (t.type === 'literal') {
-        if (/^[\/\-_]$/.test(t.value || '')) return { type: 'literal_sep', value: t.value };
+      /* 兼容旧 literal / 已移除的固定拼接符号 → 自定义 */
+      if (t.type === 'literal' || t.type === 'literal_sep') {
         return { type: 'literal_custom', value: t.value || '' };
       }
       if (t.type === 'row_no') return null;
@@ -2034,7 +2032,6 @@
 
     function defaultToken(type) {
       if (type === 'literal_custom') return { type: 'literal_custom', value: '' };
-      if (type === 'literal_sep') return { type: 'literal_sep', value: '-' };
       if (type === 'date') return { type: 'date', source: 'entrust', part: 'year', digits: 4 };
       if (type === 'seq') return { type: 'seq', digits: 4 };
       if (type === 'report_count') return { type: 'report_count', dimension: 'major_cat', range: 'year', digits: 4 };
@@ -2077,7 +2074,6 @@
     function tokenLabel(tk) {
       var meta = TOKEN_META[tk.type];
       if (tk.type === 'literal_custom') return '自定义「' + (tk.value || '') + '」';
-      if (tk.type === 'literal_sep') return '拼接符「' + (tk.value || '') + '」';
       if (tk.type === 'date') {
         var base = dateSourceLabel(tk.source) + '·' + datePartLabel(tk.part);
         if (tk.part === 'year') base += '·' + (tk.digits || 4) + '位';
@@ -2091,7 +2087,6 @@
     }
 
     function tokenChipClass(tk) {
-      if (tk.type === 'literal_sep') return 'rule-chip sep';
       if (tk.type === 'literal_custom') return 'rule-chip fixed';
       if (tk.type === 'seq') return 'rule-chip seq';
       if (tk.type === 'report_count') return 'rule-chip report';
@@ -2109,7 +2104,6 @@
     function tokenSample(tk, ctx) {
       switch (tk.type) {
         case 'literal_custom':
-        case 'literal_sep':
           return tk.value || '';
         case 'date': {
           var isSubmit = tk.source === 'submit';
@@ -2146,12 +2140,12 @@
         { id: 'entrust', name: '委托编号规则', tokens: [
           { type: 'literal_custom', value: 'SC' },
           { type: 'date', source: 'entrust', part: 'year', digits: 4 },
-          { type: 'literal_sep', value: '/' },
+          { type: 'literal_custom', value: '/' },
           { type: 'seq', digits: 4 }
         ]},
         { id: 'entrust-order', name: '委托单编号规则', tokens: [
           { type: 'ref_entrust' },
-          { type: 'literal_sep', value: '-' },
+          { type: 'literal_custom', value: '-' },
           { type: 'seq', digits: 2 }
         ]},
         { id: 'sample', name: '样品编号规则', tokens: [
@@ -2160,9 +2154,9 @@
         ]},
         { id: 'test-record', name: '试样编号规则', tokens: [
           { type: 'category_code' },
-          { type: 'literal_sep', value: '-' },
+          { type: 'literal_custom', value: '-' },
           { type: 'ref_sample' },
-          { type: 'literal_sep', value: '-' },
+          { type: 'literal_custom', value: '-' },
           { type: 'seq', digits: 2 }
         ]},
         { id: 'origin-record', name: '原始记录单编号规则', tokens: [
@@ -2172,9 +2166,9 @@
         ]},
         { id: 'report', name: '报告编号规则', tokens: [
           { type: 'specimen_category_code' },
-          { type: 'literal_sep', value: '-' },
+          { type: 'literal_custom', value: '-' },
           { type: 'report_count', dimension: 'major_cat', range: 'year', digits: 4 },
-          { type: 'literal_sep', value: '-' },
+          { type: 'literal_custom', value: '-' },
           { type: 'ref_entrust' }
         ]}
       ];
@@ -2197,7 +2191,7 @@
     NUMBERING_BY_CAT.aqgqj[0].tokens = [
       { type: 'literal_custom', value: 'AQ' },
       { type: 'category_code' },
-      { type: 'literal_sep', value: '-' },
+      { type: 'literal_custom', value: '-' },
       { type: 'date', source: 'entrust', part: 'year', digits: 2 },
       { type: 'seq', digits: 4 }
     ];
@@ -2262,16 +2256,8 @@
     function customFieldsHtml(tk, index) {
       if (tk.type === 'literal_custom') {
         return '<div class="token-field"><label><span class="req">*</span>自定义字符</label>' +
-          '<input type="text" maxlength="20" value="' + (tk.value || '').replace(/"/g, '&quot;') + '" oninput="updateTokenField(' + index + ',\'value\',this.value)" placeholder="如 SC、NJYN- " /></div>';
-      }
-      if (tk.type === 'literal_sep') {
-        var v = tk.value || '-';
-        return '<div class="token-field"><label><span class="req">*</span>固定拼接符号</label>' +
-          '<div class="token-quick" style="margin-top:0">' +
-          '<button type="button" class="' + (v === '/' ? 'active' : '') + '" onclick="fillLiteralQuick(' + index + ',\'/\')">/</button>' +
-          '<button type="button" class="' + (v === '-' ? 'active' : '') + '" onclick="fillLiteralQuick(' + index + ',\'-\')">-</button>' +
-          '<button type="button" class="' + (v === '_' ? 'active' : '') + '" onclick="fillLiteralQuick(' + index + ',\'_\')">_</button>' +
-          '</div></div>';
+          '<input type="text" maxlength="20" value="' + (tk.value || '').replace(/"/g, '&quot;') + '" oninput="updateTokenField(' + index + ',\'value\',this.value)" placeholder="如 SC、NJYN-" />' +
+          '<div class="token-hint" style="margin-top:8px"><i class="fa fa-info-circle text-blue-500"></i> 最长 20 个字符，<strong>不允许输入空格</strong>。</div></div>';
       }
       if (tk.type === 'date') {
         var src = tk.source || 'entrust';
@@ -2306,6 +2292,7 @@
           '<button type="button" class="' + (sd === 2 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',2)">2位</button>' +
           '<button type="button" class="' + (sd === 3 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',3)">3位</button>' +
           '<button type="button" class="' + (sd === 4 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',4)">4位</button>' +
+          '<button type="button" class="' + (sd === 5 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',5)">5位</button>' +
           '</div></div>';
       }
       if (tk.type === 'report_count') {
@@ -2450,19 +2437,17 @@
       renderTokenSegments();
     }
 
-    function fillLiteralQuick(index, ch) {
-      if (!editingTokens[index]) return;
-      editingTokens[index].value = ch;
-      renderTokenSegments();
-    }
-
     function validateEditingTokens() {
       if (!editingTokens.length) return '请至少添加一个令牌';
       var seqCount = 0;
       for (var i = 0; i < editingTokens.length; i++) {
         var tk = editingTokens[i];
-        if (tk.type === 'literal_custom' && !String(tk.value || '').trim()) return '第 ' + (i + 1) + ' 段：请填写自定义字符';
-        if (tk.type === 'literal_sep' && !/^[\/\-_]$/.test(tk.value || '')) return '第 ' + (i + 1) + ' 段：请选择固定拼接符号';
+        if (tk.type === 'literal_custom') {
+          var cv = String(tk.value || '');
+          if (!cv.trim()) return '第 ' + (i + 1) + ' 段：请填写自定义字符';
+          if (/\s/.test(cv)) return '第 ' + (i + 1) + ' 段：自定义字符不允许包含空格';
+          if (cv.length > 20) return '第 ' + (i + 1) + ' 段：自定义字符最长 20 个字符';
+        }
         if (tk.type === 'date') {
           if (tk.source !== 'entrust' && tk.source !== 'submit') return '第 ' + (i + 1) + ' 段：请选择日期来源';
           if (tk.part !== 'year' && tk.part !== 'month' && tk.part !== 'day') return '第 ' + (i + 1) + ' 段：请选择日期部分';
@@ -2470,7 +2455,7 @@
         }
         if (tk.type === 'seq') {
           seqCount++;
-          if ([2, 3, 4].indexOf(tk.digits) < 0) return '第 ' + (i + 1) + ' 段：序号位数仅支持 2 / 3 / 4';
+          if ([2, 3, 4, 5].indexOf(tk.digits) < 0) return '第 ' + (i + 1) + ' 段：序号位数仅支持 2 / 3 / 4 / 5';
         }
         if (tk.type === 'report_count') {
           if (tk.dimension !== 'major_cat' && tk.dimension !== 'sample_cat_l1') return '第 ' + (i + 1) + ' 段：请选择统计维度';
@@ -2668,7 +2653,7 @@
           position: 'top-left',
           title: '规则芯片与示例',
           wide: true,
-          content: '芯片颜色区分语义：琥珀色=自定义字符、灰色=拼接符、蓝色=日期/引用、紫色=自增序号、绿色=分类/试样、橙色=报告数量。下方等宽字体为实时生成示例。',
+          content: '芯片颜色区分语义：琥珀色=自定义字符、蓝色=日期/引用、紫色=自增序号、绿色=分类/试样、橙色=报告数量。下方等宽字体为实时生成示例。',
           tag: '编号规则'
         },
         {
@@ -2727,7 +2712,7 @@
           position: 'top-left',
           title: '类型下拉（分组）',
           wide: true,
-          content: '<strong>指定字符</strong>→ 自定义 / 固定拼接符号（/ - _）<br><strong>日期</strong>→ 来源（委托登记日/送样日）→ 年/月/日 → 年再选 2/4 位<br><strong>分类与试样</strong>→ 分类名称、分类编号（仅层级1）、试样类别代码<br><strong>序号与数量</strong>→ 自增序号（2/3/4 位）、报告数量<br><strong>引用编号</strong>→ 委托编号、样品编号（无行号）<br><br>已去除：客户编码、样品类型、行号。',
+          content: '<strong>指定字符</strong>→ 自定义（已去除「固定拼接符号」，分隔符请用自定义填写）<br><strong>日期</strong>→ 来源（委托登记日/送样日）→ 年/月/日 → 年再选 2/4 位<br><strong>分类与试样</strong>→ 分类名称、分类编号（仅层级1）、试样类别代码<br><strong>序号与数量</strong>→ 自增序号（2/3/4/5 位）、报告数量<br><strong>引用编号</strong>→ 委托编号、样品编号（无行号）<br><br>已去除：固定拼接符号、客户编码、样品类型、行号。',
           tag: '编号规则·弹窗'
         },
         {
@@ -2736,7 +2721,7 @@
           position: 'top-right',
           title: '类型自定义区',
           wide: true,
-          content: '随类型变化：<br>· 自定义：文本输入<br>· 固定拼接符号：仅 / - _ 三键<br>· 日期：级联三步<br>· 自增序号：仅 2/3/4 位快捷（无步进器）<br>· 报告数量：维度（样品大类/样品分类层级1）+ 当年/当月 + 固定「拼接 +1」+ 3/4/5 位<br>· 分类/试样：说明文案',
+          content: '随类型变化：<br>· 自定义：最长 20 字符，不允许空格<br>· 日期：级联三步<br>· 自增序号：2/3/4/5 位快捷<br>· 报告数量：维度（样品大类/样品分类层级1）+ 当年/当月 + 固定「拼接 +1」+ 3/4/5 位<br>· 分类/试样：说明文案',
           tag: '编号规则·弹窗'
         },
         {
@@ -2761,7 +2746,7 @@
           position: 'top-left',
           title: '确定保存',
           wide: true,
-          content: '校验：至少一段；自定义非空；拼接符必选；自增仅一个且位数 2/3/4；报告数量位数 3/4/5；样品编号不可自引用样品编号；委托编号不可自引用委托编号，且不宜引用样品编号或试样类别代码。通过后写入<strong>当前大类</strong>并关闭弹窗。',
+          content: '校验：至少一段；自定义非空、无空格、≤20 字；自增仅一个且位数 2/3/4/5；报告数量位数 3/4/5；样品编号不可自引用样品编号；委托编号不可自引用委托编号，且不宜引用样品编号或试样类别代码。通过后写入<strong>当前大类</strong>并关闭弹窗。',
           tag: '编号规则·弹窗'
         },
         {
