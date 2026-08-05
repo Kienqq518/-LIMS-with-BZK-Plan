@@ -406,7 +406,7 @@
                 <div class="tip mt-1" id="t_sampleQtyTip" style="margin-top:6px">是否制样为「是」时必填；用步进器调整试样数量（≥1）。</div>
                 <div id="t_sampleQtyOv"></div>
               </div></div>
-              <div class="field-row"><label>检测设备</label><div class="ctrl">
+              <div class="field-row" data-annotate="test-equip"><label>检测设备</label><div class="ctrl">
                 <div class="equip-ms" id="t_equipMs" data-selected="[]">
                   <div class="equip-ms-trigger" onclick="toggleEquipMs('t_equipMs')"><span class="ph">请选择启用设备（可多选）</span></div>
                   <div class="equip-ms-panel" id="t_equipMsPanel"></div>
@@ -570,7 +570,7 @@
                   <div id="c_sampleQtyOv"></div>
                 </div></div>
                 <div class="field-row"><label>默认费用（元）</label><div class="ctrl"><input id="c_fee" type="number" min="0" /><div id="c_feeOv"></div></div></div>
-                <div class="field-row"><label>检测设备</label><div class="ctrl">
+                <div class="field-row" data-annotate="cfg-equip"><label>检测设备</label><div class="ctrl">
                   <div class="equip-ms" id="c_equipMs" data-selected="[]">
                     <div class="equip-ms-trigger" onclick="toggleEquipMs('c_equipMs')"><span class="ph">请选择启用设备（可多选）</span></div>
                     <div class="equip-ms-panel" id="c_equipMsPanel"></div>
@@ -2592,6 +2592,24 @@
             title: '试样数量',
             content: '是否制样为「是」时显示并必填；步进器调整（≥1）。委托详情「制样信息」取此值展示为「试样数量-N」。',
             tag: '制样'
+          },
+          {
+            id: 'test-equip',
+            selector: '[data-annotate="test-equip"]',
+            position: 'left',
+            title: '检测设备（多选）',
+            wide: true,
+            content: '改为多选下拉，选项来自「设备管理」且<strong>仅启用状态=启用</strong>的设备。停用设备不可新选；暂无启用设备时提示先去设备管理启用。',
+            tag: '设备'
+          },
+          {
+            id: 'cfg-equip',
+            selector: '[data-annotate="cfg-equip"]',
+            position: 'left',
+            title: '规格型号·检测设备',
+            wide: true,
+            content: '配置试验覆盖态同样为多选启用设备；与默认试验「检测设备」同源（EquipStore），规格型号侧覆盖不回写默认。',
+            tag: '设备'
           },
           {
             id: 'detect-items',
