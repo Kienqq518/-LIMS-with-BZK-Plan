@@ -2032,28 +2032,40 @@
       g.options.forEach(function (o) { TOKEN_META[o.type] = { label: o.label, group: g.label }; });
     });
 
-    /* 日期·月 / 日 可选输出格式（占位符：YYYY / YY / MM / DD） */
+    /* 日期·年 / 月 / 日 可选输出格式（占位符：YYYY / YY / MM / DD） */
+    var DATE_YEAR_FORMATS = [
+      { value: 'YYYY', label: 'YYYY', tip: '四位年，如 2026' },
+      { value: 'YY', label: 'YY', tip: '两位年，如 26' }
+    ];
     var DATE_MONTH_FORMATS = [
       { value: 'YYYY-MM', label: 'YYYY-MM', tip: '年-月，如 2026-03' },
+      { value: 'YYYY/MM', label: 'YYYY/MM', tip: '年/月，如 2026/03' },
       { value: 'YYYYMM', label: 'YYYYMM', tip: '年月紧凑，如 202603' },
       { value: 'YY-MM', label: 'YY-MM', tip: '两年-月，如 26-03' },
+      { value: 'YY/MM', label: 'YY/MM', tip: '两年/月，如 26/03' },
       { value: 'YYMM', label: 'YYMM', tip: '两年月紧凑，如 2603' },
       { value: 'MM', label: 'MM', tip: '仅月份 2 位，如 03' }
     ];
     var DATE_DAY_FORMATS = [
       { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD', tip: '完整日期，如 2026-03-18' },
+      { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD', tip: '完整日期（/），如 2026/03/18' },
       { value: 'YYYYMMDD', label: 'YYYYMMDD', tip: '完整日期紧凑，如 20260318' },
       { value: 'YYMMDD', label: 'YYMMDD', tip: '两年月日紧凑，如 260318' },
+      { value: 'YY/MM/DD', label: 'YY/MM/DD', tip: '两年月日（/），如 26/03/18' },
       { value: 'MM-DD', label: 'MM-DD', tip: '月-日，如 03-18' },
+      { value: 'MM/DD', label: 'MM/DD', tip: '月/日，如 03/18' },
       { value: 'MMDD', label: 'MMDD', tip: '月日紧凑，如 0318' },
       { value: 'DD', label: 'DD', tip: '仅日 2 位，如 18' }
     ];
 
     function dateFormatOptions(part) {
-      return part === 'day' ? DATE_DAY_FORMATS : DATE_MONTH_FORMATS;
+      if (part === 'year') return DATE_YEAR_FORMATS;
+      if (part === 'day') return DATE_DAY_FORMATS;
+      return DATE_MONTH_FORMATS;
     }
 
     function defaultDateFormat(part) {
+      if (part === 'year') return 'YYYY';
       if (part === 'month') return 'YYYY-MM';
       if (part === 'day') return 'YYYY-MM-DD';
       return '';
@@ -2065,6 +2077,11 @@
 
     function resolveDateFormat(tk) {
       if (!tk || tk.type !== 'date') return '';
+      if (tk.part === 'year') {
+        if (isValidDateFormat('year', tk.format)) return tk.format;
+        // 兼容旧 digits：2 → YY，4/缺省 → YYYY
+        return tk.digits === 2 ? 'YY' : 'YYYY';
+      }
       if (tk.part === 'month') return isValidDateFormat('month', tk.format) ? tk.format : 'MM';
       if (tk.part === 'day') return isValidDateFormat('day', tk.format) ? tk.format : 'DD';
       return '';
@@ -2094,16 +2111,21 @@
       if (t.dimension != null) n.dimension = t.dimension;
       if (t.range != null) n.range = t.range;
       if (n.type === 'date') {
-        if (n.part === 'month' && !isValidDateFormat('month', n.format)) n.format = n.format ? defaultDateFormat('month') : 'MM';
-        if (n.part === 'day' && !isValidDateFormat('day', n.format)) n.format = n.format ? defaultDateFormat('day') : 'DD';
-        if (n.part === 'year') delete n.format;
+        if (n.part === 'year') {
+          n.format = resolveDateFormat(n);
+          delete n.digits;
+        } else if (n.part === 'month' && !isValidDateFormat('month', n.format)) {
+          n.format = n.format ? defaultDateFormat('month') : 'MM';
+        } else if (n.part === 'day' && !isValidDateFormat('day', n.format)) {
+          n.format = n.format ? defaultDateFormat('day') : 'DD';
+        }
       }
       return n;
     }
 
     function defaultToken(type) {
       if (type === 'literal_custom') return { type: 'literal_custom', value: '' };
-      if (type === 'date') return { type: 'date', source: 'entrust', part: 'year', digits: 4 };
+      if (type === 'date') return { type: 'date', source: 'entrust', part: 'year', format: 'YYYY' };
       if (type === 'seq') return { type: 'seq', digits: 4 };
       if (type === 'report_count') return { type: 'report_count', dimension: 'major_cat', range: 'year', digits: 4 };
       return { type: type };
@@ -2146,10 +2168,7 @@
       var meta = TOKEN_META[tk.type];
       if (tk.type === 'literal_custom') return '自定义「' + (tk.value || '') + '」';
       if (tk.type === 'date') {
-        var base = dateSourceLabel(tk.source) + '·' + datePartLabel(tk.part);
-        if (tk.part === 'year') base += '·' + (tk.digits || 4) + '位';
-        else if (tk.part === 'month' || tk.part === 'day') base += '·' + resolveDateFormat(tk);
-        return base;
+        return dateSourceLabel(tk.source) + '·' + datePartLabel(tk.part) + '·' + resolveDateFormat(tk);
       }
       if (tk.type === 'seq') return '自增序号·' + (tk.digits || 4) + '位';
       if (tk.type === 'report_count') {
@@ -2182,7 +2201,6 @@
           var y = isSubmit ? ctx.submitYear : ctx.entrustYear;
           var m = isSubmit ? ctx.submitMonth : ctx.entrustMonth;
           var d = isSubmit ? ctx.submitDay : ctx.entrustDay;
-          if (tk.part === 'year') return yearSample(y, tk.digits || 4);
           return applyDateFormatPattern(resolveDateFormat(tk), y, m, d);
         }
         case 'category_name': return ctx.categoryName;
@@ -2336,7 +2354,6 @@
       if (tk.type === 'date') {
         var src = tk.source || 'entrust';
         var part = tk.part || 'year';
-        var d = tk.digits || 4;
         var fmt = resolveDateFormat(tk);
         var html = '';
         html += '<div class="token-field"><label><span class="req">*</span>日期来源</label>' +
@@ -2351,14 +2368,11 @@
           '<label><input type="radio" name="datePart' + index + '" ' + (part === 'month' ? 'checked' : '') + ' onchange="updateDatePart(' + index + ',\'month\')" /> 月</label>' +
           '<label><input type="radio" name="datePart' + index + '" ' + (part === 'day' ? 'checked' : '') + ' onchange="updateDatePart(' + index + ',\'day\')" /> 日</label>' +
           '</div></div>';
-        if (part === 'year') {
-          html += '<div class="token-field"><label><span class="req">*</span>位数</label>' +
-            '<div class="token-radios">' +
-            '<label><input type="radio" name="dateDigits' + index + '" ' + (d === 2 ? 'checked' : '') + ' onchange="updateTokenField(' + index + ',\'digits\',2)" /> 2位</label>' +
-            '<label><input type="radio" name="dateDigits' + index + '" ' + (d === 4 ? 'checked' : '') + ' onchange="updateTokenField(' + index + ',\'digits\',4)" /> 4位</label>' +
-            '</div></div>';
-        } else if (part === 'month' || part === 'day') {
+        if (part === 'year' || part === 'month' || part === 'day') {
           var opts = dateFormatOptions(part);
+          var tipExtra = part === 'year'
+            ? '与月/日一致，用输出格式选择两位年或四位年。'
+            : '可按编号习惯选择带分隔符或紧凑格式。';
           html += '<div class="token-field"><label><span class="req">*</span>输出格式</label>' +
             '<div class="token-quick" style="margin-top:0">' +
             opts.map(function (op) {
@@ -2367,7 +2381,7 @@
             '</div>' +
             '<div class="token-hint" style="margin-top:8px"><i class="fa fa-info-circle text-blue-500"></i> ' +
             (opts.find(function (o) { return o.value === fmt; }) || opts[0]).tip +
-            '。可按编号习惯选择带分隔符或紧凑格式。</div></div>';
+            '。' + tipExtra + '</div></div>';
         }
         return html;
       }
@@ -2774,6 +2788,7 @@
     function updateTokenField(index, key, value) {
       if (!editingTokens[index]) return;
       editingTokens[index][key] = value;
+      if (key === 'format' && editingTokens[index].type === 'date') delete editingTokens[index].digits;
       renderTokenSegments();
     }
 
@@ -2788,15 +2803,11 @@
       var tk = editingTokens[index];
       if (!tk || tk.type !== 'date') return;
       tk.part = part;
-      if (part === 'year') {
-        if (tk.digits !== 2 && tk.digits !== 4) tk.digits = 4;
+      delete tk.digits;
+      if (part === 'year' || part === 'month' || part === 'day') {
+        tk.format = isValidDateFormat(part, tk.format) ? tk.format : defaultDateFormat(part);
+      } else {
         delete tk.format;
-      } else if (part === 'month') {
-        delete tk.digits;
-        tk.format = isValidDateFormat('month', tk.format) ? tk.format : defaultDateFormat('month');
-      } else if (part === 'day') {
-        delete tk.digits;
-        tk.format = isValidDateFormat('day', tk.format) ? tk.format : defaultDateFormat('day');
       }
       renderTokenSegments();
     }
@@ -2815,9 +2826,8 @@
         if (tk.type === 'date') {
           if (tk.source !== 'entrust' && tk.source !== 'submit') return '第 ' + (i + 1) + ' 段：请选择日期来源';
           if (tk.part !== 'year' && tk.part !== 'month' && tk.part !== 'day') return '第 ' + (i + 1) + ' 段：请选择日期部分';
-          if (tk.part === 'year' && tk.digits !== 2 && tk.digits !== 4) return '第 ' + (i + 1) + ' 段：年份位数仅支持 2 或 4';
-          if ((tk.part === 'month' || tk.part === 'day') && !isValidDateFormat(tk.part, resolveDateFormat(tk))) {
-            return '第 ' + (i + 1) + ' 段：请选择日期输出格式';
+          if (!isValidDateFormat(tk.part, resolveDateFormat(tk))) {
+            return '第 ' + (i + 1) + ' 段：请选择日期输出格式（年：YY / YYYY）';
           }
         }
         if (tk.type === 'seq') {
@@ -3088,7 +3098,7 @@
           position: 'top-left',
           title: '类型下拉（分组）',
           wide: true,
-          content: '<strong>指定字符</strong>→ 自定义（分隔符请用自定义填写）<br><strong>日期</strong>→ 来源 → 年/月/日；月/日需再选输出格式（如 YYYY-MM、YYYY-MM-DD）<br><strong>分类与试样</strong>→ 分类名称、分类编号（仅层级1）、试样类别代码<br><strong>序号与数量</strong>→ 自增序号（2/3/4/5 位）、报告数量<br><strong>引用编号</strong>→ 委托编号、样品编号<br><br>已去除：固定拼接符号、客户编码、样品类型、行号。',
+          content: '<strong>指定字符</strong>→ 自定义（分隔符请用自定义填写）<br><strong>日期</strong>→ 来源 → 年/月/日，均再选输出格式（年：YY/YYYY；月如 YYYY-MM、YYYY/MM；日如 YYYY-MM-DD、YYYY/MM/DD）<br><strong>分类与试样</strong>→ 分类名称、分类编号（仅层级1）、试样类别代码<br><strong>序号与数量</strong>→ 自增序号（2/3/4/5 位）、报告数量<br><strong>引用编号</strong>→ 委托编号、样品编号<br><br>已去除：固定拼接符号、客户编码、样品类型、行号。',
           tag: '编号规则·弹窗'
         },
         {
@@ -3097,7 +3107,7 @@
           position: 'top-right',
           title: '类型自定义区',
           wide: true,
-          content: '随类型变化：<br>· 自定义：最长 20 字符，不允许空格<br>· 日期：来源 → 年/月/日；年选 2/4 位；<strong>月</strong>可选 YYYY-MM / YYYYMM / YY-MM / YYMM / MM；<strong>日</strong>可选 YYYY-MM-DD / YYYYMMDD / YYMMDD / MM-DD / MMDD / DD<br>· 自增序号：2/3/4/5 位快捷<br>· 报告数量：维度 + 当年/当月 + 拼接 +1 + 3/4/5 位<br>· 分类/试样：说明文案<br>· 引用编号：委托 / 样品编号说明文案',
+          content: '随类型变化：<br>· 自定义：最长 20 字符，不允许空格<br>· 日期：来源 → 年/月/日 → <strong>输出格式</strong>（年：YYYY / YY；月含 - 与 /，如 YYYY-MM、YYYY/MM；日含 YYYY-MM-DD、YYYY/MM/DD 等）<br>· 自增序号：2/3/4/5 位快捷<br>· 报告数量：维度 + 当年/当月 + 拼接 +1 + 3/4/5 位<br>· 分类/试样：说明文案<br>· 引用编号：委托 / 样品编号说明文案',
           tag: '编号规则·弹窗'
         },
         {
