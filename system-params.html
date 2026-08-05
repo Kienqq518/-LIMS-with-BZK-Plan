@@ -2567,6 +2567,19 @@
             { type: 'literal_custom', value: '-' },
             { type: 'seq', digits: 3 }
           ]
+        },
+        {
+          // 图示 NJYN-WZ-xxNNNN-AA → 前缀以 SC- 代替
+          id: 'sc-yy-count-cat',
+          name: 'SC-年序-分类',
+          desc: 'SC- + 年2位 + 当年报告份数4位 + - + 分类编号（SC-xxNNNN-AA）',
+          tokens: [
+            { type: 'literal_custom', value: 'SC-' },
+            { type: 'date', source: 'entrust', part: 'year', format: 'YY' },
+            { type: 'report_count', dimension: 'sample_cat_l1', range: 'year', digits: 4 },
+            { type: 'literal_custom', value: '-' },
+            { type: 'category_code' }
+          ]
         }
       ],
       'test-record': [
@@ -2601,6 +2614,21 @@
             { type: 'date', source: 'entrust', part: 'day', format: 'YYYYMMDD' },
             { type: 'literal_custom', value: '-' },
             { type: 'seq', digits: 2 }
+          ]
+        },
+        {
+          // 图示 NJYN-WZ-xxNNNN-AA-aa → 前缀以 SC- 代替
+          id: 'sc-yy-count-cat-specimen',
+          name: 'SC-年序-分类-试样类',
+          desc: 'SC- + 年2位 + 当年报告份数4位 + - + 分类编号 + - + 试样类别代码（SC-xxNNNN-AA-aa）',
+          tokens: [
+            { type: 'literal_custom', value: 'SC-' },
+            { type: 'date', source: 'entrust', part: 'year', format: 'YY' },
+            { type: 'report_count', dimension: 'sample_cat_l1', range: 'year', digits: 4 },
+            { type: 'literal_custom', value: '-' },
+            { type: 'category_code' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'specimen_category_code' }
           ]
         }
       ],
