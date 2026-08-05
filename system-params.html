@@ -282,6 +282,23 @@
     }
     .token-quick button:hover { border-color: #93c5fd; color: #2563eb; }
     .token-quick button.active { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+    .num-preset-wrap {
+      margin-bottom: 16px; border: 1px solid #dbeafe; border-radius: 8px; background: #f8fbff; padding: 12px 14px;
+    }
+    .num-preset-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .num-preset-title { font-size: 13px; font-weight: 600; color: #1e40af; }
+    .num-preset-sub { font-size: 12px; color: #64748b; }
+    .num-preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    @media (max-width: 720px) { .num-preset-grid { grid-template-columns: 1fr; } }
+    .num-preset-card {
+      text-align: left; border: 1px solid #bfdbfe; border-radius: 8px; background: #fff;
+      padding: 10px 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s;
+    }
+    .num-preset-card:hover { border-color: #2563eb; box-shadow: 0 1px 6px rgba(37,99,235,.12); }
+    .num-preset-card.active { border-color: #2563eb; background: #eff6ff; }
+    .num-preset-name { font-size: 13px; font-weight: 600; color: #1e3a8a; margin-bottom: 4px; }
+    .num-preset-desc { font-size: 12px; color: #64748b; line-height: 1.45; margin-bottom: 6px; }
+    .num-preset-sample { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #2563eb; word-break: break-all; }
     /* 签名与印章（复用模板管理印章样式） */
     .stamp-upload-row { display: flex; flex-wrap: wrap; gap: 28px; }
     .stamp-upload-box { text-align: center; }
@@ -687,12 +704,13 @@
 
   <!-- 编号规则编辑弹窗 -->
   <div id="numberingModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-    <div class="flex max-h-[90vh] w-[760px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+    <div class="flex max-h-[90vh] w-[820px] max-w-full flex-col rounded-lg bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <h3 class="text-base font-medium text-slate-800" id="numberingModalTitle" data-annotate="numbering-modal-title">修改编号规则</h3>
         <button type="button" onclick="closeNumberingModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="flex-1 overflow-auto px-6 py-4">
+        <div id="numberingPresetArea" class="num-preset-wrap" data-annotate="numbering-presets"></div>
         <div class="mb-4" data-annotate="numbering-rule-preview">
           <div class="mb-2 text-sm font-medium text-slate-600">当前规则</div>
           <div id="ruleChipPreview"></div>
@@ -2014,6 +2032,53 @@
       g.options.forEach(function (o) { TOKEN_META[o.type] = { label: o.label, group: g.label }; });
     });
 
+    /* 日期·月 / 日 可选输出格式（占位符：YYYY / YY / MM / DD） */
+    var DATE_MONTH_FORMATS = [
+      { value: 'YYYY-MM', label: 'YYYY-MM', tip: '年-月，如 2026-03' },
+      { value: 'YYYYMM', label: 'YYYYMM', tip: '年月紧凑，如 202603' },
+      { value: 'YY-MM', label: 'YY-MM', tip: '两年-月，如 26-03' },
+      { value: 'YYMM', label: 'YYMM', tip: '两年月紧凑，如 2603' },
+      { value: 'MM', label: 'MM', tip: '仅月份 2 位，如 03' }
+    ];
+    var DATE_DAY_FORMATS = [
+      { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD', tip: '完整日期，如 2026-03-18' },
+      { value: 'YYYYMMDD', label: 'YYYYMMDD', tip: '完整日期紧凑，如 20260318' },
+      { value: 'YYMMDD', label: 'YYMMDD', tip: '两年月日紧凑，如 260318' },
+      { value: 'MM-DD', label: 'MM-DD', tip: '月-日，如 03-18' },
+      { value: 'MMDD', label: 'MMDD', tip: '月日紧凑，如 0318' },
+      { value: 'DD', label: 'DD', tip: '仅日 2 位，如 18' }
+    ];
+
+    function dateFormatOptions(part) {
+      return part === 'day' ? DATE_DAY_FORMATS : DATE_MONTH_FORMATS;
+    }
+
+    function defaultDateFormat(part) {
+      if (part === 'month') return 'YYYY-MM';
+      if (part === 'day') return 'YYYY-MM-DD';
+      return '';
+    }
+
+    function isValidDateFormat(part, format) {
+      return dateFormatOptions(part).some(function (f) { return f.value === format; });
+    }
+
+    function resolveDateFormat(tk) {
+      if (!tk || tk.type !== 'date') return '';
+      if (tk.part === 'month') return isValidDateFormat('month', tk.format) ? tk.format : 'MM';
+      if (tk.part === 'day') return isValidDateFormat('day', tk.format) ? tk.format : 'DD';
+      return '';
+    }
+
+    function applyDateFormatPattern(pattern, yyyy, mm, dd) {
+      var yy = String(yyyy).slice(-2);
+      return String(pattern || '')
+        .replace(/YYYY/g, String(yyyy))
+        .replace(/YY/g, yy)
+        .replace(/MM/g, String(mm))
+        .replace(/DD/g, String(dd));
+    }
+
     function normalizeToken(t) {
       /* 兼容旧 literal / 已移除的固定拼接符号 → 自定义 */
       if (t.type === 'literal' || t.type === 'literal_sep') {
@@ -2025,8 +2090,14 @@
       if (t.digits != null) n.digits = t.digits;
       if (t.source != null) n.source = t.source;
       if (t.part != null) n.part = t.part;
+      if (t.format != null) n.format = t.format;
       if (t.dimension != null) n.dimension = t.dimension;
       if (t.range != null) n.range = t.range;
+      if (n.type === 'date') {
+        if (n.part === 'month' && !isValidDateFormat('month', n.format)) n.format = n.format ? defaultDateFormat('month') : 'MM';
+        if (n.part === 'day' && !isValidDateFormat('day', n.format)) n.format = n.format ? defaultDateFormat('day') : 'DD';
+        if (n.part === 'year') delete n.format;
+      }
       return n;
     }
 
@@ -2077,6 +2148,7 @@
       if (tk.type === 'date') {
         var base = dateSourceLabel(tk.source) + '·' + datePartLabel(tk.part);
         if (tk.part === 'year') base += '·' + (tk.digits || 4) + '位';
+        else if (tk.part === 'month' || tk.part === 'day') base += '·' + resolveDateFormat(tk);
         return base;
       }
       if (tk.type === 'seq') return '自增序号·' + (tk.digits || 4) + '位';
@@ -2107,9 +2179,11 @@
           return tk.value || '';
         case 'date': {
           var isSubmit = tk.source === 'submit';
-          if (tk.part === 'month') return isSubmit ? ctx.submitMonth : ctx.entrustMonth;
-          if (tk.part === 'day') return isSubmit ? ctx.submitDay : ctx.entrustDay;
-          return yearSample(isSubmit ? ctx.submitYear : ctx.entrustYear, tk.digits || 4);
+          var y = isSubmit ? ctx.submitYear : ctx.entrustYear;
+          var m = isSubmit ? ctx.submitMonth : ctx.entrustMonth;
+          var d = isSubmit ? ctx.submitDay : ctx.entrustDay;
+          if (tk.part === 'year') return yearSample(y, tk.digits || 4);
+          return applyDateFormatPattern(resolveDateFormat(tk), y, m, d);
         }
         case 'category_name': return ctx.categoryName;
         case 'category_code': return ctx.categoryCode;
@@ -2263,6 +2337,7 @@
         var src = tk.source || 'entrust';
         var part = tk.part || 'year';
         var d = tk.digits || 4;
+        var fmt = resolveDateFormat(tk);
         var html = '';
         html += '<div class="token-field"><label><span class="req">*</span>日期来源</label>' +
           '<div class="token-radios">' +
@@ -2282,6 +2357,17 @@
             '<label><input type="radio" name="dateDigits' + index + '" ' + (d === 2 ? 'checked' : '') + ' onchange="updateTokenField(' + index + ',\'digits\',2)" /> 2位</label>' +
             '<label><input type="radio" name="dateDigits' + index + '" ' + (d === 4 ? 'checked' : '') + ' onchange="updateTokenField(' + index + ',\'digits\',4)" /> 4位</label>' +
             '</div></div>';
+        } else if (part === 'month' || part === 'day') {
+          var opts = dateFormatOptions(part);
+          html += '<div class="token-field"><label><span class="req">*</span>输出格式</label>' +
+            '<div class="token-quick" style="margin-top:0">' +
+            opts.map(function (op) {
+              return '<button type="button" class="' + (fmt === op.value ? 'active' : '') + '" title="' + op.tip + '" onclick="updateTokenField(' + index + ',\'format\',\'' + op.value + '\')">' + op.label + '</button>';
+            }).join('') +
+            '</div>' +
+            '<div class="token-hint" style="margin-top:8px"><i class="fa fa-info-circle text-blue-500"></i> ' +
+            (opts.find(function (o) { return o.value === fmt; }) || opts[0]).tip +
+            '。可按编号习惯选择带分隔符或紧凑格式。</div></div>';
         }
         return html;
       }
@@ -2359,6 +2445,11 @@
         ? editingTokens.map(function (tk) { return '<span class="' + tokenChipClass(tk) + '">' + tokenLabel(tk) + '</span>'; }).join('')
         : '<span class="text-sm text-slate-400">请从下方添加令牌组合编号规则</span>';
       document.getElementById('rulePreview').textContent = rulePreview(editingTokens);
+      // 同步推荐搭配高亮（避免在 renderNumberingPresets↔renderTokenSegments 间递归）
+      if (!_renderingPresets) {
+        _renderingPresets = true;
+        try { renderNumberingPresets(); } finally { _renderingPresets = false; }
+      }
     }
 
     function refreshNumberingAnnotations() {
@@ -2367,12 +2458,264 @@
       }
     }
 
+    /* 各编号规则的推荐搭配（一键套用） */
+    var NUMBERING_PRESETS = {
+      entrust: [
+        {
+          id: 'classic',
+          name: '经典斜杠',
+          desc: '前缀 + 年份4位 + / + 自增4位',
+          tokens: [
+            { type: 'literal_custom', value: 'SC' },
+            { type: 'date', source: 'entrust', part: 'year', digits: 4 },
+            { type: 'literal_custom', value: '/' },
+            { type: 'seq', digits: 4 }
+          ]
+        },
+        {
+          id: 'ym-seq',
+          name: '年月序号',
+          desc: '前缀 + YYYY-MM + 自增4位',
+          tokens: [
+            { type: 'literal_custom', value: 'SC' },
+            { type: 'date', source: 'entrust', part: 'month', format: 'YYYY-MM' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'seq', digits: 4 }
+          ]
+        },
+        {
+          id: 'cat-yy',
+          name: '分类短年',
+          desc: '前缀 + 分类编号 + 年2位 + 自增4位',
+          tokens: [
+            { type: 'literal_custom', value: 'SC' },
+            { type: 'category_code' },
+            { type: 'date', source: 'entrust', part: 'year', digits: 2 },
+            { type: 'seq', digits: 4 }
+          ]
+        },
+        {
+          id: 'full-day',
+          name: '完整日期',
+          desc: '前缀 + YYYY-MM-DD + 自增3位',
+          tokens: [
+            { type: 'literal_custom', value: 'SC' },
+            { type: 'date', source: 'entrust', part: 'day', format: 'YYYY-MM-DD' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'seq', digits: 3 }
+          ]
+        }
+      ],
+      'entrust-order': [
+        {
+          id: 'dash-2',
+          name: '委托号-序号',
+          desc: '引用委托编号 + - + 自增2位',
+          tokens: [
+            { type: 'ref_entrust' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'seq', digits: 2 }
+          ]
+        },
+        {
+          id: 'slash-3',
+          name: '委托号/序号',
+          desc: '引用委托编号 + / + 自增3位',
+          tokens: [
+            { type: 'ref_entrust' },
+            { type: 'literal_custom', value: '/' },
+            { type: 'seq', digits: 3 }
+          ]
+        }
+      ],
+      sample: [
+        {
+          id: 'entrust-seq2',
+          name: '委托号续号',
+          desc: '引用委托编号 + 自增2位',
+          tokens: [
+            { type: 'ref_entrust' },
+            { type: 'seq', digits: 2 }
+          ]
+        },
+        {
+          id: 'entrust-dash-seq3',
+          name: '委托号-序号',
+          desc: '引用委托编号 + - + 自增3位',
+          tokens: [
+            { type: 'ref_entrust' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'seq', digits: 3 }
+          ]
+        }
+      ],
+      'test-record': [
+        {
+          id: 'cat-sample-seq',
+          name: '分类-样品-序号',
+          desc: '分类编号 - 样品编号 - 自增2位',
+          tokens: [
+            { type: 'category_code' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'ref_sample' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'seq', digits: 2 }
+          ]
+        },
+        {
+          id: 'sample-seq',
+          name: '样品续号',
+          desc: '样品编号 + 自增3位',
+          tokens: [
+            { type: 'ref_sample' },
+            { type: 'seq', digits: 3 }
+          ]
+        },
+        {
+          id: 'specimen-ymd',
+          name: '试样类+日期',
+          desc: '试样类别代码 + YYYYMMDD + 自增2位',
+          tokens: [
+            { type: 'specimen_category_code' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'date', source: 'entrust', part: 'day', format: 'YYYYMMDD' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'seq', digits: 2 }
+          ]
+        }
+      ],
+      'origin-record': [
+        {
+          id: 'ymd-parts',
+          name: '年/月/日分段',
+          desc: '年4位 + 月 + 日 + 自增3位（分段拼接）',
+          tokens: [
+            { type: 'date', source: 'entrust', part: 'year', digits: 4 },
+            { type: 'date', source: 'entrust', part: 'month', format: 'MM' },
+            { type: 'date', source: 'entrust', part: 'day', format: 'DD' },
+            { type: 'seq', digits: 3 }
+          ]
+        },
+        {
+          id: 'compact-day',
+          name: '紧凑完整日',
+          desc: 'YYYYMMDD + 自增4位',
+          tokens: [
+            { type: 'date', source: 'entrust', part: 'day', format: 'YYYYMMDD' },
+            { type: 'seq', digits: 4 }
+          ]
+        }
+      ],
+      report: [
+        {
+          id: 'specimen-count',
+          name: '试样类-份数',
+          desc: '试样类别代码 - 报告数量4位 - 委托编号',
+          tokens: [
+            { type: 'specimen_category_code' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'report_count', dimension: 'major_cat', range: 'year', digits: 4 },
+            { type: 'literal_custom', value: '-' },
+            { type: 'ref_entrust' }
+          ]
+        },
+        {
+          id: 'cat-count',
+          name: '分类-份数',
+          desc: '分类编号 - 报告数量（层级1·当年）3位 - 委托编号',
+          tokens: [
+            { type: 'category_code' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'report_count', dimension: 'sample_cat_l1', range: 'year', digits: 3 },
+            { type: 'literal_custom', value: '-' },
+            { type: 'ref_entrust' }
+          ]
+        },
+        {
+          id: 'ym-count',
+          name: '年月-份数',
+          desc: 'YYYY-MM - 报告数量（当月）3位 - 委托编号',
+          tokens: [
+            { type: 'date', source: 'entrust', part: 'month', format: 'YYYY-MM' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'report_count', dimension: 'major_cat', range: 'month', digits: 3 },
+            { type: 'literal_custom', value: '-' },
+            { type: 'ref_entrust' }
+          ]
+        }
+      ]
+    };
+
+    var activePresetId = null;
+    var _renderingPresets = false;
+
+    function presetsForCurrentRule() {
+      return NUMBERING_PRESETS[editingRuleId] || [];
+    }
+
+    function tokensEqual(a, b) {
+      return JSON.stringify(cloneTokens(a || [])) === JSON.stringify(cloneTokens(b || []));
+    }
+
+    function detectActivePreset() {
+      var list = presetsForCurrentRule();
+      for (var i = 0; i < list.length; i++) {
+        if (tokensEqual(editingTokens, list[i].tokens)) return list[i].id;
+      }
+      return null;
+    }
+
+    function renderNumberingPresets() {
+      var box = document.getElementById('numberingPresetArea');
+      if (!box) return;
+      var list = presetsForCurrentRule();
+      activePresetId = detectActivePreset();
+      if (!list.length) {
+        box.style.display = 'none';
+        box.innerHTML = '';
+        return;
+      }
+      box.style.display = '';
+      box.innerHTML =
+        '<div class="num-preset-head">' +
+          '<div><div class="num-preset-title"><i class="fa fa-magic"></i> 推荐搭配</div>' +
+          '<div class="num-preset-sub">点选即可套用常见组合，再按需微调令牌</div></div>' +
+        '</div>' +
+        '<div class="num-preset-grid">' +
+        list.map(function (p) {
+          var sample = rulePreview(p.tokens);
+          var on = activePresetId === p.id ? ' active' : '';
+          return '<button type="button" class="num-preset-card' + on + '" onclick="applyNumberingPreset(\'' + p.id + '\')">' +
+            '<div class="num-preset-name">' + p.name + '</div>' +
+            '<div class="num-preset-desc">' + p.desc + '</div>' +
+            '<div class="num-preset-sample">' + sample + '</div>' +
+          '</button>';
+        }).join('') +
+        '</div>';
+    }
+
+    function applyNumberingPreset(presetId) {
+      var list = presetsForCurrentRule();
+      var hit = list.find(function (p) { return p.id === presetId; });
+      if (!hit) return;
+      if (editingTokens.length && !tokensEqual(editingTokens, hit.tokens)) {
+        if (!confirm('套用「' + hit.name + '」将覆盖当前令牌组合，是否继续？')) return;
+      }
+      editingTokens = cloneTokens(hit.tokens);
+      activePresetId = hit.id;
+      renderTokenSegments();
+      renderNumberingPresets();
+      refreshNumberingAnnotations();
+    }
+
     function openNumberingModal(id) {
       var rule = currentRules().find(function (r) { return r.id === id; });
       if (!rule) return;
       editingRuleId = id;
       editingTokens = cloneTokens(rule.tokens);
+      activePresetId = null;
       document.getElementById('numberingModalTitle').textContent = '修改' + rule.name + ' · ' + catName(numberingCat);
+      renderNumberingPresets();
       renderTokenSegments();
       var m = document.getElementById('numberingModal');
       m.classList.remove('hidden'); m.classList.add('flex');
@@ -2431,8 +2774,13 @@
       tk.part = part;
       if (part === 'year') {
         if (tk.digits !== 2 && tk.digits !== 4) tk.digits = 4;
-      } else {
+        delete tk.format;
+      } else if (part === 'month') {
         delete tk.digits;
+        tk.format = isValidDateFormat('month', tk.format) ? tk.format : defaultDateFormat('month');
+      } else if (part === 'day') {
+        delete tk.digits;
+        tk.format = isValidDateFormat('day', tk.format) ? tk.format : defaultDateFormat('day');
       }
       renderTokenSegments();
     }
@@ -2452,6 +2800,9 @@
           if (tk.source !== 'entrust' && tk.source !== 'submit') return '第 ' + (i + 1) + ' 段：请选择日期来源';
           if (tk.part !== 'year' && tk.part !== 'month' && tk.part !== 'day') return '第 ' + (i + 1) + ' 段：请选择日期部分';
           if (tk.part === 'year' && tk.digits !== 2 && tk.digits !== 4) return '第 ' + (i + 1) + ' 段：年份位数仅支持 2 或 4';
+          if ((tk.part === 'month' || tk.part === 'day') && !isValidDateFormat(tk.part, resolveDateFormat(tk))) {
+            return '第 ' + (i + 1) + ' 段：请选择日期输出格式';
+          }
         }
         if (tk.type === 'seq') {
           seqCount++;
@@ -2673,6 +3024,15 @@
           tag: '编号规则·弹窗'
         },
         {
+          id: 'numbering-presets',
+          selector: '[data-annotate="numbering-presets"]',
+          position: 'top-left',
+          title: '推荐搭配',
+          wide: true,
+          content: '按当前规则类型提供 2～4 种常见组合。点选卡片即可套用（若已有令牌会二次确认覆盖），套用后仍可继续微调。卡片下方展示该组合的生成预览。',
+          tag: '编号规则·弹窗'
+        },
+        {
           id: 'numbering-rule-preview',
           selector: '[data-annotate="numbering-rule-preview"]',
           position: 'top-right',
@@ -2712,7 +3072,7 @@
           position: 'top-left',
           title: '类型下拉（分组）',
           wide: true,
-          content: '<strong>指定字符</strong>→ 自定义（已去除「固定拼接符号」，分隔符请用自定义填写）<br><strong>日期</strong>→ 来源（委托登记日/送样日）→ 年/月/日 → 年再选 2/4 位<br><strong>分类与试样</strong>→ 分类名称、分类编号（仅层级1）、试样类别代码<br><strong>序号与数量</strong>→ 自增序号（2/3/4/5 位）、报告数量<br><strong>引用编号</strong>→ 委托编号、样品编号（无行号）<br><br>已去除：固定拼接符号、客户编码、样品类型、行号。',
+          content: '<strong>指定字符</strong>→ 自定义（分隔符请用自定义填写）<br><strong>日期</strong>→ 来源 → 年/月/日；月/日需再选输出格式（如 YYYY-MM、YYYY-MM-DD）<br><strong>分类与试样</strong>→ 分类名称、分类编号（仅层级1）、试样类别代码<br><strong>序号与数量</strong>→ 自增序号（2/3/4/5 位）、报告数量<br><strong>引用编号</strong>→ 委托编号、样品编号<br><br>已去除：固定拼接符号、客户编码、样品类型、行号。',
           tag: '编号规则·弹窗'
         },
         {
@@ -2721,7 +3081,7 @@
           position: 'top-right',
           title: '类型自定义区',
           wide: true,
-          content: '随类型变化：<br>· 自定义：最长 20 字符，不允许空格<br>· 日期：级联三步<br>· 自增序号：2/3/4/5 位快捷<br>· 报告数量：维度（样品大类/样品分类层级1）+ 当年/当月 + 固定「拼接 +1」+ 3/4/5 位<br>· 分类/试样：说明文案',
+          content: '随类型变化：<br>· 自定义：最长 20 字符，不允许空格<br>· 日期：来源 → 年/月/日；年选 2/4 位；<strong>月</strong>可选 YYYY-MM / YYYYMM / YY-MM / YYMM / MM；<strong>日</strong>可选 YYYY-MM-DD / YYYYMMDD / YYMMDD / MM-DD / MMDD / DD<br>· 自增序号：2/3/4/5 位快捷<br>· 报告数量：维度 + 当年/当月 + 拼接 +1 + 3/4/5 位<br>· 分类/试样：说明文案',
           tag: '编号规则·弹窗'
         },
         {
