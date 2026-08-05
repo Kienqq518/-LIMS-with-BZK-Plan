@@ -2022,7 +2022,8 @@
         label: '引用编号',
         options: [
           { type: 'ref_entrust', label: '委托编号' },
-          { type: 'ref_sample', label: '样品编号' }
+          { type: 'ref_sample', label: '样品编号' },
+          { type: 'ref_test_record', label: '试样编号' }
         ]
       }
     ];
@@ -2172,6 +2173,10 @@
     function buildRefSample(ctx) {
       return buildRefEntrust(ctx) + padNum(1, 2);
     }
+    function buildRefTestRecord(ctx) {
+      // 与默认试样编号规则一致：分类编号 - 样品编号 - 自增2位
+      return ctx.categoryCode + '-' + buildRefSample(ctx) + '-' + padNum(1, 2);
+    }
 
     function tokenSample(tk, ctx) {
       switch (tk.type) {
@@ -2192,6 +2197,7 @@
         case 'report_count': return padNum(ctx.reportCount || 1, tk.digits || 4);
         case 'ref_entrust': return buildRefEntrust(ctx);
         case 'ref_sample': return buildRefSample(ctx);
+        case 'ref_test_record': return buildRefTestRecord(ctx);
         default: return '';
       }
     }
@@ -2314,10 +2320,11 @@
     function typeOptionsHtml(selected) {
       return TOKEN_TYPE_GROUPS.map(function (g) {
         var opts = g.options.filter(function (o) {
-          // 禁止自引用：编辑样品编号不可选样品编号；编辑委托编号不可选委托编号
+          // 禁止自引用：编辑样品/委托/试样编号时不可选对应引用项
           // 若历史令牌已是该类型，仍保留当前选中项以便改掉
           if (editingRuleId === 'sample' && o.type === 'ref_sample' && o.type !== selected) return false;
           if (editingRuleId === 'entrust' && o.type === 'ref_entrust' && o.type !== selected) return false;
+          if (editingRuleId === 'test-record' && o.type === 'ref_test_record' && o.type !== selected) return false;
           return true;
         });
         if (!opts.length) return '';
@@ -2413,6 +2420,15 @@
       }
       if (tk.type === 'specimen_category_code') {
         return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 取<strong>样品数据</strong>中该试验配置的「试样类别代码」。</div>';
+      }
+      if (tk.type === 'ref_entrust') {
+        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 引用当前业务关联的<strong>委托编号</strong>原文拼接。</div>';
+      }
+      if (tk.type === 'ref_sample') {
+        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 引用当前业务关联的<strong>样品编号</strong>原文拼接。</div>';
+      }
+      if (tk.type === 'ref_test_record') {
+        return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 引用当前业务关联的<strong>试样编号</strong>原文拼接。</div>';
       }
       return '';
     }
@@ -2603,6 +2619,26 @@
           tokens: [
             { type: 'date', source: 'entrust', part: 'day', format: 'YYYYMMDD' },
             { type: 'seq', digits: 4 }
+          ]
+        },
+        {
+          id: 'ref-sample',
+          name: '引用样品编号',
+          desc: '样品编号 + - + 自增3位',
+          tokens: [
+            { type: 'ref_sample' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'seq', digits: 3 }
+          ]
+        },
+        {
+          id: 'ref-test-record',
+          name: '引用试样编号',
+          desc: '试样编号 + - + 自增3位',
+          tokens: [
+            { type: 'ref_test_record' },
+            { type: 'literal_custom', value: '-' },
+            { type: 'seq', digits: 3 }
           ]
         }
       ],
@@ -2820,14 +2856,19 @@
           return '样品编号规则不能引用样品编号本身';
         }
       }
+      if (editingRuleId === 'test-record') {
+        if (editingTokens.some(function (t) { return t.type === 'ref_test_record'; })) {
+          return '试样编号规则不能引用试样编号本身';
+        }
+      }
       if (editingRuleId === 'entrust') {
         if (editingTokens.some(function (t) { return t.type === 'ref_entrust'; })) {
           return '委托编号规则不能引用委托编号本身';
         }
         var bad = editingTokens.find(function (t) {
-          return t.type === 'ref_sample' || t.type === 'specimen_category_code';
+          return t.type === 'ref_sample' || t.type === 'ref_test_record' || t.type === 'specimen_category_code';
         });
-        if (bad) return '委托编号规则不宜引用样品编号或试样类别代码';
+        if (bad) return '委托编号规则不宜引用样品编号、试样编号或试样类别代码';
       }
       return null;
     }
@@ -3072,7 +3113,7 @@
           position: 'top-left',
           title: '类型下拉（分组）',
           wide: true,
-          content: '<strong>指定字符</strong>→ 自定义（分隔符请用自定义填写）<br><strong>日期</strong>→ 来源 → 年/月/日；月/日需再选输出格式（如 YYYY-MM、YYYY-MM-DD）<br><strong>分类与试样</strong>→ 分类名称、分类编号（仅层级1）、试样类别代码<br><strong>序号与数量</strong>→ 自增序号（2/3/4/5 位）、报告数量<br><strong>引用编号</strong>→ 委托编号、样品编号<br><br>已去除：固定拼接符号、客户编码、样品类型、行号。',
+          content: '<strong>指定字符</strong>→ 自定义（分隔符请用自定义填写）<br><strong>日期</strong>→ 来源 → 年/月/日；月/日需再选输出格式（如 YYYY-MM、YYYY-MM-DD）<br><strong>分类与试样</strong>→ 分类名称、分类编号（仅层级1）、试样类别代码<br><strong>序号与数量</strong>→ 自增序号（2/3/4/5 位）、报告数量<br><strong>引用编号</strong>→ 委托编号、样品编号、试样编号<br><br>已去除：固定拼接符号、客户编码、样品类型、行号。',
           tag: '编号规则·弹窗'
         },
         {
@@ -3106,7 +3147,7 @@
           position: 'top-left',
           title: '确定保存',
           wide: true,
-          content: '校验：至少一段；自定义非空、无空格、≤20 字；自增仅一个且位数 2/3/4/5；报告数量位数 3/4/5；样品编号不可自引用样品编号；委托编号不可自引用委托编号，且不宜引用样品编号或试样类别代码。通过后写入<strong>当前大类</strong>并关闭弹窗。',
+          content: '校验：至少一段；自定义非空、无空格、≤20 字；自增仅一个且位数 2/3/4/5；报告数量位数 3/4/5；样品/试样/委托编号均不可自引用；委托编号不宜引用样品编号、试样编号或试样类别代码。通过后写入<strong>当前大类</strong>并关闭弹窗。',
           tag: '编号规则·弹窗'
         },
         {
