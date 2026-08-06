@@ -18,7 +18,8 @@
     scale: 3.78, // px per mm，与 LabelCertRender.mmToPx 对齐，便于预览叠层
     zoom: 1, // 画布视觉缩放（CSS transform），不影响 mm 坐标
     drag: null,
-    lastPaper: null // { wMm, hMm } 用于纸张变更时等比缩放元素
+    lastPaper: null, // { wMm, hMm } 用于纸张变更时等比缩放元素
+    history: { past: [], future: [], coalesceKey: null, max: 40 }
   };
 
   var ZOOM_MIN = 0.5;
@@ -258,6 +259,7 @@
     state.selectedId = null;
     state.propTab = 'layout';
     state.zoom = 1;
+    resetHistory();
     if (isDefault) {
       draft.enabled = true;
       draft.bindSampleIds = [];
@@ -273,6 +275,101 @@
     state.editingId = null;
     state.selectedId = null;
     state.drag = null;
+    resetHistory();
+  }
+
+  /* ---------- 撤销 / 重做 ---------- */
+
+  function resetHistory() {
+    state.history = { past: [], future: [], coalesceKey: null, max: 40 };
+    syncHistoryButtons();
+  }
+
+  function editorSnapshot() {
+    if (!state.draft) return null;
+    syncPaperFromDom();
+    return {
+      name: state.draft.name || '',
+      paper: LabelCertConfig.clone(state.draft.paper),
+      elements: LabelCertConfig.clone(state.draft.elements || []),
+      meta: LabelCertConfig.clone(state.draft.meta || {}),
+      bindSampleIds: LabelCertConfig.clone(state.draft.bindSampleIds || []),
+      selectedId: state.selectedId,
+      lastPaper: state.lastPaper ? { wMm: state.lastPaper.wMm, hMm: state.lastPaper.hMm } : null,
+      propTab: state.propTab
+    };
+  }
+
+  function applyEditorSnapshot(snap) {
+    if (!state.draft || !snap) return;
+    state.draft.name = snap.name || '';
+    state.draft.paper = LabelCertConfig.clone(snap.paper);
+    state.draft.elements = LabelCertConfig.clone(snap.elements || []);
+    state.draft.meta = LabelCertConfig.clone(snap.meta || {});
+    state.draft.bindSampleIds = LabelCertConfig.clone(snap.bindSampleIds || []);
+    state.selectedId = snap.selectedId || null;
+    state.lastPaper = snap.lastPaper ? { wMm: snap.lastPaper.wMm, hMm: snap.lastPaper.hMm } : {
+      wMm: state.draft.paper.wMm,
+      hMm: state.draft.paper.hMm
+    };
+    if (snap.propTab) state.propTab = snap.propTab;
+    state.history.coalesceKey = null;
+    fillEditor();
+    syncHistoryButtons();
+  }
+
+  /** 在变更前调用；同一 coalesceKey 的连续操作只记一次（如拖动滑块） */
+  function markHistory(coalesceKey) {
+    if (!state.draft) return;
+    if (coalesceKey && state.history.coalesceKey === coalesceKey) return;
+    var snap = editorSnapshot();
+    if (!snap) return;
+    var json = JSON.stringify(snap);
+    var last = state.history.past.length ? state.history.past[state.history.past.length - 1] : null;
+    if (last === json) {
+      state.history.coalesceKey = coalesceKey || null;
+      return;
+    }
+    state.history.past.push(json);
+    if (state.history.past.length > state.history.max) state.history.past.shift();
+    state.history.future = [];
+    state.history.coalesceKey = coalesceKey || null;
+    syncHistoryButtons();
+  }
+
+  function endHistoryCoalesce() {
+    state.history.coalesceKey = null;
+  }
+
+  function undoEditor() {
+    if (!state.draft || !state.history.past.length) return;
+    var current = editorSnapshot();
+    if (!current) return;
+    state.history.future.push(JSON.stringify(current));
+    var prev = state.history.past.pop();
+    applyEditorSnapshot(JSON.parse(prev));
+  }
+
+  function redoEditor() {
+    if (!state.draft || !state.history.future.length) return;
+    var current = editorSnapshot();
+    if (!current) return;
+    state.history.past.push(JSON.stringify(current));
+    var next = state.history.future.pop();
+    applyEditorSnapshot(JSON.parse(next));
+  }
+
+  function syncHistoryButtons() {
+    var undoBtn = document.querySelector('[data-lc-undo]');
+    var redoBtn = document.querySelector('[data-lc-redo]');
+    if (undoBtn) {
+      undoBtn.disabled = !(state.history.past && state.history.past.length);
+      undoBtn.classList.toggle('disabled', undoBtn.disabled);
+    }
+    if (redoBtn) {
+      redoBtn.disabled = !(state.history.future && state.history.future.length);
+      redoBtn.classList.toggle('disabled', redoBtn.disabled);
+    }
   }
 
   function selectedEl() {
@@ -331,6 +428,11 @@
     wMm = Math.max(20, Math.min(200, Number(wMm)));
     hMm = Math.max(15, Math.min(200, Number(hMm)));
     if (!isFinite(wMm) || !isFinite(hMm)) return;
+    var curW = state.lastPaper ? state.lastPaper.wMm : state.draft.paper.wMm;
+    var curH = state.lastPaper ? state.lastPaper.hMm : state.draft.paper.hMm;
+    if (Math.abs(curW - wMm) < 0.001 && Math.abs(curH - hMm) < 0.001) return;
+    markHistory('paper-size');
+    endHistoryCoalesce();
     var from = state.lastPaper || { wMm: state.draft.paper.wMm, hMm: state.draft.paper.hMm };
     if (scaleElements !== false && from.wMm > 0 && from.hMm > 0) {
       LabelCertConfig.scaleElementsToPaper(state.draft.elements, from, { wMm: wMm, hMm: hMm });
@@ -448,6 +550,7 @@
     var hits = findPaletteMatch(type, fieldId);
     if (hits.length) {
       var target = hits[hits.length - 1];
+      markHistory();
       state.draft.elements = state.draft.elements.filter(function (e) { return e.id !== target.id; });
       if (state.selectedId === target.id) state.selectedId = null;
       renderPalette();
@@ -463,6 +566,7 @@
     if (!state.draft) return;
     var check = LabelCertConfig.canAddElement(state.draft.elements, type, fieldId);
     if (!check.ok) { alert(check.reason); return; }
+    markHistory();
     var opts = { paper: state.draft.paper, tplType: state.type };
     if (type === 'fieldRow') {
       opts.fieldId = fieldId;
@@ -487,6 +591,7 @@
     if (!state.draft || !state.selectedId) return;
     var el = selectedEl();
     if (el && el.locked) { alert('元素已锁定，请先解锁'); return; }
+    markHistory();
     state.draft.elements = state.draft.elements.filter(function (e) { return e.id !== state.selectedId; });
     state.selectedId = null;
     renderPalette();
@@ -832,6 +937,8 @@
     var el = selectedEl();
     if (!el) return;
     if (!el.props) el.props = {};
+    if (el.props[key] === hex) return;
+    markHistory('content-color:' + el.id + ':' + key);
     el.props[key] = hex;
     syncColorPair($('lc_propContent'), key, hex);
     renderCanvas();
@@ -869,6 +976,7 @@
   function applyGeomFromInputs() {
     var el = selectedEl();
     if (!el) return;
+    markHistory('geom:' + el.id);
     document.querySelectorAll('#lc_propLayout [data-lc-geom]').forEach(function (input) {
       var key = input.getAttribute('data-lc-geom');
       var v = parseFloat(input.value);
@@ -890,6 +998,7 @@
     var el = selectedEl();
     if (!el) return;
     if (!el.props) el.props = {};
+    markHistory('content:' + el.id);
     document.querySelectorAll('#lc_propContent [data-lc-c]').forEach(function (input) {
       var key = input.getAttribute('data-lc-c');
       if (input.type === 'checkbox') {
@@ -1102,7 +1211,8 @@
         origY: el.yMm,
         origW: el.wMm,
         origH: el.hMm,
-        rect: rect
+        rect: rect,
+        historyMarked: false
       };
       e.preventDefault();
       return;
@@ -1120,6 +1230,10 @@
     var unit = state.scale * (state.zoom || 1);
     var dx = (e.clientX - state.drag.startX) / unit;
     var dy = (e.clientY - state.drag.startY) / unit;
+    if (!state.drag.historyMarked && (Math.abs(dx) > 0.02 || Math.abs(dy) > 0.02)) {
+      markHistory('drag:' + state.drag.id);
+      state.drag.historyMarked = true;
+    }
     if (state.drag.mode === 'move') {
       el.xMm = state.drag.origX + dx;
       el.yMm = state.drag.origY + dy;
@@ -1133,6 +1247,7 @@
 
   function onCanvasPointerUp() {
     if (!state.drag) return;
+    if (state.drag.historyMarked) endHistoryCoalesce();
     state.drag = null;
     renderPropPanel();
     refreshPreview();
@@ -1166,6 +1281,8 @@
       if (e.target.closest('[data-lc-close]')) { closeEditor(); return; }
       if (e.target.closest('[data-lc-save]')) { saveEditor(); return; }
       if (e.target.closest('[data-lc-refresh]')) { refreshPreview(); return; }
+      if (e.target.closest('[data-lc-undo]')) { undoEditor(); return; }
+      if (e.target.closest('[data-lc-redo]')) { redoEditor(); return; }
       var zoomBtn = e.target.closest('[data-lc-zoom]');
       if (zoomBtn) {
         nudgeZoom(parseInt(zoomBtn.getAttribute('data-lc-zoom'), 10) || 0);
@@ -1246,6 +1363,8 @@
         readClipboardText().then(function (txt) {
           var hex = parseColorText(txt);
           if (!hex) { alert('无法识别颜色'); return; }
+          markHistory('border-color');
+          endHistoryCoalesce();
           $('lc_e_borderColor').value = hex;
           syncBorderColorUi();
           syncPaperFromDom();
@@ -1255,6 +1374,8 @@
           var manual = window.prompt('粘贴 RGB 或十六进制颜色', '');
           var hex2 = parseColorText(manual);
           if (!hex2) return;
+          markHistory('border-color');
+          endHistoryCoalesce();
           $('lc_e_borderColor').value = hex2;
           syncBorderColorUi();
           syncPaperFromDom();
@@ -1266,6 +1387,7 @@
       if (e.target.closest('[data-lc-logo-clear]')) {
         var logoEl = selectedEl();
         if (logoEl && logoEl.type === 'logo') {
+          markHistory();
           logoEl.props = logoEl.props || {};
           logoEl.props.url = null;
           renderPropPanel();
@@ -1277,6 +1399,7 @@
 
       var layer = e.target.closest('[data-lc-layer]');
       if (layer && state.selectedId) {
+        markHistory();
         LabelCertConfig.bringToLayer(state.draft.elements, state.selectedId, layer.getAttribute('data-lc-layer'));
         renderCanvas();
         renderPropPanel();
@@ -1297,6 +1420,8 @@
       if (en) { setEnabled(en, e.target.checked); return; }
       if (e.target.getAttribute('data-lc-bind')) {
         var sid = e.target.getAttribute('data-lc-bind');
+        markHistory('bind');
+        endHistoryCoalesce();
         var list = state.draft.bindSampleIds || (state.draft.bindSampleIds = []);
         var ix = list.indexOf(sid);
         if (e.target.checked && ix < 0) list.push(sid);
@@ -1306,7 +1431,11 @@
       }
       if (e.target.getAttribute('data-lc-prop') === 'locked') {
         var el = selectedEl();
-        if (el) { el.locked = e.target.checked; renderCanvas(); }
+        if (el) {
+          markHistory();
+          el.locked = e.target.checked;
+          renderCanvas();
+        }
         return;
       }
       if (e.target.getAttribute('data-lc-logo-file') != null) {
@@ -1314,6 +1443,7 @@
         var logoTarget = selectedEl();
         if (!file || !logoTarget || logoTarget.type !== 'logo') return;
         readFileAsDataUrl(file, function (url) {
+          markHistory();
           logoTarget.props = logoTarget.props || {};
           logoTarget.props.source = 'custom';
           logoTarget.props.url = url;
@@ -1325,6 +1455,7 @@
       }
       if (e.target.closest('#lc_propContent') && e.target.getAttribute('data-lc-c')) {
         applyContentFromInputs();
+        endHistoryCoalesce();
         // 切换 Logo 来源时刷新内容区（显示/隐藏上传）
         if (e.target.getAttribute('data-lc-c') === 'source') renderPropPanel();
         if (e.target.getAttribute('data-lc-c') === 'opacity') syncOpacityLabel();
@@ -1339,6 +1470,8 @@
         return;
       }
       if (e.target.id === 'lc_e_borderColor') {
+        markHistory('border-color');
+        endHistoryCoalesce();
         syncBorderColorUi();
         syncPaperFromDom();
         renderCanvas();
@@ -1347,9 +1480,14 @@
       }
       if (e.target.id === 'lc_e_w' || e.target.id === 'lc_e_h') {
         syncPaperSizeFromInputs(true);
+        endHistoryCoalesce();
         return;
       }
-      if (e.target.id === 'lc_e_borderOn' || e.target.id === 'lc_e_borderWidth') {
+      if (e.target.id === 'lc_e_borderOn' || e.target.id === 'lc_e_borderWidth' ||
+          e.target.id === 'lc_e_mat' || e.target.id === 'lc_e_mount' || e.target.id === 'lc_e_print' ||
+          e.target.id === 'lc_e_name') {
+        markHistory('meta:' + e.target.id);
+        endHistoryCoalesce();
         syncPaperFromDom();
         renderCanvas();
         refreshPreview();
@@ -1371,11 +1509,18 @@
       if (e.target.id === 'lc_e_borderRgb') {
         var bHex = parseColorText(e.target.value);
         if (bHex) {
+          markHistory('border-color');
           $('lc_e_borderColor').value = bHex;
           syncPaperFromDom();
           renderCanvas();
           refreshPreview();
         }
+        return;
+      }
+      if (e.target.id === 'lc_e_name' || e.target.id === 'lc_e_mat' ||
+          e.target.id === 'lc_e_mount' || e.target.id === 'lc_e_print') {
+        markHistory('meta:' + e.target.id);
+        syncPaperFromDom();
         return;
       }
       if (e.target.closest('#lc_propContent') && e.target.getAttribute('data-lc-rgb')) {
@@ -1389,6 +1534,26 @@
         if (e.target.getAttribute('data-lc-c') === 'opacity') syncOpacityLabel();
         renderCanvas();
         refreshPreview();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      var modal = $('lc_editModal');
+      if (!modal || !modal.classList.contains('open') || !state.draft) return;
+      var tag = (e.target && e.target.tagName) || '';
+      var typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable);
+      if (!(e.ctrlKey || e.metaKey)) return;
+      var key = String(e.key || '').toLowerCase();
+      if (key === 'z' && !e.shiftKey) {
+        if (typing) return;
+        e.preventDefault();
+        undoEditor();
+        return;
+      }
+      if (key === 'y' || (key === 'z' && e.shiftKey)) {
+        if (typing) return;
+        e.preventDefault();
+        redoEditor();
       }
     });
 
