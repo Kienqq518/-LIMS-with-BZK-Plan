@@ -95,6 +95,7 @@
   function elementLayerOf(el) {
     if (global.LabelCertConfig && LabelCertConfig.elementLayer) return LabelCertConfig.elementLayer(el);
     if (!el) return 'content';
+    if (el.layer === 'bg' || el.layer === 'content' || el.layer === 'wm') return el.layer;
     if (el.type === 'staticText') return 'bg';
     if (el.type === 'seal' || el.type === 'watermarkText') return 'wm';
     return 'content';

@@ -69,11 +69,25 @@
   };
 
   /** 逻辑分区：背景层 / 内容层 / 水印层（编辑器元件库与显隐用） */
-  function elementLayer(elOrType) {
-    var type = typeof elOrType === 'string' ? elOrType : (elOrType && elOrType.type);
+  function inferLayerByType(type) {
     if (type === 'staticText') return 'bg';
     if (type === 'seal' || type === 'watermarkText') return 'wm';
     return 'content';
+  }
+
+  function normalizeLayer(layer, type) {
+    if (type === 'seal' || type === 'watermarkText') return 'wm';
+    if (type === 'staticText') {
+      return layer === 'content' ? 'content' : 'bg';
+    }
+    return 'content';
+  }
+
+  function elementLayer(elOrType) {
+    if (elOrType && typeof elOrType !== 'string') {
+      return normalizeLayer(elOrType.layer, elOrType.type);
+    }
+    return inferLayerByType(elOrType);
   }
 
   var DATE_FIELD_IDS = ['inspectDate', 'reinspectDate', 'validUntil', 'receiveDate'];
@@ -101,11 +115,14 @@
     return 'YYYY-MM-DD';
   }
 
-  function defaultZIndexForType(type) {
-    var layer = elementLayer(type);
+  function defaultZIndexForLayer(layer) {
     if (layer === 'bg') return 0;
     if (layer === 'wm') return 20;
     return 10;
+  }
+
+  function defaultZIndexForType(type) {
+    return defaultZIndexForLayer(inferLayerByType(type));
   }
 
   var SAMPLE_TREE = {
@@ -341,11 +358,13 @@
     var meta = ELEMENT_TYPES[type];
     if (!meta) throw new Error('unknown element type: ' + type);
     var box = opts.box || defaultBox(type, paper, opts);
-    var z = opts.zIndex != null ? opts.zIndex : defaultZIndexForType(type);
+    var layer = normalizeLayer(opts.layer, type);
+    var z = opts.zIndex != null ? opts.zIndex : defaultZIndexForLayer(layer);
     return {
       id: opts.id || elUid(),
       category: meta.category,
       type: type,
+      layer: layer,
       xMm: clamp(box.xMm, 0, 200, 0),
       yMm: clamp(box.yMm, 0, 200, 0),
       wMm: clamp(box.wMm, 1, 200, 10),
@@ -560,6 +579,7 @@
       id: el.id || elUid(),
       category: meta.category,
       type: el.type,
+      layer: normalizeLayer(el.layer, el.type),
       xMm: clamp(el.xMm, 0, 200, 0),
       yMm: clamp(el.yMm, 0, 200, 0),
       wMm: clamp(el.wMm, 0.5, 200, 10),

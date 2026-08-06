@@ -496,13 +496,14 @@
     applyPaperSize(w, h, scaleElements !== false);
   }
 
-  function findPaletteMatch(type, fieldId) {
+  function findPaletteMatch(type, fieldId, palLayer) {
     var els = (state.draft && state.draft.elements) || [];
     var hits = [];
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
       if (el.type !== type) continue;
       if (type === 'fieldRow' && fieldId && !(el.props && el.props.fieldId === fieldId)) continue;
+      if (palLayer && LabelCertConfig.elementLayer(el) !== palLayer) continue;
       hits.push(el);
     }
     return hits;
@@ -522,21 +523,23 @@
         LabelCertRender.esc(meta.name) + '</button>';
     }
 
-    /** 可重复：左侧点击循环选中，右侧 + 新增 */
-    function multiRow(type) {
+    /** 可重复：左侧点击循环选中，右侧 + 新增；palLayer 用于静态文本跨背景/内容分区 */
+    function multiRow(type, palLayer) {
       var meta = types[type];
-      var n = findPaletteMatch(type).length;
+      var hits = findPaletteMatch(type, null, palLayer);
+      var n = hits.length;
       var on = n > 0;
-      var selectedHere = on && findPaletteMatch(type).some(function (el) { return el.id === state.selectedId; });
+      var selectedHere = on && hits.some(function (el) { return el.id === state.selectedId; });
+      var layerAttr = palLayer ? (' data-pal-layer="' + palLayer + '"') : '';
       return '<div class="lc-pal-row">' +
         '<button type="button" class="lc-pal-item' + (on ? ' on' : '') + (selectedHere ? ' selected' : '') +
-          '" data-lc-cycle="' + type + '" title="' +
+          '" data-lc-cycle="' + type + '"' + layerAttr + ' title="' +
           (on ? ('点击循环选中已添加的 ' + n + ' 个') : '尚未添加，请点右侧 +') + '">' +
           LabelCertRender.esc(meta.name) +
           (n > 0 ? '<span class="lc-pal-count">×' + n + '</span>' : '') +
         '</button>' +
-        '<button type="button" class="lc-pal-add" data-lc-add="' + type + '" title="添加一个' +
-          LabelCertRender.esc(meta.name) + '"><i class="fa fa-plus"></i></button>' +
+        '<button type="button" class="lc-pal-add" data-lc-add="' + type + '"' + layerAttr +
+          ' title="添加一个' + LabelCertRender.esc(meta.name) + '"><i class="fa fa-plus"></i></button>' +
         '</div>';
     }
 
@@ -545,9 +548,9 @@
     }
 
     // 背景层：仅静态文本
-    var bgItems = multiRow('staticText');
+    var bgItems = multiRow('staticText', 'bg');
 
-    // 内容层：除检测章、文本水印外的全部
+    // 内容层：除检测章、文本水印外的全部（含静态文本）
     var brand = ['orgName', 'title', 'logo'].map(function (t) {
       var on = LabelCertConfig.hasElementType(state.draft.elements, t);
       return typeBtn(t, '', on, on ? '再次点击移除' : '');
@@ -559,11 +562,12 @@
         LabelCertRender.esc(f.label) + '</button>';
     }).join('');
     var qrOn = findPaletteMatch('qr').length > 0;
-    var contentExtra = typeBtn('qr', '', qrOn, qrOn ? '再次点击移除' : '') +
-      ['line', 'hangHole'].map(multiRow).join('');
+    var contentExtra = multiRow('staticText', 'content') +
+      typeBtn('qr', '', qrOn, qrOn ? '再次点击移除' : '') +
+      ['line', 'hangHole'].map(function (t) { return multiRow(t); }).join('');
 
     // 水印层：检测章 + 文本水印
-    var wmItems = ['seal', 'watermarkText'].map(multiRow).join('');
+    var wmItems = ['seal', 'watermarkText'].map(function (t) { return multiRow(t, 'wm'); }).join('');
 
     box.innerHTML =
       '<div class="lc-pal-layer" data-layer="bg">' +
@@ -575,7 +579,7 @@
         '<div class="lc-pal-items">' +
           subTitle('品牌标识') + brand +
           subTitle('业务字段') + fields +
-          subTitle('码与辅助') + contentExtra +
+          subTitle('文本与辅助') + contentExtra +
         '</div>' +
       '</div>' +
       '<div class="lc-pal-layer" data-layer="wm">' +
@@ -623,8 +627,8 @@
   }
 
   /** 在可重复类型中循环选中已有元素（元件库单击水印/章时使用） */
-  function selectExistingOfType(type, fieldId) {
-    var hits = findPaletteMatch(type, fieldId);
+  function selectExistingOfType(type, fieldId, palLayer) {
+    var hits = findPaletteMatch(type, fieldId, palLayer);
     if (!hits.length) return false;
     // 按叠放顺序从底到顶循环，便于先点到底层水印
     hits = hits.slice().sort(function (a, b) {
@@ -648,15 +652,15 @@
     if (isRepeatableType(type)) {
       // 右侧 + 或 forceAdd：始终新增
       if (opts.forceAdd) {
-        addElement(type, fieldId);
+        addElement(type, fieldId, opts);
         return;
       }
       // 兼容：无已有则添加，有则循环选中
-      if (selectExistingOfType(type, fieldId)) return;
-      addElement(type, fieldId);
+      if (selectExistingOfType(type, fieldId, opts.layer)) return;
+      addElement(type, fieldId, opts);
       return;
     }
-    var hits = findPaletteMatch(type, fieldId);
+    var hits = findPaletteMatch(type, fieldId, opts.layer);
     if (hits.length) {
       var target = hits[hits.length - 1];
       markHistory();
@@ -668,15 +672,17 @@
       refreshPreview();
       return;
     }
-    addElement(type, fieldId);
+    addElement(type, fieldId, opts);
   }
 
-  function addElement(type, fieldId) {
+  function addElement(type, fieldId, optsExtra) {
     if (!state.draft) return;
+    optsExtra = optsExtra || {};
     var check = LabelCertConfig.canAddElement(state.draft.elements, type, fieldId);
     if (!check.ok) { alert(check.reason); return; }
     markHistory();
     var opts = { paper: state.draft.paper, tplType: state.type };
+    if (optsExtra.layer) opts.layer = optsExtra.layer;
     if (type === 'fieldRow') {
       opts.fieldId = fieldId;
       opts.label = LabelCertConfig.fieldLabel(state.type, fieldId);
@@ -1537,18 +1543,24 @@
       var cycleBtn = e.target.closest('[data-lc-cycle]');
       if (cycleBtn) {
         var ctype = cycleBtn.getAttribute('data-lc-cycle');
-        if (!selectExistingOfType(ctype)) {
+        var cLayer = cycleBtn.getAttribute('data-pal-layer') || undefined;
+        if (!selectExistingOfType(ctype, null, cLayer)) {
           // 尚未添加时，点击名称也先添加一枚
-          addElement(ctype);
+          addElement(ctype, null, { layer: cLayer });
         }
         return;
       }
       var addBtn = e.target.closest('[data-lc-add]');
       if (addBtn) {
+        var addType = addBtn.getAttribute('data-lc-add');
+        var addLayer = addBtn.getAttribute('data-pal-layer') || undefined;
         toggleElement(
-          addBtn.getAttribute('data-lc-add'),
+          addType,
           addBtn.getAttribute('data-field'),
-          { forceAdd: isRepeatableType(addBtn.getAttribute('data-lc-add')) || !!e.shiftKey }
+          {
+            forceAdd: isRepeatableType(addType) || !!e.shiftKey,
+            layer: addLayer
+          }
         );
         return;
       }
