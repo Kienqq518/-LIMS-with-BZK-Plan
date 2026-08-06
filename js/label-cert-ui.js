@@ -16,7 +16,8 @@
     selectedId: null,
     propTab: 'layout', // layout | content
     scale: 3.78, // px per mm，与 LabelCertRender.mmToPx 对齐，便于预览叠层
-    drag: null
+    drag: null,
+    lastPaper: null // { wMm, hMm } 用于纸张变更时等比缩放元素
   };
 
   function $(id) { return document.getElementById(id); }
@@ -284,6 +285,7 @@
     $('lc_e_name').value = tpl.name || '';
     $('lc_e_w').value = tpl.paper.wMm;
     $('lc_e_h').value = tpl.paper.hMm;
+    state.lastPaper = { wMm: tpl.paper.wMm, hMm: tpl.paper.hMm };
     $('lc_e_borderOn').value = tpl.paper.border && tpl.paper.border.enabled ? '1' : '0';
     $('lc_e_borderColor').value = (tpl.paper.border && tpl.paper.border.color) || '#cbd5e1';
     syncBorderColorUi();
@@ -292,10 +294,11 @@
     $('lc_e_mount').value = (tpl.meta && tpl.meta.mount) || '';
     $('lc_e_print').value = (tpl.meta && tpl.meta.printMethod) || '';
     $('lc_e_roleHint').textContent = state.editingIsDefault
-      ? '默认模版：自由设计版式；不可删除 / 停用 / 绑定样品。'
-      : '个性化模版：保存并启用前须绑定 ≥1 个样品叶节点。可从空白或复制已有模版而来。';
+      ? '默认模版：自由设计版式；不可删除 / 停用 / 绑定样品。修改纸张宽高时元素等比缩放。'
+      : '个性化模版：保存并启用前须绑定 ≥1 个样品叶节点。修改纸张宽高时元素等比缩放。';
     var bindSec = $('lc_bindSection');
     if (bindSec) bindSec.classList.toggle('hidden', state.editingIsDefault);
+    renderPaperSizeChips();
     renderPalette();
     renderCanvas();
     renderPropPanel();
@@ -304,11 +307,42 @@
     syncPropTabs();
   }
 
+  function renderPaperSizeChips() {
+    var host = $('lc_paperSizeChips');
+    if (!host) return;
+    var presets = LabelCertConfig.PAPER_SIZE_PRESETS || [];
+    var curW = state.draft && state.draft.paper ? state.draft.paper.wMm : 0;
+    var curH = state.draft && state.draft.paper ? state.draft.paper.hMm : 0;
+    host.innerHTML = presets.map(function (p) {
+      var on = Math.abs(p.wMm - curW) < 0.05 && Math.abs(p.hMm - curH) < 0.05;
+      return '<button type="button" class="lc-mini-btn' + (on ? ' on' : '') + '" data-lc-paper-size="' + p.id + '" title="应用到纸张并等比缩放元素">' +
+        LabelCertRender.esc(p.name) + ' ' + p.wMm + '×' + p.hMm + '</button>';
+    }).join('');
+  }
+
+  function applyPaperSize(wMm, hMm, scaleElements) {
+    if (!state.draft) return;
+    wMm = Math.max(20, Math.min(200, Number(wMm)));
+    hMm = Math.max(15, Math.min(200, Number(hMm)));
+    if (!isFinite(wMm) || !isFinite(hMm)) return;
+    var from = state.lastPaper || { wMm: state.draft.paper.wMm, hMm: state.draft.paper.hMm };
+    if (scaleElements !== false && from.wMm > 0 && from.hMm > 0) {
+      LabelCertConfig.scaleElementsToPaper(state.draft.elements, from, { wMm: wMm, hMm: hMm });
+    }
+    state.draft.paper.wMm = wMm;
+    state.draft.paper.hMm = hMm;
+    state.lastPaper = { wMm: wMm, hMm: hMm };
+    $('lc_e_w').value = wMm;
+    $('lc_e_h').value = hMm;
+    renderPaperSizeChips();
+    renderCanvas();
+    renderPropPanel();
+    refreshPreview();
+  }
+
   function syncPaperFromDom() {
     if (!state.draft) return;
     state.draft.name = ($('lc_e_name').value || '').trim();
-    state.draft.paper.wMm = parseFloat($('lc_e_w').value) || state.draft.paper.wMm;
-    state.draft.paper.hMm = parseFloat($('lc_e_h').value) || state.draft.paper.hMm;
     if (!state.draft.paper.border) state.draft.paper.border = { enabled: true, color: '#cbd5e1', widthPx: 1 };
     state.draft.paper.border.enabled = $('lc_e_borderOn').value !== '0';
     state.draft.paper.border.color = $('lc_e_borderColor').value || '#cbd5e1';
@@ -318,6 +352,19 @@
       mount: $('lc_e_mount').value || '',
       printMethod: $('lc_e_print').value || ''
     };
+    // 宽高由 applyPaperSize / 尺寸快捷管理，避免无缩放地覆盖
+    if (state.lastPaper) {
+      state.draft.paper.wMm = state.lastPaper.wMm;
+      state.draft.paper.hMm = state.lastPaper.hMm;
+    }
+  }
+
+  function syncPaperSizeFromInputs(scaleElements) {
+    if (!state.draft) return;
+    var w = parseFloat($('lc_e_w').value);
+    var h = parseFloat($('lc_e_h').value);
+    if (!(w >= 20 && w <= 200 && h >= 15 && h <= 200)) return;
+    applyPaperSize(w, h, scaleElements !== false);
   }
 
   function findPaletteMatch(type, fieldId) {
@@ -1059,6 +1106,16 @@
       if (e.target.closest('[data-lc-create-close]')) { closeCreateChooser(); return; }
       if (e.target.closest('#lc_c_confirm')) { confirmCreate(); return; }
 
+      var paperSizeBtn = e.target.closest('[data-lc-paper-size]');
+      if (paperSizeBtn) {
+        var pid = paperSizeBtn.getAttribute('data-lc-paper-size');
+        var presets = LabelCertConfig.PAPER_SIZE_PRESETS || [];
+        var hit = null;
+        for (var pi = 0; pi < presets.length; pi++) if (presets[pi].id === pid) hit = presets[pi];
+        if (hit) applyPaperSize(hit.wMm, hit.hMm, true);
+        return;
+      }
+
       var addBtn = e.target.closest('[data-lc-add]');
       if (addBtn) {
         toggleElement(addBtn.getAttribute('data-lc-add'), addBtn.getAttribute('data-field'));
@@ -1208,8 +1265,11 @@
         refreshPreview();
         return;
       }
-      if (e.target.id === 'lc_e_w' || e.target.id === 'lc_e_h' || e.target.id === 'lc_e_borderOn' ||
-          e.target.id === 'lc_e_borderWidth') {
+      if (e.target.id === 'lc_e_w' || e.target.id === 'lc_e_h') {
+        syncPaperSizeFromInputs(true);
+        return;
+      }
+      if (e.target.id === 'lc_e_borderOn' || e.target.id === 'lc_e_borderWidth') {
         syncPaperFromDom();
         renderCanvas();
         refreshPreview();

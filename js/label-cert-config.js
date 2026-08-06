@@ -767,6 +767,27 @@
     return cfg;
   }
 
+  /** 含悬挂孔的合格证统一到样例尺寸 50×25，并等比缩放元素 */
+  function migrateHangPaper50x25(cfg) {
+    if (!cfg || cfg._migrateHangPaper50x25) return cfg;
+    CATEGORIES.forEach(function (c) {
+      var bucket = getBucket(cfg, c.key, 'certificate');
+      (bucket.templates || []).forEach(function (t) {
+        if (!t || !Array.isArray(t.elements)) return;
+        var hasHole = t.elements.some(function (el) { return el.type === 'hangHole'; });
+        if (!hasHole || !t.paper) return;
+        var tw = 50;
+        var th = 25;
+        if (Math.abs(t.paper.wMm - tw) < 0.05 && Math.abs(t.paper.hMm - th) < 0.05) return;
+        scaleElementsToPaper(t.elements, { wMm: t.paper.wMm, hMm: t.paper.hMm }, { wMm: tw, hMm: th });
+        t.paper.wMm = tw;
+        t.paper.hMm = th;
+      });
+    });
+    cfg._migrateHangPaper50x25 = 1;
+    return cfg;
+  }
+
   function load() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
@@ -774,6 +795,7 @@
         var parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
           migrateFreeLayout(parsed);
+          migrateHangPaper50x25(parsed);
           normalizeConfig(parsed);
           save(parsed);
           return parsed;
@@ -781,6 +803,7 @@
       }
     } catch (e) { /* ignore */ }
     var cfg = buildDefaultConfig();
+    cfg._migrateHangPaper50x25 = 1;
     normalizeConfig(cfg);
     save(cfg);
     return cfg;
@@ -894,6 +917,42 @@
     return list;
   }
 
+  function round2(n) {
+    return Math.round(Number(n) * 100) / 100;
+  }
+
+  /** 纸张尺寸变化时，按宽/高比例缩放全部元素（位置、尺寸、字号） */
+  function scaleElementsToPaper(elements, fromPaper, toPaper) {
+    fromPaper = fromPaper || {};
+    toPaper = toPaper || {};
+    var ox = Number(fromPaper.wMm);
+    var oy = Number(fromPaper.hMm);
+    var nx = Number(toPaper.wMm);
+    var ny = Number(toPaper.hMm);
+    if (!(ox > 0 && oy > 0 && nx > 0 && ny > 0)) return elements;
+    var sx = nx / ox;
+    var sy = ny / oy;
+    if (Math.abs(sx - 1) < 1e-6 && Math.abs(sy - 1) < 1e-6) return elements;
+    var sf = Math.sqrt(Math.abs(sx * sy));
+    (elements || []).forEach(function (el) {
+      el.xMm = round2(el.xMm * sx);
+      el.yMm = round2(el.yMm * sy);
+      el.wMm = Math.max(0.5, round2(el.wMm * sx));
+      el.hMm = Math.max(0.5, round2(el.hMm * sy));
+      if (el.xMm + el.wMm > nx) el.xMm = Math.max(0, round2(nx - el.wMm));
+      if (el.yMm + el.hMm > ny) el.yMm = Math.max(0, round2(ny - el.hMm));
+      if (el.props) {
+        if (el.props.fontSize != null) {
+          el.props.fontSize = Math.max(6, Math.min(48, Math.round(Number(el.props.fontSize) * sf)));
+        }
+        if (el.props.widthPx != null) {
+          el.props.widthPx = Math.max(1, Math.round(Number(el.props.widthPx) * sf));
+        }
+      }
+    });
+    return elements;
+  }
+
   global.LabelCertConfig = {
     STORAGE_KEY: STORAGE_KEY,
     DEFAULT_ORG: DEFAULT_ORG,
@@ -931,6 +990,7 @@
     usedFieldIds: usedFieldIds,
     hasElementType: hasElementType,
     bringToLayer: bringToLayer,
+    scaleElementsToPaper: scaleElementsToPaper,
     poolForType: poolForType,
     payloadTypeFor: payloadTypeFor,
     templateTypeOf: templateTypeOf,
