@@ -14,6 +14,8 @@
     '#prototype-annotation-root { position: absolute; top: 0; left: 0; width: 0; height: 0; pointer-events: none; z-index: 9990; overflow: visible; }',
     '#prototype-annotation-root * { pointer-events: auto; }',
     '.pa-toggle { position: fixed; right: 20px; bottom: 20px; z-index: 10001; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 14px rgba(15,23,42,.18); cursor: pointer; border: none; transition: all .2s; }',
+    /* 弹窗打开时移到左下，避免遮挡右下角取消/保存等操作按钮 */
+    '.pa-toggle.pa-modal-open { right: auto; left: 20px; }',
     '.pa-toggle.off { background: #fff; color: #475569; }',
     '.pa-toggle.on { background: #f97316; color: #fff; }',
     '.pa-marker { position: absolute; z-index: 9995; width: 22px; height: 22px; border-radius: 50%; background: #f97316; color: #fff; font-size: 12px; font-weight: 700; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(249,115,22,.45); cursor: pointer; border: 2px solid #fff; }',
@@ -54,6 +56,8 @@
     var obs = window._paModalObserver;
     if (obs) obs.disconnect();
     focusScopeEl = detectFocusScope();
+    var toggle = document.querySelector('.pa-toggle');
+    if (toggle) toggle.classList.toggle('pa-modal-open', !!focusScopeEl);
     config.annotations.forEach(function (item) {
       var inScope = isInFocusScope(item._target);
       if (item._marker) {

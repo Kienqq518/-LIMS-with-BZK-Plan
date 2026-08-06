@@ -428,8 +428,9 @@
       grid-template-columns: minmax(140px, 1.1fr) 88px 88px minmax(260px, 1.6fr);
       align-items: start;
     }
-    .lc-meta-row.r-border { grid-template-columns: 88px minmax(200px, 1.2fr) 88px; }
-    .lc-meta-row.r-meta { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .lc-meta-row.r-extra {
+      grid-template-columns: 72px minmax(180px, 1.1fr) 72px minmax(100px, .9fr) minmax(100px, .9fr) minmax(110px, 1fr);
+    }
     .lc-meta-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .lc-meta-field > span,
     .lc-meta-field > .lc-meta-label {
@@ -459,12 +460,11 @@
       font-size: 10px; color: #94a3b8; line-height: 1.2;
     }
     .lc-meta-border-color .lc-color-row { margin-top: 0; }
-    @media (max-width: 1200px) {
+    @media (max-width: 1280px) {
       .lc-meta-row.r-name { grid-template-columns: minmax(140px, 1fr) 88px 88px; }
       .lc-meta-row.r-name .lc-meta-size { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
       .lc-meta-size #lc_paperSizeChips { justify-content: flex-start; }
-      .lc-meta-row.r-border,
-      .lc-meta-row.r-meta { grid-template-columns: 1fr 1fr; }
+      .lc-meta-row.r-extra { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     .lc-create-tabs { display: flex; gap: 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 12px; }
     .lc-create-tabs button {
@@ -862,7 +862,7 @@
               <span class="lc-meta-size-hint">应用后内部元素等比缩放</span>
             </div>
           </div>
-          <div class="lc-meta-row r-border">
+          <div class="lc-meta-row r-extra">
             <label class="lc-meta-field"><span>边框</span>
               <select id="lc_e_borderOn">
                 <option value="1">有</option>
@@ -879,8 +879,6 @@
               </div>
             </div>
             <label class="lc-meta-field"><span>边框粗细</span><input id="lc_e_borderWidth" type="number" min="0" max="8" /></label>
-          </div>
-          <div class="lc-meta-row r-meta">
             <label class="lc-meta-field"><span>材质</span><input id="lc_e_mat" placeholder="如：不粘胶纸" /></label>
             <label class="lc-meta-field"><span>安装方式</span><input id="lc_e_mount" placeholder="如：粘贴 / 悬挂" /></label>
             <label class="lc-meta-field"><span>赋码打印方式</span><input id="lc_e_print" placeholder="如：喷墨 / 热转印" /></label>
