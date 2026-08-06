@@ -664,14 +664,17 @@
     } else if (el.type === 'orgName' || el.type === 'title' || el.type === 'staticText' || el.type === 'watermarkText') {
       html +=
         '<label class="text-xs text-slate-600 block mb-2">文案<textarea data-lc-c="text" rows="2" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm">' +
-        LabelCertRender.esc(p.text || '') + '</textarea></label>' +
+        LabelCertRender.esc(p.text || '') + '</textarea></label>';
+      if (el.type === 'watermarkText') {
+        html += opacityField(Math.round((p.opacity != null ? p.opacity : 0.18) * 100),
+          '拖动调整水印浓淡（5%–100%）');
+      }
+      html +=
         numContent('字号', 'fontSize', p.fontSize || 11) +
         colorField('颜色', 'color', p.color || '#1e293b') +
         selectField('对齐', 'align', p.align || 'center', [['left', '居左'], ['center', '居中'], ['right', '居右']]);
       if (el.type === 'watermarkText') {
-        html += numContent('透明度', 'opacity', Math.round((p.opacity != null ? p.opacity : 0.18) * 100)) +
-          '<p class="text-[10px] text-slate-400 -mt-1 mb-2">透明度输入 5–80（百分比）</p>' +
-          '<label class="text-xs text-slate-600 flex items-center gap-1 mb-2"><input type="checkbox" data-lc-c="tile"' +
+        html += '<label class="text-xs text-slate-600 flex items-center gap-1 mb-2"><input type="checkbox" data-lc-c="tile"' +
           (p.tile ? ' checked' : '') + ' /> 平铺</label>';
       }
     } else if (el.type === 'logo') {
@@ -699,8 +702,8 @@
       }
     } else if (el.type === 'seal') {
       html += selectField('来源', 'source', p.source || 'system', [['system', '系统检测章'], ['custom', '自定义（需 url）']]) +
-        numContent('透明度', 'opacity', Math.round((p.opacity != null ? p.opacity : 0.42) * 100)) +
-        '<p class="text-[10px] text-slate-400 -mt-1 mb-2">透明度输入 5–100（百分比）</p>';
+        opacityField(Math.round((p.opacity != null ? p.opacity : 0.42) * 100),
+          '拖动调整检测章浓淡（5%–100%）');
     } else if (el.type === 'qr') {
       html += '<p class="text-xs text-slate-500 mb-2">载荷类型（只读）：<b>' +
         (p.payloadType === 'sample_flow' ? '样品流转' : '合格证短链') + '</b></p>' +
@@ -727,6 +730,28 @@
     return '<label class="text-xs text-slate-600 block mb-2">' + label +
       '<input type="number" data-lc-c="' + key + '" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" value="' +
       val + '" /></label>';
+  }
+
+  function opacityField(pct, hint) {
+    pct = Math.round(Math.max(5, Math.min(100, Number(pct) || 18)));
+    return '<div class="lc-opacity-field mb-2">' +
+      '<div class="lc-opacity-head">' +
+        '<span>透明度</span>' +
+        '<span data-lc-opacity-label>' + pct + '%</span>' +
+      '</div>' +
+      '<input type="range" min="5" max="100" step="1" data-lc-c="opacity" class="lc-opacity-range" value="' + pct + '" />' +
+      '<p class="lc-opacity-hint">' + (hint || '拖动调整浓淡（5%–100%，数值越大越不透明）') + '</p>' +
+      '</div>';
+  }
+
+  function syncOpacityLabel() {
+    var el = selectedEl();
+    var lab = document.querySelector('#lc_propContent [data-lc-opacity-label]');
+    var range = document.querySelector('#lc_propContent [data-lc-c="opacity"]');
+    if (!el || !el.props || el.props.opacity == null) return;
+    var pct = Math.round(el.props.opacity * 100);
+    if (lab) lab.textContent = pct + '%';
+    if (range && String(range.value) !== String(pct)) range.value = String(pct);
   }
 
   function hexToRgb(hex) {
@@ -1302,6 +1327,7 @@
         applyContentFromInputs();
         // 切换 Logo 来源时刷新内容区（显示/隐藏上传）
         if (e.target.getAttribute('data-lc-c') === 'source') renderPropPanel();
+        if (e.target.getAttribute('data-lc-c') === 'opacity') syncOpacityLabel();
         renderCanvas();
         refreshPreview();
         return;
@@ -1360,6 +1386,7 @@
       }
       if (e.target.closest('#lc_propContent') && e.target.getAttribute('data-lc-c')) {
         applyContentFromInputs();
+        if (e.target.getAttribute('data-lc-c') === 'opacity') syncOpacityLabel();
         renderCanvas();
         refreshPreview();
       }

@@ -469,7 +469,7 @@
       props.opacity = clamp(props.opacity, 0.05, 1, el.type === 'seal' ? 0.42 : 1);
     }
     if (el.type === 'watermarkText') {
-      props.opacity = clamp(props.opacity, 0.05, 0.8, 0.18);
+      props.opacity = clamp(props.opacity, 0.05, 1, 0.18);
       props.tile = !!props.tile;
     }
     if (el.type === 'line') {
