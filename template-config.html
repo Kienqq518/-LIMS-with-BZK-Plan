@@ -6,6 +6,7 @@
   <title>模板管理 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;600&family=ZCOOL+XiaoWei&family=Ma+Shan+Zheng&display=swap" />
   <style>
     /* 关键 show/hide：不依赖 Tailwind CDN（CDN 不可达时否则大类页无法进入详情） */
     .hidden { display: none !important; }
@@ -472,6 +473,13 @@
       font-size: 10px; color: #94a3b8; line-height: 1.2;
     }
     .lc-meta-border-color .lc-color-row { margin-top: 0; }
+    .lc-meta-bind {
+      padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;
+    }
+    .lc-meta-bind-head {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px;
+    }
+    .lc-meta-bind .lc-ms { max-width: none; }
     .lc-opacity-field { padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
     .lc-opacity-head {
       display: flex; align-items: center; justify-content: space-between;
@@ -907,6 +915,14 @@
             <label class="lc-meta-field"><span>安装方式</span><input id="lc_e_mount" placeholder="如：粘贴 / 悬挂" /></label>
             <label class="lc-meta-field"><span>赋码打印方式</span><input id="lc_e_print" placeholder="如：喷墨 / 热转印" /></label>
           </div>
+          <div id="lc_bindSection" class="lc-meta-bind" data-annotate="label-cert-edit-bind">
+            <div class="lc-meta-bind-head">
+              <span class="lc-meta-label">绑定样品 <span class="text-rose-500">*</span></span>
+              <span class="text-[10px] text-slate-400">个性化模版须绑定 ≥1 个样品叶节点</span>
+            </div>
+            <div id="lc_bindSamples"></div>
+            <p id="lc_bindHint" class="mt-1 text-xs text-amber-600"></p>
+          </div>
         </div>
         <div class="lc-free-shell" data-annotate="label-cert-edit-fields">
           <div class="lc-edit-work">
@@ -941,15 +957,9 @@
                 <button type="button" data-lc-prop-tab="content">内容</button>
               </div>
               <div class="lc-prop-body">
-                <p id="lc_propEmpty" class="text-xs text-slate-400">选中画布元素后，可调整布局坐标与内容样式。</p>
+                <p id="lc_propEmpty" class="text-xs text-slate-400">选中画布元素后，可调整布局坐标与内容样式。<br/>下层元素被挡住时：<b>Alt+点击</b>可穿透切换选中。</p>
                 <div id="lc_propLayout"></div>
                 <div id="lc_propContent" class="hidden"></div>
-                <section id="lc_bindSection" class="mt-4 border-t border-slate-100 pt-3" data-annotate="label-cert-edit-bind">
-                  <h4 class="text-xs font-semibold text-slate-700 mb-1">绑定样品 <span class="text-rose-500">*</span></h4>
-                  <p class="mb-2 text-[11px] text-slate-400">个性化须绑定 ≥1 个叶节点。</p>
-                  <div id="lc_bindSamples"></div>
-                  <p id="lc_bindHint" class="mt-2 text-xs text-amber-600"></p>
-                </section>
               </div>
             </aside>
           </div>

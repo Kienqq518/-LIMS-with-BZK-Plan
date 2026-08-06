@@ -104,6 +104,14 @@
       'px;z-index:' + (el.zIndex || 0) + ';box-sizing:border-box;overflow:hidden;' + rot;
   }
 
+  function fontFamilyCss(p) {
+    var id = p && p.fontFamily;
+    var css = (global.LabelCertConfig && LabelCertConfig.fontCssById)
+      ? LabelCertConfig.fontCssById(id)
+      : '';
+    return css ? ('font-family:' + css + ';') : '';
+  }
+
   function renderFieldRow(el, data) {
     var p = el.props || {};
     var color = p.color || '#1e293b';
@@ -111,7 +119,8 @@
     var align = p.valueAlign || 'left';
     var label = p.showLabel === false ? '' : ('<span class="lc-el-k">' + esc(p.label || '') + '：</span>');
     return '<div class="lc-el lc-el-field" style="' + elBoxStyle(el) + alignCss(align) +
-      'display:flex;align-items:baseline;gap:2px;font-size:' + fs + 'px;color:' + esc(color) + ';">' +
+      'display:flex;align-items:baseline;gap:2px;font-size:' + fs + 'px;color:' + esc(color) + ';' +
+      fontFamilyCss(p) + '">' +
       label +
       '<span class="lc-el-v" style="flex:1;min-width:0;' + underlineCss(p.underline, color) + '">' +
       esc(fieldValue(p.fieldId, data)) + '</span></div>';
@@ -122,7 +131,7 @@
     var opacity = p.opacity != null ? p.opacity : 1;
     return '<div class="lc-el ' + className + '" style="' + elBoxStyle(el) + alignCss(p.align) +
       'display:flex;align-items:center;font-size:' + (p.fontSize || 11) + 'px;color:' + esc(p.color || '#1e293b') +
-      ';opacity:' + opacity + ';white-space:pre-wrap;word-break:break-all;">' +
+      ';opacity:' + opacity + ';' + fontFamilyCss(p) + 'white-space:pre-wrap;word-break:break-all;">' +
       esc(p.text || '') + '</div>';
   }
 
@@ -146,8 +155,8 @@
   function renderWatermarkText(el) {
     var p = el.props || {};
     if (p.tile) {
-      var cell = '<div style="font-size:' + (p.fontSize || 28) + 'px;color:' + esc(p.color || '#16a34a') +
-        ';transform:rotate(' + (el.rotationDeg || 0) + 'deg);">' + esc(p.text || '格') + '</div>';
+      var cell = '<div style="font-size:' + (p.fontSize || 28) + 'px;color:' + esc(p.color || '#16a34a') + ';' +
+        fontFamilyCss(p) + 'transform:rotate(' + (el.rotationDeg || 0) + 'deg);">' + esc(p.text || '格') + '</div>';
       var tiles = '';
       for (var i = 0; i < 6; i++) tiles += '<div class="lc-wm-tile">' + cell + '</div>';
       return '<div class="lc-el lc-el-wm-tile" style="position:absolute;left:0;top:0;right:0;bottom:0;z-index:' +

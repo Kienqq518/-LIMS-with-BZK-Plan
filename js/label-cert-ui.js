@@ -515,17 +515,21 @@
 
     var code = ['qr', 'seal', 'watermarkText'].map(function (t) {
       var on = findPaletteMatch(t).length > 0;
-      // 检测章/文本水印可多枚：点击始终新增；二维码仍为开关
+      // 检测章/文本水印可多枚：点击新增；Alt+点击选中已有（便于点到被挡住的水印）
       if (t === 'seal' || t === 'watermarkText') {
         var n = findPaletteMatch(t).length;
-        return typeBtn(t, '', n > 0, n > 0 ? ('已添加 ' + n + ' 个，点击继续添加') : '点击添加（可重复）');
+        return typeBtn(t, '', n > 0, n > 0
+          ? ('已添加 ' + n + ' 个；点击继续添加，Alt+点击选中已有')
+          : '点击添加（可重复）');
       }
       return typeBtn(t, '', on, on ? '再次点击移除' : '');
     }).join('');
 
     var decor = ['staticText', 'line', 'hangHole'].map(function (t) {
       var n = findPaletteMatch(t).length;
-      return typeBtn(t, '', n > 0, n > 0 ? ('已添加 ' + n + ' 个，点击继续添加') : '点击添加（可重复）');
+      return typeBtn(t, '', n > 0, n > 0
+        ? ('已添加 ' + n + ' 个；点击继续添加，Alt+点击选中已有')
+        : '点击添加（可重复）');
     }).join('');
 
     box.innerHTML =
@@ -540,10 +544,30 @@
       type === 'seal' || type === 'watermarkText';
   }
 
+  /** 在可重复类型中循环选中已有元素（用于被挡住时从元件库选中） */
+  function selectExistingOfType(type, fieldId) {
+    var hits = findPaletteMatch(type, fieldId);
+    if (!hits.length) return false;
+    var ids = hits.map(function (e) { return e.id; });
+    var ix = ids.indexOf(state.selectedId);
+    state.selectedId = ids[(ix + 1) % ids.length];
+    state.propTab = 'layout';
+    renderPalette();
+    renderCanvas();
+    renderPropPanel();
+    syncPropTabs();
+    return true;
+  }
+
   /** 元件库：唯一类开关；装饰辅助等可重复类型每次点击新增 */
-  function toggleElement(type, fieldId) {
+  function toggleElement(type, fieldId, opts) {
+    opts = opts || {};
     if (!state.draft) return;
     if (isRepeatableType(type)) {
+      if (opts.selectExisting) {
+        if (!selectExistingOfType(type, fieldId)) addElement(type, fieldId);
+        return;
+      }
       addElement(type, fieldId);
       return;
     }
@@ -728,17 +752,16 @@
           numField('层级', 'zIndex', el.zIndex) +
           numField('旋转°', 'rotationDeg', el.rotationDeg || 0) +
         '</div>' +
-        '<p class="text-[10px] text-slate-400 mb-2 leading-relaxed">叠放顺序（非图层数量）：数字越大越靠上。当前约第 ' +
-          rank.index + ' / 共 ' + rank.total + '。水印/章可用置底/置顶。</p>' +
+        '<p class="text-[10px] text-slate-400 mb-2 leading-relaxed">叠放顺序：数字越大越靠上。当前约第 ' +
+          rank.index + ' / 共 ' + rank.total + '。被挡住时可用 Alt+点击切换，或点「选中下层」。</p>' +
         '<div class="lc-prop-actions">' +
           '<label class="text-xs text-slate-600 flex items-center gap-1"><input type="checkbox" data-lc-prop="locked"' +
             (el.locked ? ' checked' : '') + ' /> 锁定</label>' +
+          '<button type="button" class="lc-mini-btn" data-lc-select-below title="选中当前元素正下方被挡住的元素">选中下层</button>' +
           '<button type="button" class="lc-mini-btn" data-lc-layer="up">上移一层</button>' +
           '<button type="button" class="lc-mini-btn" data-lc-layer="down">下移一层</button>' +
-          ((el.type === 'seal' || el.type === 'watermarkText')
-            ? '<button type="button" class="lc-mini-btn" data-lc-layer="bottom">置于底层</button>' +
-              '<button type="button" class="lc-mini-btn" data-lc-layer="top">置于顶层</button>'
-            : '') +
+          '<button type="button" class="lc-mini-btn" data-lc-layer="bottom">置于底层</button>' +
+          '<button type="button" class="lc-mini-btn" data-lc-layer="top">置于顶层</button>' +
           '<button type="button" class="lc-mini-btn danger" data-lc-del-el>删除元素</button>' +
         '</div>';
     }
@@ -764,6 +787,7 @@
         selectField('值对齐', 'valueAlign', p.valueAlign || 'left', [['left', '居左'], ['center', '居中'], ['right', '居右']]) +
         selectField('下划线', 'underline', p.underline || 'dotted', [['none', '无'], ['solid', '直线'], ['dotted', '断点'], ['dashed', '断线']]) +
         numContent('字号', 'fontSize', p.fontSize || 11) +
+        fontFamilyField(p.fontFamily) +
         colorField('颜色', 'color', p.color || '#1e293b') +
         '<p class="text-xs text-slate-400 mt-2">绑定字段：' + LabelCertRender.esc(p.fieldId) + '（不可改；删除后可重新添加）</p>';
     } else if (el.type === 'orgName' || el.type === 'title' || el.type === 'staticText' || el.type === 'watermarkText') {
@@ -772,15 +796,19 @@
         LabelCertRender.esc(p.text || '') + '</textarea></label>';
       if (el.type === 'watermarkText') {
         html += opacityField(Math.round((p.opacity != null ? p.opacity : 0.18) * 100),
-          '拖动调整水印浓淡（5%–100%）');
+          '拖动调整水印浓淡（0%–100%，可设为 100%）');
+      } else if (el.type === 'staticText') {
+        html += opacityField(Math.round((p.opacity != null ? p.opacity : 1) * 100),
+          '拖动调整文本浓淡（0%–100%；静态文本不支持平铺）');
       }
       html +=
         numContent('字号', 'fontSize', p.fontSize || 11) +
+        fontFamilyField(p.fontFamily) +
         colorField('颜色', 'color', p.color || '#1e293b') +
         selectField('对齐', 'align', p.align || 'center', [['left', '居左'], ['center', '居中'], ['right', '居右']]);
       if (el.type === 'watermarkText') {
         html += '<label class="text-xs text-slate-600 flex items-center gap-1 mb-2"><input type="checkbox" data-lc-c="tile"' +
-          (p.tile ? ' checked' : '') + ' /> 平铺</label>';
+          (p.tile ? ' checked' : '') + ' /> 平铺（仅水印）</label>';
       }
     } else if (el.type === 'logo') {
       var src = p.source || 'system';
@@ -808,7 +836,7 @@
     } else if (el.type === 'seal') {
       html += selectField('来源', 'source', p.source || 'system', [['system', '系统检测章'], ['custom', '自定义（需 url）']]) +
         opacityField(Math.round((p.opacity != null ? p.opacity : 0.42) * 100),
-          '拖动调整检测章浓淡（5%–100%）');
+          '拖动调整检测章浓淡（0%–100%）');
     } else if (el.type === 'qr') {
       html += '<p class="text-xs text-slate-500 mb-2">载荷类型（只读）：<b>' +
         (p.payloadType === 'sample_flow' ? '样品流转' : '合格证短链') + '</b></p>' +
@@ -838,15 +866,23 @@
   }
 
   function opacityField(pct, hint) {
-    pct = Math.round(Math.max(5, Math.min(100, Number(pct) || 18)));
+    pct = Math.round(Math.max(0, Math.min(100, Number(pct) || 0)));
     return '<div class="lc-opacity-field mb-2">' +
       '<div class="lc-opacity-head">' +
         '<span>透明度</span>' +
         '<span data-lc-opacity-label>' + pct + '%</span>' +
       '</div>' +
-      '<input type="range" min="5" max="100" step="1" data-lc-c="opacity" class="lc-opacity-range" value="' + pct + '" />' +
-      '<p class="lc-opacity-hint">' + (hint || '拖动调整浓淡（5%–100%，数值越大越不透明）') + '</p>' +
+      '<input type="range" min="0" max="100" step="1" data-lc-c="opacity" class="lc-opacity-range" value="' + pct + '" />' +
+      '<p class="lc-opacity-hint">' + (hint || '拖动调整浓淡（0%–100%，100% 为完全不透明）') + '</p>' +
       '</div>';
+  }
+
+  function fontFamilyField(val) {
+    var presets = LabelCertConfig.FONT_PRESETS || [];
+    var cur = LabelCertConfig.normalizeFontFamily(val);
+    return selectField('字体', 'fontFamily', cur, presets.map(function (f) {
+      return [f.id, f.name];
+    }));
   }
 
   function syncOpacityLabel() {
@@ -1007,7 +1043,7 @@
       }
       if (key === 'opacity') {
         var pct = parseFloat(input.value);
-        if (!isNaN(pct)) el.props.opacity = Math.max(0.05, Math.min(1, pct / 100));
+        if (!isNaN(pct)) el.props.opacity = Math.max(0, Math.min(1, pct / 100));
         return;
       }
       if (key === 'fontSize' || key === 'widthPx') {
@@ -1189,19 +1225,80 @@
 
   /* ---------- 事件 ---------- */
 
+  /** 按画布坐标命中所有元素，zIndex 从高到低 */
+  function hitElementsAtClient(clientX, clientY) {
+    var stack = $('lc_stageStack');
+    if (!stack || !state.draft) return [];
+    var rect = stack.getBoundingClientRect();
+    var unit = state.scale * (state.zoom || 1);
+    if (!(unit > 0)) return [];
+    var xMm = (clientX - rect.left) / unit;
+    var yMm = (clientY - rect.top) / unit;
+    var hits = (state.draft.elements || []).filter(function (el) {
+      return xMm >= el.xMm && yMm >= el.yMm &&
+        xMm <= el.xMm + el.wMm && yMm <= el.yMm + el.hMm;
+    }).slice().sort(function (a, b) {
+      return (b.zIndex - a.zIndex) || String(b.id).localeCompare(String(a.id));
+    });
+    return hits;
+  }
+
+  function selectElementById(id, opts) {
+    opts = opts || {};
+    state.selectedId = id || null;
+    if (opts.propTab) state.propTab = opts.propTab;
+    renderCanvas();
+    renderPropPanel();
+    syncPropTabs();
+  }
+
+  /** 在重叠命中中切换到下一层（用于 Alt+点击 / 选中下层） */
+  function cycleHitSelection(hits, fromId) {
+    if (!hits || !hits.length) return null;
+    var ids = hits.map(function (e) { return e.id; });
+    var ix = fromId ? ids.indexOf(fromId) : -1;
+    return ids[(ix + 1) % ids.length];
+  }
+
+  function selectBelowCurrent() {
+    var el = selectedEl();
+    if (!el || !state.draft) return;
+    var cx = el.xMm + el.wMm / 2;
+    var cy = el.yMm + el.hMm / 2;
+    var hits = (state.draft.elements || []).filter(function (e) {
+      return cx >= e.xMm && cy >= e.yMm &&
+        cx <= e.xMm + e.wMm && cy <= e.yMm + e.hMm;
+    }).slice().sort(function (a, b) {
+      return (b.zIndex - a.zIndex) || String(b.id).localeCompare(String(a.id));
+    });
+    var next = cycleHitSelection(hits, state.selectedId);
+    if (next && next !== state.selectedId) selectElementById(next);
+  }
+
   function onCanvasPointerDown(e) {
     var handle = e.target.closest('[data-resize]');
     var node = e.target.closest('[data-el-id]');
     var paper = e.target.closest('[data-lc-paper]');
-    if (node) {
-      var id = node.getAttribute('data-el-id');
+    var hits = hitElementsAtClient(e.clientX, e.clientY);
+
+    // Alt+点击：在重叠元素中穿透切换（解决底层水印点不到）
+    if (e.altKey && hits.length) {
+      var nextId = cycleHitSelection(hits, state.selectedId);
+      selectElementById(nextId);
+      e.preventDefault();
+      return;
+    }
+
+    if (node || hits.length) {
+      var id = node ? node.getAttribute('data-el-id') : hits[0].id;
+      // 若 DOM 命中与几何顶层不一致，以几何顶层为准（旋转等近似）
+      if (hits.length && hits[0].id !== id && !handle) id = hits[0].id;
       state.selectedId = id;
       var el = selectedEl();
       if (!el) return;
       renderCanvas();
       renderPropPanel();
       if (el.locked && !handle) return;
-      var rect = node.getBoundingClientRect();
       state.drag = {
         id: id,
         mode: handle ? 'resize' : 'move',
@@ -1211,7 +1308,6 @@
         origY: el.yMm,
         origW: el.wMm,
         origH: el.hMm,
-        rect: rect,
         historyMarked: false
       };
       e.preventDefault();
@@ -1314,7 +1410,15 @@
 
       var addBtn = e.target.closest('[data-lc-add]');
       if (addBtn) {
-        toggleElement(addBtn.getAttribute('data-lc-add'), addBtn.getAttribute('data-field'));
+        toggleElement(
+          addBtn.getAttribute('data-lc-add'),
+          addBtn.getAttribute('data-field'),
+          { selectExisting: !!e.altKey }
+        );
+        return;
+      }
+      if (e.target.closest('[data-lc-select-below]')) {
+        selectBelowCurrent();
         return;
       }
 

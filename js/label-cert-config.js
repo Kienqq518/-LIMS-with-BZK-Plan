@@ -31,6 +31,30 @@
     { id: 'label', name: '样品标签', wMm: 60, hMm: 40 }
   ];
 
+  /** 内置开源字体（Google Fonts / SIL OFL 等，无版权争议） */
+  var FONT_PRESETS = [
+    { id: 'default', name: '系统默认', css: '' },
+    { id: 'noto-sans', name: 'Noto 黑体', css: '"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif' },
+    { id: 'noto-serif', name: 'Noto 宋体', css: '"Noto Serif SC","Songti SC","SimSun",serif' },
+    { id: 'xiaowei', name: '站酷小薇', css: '"ZCOOL XiaoWei","PingFang SC","Microsoft YaHei",sans-serif' },
+    { id: 'mashan', name: '马善政楷书', css: '"Ma Shan Zheng","KaiTi","STKaiti",cursive' }
+  ];
+
+  function fontCssById(id) {
+    for (var i = 0; i < FONT_PRESETS.length; i++) {
+      if (FONT_PRESETS[i].id === id) return FONT_PRESETS[i].css || '';
+    }
+    return '';
+  }
+
+  function normalizeFontFamily(id) {
+    if (!id) return 'default';
+    for (var i = 0; i < FONT_PRESETS.length; i++) {
+      if (FONT_PRESETS[i].id === id) return id;
+    }
+    return 'default';
+  }
+
   var ELEMENT_TYPES = {
     orgName: { category: 'brand', name: '单位名称', unique: true },
     title: { category: 'brand', name: '标题', unique: true },
@@ -209,9 +233,9 @@
     var tplType = opts.tplType || 'certificate';
     switch (type) {
       case 'orgName':
-        return { text: tplType === 'sample_label' ? '' : DEFAULT_ORG, fontSize: 11, color: '#1e293b', align: 'center' };
+        return { text: tplType === 'sample_label' ? '' : DEFAULT_ORG, fontSize: 11, fontFamily: 'default', color: '#1e293b', align: 'center' };
       case 'title':
-        return { text: tplType === 'sample_label' ? '' : '检验合格证', fontSize: 13, color: '#1e293b', align: 'center' };
+        return { text: tplType === 'sample_label' ? '' : '检验合格证', fontSize: 13, fontFamily: 'default', color: '#1e293b', align: 'center' };
       case 'logo':
         return { source: 'system', url: null };
       case 'fieldRow':
@@ -222,6 +246,7 @@
           valueAlign: 'left',
           underline: 'dotted',
           fontSize: 11,
+          fontFamily: 'default',
           color: '#1e293b'
         };
       case 'qr':
@@ -229,9 +254,9 @@
       case 'seal':
         return { source: 'system', url: null, opacity: 0.42 };
       case 'watermarkText':
-        return { text: '格', fontSize: 28, color: '#16a34a', opacity: 0.18, tile: false, align: 'center' };
+        return { text: '格', fontSize: 28, fontFamily: 'default', color: '#16a34a', opacity: 0.18, tile: false, align: 'center' };
       case 'staticText':
-        return { text: '无法扫码视为过期', fontSize: 9, color: '#dc2626', align: 'center' };
+        return { text: '无法扫码视为过期', fontSize: 9, fontFamily: 'default', color: '#dc2626', opacity: 1, align: 'center' };
       case 'line':
         return { color: '#cbd5e1', widthPx: 1, style: 'solid' };
       case 'hangHole':
@@ -454,22 +479,27 @@
       props.underline = ['none', 'solid', 'dotted', 'dashed'].indexOf(props.underline) >= 0 ? props.underline : 'dotted';
       props.valueAlign = normalizeAlign(props.valueAlign, 'left');
       props.fontSize = clamp(props.fontSize, 7, 22, 11);
+      props.fontFamily = normalizeFontFamily(props.fontFamily);
       props.color = normalizeColor(props.color, '#1e293b');
       props.showLabel = props.showLabel !== false;
     }
     if (el.type === 'orgName' || el.type === 'title' || el.type === 'staticText' || el.type === 'watermarkText') {
       props.text = props.text != null ? String(props.text) : '';
       props.fontSize = clamp(props.fontSize, 7, 48, props.fontSize || 11);
+      props.fontFamily = normalizeFontFamily(props.fontFamily);
       props.color = normalizeColor(props.color, '#1e293b');
       props.align = normalizeAlign(props.align, 'center');
+    }
+    if (el.type === 'staticText') {
+      props.opacity = clamp(props.opacity, 0, 1, 1);
     }
     if (el.type === 'logo' || el.type === 'seal') {
       props.source = props.source === 'custom' || props.source === 'hidden' ? props.source : 'system';
       if (el.type === 'seal' && props.source === 'hidden') props.source = 'system';
-      props.opacity = clamp(props.opacity, 0.05, 1, el.type === 'seal' ? 0.42 : 1);
+      props.opacity = clamp(props.opacity, 0, 1, el.type === 'seal' ? 0.42 : 1);
     }
     if (el.type === 'watermarkText') {
-      props.opacity = clamp(props.opacity, 0.05, 1, 0.18);
+      props.opacity = clamp(props.opacity, 0, 1, 0.18);
       props.tile = !!props.tile;
     }
     if (el.type === 'line') {
@@ -963,6 +993,9 @@
     SYSTEM_SEAL_URL: SYSTEM_SEAL_URL,
     FIELD_UNDERLINE_STYLES: FIELD_UNDERLINE_STYLES,
     PAPER_SIZE_PRESETS: PAPER_SIZE_PRESETS,
+    FONT_PRESETS: FONT_PRESETS,
+    fontCssById: fontCssById,
+    normalizeFontFamily: normalizeFontFamily,
     ELEMENT_TYPES: ELEMENT_TYPES,
     CERT_FIELD_POOL: CERT_FIELD_POOL,
     LABEL_FIELD_POOL: LABEL_FIELD_POOL,
