@@ -360,24 +360,38 @@
 
     var code = ['qr', 'seal', 'watermarkText'].map(function (t) {
       var on = findPaletteMatch(t).length > 0;
+      // 检测章/文本水印可多枚：点击始终新增；二维码仍为开关
+      if (t === 'seal' || t === 'watermarkText') {
+        var n = findPaletteMatch(t).length;
+        return typeBtn(t, '', n > 0, n > 0 ? ('已添加 ' + n + ' 个，点击继续添加') : '点击添加（可重复）');
+      }
       return typeBtn(t, '', on, on ? '再次点击移除' : '');
     }).join('');
 
     var decor = ['staticText', 'line', 'hangHole'].map(function (t) {
-      var on = findPaletteMatch(t).length > 0;
-      return typeBtn(t, '', on, on ? '再次点击移除' : '');
+      var n = findPaletteMatch(t).length;
+      return typeBtn(t, '', n > 0, n > 0 ? ('已添加 ' + n + ' 个，点击继续添加') : '点击添加（可重复）');
     }).join('');
 
     box.innerHTML =
       '<div class="lc-pal-group"><div class="lc-pal-title">品牌标识</div><div class="lc-pal-items">' + brand + '</div></div>' +
       '<div class="lc-pal-group"><div class="lc-pal-title">业务字段</div><div class="lc-pal-items">' + fields + '</div></div>' +
       '<div class="lc-pal-group"><div class="lc-pal-title">码与章</div><div class="lc-pal-items">' + code + '</div></div>' +
-      '<div class="lc-pal-group"><div class="lc-pal-title">装饰辅助</div><div class="lc-pal-items">' + decor + '</div></div>';
+      '<div class="lc-pal-group"><div class="lc-pal-title">装饰辅助 <span class="font-normal text-slate-400">可重复</span></div><div class="lc-pal-items">' + decor + '</div></div>';
   }
 
-  /** 元件库开关：无则添加，有则移除（可多枚类型移除最后一枚） */
+  function isRepeatableType(type) {
+    return type === 'staticText' || type === 'line' || type === 'hangHole' ||
+      type === 'seal' || type === 'watermarkText';
+  }
+
+  /** 元件库：唯一类开关；装饰辅助等可重复类型每次点击新增 */
   function toggleElement(type, fieldId) {
     if (!state.draft) return;
+    if (isRepeatableType(type)) {
+      addElement(type, fieldId);
+      return;
+    }
     var hits = findPaletteMatch(type, fieldId);
     if (hits.length) {
       var target = hits[hits.length - 1];
