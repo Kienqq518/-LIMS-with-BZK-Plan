@@ -297,28 +297,11 @@
     .lc-inline-pair { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
     .lc-inline-pair input[type=number] { width: 72px; }
     .lc-inline-pair input[type=color] { width: 36px; height: 28px; padding: 0; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; }
-    /* 自由设计编辑器：左预览 · 右编辑（同排，避免纵向滚动） */
-    .lc-free-shell {
-      display: flex; flex-direction: row; flex-wrap: nowrap;
-      flex: 1 1 auto; min-height: 0; overflow: hidden;
-    }
-    .lc-edit-preview-pane {
-      width: 360px; flex: 0 0 360px; align-self: stretch;
-      min-height: 0; overflow: hidden;
-      border-right: 1px solid #e2e8f0; background: #f1f5f9;
-      display: flex; flex-direction: column;
-    }
-    .lc-edit-preview-pane .lc-preview-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; flex-shrink: 0;
-    }
-    .lc-edit-preview-pane .lc-preview-body {
-      flex: 1 1 auto; min-height: 0; overflow: auto; padding: 12px;
-      display: flex; justify-content: center; align-items: flex-start;
-    }
+    /* 自由设计编辑器：左元件 · 中实时预览(+编辑覆盖) · 右属性 */
+    .lc-free-shell,
     .lc-edit-work {
-      flex: 1 1 auto; min-width: 0; min-height: 0; align-self: stretch;
-      display: flex; flex-direction: row; flex-wrap: nowrap; overflow: hidden;
+      display: flex; flex-direction: row; flex-wrap: nowrap;
+      flex: 1 1 auto; min-width: 0; min-height: 0; align-self: stretch; overflow: hidden;
     }
     .lc-palette {
       width: 220px; flex: 0 0 220px; border-right: 1px solid #e2e8f0; background: #f8fafc;
@@ -337,29 +320,52 @@
       box-shadow: inset 2px 0 0 #2563eb;
     }
     .lc-pal-item.on:hover { background: #dbeafe; }
-    .lc-canvas-wrap {
-      flex: 1 1 auto; min-width: 0; overflow: auto; background:
+    .lc-center-stage {
+      flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column;
+      background: #e2e8f0;
+    }
+    .lc-center-stage .lc-preview-head {
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+      padding: 10px 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;
+    }
+    .lc-center-body {
+      flex: 1 1 auto; min-height: 0; overflow: auto; padding: 16px;
+      display: flex; justify-content: center; align-items: flex-start;
+      background:
         linear-gradient(90deg, rgba(148,163,184,.15) 1px, transparent 1px) 0 0 / 16px 16px,
         linear-gradient(rgba(148,163,184,.15) 1px, transparent 1px) 0 0 / 16px 16px,
         #e2e8f0;
-      padding: 16px; display: flex; justify-content: center; align-items: flex-start;
     }
+    .lc-stage-stack {
+      position: relative; flex: 0 0 auto;
+      box-shadow: 0 8px 24px rgba(15,23,42,.12);
+    }
+    .lc-stage-preview {
+      position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+      pointer-events: none; z-index: 1; overflow: hidden; background: #fff;
+    }
+    .lc-stage-preview .lc-sheet {
+      box-shadow: none !important;
+    }
+    .lc-stage-canvas { position: relative; z-index: 2; }
     .lc-canvas-paper {
-      position: relative; background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.12);
-      box-sizing: border-box;
+      position: relative; background: transparent; box-sizing: border-box;
     }
     .lc-canvas-el {
       position: absolute; box-sizing: border-box; border: 1px dashed transparent;
-      background: rgba(59,130,246,.06); cursor: move; user-select: none;
+      background: transparent; cursor: move; user-select: none;
     }
-    .lc-canvas-el:hover { border-color: #93c5fd; }
-    .lc-canvas-el.selected { border: 1.5px solid #2563eb; background: rgba(37,99,235,.08); }
-    .lc-canvas-el.locked { cursor: default; opacity: .85; }
+    .lc-canvas-el:hover { border-color: #93c5fd; background: rgba(59,130,246,.08); }
+    .lc-canvas-el.selected { border: 1.5px solid #2563eb; background: rgba(37,99,235,.10); }
+    .lc-canvas-el.locked { cursor: default; }
     .lc-canvas-el-inner {
-      font-size: 10px; color: #334155; padding: 2px 3px; overflow: hidden;
+      font-size: 10px; color: #1d4ed8; padding: 2px 3px; overflow: hidden;
       white-space: nowrap; text-overflow: ellipsis; height: 100%;
-      display: flex; align-items: center;
+      display: flex; align-items: center; opacity: 0;
+      background: rgba(255,255,255,.72);
     }
+    .lc-canvas-el:hover .lc-canvas-el-inner,
+    .lc-canvas-el.selected .lc-canvas-el-inner { opacity: 1; }
     .lc-canvas-handle {
       position: absolute; right: -4px; bottom: -4px; width: 8px; height: 8px;
       background: #2563eb; border-radius: 2px; cursor: nwse-resize;
@@ -813,20 +819,20 @@
           </label>
         </div>
         <div class="lc-free-shell" data-annotate="label-cert-edit-fields">
-          <aside class="lc-edit-preview-pane" data-annotate="label-cert-edit-preview">
-            <div class="lc-preview-head">
-              <span class="text-xs font-medium text-slate-600">实时预览</span>
-              <button type="button" data-lc-refresh class="text-xs text-blue-600 hover:underline">刷新</button>
-            </div>
-            <div class="lc-preview-body">
-              <div id="lc_previewBox" class="rounded border border-slate-200 bg-white p-2"></div>
-            </div>
-          </aside>
           <div class="lc-edit-work">
             <aside id="lc_palette" class="lc-palette" data-annotate="label-cert-edit-brand"></aside>
-            <div class="lc-canvas-wrap">
-              <div id="lc_canvas"></div>
-            </div>
+            <section class="lc-center-stage" data-annotate="label-cert-edit-preview">
+              <div class="lc-preview-head">
+                <span class="text-xs font-medium text-slate-600">实时预览</span>
+                <button type="button" data-lc-refresh class="text-xs text-blue-600 hover:underline">刷新</button>
+              </div>
+              <div class="lc-center-body">
+                <div id="lc_stageStack" class="lc-stage-stack">
+                  <div id="lc_previewBox" class="lc-stage-preview"></div>
+                  <div id="lc_canvas" class="lc-stage-canvas"></div>
+                </div>
+              </div>
+            </section>
             <aside class="lc-prop-pane" data-annotate="label-cert-edit-skin">
               <div class="lc-prop-tabs">
                 <button type="button" class="active" data-lc-prop-tab="layout">布局</button>

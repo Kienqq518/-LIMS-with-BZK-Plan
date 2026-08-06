@@ -15,7 +15,7 @@
     bindKw: '',
     selectedId: null,
     propTab: 'layout', // layout | content
-    scale: 4, // px per mm in editor canvas
+    scale: 3.78, // px per mm，与 LabelCertRender.mmToPx 对齐，便于预览叠层
     drag: null
   };
 
@@ -428,18 +428,35 @@
     refreshPreview();
   }
 
+  function stagePixelSize() {
+    var paper = state.draft && state.draft.paper;
+    if (!paper) return { w: 0, h: 0 };
+    var s = state.scale;
+    return {
+      w: Math.round(paper.wMm * s),
+      h: Math.round(paper.hMm * s),
+      s: s
+    };
+  }
+
   function renderCanvas() {
     var host = $('lc_canvas');
     if (!host || !state.draft) return;
     syncPaperFromDom();
     var paper = state.draft.paper;
-    var s = state.scale;
-    var w = paper.wMm * s;
-    var h = paper.hMm * s;
+    var size = stagePixelSize();
+    var w = size.w;
+    var h = size.h;
+    var s = size.s;
     var border = paper.border || {};
-    var borderCss = border.enabled
-      ? ('border:' + (border.widthPx || 1) + 'px solid ' + (border.color || '#cbd5e1') + ';')
-      : 'border:1px dashed #cbd5e1;';
+    // 边框由底层实时预览绘制，覆盖层仅保留定位框
+    var borderCss = border.enabled ? 'border:1px solid transparent;' : 'border:1px dashed transparent;';
+
+    var stack = $('lc_stageStack');
+    if (stack) {
+      stack.style.width = w + 'px';
+      stack.style.height = h + 'px';
+    }
 
     var els = (state.draft.elements || []).slice().sort(function (a, b) {
       return (a.zIndex - b.zIndex) || String(a.id).localeCompare(String(b.id));
@@ -791,7 +808,13 @@
     var box = $('lc_previewBox');
     if (!box) return;
     LabelCertRender.ensureStyles();
+    var size = stagePixelSize();
     box.innerHTML = LabelCertRender.renderSheet(state.draft, demoData(), { suffix: '-pv' });
+    var sheet = box.querySelector('.lc-sheet');
+    if (sheet && size.w && size.h) {
+      sheet.style.width = size.w + 'px';
+      sheet.style.height = size.h + 'px';
+    }
     LabelCertRender.mountQrs(box, [demoData()]);
   }
 
