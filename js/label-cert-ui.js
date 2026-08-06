@@ -926,9 +926,27 @@
         html += '<p class="text-xs text-slate-400">Logo 不显示</p>';
       }
     } else if (el.type === 'seal') {
-      html += selectField('来源', 'source', p.source || 'system', [['system', '系统检测章'], ['custom', '自定义（需 url）']]) +
-        opacityField(Math.round((p.opacity != null ? p.opacity : 0.42) * 100),
-          '拖动调整检测章浓淡（0%–100%）');
+      var sealSrc = p.source || 'system';
+      html += selectField('来源', 'source', sealSrc, [
+        ['system', '系统检测章'],
+        ['custom', '上传自定义']
+      ]);
+      if (sealSrc === 'system') {
+        html += '<p class="text-xs text-slate-400 mb-1">使用系统默认检测章</p>' +
+          '<img class="lc-logo-thumb" src="' + LabelCertRender.esc(LabelCertConfig.SYSTEM_SEAL_URL) + '" alt="system seal" />';
+      } else {
+        html += '<label class="text-xs text-slate-600 block mb-2">上传检测章图片' +
+          '<input type="file" accept="image/*" data-lc-seal-file class="mt-1 block w-full text-xs text-slate-500" />' +
+          '</label>';
+        if (p.url) {
+          html += '<img class="lc-logo-thumb" src="' + LabelCertRender.esc(p.url) + '" alt="custom seal" />' +
+            '<button type="button" class="lc-mini-btn mt-1" data-lc-seal-clear>清除上传</button>';
+        } else {
+          html += '<p class="text-xs text-amber-600 mb-2">请上传图片后才会显示在预览中</p>';
+        }
+      }
+      html += opacityField(Math.round((p.opacity != null ? p.opacity : 0.42) * 100),
+        '拖动调整检测章浓淡（0%–100%）');
     } else if (el.type === 'qr') {
       html += '<p class="text-xs text-slate-500 mb-2">载荷类型（只读）：<b>' +
         (p.payloadType === 'sample_flow' ? '样品流转' : '合格证短链') + '</b></p>' +
@@ -1605,12 +1623,13 @@
         });
         return;
       }
-      if (e.target.closest('[data-lc-logo-clear]')) {
-        var logoEl = selectedEl();
-        if (logoEl && logoEl.type === 'logo') {
+      if (e.target.closest('[data-lc-logo-clear]') || e.target.closest('[data-lc-seal-clear]')) {
+        var clearEl = selectedEl();
+        var clearType = e.target.closest('[data-lc-seal-clear]') ? 'seal' : 'logo';
+        if (clearEl && clearEl.type === clearType) {
           markHistory();
-          logoEl.props = logoEl.props || {};
-          logoEl.props.url = null;
+          clearEl.props = clearEl.props || {};
+          clearEl.props.url = null;
           renderPropPanel();
           renderCanvas();
           refreshPreview();
@@ -1659,15 +1678,16 @@
         }
         return;
       }
-      if (e.target.getAttribute('data-lc-logo-file') != null) {
+      if (e.target.getAttribute('data-lc-logo-file') != null || e.target.getAttribute('data-lc-seal-file') != null) {
         var file = e.target.files && e.target.files[0];
-        var logoTarget = selectedEl();
-        if (!file || !logoTarget || logoTarget.type !== 'logo') return;
+        var imgTarget = selectedEl();
+        var expectType = e.target.getAttribute('data-lc-seal-file') != null ? 'seal' : 'logo';
+        if (!file || !imgTarget || imgTarget.type !== expectType) return;
         readFileAsDataUrl(file, function (url) {
           markHistory();
-          logoTarget.props = logoTarget.props || {};
-          logoTarget.props.source = 'custom';
-          logoTarget.props.url = url;
+          imgTarget.props = imgTarget.props || {};
+          imgTarget.props.source = 'custom';
+          imgTarget.props.url = url;
           renderPropPanel();
           renderCanvas();
           refreshPreview();
