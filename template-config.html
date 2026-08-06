@@ -297,10 +297,26 @@
     .lc-inline-pair { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
     .lc-inline-pair input[type=number] { width: 72px; }
     .lc-inline-pair input[type=color] { width: 36px; height: 28px; padding: 0; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; }
-    /* 自由设计编辑器 */
-    .lc-free-shell { display: flex; flex: 1; min-height: 0; }
+    /* 自由设计编辑器：左预览 · 右编辑 */
+    .lc-free-shell { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+    .lc-edit-preview-pane {
+      width: 340px; flex: 0 0 340px; min-height: 0; overflow: hidden;
+      border-right: 1px solid #e2e8f0; background: #f1f5f9;
+      display: flex; flex-direction: column;
+    }
+    .lc-edit-preview-pane .lc-preview-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; flex-shrink: 0;
+    }
+    .lc-edit-preview-pane .lc-preview-body {
+      flex: 1; min-height: 0; overflow: auto; padding: 12px;
+      display: flex; justify-content: center; align-items: flex-start;
+    }
+    .lc-edit-work {
+      flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; overflow: hidden;
+    }
     .lc-palette {
-      width: 168px; flex: 0 0 168px; border-right: 1px solid #e2e8f0; background: #f8fafc;
+      width: 156px; flex: 0 0 156px; border-right: 1px solid #e2e8f0; background: #f8fafc;
       overflow-y: auto; padding: 10px;
     }
     .lc-pal-group { margin-bottom: 12px; }
@@ -310,14 +326,18 @@
       text-align: left; border: 1px solid #e2e8f0; background: #fff; border-radius: 6px;
       padding: 6px 8px; font-size: 12px; color: #334155; cursor: pointer;
     }
-    .lc-pal-item:hover:not(.disabled) { border-color: #93c5fd; color: #1d4ed8; background: #eff6ff; }
-    .lc-pal-item.disabled { opacity: .45; cursor: not-allowed; }
+    .lc-pal-item:hover { border-color: #93c5fd; color: #1d4ed8; background: #eff6ff; }
+    .lc-pal-item.on {
+      background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; font-weight: 500;
+      box-shadow: inset 2px 0 0 #2563eb;
+    }
+    .lc-pal-item.on:hover { background: #dbeafe; }
     .lc-canvas-wrap {
       flex: 1 1 auto; min-width: 0; overflow: auto; background:
         linear-gradient(90deg, rgba(148,163,184,.15) 1px, transparent 1px) 0 0 / 16px 16px,
         linear-gradient(rgba(148,163,184,.15) 1px, transparent 1px) 0 0 / 16px 16px,
         #e2e8f0;
-      padding: 20px; display: flex; justify-content: center; align-items: flex-start;
+      padding: 16px; display: flex; justify-content: center; align-items: flex-start;
     }
     .lc-canvas-paper {
       position: relative; background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.12);
@@ -360,10 +380,6 @@
     .lc-edit-meta {
       border-top: 1px solid #e2e8f0; background: #f8fafc; padding: 10px 12px;
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
-    }
-    .lc-edit-preview-strip {
-      border-top: 1px solid #e2e8f0; background: #f1f5f9; padding: 10px 12px;
-      max-height: 180px; overflow: auto;
     }
     .lc-create-tabs { display: flex; gap: 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 12px; }
     .lc-create-tabs button {
@@ -771,34 +787,38 @@
           </label>
         </div>
         <div class="lc-free-shell" data-annotate="label-cert-edit-fields">
-          <aside id="lc_palette" class="lc-palette" data-annotate="label-cert-edit-brand"></aside>
-          <div class="lc-canvas-wrap">
-            <div id="lc_canvas"></div>
-          </div>
-          <aside class="lc-prop-pane" data-annotate="label-cert-edit-skin">
-            <div class="lc-prop-tabs">
-              <button type="button" class="active" data-lc-prop-tab="layout">布局</button>
-              <button type="button" data-lc-prop-tab="content">内容</button>
+          <aside class="lc-edit-preview-pane" data-annotate="label-cert-edit-preview">
+            <div class="lc-preview-head">
+              <span class="text-xs font-medium text-slate-600">实时预览</span>
+              <button type="button" data-lc-refresh class="text-xs text-blue-600 hover:underline">刷新</button>
             </div>
-            <div class="lc-prop-body">
-              <p id="lc_propEmpty" class="text-xs text-slate-400">选中画布元素后，可调整布局坐标与内容样式。</p>
-              <div id="lc_propLayout"></div>
-              <div id="lc_propContent" class="hidden"></div>
-              <section id="lc_bindSection" class="mt-4 border-t border-slate-100 pt-3" data-annotate="label-cert-edit-bind">
-                <h4 class="text-xs font-semibold text-slate-700 mb-1">绑定样品 <span class="text-rose-500">*</span></h4>
-                <p class="mb-2 text-[11px] text-slate-400">个性化须绑定 ≥1 个叶节点。</p>
-                <div id="lc_bindSamples"></div>
-                <p id="lc_bindHint" class="mt-2 text-xs text-amber-600"></p>
-              </section>
+            <div class="lc-preview-body">
+              <div id="lc_previewBox" class="rounded border border-slate-200 bg-white p-2"></div>
             </div>
           </aside>
-        </div>
-        <div class="lc-edit-preview-strip" data-annotate="label-cert-edit-preview">
-          <div class="mb-1 flex items-center justify-between">
-            <span class="text-xs font-medium text-slate-600">实时预览</span>
-            <button type="button" data-lc-refresh class="text-xs text-blue-600 hover:underline">刷新</button>
+          <div class="lc-edit-work">
+            <aside id="lc_palette" class="lc-palette" data-annotate="label-cert-edit-brand"></aside>
+            <div class="lc-canvas-wrap">
+              <div id="lc_canvas"></div>
+            </div>
+            <aside class="lc-prop-pane" data-annotate="label-cert-edit-skin">
+              <div class="lc-prop-tabs">
+                <button type="button" class="active" data-lc-prop-tab="layout">布局</button>
+                <button type="button" data-lc-prop-tab="content">内容</button>
+              </div>
+              <div class="lc-prop-body">
+                <p id="lc_propEmpty" class="text-xs text-slate-400">选中画布元素后，可调整布局坐标与内容样式。</p>
+                <div id="lc_propLayout"></div>
+                <div id="lc_propContent" class="hidden"></div>
+                <section id="lc_bindSection" class="mt-4 border-t border-slate-100 pt-3" data-annotate="label-cert-edit-bind">
+                  <h4 class="text-xs font-semibold text-slate-700 mb-1">绑定样品 <span class="text-rose-500">*</span></h4>
+                  <p class="mb-2 text-[11px] text-slate-400">个性化须绑定 ≥1 个叶节点。</p>
+                  <div id="lc_bindSamples"></div>
+                  <p id="lc_bindHint" class="mt-2 text-xs text-amber-600"></p>
+                </section>
+              </div>
+            </aside>
           </div>
-          <div id="lc_previewBox" class="flex justify-center overflow-auto rounded border border-slate-200 bg-white p-2"></div>
         </div>
         <div class="flex justify-end gap-2 border-t border-slate-200 px-5 py-3">
           <button type="button" data-lc-close class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>

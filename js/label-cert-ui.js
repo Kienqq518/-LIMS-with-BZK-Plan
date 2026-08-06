@@ -319,6 +319,18 @@
     };
   }
 
+  function findPaletteMatch(type, fieldId) {
+    var els = (state.draft && state.draft.elements) || [];
+    var hits = [];
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.type !== type) continue;
+      if (type === 'fieldRow' && fieldId && !(el.props && el.props.fieldId === fieldId)) continue;
+      hits.push(el);
+    }
+    return hits;
+  }
+
   function renderPalette() {
     var box = $('lc_palette');
     if (!box || !state.draft) return;
@@ -326,31 +338,33 @@
     var pool = LabelCertConfig.poolForType(state.type);
     var types = LabelCertConfig.ELEMENT_TYPES;
 
-    function typeBtn(type, extra, disabled, tip) {
+    function typeBtn(type, extra, on, tip) {
       var meta = types[type];
-      return '<button type="button" class="lc-pal-item' + (disabled ? ' disabled' : '') + '" data-lc-add="' + type + '"' +
-        (extra || '') + (disabled ? ' disabled' : '') + ' title="' + LabelCertRender.esc(tip || meta.name) + '">' +
+      return '<button type="button" class="lc-pal-item' + (on ? ' on' : '') + '" data-lc-add="' + type + '"' +
+        (extra || '') + ' title="' + LabelCertRender.esc(tip || (on ? '再次点击移除' : '点击添加到画布')) + '">' +
         LabelCertRender.esc(meta.name) + '</button>';
     }
 
     var brand = ['orgName', 'title', 'logo'].map(function (t) {
-      var blocked = LabelCertConfig.hasElementType(state.draft.elements, t);
-      return typeBtn(t, '', blocked, blocked ? '已存在' : '');
+      var on = LabelCertConfig.hasElementType(state.draft.elements, t);
+      return typeBtn(t, '', on, on ? '再次点击移除' : '');
     }).join('');
 
     var fields = pool.map(function (f) {
-      var blocked = usedFields.indexOf(f.id) >= 0;
-      return '<button type="button" class="lc-pal-item' + (blocked ? ' disabled' : '') + '" data-lc-add="fieldRow" data-field="' +
-        f.id + '"' + (blocked ? ' disabled' : '') + '>' + LabelCertRender.esc(f.label) + '</button>';
+      var on = usedFields.indexOf(f.id) >= 0;
+      return '<button type="button" class="lc-pal-item' + (on ? ' on' : '') + '" data-lc-add="fieldRow" data-field="' +
+        f.id + '" title="' + (on ? '再次点击移除' : '点击添加到画布') + '">' +
+        LabelCertRender.esc(f.label) + '</button>';
     }).join('');
 
     var code = ['qr', 'seal', 'watermarkText'].map(function (t) {
-      var blocked = t === 'qr' && LabelCertConfig.hasElementType(state.draft.elements, 'qr');
-      return typeBtn(t, '', blocked, blocked ? '已存在' : '');
+      var on = findPaletteMatch(t).length > 0;
+      return typeBtn(t, '', on, on ? '再次点击移除' : '');
     }).join('');
 
     var decor = ['staticText', 'line', 'hangHole'].map(function (t) {
-      return typeBtn(t, '', false, '');
+      var on = findPaletteMatch(t).length > 0;
+      return typeBtn(t, '', on, on ? '再次点击移除' : '');
     }).join('');
 
     box.innerHTML =
@@ -358,6 +372,23 @@
       '<div class="lc-pal-group"><div class="lc-pal-title">业务字段</div><div class="lc-pal-items">' + fields + '</div></div>' +
       '<div class="lc-pal-group"><div class="lc-pal-title">码与章</div><div class="lc-pal-items">' + code + '</div></div>' +
       '<div class="lc-pal-group"><div class="lc-pal-title">装饰辅助</div><div class="lc-pal-items">' + decor + '</div></div>';
+  }
+
+  /** 元件库开关：无则添加，有则移除（可多枚类型移除最后一枚） */
+  function toggleElement(type, fieldId) {
+    if (!state.draft) return;
+    var hits = findPaletteMatch(type, fieldId);
+    if (hits.length) {
+      var target = hits[hits.length - 1];
+      state.draft.elements = state.draft.elements.filter(function (e) { return e.id !== target.id; });
+      if (state.selectedId === target.id) state.selectedId = null;
+      renderPalette();
+      renderCanvas();
+      renderPropPanel();
+      refreshPreview();
+      return;
+    }
+    addElement(type, fieldId);
   }
 
   function addElement(type, fieldId) {
@@ -860,8 +891,8 @@
       if (e.target.closest('#lc_c_confirm')) { confirmCreate(); return; }
 
       var addBtn = e.target.closest('[data-lc-add]');
-      if (addBtn && !addBtn.disabled) {
-        addElement(addBtn.getAttribute('data-lc-add'), addBtn.getAttribute('data-field'));
+      if (addBtn) {
+        toggleElement(addBtn.getAttribute('data-lc-add'), addBtn.getAttribute('data-field'));
         return;
       }
 
