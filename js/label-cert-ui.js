@@ -501,6 +501,24 @@
         LabelCertRender.esc(meta.name) + '</button>';
     }
 
+    /** 可重复：左侧点击循环选中，右侧 + 新增 */
+    function multiRow(type) {
+      var meta = types[type];
+      var n = findPaletteMatch(type).length;
+      var on = n > 0;
+      var selectedHere = on && findPaletteMatch(type).some(function (el) { return el.id === state.selectedId; });
+      return '<div class="lc-pal-row">' +
+        '<button type="button" class="lc-pal-item' + (on ? ' on' : '') + (selectedHere ? ' selected' : '') +
+          '" data-lc-cycle="' + type + '" title="' +
+          (on ? ('点击循环选中已添加的 ' + n + ' 个') : '尚未添加，请点右侧 +') + '">' +
+          LabelCertRender.esc(meta.name) +
+          (n > 0 ? '<span class="lc-pal-count">×' + n + '</span>' : '') +
+        '</button>' +
+        '<button type="button" class="lc-pal-add" data-lc-add="' + type + '" title="添加一个' +
+          LabelCertRender.esc(meta.name) + '"><i class="fa fa-plus"></i></button>' +
+        '</div>';
+    }
+
     var brand = ['orgName', 'title', 'logo'].map(function (t) {
       var on = LabelCertConfig.hasElementType(state.draft.elements, t);
       return typeBtn(t, '', on, on ? '再次点击移除' : '');
@@ -514,29 +532,18 @@
     }).join('');
 
     var code = ['qr', 'seal', 'watermarkText'].map(function (t) {
+      if (t === 'seal' || t === 'watermarkText') return multiRow(t);
       var on = findPaletteMatch(t).length > 0;
-      // 水印/检测章常被挡住：单击循环选中已有；Shift+点击再新增
-      if (t === 'seal' || t === 'watermarkText') {
-        var n = findPaletteMatch(t).length;
-        return typeBtn(t, '', n > 0, n > 0
-          ? ('已添加 ' + n + ' 个；点击循环选中，Shift+点击新增')
-          : '点击添加（可重复）');
-      }
       return typeBtn(t, '', on, on ? '再次点击移除' : '');
     }).join('');
 
-    var decor = ['staticText', 'line', 'hangHole'].map(function (t) {
-      var n = findPaletteMatch(t).length;
-      return typeBtn(t, '', n > 0, n > 0
-        ? ('已添加 ' + n + ' 个；点击继续添加，Alt+点击选中已有')
-        : '点击添加（可重复）');
-    }).join('');
+    var decor = ['staticText', 'line', 'hangHole'].map(multiRow).join('');
 
     box.innerHTML =
       '<div class="lc-pal-group"><div class="lc-pal-title">品牌标识</div><div class="lc-pal-items">' + brand + '</div></div>' +
       '<div class="lc-pal-group"><div class="lc-pal-title">业务字段</div><div class="lc-pal-items">' + fields + '</div></div>' +
       '<div class="lc-pal-group"><div class="lc-pal-title">码与章</div><div class="lc-pal-items">' + code + '</div></div>' +
-      '<div class="lc-pal-group"><div class="lc-pal-title">装饰辅助 <span class="font-normal text-slate-400">可重复</span></div><div class="lc-pal-items">' + decor + '</div></div>';
+      '<div class="lc-pal-group"><div class="lc-pal-title">装饰辅助 <span class="font-normal text-slate-400">可重复 · 点名循环选中 / + 添加</span></div><div class="lc-pal-items">' + decor + '</div></div>';
   }
 
   function isRepeatableType(type) {
@@ -563,27 +570,18 @@
     return true;
   }
 
-  /** 元件库：唯一类开关；水印/章单击循环选中，Shift 新增 */
+  /** 元件库：唯一类开关；可重复类型由 + 新增 / 名称循环选中 */
   function toggleElement(type, fieldId, opts) {
     opts = opts || {};
     if (!state.draft) return;
     if (isRepeatableType(type)) {
-      var cycleOnClick = type === 'watermarkText' || type === 'seal';
-      if (cycleOnClick) {
-        // 单击：循环选中已有；Shift+点击：新增一枚
-        if (opts.forceAdd) {
-          addElement(type, fieldId);
-          return;
-        }
-        if (selectExistingOfType(type, fieldId)) return;
+      // 右侧 + 或 forceAdd：始终新增
+      if (opts.forceAdd) {
         addElement(type, fieldId);
         return;
       }
-      // 其他可重复：默认新增；Alt+点击选中已有
-      if (opts.selectExisting) {
-        if (!selectExistingOfType(type, fieldId)) addElement(type, fieldId);
-        return;
-      }
+      // 兼容：无已有则添加，有则循环选中
+      if (selectExistingOfType(type, fieldId)) return;
       addElement(type, fieldId);
       return;
     }
@@ -1424,12 +1422,21 @@
         return;
       }
 
+      var cycleBtn = e.target.closest('[data-lc-cycle]');
+      if (cycleBtn) {
+        var ctype = cycleBtn.getAttribute('data-lc-cycle');
+        if (!selectExistingOfType(ctype)) {
+          // 尚未添加时，点击名称也先添加一枚
+          addElement(ctype);
+        }
+        return;
+      }
       var addBtn = e.target.closest('[data-lc-add]');
       if (addBtn) {
         toggleElement(
           addBtn.getAttribute('data-lc-add'),
           addBtn.getAttribute('data-field'),
-          { selectExisting: !!e.altKey, forceAdd: !!e.shiftKey }
+          { forceAdd: isRepeatableType(addBtn.getAttribute('data-lc-add')) || !!e.shiftKey }
         );
         return;
       }
