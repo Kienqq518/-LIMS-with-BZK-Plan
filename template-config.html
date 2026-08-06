@@ -451,12 +451,28 @@
       display: grid; gap: 10px; align-items: end;
     }
     .lc-meta-row.r-name {
-      grid-template-columns: minmax(140px, 1.1fr) 88px 88px minmax(260px, 1.6fr);
+      grid-template-columns: minmax(120px, 1.1fr) 72px 72px 64px minmax(220px, 1.5fr);
       align-items: start;
     }
     .lc-meta-row.r-extra {
-      grid-template-columns: 72px minmax(180px, 1.1fr) 72px minmax(100px, .9fr) minmax(100px, .9fr) minmax(110px, 1fr);
+      grid-template-columns: minmax(150px, 1fr) 64px minmax(72px, .65fr) minmax(72px, .65fr) minmax(80px, .7fr) minmax(240px, 1.8fr);
+      align-items: start; gap: 8px;
     }
+    .lc-meta-row.r-extra.no-border {
+      grid-template-columns: minmax(72px, .7fr) minmax(72px, .7fr) minmax(80px, .75fr) minmax(280px, 2fr);
+    }
+    .lc-meta-row.r-extra.no-border [data-lc-border-only] { display: none !important; }
+    .lc-meta-bind-inline {
+      display: flex; flex-direction: column; gap: 4px; min-width: 0;
+    }
+    .lc-meta-bind-inline .lc-meta-bind-head {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
+    }
+    .lc-meta-bind-inline #lc_bindSamples,
+    .lc-meta-bind-inline .lc-ms {
+      max-width: none !important; width: 100%;
+    }
+    .lc-meta-bind-inline .lc-ms-trigger { width: 100%; box-sizing: border-box; }
     .lc-meta-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .lc-meta-field > span,
     .lc-meta-field > .lc-meta-label {
@@ -510,10 +526,12 @@
     }
     .lc-opacity-hint { margin-top: 6px; font-size: 10px; color: #94a3b8; line-height: 1.3; }
     @media (max-width: 1280px) {
-      .lc-meta-row.r-name { grid-template-columns: minmax(140px, 1fr) 88px 88px; }
+      .lc-meta-row.r-name { grid-template-columns: minmax(120px, 1fr) 72px 72px 64px; }
       .lc-meta-row.r-name .lc-meta-size { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
       .lc-meta-size #lc_paperSizeChips { justify-content: flex-start; }
-      .lc-meta-row.r-extra { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .lc-meta-row.r-extra,
+      .lc-meta-row.r-extra.no-border { grid-template-columns: 1fr 1fr; }
+      .lc-meta-row.r-extra .lc-meta-bind-inline { grid-column: 1 / -1; }
     }
     .lc-create-tabs { display: flex; gap: 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 12px; }
     .lc-create-tabs button {
@@ -905,20 +923,20 @@
             <label class="lc-meta-field"><span>模版名称</span><input id="lc_e_name" placeholder="例如：默认合格证" /></label>
             <label class="lc-meta-field"><span>纸张宽 (mm)</span><input id="lc_e_w" type="number" min="20" max="200" step="0.1" /></label>
             <label class="lc-meta-field"><span>纸张高 (mm)</span><input id="lc_e_h" type="number" min="15" max="200" step="0.1" /></label>
-            <div class="lc-meta-size">
-              <span class="lc-meta-label">尺寸快捷</span>
-              <div id="lc_paperSizeChips"></div>
-              <span class="lc-meta-size-hint">应用后内部元素等比缩放</span>
-            </div>
-          </div>
-          <div class="lc-meta-row r-extra">
             <label class="lc-meta-field"><span>边框</span>
               <select id="lc_e_borderOn">
                 <option value="1">有</option>
                 <option value="0">无</option>
               </select>
             </label>
-            <div class="lc-meta-field lc-color-field lc-meta-border-color" data-lc-border-color>
+            <div class="lc-meta-size">
+              <span class="lc-meta-label">尺寸快捷</span>
+              <div id="lc_paperSizeChips"></div>
+              <span class="lc-meta-size-hint">应用后内部元素等比缩放</span>
+            </div>
+          </div>
+          <div class="lc-meta-row r-extra" id="lc_metaExtraRow">
+            <div class="lc-meta-field lc-color-field lc-meta-border-color" data-lc-border-color data-lc-border-only>
               <span class="lc-meta-label">边框色</span>
               <div class="lc-color-row">
                 <input id="lc_e_borderColor" type="color" value="#cbd5e1" />
@@ -927,18 +945,18 @@
                 <button type="button" class="lc-icon-btn" data-lc-border-rgb-paste title="从剪贴板粘贴" aria-label="粘贴 RGB"><i class="fa fa-clipboard"></i></button>
               </div>
             </div>
-            <label class="lc-meta-field"><span>边框粗细</span><input id="lc_e_borderWidth" type="number" min="0" max="8" /></label>
+            <label class="lc-meta-field" data-lc-border-only><span>边框粗细</span><input id="lc_e_borderWidth" type="number" min="0" max="8" /></label>
             <label class="lc-meta-field"><span>材质</span><input id="lc_e_mat" placeholder="如：不粘胶纸" /></label>
             <label class="lc-meta-field"><span>安装方式</span><input id="lc_e_mount" placeholder="如：粘贴 / 悬挂" /></label>
             <label class="lc-meta-field"><span>赋码打印方式</span><input id="lc_e_print" placeholder="如：喷墨 / 热转印" /></label>
-          </div>
-          <div id="lc_bindSection" class="lc-meta-bind" data-annotate="label-cert-edit-bind">
-            <div class="lc-meta-bind-head">
-              <span class="lc-meta-label">绑定样品 <span class="text-rose-500">*</span></span>
-              <span class="text-[10px] text-slate-400">个性化模版须绑定 ≥1 个样品叶节点</span>
+            <div id="lc_bindSection" class="lc-meta-bind-inline" data-annotate="label-cert-edit-bind">
+              <div class="lc-meta-bind-head">
+                <span class="lc-meta-label">绑定样品 <span class="text-rose-500">*</span></span>
+                <span class="text-[10px] text-slate-400">须绑定 ≥1 个叶节点</span>
+              </div>
+              <div id="lc_bindSamples"></div>
+              <p id="lc_bindHint" class="mt-0.5 text-xs text-amber-600"></p>
             </div>
-            <div id="lc_bindSamples"></div>
-            <p id="lc_bindHint" class="mt-1 text-xs text-amber-600"></p>
           </div>
         </div>
         <div class="lc-free-shell" data-annotate="label-cert-edit-fields">

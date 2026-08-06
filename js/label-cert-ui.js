@@ -393,6 +393,7 @@
     $('lc_e_borderColor').value = (tpl.paper.border && tpl.paper.border.color) || '#cbd5e1';
     syncBorderColorUi();
     $('lc_e_borderWidth').value = (tpl.paper.border && tpl.paper.border.widthPx) || 1;
+    syncBorderFieldsVisibility();
     $('lc_e_mat').value = (tpl.meta && tpl.meta.material) || '';
     $('lc_e_mount').value = (tpl.meta && tpl.meta.mount) || '';
     $('lc_e_print').value = (tpl.meta && tpl.meta.printMethod) || '';
@@ -1023,6 +1024,12 @@
     if (rgb) rgb.value = rgbTextFromHex(hex);
   }
 
+  function syncBorderFieldsVisibility() {
+    var on = $('lc_e_borderOn') && $('lc_e_borderOn').value !== '0';
+    var row = $('lc_metaExtraRow');
+    if (row) row.classList.toggle('no-border', !on);
+  }
+
   function applyGeomFromInputs() {
     var el = selectedEl();
     if (!el) return;
@@ -1615,6 +1622,7 @@
           e.target.id === 'lc_e_name') {
         markHistory('meta:' + e.target.id);
         endHistoryCoalesce();
+        if (e.target.id === 'lc_e_borderOn') syncBorderFieldsVisibility();
         syncPaperFromDom();
         renderCanvas();
         refreshPreview();
