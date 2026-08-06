@@ -132,7 +132,7 @@
   }
 
   function systemSealUrl() {
-    return (global.LabelCertConfig && LabelCertConfig.SYSTEM_SEAL_URL) || 'assets/label-cert/system-seal.svg';
+    return (global.LabelCertConfig && LabelCertConfig.SYSTEM_SEAL_URL) || 'assets/label-cert/system-seal.png';
   }
 
   function alignCss(align) {
