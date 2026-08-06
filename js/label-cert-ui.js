@@ -515,11 +515,11 @@
 
     var code = ['qr', 'seal', 'watermarkText'].map(function (t) {
       var on = findPaletteMatch(t).length > 0;
-      // 检测章/文本水印可多枚：点击新增；Alt+点击选中已有（便于点到被挡住的水印）
+      // 水印/检测章常被挡住：单击循环选中已有；Shift+点击再新增
       if (t === 'seal' || t === 'watermarkText') {
         var n = findPaletteMatch(t).length;
         return typeBtn(t, '', n > 0, n > 0
-          ? ('已添加 ' + n + ' 个；点击继续添加，Alt+点击选中已有')
+          ? ('已添加 ' + n + ' 个；点击循环选中，Shift+点击新增')
           : '点击添加（可重复）');
       }
       return typeBtn(t, '', on, on ? '再次点击移除' : '');
@@ -559,11 +559,23 @@
     return true;
   }
 
-  /** 元件库：唯一类开关；装饰辅助等可重复类型每次点击新增 */
+  /** 元件库：唯一类开关；水印/章单击循环选中，Shift 新增 */
   function toggleElement(type, fieldId, opts) {
     opts = opts || {};
     if (!state.draft) return;
     if (isRepeatableType(type)) {
+      var cycleOnClick = type === 'watermarkText' || type === 'seal';
+      if (cycleOnClick) {
+        // 单击：循环选中已有；Shift+点击：新增一枚
+        if (opts.forceAdd) {
+          addElement(type, fieldId);
+          return;
+        }
+        if (selectExistingOfType(type, fieldId)) return;
+        addElement(type, fieldId);
+        return;
+      }
+      // 其他可重复：默认新增；Alt+点击选中已有
       if (opts.selectExisting) {
         if (!selectExistingOfType(type, fieldId)) addElement(type, fieldId);
         return;
@@ -1413,7 +1425,7 @@
         toggleElement(
           addBtn.getAttribute('data-lc-add'),
           addBtn.getAttribute('data-field'),
-          { selectExisting: !!e.altKey }
+          { selectExisting: !!e.altKey, forceAdd: !!e.shiftKey }
         );
         return;
       }
