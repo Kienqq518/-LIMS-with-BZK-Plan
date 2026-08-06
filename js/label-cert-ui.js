@@ -778,19 +778,20 @@
         '<input type="color" data-lc-c="' + key + '" value="' + hex + '" title="取色" />' +
         '<input type="text" data-lc-rgb="' + key + '" class="lc-rgb-input" value="' + rgbTextFromHex(hex) +
           '" placeholder="R, G, B 或 #hex" title="支持 44,221,74 / rgb(44,221,74) / #2cdd4a" />' +
-        '<button type="button" class="lc-icon-btn" data-lc-rgb-copy="' + key + '" title="复制 RGB" aria-label="复制 RGB"><i class="fa fa-copy"></i></button>' +
+        '<button type="button" class="lc-icon-btn" data-lc-rgb-copy="' + key + '" title="复制 RGB" aria-label="复制 RGB"><i class="fa fa-files-o"></i></button>' +
         '<button type="button" class="lc-icon-btn" data-lc-rgb-paste="' + key + '" title="从剪贴板粘贴" aria-label="粘贴 RGB"><i class="fa fa-clipboard"></i></button>' +
       '</div></div>';
   }
 
   function flashIconBtn(btn, okIcon) {
     if (!btn) return;
-    var prev = btn.innerHTML;
+    var prev = btn.getAttribute('data-icon-html') || btn.innerHTML;
+    btn.setAttribute('data-icon-html', prev);
     btn.classList.add('ok');
     btn.innerHTML = '<i class="fa ' + (okIcon || 'fa-check') + '"></i>';
     setTimeout(function () {
       btn.classList.remove('ok');
-      btn.innerHTML = prev;
+      btn.innerHTML = btn.getAttribute('data-icon-html') || prev;
     }, 900);
   }
 
