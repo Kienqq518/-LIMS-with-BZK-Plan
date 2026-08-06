@@ -336,9 +336,11 @@
         linear-gradient(rgba(148,163,184,.15) 1px, transparent 1px) 0 0 / 16px 16px,
         #e2e8f0;
     }
+    .lc-zoom-pad { flex: 0 0 auto; position: relative; }
     .lc-stage-stack {
       position: relative; flex: 0 0 auto;
       box-shadow: 0 8px 24px rgba(15,23,42,.12);
+      transform-origin: top left;
     }
     .lc-stage-preview {
       position: absolute; left: 0; top: 0; right: 0; bottom: 0;
@@ -402,10 +404,60 @@
     .lc-mini-btn:hover { border-color: #93c5fd; color: #1d4ed8; }
     .lc-mini-btn.on { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
     .lc-mini-btn.danger { color: #dc2626; border-color: #fecaca; }
-    .lc-edit-meta .col-span-2 { grid-column: span 2; }
+    .lc-icon-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; padding: 0; flex: 0 0 28px;
+      border: 1px solid #e2e8f0; background: #fff; border-radius: 4px;
+      color: #64748b; cursor: pointer; font-size: 12px; line-height: 1;
+    }
+    .lc-icon-btn:hover { border-color: #93c5fd; color: #1d4ed8; background: #eff6ff; }
+    .lc-icon-btn.ok { border-color: #86efac; color: #16a34a; background: #f0fdf4; }
+    .lc-zoom-bar { display: flex; align-items: center; gap: 4px; }
+    .lc-zoom-bar .lc-zoom-val {
+      min-width: 44px; text-align: center; font-size: 11px; color: #475569;
+      font-variant-numeric: tabular-nums;
+    }
     .lc-edit-meta {
-      border-top: 1px solid #e2e8f0; background: #f8fafc; padding: 10px 12px;
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+      border-top: 1px solid #e2e8f0; background: #f8fafc;
+      padding: 12px 16px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .lc-meta-row {
+      display: grid; gap: 10px; align-items: end;
+    }
+    .lc-meta-row.r-name { grid-template-columns: minmax(160px, 1.4fr) 100px 100px; }
+    .lc-meta-row.r-size { grid-template-columns: 1fr; }
+    .lc-meta-row.r-border { grid-template-columns: 88px minmax(200px, 1.2fr) 88px; }
+    .lc-meta-row.r-meta { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .lc-meta-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .lc-meta-field > span,
+    .lc-meta-field > .lc-meta-label {
+      font-size: 11px; font-weight: 500; color: #64748b; letter-spacing: 0.01em;
+    }
+    .lc-meta-field input,
+    .lc-meta-field select {
+      width: 100%; border: 1px solid #dcdfe6; border-radius: 6px;
+      padding: 6px 8px; font-size: 13px; color: #334155; background: #fff;
+      outline: none; transition: border-color .15s, box-shadow .15s;
+    }
+    .lc-meta-field input:focus,
+    .lc-meta-field select:focus {
+      border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.12);
+    }
+    .lc-meta-size-bar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+      padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px;
+      background: #fff;
+    }
+    .lc-meta-size-bar .lc-meta-label {
+      font-size: 11px; font-weight: 500; color: #64748b; margin-right: 2px;
+    }
+    .lc-meta-size-bar #lc_paperSizeChips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .lc-meta-border-color .lc-color-row { margin-top: 0; }
+    @media (max-width: 1100px) {
+      .lc-meta-row.r-name,
+      .lc-meta-row.r-border,
+      .lc-meta-row.r-meta { grid-template-columns: 1fr 1fr; }
+      .lc-meta-row.r-name .lc-meta-field:first-child { grid-column: 1 / -1; }
     }
     .lc-create-tabs { display: flex; gap: 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 12px; }
     .lc-create-tabs button {
@@ -793,36 +845,41 @@
           <button type="button" data-lc-close class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
         </div>
         <div class="lc-edit-meta" data-annotate="label-cert-edit-base">
-          <label class="text-xs text-slate-600">模版名称<input id="lc_e_name" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" /></label>
-          <label class="text-xs text-slate-600">纸张宽(mm)<input id="lc_e_w" type="number" min="20" max="200" step="0.1" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" /></label>
-          <label class="text-xs text-slate-600">纸张高(mm)<input id="lc_e_h" type="number" min="15" max="200" step="0.1" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" /></label>
-          <div class="col-span-2 text-xs text-slate-500">
-            <div class="mb-1">尺寸快捷（将等比缩放内部元素）</div>
-            <div id="lc_paperSizeChips" class="flex flex-wrap gap-1"></div>
+          <div class="lc-meta-row r-name">
+            <label class="lc-meta-field"><span>模版名称</span><input id="lc_e_name" placeholder="例如：默认合格证" /></label>
+            <label class="lc-meta-field"><span>纸张宽 (mm)</span><input id="lc_e_w" type="number" min="20" max="200" step="0.1" /></label>
+            <label class="lc-meta-field"><span>纸张高 (mm)</span><input id="lc_e_h" type="number" min="15" max="200" step="0.1" /></label>
           </div>
-          <label class="text-xs text-slate-600">边框
-            <select id="lc_e_borderOn" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm">
-              <option value="1">有</option>
-              <option value="0">无</option>
-            </select>
-          </label>
-          <div class="text-xs text-slate-600 lc-color-field" data-lc-border-color>
-            <div class="mb-0.5">边框色</div>
-            <div class="lc-color-row">
-              <input id="lc_e_borderColor" type="color" value="#cbd5e1" />
-              <input id="lc_e_borderRgb" type="text" class="lc-rgb-input" placeholder="R, G, B 或 #hex" />
-              <button type="button" class="lc-mini-btn" data-lc-border-rgb-copy title="复制 RGB">复制</button>
-              <button type="button" class="lc-mini-btn" data-lc-border-rgb-paste title="从剪贴板粘贴">粘贴</button>
+          <div class="lc-meta-row r-size">
+            <div class="lc-meta-size-bar">
+              <span class="lc-meta-label">尺寸快捷</span>
+              <div id="lc_paperSizeChips"></div>
+              <span class="text-[10px] text-slate-400 ml-auto">应用后内部元素等比缩放</span>
             </div>
           </div>
-          <label class="text-xs text-slate-600">边框粗细<input id="lc_e_borderWidth" type="number" min="0" max="8" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" /></label>
-          <label class="text-xs text-slate-600">材质<input id="lc_e_mat" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" /></label>
-          <label class="text-xs text-slate-600">安装 / 赋码
-            <div class="mt-0.5 flex gap-1">
-              <input id="lc_e_mount" class="w-1/2 rounded border border-slate-300 px-2 py-1 text-sm" placeholder="安装" />
-              <input id="lc_e_print" class="w-1/2 rounded border border-slate-300 px-2 py-1 text-sm" placeholder="赋码" />
+          <div class="lc-meta-row r-border">
+            <label class="lc-meta-field"><span>边框</span>
+              <select id="lc_e_borderOn">
+                <option value="1">有</option>
+                <option value="0">无</option>
+              </select>
+            </label>
+            <div class="lc-meta-field lc-color-field lc-meta-border-color" data-lc-border-color>
+              <span class="lc-meta-label">边框色</span>
+              <div class="lc-color-row">
+                <input id="lc_e_borderColor" type="color" value="#cbd5e1" />
+                <input id="lc_e_borderRgb" type="text" class="lc-rgb-input" placeholder="R, G, B 或 #hex" />
+                <button type="button" class="lc-icon-btn" data-lc-border-rgb-copy title="复制 RGB" aria-label="复制 RGB"><i class="fa fa-copy"></i></button>
+                <button type="button" class="lc-icon-btn" data-lc-border-rgb-paste title="从剪贴板粘贴" aria-label="粘贴 RGB"><i class="fa fa-clipboard"></i></button>
+              </div>
             </div>
-          </label>
+            <label class="lc-meta-field"><span>边框粗细</span><input id="lc_e_borderWidth" type="number" min="0" max="8" /></label>
+          </div>
+          <div class="lc-meta-row r-meta">
+            <label class="lc-meta-field"><span>材质</span><input id="lc_e_mat" placeholder="如：不粘胶纸" /></label>
+            <label class="lc-meta-field"><span>安装方式</span><input id="lc_e_mount" placeholder="如：粘贴 / 悬挂" /></label>
+            <label class="lc-meta-field"><span>赋码打印方式</span><input id="lc_e_print" placeholder="如：喷墨 / 热转印" /></label>
+          </div>
         </div>
         <div class="lc-free-shell" data-annotate="label-cert-edit-fields">
           <div class="lc-edit-work">
@@ -830,12 +887,20 @@
             <section class="lc-center-stage" data-annotate="label-cert-edit-preview">
               <div class="lc-preview-head">
                 <span class="text-xs font-medium text-slate-600">实时预览</span>
-                <button type="button" data-lc-refresh class="text-xs text-blue-600 hover:underline">刷新</button>
+                <div class="lc-zoom-bar">
+                  <button type="button" class="lc-icon-btn" data-lc-zoom="-1" title="缩小" aria-label="缩小"><i class="fa fa-minus"></i></button>
+                  <span class="lc-zoom-val" id="lc_zoomVal">100%</span>
+                  <button type="button" class="lc-icon-btn" data-lc-zoom="1" title="放大" aria-label="放大"><i class="fa fa-plus"></i></button>
+                  <button type="button" class="lc-icon-btn" data-lc-zoom="0" title="重置缩放" aria-label="重置缩放"><i class="fa fa-compress"></i></button>
+                  <button type="button" data-lc-refresh class="text-xs text-blue-600 hover:underline ml-2">刷新</button>
+                </div>
               </div>
               <div class="lc-center-body">
-                <div id="lc_stageStack" class="lc-stage-stack">
-                  <div id="lc_previewBox" class="lc-stage-preview"></div>
-                  <div id="lc_canvas" class="lc-stage-canvas"></div>
+                <div id="lc_zoomPad" class="lc-zoom-pad">
+                  <div id="lc_stageStack" class="lc-stage-stack">
+                    <div id="lc_previewBox" class="lc-stage-preview"></div>
+                    <div id="lc_canvas" class="lc-stage-canvas"></div>
+                  </div>
                 </div>
               </div>
             </section>

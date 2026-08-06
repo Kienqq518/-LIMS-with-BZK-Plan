@@ -16,9 +16,14 @@
     selectedId: null,
     propTab: 'layout', // layout | content
     scale: 3.78, // px per mm，与 LabelCertRender.mmToPx 对齐，便于预览叠层
+    zoom: 1, // 画布视觉缩放（CSS transform），不影响 mm 坐标
     drag: null,
     lastPaper: null // { wMm, hMm } 用于纸张变更时等比缩放元素
   };
+
+  var ZOOM_MIN = 0.5;
+  var ZOOM_MAX = 2;
+  var ZOOM_STEP = 0.1;
 
   function $(id) { return document.getElementById(id); }
 
@@ -252,6 +257,7 @@
     state.editingIsDefault = !!isDefault;
     state.selectedId = null;
     state.propTab = 'layout';
+    state.zoom = 1;
     if (isDefault) {
       draft.enabled = true;
       draft.bindSampleIds = [];
@@ -500,6 +506,39 @@
     };
   }
 
+  function applyStageZoom() {
+    var stack = $('lc_stageStack');
+    var pad = $('lc_zoomPad');
+    var z = state.zoom || 1;
+    var size = stagePixelSize();
+    if (stack) stack.style.transform = z === 1 ? '' : ('scale(' + z + ')');
+    if (pad && size.w && size.h) {
+      pad.style.width = Math.round(size.w * z) + 'px';
+      pad.style.height = Math.round(size.h * z) + 'px';
+    }
+    var label = $('lc_zoomVal');
+    if (label) label.textContent = Math.round(z * 100) + '%';
+  }
+
+  function setZoom(next) {
+    var z = Math.round(Number(next) * 100) / 100;
+    if (!isFinite(z)) z = 1;
+    state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+    applyStageZoom();
+  }
+
+  function nudgeZoom(dir) {
+    if (dir === 0) { setZoom(1); return; }
+    setZoom((state.zoom || 1) + (dir > 0 ? ZOOM_STEP : -ZOOM_STEP));
+  }
+
+  function clearSelection() {
+    if (!state.selectedId) return;
+    state.selectedId = null;
+    renderCanvas();
+    renderPropPanel();
+  }
+
   function renderCanvas() {
     var host = $('lc_canvas');
     if (!host || !state.draft) return;
@@ -518,6 +557,7 @@
       stack.style.width = w + 'px';
       stack.style.height = h + 'px';
     }
+    applyStageZoom();
 
     var els = (state.draft.elements || []).slice().sort(function (a, b) {
       return (a.zIndex - b.zIndex) || String(a.id).localeCompare(String(b.id));
@@ -738,9 +778,20 @@
         '<input type="color" data-lc-c="' + key + '" value="' + hex + '" title="取色" />' +
         '<input type="text" data-lc-rgb="' + key + '" class="lc-rgb-input" value="' + rgbTextFromHex(hex) +
           '" placeholder="R, G, B 或 #hex" title="支持 44,221,74 / rgb(44,221,74) / #2cdd4a" />' +
-        '<button type="button" class="lc-mini-btn" data-lc-rgb-copy="' + key + '" title="复制 RGB">复制</button>' +
-        '<button type="button" class="lc-mini-btn" data-lc-rgb-paste="' + key + '" title="从剪贴板粘贴">粘贴</button>' +
+        '<button type="button" class="lc-icon-btn" data-lc-rgb-copy="' + key + '" title="复制 RGB" aria-label="复制 RGB"><i class="fa fa-copy"></i></button>' +
+        '<button type="button" class="lc-icon-btn" data-lc-rgb-paste="' + key + '" title="从剪贴板粘贴" aria-label="粘贴 RGB"><i class="fa fa-clipboard"></i></button>' +
       '</div></div>';
+  }
+
+  function flashIconBtn(btn, okIcon) {
+    if (!btn) return;
+    var prev = btn.innerHTML;
+    btn.classList.add('ok');
+    btn.innerHTML = '<i class="fa ' + (okIcon || 'fa-check') + '"></i>';
+    setTimeout(function () {
+      btn.classList.remove('ok');
+      btn.innerHTML = prev;
+    }, 900);
   }
 
   function syncColorPair(root, key, hex) {
@@ -1030,11 +1081,7 @@
       e.preventDefault();
       return;
     }
-    if (paper) {
-      state.selectedId = null;
-      renderCanvas();
-      renderPropPanel();
-    }
+    if (paper) clearSelection();
   }
 
   function onCanvasPointerMove(e) {
@@ -1044,8 +1091,9 @@
       if (state.draft.elements[i].id === state.drag.id) el = state.draft.elements[i];
     }
     if (!el || el.locked) return;
-    var dx = (e.clientX - state.drag.startX) / state.scale;
-    var dy = (e.clientY - state.drag.startY) / state.scale;
+    var unit = state.scale * (state.zoom || 1);
+    var dx = (e.clientX - state.drag.startX) / unit;
+    var dy = (e.clientY - state.drag.startY) / unit;
     if (state.drag.mode === 'move') {
       el.xMm = state.drag.origX + dx;
       el.yMm = state.drag.origY + dy;
@@ -1092,6 +1140,11 @@
       if (e.target.closest('[data-lc-close]')) { closeEditor(); return; }
       if (e.target.closest('[data-lc-save]')) { saveEditor(); return; }
       if (e.target.closest('[data-lc-refresh]')) { refreshPreview(); return; }
+      var zoomBtn = e.target.closest('[data-lc-zoom]');
+      if (zoomBtn) {
+        nudgeZoom(parseInt(zoomBtn.getAttribute('data-lc-zoom'), 10) || 0);
+        return;
+      }
       if (e.target.closest('[data-lc-pv-close]')) { closePreview(); return; }
       if (e.target.closest('[data-lc-pv-edit]')) {
         var pid = state.previewId;
@@ -1135,8 +1188,7 @@
         var rgbEl = document.querySelector('#lc_propContent [data-lc-rgb="' + cKey + '"]');
         var text = rgbEl ? rgbEl.value : '';
         copyText(text).then(function () {
-          rgbCopy.textContent = '已复制';
-          setTimeout(function () { rgbCopy.textContent = '复制'; }, 1000);
+          flashIconBtn(rgbCopy);
         }).catch(function () { alert('复制失败，请手动选中复制'); });
         return;
       }
@@ -1147,6 +1199,7 @@
           var hex = parseColorText(txt);
           if (!hex) { alert('无法识别颜色，请粘贴如 44,221,74 或 #2cdd4a'); return; }
           applyColorKey(pKey, hex);
+          flashIconBtn(rgbPaste, 'fa-check');
         }).catch(function () {
           var manual = window.prompt('粘贴 RGB 或十六进制颜色', '');
           var hex2 = parseColorText(manual);
@@ -1155,11 +1208,11 @@
         });
         return;
       }
-      if (e.target.closest('[data-lc-border-rgb-copy]')) {
+      var borderCopyBtn = e.target.closest('[data-lc-border-rgb-copy]');
+      if (borderCopyBtn) {
         var bRgb = $('lc_e_borderRgb');
         copyText(bRgb ? bRgb.value : '').then(function () {
-          e.target.textContent = '已复制';
-          setTimeout(function () { e.target.textContent = '复制'; }, 1000);
+          flashIconBtn(borderCopyBtn);
         }).catch(function () { alert('复制失败'); });
         return;
       }
@@ -1312,10 +1365,24 @@
     });
 
     root.addEventListener('mousedown', function (e) {
-      if (e.target.closest('#lc_canvas')) onCanvasPointerDown(e);
+      if (e.target.closest('#lc_canvas')) {
+        onCanvasPointerDown(e);
+        return;
+      }
+      // 点击画布网格空白处：取消选中，恢复纯预览样式
+      if (e.target.closest('.lc-center-body') && !e.target.closest('.lc-canvas-el')) {
+        clearSelection();
+      }
     });
     document.addEventListener('mousemove', onCanvasPointerMove);
     document.addEventListener('mouseup', onCanvasPointerUp);
+
+    root.addEventListener('wheel', function (e) {
+      if (!e.target.closest('.lc-center-body')) return;
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      nudgeZoom(e.deltaY < 0 ? 1 : -1);
+    }, { passive: false });
   }
 
   function init(cat) {
