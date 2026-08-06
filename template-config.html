@@ -297,10 +297,14 @@
     .lc-inline-pair { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
     .lc-inline-pair input[type=number] { width: 72px; }
     .lc-inline-pair input[type=color] { width: 36px; height: 28px; padding: 0; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; }
-    /* 自由设计编辑器：左预览 · 右编辑 */
-    .lc-free-shell { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+    /* 自由设计编辑器：左预览 · 右编辑（同排，避免纵向滚动） */
+    .lc-free-shell {
+      display: flex; flex-direction: row; flex-wrap: nowrap;
+      flex: 1 1 auto; min-height: 0; overflow: hidden;
+    }
     .lc-edit-preview-pane {
-      width: 340px; flex: 0 0 340px; min-height: 0; overflow: hidden;
+      width: 360px; flex: 0 0 360px; align-self: stretch;
+      min-height: 0; overflow: hidden;
       border-right: 1px solid #e2e8f0; background: #f1f5f9;
       display: flex; flex-direction: column;
     }
@@ -309,11 +313,12 @@
       padding: 10px 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; flex-shrink: 0;
     }
     .lc-edit-preview-pane .lc-preview-body {
-      flex: 1; min-height: 0; overflow: auto; padding: 12px;
+      flex: 1 1 auto; min-height: 0; overflow: auto; padding: 12px;
       display: flex; justify-content: center; align-items: flex-start;
     }
     .lc-edit-work {
-      flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; overflow: hidden;
+      flex: 1 1 auto; min-width: 0; min-height: 0; align-self: stretch;
+      display: flex; flex-direction: row; flex-wrap: nowrap; overflow: hidden;
     }
     .lc-palette {
       width: 156px; flex: 0 0 156px; border-right: 1px solid #e2e8f0; background: #f8fafc;
@@ -758,7 +763,7 @@
     </div>
 
     <div id="lc_editModal" class="lc-modal-mask">
-      <div class="flex h-[94vh] w-[1280px] max-w-[98vw] flex-col rounded-lg bg-white shadow-2xl">
+      <div class="flex h-[94vh] w-[1360px] max-w-[98vw] flex-col overflow-hidden rounded-lg bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3">
           <div class="min-w-0">
             <h3 id="lc_editTitle" class="text-base font-medium">编辑模版</h3>
