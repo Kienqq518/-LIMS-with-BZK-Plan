@@ -869,7 +869,6 @@
         LabelCertRender.esc(p.label || '') + '" /></label>' +
         '<label class="text-xs text-slate-600 flex items-center gap-1 mb-2"><input type="checkbox" data-lc-c="showLabel"' +
         (p.showLabel !== false ? ' checked' : '') + ' /> 显示标签</label>' +
-        selectField('值对齐', 'valueAlign', p.valueAlign || 'left', [['left', '居左'], ['center', '居中'], ['right', '居右']]) +
         selectField('下划线', 'underline', p.underline || 'dotted', [['none', '无'], ['solid', '直线'], ['dotted', '断点'], ['dashed', '断线']]) +
         numContent('字号', 'fontSize', p.fontSize || 11) +
         fontFamilyField(p.fontFamily) +
