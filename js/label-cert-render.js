@@ -84,7 +84,8 @@
 
   function ensureMigrated(tpl) {
     if (!tpl) return tpl;
-    if (Array.isArray(tpl.elements) && tpl.elements.length) return tpl;
+    // 已是自由设计（含空白 elements: []）直接用，勿把空白误展开成旧预设
+    if (Array.isArray(tpl.elements)) return tpl;
     if (global.LabelCertConfig && LabelCertConfig.migrateTemplateToFree) {
       return LabelCertConfig.migrateTemplateToFree(LabelCertConfig.clone(tpl));
     }

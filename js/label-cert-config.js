@@ -582,7 +582,10 @@
     }
     tpl.paper = normalizePaper(paper, paperFallback);
 
-    if (!Array.isArray(tpl.elements) || !tpl.elements.length) {
+    // 仅旧版 layoutPreset/brand/fields 结构才展开；空白自由设计（elements: []）必须保持空白
+    var isLegacyShape = !!(tpl.layoutPreset || tpl.brand || tpl.fields || tpl.qr || tpl.style);
+    if (!Array.isArray(tpl.elements)) tpl.elements = [];
+    if (!tpl.elements.length && isLegacyShape) {
       tpl.elements = expandLegacyToElements(tpl, tplType);
     }
     tpl.elements = enforceUniqueness(
