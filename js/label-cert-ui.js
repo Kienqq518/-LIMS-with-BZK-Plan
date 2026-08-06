@@ -544,10 +544,14 @@
       type === 'seal' || type === 'watermarkText';
   }
 
-  /** 在可重复类型中循环选中已有元素（用于被挡住时从元件库选中） */
+  /** 在可重复类型中循环选中已有元素（元件库单击水印/章时使用） */
   function selectExistingOfType(type, fieldId) {
     var hits = findPaletteMatch(type, fieldId);
     if (!hits.length) return false;
+    // 按叠放顺序从底到顶循环，便于先点到底层水印
+    hits = hits.slice().sort(function (a, b) {
+      return (a.zIndex - b.zIndex) || String(a.id).localeCompare(String(b.id));
+    });
     var ids = hits.map(function (e) { return e.id; });
     var ix = ids.indexOf(state.selectedId);
     state.selectedId = ids[(ix + 1) % ids.length];
