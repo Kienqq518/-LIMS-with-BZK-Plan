@@ -39,6 +39,73 @@
     }
   }
 
+  function pad2(n) {
+    return n < 10 ? '0' + n : String(n);
+  }
+
+  function parseDateParts(str) {
+    var s = String(str == null ? '' : str).trim();
+    if (!s) return null;
+    var m = s.match(/^(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})/);
+    if (!m) m = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+    if (!m) return null;
+    var y, mo, d;
+    if (m[1].length === 4) {
+      y = +m[1]; mo = +m[2]; d = +m[3];
+    } else {
+      // MM/DD/YYYY or DD-MM-YYYY — 仅作宽松回退，以首段>12 判断日在前
+      var a = +m[1], b = +m[2], c = +m[3];
+      if (a > 12) { d = a; mo = b; y = c; }
+      else { mo = a; d = b; y = c; }
+    }
+    if (!(y >= 1900 && y <= 2100 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31)) return null;
+    return { y: y, m: mo, d: d };
+  }
+
+  function formatDateValue(str, fmt) {
+    var p = parseDateParts(str);
+    if (!p) return str == null ? '' : String(str);
+    if (global.LabelCertConfig && LabelCertConfig.normalizeDateFormat) {
+      fmt = LabelCertConfig.normalizeDateFormat(fmt);
+    } else {
+      fmt = fmt || 'YYYY-MM-DD';
+    }
+    switch (fmt) {
+      case 'YYYY/MM/DD': return p.y + '/' + pad2(p.m) + '/' + pad2(p.d);
+      case 'YYYY.MM.DD': return p.y + '.' + pad2(p.m) + '.' + pad2(p.d);
+      case 'YYYY年MM月DD日': return p.y + '年' + pad2(p.m) + '月' + pad2(p.d) + '日';
+      case 'YYYY年M月D日': return p.y + '年' + p.m + '月' + p.d + '日';
+      case 'YY.MM.DD': return String(p.y).slice(-2) + '.' + pad2(p.m) + '.' + pad2(p.d);
+      case 'MM/DD/YYYY': return pad2(p.m) + '/' + pad2(p.d) + '/' + p.y;
+      case 'DD-MM-YYYY': return pad2(p.d) + '-' + pad2(p.m) + '-' + p.y;
+      case 'YYYY-MM-DD':
+      default: return p.y + '-' + pad2(p.m) + '-' + pad2(p.d);
+    }
+  }
+
+  function displayFieldValue(fieldId, data, dateFormat) {
+    var raw = fieldValue(fieldId, data);
+    var isDate = global.LabelCertConfig && LabelCertConfig.isDateFieldId
+      ? LabelCertConfig.isDateFieldId(fieldId)
+      : (fieldId === 'inspectDate' || fieldId === 'reinspectDate' || fieldId === 'validUntil' || fieldId === 'receiveDate');
+    if (isDate) return formatDateValue(raw, dateFormat);
+    return raw;
+  }
+
+  function elementLayerOf(el) {
+    if (global.LabelCertConfig && LabelCertConfig.elementLayer) return LabelCertConfig.elementLayer(el);
+    if (!el) return 'content';
+    if (el.type === 'staticText') return 'bg';
+    if (el.type === 'seal' || el.type === 'watermarkText') return 'wm';
+    return 'content';
+  }
+
+  function isLayerVisible(el, layerVisible) {
+    if (!layerVisible) return true;
+    var layer = elementLayerOf(el);
+    return layerVisible[layer] !== false;
+  }
+
   function visibleFields(tpl) {
     // 兼容：优先 elements；旧 fields 回退
     if (tpl && Array.isArray(tpl.elements) && tpl.elements.length) {
@@ -124,7 +191,7 @@
       fontFamilyCss(p) + '">' +
       label +
       '<span class="lc-el-v" style="flex:1;min-width:0;' + underlineCss(p.underline, color) + '">' +
-      esc(fieldValue(p.fieldId, data)) + '</span></div>';
+      esc(displayFieldValue(p.fieldId, data, p.dateFormat)) + '</span></div>';
   }
 
   function renderTextLike(el, className) {
@@ -223,7 +290,10 @@
     opts = opts || {};
     data = data || {};
     tpl = ensureMigrated(tpl);
-    var inner = sortedElements(tpl).map(function (el) {
+    var layerVisible = opts.layerVisible;
+    var inner = sortedElements(tpl).filter(function (el) {
+      return isLayerVisible(el, layerVisible);
+    }).map(function (el) {
       return renderElement(el, data, opts);
     }).join('');
     return '<div class="lc-sheet lc-free" style="' + sheetOuterStyle(tpl) + '" data-sample="' + esc(data.sampleNo) + '">' +
@@ -279,6 +349,8 @@
     mountQrs: mountQrs,
     ensureStyles: ensureStyles,
     fieldValue: fieldValue,
+    displayFieldValue: displayFieldValue,
+    formatDateValue: formatDateValue,
     visibleFields: visibleFields,
     normalizeQrPlacement: normalizeQrPlacement,
     esc: esc,

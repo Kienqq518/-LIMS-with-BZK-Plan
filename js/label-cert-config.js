@@ -68,6 +68,46 @@
     hangHole: { category: 'decor', name: '悬挂孔' }
   };
 
+  /** 逻辑分区：背景层 / 内容层 / 水印层（编辑器元件库与显隐用） */
+  function elementLayer(elOrType) {
+    var type = typeof elOrType === 'string' ? elOrType : (elOrType && elOrType.type);
+    if (type === 'staticText') return 'bg';
+    if (type === 'seal' || type === 'watermarkText') return 'wm';
+    return 'content';
+  }
+
+  var DATE_FIELD_IDS = ['inspectDate', 'reinspectDate', 'validUntil', 'receiveDate'];
+
+  var DATE_FORMAT_PRESETS = [
+    { id: 'YYYY-MM-DD', name: '2026-07-01' },
+    { id: 'YYYY/MM/DD', name: '2026/07/01' },
+    { id: 'YYYY.MM.DD', name: '2026.07.01' },
+    { id: 'YYYY年MM月DD日', name: '2026年07月01日' },
+    { id: 'YYYY年M月D日', name: '2026年7月1日' },
+    { id: 'YY.MM.DD', name: '26.07.01' },
+    { id: 'MM/DD/YYYY', name: '07/01/2026' },
+    { id: 'DD-MM-YYYY', name: '01-07-2026' }
+  ];
+
+  function isDateFieldId(fieldId) {
+    return DATE_FIELD_IDS.indexOf(fieldId) >= 0;
+  }
+
+  function normalizeDateFormat(fmt) {
+    var id = String(fmt || 'YYYY-MM-DD');
+    for (var i = 0; i < DATE_FORMAT_PRESETS.length; i++) {
+      if (DATE_FORMAT_PRESETS[i].id === id) return id;
+    }
+    return 'YYYY-MM-DD';
+  }
+
+  function defaultZIndexForType(type) {
+    var layer = elementLayer(type);
+    if (layer === 'bg') return 0;
+    if (layer === 'wm') return 20;
+    return 10;
+  }
+
   var SAMPLE_TREE = {
     aqgqj: [
       {
@@ -238,9 +278,10 @@
         return { text: tplType === 'sample_label' ? '' : '检验合格证', fontSize: 13, fontFamily: 'default', color: '#1e293b', align: 'center' };
       case 'logo':
         return { source: 'system', url: null };
-      case 'fieldRow':
-        return {
-          fieldId: opts.fieldId || 'sampleName',
+      case 'fieldRow': {
+        var fid = opts.fieldId || 'sampleName';
+        var base = {
+          fieldId: fid,
           label: opts.label || '试样名称',
           showLabel: true,
           valueAlign: 'left',
@@ -249,6 +290,9 @@
           fontFamily: 'default',
           color: '#1e293b'
         };
+        if (isDateFieldId(fid)) base.dateFormat = 'YYYY-MM-DD';
+        return base;
+      }
       case 'qr':
         return { payloadType: payloadTypeFor(tplType) };
       case 'seal':
@@ -297,7 +341,7 @@
     var meta = ELEMENT_TYPES[type];
     if (!meta) throw new Error('unknown element type: ' + type);
     var box = opts.box || defaultBox(type, paper, opts);
-    var z = opts.zIndex != null ? opts.zIndex : (type === 'seal' || type === 'watermarkText' ? 0 : 1);
+    var z = opts.zIndex != null ? opts.zIndex : defaultZIndexForType(type);
     return {
       id: opts.id || elUid(),
       category: meta.category,
@@ -482,6 +526,11 @@
       props.fontFamily = normalizeFontFamily(props.fontFamily);
       props.color = normalizeColor(props.color, '#1e293b');
       props.showLabel = props.showLabel !== false;
+      if (isDateFieldId(props.fieldId)) {
+        props.dateFormat = normalizeDateFormat(props.dateFormat);
+      } else {
+        delete props.dateFormat;
+      }
     }
     if (el.type === 'orgName' || el.type === 'title' || el.type === 'staticText' || el.type === 'watermarkText') {
       props.text = props.text != null ? String(props.text) : '';
@@ -1000,6 +1049,11 @@
     fontCssById: fontCssById,
     normalizeFontFamily: normalizeFontFamily,
     ELEMENT_TYPES: ELEMENT_TYPES,
+    elementLayer: elementLayer,
+    DATE_FIELD_IDS: DATE_FIELD_IDS,
+    DATE_FORMAT_PRESETS: DATE_FORMAT_PRESETS,
+    isDateFieldId: isDateFieldId,
+    normalizeDateFormat: normalizeDateFormat,
     CERT_FIELD_POOL: CERT_FIELD_POOL,
     LABEL_FIELD_POOL: LABEL_FIELD_POOL,
     LABEL_DETECT_STATUS: LABEL_DETECT_STATUS,

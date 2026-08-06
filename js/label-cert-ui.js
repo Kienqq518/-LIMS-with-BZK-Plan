@@ -19,7 +19,9 @@
     zoom: 1, // 画布视觉缩放（CSS transform），不影响 mm 坐标
     drag: null,
     lastPaper: null, // { wMm, hMm } 用于纸张变更时等比缩放元素
-    history: { past: [], future: [], coalesceKey: null, max: 40 }
+    history: { past: [], future: [], coalesceKey: null, max: 40 },
+    /** 编辑器预览/画布分区显隐（仅编辑辅助，不写入模版） */
+    layerVisible: { bg: true, content: true, wm: true }
   };
 
   var ZOOM_MIN = 0.5;
@@ -259,12 +261,14 @@
     state.selectedId = null;
     state.propTab = 'layout';
     state.zoom = 1;
+    state.layerVisible = { bg: true, content: true, wm: true };
     resetHistory();
     if (isDefault) {
       draft.enabled = true;
       draft.bindSampleIds = [];
     }
     fillEditor();
+    renderLayerToggles();
     $('lc_editModal').classList.add('open');
     refreshAnnotations();
   }
@@ -403,6 +407,7 @@
     var bindSec = $('lc_bindSection');
     if (bindSec) bindSec.classList.toggle('hidden', state.editingIsDefault);
     renderPaperSizeChips();
+    renderLayerToggles();
     renderPalette();
     renderCanvas();
     renderPropPanel();
@@ -520,31 +525,81 @@
         '</div>';
     }
 
+    function subTitle(text) {
+      return '<div class="lc-pal-sub">' + text + '</div>';
+    }
+
+    // 背景层：仅静态文本
+    var bgItems = multiRow('staticText');
+
+    // 内容层：除检测章、文本水印外的全部
     var brand = ['orgName', 'title', 'logo'].map(function (t) {
       var on = LabelCertConfig.hasElementType(state.draft.elements, t);
       return typeBtn(t, '', on, on ? '再次点击移除' : '');
     }).join('');
-
     var fields = pool.map(function (f) {
       var on = usedFields.indexOf(f.id) >= 0;
       return '<button type="button" class="lc-pal-item' + (on ? ' on' : '') + '" data-lc-add="fieldRow" data-field="' +
         f.id + '" title="' + (on ? '再次点击移除' : '点击添加到画布') + '">' +
         LabelCertRender.esc(f.label) + '</button>';
     }).join('');
+    var qrOn = findPaletteMatch('qr').length > 0;
+    var contentExtra = typeBtn('qr', '', qrOn, qrOn ? '再次点击移除' : '') +
+      ['line', 'hangHole'].map(multiRow).join('');
 
-    var code = ['qr', 'seal', 'watermarkText'].map(function (t) {
-      if (t === 'seal' || t === 'watermarkText') return multiRow(t);
-      var on = findPaletteMatch(t).length > 0;
-      return typeBtn(t, '', on, on ? '再次点击移除' : '');
-    }).join('');
-
-    var decor = ['staticText', 'line', 'hangHole'].map(multiRow).join('');
+    // 水印层：检测章 + 文本水印
+    var wmItems = ['seal', 'watermarkText'].map(multiRow).join('');
 
     box.innerHTML =
-      '<div class="lc-pal-group"><div class="lc-pal-title">品牌标识</div><div class="lc-pal-items">' + brand + '</div></div>' +
-      '<div class="lc-pal-group"><div class="lc-pal-title">业务字段</div><div class="lc-pal-items">' + fields + '</div></div>' +
-      '<div class="lc-pal-group"><div class="lc-pal-title">码与章</div><div class="lc-pal-items">' + code + '</div></div>' +
-      '<div class="lc-pal-group"><div class="lc-pal-title">装饰辅助 <span class="font-normal text-slate-400">可重复 · 点名循环选中 / + 添加</span></div><div class="lc-pal-items">' + decor + '</div></div>';
+      '<div class="lc-pal-layer" data-layer="bg">' +
+        '<div class="lc-pal-title">背景层 <span class="font-normal text-slate-400">仅静态文本</span></div>' +
+        '<div class="lc-pal-items">' + bgItems + '</div>' +
+      '</div>' +
+      '<div class="lc-pal-layer" data-layer="content">' +
+        '<div class="lc-pal-title">内容层</div>' +
+        '<div class="lc-pal-items">' +
+          subTitle('品牌标识') + brand +
+          subTitle('业务字段') + fields +
+          subTitle('码与辅助') + contentExtra +
+        '</div>' +
+      '</div>' +
+      '<div class="lc-pal-layer" data-layer="wm">' +
+        '<div class="lc-pal-title">水印层 <span class="font-normal text-slate-400">检测章 / 文本水印</span></div>' +
+        '<div class="lc-pal-items">' + wmItems + '</div>' +
+      '</div>';
+  }
+
+  function layerVisibleOf(el) {
+    var layer = LabelCertConfig.elementLayer(el);
+    return !state.layerVisible || state.layerVisible[layer] !== false;
+  }
+
+  function renderLayerToggles() {
+    var host = $('lc_layerToggles');
+    if (!host) return;
+    var items = [
+      { id: 'bg', name: '背景层' },
+      { id: 'content', name: '内容层' },
+      { id: 'wm', name: '水印层' }
+    ];
+    host.innerHTML = items.map(function (it) {
+      var on = !state.layerVisible || state.layerVisible[it.id] !== false;
+      return '<button type="button" class="lc-layer-chip' + (on ? '' : ' off') +
+        '" data-lc-layer-vis="' + it.id + '" title="' +
+        (on ? ('隐藏' + it.name) : ('显示' + it.name)) + '">' +
+        '<span class="lc-layer-name">' + it.name + '</span>' +
+        '<i class="fa ' + (on ? 'fa-eye' : 'fa-eye-slash') + '" aria-hidden="true"></i>' +
+        '</button>';
+    }).join('');
+  }
+
+  function toggleLayerVisible(layerId) {
+    if (!state.layerVisible) state.layerVisible = { bg: true, content: true, wm: true };
+    if (!state.layerVisible.hasOwnProperty(layerId)) return;
+    state.layerVisible[layerId] = !state.layerVisible[layerId];
+    renderLayerToggles();
+    renderCanvas();
+    refreshPreview();
   }
 
   function isRepeatableType(type) {
@@ -703,7 +758,7 @@
     }
     applyStageZoom();
 
-    var els = (state.draft.elements || []).slice().sort(function (a, b) {
+    var els = (state.draft.elements || []).filter(layerVisibleOf).slice().sort(function (a, b) {
       return (a.zIndex - b.zIndex) || String(a.id).localeCompare(String(b.id));
     });
 
@@ -803,8 +858,16 @@
         selectField('下划线', 'underline', p.underline || 'dotted', [['none', '无'], ['solid', '直线'], ['dotted', '断点'], ['dashed', '断线']]) +
         numContent('字号', 'fontSize', p.fontSize || 11) +
         fontFamilyField(p.fontFamily) +
-        colorField('颜色', 'color', p.color || '#1e293b') +
-        '<p class="text-xs text-slate-400 mt-2">绑定字段：' + LabelCertRender.esc(p.fieldId) + '（不可改；删除后可重新添加）</p>';
+        colorField('颜色', 'color', p.color || '#1e293b');
+      if (LabelCertConfig.isDateFieldId(p.fieldId)) {
+        var fmt = LabelCertConfig.normalizeDateFormat(p.dateFormat);
+        var fmtOpts = (LabelCertConfig.DATE_FORMAT_PRESETS || []).map(function (f) {
+          return [f.id, f.name];
+        });
+        html += selectField('日期格式', 'dateFormat', fmt, fmtOpts) +
+          '<p class="text-[10px] text-slate-400 -mt-1 mb-2">点选切换常见格式；预览即时生效</p>';
+      }
+      html += '<p class="text-xs text-slate-400 mt-2">绑定字段：' + LabelCertRender.esc(p.fieldId) + '（不可改；删除后可重新添加）</p>';
     } else if (el.type === 'orgName' || el.type === 'title' || el.type === 'staticText' || el.type === 'watermarkText') {
       html +=
         '<label class="text-xs text-slate-600 block mb-2">文案<textarea data-lc-c="text" rows="2" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm">' +
@@ -1113,7 +1176,10 @@
     if (!box) return;
     LabelCertRender.ensureStyles();
     var size = stagePixelSize();
-    box.innerHTML = LabelCertRender.renderSheet(state.draft, demoData(), { suffix: '-pv' });
+    box.innerHTML = LabelCertRender.renderSheet(state.draft, demoData(), {
+      suffix: '-pv',
+      layerVisible: state.layerVisible
+    });
     var sheet = box.querySelector('.lc-sheet');
     if (sheet && size.w && size.h) {
       sheet.style.width = size.w + 'px';
@@ -1256,6 +1322,7 @@
     var xMm = (clientX - rect.left) / unit;
     var yMm = (clientY - rect.top) / unit;
     var hits = (state.draft.elements || []).filter(function (el) {
+      if (!layerVisibleOf(el)) return false;
       return xMm >= el.xMm && yMm >= el.yMm &&
         xMm <= el.xMm + el.wMm && yMm <= el.yMm + el.hMm;
     }).slice().sort(function (a, b) {
@@ -1287,6 +1354,7 @@
     var cx = el.xMm + el.wMm / 2;
     var cy = el.yMm + el.hMm / 2;
     var hits = (state.draft.elements || []).filter(function (e) {
+      if (!layerVisibleOf(e)) return false;
       return cx >= e.xMm && cy >= e.yMm &&
         cx <= e.xMm + e.wMm && cy <= e.yMm + e.hMm;
     }).slice().sort(function (a, b) {
@@ -1398,6 +1466,11 @@
       if (e.target.closest('[data-lc-close]')) { closeEditor(); return; }
       if (e.target.closest('[data-lc-save]')) { saveEditor(); return; }
       if (e.target.closest('[data-lc-refresh]')) { refreshPreview(); return; }
+      var layerVisBtn = e.target.closest('[data-lc-layer-vis]');
+      if (layerVisBtn) {
+        toggleLayerVisible(layerVisBtn.getAttribute('data-lc-layer-vis'));
+        return;
+      }
       if (e.target.closest('[data-lc-undo]')) { undoEditor(); return; }
       if (e.target.closest('[data-lc-redo]')) { redoEditor(); return; }
       var zoomBtn = e.target.closest('[data-lc-zoom]');
