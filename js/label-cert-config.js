@@ -7,7 +7,7 @@
   var STORAGE_KEY = 'lims.labelCertConfig';
   var DEFAULT_ORG = '杭州数蚕智能科技有限公司';
   var SYSTEM_LOGO_URL = 'assets/label-cert/system-logo.png?v=transparent';
-  var SYSTEM_SEAL_URL = 'assets/label-cert/system-seal.svg';
+  var SYSTEM_SEAL_URL = 'assets/label-cert/system-seal.png';
 
   var CATEGORIES = [
     { key: 'aqgqj', name: '安全工器具类' },
