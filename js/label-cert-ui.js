@@ -47,6 +47,15 @@
     return (tpl.elements || []).length;
   }
 
+  function metaParts(tpl) {
+    var m = (tpl && tpl.meta) || {};
+    return {
+      material: m.material || '—',
+      mount: m.mount || '—',
+      printMethod: m.printMethod || '—'
+    };
+  }
+
   function renderList() {
     var bucket = currentBucket();
     LabelCertConfig.save(cfg);
@@ -56,13 +65,16 @@
 
     var card = $('lc_defaultCard');
     if (card && def) {
+      var dm = metaParts(def);
       card.innerHTML =
         '<div class="meta">' +
           '<div class="name">' + LabelCertRender.esc(def.name) +
             '<span class="lc-default-badge"><i class="fa fa-lock"></i> 默认 · 兜底</span>' +
           '</div>' +
-          '<div class="sub">自由设计 · ' + def.paper.wMm + '×' + def.paper.hMm + ' mm · ' +
-            elCount(def) + ' 个元素 · 覆盖全部未单独配置的样品</div>' +
+          '<div class="sub">自由设计 · ' + def.paper.wMm + '×' + def.paper.hMm + ' mm · 材质 ' +
+            LabelCertRender.esc(dm.material) + ' · 安装 ' + LabelCertRender.esc(dm.mount) +
+            ' · 赋码 ' + LabelCertRender.esc(dm.printMethod) +
+            ' · 覆盖全部未单独配置的样品</div>' +
         '</div>' +
         '<div class="flex items-center gap-3 flex-shrink-0">' +
           '<button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-white" data-lc-act="edit" data-id="' + def.id + '" data-annotate="label-cert-default-edit">编辑版式</button>' +
@@ -75,13 +87,16 @@
     body.innerHTML = personal.length ? personal.map(function (t, idx) {
       var binds = (t.bindSampleIds || []).map(sampleName).join('、') || '—';
       var n = (t.bindSampleIds || []).length;
+      var meta = metaParts(t);
       var enableAnno = idx === 0 ? ' data-annotate="label-cert-enable"' : '';
       var opsAnno = idx === 0 ? ' data-annotate="label-cert-ops"' : '';
       return '<tr class="hover:bg-slate-50">' +
         '<td class="border-b border-slate-100 px-3 py-2">' + LabelCertRender.esc(t.name) + '</td>' +
-        '<td class="border-b border-slate-100 px-3 py-2">' + elCount(t) + ' 个元素</td>' +
         '<td class="border-b border-slate-100 px-3 py-2">' + (t.paper.wMm + '×' + t.paper.hMm) + '</td>' +
-        '<td class="border-b border-slate-100 px-3 py-2 max-w-[240px] truncate" title="' + LabelCertRender.esc(binds) + '">' +
+        '<td class="border-b border-slate-100 px-3 py-2">' + LabelCertRender.esc(meta.material) + '</td>' +
+        '<td class="border-b border-slate-100 px-3 py-2">' + LabelCertRender.esc(meta.mount) + '</td>' +
+        '<td class="border-b border-slate-100 px-3 py-2">' + LabelCertRender.esc(meta.printMethod) + '</td>' +
+        '<td class="border-b border-slate-100 px-3 py-2 max-w-[200px] truncate" title="' + LabelCertRender.esc(binds) + '">' +
           LabelCertRender.esc(binds) + ' <span class="text-slate-400">(' + n + ')</span></td>' +
         '<td class="border-b border-slate-100 px-3 py-2">' +
           '<label class="lc-switch"' + enableAnno + ' title="' + (t.enabled ? '启用中，停用后回退默认' : '已停用，使用默认模版') + '">' +
@@ -94,7 +109,7 @@
           '<button type="button" class="text-blue-600 hover:underline mr-2" data-lc-act="preview" data-id="' + t.id + '">预览</button>' +
           '<button type="button" class="text-red-500 hover:underline" data-lc-act="del" data-id="' + t.id + '">删除</button>' +
         '</td></tr>';
-    }).join('') : '<tr><td colspan="6" class="px-3 py-10 text-center text-slate-400">尚未配置个性化模版，全部样品使用上方默认模版</td></tr>';
+    }).join('') : '<tr><td colspan="8" class="px-3 py-10 text-center text-slate-400">尚未配置个性化模版，全部样品使用上方默认模版</td></tr>';
 
     $('lc_listTitle').textContent = state.type === 'certificate' ? '合格证模版' : '样品标签模版';
     document.querySelectorAll('#labelCertView .lc-type-nav').forEach(function (el) {

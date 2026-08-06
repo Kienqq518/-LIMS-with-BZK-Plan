@@ -455,11 +455,11 @@
       align-items: start;
     }
     .lc-meta-row.r-extra {
-      grid-template-columns: minmax(150px, 1fr) 64px minmax(72px, .65fr) minmax(72px, .65fr) minmax(80px, .7fr) minmax(240px, 1.8fr);
-      align-items: start; gap: 8px;
+      grid-template-columns: minmax(150px, 1fr) 64px minmax(72px, .7fr) minmax(72px, .7fr) minmax(80px, .75fr) minmax(200px, 1.35fr);
+      align-items: end; gap: 8px;
     }
     .lc-meta-row.r-extra.no-border {
-      grid-template-columns: minmax(72px, .7fr) minmax(72px, .7fr) minmax(80px, .75fr) minmax(280px, 2fr);
+      grid-template-columns: minmax(72px, .75fr) minmax(72px, .75fr) minmax(80px, .8fr) minmax(220px, 1.5fr);
     }
     .lc-meta-row.r-extra.no-border [data-lc-border-only] { display: none !important; }
     .lc-meta-bind-inline {
@@ -467,12 +467,24 @@
     }
     .lc-meta-bind-inline .lc-meta-bind-head {
       display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
+      min-height: 16px;
     }
+    .lc-meta-bind-inline .lc-meta-label {
+      font-size: 11px; font-weight: 500; color: #64748b; letter-spacing: 0.01em;
+    }
+    .lc-meta-bind-inline .lc-meta-bind-note { font-size: 10px; color: #94a3b8; white-space: nowrap; }
     .lc-meta-bind-inline #lc_bindSamples,
     .lc-meta-bind-inline .lc-ms {
       max-width: none !important; width: 100%;
     }
-    .lc-meta-bind-inline .lc-ms-trigger { width: 100%; box-sizing: border-box; }
+    .lc-meta-bind-inline .lc-ms-trigger {
+      width: 100%; box-sizing: border-box;
+      min-height: 0; height: auto;
+      padding: 6px 8px; font-size: 13px; border-radius: 6px;
+      line-height: 1.25;
+    }
+    .lc-meta-bind-inline .lc-ms-trigger .fa { font-size: 11px; }
+    .lc-meta-bind-inline #lc_bindHint { margin-top: 2px; font-size: 11px; }
     .lc-meta-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .lc-meta-field > span,
     .lc-meta-field > .lc-meta-label {
@@ -851,8 +863,10 @@
               <thead>
                 <tr class="bg-slate-50 text-slate-600">
                   <th class="border-b border-slate-200 px-3 py-2 font-medium">名称</th>
-                  <th class="border-b border-slate-200 px-3 py-2 font-medium">元素</th>
                   <th class="border-b border-slate-200 px-3 py-2 font-medium">纸张(mm)</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">材质</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">安装方式</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">赋码打印方式</th>
                   <th class="border-b border-slate-200 px-3 py-2 font-medium">已绑样品</th>
                   <th class="border-b border-slate-200 px-3 py-2 font-medium">启用</th>
                   <th class="border-b border-slate-200 px-3 py-2 font-medium">操作</th>
@@ -952,10 +966,10 @@
             <div id="lc_bindSection" class="lc-meta-bind-inline" data-annotate="label-cert-edit-bind">
               <div class="lc-meta-bind-head">
                 <span class="lc-meta-label">绑定样品 <span class="text-rose-500">*</span></span>
-                <span class="text-[10px] text-slate-400">须绑定 ≥1 个叶节点</span>
+                <span class="lc-meta-bind-note">须绑定 ≥1 个叶节点</span>
               </div>
               <div id="lc_bindSamples"></div>
-              <p id="lc_bindHint" class="mt-0.5 text-xs text-amber-600"></p>
+              <p id="lc_bindHint" class="text-amber-600"></p>
             </div>
           </div>
         </div>
