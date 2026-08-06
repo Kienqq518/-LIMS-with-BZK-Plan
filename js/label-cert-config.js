@@ -272,7 +272,7 @@
     var meta = ELEMENT_TYPES[type];
     if (!meta) throw new Error('unknown element type: ' + type);
     var box = opts.box || defaultBox(type, paper, opts);
-    var z = opts.zIndex != null ? opts.zIndex : (type === 'seal' || type === 'watermarkText' ? 0 : 10);
+    var z = opts.zIndex != null ? opts.zIndex : (type === 'seal' || type === 'watermarkText' ? 0 : 1);
     return {
       id: opts.id || elUid(),
       category: meta.category,
@@ -281,7 +281,7 @@
       yMm: clamp(box.yMm, 0, 200, 0),
       wMm: clamp(box.wMm, 1, 200, 10),
       hMm: clamp(box.hMm, 0.5, 200, 4),
-      zIndex: clamp(z, -999, 999, 10),
+      zIndex: clamp(z, -999, 999, 1),
       locked: !!opts.locked,
       rotationDeg: clamp(opts.rotationDeg != null ? opts.rotationDeg : (type === 'seal' || type === 'watermarkText' ? -12 : 0), -90, 90, 0),
       props: Object.assign(defaultProps(type, opts), opts.props || {})
@@ -309,7 +309,7 @@
         return { id: id, label: fieldLabel(tplType, id), visible: true };
       });
     }
-    var z = 10;
+    var z = 1;
 
     if (legacyId === 'cert_style_1') {
       if (brand.logoMode !== 'hidden') {
@@ -485,7 +485,7 @@
       yMm: clamp(el.yMm, 0, 200, 0),
       wMm: clamp(el.wMm, 0.5, 200, 10),
       hMm: clamp(el.hMm, 0.5, 200, 4),
-      zIndex: clamp(el.zIndex, -999, 999, 10),
+      zIndex: clamp(el.zIndex, -999, 999, 1),
       locked: !!el.locked,
       rotationDeg: clamp(el.rotationDeg, -90, 90, 0),
       props: props

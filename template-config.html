@@ -321,7 +321,7 @@
       display: flex; flex-direction: row; flex-wrap: nowrap; overflow: hidden;
     }
     .lc-palette {
-      width: 156px; flex: 0 0 156px; border-right: 1px solid #e2e8f0; background: #f8fafc;
+      width: 220px; flex: 0 0 220px; border-right: 1px solid #e2e8f0; background: #f8fafc;
       overflow-y: auto; padding: 10px;
     }
     .lc-pal-group { margin-bottom: 12px; }
@@ -365,8 +365,21 @@
       background: #2563eb; border-radius: 2px; cursor: nwse-resize;
     }
     .lc-prop-pane {
-      width: 280px; flex: 0 0 280px; border-left: 1px solid #e2e8f0; background: #fff;
+      width: 220px; flex: 0 0 220px; border-left: 1px solid #e2e8f0; background: #fff;
       display: flex; flex-direction: column; min-height: 0;
+    }
+    .lc-color-field .lc-color-row { display: flex; align-items: center; gap: 4px; }
+    .lc-color-field input[type=color] {
+      width: 36px; height: 32px; padding: 0; border: 1px solid #dcdfe6; border-radius: 4px;
+      background: #fff; flex: 0 0 36px;
+    }
+    .lc-color-field .lc-rgb-input {
+      flex: 1 1 auto; min-width: 0; border: 1px solid #dcdfe6; border-radius: 4px;
+      padding: 4px 6px; font-size: 12px; color: #334155;
+    }
+    .lc-logo-thumb {
+      margin-top: 6px; max-width: 100%; max-height: 56px; object-fit: contain;
+      border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; padding: 4px;
     }
     .lc-prop-tabs { display: flex; border-bottom: 1px solid #e2e8f0; }
     .lc-prop-tabs button {
@@ -781,7 +794,15 @@
               <option value="0">无</option>
             </select>
           </label>
-          <label class="text-xs text-slate-600">边框色<input id="lc_e_borderColor" type="color" class="mt-0.5 block h-8 w-full rounded border border-slate-300 bg-white px-1" /></label>
+          <div class="text-xs text-slate-600 lc-color-field" data-lc-border-color>
+            <div class="mb-0.5">边框色</div>
+            <div class="lc-color-row">
+              <input id="lc_e_borderColor" type="color" value="#cbd5e1" />
+              <input id="lc_e_borderRgb" type="text" class="lc-rgb-input" placeholder="R, G, B 或 #hex" />
+              <button type="button" class="lc-mini-btn" data-lc-border-rgb-copy title="复制 RGB">复制</button>
+              <button type="button" class="lc-mini-btn" data-lc-border-rgb-paste title="从剪贴板粘贴">粘贴</button>
+            </div>
+          </div>
           <label class="text-xs text-slate-600">边框粗细<input id="lc_e_borderWidth" type="number" min="0" max="8" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" /></label>
           <label class="text-xs text-slate-600">材质<input id="lc_e_mat" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" /></label>
           <label class="text-xs text-slate-600">安装 / 赋码

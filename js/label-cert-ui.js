@@ -286,6 +286,7 @@
     $('lc_e_h').value = tpl.paper.hMm;
     $('lc_e_borderOn').value = tpl.paper.border && tpl.paper.border.enabled ? '1' : '0';
     $('lc_e_borderColor').value = (tpl.paper.border && tpl.paper.border.color) || '#cbd5e1';
+    syncBorderColorUi();
     $('lc_e_borderWidth').value = (tpl.paper.border && tpl.paper.border.widthPx) || 1;
     $('lc_e_mat').value = (tpl.meta && tpl.meta.material) || '';
     $('lc_e_mount').value = (tpl.meta && tpl.meta.mount) || '';
@@ -496,6 +497,7 @@
     if (empty) empty.classList.add('hidden');
 
     if (layout) {
+      var rank = stackRank(el);
       layout.innerHTML =
         '<div class="lc-prop-grid">' +
           numField('X(mm)', 'xMm', el.xMm) + numField('Y(mm)', 'yMm', el.yMm) +
@@ -503,6 +505,8 @@
           numField('层级', 'zIndex', el.zIndex) +
           numField('旋转°', 'rotationDeg', el.rotationDeg || 0) +
         '</div>' +
+        '<p class="text-[10px] text-slate-400 mb-2 leading-relaxed">叠放顺序（非图层数量）：数字越大越靠上。当前约第 ' +
+          rank.index + ' / 共 ' + rank.total + '。水印/章可用置底/置顶。</p>' +
         '<div class="lc-prop-actions">' +
           '<label class="text-xs text-slate-600 flex items-center gap-1"><input type="checkbox" data-lc-prop="locked"' +
             (el.locked ? ' checked' : '') + ' /> 锁定</label>' +
@@ -553,7 +557,28 @@
           (p.tile ? ' checked' : '') + ' /> 平铺</label>';
       }
     } else if (el.type === 'logo') {
-      html += selectField('来源', 'source', p.source || 'system', [['system', '系统 Logo'], ['hidden', '隐藏']]);
+      var src = p.source || 'system';
+      html += selectField('来源', 'source', src, [
+        ['system', '系统 Logo'],
+        ['custom', '上传自定义'],
+        ['hidden', '隐藏']
+      ]);
+      if (src === 'system') {
+        html += '<p class="text-xs text-slate-400 mb-1">使用系统默认 Logo</p>' +
+          '<img class="lc-logo-thumb" src="' + LabelCertRender.esc(LabelCertConfig.SYSTEM_LOGO_URL) + '" alt="system logo" />';
+      } else if (src === 'custom') {
+        html += '<label class="text-xs text-slate-600 block mb-2">上传 Logo 图片' +
+          '<input type="file" accept="image/*" data-lc-logo-file class="mt-1 block w-full text-xs text-slate-500" />' +
+          '</label>';
+        if (p.url) {
+          html += '<img class="lc-logo-thumb" src="' + LabelCertRender.esc(p.url) + '" alt="custom logo" />' +
+            '<button type="button" class="lc-mini-btn mt-1" data-lc-logo-clear>清除上传</button>';
+        } else {
+          html += '<p class="text-xs text-amber-600">请上传图片后才会显示在预览中</p>';
+        }
+      } else {
+        html += '<p class="text-xs text-slate-400">Logo 不显示</p>';
+      }
     } else if (el.type === 'seal') {
       html += selectField('来源', 'source', p.source || 'system', [['system', '系统检测章'], ['custom', '自定义（需 url）']]) +
         numContent('透明度', 'opacity', Math.round((p.opacity != null ? p.opacity : 0.42) * 100)) +
@@ -586,10 +611,104 @@
       val + '" /></label>';
   }
 
+  function hexToRgb(hex) {
+    var m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex || '').trim());
+    if (!m) return { r: 30, g: 41, b: 59 };
+    var n = parseInt(m[1], 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+
+  function rgbToHex(r, g, b) {
+    function h(x) {
+      var s = Math.max(0, Math.min(255, Math.round(Number(x) || 0))).toString(16);
+      return s.length === 1 ? '0' + s : s;
+    }
+    return '#' + h(r) + h(g) + h(b);
+  }
+
+  function parseColorText(str) {
+    str = String(str || '').trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(str)) return str.toLowerCase();
+    if (/^#[0-9a-fA-F]{3}$/.test(str)) {
+      return ('#' + str[1] + str[1] + str[2] + str[2] + str[3] + str[3]).toLowerCase();
+    }
+    var m = str.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i) ||
+      str.match(/^(\d{1,3})\s*[,，]\s*(\d{1,3})\s*[,，]\s*(\d{1,3})\s*$/);
+    if (m) return rgbToHex(m[1], m[2], m[3]);
+    return null;
+  }
+
+  function rgbTextFromHex(hex) {
+    var rgb = hexToRgb(hex);
+    return rgb.r + ', ' + rgb.g + ', ' + rgb.b;
+  }
+
+  function stackRank(el) {
+    var sorted = ((state.draft && state.draft.elements) || []).slice().sort(function (a, b) {
+      return (a.zIndex - b.zIndex) || String(a.id).localeCompare(String(b.id));
+    });
+    var idx = 0;
+    for (var i = 0; i < sorted.length; i++) if (sorted[i].id === el.id) idx = i + 1;
+    return { index: idx || 1, total: sorted.length || 1 };
+  }
+
   function colorField(label, key, val) {
-    return '<label class="text-xs text-slate-600 block mb-2">' + label +
-      '<input type="color" data-lc-c="' + key + '" class="mt-0.5 block h-9 w-full rounded border border-slate-300 bg-white px-1" value="' +
-      val + '" /></label>';
+    var hex = parseColorText(val) || '#1e293b';
+    return '<div class="lc-color-field mb-2">' +
+      '<div class="text-xs text-slate-600 mb-0.5">' + label + '</div>' +
+      '<div class="lc-color-row">' +
+        '<input type="color" data-lc-c="' + key + '" value="' + hex + '" title="取色" />' +
+        '<input type="text" data-lc-rgb="' + key + '" class="lc-rgb-input" value="' + rgbTextFromHex(hex) +
+          '" placeholder="R, G, B 或 #hex" title="支持 44,221,74 / rgb(44,221,74) / #2cdd4a" />' +
+        '<button type="button" class="lc-mini-btn" data-lc-rgb-copy="' + key + '" title="复制 RGB">复制</button>' +
+        '<button type="button" class="lc-mini-btn" data-lc-rgb-paste="' + key + '" title="从剪贴板粘贴">粘贴</button>' +
+      '</div></div>';
+  }
+
+  function syncColorPair(root, key, hex) {
+    root = root || document;
+    var colorInput = root.querySelector('[data-lc-c="' + key + '"]');
+    var rgbInput = root.querySelector('[data-lc-rgb="' + key + '"]');
+    if (colorInput) colorInput.value = hex;
+    if (rgbInput) rgbInput.value = rgbTextFromHex(hex);
+  }
+
+  function applyColorKey(key, hex) {
+    var el = selectedEl();
+    if (!el) return;
+    if (!el.props) el.props = {};
+    el.props[key] = hex;
+    syncColorPair($('lc_propContent'), key, hex);
+    renderCanvas();
+    refreshPreview();
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        resolve();
+      } catch (e) { reject(e); }
+    });
+  }
+
+  function readClipboardText() {
+    if (navigator.clipboard && navigator.clipboard.readText) return navigator.clipboard.readText();
+    return Promise.reject(new Error('clipboard unavailable'));
+  }
+
+  function syncBorderColorUi() {
+    var hex = ($('lc_e_borderColor') && $('lc_e_borderColor').value) || '#cbd5e1';
+    var rgb = $('lc_e_borderRgb');
+    if (rgb) rgb.value = rgbTextFromHex(hex);
   }
 
   function applyGeomFromInputs() {
@@ -631,8 +750,21 @@
         el.props[key] = parseFloat(input.value) || el.props[key];
         return;
       }
+      if (input.type === 'color') {
+        el.props[key] = input.value;
+        syncColorPair($('lc_propContent'), key, input.value);
+        return;
+      }
       el.props[key] = input.value;
     });
+  }
+
+  function readFileAsDataUrl(file, done) {
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () { done(String(reader.result || '')); };
+    reader.onerror = function () { alert('读取图片失败'); };
+    reader.readAsDataURL(file);
   }
 
   function demoData() {
@@ -903,6 +1035,73 @@
         return;
       }
 
+      var rgbCopy = e.target.closest('[data-lc-rgb-copy]');
+      if (rgbCopy) {
+        var cKey = rgbCopy.getAttribute('data-lc-rgb-copy');
+        var rgbEl = document.querySelector('#lc_propContent [data-lc-rgb="' + cKey + '"]');
+        var text = rgbEl ? rgbEl.value : '';
+        copyText(text).then(function () {
+          rgbCopy.textContent = '已复制';
+          setTimeout(function () { rgbCopy.textContent = '复制'; }, 1000);
+        }).catch(function () { alert('复制失败，请手动选中复制'); });
+        return;
+      }
+      var rgbPaste = e.target.closest('[data-lc-rgb-paste]');
+      if (rgbPaste) {
+        var pKey = rgbPaste.getAttribute('data-lc-rgb-paste');
+        readClipboardText().then(function (txt) {
+          var hex = parseColorText(txt);
+          if (!hex) { alert('无法识别颜色，请粘贴如 44,221,74 或 #2cdd4a'); return; }
+          applyColorKey(pKey, hex);
+        }).catch(function () {
+          var manual = window.prompt('粘贴 RGB 或十六进制颜色', '');
+          var hex2 = parseColorText(manual);
+          if (!hex2) { alert('无法识别颜色'); return; }
+          applyColorKey(pKey, hex2);
+        });
+        return;
+      }
+      if (e.target.closest('[data-lc-border-rgb-copy]')) {
+        var bRgb = $('lc_e_borderRgb');
+        copyText(bRgb ? bRgb.value : '').then(function () {
+          e.target.textContent = '已复制';
+          setTimeout(function () { e.target.textContent = '复制'; }, 1000);
+        }).catch(function () { alert('复制失败'); });
+        return;
+      }
+      if (e.target.closest('[data-lc-border-rgb-paste]')) {
+        readClipboardText().then(function (txt) {
+          var hex = parseColorText(txt);
+          if (!hex) { alert('无法识别颜色'); return; }
+          $('lc_e_borderColor').value = hex;
+          syncBorderColorUi();
+          syncPaperFromDom();
+          renderCanvas();
+          refreshPreview();
+        }).catch(function () {
+          var manual = window.prompt('粘贴 RGB 或十六进制颜色', '');
+          var hex2 = parseColorText(manual);
+          if (!hex2) return;
+          $('lc_e_borderColor').value = hex2;
+          syncBorderColorUi();
+          syncPaperFromDom();
+          renderCanvas();
+          refreshPreview();
+        });
+        return;
+      }
+      if (e.target.closest('[data-lc-logo-clear]')) {
+        var logoEl = selectedEl();
+        if (logoEl && logoEl.type === 'logo') {
+          logoEl.props = logoEl.props || {};
+          logoEl.props.url = null;
+          renderPropPanel();
+          renderCanvas();
+          refreshPreview();
+        }
+        return;
+      }
+
       var layer = e.target.closest('[data-lc-layer]');
       if (layer && state.selectedId) {
         LabelCertConfig.bringToLayer(state.draft.elements, state.selectedId, layer.getAttribute('data-lc-layer'));
@@ -937,8 +1136,24 @@
         if (el) { el.locked = e.target.checked; renderCanvas(); }
         return;
       }
+      if (e.target.getAttribute('data-lc-logo-file') != null) {
+        var file = e.target.files && e.target.files[0];
+        var logoTarget = selectedEl();
+        if (!file || !logoTarget || logoTarget.type !== 'logo') return;
+        readFileAsDataUrl(file, function (url) {
+          logoTarget.props = logoTarget.props || {};
+          logoTarget.props.source = 'custom';
+          logoTarget.props.url = url;
+          renderPropPanel();
+          renderCanvas();
+          refreshPreview();
+        });
+        return;
+      }
       if (e.target.closest('#lc_propContent') && e.target.getAttribute('data-lc-c')) {
         applyContentFromInputs();
+        // 切换 Logo 来源时刷新内容区（显示/隐藏上传）
+        if (e.target.getAttribute('data-lc-c') === 'source') renderPropPanel();
         renderCanvas();
         refreshPreview();
         return;
@@ -949,8 +1164,15 @@
         if (wrap) wrap.classList.toggle('hidden', !custom);
         return;
       }
+      if (e.target.id === 'lc_e_borderColor') {
+        syncBorderColorUi();
+        syncPaperFromDom();
+        renderCanvas();
+        refreshPreview();
+        return;
+      }
       if (e.target.id === 'lc_e_w' || e.target.id === 'lc_e_h' || e.target.id === 'lc_e_borderOn' ||
-          e.target.id === 'lc_e_borderColor' || e.target.id === 'lc_e_borderWidth') {
+          e.target.id === 'lc_e_borderWidth') {
         syncPaperFromDom();
         renderCanvas();
         refreshPreview();
@@ -967,6 +1189,22 @@
         applyGeomFromInputs();
         renderCanvas();
         refreshPreview();
+        return;
+      }
+      if (e.target.id === 'lc_e_borderRgb') {
+        var bHex = parseColorText(e.target.value);
+        if (bHex) {
+          $('lc_e_borderColor').value = bHex;
+          syncPaperFromDom();
+          renderCanvas();
+          refreshPreview();
+        }
+        return;
+      }
+      if (e.target.closest('#lc_propContent') && e.target.getAttribute('data-lc-rgb')) {
+        var key = e.target.getAttribute('data-lc-rgb');
+        var hex = parseColorText(e.target.value);
+        if (hex) applyColorKey(key, hex);
         return;
       }
       if (e.target.closest('#lc_propContent') && e.target.getAttribute('data-lc-c')) {
