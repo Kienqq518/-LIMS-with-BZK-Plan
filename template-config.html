@@ -424,8 +424,10 @@
     .lc-meta-row {
       display: grid; gap: 10px; align-items: end;
     }
-    .lc-meta-row.r-name { grid-template-columns: minmax(160px, 1.4fr) 100px 100px; }
-    .lc-meta-row.r-size { grid-template-columns: 1fr; }
+    .lc-meta-row.r-name {
+      grid-template-columns: minmax(140px, 1.1fr) 88px 88px minmax(260px, 1.6fr);
+      align-items: start;
+    }
     .lc-meta-row.r-border { grid-template-columns: 88px minmax(200px, 1.2fr) 88px; }
     .lc-meta-row.r-meta { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .lc-meta-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -443,21 +445,26 @@
     .lc-meta-field select:focus {
       border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.12);
     }
-    .lc-meta-size-bar {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-      padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px;
-      background: #fff;
+    .lc-meta-size {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+      min-width: 0; justify-self: end; text-align: right;
     }
-    .lc-meta-size-bar .lc-meta-label {
-      font-size: 11px; font-weight: 500; color: #64748b; margin-right: 2px;
+    .lc-meta-size .lc-meta-label {
+      font-size: 11px; font-weight: 500; color: #64748b;
     }
-    .lc-meta-size-bar #lc_paperSizeChips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .lc-meta-size #lc_paperSizeChips {
+      display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end;
+    }
+    .lc-meta-size .lc-meta-size-hint {
+      font-size: 10px; color: #94a3b8; line-height: 1.2;
+    }
     .lc-meta-border-color .lc-color-row { margin-top: 0; }
-    @media (max-width: 1100px) {
-      .lc-meta-row.r-name,
+    @media (max-width: 1200px) {
+      .lc-meta-row.r-name { grid-template-columns: minmax(140px, 1fr) 88px 88px; }
+      .lc-meta-row.r-name .lc-meta-size { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
+      .lc-meta-size #lc_paperSizeChips { justify-content: flex-start; }
       .lc-meta-row.r-border,
       .lc-meta-row.r-meta { grid-template-columns: 1fr 1fr; }
-      .lc-meta-row.r-name .lc-meta-field:first-child { grid-column: 1 / -1; }
     }
     .lc-create-tabs { display: flex; gap: 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 12px; }
     .lc-create-tabs button {
@@ -849,12 +856,10 @@
             <label class="lc-meta-field"><span>模版名称</span><input id="lc_e_name" placeholder="例如：默认合格证" /></label>
             <label class="lc-meta-field"><span>纸张宽 (mm)</span><input id="lc_e_w" type="number" min="20" max="200" step="0.1" /></label>
             <label class="lc-meta-field"><span>纸张高 (mm)</span><input id="lc_e_h" type="number" min="15" max="200" step="0.1" /></label>
-          </div>
-          <div class="lc-meta-row r-size">
-            <div class="lc-meta-size-bar">
+            <div class="lc-meta-size">
               <span class="lc-meta-label">尺寸快捷</span>
               <div id="lc_paperSizeChips"></div>
-              <span class="text-[10px] text-slate-400 ml-auto">应用后内部元素等比缩放</span>
+              <span class="lc-meta-size-hint">应用后内部元素等比缩放</span>
             </div>
           </div>
           <div class="lc-meta-row r-border">
