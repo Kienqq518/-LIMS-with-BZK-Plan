@@ -482,7 +482,9 @@
           position: 'top-right',
           title: '单个合格证打印',
           wide: true,
-          content: '点击「合格证」按目标合格证模版所需角色弹出「选择人员」（检测员/记录员）。<br><br>' +
+          content: '点击「合格证」按目标合格证模版所需角色弹出「选择人员」（检测员/记录员；合并位需两者均选）。<br><br>' +
+            '<strong>弹窗列：</strong>仅展示模版配置的人员字段对应列（模版无人员字段则不弹窗）。<br>' +
+            '<strong>人数上限：</strong>检测员 ≤ cert.inspector.max（默认 2）、记录员 ≤ cert.recorder.max（默认 1）。<br><br>' +
             '<strong>首次打印：</strong>必须弹出选人弹窗。<br>' +
             '<strong>后续再打印：</strong>若已记忆且覆盖当前所需角色则不再弹窗；缺角色时仍会弹出。',
           tag: '流程 · 图2'
@@ -505,7 +507,7 @@
           selector: '#btnBatchCert',
           position: 'top-right',
           title: '批量打印合格证',
-          content: '多选已签发报告的委托后点击。按所选委托模版推导检测员/记录员需求；首次或记忆不足时弹窗选人，否则直接进入批量打印页。',
+          content: '多选已签发报告的委托后点击。按所选委托模版推导检测员/记录员需求（合并位需两者均选）；弹窗列与人数上限随模版与参数配置；首次或记忆不足时弹窗选人，否则直接进入批量打印页。',
           tag: '流程 · 图3'
         },
         {
@@ -513,7 +515,7 @@
           selector: '#btnConfirmInspector',
           position: 'top-right',
           title: '确认人员',
-          content: '单个/批量打印共用此弹窗。确认后记忆检测员与记录员，后续打印在角色齐全时自动带入。',
+          content: '单个/批量打印共用此弹窗。弹窗列与上限随目标模版推导（检测员 cert.inspector.max、记录员 cert.recorder.max）。确认后分 key 记忆检测员与记录员，后续打印在角色齐全时自动带入。',
           tag: '流程 · 图4→5'
         }
       ]

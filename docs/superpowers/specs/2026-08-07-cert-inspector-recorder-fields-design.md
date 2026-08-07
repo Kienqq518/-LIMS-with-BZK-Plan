@@ -2,7 +2,7 @@
 
 **日期**: 2026-08-07  
 **范围**: 合格证模版字段池、编辑器互斥与展示方式同步、打印选人与证面渲染  
-**状态**: 定稿（待实现）  
+**状态**: 定稿（原型已实现）  
 **关联**:
 - 母设计：`2026-07-31-label-cert-configurable-design.md`
 - 配置原型：`template-config.html?type=labelCert` / `js/label-cert-*.js`
