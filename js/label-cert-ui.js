@@ -555,10 +555,21 @@
       var on = LabelCertConfig.hasElementType(state.draft.elements, t);
       return typeBtn(t, '', on, on ? '再次点击移除' : '');
     }).join('');
+    var usedPersonnel = LabelCertConfig.usedPersonnelFieldIds(state.draft.elements);
     var fields = pool.map(function (f) {
       var on = usedFields.indexOf(f.id) >= 0;
-      return '<button type="button" class="lc-pal-item' + (on ? ' on' : '') + '" data-lc-add="fieldRow" data-field="' +
-        f.id + '" title="' + (on ? '再次点击移除' : '点击添加到画布') + '">' +
+      var blocked = LabelCertConfig.isPersonnelFieldId(f.id) &&
+        !on &&
+        LabelCertConfig.isPersonnelFieldBlocked(usedPersonnel, f.id);
+      var tip = blocked
+        ? (f.id === 'inspectorsRecorders'
+          ? '已添加检测员或记录员，不能再添加合并位'
+          : '已添加「检测员/记录员」合并位，不能再单独添加')
+        : (on ? '再次点击移除' : '点击添加到画布');
+      return '<button type="button" class="lc-pal-item' + (on ? ' on' : '') + (blocked ? ' opacity-40 cursor-not-allowed' : '') +
+        '" data-lc-add="fieldRow" data-field="' + f.id + '"' +
+        (blocked ? ' disabled' : '') +
+        ' title="' + LabelCertRender.esc(tip) + '">' +
         LabelCertRender.esc(f.label) + '</button>';
     }).join('');
     var qrOn = findPaletteMatch('qr').length > 0;
@@ -875,9 +886,9 @@
         LabelCertRender.esc(p.label || '') + '" /></label>' +
         '<label class="text-xs text-slate-600 flex items-center gap-1 mb-2"><input type="checkbox" data-lc-c="showLabel"' +
         (p.showLabel !== false ? ' checked' : '') + ' /> 显示标签</label>';
-      var inspectorEsign = LabelCertConfig.isInspectorFieldId(p.fieldId) &&
+      var inspectorEsign = LabelCertConfig.isPersonnelFieldId(p.fieldId) &&
         LabelCertConfig.normalizeInspectorDisplay(p.inspectorDisplay) === 'esign';
-      if (LabelCertConfig.isInspectorFieldId(p.fieldId)) {
+      if (LabelCertConfig.isPersonnelFieldId(p.fieldId)) {
         var idisp = LabelCertConfig.normalizeInspectorDisplay(p.inspectorDisplay);
         html += selectField('展示方式', 'inspectorDisplay', idisp, [
           ['text', '姓名文本'],
@@ -885,8 +896,8 @@
         ]) +
           '<p class="text-[10px] text-slate-400 -mt-1 mb-2">' +
           (idisp === 'esign'
-            ? '预览以手写签样式占位展示各检测员；打印时可替换为真实电子签图片'
-            : '以姓名文本展示（如：张三、李四）') +
+            ? '预览以手写签样式占位展示各人员；打印时可替换为真实电子签图片'
+            : '以姓名文本展示；检测员与记录员按模版字段分别或合并展示（如：张三、李四）') +
           '</p>';
       }
       html +=
@@ -1205,10 +1216,16 @@
       }
       el.props[key] = input.value;
     });
-    // 电子签名：下划线固定为「无」（禁用控件时仍强制写回）
-    if (el.type === 'fieldRow' && LabelCertConfig.isInspectorFieldId(el.props.fieldId) &&
-      LabelCertConfig.normalizeInspectorDisplay(el.props.inspectorDisplay) === 'esign') {
-      el.props.underline = 'none';
+    if (el.type === 'fieldRow' && LabelCertConfig.isPersonnelFieldId(el.props.fieldId)) {
+      var mode = LabelCertConfig.normalizeInspectorDisplay(el.props.inspectorDisplay);
+      el.props.inspectorDisplay = mode;
+      if (mode === 'esign') el.props.underline = 'none';
+      (state.draft.elements || []).forEach(function (other) {
+        if (other === el) return;
+        if (other.type !== 'fieldRow' || !LabelCertConfig.isPersonnelFieldId(other.props && other.props.fieldId)) return;
+        other.props.inspectorDisplay = mode;
+        if (mode === 'esign') other.props.underline = 'none';
+      });
     }
   }
 
@@ -1228,6 +1245,7 @@
       sampleName: '绝缘操作杆',
       specModel: '10m',
       inspectors: ['张三', '李四'],
+      recorders: ['王五'],
       inspectDate: '2026-07-01',
       reinspectDate: '2027-07-01',
       validUntil: '2027-07-01',
@@ -1585,9 +1603,17 @@
       if (addBtn) {
         var addType = addBtn.getAttribute('data-lc-add');
         var addLayer = addBtn.getAttribute('data-pal-layer') || undefined;
+        var fieldId = addBtn.getAttribute('data-field');
+        if (fieldId && LabelCertConfig.isPersonnelFieldId(fieldId)) {
+          var usedP = LabelCertConfig.usedPersonnelFieldIds(state.draft.elements);
+          var usedFieldsNow = LabelCertConfig.usedFieldIds(state.draft.elements);
+          if (usedFieldsNow.indexOf(fieldId) < 0 && LabelCertConfig.isPersonnelFieldBlocked(usedP, fieldId)) {
+            return;
+          }
+        }
         toggleElement(
           addType,
-          addBtn.getAttribute('data-field'),
+          fieldId,
           {
             forceAdd: isRepeatableType(addType) || !!e.shiftKey,
             layer: addLayer
