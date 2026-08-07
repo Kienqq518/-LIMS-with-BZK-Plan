@@ -193,7 +193,6 @@
       return '<span class="lc-esign-slot" title="电子签名占位：' + esc(name) + '">' +
         '<span class="lc-esign-ink" style="color:' + esc(color || '#1e3a8a') + ';font-size:' +
         Math.max(12, (fontSize || 11) + 3) + 'px;">' + esc(name) + '</span>' +
-        '<span class="lc-esign-line" aria-hidden="true"></span>' +
         '</span>';
     }).join('');
   }
@@ -357,21 +356,23 @@
   }
 
   function ensureStyles() {
-    if (document.getElementById('label-cert-render-css')) return;
-    var style = document.createElement('style');
-    style.id = 'label-cert-render-css';
-    style.textContent = [
+    var css = [
       '.lc-sheet.lc-free{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;color:#1e293b;}',
       '.lc-sheet.lc-free .lc-el{line-height:1.15;}',
       '.lc-sheet.lc-free .lc-el-k{flex:0 0 auto;white-space:nowrap;}',
       '.lc-sheet.lc-free .lc-el-v{display:inline-block;}',
       '.lc-sheet.lc-free .lc-qr img,.lc-sheet.lc-free .lc-qr canvas{width:100%!important;height:100%!important;}',
       '.lc-wm-tile{display:flex;align-items:center;justify-content:center;}',
-      '.lc-esign-slot{display:inline-flex;flex-direction:column;align-items:center;min-width:36px;line-height:1;}',
-      '.lc-esign-ink{font-family:"Segoe Script","Lucida Handwriting","Brush Script MT","KaiTi","STKaiti","楷体",cursive;font-style:italic;font-weight:600;letter-spacing:.04em;transform:rotate(-6deg);display:inline-block;white-space:nowrap;}',
-      '.lc-esign-line{display:block;width:100%;height:2px;margin-top:1px;background:linear-gradient(90deg,transparent,#94a3b8 12%,#64748b 50%,#94a3b8 88%,transparent);border-radius:1px;opacity:.7;}'
+      '.lc-esign-slot{display:inline-flex;align-items:center;min-width:36px;line-height:1;}',
+      '.lc-esign-ink{font-family:"Segoe Script","Lucida Handwriting","Brush Script MT","KaiTi","STKaiti","楷体",cursive;font-style:italic;font-weight:600;letter-spacing:.04em;transform:rotate(-6deg);display:inline-block;white-space:nowrap;}'
     ].join('\n');
-    document.head.appendChild(style);
+    var style = document.getElementById('label-cert-render-css');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'label-cert-render-css';
+      document.head.appendChild(style);
+    }
+    style.textContent = css;
   }
 
   // 兼容旧调用
