@@ -163,19 +163,31 @@
       });
     }
 
-    function getLastInspectors() {
+    function readStoredInspectors() {
       try {
         var raw = localStorage.getItem(STORAGE_INSPECTORS);
-        return (raw ? JSON.parse(raw) : ['admin']).slice(0, MAX_INSPECTORS);
-      } catch (e) { return ['admin']; }
+        if (raw == null) return null;
+        var list = JSON.parse(raw);
+        return Array.isArray(list) ? list.slice(0, MAX_INSPECTORS) : [];
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function getLastInspectors() {
+      var stored = readStoredInspectors();
+      return stored && stored.length ? stored : ['admin'];
     }
 
     function getLastRecorders() {
       try {
         var raw = localStorage.getItem(STORAGE_RECORDERS);
-        var list = raw ? JSON.parse(raw) : [];
+        if (raw == null) return [];
+        var list = JSON.parse(raw);
         return Array.isArray(list) ? list.slice(0, MAX_RECORDERS) : [];
-      } catch (e) { return []; }
+      } catch (e) {
+        return [];
+      }
     }
 
     function saveLastPersonnel(inspectors, recorders, roles) {
@@ -195,8 +207,14 @@
 
     function canSkipModal(roles) {
       if (!hasSelectedBefore()) return false;
-      if (roles.needInspectors && !getLastInspectors().length) return false;
-      if (roles.needRecorders && !getLastRecorders().length) return false;
+      if (roles.needInspectors) {
+        var insp = readStoredInspectors();
+        if (!insp || !insp.length) return false;
+      }
+      if (roles.needRecorders) {
+        var rec = getLastRecorders();
+        if (!rec.length) return false;
+      }
       return true;
     }
 
@@ -314,7 +332,7 @@
       }
       if (canSkipModal(roles)) {
         goPrint(
-          roles.needInspectors ? getLastInspectors() : [],
+          roles.needInspectors ? (readStoredInspectors() || []) : [],
           roles.needRecorders ? getLastRecorders() : []
         );
         return;
