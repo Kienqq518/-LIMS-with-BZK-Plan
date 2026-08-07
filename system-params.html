@@ -458,13 +458,18 @@
             <div class="cfg-section-title" data-annotate="undertaker-seal">签名与印章</div>
             <p class="seal-instant-note" data-annotate="undertaker-seal-note"><i class="fa fa-bolt text-amber-500"></i> 上传后立即生效，无需保存</p>
             <div class="seal-hint" data-annotate="undertaker-seal-hint">
-              <i class="fa fa-info-circle"></i> 签名与印章图片建议上传 <strong>PNG 透明底</strong> 格式；骑缝章 / CNAS / CMA / 检测专用章最小尺寸 <strong>200×200 像素</strong>，法定代表人签名建议宽度不小于 <strong>300 像素</strong>；单文件不超过 <strong>2MB</strong>，以保证导出报告时清晰可辨。
+              <i class="fa fa-info-circle"></i> 签名与印章图片建议上传 <strong>PNG 透明底</strong> 格式；电子公章 / 骑缝章 / CNAS / CMA / 检测专用章最小尺寸 <strong>200×200 像素</strong>，法定代表人签名建议宽度不小于 <strong>300 像素</strong>；单文件不超过 <strong>2MB</strong>，以保证导出报告时清晰可辨。
             </div>
             <div class="stamp-upload-row" id="sealUploadRow">
               <div class="stamp-upload-box" data-seal-key="signature">
                 <div class="label">法定代表人电子签名</div>
                 <div class="stamp-preview placeholder" id="sealPreview_signature"><i class="fa fa-pencil-square-o text-lg"></i><span>签名预览</span></div>
                 <button type="button" class="stamp-upload-btn" data-annotate="undertaker-seal-upload" onclick="openSealUploadModal('signature')"><i class="fa fa-upload"></i> 上传</button>
+              </div>
+              <div class="stamp-upload-box" data-seal-key="official" data-annotate="undertaker-seal-official">
+                <div class="label">电子公章</div>
+                <div class="stamp-preview" id="sealPreview_official"><img src="https://via.placeholder.com/110x110/e11d48/ffffff?text=公章" alt="电子公章" /></div>
+                <button type="button" class="stamp-upload-btn" onclick="openSealUploadModal('official')"><i class="fa fa-upload"></i> 上传</button>
               </div>
               <div class="stamp-upload-box" data-seal-key="inspect">
                 <div class="label">检测专用章</div>
@@ -959,6 +964,7 @@
     /* ===== 签名与印章 ===== */
     var SEAL_META = {
       signature: { label: '法定代表人电子签名', isSignature: true },
+      official: { label: '电子公章', isSignature: false },
       inspect: { label: '检测专用章', isSignature: false },
       perforation: { label: '骑缝章', isSignature: false },
       cnas: { label: 'CNAS 资质章', isSignature: false },
@@ -967,6 +973,7 @@
 
     var SEAL_CONFIG = {
       signature: null,
+      official: { fileName: '电子公章.png', url: 'https://via.placeholder.com/110x110/e11d48/ffffff?text=公章' },
       inspect: { fileName: '检测专用章.png', url: 'https://via.placeholder.com/110x110/e11d48/ffffff?text=检测' },
       perforation: { fileName: '骑缝章.png', url: 'https://via.placeholder.com/110x110/e11d48/ffffff?text=骑缝' },
       cnas: { fileName: 'CNAS资质章.png', url: 'https://via.placeholder.com/110x110/1d4ed8/ffffff?text=CNAS' },
@@ -2955,7 +2962,7 @@
           position: 'top-right',
           title: '上传签名与印章',
           wide: true,
-          content: '点击各上传位打开弹窗：含格式/尺寸提示、拖拽上传区、当前文件说明与预览。法定代表人签名宽度 ≥ 300px；骑缝章/CNAS/CMA/检测专用章最小 200×200px；PNG 透明底，≤ 2MB。确定后立即更新预览。',
+          content: '点击各上传位打开弹窗：含格式/尺寸提示、拖拽上传区、当前文件说明与预览。法定代表人签名宽度 ≥ 300px；电子公章/骑缝章/CNAS/CMA/检测专用章最小 200×200px；PNG 透明底，≤ 2MB。确定后立即更新预览。',
           tag: '业务流程配置'
         },
         {
@@ -2981,7 +2988,16 @@
           position: 'top-right',
           title: '签名与印章',
           wide: true,
-          content: '区域名称由「签章与标识」/「签章与资质」改为「签名与印章」。已去除「单位 Logo」；保留法定代表人电子签名、检测专用章，并新增骑缝章、CNAS 资质章、CMA 资质章上传位，交互样式复用原「模板管理 › 印章管理」卡片布局。',
+          content: '上传位顺序：法定代表人电子签名 → <strong>电子公章</strong> → 检测专用章 → 骑缝章 → CNAS / CMA 资质章。上传后立即生效，无需区块保存。',
+          tag: '业务流程配置'
+        },
+        {
+          id: 'undertaker-seal-official',
+          selector: '[data-annotate="undertaker-seal-official"]',
+          position: 'top-right',
+          title: '电子公章',
+          wide: true,
+          content: '<strong>委托书上盖的章取这个电子公章。</strong>与检测专用章区分：公章用于委托书等对外文书盖章；检测专用章用于检测相关证面/报告场景。',
           tag: '业务流程配置'
         },
         {
@@ -2990,7 +3006,7 @@
           position: 'top-left',
           title: '签名与印章上传要求',
           wide: true,
-          content: '提示签名与印章图片格式与最小尺寸要求：PNG 透明底；骑缝章 / CNAS / CMA / 检测专用章最小 200×200 像素；法定代表人签名宽度建议不小于 300 像素；单文件不超过 2MB。',
+          content: '提示签名与印章图片格式与最小尺寸要求：PNG 透明底；电子公章 / 骑缝章 / CNAS / CMA / 检测专用章最小 200×200 像素；法定代表人签名宽度建议不小于 300 像素；单文件不超过 2MB。',
           tag: '业务流程配置'
         },
         {
