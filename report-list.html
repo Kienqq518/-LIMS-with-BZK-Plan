@@ -72,6 +72,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
               <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-record">报告记录</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-transparency">透明度等级 / 溯源</th>
               <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="report-ops">操作</th>
             </tr>
           </thead>
@@ -162,15 +163,36 @@
     </div>
   </div>
 
+  <!-- 透明度等级选择弹窗 -->
+  <div id="levelModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[92vh] w-[560px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">选择报告透明度等级</h3>
+        <button type="button" onclick="closeLevelModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto px-6 py-4">
+        <p id="levelModalHint" class="mb-3 rounded bg-slate-50 px-3 py-2 text-xs text-slate-500"></p>
+        <div id="levelOptions" class="space-y-2"></div>
+        <div id="levelResult" class="mt-3 hidden rounded-lg border p-3 text-sm"></div>
+      </div>
+      <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button type="button" onclick="closeLevelModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
+        <button type="button" onclick="confirmLevel()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white">确定</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
+  <script src="js/short-link-qr.js"></script>
+  <script src="js/report-trace.js"></script>
   <script>
     var ROWS = [
-      { id: 1, code: 'SCZN202508/0009', contract: 'HT11213333', unit: '杭州数蚕智能科技有限公司', sample: '实壁塑料电缆导管', acceptDate: '2025-07-18', dueDate: '', priority: '', sales: '', compiler: '王..', demo: true },
-      { id: 2, code: 'SC2026/0099', contract: 'HT11213322', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-17', dueDate: '', priority: '常规', sales: '', compiler: 'admin', demo: false },
-      { id: 3, code: 'SCZN202508/0007', contract: '—', unit: '浙江某某供电所', sample: '绝缘手套', acceptDate: '2025-07-16', dueDate: '2025-07-25', priority: '高', sales: '李', compiler: '张..' },
-      { id: 4, code: 'SCZN202508/0006', contract: 'HT99887766', unit: '某某化工厂', sample: '废水/废气/噪声', acceptDate: '2025-07-15', dueDate: '2025-08-01', priority: '', sales: '', compiler: '赵..' },
-      { id: 5, code: 'SCZN202508/0005', contract: '—', unit: '某某建设集团', sample: '混凝土试块', acceptDate: '2025-07-14', dueDate: '', priority: '', sales: '', compiler: '陈..' }
+      { id: 1, code: 'SCZN202508/0009', contract: 'HT11213333', unit: '杭州数蚕智能科技有限公司', sample: '实壁塑料电缆导管', acceptDate: '2025-07-18', dueDate: '', priority: '', sales: '', compiler: '王..', demo: true, level: null, reservedLevel: null, traceCode: null },
+      { id: 2, code: 'SC2026/0099', contract: 'HT11213322', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-17', dueDate: '', priority: '常规', sales: '', compiler: 'admin', demo: false, level: 3, reservedLevel: null, traceCode: 'R3a2K' },
+      { id: 3, code: 'SCZN202508/0007', contract: '—', unit: '浙江某某供电所', sample: '绝缘手套', acceptDate: '2025-07-16', dueDate: '2025-07-25', priority: '高', sales: '李', compiler: '张..', level: null, reservedLevel: 2, traceCode: 'R2c9X' },
+      { id: 4, code: 'SCZN202508/0006', contract: 'HT99887766', unit: '某某化工厂', sample: '废水/废气/噪声', acceptDate: '2025-07-15', dueDate: '2025-08-01', priority: '', sales: '', compiler: '赵..', level: 4, reservedLevel: null, traceCode: 'R4b7M' },
+      { id: 5, code: 'SCZN202508/0005', contract: '—', unit: '某某建设集团', sample: '混凝土试块', acceptDate: '2025-07-14', dueDate: '', priority: '', sales: '', compiler: '陈..', level: null, reservedLevel: null, traceCode: null }
     ];
 
     var COMPILE_LIST_DEMO = [
@@ -211,6 +233,98 @@
       return stage.user + '<br><span class="text-xs text-slate-400">' + stage.date + '</span>';
     }
 
+    /** 透明度等级列：已选定→徽标+查看溯源；预留→提示；未设定→设置等级 */
+    function transparencyCell(row) {
+      var out = '';
+      if (row.level) {
+        var name = ReportTrace.levelName(row.level).split(' ')[0];
+        out += '<span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">' + name + '</span>';
+        if (row.traceCode) {
+          out += ' <a href="report-verify.html?code=' + row.traceCode + '" target="_blank" class="ml-1 text-blue-600 hover:underline"><i class="fa fa-qrcode"></i> 查看溯源</a>';
+        }
+        out += ' <a href="#" class="ml-1 text-slate-400 hover:underline" onclick="openLevelModal(' + row.id + ');return false;">改</a>';
+      } else if (row.reservedLevel) {
+        var rname = ReportTrace.levelName(row.reservedLevel).split(' ')[0];
+        out += '<span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700" title="已登记升级预留，能力就绪后方可出具">' + rname + '（预留）</span>';
+        if (row.traceCode) out += ' <a href="report-verify.html?code=' + row.traceCode + '" target="_blank" class="ml-1 text-blue-600 hover:underline"><i class="fa fa-eye"></i> 预览</a>';
+        out += ' <a href="#" class="ml-1 text-slate-400 hover:underline" onclick="openLevelModal(' + row.id + ');return false;">改</a>';
+      } else {
+        out += '<a href="#" class="text-blue-600 hover:underline" onclick="openLevelModal(' + row.id + ');return false;"><i class="fa fa-tag mr-1"></i>设置等级</a>';
+      }
+      return out;
+    }
+
+    var _levelRowId = null;
+    var _levelPick = null;
+
+    /** 打开等级选择弹窗 */
+    function openLevelModal(rowId) {
+      _levelRowId = rowId;
+      var row = ROWS.filter(function (r) { return r.id === rowId; })[0];
+      _levelPick = row ? (row.level || row.reservedLevel || null) : null;
+      document.getElementById('levelModalHint').innerHTML =
+        '规则：单报告可选等级 ≤ min（能力门禁, 实验室授权等级）。当前实验室授权等级 <b>' +
+        ReportTrace.levelName(ReportTrace.AUTHORIZED_LEVEL).split(' ')[0] + '</b>；一/二级为预留等级，可选但暂不放行出具（登记升级预留）。';
+      renderLevelOptions();
+      document.getElementById('levelResult').classList.add('hidden');
+      var modal = document.getElementById('levelModal');
+      modal.classList.remove('hidden'); modal.classList.add('flex');
+    }
+
+    function closeLevelModal() {
+      var modal = document.getElementById('levelModal');
+      modal.classList.add('hidden'); modal.classList.remove('flex');
+    }
+
+    /** 渲染四级选项 + 门禁状态 */
+    function renderLevelOptions() {
+      document.getElementById('levelOptions').innerHTML = ReportTrace.LEVELS.map(function (lv) {
+        var chk = ReportTrace.canIssue(lv.level);
+        var tag, tagCls;
+        if (chk.ok) { tag = chk.note ? '可出具·选低' : '可出具'; tagCls = 'bg-green-100 text-green-700'; }
+        else if (chk.blockedBy === 'authorized') { tag = '超出授权·需重新评定'; tagCls = 'bg-red-100 text-red-700'; }
+        else { tag = '预留·暂不可出具'; tagCls = 'bg-amber-100 text-amber-700'; }
+        var checked = (_levelPick === lv.level) ? 'checked' : '';
+        return '<label class="flex cursor-pointer items-start gap-2 rounded-lg border p-3 hover:bg-slate-50 ' + (_levelPick === lv.level ? 'border-blue-400 bg-blue-50' : 'border-slate-200') + '">' +
+          '<input type="radio" name="lvopt" class="mt-1" value="' + lv.level + '" ' + checked + ' onchange="pickLevel(' + lv.level + ')" />' +
+          '<div class="flex-1"><div class="flex items-center justify-between"><span class="text-sm font-medium text-slate-700">' + lv.name + '</span>' +
+          '<span class="rounded-full px-2 py-0.5 text-[11px] ' + tagCls + '">' + tag + '</span></div>' +
+          '<p class="mt-0.5 text-xs text-slate-500">' + lv.brief + '</p>' +
+          (chk.missing && chk.missing.length ? '<p class="mt-1 text-[11px] text-amber-600">待补能力：' + chk.missing.join('、') + '</p>' : '') +
+          '</div></label>';
+      }).join('');
+    }
+
+    function pickLevel(level) { _levelPick = level; renderLevelOptions(); }
+
+    /** 确定：按门禁分流——可出具则选定；预留则登记；低于授权则确认后选定 */
+    function confirmLevel() {
+      if (!_levelPick) { alert('请选择一个透明度等级'); return; }
+      var row = ROWS.filter(function (r) { return r.id === _levelRowId; })[0];
+      if (!row) return;
+      var chk = ReportTrace.canIssue(_levelPick);
+      var box = document.getElementById('levelResult');
+      var pickName = ReportTrace.levelName(_levelPick).split(' ')[0];
+      box.classList.remove('hidden');
+      if (chk.ok) {
+        row.level = _levelPick; row.reservedLevel = null;
+        box.className = 'mt-3 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700';
+        box.innerHTML = '<i class="fa fa-check-circle"></i> 已选定 <b>' + pickName + '</b>。' +
+          (chk.note ? '（' + chk.note + '）' : '') +
+          ' 报告签发后将生成唯一溯源码并印刷于报告首页。';
+      } else if (chk.blockedBy === 'capability') {
+        row.reservedLevel = _levelPick; row.level = null;
+        box.className = 'mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700';
+        box.innerHTML = '<i class="fa fa-clock-o"></i> 已登记 <b>' + pickName + '</b> 升级预留。当前能力未就绪（' +
+          chk.missing.join('、') + '），本次<b>不可出具</b>；待对应模块接入且能力门禁通过后方可签发。';
+      } else {
+        box.className = 'mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700';
+        box.innerHTML = '<i class="fa fa-exclamation-triangle"></i> <b>' + pickName + '</b> ' + chk.reason + '。未写入选定。';
+      }
+      renderTable();
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
     function renderTable(list) {
       var data = list || ROWS;
       document.getElementById('tableBody').innerHTML = data.map(function (row, i) {
@@ -229,6 +343,7 @@
           '<td class="border border-slate-200 px-3 py-2">' + (row.sales || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.compiler + '</td>' +
           '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="openReportRecordModal();return false;">报告记录</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + transparencyCell(row) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + genLink +
           ' <a href="#" class="ml-3 text-blue-600 hover:underline" onclick="openCompileListModal();return false;">编制</a></td></tr>';
       }).join('');
@@ -330,12 +445,13 @@
     renderTable();
 
     if (window.PrototypeAnnotation) {
-      PrototypeAnnotation.register([
+      PrototypeAnnotation.init({ annotations: [
         { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '「报告生成」进入报告编制编辑页；「编制」弹出报告列表，勾选后进入 Word 在线编制。', tag: '报告编制' },
         { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '点击「报告记录」查看各报告在编制/审核/签发等节点的流转记录。', tag: '报告编制' },
         { id: 'report-gen-link', selector: '[data-annotate="report-generate"]', position: 'left', title: '报告生成', content: '演示委托 SCZN202508/0009 · 实壁塑料电缆导管 PVC-C。', tag: '报告编制' },
-        { id: 'compile-modal', selector: '[data-annotate="compile-confirm"]', position: 'left', title: '编制确认', content: '勾选报告后点击「编制」进入 Word 在线编辑（原型演示）。', tag: '报告列表' }
-      ]);
+        { id: 'compile-modal', selector: '[data-annotate="compile-confirm"]', position: 'left', title: '编制确认', content: '勾选报告后点击「编制」进入 Word 在线编辑（原型演示）。', tag: '报告列表' },
+        { id: 'col-transparency', selector: '[data-annotate="col-transparency"]', position: 'top', title: '透明度等级 / 溯源', content: '检测前为本次报告选定透明度等级（四级）。一/二级为预留等级：可选但受能力门禁拦截、暂不放行出具（登记升级预留）。签发后生成唯一溯源码印刷于报告首页，「查看溯源」即扫码公开页。', tag: '透明检测' }
+      ] });
     }
   </script>
 </body>
