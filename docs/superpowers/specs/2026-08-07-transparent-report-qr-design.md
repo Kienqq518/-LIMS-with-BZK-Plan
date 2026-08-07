@@ -336,7 +336,9 @@ ReportCodeRegistry[code] = {
 
 ---
 
-## 11. 本期原型（Prototype）建议范围
+## 11. 本期原型（Prototype）— 已落地
+
+> 状态：**已实现并通过无头渲染自测**。文件：`report-verify.html`、`js/report-trace.js`、`report-list.html`（报告编制集成等级选择）。演示码：三级 `R3a2K` · 四级 `R4b7M` · 二级预留预览 `R2c9X` · 已召回 `R3rev` · 已换版 `R3old`。
 
 与现网原型技术栈一致（静态 HTML + Tailwind + 原生 JS + mock 数据）：
 
