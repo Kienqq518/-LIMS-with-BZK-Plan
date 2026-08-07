@@ -31,6 +31,8 @@
    * @param {string} [opts.mode] 'cell' | 'modal'
    * @param {string} [opts.prefix] data attribute prefix for idx
    * @param {number|string} [opts.idx]
+   * @param {number} [opts.maxCount]
+   * @param {string} [opts.addLabel] placeholder for add select
    */
   function renderHTML(opts) {
     injectStyles();
@@ -39,11 +41,12 @@
     var mode = opts.mode === 'modal' ? 'inspector-combobox--modal' : 'inspector-combobox--cell';
     var idx = opts.idx != null ? opts.idx : '';
     var prefix = opts.prefix || 'insp';
+    var addLabel = opts.addLabel != null ? opts.addLabel : (mode.indexOf('modal') !== -1 ? '添加' : '');
 
     var maxCount = opts.maxCount || 0;
     var tags = inspectors.map(function (name) {
       return '<span class="inspector-tag" data-value="' + name + '">' + name +
-        ' <i class="fa fa-times" data-action="remove" data-name="' + name + '" data-idx="' + idx + '"></i></span>';
+        ' <i class="fa fa-times" data-action="remove" data-name="' + name + '" data-idx="' + idx + '" data-prefix="' + prefix + '"></i></span>';
     }).join('');
 
     var avail = options.filter(function (o) { return inspectors.indexOf(o) === -1; });
@@ -51,7 +54,7 @@
     var select = atMax ? '' : (
       '<select class="inspector-add" data-action="add" data-idx="' + idx + '" data-prefix="' + prefix + '"' +
         (maxCount ? ' data-max="' + maxCount + '"' : '') + '>' +
-        '<option value="">' + (mode.indexOf('modal') !== -1 ? '添加检验人员' : '') + '</option>' +
+        '<option value="">' + addLabel + '</option>' +
         avail.map(function (o) { return '<option value="' + o + '">' + o + '</option>'; }).join('') +
       '</select>'
     );
@@ -62,7 +65,7 @@
   /**
    * 绑定容器内所有 combobox 的事件
    * @param {HTMLElement|string} root
-   * @param {{ onAdd: Function, onRemove: Function }} handlers - (idx, name) => void
+   * @param {{ onAdd: Function, onRemove: Function }} handlers - (idx, name, prefix?) => void
    */
   function bind(root, handlers) {
     injectStyles();
@@ -75,7 +78,8 @@
       var val = sel.value;
       if (!val) return;
       var idx = sel.getAttribute('data-idx');
-      if (handlers.onAdd) handlers.onAdd(idx === '' ? null : Number(idx), val);
+      var prefix = sel.getAttribute('data-prefix') || '';
+      if (handlers.onAdd) handlers.onAdd(idx === '' ? null : Number(idx), val, prefix);
       sel.value = '';
     });
 
@@ -85,7 +89,8 @@
       e.stopPropagation();
       var idx = icon.getAttribute('data-idx');
       var name = icon.getAttribute('data-name');
-      if (handlers.onRemove) handlers.onRemove(idx === '' ? null : Number(idx), name);
+      var prefix = icon.getAttribute('data-prefix') || '';
+      if (handlers.onRemove) handlers.onRemove(idx === '' ? null : Number(idx), name, prefix);
     });
   }
 

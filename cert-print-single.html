@@ -74,7 +74,8 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">型号规格</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">检验日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">再检日期</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">检验人员</th>
+              <th id="thInspector" class="border border-slate-200 px-3 py-2 font-medium">检测员</th>
+              <th id="thRecorder" class="border border-slate-200 px-3 py-2 font-medium hidden">记录员</th>
             </tr>
           </thead>
           <tbody id="sampleBody"></tbody>
@@ -99,7 +100,9 @@
     var params = new URLSearchParams(location.search);
     var entrustCode = params.get('code') || 'SC2026/0079';
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
+    var MAX_RECORDERS = LabelCertConfig.getRecorderMax();
     var urlInspectors = (params.get('inspectors') || 'cs222,cs3').split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
+    var urlRecorders = (params.get('recorders') || '').split(',').filter(Boolean).slice(0, MAX_RECORDERS);
 
     function syncShortlinkBaseHint() {
       var mode = ShortLinkQR.getBaseMode();
@@ -129,17 +132,33 @@
 
     // 00790101 → 个性化不粘胶纸；00790201 → 未绑定个性化，走默认左文右码版式 mock
     var allSamples = [
-      { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', spec: '', model: '10kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'rod', judgment: '合格', status: '报告发放' },
-      { sampleNo: 'SC2026/00790201', name: '验电器', spec: '', model: '35kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'electroscope', judgment: '合格', status: '报告发放' }
+      { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', spec: '', model: '10kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), recorders: urlRecorders.slice(), entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'rod', judgment: '合格', status: '报告发放' },
+      { sampleNo: 'SC2026/00790201', name: '验电器', spec: '', model: '35kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), recorders: urlRecorders.slice(), entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'electroscope', judgment: '合格', status: '报告发放' }
     ];
     if (entrustCode !== 'SC2026/0079') {
       allSamples = [
-        { sampleNo: entrustCode + '0101', name: '验电器', spec: '', model: '10kV', inspectDate: '2026-07-01', reinspectDate: '2027-07-01', inspectors: urlInspectors.slice(), entrust: entrustCode, cat: 'aqgqj', masterId: 'electroscope', judgment: '合格', status: '报告签发' }
+        { sampleNo: entrustCode + '0101', name: '验电器', spec: '', model: '10kV', inspectDate: '2026-07-01', reinspectDate: '2027-07-01', inspectors: urlInspectors.slice(), recorders: urlRecorders.slice(), entrust: entrustCode, cat: 'aqgqj', masterId: 'electroscope', judgment: '合格', status: '报告签发' }
       ];
     }
 
     var samples = allSamples.slice();
     var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
+
+    function rolesForItem(item) {
+      var masterId = item.masterId || LabelCertConfig.masterIdFromName(item.name);
+      var tpl = LabelCertConfig.resolveTemplate(item.cat || 'aqgqj', 'certificate', masterId);
+      return LabelCertConfig.personnelRolesNeeded((tpl && tpl.elements) || []);
+    }
+
+    function pageRolesUnion(list) {
+      var needI = false, needR = false;
+      (list || []).forEach(function (s) {
+        var r = rolesForItem(s);
+        if (r.needInspectors) needI = true;
+        if (r.needRecorders) needR = true;
+      });
+      return { needInspectors: needI, needRecorders: needR };
+    }
 
     function buildCertHtml(item, idx) {
       var masterId = item.masterId || LabelCertConfig.masterIdFromName(item.name);
@@ -165,8 +184,26 @@
     }
 
     function renderSampleTable() {
+      var union = pageRolesUnion(samples);
+      document.getElementById('thInspector').classList.toggle('hidden', !union.needInspectors);
+      document.getElementById('thRecorder').classList.toggle('hidden', !union.needRecorders);
       document.getElementById('sampleBody').innerHTML = samples.map(function (item, i) {
         item._checked = item._checked !== false;
+        var roles = rolesForItem(item);
+        var inspTd = union.needInspectors
+          ? '<td class="border border-slate-200 px-3 py-2 min-w-[140px]" data-annotate-inspector="' + (i === 0 ? '1' : '') + '">' +
+              (roles.needInspectors
+                ? InspectorSelect.renderHTML({ inspectors: item.inspectors, options: INSPECTOR_OPTIONS, mode: 'cell', idx: i, prefix: 'insp', maxCount: MAX_INSPECTORS })
+                : '<span class="text-xs text-slate-300">—</span>') +
+            '</td>'
+          : '';
+        var recTd = union.needRecorders
+          ? '<td class="border border-slate-200 px-3 py-2 min-w-[140px]">' +
+              (roles.needRecorders
+                ? InspectorSelect.renderHTML({ inspectors: item.recorders || [], options: INSPECTOR_OPTIONS, mode: 'cell', idx: i, prefix: 'rec', maxCount: MAX_RECORDERS })
+                : '<span class="text-xs text-slate-300">—</span>') +
+            '</td>'
+          : '';
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2"><input type="checkbox" class="sample-check" data-idx="' + i + '" ' + (item._checked ? 'checked' : '') + ' onchange="onSampleCheck(' + i + ', this.checked)" /></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
@@ -176,9 +213,7 @@
           '<td class="border border-slate-200 px-3 py-2">' + (item.model || '') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.inspectDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.reinspectDate + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2 min-w-[140px]" data-annotate-inspector="' + (i === 0 ? '1' : '') + '">' +
-            InspectorSelect.renderHTML({ inspectors: item.inspectors, options: INSPECTOR_OPTIONS, mode: 'cell', idx: i, prefix: 'row', maxCount: MAX_INSPECTORS }) +
-          '</td></tr>';
+          inspTd + recTd + '</tr>';
       }).join('');
       document.getElementById('sampleTotal').textContent = '共 ' + samples.length + ' 条';
       renderPreview();
@@ -194,23 +229,38 @@
       renderSampleTable();
     }
 
-    function onInspectorAdd(idx, name) {
-      if (samples[idx].inspectors.length >= MAX_INSPECTORS) {
-        alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检验人员');
-        return;
+    function onPersonnelAdd(idx, name, prefix) {
+      if (idx == null || !samples[idx] || !name) return;
+      if (prefix === 'rec') {
+        if (!samples[idx].recorders) samples[idx].recorders = [];
+        if (samples[idx].recorders.length >= MAX_RECORDERS) {
+          alert('最多只能选择 ' + MAX_RECORDERS + ' 名记录员');
+          return;
+        }
+        if (samples[idx].recorders.indexOf(name) === -1) samples[idx].recorders.push(name);
+      } else {
+        if (samples[idx].inspectors.length >= MAX_INSPECTORS) {
+          alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检测员');
+          return;
+        }
+        if (samples[idx].inspectors.indexOf(name) === -1) samples[idx].inspectors.push(name);
       }
-      if (samples[idx].inspectors.indexOf(name) === -1) samples[idx].inspectors.push(name);
       renderSampleTable();
     }
 
-    function onInspectorRemove(idx, name) {
-      samples[idx].inspectors = samples[idx].inspectors.filter(function (n) { return n !== name; });
+    function onPersonnelRemove(idx, name, prefix) {
+      if (idx == null || !samples[idx]) return;
+      if (prefix === 'rec') {
+        samples[idx].recorders = (samples[idx].recorders || []).filter(function (n) { return n !== name; });
+      } else {
+        samples[idx].inspectors = samples[idx].inspectors.filter(function (n) { return n !== name; });
+      }
       renderSampleTable();
     }
 
     InspectorSelect.bind(document.getElementById('sampleBody'), {
-      onAdd: onInspectorAdd,
-      onRemove: onInspectorRemove
+      onAdd: onPersonnelAdd,
+      onRemove: onPersonnelRemove
     });
 
     function filterSamples() {
@@ -253,7 +303,7 @@
             '③ 扫码后短链服务 HTTP 302 跳转至 H5 验真页<br><br>' +
             '<strong>扫码方式：</strong>微信、支付宝、手机系统相机均可，无特殊限制<br><br>' +
             '<strong>跳转页面：</strong>「合格证验真」H5 页（原型 cert-verify.html）<br><br>' +
-            '<strong>展示信息：</strong>试样编号/名称、型号规格、检验/再检日期、检验人员、检验机构、验真结论<br><br>' +
+            '<strong>展示信息：</strong>试样编号/名称、型号规格、检验/再检日期、检测员、检验机构、验真结论<br><br>' +
             '<strong>验真有效：</strong>短链存在 + 处于报告签发后续流程 + 未超过再检日期 + 未作废<br>' +
             '<strong>验真无效：</strong>短链不存在/已失效、超过再检日期、已作废/撤回（含<strong>流程回退</strong>：从报告签发后续退至报告签发及之前，短链自动作废）<br><br>' +
             '<strong>演示：</strong>有效 Ab3K9 · 过期 Ex1p1 · 回退作废 Rv0k1 · 不存在 XXXXX<br><br>' +
@@ -285,8 +335,8 @@
           id: 'inspector-edit',
           selector: '[data-annotate-inspector="1"]',
           position: 'top-right',
-          title: '检验人员选择',
-          content: '与系统一致：标签 + 下拉在同一行边框内展示，最多选择 2 名检验人员。修改后左侧合格证预览实时同步。',
+          title: '检测员/记录员选择',
+          content: '与系统一致：标签 + 下拉在同一行边框内展示。列按模版角色并集显示；修改后左侧合格证预览实时同步。',
           tag: 'UI 对齐'
         }
       ]

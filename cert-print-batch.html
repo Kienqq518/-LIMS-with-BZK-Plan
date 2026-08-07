@@ -74,7 +74,8 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">型号规格</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">检验日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">再检日期</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">检验人员</th>
+              <th id="thInspector" class="border border-slate-200 px-3 py-2 font-medium">检测员</th>
+              <th id="thRecorder" class="border border-slate-200 px-3 py-2 font-medium hidden">记录员</th>
             </tr>
           </thead>
           <tbody id="sampleBody"></tbody>
@@ -101,9 +102,11 @@
     var SHORTLINK_BASE_KEY = 'lims.shortlink.baseMode';
     var params = new URLSearchParams(location.search);
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
+    var MAX_RECORDERS = LabelCertConfig.getRecorderMax();
     var entrustCodes = (params.get('codes') || 'SC2026/0073,SC2026/0072').split(',').filter(Boolean);
     var sampleNos = (params.get('nos') || '').split(',').filter(Boolean);
     var defaultInspectors = (params.get('inspectors') || 'admin').split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
+    var defaultRecorders = (params.get('recorders') || '').split(',').filter(Boolean).slice(0, MAX_RECORDERS);
     if (params.get('from') === 'qualified') document.getElementById('backLink').href = 'cert-qualified-print.html';
 
     function syncShortlinkBaseHint() {
@@ -161,9 +164,26 @@
       allSamples.push({
         sampleNo: s.sampleNo, name: s.name, spec: s.spec || '', model: s.model || '',
         inspectDate: s.inspectDate, reinspectDate: s.reinspectDate,
-        inspectors: defaultInspectors.slice(), masterId: s.masterId || LabelCertConfig.masterIdFromName(s.name),
+        inspectors: defaultInspectors.slice(),
+        recorders: defaultRecorders.slice(),
+        masterId: s.masterId || LabelCertConfig.masterIdFromName(s.name),
         cat: s.cat || 'aqgqj', _checked: true
       });
+    }
+
+    function rolesForItem(item) {
+      var tpl = LabelCertConfig.resolveTemplate(item.cat || 'aqgqj', 'certificate', item.masterId || null);
+      return LabelCertConfig.personnelRolesNeeded((tpl && tpl.elements) || []);
+    }
+
+    function pageRolesUnion(list) {
+      var needI = false, needR = false;
+      (list || []).forEach(function (s) {
+        var r = rolesForItem(s);
+        if (r.needInspectors) needI = true;
+        if (r.needRecorders) needR = true;
+      });
+      return { needInspectors: needI, needRecorders: needR };
     }
 
     if (sampleNos.length) {
@@ -211,8 +231,19 @@
         options: INSPECTOR_OPTIONS,
         mode: 'cell',
         idx: globalIdx,
-        prefix: 'row',
+        prefix: 'insp',
         maxCount: MAX_INSPECTORS
+      });
+    }
+
+    function recorderCell(item, globalIdx) {
+      return InspectorSelect.renderHTML({
+        inspectors: item.recorders || [],
+        options: INSPECTOR_OPTIONS,
+        mode: 'cell',
+        idx: globalIdx,
+        prefix: 'rec',
+        maxCount: MAX_RECORDERS
       });
     }
 
@@ -223,8 +254,22 @@
 
     function renderSampleTable() {
       var pg = getPageData();
+      var union = pageRolesUnion(samples);
+      document.getElementById('thInspector').classList.toggle('hidden', !union.needInspectors);
+      document.getElementById('thRecorder').classList.toggle('hidden', !union.needRecorders);
       document.getElementById('sampleBody').innerHTML = pg.slice.map(function (item, i) {
         var gIdx = pg.start + i;
+        var roles = rolesForItem(item);
+        var inspTd = union.needInspectors
+          ? '<td class="border border-slate-200 px-3 py-2 min-w-[140px]"' + (gIdx === 0 ? ' data-annotate-inspector="1"' : '') + '>' +
+              (roles.needInspectors ? inspectorCell(item, gIdx) : '<span class="text-xs text-slate-300">—</span>') +
+            '</td>'
+          : '';
+        var recTd = union.needRecorders
+          ? '<td class="border border-slate-200 px-3 py-2 min-w-[140px]">' +
+              (roles.needRecorders ? recorderCell(item, gIdx) : '<span class="text-xs text-slate-300">—</span>') +
+            '</td>'
+          : '';
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2"><input type="checkbox" class="sample-check" ' + (item._checked ? 'checked' : '') + ' onchange="onSampleCheck(' + gIdx + ', this.checked)" /></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (gIdx + 1) + '</td>' +
@@ -234,7 +279,7 @@
           '<td class="border border-slate-200 px-3 py-2">' + (item.model || '') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.inspectDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.reinspectDate + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2 min-w-[140px]"' + (gIdx === 0 ? ' data-annotate-inspector="1"' : '') + '>' + inspectorCell(item, gIdx) + '</td></tr>';
+          inspTd + recTd + '</tr>';
       }).join('');
       document.getElementById('sampleTotal').textContent = '共 ' + samples.length + ' 条';
       renderPreview();
@@ -250,24 +295,40 @@
       renderSampleTable();
     }
 
-    function addInspector(idx, name) {
-      if (!name || samples[idx].inspectors.indexOf(name) !== -1) return;
-      if (samples[idx].inspectors.length >= MAX_INSPECTORS) {
-        alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检验人员');
-        return;
+    function onPersonnelAdd(idx, name, prefix) {
+      if (idx == null || !samples[idx] || !name) return;
+      if (prefix === 'rec') {
+        if (!samples[idx].recorders) samples[idx].recorders = [];
+        if (samples[idx].recorders.indexOf(name) !== -1) return;
+        if (samples[idx].recorders.length >= MAX_RECORDERS) {
+          alert('最多只能选择 ' + MAX_RECORDERS + ' 名记录员');
+          return;
+        }
+        samples[idx].recorders.push(name);
+      } else {
+        if (samples[idx].inspectors.indexOf(name) !== -1) return;
+        if (samples[idx].inspectors.length >= MAX_INSPECTORS) {
+          alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检测员');
+          return;
+        }
+        samples[idx].inspectors.push(name);
       }
-      samples[idx].inspectors.push(name);
       renderSampleTable();
     }
 
-    function removeInspector(idx, name) {
-      samples[idx].inspectors = samples[idx].inspectors.filter(function (n) { return n !== name; });
+    function onPersonnelRemove(idx, name, prefix) {
+      if (idx == null || !samples[idx]) return;
+      if (prefix === 'rec') {
+        samples[idx].recorders = (samples[idx].recorders || []).filter(function (n) { return n !== name; });
+      } else {
+        samples[idx].inspectors = samples[idx].inspectors.filter(function (n) { return n !== name; });
+      }
       renderSampleTable();
     }
 
     InspectorSelect.bind(document.getElementById('sampleBody'), {
-      onAdd: addInspector,
-      onRemove: removeInspector
+      onAdd: onPersonnelAdd,
+      onRemove: onPersonnelRemove
     });
 
     function filterSamples() {
@@ -307,7 +368,7 @@
           selector: '#previewContainer',
           position: 'top-left',
           title: '批量打印预览',
-          content: '从列表页多选委托并指定默认检验人员后进入本页。左侧滚动展示全部待打印合格证，右侧可逐条调整检验人员或取消勾选。',
+          content: '从列表页多选委托并指定默认检测员/记录员后进入本页。左侧滚动展示全部待打印合格证，右侧可按模版角色逐条调整或取消勾选。',
           tag: '流程 · 图5'
         },
         {
@@ -323,7 +384,7 @@
             '③ 用户扫码 → 短链网关 302 → 正式 H5 验真页<br><br>' +
             '<strong>扫码方式：</strong>微信扫一扫、支付宝扫一扫、iOS/Android 相机均可<br><br>' +
             '<strong>跳转页面：</strong>智慧实验室「合格证验真」H5 页（原型 cert-verify.html，移动端适配）<br><br>' +
-            '<strong>页面展示：</strong>验真结论、试样编号/名称、型号规格、检验/再检日期、检验人员、检验机构<br><br>' +
+            '<strong>页面展示：</strong>验真结论、试样编号/名称、型号规格、检验/再检日期、检测员、检验机构<br><br>' +
             '<strong>验真有效条件：</strong>短链存在；委托处于报告签发及后续流程；未超过再检日期；未被作废 → 「短链有效，验真通过」<br><br>' +
             '<strong>验真无效条件：</strong>① 短链不存在 ② 超过再检日期 ③ 已作废/撤回（含流程从报告签发后续<strong>回退</strong>至报告签发及之前，短链自动作废）→ 「短链无效，无法验真」<br><br>' +
             '<strong>原型演示码：</strong>有效 Ab3K9 · 过期 Ex1p1 · 回退作废 Rv0k1 · 不存在 cert-verify.html?code=XXXXX<br><br>' +
@@ -346,8 +407,8 @@
           id: 'default-inspector',
           selector: '[data-annotate-inspector="1"]',
           position: 'top-right',
-          title: '检验人员选择',
-          content: '样式对齐系统：标签与添加下拉在同一行边框内。最多 2 名检验人员。批量入口带入默认值，可逐条增删，左侧预览同步更新。',
+          title: '检测员/记录员选择',
+          content: '样式对齐系统：标签与添加下拉在同一行边框内。列按当前样品模版角色并集显示；可逐条增删，左侧预览同步更新。',
           tag: 'UI 对齐'
         }
       ]

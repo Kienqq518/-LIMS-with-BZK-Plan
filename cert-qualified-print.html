@@ -83,15 +83,19 @@
   <div id="inspectorModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
     <div class="w-[480px] max-w-full rounded-lg bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
-        <h3 class="text-base font-medium">选择检验人员</h3>
+        <h3 class="text-base font-medium">选择人员</h3>
         <button onclick="closeInspectorModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="px-6 py-5">
-        <div class="flex items-center gap-3">
-          <label class="w-[72px] flex-shrink-0 text-right text-sm text-slate-600">检验人员</label>
+        <div id="inspectorRow" class="flex items-start gap-3">
+          <label class="w-[72px] flex-shrink-0 text-right text-sm text-slate-600">检测员</label>
           <div id="modalInspectorBox" class="flex-1"></div>
         </div>
-        <p class="mt-2 pl-[84px] text-xs text-slate-400" id="maxTip">最多选择 2 名检验人员</p>
+        <div id="recorderRow" class="mt-2 flex items-start gap-3 hidden">
+          <label class="w-[72px] flex-shrink-0 text-right text-sm text-slate-600">记录员</label>
+          <div id="modalRecorderBox" class="flex-1"></div>
+        </div>
+        <p id="personnelTip" class="mt-2 pl-[84px] text-xs text-slate-400"></p>
       </div>
       <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
         <button onclick="closeInspectorModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
@@ -106,10 +110,14 @@
   <script src="js/label-cert-config.js"></script>
   <script>
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
+    var MAX_RECORDERS = LabelCertConfig.getRecorderMax();
     var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
     var STORAGE_INSPECTORS = 'lims_label_print_last_inspectors';
+    var STORAGE_RECORDERS = 'lims_label_print_last_recorders';
     var STORAGE_INIT = 'lims_label_print_inspector_inited';
     var modalInspectors = ['admin'];
+    var modalRecorders = [];
+    var modalRoles = { needInspectors: true, needRecorders: false };
     var pendingNos = [];
 
     var allRows = [
@@ -129,6 +137,30 @@
 
     var filtered = allRows.filter(eligible);
 
+    function rolesForSamples(sampleMetas) {
+      var needI = false, needR = false;
+      (sampleMetas || []).forEach(function (s) {
+        var tpl = LabelCertConfig.resolveTemplate(s.cat || 'aqgqj', 'certificate', s.masterId || null);
+        var r = LabelCertConfig.personnelRolesNeeded((tpl && tpl.elements) || []);
+        if (r.needInspectors) needI = true;
+        if (r.needRecorders) needR = true;
+      });
+      if (!(sampleMetas || []).length) return { needInspectors: true, needRecorders: false };
+      return { needInspectors: needI, needRecorders: needR };
+    }
+
+    function metasForNos(nos) {
+      return (nos || []).map(function (no) {
+        var row = null;
+        for (var i = 0; i < allRows.length; i++) {
+          if (allRows[i].sampleNo === no) { row = allRows[i]; break; }
+        }
+        return row
+          ? { cat: row.cat || 'aqgqj', masterId: row.masterId || null }
+          : { cat: 'aqgqj', masterId: null };
+      });
+    }
+
     function getLastInspectors() {
       try {
         var raw = localStorage.getItem(STORAGE_INSPECTORS);
@@ -136,8 +168,17 @@
       } catch (e) { return ['admin']; }
     }
 
-    function saveLastInspectors(list) {
-      localStorage.setItem(STORAGE_INSPECTORS, JSON.stringify(list.slice(0, MAX_INSPECTORS)));
+    function getLastRecorders() {
+      try {
+        var raw = localStorage.getItem(STORAGE_RECORDERS);
+        var list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list.slice(0, MAX_RECORDERS) : [];
+      } catch (e) { return []; }
+    }
+
+    function saveLastPersonnel(inspectors, recorders) {
+      localStorage.setItem(STORAGE_INSPECTORS, JSON.stringify((inspectors || []).slice(0, MAX_INSPECTORS)));
+      localStorage.setItem(STORAGE_RECORDERS, JSON.stringify((recorders || []).slice(0, MAX_RECORDERS)));
       localStorage.setItem(STORAGE_INIT, '1');
     }
 
@@ -145,22 +186,62 @@
       return localStorage.getItem(STORAGE_INIT) === '1';
     }
 
-    function renderModalInspectors() {
-      document.getElementById('modalInspectorBox').innerHTML = InspectorSelect.renderHTML({
-        inspectors: modalInspectors, options: INSPECTOR_OPTIONS, mode: 'modal', idx: '', prefix: 'modal', maxCount: MAX_INSPECTORS
-      });
-      document.getElementById('maxTip').textContent = '最多选择 ' + MAX_INSPECTORS + ' 名检验人员';
+    function canSkipModal(roles) {
+      if (!hasSelectedBefore()) return false;
+      if (roles.needInspectors && !getLastInspectors().length) return false;
+      if (roles.needRecorders && !getLastRecorders().length) return false;
+      return true;
     }
 
-    InspectorSelect.bind(document.getElementById('inspectorModal'), {
+    function updatePersonnelTip() {
+      var parts = [];
+      if (modalRoles.needInspectors) parts.push('最多选择 ' + MAX_INSPECTORS + ' 名检测员');
+      if (modalRoles.needRecorders) parts.push('最多选择 ' + MAX_RECORDERS + ' 名记录员');
+      document.getElementById('personnelTip').textContent = parts.join('；');
+    }
+
+    function renderModalPersonnel() {
+      document.getElementById('inspectorRow').classList.toggle('hidden', !modalRoles.needInspectors);
+      document.getElementById('recorderRow').classList.toggle('hidden', !modalRoles.needRecorders);
+      if (modalRoles.needInspectors) {
+        document.getElementById('modalInspectorBox').innerHTML = InspectorSelect.renderHTML({
+          inspectors: modalInspectors, options: INSPECTOR_OPTIONS, mode: 'modal', idx: '',
+          prefix: 'modalInsp', maxCount: MAX_INSPECTORS, addLabel: '添加检测员'
+        });
+      } else {
+        document.getElementById('modalInspectorBox').innerHTML = '';
+      }
+      if (modalRoles.needRecorders) {
+        document.getElementById('modalRecorderBox').innerHTML = InspectorSelect.renderHTML({
+          inspectors: modalRecorders, options: INSPECTOR_OPTIONS, mode: 'modal', idx: '',
+          prefix: 'modalRec', maxCount: MAX_RECORDERS, addLabel: '添加记录员'
+        });
+      } else {
+        document.getElementById('modalRecorderBox').innerHTML = '';
+      }
+      updatePersonnelTip();
+    }
+
+    InspectorSelect.bind(document.getElementById('modalInspectorBox'), {
       onAdd: function (_, name) {
-        if (modalInspectors.length >= MAX_INSPECTORS) { alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检验人员'); return; }
+        if (modalInspectors.length >= MAX_INSPECTORS) { alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检测员'); return; }
         if (modalInspectors.indexOf(name) === -1) modalInspectors.push(name);
-        renderModalInspectors();
+        renderModalPersonnel();
       },
       onRemove: function (_, name) {
         modalInspectors = modalInspectors.filter(function (n) { return n !== name; });
-        renderModalInspectors();
+        renderModalPersonnel();
+      }
+    });
+    InspectorSelect.bind(document.getElementById('modalRecorderBox'), {
+      onAdd: function (_, name) {
+        if (modalRecorders.length >= MAX_RECORDERS) { alert('最多只能选择 ' + MAX_RECORDERS + ' 名记录员'); return; }
+        if (modalRecorders.indexOf(name) === -1) modalRecorders.push(name);
+        renderModalPersonnel();
+      },
+      onRemove: function (_, name) {
+        modalRecorders = modalRecorders.filter(function (n) { return n !== name; });
+        renderModalPersonnel();
       }
     });
 
@@ -219,12 +300,22 @@
     function openInspectorFor(nos) {
       pendingNos = nos;
       if (!pendingNos.length) { alert('请先勾选样品'); return; }
-      if (hasSelectedBefore()) {
-        goPrint(getLastInspectors());
+      var roles = rolesForSamples(metasForNos(pendingNos));
+      if (!roles.needInspectors && !roles.needRecorders) {
+        goPrint([], []);
         return;
       }
-      modalInspectors = getLastInspectors();
-      renderModalInspectors();
+      if (canSkipModal(roles)) {
+        goPrint(
+          roles.needInspectors ? getLastInspectors() : [],
+          roles.needRecorders ? getLastRecorders() : []
+        );
+        return;
+      }
+      modalRoles = roles;
+      modalInspectors = roles.needInspectors ? getLastInspectors().slice() : [];
+      modalRecorders = roles.needRecorders ? getLastRecorders().slice() : [];
+      renderModalPersonnel();
       document.getElementById('inspectorModal').classList.remove('hidden');
       document.getElementById('inspectorModal').classList.add('flex');
     }
@@ -235,14 +326,20 @@
     }
 
     function confirmInspector() {
-      if (!modalInspectors.length) { alert('请至少选择 1 名检验人员'); return; }
-      saveLastInspectors(modalInspectors);
+      if (modalRoles.needInspectors && !modalInspectors.length) { alert('请至少选择 1 名检测员'); return; }
+      if (modalRoles.needRecorders && !modalRecorders.length) { alert('请至少选择 1 名记录员'); return; }
+      var inspectors = modalRoles.needInspectors ? modalInspectors.slice() : [];
+      var recorders = modalRoles.needRecorders ? modalRecorders.slice() : [];
+      saveLastPersonnel(inspectors, recorders);
       closeInspectorModal();
-      goPrint(modalInspectors);
+      goPrint(inspectors, recorders);
     }
 
-    function goPrint(inspectors) {
-      var q = 'nos=' + encodeURIComponent(pendingNos.join(',')) + '&inspectors=' + encodeURIComponent(inspectors.join(',')) + '&from=qualified';
+    function goPrint(inspectors, recorders) {
+      var q = 'nos=' + encodeURIComponent(pendingNos.join(',')) +
+        '&inspectors=' + encodeURIComponent((inspectors || []).join(',')) +
+        '&recorders=' + encodeURIComponent((recorders || []).join(',')) +
+        '&from=qualified';
       location.href = 'cert-print-batch.html?' + q;
     }
 
@@ -255,7 +352,7 @@
       openInspectorFor(getSelectedNos());
     }
 
-    renderModalInspectors();
+    renderModalPersonnel();
     renderTable();
   </script>
 </body>

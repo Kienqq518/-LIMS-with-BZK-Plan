@@ -92,19 +92,23 @@
     </div>
   </div>
 
-  <!-- 选择检验人员弹窗 -->
+  <!-- 选择人员弹窗 -->
   <div id="inspectorModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
     <div class="w-[480px] max-w-full rounded-lg bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
-        <h3 class="text-base font-medium text-slate-800">选择检验人员</h3>
+        <h3 class="text-base font-medium text-slate-800">选择人员</h3>
         <button onclick="closeInspectorModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="px-6 py-5">
-        <div class="flex items-center gap-3">
-          <label class="w-[72px] flex-shrink-0 text-right text-sm text-slate-600">检验人员</label>
+        <div id="inspectorRow" class="flex items-start gap-3">
+          <label class="w-[72px] flex-shrink-0 text-right text-sm text-slate-600">检测员</label>
           <div id="modalInspectorBox" class="flex-1"></div>
         </div>
-        <p class="mt-2 pl-[84px] text-xs text-slate-400" id="maxInspectorTip">最多选择 2 名检验人员</p>
+        <div id="recorderRow" class="mt-2 flex items-start gap-3 hidden">
+          <label class="w-[72px] flex-shrink-0 text-right text-sm text-slate-600">记录员</label>
+          <div id="modalRecorderBox" class="flex-1"></div>
+        </div>
+        <p id="personnelTip" class="mt-2 pl-[84px] text-xs text-slate-400"></p>
       </div>
       <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
         <button onclick="closeInspectorModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
@@ -136,16 +140,51 @@
     ];
 
     var filtered = listData.slice();
-    var modalInspectors = ['admin'];
-    var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
+    var MAX_RECORDERS = LabelCertConfig.getRecorderMax();
+    var modalInspectors = ['admin'];
+    var modalRecorders = [];
+    var modalRoles = { needInspectors: true, needRecorders: false };
+    var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
     var modalMode = 'batch';
     var pendingSingleCode = null;
     var STORAGE_INSPECTORS = 'lims_label_print_last_inspectors';
+    var STORAGE_RECORDERS = 'lims_label_print_last_recorders';
     var STORAGE_INIT = 'lims_label_print_inspector_inited';
+
+    // 委托编号 → 样品元数据（与批打页 SAMPLE_CATALOG 对齐的精简映射）
+    var ENTRUST_SAMPLE_METAS = {
+      'SC2026/0079': [{ cat: 'aqgqj', masterId: 'rod' }, { cat: 'aqgqj', masterId: 'electroscope' }],
+      'SC2026/0073': [{ cat: 'aqgqj', masterId: 'belt976' }],
+      'SC2026/0072': [{ cat: 'aqgqj', masterId: 'electroscope' }],
+      'SC2026/0071': [{ cat: 'aqgqj', masterId: 'rod' }],
+      'SC2026/0070': [{ cat: 'aqgqj', masterId: 'helmet' }],
+      'SC2026/0074': [{ cat: 'aqgqj', masterId: 'blanket' }]
+    };
 
     function canShowCert(item) {
       return FlowStages.canShowCert(item);
+    }
+
+    function rolesForSamples(sampleMetas) {
+      var needI = false, needR = false;
+      (sampleMetas || []).forEach(function (s) {
+        var tpl = LabelCertConfig.resolveTemplate(s.cat || 'aqgqj', 'certificate', s.masterId || null);
+        var r = LabelCertConfig.personnelRolesNeeded((tpl && tpl.elements) || []);
+        if (r.needInspectors) needI = true;
+        if (r.needRecorders) needR = true;
+      });
+      return { needInspectors: needI, needRecorders: needR };
+    }
+
+    function metasForCodes(codes) {
+      var metas = [];
+      (codes || []).forEach(function (code) {
+        var list = ENTRUST_SAMPLE_METAS[code];
+        if (list) list.forEach(function (m) { metas.push(m); });
+        else metas.push({ cat: 'aqgqj', masterId: null });
+      });
+      return metas;
     }
 
     function getLastInspectors() {
@@ -158,44 +197,101 @@
       }
     }
 
-    function saveLastInspectors(list) {
-      var trimmed = list.slice(0, MAX_INSPECTORS);
-      localStorage.setItem(STORAGE_INSPECTORS, JSON.stringify(trimmed));
+    function getLastRecorders() {
+      try {
+        var raw = localStorage.getItem(STORAGE_RECORDERS);
+        var list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list.slice(0, MAX_RECORDERS) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveLastPersonnel(inspectors, recorders) {
+      localStorage.setItem(STORAGE_INSPECTORS, JSON.stringify((inspectors || []).slice(0, MAX_INSPECTORS)));
+      localStorage.setItem(STORAGE_RECORDERS, JSON.stringify((recorders || []).slice(0, MAX_RECORDERS)));
       localStorage.setItem(STORAGE_INIT, '1');
-      return trimmed;
     }
 
     function hasSelectedBefore() {
       return localStorage.getItem(STORAGE_INIT) === '1';
     }
 
-    function renderModalInspectors() {
-      document.getElementById('modalInspectorBox').innerHTML = InspectorSelect.renderHTML({
-        inspectors: modalInspectors,
-        options: INSPECTOR_OPTIONS,
-        mode: 'modal',
-        idx: '',
-        prefix: 'modal',
-        maxCount: MAX_INSPECTORS
-      });
+    function canSkipModal(roles) {
+      if (!hasSelectedBefore()) return false;
+      if (roles.needInspectors && !getLastInspectors().length) return false;
+      if (roles.needRecorders && !getLastRecorders().length) return false;
+      return true;
     }
 
-    InspectorSelect.bind(document.getElementById('inspectorModal'), {
+    function updatePersonnelTip() {
+      var parts = [];
+      if (modalRoles.needInspectors) parts.push('最多选择 ' + MAX_INSPECTORS + ' 名检测员');
+      if (modalRoles.needRecorders) parts.push('最多选择 ' + MAX_RECORDERS + ' 名记录员');
+      document.getElementById('personnelTip').textContent = parts.join('；');
+    }
+
+    function renderModalPersonnel() {
+      document.getElementById('inspectorRow').classList.toggle('hidden', !modalRoles.needInspectors);
+      document.getElementById('recorderRow').classList.toggle('hidden', !modalRoles.needRecorders);
+      if (modalRoles.needInspectors) {
+        document.getElementById('modalInspectorBox').innerHTML = InspectorSelect.renderHTML({
+          inspectors: modalInspectors,
+          options: INSPECTOR_OPTIONS,
+          mode: 'modal',
+          idx: '',
+          prefix: 'modalInsp',
+          maxCount: MAX_INSPECTORS,
+          addLabel: '添加检测员'
+        });
+      } else {
+        document.getElementById('modalInspectorBox').innerHTML = '';
+      }
+      if (modalRoles.needRecorders) {
+        document.getElementById('modalRecorderBox').innerHTML = InspectorSelect.renderHTML({
+          inspectors: modalRecorders,
+          options: INSPECTOR_OPTIONS,
+          mode: 'modal',
+          idx: '',
+          prefix: 'modalRec',
+          maxCount: MAX_RECORDERS,
+          addLabel: '添加记录员'
+        });
+      } else {
+        document.getElementById('modalRecorderBox').innerHTML = '';
+      }
+      updatePersonnelTip();
+    }
+
+    InspectorSelect.bind(document.getElementById('modalInspectorBox'), {
       onAdd: function (_, name) {
         if (modalInspectors.length >= MAX_INSPECTORS) {
-          alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检验人员');
+          alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检测员');
           return;
         }
         if (modalInspectors.indexOf(name) === -1) modalInspectors.push(name);
-        renderModalInspectors();
+        renderModalPersonnel();
       },
       onRemove: function (_, name) {
         modalInspectors = modalInspectors.filter(function (n) { return n !== name; });
-        renderModalInspectors();
+        renderModalPersonnel();
       }
     });
-    document.getElementById('maxInspectorTip').textContent = '最多选择 ' + MAX_INSPECTORS + ' 名检验人员';
-    renderModalInspectors();
+    InspectorSelect.bind(document.getElementById('modalRecorderBox'), {
+      onAdd: function (_, name) {
+        if (modalRecorders.length >= MAX_RECORDERS) {
+          alert('最多只能选择 ' + MAX_RECORDERS + ' 名记录员');
+          return;
+        }
+        if (modalRecorders.indexOf(name) === -1) modalRecorders.push(name);
+        renderModalPersonnel();
+      },
+      onRemove: function (_, name) {
+        modalRecorders = modalRecorders.filter(function (n) { return n !== name; });
+        renderModalPersonnel();
+      }
+    });
+    renderModalPersonnel();
 
     function renderTable() {
       document.getElementById('tableBody').innerHTML = filtered.map(function (item, i) {
@@ -235,10 +331,6 @@
       }).filter(Boolean);
     }
 
-    function getInspectors() {
-      return modalInspectors.slice();
-    }
-
     function doSearch() {
       var code = document.getElementById('f_code').value.trim();
       var customer = document.getElementById('f_customer').value.trim();
@@ -267,27 +359,52 @@
       location.href = 'label-print-preview.html?codes=' + encodeURIComponent(codes.join(','));
     }
 
-    function goSingleCert(code, inspectors) {
-      window.location.href = 'cert-print-single.html?code=' + encodeURIComponent(code) +
-        '&inspectors=' + encodeURIComponent(inspectors.join(','));
+    function personnelQuery(inspectors, recorders) {
+      return '&inspectors=' + encodeURIComponent((inspectors || []).join(',')) +
+        '&recorders=' + encodeURIComponent((recorders || []).join(','));
     }
 
-    function goBatchCert(codes, inspectors) {
+    function goSingleCert(code, inspectors, recorders) {
+      window.location.href = 'cert-print-single.html?code=' + encodeURIComponent(code) +
+        personnelQuery(inspectors, recorders);
+    }
+
+    function goBatchCert(codes, inspectors, recorders) {
       window.location.href = 'cert-print-batch.html?codes=' + encodeURIComponent(codes.join(',')) +
-        '&inspectors=' + encodeURIComponent(inspectors.join(','));
+        personnelQuery(inspectors, recorders);
+    }
+
+    function prepareModalForRoles(roles) {
+      modalRoles = roles;
+      modalInspectors = roles.needInspectors ? getLastInspectors().slice() : [];
+      modalRecorders = roles.needRecorders ? getLastRecorders().slice() : [];
+      renderModalPersonnel();
+    }
+
+    function tryGoPrint(codes, isSingle) {
+      var roles = rolesForSamples(metasForCodes(codes));
+      if (!roles.needInspectors && !roles.needRecorders) {
+        if (isSingle) goSingleCert(codes[0], [], []);
+        else goBatchCert(codes, [], []);
+        return true;
+      }
+      if (canSkipModal(roles)) {
+        var insp = roles.needInspectors ? getLastInspectors() : [];
+        var rec = roles.needRecorders ? getLastRecorders() : [];
+        if (isSingle) goSingleCert(codes[0], insp, rec);
+        else goBatchCert(codes, insp, rec);
+        return true;
+      }
+      prepareModalForRoles(roles);
+      showModal('inspectorModal');
+      return false;
     }
 
     function onSingleCertClick(e, code) {
       e.preventDefault();
       modalMode = 'single';
       pendingSingleCode = code;
-      if (hasSelectedBefore()) {
-        goSingleCert(code, getLastInspectors());
-        return;
-      }
-      modalInspectors = getLastInspectors().slice();
-      renderModalInspectors();
-      showModal('inspectorModal');
+      tryGoPrint([code], true);
     }
 
     function openInspectorModal() {
@@ -295,13 +412,7 @@
       if (!codes.length) { alert('请先勾选可打印合格证的委托（报告签发及后续流程，且判定合格）'); return; }
       modalMode = 'batch';
       pendingSingleCode = null;
-      if (hasSelectedBefore()) {
-        goBatchCert(codes, getLastInspectors());
-        return;
-      }
-      modalInspectors = getLastInspectors().slice();
-      renderModalInspectors();
-      showModal('inspectorModal');
+      tryGoPrint(codes, false);
     }
 
     function closeInspectorModal() {
@@ -310,16 +421,17 @@
     }
 
     function confirmInspector() {
-      var inspectors = getInspectors();
-      if (!inspectors.length) { alert('请至少选择 1 名检验人员'); return; }
-      if (inspectors.length > MAX_INSPECTORS) { alert('最多只能选择 ' + MAX_INSPECTORS + ' 名检验人员'); return; }
-      saveLastInspectors(inspectors);
+      if (modalRoles.needInspectors && !modalInspectors.length) { alert('请至少选择 1 名检测员'); return; }
+      if (modalRoles.needRecorders && !modalRecorders.length) { alert('请至少选择 1 名记录员'); return; }
+      var inspectors = modalRoles.needInspectors ? modalInspectors.slice() : [];
+      var recorders = modalRoles.needRecorders ? modalRecorders.slice() : [];
+      saveLastPersonnel(inspectors, recorders);
       if (modalMode === 'single' && pendingSingleCode) {
-        goSingleCert(pendingSingleCode, inspectors);
+        goSingleCert(pendingSingleCode, inspectors, recorders);
       } else {
         var codes = getSelectedCodes(true);
         if (!codes.length) { alert('请先勾选可打印合格证的委托'); return; }
-        goBatchCert(codes, inspectors);
+        goBatchCert(codes, inspectors, recorders);
       }
     }
 
@@ -349,9 +461,9 @@
           position: 'top-right',
           title: '单个合格证打印',
           wide: true,
-          content: '点击「合格证」先弹出选择检验人员（<strong>最多 2 人</strong>），确认后跳转打印页。<br><br>' +
-            '<strong>首次打印：</strong>必须弹出选择检验人员弹窗。<br>' +
-            '<strong>后续再打印：</strong>不再弹窗，默认沿用上次选择的检验人员（浏览器 localStorage 记忆，原型可清除缓存复测首次流程）。',
+          content: '点击「合格证」按目标合格证模版所需角色弹出「选择人员」（检测员/记录员）。<br><br>' +
+            '<strong>首次打印：</strong>必须弹出选人弹窗。<br>' +
+            '<strong>后续再打印：</strong>若已记忆且覆盖当前所需角色则不再弹窗；缺角色时仍会弹出。',
           tag: '流程 · 图2'
         },
         {
@@ -372,15 +484,15 @@
           selector: '#btnBatchCert',
           position: 'top-right',
           title: '批量打印合格证',
-          content: '多选已签发报告的委托后点击。首次打印弹出检验人员选择（最多 2 人），后续默认沿用上次选择，直接进入批量打印页。',
+          content: '多选已签发报告的委托后点击。按所选委托模版推导检测员/记录员需求；首次或记忆不足时弹窗选人，否则直接进入批量打印页。',
           tag: '流程 · 图3'
         },
         {
           id: 'confirm-inspector',
           selector: '#btnConfirmInspector',
           position: 'top-right',
-          title: '确认检验人员',
-          content: '单个/批量打印共用此弹窗。确认后记忆检验人员，后续打印自动带入。最多选择 2 名检验人员。',
+          title: '确认人员',
+          content: '单个/批量打印共用此弹窗。确认后记忆检测员与记录员，后续打印在角色齐全时自动带入。',
           tag: '流程 · 图4→5'
         }
       ]
