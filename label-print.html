@@ -168,7 +168,10 @@
 
     function rolesForSamples(sampleMetas) {
       var needI = false, needR = false;
-      (sampleMetas || []).forEach(function (s) {
+      var list = sampleMetas && sampleMetas.length
+        ? sampleMetas
+        : [{ cat: 'aqgqj', masterId: null }];
+      list.forEach(function (s) {
         var tpl = LabelCertConfig.resolveTemplate(s.cat || 'aqgqj', 'certificate', s.masterId || null);
         var r = LabelCertConfig.personnelRolesNeeded((tpl && tpl.elements) || []);
         if (r.needInspectors) needI = true;
