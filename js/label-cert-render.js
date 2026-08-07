@@ -220,15 +220,25 @@
     if (isEsign) {
       var names;
       if (p.fieldId === 'recorders') {
-        names = (global.LabelCertConfig && LabelCertConfig.personnelNameList || function (a) {
-          return Array.isArray(a) ? a : [];
-        })(data && data.recorders, '签名占位');
+        if (global.LabelCertConfig && LabelCertConfig.personnelNameList) {
+          names = LabelCertConfig.personnelNameList(data && data.recorders, '签名占位');
+        } else {
+          names = Array.isArray(data && data.recorders) ? data.recorders.slice() : [];
+        }
+        if (!names.length) names = ['签名占位'];
       } else if (p.fieldId === 'inspectorsRecorders') {
-        names = global.LabelCertConfig && LabelCertConfig.combinedPersonnelNames
-          ? LabelCertConfig.combinedPersonnelNames(data, { previewFallback: true })
-          : inspectorNameList(data);
+        if (global.LabelCertConfig && LabelCertConfig.combinedPersonnelNames) {
+          names = LabelCertConfig.combinedPersonnelNames(data, { previewFallback: true });
+        } else {
+          names = inspectorNameList(data);
+        }
+        if (!names.length) names = ['签名占位'];
       } else {
-        names = (global.LabelCertConfig && LabelCertConfig.personnelNameList || inspectorNameList)(data && data.inspectors, '签名占位');
+        if (global.LabelCertConfig && LabelCertConfig.personnelNameList) {
+          names = LabelCertConfig.personnelNameList(data && data.inspectors, '签名占位');
+        } else {
+          names = inspectorNameList(data);
+        }
         if (!names.length) names = ['签名占位'];
       }
       return '<div class="lc-el lc-el-field lc-el-esign" style="' + elBoxStyle(el) + alignCss(align) +
