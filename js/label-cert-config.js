@@ -115,8 +115,15 @@
     return 'YYYY-MM-DD';
   }
 
+  var PERSONNEL_FIELD_IDS = ['inspectors', 'recorders', 'inspectorsRecorders'];
+
+  function isPersonnelFieldId(fieldId) {
+    return PERSONNEL_FIELD_IDS.indexOf(fieldId) >= 0;
+  }
+
+  /** 兼容旧调用：检测员单项或合并位都算「检查员类」展示入口 */
   function isInspectorFieldId(fieldId) {
-    return fieldId === 'inspectors';
+    return isPersonnelFieldId(fieldId);
   }
 
   /** 检查员展示：text=姓名文本，esign=电子签名占位 */
@@ -193,7 +200,9 @@
     { id: 'sampleName', label: '试样名称' },
     { id: 'specModel', label: '规格型号' },
     { id: 'specimenNo', label: '试样编号' },
-    { id: 'inspectors', label: '检查员' },
+    { id: 'inspectors', label: '检测员' },
+    { id: 'recorders', label: '记录员' },
+    { id: 'inspectorsRecorders', label: '检测员/记录员' },
     { id: 'inspectDate', label: '本次检测日期' },
     { id: 'reinspectDate', label: '下次检测日期' },
     { id: 'validUntil', label: '检测有效期' },
@@ -978,6 +987,48 @@
     return 2;
   }
 
+  function getRecorderMax() {
+    try {
+      var raw = localStorage.getItem('lims.paramOverrides');
+      if (raw) {
+        var map = JSON.parse(raw);
+        if (map['cert.recorder.max']) return Math.max(1, parseInt(map['cert.recorder.max'], 10) || 1);
+      }
+    } catch (e) { /* ignore */ }
+    return 1;
+  }
+
+  /**
+   * 合并位姓名文本：先检测员后记录员；角色内「、」；角色间「 、」
+   */
+  function formatInspectorsRecordersText(inspectors, recorders) {
+    function joinNames(arr) {
+      return (arr || []).map(function (n) { return String(n || '').trim(); }).filter(Boolean).join('、');
+    }
+    var a = joinNames(inspectors);
+    var b = joinNames(recorders);
+    if (a && b) return a + ' 、' + b;
+    return a || b || '';
+  }
+
+  function personnelNameList(arr, fallback) {
+    if (Array.isArray(arr) && arr.length) {
+      return arr.map(function (n) { return String(n || '').trim(); }).filter(Boolean);
+    }
+    if (arr == null || arr === '') return fallback ? [fallback] : [];
+    return String(arr).split(/[、,，]/).map(function (n) { return n.trim(); }).filter(Boolean);
+  }
+
+  /** 电子签顺序：先全部检测员，再全部记录员 */
+  function combinedPersonnelNames(data, opts) {
+    opts = opts || {};
+    var insp = personnelNameList(data && data.inspectors, opts.previewFallback ? '签名占位' : '');
+    var rec = personnelNameList(data && data.recorders, opts.previewFallback ? '签名占位' : '');
+    // 预览：若两侧都空则给一个占位；打印侧由门禁保证非空
+    if (opts.previewFallback && !insp.length && !rec.length) return ['签名占位'];
+    return insp.concat(rec);
+  }
+
   function findBindConflicts(catKey, type, templateId, bindSampleIds) {
     var cfg = load();
     var bucket = ensureBucketShape(getBucket(cfg, catKey, type), type);
@@ -1016,6 +1067,35 @@
   function usedFieldIds(elements) {
     return (elements || []).filter(function (e) { return e.type === 'fieldRow'; })
       .map(function (e) { return e.props.fieldId; });
+  }
+
+  function usedPersonnelFieldIds(elements) {
+    return usedFieldIds(elements).filter(isPersonnelFieldId);
+  }
+
+  /**
+   * 元件库是否禁用某人员 fieldId
+   * @returns {boolean} true=禁用
+   */
+  function isPersonnelFieldBlocked(usedPersonnelIds, candidateId) {
+    var used = usedPersonnelIds || [];
+    if (used.indexOf(candidateId) >= 0) return false; // 已占用项本身可点移除，不在此禁用
+    var hasCombined = used.indexOf('inspectorsRecorders') >= 0;
+    var hasSingle = used.indexOf('inspectors') >= 0 || used.indexOf('recorders') >= 0;
+    if (candidateId === 'inspectorsRecorders') return hasSingle;
+    if (candidateId === 'inspectors' || candidateId === 'recorders') return hasCombined;
+    return false;
+  }
+
+  /**
+   * 由模版 elements 推导打印所需角色
+   * @returns {{ needInspectors: boolean, needRecorders: boolean }}
+   */
+  function personnelRolesNeeded(elements) {
+    var used = usedPersonnelFieldIds(elements);
+    var needInspectors = used.indexOf('inspectors') >= 0 || used.indexOf('inspectorsRecorders') >= 0;
+    var needRecorders = used.indexOf('recorders') >= 0 || used.indexOf('inspectorsRecorders') >= 0;
+    return { needInspectors: needInspectors, needRecorders: needRecorders };
   }
 
   function hasElementType(elements, type) {
@@ -1090,6 +1170,8 @@
     DATE_FORMAT_PRESETS: DATE_FORMAT_PRESETS,
     isDateFieldId: isDateFieldId,
     normalizeDateFormat: normalizeDateFormat,
+    PERSONNEL_FIELD_IDS: PERSONNEL_FIELD_IDS,
+    isPersonnelFieldId: isPersonnelFieldId,
     isInspectorFieldId: isInspectorFieldId,
     normalizeInspectorDisplay: normalizeInspectorDisplay,
     CERT_FIELD_POOL: CERT_FIELD_POOL,
@@ -1116,6 +1198,9 @@
     enforceUniqueness: enforceUniqueness,
     validateTemplate: validateTemplate,
     usedFieldIds: usedFieldIds,
+    usedPersonnelFieldIds: usedPersonnelFieldIds,
+    isPersonnelFieldBlocked: isPersonnelFieldBlocked,
+    personnelRolesNeeded: personnelRolesNeeded,
     hasElementType: hasElementType,
     bringToLayer: bringToLayer,
     scaleElementsToPaper: scaleElementsToPaper,
@@ -1125,6 +1210,10 @@
     fieldLabel: fieldLabel,
     masterIdFromName: masterIdFromName,
     getInspectorMax: getInspectorMax,
+    getRecorderMax: getRecorderMax,
+    formatInspectorsRecordersText: formatInspectorsRecordersText,
+    personnelNameList: personnelNameList,
+    combinedPersonnelNames: combinedPersonnelNames,
     findBindConflicts: findBindConflicts,
     formatNow: formatNow,
     uid: uid,
