@@ -108,7 +108,12 @@
     .pager { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: #64748b; }
     .pager .pg { min-width: 24px; height: 24px; border: 1px solid #e2e8f0; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
     .pager .pg.active { background: #2563eb; color: #fff; border-color: #2563eb; }
-    .cable-only.hidden, .model-panel.hidden, #sampleWorkspace.hidden, #emptyState.hidden { display: none !important; }
+    .cable-only.hidden, .model-only.hidden, .sample-spec-body.hidden, #sampleWorkspace.hidden, #emptyState.hidden { display: none !important; }
+    .empty-table { padding: 36px 16px; text-align: center; color: #94a3b8; font-size: 13px; }
+    .empty-table i { display: block; font-size: 36px; margin-bottom: 8px; color: #cbd5e1; }
+    .section-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .section-title-row .section-title { margin-bottom: 0; }
+    .section-title-row .icon-btn { margin-left: 0; }
     @media (max-width: 1100px) {
       .form-3col { grid-template-columns: 1fr 1fr; }
       .spec-fields { grid-template-columns: 1fr; }
@@ -169,7 +174,7 @@
             </div>
             <div class="form-item">
               <label><span class="req">*</span>标准号</label>
-              <select id="b_standard"></select>
+              <select id="b_standard" disabled class="bg-slate-50 text-slate-500"></select>
             </div>
             <div class="form-item">
               <label>默认费用(元)</label>
@@ -192,7 +197,7 @@
               <input id="b_unit" type="text" />
             </div>
 
-            <div class="form-item" style="grid-column: 1 / -1;">
+            <div class="form-item">
               <label>备注</label>
               <input id="b_remark" type="text" />
             </div>
@@ -237,45 +242,51 @@
               </div>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" id="sampleImageItem">
               <label>样品图片</label>
               <div class="upload-box" title="上传图片"><i class="fa fa-plus"></i></div>
-              <div class="mt-2"><a class="file-link"><i class="fa fa-file-text-o"></i> 上传附件</a></div>
             </div>
           </div>
-          <div class="mt-5 flex justify-end"><button class="btn-save" onclick="toast('样品信息已保存（原型）')">保存</button></div>
+          <div class="mt-5 flex items-center justify-between">
+            <a class="file-link"><i class="fa fa-file-text-o"></i> 上传附件</a>
+            <button class="btn-save" onclick="toast('样品信息已保存（原型）')">保存</button>
+          </div>
         </div>
 
-        <!-- 图1/2：样品级规格参数 -->
+        <!-- 样品级规格参数：区分型号=否且无参数时仅标题+加号（图2） -->
         <div class="section-card" data-annotate="sample-specs">
-          <div class="section-title">规格参数：</div>
-          <div class="flex items-center gap-3">
-            <div class="spec-tabs" id="sampleSpecTabs"></div>
-            <div class="spec-tab-actions">
-              <i class="fa fa-plus-circle" title="新增" onclick="toast('新增规格参数（原型）')"></i>
+          <div class="section-title-row">
+            <div class="section-title">规格参数：</div>
+            <i class="fa fa-plus-circle icon-btn" title="新增" onclick="toast('新增规格参数（原型）')"></i>
+            <div class="spec-tab-actions sample-spec-body" id="sampleSpecActions">
               <i class="fa fa-copy" title="复制" onclick="toast('复制规格参数（原型）')"></i>
               <i class="fa fa-trash" title="删除" onclick="toast('删除规格参数（原型）')"></i>
             </div>
           </div>
-          <div class="spec-fields">
-            <div class="form-item">
-              <label><span class="req">*</span>参数名称</label>
-              <input id="ss_name" type="text" />
+          <div class="sample-spec-body" id="sampleSpecBody">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="spec-tabs" id="sampleSpecTabs"></div>
             </div>
-            <div class="form-item">
-              <label>符号</label>
-              <input id="ss_symbol" type="text" />
+            <div class="spec-fields">
+              <div class="form-item">
+                <label><span class="req">*</span>参数名称</label>
+                <input id="ss_name" type="text" />
+              </div>
+              <div class="form-item">
+                <label>符号</label>
+                <input id="ss_symbol" type="text" />
+              </div>
+              <div class="form-item">
+                <label>单位</label>
+                <input id="ss_unit" type="text" />
+              </div>
             </div>
-            <div class="form-item">
-              <label>单位</label>
-              <input id="ss_unit" type="text" />
-            </div>
+            <div class="mt-5 flex justify-end"><button class="btn-save" onclick="toast('规格参数已保存（原型）')">保存</button></div>
           </div>
-          <div class="mt-5 flex justify-end"><button class="btn-save" onclick="toast('规格参数已保存（原型）')">保存</button></div>
         </div>
 
-        <!-- 图4/5：型号面板（区分型号=是） -->
-        <div class="model-panel" id="modelPanel" data-annotate="model-panel">
+        <!-- 产品标记 / 试验项 / 样品判定 始终展示；型号专属区随「区分型号」显隐 -->
+        <div data-annotate="model-panel">
           <div class="section-card">
             <div class="section-title">产品标记：</div>
             <div class="text-sm text-slate-500 mb-2">产品标记规则预览</div>
@@ -321,52 +332,55 @@
             <div class="mt-5 flex justify-end"><button class="btn-save" onclick="toast('产品标记已保存（原型）')">保存</button></div>
           </div>
 
-          <div class="section-card">
-            <div class="mb-3 flex items-center">
-              <div class="section-title mb-0">型号/分类：</div>
-              <i class="fa fa-plus-circle icon-btn" title="新增型号" onclick="toast('新增型号（原型）')"></i>
-              <i class="fa fa-copy icon-btn" title="复制型号" onclick="toast('复制型号（原型）')"></i>
+          <!-- 区分型号=是：型号/分类、型号信息、型号级规格参数 -->
+          <div class="model-only" id="modelOnlyBlock">
+            <div class="section-card">
+              <div class="mb-3 flex items-center">
+                <div class="section-title mb-0">型号/分类：</div>
+                <i class="fa fa-plus-circle icon-btn" title="新增型号" onclick="toast('新增型号（原型）')"></i>
+                <i class="fa fa-copy icon-btn" title="复制型号" onclick="toast('复制型号（原型）')"></i>
+              </div>
+              <div class="model-tabs" id="modelTabs"></div>
             </div>
-            <div class="model-tabs" id="modelTabs"></div>
-          </div>
 
-          <div class="section-card">
-            <div class="mb-3 flex items-center justify-between">
-              <div class="section-title mb-0">型号信息：</div>
-              <a class="link danger text-sm" onclick="toast('删除该型号（原型）')"><i class="fa fa-trash"></i> 删除该型号</a>
+            <div class="section-card">
+              <div class="mb-3 flex items-center justify-between">
+                <div class="section-title mb-0">型号信息：</div>
+                <a class="link danger text-sm" onclick="toast('删除该型号（原型）')"><i class="fa fa-trash"></i> 删除该型号</a>
+              </div>
+              <div class="form-3col">
+                <div class="form-item">
+                  <label><span class="req">*</span>型号</label>
+                  <input id="m_code" type="text" />
+                </div>
+                <div class="form-item" style="grid-column: span 2;">
+                  <label><span class="req">*</span>名称</label>
+                  <input id="m_name" type="text" />
+                </div>
+                <div class="form-item">
+                  <label><span class="req">*</span>排序</label>
+                  <input id="m_sort" type="number" min="1" />
+                </div>
+                <div class="form-item">
+                  <label><span class="req">*</span>最大检测周期(月)</label>
+                  <input id="m_cycle" type="number" min="0" />
+                </div>
+                <div class="form-item">
+                  <label>描述</label>
+                  <input id="m_desc" type="text" />
+                </div>
+                <div class="form-item">
+                  <label>&nbsp;</label>
+                  <a class="file-link"><i class="fa fa-file-text-o"></i> 上传附件</a>
+                </div>
+              </div>
+              <div class="mt-5 flex justify-end"><button class="btn-save" onclick="toast('型号信息已保存（原型）')">保存</button></div>
             </div>
-            <div class="form-3col">
-              <div class="form-item">
-                <label><span class="req">*</span>型号</label>
-                <input id="m_code" type="text" />
-              </div>
-              <div class="form-item" style="grid-column: span 2;">
-                <label><span class="req">*</span>名称</label>
-                <input id="m_name" type="text" />
-              </div>
-              <div class="form-item">
-                <label><span class="req">*</span>排序</label>
-                <input id="m_sort" type="number" min="1" />
-              </div>
-              <div class="form-item">
-                <label><span class="req">*</span>最大检测周期(月)</label>
-                <input id="m_cycle" type="number" min="0" />
-              </div>
-              <div class="form-item">
-                <label>描述</label>
-                <input id="m_desc" type="text" />
-              </div>
-              <div class="form-item">
-                <label>&nbsp;</label>
-                <a class="file-link"><i class="fa fa-file-text-o"></i> 上传附件</a>
-              </div>
-            </div>
-            <div class="mt-5 flex justify-end"><button class="btn-save" onclick="toast('型号信息已保存（原型）')">保存</button></div>
-          </div>
 
-          <div class="section-card">
-            <div class="section-title">规格参数：</div>
-            <div id="modelSpecCards"></div>
+            <div class="section-card">
+              <div class="section-title">规格参数：</div>
+              <div id="modelSpecCards"></div>
+            </div>
           </div>
 
           <div class="section-card">
@@ -394,7 +408,7 @@
                 <tbody id="testTableBody"></tbody>
               </table>
             </div>
-            <div class="pager">
+            <div class="pager" id="testPager">
               <span>共<span id="testTotal">0</span>条</span>
               <span class="pg active">1</span>
               <select class="rounded border border-slate-200 px-2 py-1 text-xs"><option>10条/页</option></select>
@@ -581,6 +595,28 @@
             ]
           }
         ]
+      },
+      'cu6-1c': {
+        name: '10kV单芯电力电缆',
+        code: '',
+        sort: 2,
+        category: '电力电缆类 / 额定电压 6kV-30kV',
+        standard: 'GBT 12706.2-2020',
+        fee: '',
+        cycle: 5,
+        diffModel: '否',
+        unit: '',
+        remark: '',
+        isCable: false,
+        cableStruct: '单芯',
+        cores: '1芯',
+        coreColor: '绝缘分色',
+        phases: [],
+        sampleSpecs: [],
+        markRule: '',
+        models: [],
+        tests: [],
+        judges: []
       }
     };
 
@@ -601,9 +637,11 @@
         cores: '3芯',
         coreColor: '绝缘分色',
         phases: [],
-        sampleSpecs: [{ name: '', symbol: '', unit: '' }],
+        sampleSpecs: [],
         markRule: '',
-        models: []
+        models: [],
+        tests: [],
+        judges: []
       };
     }
 
@@ -725,7 +763,10 @@
 
     function onDiffModelChange() {
       var show = document.getElementById('b_diffModel').value === '是';
-      document.getElementById('modelPanel').classList.toggle('hidden', !show);
+      document.getElementById('modelOnlyBlock').classList.toggle('hidden', !show);
+      // 切换后刷新试验/判定数据源（型号级 vs 样品级）
+      renderSharedPanels(currentSample());
+      if (show) renderModelPanel(currentSample());
     }
 
     function onCableToggle() {
@@ -743,7 +784,10 @@
 
     function renderSampleSpecTabs(sample) {
       var specs = sample.sampleSpecs || [];
-      if (!specs.length) specs = [{ name: '', symbol: '', unit: '' }];
+      var hasSpecs = specs.length > 0;
+      document.getElementById('sampleSpecBody').classList.toggle('hidden', !hasSpecs);
+      document.getElementById('sampleSpecActions').classList.toggle('hidden', !hasSpecs);
+      if (!hasSpecs) return;
       if (state.sampleSpecIdx >= specs.length) state.sampleSpecIdx = 0;
       document.getElementById('sampleSpecTabs').innerHTML = specs.map(function (s, i) {
         return '<div class="spec-tab' + (i === state.sampleSpecIdx ? ' active' : '') + '" onclick="switchSampleSpec(' + i + ')">规格参数' + (i + 1) + '</div>';
@@ -756,8 +800,7 @@
 
     function switchSampleSpec(idx) {
       var sample = currentSample();
-      // persist current edits into mock for demo continuity
-      if (SAMPLE_MOCK[state.selectedId] && SAMPLE_MOCK[state.selectedId].sampleSpecs[state.sampleSpecIdx]) {
+      if (SAMPLE_MOCK[state.selectedId] && SAMPLE_MOCK[state.selectedId].sampleSpecs && SAMPLE_MOCK[state.selectedId].sampleSpecs[state.sampleSpecIdx]) {
         SAMPLE_MOCK[state.selectedId].sampleSpecs[state.sampleSpecIdx] = {
           name: document.getElementById('ss_name').value,
           symbol: document.getElementById('ss_symbol').value,
@@ -782,26 +825,47 @@
 
     function renderModelSpecCards(model) {
       var specs = (model && model.specs) || [];
-      document.getElementById('modelSpecCards').innerHTML = specs.map(function (sp) {
-        return '<div class="param-card">' +
+      document.getElementById('modelSpecCards').innerHTML = specs.map(function (sp, idx) {
+        var isSelect = sp.type === '用户选择';
+        var name = 'modelSpecType_' + idx;
+        return '<div class="param-card" data-spec-idx="' + idx + '">' +
           '<div class="param-card-head"><span>' + sp.title + '</span>' +
-          '<div class="ops"><i class="fa fa-check-circle" title="确认"></i><i class="fa fa-copy" title="复制"></i><i class="fa fa-trash" title="删除"></i></div></div>' +
-          '<div class="form-3col">' +
+          '<div class="ops"><i class="fa fa-check-square" title="确认"></i><i class="fa fa-copy" title="复制"></i><i class="fa fa-trash" title="删除"></i></div></div>' +
           '<div class="form-item"><label><span class="req">*</span>类型</label>' +
           '<div class="radio-row">' +
-          '<label><input type="radio" disabled ' + (sp.type === '用户输入' ? 'checked' : '') + ' /> 用户输入</label>' +
-          '<label><input type="radio" disabled ' + (sp.type === '用户选择' ? 'checked' : '') + ' /> 用户选择</label>' +
+          '<label><input type="radio" name="' + name + '" value="用户输入" ' + (!isSelect ? 'checked' : '') +
+          ' onchange="onModelSpecTypeChange(' + idx + ',\'用户输入\')" /> 用户输入</label>' +
+          '<label><input type="radio" name="' + name + '" value="用户选择" ' + (isSelect ? 'checked' : '') +
+          ' onchange="onModelSpecTypeChange(' + idx + ',\'用户选择\')" /> 用户选择</label>' +
           '</div></div>' +
-          '<div class="form-item" style="grid-column: span 2;"><label><span class="req">*</span>可选项</label>' +
+          '<div class="form-item mt-3 model-spec-options"' + (isSelect ? '' : ' style="display:none"') + '>' +
+          '<label><span class="req">*</span>可选项</label>' +
           '<div class="option-tags">' + (sp.options || []).map(function (o) {
             return '<span class="option-tag">' + o + ' <i class="fa fa-times rm"></i></span>';
-          }).join('') + '</div></div></div></div>';
+          }).join('') + '</div></div></div>';
       }).join('') || '<div class="text-sm text-slate-400">暂无规格参数配置</div>';
     }
 
-    function renderTests(model) {
-      var tests = (model && model.tests) || [];
+    function onModelSpecTypeChange(idx, type) {
+      var sample = currentSample();
+      var model = currentModel(sample);
+      if (!model || !model.specs || !model.specs[idx]) return;
+      model.specs[idx].type = type;
+      // 同步回 mock，便于切换型号后保留
+      if (SAMPLE_MOCK[state.selectedId] && SAMPLE_MOCK[state.selectedId].models) {
+        SAMPLE_MOCK[state.selectedId].models[state.modelIdx] = model;
+      }
+      renderModelSpecCards(model);
+    }
+
+    function emptyTableRow(colspan, text) {
+      return '<tr><td colspan="' + colspan + '"><div class="empty-table"><i class="fa fa-inbox"></i>' + (text || '暂无数据') + '</div></td></tr>';
+    }
+
+    function renderTests(tests) {
+      tests = tests || [];
       document.getElementById('testTotal').textContent = String(tests.length);
+      document.getElementById('testPager').style.display = tests.length ? '' : 'none';
       document.getElementById('testTableBody').innerHTML = tests.map(function (t, i) {
         return '<tr>' +
           '<td>' + (i + 1) + '</td>' +
@@ -817,11 +881,11 @@
           '<a class="link mr-2" onclick="toast(\'编辑试验（原型）\')"><i class="fa fa-pencil"></i> 编辑</a>' +
           '<a class="link danger" onclick="toast(\'删除试验（原型）\')"><i class="fa fa-trash"></i> 删除</a>' +
           '</td></tr>';
-      }).join('') || '<tr><td colspan="8" class="text-center text-slate-400">暂无试验项</td></tr>';
+      }).join('') || emptyTableRow(8, '暂无数据');
     }
 
-    function renderJudges(model) {
-      var judges = (model && model.judges) || [];
+    function renderJudges(judges) {
+      judges = judges || [];
       document.getElementById('judgeTableBody').innerHTML = judges.map(function (j, i) {
         return '<tr>' +
           '<td>' + (i + 1) + '</td>' +
@@ -829,12 +893,24 @@
           '<td>' + j.scheme + '</td>' +
           '<td><a class="link" onclick="toast(\'查看判定详情（原型）\')">详情</a></td>' +
           '</tr>';
-      }).join('') || '<tr><td colspan="4" class="text-center text-slate-400">暂无样品判定配置</td></tr>';
+      }).join('') || emptyTableRow(4, '暂无数据');
+    }
+
+    function renderSharedPanels(sample) {
+      document.getElementById('markRule').value = sample.markRule || '';
+      var diffYes = (document.getElementById('b_diffModel').value || sample.diffModel) === '是';
+      if (diffYes) {
+        var model = currentModel(sample);
+        renderTests(model ? model.tests : []);
+        renderJudges(model ? model.judges : []);
+      } else {
+        renderTests(sample.tests || []);
+        renderJudges(sample.judges || []);
+      }
     }
 
     function renderModelPanel(sample) {
       var model = currentModel(sample);
-      document.getElementById('markRule').value = sample.markRule || '';
       renderModelTabs(sample);
       if (!model) {
         document.getElementById('m_code').value = '';
@@ -843,9 +919,6 @@
         document.getElementById('m_cycle').value = '';
         document.getElementById('m_desc').value = '';
         document.getElementById('modelSpecCards').innerHTML = '<div class="text-sm text-slate-400">请先新增型号</div>';
-        document.getElementById('testTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-slate-400">暂无试验项</td></tr>';
-        document.getElementById('judgeTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-slate-400">暂无样品判定配置</td></tr>';
-        document.getElementById('testTotal').textContent = '0';
         return;
       }
       document.getElementById('m_code').value = model.code || '';
@@ -854,8 +927,6 @@
       document.getElementById('m_cycle').value = model.cycle || '';
       document.getElementById('m_desc').value = model.desc || '';
       renderModelSpecCards(model);
-      renderTests(model);
-      renderJudges(model);
     }
 
     function renderWorkspace() {
@@ -894,8 +965,10 @@
 
       onCableToggle();
       renderSampleSpecTabs(sample);
-      document.getElementById('modelPanel').classList.toggle('hidden', sample.diffModel !== '是');
-      if (sample.diffModel === '是') renderModelPanel(sample);
+      var diffYes = sample.diffModel === '是';
+      document.getElementById('modelOnlyBlock').classList.toggle('hidden', !diffYes);
+      if (diffYes) renderModelPanel(sample);
+      renderSharedPanels(sample);
     }
 
     function insertMarkElement() {
@@ -947,7 +1020,7 @@
               position: 'top-left',
               title: '型号面板',
               wide: true,
-              content: '含产品标记、型号/分类、型号信息、型号级规格参数、试验项与样品判定。点击「去设置」进入报告判定页。',
+              content: '产品标记 / 试验项 / 样品判定始终展示。「区分型号=是」时追加型号/分类、型号信息与型号级规格参数；规格参数类型选「用户输入」时不展示可选项。',
               tag: '型号'
             },
             {
