@@ -114,6 +114,40 @@
     .section-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
     .section-title-row .section-title { margin-bottom: 0; }
     .section-title-row .icon-btn { margin-left: 0; }
+    /* 型号面板：凸显当前型号下的配置区块 */
+    .model-scope-panel.is-model {
+      margin-bottom: 12px;
+      padding: 14px 14px 6px;
+      border: 1px solid #93c5fd;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 56px, #f1f5f9 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 3px rgba(37,99,235,.06);
+    }
+    .model-scope-panel.is-model .section-card {
+      border: 1px solid #bfdbfe;
+      box-shadow: none;
+      background: #fff;
+    }
+    .model-scope-panel.is-model .section-card:last-child { margin-bottom: 8px; }
+    .model-scope-head {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 2px 4px 10px;
+      border-bottom: 1px dashed #93c5fd;
+    }
+    .model-scope-panel.is-model .model-scope-head { display: flex; }
+    .model-scope-head .left {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600; color: #1d4ed8;
+    }
+    .model-scope-head .left .badge {
+      display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px;
+      background: #2563eb; color: #fff; font-size: 12px; font-weight: 600;
+    }
+    .model-scope-head .hint { font-size: 12px; color: #64748b; font-weight: 400; }
     @media (max-width: 1100px) {
       .form-3col { grid-template-columns: 1fr 1fr; }
       .spec-fields { grid-template-columns: 1fr; }
@@ -332,7 +366,7 @@
             <div class="mt-5 flex justify-end"><button class="btn-save" onclick="toast('产品标记已保存（原型）')">保存</button></div>
           </div>
 
-          <!-- 区分型号=是：型号/分类、型号信息、型号级规格参数 -->
+          <!-- 区分型号=是：型号/分类选择条 -->
           <div class="model-only" id="modelOnlyBlock">
             <div class="section-card">
               <div class="mb-3 flex items-center">
@@ -342,96 +376,109 @@
               </div>
               <div class="model-tabs" id="modelTabs"></div>
             </div>
+          </div>
+
+          <!-- 型号面板：型号信息 / 规格参数 / 试验项 / 样品判定 -->
+          <div class="model-scope-panel" id="modelScopePanel" data-annotate="model-scope">
+            <div class="model-scope-head">
+              <div class="left">
+                <i class="fa fa-cube"></i>
+                <span>型号面板</span>
+                <span class="badge" id="modelScopeName">-</span>
+              </div>
+              <div class="hint">以下配置均归属当前型号</div>
+            </div>
+
+            <div class="model-only">
+              <div class="section-card">
+                <div class="mb-3 flex items-center justify-between">
+                  <div class="section-title mb-0">型号信息：</div>
+                  <a class="link danger text-sm" onclick="toast('删除该型号（原型）')"><i class="fa fa-trash"></i> 删除该型号</a>
+                </div>
+                <div class="form-3col">
+                  <div class="form-item">
+                    <label><span class="req">*</span>型号</label>
+                    <input id="m_code" type="text" />
+                  </div>
+                  <div class="form-item" style="grid-column: span 2;">
+                    <label><span class="req">*</span>名称</label>
+                    <input id="m_name" type="text" />
+                  </div>
+                  <div class="form-item">
+                    <label><span class="req">*</span>排序</label>
+                    <input id="m_sort" type="number" min="1" />
+                  </div>
+                  <div class="form-item">
+                    <label><span class="req">*</span>最大检测周期(月)</label>
+                    <input id="m_cycle" type="number" min="0" />
+                  </div>
+                  <div class="form-item" style="grid-column: span 1;">
+                    <label>描述</label>
+                    <input id="m_desc" type="text" />
+                  </div>
+                </div>
+                <div class="mt-5 flex items-center justify-between">
+                  <a class="file-link"><i class="fa fa-paperclip"></i> 上传附件</a>
+                  <button class="btn-save" onclick="toast('型号信息已保存（原型）')">保存</button>
+                </div>
+              </div>
+
+              <div class="section-card">
+                <div class="section-title">规格参数：</div>
+                <div id="modelSpecCards"></div>
+              </div>
+            </div>
 
             <div class="section-card">
               <div class="mb-3 flex items-center justify-between">
-                <div class="section-title mb-0">型号信息：</div>
-                <a class="link danger text-sm" onclick="toast('删除该型号（原型）')"><i class="fa fa-trash"></i> 删除该型号</a>
-              </div>
-              <div class="form-3col">
-                <div class="form-item">
-                  <label><span class="req">*</span>型号</label>
-                  <input id="m_code" type="text" />
-                </div>
-                <div class="form-item" style="grid-column: span 2;">
-                  <label><span class="req">*</span>名称</label>
-                  <input id="m_name" type="text" />
-                </div>
-                <div class="form-item">
-                  <label><span class="req">*</span>排序</label>
-                  <input id="m_sort" type="number" min="1" />
-                </div>
-                <div class="form-item">
-                  <label><span class="req">*</span>最大检测周期(月)</label>
-                  <input id="m_cycle" type="number" min="0" />
-                </div>
-                <div class="form-item">
-                  <label>描述</label>
-                  <input id="m_desc" type="text" />
-                </div>
-                <div class="form-item">
-                  <label>&nbsp;</label>
-                  <a class="file-link"><i class="fa fa-file-text-o"></i> 上传附件</a>
+                <div class="section-title mb-0">试验项：</div>
+                <div class="flex gap-2">
+                  <button class="btn-outline" type="button" onclick="toast('复制试验（原型）')">复制试验</button>
+                  <button class="btn-primary" type="button" onclick="toast('新增试验（原型）')"><i class="fa fa-plus"></i> 新增试验</button>
                 </div>
               </div>
-              <div class="mt-5 flex justify-end"><button class="btn-save" onclick="toast('型号信息已保存（原型）')">保存</button></div>
-            </div>
-
-            <div class="section-card">
-              <div class="section-title">规格参数：</div>
-              <div id="modelSpecCards"></div>
-            </div>
-          </div>
-
-          <div class="section-card">
-            <div class="mb-3 flex items-center justify-between">
-              <div class="section-title mb-0">试验项：</div>
-              <div class="flex gap-2">
-                <button class="btn-outline" type="button" onclick="toast('复制试验（原型）')">复制试验</button>
-                <button class="btn-primary" type="button" onclick="toast('新增试验（原型）')"><i class="fa fa-plus"></i> 新增试验</button>
+              <div class="overflow-x-auto">
+                <table class="data-table min-w-[1100px]">
+                  <thead>
+                    <tr>
+                      <th style="width:56px">序号</th>
+                      <th style="width:160px">检测项目</th>
+                      <th style="width:100px">质量特性</th>
+                      <th style="width:100px">检验类别</th>
+                      <th style="width:140px">试验依据</th>
+                      <th>标准要求</th>
+                      <th style="width:70px">状态</th>
+                      <th style="width:150px">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="testTableBody"></tbody>
+                </table>
+              </div>
+              <div class="pager" id="testPager">
+                <span>共<span id="testTotal">0</span>条</span>
+                <span class="pg active">1</span>
+                <select class="rounded border border-slate-200 px-2 py-1 text-xs"><option>10条/页</option></select>
               </div>
             </div>
-            <div class="overflow-x-auto">
-              <table class="data-table min-w-[1100px]">
-                <thead>
-                  <tr>
-                    <th style="width:56px">序号</th>
-                    <th style="width:160px">检测项目</th>
-                    <th style="width:100px">质量特性</th>
-                    <th style="width:100px">检验类别</th>
-                    <th style="width:140px">试验依据</th>
-                    <th>标准要求</th>
-                    <th style="width:70px">状态</th>
-                    <th style="width:150px">操作</th>
-                  </tr>
-                </thead>
-                <tbody id="testTableBody"></tbody>
-              </table>
-            </div>
-            <div class="pager" id="testPager">
-              <span>共<span id="testTotal">0</span>条</span>
-              <span class="pg active">1</span>
-              <select class="rounded border border-slate-200 px-2 py-1 text-xs"><option>10条/页</option></select>
-            </div>
-          </div>
 
-          <div class="section-card" data-annotate="sample-judge">
-            <div class="mb-3 flex items-center justify-between">
-              <div class="section-title mb-0">样品判定：</div>
-              <button class="btn-outline" type="button" onclick="goReportJudgment()">去设置</button>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th style="width:70px">序号</th>
-                    <th style="width:140px">检测类别</th>
-                    <th>规则判定方案</th>
-                    <th style="width:90px">详情</th>
-                  </tr>
-                </thead>
-                <tbody id="judgeTableBody"></tbody>
-              </table>
+            <div class="section-card" data-annotate="sample-judge">
+              <div class="mb-3 flex items-center justify-between">
+                <div class="section-title mb-0">样品判定：</div>
+                <button class="btn-outline" type="button" onclick="goReportJudgment()">去设置</button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th style="width:70px">序号</th>
+                      <th style="width:140px">检测类别</th>
+                      <th>规则判定方案</th>
+                      <th style="width:90px">详情</th>
+                    </tr>
+                  </thead>
+                  <tbody id="judgeTableBody"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -761,12 +808,19 @@
       return sample.models[state.modelIdx];
     }
 
+    function setDiffModelMode(show) {
+      document.querySelectorAll('.model-only').forEach(function (el) {
+        el.classList.toggle('hidden', !show);
+      });
+      document.getElementById('modelScopePanel').classList.toggle('is-model', !!show);
+    }
+
     function onDiffModelChange() {
       var show = document.getElementById('b_diffModel').value === '是';
-      document.getElementById('modelOnlyBlock').classList.toggle('hidden', !show);
-      // 切换后刷新试验/判定数据源（型号级 vs 样品级）
+      setDiffModelMode(show);
       renderSharedPanels(currentSample());
       if (show) renderModelPanel(currentSample());
+      else document.getElementById('modelScopeName').textContent = '-';
     }
 
     function onCableToggle() {
@@ -820,7 +874,9 @@
 
     function switchModel(idx) {
       state.modelIdx = idx;
-      renderModelPanel(currentSample());
+      var sample = currentSample();
+      renderModelPanel(sample);
+      renderSharedPanels(sample);
     }
 
     function renderModelSpecCards(model) {
@@ -913,6 +969,7 @@
       var model = currentModel(sample);
       renderModelTabs(sample);
       if (!model) {
+        document.getElementById('modelScopeName').textContent = '-';
         document.getElementById('m_code').value = '';
         document.getElementById('m_name').value = '';
         document.getElementById('m_sort').value = '';
@@ -921,6 +978,7 @@
         document.getElementById('modelSpecCards').innerHTML = '<div class="text-sm text-slate-400">请先新增型号</div>';
         return;
       }
+      document.getElementById('modelScopeName').textContent = model.code || '-';
       document.getElementById('m_code').value = model.code || '';
       document.getElementById('m_name').value = model.name || '';
       document.getElementById('m_sort').value = model.sort || 1;
@@ -966,8 +1024,9 @@
       onCableToggle();
       renderSampleSpecTabs(sample);
       var diffYes = sample.diffModel === '是';
-      document.getElementById('modelOnlyBlock').classList.toggle('hidden', !diffYes);
+      setDiffModelMode(diffYes);
       if (diffYes) renderModelPanel(sample);
+      else document.getElementById('modelScopeName').textContent = '-';
       renderSharedPanels(sample);
     }
 
@@ -1015,12 +1074,12 @@
               tag: '结构'
             },
             {
-              id: 'model-panel',
-              selector: '[data-annotate="model-panel"]',
+              id: 'model-scope',
+              selector: '[data-annotate="model-scope"]',
               position: 'top-left',
               title: '型号面板',
               wide: true,
-              content: '产品标记 / 试验项 / 样品判定始终展示。「区分型号=是」时追加型号/分类、型号信息与型号级规格参数；规格参数类型选「用户输入」时不展示可选项。',
+              content: '区分型号=是时，型号信息 / 规格参数 / 试验项 / 样品判定归入蓝色「型号面板」，随上方型号 Tab（如 YJV）切换。',
               tag: '型号'
             },
             {
