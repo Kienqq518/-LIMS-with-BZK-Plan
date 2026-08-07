@@ -181,12 +181,43 @@
     return css ? ('font-family:' + css + ';') : '';
   }
 
+  function inspectorNameList(data) {
+    var v = data && data.inspectors;
+    if (Array.isArray(v)) return v.map(function (n) { return String(n || '').trim(); }).filter(Boolean);
+    if (v == null || v === '') return ['签名占位'];
+    return String(v).split(/[、,，]/).map(function (n) { return n.trim(); }).filter(Boolean);
+  }
+
+  function renderInspectorEsignSlots(names, color, fontSize) {
+    return names.map(function (name) {
+      return '<span class="lc-esign-slot" title="电子签名占位：' + esc(name) + '">' +
+        '<span class="lc-esign-ink" style="color:' + esc(color || '#1e3a8a') + ';font-size:' +
+        Math.max(12, (fontSize || 11) + 3) + 'px;">' + esc(name) + '</span>' +
+        '<span class="lc-esign-line" aria-hidden="true"></span>' +
+        '</span>';
+    }).join('');
+  }
+
   function renderFieldRow(el, data) {
     var p = el.props || {};
     var color = p.color || '#1e293b';
     var fs = p.fontSize || 11;
     var align = p.valueAlign || 'left';
     var label = p.showLabel === false ? '' : ('<span class="lc-el-k">' + esc(p.label || '') + '：</span>');
+    var isEsign = p.fieldId === 'inspectors' &&
+      ((global.LabelCertConfig && LabelCertConfig.normalizeInspectorDisplay)
+        ? LabelCertConfig.normalizeInspectorDisplay(p.inspectorDisplay) === 'esign'
+        : p.inspectorDisplay === 'esign');
+    if (isEsign) {
+      var names = inspectorNameList(data);
+      return '<div class="lc-el lc-el-field lc-el-esign" style="' + elBoxStyle(el) + alignCss(align) +
+        'display:flex;align-items:center;gap:4px;font-size:' + fs + 'px;color:' + esc(color) + ';' +
+        fontFamilyCss(p) + '">' +
+        label +
+        '<span class="lc-el-v lc-esign-row" style="flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;">' +
+        renderInspectorEsignSlots(names, color, fs) +
+        '</span></div>';
+    }
     return '<div class="lc-el lc-el-field" style="' + elBoxStyle(el) + alignCss(align) +
       'display:flex;align-items:baseline;gap:2px;font-size:' + fs + 'px;color:' + esc(color) + ';' +
       fontFamilyCss(p) + '">' +
@@ -335,7 +366,10 @@
       '.lc-sheet.lc-free .lc-el-k{flex:0 0 auto;white-space:nowrap;}',
       '.lc-sheet.lc-free .lc-el-v{display:inline-block;}',
       '.lc-sheet.lc-free .lc-qr img,.lc-sheet.lc-free .lc-qr canvas{width:100%!important;height:100%!important;}',
-      '.lc-wm-tile{display:flex;align-items:center;justify-content:center;}'
+      '.lc-wm-tile{display:flex;align-items:center;justify-content:center;}',
+      '.lc-esign-slot{display:inline-flex;flex-direction:column;align-items:center;min-width:36px;line-height:1;}',
+      '.lc-esign-ink{font-family:"Segoe Script","Lucida Handwriting","Brush Script MT","KaiTi","STKaiti","楷体",cursive;font-style:italic;font-weight:600;letter-spacing:.04em;transform:rotate(-6deg);display:inline-block;white-space:nowrap;}',
+      '.lc-esign-line{display:block;width:100%;height:2px;margin-top:1px;background:linear-gradient(90deg,transparent,#94a3b8 12%,#64748b 50%,#94a3b8 88%,transparent);border-radius:1px;opacity:.7;}'
     ].join('\n');
     document.head.appendChild(style);
   }

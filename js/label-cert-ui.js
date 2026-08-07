@@ -874,7 +874,20 @@
         '<label class="text-xs text-slate-600 block mb-2">显示名<input data-lc-c="label" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" value="' +
         LabelCertRender.esc(p.label || '') + '" /></label>' +
         '<label class="text-xs text-slate-600 flex items-center gap-1 mb-2"><input type="checkbox" data-lc-c="showLabel"' +
-        (p.showLabel !== false ? ' checked' : '') + ' /> 显示标签</label>' +
+        (p.showLabel !== false ? ' checked' : '') + ' /> 显示标签</label>';
+      if (LabelCertConfig.isInspectorFieldId(p.fieldId)) {
+        var idisp = LabelCertConfig.normalizeInspectorDisplay(p.inspectorDisplay);
+        html += selectField('展示方式', 'inspectorDisplay', idisp, [
+          ['text', '姓名文本'],
+          ['esign', '电子签名']
+        ]) +
+          '<p class="text-[10px] text-slate-400 -mt-1 mb-2">' +
+          (idisp === 'esign'
+            ? '预览以手写签样式占位展示各检测员；打印时可替换为真实电子签图片'
+            : '以姓名文本展示（如：张三、李四）') +
+          '</p>';
+      }
+      html +=
         selectField('下划线', 'underline', p.underline || 'dotted', [['none', '无'], ['solid', '直线'], ['dotted', '断点'], ['dashed', '断线']]) +
         numContent('字号', 'fontSize', p.fontSize || 11) +
         fontFamilyField(p.fontFamily) +
@@ -1709,9 +1722,10 @@
       if (e.target.closest('#lc_propContent') && e.target.getAttribute('data-lc-c')) {
         applyContentFromInputs();
         endHistoryCoalesce();
-        // 切换 Logo 来源时刷新内容区（显示/隐藏上传）
-        if (e.target.getAttribute('data-lc-c') === 'source') renderPropPanel();
-        if (e.target.getAttribute('data-lc-c') === 'opacity') syncOpacityLabel();
+        // 切换 Logo 来源 / 检查员展示方式时刷新内容区文案
+        var cKey = e.target.getAttribute('data-lc-c');
+        if (cKey === 'source' || cKey === 'inspectorDisplay') renderPropPanel();
+        if (cKey === 'opacity') syncOpacityLabel();
         renderCanvas();
         refreshPreview();
         return;
