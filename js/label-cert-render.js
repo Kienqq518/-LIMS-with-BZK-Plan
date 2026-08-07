@@ -356,10 +356,7 @@
   }
 
   function ensureStyles() {
-    if (document.getElementById('label-cert-render-css')) return;
-    var style = document.createElement('style');
-    style.id = 'label-cert-render-css';
-    style.textContent = [
+    var css = [
       '.lc-sheet.lc-free{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;color:#1e293b;}',
       '.lc-sheet.lc-free .lc-el{line-height:1.15;}',
       '.lc-sheet.lc-free .lc-el-k{flex:0 0 auto;white-space:nowrap;}',
@@ -369,7 +366,13 @@
       '.lc-esign-slot{display:inline-flex;align-items:center;min-width:36px;line-height:1;}',
       '.lc-esign-ink{font-family:"Segoe Script","Lucida Handwriting","Brush Script MT","KaiTi","STKaiti","楷体",cursive;font-style:italic;font-weight:600;letter-spacing:.04em;transform:rotate(-6deg);display:inline-block;white-space:nowrap;}'
     ].join('\n');
-    document.head.appendChild(style);
+    var style = document.getElementById('label-cert-render-css');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'label-cert-render-css';
+      document.head.appendChild(style);
+    }
+    style.textContent = css;
   }
 
   // 兼容旧调用
