@@ -875,6 +875,8 @@
         LabelCertRender.esc(p.label || '') + '" /></label>' +
         '<label class="text-xs text-slate-600 flex items-center gap-1 mb-2"><input type="checkbox" data-lc-c="showLabel"' +
         (p.showLabel !== false ? ' checked' : '') + ' /> 显示标签</label>';
+      var inspectorEsign = LabelCertConfig.isInspectorFieldId(p.fieldId) &&
+        LabelCertConfig.normalizeInspectorDisplay(p.inspectorDisplay) === 'esign';
       if (LabelCertConfig.isInspectorFieldId(p.fieldId)) {
         var idisp = LabelCertConfig.normalizeInspectorDisplay(p.inspectorDisplay);
         html += selectField('展示方式', 'inspectorDisplay', idisp, [
@@ -888,7 +890,13 @@
           '</p>';
       }
       html +=
-        selectField('下划线', 'underline', p.underline || 'dotted', [['none', '无'], ['solid', '直线'], ['dotted', '断点'], ['dashed', '断线']]) +
+        selectField(
+          '下划线',
+          'underline',
+          inspectorEsign ? 'none' : (p.underline || 'dotted'),
+          [['none', '无'], ['solid', '直线'], ['dotted', '断点'], ['dashed', '断线']],
+          inspectorEsign ? { disabled: true, hint: '电子签名模式下固定为「无」' } : null
+        ) +
         numContent('字号', 'fontSize', p.fontSize || 11) +
         fontFamilyField(p.fontFamily) +
         colorField('颜色', 'color', p.color || '#1e293b');
@@ -980,12 +988,17 @@
     return html || '<p class="text-xs text-slate-400">无可编辑内容</p>';
   }
 
-  function selectField(label, key, val, options) {
+  function selectField(label, key, val, options, opts) {
+    opts = opts || {};
+    var disabled = !!opts.disabled;
+    var hint = opts.hint ? ('<p class="text-[10px] text-slate-400 mt-0.5">' + opts.hint + '</p>') : '';
     return '<label class="text-xs text-slate-600 block mb-2">' + label +
-      '<select data-lc-c="' + key + '" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm">' +
+      '<select data-lc-c="' + key + '" class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm' +
+      (disabled ? ' bg-slate-100 text-slate-500 cursor-not-allowed' : '') + '"' +
+      (disabled ? ' disabled' : '') + '>' +
       options.map(function (o) {
         return '<option value="' + o[0] + '"' + (o[0] === val ? ' selected' : '') + '>' + o[1] + '</option>';
-      }).join('') + '</select></label>';
+      }).join('') + '</select>' + hint + '</label>';
   }
 
   function numContent(label, key, val) {
@@ -1192,6 +1205,11 @@
       }
       el.props[key] = input.value;
     });
+    // 电子签名：下划线固定为「无」（禁用控件时仍强制写回）
+    if (el.type === 'fieldRow' && LabelCertConfig.isInspectorFieldId(el.props.fieldId) &&
+      LabelCertConfig.normalizeInspectorDisplay(el.props.inspectorDisplay) === 'esign') {
+      el.props.underline = 'none';
+    }
   }
 
   function readFileAsDataUrl(file, done) {

@@ -562,6 +562,7 @@
       }
       if (isInspectorFieldId(props.fieldId)) {
         props.inspectorDisplay = normalizeInspectorDisplay(props.inspectorDisplay);
+        if (props.inspectorDisplay === 'esign') props.underline = 'none';
       } else {
         delete props.inspectorDisplay;
       }
