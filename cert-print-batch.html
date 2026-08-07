@@ -105,7 +105,10 @@
     var MAX_RECORDERS = LabelCertConfig.getRecorderMax();
     var entrustCodes = (params.get('codes') || 'SC2026/0073,SC2026/0072').split(',').filter(Boolean);
     var sampleNos = (params.get('nos') || '').split(',').filter(Boolean);
-    var defaultInspectors = (params.get('inspectors') || 'admin').split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
+    var inspParam = params.get('inspectors');
+    var defaultInspectors = inspParam === null
+      ? ['admin']
+      : inspParam.split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
     var defaultRecorders = (params.get('recorders') || '').split(',').filter(Boolean).slice(0, MAX_RECORDERS);
     if (params.get('from') === 'qualified') document.getElementById('backLink').href = 'cert-qualified-print.html';
 

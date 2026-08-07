@@ -101,7 +101,10 @@
     var entrustCode = params.get('code') || 'SC2026/0079';
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
     var MAX_RECORDERS = LabelCertConfig.getRecorderMax();
-    var urlInspectors = (params.get('inspectors') || 'cs222,cs3').split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
+    var inspParam = params.get('inspectors');
+    var urlInspectors = inspParam === null
+      ? ['cs222', 'cs3']
+      : inspParam.split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
     var urlRecorders = (params.get('recorders') || '').split(',').filter(Boolean).slice(0, MAX_RECORDERS);
 
     function syncShortlinkBaseHint() {

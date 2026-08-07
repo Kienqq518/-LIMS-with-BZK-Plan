@@ -178,9 +178,14 @@
       } catch (e) { return []; }
     }
 
-    function saveLastPersonnel(inspectors, recorders) {
-      localStorage.setItem(STORAGE_INSPECTORS, JSON.stringify((inspectors || []).slice(0, MAX_INSPECTORS)));
-      localStorage.setItem(STORAGE_RECORDERS, JSON.stringify((recorders || []).slice(0, MAX_RECORDERS)));
+    function saveLastPersonnel(inspectors, recorders, roles) {
+      roles = roles || {};
+      if (roles.needInspectors) {
+        localStorage.setItem(STORAGE_INSPECTORS, JSON.stringify((inspectors || []).slice(0, MAX_INSPECTORS)));
+      }
+      if (roles.needRecorders) {
+        localStorage.setItem(STORAGE_RECORDERS, JSON.stringify((recorders || []).slice(0, MAX_RECORDERS)));
+      }
       localStorage.setItem(STORAGE_INIT, '1');
     }
 
@@ -332,7 +337,7 @@
       if (modalRoles.needRecorders && !modalRecorders.length) { alert('请至少选择 1 名记录员'); return; }
       var inspectors = modalRoles.needInspectors ? modalInspectors.slice() : [];
       var recorders = modalRoles.needRecorders ? modalRecorders.slice() : [];
-      saveLastPersonnel(inspectors, recorders);
+      saveLastPersonnel(inspectors, recorders, modalRoles);
       closeInspectorModal();
       goPrint(inspectors, recorders);
     }
