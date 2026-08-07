@@ -115,6 +115,15 @@
     return 'YYYY-MM-DD';
   }
 
+  function isInspectorFieldId(fieldId) {
+    return fieldId === 'inspectors';
+  }
+
+  /** 检查员展示：text=姓名文本，esign=电子签名占位 */
+  function normalizeInspectorDisplay(mode) {
+    return mode === 'esign' ? 'esign' : 'text';
+  }
+
   function defaultZIndexForLayer(layer) {
     if (layer === 'bg') return 0;
     if (layer === 'wm') return 20;
@@ -308,6 +317,7 @@
           color: '#1e293b'
         };
         if (isDateFieldId(fid)) base.dateFormat = 'YYYY-MM-DD';
+        if (isInspectorFieldId(fid)) base.inspectorDisplay = 'text';
         return base;
       }
       case 'qr':
@@ -549,6 +559,11 @@
         props.dateFormat = normalizeDateFormat(props.dateFormat);
       } else {
         delete props.dateFormat;
+      }
+      if (isInspectorFieldId(props.fieldId)) {
+        props.inspectorDisplay = normalizeInspectorDisplay(props.inspectorDisplay);
+      } else {
+        delete props.inspectorDisplay;
       }
     }
     if (el.type === 'orgName' || el.type === 'title' || el.type === 'staticText' || el.type === 'watermarkText') {
@@ -1074,6 +1089,8 @@
     DATE_FORMAT_PRESETS: DATE_FORMAT_PRESETS,
     isDateFieldId: isDateFieldId,
     normalizeDateFormat: normalizeDateFormat,
+    isInspectorFieldId: isInspectorFieldId,
+    normalizeInspectorDisplay: normalizeInspectorDisplay,
     CERT_FIELD_POOL: CERT_FIELD_POOL,
     LABEL_FIELD_POOL: LABEL_FIELD_POOL,
     LABEL_DETECT_STATUS: LABEL_DETECT_STATUS,
