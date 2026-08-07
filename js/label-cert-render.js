@@ -21,6 +21,13 @@
         return data.specModel || [data.spec, data.model].filter(Boolean).join(' ') || '';
       case 'inspectors':
         return Array.isArray(data.inspectors) ? data.inspectors.join('、') : (data.inspectors || '');
+      case 'recorders':
+        return Array.isArray(data.recorders) ? data.recorders.join('、') : (data.recorders || '');
+      case 'inspectorsRecorders':
+        if (global.LabelCertConfig && LabelCertConfig.formatInspectorsRecordersText) {
+          return LabelCertConfig.formatInspectorsRecordersText(data.inspectors, data.recorders);
+        }
+        return '';
       case 'inspectDate':
         return data.inspectDate || '';
       case 'reinspectDate':
@@ -203,12 +210,27 @@
     var fs = p.fontSize || 11;
     var align = p.valueAlign || 'left';
     var label = p.showLabel === false ? '' : ('<span class="lc-el-k">' + esc(p.label || '') + '：</span>');
-    var isEsign = p.fieldId === 'inspectors' &&
+    var isPersonnel = global.LabelCertConfig && LabelCertConfig.isPersonnelFieldId
+      ? LabelCertConfig.isPersonnelFieldId(p.fieldId)
+      : (p.fieldId === 'inspectors' || p.fieldId === 'recorders' || p.fieldId === 'inspectorsRecorders');
+    var isEsign = isPersonnel &&
       ((global.LabelCertConfig && LabelCertConfig.normalizeInspectorDisplay)
         ? LabelCertConfig.normalizeInspectorDisplay(p.inspectorDisplay) === 'esign'
         : p.inspectorDisplay === 'esign');
     if (isEsign) {
-      var names = inspectorNameList(data);
+      var names;
+      if (p.fieldId === 'recorders') {
+        names = (global.LabelCertConfig && LabelCertConfig.personnelNameList || function (a) {
+          return Array.isArray(a) ? a : [];
+        })(data && data.recorders, '签名占位');
+      } else if (p.fieldId === 'inspectorsRecorders') {
+        names = global.LabelCertConfig && LabelCertConfig.combinedPersonnelNames
+          ? LabelCertConfig.combinedPersonnelNames(data, { previewFallback: true })
+          : inspectorNameList(data);
+      } else {
+        names = (global.LabelCertConfig && LabelCertConfig.personnelNameList || inspectorNameList)(data && data.inspectors, '签名占位');
+        if (!names.length) names = ['签名占位'];
+      }
       return '<div class="lc-el lc-el-field lc-el-esign" style="' + elBoxStyle(el) + alignCss(align) +
         'display:flex;align-items:center;gap:4px;font-size:' + fs + 'px;color:' + esc(color) + ';' +
         fontFamilyCss(p) + '">' +
