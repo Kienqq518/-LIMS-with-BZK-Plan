@@ -220,10 +220,7 @@
       'cement': { '例行试验': 0, '抽样试验': 0, '出厂检验': 0, '型式检验': 0 }
     };
 
-    var bootParams = new URLSearchParams(window.location.search);
-    var bootCat = bootParams.get('cat') || 'dlwz';
-    if (!TREES[bootCat]) bootCat = 'dlwz';
-    var state = { cat: bootCat, selectedId: 'model-3c', openIds: { cable: true, v6: true, std: true, cu: true, pipe: true } };
+    var state = { cat: 'dlwz', selectedId: 'model-3c', openIds: { cable: true, v6: true, std: true, cu: true, pipe: true } };
 
     function flattenLeaves(nodes, out) {
       (nodes || []).forEach(function (n) {
@@ -425,7 +422,9 @@
       if (tab) switchCat(tab.getAttribute('data-cat'));
     });
 
-    switchCat(state.cat);
+    fillCategorySelect();
+    renderTree();
+    renderConfig();
   </script>
 </body>
 </html>
