@@ -3,235 +3,188 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>样品数据 - 智慧实验室</title>
+  <title>样品数据详情 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <style>
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
-    .layout { display: flex; gap: 0; min-height: calc(100vh - 88px); background: #fff; border-top: 1px solid #e2e8f0; }
-    .tree-panel { width: 340px; flex-shrink: 0; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; background: #fff; }
+    .layout { display: flex; min-height: calc(100vh - 42px); background: #fff; border-top: 1px solid #e2e8f0; }
+    .tree-panel { width: 300px; flex-shrink: 0; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; background: #fff; }
     .tree-head { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; }
     .tree-head .back { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 500; color: #334155; margin-bottom: 10px; cursor: pointer; }
     .tree-head .back:hover { color: #2563eb; }
-    .tree-head input { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px 7px 30px; font-size: 13px; outline: none; }
     .tree-search { position: relative; }
     .tree-search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px; }
+    .tree-search input { width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px 7px 30px; font-size: 13px; outline: none; }
     .tree-body { flex: 1; overflow-y: auto; padding: 6px 0; font-size: 13px; }
     .tree-node { padding: 7px 12px; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; user-select: none; }
     .tree-node:hover { background: #f8fafc; }
-    .tree-node.active { background: #eef2f7; color: #1e293b; font-weight: 500; }
-    .tree-node.branch { color: #64748b; }
-    .tree-node.branch.active { color: #1e293b; }
-    .tree-toggle { width: 14px; flex-shrink: 0; color: #94a3b8; font-size: 10px; text-align: center; cursor: pointer; }
-    .main-panel { flex: 1; min-width: 0; background: #f8fafc; display: flex; flex-direction: column; overflow: hidden; }
-    .main-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 14px; gap: 6px; }
-    .main-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-    .content-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; }
-    .param-tabs { display: flex; gap: 4px; padding: 0 16px; background: #fff; border-bottom: 1px solid #e2e8f0; }
-    .param-tab { border-bottom: 2px solid transparent; color: #64748b; padding: 10px 16px; cursor: pointer; font-size: 14px; }
-    .param-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
-    .param-panel { display: none; flex: 1; min-height: 0; overflow: auto; padding: 16px; }
-    .param-panel.active { display: block; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; max-width: 960px; }
+    .tree-node.active { background: #e0f2fe; color: #0369a1; font-weight: 500; }
+    .tree-toggle { width: 14px; flex-shrink: 0; color: #94a3b8; font-size: 10px; text-align: center; }
+    .main-panel { flex: 1; min-width: 0; background: #f1f5f9; overflow: auto; }
+    .main-empty { min-height: 480px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 14px; gap: 6px; }
+    .section-card { background: #fff; border-radius: 4px; padding: 16px 20px 18px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+    .section-title { font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 14px; }
+    .form-3col { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 20px; }
     .form-item label { display: block; font-size: 13px; color: #64748b; margin-bottom: 6px; }
     .form-item .req { color: #ef4444; margin-right: 2px; }
     .form-item input, .form-item select, .form-item textarea {
       width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; background: #fff;
     }
     .form-item input:focus, .form-item select:focus, .form-item textarea:focus { border-color: #3b82f6; }
-    .upload-box { width: 96px; height: 96px; border: 1px dashed #cbd5e1; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 12px; cursor: pointer; background: #fff; flex-shrink: 0; }
+    .form-item textarea { resize: vertical; min-height: 38px; }
+    /* 样品信息：标签与控件同一行，更紧凑 */
+    [data-annotate="sample-info"] .form-3col { gap: 10px 14px; }
+    [data-annotate="sample-info"] .form-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    [data-annotate="sample-info"] .form-item > label:not(.toggle) {
+      display: block;
+      flex: 0 0 118px;
+      width: 118px;
+      margin-bottom: 0;
+      font-size: 13px;
+      color: #64748b;
+      text-align: right;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+    [data-annotate="sample-info"] .form-item > input,
+    [data-annotate="sample-info"] .form-item > select,
+    [data-annotate="sample-info"] .form-item > textarea,
+    [data-annotate="sample-info"] .form-item > .radio-row,
+    [data-annotate="sample-info"] .form-item > .phase-tags {
+      flex: 1;
+      min-width: 0;
+    }
+    [data-annotate="sample-info"] .form-item > .toggle,
+    [data-annotate="sample-info"] .form-item > .upload-box {
+      flex: 0 0 auto;
+    }
+    [data-annotate="sample-info"] .form-item > .upload-box {
+      align-self: flex-start;
+    }
+    .radio-row, .phase-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; min-height: 36px; font-size: 13px; color: #475569; }
+    .radio-row label, .phase-row label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; color: #475569; }
+    .phase-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; padding: 4px 8px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; align-items: center; }
+    .phase-tag { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; background: #eff6ff; color: #2563eb; font-size: 12px; }
+    .phase-tag .rm { cursor: pointer; color: #94a3b8; }
+    .phase-tag .rm:hover { color: #ef4444; }
+    .upload-box {
+      width: 88px; height: 88px; border: 1px dashed #cbd5e1; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 28px; cursor: pointer; background: #fff;
+    }
     .upload-box:hover { border-color: #2563eb; color: #2563eb; }
-    .upload-list { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
-    .img-thumb { width: 96px; height: 96px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; position: relative; color: #64748b; font-size: 11px; text-align: center; padding: 4px; }
-    .img-thumb .rm, .file-chip .rm { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: #ef4444; color: #fff; font-size: 10px; line-height: 18px; text-align: center; cursor: pointer; }
-    .file-chip { position: relative; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 4px; background: #eff6ff; font-size: 12px; }
-    .file-link { color: #2563eb; text-decoration: underline; cursor: pointer; }
+    .file-link { color: #2563eb; font-size: 13px; cursor: pointer; }
     .file-link:hover { color: #1d4ed8; }
-    .file-links { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
-    .test-names { display: flex; flex-wrap: wrap; gap: 4px; }
-    .test-names .tag { margin: 0; }
-    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; }
-    .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; vertical-align: top; }
-    .data-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
-    .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #eff6ff; color: #2563eb; font-size: 12px; }
-    .ov-badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: #fef3c7; color: #b45309; font-size: 11px; vertical-align: middle; }
-    .modal-mask { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
-    .modal-mask.open { display: flex; }
-    .modal-mask.drawer-mask { align-items: stretch; justify-content: flex-end; padding: 0; }
-    .modal-box { width: 960px; max-width: 100%; max-height: calc(100vh - 32px); background: #fff; border-radius: 8px; box-shadow: 0 20px 50px rgba(15,23,42,.2); display: flex; flex-direction: column; }
-    .modal-box.sm { width: 520px; }
-    .modal-box.drawer {
-      width: 480px; max-width: 92vw; height: 100%; max-height: 100%; border-radius: 0;
-      box-shadow: -8px 0 32px rgba(15,23,42,.18); animation: drawerIn .2s ease;
-    }
-    .modal-box.drawer.wide { width: 860px; }
-    .modal-box.drawer.xwide { width: 980px; max-width: 96vw; }
-    .split-edit.drawer-split { grid-template-columns: minmax(300px, 0.95fr) minmax(340px, 1.05fr); gap: 14px; min-height: 0; align-items: start; }
-    .split-edit.drawer-split .pane { max-height: none; }
-    .drawer-section { margin-bottom: 14px; padding-bottom: 4px; border-bottom: 1px dashed #e2e8f0; }
-    .drawer-section:last-child { border-bottom: none; margin-bottom: 0; }
-    .drawer-section-title { font-size: 12px; font-weight: 600; color: #94a3b8; letter-spacing: .04em; margin-bottom: 10px; text-transform: none; }
-    @keyframes drawerIn { from { transform: translateX(24px); opacity: .6; } to { transform: none; opacity: 1; } }
-    .modal-head, .modal-foot { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-    .modal-foot { border-bottom: none; border-top: 1px solid #e2e8f0; justify-content: flex-end; gap: 8px; }
-    .modal-body { padding: 16px; overflow: auto; flex: 1; min-height: 0; }
-    .label-tip { display: inline-flex; align-items: center; gap: 4px; }
-    .label-tip .tip-ico { position: relative; color: #94a3b8; cursor: help; font-size: 12px; display: inline-block; }
-    .label-tip .tip-ico .tip-bubble {
-      display: none; position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); z-index: 40; width: 160px;
-      background: #1e293b; color: #fff; font-size: 12px; line-height: 1.5; padding: 8px 10px; border-radius: 6px; text-align: left; font-weight: 400;
-      white-space: normal; pointer-events: none; box-shadow: 0 4px 12px rgba(15,23,42,.2);
-    }
-    .label-tip .tip-ico:hover .tip-bubble { display: block; }
-    .modal-box.drawer .modal-body { overflow-x: visible; }
-    .param-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #475569; font-size: 13px; }
-    .cfg-drawer-sub { font-size: 12px; font-weight: 400; color: #64748b; margin-top: 2px; }
-    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .chip-check {
-      display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid #e2e8f0;
-      border-radius: 999px; background: #fff; font-size: 13px; color: #475569; cursor: pointer; user-select: none;
-    }
-    .chip-check:hover { border-color: #93c5fd; }
-    .chip-check.on { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
-    .chip-check input { margin: 0; }
-    .cfg-linked-row { cursor: pointer; }
-    .cfg-linked-row.active { background: #eff6ff; }
-    .cfg-edit-panel { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; overflow: hidden; }
-    .cfg-edit-panel .cfg-edit-head { padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 13px; font-weight: 600; color: #334155; display: flex; justify-content: space-between; align-items: center; }
-    .cfg-edit-panel .cfg-edit-body { padding: 12px; }
-    .cfg-edit-empty { padding: 28px 16px; text-align: center; color: #94a3b8; font-size: 13px; border: 1px dashed #e2e8f0; border-radius: 8px; margin-top: 16px; }
-    .split-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 420px; }
-    .split-edit .pane { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; background: #fff; }
-    .split-edit .pane-title { font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
-    .field-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
-    .field-row > label { width: 112px; flex-shrink: 0; text-align: right; font-size: 13px; color: #64748b; padding-top: 8px; line-height: 1.3; }
-    .field-row > label .req { color: #ef4444; margin-right: 2px; font-weight: 500; }
-    .field-row .ctrl { flex: 1; min-width: 0; }
-    .field-row input, .field-row select, .field-row textarea {
-      width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; padding: 7px 10px; font-size: 13px; outline: none; background: #fff;
-    }
-    .field-row input:focus, .field-row select:focus, .field-row textarea:focus { border-color: #3b82f6; }
-    .num-stepper {
-      display: inline-flex; align-items: stretch; border: 1px solid #dcdfe6; border-radius: 4px;
-      overflow: hidden; background: #fff; width: 140px; max-width: 100%;
-    }
-    .num-stepper:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.12); }
-    .num-stepper button {
-      width: 34px; flex-shrink: 0; border: 0; background: #f8fafc; color: #475569;
-      font-size: 16px; line-height: 1; cursor: pointer; user-select: none;
-    }
-    .num-stepper button:hover { background: #eff6ff; color: #2563eb; }
-    .num-stepper button:active { background: #dbeafe; }
-    .num-stepper input[type="number"] {
-      width: 72px !important; border: 0 !important; border-left: 1px solid #e2e8f0 !important;
-      border-right: 1px solid #e2e8f0 !important; border-radius: 0 !important;
-      text-align: center; padding: 7px 4px !important; box-shadow: none !important;
-      -moz-appearance: textfield;
-    }
-    .num-stepper input[type="number"]::-webkit-outer-spin-button,
-    .num-stepper input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .chip-multi {
-      display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start;
-      min-height: 38px; max-height: 120px; overflow-y: auto; padding: 6px;
-      border: 1px solid #dcdfe6; border-radius: 6px; background: #fff;
-    }
-    .chip-multi:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.12); }
-    .chip-multi .cm-item {
-      display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px; border: 1px solid #e2e8f0;
-      background: #f8fafc; color: #64748b; font-size: 12px; line-height: 1.3; cursor: pointer; user-select: none; transition: .15s;
-    }
-    .chip-multi .cm-item::before {
-      content: ''; width: 12px; height: 12px; border-radius: 3px; border: 1px solid #cbd5e1; background: #fff; flex-shrink: 0;
-    }
-    .chip-multi .cm-item:hover { border-color: #93c5fd; color: #2563eb; background: #f8fbff; }
-    .chip-multi .cm-item.on { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; font-weight: 500; }
-    .chip-multi .cm-item.on::before {
-      border-color: #2563eb; background: #2563eb;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' d='M2.5 6.2l2.4 2.3 4.6-4.8'/%3E%3C/svg%3E");
-      background-size: 10px 10px; background-position: center; background-repeat: no-repeat;
-    }
-    .equip-ms { position: relative; width: 100%; }
-    .equip-ms-trigger {
-      min-height: 34px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff;
-      padding: 4px 28px 4px 8px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
-    }
-    .equip-ms-trigger:hover, .equip-ms.open .equip-ms-trigger { border-color: #3b82f6; }
-    .equip-ms-trigger::after {
-      content: '\f0d7'; font-family: FontAwesome; position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-      color: #94a3b8; font-size: 12px; pointer-events: none;
-    }
-    .equip-ms-trigger .ph { color: #94a3b8; font-size: 13px; }
-    .equip-ms-trigger .eq-tag {
-      display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px;
-      background: #eff6ff; color: #2563eb; font-size: 12px; max-width: 100%;
-    }
-    .equip-ms-trigger .eq-tag .rm { cursor: pointer; color: #64748b; }
-    .equip-ms-trigger .eq-tag .rm:hover { color: #ef4444; }
-    .equip-ms-panel {
-      display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 40;
-      max-height: 220px; overflow-y: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
-      box-shadow: 0 8px 24px rgba(15,23,42,.12); padding: 6px 0;
-    }
-    .equip-ms.open .equip-ms-panel { display: block; }
-    .equip-ms-panel label {
-      display: flex; align-items: center; gap: 8px; padding: 7px 12px; font-size: 13px; color: #334155; cursor: pointer;
-    }
-    .equip-ms-panel label:hover { background: #f8fafc; }
-    .equip-ms-panel .empty { padding: 12px; text-align: center; color: #94a3b8; font-size: 12px; }
-    .model-table { table-layout: fixed; width: 100%; min-width: 820px; }
-    .model-table th, .model-table td { vertical-align: middle; }
-    .model-table .col-idx { width: 48px; text-align: center; padding-left: 6px; padding-right: 6px; }
-    .model-table .col-name { width: 78px; padding-left: 8px; padding-right: 8px; }
-    .model-table .col-recheck { width: 78px; white-space: nowrap; padding-left: 8px; padding-right: 8px; }
-    .model-table .col-unit { width: 48px; text-align: center; padding-left: 6px; padding-right: 6px; }
-    .model-table .col-desc { width: 100px; }
-    .model-table .col-files { width: 168px; }
-    .model-table .col-tests { width: auto; }
-    .model-table .col-ops { width: 200px; }
-    .model-table .cell-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .split-edit.drawer-split .pane .field-row > label { width: 112px; }
-    .item-card .field-row > label { width: 112px; }
-    .field-row > label.label-tip { justify-content: flex-end; flex-wrap: wrap; }
-    .seg-type { display: inline-flex; border: 1px solid #dcdfe6; border-radius: 4px; overflow: hidden; }
-    .seg-type button { border: 0; background: #fff; padding: 6px 10px; font-size: 12px; color: #64748b; cursor: pointer; }
-    .seg-type button.on { background: #2563eb; color: #fff; }
-    .item-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #f8fafc; }
-    .item-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .concat-builder { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; background: #f8fafc; }
-    .concat-seg { display: inline-flex; align-items: center; gap: 4px; margin: 0 4px 6px 0; padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #fff; border: 1px solid #e2e8f0; }
-    .concat-seg.field { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
-    .concat-seg.text { background: #f1f5f9; color: #475569; }
-    .option-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
-    .option-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #eff6ff; color: #2563eb; border-radius: 999px; font-size: 12px; }
     .toggle { position: relative; display: inline-block; width: 40px; height: 22px; vertical-align: middle; }
     .toggle input { opacity: 0; width: 0; height: 0; }
     .toggle-slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 11px; cursor: pointer; transition: .2s; }
     .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
     .toggle input:checked + .toggle-slider { background: #2563eb; }
     .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
-    .toggle input:disabled + .toggle-slider { opacity: .5; cursor: not-allowed; }
-    .tip { font-size: 12px; color: #64748b; margin-top: 8px; }
-    .sync-tip { margin: 0 16px 12px; padding: 8px 12px; background: #eff6ff; color: #1d4ed8; border-radius: 6px; font-size: 12px; display: none; }
-    .tooltip-wrap { position: relative; display: inline-block; }
-    .tooltip-wrap .tip-bubble {
-      display: none; position: absolute; left: 0; top: calc(100% + 6px); z-index: 20; width: 260px;
-      background: #1e293b; color: #fff; font-size: 12px; line-height: 1.5; padding: 8px 10px; border-radius: 6px;
+    .btn-save { border-radius: 4px; background: #2563eb; color: #fff; padding: 7px 22px; font-size: 13px; }
+    .btn-save:hover { background: #1d4ed8; }
+    .btn-outline { border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; color: #334155; padding: 6px 14px; font-size: 13px; }
+    .btn-outline:hover { background: #f8fafc; }
+    .btn-primary { border-radius: 4px; background: #2563eb; color: #fff; padding: 6px 14px; font-size: 13px; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .spec-tabs { display: flex; align-items: center; gap: 0; border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden; width: fit-content; max-width: 100%; }
+    .spec-tab { padding: 8px 16px; font-size: 13px; color: #64748b; cursor: pointer; background: #fff; border-right: 1px solid #e2e8f0; white-space: nowrap; }
+    .spec-tab:last-of-type { border-right: none; }
+    .spec-tab.active { background: #e0f2fe; color: #0284c7; font-weight: 500; }
+    .spec-tab-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; color: #2563eb; font-size: 16px; }
+    .spec-tab-actions .fa-trash { color: #ef4444; }
+    .spec-tab-actions i { cursor: pointer; }
+    .spec-fields { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 14px 18px; margin-top: 14px; max-width: 860px; }
+    .mark-preview {
+      display: flex; gap: 8px; align-items: stretch;
     }
-    .tooltip-wrap:hover .tip-bubble { display: block; }
-    .readonly-hint { font-size: 12px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 8px 10px; margin-bottom: 12px; }
-    .multi-select { min-height: 34px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 4px 8px; background: #fff; cursor: pointer; }
-    .multi-select .ph { color: #94a3b8; font-size: 13px; }
-    .recheck-combo { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .recheck-combo select { width: 88px; flex-shrink: 0; }
-    .recheck-combo .recheck-num-wrap { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
-    .recheck-combo .recheck-num-wrap .num-stepper { width: 128px; }
-    .recheck-combo .recheck-unit { font-size: 13px; color: #64748b; flex-shrink: 0; }
-    .recheck-combo .recheck-text { flex: 1; min-width: 160px; width: auto !important; }
-    .recheck-combo .hidden { display: none !important; }
-    .field-row input.readonly-code,
-    .form-item input.readonly-code {
-      background: #f8fafc; color: #64748b; cursor: default;
+    .mark-preview textarea {
+      flex: 1; min-height: 64px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 8px 10px; font-size: 13px; outline: none; resize: vertical; background: #fff;
+    }
+    .mark-preview .ops { display: flex; flex-direction: column; gap: 6px; }
+    .mark-preview .ops button { border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; padding: 4px 12px; font-size: 12px; color: #475569; }
+    .mark-tools { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; margin-top: 12px; font-size: 13px; color: #64748b; }
+    .mark-tools select, .mark-tools input { border: 1px solid #dcdfe6; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; background: #fff; }
+    .sym-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+    .sym-btns button { min-width: 32px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; padding: 4px 8px; font-size: 12px; color: #334155; }
+    .sym-btns button:hover { border-color: #93c5fd; color: #2563eb; }
+    .model-tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .model-chip {
+      min-width: 64px; text-align: center; padding: 6px 14px; border: 1px solid #cbd5e1; border-radius: 4px;
+      background: #fff; color: #475569; font-size: 13px; cursor: pointer;
+    }
+    .model-chip.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; font-weight: 500; }
+    .icon-btn { color: #2563eb; cursor: pointer; font-size: 16px; margin-left: 8px; }
+    .icon-btn.danger { color: #ef4444; }
+    .param-card { border: 1px solid #e2e8f0; border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; background: #fff; }
+    .param-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: #334155; }
+    .param-card-head .ops { display: flex; gap: 12px; color: #2563eb; font-size: 15px; }
+    .param-card-head .ops .fa-trash { color: #ef4444; }
+    .param-card-head .ops i { cursor: pointer; }
+    .option-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .option-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #eff6ff; color: #2563eb; border-radius: 999px; font-size: 12px; }
+    .option-tag .rm { cursor: pointer; color: #94a3b8; }
+    .option-tag .rm:hover { color: #ef4444; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; }
+    .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; vertical-align: middle; }
+    .data-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
+    .data-table td { color: #334155; }
+    .link { color: #2563eb; cursor: pointer; }
+    .link:hover { color: #1d4ed8; }
+    .link.danger { color: #ef4444; }
+    .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #eff6ff; color: #2563eb; font-size: 12px; }
+    .pager { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: #64748b; }
+    .pager .pg { min-width: 24px; height: 24px; border: 1px solid #e2e8f0; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
+    .pager .pg.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .cable-only.hidden, .model-only.hidden, .sample-spec-body.hidden, #sampleWorkspace.hidden, #emptyState.hidden { display: none !important; }
+    .empty-table { padding: 36px 16px; text-align: center; color: #94a3b8; font-size: 13px; }
+    .empty-table i { display: block; font-size: 36px; margin-bottom: 8px; color: #cbd5e1; }
+    .section-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .section-title-row .section-title { margin-bottom: 0; }
+    .section-title-row .icon-btn { margin-left: 0; }
+    /* 型号面板：凸显当前型号下的配置区块 */
+    .model-scope-panel.is-model {
+      margin-bottom: 12px;
+      padding: 14px 14px 6px;
+      border: 1px solid #93c5fd;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 56px, #f1f5f9 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 3px rgba(37,99,235,.06);
+    }
+    .model-scope-panel.is-model .section-card {
+      border: 1px solid #bfdbfe;
+      box-shadow: none;
+      background: #fff;
+    }
+    .model-scope-panel.is-model .section-card:last-child { margin-bottom: 8px; }
+    .model-scope-head {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 2px 4px 10px;
+      border-bottom: 1px dashed #93c5fd;
+    }
+    .model-scope-panel.is-model .model-scope-head { display: flex; }
+    .model-scope-head .left {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600; color: #1d4ed8;
+    }
+    .model-scope-head .left .badge {
+      display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px;
+      background: #2563eb; color: #fff; font-size: 12px; font-weight: 600;
+    }
+    .model-scope-head .hint { font-size: 12px; color: #64748b; font-weight: 400; }
+    @media (max-width: 1100px) {
+      .form-3col { grid-template-columns: 1fr 1fr; }
+      .spec-fields { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -241,13 +194,13 @@
     <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
     <a href="sample-data.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">样品数据</a>
     <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
-      <span id="tabCatName">样品数据明细</span>
+      样品数据详情
       <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
     </span>
   </div>
 
   <div class="layout">
-    <aside class="tree-panel" data-annotate="tree-leaf-only">
+    <aside class="tree-panel">
       <div class="tree-head">
         <div class="back" onclick="goBack()"><i class="fa fa-angle-left"></i> <span id="catTitle">电力物资类</span></div>
         <div class="tree-search">
@@ -259,378 +212,315 @@
     </aside>
 
     <div class="main-panel" id="mainPanel">
-      <div class="main-empty" id="emptyState" data-annotate="empty-non-leaf">
+      <div class="main-empty" id="emptyState">
         <i class="fa fa-sitemap text-3xl text-slate-300"></i>
         <div>请选择具体样品</div>
         <div class="text-xs text-slate-400">当前选中的是分类/标准节点，请在左侧选择样品叶节点后进行配置</div>
       </div>
 
-      <div class="main-body hidden" id="sampleWorkspace">
-        <div class="content-head">
-          <div class="text-base font-medium text-slate-800" id="sampleTitle">-</div>
-          <div class="tooltip-wrap" data-annotate="sync-to-da">
-            <button onclick="syncToDa()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">
-              <i class="fa fa-refresh"></i> 一键同步样品试验数据
-            </button>
-            <div class="tip-bubble">将 LIMS 样品数据结构同步至直连数采系统</div>
+      <div id="sampleWorkspace" class="hidden p-4">
+        <!-- 图1/3：样品信息 -->
+        <div class="section-card" data-annotate="sample-info">
+          <div class="section-title">样品信息：</div>
+          <div class="form-3col">
+            <div class="form-item">
+              <label><span class="req">*</span>名称</label>
+              <input id="b_name" type="text" />
+            </div>
+            <div class="form-item">
+              <label>样品代码</label>
+              <input id="b_code" type="text" placeholder="请输入" />
+            </div>
+            <div class="form-item">
+              <label><span class="req">*</span>排序</label>
+              <input id="b_sort" type="number" min="1" />
+            </div>
+
+            <div class="form-item">
+              <label><span class="req">*</span>样品分类</label>
+              <select id="b_category"></select>
+            </div>
+            <div class="form-item">
+              <label><span class="req">*</span>标准号</label>
+              <select id="b_standard" disabled class="bg-slate-50 text-slate-500"></select>
+            </div>
+            <div class="form-item">
+              <label>默认费用(元)</label>
+              <input id="b_fee" type="text" placeholder="请输入" />
+            </div>
+
+            <div class="form-item">
+              <label><span class="req">*</span>最大检测周期(月)</label>
+              <input id="b_cycle" type="number" min="0" />
+            </div>
+            <div class="form-item">
+              <label><span class="req">*</span>区分型号</label>
+              <select id="b_diffModel" onchange="onDiffModelChange()">
+                <option value="是">是</option>
+                <option value="否">否</option>
+              </select>
+            </div>
+            <div class="form-item">
+              <label>单位</label>
+              <input id="b_unit" type="text" />
+            </div>
+
+            <div class="form-item">
+              <label>备注</label>
+              <input id="b_remark" type="text" />
+            </div>
+
+            <div class="form-item">
+              <label><span class="req">*</span>是否电缆</label>
+              <label class="toggle">
+                <input id="b_isCable" type="checkbox" onchange="onCableToggle()" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-item cable-only">
+              <label><span class="req">*</span>电缆结构</label>
+              <div class="radio-row">
+                <label><input type="radio" name="cableStruct" value="单芯" /> 单芯</label>
+                <label><input type="radio" name="cableStruct" value="多芯" checked /> 多芯</label>
+              </div>
+            </div>
+            <div class="form-item cable-only">
+              <label><span class="req">*</span>芯数</label>
+              <select id="b_cores">
+                <option>2芯</option>
+                <option selected>3芯</option>
+                <option>4芯</option>
+                <option>5芯</option>
+              </select>
+            </div>
+
+            <div class="form-item cable-only">
+              <label><span class="req">*</span>线芯颜色</label>
+              <div class="radio-row">
+                <label><input type="radio" name="coreColor" value="绝缘分色" checked /> 绝缘分色</label>
+                <label><input type="radio" name="coreColor" value="数字标识" /> 数字标识</label>
+              </div>
+            </div>
+            <div class="form-item cable-only" style="grid-column: span 2;">
+              <label><span class="req">*</span>相别</label>
+              <div class="phase-tags" id="b_phases">
+                <span class="phase-tag">红 <i class="fa fa-times rm"></i></span>
+                <span class="phase-tag">黄 <i class="fa fa-times rm"></i></span>
+                <span class="phase-tag">绿 <i class="fa fa-times rm"></i></span>
+              </div>
+            </div>
+
+            <div class="form-item" id="sampleImageItem">
+              <label>样品图片</label>
+              <div class="upload-box" title="上传图片"><i class="fa fa-plus"></i></div>
+            </div>
+          </div>
+          <div class="mt-5 flex items-center justify-between">
+            <a class="file-link"><i class="fa fa-file-text-o"></i> 上传附件</a>
+            <button class="btn-save" onclick="toast('样品信息已保存（原型）')">保存</button>
           </div>
         </div>
-        <div class="param-tabs" data-annotate="param-tabs">
-          <div class="param-tab active" data-tab="basic" onclick="switchTab('basic')">基本信息</div>
-          <div class="param-tab" data-tab="model" onclick="switchTab('model')">规格型号</div>
-          <div class="param-tab" data-tab="test" onclick="switchTab('test')">试验</div>
-        </div>
-        <div id="syncTip" class="sync-tip"></div>
 
-        <div class="param-panel active" id="panel-basic" data-annotate="basic-fields">
-          <div class="rounded bg-white p-5 shadow-sm">
-            <div class="form-grid">
-              <div class="form-item"><label><span class="req">*</span>样品分类</label><select id="b_category"></select></div>
-              <div class="form-item"><label><span class="req">*</span>名称</label><input id="b_name" type="text" /></div>
-              <div class="form-item"><label><span class="req">*</span>排序</label><input id="b_sort" type="number" min="1" /></div>
-              <div class="form-item"><label>单位</label><input id="b_unit" type="text" /></div>
-              <div class="form-item" data-annotate="sample-need-prepare">
-                <label><span class="req">*</span>是否制样</label>
-                <select id="b_needPrepare">
-                  <option value="否">否</option>
-                  <option value="是">是</option>
+        <!-- 样品级规格参数：区分型号=否且无参数时仅标题+加号（图2） -->
+        <div class="section-card" data-annotate="sample-specs">
+          <div class="section-title-row">
+            <div class="section-title">规格参数：</div>
+            <i class="fa fa-plus-circle icon-btn" title="新增" onclick="toast('新增规格参数（原型）')"></i>
+            <div class="spec-tab-actions sample-spec-body" id="sampleSpecActions">
+              <i class="fa fa-copy" title="复制" onclick="toast('复制规格参数（原型）')"></i>
+              <i class="fa fa-trash" title="删除" onclick="toast('删除规格参数（原型）')"></i>
+            </div>
+          </div>
+          <div class="sample-spec-body" id="sampleSpecBody">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="spec-tabs" id="sampleSpecTabs"></div>
+            </div>
+            <div class="spec-fields">
+              <div class="form-item">
+                <label><span class="req">*</span>参数名称</label>
+                <input id="ss_name" type="text" />
+              </div>
+              <div class="form-item">
+                <label>符号</label>
+                <input id="ss_symbol" type="text" />
+              </div>
+              <div class="form-item">
+                <label>单位</label>
+                <input id="ss_unit" type="text" />
+              </div>
+            </div>
+            <div class="mt-5 flex justify-end"><button class="btn-save" onclick="toast('规格参数已保存（原型）')">保存</button></div>
+          </div>
+        </div>
+
+        <!-- 产品标记 / 试验项 / 样品判定 始终展示；型号专属区随「区分型号」显隐 -->
+        <div data-annotate="model-panel">
+          <div class="section-card">
+            <div class="section-title">产品标记：</div>
+            <div class="text-sm text-slate-500 mb-2">产品标记规则预览</div>
+            <div class="mark-preview">
+              <textarea id="markRule" readonly></textarea>
+              <div class="ops">
+                <button type="button" onclick="toast('已复制规则')">复制</button>
+                <button type="button" onclick="toast('已回退')">回退</button>
+                <button type="button" onclick="clearMarkRule()">清除</button>
+              </div>
+            </div>
+            <div class="mark-tools">
+              <div class="flex items-center gap-2">
+                <span>可用元素</span>
+                <select id="markElement">
+                  <option value="">请选择</option>
+                  <option>型号信息.型号</option>
+                  <option>规格参数.额定电压.值</option>
+                  <option>样品信息.是否电缆.芯数</option>
+                  <option>规格参数.导体标称截面积.值</option>
+                  <option>样品信息.标准号</option>
                 </select>
-                <div class="tip">样品制备节点按本字段流转：选「是」走样品制备；选「否」跳过制备环节。</div>
+                <button class="btn-outline" type="button" onclick="insertMarkElement()">插入</button>
               </div>
-              <div class="form-item"><label>样品描述</label><textarea id="b_desc" rows="3"></textarea></div>
-              <div class="form-item" data-annotate="recheck-cycle">
-                <label><span class="req">*</span>再检周期</label>
-                <div class="recheck-combo">
-                  <select id="b_recheckMode" onchange="onRecheckModeChange('b')">
-                    <option value="数值">数值</option>
-                    <option value="文本">文本</option>
-                  </select>
-                  <span id="b_recheckNumWrap" class="recheck-num-wrap">
-                    <span class="num-stepper">
-                      <button type="button" aria-label="减少" onclick="stepRecheckNum('b',-1)">−</button>
-                      <input id="b_recheckNum" type="number" min="0" step="1" value="12" />
-                      <button type="button" aria-label="增加" onclick="stepRecheckNum('b',1)">+</button>
-                    </span>
-                    <span class="recheck-unit">月</span>
-                  </span>
-                  <input id="b_recheckText" class="recheck-text hidden" type="text" placeholder="请输入文字，将加载到合格证" />
+              <div class="flex items-center gap-2">
+                <span>选择符号</span>
+                <div class="sym-btns">
+                  <button type="button" onclick="insertMarkText('-')">-</button>
+                  <button type="button" onclick="insertMarkText('X')">X</button>
+                  <button type="button" onclick="insertMarkText('/')">/</button>
+                  <button type="button" onclick="insertMarkText('(')">(</button>
+                  <button type="button" onclick="insertMarkText(')')">)</button>
+                  <button type="button" onclick="insertMarkText('.')">.</button>
+                  <button type="button" onclick="insertMarkText('空格')">空格</button>
                 </div>
-                <div class="tip" id="b_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）-1（天）</div>
               </div>
-              <div class="form-item">
-                <label>图片<span class="text-slate-400 font-normal">（可多张）</span></label>
-                <div class="upload-list" id="b_images"></div>
-              </div>
-              <div class="form-item">
-                <label>附件<span class="text-slate-400 font-normal">（可多个）</span></label>
-                <div class="upload-list" id="b_attachments"></div>
+              <div class="flex items-center gap-2">
+                <span>字母或数值</span>
+                <input id="markCustom" type="text" placeholder="请输入" class="w-36" />
+                <button class="btn-outline" type="button" onclick="insertMarkCustom()">插入</button>
               </div>
             </div>
-            <div class="mt-6 text-center"><button onclick="saveBasic()" class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">保存</button></div>
+            <div class="mt-5 flex justify-end"><button class="btn-save" onclick="toast('产品标记已保存（原型）')">保存</button></div>
           </div>
-        </div>
 
-        <div class="param-panel" id="panel-model" data-annotate="model-table">
-          <div class="mb-3 flex items-center justify-end">
-            <button onclick="openModelEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 添加规格型号</button>
-          </div>
-          <div class="overflow-x-auto rounded bg-white shadow-sm">
-            <table class="data-table model-table">
-              <thead>
-                <tr>
-                  <th class="col-idx">序号</th>
-                  <th class="col-name">规格型号名称</th>
-                  <th class="col-recheck">再检周期</th>
-                  <th class="col-unit">单位</th>
-                  <th class="col-desc">描述</th>
-                  <th class="col-files">附件</th>
-                  <th class="col-tests">已配试验</th>
-                  <th class="col-ops">操作</th>
-                </tr>
-              </thead>
-              <tbody id="modelTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="param-panel" id="panel-test" data-annotate="test-tab">
-          <div class="mb-3 flex items-center justify-end gap-2" data-annotate="copy-add-test">
-            <button onclick="openTestEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 手动添加</button>
-            <button onclick="copyAddTest()" class="rounded border border-slate-300 px-4 py-1.5 text-sm hover:bg-slate-50">复制添加</button>
-          </div>
-          <div class="overflow-x-auto rounded bg-white shadow-sm">
-            <table class="data-table min-w-[960px]">
-              <thead>
-                <tr>
-                  <th style="width:60px">序号</th>
-                  <th>名称</th>
-                  <th id="thDetectCategory">检测类别</th>
-                  <th>检测依据</th>
-                  <th>检测数据项</th>
-                  <th style="width:90px">是否制样</th>
-                  <th style="width:180px">操作</th>
-                </tr>
-              </thead>
-              <tbody id="testTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 编辑试验抽屉 -->
-  <div id="testModal" class="modal-mask drawer-mask">
-    <div class="modal-box drawer xwide">
-      <div class="modal-head">
-        <div>
-          <h3 id="testModalTitle" class="text-base font-medium">编辑试验</h3>
-          <div id="testModalSub" class="cfg-drawer-sub"></div>
-        </div>
-        <button onclick="closeModal('testModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
-      </div>
-      <div class="modal-body" data-annotate="test-edit-drawer">
-        <div id="overrideReadonlyHint" class="readonly-hint hidden">结构字段只读：请在样品默认试验中修改结构（增减检测项、改类型/名称）。试验名称不可覆盖。</div>
-        <div class="split-edit drawer-split">
-          <div class="pane">
-            <div class="pane-title">试验信息</div>
-            <div class="drawer-section">
-              <div class="drawer-section-title">基础</div>
-              <div class="field-row" data-annotate="test-code"><label>试验项编码</label><div class="ctrl"><input id="t_code" type="text" class="readonly-code" readonly tabindex="-1" placeholder="系统生成" /><div class="tip mt-1" style="margin-top:6px">系统生成，仅回显，不可编辑。</div></div></div>
-              <div class="field-row"><label><span class="req">*</span>试验名称</label><div class="ctrl"><input id="t_name" type="text" /><div id="t_nameOv" class="hidden"></div></div></div>
-              <div class="field-row"><label id="lblDetectCategory" class="label-tip"><span class="req">*</span>检测类别<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span></label><div class="ctrl"><select id="t_detectCategory"></select><div id="t_detectCategoryOv"></div></div></div>
-              <div class="field-row"><label><span class="req">*</span>默认费用（元）</label><div class="ctrl"><input id="t_fee" type="number" min="0" /><div id="t_feeOv"></div></div></div>
-              <div class="field-row"><label><span class="req">*</span>排序</label><div class="ctrl"><input id="t_sort" type="number" min="1" /><div id="t_sortOv"></div></div></div>
+          <!-- 区分型号=是：型号/分类选择条 -->
+          <div class="model-only" id="modelOnlyBlock">
+            <div class="section-card">
+              <div class="mb-3 flex items-center">
+                <div class="section-title mb-0">型号/分类：</div>
+                <i class="fa fa-plus-circle icon-btn" title="新增型号" onclick="toast('新增型号（原型）')"></i>
+                <i class="fa fa-copy icon-btn" title="复制型号" onclick="toast('复制型号（原型）')"></i>
+              </div>
+              <div class="model-tabs" id="modelTabs"></div>
             </div>
-            <div class="drawer-section">
-              <div class="drawer-section-title">依据与标准</div>
-              <div class="field-row"><label><span class="req">*</span>检测依据</label><div class="ctrl"><div class="chip-multi" id="t_basisChips"></div></div></div>
-              <div class="field-row"><label><span class="req">*</span>判定依据</label><div class="ctrl"><div class="chip-multi" id="t_judgeChips"></div></div></div>
-              <div class="field-row" data-annotate="std-builder"><label>标准要求</label><div class="ctrl">
-                <div class="concat-builder" id="stdBuilder"></div>
-                <div class="mt-2 flex flex-wrap gap-2">
-                  <button type="button" class="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-white" onclick="addStdSeg('field')">+ 字段</button>
-                  <button type="button" class="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-white" onclick="addStdSeg('text')">+ 文字</button>
+          </div>
+
+          <!-- 型号面板：型号信息 / 规格参数 / 试验项 / 样品判定 -->
+          <div class="model-scope-panel" id="modelScopePanel" data-annotate="model-scope">
+            <div class="model-scope-head">
+              <div class="left">
+                <i class="fa fa-cube"></i>
+                <span>型号面板</span>
+                <span class="badge" id="modelScopeName">-</span>
+              </div>
+              <div class="hint">以下配置均归属当前型号</div>
+            </div>
+
+            <div class="model-only">
+              <div class="section-card">
+                <div class="mb-3 flex items-center justify-between">
+                  <div class="section-title mb-0">型号信息：</div>
+                  <a class="link danger text-sm" onclick="toast('删除该型号（原型）')"><i class="fa fa-trash"></i> 删除该型号</a>
                 </div>
-                <div class="tip mt-2">预览：<span id="stdPreview" class="text-slate-700">（空）</span></div>
-                <div id="t_stdOv"></div>
-              </div></div>
-            </div>
-            <div class="drawer-section" data-annotate="test-prepare">
-              <div class="drawer-section-title">制样与其他</div>
-              <div class="field-row"><label><span class="req">*</span>是否制样</label><div class="ctrl"><select id="t_needPrepare" onchange="toggleSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="t_needPrepareOv"></div></div></div>
-              <div class="field-row" id="rowSampleQty" data-annotate="test-sample-qty" style="display:none"><label><span class="req">*</span>试样数量</label><div class="ctrl">
-                <div class="num-stepper">
-                  <button type="button" aria-label="减少" onclick="stepSampleQty(-1)">−</button>
-                  <input id="t_sampleQty" type="number" min="1" step="1" value="1" />
-                  <button type="button" aria-label="增加" onclick="stepSampleQty(1)">+</button>
-                </div>
-                <div class="tip mt-1" id="t_sampleQtyTip" style="margin-top:6px">是否制样为「是」时必填；用步进器调整试样数量（≥1）。</div>
-                <div id="t_sampleQtyOv"></div>
-              </div></div>
-              <div class="field-row" data-annotate="test-equip"><label>检测设备</label><div class="ctrl">
-                <div class="equip-ms" id="t_equipMs" data-selected="[]">
-                  <div class="equip-ms-trigger" onclick="toggleEquipMs('t_equipMs')"><span class="ph">请选择启用设备（可多选）</span></div>
-                  <div class="equip-ms-panel" id="t_equipMsPanel"></div>
-                </div>
-                <div id="t_equipOv"></div>
-              </div></div>
-              <div class="field-row">
-                <label class="label-tip">试样色号
-                  <span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「试样色号」</span></span>
-                </label>
-                <div class="ctrl"><div class="chip-multi" id="t_colorsChips"></div><div id="t_colorsOv"></div></div>
-              </div>
-              <div class="field-row"><label>试样类别代码</label><div class="ctrl"><input id="t_sampleCatCode" type="text" placeholder="非必填" /><div id="t_sampleCatCodeOv"></div></div></div>
-              <div class="field-row"><label>备注</label><div class="ctrl"><input id="t_remark" type="text" /><div id="t_remarkOv"></div></div></div>
-            </div>
-          </div>
-          <div class="pane" data-annotate="detect-items">
-            <div class="pane-title flex items-center justify-between">
-              <span>检测项 / 参数项</span>
-              <button type="button" id="btnAddItem" class="rounded bg-blue-600 px-2 py-1 text-xs text-white" onclick="addDetectItem()">+ 添加检测项</button>
-            </div>
-            <div class="tip mb-2" style="margin-top:0">右侧维护检测字段结构；下拉类型请配置可选项。隐藏字段不可设为必填。</div>
-            <div id="detectItems"></div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-foot">
-        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('testModal')">取消</button>
-        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="resetTestForm()">重置</button>
-        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="confirmTestEdit()">确定</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 复制添加：选择其他样品的试验 -->
-  <div id="copyTestModal" class="modal-mask">
-    <div class="modal-box sm">
-      <div class="modal-head"><h3 class="text-base font-medium">复制添加试验</h3><button onclick="closeModal('copyTestModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
-      <div class="modal-body text-sm space-y-3" data-annotate="copy-test-modal">
-        <p class="text-slate-500">请选择其他样品的试验进行复制（不可选择当前样品的试验）。</p>
-        <div class="field-row" style="margin:0">
-          <label style="width:auto;min-width:72px"><span class="req">*</span>试验项</label>
-          <div class="ctrl">
-            <select id="copyTestSelect" class="w-full">
-              <option value="">请选择样品分类 / 样品 / 试验项</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div class="modal-foot">
-        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('copyTestModal')">取消</button>
-        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="confirmCopyTest()">确定</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 新增试验同步决策 -->
-  <div id="syncNewTestModal" class="modal-mask">
-    <div class="modal-box sm">
-      <div class="modal-head"><h3 class="text-base font-medium">同步到已有规格型号</h3><button onclick="closeModal('syncNewTestModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
-      <div class="modal-body text-sm space-y-3" data-annotate="sync-new-test">
-        <p>已新增默认试验「<span id="syncNewTestName" class="font-medium"></span>」。是否同步关联到已有规格型号？</p>
-        <label class="flex items-center gap-2"><input type="radio" name="syncMode" value="all" checked /> 全部规格型号</label>
-        <label class="flex items-center gap-2"><input type="radio" name="syncMode" value="pick" /> 选择规格型号</label>
-        <div id="syncModelPick" class="ml-6 hidden space-y-1"></div>
-        <label class="flex items-center gap-2"><input type="radio" name="syncMode" value="none" /> 不同步（仅默认模板）</label>
-      </div>
-      <div class="modal-foot">
-        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('syncNewTestModal')">取消</button>
-        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="confirmSyncNewTest()">确定</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 规格型号编辑抽屉 -->
-  <div id="modelModal" class="modal-mask drawer-mask">
-    <div class="modal-box drawer">
-      <div class="modal-head"><h3 id="modelModalTitle" class="text-base font-medium">添加规格型号</h3><button onclick="closeModal('modelModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button></div>
-      <div class="modal-body space-y-3 text-sm" data-annotate="model-edit-drawer">
-        <div class="field-row"><label>样品名称</label><div class="ctrl"><input id="m_sampleName" type="text" disabled class="bg-slate-50 text-slate-600" /></div></div>
-        <div class="field-row"><label><span class="req">*</span>规格型号名称</label><div class="ctrl"><input id="m_name" type="text" /></div></div>
-        <div class="field-row"><label>排序</label><div class="ctrl"><input id="m_sort" type="number" min="1" value="1" /></div></div>
-        <div class="field-row"><label>单位</label><div class="ctrl"><input id="m_unit" type="text" /></div></div>
-        <div class="field-row"><label>再检周期</label><div class="ctrl">
-          <div class="recheck-combo">
-            <select id="m_recheckMode" onchange="onRecheckModeChange('m')">
-              <option value="数值">数值</option>
-              <option value="文本">文本</option>
-            </select>
-            <span id="m_recheckNumWrap" class="recheck-num-wrap">
-              <span class="num-stepper">
-                <button type="button" aria-label="减少" onclick="stepRecheckNum('m',-1)">−</button>
-                <input id="m_recheckNum" type="number" min="0" step="1" value="" />
-                <button type="button" aria-label="增加" onclick="stepRecheckNum('m',1)">+</button>
-              </span>
-              <span class="recheck-unit">月</span>
-            </span>
-            <input id="m_recheckText" class="recheck-text hidden" type="text" placeholder="请输入文字，将加载到合格证" />
-          </div>
-          <div class="tip" id="m_recheckTip">数值：合格证再检日期 = 检测日期 + 再检周期（月）-1（天）</div>
-        </div></div>
-        <div class="field-row"><label>描述</label><div class="ctrl"><textarea id="m_desc" rows="3"></textarea></div></div>
-        <div class="field-row">
-          <label class="label-tip">图片
-            <span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">可上传多张图片</span></span>
-          </label>
-          <div class="ctrl"><div class="upload-list" id="m_images"></div></div>
-        </div>
-        <div class="field-row">
-          <label class="label-tip">附件
-            <span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">可上传多个附件</span></span>
-          </label>
-          <div class="ctrl"><div class="upload-list" id="m_attachments"></div></div>
-        </div>
-      </div>
-      <div class="modal-foot">
-        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeModal('modelModal')">取消</button>
-        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="confirmModelEdit()">确定</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 配置试验抽屉 -->
-  <div id="cfgTestModal" class="modal-mask drawer-mask">
-    <div class="modal-box drawer wide">
-      <div class="modal-head">
-        <div>
-          <h3 id="cfgTestTitle" class="text-base font-medium">配置试验</h3>
-          <div id="cfgTestSub" class="cfg-drawer-sub"></div>
-        </div>
-        <button onclick="closeCfgDrawer()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
-      </div>
-      <div class="modal-body" data-annotate="cfg-tests-drawer">
-        <div class="mb-3 text-sm text-slate-500">从默认试验中勾选本规格型号要做的试验。勾选与下方「取消关联」联动；保存时才会落库。首次勾选会快照复制取值，规格型号侧修改不回写默认。</div>
-        <div class="mb-2 text-xs font-medium text-slate-500">可选试验</div>
-        <div id="cfgTestList" class="chip-row mb-4"></div>
-        <div class="mb-2 flex items-center justify-between">
-          <div class="text-xs font-medium text-slate-500">已选试验（点击行可在下方编辑）</div>
-          <div class="text-xs text-slate-400">取消关联 = 取消勾选，需点保存后生效</div>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="data-table">
-            <thead><tr><th>已关联试验</th><th>是否制样</th><th>参数项</th><th>操作</th></tr></thead>
-            <tbody id="cfgLinkedBody"></tbody>
-          </table>
-        </div>
-        <div id="cfgEditEmpty" class="cfg-edit-empty">请点击上方已选试验进行编辑配置</div>
-        <div id="cfgEditPanel" class="cfg-edit-panel hidden" data-annotate="cfg-override">
-          <div class="cfg-edit-head">
-            <span id="cfgEditTitle">编辑试验</span>
-            <button type="button" class="text-xs text-slate-500 hover:text-slate-700" onclick="clearCfgInlineEdit()">收起</button>
-          </div>
-          <div class="cfg-edit-body">
-            <div class="readonly-hint">结构字段只读：请在样品默认试验中修改结构。试验名称不可覆盖。下方修改仅作用于本规格型号。</div>
-            <div class="split-edit" style="min-height:280px">
-              <div class="pane">
-                <div class="pane-title">试验信息（规格型号覆盖）</div>
-                <div class="field-row"><label>试验名称</label><div class="ctrl"><input id="c_name" type="text" disabled /></div></div>
-                <div class="field-row"><label id="c_lblDetectCategory" class="label-tip">检测类别<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span></label><div class="ctrl"><select id="c_detectCategory"></select><div id="c_detectCategoryOv"></div></div></div>
-                <div class="field-row"><label>试样类别代码</label><div class="ctrl"><input id="c_sampleCatCode" type="text" /><div id="c_sampleCatCodeOv"></div></div></div>
-                <div class="field-row"><label>是否制样</label><div class="ctrl"><select id="c_needPrepare" onchange="toggleCfgSampleQty()"><option value="否">否</option><option value="是">是</option></select><div id="c_needPrepareOv"></div></div></div>
-                <div class="field-row" id="c_rowSampleQty" style="display:none"><label>试样数量</label><div class="ctrl">
-                  <div class="num-stepper">
-                    <button type="button" aria-label="减少" onclick="stepCfgSampleQty(-1)">−</button>
-                    <input id="c_sampleQty" type="number" min="1" step="1" value="1" />
-                    <button type="button" aria-label="增加" onclick="stepCfgSampleQty(1)">+</button>
+                <div class="form-3col">
+                  <div class="form-item">
+                    <label><span class="req">*</span>型号</label>
+                    <input id="m_code" type="text" />
                   </div>
-                  <div id="c_sampleQtyOv"></div>
-                </div></div>
-                <div class="field-row"><label>默认费用（元）</label><div class="ctrl"><input id="c_fee" type="number" min="0" /><div id="c_feeOv"></div></div></div>
-                <div class="field-row" data-annotate="cfg-equip"><label>检测设备</label><div class="ctrl">
-                  <div class="equip-ms" id="c_equipMs" data-selected="[]">
-                    <div class="equip-ms-trigger" onclick="toggleEquipMs('c_equipMs')"><span class="ph">请选择启用设备（可多选）</span></div>
-                    <div class="equip-ms-panel" id="c_equipMsPanel"></div>
+                  <div class="form-item" style="grid-column: span 2;">
+                    <label><span class="req">*</span>名称</label>
+                    <input id="m_name" type="text" />
                   </div>
-                  <div id="c_equipOv"></div>
-                </div></div>
-                <div class="field-row"><label>备注</label><div class="ctrl"><input id="c_remark" type="text" /><div id="c_remarkOv"></div></div></div>
+                  <div class="form-item">
+                    <label><span class="req">*</span>排序</label>
+                    <input id="m_sort" type="number" min="1" />
+                  </div>
+                  <div class="form-item">
+                    <label><span class="req">*</span>最大检测周期(月)</label>
+                    <input id="m_cycle" type="number" min="0" />
+                  </div>
+                  <div class="form-item" style="grid-column: span 1;">
+                    <label>描述</label>
+                    <input id="m_desc" type="text" />
+                  </div>
+                </div>
+                <div class="mt-5 flex items-center justify-between">
+                  <a class="file-link"><i class="fa fa-paperclip"></i> 上传附件</a>
+                  <button class="btn-save" onclick="toast('型号信息已保存（原型）')">保存</button>
+                </div>
               </div>
-              <div class="pane">
-                <div class="pane-title">检测项取值（可覆盖）</div>
-                <div id="c_detectItems"></div>
+
+              <div class="section-card">
+                <div class="section-title">规格参数：</div>
+                <div id="modelSpecCards"></div>
               </div>
             </div>
-            <div class="mt-3 flex justify-end gap-2">
-              <button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm" onclick="clearCfgInlineEdit()">取消编辑</button>
-              <button type="button" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white" onclick="saveCfgInlineEdit()">保存本试验覆盖</button>
+
+            <div class="section-card">
+              <div class="mb-3 flex items-center justify-between">
+                <div class="section-title mb-0">试验项：</div>
+                <div class="flex gap-2">
+                  <button class="btn-outline" type="button" onclick="toast('复制试验（原型）')">复制试验</button>
+                  <button class="btn-primary" type="button" onclick="toast('新增试验（原型）')"><i class="fa fa-plus"></i> 新增试验</button>
+                </div>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="data-table min-w-[1100px]">
+                  <thead>
+                    <tr>
+                      <th style="width:56px">序号</th>
+                      <th style="width:160px">检测项目</th>
+                      <th style="width:100px">质量特性</th>
+                      <th style="width:100px">检验类别</th>
+                      <th style="width:140px">试验依据</th>
+                      <th>标准要求</th>
+                      <th style="width:70px">状态</th>
+                      <th style="width:150px">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="testTableBody"></tbody>
+                </table>
+              </div>
+              <div class="pager" id="testPager">
+                <span>共<span id="testTotal">0</span>条</span>
+                <span class="pg active">1</span>
+                <select class="rounded border border-slate-200 px-2 py-1 text-xs"><option>10条/页</option></select>
+              </div>
+            </div>
+
+            <div class="section-card" data-annotate="sample-judge">
+              <div class="mb-3 flex items-center justify-between">
+                <div class="section-title mb-0">样品判定：</div>
+                <button class="btn-outline" type="button" onclick="goReportJudgment()">去设置</button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th style="width:70px">序号</th>
+                      <th style="width:140px">检测类别</th>
+                      <th>规则判定方案</th>
+                      <th style="width:90px">详情</th>
+                    </tr>
+                  </thead>
+                  <tbody id="judgeTableBody"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="modal-foot">
-        <button class="rounded border border-slate-300 px-4 py-1.5 text-sm" onclick="closeCfgDrawer()">关闭</button>
-        <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" onclick="saveCfgTests()">保存关联</button>
       </div>
     </div>
   </div>
 
   <script src="js/tab-bar.js"></script>
-  <script src="js/mock-dict.js"></script>
-  <script src="js/entrust-field-config.js"></script>
-  <script src="js/equip-store.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     var CAT_META = {
@@ -670,27 +560,6 @@
             { id: 'dlt803', label: 'DLT 802.3-2023', open: true, children: [
               { id: 'ds-s', label: 'DS实壁类塑料电缆导管_直管', leaf: true },
               { id: 'ds-k', label: 'DS实壁类塑料电缆导管_带承口', leaf: true }
-            ]},
-            { id: 'dlt802', label: 'DLT 802.2-2023', open: true, children: [
-              { id: 'gf', label: '玻璃纤维增强塑料电缆导管', leaf: true }
-            ]},
-            { id: 'dlt804', label: 'DLT 802.4-2023', open: true, children: [
-              { id: 'bw', label: '波纹类塑料电缆导管', leaf: true }
-            ]},
-            { id: 'dlt805', label: 'DLT 802.5-2023', open: true, children: [
-              { id: 'xw', label: '纤维水泥电缆导管', leaf: true }
-            ]},
-            { id: 'dlt806', label: 'DLT 802.6-2023', open: true, children: [
-              { id: 'cs', label: '承插式混凝土预制电缆导管', leaf: true }
-            ]},
-            { id: 'dlt807', label: 'DLT 802.7-2023', open: true, children: [
-              { id: 'fw', label: '非开挖用塑料电缆导管', leaf: true }
-            ]},
-            { id: 'dlt808', label: 'DLT 802.8-2023', open: true, children: [
-              { id: 'sg', label: '塑钢复合电缆导管', leaf: true }
-            ]},
-            { id: 'dlt810', label: 'DLT 802.10-2023', open: true, children: [
-              { id: 'ts', label: '涂塑钢质电缆导管', leaf: true }
             ]}
           ]}
         ]}
@@ -705,19 +574,7 @@
       ]},
       { id: 'dlt1476', label: 'DLT 1476-2023', open: true, children: [
         { id: 'rope1476', label: '安全绳', leaf: true },
-        { id: 'rod1476', label: '绝缘杆', leaf: true },
-        { id: 'belt1476', label: '安全带', leaf: true },
-        { id: 'helmet', label: '安全帽', leaf: true },
-        { id: 'board1476', label: '登高板', leaf: true },
-        { id: 'spur', label: '登杆脚扣', leaf: true }
-      ]},
-      { id: 'dlt1741', label: 'DLT 1741-2017', open: true, children: [
-        { id: 'sling', label: '吊装带', leaf: true },
-        { id: 'shackle', label: '卸扣', leaf: true },
-        { id: 'belt1741', label: '安全带', leaf: true },
-        { id: 'jack', label: '千斤顶', leaf: true },
-        { id: 'board1741', label: '登高板（升降板）', leaf: true },
-        { id: 'rope1741', label: '安全绳', leaf: true }
+        { id: 'helmet', label: '安全帽', leaf: true }
       ]}
     ];
 
@@ -725,468 +582,221 @@
       { id: 'cement', label: '通用硅酸盐水泥', open: true, children: [
         { id: 'gb175', label: 'GB 175-2023', open: true, children: [
           { id: 'p', label: '硅酸盐水泥', leaf: true },
-          { id: 'po', label: '普通硅酸盐水泥', leaf: true },
-          { id: 'ps', label: '矿渣硅酸盐水泥', leaf: true },
-          { id: 'pf', label: '粉煤灰硅酸盐水泥', leaf: true },
-          { id: 'pp', label: '火山灰质硅酸盐水泥', leaf: true },
-          { id: 'pc', label: 'P·C复合硅酸盐水泥', leaf: true }
+          { id: 'po', label: '普通硅酸盐水泥', leaf: true }
         ]}
       ]}
     ];
     var TREE_HJJC = [];
     var TREES = { dlwz: TREE_DLWZ, aqgqj: TREE_AQGQJ, hjjc: TREE_HJJC, gcjc: TREE_GCJC };
 
+    var SAMPLE_MOCK = {
+      'cu6-3c': {
+        name: '10kV3芯电力电缆',
+        code: '',
+        sort: 1,
+        category: '电力电缆类 / 额定电压 6kV-30kV',
+        standard: 'GBT 12706.2-2020',
+        fee: '',
+        cycle: 5,
+        diffModel: '是',
+        unit: '根',
+        remark: 'YJV、YJY、YJV22、YJV23',
+        isCable: true,
+        cableStruct: '多芯',
+        cores: '3芯',
+        coreColor: '绝缘分色',
+        phases: ['红', '黄', '绿'],
+        sampleSpecs: [
+          { name: '导体标称截面积', symbol: 'S', unit: 'mm²' },
+          { name: '额定电压', symbol: 'Uo/U(Um)', unit: 'kV' }
+        ],
+        markRule: '[型号信息.型号][ - ][规格参数.额定电压.值][空格][样品信息.是否电缆.芯数][X][规格参数.导体标称截面积.值][空格][样品信息.标准号]',
+        models: [
+          {
+            code: 'YJV',
+            name: '交联聚乙烯绝缘聚氯乙烯护套电力电缆',
+            sort: 1,
+            cycle: 5,
+            desc: '铜带屏蔽，无铠装层。',
+            specs: [
+              {
+                title: '规格参数1:导体标称截面积S (mm²)',
+                type: '用户选择',
+                options: ['25','35','50','70','95','120','150','185','240','300','400','500','630','800','1000']
+              },
+              {
+                title: '规格参数2:额定电压Uo/U(Um) (kV)',
+                type: '用户选择',
+                options: ['8.7/10']
+              }
+            ],
+            tests: [
+              { name: '导体直流电阻', quality: '', category: '抽样试验', basis: 'GBT 3956-2008', req: '20℃时，导体直流电阻应符合标准要求', on: true },
+              { name: '结构尺寸检查', quality: '', category: '型式检验', basis: 'GBT 12706.2-2020', req: '绝缘厚度、外护套厚度等符合标准', on: true },
+              { name: '老化前绝缘的机械性能', quality: '', category: '型式检验', basis: 'GBT 2951.11-2008', req: '老化前：抗张强度中间值≥12.5 N/mm²', on: true },
+              { name: '非金属护套老化前机械性能', quality: '', category: '型式检验', basis: 'GBT 2951.11-2008', req: '抗张强度中间值≥12.5 N/mm²；断裂伸长率中间值≥150%', on: true },
+              { name: 'XLPE绝缘的热延伸试验', quality: '', category: '型式检验', basis: 'GBT 2951.21-2008', req: '负荷下伸长率 ≤ 175%；冷却后永久伸长率 ≤ 15%', on: true },
+              { name: '结构尺寸检查（铜带屏蔽）', quality: '', category: '抽样试验', basis: 'GBT 12706.2-2020', req: '铜带屏蔽：搭盖率平均值≥15%', on: true },
+              { name: '局部放电试验', quality: '', category: '型式检验', basis: 'GBT 3048.12-2007', req: '在规定电压下局部放电量不超过标准限值', on: true },
+              { name: '4h电压试验', quality: '', category: '型式检验', basis: 'GBT 12706.2-2020', req: '施加规定电压 4h 不击穿', on: true }
+            ],
+            judges: [
+              { category: '例行试验', scheme: '规则判定方案-简单合格/不合格判定' },
+              { category: '出厂检验', scheme: '规则判定方案-简单合格/不合格判定' },
+              { category: '抽样试验', scheme: '规则判定方案-简单合格/不合格判定' },
+              { category: '型式检验', scheme: '规则判定方案-简单合格/不合格判定' }
+            ]
+          },
+          {
+            code: 'YJV22',
+            name: '交联聚乙烯绝缘钢带铠装聚氯乙烯护套电力电缆',
+            sort: 2,
+            cycle: 5,
+            desc: '铜带屏蔽，钢带铠装。',
+            specs: [
+              {
+                title: '规格参数1:导体标称截面积S (mm²)',
+                type: '用户选择',
+                options: ['25','35','50','70','95','120','150','185','240','300','400']
+              },
+              {
+                title: '规格参数2:额定电压Uo/U(Um) (kV)',
+                type: '用户选择',
+                options: ['8.7/10']
+              }
+            ],
+            tests: [
+              { name: '导体直流电阻', quality: '', category: '抽样试验', basis: 'GBT 3956-2008', req: '20℃时，导体直流电阻应符合标准要求', on: true },
+              { name: '结构尺寸检查', quality: '', category: '型式检验', basis: 'GBT 12706.2-2020', req: '铠装层、护套厚度符合标准', on: true }
+            ],
+            judges: [
+              { category: '例行试验', scheme: '规则判定方案-简单合格/不合格判定' },
+              { category: '抽样试验', scheme: '规则判定方案-简单合格/不合格判定' },
+              { category: '型式检验', scheme: '规则判定方案-简单合格/不合格判定' }
+            ]
+          }
+        ]
+      },
+      'cu6-1c': {
+        name: '10kV单芯电力电缆',
+        code: '',
+        sort: 2,
+        category: '电力电缆类 / 额定电压 6kV-30kV',
+        standard: 'GBT 12706.2-2020',
+        fee: '',
+        cycle: 5,
+        diffModel: '否',
+        unit: '',
+        remark: '',
+        isCable: false,
+        cableStruct: '单芯',
+        cores: '1芯',
+        coreColor: '绝缘分色',
+        phases: [],
+        sampleSpecs: [],
+        markRule: '',
+        models: [],
+        tests: [],
+        judges: []
+      }
+    };
+
+    function defaultSample(label) {
+      return {
+        name: label,
+        code: '',
+        sort: 1,
+        category: CAT_META[state.cat].name,
+        standard: '-',
+        fee: '',
+        cycle: 12,
+        diffModel: '否',
+        unit: '',
+        remark: '',
+        isCable: false,
+        cableStruct: '多芯',
+        cores: '3芯',
+        coreColor: '绝缘分色',
+        phases: [],
+        sampleSpecs: [],
+        markRule: '',
+        models: [],
+        tests: [],
+        judges: []
+      };
+    }
+
     var params = new URLSearchParams(window.location.search);
     var cat = params.get('cat') || 'dlwz';
     if (!CAT_META[cat]) cat = 'dlwz';
 
-    var dictTypes = MockDictStore.load();
-    var fieldSections = EntrustFieldConfig.load();
-    var uidSeq = 1000;
-    function uid(prefix) { return (prefix || 'id') + '_' + (++uidSeq); }
-    function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+    var state = {
+      cat: cat,
+      selectedId: null,
+      selectedIsLeaf: false,
+      openIds: {},
+      sampleSpecIdx: 0,
+      modelIdx: 0
+    };
+
     function toast(msg) { alert(msg); }
+    function goBack() { window.location.href = 'sample-data.html'; }
 
-    function detectCategoryField() {
-      return EntrustFieldConfig.findField(fieldSections, 'detectNature');
+    function goReportJudgment() {
+      window.location.href = 'report-judgment.html?cat=' + encodeURIComponent(state.cat) +
+        (state.selectedId ? '&sample=' + encodeURIComponent(state.selectedId) : '');
     }
 
-    function detectCategoryLabel() {
-      var f = detectCategoryField();
-      return (f && (f.placeholder || f.label)) || '检测类别';
+    function collectOpenIds(nodes) {
+      (nodes || []).forEach(function (n) {
+        if (n.open) state.openIds[n.id] = true;
+        if (n.children) collectOpenIds(n.children);
+      });
     }
 
-    function detectCategoryDictType() {
-      var f = detectCategoryField();
-      return (f && f.dictType) || 'lims_detect_category';
-    }
-
-    function applyDetectCategoryLabels() {
-      var label = detectCategoryLabel();
-      var tip = '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span>';
-      document.getElementById('thDetectCategory').textContent = label;
-      document.getElementById('lblDetectCategory').innerHTML = '<span class="req">*</span>' + label + tip;
-      var cfgLbl = document.getElementById('c_lblDetectCategory');
-      if (cfgLbl) cfgLbl.innerHTML = label + tip;
-    }
-
-    function fillDictSelect(sel, type, keepEmpty) {
-      var items = MockDictStore.getActiveItems(dictTypes, type);
-      var html = keepEmpty ? '<option value="">请选择</option>' : '';
-      html += items.map(function (it) {
-        return '<option value="' + it.value + '">' + it.label + '</option>';
-      }).join('');
-      sel.innerHTML = html || '<option value="">暂无选项</option>';
-    }
-
-    function makeItem(partial) {
-      return Object.assign({
-        id: uid('di'), code: uid('DIC'), type: '文字', name: '', defaultValue: '', unit: '',
-        testCount: '1', decimals: '', min: '', max: '', required: false, hidden: false, options: []
-      }, partial || {});
-    }
-
-    function makeTest(partial) {
-      return Object.assign({
-        id: uid('test'), code: uid('TST'), name: '', basis: ['DLT 976-2017'], judge: ['DLT 976-2017'],
-        detectCategory: 'routine', sampleCatCode: '', colors: [], needPrepare: '否', sampleQty: 1,
-        fee: 40, equip: [], sort: 1, remark: '',
-        stdReq: [],
-        items: []
-      }, partial || {});
-    }
-
-    function makeRecheck(mode, value) {
-      return { mode: mode === '文本' ? '文本' : '数值', value: value == null ? '' : String(value) };
-    }
-
-    function normalizeRecheck(raw) {
-      if (raw && typeof raw === 'object') return makeRecheck(raw.mode, raw.value);
-      if (raw === '' || raw == null) return makeRecheck('数值', '');
-      return makeRecheck('数值', raw);
-    }
-
-    function formatRecheck(raw) {
-      var r = normalizeRecheck(raw);
-      if (!r.value) return '';
-      return r.mode === '数值' ? (r.value + ' 月') : r.value;
-    }
-
-    var recheckUiCache = { b: { num: '12', text: '' }, m: { num: '', text: '' } };
-
-    function onRecheckModeChange(prefix, opts) {
-      opts = opts || {};
-      var mode = document.getElementById(prefix + '_recheckMode').value;
-      var numEl = document.getElementById(prefix + '_recheckNum');
-      var numWrap = document.getElementById(prefix + '_recheckNumWrap');
-      var textEl = document.getElementById(prefix + '_recheckText');
-      var tip = document.getElementById(prefix + '_recheckTip');
-      if (!recheckUiCache[prefix]) recheckUiCache[prefix] = { num: '', text: '' };
-      if (mode === '数值') {
-        // 切回数值：展示步进器 +「月」，不把文本带入
-        if (numWrap) numWrap.classList.remove('hidden');
-        else numEl.classList.remove('hidden');
-        textEl.classList.add('hidden');
-        if (!opts.keepValues) {
-          numEl.value = recheckUiCache[prefix].num || '';
-          textEl.value = '';
-        }
-        tip.textContent = '数值：合格证再检日期 = 检测日期 + 再检周期（月）-1（天）';
-      } else {
-        // 切换到文本：隐藏步进器，文本框不展示之前的数值
-        if (!opts.keepValues) {
-          recheckUiCache[prefix].num = numEl.value;
-          textEl.value = '';
-        }
-        if (numWrap) numWrap.classList.add('hidden');
-        else numEl.classList.add('hidden');
-        textEl.classList.remove('hidden');
-        tip.textContent = '文本：无固定再检日期，该文字直接展示在合格证上';
-      }
-    }
-
-    function stepRecheckNum(prefix, delta) {
-      var el = document.getElementById(prefix + '_recheckNum');
-      if (!el || el.closest('.hidden')) return;
-      var n = parseInt(el.value, 10);
-      if (isNaN(n)) n = 0;
-      n = Math.max(0, n + delta);
-      el.value = String(n);
-      if (!recheckUiCache[prefix]) recheckUiCache[prefix] = { num: '', text: '' };
-      recheckUiCache[prefix].num = el.value;
-    }
-
-    function readRecheckFromForm(prefix) {
-      var mode = document.getElementById(prefix + '_recheckMode').value;
-      var value = mode === '数值'
-        ? String(document.getElementById(prefix + '_recheckNum').value || '').trim()
-        : document.getElementById(prefix + '_recheckText').value.trim();
-      if (mode === '数值' && value && !/^\d+(\.\d+)?$/.test(value)) return null;
-      if (mode === '数值') recheckUiCache[prefix].num = value;
-      else recheckUiCache[prefix].text = value;
-      return makeRecheck(mode, value);
-    }
-
-    function writeRecheckToForm(prefix, raw) {
-      var r = normalizeRecheck(raw);
-      document.getElementById(prefix + '_recheckMode').value = r.mode;
-      var numEl = document.getElementById(prefix + '_recheckNum');
-      var textEl = document.getElementById(prefix + '_recheckText');
-      if (r.mode === '数值') {
-        recheckUiCache[prefix] = { num: r.value, text: '' };
-        numEl.value = r.value;
-        textEl.value = '';
-      } else {
-        recheckUiCache[prefix] = { num: '', text: r.value };
-        numEl.value = '';
-        textEl.value = r.value;
-      }
-      onRecheckModeChange(prefix, { keepValues: true });
-    }
-
-    function makeFile(name) {
-      return { id: uid('file'), name: name };
-    }
-
-    function renderFileList(containerId, files, kind, ownerKey) {
-      var el = document.getElementById(containerId);
-      if (!el) return;
-      files = files || [];
-      var html = files.map(function (f, idx) {
-        if (kind === 'image') {
-          return '<div class="img-thumb">' + esc(f.name) +
-            '<span class="rm" title="删除" onclick="removeUploadFile(\'' + ownerKey + '\',\'image\',' + idx + ')">×</span></div>';
-        }
-        return '<div class="file-chip"><a class="file-link" href="javascript:void(0)" onclick="downloadFile(\'' + esc(f.name) + '\')">' + esc(f.name) + '</a>' +
-          '<span class="rm" title="删除" onclick="removeUploadFile(\'' + ownerKey + '\',\'file\',' + idx + ')">×</span></div>';
-      }).join('');
-      html += '<div class="upload-box" onclick="addUploadFile(\'' + ownerKey + '\',\'' + (kind === 'image' ? 'image' : 'file') + '\')">' +
-        '<i class="fa fa-plus mb-1"></i>' + (kind === 'image' ? '添加图片' : '添加附件') + '</div>';
-      el.innerHTML = html;
-    }
-
-    function getUploadOwner(ownerKey) {
-      var sample = currentSample();
-      if (!sample) return null;
-      if (ownerKey === 'basic') {
-        if (!sample.basic.images) sample.basic.images = [];
-        if (!sample.basic.attachments) sample.basic.attachments = [];
-        return sample.basic;
-      }
-      if (ownerKey.indexOf('model:') === 0) {
-        var mid = ownerKey.slice(6);
-        var m = sample.models.find(function (x) { return x.id === mid; });
-        if (!m) return null;
-        if (!m.images) m.images = [];
-        if (!m.attachments) m.attachments = [];
-        return m;
-      }
-      if (ownerKey === 'modelDraft') {
-        if (!state.modelDraft) state.modelDraft = { images: [], attachments: [] };
-        return state.modelDraft;
+    function findFirstLeaf(nodes) {
+      for (var i = 0; i < (nodes || []).length; i++) {
+        var n = nodes[i];
+        if (n.leaf) return n.id;
+        var child = findFirstLeaf(n.children);
+        if (child) return child;
       }
       return null;
     }
 
-    function addUploadFile(ownerKey, kind) {
-      var owner = getUploadOwner(ownerKey);
-      if (!owner) return;
-      var name = kind === 'image'
-        ? ('图片' + ((owner.images || []).length + 1) + '.jpg')
-        : ('附件' + ((owner.attachments || []).length + 1) + '.pdf');
-      if (kind === 'image') owner.images.push(makeFile(name));
-      else owner.attachments.push(makeFile(name));
-      refreshUploadLists(ownerKey);
-    }
-
-    function removeUploadFile(ownerKey, kind, idx) {
-      var owner = getUploadOwner(ownerKey);
-      if (!owner) return;
-      if (kind === 'image') owner.images.splice(idx, 1);
-      else owner.attachments.splice(idx, 1);
-      refreshUploadLists(ownerKey);
-      if (ownerKey.indexOf('model:') === 0 || ownerKey === 'basic') renderModelTable();
-    }
-
-    function refreshUploadLists(ownerKey) {
-      var owner = getUploadOwner(ownerKey);
-      if (!owner) return;
-      if (ownerKey === 'basic') {
-        renderFileList('b_images', owner.images, 'image', 'basic');
-        renderFileList('b_attachments', owner.attachments, 'file', 'basic');
-      } else if (ownerKey === 'modelDraft' || ownerKey.indexOf('model:') === 0) {
-        renderFileList('m_images', owner.images, 'image', ownerKey);
-        renderFileList('m_attachments', owner.attachments, 'file', ownerKey);
-      }
-    }
-
-    function downloadFile(name) {
-      toast('原型：下载「' + name + '」');
-    }
-
-    function makeModel(partial) {
-      return Object.assign({
-        id: uid('model'), name: '', sort: 1, recheck: makeRecheck('数值', ''), unit: '', desc: '',
-        images: [], attachments: [],
-        linkedTestIds: [], overrides: {}
-      }, partial || {});
-    }
-
-    function emptySample(label, categoryLabel) {
-      return {
-        basic: {
-          category: categoryLabel || '',
-          name: label || '',
-          sort: 1,
-          needPrepare: '否',
-          recheck: makeRecheck('数值', '12'),
-          unit: '',
-          desc: '',
-          images: [],
-          attachments: []
-        },
-        models: [],
-        tests: []
-      };
-    }
-
-    function seedRod() {
-      var t1 = makeTest({
-        id: 't_ac', code: 'TST_AC', name: '交流耐压试验', detectCategory: 'routine',
-        basis: ['DLT 976-2017'], judge: ['DLT 976-2017'], colors: ['yellow'], needPrepare: '否',
-        fee: 40, equip: ['eq_yfg150'], sort: 1,
-        stdReq: [
-          { type: 'field', value: '标称值', sep: '/' },
-          { type: 'field', value: '试验值', sep: '' },
-          { type: 'text', value: '，应无击穿、无闪络、无过热', sep: '' }
-        ],
-        items: [
-          makeItem({ id: 'di1', code: 'DIC1', type: '数字', name: '标称值', defaultValue: '', unit: 'kV', required: true }),
-          makeItem({ id: 'di2', code: 'DIC2', type: '数字', name: '试验值', unit: 'kV', required: true }),
-          makeItem({ id: 'di3', code: 'DIC3', type: '数字', name: '时间', unit: 'min', defaultValue: '1' }),
-          makeItem({ id: 'di4', code: 'DIC4', type: '文字', name: '结论', required: true }),
-          makeItem({ id: 'di5', code: 'DIC5', type: '数字', name: '试验电极间距离', unit: 'm', defaultValue: '', hidden: true })
-        ]
-      });
-      var t2 = makeTest({
-        id: 't_look', code: 'TST_LOOK', name: '外观及尺寸', detectCategory: 'routine', sort: 2, fee: 20,
-        needPrepare: '否',
-        items: [
-          makeItem({ id: 'di6', code: 'DIC6', type: '文字', name: '外观描述', required: true }),
-          makeItem({ id: 'di7', code: 'DIC7', type: '下拉', name: '状态', options: ['合格', '不合格'], required: true })
-        ]
-      });
-      var t3 = makeTest({
-        id: 't_bend', code: 'TST_BEND', name: '挠度载荷', detectCategory: 'type', sort: 3, fee: 30, needPrepare: '是', sampleQty: 1,
-        items: [makeItem({ id: 'di8', code: 'DIC8', type: '数字', name: '载荷值', unit: 'N', required: true })]
-      });
-      var m1 = makeModel({
-        id: 'm_10', name: '10kV', sort: 1, recheck: makeRecheck('数值', '12'), unit: '根', desc: '',
-        attachments: [makeFile('10kV说明书.pdf'), makeFile('10kV型式报告.pdf')],
-        images: [makeFile('10kV外观.jpg')],
-        linkedTestIds: ['t_ac', 't_look'],
-        overrides: {
-          t_ac: {
-            values: { fee: 40 },
-            items: { di1: { defaultValue: '10' } }
-          }
-        }
-      });
-      var m2 = makeModel({
-        id: 'm_20', name: '20kV', sort: 2, recheck: makeRecheck('数值', '12'), unit: '根',
-        attachments: [makeFile('20kV技术规格.docx')],
-        images: [],
-        linkedTestIds: ['t_ac', 't_look', 't_bend'],
-        overrides: {
-          t_ac: { items: { di1: { defaultValue: '20' } } },
-          t_bend: { values: { needPrepare: '是', sampleQty: 2 } }
-        }
-      });
-      return {
-        basic: {
-          category: 'DLT 976-2017', name: '绝缘操作杆', sort: 1, needPrepare: '是',
-          recheck: makeRecheck('数值', '12'), unit: '根',
-          desc: '带电作业用绝缘操作杆',
-          images: [makeFile('样品正面.jpg'), makeFile('样品侧面.jpg')],
-          attachments: [makeFile('样品技术要求.pdf')]
-        },
-        models: [m1, m2],
-        tests: [t1, t2, t3]
-      };
-    }
-
-    function seedBelt976() {
-      return {
-        basic: {
-          category: 'DLT 976-2017', name: '安全带', sort: 3, needPrepare: '否',
-          recheck: makeRecheck('文本', '按使用说明书要求再检'), unit: '条', desc: '',
-          images: [], attachments: []
-        },
-        models: [],
-        tests: [
-          makeTest({
-            id: 't_belt_look', name: '外观检查', detectCategory: 'routine', sort: 1, fee: 15,
-            items: [makeItem({ name: '外观结论', type: '下拉', options: ['合格', '不合格'], required: true })]
-          })
-        ]
-      };
-    }
-
-    var SAMPLE_STORE = {
-      rod: seedRod(),
-      belt976: seedBelt976()
-    };
-
-    var state = {
-      cat: cat,
-      selectedId: cat === 'dlwz' ? 'cu6-3c' : (cat === 'aqgqj' ? 'rod' : (cat === 'gcjc' ? 'p' : null)),
-      selectedIsLeaf: true,
-      openIds: {},
-      activeTab: 'basic',
-      editingTestId: null,
-      editingModelId: null,
-      overrideMode: false,
-      overrideModelId: null,
-      pendingNewTestId: null,
-      draft: null,
-      modelDraft: null,
-      cfgPendingIds: [],
-      cfgEditingTestId: null,
-      cfgDraftItems: [],
-      stdSegs: [],
-      draftItems: []
-    };
-
-    function collectOpen(nodes) {
-      (nodes || []).forEach(function (n) {
-        if (n.open) state.openIds[n.id] = true;
-        if (n.children) collectOpen(n.children);
-      });
-    }
-    collectOpen(TREES[cat]);
-
-    document.getElementById('catTitle').textContent = CAT_META[cat].name;
-    document.getElementById('tabCatName').textContent = CAT_META[cat].name;
-
     function findNode(nodes, id) {
       for (var i = 0; i < (nodes || []).length; i++) {
-        if (nodes[i].id === id) return nodes[i];
-        var c = findNode(nodes[i].children, id);
+        var n = nodes[i];
+        if (n.id === id) return n;
+        var c = findNode(n.children, id);
         if (c) return c;
       }
       return null;
     }
 
-    function findParentLabel(nodes, id, parentLabel) {
-      for (var i = 0; i < (nodes || []).length; i++) {
-        var n = nodes[i];
-        if (n.id === id) return parentLabel || '';
-        if (n.children) {
-          var hit = findParentLabel(n.children, id, n.label);
-          if (hit !== null && hit !== undefined && (n.children.some(function (c) { return c.id === id; }) || findNode(n.children, id))) {
-            if (n.children.some(function (c) { return c.id === id; })) return n.label;
-            var deeper = findParentLabel(n.children, id, n.label);
-            if (deeper) return deeper;
-          }
-        }
-      }
-      return '';
-    }
-
-    function getParentCategory(sampleId) {
-      function walk(nodes, trail) {
-        for (var i = 0; i < (nodes || []).length; i++) {
-          var n = nodes[i];
-          var next = trail.concat(n.label);
-          if (n.id === sampleId) return trail.length ? trail[trail.length - 1] : '';
-          if (n.children) {
-            var r = walk(n.children, next);
-            if (r !== null) return r;
-          }
-        }
-        return null;
-      }
-      return walk(TREES[state.cat], '') || '';
-    }
-
-    function ensureSample(id) {
-      if (!SAMPLE_STORE[id]) {
-        var node = findNode(TREES[state.cat], id);
-        SAMPLE_STORE[id] = emptySample(node ? node.label : id, getParentCategory(id));
-      }
-      return SAMPLE_STORE[id];
-    }
-
-    function currentSample() {
-      if (!state.selectedId || !state.selectedIsLeaf) return null;
-      return ensureSample(state.selectedId);
-    }
-
-    function matchKw(n, kw) {
+    function matchKw(node, kw) {
       if (!kw) return true;
-      if ((n.label || '').toLowerCase().indexOf(kw) >= 0) return true;
-      return (n.children || []).some(function (c) { return matchKw(c, kw); });
+      if ((node.label || '').toLowerCase().indexOf(kw) >= 0) return true;
+      return (node.children || []).some(function (c) { return matchKw(c, kw); });
     }
 
     function renderNodes(nodes, depth, kw) {
       var html = '';
       (nodes || []).forEach(function (n) {
-        if (kw && !matchKw(n, kw)) return;
-        var hasChild = n.children && n.children.length;
-        var isLeaf = !!n.leaf && !hasChild;
+        if (!matchKw(n, kw)) return;
+        var pad = 12 + depth * 16;
         var isOpen = !!state.openIds[n.id];
-        var pad = depth * 16 + 12;
-        var active = (state.selectedId === n.id) ? ' active' : '';
-        var toggle = hasChild
-          ? '<span class="tree-toggle" onclick="toggleNode(event,\'' + n.id + '\')">' + (isOpen ? '▼' : '▶') + '</span>'
-          : '<span class="tree-toggle"></span>';
-        var cls = 'tree-node' + active + (!isLeaf ? ' branch' : '');
-        var click = isLeaf
-          ? 'onclick="selectLeaf(\'' + n.id + '\')"'
-          : 'onclick="selectBranch(\'' + n.id + '\')"';
-        html += '<div class="' + cls + '" style="padding-left:' + pad + 'px" ' + click + '>' +
-          toggle + '<span class="tree-label">' + n.label + '</span></div>';
-        if (hasChild && isOpen) html += renderNodes(n.children, depth + 1, kw);
+        var hasChildren = !!(n.children && n.children.length);
+        var active = state.selectedId === n.id ? ' active' : '';
+        if (n.leaf) {
+          html += '<div class="tree-node' + active + '" style="padding-left:' + pad + 'px" onclick="selectLeaf(\'' + n.id + '\')">' +
+            '<span class="tree-toggle"></span><span>' + n.label + '</span></div>';
+        } else {
+          html += '<div class="tree-node' + active + '" style="padding-left:' + pad + 'px" onclick="selectBranch(\'' + n.id + '\')">' +
+            '<span class="tree-toggle" onclick="toggleNode(event,\'' + n.id + '\')">' + (hasChildren ? (isOpen ? '▼' : '▶') : '') + '</span>' +
+            '<span>' + n.label + '</span></div>';
+          if (hasChildren && (isOpen || kw)) html += renderNodes(n.children, depth + 1, kw);
+        }
       });
       return html;
     }
@@ -1206,8 +816,8 @@
     function selectLeaf(id) {
       state.selectedId = id;
       state.selectedIsLeaf = true;
-      state.activeTab = 'basic';
-      hideSyncTip();
+      state.sampleSpecIdx = 0;
+      state.modelIdx = 0;
       renderTree();
       renderWorkspace();
     }
@@ -1215,1484 +825,311 @@
     function selectBranch(id) {
       state.selectedId = id;
       state.selectedIsLeaf = false;
-      hideSyncTip();
       renderTree();
       renderWorkspace();
     }
 
-    function goBack() { window.location.href = 'sample-data.html'; }
+    function currentSample() {
+      var node = findNode(TREES[state.cat], state.selectedId);
+      var label = node ? node.label : '-';
+      return SAMPLE_MOCK[state.selectedId] || defaultSample(label);
+    }
 
-    function switchTab(tab) {
-      state.activeTab = tab;
-      document.querySelectorAll('.param-tab').forEach(function (el) {
-        el.classList.toggle('active', el.getAttribute('data-tab') === tab);
+    function currentModel(sample) {
+      sample = sample || currentSample();
+      if (!sample.models || !sample.models.length) return null;
+      if (state.modelIdx >= sample.models.length) state.modelIdx = 0;
+      return sample.models[state.modelIdx];
+    }
+
+    function setDiffModelMode(show) {
+      document.querySelectorAll('.model-only').forEach(function (el) {
+        el.classList.toggle('hidden', !show);
       });
-      document.querySelectorAll('.param-panel').forEach(function (el) {
-        el.classList.toggle('active', el.id === 'panel-' + tab);
+      document.getElementById('modelScopePanel').classList.toggle('is-model', !!show);
+    }
+
+    function onDiffModelChange() {
+      var show = document.getElementById('b_diffModel').value === '是';
+      setDiffModelMode(show);
+      renderSharedPanels(currentSample());
+      if (show) renderModelPanel(currentSample());
+      else document.getElementById('modelScopeName').textContent = '-';
+    }
+
+    function onCableToggle() {
+      var on = document.getElementById('b_isCable').checked;
+      document.querySelectorAll('.cable-only').forEach(function (el) {
+        el.classList.toggle('hidden', !on);
       });
-      if (tab === 'model') renderModelTable();
-      if (tab === 'test') renderTestTable();
-      refreshAnnotations();
     }
 
-    function openModal(id) { document.getElementById(id).classList.add('open'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-    function hideSyncTip() {
-      var el = document.getElementById('syncTip');
-      el.style.display = 'none';
-      el.textContent = '';
+    function fillSelect(sel, values, selected) {
+      sel.innerHTML = values.map(function (v) {
+        return '<option value="' + v + '"' + (v === selected ? ' selected' : '') + '>' + v + '</option>';
+      }).join('');
     }
 
-    function showSyncTip(msg) {
-      var el = document.getElementById('syncTip');
-      el.style.display = 'block';
-      el.textContent = msg;
+    function renderSampleSpecTabs(sample) {
+      var specs = sample.sampleSpecs || [];
+      var hasSpecs = specs.length > 0;
+      document.getElementById('sampleSpecBody').classList.toggle('hidden', !hasSpecs);
+      document.getElementById('sampleSpecActions').classList.toggle('hidden', !hasSpecs);
+      if (!hasSpecs) return;
+      if (state.sampleSpecIdx >= specs.length) state.sampleSpecIdx = 0;
+      document.getElementById('sampleSpecTabs').innerHTML = specs.map(function (s, i) {
+        return '<div class="spec-tab' + (i === state.sampleSpecIdx ? ' active' : '') + '" onclick="switchSampleSpec(' + i + ')">规格参数' + (i + 1) + '</div>';
+      }).join('');
+      var cur = specs[state.sampleSpecIdx];
+      document.getElementById('ss_name').value = cur.name || '';
+      document.getElementById('ss_symbol').value = cur.symbol || '';
+      document.getElementById('ss_unit').value = cur.unit || '';
     }
 
-    function refreshAnnotations() {
-      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) {
-        requestAnimationFrame(function () { PrototypeAnnotation.refresh(); });
+    function switchSampleSpec(idx) {
+      var sample = currentSample();
+      if (SAMPLE_MOCK[state.selectedId] && SAMPLE_MOCK[state.selectedId].sampleSpecs && SAMPLE_MOCK[state.selectedId].sampleSpecs[state.sampleSpecIdx]) {
+        SAMPLE_MOCK[state.selectedId].sampleSpecs[state.sampleSpecIdx] = {
+          name: document.getElementById('ss_name').value,
+          symbol: document.getElementById('ss_symbol').value,
+          unit: document.getElementById('ss_unit').value
+        };
       }
+      state.sampleSpecIdx = idx;
+      renderSampleSpecTabs(sample);
+    }
+
+    function renderModelTabs(sample) {
+      var models = sample.models || [];
+      document.getElementById('modelTabs').innerHTML = models.map(function (m, i) {
+        return '<div class="model-chip' + (i === state.modelIdx ? ' active' : '') + '" onclick="switchModel(' + i + ')">' + m.code + '</div>';
+      }).join('') || '<span class="text-sm text-slate-400">暂无型号，请点击 + 新增</span>';
+    }
+
+    function switchModel(idx) {
+      state.modelIdx = idx;
+      var sample = currentSample();
+      renderModelPanel(sample);
+      renderSharedPanels(sample);
+    }
+
+    function renderModelSpecCards(model) {
+      var specs = (model && model.specs) || [];
+      document.getElementById('modelSpecCards').innerHTML = specs.map(function (sp, idx) {
+        var isSelect = sp.type === '用户选择';
+        var name = 'modelSpecType_' + idx;
+        return '<div class="param-card" data-spec-idx="' + idx + '">' +
+          '<div class="param-card-head"><span>' + sp.title + '</span>' +
+          '<div class="ops"><i class="fa fa-check-square" title="确认"></i><i class="fa fa-copy" title="复制"></i><i class="fa fa-trash" title="删除"></i></div></div>' +
+          '<div class="form-item"><label><span class="req">*</span>类型</label>' +
+          '<div class="radio-row">' +
+          '<label><input type="radio" name="' + name + '" value="用户输入" ' + (!isSelect ? 'checked' : '') +
+          ' onchange="onModelSpecTypeChange(' + idx + ',\'用户输入\')" /> 用户输入</label>' +
+          '<label><input type="radio" name="' + name + '" value="用户选择" ' + (isSelect ? 'checked' : '') +
+          ' onchange="onModelSpecTypeChange(' + idx + ',\'用户选择\')" /> 用户选择</label>' +
+          '</div></div>' +
+          '<div class="form-item mt-3 model-spec-options"' + (isSelect ? '' : ' style="display:none"') + '>' +
+          '<label><span class="req">*</span>可选项</label>' +
+          '<div class="option-tags">' + (sp.options || []).map(function (o) {
+            return '<span class="option-tag">' + o + ' <i class="fa fa-times rm"></i></span>';
+          }).join('') + '</div></div></div>';
+      }).join('') || '<div class="text-sm text-slate-400">暂无规格参数配置</div>';
+    }
+
+    function onModelSpecTypeChange(idx, type) {
+      var sample = currentSample();
+      var model = currentModel(sample);
+      if (!model || !model.specs || !model.specs[idx]) return;
+      model.specs[idx].type = type;
+      // 同步回 mock，便于切换型号后保留
+      if (SAMPLE_MOCK[state.selectedId] && SAMPLE_MOCK[state.selectedId].models) {
+        SAMPLE_MOCK[state.selectedId].models[state.modelIdx] = model;
+      }
+      renderModelSpecCards(model);
+    }
+
+    function emptyTableRow(colspan, text) {
+      return '<tr><td colspan="' + colspan + '"><div class="empty-table"><i class="fa fa-inbox"></i>' + (text || '暂无数据') + '</div></td></tr>';
+    }
+
+    function renderTests(tests) {
+      tests = tests || [];
+      document.getElementById('testTotal').textContent = String(tests.length);
+      document.getElementById('testPager').style.display = tests.length ? '' : 'none';
+      document.getElementById('testTableBody').innerHTML = tests.map(function (t, i) {
+        return '<tr>' +
+          '<td>' + (i + 1) + '</td>' +
+          '<td>' + t.name + '</td>' +
+          '<td>' + (t.quality || '') + '</td>' +
+          '<td><span class="tag">' + t.category + '</span></td>' +
+          '<td>' + t.basis + '</td>' +
+          '<td>' + t.req + '</td>' +
+          '<td><label class="toggle"><input type="checkbox" ' + (t.on ? 'checked' : '') + ' /><span class="toggle-slider"></span></label></td>' +
+          '<td class="whitespace-nowrap">' +
+          '<a class="link mr-2" title="上移"><i class="fa fa-arrow-up"></i></a>' +
+          '<a class="link mr-2" title="下移"><i class="fa fa-arrow-down"></i></a>' +
+          '<a class="link mr-2" onclick="toast(\'编辑试验（原型）\')"><i class="fa fa-pencil"></i> 编辑</a>' +
+          '<a class="link danger" onclick="toast(\'删除试验（原型）\')"><i class="fa fa-trash"></i> 删除</a>' +
+          '</td></tr>';
+      }).join('') || emptyTableRow(8, '暂无数据');
+    }
+
+    function renderJudges(judges) {
+      judges = judges || [];
+      document.getElementById('judgeTableBody').innerHTML = judges.map(function (j, i) {
+        return '<tr>' +
+          '<td>' + (i + 1) + '</td>' +
+          '<td>' + j.category + '</td>' +
+          '<td>' + j.scheme + '</td>' +
+          '<td><a class="link" onclick="toast(\'查看判定详情（原型）\')">详情</a></td>' +
+          '</tr>';
+      }).join('') || emptyTableRow(4, '暂无数据');
+    }
+
+    function renderSharedPanels(sample) {
+      document.getElementById('markRule').value = sample.markRule || '';
+      var diffYes = (document.getElementById('b_diffModel').value || sample.diffModel) === '是';
+      if (diffYes) {
+        var model = currentModel(sample);
+        renderTests(model ? model.tests : []);
+        renderJudges(model ? model.judges : []);
+      } else {
+        renderTests(sample.tests || []);
+        renderJudges(sample.judges || []);
+      }
+    }
+
+    function renderModelPanel(sample) {
+      var model = currentModel(sample);
+      renderModelTabs(sample);
+      if (!model) {
+        document.getElementById('modelScopeName').textContent = '-';
+        document.getElementById('m_code').value = '';
+        document.getElementById('m_name').value = '';
+        document.getElementById('m_sort').value = '';
+        document.getElementById('m_cycle').value = '';
+        document.getElementById('m_desc').value = '';
+        document.getElementById('modelSpecCards').innerHTML = '<div class="text-sm text-slate-400">请先新增型号</div>';
+        return;
+      }
+      document.getElementById('modelScopeName').textContent = model.code || '-';
+      document.getElementById('m_code').value = model.code || '';
+      document.getElementById('m_name').value = model.name || '';
+      document.getElementById('m_sort').value = model.sort || 1;
+      document.getElementById('m_cycle').value = model.cycle || '';
+      document.getElementById('m_desc').value = model.desc || '';
+      renderModelSpecCards(model);
     }
 
     function renderWorkspace() {
-      applyDetectCategoryLabels();
-      var sample = currentSample();
-      if (!sample) {
-        document.getElementById('emptyState').classList.remove('hidden');
-        document.getElementById('sampleWorkspace').classList.add('hidden');
-        refreshAnnotations();
+      var empty = document.getElementById('emptyState');
+      var ws = document.getElementById('sampleWorkspace');
+      if (!state.selectedIsLeaf) {
+        empty.classList.remove('hidden');
+        ws.classList.add('hidden');
         return;
       }
-      document.getElementById('emptyState').classList.add('hidden');
-      document.getElementById('sampleWorkspace').classList.remove('hidden');
-      var node = findNode(TREES[state.cat], state.selectedId);
-      document.getElementById('sampleTitle').textContent = sample.basic.name || (node && node.label) || state.selectedId;
-      fillBasicForm(sample);
-      switchTab(state.activeTab);
-      renderModelTable();
-      renderTestTable();
-    }
+      empty.classList.add('hidden');
+      ws.classList.remove('hidden');
 
-    function fillCategoryOptions(selected) {
-      var sel = document.getElementById('b_category');
-      var opts = [];
-      function walk(nodes) {
-        (nodes || []).forEach(function (n) {
-          if (n.children && n.children.length) {
-            if (!n.leaf) opts.push(n.label);
-            walk(n.children);
-          }
-        });
-      }
-      walk(TREES[state.cat]);
-      opts = opts.filter(function (v, i, a) { return a.indexOf(v) === i; });
-      if (selected && opts.indexOf(selected) < 0) opts.unshift(selected);
-      sel.innerHTML = opts.map(function (o) {
-        return '<option value="' + o + '"' + (o === selected ? ' selected' : '') + '>' + o + '</option>';
-      }).join('');
-    }
-
-    function fillBasicForm(sample) {
-      fillCategoryOptions(sample.basic.category || getParentCategory(state.selectedId));
-      document.getElementById('b_name').value = sample.basic.name || '';
-      document.getElementById('b_sort').value = sample.basic.sort || 1;
-      document.getElementById('b_unit').value = sample.basic.unit || '';
-      document.getElementById('b_needPrepare').value = sample.basic.needPrepare === '是' ? '是' : '否';
-      document.getElementById('b_desc').value = sample.basic.desc || '';
-      writeRecheckToForm('b', sample.basic.recheck);
-      if (!sample.basic.images) sample.basic.images = [];
-      if (!sample.basic.attachments) sample.basic.attachments = [];
-      refreshUploadLists('basic');
-    }
-
-    function saveBasic() {
       var sample = currentSample();
-      if (!sample) return;
-      var name = document.getElementById('b_name').value.trim();
-      var sort = document.getElementById('b_sort').value;
-      var recheck = readRecheckFromForm('b');
-      if (!name || !sort) { toast('请填写必填字段'); return; }
-      if (recheck === null) { toast('再检周期为数值时仅可输入数字'); return; }
-      if (!recheck.value) { toast('请填写再检周期'); return; }
-      sample.basic.category = document.getElementById('b_category').value;
-      sample.basic.name = name;
-      sample.basic.sort = Number(sort);
-      sample.basic.needPrepare = document.getElementById('b_needPrepare').value === '是' ? '是' : '否';
-      sample.basic.recheck = recheck;
-      sample.basic.unit = document.getElementById('b_unit').value.trim();
-      sample.basic.desc = document.getElementById('b_desc').value.trim();
-      document.getElementById('sampleTitle').textContent = name;
-      toast('基本信息已保存');
-    }
-
-    function syncToDa() {
-      toast('已触发同步：将当前样品数据结构推送至直连数采系统（原型演示）');
-    }
-
-    function renderModelTable() {
-      var sample = currentSample();
-      var body = document.getElementById('modelTableBody');
-      if (!sample) { body.innerHTML = ''; return; }
-      if (!sample.models.length) {
-        body.innerHTML = '<tr><td colspan="8" class="text-center text-slate-400 py-8">暂无规格型号，请点击「添加规格型号」</td></tr>';
-        return;
-      }
-      body.innerHTML = sample.models.map(function (m, idx) {
-        var files = (m.attachments || []).map(function (f) {
-          return '<a class="file-link" href="javascript:void(0)" onclick="downloadFile(\'' + esc(f.name) + '\')">' + esc(f.name) + '</a>';
-        }).join('');
-        var fileHtml = files
-          ? ('<div class="file-links">' + files + '</div>')
-          : '<span class="text-slate-400">-</span>';
-        var testNames = (m.linkedTestIds || []).map(function (tid) {
-          var t = sample.tests.find(function (x) { return x.id === tid; });
-          return t ? ('<span class="tag">' + esc(t.name) + '</span>') : '';
-        }).filter(Boolean).join('');
-        var testHtml = testNames
-          ? ('<div class="test-names">' + testNames + '</div>')
-          : '<span class="text-slate-400">未配置</span>';
-        return '<tr>' +
-          '<td class="col-idx">' + (idx + 1) + '</td>' +
-          '<td class="col-name"><div class="cell-ellipsis" title="' + esc(m.name) + '">' + esc(m.name) + '</div></td>' +
-          '<td class="col-recheck">' + esc(formatRecheck(m.recheck)) + '</td>' +
-          '<td class="col-unit">' + esc(m.unit || '') + '</td>' +
-          '<td class="col-desc"><div class="cell-ellipsis" title="' + esc(m.desc || '') + '">' + esc(m.desc || '') + '</div></td>' +
-          '<td class="col-files">' + fileHtml + '</td>' +
-          '<td class="col-tests">' + testHtml + '</td>' +
-          '<td class="col-ops space-x-2 whitespace-nowrap">' +
-            '<button class="text-blue-600 hover:underline" onclick="openModelEdit(\'' + m.id + '\')">编辑</button>' +
-            '<button class="text-blue-600 hover:underline" onclick="openCfgTests(\'' + m.id + '\')">配置试验</button>' +
-            '<button class="text-blue-600 hover:underline" onclick="moveModel(\'' + m.id + '\',-1)" title="上移">↑</button>' +
-            '<button class="text-blue-600 hover:underline" onclick="moveModel(\'' + m.id + '\',1)" title="下移">↓</button>' +
-            '<button class="text-red-500 hover:underline" onclick="deleteModel(\'' + m.id + '\')">删除</button>' +
-          '</td></tr>';
-      }).join('');
-    }
-
-    function renderTestTable() {
-      var sample = currentSample();
-      var body = document.getElementById('testTableBody');
-      if (!sample) { body.innerHTML = ''; return; }
-      if (!sample.tests.length) {
-        body.innerHTML = '<tr><td colspan="7" class="text-center text-slate-400 py-8">暂无默认试验，请手动添加</td></tr>';
-        return;
-      }
-      var catMap = {};
-      MockDictStore.getActiveItems(dictTypes, detectCategoryDictType()).forEach(function (it) { catMap[it.value] = it.label; });
-      body.innerHTML = sample.tests.map(function (t, idx) {
-        var names = (t.items || []).map(function (i) { return i.name; }).filter(Boolean);
-        return '<tr>' +
-          '<td>' + (idx + 1) + '</td>' +
-          '<td>' + esc(t.name) + '</td>' +
-          '<td>' + esc(catMap[t.detectCategory] || t.detectCategory || '') + '</td>' +
-          '<td>' + esc((t.basis || []).join('、')) + '</td>' +
-          '<td><span class="tag" title="' + esc(names.join('，')) + '">' + names.length + ' 项</span></td>' +
-          '<td>' + esc(t.needPrepare || '否') + '</td>' +
-          '<td class="space-x-2 whitespace-nowrap">' +
-            '<button class="text-blue-600 hover:underline" onclick="openTestEdit(\'' + t.id + '\')">编辑</button>' +
-            '<button class="text-blue-600 hover:underline" onclick="moveTest(\'' + t.id + '\',-1)">↑</button>' +
-            '<button class="text-blue-600 hover:underline" onclick="moveTest(\'' + t.id + '\',1)">↓</button>' +
-            '<button class="text-red-500 hover:underline" onclick="deleteTest(\'' + t.id + '\')">删除</button>' +
-          '</td></tr>';
-      }).join('');
-    }
-
-    function esc(s) {
-      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+      document.getElementById('b_name').value = sample.name || '';
+      document.getElementById('b_code').value = sample.code || '';
+      document.getElementById('b_sort').value = sample.sort || 1;
+      fillSelect(document.getElementById('b_category'), [sample.category], sample.category);
+      fillSelect(document.getElementById('b_standard'), [sample.standard], sample.standard);
+      document.getElementById('b_fee').value = sample.fee || '';
+      document.getElementById('b_cycle').value = sample.cycle || '';
+      document.getElementById('b_diffModel').value = sample.diffModel || '否';
+      document.getElementById('b_unit').value = sample.unit || '';
+      document.getElementById('b_remark').value = sample.remark || '';
+      document.getElementById('b_isCable').checked = !!sample.isCable;
+      document.getElementById('b_cores').value = sample.cores || '3芯';
+      document.querySelectorAll('input[name="cableStruct"]').forEach(function (el) {
+        el.checked = el.value === (sample.cableStruct || '多芯');
       });
-    }
-
-    function openModelEdit(id) {
-      state.editingModelId = id || null;
-      document.getElementById('modelModalTitle').textContent = id ? '编辑规格型号' : '添加规格型号';
-      var sample = currentSample();
-      var m = id ? sample.models.find(function (x) { return x.id === id; }) : null;
-      document.getElementById('m_sampleName').value = (sample && sample.basic && sample.basic.name) || document.getElementById('sampleTitle').textContent || '';
-      document.getElementById('m_name').value = m ? m.name : '';
-      document.getElementById('m_sort').value = m ? m.sort : ((sample.models.length || 0) + 1);
-      document.getElementById('m_unit').value = m ? (m.unit || '') : (sample.basic.unit || '');
-      writeRecheckToForm('m', m ? m.recheck : sample.basic.recheck);
-      document.getElementById('m_desc').value = m ? (m.desc || '') : '';
-      if (m) {
-        if (!m.images) m.images = [];
-        if (!m.attachments) m.attachments = [];
-        refreshUploadLists('model:' + m.id);
-      } else {
-        state.modelDraft = { images: [], attachments: [] };
-        refreshUploadLists('modelDraft');
-      }
-      openModal('modelModal');
-    }
-
-    function confirmModelEdit() {
-      var name = document.getElementById('m_name').value.trim();
-      if (!name) { toast('请填写规格型号名称'); return; }
-      var recheck = readRecheckFromForm('m');
-      if (recheck === null) { toast('再检周期为数值时仅可输入数字'); return; }
-      var sample = currentSample();
-      if (state.editingModelId) {
-        var m = sample.models.find(function (x) { return x.id === state.editingModelId; });
-        m.name = name;
-        m.sort = Number(document.getElementById('m_sort').value || 1);
-        m.recheck = recheck;
-        m.unit = document.getElementById('m_unit').value.trim();
-        m.desc = document.getElementById('m_desc').value.trim();
-      } else {
-        var draft = state.modelDraft || { images: [], attachments: [] };
-        sample.models.push(makeModel({
-          name: name,
-          sort: Number(document.getElementById('m_sort').value || 1),
-          recheck: recheck,
-          unit: document.getElementById('m_unit').value.trim(),
-          desc: document.getElementById('m_desc').value.trim(),
-          images: deepClone(draft.images || []),
-          attachments: deepClone(draft.attachments || [])
-        }));
-        state.modelDraft = null;
-      }
-      closeModal('modelModal');
-      renderModelTable();
-    }
-
-    function deleteModel(id) {
-      if (!confirm('确认删除该规格型号？')) return;
-      var sample = currentSample();
-      sample.models = sample.models.filter(function (m) { return m.id !== id; });
-      renderModelTable();
-    }
-
-    function moveModel(id, dir) {
-      var sample = currentSample();
-      var idx = sample.models.findIndex(function (m) { return m.id === id; });
-      var j = idx + dir;
-      if (idx < 0 || j < 0 || j >= sample.models.length) return;
-      var t = sample.models[idx];
-      sample.models[idx] = sample.models[j];
-      sample.models[j] = t;
-      sample.models.forEach(function (m, i) { m.sort = i + 1; });
-      renderModelTable();
-    }
-
-    function openCfgTests(modelId) {
-      state.editingModelId = modelId;
-      state.cfgEditingTestId = null;
-      var sample = currentSample();
-      var model = sample.models.find(function (m) { return m.id === modelId; });
-      state.cfgPendingIds = (model.linkedTestIds || []).slice();
-      var sampleName = (sample.basic && sample.basic.name) || document.getElementById('sampleTitle').textContent || '';
-      document.getElementById('cfgTestTitle').textContent = '配置试验';
-      document.getElementById('cfgTestSub').textContent = '样品：' + sampleName + (model.name ? '　·　规格型号：' + model.name : '');
-      renderCfgChips();
-      renderCfgLinked();
-      clearCfgInlineEdit();
-      openModal('cfgTestModal');
-    }
-
-    function closeCfgDrawer() {
-      clearCfgInlineEdit();
-      closeModal('cfgTestModal');
-    }
-
-    function renderCfgChips() {
-      var sample = currentSample();
-      var box = document.getElementById('cfgTestList');
-      if (!sample.tests.length) {
-        box.innerHTML = '<div class="text-slate-400 text-sm">请先在「试验」Tab 配置默认试验</div>';
-        return;
-      }
-      box.innerHTML = sample.tests.map(function (t) {
-        var on = state.cfgPendingIds.indexOf(t.id) >= 0;
-        return '<label class="chip-check' + (on ? ' on' : '') + '">' +
-          '<input type="checkbox" class="cfg-test-cb" value="' + t.id + '" ' + (on ? 'checked' : '') + ' onchange="onCfgChipChange(\'' + t.id + '\', this.checked)" />' +
-          esc(t.name) + '</label>';
-      }).join('');
-    }
-
-    function onCfgChipChange(testId, checked) {
-      var idx = state.cfgPendingIds.indexOf(testId);
-      if (checked && idx < 0) state.cfgPendingIds.push(testId);
-      if (!checked && idx >= 0) state.cfgPendingIds.splice(idx, 1);
-      if (!checked && state.cfgEditingTestId === testId) clearCfgInlineEdit();
-      renderCfgChips();
-      renderCfgLinked();
-    }
-
-    function effectiveTestForModel(sample, model, testId) {
-      var base = sample.tests.find(function (t) { return t.id === testId; });
-      if (!base) return null;
-      var merged = deepClone(base);
-      var ov = (model.overrides && model.overrides[testId]) || {};
-      Object.assign(merged, ov.values || {});
-      (merged.items || []).forEach(function (it) {
-        if (ov.items && ov.items[it.id]) Object.assign(it, ov.items[it.id]);
+      document.querySelectorAll('input[name="coreColor"]').forEach(function (el) {
+        el.checked = el.value === (sample.coreColor || '绝缘分色');
       });
-      return merged;
+      document.getElementById('b_phases').innerHTML = (sample.phases || []).map(function (p) {
+        return '<span class="phase-tag">' + p + ' <i class="fa fa-times rm"></i></span>';
+      }).join('') || '<span class="text-xs text-slate-400">请选择相别</span>';
+
+      onCableToggle();
+      renderSampleSpecTabs(sample);
+      var diffYes = sample.diffModel === '是';
+      setDiffModelMode(diffYes);
+      if (diffYes) renderModelPanel(sample);
+      else document.getElementById('modelScopeName').textContent = '-';
+      renderSharedPanels(sample);
     }
 
-    function hasModelOverride(model, testId) {
-      var ov = model.overrides && model.overrides[testId];
-      if (!ov) return false;
-      if (ov.values && Object.keys(ov.values).length) return true;
-      if (ov.items && Object.keys(ov.items).some(function (k) { return ov.items[k] && Object.keys(ov.items[k]).length; })) return true;
-      return false;
-    }
-
-    function renderCfgLinked() {
-      var sample = currentSample();
-      var model = sample.models.find(function (m) { return m.id === state.editingModelId; });
-      var body = document.getElementById('cfgLinkedBody');
-      if (!state.cfgPendingIds.length) {
-        body.innerHTML = '<tr><td colspan="4" class="text-center text-slate-400">尚未选择试验</td></tr>';
-        return;
-      }
-      body.innerHTML = state.cfgPendingIds.map(function (tid) {
-        var t = effectiveTestForModel(sample, model, tid);
-        if (!t) return '';
-        var names = (t.items || []).map(function (i) { return i.name; }).filter(Boolean);
-        var full = names.join('，');
-        var active = state.cfgEditingTestId === tid ? ' active' : '';
-        var ovMark = hasModelOverride(model, tid) ? ' <span class="ov-badge">有覆盖</span>' : '';
-        var paramHtml = full
-          ? ('<div class="param-cell" title="' + esc(full) + '">' + esc(full) + '</div>')
-          : '<span class="text-slate-400">-</span>';
-        return '<tr class="cfg-linked-row' + active + '" onclick="selectCfgTest(\'' + tid + '\')">' +
-          '<td>' + esc(t.name) + ovMark + '</td>' +
-          '<td>' + esc(t.needPrepare || '否') + '</td>' +
-          '<td>' + paramHtml + '</td>' +
-          '<td class="space-x-2" onclick="event.stopPropagation()">' +
-            '<button class="text-blue-600 hover:underline" onclick="selectCfgTest(\'' + tid + '\')">编辑</button>' +
-            '<button class="text-red-500 hover:underline" onclick="unlinkCfgTest(\'' + tid + '\')">取消关联</button>' +
-          '</td></tr>';
-      }).join('');
-    }
-
-    function unlinkCfgTest(testId) {
-      // 与取消勾选联动：仅改待保存状态，真正清除覆盖在保存时确认
-      onCfgChipChange(testId, false);
-    }
-
-    function selectCfgTest(testId) {
-      if (state.cfgPendingIds.indexOf(testId) < 0) return;
-      state.cfgEditingTestId = testId;
-      state.overrideMode = true;
-      state.overrideModelId = state.editingModelId;
-      state.editingTestId = testId;
-      var sample = currentSample();
-      var model = sample.models.find(function (m) { return m.id === state.editingModelId; });
-      var data = effectiveTestForModel(sample, model, testId);
-      state.cfgDraftItems = deepClone((data && data.items) || []);
-      document.getElementById('cfgEditEmpty').classList.add('hidden');
-      document.getElementById('cfgEditPanel').classList.remove('hidden');
-      refreshAnnotations();
-      document.getElementById('cfgEditTitle').textContent = '编辑试验 · ' + (data ? data.name : '');
-      document.getElementById('c_lblDetectCategory').innerHTML = detectCategoryLabel() +
-        '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">选项来自字典管理「检测类别」</span></span>';
-      fillDictSelect(document.getElementById('c_detectCategory'), detectCategoryDictType(), true);
-      document.getElementById('c_name').value = data.name || '';
-      document.getElementById('c_detectCategory').value = data.detectCategory || '';
-      document.getElementById('c_sampleCatCode').value = data.sampleCatCode || '';
-      document.getElementById('c_needPrepare').value = data.needPrepare || '否';
-      document.getElementById('c_sampleQty').value = data.sampleQty || 1;
-      document.getElementById('c_fee').value = data.fee || '';
-      renderEquipMs('c_equipMs', data.equip);
-      document.getElementById('c_remark').value = data.remark || '';
-      toggleCfgSampleQty();
-      renderCfgOverrideBadges(sample.tests.find(function (t) { return t.id === testId; }), model);
-      renderCfgDetectItems();
-      renderCfgLinked();
-      var panel = document.getElementById('cfgEditPanel');
-      if (panel && panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function toggleCfgSampleQty() {
-      var cRow = document.getElementById('c_rowSampleQty');
-      if (cRow) {
-        cRow.style.display = document.getElementById('c_needPrepare').value === '是' ? 'flex' : 'none';
-      }
-    }
-
-    function renderCfgOverrideBadges(base, model) {
-      ['c_detectCategoryOv','c_sampleCatCodeOv','c_needPrepareOv','c_sampleQtyOv','c_feeOv','c_equipOv','c_remarkOv'].forEach(function (id) {
-        var el = document.getElementById(id); if (el) el.innerHTML = '';
-      });
-      if (!base || !model) return;
-      var ov = (model.overrides && model.overrides[state.cfgEditingTestId]) || { values: {} };
-      function badge(targetId, key) {
-        if (!ov.values || ov.values[key] === undefined) return;
-        document.getElementById(targetId).innerHTML = '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600 hover:underline" onclick="restoreCfgOverrideValue(\'' + key + '\')">恢复默认</button>';
-      }
-      badge('c_detectCategoryOv', 'detectCategory');
-      badge('c_sampleCatCodeOv', 'sampleCatCode');
-      badge('c_needPrepareOv', 'needPrepare');
-      badge('c_sampleQtyOv', 'sampleQty');
-      badge('c_feeOv', 'fee');
-      badge('c_equipOv', 'equip');
-      badge('c_remarkOv', 'remark');
-    }
-
-    function restoreCfgOverrideValue(key) {
-      var sample = currentSample();
-      var model = sample.models.find(function (m) { return m.id === state.editingModelId; });
-      if (model.overrides[state.cfgEditingTestId] && model.overrides[state.cfgEditingTestId].values) {
-        delete model.overrides[state.cfgEditingTestId].values[key];
-      }
-      selectCfgTest(state.cfgEditingTestId);
-    }
-
-    function renderCfgDetectItems() {
-      var box = document.getElementById('c_detectItems');
-      var model = currentSample().models.find(function (m) { return m.id === state.editingModelId; });
-      if (!state.cfgDraftItems.length) {
-        box.innerHTML = '<div class="text-sm text-slate-400 py-4 text-center">无检测项</div>';
-        return;
-      }
-      box.innerHTML = state.cfgDraftItems.map(function (it, idx) {
-        var lockedReq = !!it.hidden;
-        var ovi = model && model.overrides[state.cfgEditingTestId] && model.overrides[state.cfgEditingTestId].items && model.overrides[state.cfgEditingTestId].items[it.id];
-        var ovHtml = (ovi && Object.keys(ovi).length)
-          ? '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600" onclick="restoreCfgItemOverride(\'' + it.id + '\')">恢复默认</button>'
-          : '';
-        var optionsHtml = '';
-        if (it.type === '下拉') {
-          optionsHtml = '<div class="field-row"><label>可选项</label><div class="ctrl">' +
-            '<div class="option-tags">' + (it.options || []).map(function (op, oi) {
-              return '<span class="option-tag">' + esc(op) +
-                ' <i class="fa fa-times cursor-pointer" onclick="removeCfgOption(' + idx + ',' + oi + ')"></i></span>';
-            }).join('') + '</div>' +
-            '<div class="flex gap-2"><input id="cfg_opt_input_' + idx + '" placeholder="输入选项后回车或点击添加" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addCfgOption(' + idx + ');}" />' +
-            '<button type="button" class="rounded border px-2 text-xs" onclick="addCfgOption(' + idx + ')">添加</button></div>' +
-            '<div class="tip">下拉类型需配置可选项</div></div></div>';
-        }
-        return '<div class="item-card">' +
-          '<div class="item-card-head"><div class="text-sm font-medium">' + esc(it.name || ('检测项 ' + (idx + 1))) + ' <span class="text-xs text-slate-400">(' + esc(it.type) + ')</span> ' + ovHtml + '</div></div>' +
-          optionsHtml +
-          '<div class="field-row"><label>默认值</label><div class="ctrl">' + defaultValueCtrlHtml(it, idx, true) + '</div></div>' +
-          '<div class="field-row"><label>单位</label><div class="ctrl"><input value="' + esc(it.unit || '') + '" onchange="setCfgItemField(' + idx + ',\'unit\',this.value)" /></div></div>' +
-          '<div class="field-row"><label>试验次数</label><div class="ctrl"><input value="' + esc(it.testCount || '') + '" onchange="setCfgItemField(' + idx + ',\'testCount\',this.value)" /></div></div>' +
-          '<div class="field-row"><label>取值范围</label><div class="ctrl flex gap-2"><input placeholder="最小" value="' + esc(it.min || '') + '" onchange="setCfgItemField(' + idx + ',\'min\',this.value)" /><input placeholder="最大" value="' + esc(it.max || '') + '" onchange="setCfgItemField(' + idx + ',\'max\',this.value)" /></div></div>' +
-          '<div class="field-row"><label class="label-tip">是否必填' +
-            '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">' + (lockedReq ? '隐藏字段不可设为必填' : '约束试验检测提交') + '</span></span>' +
-          '</label><div class="ctrl flex items-center gap-2">' +
-            '<label class="toggle"><input type="checkbox" ' + (it.required && !lockedReq ? 'checked' : '') + ' ' + (lockedReq ? 'disabled' : '') + ' onchange="setCfgItemField(' + idx + ',\'required\',this.checked)" /><span class="toggle-slider"></span></label>' +
-          '</div></div>' +
-          '<div class="field-row"><label class="label-tip">隐藏字段' +
-            '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">隐藏后试验检测页不展示</span></span>' +
-          '</label><div class="ctrl"><label class="toggle"><input type="checkbox" ' + (it.hidden ? 'checked' : '') + ' onchange="setCfgItemHidden(' + idx + ',this.checked)" /><span class="toggle-slider"></span></label></div></div>' +
-        '</div>';
-      }).join('');
-    }
-
-    function setCfgItemField(idx, key, val) { state.cfgDraftItems[idx][key] = val; }
-    function setCfgItemHidden(idx, hidden) {
-      state.cfgDraftItems[idx].hidden = hidden;
-      if (hidden) state.cfgDraftItems[idx].required = false;
-      renderCfgDetectItems();
-    }
-    function addCfgOption(idx) {
-      var input = document.getElementById('cfg_opt_input_' + idx);
-      var v = (input && input.value || '').trim();
+    function insertMarkElement() {
+      var v = document.getElementById('markElement').value;
       if (!v) return;
-      state.cfgDraftItems[idx].options = state.cfgDraftItems[idx].options || [];
-      state.cfgDraftItems[idx].options.push(v);
-      renderCfgDetectItems();
+      var el = document.getElementById('markRule');
+      el.value += '[' + v + ']';
     }
-    function removeCfgOption(idx, oi) {
-      var removed = state.cfgDraftItems[idx].options[oi];
-      state.cfgDraftItems[idx].options.splice(oi, 1);
-      if (state.cfgDraftItems[idx].defaultValue === removed) state.cfgDraftItems[idx].defaultValue = '';
-      renderCfgDetectItems();
+    function insertMarkText(t) {
+      var el = document.getElementById('markRule');
+      el.value += '[' + t + ']';
     }
-    function restoreCfgItemOverride(itemId) {
-      var model = currentSample().models.find(function (m) { return m.id === state.editingModelId; });
-      if (model && model.overrides[state.cfgEditingTestId]) delete model.overrides[state.cfgEditingTestId].items[itemId];
-      selectCfgTest(state.cfgEditingTestId);
-    }
-
-    function clearCfgInlineEdit() {
-      state.cfgEditingTestId = null;
-      state.cfgDraftItems = [];
-      document.getElementById('cfgEditPanel').classList.add('hidden');
-      document.getElementById('cfgEditEmpty').classList.remove('hidden');
-      renderCfgLinked();
-      refreshAnnotations();
-    }
-
-    function saveCfgInlineEdit() {
-      if (!state.cfgEditingTestId) return;
-      var sample = currentSample();
-      var model = sample.models.find(function (m) { return m.id === state.editingModelId; });
-      var base = sample.tests.find(function (t) { return t.id === state.cfgEditingTestId; });
-      if (!model.overrides[state.cfgEditingTestId]) model.overrides[state.cfgEditingTestId] = { values: {}, items: {} };
-      var ov = model.overrides[state.cfgEditingTestId];
-      var data = {
-        detectCategory: document.getElementById('c_detectCategory').value,
-        sampleCatCode: document.getElementById('c_sampleCatCode').value.trim(),
-        needPrepare: document.getElementById('c_needPrepare').value,
-        sampleQty: Number(document.getElementById('c_sampleQty').value || 1),
-        fee: Number(document.getElementById('c_fee').value || 0),
-        equip: getEquipMs('c_equipMs'),
-        remark: document.getElementById('c_remark').value.trim()
-      };
-      Object.keys(data).forEach(function (k) {
-        if (JSON.stringify(data[k]) !== JSON.stringify(base[k])) ov.values[k] = deepClone(data[k]);
-        else delete ov.values[k];
-      });
-      state.cfgDraftItems.forEach(function (it) {
-        var bi = (base.items || []).find(function (x) { return x.id === it.id; }) || {};
-        var diff = {};
-        ['defaultValue','unit','testCount','min','max','required','hidden','options'].forEach(function (k) {
-          if (JSON.stringify(it[k]) !== JSON.stringify(bi[k])) diff[k] = deepClone(it[k]);
-        });
-        if (Object.keys(diff).length) ov.items[it.id] = diff;
-        else delete ov.items[it.id];
-      });
-      renderCfgLinked();
-      selectCfgTest(state.cfgEditingTestId);
-      toast('本试验规格型号覆盖已保存（未回写默认试验）');
-    }
-
-    function saveCfgTests() {
-      var sample = currentSample();
-      var model = sample.models.find(function (m) { return m.id === state.editingModelId; });
-      var selected = state.cfgPendingIds.slice();
-      var prev = model.linkedTestIds || [];
-      var removed = prev.filter(function (tid) { return selected.indexOf(tid) < 0; });
-      var removedWithOverride = removed.filter(function (tid) { return hasModelOverride(model, tid); });
-      if (removedWithOverride.length) {
-        var names = removedWithOverride.map(function (tid) {
-          var t = sample.tests.find(function (x) { return x.id === tid; });
-          return t ? t.name : tid;
-        }).join('、');
-        if (!confirm('取消关联将清除本规格型号下以下试验的个性化配置，请谨慎操作：\n\n' + names + '\n\n是否确认保存？')) return;
-      }
-      selected.forEach(function (tid) {
-        if (prev.indexOf(tid) < 0) {
-          if (!model.overrides[tid]) model.overrides[tid] = { values: {}, items: {} };
-          var base = sample.tests.find(function (t) { return t.id === tid; });
-          if (base) {
-            (base.items || []).forEach(function (it) {
-              if (it.defaultValue !== '' && it.defaultValue != null) {
-                model.overrides[tid].items[it.id] = { defaultValue: it.defaultValue };
-              }
-            });
-          }
-        }
-      });
-      Object.keys(model.overrides || {}).forEach(function (tid) {
-        if (selected.indexOf(tid) < 0) delete model.overrides[tid];
-      });
-      model.linkedTestIds = selected;
-      renderCfgLinked();
-      renderModelTable();
-      toast('已保存规格型号试验关联');
-    }
-
-    var STD_REF_OPTIONS = [
-      { value: 'DLT 976-2017', label: 'DLT 976-2017' },
-      { value: 'DLT 1476-2023', label: 'DLT 1476-2023' },
-      { value: 'GB/T 12706.1-2020', label: 'GB/T 12706.1-2020' },
-      { value: 'DLT 802.3-2023', label: 'DLT 802.3-2023' }
-    ];
-
-    function renderChipMulti(elId, options, selected) {
-      var el = document.getElementById(elId);
-      if (!el) return;
-      var opts = (options || []).map(function (o) {
-        return typeof o === 'string' ? { value: o, label: o } : o;
-      });
-      var sel = (selected || []).slice();
-      el.setAttribute('data-options', JSON.stringify(opts));
-      el.setAttribute('data-selected', JSON.stringify(sel));
-      var set = {};
-      sel.forEach(function (v) { set[v] = true; });
-      el.innerHTML = opts.map(function (o) {
-        var on = !!set[o.value];
-        return '<span class="cm-item' + (on ? ' on' : '') + '" data-value="' + esc(o.value) + '" onclick="toggleChipMulti(\'' + elId + '\', this)" title="' + esc(o.label) + '">' +
-          esc(o.label) + '</span>';
-      }).join('') || '<span class="text-xs text-slate-400 px-1 py-1">暂无选项</span>';
-    }
-
-    function toggleChipMulti(elId, node) {
-      var el = document.getElementById(elId);
-      var selected = JSON.parse(el.getAttribute('data-selected') || '[]');
-      var opts = JSON.parse(el.getAttribute('data-options') || '[]');
-      var val = node.getAttribute('data-value');
-      var i = selected.indexOf(val);
-      if (i >= 0) selected.splice(i, 1);
-      else selected.push(val);
-      renderChipMulti(elId, opts, selected);
-    }
-
-    function getChipMulti(elId) {
-      var el = document.getElementById(elId);
-      if (!el) return [];
-      try { return JSON.parse(el.getAttribute('data-selected') || '[]'); } catch (e) { return []; }
-    }
-
-    /** 规范化试验.equip：兼容旧字符串，统一为启用设备 id 数组 */
-    function normalizeEquipIds(raw) {
-      if (Array.isArray(raw)) return raw.filter(Boolean);
-      if (raw == null || raw === '') return [];
-      var s = String(raw).trim();
-      if (!s) return [];
-      var all = (window.EquipStore && EquipStore.listAll()) || [];
-      var hit = all.find(function (d) {
-        return EquipStore.displayLabel(d) === s || d.code === s || ('[' + d.code + '] ' + d.name) === s;
-      });
-      return hit ? [hit.id] : [];
-    }
-
-    function renderEquipMs(elId, selectedIds) {
-      var root = document.getElementById(elId);
-      if (!root) return;
-      var enabled = (window.EquipStore && EquipStore.listEnabled()) || [];
-      var selected = normalizeEquipIds(selectedIds);
-      // 仅保留仍启用的 id；已选但停用的仍展示（避免丢数据），勾选面板只列启用
-      var selectedSet = {};
-      selected.forEach(function (id) { selectedSet[id] = true; });
-      root.setAttribute('data-selected', JSON.stringify(selected));
-
-      var trigger = root.querySelector('.equip-ms-trigger');
-      if (selected.length) {
-        trigger.innerHTML = selected.map(function (id) {
-          var d = EquipStore.findById(id);
-          var label = d ? EquipStore.displayLabel(d) : id;
-          return '<span class="eq-tag" title="' + esc(label) + '">' + esc(label) +
-            ' <i class="fa fa-times rm" onclick="event.stopPropagation();removeEquipMs(\'' + elId + '\',\'' + esc(id) + '\')"></i></span>';
-        }).join('');
-      } else {
-        trigger.innerHTML = '<span class="ph">请选择启用设备（可多选）</span>';
-      }
-
-      var panel = root.querySelector('.equip-ms-panel');
-      if (!enabled.length) {
-        panel.innerHTML = '<div class="empty">暂无启用设备，请先在「设备管理」启用</div>';
-      } else {
-        panel.innerHTML = enabled.map(function (d) {
-          var checked = selectedSet[d.id] ? ' checked' : '';
-          return '<label><input type="checkbox" value="' + esc(d.id) + '"' + checked +
-            ' onchange="onEquipMsCheck(\'' + elId + '\', this)" /> ' + esc(EquipStore.displayLabel(d)) + '</label>';
-        }).join('');
-      }
-    }
-
-    function toggleEquipMs(elId) {
-      var root = document.getElementById(elId);
-      if (!root) return;
-      var willOpen = !root.classList.contains('open');
-      document.querySelectorAll('.equip-ms.open').forEach(function (el) { el.classList.remove('open'); });
-      if (willOpen) root.classList.add('open');
-    }
-
-    function onEquipMsCheck(elId, cb) {
-      var root = document.getElementById(elId);
-      var selected = normalizeEquipIds(JSON.parse(root.getAttribute('data-selected') || '[]'));
-      var id = cb.value;
-      var i = selected.indexOf(id);
-      if (cb.checked && i < 0) selected.push(id);
-      if (!cb.checked && i >= 0) selected.splice(i, 1);
-      renderEquipMs(elId, selected);
-      root.classList.add('open');
-    }
-
-    function removeEquipMs(elId, id) {
-      var root = document.getElementById(elId);
-      var selected = normalizeEquipIds(JSON.parse(root.getAttribute('data-selected') || '[]')).filter(function (x) { return x !== id; });
-      renderEquipMs(elId, selected);
-    }
-
-    function getEquipMs(elId) {
-      var root = document.getElementById(elId);
-      if (!root) return [];
-      try { return normalizeEquipIds(JSON.parse(root.getAttribute('data-selected') || '[]')); } catch (e) { return []; }
-    }
-
-    document.addEventListener('click', function (e) {
-      if (!e.target.closest('.equip-ms')) {
-        document.querySelectorAll('.equip-ms.open').forEach(function (el) { el.classList.remove('open'); });
-      }
-    });
-
-    function openTestEdit(testId, overrideMode, modelId) {
-      // 规格型号覆盖编辑统一走配置试验抽屉内联区
-      if (overrideMode && modelId) {
-        if (state.editingModelId !== modelId || !document.getElementById('cfgTestModal').classList.contains('open')) {
-          openCfgTests(modelId);
-        }
-        selectCfgTest(testId);
-        return;
-      }
-      var sample = currentSample();
-      state.overrideMode = false;
-      state.overrideModelId = null;
-      state.editingTestId = testId || null;
-      document.getElementById('overrideReadonlyHint').classList.add('hidden');
-      document.getElementById('btnAddItem').style.display = '';
-      document.getElementById('testModalTitle').textContent = testId ? '编辑试验' : '添加试验';
-      var sampleName = (sample.basic && sample.basic.name) || document.getElementById('sampleTitle').textContent || '';
-      document.getElementById('testModalSub').textContent = sampleName ? ('样品：' + sampleName) : '';
-
-      fillDictSelect(document.getElementById('t_detectCategory'), detectCategoryDictType(), true);
-
-      var base = testId ? sample.tests.find(function (t) { return t.id === testId; }) : null;
-      var data = base ? deepClone(base) : makeTest({ sort: (sample.tests.length || 0) + 1 });
-      state.draft = deepClone(base || data);
-      state.stdSegs = deepClone(data.stdReq || []);
-      state.draftItems = deepClone(data.items || []);
-
-      document.getElementById('t_code').value = data.code || '';
-      document.getElementById('t_name').value = data.name || '';
-      document.getElementById('t_name').disabled = false;
-      renderChipMulti('t_basisChips', STD_REF_OPTIONS, data.basis || []);
-      renderChipMulti('t_judgeChips', STD_REF_OPTIONS, data.judge || []);
-      document.getElementById('t_detectCategory').value = data.detectCategory || '';
-      document.getElementById('t_sampleCatCode').value = data.sampleCatCode || '';
-      var colorOpts = MockDictStore.getActiveItems(dictTypes, 'lims_sample_color').map(function (it) {
-        return { value: it.value, label: it.label };
-      });
-      renderChipMulti('t_colorsChips', colorOpts, data.colors || []);
-      document.getElementById('t_needPrepare').value = data.needPrepare || '否';
-      document.getElementById('t_sampleQty').value = data.sampleQty || 1;
-      document.getElementById('t_fee').value = data.fee || '';
-      renderEquipMs('t_equipMs', data.equip);
-      document.getElementById('t_sort').value = data.sort || 1;
-      document.getElementById('t_remark').value = data.remark || '';
-      toggleSampleQty();
-      renderStdBuilder();
-      renderDetectItems();
-      renderOverrideBadges(base);
-      openModal('testModal');
-    }
-
-    function renderOverrideBadges(base) {
-      ['t_detectCategoryOv','t_sampleCatCodeOv','t_colorsOv','t_needPrepareOv','t_sampleQtyOv','t_feeOv','t_equipOv','t_stdOv','t_sortOv','t_remarkOv','t_nameOv'].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.innerHTML = '';
-      });
-      if (!state.overrideMode || !base) return;
-      var model = currentSample().models.find(function (m) { return m.id === state.overrideModelId; });
-      var ov = (model && model.overrides && model.overrides[state.editingTestId]) || { values: {}, items: {} };
-      function badge(targetId, key) {
-        if (!ov.values || ov.values[key] === undefined) return;
-        document.getElementById(targetId).innerHTML = '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600 hover:underline" onclick="restoreOverrideValue(\'' + key + '\')">恢复默认</button>';
-      }
-      badge('t_detectCategoryOv', 'detectCategory');
-      badge('t_sampleCatCodeOv', 'sampleCatCode');
-      badge('t_needPrepareOv', 'needPrepare');
-      badge('t_sampleQtyOv', 'sampleQty');
-      badge('t_feeOv', 'fee');
-      badge('t_equipOv', 'equip');
-      badge('t_sortOv', 'sort');
-      badge('t_remarkOv', 'remark');
-      if (ov.values && ov.values.stdReq) {
-        document.getElementById('t_stdOv').innerHTML = '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600 hover:underline" onclick="restoreOverrideValue(\'stdReq\')">恢复默认</button>';
-      }
-      if (ov.values && ov.values.colors) {
-        document.getElementById('t_colorsOv').innerHTML = '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600 hover:underline" onclick="restoreOverrideValue(\'colors\')">恢复默认</button>';
-      }
-    }
-
-    function restoreOverrideValue(key) {
-      var sample = currentSample();
-      var model = sample.models.find(function (m) { return m.id === state.overrideModelId; });
-      var base = sample.tests.find(function (t) { return t.id === state.editingTestId; });
-      if (!model || !base) return;
-      if (model.overrides[state.editingTestId] && model.overrides[state.editingTestId].values) {
-        delete model.overrides[state.editingTestId].values[key];
-      }
-      openTestEdit(state.editingTestId, true, state.overrideModelId);
-    }
-
-    function toggleSampleQty() {
-      var show = document.getElementById('t_needPrepare').value === '是';
-      var row = document.getElementById('rowSampleQty');
-      if (row) row.style.display = show ? 'flex' : 'none';
-      var tip = document.getElementById('t_sampleQtyTip');
-      if (tip) tip.textContent = '是否制样为「是」时必填；用步进器调整试样数量（≥1）。';
-      refreshAnnotations();
-    }
-
-    function stepNumberInput(inputId, delta, minVal) {
-      var el = document.getElementById(inputId);
-      if (!el || el.disabled) return;
-      var min = minVal == null ? 1 : minVal;
-      var n = parseInt(el.value, 10);
-      if (isNaN(n)) n = min;
-      n = Math.max(min, n + delta);
-      el.value = n;
-      el.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    function stepSampleQty(delta) { stepNumberInput('t_sampleQty', delta, 1); }
-    function stepCfgSampleQty(delta) { stepNumberInput('c_sampleQty', delta, 1); }
-
-    function renderStdBuilder() {
-      var box = document.getElementById('stdBuilder');
-      if (!state.stdSegs.length) {
-        box.innerHTML = '<span class="text-slate-400 text-xs">点击下方按钮添加字段或文字段，段间连接符可选 - / _</span>';
-      } else {
-        box.innerHTML = state.stdSegs.map(function (seg, idx) {
-          var typeCls = seg.type === 'field' ? 'field' : 'text';
-          var body = seg.type === 'field'
-            ? ('<select onchange="updateStdSeg(' + idx + ',\'value\',this.value)">' + fieldOptionsHtml(seg.value) + '</select>')
-            : ('<input style="width:120px" value="' + esc(seg.value || '') + '" onchange="updateStdSeg(' + idx + ',\'value\',this.value)" placeholder="文字" />');
-          var sep = idx < state.stdSegs.length - 1
-            ? ('<select onchange="updateStdSeg(' + idx + ',\'sep\',this.value)">' +
-                ['','-','/','_'].map(function (s) {
-                  return '<option value="' + s + '"' + ((seg.sep || '') === s ? ' selected' : '') + '>' + (s || '无') + '</option>';
-                }).join('') + '</select>')
-            : '';
-          return '<span class="concat-seg ' + typeCls + '"><span class="text-[10px] opacity-70">' + (seg.type === 'field' ? '字段' : '文字') + '</span> ' +
-            body + sep +
-            ' <button type="button" onclick="removeStdSeg(' + idx + ')" class="text-slate-400 hover:text-red-500"><i class="fa fa-times"></i></button></span>';
-        }).join('');
-      }
-      document.getElementById('stdPreview').textContent = previewStd(state.stdSegs) || '（空）';
-    }
-
-    function fieldOptionsHtml(selected) {
-      var names = state.draftItems.map(function (i) { return i.name; }).filter(Boolean);
-      if (selected && names.indexOf(selected) < 0) names.unshift(selected);
-      return '<option value="">请选择字段</option>' + names.map(function (n) {
-        return '<option value="' + esc(n) + '"' + (n === selected ? ' selected' : '') + '>' + esc(n) + '</option>';
-      }).join('');
-    }
-
-    function previewStd(segs) {
-      return (segs || []).map(function (seg, idx) {
-        var v = seg.type === 'field' ? ('{' + (seg.value || '字段') + '}') : (seg.value || '');
-        var sep = idx < segs.length - 1 ? (seg.sep || '') : '';
-        return v + sep;
-      }).join('');
-    }
-
-    function addStdSeg(type) {
-      state.stdSegs.push({ type: type, value: type === 'field' ? '' : '', sep: '/' });
-      renderStdBuilder();
-    }
-    function updateStdSeg(idx, key, val) { state.stdSegs[idx][key] = val; renderStdBuilder(); }
-    function removeStdSeg(idx) { state.stdSegs.splice(idx, 1); renderStdBuilder(); }
-
-    function defaultValueCtrlHtml(it, idx, isCfg) {
-      var setter = isCfg ? 'setCfgItemField' : 'setItemField';
-      if (it.type === '下拉') {
-        var opts = it.options || [];
-        var html = '<select onchange="' + setter + '(' + idx + ',\'defaultValue\',this.value)">';
-        html += '<option value="">请选择默认值（非必填）</option>';
-        opts.forEach(function (op) {
-          html += '<option value="' + esc(op) + '"' + (it.defaultValue === op ? ' selected' : '') + '>' + esc(op) + '</option>';
-        });
-        if (it.defaultValue && opts.indexOf(it.defaultValue) < 0) {
-          html += '<option value="' + esc(it.defaultValue) + '" selected>' + esc(it.defaultValue) + '（已失效）</option>';
-        }
-        html += '</select>';
-        if (!opts.length) html += '<div class="tip" style="margin-top:4px">请先配置可选项</div>';
-        return html;
-      }
-      return '<input value="' + esc(it.defaultValue || '') + '" onchange="' + setter + '(' + idx + ',\'defaultValue\',this.value)" placeholder="非必填，如标称值可留空" />';
-    }
-
-    function renderDetectItems() {
-      var box = document.getElementById('detectItems');
-      if (!state.draftItems.length) {
-        box.innerHTML = '<div class="text-sm text-slate-400 py-6 text-center">暂无检测项</div>';
-        return;
-      }
-      box.innerHTML = state.draftItems.map(function (it, idx) {
-        var lockedReq = !!it.hidden;
-        var ovHtml = '';
-        if (state.overrideMode) {
-          var model = currentSample().models.find(function (m) { return m.id === state.overrideModelId; });
-          var ovi = model && model.overrides[state.editingTestId] && model.overrides[state.editingTestId].items && model.overrides[state.editingTestId].items[it.id];
-          if (ovi && Object.keys(ovi).length) {
-            ovHtml = '<span class="ov-badge">已覆盖</span> <button type="button" class="text-xs text-blue-600" onclick="restoreItemOverride(\'' + it.id + '\')">恢复默认</button>';
-          }
-        }
-        var structDisabled = state.overrideMode ? 'disabled' : '';
-        if (!it.code) it.code = uid('DIC');
-        return '<div class="item-card">' +
-          '<div class="item-card-head"><div class="text-sm font-medium text-slate-700">检测项 ' + (idx + 1) + ' ' + ovHtml + '</div>' +
-          '<div class="space-x-2 text-slate-400">' +
-            (state.overrideMode ? '' : ('<button type="button" onclick="moveItem(' + idx + ',-1)"><i class="fa fa-arrow-up"></i></button>' +
-            '<button type="button" onclick="moveItem(' + idx + ',1)"><i class="fa fa-arrow-down"></i></button>' +
-            '<button type="button" class="text-red-500" onclick="removeItem(' + idx + ')"><i class="fa fa-trash"></i></button>')) +
-          '</div></div>' +
-          '<div class="field-row"><label>检测项编码</label><div class="ctrl"><input class="readonly-code" type="text" readonly tabindex="-1" value="' + esc(it.code || '') + '" /><div class="tip mt-1" style="margin-top:6px">系统生成，仅回显，不可编辑。</div></div></div>' +
-          '<div class="field-row"><label><span class="req">*</span>类型</label><div class="ctrl"><div class="seg-type">' +
-            ['文字','数字','下拉'].map(function (tp) {
-              return '<button type="button" class="' + (it.type === tp ? 'on' : '') + '" ' + structDisabled + ' onclick="setItemType(' + idx + ',\'' + tp + '\')">' + tp + '</button>';
-            }).join('') +
-          '</div></div></div>' +
-          '<div class="field-row"><label><span class="req">*</span>名称</label><div class="ctrl"><input ' + structDisabled + ' value="' + esc(it.name) + '" onchange="setItemField(' + idx + ',\'name\',this.value)" /></div></div>' +
-          (it.type === '下拉' ? ('<div class="field-row"><label>可选项</label><div class="ctrl">' +
-            '<div class="option-tags">' + (it.options || []).map(function (op, oi) {
-              return '<span class="option-tag">' + esc(op) + (state.overrideMode ? '' : (' <i class="fa fa-times cursor-pointer" onclick="removeOption(' + idx + ',' + oi + ')"></i>')) + '</span>';
-            }).join('') + '</div>' +
-            (state.overrideMode ? '' : '<div class="flex gap-2"><input id="opt_input_' + idx + '" placeholder="输入选项后回车或点击添加" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addOption(' + idx + ');}" /><button type="button" class="rounded border px-2 text-xs" onclick="addOption(' + idx + ')">添加</button></div>') +
-          '</div></div>') : '') +
-          '<div class="field-row"><label>默认值</label><div class="ctrl">' + defaultValueCtrlHtml(it, idx, false) + '</div></div>' +
-          '<div class="field-row"><label>单位</label><div class="ctrl"><input value="' + esc(it.unit || '') + '" onchange="setItemField(' + idx + ',\'unit\',this.value)" /></div></div>' +
-          '<div class="field-row"><label>试验次数</label><div class="ctrl"><input value="' + esc(it.testCount || '') + '" onchange="setItemField(' + idx + ',\'testCount\',this.value)" /></div></div>' +
-          '<div class="field-row"><label>保留小数</label><div class="ctrl"><input value="' + esc(it.decimals || '') + '" onchange="setItemField(' + idx + ',\'decimals\',this.value)" placeholder="请输入保留的小数位数" /></div></div>' +
-          '<div class="field-row"><label>取值范围</label><div class="ctrl flex gap-2"><input placeholder="最小值" value="' + esc(it.min || '') + '" onchange="setItemField(' + idx + ',\'min\',this.value)" /><input placeholder="最大值" value="' + esc(it.max || '') + '" onchange="setItemField(' + idx + ',\'max\',this.value)" /></div></div>' +
-          '<div class="field-row"><label class="label-tip">是否必填' +
-            '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">' + (lockedReq ? '隐藏字段不可设为必填' : '约束试验检测提交') + '</span></span>' +
-          '</label><div class="ctrl flex items-center gap-2">' +
-            '<label class="toggle"><input type="checkbox" ' + (it.required && !lockedReq ? 'checked' : '') + ' ' + (lockedReq ? 'disabled' : '') + ' onchange="setItemField(' + idx + ',\'required\',this.checked)" /><span class="toggle-slider"></span></label>' +
-          '</div></div>' +
-          '<div class="field-row"><label class="label-tip">隐藏字段' +
-            '<span class="tip-ico"><i class="fa fa-question-circle"></i><span class="tip-bubble">隐藏后试验检测页不展示</span></span>' +
-          '</label><div class="ctrl flex items-center gap-2">' +
-            '<label class="toggle"><input type="checkbox" ' + (it.hidden ? 'checked' : '') + ' onchange="setItemHidden(' + idx + ',this.checked)" /><span class="toggle-slider"></span></label>' +
-          '</div></div>' +
-        '</div>';
-      }).join('');
-    }
-
-    function addDetectItem() {
-      if (state.overrideMode) return;
-      state.draftItems.push(makeItem({ name: '新检测项' }));
-      renderDetectItems();
-      renderStdBuilder();
-    }
-    function setItemType(idx, type) {
-      if (state.overrideMode) return;
-      state.draftItems[idx].type = type;
-      if (type !== '下拉') {
-        state.draftItems[idx].options = [];
-      } else if (state.draftItems[idx].defaultValue && (state.draftItems[idx].options || []).indexOf(state.draftItems[idx].defaultValue) < 0) {
-        state.draftItems[idx].defaultValue = '';
-      }
-      renderDetectItems();
-    }
-    function setItemField(idx, key, val) { state.draftItems[idx][key] = val; if (key === 'name') renderStdBuilder(); }
-    function setItemHidden(idx, hidden) {
-      state.draftItems[idx].hidden = hidden;
-      if (hidden) state.draftItems[idx].required = false;
-      renderDetectItems();
-    }
-    function moveItem(idx, dir) {
-      var j = idx + dir; if (j < 0 || j >= state.draftItems.length) return;
-      var t = state.draftItems[idx]; state.draftItems[idx] = state.draftItems[j]; state.draftItems[j] = t;
-      renderDetectItems();
-    }
-    function removeItem(idx) {
-      var name = state.draftItems[idx].name;
-      var referenced = state.stdSegs.some(function (s) { return s.type === 'field' && s.value === name; });
-      if (referenced && !confirm('标准要求仍引用该检测项字段，确认删除？')) return;
-      state.draftItems.splice(idx, 1);
-      renderDetectItems();
-      renderStdBuilder();
-    }
-    function addOption(idx) {
-      var input = document.getElementById('opt_input_' + idx);
-      var v = (input && input.value || '').trim();
+    function insertMarkCustom() {
+      var v = (document.getElementById('markCustom').value || '').trim();
       if (!v) return;
-      state.draftItems[idx].options = state.draftItems[idx].options || [];
-      state.draftItems[idx].options.push(v);
-      renderDetectItems();
+      insertMarkText(v);
+      document.getElementById('markCustom').value = '';
     }
-    function removeOption(idx, oi) {
-      var removed = state.draftItems[idx].options[oi];
-      state.draftItems[idx].options.splice(oi, 1);
-      if (state.draftItems[idx].defaultValue === removed) state.draftItems[idx].defaultValue = '';
-      renderDetectItems();
-    }
-    function restoreItemOverride(itemId) {
-      var model = currentSample().models.find(function (m) { return m.id === state.overrideModelId; });
-      if (model && model.overrides[state.editingTestId]) delete model.overrides[state.editingTestId].items[itemId];
-      openTestEdit(state.editingTestId, true, state.overrideModelId);
+    function clearMarkRule() {
+      document.getElementById('markRule').value = '';
     }
 
-    function resetTestForm() {
-      if (state.editingTestId) openTestEdit(state.editingTestId, state.overrideMode, state.overrideModelId);
-      else openTestEdit();
-    }
-
-    function collectTestForm() {
-      var data = {
-        name: document.getElementById('t_name').value.trim(),
-        basis: getChipMulti('t_basisChips'),
-        judge: getChipMulti('t_judgeChips'),
-        detectCategory: document.getElementById('t_detectCategory').value,
-        sampleCatCode: document.getElementById('t_sampleCatCode').value.trim(),
-        colors: getChipMulti('t_colorsChips'),
-        needPrepare: document.getElementById('t_needPrepare').value,
-        sampleQty: Number(document.getElementById('t_sampleQty').value || 1),
-        fee: Number(document.getElementById('t_fee').value || 0),
-        equip: getEquipMs('t_equipMs'),
-        sort: Number(document.getElementById('t_sort').value || 1),
-        remark: document.getElementById('t_remark').value.trim(),
-        stdReq: deepClone(state.stdSegs),
-        items: deepClone(state.draftItems)
-      };
-      var code = document.getElementById('t_code').value;
-      if (code) data.code = code;
-      return data;
-    }
-
-    function validateTestForm(data) {
-      if (!data.name) return '请填写试验名称';
-      if (!data.basis.length) return '请选择检测依据';
-      if (!data.judge.length) return '请选择判定依据';
-      if (!data.detectCategory) return '请选择' + detectCategoryLabel();
-      if (data.needPrepare === '是' && !data.sampleQty) return '制样时请填写试样数量';
-      if (data.fee === '' || data.fee == null || isNaN(data.fee)) return '请填写默认费用（元）';
-      if (!data.items.length) return '请至少添加一个检测项';
-      for (var i = 0; i < data.items.length; i++) {
-        if (!data.items[i].name) return '检测项名称不能为空';
-        if (data.items[i].type === '下拉' && !(data.items[i].options || []).length) return '下拉类型请配置可选项';
-        if (data.items[i].hidden && data.items[i].required) return '隐藏字段不可设为必填';
+    function init() {
+      document.getElementById('catTitle').textContent = CAT_META[state.cat].name;
+      collectOpenIds(TREES[state.cat] || []);
+      var first = findFirstLeaf(TREES[state.cat] || []);
+      if (first) {
+        state.selectedId = first;
+        state.selectedIsLeaf = true;
       }
-      return '';
-    }
+      renderTree();
+      renderWorkspace();
 
-    function confirmTestEdit() {
-      var data = collectTestForm();
-      var err = validateTestForm(data);
-      if (err) { toast(err); return; }
-      var sample = currentSample();
-
-      if (state.overrideMode) {
-        // 兼容旧路径：覆盖编辑已迁至配置试验抽屉
-        closeModal('testModal');
-        if (state.overrideModelId) openCfgTests(state.overrideModelId);
-        return;
-      }
-
-      var isNew = !state.editingTestId;
-      var testObj;
-      if (isNew) {
-        testObj = makeTest(data);
-        sample.tests.push(testObj);
-      } else {
-        testObj = sample.tests.find(function (t) { return t.id === state.editingTestId; });
-        var oldItems = deepClone(testObj.items || []);
-        Object.assign(testObj, data);
-        // 结构同步到已关联规格型号：补齐新检测项覆盖槽，清理已删项
-        sample.models.forEach(function (m) {
-          if ((m.linkedTestIds || []).indexOf(testObj.id) < 0) return;
-          if (!m.overrides[testObj.id]) m.overrides[testObj.id] = { values: {}, items: {} };
-          var itemIds = (testObj.items || []).map(function (i) { return i.id; });
-          Object.keys(m.overrides[testObj.id].items || {}).forEach(function (iid) {
-            if (itemIds.indexOf(iid) < 0) delete m.overrides[testObj.id].items[iid];
-          });
-          (testObj.items || []).forEach(function (it) {
-            var wasNew = !oldItems.some(function (o) { return o.id === it.id; });
-            if (wasNew && it.defaultValue) {
-              m.overrides[testObj.id].items[it.id] = Object.assign({}, m.overrides[testObj.id].items[it.id] || {}, { defaultValue: it.defaultValue });
+      if (window.PrototypeAnnotation) {
+        PrototypeAnnotation.init({
+          annotations: [
+            {
+              id: 'sample-info',
+              selector: '[data-annotate="sample-info"]',
+              position: 'top-right',
+              title: '样品信息',
+              wide: true,
+              content: '按大类进入后的详情页：左树选样品叶节点，右侧维护样品基础信息；「区分型号=是」时展示下方型号面板。',
+              tag: '结构'
+            },
+            {
+              id: 'model-scope',
+              selector: '[data-annotate="model-scope"]',
+              position: 'top-left',
+              title: '型号面板',
+              wide: true,
+              content: '区分型号=是时，型号信息 / 规格参数 / 试验项 / 样品判定归入蓝色「型号面板」，随上方型号 Tab（如 YJV）切换。',
+              tag: '型号'
+            },
+            {
+              id: 'sample-judge',
+              selector: '[data-annotate="sample-judge"]',
+              position: 'bottom-right',
+              title: '样品判定 · 去设置',
+              content: '「去设置」跳转至「报告判定」页面，可继续配置规则判定方案。',
+              tag: '判定'
             }
-          });
+          ]
         });
       }
-
-      closeModal('testModal');
-      renderTestTable();
-      renderModelTable();
-
-      var linkedCount = sample.models.filter(function (m) { return (m.linkedTestIds || []).indexOf(testObj.id) >= 0; }).length;
-      if (!isNew && sample.models.length) {
-        showSyncTip('结构已同步至 ' + linkedCount + ' 个规格型号；取值类修改不会覆盖规格型号已有配置');
-      }
-      if (isNew && sample.models.length) {
-        openSyncNewTestModal(testObj);
-      } else {
-        toast('试验已保存');
-      }
     }
 
-    function openSyncNewTestModal(testObj) {
-      var sample = currentSample();
-      if (!sample || !testObj) return;
-      state.pendingNewTestId = testObj.id;
-      document.getElementById('syncNewTestName').textContent = testObj.name;
-      var pick = document.getElementById('syncModelPick');
-      pick.innerHTML = (sample.models || []).map(function (m) {
-        return '<label class="flex items-center gap-2"><input type="checkbox" class="sync-model-cb" value="' + esc(m.id) + '" /> ' + esc(m.name) + '</label>';
-      }).join('') || '<div class="text-slate-400">暂无规格型号</div>';
-      document.querySelectorAll('input[name=syncMode]').forEach(function (r) {
-        r.onchange = function () {
-          var mode = document.querySelector('input[name=syncMode]:checked').value;
-          pick.classList.toggle('hidden', mode !== 'pick');
-        };
-      });
-      document.querySelector('input[name=syncMode][value=all]').checked = true;
-      pick.classList.add('hidden');
-      openModal('syncNewTestModal');
-    }
-
-    function confirmSyncNewTest() {
-      var sample = currentSample();
-      var mode = document.querySelector('input[name=syncMode]:checked').value;
-      var tid = state.pendingNewTestId;
-      var targets = [];
-      if (mode === 'all') targets = sample.models.slice();
-      else if (mode === 'pick') {
-        var ids = Array.prototype.slice.call(document.querySelectorAll('.sync-model-cb:checked')).map(function (el) { return el.value; });
-        targets = sample.models.filter(function (m) { return ids.indexOf(m.id) >= 0; });
-        if (!targets.length) { toast('请选择至少一个规格型号'); return; }
-      }
-      targets.forEach(function (m) {
-        if ((m.linkedTestIds || []).indexOf(tid) < 0) m.linkedTestIds.push(tid);
-        if (!m.overrides[tid]) m.overrides[tid] = { values: {}, items: {} };
-        var base = sample.tests.find(function (t) { return t.id === tid; });
-        (base.items || []).forEach(function (it) {
-          if (it.defaultValue !== '' && it.defaultValue != null) {
-            m.overrides[tid].items[it.id] = Object.assign({}, m.overrides[tid].items[it.id] || {}, { defaultValue: it.defaultValue });
-          }
-        });
-      });
-      closeModal('syncNewTestModal');
-      renderModelTable();
-      if (mode === 'none') toast('已保存默认试验（未同步到规格型号）');
-      else toast('已同步关联到 ' + targets.length + ' 个规格型号');
-    }
-
-    /** 收集其他样品可复制的试验，按「样品分类 · 样品」分组（排除当前样品） */
-    function collectCopyableTests(excludeSampleId) {
-      var groups = [];
-      var groupMap = {};
-      function walk(nodes, trail) {
-        (nodes || []).forEach(function (n) {
-          var hasChild = n.children && n.children.length;
-          var isLeaf = !!n.leaf && !hasChild;
-          var nextTrail = trail.concat(n.label);
-          if (isLeaf) {
-            if (n.id === excludeSampleId) return;
-            var sample = SAMPLE_STORE[n.id];
-            if (!sample || !(sample.tests || []).length) return;
-            var categoryLabel = (sample.basic && sample.basic.category)
-              || (trail.length ? trail[trail.length - 1] : '');
-            var groupLabel = (categoryLabel ? categoryLabel + ' · ' : '') + n.label;
-            if (!groupMap[groupLabel]) {
-              groupMap[groupLabel] = { label: groupLabel, options: [] };
-              groups.push(groupMap[groupLabel]);
-            }
-            sample.tests.forEach(function (t) {
-              groupMap[groupLabel].options.push({
-                value: n.id + '|' + t.id,
-                text: t.name
-              });
-            });
-            return;
-          }
-          if (hasChild) walk(n.children, nextTrail);
-        });
-      }
-      Object.keys(TREES).forEach(function (catKey) {
-        walk(TREES[catKey] || [], CAT_META[catKey] ? [CAT_META[catKey].name] : []);
-      });
-      return groups;
-    }
-
-    function fillCopyTestSelect() {
-      var sel = document.getElementById('copyTestSelect');
-      var groups = collectCopyableTests(state.selectedId);
-      var html = '<option value="">请选择样品分类 / 样品 / 试验项</option>';
-      groups.forEach(function (g) {
-        html += '<optgroup label="' + esc(g.label) + '">';
-        g.options.forEach(function (opt) {
-          html += '<option value="' + esc(opt.value) + '">' + esc(opt.text) + '</option>';
-        });
-        html += '</optgroup>';
-      });
-      sel.innerHTML = html;
-      sel.value = '';
-      return groups.length > 0;
-    }
-
-    function copyAddTest() {
-      var sample = currentSample();
-      if (!sample) { toast('请先选择样品'); return; }
-      if (!fillCopyTestSelect()) {
-        toast('暂无其他样品的试验可复制');
-        return;
-      }
-      openModal('copyTestModal');
-    }
-
-    function confirmCopyTest() {
-      var sample = currentSample();
-      if (!sample) { toast('请先选择样品'); return; }
-      var val = document.getElementById('copyTestSelect').value;
-      if (!val) { toast('请选择要复制的试验'); return; }
-      var sep = val.indexOf('|');
-      if (sep < 0) { toast('请选择要复制的试验'); return; }
-      var srcSampleId = val.slice(0, sep);
-      var srcTestId = val.slice(sep + 1);
-      if (srcSampleId === state.selectedId) {
-        toast('不允许复制当前样品的试验');
-        return;
-      }
-      var srcSample = SAMPLE_STORE[srcSampleId];
-      var srcTest = srcSample && (srcSample.tests || []).find(function (t) { return t.id === srcTestId; });
-      if (!srcTest) { toast('所选试验不存在'); return; }
-
-      var copied = deepClone(srcTest);
-      copied.id = uid('test');
-      copied.code = uid('TST');
-      copied.name = copied.name + '（副本）';
-      copied.sort = (sample.tests.length || 0) + 1;
-      copied.items = (copied.items || []).map(function (it) {
-        it.id = uid('di');
-        it.code = uid('DIC');
-        return it;
-      });
-      sample.tests.push(copied);
-      closeModal('copyTestModal');
-      renderTestTable();
-      if (sample.models.length) {
-        openSyncNewTestModal(copied);
-      } else {
-        toast('已复制添加');
-      }
-    }
-
-    function moveTest(id, dir) {
-      var sample = currentSample();
-      var idx = sample.tests.findIndex(function (t) { return t.id === id; });
-      var j = idx + dir;
-      if (idx < 0 || j < 0 || j >= sample.tests.length) return;
-      var t = sample.tests[idx]; sample.tests[idx] = sample.tests[j]; sample.tests[j] = t;
-      renderTestTable();
-    }
-
-    function deleteTest(id) {
-      var sample = currentSample();
-      var used = sample.models.filter(function (m) { return (m.linkedTestIds || []).indexOf(id) >= 0; });
-      if (used.length) {
-        if (!confirm('有 ' + used.length + ' 个规格型号正在使用该试验，删除将级联取消关联。确认删除？')) return;
-      } else if (!confirm('确认删除该默认试验？')) return;
-      sample.tests = sample.tests.filter(function (t) { return t.id !== id; });
-      sample.models.forEach(function (m) {
-        m.linkedTestIds = (m.linkedTestIds || []).filter(function (tid) { return tid !== id; });
-        if (m.overrides) delete m.overrides[id];
-      });
-      renderTestTable();
-      renderModelTable();
-    }
-
-    // init: leaf-only workspace; non-leaf shows empty state
-    if (state.selectedId) {
-      var n = findNode(TREES[state.cat], state.selectedId);
-      state.selectedIsLeaf = !!(n && n.leaf && !(n.children && n.children.length));
-    }
-    applyDetectCategoryLabels();
-    renderTree();
-    renderWorkspace();
-
-    if (window.PrototypeAnnotation) {
-      PrototypeAnnotation.init({
-        annotations: [
-          {
-            id: 'tree-leaf-only',
-            selector: '[data-annotate="tree-leaf-only"]',
-            position: 'top-right',
-            title: '左树仅样品可选',
-            wide: true,
-            content: '层级为<strong>参考标准 → 样品</strong>。中间节点（标准/分类）只负责展开；<strong>仅样品叶节点可选</strong>后进入右侧配置。<br>同名样品在不同标准下为不同主数据（后台编码不同，前端不展示编码）。',
-            tag: '结构'
-          },
-          {
-            id: 'empty-non-leaf',
-            selector: '[data-annotate="empty-non-leaf"]',
-            position: 'top-left',
-            title: '非叶空态',
-            content: '选中分类/标准节点时右侧展示空态，提示先选择样品叶节点再维护基本信息、规格型号与试验。',
-            tag: '结构'
-          },
-          {
-            id: 'sync-to-da',
-            selector: '[data-annotate="sync-to-da"]',
-            position: 'bottom-left',
-            title: '一键同步样品试验数据',
-            wide: true,
-            content: '已移除「导出」。保留本按钮，hover 提示：将 LIMS 样品数据结构同步至<strong>直连数采系统</strong>。',
-            tag: '同步'
-          },
-          {
-            id: 'param-tabs',
-            selector: '[data-annotate="param-tabs"]',
-            position: 'bottom-right',
-            title: '右侧三 Tab',
-            wide: true,
-            content: '<strong>基本信息</strong>｜<strong>规格型号</strong>｜<strong>试验</strong>。<br>试验 Tab = 样品默认试验模板（结构唯一真相）；规格型号 Tab = 型号档案 +「配置试验」关联默认试验并快照取值。',
-            tag: '结构'
-          },
-          {
-            id: 'basic-fields',
-            selector: '[data-annotate="basic-fields"]',
-            position: 'top-right',
-            title: '基本信息字段',
-            wide: true,
-            content: '含样品分类、名称、排序、单位、<strong>是否制样</strong>、描述、再检周期、图片、附件。图片/附件均支持多文件。',
-            tag: '字段'
-          },
-          {
-            id: 'sample-need-prepare',
-            selector: '[data-annotate="sample-need-prepare"]',
-            position: 'left',
-            title: '是否制样（样品级）',
-            wide: true,
-            content: '样品主数据字段，直接决定<strong>样品制备流程是否走</strong>：选「是」→ 委托后进入样品制备；选「否」→ 跳过制备、流转单不生成制备行。',
-            tag: '制样'
-          },
-          {
-            id: 'recheck-cycle',
-            selector: '[data-annotate="recheck-cycle"]',
-            position: 'left',
-            title: '再检周期',
-            wide: true,
-            content: '下拉「数值 / 文本」组合：<br>· <strong>数值</strong>：步进器 + 单位「月」；合格证再检日期 = 检测日期 + 再检周期（月）-1（天）<br>· <strong>文本</strong>：隐藏步进器，文字直接加载到合格证（不带入原数值）<br>规格型号编辑同样使用该组件。',
-            tag: '字段'
-          },
-          {
-            id: 'model-table',
-            selector: '[data-annotate="model-table"]',
-            position: 'top-right',
-            title: '规格型号列表',
-            wide: true,
-            content: '列表<strong>不含是否制样、不含标准要求</strong>。操作「关联」已改为<strong>配置试验</strong>：从默认试验勾选并允许规格型号侧覆盖取值。',
-            tag: '规格型号'
-          },
-          {
-            id: 'model-edit-drawer',
-            selector: '[data-annotate="model-edit-drawer"]',
-            position: 'top-left',
-            title: '规格型号编辑',
-            wide: true,
-            content: '右侧抽屉维护型号档案。再检周期同基本信息组合控件；图片/附件字段旁 tips 提示「可上传多个」。无规格型号时首次添加会保留默认模板值并复制到型号。',
-            tag: '规格型号'
-          },
-          {
-            id: 'cfg-tests-drawer',
-            selector: '[data-annotate="cfg-tests-drawer"]',
-            position: 'top-left',
-            title: '配置试验',
-            wide: true,
-            content: '可选试验为单行 chips；勾选与「取消关联」联动为待保存。点击已选试验在下方编辑覆盖。<br>首次勾选<strong>快照复制取值</strong>；规格型号侧修改<strong>永不回写</strong>默认。保存时若取消项含个性化配置则二次确认。',
-            tag: '规格型号'
-          },
-          {
-            id: 'cfg-override',
-            selector: '[data-annotate="cfg-override"]',
-            position: 'bottom-left',
-            title: '规格型号覆盖',
-            wide: true,
-            content: '可覆盖取值类字段；结构字段只读，须在样品默认试验中修改结构。默认试验改取值<strong>不覆盖</strong>已关联型号；改结构则<strong>强同步</strong>到已关联型号。',
-            tag: '数据关系'
-          },
-          {
-            id: 'test-tab',
-            selector: '[data-annotate="test-tab"]',
-            position: 'top-right',
-            title: '默认试验模板',
-            wide: true,
-            content: '本 Tab 是样品默认试验的<strong>结构唯一真相</strong>。试验项编码 / 检测项编码系统生成，编辑抽屉内只读回显。新增试验后若已有规格型号，会弹出同步决策。',
-            tag: '试验'
-          },
-          {
-            id: 'copy-add-test',
-            selector: '[data-annotate="copy-add-test"]',
-            position: 'bottom-left',
-            title: '手动添加 / 复制添加',
-            wide: true,
-            content: '<strong>手动添加</strong>：打开试验编辑抽屉新建。<br><strong>复制添加</strong>：下拉单选<strong>其他样品</strong>的试验（不可选当前样品），复制后再弹出「同步到已有规格型号」。',
-            tag: '试验'
-          },
-          {
-            id: 'copy-test-modal',
-            selector: '[data-annotate="copy-test-modal"]',
-            position: 'top-right',
-            title: '复制其他样品试验',
-            wide: true,
-            content: '下拉按「样品分类 · 样品」分组列出可复制试验项，支持单选。排除当前样品全部试验，避免同样品自我复制。',
-            tag: '试验'
-          },
-          {
-            id: 'sync-new-test',
-            selector: '[data-annotate="sync-new-test"]',
-            position: 'top-right',
-            title: '新增试验同步决策',
-            wide: true,
-            content: '默认新增一条试验后询问是否同步关联：<br>· 全部规格型号<br>· 选择规格型号（下方加载当前样品型号列表）<br>· 不同步（仅默认模板）',
-            tag: '数据关系'
-          },
-          {
-            id: 'test-edit-drawer',
-            selector: '[data-annotate="test-edit-drawer"]',
-            position: 'top-left',
-            title: '试验编辑抽屉',
-            wide: true,
-            content: '维护试验级字段：<strong>试验项编码</strong>（只读回显）、检测类别、试样类别代码、试样色号、是否制样、试样数量、标准要求拼接器等。右侧每个检测项含<strong>检测项编码</strong>（只读回显）。',
-            tag: '字段'
-          },
-          {
-            id: 'test-code',
-            selector: '[data-annotate="test-code"]',
-            position: 'left',
-            title: '试验项编码',
-            content: '系统生成（如 TST_AC），仅回显，用户不可编辑。新建时自动分配。',
-            tag: '编码'
-          },
-          {
-            id: 'std-builder',
-            selector: '[data-annotate="std-builder"]',
-            position: 'left',
-            title: '标准要求拼接',
-            content: '支持多段「字段 + 文字」拼接预览。检测项级不再维护项级标准要求。',
-            tag: '字段'
-          },
-          {
-            id: 'test-prepare',
-            selector: '[data-annotate="test-prepare"]',
-            position: 'top-right',
-            title: '是否制样（试验级）',
-            wide: true,
-            content: '试验级「是否制样」控制本试验的试样数量等配置。样品制备<strong>流程是否走</strong>以基本信息 Tab 的样品级「是否制样」为准。',
-            tag: '制样'
-          },
-          {
-            id: 'test-sample-qty',
-            selector: '[data-annotate="test-sample-qty"]',
-            position: 'left',
-            title: '试样数量',
-            content: '是否制样为「是」时显示并必填；步进器调整（≥1）。委托详情「制样信息」取此值展示为「试样数量-N」。',
-            tag: '制样'
-          },
-          {
-            id: 'test-equip',
-            selector: '[data-annotate="test-equip"]',
-            position: 'left',
-            title: '检测设备（多选）',
-            wide: true,
-            content: '改为多选下拉，选项来自「设备管理」且<strong>仅启用状态=启用</strong>的设备。停用设备不可新选；暂无启用设备时提示先去设备管理启用。',
-            tag: '设备'
-          },
-          {
-            id: 'cfg-equip',
-            selector: '[data-annotate="cfg-equip"]',
-            position: 'left',
-            title: '规格型号·检测设备',
-            wide: true,
-            content: '配置试验覆盖态同样为多选启用设备；与默认试验「检测设备」同源（EquipStore），规格型号侧覆盖不回写默认。',
-            tag: '设备'
-          },
-          {
-            id: 'detect-items',
-            selector: '[data-annotate="detect-items"]',
-            position: 'top-left',
-            title: '检测项规则',
-            wide: true,
-            content: '每个检测项展示<strong>检测项编码</strong>（系统生成、只读）。无项级标准要求。支持是否必填、隐藏（隐藏则必填锁定为否）；类型=下拉时配置可选项。<strong>默认值（含标称值）永远非必填</strong>。',
-            tag: '检测项'
-          }
-        ]
-      });
-    }
+    init();
   </script>
 </body>
 </html>
