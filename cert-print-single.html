@@ -90,6 +90,7 @@
   </div>
 
   <script src="js/short-link-qr.js"></script>
+  <script src="js/personnel-store.js"></script>
   <script src="js/inspector-select.js"></script>
   <script src="js/label-cert-config.js"></script>
   <script src="js/label-cert-render.js"></script>
@@ -102,9 +103,10 @@
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
     var MAX_RECORDERS = LabelCertConfig.getRecorderMax();
     var inspParam = params.get('inspectors');
-    var urlInspectors = inspParam === null
-      ? ['cs222', 'cs3']
-      : inspParam.split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
+    var urlInspectors = PersonnelStore.pickRosterNames(
+      inspParam === null ? [] : inspParam.split(',').filter(Boolean),
+      MAX_INSPECTORS
+    );
     var urlRecorders = (params.get('recorders') || '').split(',').filter(Boolean).slice(0, MAX_RECORDERS);
 
     function syncShortlinkBaseHint() {
@@ -145,7 +147,8 @@
     }
 
     var samples = allSamples.slice();
-    var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
+    var INSPECTOR_OPTIONS = PersonnelStore.rosterNames();
+    var RECORDER_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
 
     function rolesForItem(item) {
       var masterId = item.masterId || LabelCertConfig.masterIdFromName(item.name);
@@ -203,7 +206,7 @@
         var recTd = union.needRecorders
           ? '<td class="border border-slate-200 px-3 py-2 min-w-[140px]">' +
               (roles.needRecorders
-                ? InspectorSelect.renderHTML({ inspectors: item.recorders || [], options: INSPECTOR_OPTIONS, mode: 'cell', idx: i, prefix: 'rec', maxCount: MAX_RECORDERS })
+                ? InspectorSelect.renderHTML({ inspectors: item.recorders || [], options: RECORDER_OPTIONS, mode: 'cell', idx: i, prefix: 'rec', maxCount: MAX_RECORDERS })
                 : '<span class="text-xs text-slate-300">—</span>') +
             '</td>'
           : '';
@@ -338,9 +341,10 @@
           id: 'inspector-edit',
           selector: '[data-annotate-inspector="1"]',
           position: 'top-right',
-          title: '检测员/记录员选择',
-          content: '与系统一致：标签 + 下拉在同一行边框内展示。列按模版角色并集显示；修改后左侧合格证预览实时同步。',
-          tag: 'UI 对齐'
+          title: '检测员选择',
+          wide: true,
+          content: '检测员取自基础数据 › 人员资质的<b>在岗</b>试验员。已离岗不出现。列按模版角色并集显示；修改后左侧合格证预览实时同步。记录员名单本期不变。',
+          tag: '选人'
         }
       ]
     });

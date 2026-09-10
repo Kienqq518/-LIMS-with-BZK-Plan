@@ -83,7 +83,7 @@
   </div>
 
   <!-- 试样分发弹窗 -->
-  <div id="issueModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+  <div id="issueModal" class="modal-mask fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
     <div class="w-[520px] max-w-full rounded-lg bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <h3 class="text-base font-medium text-slate-800">试样分发</h3>
@@ -98,7 +98,7 @@
           </div>
         </div>
         <div class="mb-2 text-sm text-slate-600">领样人：</div>
-        <div id="receiverList" class="receiver-list"></div>
+        <div id="receiverList" class="receiver-list" data-annotate="receiver-list"></div>
         <div class="mt-4 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800 leading-relaxed" data-annotate="distribute-note">
           <strong>发放时将生成检测任务单：</strong>按所选领样人（检测员）一人一单；下发人/日期写入，接收人与接收日期置空。<br>
           任务进入「待接收」。流转单「接收试样」行仍在<strong>试验检测</strong>页检测员点击「接收」时回填。
@@ -111,20 +111,14 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/personnel-store.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
-    var RECEIVERS = [
-      { name: 'admin', dept: '事业发展部' },
-      { name: 'cs222', dept: '安全工器具检测组' },
-      { name: '梁倩', dept: '数蚕智能' },
-      { name: 'cs111', dept: 'XXX检测' },
-      { name: '环境检测体验账号1', dept: '主目录' },
-      { name: '谢刘成', dept: '杭州总公司' },
-      { name: 'ZR01', dept: '检测中心' },
-      { name: '潘哲宁', dept: '电气试验室' },
-      { name: '李四', dept: '力学试验室' },
-      { name: 'lims_test', dept: '杭州总公司' }
-    ];
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
     var allData = [
       { specimenId: 'SC2026/02130101-01', sampleName: '实壁类塑料电缆导管_直管', sampleCode: 'SC2026/02130101', spec: 'PVC-C 氯化聚氯乙烯实壁导管', testName: '颜色外观检查' },
@@ -146,9 +140,17 @@
     var issueAllMode = false;
 
     function renderReceivers() {
-      document.getElementById('receiverList').innerHTML = RECEIVERS.map(function (r, i) {
-        return '<label class="receiver-item"><input type="radio" name="receiver" value="' + r.name + '" data-dept="' + r.dept + '"' + (i === 0 ? ' checked' : '') + ' />' +
-          '<span>' + r.name + ' — ' + r.dept + '</span></label>';
+      var list = (window.PersonnelStore && PersonnelStore.listOnRoster)
+        ? PersonnelStore.listOnRoster()
+        : [];
+      var el = document.getElementById('receiverList');
+      if (!list.length) {
+        el.innerHTML = '<div class="px-4 py-8 text-center text-sm text-slate-400">暂无在岗试验员，请先在「人员资质」同步底座</div>';
+        return;
+      }
+      el.innerHTML = list.map(function (r, i) {
+        return '<label class="receiver-item"><input type="radio" name="receiver" value="' + esc(r.name) + '" data-dept="' + esc(r.dept || '') + '"' + (i === 0 ? ' checked' : '') + ' />' +
+          '<span>' + esc(r.name) + ' — ' + esc(r.dept || '-') + '</span></label>';
       }).join('');
     }
 
@@ -209,8 +211,16 @@
       renderTable();
     }
 
-    function showModal(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
-    function hideModal(id) { var m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+    function showModal(id) {
+      var m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex', 'open');
+    }
+    function hideModal(id) {
+      var m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex', 'open');
+    }
 
     function openIssueModal(all) {
       issueAllMode = all;
@@ -248,14 +258,16 @@
 
     document.getElementById('issueModal').addEventListener('click', function (e) { if (e.target === this) closeIssueModal(); });
     renderTable();
+    renderReceivers();
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
           { id: 'issue-btn', selector: '[data-annotate="issue-btn"]', position: 'bottom-left', title: '发样', wide: true, content: '勾选至少一条试样后按钮点亮。点击后弹出「试样分发」弹窗，选择检测时效与领样人完成发放。', tag: '任务单' },
           { id: 'issue-all-btn', selector: '[data-annotate="issue-all-btn"]', position: 'bottom-left', title: '全部发样', wide: true, content: '无需勾选，将当前列表全部试样一次性分发给同一领样人，并生成/合并该检测员的检测任务单。', tag: '任务单' },
+          { id: 'receiver-list', selector: '[data-annotate="receiver-list"]', position: 'top-left', title: '领样人', wide: true, content: '取自基础数据 › 人员资质的<b>在岗</b>试验员（底座「试验员」角色仍在）。已离岗不出现。展示「姓名 — 部门」。无人时提示去人员资质同步底座。', tag: '选人' },
           { id: 'distribute-note', selector: '[data-annotate="distribute-note"]', position: 'top-left', title: '任务单生成 + 流转单时机', wide: true, content: '<strong>检测任务单：</strong>点击「发放」瞬间按检测员生成（一人一单）；内容仅含分给此人的试样/项目；接收人/日期置空。同检测员已有有效单则合并。<br><strong>流转单：</strong>「接收试样」行仍在试验检测页点「接收」时回填。', tag: '任务单' },
-          { id: 'issue-confirm', selector: '[data-annotate="issue-confirm"]', position: 'top-left', title: '发放', wide: true, content: '确认后：① 试样指派给领样人并进入「待接收」；② 生成或合并该检测员的检测任务单（下发人/日期写入，接收栏空）。', tag: '任务单' }
+          { id: 'issue-confirm', selector: '[data-annotate="issue-confirm"]', position: 'top-left', title: '发放', wide: true, content: '确认后：① 试样指派给领样人并进入「待接收」；② 生成或合并该检测员的检测任务单（下发人/日期写入，接收栏空）。领样人必须来自在岗试验员。', tag: '任务单' }
         ]
       });
     }

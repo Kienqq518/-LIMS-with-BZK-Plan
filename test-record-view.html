@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>检测记录</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    .sheet-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .sheet-table th, .sheet-table td { border: 1px solid #94a3b8; padding: 7px 8px; text-align: center; }
+    .sheet-table th { background: #f1f5f9; color: #475569; font-weight: 500; }
+    .meta-grid { display: grid; grid-template-columns: 88px 1fr; gap: 6px 8px; font-size: 12px; }
+    .meta-grid .k { color: #64748b; }
+    .chg-mark {
+      display: inline-flex; align-items: center; gap: 3px;
+      margin-left: 4px; padding: 0 6px; border-radius: 999px;
+      background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa;
+      font-size: 10px; line-height: 18px; cursor: pointer; vertical-align: middle;
+    }
+    .chg-mark:hover { background: #ffedd5; }
+    .chg-modal { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(15,23,42,.45); padding: 16px; }
+    .chg-modal.open { display: flex; }
+    .chg-card { width: 360px; max-width: 100%; background: #fff; border-radius: 12px; padding: 16px 18px; box-shadow: 0 12px 32px rgba(15,23,42,.18); }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-700">
+  <div class="mx-auto max-w-xl p-4 pt-6">
+    <div class="overflow-hidden rounded-xl bg-white shadow-lg">
+      <div class="bg-blue-600 px-5 py-4 text-white">
+        <a id="backLink" href="report-verify.html" class="mb-2 inline-flex items-center gap-1 text-xs text-blue-100 hover:text-white">
+          <i class="fa fa-angle-left"></i> 返回溯源页
+        </a>
+        <h1 class="text-lg font-semibold">试验检测记录</h1>
+        <p id="topSub" class="mt-1 text-xs text-blue-100">公开只读 · 按试样展示检测员、起止时间、记录员及检测记录</p>
+      </div>
+      <div id="body" class="px-5 py-5"></div>
+    </div>
+  </div>
+
+  <div id="chgModal" class="chg-modal" role="dialog" aria-modal="true">
+    <div class="chg-card">
+      <div class="flex items-center justify-between">
+        <p class="text-sm font-semibold text-slate-800"><i class="fa fa-history text-amber-500"></i> 更改详情</p>
+        <button type="button" id="chgClose" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div id="chgBody" class="mt-3 text-xs leading-relaxed text-slate-700"></div>
+    </div>
+  </div>
+
+  <script src="js/report-trace.js"></script>
+  <script src="js/report-trace-l1.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var code = params.get('code') || '';
+      var focusItem = params.get('item') || '';
+      if (code) document.getElementById('backLink').href = 'report-verify.html?code=' + encodeURIComponent(code);
+
+      var res = code ? ReportTrace.getVerify(code) : { ok: false };
+      var reportNo = (res.ok && res.entry) ? res.entry.reportNo : params.get('report');
+      var items = ReportTrace.getTestItemRecords(reportNo);
+      var reworks = ReportTrace.getReworks ? ReportTrace.getReworks(reportNo) : [];
+      var body = document.getElementById('body');
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      function findChange(testName, specimenNo, colName) {
+        var key = String(colName || '').replace(/\/.*$/, '');
+        return reworks.filter(function (r) {
+          if (r.testName !== testName) return false;
+          if (r.specimenNo && r.specimenNo !== specimenNo) return false;
+          var f = String(r.field || '');
+          return f && (colName.indexOf(f) >= 0 || f.indexOf(key) >= 0);
+        })[0] || null;
+      }
+
+      function chgBtn(rw, idx) {
+        if (!rw) return '';
+        return '<button type="button" class="chg-mark js-chg" data-idx="' + idx + '"><i class="fa fa-pencil"></i> 已更改</button>';
+      }
+
+      if (!items.length) {
+        body.innerHTML = '<p class="text-sm text-slate-500">未找到对应检测记录。</p>';
+        return;
+      }
+
+      document.getElementById('topSub').textContent =
+        ((res.view && res.view.reportNo) ? res.view.reportNo + '　·　' : '') + items.length + ' 个试验项' +
+        ((res.entry && res.entry.level === 1) ? '　·　无人化自动采集（只读）' : '');
+
+      var firstParams = (items[0] && items[0].sampleParams) || null;
+      var paramsBanner = '';
+      if (res.entry && res.entry.level === 1 && firstParams) {
+        paramsBanner = '<div class="mb-3 rounded-lg border border-blue-100 bg-blue-50/70 p-3 text-xs text-slate-700">' +
+          '<p class="mb-1.5 font-semibold text-blue-800">样品参数同步</p>' +
+          '<div class="grid grid-cols-2 gap-x-3 gap-y-1">' +
+            '<span>样品编号　' + esc(firstParams.sampleNo || '') + '</span>' +
+            '<span>环刚度等级　' + esc(firstParams.ringGrade || '') + '</span>' +
+            '<span>公称长度　' + esc(firstParams.nominalLength || '') + '</span>' +
+            '<span>公称内径　' + esc(firstParams.innerDia || '') + '</span>' +
+            '<span>公称壁厚　' + esc(firstParams.wall || '') + '</span>' +
+          '</div>' +
+          '<p class="mt-2 text-[11px] text-blue-700"><i class="fa fa-lock"></i> 设备自动采集 → 自动传输 → 自动存储 → 自动计算；人员无录入/修改权限</p>' +
+        '</div>';
+      }
+
+      body.innerHTML = paramsBanner + items.map(function (it) {
+        var resultCols = (it.columns || []).slice(1);
+        var specimens = it.specimens && it.specimens.length ? it.specimens : [];
+        var focused = focusItem && focusItem === it.name;
+        var unmanned = !!it.unmanned || (res.entry && res.entry.level === 1);
+        var specHtml = specimens.map(function (sp) {
+          var thead = resultCols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('');
+          var tbody = '<tr>' + (sp.values || []).map(function (c, ci) {
+            var col = resultCols[ci] || '';
+            var rw = findChange(it.name, sp.specimenNo, col);
+            var mark = rw ? chgBtn(rw, reworks.indexOf(rw)) : '';
+            return '<td>' + esc(c) + mark + '</td>';
+          }).join('') + '</tr>';
+          return '<div class="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">' +
+            '<p class="text-sm font-medium text-slate-800">试样　' + esc(sp.specimenNo || '—') +
+              (unmanned ? ' <span class="ml-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-normal text-emerald-700">系统判定</span>' : '') +
+            '</p>' +
+            '<div class="meta-grid mt-2">' +
+              '<span class="k">' + (unmanned ? '执行工位' : '检测员') + '</span><span>' + esc(sp.inspector || '—') + '</span>' +
+              '<span class="k">试验开始</span><span>' + esc(sp.startAt || '—') + '</span>' +
+              '<span class="k">试验结束</span><span>' + esc(sp.endAt || '—') + '</span>' +
+              '<span class="k">' + (unmanned ? '记录方式' : '记录员') + '</span><span>' + esc(sp.recorder || '—') + '</span>' +
+              '<span class="k">记录时间</span><span>' + esc(sp.recordAt || '—') + '</span>' +
+            '</div>' +
+            (resultCols.length
+              ? '<div class="mt-3 overflow-x-auto"><table class="sheet-table min-w-[320px]"><thead><tr>' + thead + '</tr></thead><tbody>' + tbody + '</tbody></table></div>'
+              : '') +
+          '</div>';
+        }).join('');
+        var basisHtml = (it.basis && it.basis.length)
+          ? '<span class="k">试验依据</span><span>' + it.basis.map(esc).join('<br>') + '</span>'
+          : '<span class="k">执行标准</span><span>' + esc(it.stdCode) + '　' + esc(it.stdName) + '</span>';
+        var envHtml = '';
+        if (it.envDetail) {
+          envHtml = '<span class="k">环境数据</span><span>温度 ' + esc(it.envDetail.temp) + ' ℃　湿度 ' + esc(it.envDetail.humidity) + ' %RH　气压 ' + esc(it.envDetail.pressure) + ' hPa</span>';
+        } else {
+          envHtml = '<span class="k">环境条件</span><span>' + esc(it.env) + '</span>';
+        }
+        var eqTable = '';
+        if (it.equipTable && it.equipTable.length) {
+          eqTable = '<div class="mt-3 overflow-x-auto"><p class="mb-1 text-[11px] font-medium text-slate-500">试验设备</p>' +
+            '<table class="sheet-table min-w-[420px]"><thead><tr><th>名称</th><th>型号</th><th>编号</th><th>精度</th><th>试验前</th><th>试验后</th></tr></thead><tbody>' +
+            it.equipTable.map(function (e) {
+              return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.model) + '</td><td>' + esc(e.id) + '</td><td>' + esc(e.precision) + '</td><td>' + esc(e.before) + '</td><td>' + esc(e.after) + '</td></tr>';
+            }).join('') + '</tbody></table></div>';
+        }
+        return '<article id="item-' + esc(it.name) + '" class="mb-3 rounded-lg border p-4 last:mb-0 ' +
+          (focused ? 'border-blue-300 bg-blue-50/40 ring-1 ring-blue-200' : 'border-slate-200') + '">' +
+          '<p class="text-sm font-medium text-slate-800">' + esc(it.name) + '</p>' +
+          '<div class="meta-grid mt-3">' +
+            basisHtml +
+            '<span class="k">检测设备</span><span>' + esc(it.equipment) + '</span>' +
+            envHtml +
+          '</div>' +
+          eqTable +
+          (specHtml || '<p class="mt-3 text-sm text-slate-500">暂无试样记录。</p>') +
+        '</article>';
+      }).join('') +
+        (res.entry && (res.entry.level === 1 || res.entry.level === 3) ? '' : multiSpecimenRecordDemo()) +
+        '<p class="mt-3 text-center text-[11px] text-slate-400">' +
+          (res.entry && res.entry.level === 1
+            ? '公开页只读展示签发时冻结的自动采集记录，人员不可编辑。'
+            : '公开页只读展示签发时冻结的检测记录，不可编辑。') +
+        '</p>';
+
+      // 自动滚动并定位到该试验项
+      if (focusItem) {
+        var el = document.getElementById('item-' + focusItem);
+        if (el) requestAnimationFrame(function () { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+      }
+
+      /** 结构示意：多条试样合并出一个结果（如三相导体直流电阻） */
+      function multiSpecimenRecordDemo() {
+        // 用一个跨行合并单元格表达「多试样一结论」
+        var tbody =
+          '<tr>' +
+            '<td class="text-center">SC2026/0022-03701</td><td class="text-center">红</td><td class="text-center">不涂金属</td><td class="text-center">20</td><td class="text-center">0.0300</td><td class="text-center">0.0773</td>' +
+            '<td class="text-center align-middle font-medium text-emerald-600" rowspan="3">合格<div class="mt-1 text-[10px] font-normal text-slate-400">三相合并<br>系统判定</div></td>' +
+          '</tr>' +
+          '<tr><td class="text-center">SC2026/0022-03702</td><td class="text-center">黄</td><td class="text-center">不涂金属</td><td class="text-center">20</td><td class="text-center">0.0301</td><td class="text-center">0.0772</td></tr>' +
+          '<tr><td class="text-center">SC2026/0022-03703</td><td class="text-center">绿</td><td class="text-center">不涂金属</td><td class="text-center">20</td><td class="text-center">0.0299</td><td class="text-center">0.0770</td></tr>';
+        return '<div class="mt-5 mb-2 flex items-center gap-2"><span class="h-px flex-1 bg-slate-200"></span>' +
+          '<span class="text-[11px] text-slate-400">结构示意 · 多条试样合并出一个结果</span>' +
+          '<span class="h-px flex-1 bg-slate-200"></span></div>' +
+          '<article class="rounded-lg border border-slate-200 p-4">' +
+            '<p class="text-sm font-medium text-slate-800">20℃ 导体直流电阻</p>' +
+            '<div class="meta-grid mt-3">' +
+              '<span class="k">执行标准</span><span>GB/T 3956-2008　电缆的导体</span>' +
+              '<span class="k">检测设备</span><span>YMWJ-XL2 直流电阻测试仪「XL2」</span>' +
+              '<span class="k">环境条件</span><span>20.0℃ / 55%RH</span>' +
+            '</div>' +
+            '<div class="mt-3 overflow-x-auto"><table class="sheet-table min-w-[420px]"><thead><tr>' +
+              '<th>试样编号</th><th>相别</th><th>金属镀层</th><th>试验温度(℃)</th><th>平均电阻(μΩ)</th><th>R20(Ω/km)</th><th>结论</th>' +
+            '</tr></thead><tbody>' + tbody + '</tbody></table></div>' +
+            '<p class="mt-2 text-[11px] text-slate-400">说明：三相（红/黄/绿）分别记录实测值，由系统合并计算后给出<strong>单一结论</strong>；「结论」列跨行合并，区别于上方「一条试样一条结论」的展示结构。</p>' +
+          '</article>';
+      }
+
+      var chgModal = document.getElementById('chgModal');
+      var chgBody = document.getElementById('chgBody');
+      function openChg(rw) {
+        if (!rw || !chgBody) return;
+        chgBody.innerHTML =
+          '<div class="meta-grid">' +
+            '<span class="k">更改字段</span><span>' + esc(rw.field) + '</span>' +
+            '<span class="k">试样编号</span><span>' + esc(rw.specimenNo) + '</span>' +
+            '<span class="k">更改前</span><span class="text-rose-600">' + esc(rw.before) + '</span>' +
+            '<span class="k">更改后</span><span class="text-emerald-600">' + esc(rw.after) + '</span>' +
+            '<span class="k">更改人</span><span>' + esc(rw.reworkBy) + '</span>' +
+            '<span class="k">更改时间</span><span>' + esc(rw.reworkAt) + '</span>' +
+            '<span class="k">更改原因</span><span>' + esc(rw.reason) + '</span>' +
+            (rw.returnedBy ? '<span class="k">退回人</span><span>' + esc(rw.returnedBy) + '（' + esc(rw.returnedRole) + '）' + esc(rw.returnedAt) + '</span>' : '') +
+          '</div>';
+        chgModal.classList.add('open');
+      }
+      function closeChg() { chgModal.classList.remove('open'); }
+      document.getElementById('chgClose').addEventListener('click', closeChg);
+      chgModal.addEventListener('click', function (e) { if (e.target === chgModal) closeChg(); });
+      document.addEventListener('click', function (e) {
+        var btn = e.target.closest ? e.target.closest('.js-chg') : null;
+        if (!btn) return;
+        var rw = reworks[parseInt(btn.getAttribute('data-idx'), 10)];
+        openChg(rw);
+      });
+    })();
+  </script>
+</body>
+</html>

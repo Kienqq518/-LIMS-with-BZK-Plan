@@ -93,6 +93,7 @@
   </div>
 
   <script src="js/short-link-qr.js"></script>
+  <script src="js/personnel-store.js"></script>
   <script src="js/inspector-select.js"></script>
   <script src="js/label-cert-config.js"></script>
   <script src="js/label-cert-render.js"></script>
@@ -106,9 +107,10 @@
     var entrustCodes = (params.get('codes') || 'SC2026/0073,SC2026/0072').split(',').filter(Boolean);
     var sampleNos = (params.get('nos') || '').split(',').filter(Boolean);
     var inspParam = params.get('inspectors');
-    var defaultInspectors = inspParam === null
-      ? ['admin']
-      : inspParam.split(',').filter(Boolean).slice(0, MAX_INSPECTORS);
+    var defaultInspectors = PersonnelStore.pickRosterNames(
+      inspParam === null ? [] : inspParam.split(',').filter(Boolean),
+      MAX_INSPECTORS
+    );
     var defaultRecorders = (params.get('recorders') || '').split(',').filter(Boolean).slice(0, MAX_RECORDERS);
     if (params.get('from') === 'qualified') document.getElementById('backLink').href = 'cert-qualified-print.html';
 
@@ -206,7 +208,8 @@
     var samples = allSamples.slice();
     var currentPage = 1;
     var pageSize = 10;
-    var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
+    var INSPECTOR_OPTIONS = PersonnelStore.rosterNames();
+    var RECORDER_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
 
     function buildCertHtml(item, idx) {
       var tpl = LabelCertConfig.resolveTemplate(item.cat || 'aqgqj', 'certificate', item.masterId);
@@ -242,7 +245,7 @@
     function recorderCell(item, globalIdx) {
       return InspectorSelect.renderHTML({
         inspectors: item.recorders || [],
-        options: INSPECTOR_OPTIONS,
+        options: RECORDER_OPTIONS,
         mode: 'cell',
         idx: globalIdx,
         prefix: 'rec',
@@ -410,9 +413,10 @@
           id: 'default-inspector',
           selector: '[data-annotate-inspector="1"]',
           position: 'top-right',
-          title: '检测员/记录员选择',
-          content: '样式对齐系统：标签与添加下拉在同一行边框内。列按当前样品模版角色并集显示；可逐条增删，左侧预览同步更新。',
-          tag: 'UI 对齐'
+          title: '检测员选择',
+          wide: true,
+          content: '检测员取自基础数据 › 人员资质的<b>在岗</b>试验员。已离岗不出现。列按当前样品模版角色并集显示；可逐条增删，左侧预览同步更新。记录员名单本期不变。',
+          tag: '选人'
         }
       ]
     });

@@ -2,7 +2,7 @@
  * 设备台账 Mock Store（设备管理 + 样品试验「检测设备」共用）
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-equip-store-v1';
+  var STORAGE_KEY = 'lims-equip-store-v3';
 
   var DEPTS = ['材料检测组', '应敏科技1', '电气检测组', '力学检测组'];
   var AREAS = ['力学检测室1', '电气检测室', '老化试验室', '综合检测区'];
@@ -37,8 +37,15 @@
           { path: '安全工器具类 - DLT 976-2017 - 绝缘操作杆 - 交流耐压试验', sample: '绝缘操作杆', model: '-', test: '交流耐压试验' }
         ],
         history: [
-          { id: 'h1', event: '设备校准', start: '2025-06-01', end: '2025-06-01', remark: '', report: '校准报告_20250601.pdf' },
-          { id: 'h2', event: '设备校准', start: '2024-06-05', end: '2024-06-05', remark: '', report: '校准报告_20240605.pdf' }
+          { id: 'h1', event: '设备校准', date: '2025-06-01', remark: '按周期送检', report: '校准报告_20250601.pdf' },
+          { id: 'h2', event: '设备校准', date: '2024-06-05', remark: '', report: '校准报告_20240605.pdf' },
+          { id: 'h1b', event: '设备校准', date: '2023-06-10', remark: '', report: '校准报告_20230610.pdf' },
+          { id: 'h1c', event: '设备校准', date: '2022-06-12', remark: '', report: '校准报告_20220612.pdf' }
+        ],
+        maintain: [
+          { id: 'm1', type: '维修', date: '2026-06-15', content: '更换升压变压器散热风扇，复测输出电压正常', by: '厂家工程师', result: '已修复', file: '维修单_20260615.pdf' },
+          { id: 'm2', type: '期间核查', date: '2026-05-20', content: '水槽密封与接地电阻复测', by: '周强', result: '正常', file: '' },
+          { id: 'm3', type: '日常保养', date: '2026-02-18', content: '电极清洗 / 绝缘检查', by: '周强', result: '正常', file: '' }
         ]
       },
       {
@@ -81,8 +88,11 @@
           { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-H - 维卡软化温度', sample: 'PVC-H', model: 'DS实壁类', test: '维卡软化温度' }
         ],
         history: [
-          { id: 'h3', event: '设备校准', start: '2025-02-25', end: '2025-02-25', remark: '', report: '校准报告_YBKC02_20250225.pdf' },
-          { id: 'h4', event: '设备校准', start: '2024-08-29', end: '2024-08-29', remark: '', report: '校准报告_YBKC02_20240829.pdf' }
+          { id: 'h3', event: '设备校准', date: '2025-02-25', remark: '', report: '校准报告_YBKC02_20250225.pdf' },
+          { id: 'h4', event: '设备校准', date: '2024-08-29', remark: '', report: '校准报告_YBKC02_20240829.pdf' }
+        ],
+        maintain: [
+          { id: 'm4', type: '日常保养', date: '2026-03-10', content: '量爪清洁、零位校对', by: '李强', result: '正常', file: '' }
         ]
       },
       {
@@ -111,7 +121,7 @@
           { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-M - 尺寸检查', sample: 'PVC-M', model: 'DS实壁类', test: '尺寸检查' }
         ],
         history: [
-          { id: 'h5', event: '设备校准', start: '2025-01-10', end: '2025-01-10', remark: '', report: '校准报告_YBKC03.pdf' }
+          { id: 'h5', event: '设备校准', date: '2025-01-10', remark: '', report: '校准报告_YBKC03.pdf' }
         ]
       },
       {
@@ -142,7 +152,7 @@
         ],
         linkedTests: [],
         history: [
-          { id: 'h6', event: '设备校准', start: '2026-01-07', end: '2026-01-07', remark: '', report: '空气老化箱校准报告.pdf' }
+          { id: 'h6', event: '设备校准', date: '2026-01-07', remark: '', report: '空气老化箱校准报告.pdf' }
         ]
       },
       {
@@ -166,9 +176,11 @@
         calibStatus: '已过期',
         enabled: true,
         files: [{ name: '万能机说明书.pdf', type: 'pdf' }],
-        linkedTests: [],
+        linkedTests: [
+          { path: '安全工器具类 - DLT 976-2017 - 绝缘操作杆 - 挠度载荷', sample: '绝缘操作杆', model: '-', test: '挠度载荷' }
+        ],
         history: [
-          { id: 'h7', event: '设备校准', start: '2024-12-01', end: '2024-12-01', remark: '', report: '校准报告_LX05.pdf' }
+          { id: 'h7', event: '设备校准', date: '2024-12-01', remark: '', report: '校准报告_LX05.pdf' }
         ]
       },
       {
@@ -265,12 +277,33 @@
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
+  function normalizeHistory(list) {
+    var changed = false;
+    (list || []).forEach(function (dev) {
+      (dev.history || []).forEach(function (h) {
+        if (!h.date && (h.end || h.start)) {
+          h.date = h.end || h.start || '';
+          changed = true;
+        }
+        if (h.start != null || h.end != null) {
+          delete h.start;
+          delete h.end;
+          changed = true;
+        }
+      });
+    });
+    return changed;
+  }
+
   function load() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length) return parsed;
+        if (Array.isArray(parsed) && parsed.length) {
+          if (normalizeHistory(parsed)) save(parsed);
+          return parsed;
+        }
       }
     } catch (e) { /* ignore */ }
     var seed = defaultSeed();

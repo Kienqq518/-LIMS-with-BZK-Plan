@@ -33,6 +33,19 @@
     .test-table th, .test-table td { border: 1px solid #e5e7eb; padding: 8px 10px; font-size: 12px; text-align: left; vertical-align: top; }
     .test-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
     .test-table td.max-w-xs { max-width: 180px; }
+    .client-combo { position: relative; flex: 1 1 auto; min-width: 0; width: 100%; }
+    .form-item .client-combo input[type="text"] { width: 100%; min-width: 0; flex: none; box-sizing: border-box; }
+    .client-combo-list {
+      display: none; position: absolute; z-index: 20; left: 0; right: 0; top: 100%;
+      margin-top: 2px; max-height: 220px; overflow: auto; background: #fff;
+      border: 1px solid #cbd5e1; border-radius: 4px; box-shadow: 0 8px 20px rgba(15,23,42,.12);
+    }
+    .client-combo.open .client-combo-list { display: block; }
+    .client-combo-list button {
+      display: block; width: 100%; text-align: left; padding: 7px 10px; font-size: 13px; color: #334155; background: #fff; border: 0; cursor: pointer;
+    }
+    .client-combo-list button:hover, .client-combo-list button.active { background: #eff6ff; color: #1d4ed8; }
+    .client-combo-list .empty { padding: 10px; font-size: 12px; color: #94a3b8; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -87,12 +100,19 @@
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
       <div class="form-grid">
-        <div class="form-item"><label><span class="req">*</span> 委托编号</label><input id="f_code" type="text" readonly class="bg-slate-50" /></div>
+        <div class="form-item" data-annotate="create-code"><label><span class="req">*</span> 委托编号</label><input id="f_code" type="text" readonly class="bg-slate-50" /></div>
+        <div class="form-item" data-annotate="create-major-cat"><label><span class="req">*</span> 样品大类</label><input id="f_majorCat" type="text" readonly class="bg-slate-50" /></div>
         <div class="form-item"><label><span class="req">*</span> 任务类型</label><select id="f_taskType"><option value="">请选择</option><option value="electrical">电气（输配电类）</option><option value="electrical_lv">电气（低压电器类）</option><option value="electrical_ee">电气（电工电子产品类）</option><option value="electrical_seismic">电气（抗震检测类）</option><option value="material_safety">材料（安全工器具类）</option><option value="material_cable">材料（电线电缆、金具、金属材料类）</option></select></div>
         <div class="form-item"><label><span class="req">*</span> 优先等级</label><select id="f_priority"><option>常规</option><option>加急</option></select></div>
         <div class="form-item"><label>检测类型</label><select id="f_testType"><option>常规</option></select></div>
         <div class="form-item"><label>检测类别</label><select id="f_testCategory"><option>例行试验</option></select></div>
-        <div class="form-item"><label><span class="req">*</span> 客户单位</label><select id="f_customer"><option value="">请选择</option><option>杭州数蚕智能科技有限公司</option><option>宇宙设想有限公司</option></select></div>
+        <div class="form-item" data-annotate="create-client-unit"><label><span class="req">*</span> 委托单位</label>
+          <div class="client-combo" id="customerCombo">
+            <input id="f_customer_display" type="text" placeholder="请选择 / 输入名称或编码" autocomplete="off" />
+            <input type="hidden" id="f_customer" />
+            <div id="f_customer_list" class="client-combo-list"></div>
+          </div>
+        </div>
         <div class="form-item"><label>客户地址</label><input id="f_address" type="text" placeholder="请输入" /></div>
         <div class="form-item"><label>客户邮政编码</label><input id="f_zip" type="text" placeholder="请输入" /></div>
         <div class="form-item"><label><span class="req">*</span> 客户联系人</label><select id="f_contact"><option value="">请选择</option><option>安可</option></select></div>
@@ -159,7 +179,11 @@
           <div class="modal-form-item"><label><span class="req">*</span> 样品名称</label>
             <select id="m_sampleName" onchange="onSampleNameChange()">
               <option value="">请选择样品名称</option>
-              <optgroup label="安全工器具 / 976">
+              <optgroup label="电力物资类" data-cat="dlwz">
+                <option value="8.7/10kV·3芯">8.7/10kV·3芯</option>
+                <option value="实壁类塑料电缆导管_直管">实壁类塑料电缆导管_直管</option>
+              </optgroup>
+              <optgroup label="安全工器具 / 976" data-cat="aqgqj">
                 <option value="绝缘操作杆">绝缘操作杆</option>
                 <option value="绝缘支、拉、吊杆">绝缘支、拉、吊杆</option>
                 <option value="绝缘托瓶架">绝缘托瓶架</option>
@@ -167,6 +191,12 @@
                 <option value="绝缘绳索类工具">绝缘绳索类工具</option>
                 <option value="绝缘软梯">绝缘软梯</option>
                 <option value="绝缘滑车">绝缘滑车</option>
+              </optgroup>
+              <optgroup label="环境检测" data-cat="hjjc">
+                <option value="水质检测">水质检测</option>
+              </optgroup>
+              <optgroup label="工程检测" data-cat="gcjc">
+                <option value="复合硅酸盐水泥">复合硅酸盐水泥</option>
               </optgroup>
             </select>
           </div>
@@ -247,12 +277,99 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/mock-dict.js"></script>
   <script src="js/entrust-field-config.js"></script>
+  <script src="js/customer-store.js"></script>
+  <script src="js/prototype-annotation.js"></script>
   <script>
     (function applyEntrustFieldConfig() {
       var sections = EntrustFieldConfig.load();
       var dictTypes = MockDictStore.load();
       EntrustFieldConfig.applyToForm(sections, dictTypes);
     })();
+
+    function findCustomer(nameOrId) {
+      if (!nameOrId || !window.CustomerStore) return null;
+      var list = CustomerStore.loadCustomers();
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].id === nameOrId || list[i].name === nameOrId) return list[i];
+      }
+      return null;
+    }
+
+    function applyCustomer(c, fillAddr) {
+      var hidden = document.getElementById('f_customer');
+      var display = document.getElementById('f_customer_display');
+      if (!hidden || !display) return;
+      if (!c) {
+        hidden.value = '';
+        display.value = '';
+        return;
+      }
+      hidden.value = c.id;
+      display.value = CustomerStore.displayLabel(c);
+      if (fillAddr) {
+        var addr = document.getElementById('f_address');
+        if (addr) addr.value = c.address || c.region || '';
+        var zip = document.getElementById('f_zip');
+        if (zip && c.zip) zip.value = c.zip;
+        var contact = document.getElementById('f_contact');
+        if (contact && c.contacts && c.contacts[0]) {
+          contact.innerHTML = '<option value="">请选择</option>' + c.contacts.map(function (p) {
+            return '<option' + (p === c.contacts[0] ? ' selected' : '') + '>' + p.name + '</option>';
+          }).join('');
+          var phone = document.getElementById('f_phone');
+          if (phone) phone.value = c.contacts[0].phone || c.contacts[0].mobile || '';
+        }
+      }
+    }
+
+    function selectedCustomerName() {
+      var c = findCustomer(document.getElementById('f_customer').value);
+      if (c) return c.name;
+      var display = document.getElementById('f_customer_display');
+      return (display && display.value) || '';
+    }
+
+    function bindCustomerCombo() {
+      var combo = document.getElementById('customerCombo');
+      var display = document.getElementById('f_customer_display');
+      var listEl = document.getElementById('f_customer_list');
+      if (!combo || !display || !window.CustomerStore) return;
+
+      function renderList(q) {
+        q = (q || '').toLowerCase();
+        var list = CustomerStore.loadCustomers().filter(function (c) {
+          if (!q) return true;
+          return (c.name || '').toLowerCase().indexOf(q) >= 0 || (c.code || '').toLowerCase().indexOf(q) >= 0;
+        });
+        if (!list.length) {
+          listEl.innerHTML = '<div class="empty">无匹配客户</div>';
+          return;
+        }
+        listEl.innerHTML = list.map(function (c) {
+          return '<button type="button" data-id="' + c.id + '">' + CustomerStore.displayLabel(c) + '</button>';
+        }).join('');
+      }
+
+      display.addEventListener('focus', function () {
+        combo.classList.add('open');
+        renderList(display.value.replace(/（.*）$/, ''));
+      });
+      display.addEventListener('input', function () {
+        document.getElementById('f_customer').value = '';
+        combo.classList.add('open');
+        renderList(display.value);
+      });
+      listEl.addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-id]');
+        if (!btn) return;
+        applyCustomer(findCustomer(btn.getAttribute('data-id')), true);
+        combo.classList.remove('open');
+      });
+      document.addEventListener('click', function (e) {
+        if (!combo.contains(e.target)) combo.classList.remove('open');
+      });
+    }
+    bindCustomerCombo();
     // 样品试验 Mock 数据（绝缘操作杆 / 976 类）
     var sampleTestMap = {
       '绝缘操作杆': [
@@ -310,6 +427,7 @@
         var el = document.getElementById('f_' + key);
         if (el && data[key] !== undefined) el.value = data[key];
       });
+      applyCustomer(findCustomer(data.customer), false);
       renderSamples(data.samples || []);
     }
 
@@ -413,8 +531,16 @@
       renderTestTable([], false);
     }
 
+    function filterSampleOptionsByCat() {
+      var cat = window._majorCat || 'dlwz';
+      document.querySelectorAll('#m_sampleName optgroup').forEach(function (g) {
+        g.hidden = g.getAttribute('data-cat') !== cat;
+      });
+    }
+
     function openSampleModal(index) {
       resetSampleModal();
+      filterSampleOptionsByCat();
       if (typeof index === 'number' && index >= 0) {
         editingSampleIndex = index;
         var s = window._formData.samples[index];
@@ -494,18 +620,34 @@
 
     (function init() {
       var params = getParams();
+      var catMap = {
+        dlwz: { name: '电力物资类', nextCode: 'SC2026/0210' },
+        aqgqj: { name: '安全工器具类', nextCode: 'AQJYST-260013' },
+        hjjc: { name: '环境检测', nextCode: 'SC2026/0006' },
+        gcjc: { name: '工程检测', nextCode: 'SC2026/0010' }
+      };
+      var cat = catMap[params.cat] || catMap.dlwz;
       var data = (params.mode === 'copy') ? JSON.parse(JSON.stringify(copyData)) : JSON.parse(JSON.stringify(manualData));
-      if (params.mode === 'copy' && params.from) {
-        data.code = 'SC2026/' + String(Math.floor(Math.random() * 9000 + 1000)).padStart(4, '0');
+      if (params.mode === 'copy' && params.cat && params.cat !== 'aqgqj') {
+        data.samples = [];
       }
+      if (params.mode !== 'edit') {
+        data.code = params.code || cat.nextCode;
+      } else if (params.code) {
+        data.code = params.code;
+      }
+      data.majorCat = cat.name;
       fillForm(data);
+      var catEl = document.getElementById('f_majorCat');
+      if (catEl) catEl.value = cat.name;
       window._formData = data;
+      window._majorCat = params.cat || 'dlwz';
     })();
 
     function openPreview() {
       var d = window._formData || manualData;
       var code = document.getElementById('f_code').value || d.code;
-      var customer = document.getElementById('f_customer').value || d.customer;
+      var customer = selectedCustomerName() || d.customer;
       var contact = document.getElementById('f_contact').value || d.contact || '安可';
       var phone = document.getElementById('f_phone').value || d.phone || '17835503262';
       var fee = document.getElementById('f_actualFee').value || d.actualFee || '0';
@@ -540,6 +682,40 @@
         if (e.target === this) hideModal(id);
       });
     });
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'create-code',
+            selector: '[data-annotate="create-code"]',
+            position: 'top-right',
+            title: '委托编号（按大类规则生成）',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>委托号必须在选定样品大类后生成，才能命中该大类编号规则，使单号体现电力 / 环境等业务属性。<br><strong>展示规则：</strong>只读。电力物资类示例 SC2026/0210；安全工器具类示例 AQJYST-260013（前缀与分类码按该大类规则）。<br><strong>交互逻辑：</strong>登记入口已选定大类后带入，本页不可改号、不可换大类。复制任务也不沿用源单旧号。',
+            tag: '委托编辑'
+          },
+          {
+            id: 'create-major-cat',
+            selector: '[data-annotate="create-major-cat"]',
+            position: 'top-right',
+            title: '样品大类（登记锁定）',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>一个委托单只对应一个大类。登记时前置选择后锁定，后续样品必须属于该大类。<br><strong>展示规则：</strong>只读，回显登记弹窗所选大类。<br><strong>交互逻辑：</strong>不可在编辑页改大类。若选错大类需作废本单后重新登记。添加样品时仅可选该大类下的样品主数据。',
+            tag: '委托编辑'
+          },
+          {
+            id: 'create-client-unit',
+            selector: '[data-annotate="create-client-unit"]',
+            position: 'bottom-right',
+            title: '委托单位（带单位编码）',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>客户管理允许同名同地区并存，下拉只显示名称会分不清点哪一家。选择客户时必须能看到单位编码。<br><strong>展示规则：</strong>选项与选中态均为「单位名称（单位编码）」，如 杭州数蚕智能科技有限公司（121001）。预览/套打仍只打名称。<br><strong>交互逻辑：</strong>输入名称或编码均可过滤。选中后回填地址、邮编、联系人。取值仍是客户 id。',
+            tag: '委托编辑'
+          }
+        ]
+      });
+    }
   </script>
 </body>
 </html>

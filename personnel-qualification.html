@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>人员资质 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+
+    .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+    .badge { display:inline-flex; align-items:center; border-radius:10px; padding:1px 8px; font-size:12px; line-height:1.6; }
+    .b-valid { background:#ecfdf5; color:#059669; }
+    .b-warn  { background:#fffbeb; color:#b45309; }
+    .b-expired { background:#fef2f2; color:#dc2626; }
+    .b-missing { background:#f1f5f9; color:#64748b; }
+    .b-off { background:#e2e8f0; color:#475569; }
+
+    /* Drawer */
+    .drawer-mask { position:fixed; inset:0; z-index:50; background:rgba(15,23,42,.45); opacity:0; pointer-events:none; transition:opacity .2s; }
+    .drawer-mask.open { opacity:1; pointer-events:auto; }
+    .drawer { position:fixed; top:0; right:0; bottom:0; z-index:60; width:880px; max-width:96vw; background:#fff;
+      box-shadow:-8px 0 28px rgba(0,0,0,.12); transform:translateX(100%); transition:transform .25s ease; display:flex; flex-direction:column; }
+    .drawer.open { transform:translateX(0); }
+
+    .tabbtn { padding:8px 4px; margin-right:20px; font-size:14px; color:#64748b; border-bottom:2px solid transparent; cursor:pointer; }
+    .tabbtn.active { color:#2563eb; border-bottom-color:#2563eb; font-weight:500; }
+
+    .modal-mask { position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.4); padding:16px; }
+    .modal-mask.open { display:flex; }
+
+    #toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); z-index:9999; background:rgba(0,0,0,.76);
+      color:#fff; padding:8px 22px; border-radius:6px; font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap; }
+    #toast.show { opacity:1; }
+
+    .upload-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border:1px dashed #cbd5e1; border-radius:6px; color:#64748b; font-size:12px; cursor:pointer; background:#fff; }
+    .upload-btn:hover { border-color:#2563eb; color:#2563eb; }
+    .file-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:4px; background:#eff6ff; font-size:12px; color:#1e40af; }
+    .file-chip .rm { color:#93c5fd; cursor:pointer; }
+    .file-chip .rm:hover { color:#1d4ed8; }
+    .b-assist { background:#eff6ff; color:#1d4ed8; }
+    .linked-tag {
+      display:inline-flex; align-items:center;
+      background:#eff6ff; border:1px solid #bfdbfe; border-radius:4px;
+      padding:3px 8px; font-size:12px; color:#1e40af;
+      max-width:100%; word-break:break-all;
+    }
+    .auth-scope-box {
+      min-height:88px; padding:10px;
+      background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;
+      display:flex; flex-wrap:wrap; align-content:flex-start; gap:6px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <!-- Tab Bar -->
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      人员资质
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4 space-y-4">
+
+    <!-- Info banner -->
+    <div class="flex items-start gap-2 rounded-md border border-blue-100 bg-blue-50 px-4 py-2.5 text-xs text-blue-700" data-annotate="banner">
+      <i class="fa fa-info-circle mt-0.5"></i>
+      <p class="leading-relaxed">
+        人员基本信息（姓名 / 账号 / 部门 / 联系方式）同步自底座 <b>「角色管理 → 试验员 → 分配用户」</b>，本页只读；
+        <b>资质证书 / 操作授权 / 培训考核记录</b> 在本页维护。底座角色中已删除的人保留台账并标「已离岗」，只读，不能再派检测任务。
+      </p>
+    </div>
+
+    <!-- Filter -->
+    <div class="rounded bg-white p-4 shadow-sm" data-annotate="filter-bar">
+      <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <div class="flex items-center gap-2">
+          <label class="w-20 flex-shrink-0 text-right text-sm text-slate-600">姓名 / 账号</label>
+          <input id="f_kw" class="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-20 flex-shrink-0 text-right text-sm text-slate-600">部门</label>
+          <select id="f_dept" class="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">全部</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-20 flex-shrink-0 text-right text-sm text-slate-600">资质状态</label>
+          <select id="f_status" class="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">全部</option>
+            <option value="valid">正常</option>
+            <option value="warn">证书临期</option>
+            <option value="expired">证书过期</option>
+            <option value="missing">资质缺失</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-20 flex-shrink-0 text-right text-sm text-slate-600">在岗状态</label>
+          <select id="f_roster" class="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">全部</option>
+            <option value="on">在岗</option>
+            <option value="off">已离岗</option>
+          </select>
+        </div>
+      </div>
+      <div class="mt-3 flex justify-end gap-2">
+        <button onclick="renderTable()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+        <button onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <div class="flex items-center gap-2" data-annotate="toolbar">
+          <button onclick="syncFromBase()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 同步底座试验员</button>
+        </div>
+        <span id="statSummary" class="text-xs text-slate-400" data-annotate="summary"></span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1080px] border-collapse text-left text-sm" data-annotate="personnel-table">
+          <thead>
+            <tr class="bg-slate-50 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium w-12">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-name">姓名</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">账号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">部门</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">联系方式</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-certs">资质证书</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-auths">操作授权</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-train">培训考核（最近）</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-24" data-annotate="col-status">资质状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-32" data-annotate="col-ops">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Drawer: 人员资质维护 ===== -->
+  <div id="drawerMask" class="drawer-mask" onclick="closeDrawer()"></div>
+  <div id="drawer" class="drawer" data-annotate="pq-drawer">
+    <div class="flex-shrink-0 border-b border-slate-100 px-5 py-3">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 id="dName" class="text-base font-semibold text-slate-800">—</h3>
+            <span id="dOffTag" class="badge b-off hidden">已离岗</span>
+            <span id="dStatus" class="badge b-valid">—</span>
+          </div>
+          <div id="dMeta" class="mt-1 text-xs text-slate-500"></div>
+          <div id="dOffBanner" class="mt-2 hidden rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600" data-annotate="pq-off">
+            该人员已不在底座「试验员」角色中。资质台账只读留档，不可编辑；也不能再被分派检测任务。若重新分配到试验员角色，下次同步后恢复在岗。
+          </div>
+        </div>
+        <button onclick="closeDrawer()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times text-lg"></i></button>
+      </div>
+      <div class="mt-3 flex border-b border-slate-100" data-annotate="pq-tabs">
+        <div class="tabbtn active" data-tab="certs" onclick="switchTab('certs')">资质证书</div>
+        <div class="tabbtn" data-tab="auths" onclick="switchTab('auths')">操作授权</div>
+        <div class="tabbtn" data-tab="trainings" onclick="switchTab('trainings')">培训考核记录</div>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 py-4">
+      <div class="mb-3 flex items-center justify-between">
+        <span id="tabHint" class="text-xs text-slate-400"></span>
+        <button id="addBtn" onclick="openRecordModal(null)" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700" data-annotate="pq-add"><i class="fa fa-plus"></i> <span id="addBtnLabel">新增</span></button>
+      </div>
+      <div id="tabBody" data-annotate="pq-tab-body"></div>
+    </div>
+  </div>
+
+  <!-- ===== Record Edit Modal ===== -->
+  <div id="recordModal" class="modal-mask" style="z-index:90">
+    <div id="recDialog" class="w-[640px] max-w-full rounded-lg bg-white shadow-xl" data-annotate="pq-modal">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 id="recTitle" class="text-base font-medium">新增</h3>
+        <button onclick="closeRecordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div id="recBody" class="space-y-3 px-5 py-4 text-sm"></div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeRecordModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="saveRecord()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/equip-store.js"></script>
+  <script src="js/personnel-store.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    function refreshPa() {
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) {
+        requestAnimationFrame(function () { PrototypeAnnotation.refresh(); });
+      }
+    }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    var _toastTimer=null;
+    function showToast(msg, ms){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(_toastTimer); _toastTimer=setTimeout(function(){t.classList.remove('show');}, ms||2200); }
+    function onRoster(p){ return PersonnelStore.isOnRoster(p); }
+
+    function badgeCls(key){ return ({valid:'b-valid',warn:'b-warn',expired:'b-expired',missing:'b-missing',none:'b-valid'})[key]||'b-valid'; }
+    function statusBadge(st){ return '<span class="badge '+badgeCls(st.key)+'">'+esc(st.text)+'</span>'; }
+    function setDStatus(p){ var st=PersonnelStore.overallStatus(p); var el=document.getElementById('dStatus'); el.className='badge '+badgeCls(st.key); el.textContent=st.text; }
+    function statusDot(st){
+      var c={valid:'#10b981',warn:'#f59e0b',expired:'#ef4444',missing:'#94a3b8',none:'#10b981'}[st.key]||'#10b981';
+      return '<span class="dot" style="background:'+c+'"></span>';
+    }
+
+    // ==================== TABLE ====================
+    function fillDeptFilter(){
+      var sel=document.getElementById('f_dept');
+      PersonnelStore.DEPTS.forEach(function(d){ var o=document.createElement('option'); o.value=d; o.textContent=d; sel.appendChild(o); });
+    }
+
+    function latestTraining(p){
+      var list=(p.trainings||[]).slice().sort(function(a,b){ return String(b.at).localeCompare(String(a.at)); });
+      return list[0]||null;
+    }
+
+    function renderTable(){
+      var kw=document.getElementById('f_kw').value.trim();
+      var dept=document.getElementById('f_dept').value;
+      var st=document.getElementById('f_status').value;
+      var roster=document.getElementById('f_roster').value;
+      var rows=PersonnelStore.listAll().filter(function(p){
+        if(kw && (p.name.indexOf(kw)<0 && (p.account||'').indexOf(kw)<0)) return false;
+        if(dept && p.dept!==dept) return false;
+        if(st && PersonnelStore.overallStatus(p).key!==st) return false;
+        if(roster==='on' && !onRoster(p)) return false;
+        if(roster==='off' && onRoster(p)) return false;
+        return true;
+      });
+      var tb=document.getElementById('tableBody');
+      tb.innerHTML = rows.length ? rows.map(function(p,i){
+        var overall=PersonnelStore.overallStatus(p);
+        var certWorst = (p.certs&&p.certs.length) ? p.certs.reduce(function(w,c){
+          var s=PersonnelStore.statusOf(c.validTo); var order={none:0,valid:0,warn:1,expired:2};
+          return order[s.key]>order[w.key]?s:w;
+        }, {key:'valid',text:''}) : {key:'missing'};
+        var lt=latestTraining(p);
+        var certCell = (p.certs&&p.certs.length)
+          ? statusDot(certWorst)+p.certs.length+' 项'
+          : '<span class="text-red-500">缺失</span>';
+        var off=!onRoster(p);
+        var nameCell=esc(p.name)+(off?' <span class="badge b-off">已离岗</span>':'');
+        var opLabel=off?'查看资质':'维护资质';
+        return '<tr class="hover:bg-slate-50'+(off?' bg-slate-50 text-slate-500':'')+'">'+
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">'+(i+1)+'</td>'+
+          '<td class="border border-slate-200 px-3 py-2.5 font-medium '+(off?'text-slate-600':'text-slate-800')+'">'+nameCell+'</td>'+
+          '<td class="border border-slate-200 px-3 py-2.5">'+esc(p.account||'-')+'</td>'+
+          '<td class="border border-slate-200 px-3 py-2.5">'+esc(p.dept||'-')+'</td>'+
+          '<td class="border border-slate-200 px-3 py-2.5">'+esc(p.phone||'-')+'</td>'+
+          '<td class="border border-slate-200 px-3 py-2.5">'+certCell+'</td>'+
+          '<td class="border border-slate-200 px-3 py-2.5">'+((p.auths&&p.auths.length)?p.auths.length+' 项':'<span class="text-slate-400">-</span>')+'</td>'+
+          '<td class="border border-slate-200 px-3 py-2.5 text-xs">'+(lt?esc(lt.name)+' · '+esc(lt.at):'<span class="text-slate-400">-</span>')+'</td>'+
+          '<td class="border border-slate-200 px-3 py-2.5">'+statusBadge(overall)+'</td>'+
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">'+
+            '<button onclick="openDrawer(\''+p.id+'\')" class="text-blue-600 hover:underline text-xs">'+opLabel+'</button>'+
+          '</td>'+
+        '</tr>';
+      }).join('') : '<tr><td colspan="10" class="border border-slate-200 px-3 py-6 text-center text-sm text-slate-400">暂无人员数据</td></tr>';
+
+      var all=PersonnelStore.listAll();
+      var onN=all.filter(onRoster).length;
+      var offN=all.length-onN;
+      var warn=all.filter(function(p){var k=PersonnelStore.overallStatus(p).key;return k==='warn';}).length;
+      var exp=all.filter(function(p){return PersonnelStore.overallStatus(p).key==='expired';}).length;
+      var miss=all.filter(function(p){return PersonnelStore.overallStatus(p).key==='missing';}).length;
+      document.getElementById('statSummary').innerHTML='共 '+all.length+' 人　·　在岗 '+onN+'　'+
+        '<span class="text-slate-500">离岗 '+offN+'</span>　·　'+
+        '<span class="text-amber-600">临期 '+warn+'</span>　'+
+        '<span class="text-red-600">过期 '+exp+'</span>　'+
+        '<span class="text-slate-500">缺失 '+miss+'</span>';
+      refreshPa();
+    }
+
+    function resetFilter(){
+      document.getElementById('f_kw').value='';
+      document.getElementById('f_dept').value='';
+      document.getElementById('f_status').value='';
+      document.getElementById('f_roster').value='';
+      renderTable();
+    }
+    function syncFromBase(){
+      var r=PersonnelStore.syncFromBase();
+      showToast('已同步：在岗 '+r.on+' 人，已离岗 '+r.off+' 人（台账保留、只读）', 2800);
+      renderTable();
+    }
+
+    // ==================== DRAWER ====================
+    var _pid=null, _tab='certs';
+
+    function applyRosterUi(p){
+      var off=!onRoster(p);
+      document.getElementById('dOffTag').classList.toggle('hidden', !off);
+      document.getElementById('dOffBanner').classList.toggle('hidden', !off);
+      document.getElementById('addBtn').style.display=off?'none':'';
+    }
+    function openDrawer(id){
+      _pid=id; _tab='certs';
+      var p=PersonnelStore.findById(id); if(!p) return;
+      document.getElementById('dName').textContent=p.name;
+      setDStatus(p);
+      applyRosterUi(p);
+      document.getElementById('dMeta').innerHTML='账号 '+esc(p.account||'-')+'　|　'+esc(p.dept||'-')+'　|　'+esc(p.phone||'-')+
+        (p.certNo?'　|　资质编号 '+esc(p.certNo):'')+'　<span class="text-slate-300">（基本信息同步自底座）</span>';
+      switchTab('certs');
+      document.getElementById('drawer').classList.add('open');
+      document.getElementById('drawerMask').classList.add('open');
+      refreshPa();
+    }
+    function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('drawerMask').classList.remove('open'); renderTable(); refreshPa(); }
+
+    function switchTab(tab){
+      _tab=tab;
+      document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-tab')===tab); });
+      var label={certs:'新增证书',auths:'新增授权',trainings:'新增记录'}[tab];
+      document.getElementById('addBtnLabel').textContent=label;
+      var hint={certs:'资质证书直接对应报告「人」维度中「有效资质证书 / 操作能力证」的公示内容。',
+        auths:'操作授权按设备绑定：选定设备后带出其关联试验（只读）。可独立操作与协助操作均可被派检测任务。',
+        trainings:'培训与能力考核记录，用于资质延续与内部授权的支撑材料。'}[tab];
+      document.getElementById('tabHint').textContent=hint;
+      renderTabBody();
+      refreshPa();
+    }
+
+    function renderTabBody(){
+      var p=PersonnelStore.findById(_pid); if(!p) return;
+      var body=document.getElementById('tabBody');
+      if(_tab==='certs'){
+        var list=p.certs||[];
+        body.innerHTML = list.length ? list.map(function(c){
+          var st=PersonnelStore.statusOf(c.validTo);
+          return card(
+            '<div class="flex items-start justify-between gap-2">'+
+              '<div class="min-w-0">'+
+                '<div class="flex items-center gap-2 flex-wrap"><span class="font-medium text-slate-800">'+esc(c.name)+'</span>'+statusBadge(st)+'</div>'+
+                '<div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-500">'+
+                  kv('证书编号',c.no)+kv('类别',c.category)+kv('发证机构',c.org)+kv('有效期至',c.validTo||'长期')+
+                '</div>'+
+                fileLine(c.file)+
+              '</div>'+ ops('certs',c.id) +
+            '</div>');
+        }).join('') : empty('暂无资质证书');
+      } else if(_tab==='auths'){
+        var la=p.auths||[];
+        body.innerHTML = la.length ? la.map(function(a){
+          var st=PersonnelStore.statusOf(a.validTo);
+          var label=PersonnelStore.equipLabelOf(a.equipId, a.equip);
+          var tests=PersonnelStore.linkedTestsOf(a.equipId);
+          var levelCls=a.level==='协助操作'?'b-assist':'b-valid';
+          var tags=tests.length
+            ? tests.map(function(t){ return '<span class="linked-tag">'+esc(t.path||t.test||'')+'</span>'; }).join('')
+            : '<span class="text-xs text-slate-400">该设备尚未关联试验</span>';
+          return card(
+            '<div class="flex items-start justify-between gap-2">'+
+              '<div class="min-w-0">'+
+                '<div class="flex items-center gap-2 flex-wrap"><span class="font-medium text-slate-800">'+esc(label||'未选设备')+'</span>'+
+                  '<span class="badge '+levelCls+'">'+esc(a.level||'-')+'</span>'+statusBadge(st)+'</div>'+
+                '<div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-500">'+
+                  kv('授权人',a.by)+kv('授权日期',a.at)+kv('有效期至',a.validTo||'长期')+
+                '</div>'+
+                '<div class="mt-2">'+
+                  '<div class="mb-1 text-[11px] text-slate-400">授权范围（已关联: '+tests.length+'）</div>'+
+                  '<div class="auth-scope-box max-h-24 overflow-y-auto">'+tags+'</div>'+
+                '</div>'+
+              '</div>'+ ops('auths',a.id) +
+            '</div>');
+        }).join('') : empty('暂无操作授权');
+      } else {
+        var lt=p.trainings||[];
+        body.innerHTML = lt.length ? lt.map(function(t){
+          return card(
+            '<div class="flex items-start justify-between gap-2">'+
+              '<div class="min-w-0">'+
+                '<div class="flex items-center gap-2 flex-wrap"><span class="font-medium text-slate-800">'+esc(t.name)+'</span>'+
+                  '<span class="badge '+(t.result==='通过'||t.result==='合格'?'b-valid':'b-warn')+'">'+esc(t.result||'-')+'</span>'+
+                  '<span class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">'+esc(t.type||'培训')+'</span>'+
+                '</div>'+
+                '<div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-500">'+
+                  kv('日期',t.at)+kv('成绩',t.score||'-')+kv('有效期至',t.validTo||'-')+
+                '</div>'+
+                fileLine(t.file)+
+              '</div>'+ ops('trainings',t.id) +
+            '</div>');
+        }).join('') : empty('暂无培训考核记录');
+      }
+      refreshPa();
+    }
+    function card(inner){ return '<div class="mb-2 rounded-lg border border-slate-200 p-3">'+inner+'</div>'; }
+    function empty(t){ return '<div class="rounded-lg border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">'+t+'</div>'; }
+    function kv(k,v){ return '<div><span class="text-slate-400">'+k+'：</span>'+esc(v||'-')+'</div>'; }
+    function fileLine(f){ return f?('<div class="mt-1.5"><span class="file-chip"><i class="fa fa-file-pdf-o"></i>'+esc(f)+' <a href="#" onclick="showToast(\'预览暂未开放\');return false;" class="text-blue-600">预览</a></span></div>'):''; }
+    function ops(type,id){
+      var p=PersonnelStore.findById(_pid);
+      if(!onRoster(p)) return '';
+      return '<div class="flex-shrink-0 flex flex-col items-end gap-1 text-xs">'+
+      '<button onclick="openRecordModal(\''+id+'\')" class="text-blue-600 hover:underline">编辑</button>'+
+      '<button onclick="deleteRecord(\''+type+'\',\''+id+'\')" class="text-red-500 hover:underline">删除</button>'+
+    '</div>'; }
+    function guardRoster(){
+      var p=PersonnelStore.findById(_pid);
+      if(!onRoster(p)){ showToast('已离岗人员资质只读，不可修改'); return false; }
+      return true;
+    }
+
+    // ==================== RECORD MODAL ====================
+    var _recId=null, _recFile='';
+    var FIELDS={
+      certs:[['name','证书名称',1],['no','证书编号',0],['category','类别',0],['org','发证机构',0],['issueAt','发证日期','date'],['validTo','有效期至','date']],
+      trainings:[['name','培训/考核名称',1],['type','类型',0],['at','日期','date'],['score','成绩',0],['result','结论',0],['validTo','有效期至','date']]
+    };
+    var HASFILE={certs:true,auths:false,trainings:true};
+
+    function takenEquipIds(p, exceptId){
+      var taken={};
+      (p.auths||[]).forEach(function(a){
+        if(a.equipId && a.id!==exceptId) taken[a.equipId]=true;
+      });
+      return taken;
+    }
+    function authEquipList(p, currentRecId){
+      var keep='';
+      if(currentRecId){
+        var rec=(p.auths||[]).find(function(a){return a.id===currentRecId;});
+        if(rec) keep=rec.equipId||'';
+      }
+      var taken=takenEquipIds(p, currentRecId);
+      var list=EquipStore.listEnabled().filter(function(d){ return !taken[d.id]; });
+      if(keep && !list.some(function(d){return d.id===keep;})){
+        var extra=EquipStore.findById(keep);
+        if(extra) list.unshift(extra);
+      }
+      return list;
+    }
+    function fieldRow(label, inner, req, annotate, top){
+      return '<div class="flex '+(top?'items-start':'items-center')+' gap-3"'+(annotate?' data-annotate="'+annotate+'"':'')+'>'+
+        '<label class="w-28 flex-shrink-0 '+(top?'pt-1.5 ':'')+'text-right text-slate-600">'+(req?'<span class="text-red-500">*</span> ':'')+label+'</label>'+
+        '<div class="min-w-0 flex-1">'+inner+'</div></div>';
+    }
+    function buildAuthForm(p, rec){
+      var curId=rec?rec.equipId:'';
+      var opts=authEquipList(p, rec?rec.id:null);
+      var sel='<select id="rf_equipId" onchange="renderAuthScope()" class="w-full rounded border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-500">'+
+        '<option value="">请选择设备</option>'+
+        opts.map(function(d){
+          var lab=EquipStore.displayLabel(d)+(d.enabled===false?'（已停用）':'');
+          return '<option value="'+esc(d.id)+'"'+(d.id===curId?' selected':'')+'>'+esc(lab)+'</option>';
+        }).join('')+
+        '</select>';
+      var level=rec&&rec.level?rec.level:'可独立操作';
+      var lv='<select id="rf_level" class="w-full rounded border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-blue-500">'+
+        PersonnelStore.AUTH_LEVELS.map(function(l){
+          return '<option value="'+esc(l)+'"'+(l===level?' selected':'')+'>'+esc(l)+'</option>';
+        }).join('')+'</select>';
+      var html=fieldRow('关联设备', sel, true, 'pq-auth-equip')+
+        fieldRow('授权级别', lv, true, 'pq-auth-level')+
+        '<div id="authScopeWrap" class="'+(curId?'':'hidden')+'">'+
+          fieldRow('授权范围',
+            '<div class="mb-1 flex items-center justify-between text-xs text-slate-500">'+
+              '<span id="authScopeTitle">授权范围（已关联: 0）</span>'+
+              '<span class="text-slate-400">来自设备管理 · 只读</span></div>'+
+            '<div id="authScopeBox" class="auth-scope-box max-h-40 overflow-y-auto"></div>'+
+            '<p class="mt-1 text-[11px] text-slate-400">试验项随该设备在「设备管理 → 关联试验」中的维护而变化，此处不可勾选或删除。</p>',
+            false, 'pq-auth-scope', true)+
+        '</div>'+
+        fieldRow('授权人', '<input id="rf_by" type="text" value="'+(rec?esc(rec.by||''):'')+'" class="w-full rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" />')+
+        fieldRow('授权日期', '<input id="rf_at" type="date" value="'+(rec?esc(rec.at||''):'')+'" class="w-full rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" />')+
+        fieldRow('有效期至', '<input id="rf_validTo" type="date" value="'+(rec?esc(rec.validTo||''):'')+'" class="w-full rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" />');
+      return html;
+    }
+    function renderAuthScope(){
+      var wrap=document.getElementById('authScopeWrap');
+      var box=document.getElementById('authScopeBox');
+      var title=document.getElementById('authScopeTitle');
+      var sel=document.getElementById('rf_equipId');
+      if(!wrap||!box||!sel) return;
+      var id=sel.value;
+      if(!id){ wrap.classList.add('hidden'); refreshPa(); return; }
+      wrap.classList.remove('hidden');
+      var tests=PersonnelStore.linkedTestsOf(id);
+      title.textContent='授权范围（已关联: '+tests.length+'）';
+      box.innerHTML = tests.length
+        ? tests.map(function(t){ return '<span class="linked-tag">'+esc(t.path||t.test||'')+'</span>'; }).join('')
+        : '<span class="text-xs text-slate-400">该设备尚未关联试验，请先在设备管理中维护。</span>';
+      refreshPa();
+    }
+
+    function openRecordModal(id){
+      if(!guardRoster()) return;
+      _recId=id; _recFile='';
+      var p=PersonnelStore.findById(_pid);
+      var rec=id ? (p[_tab]||[]).find(function(r){return r.id===id;}) : null;
+      if(rec) _recFile=rec.file||'';
+      document.getElementById('recTitle').textContent=(id?'编辑':'新增')+{certs:'资质证书',auths:'操作授权',trainings:'培训考核记录'}[_tab];
+      var html;
+      if(_tab==='auths'){
+        html=buildAuthForm(p, rec);
+      } else {
+        html=FIELDS[_tab].map(function(f){
+          var type=f[2]==='date'?'date':'text';
+          var req=f[2]===1?'<span class="text-red-500">*</span> ':'';
+          var val=rec?esc(rec[f[0]]||''):'';
+          return '<div class="flex items-center gap-3">'+
+            '<label class="w-28 flex-shrink-0 text-right text-slate-600">'+req+f[1]+'</label>'+
+            '<input id="rf_'+f[0]+'" type="'+type+'" value="'+val+'" class="flex-1 rounded border border-slate-300 px-2 py-1.5 outline-none focus:border-blue-500" />'+
+          '</div>';
+        }).join('');
+      }
+      if(HASFILE[_tab]){
+        html+='<div class="flex items-start gap-3">'+
+          '<label class="w-28 flex-shrink-0 pt-1.5 text-right text-slate-600">证明附件</label>'+
+          '<div class="flex-1"><div id="rf_fileChip" class="mb-1.5"></div>'+
+          '<button type="button" class="upload-btn" onclick="uploadRecFile()"><i class="fa fa-cloud-upload"></i> 上传文件</button></div>'+
+        '</div>';
+      }
+      document.getElementById('recBody').innerHTML=html;
+      renderRecFile();
+      if(_tab==='auths') renderAuthScope();
+      document.getElementById('recordModal').classList.add('open');
+      refreshPa();
+    }
+    function renderRecFile(){ var el=document.getElementById('rf_fileChip'); if(!el) return;
+      el.innerHTML=_recFile?('<span class="file-chip"><i class="fa fa-file-pdf-o"></i>'+esc(_recFile)+' <span class="rm" onclick="_recFile=\'\';renderRecFile();">×</span></span>'):''; }
+    function uploadRecFile(){ _recFile='证明附件_'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'.pdf'; renderRecFile(); showToast('已上传（原型演示）'); }
+    function closeRecordModal(){ document.getElementById('recordModal').classList.remove('open'); refreshPa(); }
+
+    function saveRecord(){
+      if(!guardRoster()) return;
+      var p=PersonnelStore.findById(_pid); if(!p) return;
+      var obj={};
+      if(_tab==='auths'){
+        var equipId=document.getElementById('rf_equipId').value;
+        var level=document.getElementById('rf_level').value;
+        if(!equipId){ alert('请选择关联设备'); return; }
+        if(!level){ alert('请选择授权级别'); return; }
+        var dup=(p.auths||[]).some(function(a){ return a.equipId===equipId && a.id!==_recId; });
+        if(dup){ alert('该人员已授权该设备，请编辑原记录'); return; }
+        obj.equipId=equipId;
+        obj.equip=PersonnelStore.equipLabelOf(equipId);
+        obj.level=level;
+        obj.by=document.getElementById('rf_by').value.trim();
+        obj.at=document.getElementById('rf_at').value.trim();
+        obj.validTo=document.getElementById('rf_validTo').value.trim();
+      } else {
+        var first=FIELDS[_tab][0][0];
+        var firstVal=document.getElementById('rf_'+first).value.trim();
+        if(!firstVal){ alert('请填写'+FIELDS[_tab][0][1]); return; }
+        FIELDS[_tab].forEach(function(f){ obj[f[0]]=document.getElementById('rf_'+f[0]).value.trim(); });
+        if(HASFILE[_tab]) obj.file=_recFile;
+      }
+      if(!p[_tab]) p[_tab]=[];
+      if(_recId){ var idx=p[_tab].findIndex(function(r){return r.id===_recId;}); if(idx>=0){ obj.id=_recId; if(p[_tab][idx].file && obj.file==null) obj.file=p[_tab][idx].file; p[_tab][idx]=obj; } }
+      else { obj.id='r_'+Date.now(); p[_tab].push(obj); }
+      PersonnelStore.upsert(p);
+      closeRecordModal();
+      setDStatus(p);
+      renderTabBody();
+      showToast('已保存');
+      refreshPa();
+    }
+
+    function deleteRecord(type,id){
+      if(!guardRoster()) return;
+      if(!confirm('确定删除该记录？')) return;
+      var p=PersonnelStore.findById(_pid); if(!p) return;
+      p[type]=(p[type]||[]).filter(function(r){return r.id!==id;});
+      PersonnelStore.upsert(p);
+      setDStatus(p);
+      renderTabBody();
+      refreshPa();
+    }
+
+    // init
+    fillDeptFilter();
+    renderTable();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'banner',
+            selector: '[data-annotate="banner"]',
+            position: 'bottom-left',
+            title: '人员来源与本页职责',
+            wide: true,
+            content: '基本信息同步自底座「角色管理 → 试验员 → 分配用户」，本页<b>只读、不新建账号</b>。本页维护证书 / 授权 / 培训。底座角色中已删除的人<b>不删行</b>，标「已离岗」，台账只读，不能再派检测任务。',
+            tag: '范围'
+          },
+          {
+            id: 'filter-bar',
+            selector: '[data-annotate="filter-bar"]',
+            position: 'bottom-left',
+            title: '筛选区',
+            wide: true,
+            content: '姓名/账号模糊、部门、资质状态（全部 / 正常 / 证书临期 / 证书过期 / 资质缺失）、<b>在岗状态</b>（全部 / 在岗 / 已离岗）。查询刷新列表，重置清空条件。',
+            tag: '列表'
+          },
+          {
+            id: 'toolbar',
+            selector: '[data-annotate="toolbar"]',
+            position: 'bottom-left',
+            title: '同步底座试验员',
+            wide: true,
+            content: '按底座「试验员」角色对齐：新增的人补一行；已有的人刷新姓名/部门/电话，<b>不改</b>三类台账。角色中没有的人<b>不删</b>，标「已离岗」。本期<b>不做导出</b>。',
+            tag: '列表'
+          },
+          {
+            id: 'summary',
+            selector: '[data-annotate="summary"]',
+            position: 'bottom-right',
+            title: '试验员汇总',
+            wide: true,
+            content: '「共 N 人 · 在岗 / 离岗 · 临期 / 过期 / 缺失」按<b>全量</b>统计，不受当前筛选影响。离岗看角色是否还在。<b>缺失 = 证书 0 条</b>；临期/过期只看证书有效期。授权、培训不进这三项。',
+            tag: '列表'
+          },
+          {
+            id: 'personnel-table',
+            selector: '[data-annotate="personnel-table"]',
+            position: 'top-right',
+            title: '人员资质列表',
+            wide: true,
+            content: '列：序号、姓名、账号、部门、联系方式、资质证书、操作授权、培训考核（最近）、资质状态、操作。已离岗行灰色并在姓名旁打标。空态「暂无人员数据」。',
+            tag: '列表'
+          },
+          {
+            id: 'col-name',
+            selector: '[data-annotate="col-name"]',
+            position: 'bottom-left',
+            title: '已离岗标记',
+            wide: true,
+            content: '与「资质状态」分开：已离岗 = 底座试验员角色里没这个人。证书仍按有效期显示。试样分发 / 试验检测 / 合格证选人<b>只出在岗</b>。',
+            tag: '离岗'
+          },
+          {
+            id: 'col-certs',
+            selector: '[data-annotate="col-certs"]',
+            position: 'bottom-left',
+            title: '资质证书列',
+            wide: true,
+            content: '有证书：色点 + 项数，色点取该人证书最差状态。无证书（0 条）：红色「缺失」，列表「资质状态」同时为<b>资质缺失</b>。只看这一列有没有证书，不看授权和培训。',
+            tag: '证书'
+          },
+          {
+            id: 'col-auths',
+            selector: '[data-annotate="col-auths"]',
+            position: 'bottom-left',
+            title: '操作授权列',
+            content: '显示已授权设备项数；没有则「-」。一条授权对应一台设备。有没有授权、授权是否过期，<b>都不改变</b>列表「资质状态」，也不构成「资质缺失」。',
+            tag: '授权'
+          },
+          {
+            id: 'col-train',
+            selector: '[data-annotate="col-train"]',
+            position: 'bottom-left',
+            title: '培训考核列',
+            content: '取最近一次培训/考核的名称 · 日期；没有则「-」。有没有培训、培训是否过期，都不进入列表「资质状态」，也不构成「资质缺失」。',
+            tag: '培训'
+          },
+          {
+            id: 'col-status',
+            selector: '[data-annotate="col-status"]',
+            position: 'bottom-left',
+            title: '资质状态',
+            wide: true,
+            content: '只看<b>资质证书</b>。<b>资质缺失</b> = 证书 0 条（不看有效期）。有证书才看有效期：过期 &gt; 临期（≤ 60 天）&gt; 正常。有效期空 = 长期有效，不打临期/过期。操作授权、培训考核<b>不参与</b>：没授权、授权过期、没培训都不算资质缺失。',
+            tag: '状态'
+          },
+          {
+            id: 'col-ops',
+            selector: '[data-annotate="col-ops"]',
+            position: 'bottom-left',
+            title: '行操作',
+            content: '在岗为「维护资质」；已离岗为「查看资质」。本页不删人、不改账号。',
+            tag: '列表'
+          },
+          {
+            id: 'pq-drawer',
+            selector: '[data-annotate="pq-drawer"]',
+            position: 'left',
+            title: '维护资质（右侧抽屉）',
+            wide: true,
+            content: '宽 880px（小屏不超过窗口 96%）。标题为姓名 + 已离岗标（若有）+ 资质状态徽标；副标题为账号、部门、电话、资质编号。点遮罩或右上角关闭，关闭后刷新列表。',
+            tag: '抽屉'
+          },
+          {
+            id: 'pq-off',
+            selector: '[data-annotate="pq-off"]',
+            position: 'bottom-left',
+            title: '离岗只读',
+            wide: true,
+            content: '已离岗时出现。台账可看不可改：隐藏新增，卡片无编辑/删除。重新分配到试验员角色后，下次同步恢复在岗并可维护。',
+            tag: '离岗'
+          },
+          {
+            id: 'pq-tabs',
+            selector: '[data-annotate="pq-tabs"]',
+            position: 'bottom-left',
+            title: '三类台账页签',
+            wide: true,
+            content: '默认「资质证书」，另有「操作授权」「培训考核记录」。三类分页签，互不混写。',
+            tag: '抽屉'
+          },
+          {
+            id: 'pq-add',
+            selector: '[data-annotate="pq-add"]',
+            position: 'bottom-right',
+            title: '新增记录',
+            content: '文案随页签切换：新增证书 / 新增授权 / 新增记录。已离岗时隐藏。打开中间表单弹窗。',
+            tag: '抽屉'
+          },
+          {
+            id: 'pq-tab-body',
+            selector: '[data-annotate="pq-tab-body"]',
+            position: 'top-left',
+            title: '记录卡片',
+            wide: true,
+            content: '在岗时卡片可编辑 / 删除（删除先确认）。已离岗只展示，无操作按钮。空态虚线框。操作授权卡片以<b>设备</b>为标题，展示级别与该设备当前关联试验（只读）。',
+            tag: '抽屉'
+          },
+          {
+            id: 'pq-modal',
+            selector: '[data-annotate="pq-modal"]',
+            position: 'top-left',
+            title: '新增 / 编辑记录',
+            wide: true,
+            content: '证书名称、关联设备、培训/考核名称为各页签必填，其余可选。有效期空 = 长期有效。证书与培训可传一份证明附件（可选）；操作授权不传文件。一条一份附件，换文件先删芯片再传。预览产品实现。',
+            tag: '表单'
+          },
+          {
+            id: 'pq-auth-equip',
+            selector: '[data-annotate="pq-auth-equip"]',
+            position: 'bottom-left',
+            title: '关联设备',
+            wide: true,
+            content: '操作授权必填。从设备台账<b>启用</b>设备中选择。同一人同一设备只能有一条授权；下拉里不再出现已授权设备。停用设备不可新选，编辑原记录时仍显示。',
+            tag: '授权'
+          },
+          {
+            id: 'pq-auth-level',
+            selector: '[data-annotate="pq-auth-level"]',
+            position: 'bottom-left',
+            title: '授权级别',
+            wide: true,
+            content: '两档：<b>可独立操作</b>、<b>协助操作</b>。默认可独立操作。两档<b>都可以被派</b>检测任务；本期选人仍只看出岗，不按授权过滤。',
+            tag: '授权'
+          },
+          {
+            id: 'pq-auth-scope',
+            selector: '[data-annotate="pq-auth-scope"]',
+            position: 'top-left',
+            title: '授权范围（只读）',
+            wide: true,
+            content: '选完设备后出现。标签列出该设备在「设备管理 → 关联试验」中的试验项（完整路径），无同步/重置/清空，标签不可删。改试验项去设备管理。设备尚未关联时提示先维护。试验项跟设备台账走，不在授权时冻结。',
+            tag: '授权'
+          }
+        ]
+      });
+    }
+  </script>
+</body>
+</html>

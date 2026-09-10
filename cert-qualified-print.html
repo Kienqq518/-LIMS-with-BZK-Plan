@@ -106,16 +106,18 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/flow-stages.js"></script>
+  <script src="js/personnel-store.js"></script>
   <script src="js/inspector-select.js"></script>
   <script src="js/label-cert-config.js"></script>
   <script>
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
     var MAX_RECORDERS = LabelCertConfig.getRecorderMax();
-    var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
+    var INSPECTOR_OPTIONS = PersonnelStore.rosterNames();
+    var RECORDER_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
     var STORAGE_INSPECTORS = 'lims_label_print_last_inspectors';
     var STORAGE_RECORDERS = 'lims_label_print_last_recorders';
     var STORAGE_INIT = 'lims_label_print_inspector_inited';
-    var modalInspectors = ['admin'];
+    var modalInspectors = PersonnelStore.pickRosterNames([], MAX_INSPECTORS);
     var modalRecorders = [];
     var modalRoles = { needInspectors: true, needRecorders: false };
     var pendingNos = [];
@@ -176,7 +178,7 @@
 
     function getLastInspectors() {
       var stored = readStoredInspectors();
-      return stored && stored.length ? stored : ['admin'];
+      return PersonnelStore.pickRosterNames(stored || [], MAX_INSPECTORS);
     }
 
     function getLastRecorders() {
@@ -208,8 +210,8 @@
     function canSkipModal(roles) {
       if (!hasSelectedBefore()) return false;
       if (roles.needInspectors) {
-        var insp = readStoredInspectors();
-        if (!insp || !insp.length) return false;
+        var insp = PersonnelStore.pickRosterNames(readStoredInspectors() || [], MAX_INSPECTORS);
+        if (!insp.length) return false;
       }
       if (roles.needRecorders) {
         var rec = getLastRecorders();
@@ -238,7 +240,7 @@
       }
       if (modalRoles.needRecorders) {
         document.getElementById('modalRecorderBox').innerHTML = InspectorSelect.renderHTML({
-          inspectors: modalRecorders, options: INSPECTOR_OPTIONS, mode: 'modal', idx: '',
+          inspectors: modalRecorders, options: RECORDER_OPTIONS, mode: 'modal', idx: '',
           prefix: 'modalRec', maxCount: MAX_RECORDERS, addLabel: '添加记录员'
         });
       } else {
@@ -332,7 +334,7 @@
       }
       if (canSkipModal(roles)) {
         goPrint(
-          roles.needInspectors ? (readStoredInspectors() || []) : [],
+          roles.needInspectors ? getLastInspectors() : [],
           roles.needRecorders ? getLastRecorders() : []
         );
         return;

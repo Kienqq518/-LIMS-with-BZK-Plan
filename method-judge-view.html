@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>试验判定详情</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    .meta-grid { display: grid; grid-template-columns: 88px 1fr; gap: 6px 8px; font-size: 12px; }
+    .meta-grid .k { color: #64748b; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-700">
+  <div class="mx-auto max-w-xl p-4 pt-6">
+    <div class="overflow-hidden rounded-xl bg-white shadow-lg">
+      <div class="bg-blue-600 px-5 py-4 text-white">
+        <a id="backLink" href="report-verify.html" class="mb-2 inline-flex items-center gap-1 text-xs text-blue-100 hover:text-white">
+          <i class="fa fa-angle-left"></i> 返回溯源页
+        </a>
+        <h1 class="text-lg font-semibold">试验判定详情</h1>
+        <p id="topSub" class="mt-1 text-xs text-blue-100">按试样展示标准依据、试验流程、计算与判定</p>
+      </div>
+      <div id="body" class="px-5 py-5"></div>
+    </div>
+  </div>
+  <script src="js/report-trace.js"></script>
+  <script src="js/report-trace-l1.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var code = params.get('code') || '';
+      var focusItem = params.get('item') || '';
+      if (code) document.getElementById('backLink').href = 'report-verify.html?code=' + encodeURIComponent(code);
+      var res = code ? ReportTrace.getVerify(code) : { ok: false };
+      var reportNo = (res.ok && res.entry) ? res.entry.reportNo : params.get('report');
+      var items = ReportTrace.getMethodJudgments(reportNo);
+      var body = document.getElementById('body');
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+      if (!items.length) {
+        body.innerHTML = '<p class="text-sm text-slate-500">未找到试验判定详情。</p>';
+        return;
+      }
+      document.getElementById('topSub').textContent =
+        ((res.view && res.view.reportNo) ? res.view.reportNo + '　·　' : '') + items.length + ' 条试样结论';
+      body.innerHTML = items.map(function (it) {
+        var stdHref = 'std-detail.html?std=' + encodeURIComponent(it.stdFile || '') + (code ? '&code=' + encodeURIComponent(code) : '');
+        var focused = focusItem && focusItem === it.testName;
+        return '<article id="item-' + esc(it.testName) + '" class="mb-3 rounded-lg border p-4 last:mb-0 ' +
+          (focused ? 'border-blue-300 bg-blue-50/40 ring-1 ring-blue-200' : 'border-slate-200') + '">' +
+          '<p class="text-sm font-medium text-slate-800">' + esc(it.testName) + '</p>' +
+          '<p class="mt-0.5 text-xs text-slate-400">' + esc(it.sampleName) + '　' + esc(it.specimenNo) + '</p>' +
+          '<div class="meta-grid mt-3">' +
+            '<span class="k">标准文件</span><span><a class="text-blue-600 hover:underline" href="' + stdHref + '">' + esc(it.stdFile) + '</a></span>' +
+            '<span class="k">试验流程</span><span>' + esc(it.process) + '</span>' +
+            '<span class="k">判定描述</span><span>' + esc(it.judgeDesc) + '</span>' +
+            '<span class="k">计算公式</span><span>' + esc(it.formula) + '</span>' +
+            '<span class="k">原始实测值</span><span>' + esc(it.measured) + '</span>' +
+            '<span class="k">计算值</span><span>' + esc(it.calculated) + '</span>' +
+            '<span class="k">标称值</span><span>' + esc(it.nominal) + '</span>' +
+            '<span class="k">判定条件</span><span>' + esc(it.condition) + '</span>' +
+            '<span class="k">结论</span><span class="font-medium text-green-600">' + esc(it.conclusion) + '</span>' +
+          '</div>' +
+        '</article>';
+      }).join('') +
+        multiSpecimenDemo() +
+        '<p class="mt-3 text-center text-[11px] text-slate-400">公开页只读展示签发时冻结的判定依据，不可编辑。</p>';
+
+      // 自动滚动并定位到该试验项
+      if (focusItem) {
+        var el = document.getElementById('item-' + focusItem);
+        if (el) requestAnimationFrame(function () { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+      }
+
+      /** 结构示意：多条试样合并出一个结论（区别于上方「一试样一结论」） */
+      function multiSpecimenDemo() {
+        var rows = [
+          ['SC2026/0022-03701', '红', '不涂金属', '0.0300', '0.0773'],
+          ['SC2026/0022-03702', '黄', '不涂金属', '0.0301', '0.0772'],
+          ['SC2026/0022-03703', '绿', '不涂金属', '0.0299', '0.0770']
+        ];
+        var trs = rows.map(function (r) {
+          return '<tr>' + r.map(function (c) { return '<td class="border border-slate-200 px-2 py-1.5 text-center">' + esc(c) + '</td>'; }).join('') + '</tr>';
+        }).join('');
+        return '<div class="mt-5 mb-2 flex items-center gap-2"><span class="h-px flex-1 bg-slate-200"></span>' +
+          '<span class="text-[11px] text-slate-400">结构示意 · 多条试样合并出一个结论</span>' +
+          '<span class="h-px flex-1 bg-slate-200"></span></div>' +
+          '<article class="rounded-lg border border-slate-200 p-4">' +
+            '<p class="text-sm font-medium text-slate-800">20℃ 导体直流电阻</p>' +
+            '<p class="mt-0.5 text-xs text-slate-400">电力电缆 ZC-YJV　SC2026/0022-037（红 / 黄 / 绿 三相合并判定）</p>' +
+            '<div class="meta-grid mt-3">' +
+              '<span class="k">标准文件</span><span><a class="text-blue-600 hover:underline" href="std-detail.html?std=' + encodeURIComponent('GB/T 3956') + '">GB/T 3956-2008 电缆的导体</a></span>' +
+              '<span class="k">判定条件</span><span>三相各自 20℃ 直流电阻 R20 均 ≤ 标称值 → 合格（任一超标即不合格）</span>' +
+              '<span class="k">标称值</span><span>20℃ 导体最大电阻 ≤ 0.0775 Ω/km</span>' +
+            '</div>' +
+            '<div class="mt-3 overflow-x-auto"><table class="w-full border-collapse text-xs" style="min-width:360px">' +
+              '<thead><tr class="bg-slate-50 text-slate-500">' +
+                '<th class="border border-slate-200 px-2 py-1.5">试样编号</th>' +
+                '<th class="border border-slate-200 px-2 py-1.5">相别</th>' +
+                '<th class="border border-slate-200 px-2 py-1.5">金属镀层</th>' +
+                '<th class="border border-slate-200 px-2 py-1.5">平均电阻 Ravg(μΩ)</th>' +
+                '<th class="border border-slate-200 px-2 py-1.5">20℃ 电阻 R20(Ω/km)</th>' +
+              '</tr></thead><tbody>' + trs + '</tbody></table></div>' +
+            '<div class="mt-3 flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">' +
+              '<i class="fa fa-check-circle text-emerald-500"></i>' +
+              '<span class="text-sm"><span class="text-slate-500">综合判定（系统判定）：</span><span class="font-medium text-emerald-600">合格</span>' +
+              '<span class="text-slate-400"> —— 三相 R20（0.0773 / 0.0772 / 0.0770）均 ≤ 0.0775 Ω/km</span></span>' +
+            '</div>' +
+            '<p class="mt-2 text-[11px] text-slate-400">说明：此类试验项由多条试样（如三相导体）的实测值合并计算后给出<strong>单一结论</strong>，区别于上方「一条试样对应一个判定结果」的展示结构。</p>' +
+          '</article>';
+      }
+    })();
+  </script>
+</body>
+</html>

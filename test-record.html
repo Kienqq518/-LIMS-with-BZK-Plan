@@ -3,114 +3,158 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>试验记录 - 智慧实验室</title>
+  <title>原始记录 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/record-export-drawer.css" />
   <style>
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
     .record-table { width: 100%; border-collapse: collapse; font-size: 12px; }
     .record-table th, .record-table td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; white-space: nowrap; }
     .record-table th { background: #f1f5f9; color: #64748b; font-weight: 500; }
+    .record-table td.text-left { text-align: left; white-space: normal; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
 
   <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="entrust-detail.html">
     <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
-    <a href="sample-receive.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">样品收样</a>
     <a href="entrust-detail.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">委托详情</a>
-    <a href="entrust-preview.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">委托预览</a>
     <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
-      试验记录
+      原始记录
       <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
     </span>
   </div>
 
   <div class="p-4">
-    <div class="mb-3 flex items-center justify-between rounded bg-white px-4 py-3 shadow-sm">
-      <p class="text-sm text-slate-500">注：将鼠标悬浮在 <i class="fa fa-question-circle text-blue-500"></i> 图标上，可查看异常原因</p>
-      <button class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">导出管理</button>
+    <div class="mb-3 rounded bg-white px-4 py-3 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm text-slate-500">试验数据只读，不可在此改数。导出与重新生成在本页完成。</p>
+        <button type="button" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="or-export-manage" onclick="OriginalRecordUI.openExportDrawer()">
+          <i class="fa fa-download"></i> 导出管理
+        </button>
+      </div>
+      <div class="mt-2 text-xs text-slate-400">
+        委托编号：<span class="text-slate-600">SC2026/0073</span>
+        <span class="mx-2 text-slate-300">|</span>
+        客户单位：<span class="text-slate-600">杭州数蚕智能科技有限公司</span>
+      </div>
     </div>
 
-    <!-- 子页签 -->
+    <div class="mb-3 flex flex-wrap items-center gap-2 rounded border border-amber-100 bg-amber-50 px-4 py-2 text-xs text-amber-800" data-annotate="or-demo-bar">
+      <span class="font-medium">演示即时打标（写入历史「说明」）：</span>
+      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateRetest()">退回-更改检测结果</button>
+      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateDataEdit()">退回-改数（外观尺寸）</button>
+      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateDeleteB()">变更-删除样品</button>
+      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateDeleteTest()">变更-删除试验项</button>
+      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateChangeTest()">变更-增加/删除试验项</button>
+      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateReviewer()">退回-重新分配试验员</button>
+      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateEntrustInfo()">变更-变更基本委托信息</button>
+      <button type="button" class="rounded border border-slate-300 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50" onclick="OriginalRecordUI.resetDemo()">重置演示数据</button>
+    </div>
+
     <div class="mb-4 flex gap-1 border-b border-slate-200 bg-white px-4 pt-2 text-sm">
       <span class="rounded-t border border-b-0 border-slate-200 bg-white px-4 py-2 text-blue-600">绝缘操作杆</span>
     </div>
 
     <div class="space-y-4">
-      <!-- 交流耐压试验 -->
       <section class="rounded bg-white p-4 shadow-sm">
         <h3 class="mb-3 rounded bg-slate-100 py-2 text-center text-sm font-medium text-slate-700">绝缘操作杆—交流耐压试验</h3>
         <div class="overflow-x-auto">
           <table class="record-table min-w-[1200px]">
             <thead><tr>
-              <th>试样编号</th><th>试验设备</th><th>标称值/kV</th><th>试验值/kV</th><th>时间/min</th><th>状态描述</th><th>结论</th><th>室温/℃</th><th>气压/hPa</th><th>湿度/%RH</th><th>备注</th><th>状态</th><th>原因</th>
+              <th>试样编号</th><th>试验设备</th><th>标称值/kV</th><th>试验值/kV</th><th>时间/min</th><th>状态描述</th><th>结论</th><th>室温/℃</th><th>气压/hPa</th><th>湿度/%RH</th><th>备注</th><th>状态</th>
             </tr></thead>
-            <tbody><tr>
-              <td>SC2026/00730101-01</td><td><a href="#" class="text-blue-600 hover:underline">设备</a></td><td>45</td><td>10</td><td>11</td><td>无异常</td><td>合格</td><td>12</td><td>13</td><td>14</td><td></td><td></td><td></td>
-            </tr></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- 外观及尺寸 -->
-      <section class="rounded bg-white p-4 shadow-sm">
-        <h3 class="mb-3 rounded bg-slate-100 py-2 text-center text-sm font-medium text-slate-700">绝缘操作杆—外观及尺寸</h3>
-        <div class="overflow-x-auto">
-          <table class="record-table min-w-[800px]">
-            <thead><tr><th>试样编号</th><th>试验设备</th><th>外观</th><th>有效绝缘长度/m</th><th>备注</th><th>状态</th><th>原因</th></tr></thead>
-            <tbody><tr><td>SC2026/00730101-02</td><td><a href="#" class="text-blue-600 hover:underline">设备</a></td><td>无缺陷</td><td>10</td><td></td><td></td><td></td></tr></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- 抗弯动负荷试验 -->
-      <section class="rounded bg-white p-4 shadow-sm">
-        <h3 class="mb-3 rounded bg-slate-100 py-2 text-center text-sm font-medium text-slate-700">绝缘操作杆—抗弯动负荷试验</h3>
-        <div class="overflow-x-auto">
-          <table class="record-table min-w-[1100px]">
-            <thead><tr><th>试样编号</th><th>试验设备</th><th>试样长度/m</th><th>标称值/N</th><th>试验值/N</th><th>状态描述</th><th>结论</th><th>温度/℃</th><th>气压/hPa</th><th>湿度/%RH</th><th>备注</th><th>状态</th><th>原因</th></tr></thead>
-            <tbody><tr><td>SC2026/00730101-03</td><td><a href="#" class="text-blue-600 hover:underline">设备</a></td><td>10</td><td>11</td><td>12</td><td>无异常</td><td>合格</td><td>13</td><td>14</td><td>15</td><td></td><td></td><td></td></tr></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- 抗弯静负荷试验 -->
-      <section class="rounded bg-white p-4 shadow-sm">
-        <h3 class="mb-3 rounded bg-slate-100 py-2 text-center text-sm font-medium text-slate-700">绝缘操作杆—抗弯静负荷试验</h3>
-        <div class="overflow-x-auto">
-          <table class="record-table min-w-[1200px]">
-            <thead><tr><th>试样编号</th><th>试验设备</th><th>试样长度/m</th><th>标称值/N</th><th>试验值/N</th><th>时间/min</th><th>状态描述</th><th>结论</th><th>温度/℃</th><th>气压/hPa</th><th>湿度/%RH</th><th>备注</th><th>状态</th><th>原因</th></tr></thead>
-            <tbody><tr><td>SC2026/00730101-04</td><td><a href="#" class="text-blue-600 hover:underline">设备</a></td><td>10</td><td>100</td><td>11</td><td>12</td><td>无异常</td><td>合格</td><td>13</td><td>14</td><td>15</td><td></td><td></td><td></td></tr></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- 原始记录表 -->
-      <section class="rounded bg-white p-4 shadow-sm">
-        <h3 class="mb-3 text-sm font-medium text-slate-700">原始记录表：</h3>
-        <div class="overflow-x-auto">
-          <table class="record-table">
-            <thead><tr><th>序号</th><th>原始记录名称</th><th>生成时间</th></tr></thead>
             <tbody>
               <tr>
-                <td>1</td>
-                <td class="text-left"><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> SC202606003绝缘操作杆记录单.docx</a></td>
-                <td>2026-06-15 13:54:02</td>
+                <td>SC2026/00730101-01</td><td>设备</td><td>45</td><td>10</td><td>11</td><td>无异常</td><td>合格</td><td>12</td><td>13</td><td>14</td><td></td><td>已完成</td>
+              </tr>
+              <tr>
+                <td>SC2026/00730101-02</td><td>设备</td><td>45</td><td>12</td><td>11</td><td>无异常</td><td>合格</td><td>12</td><td>13</td><td>14</td><td></td><td>已完成</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="mt-3 flex justify-end gap-1 text-sm text-slate-500">
-          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
-          <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
-          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-right"></i></button>
+      </section>
+
+      <section class="rounded bg-white p-4 shadow-sm">
+        <h3 class="mb-3 rounded bg-slate-100 py-2 text-center text-sm font-medium text-slate-700">绝缘操作杆—外观及尺寸</h3>
+        <div class="overflow-x-auto">
+          <table class="record-table min-w-[800px]">
+            <thead><tr><th>试样编号</th><th>试验设备</th><th>外观</th><th>有效绝缘长度/m</th><th>备注</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr><td>SC2026/00730101-01</td><td>设备</td><td>无缺陷</td><td>10</td><td></td><td>已完成</td></tr>
+              <tr><td>SC2026/00730101-02</td><td>设备</td><td>无缺陷</td><td>10</td><td></td><td>已完成</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="rounded bg-white p-4 shadow-sm">
+        <h3 class="mb-3 rounded bg-slate-100 py-2 text-center text-sm font-medium text-slate-700">绝缘操作杆—抗弯静负荷试验</h3>
+        <div class="overflow-x-auto">
+          <table class="record-table min-w-[1200px]">
+            <thead><tr><th>试样编号</th><th>试验设备</th><th>试样长度/m</th><th>标称值/N</th><th>试验值/N</th><th>时间/min</th><th>状态描述</th><th>结论</th><th>温度/℃</th><th>气压/hPa</th><th>湿度/%RH</th><th>备注</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr><td>SC2026/00730101-01</td><td>设备</td><td>10</td><td>100</td><td>11</td><td>12</td><td>无异常</td><td>合格</td><td>13</td><td>14</td><td>15</td><td></td><td>已完成</td></tr>
+              <tr><td>SC2026/00730101-02</td><td>设备</td><td>10</td><td>100</td><td>11</td><td>12</td><td>无异常</td><td>合格</td><td>13</td><td>14</td><td>15</td><td></td><td>已完成</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="rounded bg-white p-4 shadow-sm" data-annotate="or-table">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <h3 class="text-sm font-medium text-slate-700">原始记录表：</h3>
+          <button type="button" id="btnBatchDlRaw" class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700" onclick="OriginalRecordUI.batchDownloadValid()">
+            <i class="fa fa-download"></i> 批量下载（仅有效）
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="record-table min-w-[960px]">
+            <thead>
+              <tr>
+                <th>序号</th>
+                <th>原始记录名称</th>
+                <th>覆盖样品</th>
+                <th>生成模式</th>
+                <th>生成时间</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="orTableBody" data-or-table></tbody>
+          </table>
         </div>
       </section>
     </div>
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script src="js/original-record-version.js"></script>
+  <script src="js/original-record-ui.js"></script>
+  <script>
+    OriginalRecordUI.mount();
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          { id: 'or-export-manage', selector: '[data-annotate="or-export-manage"]', position: 'bottom-left', title: '导出管理', wide: true, content: '<strong>需求逻辑：</strong>原始记录单必须人工导出。导出时冻结当时模版占位符清单（多模版拼接取并集）和字段值到该次 snapshot。<br><strong>展示规则：</strong>与已有<strong>文件身份</strong>（生成模式+试样集合+试验项）相同则升主版本；不同则新开一行。已失效同身份提示「将重新生成并解除失效」。<br><strong>交互逻辑：</strong>打开与试验检测页同一套「记录单导出详情」抽屉。模版换版不在此打失效，只影响下一次导出的 snapshot。', tag: '原始记录' },
+          { id: 'or-demo-bar', selector: '[data-annotate="or-demo-bar"]', position: 'bottom-left', title: '即时打标', wide: true, content: '<strong>需求逻辑：</strong>导出之后，标准流程外动作立刻打标，不等下次导出、不等打开页面再算。占位符只约束委托/样品印单基本信息；试验结果、删样、改试验、重新分配试验员按覆盖范围，不查占位符。标准流程内（如数据审核首次回填核校人）走 03-05 自动升版，不打失效。<br><strong>展示规则：</strong>说明列记操作动作：变更-变更基本委托信息：xxx；变更-样品修改变更：xxx；变更-删除样品；变更-删除试验项：xxx；变更-增加试验项：xxx；退回-更改检测结果；退回-重新分配试验员。<br><strong>交互逻辑：</strong>本条按钮为原型模拟。委托基本信息仅当该字段在该次导出 snapshot.usedFields 内才打失效（付款方式等不在清单内则不打）。数据改回不自动摘标。', tag: '失效' },
+          { id: 'or-table', selector: '[data-annotate="or-table"]', position: 'top-left', title: '原始记录表', wide: true, content: '<strong>需求逻辑：</strong>每个文件身份只展示当前版；与委托详情同一套列和操作。<br><strong>展示规则：</strong>列：序号、名称（已失效红标）、覆盖样品、生成模式、生成时间、状态（有效/已失效，原因 hover）、操作。文件名不带版本后缀。<br><strong>交互逻辑：</strong>失效行可「重新生成」：原范围仍在则升主版本并摘标；试样已删则弹出取消 / 跳转 / 确认导出剩余。批量下载只含状态=有效的当前版。', tag: '原始记录' },
+          { id: 'or-history-note', selector: '[data-annotate="or-history-note"]', position: 'top-left', title: '历史说明列', wide: true, content: '<strong>需求逻辑：</strong>原始记录单全部由用户点击导出，不是系统自动生成，故不设「来源」列，也不写「系统导出」。<br><strong>展示规则：</strong>首次导出说明为空（显示 —）。之后为导致上一版失效的操作动作：变更-变更基本委托信息：xxx；变更-样品修改变更：xxx；变更-删除样品；变更-删除试验项：xxx；变更-增加试验项：xxx；退回-更改检测结果；退回-重新分配试验员。委托/样品基本信息仅当该字段在该次导出占位符快照内才记这条原因。<br><strong>交互逻辑：</strong>当前版已失效尚未重导时，说明直接展示该失效原因；点「重新生成」成功后写入新版本说明，旧版保留其生成时的说明。历史仅在线查看，不下载、不回滚。', tag: '历史' },
+          { id: 'or-regen', selector: '[data-annotate="or-regen"]', position: 'top-left', title: '重新生成', wide: true, content: '<strong>需求逻辑：</strong>摘标只能靠按原文件身份重新导出成功；数据改回或换模版都不自动摘标。<br><strong>展示规则：</strong>仅当前版「已失效」行显示橙色「重新生成」。<br><strong>交互逻辑：</strong>原试样仍在则升主版本并摘标，说明写入导致上一版失效的操作动作；原范围做不到则弹出「无法按原范围重导」。校验不通过则保持已失效。', tag: '失效' },
+          { id: 'or-regen-dialog', selector: '[data-annotate="or-regen-dialog"]', position: 'top-left', title: '无法按原范围重导', wide: true, content: '<strong>需求逻辑：</strong>删样等使原文件身份无法满足时，不能按原范围重导，也不能自动把旧文件接进新文件历史。<br><strong>展示规则：</strong>提示列出已删对象；剩余为空时「确认」不可用。<br><strong>交互逻辑：</strong>取消=关闭且旧行仍失效；跳转原始记录页面=自选范围导出（新文件）；确认=按剩余对象、原生成模式新开一行且有效，旧行保持已失效。', tag: '失效' },
+          { id: 'export-drawer', selector: '[data-annotate="export-drawer"]', position: 'top-left', title: '记录单导出详情', wide: true, content: '<strong>需求逻辑：</strong>导出成功才写入当前版，并把当时模版已插入占位符清单（多模版拼接取并集）和字段值冻进该次 snapshot；之后判断委托/样品基本信息是否失效只看这份快照，不再打开 Word。<br><strong>展示规则：</strong>与试验检测页同一套抽屉：按<strong>生成模式</strong>分组、同模式下按<strong>样品名称</strong>分块。表格列为勾选、文件名、包含试验项、状态、单行导出。<br><strong>交互逻辑：</strong>模版换版、生成模式变更不打已导出文件失效，只影响下一次导出的 snapshot。', tag: '记录单导出' },
+          { id: 'export-mode-group', selector: '[data-annotate="export-mode-group"]', position: 'top-right', title: '按生成模式分组', wide: true, content: '每个折叠区块对应一种记录单生成模式。标题右侧显示该模式下样品数与文件数。', tag: '记录单导出' },
+          { id: 'export-sample-block', selector: '[data-annotate="export-sample-block"]', position: 'top-right', title: '按样品分块', wide: true, content: '同一生成模式内，不同样品各自成块。块内表格列出该样品在此模式下将生成的全部文件。', tag: '记录单导出' },
+          { id: 'export-status', selector: '[data-annotate="export-status"]', position: 'top-right', title: '导出状态', wide: true, content: '<strong>需求逻辑：</strong>导出成功才写入/更新该文件身份的当前版，并冻进当时模版的 usedFields。<br><strong>展示规则：</strong>就绪行可导出。第二行提示：<strong>将生成新版本</strong>（身份已存在且有效）、<strong>将重新生成并解除失效</strong>（身份已存在且已失效）、<strong>将生成新文件</strong>（身份不存在）。<br><strong>交互逻辑：</strong>试验未完成、缺模版行不可导出。重新生成同样校验，不通过则保持已失效。', tag: '记录单导出' },
+          { id: 'export-select-all', selector: '[data-annotate="export-select-all"]', position: 'top-left', title: '全选可导出项', content: '仅勾选状态为「就绪」的文件；未就绪行不参与全选。', tag: '记录单导出' },
+          { id: 'export-batch', selector: '[data-annotate="export-batch"]', position: 'top-left', title: '批量导出', wide: true, content: '<strong>需求逻辑：</strong>每份导出各自冻一份 snapshot；同身份升主版本，不同身份新开一行。<br><strong>展示规则：</strong>导出所有已勾选且就绪的文件。<br><strong>交互逻辑：</strong>未就绪行跳过。已失效同身份会按「将重新生成并解除失效」处理。', tag: '记录单导出' }
+        ]
+      });
+    }
+  </script>
 </body>
 </html>

@@ -119,6 +119,7 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/flow-stages.js"></script>
+  <script src="js/personnel-store.js"></script>
   <script src="js/inspector-select.js"></script>
   <script src="js/label-cert-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -142,10 +143,11 @@
     var filtered = listData.slice();
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();
     var MAX_RECORDERS = LabelCertConfig.getRecorderMax();
-    var modalInspectors = ['admin'];
+    var INSPECTOR_OPTIONS = PersonnelStore.rosterNames();
+    var RECORDER_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
+    var modalInspectors = PersonnelStore.pickRosterNames([], MAX_INSPECTORS);
     var modalRecorders = [];
     var modalRoles = { needInspectors: true, needRecorders: false };
-    var INSPECTOR_OPTIONS = ['admin', 'cs222', 'cs3', '张三', '李四'];
     var modalMode = 'batch';
     var pendingSingleCode = null;
     var STORAGE_INSPECTORS = 'lims_label_print_last_inspectors';
@@ -203,7 +205,7 @@
 
     function getLastInspectors() {
       var stored = readStoredInspectors();
-      return stored && stored.length ? stored : ['admin'];
+      return PersonnelStore.pickRosterNames(stored || [], MAX_INSPECTORS);
     }
 
     function getLastRecorders() {
@@ -235,8 +237,8 @@
     function canSkipModal(roles) {
       if (!hasSelectedBefore()) return false;
       if (roles.needInspectors) {
-        var insp = readStoredInspectors();
-        if (!insp || !insp.length) return false;
+        var insp = PersonnelStore.pickRosterNames(readStoredInspectors() || [], MAX_INSPECTORS);
+        if (!insp.length) return false;
       }
       if (roles.needRecorders) {
         var rec = getLastRecorders();
@@ -271,7 +273,7 @@
       if (modalRoles.needRecorders) {
         document.getElementById('modalRecorderBox').innerHTML = InspectorSelect.renderHTML({
           inspectors: modalRecorders,
-          options: INSPECTOR_OPTIONS,
+          options: RECORDER_OPTIONS,
           mode: 'modal',
           idx: '',
           prefix: 'modalRec',
@@ -410,7 +412,7 @@
         return true;
       }
       if (canSkipModal(roles)) {
-        var insp = roles.needInspectors ? (readStoredInspectors() || []) : [];
+        var insp = roles.needInspectors ? getLastInspectors() : [];
         var rec = roles.needRecorders ? getLastRecorders() : [];
         if (isSingle) goSingleCert(codes[0], insp, rec);
         else goBatchCert(codes, insp, rec);

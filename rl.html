@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>报告溯源跳转中…</title>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var code = (params.get('code') || '').trim();
+      if (!code) {
+        var parts = location.pathname.replace(/\/+$/, '').split('/');
+        var last = parts[parts.length - 1] || '';
+        if (last && last !== 'rl' && last !== 'rl.html') code = last;
+      }
+      if (!code) {
+        location.replace('transparent-demo/index.html');
+        return;
+      }
+      location.replace('report-verify.html?code=' + encodeURIComponent(code));
+    })();
+  </script>
+</head>
+<body>
+  <p style="font-family: sans-serif; padding: 2rem; color: #64748b;">正在跳转溯源页…</p>
+</body>
+</html>

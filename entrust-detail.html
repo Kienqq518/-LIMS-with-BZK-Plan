@@ -90,6 +90,8 @@
     }
     .btn-section-batch:hover { background: #1d4ed8; }
     .btn-section-batch.is-visible { display: inline-flex; align-items: center; gap: 4px; }
+    .or-jump { display: inline-flex; align-items: center; gap: 4px; border-radius: 4px; border: 1px solid #2563eb; color: #2563eb; background: #fff; font-size: 12px; padding: 6px 12px; text-decoration: none; }
+    .or-jump:hover { background: #eff6ff; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -455,27 +457,27 @@
     <section class="rounded bg-white p-4 shadow-sm" data-annotate="raw-record-section">
       <div class="section-hd-row">
         <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>原始记录单</h2>
-        <button type="button" id="btnBatchDlRaw" class="btn-section-batch" data-annotate="raw-batch-dl" onclick="batchDownloadSection('raw')">
-          <i class="fa fa-download"></i> 批量下载
-        </button>
+        <div class="flex items-center gap-2">
+          <a href="test-record.html" class="or-jump" data-annotate="or-jump">跳转原始记录页面 <i class="fa fa-external-link"></i></a>
+          <button type="button" id="btnBatchDlRaw" class="btn-section-batch" data-annotate="raw-batch-dl" onclick="OriginalRecordUI.batchDownloadValid()">
+            <i class="fa fa-download"></i> 批量下载
+          </button>
+        </div>
       </div>
       <div class="overflow-x-auto">
-        <table class="data-table min-w-[560px]" id="rawRecordTable">
-          <thead><tr><th>序号</th><th>原始记录名称</th><th>生成时间</th><th>操作</th></tr></thead>
-          <tbody>
-            <tr data-file-row="raw">
-              <td>1</td>
-              <td><a href="#" class="text-blue-600 hover:underline" onclick="alert('在线查看原始记录单（原型）');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-交流耐压-原始记录.docx</a></td>
-              <td>2026-07-08</td>
-              <td><button type="button" class="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700" onclick="alert('查看原始记录（原型）')">查看</button></td>
+        <table class="data-table min-w-[960px]" id="rawRecordTable">
+          <thead>
+            <tr>
+              <th>序号</th>
+              <th>原始记录名称</th>
+              <th>覆盖样品</th>
+              <th>生成模式</th>
+              <th>生成时间</th>
+              <th>状态</th>
+              <th>操作</th>
             </tr>
-            <tr data-file-row="raw">
-              <td>2</td>
-              <td><a href="#" class="text-blue-600 hover:underline" onclick="alert('在线查看原始记录单（原型）');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-外观尺寸-原始记录.docx</a></td>
-              <td>2026-07-08</td>
-              <td><button type="button" class="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700" onclick="alert('查看原始记录（原型）')">查看</button></td>
-            </tr>
-          </tbody>
+          </thead>
+          <tbody id="orTableBody" data-or-table></tbody>
         </table>
       </div>
     </section>
@@ -817,6 +819,8 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/lab-run-mode.js"></script>
   <script src="js/prototype-annotation.js"></script>
+  <script src="js/original-record-version.js"></script>
+  <script src="js/original-record-ui.js"></script>
   <script>
     var ledgerLogs = [
       { time: '2026-06-10 09:27:16', text: 'admin将绝缘操作杆[SC2026/00730101]申请归还样品库' },
@@ -1006,10 +1010,12 @@
         } else {
           html += '<button onclick="previewDoc(\'' + key + '\')" class="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700">查看</button>';
         }
-        if (canEdit) {
-          html += '<button onclick="editDoc(\'' + key + '\')" class="ml-1 rounded border border-blue-300 px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50" data-annotate="doc-edit">编辑</button>';
-        } else {
-          html += '<button disabled title="当前不允许编辑" class="ml-1 cursor-not-allowed rounded border border-slate-200 px-2.5 py-1 text-xs text-slate-300">编辑</button>';
+        if (key !== 'fee_notice') {
+          if (canEdit) {
+            html += '<button onclick="editDoc(\'' + key + '\')" class="ml-1 rounded border border-blue-300 px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50" data-annotate="doc-edit">编辑</button>';
+          } else {
+            html += '<button disabled title="当前不允许编辑" class="ml-1 cursor-not-allowed rounded border border-slate-200 px-2.5 py-1 text-xs text-slate-300">编辑</button>';
+          }
         }
         if (LimsLabRunMode.canShowHistoryButton()) {
           html += '<button onclick="openDocHistory(\'' + key + '\')" class="ml-1 rounded border border-slate-300 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50" data-annotate="doc-history">查看历史</button>';
@@ -1159,6 +1165,10 @@
     }
 
     function batchDownloadSection(kind) {
+      if (kind === 'raw' && window.OriginalRecordUI) {
+        OriginalRecordUI.batchDownloadValid();
+        return;
+      }
       var rows = document.querySelectorAll('[data-file-row="' + kind + '"]');
       if (rows.length <= 1) {
         alert('当前文件不足 2 个，无需批量下载。');
@@ -1186,6 +1196,7 @@
     renderTimeline('ledgerTimeline', ledgerLogs);
     renderTimeline('sysLogTimeline', sysLogs);
     refreshRunModeChrome();
+    if (window.OriginalRecordUI) OriginalRecordUI.mount();
     refreshSectionBatchButtons();
 
     if (window.PrototypeAnnotation) {
@@ -1200,9 +1211,14 @@
           { id: 'batch-export-scope', selector: '[data-annotate="batch-export-scope"]', position: 'top-left', title: '导出范围说明', wide: true, content: '对象=当前委托；版本=各类型最新版；格式=ZIP；空态跳过。可选类型见下方勾选（不含报告发放记录表）。', tag: '导出' },
           { id: 'batch-export-types', selector: '[data-annotate="batch-export-types"]', position: 'bottom-right', title: '自选文件类型', wide: true, content: '可选类型中，<strong>尚未生成的文件类型置灰且不可勾选</strong>；全选仅作用于已生成类型。含还样退库确认表/退样申请表；不含报告发放记录表。', tag: '导出' },
           { id: 'report-batch-dl', selector: '[data-annotate="report-batch-dl"]', position: 'bottom-left', title: '报告批量下载', content: '「报告文件」区域内文件数 ≥ 2 时显示；一键打包下载本区全部报告（与页顶跨类型批量导出区分）。', tag: '导出' },
-          { id: 'raw-batch-dl', selector: '[data-annotate="raw-batch-dl"]', position: 'bottom-left', title: '原始记录批量下载', content: '「原始记录单」区域内文件数 ≥ 2 时显示；一键打包下载本区全部原始记录。', tag: '导出' },
+          { id: 'raw-batch-dl', selector: '[data-annotate="raw-batch-dl"]', position: 'bottom-left', title: '原始记录批量下载', wide: true, content: '<strong>需求逻辑：</strong>对外只提供有效当前版，避免把已失效文件当正式件发出。<br><strong>展示规则：</strong>本区文件数 ≥ 2 时显示按钮。<br><strong>交互逻辑：</strong>只打包<strong>状态=有效</strong>的当前版；已失效和历史不纳入。', tag: '导出' },
+          { id: 'or-jump', selector: '[data-annotate="or-jump"]', position: 'bottom-left', title: '跳转原始记录页面', wide: true, content: '<strong>需求逻辑：</strong>原始记录必须人工导出，详情页只读展示当前版，导出入口在原始记录页。<br><strong>展示规则：</strong>本区表格与原始记录页底部表同一套列：覆盖样品、生成模式、有效/已失效。<br><strong>交互逻辑：</strong>点击进入 test-record 页做导出管理 / 重新生成。', tag: '原始记录' },
+          { id: 'raw-record-section', selector: '[data-annotate="raw-record-section"]', position: 'top-right', title: '原始记录单失效与版本', wide: true, content: '<strong>需求逻辑：</strong>导出后标准流程外动作立刻打标。占位符快照只约束委托/样品印单基本信息；试验结果、删样、改试验、重新分配试验员按覆盖范围。标准流程内（如数据审核首次回填核校人）走 03-05 升版，不打失效。委托单自动升版 ≠ 原始记录失效。<br><strong>展示规则：</strong>每个文件身份只展示当前版。名称旁红标=已失效；状态列 hover 显示操作动作原因。说明列写法同原始记录页。<br><strong>交互逻辑：</strong>失效行「重新生成」：原范围仍在则升主版本并摘标；试样已删则弹出取消 / 跳转 / 确认导出剩余。', tag: '原始记录' },
+          { id: 'or-history-note', selector: '[data-annotate="or-history-note"]', position: 'top-left', title: '历史说明列', wide: true, content: '<strong>需求逻辑：</strong>原始记录单全部由用户点击导出，不是系统自动生成，故不设「来源」列，也不写「系统导出」。<br><strong>展示规则：</strong>首次导出说明为空（显示 —）。之后为导致上一版失效的操作动作：变更-变更基本委托信息：xxx；变更-样品修改变更：xxx；变更-删除样品；变更-删除试验项：xxx；变更-增加试验项：xxx；退回-更改检测结果；退回-重新分配试验员。委托/样品基本信息仅当该字段在该次导出占位符快照内才记这条原因。<br><strong>交互逻辑：</strong>当前版已失效尚未重导时，说明直接展示该失效原因；点「重新生成」成功后写入新版本说明，旧版保留其生成时的说明。历史仅在线查看，不下载、不回滚。', tag: '历史' },
+          { id: 'or-regen', selector: '[data-annotate="or-regen"]', position: 'top-left', title: '重新生成', wide: true, content: '<strong>需求逻辑：</strong>摘标只能靠按原文件身份重新导出成功；数据改回或换模版都不自动摘标。<br><strong>展示规则：</strong>仅当前版「已失效」行显示橙色「重新生成」。<br><strong>交互逻辑：</strong>原试样仍在则升主版本并摘标；原范围做不到则弹出「无法按原范围重导」。校验不通过则保持已失效。', tag: '失效' },
+          { id: 'or-regen-dialog', selector: '[data-annotate="or-regen-dialog"]', position: 'top-left', title: '无法按原范围重导', wide: true, content: '<strong>需求逻辑：</strong>删样等使原文件身份无法满足时，不能按原范围重导，也不能自动把旧文件接进新文件历史。<br><strong>展示规则：</strong>提示列出已删对象；剩余为空时「确认」不可用。<br><strong>交互逻辑：</strong>取消=关闭且旧行仍失效；跳转原始记录页面=自选范围导出（新文件）；确认=按剩余对象、原生成模式新开一行且有效，旧行保持已失效。', tag: '失效' },
           { id: 'return-record', selector: '[data-annotate="return-record"]', position: 'top-right', title: '还样记录文件', content: '「还样退库确认表」「退样申请表」纳入批量导出可选类型；行内「导出」为单条快捷导出（原型）。', tag: '导出' },
-          { id: 'entrust-form-change', selector: '[data-annotate="entrust-form-change"]', position: 'top-left', title: '委托变更与委托单落版', wide: true, content: '委托变更包含四种：<strong>基本信息变更</strong>、<strong>样品修改变更</strong>、<strong>删除样品</strong>、<strong>变更添加样品</strong>。<br>其中<strong>基本信息变更</strong>在变更审批完成后，系统自动生成新版委托单文件（系统更新 → 新主版本）。', tag: '委托单' },
+          { id: 'entrust-form-change', selector: '[data-annotate="entrust-form-change"]', position: 'top-left', title: '委托变更与委托单落版', wide: true, content: '<strong>需求逻辑：</strong>委托变更四种：<strong>基本信息变更</strong>、<strong>样品修改变更</strong>、<strong>删除样品</strong>、<strong>变更添加样品</strong>。委托单自动升版与原始记录失效是两套规则：委托单在基本信息变更审批完成后系统更新 → 新主版本；原始记录是否失效另看 03-07。<br><strong>展示规则：</strong>本区展示委托单当前版；原始记录在下方「原始记录单」区，不随委托单升版自动换文件。<br><strong>交互逻辑：</strong>变更-变更基本委托信息 / 变更-样品修改变更：仅当变更字段在该次导出 snapshot.usedFields 内才打对应原始记录失效（付款方式、报告交付等未印单字段不打）。变更-删除样品按覆盖范围打失效。新增样品 C：原 A+B 文件若数据未变则保持有效。', tag: '委托单' },
           { id: 'doc-ops-col', selector: '[data-annotate="doc-ops-col"]', position: 'bottom-left', title: '文件操作列', wide: true, content: '<strong>版本号</strong>：语义化 V{主}.{次}；列表文件名不带版本后缀。<br><strong>系统更新</strong>→新主版本并成为当前；<strong>人工编辑</strong>（PageOffice 关闭保存）→次版本。<br><strong>查看历史</strong>：全员列表一致，含全部系统主版本；来源「系统更新/人工编辑」；系统说明写流程节点；历史仅在线查看，无下载、无回滚。', tag: '版本' },
           { id: 'task-sheet-section', selector: '[data-annotate="task-sheet-section"]', position: 'top-right', title: '检测任务单（按人分单）', wide: true, content: '在<strong>试样分发</strong>确认发放时按检测员生成：分给几人就有几张。表增加「检测员」「接收时间」列。未接收时接收时间为「—」。批量导出打包各检测员当前最新版。', tag: '任务单' },
           { id: 'task-sheet-entry', selector: '[data-annotate="task-sheet-entry"]', position: 'top-left', title: '一人一单', wide: true, content: '每张任务单只含分给该检测员的试样/试验项目。生成时接收人与接收日期置空；检测员在试验检测页「接收」后回填到<strong>对应自己的那张</strong>，不再覆盖他人任务单。', tag: '任务单' },

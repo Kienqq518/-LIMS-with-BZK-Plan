@@ -6,9 +6,26 @@
   var RECORD_MODES = [
     { key: 'model-all', label: '单种样品所有试验生成一份文件', dim: 'model', split: 'all' },
     { key: 'model-each', label: '单种样品单种试验生成一份文件', dim: 'model', split: 'each' },
+    { key: 'model-multi', label: '单种样品多试验项生成一份文件', dim: 'model', split: 'multi' },
     { key: 'specimen-all', label: '单个样品所有试验生成一份文件', dim: 'specimen', split: 'all' },
-    { key: 'specimen-each', label: '单个样品单种试验生成一份文件', dim: 'specimen', split: 'each' }
+    { key: 'specimen-each', label: '单个样品单种试验生成一份文件', dim: 'specimen', split: 'each' },
+    { key: 'specimen-multi', label: '单个样品多试验项生成一份文件', dim: 'specimen', split: 'multi' }
   ];
+
+  var RULES_STORAGE_KEY = 'lims_record_sheet_rules_v4';
+
+  var SEED_RULES = [
+    { id: 1, bindType: 'category', bindTarget: '安全工器具', modeKey: 'model-all' },
+    { id: 2, bindType: 'category', bindTarget: '电网物资', modeKey: 'model-each' },
+    { id: 3, bindType: 'model', bindTarget: '绝缘横担 - 通用型', modeKey: 'specimen-each' },
+    { id: 4, bindType: 'model', bindTarget: '绝缘操作杆 - 10kV', modeKey: 'model-multi', testGroups: [] }
+  ];
+
+  var SAMPLE_TESTS = {
+    '绝缘操作杆 - 10kV': ['交流耐压试验', '外观及尺寸', '抗弯动负荷试验', '抗弯静负荷试验'],
+    '绝缘硬梯 - 折叠式': ['外观及尺寸', '交流耐压试验', '水平强度试验', '横档强度试验', '连接装置强度试验', '抗压试验（折梯、人字梯）'],
+    '绝缘横担 - 通用型': ['外观及尺寸', '交流耐压试验']
+  };
 
   var DEFAULT_MODE_KEY = 'model-each';
 
@@ -26,6 +43,145 @@
 
   function modeLabel(key) {
     return modeByKey(key).label;
+  }
+
+  function isMultiMode(key) {
+    return modeByKey(key).split === 'multi';
+  }
+
+  function sampleModelLabel(sample) {
+    return (sample.name || '') + (sample.model ? ' - ' + sample.model : '');
+  }
+
+  function cloneGroups(groups) {
+    return (groups || []).map(function (g) { return (g || []).slice(); });
+  }
+
+  function cloneRules(rules) {
+    return (rules || []).map(function (r) {
+      return {
+        id: r.id,
+        bindType: r.bindType,
+        bindTarget: r.bindTarget,
+        modeKey: r.modeKey,
+        testGroups: cloneGroups(r.testGroups)
+      };
+    });
+  }
+
+  function loadRules() {
+    try {
+      var raw = global.localStorage && localStorage.getItem(RULES_STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length) return cloneRules(parsed);
+      }
+    } catch (e) { /* keep seed */ }
+    var seeded = cloneRules(SEED_RULES);
+    saveRules(seeded);
+    return seeded;
+  }
+
+  function saveRules(rules) {
+    try {
+      if (global.localStorage) localStorage.setItem(RULES_STORAGE_KEY, JSON.stringify(cloneRules(rules)));
+    } catch (e) { /* ignore quota */ }
+    return rules;
+  }
+
+  function nextRuleId(rules) {
+    var maxId = 0;
+    (rules || []).forEach(function (r) { if (r.id > maxId) maxId = r.id; });
+    return maxId + 1;
+  }
+
+  function saveModelDefault(modelLabel, modeKey, testGroups) {
+    var rules = loadRules();
+    var found = null;
+    for (var i = 0; i < rules.length; i++) {
+      if (rules[i].bindType === 'model' && rules[i].bindTarget === modelLabel) {
+        found = rules[i];
+        break;
+      }
+    }
+    if (found) {
+      found.modeKey = modeKey;
+      found.testGroups = isMultiMode(modeKey) ? cloneGroups(testGroups) : [];
+    } else {
+      rules.push({
+        id: nextRuleId(rules),
+        bindType: 'model',
+        bindTarget: modelLabel,
+        modeKey: modeKey,
+        testGroups: isMultiMode(modeKey) ? cloneGroups(testGroups) : []
+      });
+    }
+    saveRules(rules);
+    return rules;
+  }
+
+  function applySessionRules(rules, samples, sessionMap) {
+    var next = cloneRules(rules);
+    (samples || []).forEach(function (sample) {
+      var sess = sessionMap && sessionMap[sample.id];
+      if (!sess) return;
+      var label = sampleModelLabel(sample);
+      var found = null;
+      for (var i = 0; i < next.length; i++) {
+        if (next[i].bindType === 'model' && next[i].bindTarget === label) {
+          found = next[i];
+          break;
+        }
+      }
+      if (found) {
+        found.modeKey = sess.modeKey;
+        found.testGroups = cloneGroups(sess.testGroups);
+      } else {
+        next.unshift({
+          id: -1,
+          bindType: 'model',
+          bindTarget: label,
+          modeKey: sess.modeKey,
+          testGroups: cloneGroups(sess.testGroups)
+        });
+      }
+    });
+    return next;
+  }
+
+  function partitionTestGroups(allTests, testGroups) {
+    var used = {};
+    var groups = [];
+    (testGroups || []).forEach(function (g) {
+      var seen = {};
+      var names = (g || []).filter(function (t) {
+        if (allTests.indexOf(t) < 0 || seen[t]) return false;
+        seen[t] = true;
+        used[t] = true;
+        return true;
+      });
+      groups.push(names);
+    });
+    var unassigned = allTests.filter(function (t) { return !used[t]; });
+    return { groups: groups, unassigned: unassigned };
+  }
+
+  function defaultMultiGroups(fromKey, allTests, existingGroups) {
+    var part = partitionTestGroups(allTests, existingGroups);
+    if (part.groups.some(function (g) { return g.length; })) {
+      return part.groups.length ? part.groups : [[]];
+    }
+    return [[]];
+  }
+
+  function initExportSession(sample, rule) {
+    var mode = modeByKey(rule.modeKey);
+    var allTests = (sample.groups || []).map(function (g) { return g.title; });
+    var groups = cloneGroups(rule.testGroups);
+    if (mode.split === 'multi') {
+      groups = defaultMultiGroups(mode.key, allTests, groups);
+    }
+    return { modeKey: mode.key, testGroups: groups, dirty: false };
   }
 
   function resolveRecordRule(sample, rules) {
@@ -159,6 +315,36 @@
     return { status: 'ready', statusDetail: '就绪' };
   }
 
+  function evaluateMultiExportStatus(selectedNames, completedNames, sample, templateIndex, combinedData, sampleAncestorId) {
+    var incomplete = selectedNames.filter(function (t) {
+      return completedNames.indexOf(t) < 0;
+    });
+    if (incomplete.length) {
+      return {
+        status: 'incomplete',
+        statusDetail: '尚有 ' + incomplete.length + ' 项试验未完成：' + incomplete.join('、')
+      };
+    }
+    var modelKey = sample.templateKey || sample.id;
+    if (resolveCombinedTemplate(modelKey, combinedData, sampleAncestorId)) {
+      return { status: 'ready', statusDetail: '就绪' };
+    }
+    var missing = missingTemplates(selectedNames, sample, templateIndex);
+    if (!missing.length) {
+      return { status: 'ready', statusDetail: '就绪' };
+    }
+    if (missing.length === selectedNames.length) {
+      return {
+        status: 'missing_template',
+        statusDetail: '组合模版和所选试验项单模版均缺少'
+      };
+    }
+    return {
+      status: 'missing_template',
+      statusDetail: '缺少组合模版或' + missing.join('、') + '试验项单模版'
+    };
+  }
+
   function buildFileName(entrustCode, sample, tests, specimenId, mode) {
     var label = sample.name + (sample.model ? '-' + sample.model : '');
     var safe = function (s) { return String(s).replace(/[/\\:*?"<>|]/g, '_'); };
@@ -196,25 +382,75 @@
       var mode = modeByKey(rule.modeKey);
       var allTests = sample.groups.map(function (g) { return g.title; });
       var completedTests = sample.groups.filter(isGroupComplete).map(function (g) { return g.title; });
-      var sampleLabel = sample.name + (sample.model ? ' - ' + sample.model : '');
+      var sampleLabel = sampleModelLabel(sample);
       var modelKey = sample.templateKey || sample.id;
       var sampleAncestorId = sampleAncestorMap[modelKey] || sample.sampleBindTarget || null;
 
-      if (mode.dim === 'model') {
+      function emitFile(opts) {
+        files.push({
+          id: 'f' + (++fileId),
+          fileName: opts.fileName,
+          sampleId: sample.id,
+          sampleLabel: sampleLabel,
+          specimenId: opts.specimenId || null,
+          tests: opts.tests,
+          status: opts.status,
+          statusDetail: opts.statusDetail,
+          modeKey: mode.key,
+          ruleId: rule.id,
+          checked: opts.status === 'ready',
+          groupIndex: typeof opts.groupIndex === 'number' ? opts.groupIndex : null
+        });
+      }
+
+      function emitMultiGroup(names, groupIndex, specimenId, completedNames) {
+        if (!names.length) return;
+        var evalG = evaluateMultiExportStatus(
+          names,
+          completedNames,
+          sample,
+          templateIndex,
+          combinedData,
+          sampleAncestorId
+        );
+        emitFile({
+          fileName: buildFileName(entrustCode, sample, names, specimenId, mode),
+          specimenId: specimenId,
+          tests: buildTestsMeta(names, completedNames),
+          status: evalG.status,
+          statusDetail: evalG.statusDetail,
+          groupIndex: groupIndex
+        });
+      }
+
+      if (mode.split === 'multi') {
+        var part = partitionTestGroups(allTests, rule.testGroups);
+        if (mode.dim === 'model') {
+          part.groups.forEach(function (names, gi) {
+            var completedInGroup = names.filter(function (t) { return completedTests.indexOf(t) >= 0; });
+            emitMultiGroup(names, gi, null, completedInGroup);
+          });
+        } else {
+          var specIdsMulti = specimenIdsFromSample(sample);
+          specIdsMulti.forEach(function (specimenId, si) {
+            var specimenCompleted = allTests.filter(function (_t, ti) {
+              return isSpecimenTestComplete(sample, si, sample.groups[ti]);
+            });
+            part.groups.forEach(function (names, gi) {
+              var completedInGroup = names.filter(function (t) { return specimenCompleted.indexOf(t) >= 0; });
+              var rowSpecimenId = names.length ? specimenIdForTest(sample, si, names[0]) : specimenId;
+              emitMultiGroup(names, gi, rowSpecimenId, completedInGroup);
+            });
+          });
+        }
+      } else if (mode.dim === 'model') {
         if (mode.split === 'all') {
           var evalAll = evaluateMergeExportStatus(allTests, completedTests, sample, templateIndex, combinedData, sampleAncestorId);
-          files.push({
-            id: 'f' + (++fileId),
+          emitFile({
             fileName: buildFileName(entrustCode, sample, allTests, null, mode),
-            sampleId: sample.id,
-            sampleLabel: sampleLabel,
-            specimenId: null,
             tests: buildTestsMeta(allTests, completedTests),
             status: evalAll.status,
-            statusDetail: evalAll.statusDetail,
-            modeKey: mode.key,
-            ruleId: rule.id,
-            checked: evalAll.status === 'ready'
+            statusDetail: evalAll.statusDetail
           });
         } else {
           completedTests.forEach(function (testName) {
@@ -222,18 +458,11 @@
             var st = missing.length
               ? { status: 'missing_template', statusDetail: '缺少「' + missing[0] + '」的模版' }
               : { status: 'ready', statusDetail: '就绪' };
-            files.push({
-              id: 'f' + (++fileId),
+            emitFile({
               fileName: buildFileName(entrustCode, sample, [testName], null, mode),
-              sampleId: sample.id,
-              sampleLabel: sampleLabel,
-              specimenId: null,
               tests: [{ name: testName, done: true }],
               status: st.status,
-              statusDetail: st.statusDetail,
-              modeKey: mode.key,
-              ruleId: rule.id,
-              checked: st.status === 'ready'
+              statusDetail: st.statusDetail
             });
           });
         }
@@ -246,18 +475,12 @@
 
           if (mode.split === 'all') {
             var evalSpec = evaluateMergeExportStatus(allTests, specimenCompleted, sample, templateIndex, combinedData, sampleAncestorId);
-            files.push({
-              id: 'f' + (++fileId),
+            emitFile({
               fileName: buildFileName(entrustCode, sample, allTests, specimenId, mode),
-              sampleId: sample.id,
-              sampleLabel: sampleLabel,
               specimenId: specimenId,
               tests: buildTestsMeta(allTests, specimenCompleted),
               status: evalSpec.status,
-              statusDetail: evalSpec.statusDetail,
-              modeKey: mode.key,
-              ruleId: rule.id,
-              checked: evalSpec.status === 'ready'
+              statusDetail: evalSpec.statusDetail
             });
           } else {
             specimenCompleted.forEach(function (testName) {
@@ -266,18 +489,12 @@
                 ? { status: 'missing_template', statusDetail: '缺少「' + miss[0] + '」的模版' }
                 : { status: 'ready', statusDetail: '就绪' };
               var rowSpecimenId = specimenIdForTest(sample, si, testName);
-              files.push({
-                id: 'f' + (++fileId),
+              emitFile({
                 fileName: buildFileName(entrustCode, sample, [testName], rowSpecimenId, mode),
-                sampleId: sample.id,
-                sampleLabel: sampleLabel,
                 specimenId: rowSpecimenId,
                 tests: [{ name: testName, done: true }],
                 status: st2.status,
-                statusDetail: st2.statusDetail,
-                modeKey: mode.key,
-                ruleId: rule.id,
-                checked: st2.status === 'ready'
+                statusDetail: st2.statusDetail
               });
             });
           }
@@ -292,8 +509,21 @@
     RECORD_MODES: RECORD_MODES,
     BIND_TYPE_LABELS: BIND_TYPE_LABELS,
     DEFAULT_MODE_KEY: DEFAULT_MODE_KEY,
+    SAMPLE_TESTS: SAMPLE_TESTS,
+    SEED_RULES: SEED_RULES,
     modeByKey: modeByKey,
     modeLabel: modeLabel,
+    isMultiMode: isMultiMode,
+    sampleModelLabel: sampleModelLabel,
+    cloneGroups: cloneGroups,
+    loadRules: loadRules,
+    saveRules: saveRules,
+    saveModelDefault: saveModelDefault,
+    applySessionRules: applySessionRules,
+    partitionTestGroups: partitionTestGroups,
+    defaultMultiGroups: defaultMultiGroups,
+    evaluateMultiExportStatus: evaluateMultiExportStatus,
+    initExportSession: initExportSession,
     resolveRecordRule: resolveRecordRule,
     resolveCombinedTemplate: resolveCombinedTemplate,
     buildRecordFilePreview: buildRecordFilePreview

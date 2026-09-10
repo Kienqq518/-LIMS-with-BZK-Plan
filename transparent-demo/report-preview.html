@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>检测报告预览</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    :root { --ink: #1e293b; --line: #0f172a; }
+    body { background: #e2e8f0; color: var(--ink); }
+    .toolbar { position: sticky; top: 0; z-index: 20; }
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 16px auto;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .12);
+      padding: 18mm 16mm 16mm;
+      position: relative;
+      box-sizing: border-box;
+    }
+    .sheet + .sheet { page-break-before: always; }
+    .org { font-size: 22px; font-weight: 800; letter-spacing: .18em; text-align: center; }
+    .doc-title { font-size: 34px; font-weight: 900; letter-spacing: .4em; text-align: center; margin: 28px 0 8px; }
+    .kv { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .kv th, .kv td { border: 1px solid var(--line); padding: 7px 10px; vertical-align: top; }
+    .kv th { width: 22%; background: #f8fafc; font-weight: 600; text-align: right; }
+    .data { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .data th, .data td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; }
+    .data th { background: #f1f5f9; font-weight: 600; }
+    .qr-box { position: absolute; top: 16mm; right: 16mm; width: 34mm; text-align: center; }
+    .qr-box img { width: 32mm; height: 32mm; display: block; margin: 0 auto; border: 1px solid #cbd5e1; background: #fff; }
+    .stamp-ok {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 88px; height: 88px; border: 4px solid #b91c1c; border-radius: 50%;
+      color: #b91c1c; font-weight: 900; font-size: 22px; letter-spacing: .2em;
+      transform: rotate(-16deg);
+    }
+    .sign-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 28px; font-size: 13px; }
+    .footer-note { margin-top: 22px; font-size: 11px; color: #475569; line-height: 1.65; border-top: 1px solid #cbd5e1; padding-top: 10px; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none !important; }
+      .sheet { box-shadow: none; margin: 0; }
+    }
+    @page { size: A4; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="toolbar flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-2 text-sm backdrop-blur">
+    <span id="toolTitle" class="font-medium text-slate-700">检测报告预览</span>
+    <div class="flex items-center gap-3">
+      <a id="verifyLink" href="#" class="text-blue-600 hover:underline"><i class="fa fa-qrcode"></i> 打开溯源页</a>
+      <button type="button" onclick="window.print()" class="rounded border border-slate-300 px-3 py-1 text-slate-600 hover:bg-slate-50">打印 / 存 PDF</button>
+    </div>
+  </div>
+  <div id="pages"></div>
+
+  <script src="../js/short-link-qr.js"></script>
+  <script src="../js/report-trace.js"></script>
+  <script src="../js/report-trace-l1.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var code = (params.get('code') || '').trim();
+      var pages = document.getElementById('pages');
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      if (!window.ReportTrace) {
+        pages.innerHTML = '<p class="p-8 text-center text-slate-500">未加载溯源数据。</p>';
+        return;
+      }
+
+      var res = ReportTrace.getVerify(code);
+      if (!res.ok || !res.entry) {
+        pages.innerHTML = '<p class="p-8 text-center text-slate-500">' + esc(res.message || '未找到该报告。') + '</p>';
+        return;
+      }
+
+      var snap = ReportTrace.snapshots[res.entry.reportNo] || {};
+      var meta = snap.meta || {};
+      var method = snap.method || {};
+      var material = snap.material || {};
+      var flow = snap.flow || {};
+      var report = flow.report || snap.report || {};
+      var level = res.entry.level;
+      var levelName = ReportTrace.levelName(level);
+      var org = meta.org || '杭州应敏科技有限公司';
+      var sampleName = meta.sampleName || '—';
+      var reportNo = res.entry.reportNo;
+      var shortUrl = ReportTrace.reportShortUrl(code);
+      var verifyHref = '../report-verify.html?code=' + encodeURIComponent(code);
+      var qrSrc = ReportTrace.qrImageUrl(shortUrl, 220);
+      var issueDate = (res.entry.createdAt || snap.frozenAt || '').slice(0, 10);
+      var records = ReportTrace.getTestItemRecords(reportNo) || [];
+      var items = meta.testItems || records.map(function (t) { return t.name; });
+      var conclusion = meta.conclusion || '合格';
+
+      document.title = sampleName + ' 检测报告 · ' + reportNo;
+      document.getElementById('toolTitle').textContent = reportNo + ' · ' + sampleName;
+      document.getElementById('verifyLink').href = verifyHref;
+
+      function kvRow(k, v) {
+        return '<tr><th>' + esc(k) + '</th><td>' + v + '</td></tr>';
+      }
+
+      function signCell(role, person) {
+        person = person || {};
+        return '<div class="border border-slate-300 px-3 py-3 min-h-[88px]">' +
+          '<div class="text-slate-500">' + esc(role) + '</div>' +
+          '<div class="mt-2 text-base font-semibold">' + esc(person.name || '—') + '</div>' +
+          '<div class="mt-1 text-xs text-slate-400">' + esc(person.time || '') + '</div>' +
+        '</div>';
+      }
+
+      var qrBlock =
+        '<div class="qr-box">' +
+          '<a href="' + verifyHref + '" target="_blank" title="扫码或点击打开溯源页">' +
+            '<img src="' + esc(qrSrc) + '" alt="报告溯源二维码" />' +
+          '</a>' +
+          '<p style="margin:6px 0 0;font-size:10px;line-height:1.4;color:#475569">扫码核验检测过程<br>一报一码 · 不可篡改</p>' +
+        '</div>';
+
+      var cover =
+        '<section class="sheet">' +
+          qrBlock +
+          '<p class="org">' + esc(org) + '</p>' +
+          '<p style="text-align:center;font-size:12px;color:#64748b;letter-spacing:.12em;margin-top:6px">CMA / CNAS 检验检测机构 · 透明检测报告</p>' +
+          '<h1 class="doc-title">检测报告</h1>' +
+          '<p style="text-align:center;font-size:13px;color:#334155;margin-bottom:28px">' + esc(levelName) + '</p>' +
+          '<table class="kv">' +
+            kvRow('报告编号', esc(reportNo)) +
+            kvRow('样品名称', esc(sampleName)) +
+            kvRow('规格型号', esc(meta.spec || '—')) +
+            kvRow('委托单位', esc(meta.clientName || '—')) +
+            kvRow('样品编号', esc(material.sampleNo || '—')) +
+            kvRow('检测类别', esc(meta.testCategory || '委托检验')) +
+            kvRow('检测依据', esc((method.stdCode || '') + (method.stdName ? '　' + method.stdName : '') || '—')) +
+            kvRow('检测项目', esc(items.length ? items.join('、') : '—')) +
+            kvRow('签发日期', esc(issueDate || '—')) +
+            kvRow('透明度等级', '<b>' + esc(levelName) + '</b>') +
+            kvRow('溯源短链', '<span style="font-family:ui-monospace,monospace;font-size:11px;word-break:break-all">' + esc(shortUrl) + '</span>') +
+          '</table>' +
+          '<div style="margin-top:36px;display:flex;align-items:center;justify-content:space-between;gap:24px">' +
+            '<div>' +
+              '<div style="font-size:13px;color:#64748b">检测结论</div>' +
+              '<div style="font-size:28px;font-weight:900;margin-top:6px">' + esc(conclusion) + '</div>' +
+            '</div>' +
+            '<div class="stamp-ok">' + esc(conclusion) + '</div>' +
+          '</div>' +
+          '<div class="footer-note">' +
+            '本报告首页二维码与本次检测终身绑定。微信 / 支付宝 / 手机相机扫描后，按本报告透明度等级公开检测过程（人员、设备、样品、方法、环境、流程、影像与数据流转）。公开内容与等级严格匹配。' +
+          '</div>' +
+        '</section>';
+
+      var tables = '';
+      if (method.dataSummary) {
+        tables += '<p style="font-size:13px;margin:0 0 14px;line-height:1.6"><b>结果综述：</b>' + esc(method.dataSummary) + '</p>';
+      }
+      if (!records.length) {
+        tables += '<p style="font-size:13px;color:#64748b">本等级报告未公开分项检测数据表。</p>';
+      } else {
+        records.forEach(function (t) {
+          tables += '<h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">' + esc(t.name || '试验项') + '</h3>';
+          tables += '<p style="font-size:11px;color:#64748b;margin:0 0 8px">检测员 ' + esc(t.inspector || '—') +
+            (t.equipment ? '　设备 ' + esc(t.equipment) : '') +
+            (t.env ? '　环境 ' + esc(t.env) : '') + '</p>';
+          var cols = t.columns || [];
+          var rows = t.rows || [];
+          if (cols.length && rows.length) {
+            tables += '<table class="data"><thead><tr>' + cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>';
+            rows.forEach(function (r) {
+              tables += '<tr>' + r.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>';
+            });
+            tables += '</tbody></table>';
+          }
+        });
+      }
+
+      var results =
+        '<section class="sheet">' +
+          '<p class="org" style="font-size:16px;letter-spacing:.12em">' + esc(org) + '</p>' +
+          '<h2 style="text-align:center;font-size:20px;font-weight:800;margin:10px 0 18px">检测结果</h2>' +
+          tables +
+          '<div class="sign-grid">' +
+            signCell('编制 / 检测', report.compiler || { name: (snap.person && snap.person.name) || '—' }) +
+            signCell('审核', report.reviewer || {}) +
+            signCell('批准 / 签发', report.approver || {}) +
+          '</div>' +
+          '<div class="footer-note">' +
+            '声明：本报告仅对来样负责。涂改无效。报告首页二维码可核验过程影像与全流程追溯。' +
+            (level <= 2 ? '本报告为一 / 二级透明报告，扫码可回看检测视频。' : '') +
+          '</div>' +
+        '</section>';
+
+      pages.innerHTML = cover + results;
+    })();
+  </script>
+</body>
+</html>

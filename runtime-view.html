@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>上位机运行曲线</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-700">
+  <div class="mx-auto max-w-xl p-4 pt-6">
+    <div class="overflow-hidden rounded-xl bg-white shadow-lg">
+      <div class="bg-blue-600 px-5 py-4 text-white">
+        <a id="backLink" href="report-verify.html" class="mb-2 inline-flex items-center gap-1 text-xs text-blue-100 hover:text-white">
+          <i class="fa fa-angle-left"></i> 返回溯源页
+        </a>
+        <h1 class="text-lg font-semibold">关键运行数据</h1>
+        <p id="topSub" class="mt-1 text-xs text-blue-100">上位机采集 · 签发时冻结的试验过程曲线</p>
+      </div>
+      <div id="body" class="px-5 py-5"></div>
+    </div>
+  </div>
+  <script src="js/report-trace.js"></script>
+  <script src="js/report-trace-l1.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var code = params.get('code') || '';
+      if (code) document.getElementById('backLink').href = 'report-verify.html?code=' + encodeURIComponent(code);
+      var res = code ? ReportTrace.getVerify(code) : { ok: false };
+      var reportNo = (res.ok && res.entry) ? res.entry.reportNo : params.get('report');
+      var rt = ReportTrace.getRuntime(reportNo);
+      var body = document.getElementById('body');
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+      function seriesSvg(points, color) {
+        var W = 460, H = 120, pad = 24;
+        var vals = points.map(function (p) { return p.v; });
+        var lo = Math.min.apply(null, vals) - 0.1, hi = Math.max.apply(null, vals) + 0.1;
+        function mapX(i) { return pad + (W - 2 * pad) * i / Math.max(points.length - 1, 1); }
+        function mapY(v) { return H - pad - (H - 2 * pad) * (v - lo) / (hi - lo || 1); }
+        var poly = vals.map(function (v, i) { return mapX(i) + ',' + mapY(v).toFixed(1); }).join(' ');
+        return '<svg viewBox="0 0 ' + W + ' ' + H + '" class="w-full">' +
+          '<polyline fill="none" stroke="' + color + '" stroke-width="2" points="' + poly + '"/>' +
+          '</svg>';
+      }
+      if (!rt) {
+        body.innerHTML = '<p class="text-sm text-slate-500">本报告无上位机运行数据。</p>';
+        return;
+      }
+      document.getElementById('topSub').textContent = (rt.equipment || '') + '　·　' + (rt.testName || '') + '　·　' + (rt.source || '上位机采集');
+      var colors = ['#2563eb', '#16a34a', '#d97706'];
+      body.innerHTML = (rt.series || []).map(function (s, i) {
+        return '<div class="mb-3 rounded-lg border border-slate-200 p-3 last:mb-0">' +
+          '<p class="text-xs text-slate-500">' + esc(s.name) + '（' + esc(s.unit) + '）</p>' +
+          '<div class="mt-1 rounded bg-slate-50 p-2">' + seriesSvg(s.points || [], colors[i % colors.length]) + '</div>' +
+        '</div>';
+      }).join('') +
+        '<p class="mt-3 text-center text-[11px] text-slate-400">曲线由上位机采集回传，公开页只读展示签发快照。</p>';
+    })();
+  </script>
+</body>
+</html>

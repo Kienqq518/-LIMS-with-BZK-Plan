@@ -6,6 +6,7 @@
   <title>业务流程配置 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/record-export-drawer.css" />
   <style>
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
@@ -547,7 +548,7 @@
         <div class="cfg-panel">
           <div class="mx-0 mb-4 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
             <i class="fa fa-info-circle mt-0.5 text-blue-500"></i>
-            <span>配置记录单导出时的<strong>文件切分规则</strong>（四种生成模式：<strong>单种样品所有试验生成一份文件</strong>、<strong>单种样品单种试验生成一份文件</strong>、<strong>单个样品所有试验生成一份文件</strong>、<strong>单个样品单种试验生成一份文件</strong>）。操作员在试验检测页导出时按此规则预览文件，不可更改策略。模版在「模板管理 › 记录单模版」维护组合模版与试验项单模版。</span>
+            <span>配置记录单导出时的<strong>文件切分规则</strong>（六种生成模式，含两种「多试验项」自定义分组）。管理员在此配置默认规则；检测员导出时可微调，并可将本次分组<strong>保存为该样品名称(型号)的默认</strong>。模版在「模板管理 › 记录单模版」维护。</span>
           </div>
           <div class="cfg-toolbar">
             <div class="cfg-form-item"><label>绑定对象</label><input type="text" id="recordFilterTarget" placeholder="分类或型号" style="width:140px" /></div>
@@ -559,7 +560,7 @@
           </div>
           <div class="overflow-x-auto">
             <table class="cfg-table">
-              <thead><tr><th style="width:60px">序号</th><th>关联模式</th><th>绑定对象</th><th>生成模式</th><th style="width:120px">操作</th></tr></thead>
+              <thead><tr><th style="width:60px">序号</th><th>关联模式</th><th>绑定对象</th><th>生成模式</th><th>默认分组</th><th style="width:120px">操作</th></tr></thead>
               <tbody id="recordTableBody"></tbody>
             </table>
           </div>
@@ -846,7 +847,7 @@
 
   <!-- 记录单设置 · 新增/编辑 -->
   <div id="recordModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-    <div class="flex max-h-[88vh] w-[520px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+    <div class="flex max-h-[88vh] w-[860px] max-w-full flex-col rounded-lg bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <h3 class="text-base font-medium text-slate-800" id="recordModalTitle">新增记录单配置</h3>
         <button type="button" onclick="closeRecordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
@@ -859,10 +860,14 @@
           </select>
         </div>
         <div class="cfg-form-item"><label class="mb-1 block text-sm text-slate-600"><span class="text-red-500">*</span> 绑定对象</label>
-          <select id="recordFormBindTarget" class="w-full rounded border border-slate-300 px-3 py-2 text-sm"></select>
+          <select id="recordFormBindTarget" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" onchange="syncRecordGroupEditor()"></select>
         </div>
         <div class="cfg-form-item"><label class="mb-1 block text-sm text-slate-600"><span class="text-red-500">*</span> 生成模式</label>
-          <select id="recordFormMode" class="w-full rounded border border-slate-300 px-3 py-2 text-sm"></select>
+          <select id="recordFormMode" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" onchange="onRecordModeChange()"></select>
+        </div>
+        <div id="recordGroupEditor" class="hidden" data-annotate="record-groups">
+          <p class="mb-2 text-xs leading-5 text-slate-500" id="recordGroupHint">点亮试验项纳入该文件条；同一试验项可被多条文件同时点亮。保存后作为该样品名称(型号)的默认分组。检测员导出时仍可微调。</p>
+          <div id="recordGroupBoard"></div>
         </div>
       </div>
       <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
@@ -1497,14 +1502,111 @@
       model: ['绝缘操作杆 - 10kV', '绝缘硬梯 - 折叠式', '绝缘横担 - 通用型', '电线电缆']
     };
 
-    var RECORD_DATA = [
-      { id: 1, bindType: 'category', bindTarget: '安全工器具', modeKey: 'model-all' },
-      { id: 2, bindType: 'category', bindTarget: '电网物资', modeKey: 'model-each' },
-      { id: 3, bindType: 'model', bindTarget: '绝缘横担 - 通用型', modeKey: 'specimen-each' }
-    ];
+    var RECORD_DATA = RecordExport.loadRules();
 
     var recordEditId = null;
-    var recordNextId = 4;
+    var recordNextId = RECORD_DATA.reduce(function (max, r) { return r.id > max ? r.id : max; }, 0) + 1;
+    var recordFormGroups = [[]];
+    var recordGroupBound = false;
+
+    function persistRecords() {
+      RecordExport.saveRules(RECORD_DATA);
+    }
+
+    function groupSummary(row) {
+      if (!RecordExport.isMultiMode(row.modeKey)) return '—';
+      var groups = (row.testGroups || []).filter(function (g) { return g && g.length; });
+      if (!groups.length) return '未分组（导出时点亮试验项）';
+      return groups.map(function (g, i) { return (i + 1) + '：' + g.join('、'); }).join('；');
+    }
+
+    function currentRecordTests() {
+      var bindType = document.getElementById('recordFormBindType').value;
+      var bindTarget = document.getElementById('recordFormBindTarget').value;
+      if (bindType !== 'model') return [];
+      return (RecordExport.SAMPLE_TESTS[bindTarget] || []).slice();
+    }
+
+    function renderRecordGroupBoard() {
+      var board = document.getElementById('recordGroupBoard');
+      var tests = currentRecordTests();
+      var bindType = document.getElementById('recordFormBindType').value;
+      var hint = document.getElementById('recordGroupHint');
+      if (bindType !== 'model' || !tests.length) {
+        hint.textContent = '分类规则不配置具体试验项分组。请绑定到样品名称(型号)，或由检测员在导出时分组并「保存为该样品默认」。';
+        board.innerHTML = '';
+        return;
+      }
+        hint.textContent = '点亮试验项纳入该文件条。同一试验项可被多条文件同时点亮，保存后作为该样品名称(型号)的默认分组。检测员导出时仍可微调。';
+      var groups = recordFormGroups.length ? recordFormGroups : [[]];
+      var html = '<div class="export-board" style="padding:0;background:transparent">';
+      groups.forEach(function (names, gi) {
+        html += '<div class="export-file-bar' + (names.length ? ' is-ready' : '') + '">';
+        html += '<div class="export-file-bar-main"><div class="export-file-bar-head">';
+        html += '<span class="export-card-kicker">文件 ' + (gi + 1) + '</span>';
+        if (groups.length > 1) {
+          html += '<button type="button" class="export-card-remove" data-action="remove-card" data-group="' + gi + '"><i class="fa fa-times"></i></button>';
+        }
+        html += '</div><div class="export-file-bar-tags">';
+        tests.forEach(function (name) {
+          var selected = names.indexOf(name) >= 0;
+          html += '<span class="export-test-tag is-pick ' + (selected ? 'is-on' : 'is-off') +
+            '" role="button" data-action="toggle-test" data-group="' + gi + '" data-test="' + name + '">' + name + '</span>';
+        });
+        html += '</div></div></div>';
+      });
+      html += '<button type="button" class="export-add-bar" data-action="add-card"><i class="fa fa-plus"></i>添加文件</button>';
+      html += '</div>';
+      board.innerHTML = html;
+    }
+
+    function syncRecordGroupEditor() {
+      var editor = document.getElementById('recordGroupEditor');
+      var modeKey = document.getElementById('recordFormMode').value;
+      if (RecordExport.isMultiMode(modeKey)) {
+        editor.classList.remove('hidden');
+        if (!recordFormGroups.length) recordFormGroups = [[]];
+        renderRecordGroupBoard();
+      } else {
+        editor.classList.add('hidden');
+      }
+    }
+
+    function onRecordModeChange() {
+      var modeKey = document.getElementById('recordFormMode').value;
+      var tests = currentRecordTests();
+      if (RecordExport.isMultiMode(modeKey) && !recordFormGroups.some(function (g) { return g.length; })) {
+        recordFormGroups = RecordExport.defaultMultiGroups(modeKey, tests, recordFormGroups);
+      }
+      syncRecordGroupEditor();
+    }
+
+    function bindRecordGroupEvents() {
+      if (recordGroupBound) return;
+      recordGroupBound = true;
+      var board = document.getElementById('recordGroupBoard');
+      board.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        var action = btn.getAttribute('data-action');
+        var gi = Number(btn.getAttribute('data-group'));
+        if (action === 'add-card') recordFormGroups.push([]);
+        if (action === 'remove-card') {
+          recordFormGroups.splice(gi, 1);
+          if (!recordFormGroups.length) recordFormGroups = [[]];
+        }
+        if (action === 'toggle-test') {
+          var name = btn.getAttribute('data-test');
+          while (recordFormGroups.length <= gi) recordFormGroups.push([]);
+          if (recordFormGroups[gi].indexOf(name) >= 0) {
+            recordFormGroups[gi] = recordFormGroups[gi].filter(function (t) { return t !== name; });
+          } else {
+            recordFormGroups[gi].push(name);
+          }
+        }
+        renderRecordGroupBoard();
+      });
+    }
 
     function initRecordFilters() {
       var modeSel = document.getElementById('recordFilterMode');
@@ -1532,6 +1634,7 @@
 
     function onRecordBindTypeChange() {
       renderRecordBindTargetOptions();
+      syncRecordGroupEditor();
     }
 
     function editRecord(id) {
@@ -1547,10 +1650,16 @@
       if (row) {
         document.getElementById('recordFormBindTarget').value = row.bindTarget;
         document.getElementById('recordFormMode').value = row.modeKey;
+        recordFormGroups = RecordExport.cloneGroups(row.testGroups && row.testGroups.length ? row.testGroups : [[]]);
+      } else {
+        recordFormGroups = [[]];
       }
+      bindRecordGroupEvents();
+      syncRecordGroupEditor();
       var modal = document.getElementById('recordModal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function closeRecordModal() {
@@ -1575,16 +1684,19 @@
         alert('该关联范围已存在配置，请勿重复添加');
         return;
       }
+      var testGroups = RecordExport.isMultiMode(modeKey) ? RecordExport.cloneGroups(recordFormGroups) : [];
       if (recordEditId) {
         var row = RECORD_DATA.filter(function (r) { return r.id === recordEditId; })[0];
         if (row) {
           row.bindType = bindType;
           row.bindTarget = bindTarget;
           row.modeKey = modeKey;
+          row.testGroups = testGroups;
         }
       } else {
-        RECORD_DATA.push({ id: recordNextId++, bindType: bindType, bindTarget: bindTarget, modeKey: modeKey });
+        RECORD_DATA.push({ id: recordNextId++, bindType: bindType, bindTarget: bindTarget, modeKey: modeKey, testGroups: testGroups });
       }
+      persistRecords();
       closeRecordModal();
       renderRecords();
     }
@@ -1592,6 +1704,7 @@
     function deleteRecord(id) {
       if (!confirm('确定删除该记录单配置？')) return;
       RECORD_DATA = RECORD_DATA.filter(function (r) { return r.id !== id; });
+      persistRecords();
       renderRecords();
     }
 
@@ -1599,7 +1712,7 @@
       var data = list || RECORD_DATA;
       document.getElementById('recordTableBody').innerHTML = data.map(function (row, i) {
         return '<tr><td>' + (i + 1) + '</td><td>' + bindTypeLabel(row.bindType) + '</td><td>' + row.bindTarget + '</td><td>' +
-          RecordExport.modeLabel(row.modeKey) + '</td>' +
+          RecordExport.modeLabel(row.modeKey) + '</td><td class="text-left text-xs text-slate-500">' + groupSummary(row) + '</td>' +
           '<td class="whitespace-nowrap"><button onclick="editRecord(' + row.id + ')" class="text-blue-600 hover:underline">编辑</button> ' +
           '<button onclick="deleteRecord(' + row.id + ')" class="ml-2 text-red-500 hover:underline">删除</button></td></tr>';
       }).join('');
@@ -1993,10 +2106,10 @@
 
     /* Mock 预览上下文：取样品分类层级1 + 试样类别代码等 */
     var NUM_PREVIEW_CTX = {
-      dlwz: { entrustYear: 2026, entrustMonth: '03', entrustDay: '18', submitYear: 2026, submitMonth: '03', submitDay: '20', categoryName: '电力电缆类', categoryCode: 'DLDL', specimenCategoryCode: 'aa', seq: 37, reportCount: 12 },
-      aqgqj: { entrustYear: 2026, entrustMonth: '02', entrustDay: '11', submitYear: 2026, submitMonth: '02', submitDay: '12', categoryName: '绝缘手套', categoryCode: 'JYST', specimenCategoryCode: 'bb', seq: 12, reportCount: 5 },
-      hjjc: { entrustYear: 2026, entrustMonth: '01', entrustDay: '08', submitYear: 2026, submitMonth: '01', submitDay: '09', categoryName: '水质检测', categoryCode: 'SZ', specimenCategoryCode: 'cc', seq: 5, reportCount: 3 },
-      gcjc: { entrustYear: 2026, entrustMonth: '04', entrustDay: '02', submitYear: 2026, submitMonth: '04', submitDay: '03', categoryName: '通用硅酸盐水泥', categoryCode: 'SN', specimenCategoryCode: 'dd', seq: 9, reportCount: 8 }
+      dlwz: { entrustYear: 2026, entrustMonth: '03', entrustDay: '18', submitYear: 2026, submitMonth: '03', submitDay: '20', categoryName: '电力电缆类', categoryCode: 'DLDL', specimenCategoryCode: 'aa', seq: 37, reportCount: 12, taskCount: 13 },
+      aqgqj: { entrustYear: 2026, entrustMonth: '02', entrustDay: '11', submitYear: 2026, submitMonth: '02', submitDay: '12', categoryName: '绝缘手套', categoryCode: 'JYST', specimenCategoryCode: 'bb', seq: 12, reportCount: 5, taskCount: 8 },
+      hjjc: { entrustYear: 2026, entrustMonth: '01', entrustDay: '08', submitYear: 2026, submitMonth: '01', submitDay: '09', categoryName: '水质检测', categoryCode: 'SZ', specimenCategoryCode: 'cc', seq: 5, reportCount: 3, taskCount: 4 },
+      gcjc: { entrustYear: 2026, entrustMonth: '04', entrustDay: '02', submitYear: 2026, submitMonth: '04', submitDay: '03', categoryName: '通用硅酸盐水泥', categoryCode: 'SN', specimenCategoryCode: 'dd', seq: 9, reportCount: 8, taskCount: 11 }
     };
 
     var TOKEN_TYPE_GROUPS = [
@@ -2022,7 +2135,8 @@
         label: '序号与数量',
         options: [
           { type: 'seq', label: '自增序号' },
-          { type: 'report_count', label: '报告数量' }
+          { type: 'report_count', label: '报告数量' },
+          { type: 'task_count', label: '任务数量' }
         ]
       },
       {
@@ -2135,6 +2249,7 @@
       if (type === 'date') return { type: 'date', source: 'entrust', part: 'year', format: 'YYYY' };
       if (type === 'seq') return { type: 'seq', digits: 4 };
       if (type === 'report_count') return { type: 'report_count', dimension: 'major_cat', range: 'year', digits: 4 };
+      if (type === 'task_count') return { type: 'task_count', dimension: 'major_cat', range: 'year', digits: 4 };
       return { type: type };
     }
 
@@ -2178,8 +2293,9 @@
         return dateSourceLabel(tk.source) + '·' + datePartLabel(tk.part) + '·' + resolveDateFormat(tk);
       }
       if (tk.type === 'seq') return '自增序号·' + (tk.digits || 4) + '位';
-      if (tk.type === 'report_count') {
-        return '报告数量·' + reportDimLabel(tk.dimension) + '·' + reportRangeLabel(tk.range) + '·' + (tk.digits || 4) + '位';
+      if (tk.type === 'report_count' || tk.type === 'task_count') {
+        var countName = tk.type === 'task_count' ? '任务数量' : '报告数量';
+        return countName + '·' + reportDimLabel(tk.dimension) + '·' + reportRangeLabel(tk.range) + '·' + (tk.digits || 4) + '位';
       }
       return meta ? meta.label : tk.type;
     }
@@ -2187,7 +2303,7 @@
     function tokenChipClass(tk) {
       if (tk.type === 'literal_custom') return 'rule-chip fixed';
       if (tk.type === 'seq') return 'rule-chip seq';
-      if (tk.type === 'report_count') return 'rule-chip report';
+      if (tk.type === 'report_count' || tk.type === 'task_count') return 'rule-chip report';
       if (tk.type === 'category_name' || tk.type === 'category_code' || tk.type === 'specimen_category_code') return 'rule-chip cat';
       return 'rule-chip';
     }
@@ -2215,6 +2331,7 @@
         case 'specimen_category_code': return ctx.specimenCategoryCode;
         case 'seq': return padNum(ctx.seq, tk.digits || 4);
         case 'report_count': return padNum(ctx.reportCount || 1, tk.digits || 4);
+        case 'task_count': return padNum(ctx.taskCount || 1, tk.digits || 4);
         case 'ref_entrust': return buildRefEntrust(ctx);
         case 'ref_sample': return buildRefSample(ctx);
         default: return '';
@@ -2352,6 +2469,34 @@
       }).join('');
     }
 
+    function countQtyFieldsHtml(tk, index, kind) {
+      var dim = tk.dimension || 'major_cat';
+      var range = tk.range || 'year';
+      var rd = tk.digits || 4;
+      var hint = kind === 'task'
+        ? '表示该维度在统计范围内已有<strong>委托任务</strong>数量 +1（第 N 个任务流水号）。'
+        : '表示该维度在统计范围内已有报告数量 +1（第 N 份）。';
+      return '<div class="token-field"><label><span class="req">*</span>统计维度</label>' +
+        '<select onchange="updateTokenField(' + index + ',\'dimension\',this.value)">' +
+        '<option value="major_cat"' + (dim === 'major_cat' ? ' selected' : '') + '>样品大类</option>' +
+        '<option value="sample_cat_l1"' + (dim === 'sample_cat_l1' ? ' selected' : '') + '>样品分类（层级1）</option>' +
+        '</select></div>' +
+        '<div class="token-field"><label><span class="req">*</span>统计范围</label>' +
+        '<select onchange="updateTokenField(' + index + ',\'range\',this.value)">' +
+        '<option value="year"' + (range === 'year' ? ' selected' : '') + '>当年</option>' +
+        '<option value="month"' + (range === 'month' ? ' selected' : '') + '>当月</option>' +
+        '</select></div>' +
+        '<div class="token-field"><label>数值处理</label>' +
+        '<div class="token-static">拼接 +1</div>' +
+        '<div class="token-hint" style="margin-top:8px"><i class="fa fa-info-circle text-blue-500"></i> ' + hint + '</div></div>' +
+        '<div class="token-field"><label><span class="req">*</span>指定位数</label>' +
+        '<div class="token-quick" style="margin-top:0">' +
+        '<button type="button" class="' + (rd === 3 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',3)">3位</button>' +
+        '<button type="button" class="' + (rd === 4 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',4)">4位</button>' +
+        '<button type="button" class="' + (rd === 5 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',5)">5位</button>' +
+        '</div></div>';
+    }
+
     function customFieldsHtml(tk, index) {
       if (tk.type === 'literal_custom') {
         return '<div class="token-field"><label><span class="req">*</span>自定义字符</label>' +
@@ -2402,30 +2547,8 @@
           '<button type="button" class="' + (sd === 5 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',5)">5位</button>' +
           '</div></div>';
       }
-      if (tk.type === 'report_count') {
-        var dim = tk.dimension || 'major_cat';
-        var range = tk.range || 'year';
-        var rd = tk.digits || 4;
-        return '<div class="token-field"><label><span class="req">*</span>统计维度</label>' +
-          '<select onchange="updateTokenField(' + index + ',\'dimension\',this.value)">' +
-          '<option value="major_cat"' + (dim === 'major_cat' ? ' selected' : '') + '>样品大类</option>' +
-          '<option value="sample_cat_l1"' + (dim === 'sample_cat_l1' ? ' selected' : '') + '>样品分类（层级1）</option>' +
-          '</select></div>' +
-          '<div class="token-field"><label><span class="req">*</span>统计范围</label>' +
-          '<select onchange="updateTokenField(' + index + ',\'range\',this.value)">' +
-          '<option value="year"' + (range === 'year' ? ' selected' : '') + '>当年</option>' +
-          '<option value="month"' + (range === 'month' ? ' selected' : '') + '>当月</option>' +
-          '</select></div>' +
-          '<div class="token-field"><label>数值处理</label>' +
-          '<div class="token-static">拼接 +1</div>' +
-          '<div class="token-hint" style="margin-top:8px"><i class="fa fa-info-circle text-blue-500"></i> 表示该维度在统计范围内已有报告数量 +1（第 N 份）。</div></div>' +
-          '<div class="token-field"><label><span class="req">*</span>指定位数</label>' +
-          '<div class="token-quick" style="margin-top:0">' +
-          '<button type="button" class="' + (rd === 3 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',3)">3位</button>' +
-          '<button type="button" class="' + (rd === 4 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',4)">4位</button>' +
-          '<button type="button" class="' + (rd === 5 ? 'active' : '') + '" onclick="updateTokenField(' + index + ',\'digits\',5)">5位</button>' +
-          '</div></div>';
-      }
+      if (tk.type === 'report_count') return countQtyFieldsHtml(tk, index, 'report');
+      if (tk.type === 'task_count') return countQtyFieldsHtml(tk, index, 'task');
       if (tk.type === 'category_name') {
         return '<div class="token-hint"><i class="fa fa-info-circle text-blue-500"></i> 生成时取当前样品所属<strong>样品分类 · 层级 1</strong>的「分类名称」（如图：电力电缆类）。更深层级不参与编号。</div>';
       }
@@ -2522,14 +2645,14 @@
           ]
         },
         {
-          id: 'full-day',
-          name: '完整日期',
-          desc: '前缀 + YYYY-MM-DD + 自增3位',
+          id: 'task-seq',
+          name: '任务流水',
+          desc: '前缀 + 年份4位 + / + 任务数量4位（当年委托任务流水号）',
           tokens: [
             { type: 'literal_custom', value: 'SC' },
-            { type: 'date', source: 'entrust', part: 'day', format: 'YYYY-MM-DD' },
-            { type: 'literal_custom', value: '-' },
-            { type: 'seq', digits: 3 }
+            { type: 'date', source: 'entrust', part: 'year', digits: 4 },
+            { type: 'literal_custom', value: '/' },
+            { type: 'task_count', dimension: 'major_cat', range: 'year', digits: 4 }
           ]
         }
       ],
@@ -2621,21 +2744,6 @@
             { type: 'date', source: 'entrust', part: 'day', format: 'YYYYMMDD' },
             { type: 'literal_custom', value: '-' },
             { type: 'seq', digits: 2 }
-          ]
-        },
-        {
-          // 图示 NJYN-WZ-xxNNNN-AA-aa → 前缀以 SC- 代替
-          id: 'sc-yy-count-cat-specimen',
-          name: 'SC-年序-分类-试样类',
-          desc: 'SC- + 年2位 + 当年报告份数4位 + - + 分类编号 + - + 试样类别代码（SC-xxNNNN-AA-aa）',
-          tokens: [
-            { type: 'literal_custom', value: 'SC-' },
-            { type: 'date', source: 'entrust', part: 'year', format: 'YY' },
-            { type: 'report_count', dimension: 'sample_cat_l1', range: 'year', digits: 4 },
-            { type: 'literal_custom', value: '-' },
-            { type: 'category_code' },
-            { type: 'literal_custom', value: '-' },
-            { type: 'specimen_category_code' }
           ]
         }
       ],
@@ -2869,10 +2977,11 @@
           seqCount++;
           if ([2, 3, 4, 5].indexOf(tk.digits) < 0) return '第 ' + (i + 1) + ' 段：序号位数仅支持 2 / 3 / 4 / 5';
         }
-        if (tk.type === 'report_count') {
+        if (tk.type === 'report_count' || tk.type === 'task_count') {
+          var countLabel = tk.type === 'task_count' ? '任务数量' : '报告数量';
           if (tk.dimension !== 'major_cat' && tk.dimension !== 'sample_cat_l1') return '第 ' + (i + 1) + ' 段：请选择统计维度';
           if (tk.range !== 'year' && tk.range !== 'month') return '第 ' + (i + 1) + ' 段：请选择统计范围';
-          if ([3, 4, 5].indexOf(tk.digits) < 0) return '第 ' + (i + 1) + ' 段：报告数量位数仅支持 3 / 4 / 5';
+          if ([3, 4, 5].indexOf(tk.digits) < 0) return '第 ' + (i + 1) + ' 段：' + countLabel + '位数仅支持 3 / 4 / 5';
         }
       }
       if (seqCount > 1) return '同一规则内仅允许一个「自增序号」';
@@ -3031,7 +3140,7 @@
           position: 'top-right',
           title: '编号规则',
           wide: true,
-          content: '业务流程配置末位 Tab。按<strong>样品大类</strong>分套维护委托 / 委托单 / 样品 / 试样 / 原始记录单 / 报告共 6 类编号规则；各大类相互独立。',
+          content: '业务流程配置末位 Tab。按<strong>样品大类</strong>分套维护委托 / 委托单 / 样品 / 试样 / 原始记录单 / 报告共 6 类编号规则；各大类相互独立。生成委托号时，须在「委托登记 › 新增任务」先选定样品大类，再加载该大类规则（登记时尚未有样品，无法从样品反推大类）。',
           tag: '业务流程配置'
         },
         {
@@ -3056,7 +3165,7 @@
           selector: '[data-annotate="numbering-hint"]',
           position: 'top-right',
           title: '配置说明',
-          content: '提示当前大类上下文：修改仅影响该大类下<strong>新生成</strong>的编号，历史号码不重算。',
+          content: '提示当前大类上下文：修改仅影响该大类下<strong>新生成</strong>的编号，历史号码不重算。委托号在「委托登记 › 新增任务」选定本大类后才按本套规则生成。',
           tag: '编号规则'
         },
         {
@@ -3074,7 +3183,7 @@
           position: 'top-left',
           title: '规则芯片与示例',
           wide: true,
-          content: '芯片颜色区分语义：琥珀色=自定义字符、蓝色=日期/引用、紫色=自增序号、绿色=分类/试样、橙色=报告数量。下方等宽字体为实时生成示例。',
+          content: '芯片颜色区分语义：琥珀色=自定义字符、蓝色=日期/引用、紫色=自增序号、绿色=分类/试样、橙色=报告数量 / 任务数量。下方等宽字体为实时生成示例。',
           tag: '编号规则'
         },
         {
@@ -3099,7 +3208,7 @@
           position: 'top-left',
           title: '推荐搭配',
           wide: true,
-          content: '按当前规则类型提供 2～4 种常见组合。点选卡片即可套用（若已有令牌会二次确认覆盖），套用后仍可继续微调。卡片下方展示该组合的生成预览。',
+          content: '按当前规则类型提供若干常见组合。委托编号含「任务流水」（任务数量令牌）。点选卡片即可套用（若已有令牌会二次确认覆盖），套用后仍可继续微调。卡片下方展示该组合的生成预览。',
           tag: '编号规则·弹窗'
         },
         {
@@ -3142,7 +3251,7 @@
           position: 'top-left',
           title: '类型下拉（分组）',
           wide: true,
-          content: '<strong>指定字符</strong>→ 自定义（分隔符请用自定义填写）<br><strong>日期</strong>→ 来源 → 年/月/日，均再选输出格式（年：YY/YYYY；月如 YYYY-MM、YYYY/MM；日如 YYYY-MM-DD、YYYY/MM/DD）<br><strong>分类与试样</strong>→ 分类名称、分类编号（仅层级1）、试样类别代码<br><strong>序号与数量</strong>→ 自增序号（2/3/4/5 位）、报告数量<br><strong>引用编号</strong>→ 委托编号、样品编号<br><br>已去除：固定拼接符号、客户编码、样品类型、行号。',
+          content: '<strong>指定字符</strong>→ 自定义（分隔符请用自定义填写）<br><strong>日期</strong>→ 来源 → 年/月/日，均再选输出格式（年：YY/YYYY；月如 YYYY-MM、YYYY/MM；日如 YYYY-MM-DD、YYYY/MM/DD）<br><strong>分类与试样</strong>→ 分类名称、分类编号（仅层级1）、试样类别代码<br><strong>序号与数量</strong>→ 自增序号（2/3/4/5 位）、报告数量、任务数量（委托任务流水号）<br><strong>引用编号</strong>→ 委托编号、样品编号<br><br>已去除：固定拼接符号、客户编码、样品类型、行号。',
           tag: '编号规则·弹窗'
         },
         {
@@ -3151,7 +3260,7 @@
           position: 'top-right',
           title: '类型自定义区',
           wide: true,
-          content: '随类型变化：<br>· 自定义：最长 20 字符，不允许空格<br>· 日期：来源 → 年/月/日 → <strong>输出格式</strong>（年：YYYY / YY；月含 - 与 /，如 YYYY-MM、YYYY/MM；日含 YYYY-MM-DD、YYYY/MM/DD 等）<br>· 自增序号：2/3/4/5 位快捷<br>· 报告数量：维度 + 当年/当月 + 拼接 +1 + 3/4/5 位<br>· 分类/试样：说明文案<br>· 引用编号：委托 / 样品编号说明文案',
+          content: '随类型变化：<br>· 自定义：最长 20 字符，不允许空格<br>· 日期：来源 → 年/月/日 → <strong>输出格式</strong>（年：YYYY / YY；月含 - 与 /，如 YYYY-MM、YYYY/MM；日含 YYYY-MM-DD、YYYY/MM/DD 等）<br>· 自增序号：2/3/4/5 位快捷<br>· 报告数量 / 任务数量：维度 + 当年/当月 + 拼接 +1 + 3/4/5 位（任务数量统计委托任务流水号）<br>· 分类/试样：说明文案<br>· 引用编号：委托 / 样品编号说明文案',
           tag: '编号规则·弹窗'
         },
         {
@@ -3167,7 +3276,7 @@
           selector: '[data-annotate="numbering-gen-preview"]',
           position: 'top-right',
           title: '生成预览',
-          content: '按当前大类的 Mock 上下文（登记日、层级1分类、试样类别代码、报告数量等）实时拼接示例串。',
+          content: '按当前大类的 Mock 上下文（登记日、层级1分类、试样类别代码、报告数量、任务数量等）实时拼接示例串。',
           tag: '编号规则·弹窗'
         },
         {
@@ -3176,7 +3285,7 @@
           position: 'top-left',
           title: '确定保存',
           wide: true,
-          content: '校验：至少一段；自定义非空、无空格、≤20 字；自增仅一个且位数 2/3/4/5；报告数量位数 3/4/5；样品编号不可自引用样品编号；委托编号不可自引用委托编号，且不宜引用样品编号或试样类别代码。通过后写入<strong>当前大类</strong>并关闭弹窗。',
+          content: '校验：至少一段；自定义非空、无空格、≤20 字；自增仅一个且位数 2/3/4/5；报告数量 / 任务数量位数 3/4/5；样品编号不可自引用样品编号；委托编号不可自引用委托编号，且不宜引用样品编号或试样类别代码。通过后写入<strong>当前大类</strong>并关闭弹窗。',
           tag: '编号规则·弹窗'
         },
         {
@@ -3283,7 +3392,7 @@
           position: 'top-right',
           title: '记录单设置',
           wide: true,
-          content: '按<strong>关联模式 + 绑定对象</strong>配置记录单导出的<strong>生成模式</strong>（4 种切分规则）。操作员在试验检测页导出时按此规则预览文件，不可更改策略。保存时不做模版预检。',
+          content: '<strong>需求逻辑：</strong>按关联模式 + 绑定对象配置导出切分（6 种生成模式）。改生成模式、换启用模版属于配置动作，<strong>不打</strong>已导出原始记录单失效；只影响下一次导出的文件身份与 snapshot.usedFields。<br><strong>展示规则：</strong>管理员在此配默认规则；检测员导出时可微调，并可将本次分组保存为该样品名称(型号)默认。<br><strong>交互逻辑：</strong>模版文件在「模板管理 › 记录单模版」维护。保存本页配置不触发原始记录即时打标。',
           tag: '业务流程配置'
         },
         {
@@ -3292,7 +3401,16 @@
           position: 'top-left',
           title: '新增记录单配置',
           wide: true,
-          content: '选择关联模式（样品分类 / 样品名称(型号)）、绑定对象与 4 种生成模式之一。同范围不可重复配置。',
+          content: '选择关联模式（样品分类 / 样品名称(型号)）、绑定对象与 6 种生成模式之一。选「多试验项」时可点亮试验项配置默认分组；同一试验项可被多条文件同时点亮。同范围不可重复配置。',
+          tag: '记录单设置'
+        },
+        {
+          id: 'record-groups',
+          selector: '[data-annotate="record-groups"]',
+          position: 'top-left',
+          title: '多试验项默认分组',
+          wide: true,
+          content: '每条文件展示该样品全部试验项。点亮纳入该文件；同一试验项可在多条文件中同时点亮，导出时会分别写入对应文件。未点亮项不进入该文件。保存后作为该样品名称(型号)的默认分组，检测员导出时仍可微调。',
           tag: '记录单设置'
         },
         {

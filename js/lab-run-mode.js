@@ -52,6 +52,7 @@
 
   function canManualEdit(docType, reportIssued) {
     if (isCompliance()) return false;
+    if (docType === 'fee_notice') return false; // PDF，无 PageOffice 编辑
     if (docType === 'report' && reportIssued) {
       return !!read().allowReportEditAfterIssue;
     }

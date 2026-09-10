@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>耗材合格证明</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    .meta-grid { display: grid; grid-template-columns: 88px 1fr; gap: 6px 8px; font-size: 12px; }
+    .meta-grid .k { color: #64748b; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-700">
+  <div class="mx-auto max-w-xl p-4 pt-6">
+    <div class="overflow-hidden rounded-xl bg-white shadow-lg">
+      <div class="bg-blue-600 px-5 py-4 text-white">
+        <a id="backLink" href="report-verify.html" class="mb-2 inline-flex items-center gap-1 text-xs text-blue-100 hover:text-white">
+          <i class="fa fa-angle-left"></i> 返回溯源页
+        </a>
+        <h1 class="text-lg font-semibold">耗材合格证明</h1>
+        <p id="topSub" class="mt-1 text-xs text-blue-100">公开只读 · 本报告试验使用的耗材批次与合格证明</p>
+      </div>
+      <div id="body" class="px-5 py-5"></div>
+    </div>
+  </div>
+  <script src="js/report-trace.js"></script>
+  <script src="js/report-trace-l1.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var code = params.get('code') || '';
+      if (code) document.getElementById('backLink').href = 'report-verify.html?code=' + encodeURIComponent(code);
+      var res = code ? ReportTrace.getVerify(code) : { ok: false };
+      var reportNo = (res.ok && res.entry) ? res.entry.reportNo : params.get('report');
+      var focusItem = params.get('item') || '';
+      var list = ReportTrace.getConsumables(reportNo);
+      if (focusItem) {
+        list = list.filter(function (c) { return !c.usedIn || c.usedIn.indexOf(focusItem) >= 0; });
+      }
+      var body = document.getElementById('body');
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+      if (!list.length) {
+        body.innerHTML = '<p class="text-sm text-slate-500">本报告无耗材合格证明。</p>';
+        return;
+      }
+      document.getElementById('topSub').textContent = ((res.view && res.view.reportNo) ? res.view.reportNo + '　·　' : '') +
+        (focusItem ? focusItem + ' · ' : '') + list.length + ' 份';
+      body.innerHTML =
+        (focusItem ? '<div class="mb-3 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700"><i class="fa fa-flask"></i> 当前展示「' + esc(focusItem) + '」试验项使用的耗材及合格证明</div>' : '') +
+        list.map(function (c, i) {
+        return '<article class="mb-3 rounded-lg border border-slate-200 p-4 last:mb-0">' +
+          '<div class="flex items-start justify-between gap-2">' +
+            '<p class="text-sm font-medium text-slate-800">' + (i + 1) + '. ' + esc(c.name) + '</p>' +
+            '<span class="rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-600">' + esc(c.conclusion || '合格') + '</span>' +
+          '</div>' +
+          (c.usage ? '<p class="mt-1 text-xs text-slate-500"><i class="fa fa-info-circle text-slate-300"></i> ' + esc(c.usage) + '</p>' : '') +
+          '<div class="meta-grid mt-3">' +
+            '<span class="k">规格型号</span><span>' + esc(c.spec) + '</span>' +
+            '<span class="k">批次号</span><span>' + esc(c.batch) + '</span>' +
+            '<span class="k">合格证号</span><span>' + esc(c.certNo) + '</span>' +
+            '<span class="k">供应商</span><span>' + esc(c.supplier) + '</span>' +
+            '<span class="k">有效期至</span><span>' + esc(c.validTo) + '</span>' +
+            (c.usedIn && c.usedIn.length ? '<span class="k">用于试验项</span><span>' + esc(c.usedIn.join('、')) + '</span>' : '') +
+          '</div>' +
+        '</article>';
+      }).join('') +
+        '<p class="mt-3 text-center text-[11px] text-slate-400">公开页只读展示签发时冻结的耗材合格信息，不可编辑。</p>';
+    })();
+  </script>
+</body>
+</html>

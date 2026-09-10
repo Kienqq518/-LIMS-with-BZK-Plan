@@ -6,15 +6,71 @@
   <title>透明检测报告 · 溯源核验</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    /* 已作废 / 已换版圆形印章 */
+    .stamp{
+      position:absolute;top:18px;right:16px;width:86px;height:86px;border:3px solid;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;
+      transform:rotate(-18deg);pointer-events:none;z-index:6;letter-spacing:.12em;line-height:1.15;text-align:center;
+    }
+    .stamp-revoked{color:#b91c1c;border-color:#b91c1c;background:rgba(254,226,226,.92);box-shadow:0 0 0 3px rgba(185,28,28,.12)}
+    .stamp-superseded{color:#b45309;border-color:#b45309;background:rgba(254,243,199,.95);box-shadow:0 0 0 3px rgba(180,83,9,.12)}
+    /* 历史留档内容降对比，突出状态而非当前有效结论 */
+    .archived{filter:grayscale(.35);opacity:.78}
+    .card-shell{position:relative}
+    #certLightbox, #flowModal, #photoLightbox, #curveLightbox { display: none; }
+    #certLightbox.open, #flowModal.open, #photoLightbox.open, #curveLightbox.open { display: flex; }
+    .photo-wm {
+      position: absolute; right: 6px; bottom: 6px; color: #fff;
+      font-size: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .03em; text-shadow: 0 1px 2px rgba(0,0,0,.85), 0 0 8px rgba(0,0,0,.45);
+      pointer-events: none;
+    }
+    .photo-wm-lg { right: 12px; bottom: 12px; font-size: 13px; }
+
+    /* ── 试验流程时间轴（瀑布流） ── */
+    .tl { position: relative; }
+    .tl-node { position: relative; padding-left: 44px; padding-bottom: 16px; }
+    .tl-node:last-child { padding-bottom: 0; }
+    .tl-node::before { content: ''; position: absolute; left: 15px; top: 30px; bottom: -2px; width: 2px; background: #e2e8f0; }
+    .tl-node:last-child::before { display: none; }
+    .tl-badge {
+      position: absolute; left: 0; top: 0; z-index: 1; display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      background: #eff6ff; color: #2563eb; border: 2px solid #bfdbfe;
+    }
+    .tl-badge.tl-key { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .tl-badge.tl-rev { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+    .tl-badge.tl-sup { background: #fef3c7; color: #b45309; border-color: #fcd34d; }
+    /* 维度标签 */
+    .dim-tag { display: inline-flex; align-items: center; border-radius: 4px; padding: 1px 6px; font-size: 11px; line-height: 1.5; }
+    .dim-人 { background:#eff6ff; color:#2563eb; }
+    .dim-机 { background:#eef2ff; color:#4f46e5; }
+    .dim-料 { background:#ecfdf5; color:#059669; }
+    .dim-法 { background:#f5f3ff; color:#7c3aed; }
+    .dim-环 { background:#ecfeff; color:#0891b2; }
+    .dim-影像 { background:#fffbeb; color:#b45309; }
+    .dim-数据流转 { background:#fff1f2; color:#e11d48; }
+    .dim-存证 { background:#f1f5f9; color:#475569; }
+    /* 试验项折叠面板 */
+    .tl-collapse.collapsed .tl-collapse-body { display: none; }
+    .tl-collapse .tl-caret { transition: transform .18s ease; }
+    .tl-collapse.collapsed .tl-caret { transform: rotate(-90deg); }
+    .js-collapse { cursor: pointer; }
+  </style>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-700">
   <div class="mx-auto max-w-xl p-4 pt-6">
     <!-- 顶部 -->
-    <div class="overflow-hidden rounded-xl bg-white shadow-lg">
-      <div id="topBar" class="bg-blue-600 px-6 py-5 text-center text-white">
-        <i class="fa fa-qrcode text-2xl mb-1"></i>
-        <h1 class="text-lg font-semibold">透明检测报告 · 溯源核验</h1>
-        <p id="topLevel" class="mt-1 text-xs text-blue-100">扫码核验本报告透明度等级、试验全过程及数据流转防篡改信息</p>
+    <div id="cardShell" class="card-shell overflow-hidden rounded-xl bg-white shadow-lg">
+      <div id="stamp" class="stamp hidden"></div>
+      <div id="topBar" class="bg-blue-600 px-5 py-3.5 text-center text-white">
+        <p class="text-[11px] tracking-[0.2em] text-blue-100/80"><i class="fa fa-qrcode"></i> 透明检测报告 · 溯源核验</p>
+        <h1 class="mt-2 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 leading-none">
+          <span id="levelBadge" class="hidden rounded-lg bg-white/15 px-3 py-1 text-2xl font-black ring-1 ring-white/25">四级</span>
+          <span id="mainTitle" class="text-base font-semibold tracking-wide text-blue-50">可公示透明报告</span>
+        </h1>
+        <p id="topLevel" class="mt-1.5 hidden text-[11px] leading-relaxed"></p>
       </div>
 
       <div class="px-5 py-5">
@@ -24,8 +80,12 @@
         <!-- 报告概要 -->
         <div id="metaBox" class="mb-4 hidden rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm"></div>
 
-        <!-- 八维度 -->
-        <div id="dims" class="space-y-3"></div>
+        <!-- 试验流程时间轴 -->
+        <div id="flowHead" class="mb-3 hidden items-center justify-between">
+          <span class="text-sm font-semibold text-slate-700"><i class="fa fa-stream text-blue-500"></i> 试验全流程 · 溯源时间轴</span>
+          <span id="flowHeadSub" class="text-[11px] text-slate-400"></span>
+        </div>
+        <div id="timeline" class="tl"></div>
 
         <!-- 底部说明 -->
         <div id="footer" class="mt-5 hidden rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-500"></div>
@@ -34,8 +94,72 @@
     </div>
   </div>
 
+  <!-- 校准证书 / 资质证书照片灯箱 -->
+  <div id="certLightbox" class="fixed inset-0 z-50 items-center justify-center bg-black/75 p-4" role="dialog" aria-modal="true" aria-labelledby="certLightboxTitle">
+    <button type="button" id="certLightboxClose" class="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/30" aria-label="关闭">
+      <i class="fa fa-times"></i>
+    </button>
+    <div class="max-h-[90vh] w-full max-w-lg overflow-auto rounded-lg bg-[#f7f4ee] shadow-2xl">
+      <p id="certLightboxTitle" class="border-b border-slate-200 px-4 py-2.5 text-center text-sm font-medium text-slate-700">校准证书</p>
+      <img id="certLightboxImg" alt="校准证书扫描件" class="mx-auto block max-h-[78vh] w-full object-contain" />
+    </div>
+  </div>
+
+  <!-- 过程影像灯箱（按节点多图左右切换） -->
+  <div id="photoLightbox" class="fixed inset-0 z-50 items-center justify-center bg-black/85 p-4" role="dialog" aria-modal="true">
+    <button type="button" id="photoLightboxClose" class="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/30" aria-label="关闭">
+      <i class="fa fa-times"></i>
+    </button>
+    <button type="button" id="photoLightboxPrev" class="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/30" aria-label="上一张">
+      <i class="fa fa-angle-left text-xl"></i>
+    </button>
+    <button type="button" id="photoLightboxNext" class="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/30" aria-label="下一张">
+      <i class="fa fa-angle-right text-xl"></i>
+    </button>
+    <div class="flex w-full max-w-lg flex-col items-center">
+      <div class="relative w-full overflow-hidden rounded-lg bg-slate-100">
+        <img id="photoLightboxImg" alt="" class="mx-auto block max-h-[72vh] w-full object-contain" />
+        <span id="photoLightboxWm" class="photo-wm photo-wm-lg"></span>
+      </div>
+      <p id="photoLightboxTitle" class="mt-3 text-sm text-white"></p>
+      <p id="photoLightboxIdx" class="mt-0.5 text-xs text-white/60"></p>
+    </div>
+  </div>
+
+  <!-- 温湿度曲线灯箱 -->
+  <div id="curveLightbox" class="fixed inset-0 z-50 items-center justify-center bg-black/85 p-4" role="dialog" aria-modal="true">
+    <button type="button" id="curveLightboxClose" class="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/30" aria-label="关闭">
+      <i class="fa fa-times"></i>
+    </button>
+    <button type="button" id="curveLightboxPrev" class="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/30" aria-label="上一张">
+      <i class="fa fa-angle-left text-xl"></i>
+    </button>
+    <button type="button" id="curveLightboxNext" class="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/30" aria-label="下一张">
+      <i class="fa fa-angle-right text-xl"></i>
+    </button>
+    <div class="w-full max-w-lg">
+      <div id="curveLightboxBody" class="overflow-hidden rounded-lg bg-white p-3"></div>
+      <p id="curveLightboxTitle" class="mt-3 text-center text-sm text-white"></p>
+      <p id="curveLightboxIdx" class="mt-0.5 text-center text-xs text-white/60"></p>
+    </div>
+  </div>
+
+  <!-- 样品全流转详情 -->
+  <div id="flowModal" class="fixed inset-0 z-50 items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="flowModalTitle">
+    <div class="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-lg bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-2.5">
+        <p id="flowModalTitle" class="text-sm font-medium text-slate-800">样品流转详情</p>
+        <button type="button" id="flowModalClose" class="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="关闭">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      <div id="flowModalBody" class="flex-1 overflow-y-auto px-4 py-3 text-sm"></div>
+    </div>
+  </div>
+
   <script src="js/short-link-qr.js"></script>
   <script src="js/report-trace.js"></script>
+  <script src="js/report-trace-l1.js"></script>
   <script>
     (function () {
       var params = new URLSearchParams(location.search);
@@ -43,137 +167,658 @@
       var res = ReportTrace.getVerify(code);
       var banner = document.getElementById('statusBanner');
       var metaBox = document.getElementById('metaBox');
-      var dims = document.getElementById('dims');
+      var timeline = document.getElementById('timeline');
+      var flowHead = document.getElementById('flowHead');
+      var flowHeadSub = document.getElementById('flowHeadSub');
       var footer = document.getElementById('footer');
       var topLevel = document.getElementById('topLevel');
+      var topBar = document.getElementById('topBar');
+      var mainTitle = document.getElementById('mainTitle');
+      var levelBadge = document.getElementById('levelBadge');
+      var stamp = document.getElementById('stamp');
+      var demoHint = '演示码：一级 R1u8P · 二级 R2c9X · 三级 R3a2K · 四级 R4b7M · 三级已召回 R3rev · 三级已换版 R3old · 四级已作废 R4rev · 四级已换版 R4old';
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
 
       /** 未找到 / 空码 */
       if (!res.ok) {
-        document.getElementById('topBar').className = 'bg-slate-600 px-6 py-5 text-center text-white';
+        topBar.className = 'bg-slate-600 px-6 py-5 text-center text-white';
         banner.className = 'mb-4 flex items-start gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600';
-        banner.innerHTML = '<i class="fa fa-times-circle mt-0.5"></i><div><p class="font-medium">无法核验</p><p class="mt-0.5 text-xs">' + res.message + '</p><p class="mt-1 text-[11px] text-slate-400">演示码：三级 R3a2K · 四级 R4b7M · 二级预览 R2c9X · 已召回 R3rev · 已换版 R3old</p></div>';
+        banner.innerHTML = '<i class="fa fa-times-circle mt-0.5"></i><div><p class="font-medium">无法核验</p><p class="mt-0.5 text-xs">' + res.message + '</p><p class="mt-1 text-[11px] text-slate-400">' + demoHint + '</p></div>';
         return;
       }
 
       var entry = res.entry, view = res.view;
-      topLevel.textContent = '本报告透明度等级：' + view.levelName;
+      var isRevoked = entry.status === 'revoked';
+      var isSuperseded = entry.status === 'superseded';
 
-      /** 状态横幅：valid / revoked / superseded */
-      if (entry.status === 'revoked') {
-        document.getElementById('topBar').className = 'bg-slate-600 px-6 py-5 text-center text-white';
-        banner.className = 'mb-4 flex items-start gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700';
-        banner.innerHTML = '<i class="fa fa-ban mt-0.5"></i><div><p class="font-medium">本报告已召回 / 作废</p><p class="mt-0.5 text-xs">' + (entry.revokeReason || '') + '</p><p class="mt-1 text-[11px] text-slate-400">按标准要求报告永久可查，以下为历史留档内容。</p></div>';
-      } else if (entry.status === 'superseded') {
-        document.getElementById('topBar').className = 'bg-amber-500 px-6 py-5 text-center text-white';
-        banner.className = 'mb-4 flex items-start gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700';
-        banner.innerHTML = '<i class="fa fa-history mt-0.5"></i><div><p class="font-medium">本报告已被新版替代</p>' +
-          '<p class="mt-0.5 text-xs">最新版本：<a class="underline" href="report-verify.html?code=' + entry.supersededBy + '">' + entry.supersededBy + '</a></p></div>';
-      } else {
+      /** 一级标题：突出「几级」为主视觉，级别名称作辅助说明 */
+      levelBadge.classList.remove('hidden');
+      levelBadge.textContent = view.levelShort;
+      mainTitle.textContent = view.levelDesc;
+      // 顶栏保持精简，说明行仅在作废/换版时展示状态
+      topLevel.textContent = '';
+      topLevel.classList.add('hidden');
+
+      /** 渲染已作废 / 已换版印章与状态横幅（永久可查，醒目标注） */
+      function renderStatusPanel() {
+        if (isRevoked) {
+          document.body.className = 'min-h-screen bg-red-50/40 text-slate-700';
+          topBar.className = 'bg-red-800 px-5 py-3.5 text-center text-white';
+          topLevel.className = 'mt-1.5 text-[11px] leading-relaxed text-red-100';
+          topLevel.textContent = '本报告已作废 / 召回，历史留档永久可查';
+          stamp.className = 'stamp stamp-revoked';
+          stamp.textContent = '已作废';
+          stamp.classList.remove('hidden');
+          banner.className = 'mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800';
+          banner.innerHTML =
+            '<div class="flex items-start gap-2">' +
+              '<i class="fa fa-ban mt-0.5 text-lg text-red-600"></i>' +
+              '<div class="flex-1">' +
+                '<p class="font-semibold">本报告已作废 / 召回</p>' +
+                '<p class="mt-1 text-xs leading-relaxed">原因：' + (entry.revokeReason || '报告已作废') + '</p>' +
+                '<p class="mt-1 text-[11px] text-red-500">作废时间：' + (entry.revokedAt || '—') + '　·　签发时间：' + (entry.createdAt || '—') + '</p>' +
+                '<p class="mt-1 text-[11px] text-slate-500">按标准要求报告永久可查，以下为历史留档内容，结论不再作为有效依据。</p>' +
+              '</div>' +
+            '</div>';
+          return;
+        }
+        if (isSuperseded) {
+          document.body.className = 'min-h-screen bg-amber-50/50 text-slate-700';
+          topBar.className = 'bg-amber-600 px-5 py-3.5 text-center text-white';
+          topLevel.className = 'mt-1.5 text-[11px] leading-relaxed text-amber-100';
+          topLevel.textContent = '本报告已换版，请以最新版本为准';
+          stamp.className = 'stamp stamp-superseded';
+          stamp.innerHTML = '已换版';
+          stamp.classList.remove('hidden');
+          banner.className = 'mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900';
+          banner.innerHTML =
+            '<div class="flex items-start gap-2">' +
+              '<i class="fa fa-exchange mt-0.5 text-lg text-amber-600"></i>' +
+              '<div class="flex-1">' +
+                '<p class="font-semibold">本报告已被新版替代</p>' +
+                '<p class="mt-1 text-xs leading-relaxed">换版时间：' + (entry.supersededAt || '—') + '　·　本版签发：' + (entry.createdAt || '—') + '</p>' +
+                '<p class="mt-1 text-[11px] text-slate-500">扫旧码仍可打开（永久可查）。请以最新版本为准。</p>' +
+                '<a class="mt-2 inline-flex items-center gap-1 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700" href="report-verify.html?code=' + entry.supersededBy + '">' +
+                  '<i class="fa fa-arrow-right"></i> 查看最新版本 ' + entry.supersededBy +
+                '</a>' +
+              '</div>' +
+            '</div>';
+          return;
+        }
         banner.className = 'mb-4 flex items-start gap-2 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700';
         banner.innerHTML = '<i class="fa fa-check-circle mt-0.5"></i><div><p class="font-medium">核验通过 · ' + view.levelName + '</p>' +
-          (entry.preview ? '<p class="mt-0.5 text-xs text-amber-600">（二级为能力预留等级，页面为示意：部分维度显示"暂未采集/待接入"）</p>' : '<p class="mt-0.5 text-xs">扫码内容与报告等级严格匹配</p>') + '</div>';
+          (view.unmanned
+            ? '<p class="mt-0.5 text-xs font-medium">无人化试验 · 数据全链路自动流转 · 人员不可篡改原始数据</p>'
+            : '') +
+          (view.dataDefense
+            ? '<p class="mt-0.5 text-xs font-medium">防篡改校验通过' + (view.level === 1 ? '（TSA + 区块链）' : '') + '</p>'
+            : '<p class="mt-0.5 text-xs">扫码内容与报告等级严格匹配</p>') +
+          '</div>';
       }
+      renderStatusPanel();
 
       /** 报告概要 */
       var m = view.meta || {};
+      var conclusionHtml;
+      if (isRevoked) {
+        conclusionHtml = '<span class="font-medium text-red-600">已作废（历史留档，结论无效）</span>';
+      } else if (isSuperseded) {
+        conclusionHtml = '<span class="font-medium text-amber-600">已换版（请以最新版本为准）</span>';
+      } else {
+        conclusionHtml = '<span class="font-medium text-green-600">' + (m.conclusion || '-') + '</span>';
+      }
       metaBox.classList.remove('hidden');
+      if (isRevoked || isSuperseded) metaBox.classList.add('archived');
       metaBox.innerHTML =
         rowLine('报告编号', view.reportNo) +
-        rowLine('试验项', view.testItemNo) +
+        rowLine('透明度等级', '<span class="font-medium text-slate-800">' + view.levelName + '</span>') +
         rowLine('样品名称', m.sampleName) +
         rowLine('规格型号', m.spec) +
+        (m.sampleParams ? rowLine('样品参数', 'SN' + (m.sampleParams.ringGrade || '').replace(/^SN/, '') + '　内径 ' + (m.sampleParams.innerDia || '') + '　壁厚 ' + (m.sampleParams.wall || '') + '　长度 ' + (m.sampleParams.nominalLength || '')) : '') +
+        rowLine('试验项', (m.testItems && m.testItems.length) ? m.testItems.join('、') : view.testItemNo) +
         rowLine('委托单位', m.clientName) +
+        rowLine('检测类别', m.testCategory) +
         rowLine('检测机构', m.org) +
-        rowLine('检测结论', '<span class="font-medium text-green-600">' + (m.conclusion || '-') + '</span>') +
-        rowLine('归档时间', view.frozenAt);
+        rowLine('检测结论', conclusionHtml) +
+        rowLine('签发时间', view.frozenAt) +
+        (view.unmanned ? rowLine('无人化起点', (view.unmannedFrom || '样品制备') + ' 起至出报告，机械臂执行、人员不接触原始数据') : '') +
+        (isRevoked || isSuperseded ? rowLine('报告状态', isRevoked ? '已作废 / 召回' : '已换版 / 被新版替代') : '');
 
       function rowLine(k, v) {
         if (v === undefined || v === null || v === '') v = '—';
         return '<div class="flex border-b border-slate-100 py-1.5 last:border-0"><span class="w-24 flex-shrink-0 text-slate-500">' + k + '</span><span class="flex-1 text-slate-800">' + v + '</span></div>';
       }
 
-      /** 状态徽标 */
-      function badge(type, text) {
-        var map = {
-          ok: 'bg-green-100 text-green-700',
-          partial: 'bg-amber-100 text-amber-700',
-          none: 'bg-slate-200 text-slate-500',
-          na: 'bg-slate-100 text-slate-400'
-        };
-        return '<span class="rounded-full px-2 py-0.5 text-[11px] ' + (map[type] || map.none) + '">' + text + '</span>';
-      }
-
       /** 温湿度连续曲线（内联 SVG） */
-      function curveSvg(points) {
-        var W = 460, H = 120, pad = 24;
+      function curveSvg(points, compact) {
+        points = points || [];
+        if (!points.length) return '<p class="text-[11px] text-slate-400">暂无曲线</p>';
+        var W = 460, H = compact ? 90 : 120, pad = compact ? 10 : 24;
         var temps = points.map(function (p) { return p.temp; });
         var hums = points.map(function (p) { return p.humidity; });
         var tMin = Math.min.apply(null, temps) - 1, tMax = Math.max.apply(null, temps) + 1;
         var hMin = Math.min.apply(null, hums) - 3, hMax = Math.max.apply(null, hums) + 3;
-        function mapX(i) { return pad + (W - 2 * pad) * i / (points.length - 1); }
-        function mapY(v, lo, hi) { return H - pad - (H - 2 * pad) * (v - lo) / (hi - lo); }
+        function mapX(i) { return pad + (W - 2 * pad) * i / Math.max(points.length - 1, 1); }
+        function mapY(v, lo, hi) { return H - pad - (H - 2 * pad) * (v - lo) / ((hi - lo) || 1); }
         function poly(vals, lo, hi) {
           return vals.map(function (v, i) { return mapX(i) + ',' + mapY(v, lo, hi).toFixed(1); }).join(' ');
         }
-        return '<svg viewBox="0 0 ' + W + ' ' + H + '" class="w-full">' +
-          '<polyline fill="none" stroke="#ef4444" stroke-width="2" points="' + poly(temps, tMin, tMax) + '"/>' +
-          '<polyline fill="none" stroke="#3b82f6" stroke-width="2" points="' + poly(hums, hMin, hMax) + '"/>' +
-          '</svg>' +
+        var sw = compact ? 1.6 : 2;
+        var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="w-full">' +
+          '<polyline fill="none" stroke="#ef4444" stroke-width="' + sw + '" points="' + poly(temps, tMin, tMax) + '"/>' +
+          '<polyline fill="none" stroke="#3b82f6" stroke-width="' + sw + '" points="' + poly(hums, hMin, hMax) + '"/>' +
+          '</svg>';
+        if (compact) return svg;
+        return svg +
           '<div class="mt-1 flex gap-4 text-[11px] text-slate-500"><span><i class="fa fa-circle text-red-500"></i> 温度(℃)</span><span><i class="fa fa-circle text-blue-500"></i> 湿度(%RH)</span><span class="text-slate-400">数采回传 · 连续采集</span></div>';
       }
 
-      /** 照片墙（原型占位） */
-      function photosBlock(items) {
-        return '<div class="grid grid-cols-3 gap-2">' + items.map(function (p) {
-          return '<div class="flex aspect-[4/3] flex-col items-center justify-center rounded border border-slate-200 bg-slate-50 text-slate-400">' +
-            '<i class="fa fa-camera text-lg"></i><span class="mt-1 text-[10px]">' + p.node + '</span><span class="text-[9px] text-slate-300">' + (p.takenAt || '') + '</span></div>';
+      /* 全局灯箱数据（跨节点累积，供左右切换与打开） */
+      var photoGroups = [];
+      var curveItems = [];
+
+      function curveCaption(it) {
+        return [(it.testName || ''), (it.specimenNo || ''), (it.avg || '')].filter(Boolean).join('　');
+      }
+
+      /** 交互式温湿度图表（带横纵轴 + 点击/悬停读数），用于灯箱大图 */
+      function renderInteractiveCurve(container, points) {
+        points = points || [];
+        container.innerHTML = '';
+        if (!points.length) { container.innerHTML = '<p class="text-[11px] text-slate-400">暂无曲线</p>'; return; }
+        var NS = 'http://www.w3.org/2000/svg';
+        var W = 460, H = 240, padL = 40, padR = 40, padT = 16, padB = 34;
+        var temps = points.map(function (p) { return p.temp; });
+        var hums = points.map(function (p) { return p.humidity; });
+        var tMin = Math.floor(Math.min.apply(null, temps) - 1), tMax = Math.ceil(Math.max.apply(null, temps) + 1);
+        var hMin = Math.floor(Math.min.apply(null, hums) - 3), hMax = Math.ceil(Math.max.apply(null, hums) + 3);
+        function mapX(i) { return padL + (W - padL - padR) * i / Math.max(points.length - 1, 1); }
+        function mapYt(v) { return H - padB - (H - padT - padB) * (v - tMin) / ((tMax - tMin) || 1); }
+        function mapYh(v) { return H - padB - (H - padT - padB) * (v - hMin) / ((hMax - hMin) || 1); }
+        function el(name, attrs) { var e = document.createElementNS(NS, name); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+
+        var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'w-full select-none', style: 'touch-action:none;cursor:crosshair' });
+
+        // 网格 + Y 轴刻度（左温度 / 右湿度）
+        var yTicks = 4;
+        for (var g = 0; g <= yTicks; g++) {
+          var yy = padT + (H - padT - padB) * g / yTicks;
+          svg.appendChild(el('line', { x1: padL, y1: yy, x2: W - padR, y2: yy, stroke: '#e2e8f0', 'stroke-width': 1 }));
+          var tv = (tMax - (tMax - tMin) * g / yTicks).toFixed(1);
+          var hv = Math.round(hMax - (hMax - hMin) * g / yTicks);
+          var lt = el('text', { x: padL - 5, y: yy + 3, 'text-anchor': 'end', 'font-size': 9, fill: '#ef4444' }); lt.textContent = tv;
+          var lh = el('text', { x: W - padR + 5, y: yy + 3, 'text-anchor': 'start', 'font-size': 9, fill: '#3b82f6' }); lh.textContent = hv;
+          svg.appendChild(lt); svg.appendChild(lh);
+        }
+        // 轴线
+        svg.appendChild(el('line', { x1: padL, y1: padT, x2: padL, y2: H - padB, stroke: '#94a3b8', 'stroke-width': 1 }));
+        svg.appendChild(el('line', { x1: W - padR, y1: padT, x2: W - padR, y2: H - padB, stroke: '#94a3b8', 'stroke-width': 1 }));
+        svg.appendChild(el('line', { x1: padL, y1: H - padB, x2: W - padR, y2: H - padB, stroke: '#94a3b8', 'stroke-width': 1 }));
+        // X 轴时间刻度
+        var step = Math.ceil(points.length / 6);
+        points.forEach(function (p, i) {
+          if (i % step !== 0 && i !== points.length - 1) return;
+          var xx = mapX(i);
+          svg.appendChild(el('line', { x1: xx, y1: H - padB, x2: xx, y2: H - padB + 4, stroke: '#94a3b8', 'stroke-width': 1 }));
+          var lx = el('text', { x: xx, y: H - padB + 15, 'text-anchor': 'middle', 'font-size': 9, fill: '#64748b' }); lx.textContent = p.t;
+          svg.appendChild(lx);
+        });
+        // 轴标题
+        var yl = el('text', { x: padL - 30, y: padT + 6, 'font-size': 9, fill: '#ef4444' }); yl.textContent = '℃';
+        var yr = el('text', { x: W - padR + 18, y: padT + 6, 'font-size': 9, fill: '#3b82f6' }); yr.textContent = '%RH';
+        svg.appendChild(yl); svg.appendChild(yr);
+
+        function poly(vals, mapY, color) {
+          var pts = vals.map(function (v, i) { return mapX(i) + ',' + mapY(v).toFixed(1); }).join(' ');
+          svg.appendChild(el('polyline', { fill: 'none', stroke: color, 'stroke-width': 2, points: pts }));
+        }
+        poly(temps, mapYt, '#ef4444');
+        poly(hums, mapYh, '#3b82f6');
+
+        // 交互层：竖直指示线 + 高亮点 + 读数
+        var guide = el('line', { x1: padL, y1: padT, x2: padL, y2: H - padB, stroke: '#0f172a', 'stroke-width': 1, 'stroke-dasharray': '3 3', opacity: 0 });
+        var dotT = el('circle', { r: 4, fill: '#ef4444', stroke: '#fff', 'stroke-width': 1.5, opacity: 0 });
+        var dotH = el('circle', { r: 4, fill: '#3b82f6', stroke: '#fff', 'stroke-width': 1.5, opacity: 0 });
+        svg.appendChild(guide); svg.appendChild(dotT); svg.appendChild(dotH);
+        var overlay = el('rect', { x: padL, y: padT, width: (W - padL - padR), height: (H - padT - padB), fill: 'transparent' });
+        svg.appendChild(overlay);
+
+        var readout = document.createElement('div');
+        readout.className = 'mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs';
+        readout.innerHTML = '<span class="text-slate-400">在图上点击或滑动查看任意时刻读数</span>';
+
+        function showAt(i) {
+          if (i < 0) i = 0; if (i >= points.length) i = points.length - 1;
+          var p = points[i];
+          var xx = mapX(i);
+          guide.setAttribute('x1', xx); guide.setAttribute('x2', xx); guide.setAttribute('opacity', 1);
+          dotT.setAttribute('cx', xx); dotT.setAttribute('cy', mapYt(p.temp)); dotT.setAttribute('opacity', 1);
+          dotH.setAttribute('cx', xx); dotH.setAttribute('cy', mapYh(p.humidity)); dotH.setAttribute('opacity', 1);
+          readout.innerHTML =
+            '<span class="text-slate-500"><i class="fa fa-clock-o"></i> 时间 <b class="text-slate-800">' + p.t + '</b></span>' +
+            '<span class="text-red-500"><i class="fa fa-circle"></i> 温度 <b>' + p.temp.toFixed(1) + ' ℃</b></span>' +
+            '<span class="text-blue-500"><i class="fa fa-circle"></i> 湿度 <b>' + p.humidity + ' %RH</b></span>';
+        }
+        function handle(evt) {
+          var rect = svg.getBoundingClientRect();
+          var cx = (evt.touches ? evt.touches[0].clientX : evt.clientX);
+          var xInSvg = (cx - rect.left) / rect.width * W;
+          var ratio = (xInSvg - padL) / (W - padL - padR);
+          var idx = Math.round(ratio * (points.length - 1));
+          showAt(idx);
+        }
+        overlay.addEventListener('pointerdown', handle);
+        overlay.addEventListener('pointermove', function (e) { if (e.buttons || e.pressure) handle(e); });
+        svg.addEventListener('click', handle);
+
+        container.appendChild(svg);
+        var legend = document.createElement('div');
+        legend.className = 'mt-1 flex gap-4 text-[11px] text-slate-500';
+        legend.innerHTML = '<span><i class="fa fa-circle text-red-500"></i> 温度(℃)</span><span><i class="fa fa-circle text-blue-500"></i> 湿度(%RH)</span><span class="text-slate-400">数采回传 · 连续采集</span>';
+        container.appendChild(legend);
+        container.appendChild(readout);
+        showAt(0);
+      }
+
+      /** 某节点/维度区的过程影像（照片封面 + 视频缩略图 + 温湿度曲线） */
+      function nodeMediaBlock(media) {
+        if (!media) return '';
+        var html = '';
+        var photos = media.photos || [];
+        var videos = media.videos || [];
+        var curves = media.curves || [];
+        var tiles = [];
+        if (photos.length) {
+          var gi = photoGroups.length;
+          photoGroups.push({ node: '过程影像', items: photos });
+          var cover = photos[0] || {};
+          var count = photos.length > 1
+            ? '<span class="absolute right-1 top-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] leading-none text-white">' + photos.length + '</span>'
+            : '';
+          tiles.push('<button type="button" class="js-photos-open relative overflow-hidden rounded border border-slate-200 bg-slate-100 text-left" data-group="' + gi + '">' +
+            '<span class="relative block aspect-[4/3]">' +
+              '<img src="' + esc(cover.src || '') + '" alt="' + esc(cover.label || '过程照片') + '" class="h-full w-full object-cover" />' +
+              '<span class="photo-wm">' + esc(cover.uploadedAt || '') + '</span>' + count +
+            '</span>' +
+            '<span class="block truncate bg-white px-1 py-0.5 text-[10px] text-slate-500"><i class="fa fa-camera"></i> ' + esc(cover.label || '照片') + '</span>' +
+          '</button>');
+        }
+        videos.forEach(function (v) {
+          var vlabel = v.label || v.node || '视频';
+          var href = (window.ReportTrace && ReportTrace.videoPlayHref)
+            ? ReportTrace.videoPlayHref(view._code, v)
+            : ('video-play.html' + (view._code ? '?code=' + encodeURIComponent(view._code) + '&node=' + encodeURIComponent(v.node) : ''));
+          var kind = v.kind === 'cctv' ? '监控' : (v.kind === 'live' ? '实时' : (v.kind === 'continuous' ? '全程' : '过程'));
+          tiles.push('<a href="' + esc(href) + '" class="overflow-hidden rounded border border-slate-200 bg-slate-100 no-underline">' +
+            '<span class="relative block aspect-[4/3]">' +
+              '<img src="' + esc(v.poster || '') + '" alt="' + esc(vlabel) + '" class="h-full w-full object-cover" />' +
+              '<span class="absolute inset-0 flex items-center justify-center bg-black/25 text-white"><i class="fa fa-play-circle text-2xl"></i></span>' +
+              '<span class="absolute left-1 top-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] leading-none text-white">' + kind + '</span>' +
+            '</span>' +
+            '<span class="block truncate bg-white px-1 py-0.5 text-[10px] text-slate-600"><i class="fa fa-video-camera"></i> ' + esc(vlabel) + '</span>' +
+          '</a>');
+        });
+        if (tiles.length) {
+          html += '<div class="mt-2 grid grid-cols-3 gap-2">' + tiles.join('') + '</div>';
+        }
+        if (curves.length) {
+          var thumbs = curves.map(function (it) {
+            var ci = curveItems.length;
+            curveItems.push(it);
+            var sub = it.specimenNo ? ('试样' + String(it.specimenNo).slice(-2)) : '';
+            return '<button type="button" class="js-curve-open overflow-hidden rounded border border-slate-200 bg-white text-left" data-index="' + ci + '">' +
+              '<span class="block px-0.5 pt-1">' + curveSvg(it.points || [], true) + '</span>' +
+              '<span class="block truncate px-1 pb-1 text-[9px] leading-tight text-slate-500">' + esc(it.testName || '温湿度') + '</span>' +
+              '<span class="block truncate px-1 pb-1 text-[9px] leading-tight text-slate-400">' + esc(sub) + '</span>' +
+            '</button>';
+          }).join('');
+          html += '<div class="mt-2 grid grid-cols-4 gap-1.5">' + thumbs + '</div>';
+        }
+        return html;
+      }
+
+      function rowsBlock(rows) {
+        if (!rows || !rows.length) return '';
+        return '<div class="space-y-1">' + rows.map(function (r) {
+          return '<div class="flex items-start text-xs">' +
+            '<span class="w-20 flex-shrink-0 text-slate-500">' + esc(r.label) + '</span>' +
+            '<span class="min-w-0 flex-1 break-all text-slate-800">' + r.html + '</span>' +
+          '</div>';
         }).join('') + '</div>';
       }
 
-      /** 视频块 */
-      function videoBlock(media) {
-        if (media.type === 'video-pending') {
-          return '<div class="flex items-center gap-3 rounded border border-dashed border-slate-300 bg-slate-50 p-3 text-slate-400">' +
-            '<i class="fa fa-video-camera text-xl"></i><span class="text-xs">视频节点待接入（硬件即将就绪）</span></div>';
-        }
-        return '<div class="space-y-2">' + media.items.map(function (v) {
-          return '<div class="flex items-center gap-3 rounded border border-slate-200 bg-slate-50 p-3">' +
-            '<i class="fa fa-play-circle text-2xl text-blue-500"></i>' +
-            '<div class="text-xs"><p class="text-slate-700">节点 ' + v.nodeId + ' · 试验时段回看</p>' +
-            '<p class="text-slate-400">' + v.startTime + ' ~ ' + v.endTime + '（凭时间锚回源）</p></div></div>';
-        }).join('') + '</div>';
+      /** 维度区：胶囊标签置于每个区域左上角，内容整行显示在下方 */
+      function renderSection(sec) {
+        var inner = rowsBlock(sec.rows) + nodeMediaBlock(sec.media) + (sec.html || '');
+        if (!inner) return '';
+        if (!sec.tag) return '<div class="mt-2">' + inner + '</div>';
+        return '<div class="mt-2.5">' +
+          '<span class="dim-tag dim-' + sec.tag + '">' + sec.tag + '</span>' +
+          '<div class="mt-1.5">' + inner + '</div>' +
+        '</div>';
       }
 
-      /** 渲染八维度 */
-      dims.innerHTML = view.sections.map(function (sc) {
-        var body = '';
-        if (sc.statusType === 'na') {
-          body = '<p class="text-xs text-slate-400">该等级不公开此维度。</p>';
-        } else {
-          if (sc.rows && sc.rows.length) {
-            body += '<div class="space-y-1">' + sc.rows.map(function (r) {
-              return '<div class="flex text-xs"><span class="w-24 flex-shrink-0 text-slate-500">' + r[0] + '</span><span class="flex-1 text-slate-800">' + r[1] + '</span></div>';
-            }).join('') + '</div>';
-          }
-          if (sc.media) {
-            if (sc.media.type === 'curve') body += '<div class="mt-2 rounded bg-white p-2">' + curveSvg(sc.media.points) + '</div>';
-            else if (sc.media.type === 'photos') body += '<div class="mt-2">' + photosBlock(sc.media.items) + '</div>';
-            else if (sc.media.type === 'video' || sc.media.type === 'video-pending') body += '<div class="mt-2">' + videoBlock(sc.media) + '</div>';
-          }
-          if (sc.note) body += '<p class="mt-2 text-[11px] text-slate-400">' + sc.note + '</p>';
-          if (!body) body = '<p class="text-xs text-slate-400">—</p>';
+      /** 分组：可选组标题（如试验项 / 领样人）+ 右侧结论；collapsible 时标题可点击折叠 */
+      function renderGroup(g, multi, collapsible) {
+        var secs = (g.sections || []).map(renderSection).join('');
+        if (!multi) return (g.title ? '<div class="flex items-center justify-between gap-2"><span class="text-[13px] font-medium text-slate-700">' + esc(g.title) + '</span>' + (g.titleRight ? '<span class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">' + esc(g.titleRight) + '</span>' : '') + '</div>' : '') + secs;
+        if (collapsible && g.title) {
+          return '<div class="tl-collapse mt-2 overflow-hidden rounded-md border border-slate-100 bg-slate-50/60 first:mt-2">' +
+            '<button type="button" class="js-collapse flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left">' +
+              '<span class="flex items-center gap-1.5 text-[13px] font-medium text-slate-700">' +
+                '<i class="fa fa-chevron-down tl-caret text-[10px] text-slate-400"></i>' + esc(g.title) +
+              '</span>' +
+              (g.titleRight ? '<span class="rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] text-emerald-600">' + esc(g.titleRight) + '</span>' : '') +
+            '</button>' +
+            '<div class="tl-collapse-body px-2 pb-2">' + secs + '</div>' +
+          '</div>';
         }
-        return '<div class="rounded-lg border border-slate-200 p-3">' +
-          '<div class="mb-1.5 flex items-center justify-between"><span class="text-sm font-medium text-slate-700">' + sc.label + '</span>' + badge(sc.statusType, sc.statusText) + '</div>' +
-          body + '</div>';
+        var head = g.title ? ('<div class="flex items-center justify-between gap-2">' +
+          '<span class="text-[13px] font-medium text-slate-700">' + esc(g.title) + '</span>' +
+          (g.titleRight ? '<span class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">' + esc(g.titleRight) + '</span>' : '') +
+        '</div>') : '';
+        return '<div class="mt-2 rounded-md border border-slate-100 bg-slate-50/60 p-2 first:mt-2">' + head + secs + '</div>';
+      }
+
+      function groupsBlock(groups, collapsible) {
+        if (!groups || !groups.length) return '';
+        var multi = groups.length > 1 || (groups[0] && groups[0].title);
+        return groups.map(function (g) { return renderGroup(g, multi, collapsible); }).join('');
+      }
+
+      function isRichNode(n) {
+        return n.groups && n.groups.length;
+      }
+
+      view._code = res.code;
+
+      /** 一级：全程连续视频 + 实验室实时监控（可拖拽回看） */
+      if (view.level === 1 && (view.continuous || view.live)) {
+        var heroTiles = [];
+        [view.continuous, view.live].forEach(function (v) {
+          if (!v) return;
+          var href = ReportTrace.videoPlayHref(view._code, v);
+          var kind = v.kind === 'live' ? '实时监控' : '全程连续';
+          heroTiles.push('<a href="' + esc(href) + '" class="overflow-hidden rounded-lg border border-blue-200 bg-slate-900 no-underline">' +
+            '<span class="relative block aspect-[16/9]">' +
+              '<img src="' + esc(v.poster || '') + '" alt="' + esc(v.label || '') + '" class="h-full w-full object-cover opacity-90" />' +
+              '<span class="absolute inset-0 flex flex-col items-center justify-center bg-black/30 text-white">' +
+                '<i class="fa fa-play-circle text-3xl"></i>' +
+                '<span class="mt-1 text-xs font-medium">' + esc(kind) + '</span>' +
+              '</span>' +
+            '</span>' +
+            '<span class="block truncate bg-white px-2 py-1.5 text-[11px] text-slate-700"><i class="fa fa-video-camera text-blue-500"></i> ' + esc(v.label || kind) + '</span>' +
+          '</a>');
+        });
+        flowHead.insertAdjacentHTML('beforebegin',
+          '<div class="mb-4 rounded-lg border border-blue-100 bg-blue-50/60 p-3">' +
+            '<p class="mb-2 text-xs font-semibold text-blue-800"><i class="fa fa-film"></i> 全程连续视频 · 实验室实时监控　<span class="font-normal text-blue-600">可拖拽进度回看</span></p>' +
+            '<div class="grid grid-cols-2 gap-2">' + heroTiles.join('') + '</div>' +
+          '</div>');
+      }
+
+      /** 渲染试验流程时间轴 */
+      flowHead.classList.remove('hidden');
+      flowHead.classList.add('flex');
+      flowHeadSub.textContent = view.unmanned
+        ? (view.nodes.length + ' 个节点 · 无人化机械臂 · 全程视频可溯')
+        : (view.nodes.length + ' 个节点 · 时间 / 人员 / 影像可溯');
+
+      timeline.innerHTML = view.nodes.map(function (n) {
+        var rich = isRichNode(n);
+        var keyClass = n.key === '试验检测' ? ' tl-key' : '';
+        if (isRevoked && n.key === '报告签发') keyClass = ' tl-rev';
+        if (isSuperseded && n.key === '报告签发') keyClass = ' tl-sup';
+
+        var people = n.hidePeople ? '' :
+          ('<div class="mt-0.5 flex flex-wrap items-center justify-between gap-x-3 text-xs text-slate-600">' +
+            '<span>' + esc(n.role) + '　' + esc(n.owner) + '</span>' +
+            '<span class="text-slate-400">' + esc(n.time) + '</span>' +
+          '</div>');
+
+        var headRight = n.hidePeople ? '<span class="text-xs text-slate-400">' + esc(n.time) + '</span>' : '';
+
+        var body = groupsBlock(n.groups, n.key === '试验检测');
+
+        var cardCls = rich
+          ? 'rounded-lg border border-slate-200 bg-white p-3'
+          : 'rounded-lg border border-slate-100 bg-slate-50 px-3 py-2';
+
+        return '<div class="tl-node">' +
+          '<span class="tl-badge' + keyClass + '">' + n.idx + '</span>' +
+          '<div class="' + cardCls + '">' +
+            '<div class="flex items-center justify-between gap-2">' +
+              '<span class="text-sm font-medium text-slate-800">' + esc(n.name) + '</span>' +
+              headRight +
+            '</div>' +
+            people +
+            body +
+          '</div>' +
+        '</div>';
       }).join('');
+
+      if (isRevoked || isSuperseded) {
+        timeline.classList.add('archived');
+        flowHead.insertAdjacentHTML('afterend', '<p class="mb-2 text-[11px] font-medium tracking-wide ' + (isRevoked ? 'text-red-500' : 'text-amber-600') + '">历史留档 · 试验流程快照（签发时冻结，不再作为有效依据）</p>');
+      }
+
+      /* ── 灯箱：校准 / 资质证书 ── */
+      var lightbox = document.getElementById('certLightbox');
+      var lightboxImg = document.getElementById('certLightboxImg');
+      var lightboxTitle = document.getElementById('certLightboxTitle');
+      function openCertLightbox(src, title) {
+        lightboxTitle.textContent = title || '校准证书';
+        lightboxImg.src = src;
+        lightbox.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeCertLightbox() {
+        lightbox.classList.remove('open');
+        lightboxImg.src = '';
+        document.body.style.overflow = '';
+      }
+
+      /* ── 灯箱：过程影像 ── */
+      var photoBox = document.getElementById('photoLightbox');
+      var photoImg = document.getElementById('photoLightboxImg');
+      var photoWm = document.getElementById('photoLightboxWm');
+      var photoTitle = document.getElementById('photoLightboxTitle');
+      var photoIdx = document.getElementById('photoLightboxIdx');
+      var photoPrev = document.getElementById('photoLightboxPrev');
+      var photoNext = document.getElementById('photoLightboxNext');
+      var photoState = { group: 0, index: 0 };
+      function renderPhotoLightbox() {
+        var g = photoGroups[photoState.group];
+        if (!g || !g.items.length) return;
+        var i = photoState.index;
+        if (i < 0) i = g.items.length - 1;
+        if (i >= g.items.length) i = 0;
+        photoState.index = i;
+        var p = g.items[i];
+        photoImg.src = p.src || '';
+        photoImg.alt = p.label || g.node;
+        photoWm.textContent = p.uploadedAt || '';
+        photoTitle.textContent = (g.node || '') + (p.label ? ' · ' + p.label : '');
+        photoIdx.textContent = (i + 1) + ' / ' + g.items.length;
+        photoPrev.style.display = g.items.length > 1 ? '' : 'none';
+        photoNext.style.display = g.items.length > 1 ? '' : 'none';
+      }
+      function openPhotoLightbox(groupIdx, index) {
+        photoState.group = groupIdx;
+        photoState.index = index || 0;
+        renderPhotoLightbox();
+        photoBox.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+      function closePhotoLightbox() {
+        photoBox.classList.remove('open');
+        photoImg.src = '';
+        document.body.style.overflow = '';
+      }
+      function stepPhoto(delta) {
+        var g = photoGroups[photoState.group];
+        if (!g || g.items.length < 2) return;
+        photoState.index += delta;
+        renderPhotoLightbox();
+      }
+
+      /* ── 灯箱：温湿度曲线 ── */
+      var curveBox = document.getElementById('curveLightbox');
+      var curveBody = document.getElementById('curveLightboxBody');
+      var curveTitle = document.getElementById('curveLightboxTitle');
+      var curveIdx = document.getElementById('curveLightboxIdx');
+      var curvePrev = document.getElementById('curveLightboxPrev');
+      var curveNext = document.getElementById('curveLightboxNext');
+      var curveIndex = 0;
+      function renderCurveLightbox() {
+        if (!curveItems.length) return;
+        if (curveIndex < 0) curveIndex = curveItems.length - 1;
+        if (curveIndex >= curveItems.length) curveIndex = 0;
+        var it = curveItems[curveIndex];
+        renderInteractiveCurve(curveBody, it.points || []);
+        curveTitle.textContent = curveCaption(it);
+        curveIdx.textContent = (curveIndex + 1) + ' / ' + curveItems.length;
+        curvePrev.style.display = curveItems.length > 1 ? '' : 'none';
+        curveNext.style.display = curveItems.length > 1 ? '' : 'none';
+      }
+      function openCurveLightbox(index) {
+        curveIndex = index || 0;
+        renderCurveLightbox();
+        curveBox.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeCurveLightbox() {
+        curveBox.classList.remove('open');
+        curveBody.innerHTML = '';
+        document.body.style.overflow = '';
+      }
+      function stepCurve(delta) {
+        if (curveItems.length < 2) return;
+        curveIndex += delta;
+        renderCurveLightbox();
+      }
+
+      /* ── 样品全流转弹窗 ── */
+      var flowModal = document.getElementById('flowModal');
+      var flowModalBody = document.getElementById('flowModalBody');
+      function timeLabelFor(node) {
+        if (node.key === 'returnOut') {
+          if (node.mode === 'dispose') return '退样入库时间';
+          if (node.method === 'pickup') return '上门领样时间';
+          if (node.method === 'express') return '发快递时间';
+        }
+        return node.timeLabel || '时间';
+      }
+      function openFlowModal() {
+        var mf = view.materialFlow;
+        if (!mf) return;
+        var html = '<p class="mb-3 text-xs text-slate-500">样品编号 ' + esc(mf.sampleNo || '—') + '　·　按样品维度展示关键流转节点</p>';
+        html += '<div class="tl">';
+        (mf.nodes || []).forEach(function (n, i) {
+          var caption = n.key === 'returnOut' ? ReportTrace.returnOutCaption(n) : '';
+          html += '<div class="tl-node">';
+          html += '<span class="tl-badge">' + (i + 1) + '</span>';
+          html += '<div class="rounded-lg border border-slate-200 bg-white p-2.5">';
+          html += '<p class="text-sm font-medium text-slate-800">' + esc(n.title) + (caption ? ' <span class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500">' + esc(caption) + '</span>' : '') + '</p>';
+          (n.people || []).forEach(function (p) {
+            html += '<div class="mt-1 flex flex-wrap gap-x-4 text-xs text-slate-600">' +
+              '<span>' + esc(p.role) + '　' + esc(p.name) + '</span>' +
+              '<span class="text-slate-400">' + esc(timeLabelFor(n)) + '　' + esc(p.time) + '</span>' +
+              '</div>';
+          });
+          html += '</div></div>';
+        });
+        html += '</div>';
+        flowModalBody.innerHTML = html;
+        flowModal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeFlowModal() {
+        flowModal.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+
+      timeline.addEventListener('click', function (e) {
+        var collapseBtn = e.target.closest ? e.target.closest('.js-collapse') : null;
+        if (collapseBtn) {
+          var panel = collapseBtn.closest('.tl-collapse');
+          if (panel) panel.classList.toggle('collapsed');
+          return;
+        }
+        var cert = e.target.closest ? e.target.closest('.js-calib-cert') : null;
+        if (cert) {
+          e.preventDefault();
+          openCertLightbox(cert.getAttribute('data-src'), cert.getAttribute('data-title'));
+          return;
+        }
+        var flowLink = e.target.closest ? e.target.closest('.js-material-flow') : null;
+        if (flowLink) {
+          e.preventDefault();
+          openFlowModal();
+          return;
+        }
+        var photoBtn = e.target.closest ? e.target.closest('.js-photos-open') : null;
+        if (photoBtn) {
+          e.preventDefault();
+          openPhotoLightbox(parseInt(photoBtn.getAttribute('data-group'), 10) || 0, 0);
+          return;
+        }
+        var curveBtn = e.target.closest ? e.target.closest('.js-curve-open') : null;
+        if (curveBtn) {
+          e.preventDefault();
+          openCurveLightbox(parseInt(curveBtn.getAttribute('data-index'), 10) || 0);
+          return;
+        }
+      });
+      document.getElementById('certLightboxClose').addEventListener('click', closeCertLightbox);
+      lightbox.addEventListener('click', function (e) { if (e.target === lightbox) closeCertLightbox(); });
+      document.getElementById('flowModalClose').addEventListener('click', closeFlowModal);
+      flowModal.addEventListener('click', function (e) { if (e.target === flowModal) closeFlowModal(); });
+      document.getElementById('photoLightboxClose').addEventListener('click', closePhotoLightbox);
+      photoBox.addEventListener('click', function (e) { if (e.target === photoBox) closePhotoLightbox(); });
+      photoPrev.addEventListener('click', function (e) { e.stopPropagation(); stepPhoto(-1); });
+      photoNext.addEventListener('click', function (e) { e.stopPropagation(); stepPhoto(1); });
+      document.getElementById('curveLightboxClose').addEventListener('click', closeCurveLightbox);
+      curveBox.addEventListener('click', function (e) { if (e.target === curveBox) closeCurveLightbox(); });
+      curvePrev.addEventListener('click', function (e) { e.stopPropagation(); stepCurve(-1); });
+      curveNext.addEventListener('click', function (e) { e.stopPropagation(); stepCurve(1); });
+      document.addEventListener('keydown', function (e) {
+        if (photoBox.classList.contains('open')) {
+          if (e.key === 'Escape') closePhotoLightbox();
+          if (e.key === 'ArrowLeft') stepPhoto(-1);
+          if (e.key === 'ArrowRight') stepPhoto(1);
+          return;
+        }
+        if (curveBox.classList.contains('open')) {
+          if (e.key === 'Escape') closeCurveLightbox();
+          if (e.key === 'ArrowLeft') stepCurve(-1);
+          if (e.key === 'ArrowRight') stepCurve(1);
+          return;
+        }
+        if (e.key !== 'Escape') return;
+        closeCertLightbox();
+        closeFlowModal();
+      });
 
       /** 底部：等级说明 + 防篡改 */
       footer.classList.remove('hidden');
+      var statusNote = '';
+      if (isRevoked) statusNote = '<p class="mb-1 text-red-600">本溯源码状态为已作废 / 召回，扫码永久可查，但不构成有效检测结论。</p>';
+      if (isSuperseded) statusNote = '<p class="mb-1 text-amber-700">本溯源码状态为已换版，请以最新版本 <a class="underline" href="report-verify.html?code=' + entry.supersededBy + '">' + entry.supersededBy + '</a> 为准。</p>';
+      var tamperHtml = view.dataDefense
+        ? '<p class="mb-2 flex items-center gap-1.5 text-sm font-semibold text-green-700"><i class="fa fa-shield"></i> 防篡改校验通过</p>' +
+          '<p class="mb-1"><span class="text-slate-600">数据防篡改：</span><span class="font-medium text-slate-800">一级、二级</span>为防篡改等级。本报告签发时已对试验流程快照做哈希 + 可信时间戳固化（TSA）' +
+          (view.level === 1 ? '，并叠加区块链存证' : '') + '，公开核验通过。</p>'
+        : '<p class="mb-1"><span class="text-slate-600">数据防篡改：</span><span class="font-medium text-slate-800">一级、二级</span>为防篡改等级（签发快照哈希 + TSA；一级叠加区块链）。三级 / 四级无强制防篡改机制。</p>';
       footer.innerHTML =
+        statusNote +
         '<p class="mb-1 font-medium text-slate-600">关于透明度等级</p>' +
-        '<p class="mb-1">报告等级等同于出具该报告的实验室透明度等级与数据防篡改能力等级。四级由高到低：一级全要素 / 二级可视化 / 三级可追溯 / 四级可公示。</p>' +
-        '<p class="mb-1"><span class="text-slate-600">数据防篡改：</span>报告签发时对八维度快照做哈希 + 可信时间戳固化（TSA）；一级叠加区块链存证。（原型演示占位）</p>' +
+        '<p class="mb-1">报告等级等同于出具该报告的实验室透明度等级与数据防篡改能力等级。四级由高到低：一级全要素 / 二级可视化 / 三级可追溯 / 四级可公示。其中 <span class="font-medium text-slate-800">一级、二级具备防篡改能力</span>。</p>' +
+        tamperHtml +
         '<p class="text-slate-400">依据《Q/YM 006—2026 检测报告透明度等级评价规范》。溯源码：' + ReportTrace.reportShortUrl(res.code) + '</p>';
     })();
   </script>

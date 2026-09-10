@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>透明检测系统 · 报告出具 - TestOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+  </style>
+</head>
+<body data-testos-root="../" class="flex h-screen flex-col overflow-hidden bg-slate-100 text-slate-700">
+  <div id="testosHeader"></div>
+
+  <main class="flex-1 overflow-y-auto p-4">
+    <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="text-lg font-semibold text-slate-800">透明检测系统 · 报告出具</h1>
+        <p class="mt-1 text-xs leading-relaxed text-slate-500">
+          演示模式：一至四级均可出具。选中一条任务即选定该报告透明度等级，生成后点报告链接预览；微信扫描报告首页二维码进入溯源页。
+        </p>
+      </div>
+      <a href="../testos.html" class="text-sm text-blue-600 hover:underline"><i class="fa fa-th-large"></i> 返回应用总览</a>
+    </div>
+
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <div class="text-sm font-medium text-slate-700">待出具任务</div>
+        <button id="btnGenerate" type="button" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white hover:bg-blue-700">
+          生成报告
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1080px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="w-10 border border-slate-200 px-3 py-2 font-medium"></th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">透明度等级</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">溯源码</th>
+            </tr>
+          </thead>
+          <tbody id="taskBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 text-sm font-medium text-slate-700">已出具报告</div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[980px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="w-12 border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">报告编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">透明度等级</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">报告</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">生成时间</th>
+            </tr>
+          </thead>
+          <tbody id="issuedBody"></tbody>
+        </table>
+      </div>
+      <p id="issuedEmpty" class="mt-3 text-center text-sm text-slate-400">尚未生成报告。选中上方任务后点击「生成报告」。</p>
+    </div>
+  </main>
+
+  <script src="../js/testos-header.js"></script>
+  <script src="../js/short-link-qr.js"></script>
+  <script src="../js/report-trace.js"></script>
+  <script src="../js/report-trace-l1.js"></script>
+  <script>
+    (function () {
+      var STORAGE_KEY = 'td-issued-reports';
+      var TASKS = [
+        { id: 0, code: 'SC2026/02240101', unit: '国网某某供电公司', sample: '实壁类塑料电缆导管_直管-PVC-C', acceptDate: '2026-02-24', level: 1, traceCode: 'R1u8P' },
+        { id: 3, code: 'SCZN202508/0007', unit: '国网某某供电公司', sample: '实壁类塑料电缆导管_直管-PVC-C', acceptDate: '2025-07-16', level: 2, traceCode: 'R2c9X' },
+        { id: 2, code: 'SC2026/0099', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-17', level: 3, traceCode: 'R3a2K' },
+        { id: 4, code: 'SCZN202508/0006', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-15', level: 4, traceCode: 'R4b7M' }
+      ];
+
+      var selectedId = TASKS[0].id;
+      var issued = loadIssued();
+
+      function loadIssued() {
+        try {
+          var raw = sessionStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveIssued() {
+        try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(issued)); } catch (e) {}
+      }
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function levelBadge(level) {
+        var name = (window.ReportTrace && ReportTrace.levelName(level)) || ('第' + level + '级');
+        var shortName = name.split(' ')[0];
+        var cls = {
+          1: 'bg-indigo-100 text-indigo-700',
+          2: 'bg-sky-100 text-sky-700',
+          3: 'bg-emerald-100 text-emerald-700',
+          4: 'bg-slate-100 text-slate-600'
+        }[level] || 'bg-slate-100 text-slate-600';
+        return '<span class="rounded-full px-2 py-0.5 text-xs font-medium ' + cls + '">' + esc(shortName) + '</span>';
+      }
+
+      function pad(n) { return (n < 10 ? '0' : '') + n; }
+      function nowText() {
+        var d = new Date();
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' +
+          pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+      }
+
+      function reportNoOf(task) {
+        var entry = window.ReportTrace && ReportTrace.registry && ReportTrace.registry[task.traceCode];
+        return (entry && entry.reportNo) || (task.code + '-01');
+      }
+
+      function renderTasks() {
+        document.getElementById('taskBody').innerHTML = TASKS.map(function (t) {
+          var checked = selectedId === t.id ? 'checked' : '';
+          var rowCls = selectedId === t.id ? 'bg-blue-50' : 'bg-white';
+          return '<tr class="' + rowCls + '">' +
+            '<td class="border border-slate-200 px-3 py-2 text-center">' +
+              '<input type="radio" name="taskPick" value="' + t.id + '" ' + checked + ' />' +
+            '</td>' +
+            '<td class="border border-slate-200 px-3 py-2 font-mono text-xs">' + esc(t.code) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(t.unit) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(t.sample) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(t.acceptDate) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + levelBadge(t.level) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2 font-mono text-xs">' + esc(t.traceCode) + '</td>' +
+          '</tr>';
+        }).join('');
+
+        Array.prototype.forEach.call(document.querySelectorAll('input[name="taskPick"]'), function (el) {
+          el.addEventListener('change', function () {
+            selectedId = Number(el.value);
+            renderTasks();
+          });
+        });
+      }
+
+      function renderIssued() {
+        var body = document.getElementById('issuedBody');
+        var empty = document.getElementById('issuedEmpty');
+        if (!issued.length) {
+          body.innerHTML = '';
+          empty.classList.remove('hidden');
+          return;
+        }
+        empty.classList.add('hidden');
+        body.innerHTML = issued.map(function (row, i) {
+          return '<tr>' +
+            '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2 font-mono text-xs">' + esc(row.reportNo) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(row.sample) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + levelBadge(row.level) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' +
+              '<a href="report-preview.html?code=' + encodeURIComponent(row.traceCode) + '" target="tdReportPreview" ' +
+                'class="text-blue-600 hover:underline" onclick="window.open(this.href,\'tdReportPreview\',\'width=920,height=1100,scrollbars=yes\');return false;">' +
+                '<i class="fa fa-file-text-o"></i> ' + esc(row.fileName) +
+              '</a>' +
+            '</td>' +
+            '<td class="border border-slate-200 px-3 py-2 text-slate-500">' + esc(row.createdAt) + '</td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      document.getElementById('btnGenerate').addEventListener('click', function () {
+        var task = null;
+        for (var i = 0; i < TASKS.length; i++) if (TASKS[i].id === selectedId) task = TASKS[i];
+        if (!task) { alert('请选择一条待出具任务'); return; }
+
+        var reportNo = reportNoOf(task);
+        var existing = null;
+        for (var j = 0; j < issued.length; j++) {
+          if (issued[j].traceCode === task.traceCode) { existing = issued[j]; break; }
+        }
+        if (existing) {
+          existing.createdAt = nowText();
+        } else {
+          issued.unshift({
+            traceCode: task.traceCode,
+            reportNo: reportNo,
+            sample: task.sample,
+            level: task.level,
+            fileName: String(reportNo).replace(/\//g, '-') + '检测报告.pdf',
+            createdAt: nowText()
+          });
+        }
+        saveIssued();
+        renderIssued();
+      });
+
+      renderTasks();
+      renderIssued();
+    })();
+  </script>
+</body>
+</html>

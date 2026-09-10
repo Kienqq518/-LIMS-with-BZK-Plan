@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>节点视频回看</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    .player { background: #0b1220; }
+    .seek { accent-color: #3b82f6; }
+    .vol { accent-color: #94a3b8; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-700">
+  <div class="mx-auto max-w-xl p-4 pt-6">
+    <div class="overflow-hidden rounded-xl bg-white shadow-lg">
+      <div class="bg-blue-600 px-5 py-4 text-white">
+        <a id="backLink" href="report-verify.html" class="mb-2 inline-flex items-center gap-1 text-xs text-blue-100 hover:text-white">
+          <i class="fa fa-angle-left"></i> 返回溯源页
+        </a>
+        <h1 class="text-lg font-semibold">节点视频回看</h1>
+        <p id="topSub" class="mt-1 text-xs text-blue-100">组态物联视觉节点 · 凭时间锚回源</p>
+      </div>
+      <div id="body" class="px-4 py-4"></div>
+    </div>
+  </div>
+  <script src="js/report-trace.js"></script>
+  <script src="js/report-trace-l1.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var code = params.get('code') || '';
+      var node = params.get('node') || '';
+      var clipId = params.get('id') || '';
+      if (code) document.getElementById('backLink').href = 'report-verify.html?code=' + encodeURIComponent(code);
+      var res = code ? ReportTrace.getVerify(code) : { ok: false };
+      var reportNo = (res.ok && res.entry) ? res.entry.reportNo : params.get('report');
+      var clip = ReportTrace.getVideoClip(reportNo, node, clipId);
+      var body = document.getElementById('body');
+
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+      function pad(n) { return (n < 10 ? '0' : '') + n; }
+      function fmt(sec) {
+        sec = Math.max(0, Math.floor(sec));
+        return pad(Math.floor(sec / 60)) + ':' + pad(sec % 60);
+      }
+      function wallClock(start, offsetSec) {
+        var d = new Date(String(start).replace(/-/g, '/'));
+        if (isNaN(d.getTime())) return start || '';
+        d.setSeconds(d.getSeconds() + Math.floor(offsetSec));
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' +
+          pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+      }
+
+      if (!clip) {
+        body.innerHTML = '<p class="text-sm text-slate-500">未找到该节点视频。</p>';
+        return;
+      }
+
+      var title = (ReportTrace.clipTitle ? ReportTrace.clipTitle(clip) : (clip.label || clip.node));
+      document.getElementById('topSub').textContent = title + '　·　' + clip.startTime + ' ~ ' + clip.endTime;
+      document.title = title + ' · 节点视频回看';
+
+      var duration = clip.durationSec || 18;
+      body.innerHTML =
+        '<p class="mb-2 text-sm font-medium text-slate-800">' + esc(title) + '</p>' +
+        '<div class="player overflow-hidden rounded-lg">' +
+          '<div class="relative">' +
+            '<canvas id="stage" class="block w-full" width="640" height="360"></canvas>' +
+            '<span id="osd" class="pointer-events-none absolute left-3 top-3 font-mono text-[11px] text-red-400">REC ●</span>' +
+            '<span id="osdTime" class="pointer-events-none absolute right-3 top-3 font-mono text-[11px] text-white/90"></span>' +
+          '</div>' +
+          '<div class="space-y-2 px-3 py-3 text-slate-200">' +
+            '<input id="seek" class="seek w-full" type="range" min="0" max="' + duration + '" step="0.1" value="0" />' +
+            '<div class="flex items-center justify-between text-[11px] text-slate-400">' +
+              '<span id="tCur">00:00</span><span id="tDur">' + fmt(duration) + '</span>' +
+            '</div>' +
+            '<div class="flex flex-wrap items-center gap-3 text-xs">' +
+              '<button type="button" id="btnPlay" class="rounded bg-blue-600 px-3 py-1.5 text-white"><i class="fa fa-play"></i> 播放</button>' +
+              '<label class="flex items-center gap-1 text-slate-300">倍速' +
+                '<select id="rate" class="rounded bg-slate-800 px-1.5 py-1 text-slate-100">' +
+                  '<option value="0.5">0.5x</option><option value="0.75">0.75x</option>' +
+                  '<option value="1" selected>1x</option><option value="1.25">1.25x</option>' +
+                  '<option value="1.5">1.5x</option><option value="2">2x</option>' +
+                '</select>' +
+              '</label>' +
+              '<label class="flex flex-1 items-center gap-1 text-slate-300">音量' +
+                '<input id="vol" class="vol flex-1" type="range" min="0" max="1" step="0.05" value="0.35" />' +
+              '</label>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<p class="mt-3 text-center text-[11px] text-slate-400">可拖拽进度查看、倍速播放与调节音量。时间戳为上传系统时的节点时间锚。' +
+          (clip.kind === 'cctv' ? '本段为实验室对应工位监控。' : '') +
+          (clip.kind === 'continuous' ? '本段为试验全程不间断连续视频。' : '') +
+          (clip.kind === 'live' ? '本段为实验室实时监控回看。' : '') +
+        '</p>';
+
+      var canvas = document.getElementById('stage');
+      var ctx = canvas.getContext('2d');
+      var poster = new Image();
+      poster.src = clip.poster || '';
+      var state = { t: 0, playing: false, rate: 1, last: 0, volume: 0.35 };
+      var audio = { ctx: null, gain: null, osc: null };
+
+      function ensureAudio() {
+        if (audio.ctx) return;
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        audio.ctx = new AC();
+        audio.gain = audio.ctx.createGain();
+        audio.gain.gain.value = 0;
+        audio.osc = audio.ctx.createOscillator();
+        audio.osc.type = 'sine';
+        audio.osc.frequency.value = 220;
+        audio.osc.connect(audio.gain);
+        audio.gain.connect(audio.ctx.destination);
+        audio.osc.start();
+      }
+      function setAudible(on) {
+        if (!audio.gain) return;
+        audio.gain.gain.value = on ? state.volume * 0.04 : 0;
+      }
+
+      function draw() {
+        ctx.fillStyle = '#0b1220';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (poster.complete && poster.naturalWidth) {
+          ctx.drawImage(poster, 0, 40, canvas.width, canvas.height - 80);
+        }
+        ctx.fillStyle = 'rgba(0,0,0,.35)';
+        ctx.fillRect(0, canvas.height - 36, canvas.width, 36);
+        var progress = state.t / duration;
+        ctx.fillStyle = '#3b82f6';
+        ctx.fillRect(0, canvas.height - 4, canvas.width * progress, 4);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = '13px ui-sans-serif, sans-serif';
+        ctx.fillText(title + ' · 试验时段回看', 16, canvas.height - 14);
+        document.getElementById('osdTime').textContent = wallClock(clip.startTime, state.t);
+        document.getElementById('tCur').textContent = fmt(state.t);
+        document.getElementById('seek').value = String(state.t);
+      }
+
+      function tick(now) {
+        if (state.playing) {
+          var dt = (now - state.last) / 1000 * state.rate;
+          state.t += dt;
+          if (state.t >= duration) { state.t = duration; state.playing = false; setAudible(false); syncPlayBtn(); }
+        }
+        state.last = now;
+        draw();
+        requestAnimationFrame(tick);
+      }
+
+      function syncPlayBtn() {
+        document.getElementById('btnPlay').innerHTML = state.playing
+          ? '<i class="fa fa-pause"></i> 暂停'
+          : '<i class="fa fa-play"></i> 播放';
+      }
+
+      document.getElementById('btnPlay').onclick = function () {
+        ensureAudio();
+        if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
+        if (state.t >= duration) state.t = 0;
+        state.playing = !state.playing;
+        setAudible(state.playing);
+        syncPlayBtn();
+      };
+      document.getElementById('seek').addEventListener('input', function () {
+        state.t = parseFloat(this.value) || 0;
+        draw();
+      });
+      document.getElementById('rate').onchange = function () { state.rate = parseFloat(this.value) || 1; };
+      document.getElementById('vol').oninput = function () {
+        state.volume = parseFloat(this.value) || 0;
+        if (state.playing) setAudible(true);
+      };
+      poster.onload = draw;
+      draw();
+      requestAnimationFrame(function (now) { state.last = now; tick(now); });
+    })();
+  </script>
+</body>
+</html>

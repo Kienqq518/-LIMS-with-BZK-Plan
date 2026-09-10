@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>场地管理 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th, .data-table td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; vertical-align: middle; }
+    .data-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
+    .data-table tbody tr:hover { background: #f8fafc; }
+    .modal-mask { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+    .form-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; margin-bottom: 14px; }
+    .form-row label { width: 72px; flex-shrink: 0; text-align: right; color: #64748b; padding-top: 7px; }
+    .form-row .req { color: #ef4444; }
+    .form-row input, .form-row textarea { flex: 1; min-width: 0; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; outline: none; font-size: 13px; }
+    .form-row input:focus, .form-row textarea:focus { border-color: #3b82f6; }
+    .form-row textarea { min-height: 72px; resize: vertical; }
+    #toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; background: rgba(0,0,0,.76); color: #fff;
+      padding: 8px 22px; border-radius: 6px; font-size: 13px;
+      opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      场地管理
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4 space-y-4">
+    <div class="rounded bg-white p-4 shadow-sm" data-annotate="venue-filter">
+      <div class="flex flex-wrap items-end gap-x-6 gap-y-3">
+        <div class="flex items-center gap-2">
+          <label class="whitespace-nowrap text-sm text-slate-600">场地名称:</label>
+          <input id="f_name" class="w-52 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入场地名称" />
+        </div>
+        <button type="button" onclick="renderTable()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+        <button type="button" onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+      </div>
+    </div>
+
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center gap-2" data-annotate="venue-toolbar">
+        <button type="button" onclick="openEditModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="venue-add-btn"><i class="fa fa-plus"></i> 新增</button>
+        <button type="button" onclick="openImportModal()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50" data-annotate="venue-import-btn"><i class="fa fa-upload"></i> 导入</button>
+        <button type="button" onclick="doExport()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="venue-export-btn"><i class="fa fa-download"></i> 导出</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="w-16">序号</th>
+              <th>名称</th>
+              <th>位置</th>
+              <th>备注</th>
+              <th style="width:140px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-3 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="rowCount">共 0 条</span>
+        <button type="button" id="pagePrev" onclick="changePage(-1)" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50 disabled:opacity-40">&lt;</button>
+        <span id="pageNum" class="flex h-7 min-w-[28px] items-center justify-center rounded bg-blue-600 px-2 text-white">1</span>
+        <button type="button" id="pageNext" onclick="changePage(1)" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50 disabled:opacity-40">&gt;</button>
+        <select id="pageSize" onchange="onPageSizeChange()" class="min-w-[96px] rounded border border-slate-200 px-2 py-1 text-sm">
+          <option value="10">10 条/页</option>
+          <option value="20">20 条/页</option>
+          <option value="50" selected>50 条/页</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="editModal" class="modal-mask">
+    <div class="w-[520px] max-w-full rounded-lg bg-white shadow-xl" data-annotate="venue-edit-modal">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 id="editTitle" class="text-base font-medium">新增场地</h3>
+        <button type="button" onclick="closeModal('editModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4">
+        <div class="form-row"><label><span class="req">*</span> 名称</label><input id="m_name" placeholder="请输入场地名称" /></div>
+        <div class="form-row"><label>位置</label><input id="m_location" placeholder="请输入位置，如二楼202" /></div>
+        <div class="form-row"><label>备注</label><textarea id="m_remark" placeholder="请输入备注"></textarea></div>
+      </div>
+      <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+        <button type="button" onclick="resetEditForm()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+        <button type="button" onclick="submitEdit()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="importModal" class="modal-mask">
+    <div class="w-[720px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 class="text-base font-medium">导入场地</h3>
+        <button type="button" onclick="closeModal('importModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4 text-sm" data-annotate="venue-import-preview">
+        <p class="mb-3 text-slate-500">以下为原型演示文件，已解析 3 行。名称为空或与已有场地重名的行将失败。</p>
+        <div class="overflow-x-auto">
+          <table class="data-table">
+            <thead><tr><th>行</th><th>名称</th><th>位置</th><th>备注</th><th>预检</th></tr></thead>
+            <tbody id="importBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button type="button" onclick="closeModal('importModal')" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
+        <button type="button" onclick="applyImport()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">开始导入</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/venue-store.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var Store = window.VenueStore;
+    var venues = Store.load();
+    var editId = null;
+    var page = 1;
+    var pageSize = 50;
+
+    var MOCK_IMPORT = [
+      { name: '化学分析室', location: '二楼208', remark: '' },
+      { name: '电气检测室1', location: '一楼110', remark: '' },
+      { name: '温湿度实验室', location: '三楼305', remark: '新建' }
+    ];
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+      });
+    }
+
+    function toast(msg) {
+      var el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(function () { el.classList.remove('show'); }, 1800);
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function filteredList() {
+      var name = document.getElementById('f_name').value.trim();
+      return venues.filter(function (v) {
+        if (name && (v.name || '').indexOf(name) < 0) return false;
+        return true;
+      });
+    }
+
+    function pagedList(list) {
+      var start = (page - 1) * pageSize;
+      return list.slice(start, start + pageSize);
+    }
+
+    function totalPages(len) {
+      return Math.max(1, Math.ceil(len / pageSize));
+    }
+
+    function renderTable() {
+      var list = filteredList();
+      var pages = totalPages(list.length);
+      if (page > pages) page = pages;
+      var rows = pagedList(list);
+      var offset = (page - 1) * pageSize;
+      document.getElementById('rowCount').textContent = '共 ' + list.length + ' 条';
+      document.getElementById('pageNum').textContent = String(page);
+      document.getElementById('pagePrev').disabled = page <= 1;
+      document.getElementById('pageNext').disabled = page >= pages;
+      document.getElementById('tableBody').innerHTML = rows.map(function (v, i) {
+        return '<tr>' +
+          '<td>' + (offset + i + 1) + '</td>' +
+          '<td>' + esc(v.name) + '</td>' +
+          '<td>' + esc(v.location) + '</td>' +
+          '<td>' + esc(v.remark) + '</td>' +
+          '<td class="whitespace-nowrap">' +
+            '<button class="text-blue-600 hover:underline" onclick="openEditModal(\'' + v.id + '\')"><i class="fa fa-pencil"></i> 编辑</button>' +
+            '<button class="ml-3 text-red-500 hover:underline" onclick="removeVenue(\'' + v.id + '\')"><i class="fa fa-trash-o"></i> 删除</button>' +
+          '</td></tr>';
+      }).join('') || '<tr><td colspan="5" class="py-8 text-center text-slate-400">暂无数据</td></tr>';
+    }
+
+    function resetFilter() {
+      document.getElementById('f_name').value = '';
+      page = 1;
+      renderTable();
+    }
+
+    function changePage(delta) {
+      var pages = totalPages(filteredList().length);
+      page = Math.min(pages, Math.max(1, page + delta));
+      renderTable();
+    }
+
+    function onPageSizeChange() {
+      pageSize = parseInt(document.getElementById('pageSize').value, 10) || 50;
+      page = 1;
+      renderTable();
+    }
+
+    function openEditModal(id) {
+      editId = id || null;
+      var isEdit = !!id;
+      document.getElementById('editTitle').textContent = isEdit ? '编辑场地' : '新增场地';
+      var v = isEdit ? Store.findById(venues, id) : null;
+      document.getElementById('m_name').value = v ? (v.name || '') : '';
+      document.getElementById('m_location').value = v ? (v.location || '') : '';
+      document.getElementById('m_remark').value = v ? (v.remark || '') : '';
+      openModal('editModal');
+    }
+
+    function resetEditForm() {
+      if (editId) {
+        var v = Store.findById(venues, editId);
+        document.getElementById('m_name').value = v ? (v.name || '') : '';
+        document.getElementById('m_location').value = v ? (v.location || '') : '';
+        document.getElementById('m_remark').value = v ? (v.remark || '') : '';
+      } else {
+        document.getElementById('m_name').value = '';
+        document.getElementById('m_location').value = '';
+        document.getElementById('m_remark').value = '';
+      }
+    }
+
+    function submitEdit() {
+      var name = document.getElementById('m_name').value.trim();
+      var location = document.getElementById('m_location').value.trim();
+      var remark = document.getElementById('m_remark').value.trim();
+      if (!name) {
+        alert('请输入场地名称');
+        return;
+      }
+      if (Store.isNameTaken(venues, name, editId)) {
+        alert('场地名称已存在');
+        return;
+      }
+      if (editId) {
+        var cur = Store.findById(venues, editId);
+        if (!cur) return;
+        cur.name = name;
+        cur.location = location;
+        cur.remark = remark;
+        toast('已保存');
+      } else {
+        venues.push({ id: Store.newId(), name: name, location: location, remark: remark });
+        toast('新增成功');
+      }
+      Store.save(venues);
+      closeModal('editModal');
+      renderTable();
+    }
+
+    function removeVenue(id) {
+      var v = Store.findById(venues, id);
+      if (!v) return;
+      if (!confirm('确定删除场地「' + v.name + '」？')) return;
+      venues = venues.filter(function (item) { return item.id !== id; });
+      Store.save(venues);
+      toast('已删除');
+      renderTable();
+    }
+
+    function importStatus(row) {
+      if (!(row.name || '').trim()) return { kind: 'fail', text: '名称为空，失败' };
+      if (Store.isNameTaken(venues, row.name)) return { kind: 'fail', text: '名称已存在，失败' };
+      return { kind: 'ok', text: '将新增' };
+    }
+
+    function openImportModal() {
+      document.getElementById('importBody').innerHTML = MOCK_IMPORT.map(function (row, i) {
+        var st = importStatus(row);
+        var color = st.kind === 'fail' ? 'text-red-600' : 'text-emerald-600';
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(row.name) + '</td><td>' + esc(row.location) + '</td><td>' + esc(row.remark) + '</td><td class="' + color + '">' + esc(st.text) + '</td></tr>';
+      }).join('');
+      openModal('importModal');
+    }
+
+    function applyImport() {
+      var ok = 0, fail = 0;
+      MOCK_IMPORT.forEach(function (row) {
+        var st = importStatus(row);
+        if (st.kind === 'fail') { fail += 1; return; }
+        venues.push({
+          id: Store.newId(),
+          name: row.name.trim(),
+          location: row.location || '',
+          remark: row.remark || ''
+        });
+        ok += 1;
+      });
+      Store.save(venues);
+      closeModal('importModal');
+      renderTable();
+      alert('导入完成：成功 ' + ok + ' 行，失败 ' + fail + ' 行。');
+    }
+
+    function doExport() {
+      var header = '名称,位置,备注';
+      var lines = filteredList().map(function (v) {
+        return [v.name, v.location, v.remark].join(',');
+      });
+      alert('导出（原型演示）\n' + header + '\n' + lines.slice(0, 3).join('\n') + (lines.length > 3 ? '\n…共 ' + lines.length + ' 行' : ''));
+    }
+
+    document.getElementById('f_name').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') renderTable();
+    });
+
+    renderTable();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'venue-filter',
+            selector: '[data-annotate="venue-filter"]',
+            position: 'bottom-left',
+            title: '按场地名称查询',
+            content: '<strong>需求逻辑：</strong>场地是实验室物理空间主数据，列表先按名称检索。<br><strong>展示规则：</strong>单条件「场地名称」，占位「请输入场地名称」。<br><strong>交互逻辑：</strong>查询按名称模糊匹配；重置清空条件并回到第 1 页。回车等同查询。',
+            tag: '场地管理'
+          },
+          {
+            id: 'venue-toolbar',
+            selector: '[data-annotate="venue-toolbar"]',
+            position: 'bottom-left',
+            title: '新增 / 导入 / 导出',
+            content: '<strong>需求逻辑：</strong>维护检测室、试验厅等场地档案，供设备「所在区域」等处引用。<br><strong>展示规则：</strong>「+ 新增」「导入」白底、「导出」主色按钮，与客户管理操作栏一致。<br><strong>交互逻辑：</strong>新增/编辑弹窗；导入走预检演示；导出弹出当前筛选结果预览。',
+            tag: '场地管理'
+          },
+          {
+            id: 'venue-add-btn',
+            selector: '[data-annotate="venue-add-btn"]',
+            position: 'bottom-left',
+            title: '新增场地',
+            content: '<strong>需求逻辑：</strong>一条场地 = 名称 + 位置 + 备注。名称给人看、给人搜。<br><strong>展示规则：</strong>名称必填带星号；位置、备注选填。<br><strong>交互逻辑：</strong>名称去首尾空格后全库唯一（硬拦）。取消不保存。',
+            tag: '场地管理'
+          },
+          {
+            id: 'venue-edit-modal',
+            selector: '[data-annotate="venue-edit-modal"]',
+            position: 'top-right',
+            title: '新增 / 编辑场地',
+            content: '<strong>需求逻辑：</strong>编辑改的是同一条档案，不另开编码。<br><strong>展示规则：</strong>标题「新增场地 / 编辑场地」；字段顺序：名称、位置、备注。<br><strong>交互逻辑：</strong>重置：新增清空，编辑恢复打开时的值。确定后写回列表。',
+            tag: '场地管理'
+          },
+          {
+            id: 'venue-import-btn',
+            selector: '[data-annotate="venue-import-btn"]',
+            position: 'bottom-left',
+            title: '导入',
+            content: '<strong>需求逻辑：</strong>批量建档，不能绕开名称唯一。<br><strong>展示规则：</strong>演示 3 行：化学分析室将新增、电气检测室1 重名失败、温湿度实验室将新增。<br><strong>交互逻辑：</strong>失败行跳过，成功行写入。导出始终带出名称、位置、备注。',
+            tag: '场地管理'
+          }
+        ]
+      });
+    }
+  </script>
+</body>
+</html>

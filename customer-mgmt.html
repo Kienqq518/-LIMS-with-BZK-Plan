@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>客户管理 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th, .data-table td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; vertical-align: middle; }
+    .data-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
+    .data-table tbody tr:hover { background: #f8fafc; }
+    .modal-mask { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+    .modal-mask.z60 { z-index: 60; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
+    .form-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .form-row label { width: 88px; flex-shrink: 0; text-align: right; color: #64748b; }
+    .form-row .req { color: #ef4444; }
+    .form-row input, .form-row select { flex: 1; min-width: 0; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; outline: none; font-size: 13px; }
+    .form-row input:focus, .form-row select:focus { border-color: #3b82f6; }
+    .form-row input[readonly] { background: #f8fafc; color: #64748b; cursor: not-allowed; }
+    .rule-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 4px; font-size: 12px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; white-space: nowrap; }
+    .rule-chip.fixed { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+    .rule-chip.seq { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+    .token-seg { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fff; }
+    .chip-preview { display: flex; flex-wrap: wrap; gap: 6px; min-height: 48px; border: 1px dashed #cbd5e1; border-radius: 6px; background: #f8fafc; padding: 10px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      客户管理
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4 space-y-4">
+    <div class="rounded bg-white p-4 shadow-sm" data-annotate="cust-filter">
+      <div class="flex flex-wrap items-end gap-x-6 gap-y-3">
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">单位名称</label><input id="f_name" class="w-44 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入单位名称" /></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">单位编码</label><input id="f_code" class="w-40 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入单位编码" /></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">客户类型</label><select id="f_type" class="w-36 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"><option value="">请选择</option><option>委托单位</option><option>受检单位</option></select></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">单位地址</label><input id="f_addr" class="w-44 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入单位地址" /></div>
+        <div class="flex items-center gap-2"><label class="whitespace-nowrap text-sm text-slate-600">协议客户</label><select id="f_protocol" class="w-28 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"><option value="">请选择</option><option>是</option><option>否</option></select></div>
+        <button onclick="renderTable()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+        <button onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+      </div>
+    </div>
+
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between gap-3" data-annotate="cust-toolbar">
+        <button type="button" onclick="openRuleModal()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50" data-annotate="cust-rule-btn"><i class="fa fa-cog"></i> 配置单位编码规则</button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="openEditModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="cust-add-btn"><i class="fa fa-plus"></i> 新增</button>
+          <button type="button" onclick="openImportModal()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50" data-annotate="cust-import-btn"><i class="fa fa-upload"></i> 导入</button>
+          <button type="button" onclick="doExport()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="cust-export-btn"><i class="fa fa-download"></i> 导出</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[1280px]">
+          <thead>
+            <tr>
+              <th class="w-14">序号</th>
+              <th>单位名称</th>
+              <th style="width:120px" data-annotate="cust-code-col">单位编码</th>
+              <th style="width:100px">客户类型</th>
+              <th>所在省市</th>
+              <th>详细地址</th>
+              <th style="width:80px">邮编</th>
+              <th style="width:90px">协议客户</th>
+              <th style="width:70px">折扣</th>
+              <th>备注</th>
+              <th style="width:160px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-3 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="rowCount">共 0 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <select class="rounded border border-slate-200 px-2 py-1 text-sm"><option>50 条/页</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增 / 编辑客户单位 -->
+  <div id="editModal" class="modal-mask">
+    <div class="w-[720px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 id="editTitle" class="text-base font-medium">新增客户单位</h3>
+        <button onclick="closeModal('editModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4">
+        <div class="form-grid">
+          <div class="form-row"><label><span class="req">*</span> 单位名称</label><input id="m_name" placeholder="请输入单位名称" /></div>
+          <div class="form-row" data-annotate="cust-code-field"><label id="m_code_label">单位编码</label><input id="m_code" /></div>
+          <div class="form-row"><label><span class="req">*</span> 客户类型</label><select id="m_type"><option value="">请选择</option><option>委托单位</option><option>受检单位</option></select></div>
+          <div class="form-row"><label><span class="req">*</span> 所在省市</label>
+            <select id="m_region">
+              <option value="">请选择</option>
+              <option>浙江省 / 杭州市 / 西湖区</option>
+              <option>浙江省 / 杭州市 / 上城区</option>
+              <option>浙江省 / 杭州市 / 滨江区</option>
+              <option>浙江省 / 杭州市 / 余杭区</option>
+              <option>浙江省 / 宁波市 / 海曙区</option>
+              <option>浙江省 / 温州市 / 鹿城区</option>
+              <option>浙江省 / 嘉兴市 / 南湖区</option>
+              <option>浙江省 / 绍兴市 / 越城区</option>
+              <option>浙江省 / 湖州市 / 吴兴区</option>
+              <option>浙江省 / 金华市 / 婺城区</option>
+              <option>浙江省 / 台州市 / 椒江区</option>
+              <option>浙江省 / 丽水市 / 莲都区</option>
+              <option>浙江省 / 舟山市 / 定海区</option>
+              <option>安徽省 / 合肥市 / 蜀山区</option>
+              <option>福建省 / 福州市 / 鼓楼区</option>
+            </select>
+          </div>
+          <div class="form-row" style="grid-column:1 / -1"><label><span class="req">*</span> 详细地址</label><input id="m_address" placeholder="请输入详细地址" /></div>
+          <div class="form-row"><label>邮编</label><input id="m_zip" placeholder="请输入邮编" /></div>
+          <div class="form-row"><label>协议客户</label><select id="m_protocol"><option value="">请选择</option><option>是</option><option>否</option></select></div>
+          <div class="form-row"><label>折扣</label><input id="m_discount" placeholder="请输入折扣" /></div>
+          <div class="form-row"><label>备注</label><input id="m_remark" placeholder="请输入备注信息" /></div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+        <button onclick="resetEditForm()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+        <button onclick="submitEdit()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 重复提醒 -->
+  <div id="dupModal" class="modal-mask z60">
+    <div class="w-[560px] max-w-full rounded-lg bg-white shadow-xl" data-annotate="cust-dup-modal">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 class="text-base font-medium">可能重复添加</h3>
+        <button onclick="cancelDup()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4 text-sm text-slate-600">
+        <p id="dupText" class="mb-3">系统中已存在相同单位名称和所在省市的客户，是否仍要添加？</p>
+        <div class="overflow-x-auto rounded border border-amber-100">
+          <table class="data-table">
+            <thead><tr><th>单位名称</th><th>单位编码</th><th>所在省市</th></tr></thead>
+            <tbody id="dupBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="cancelDup()" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
+        <button id="dupOkBtn" onclick="confirmDup()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">仍要添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 联系人 -->
+  <div id="contactModal" class="modal-mask">
+    <div class="w-[860px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 class="text-base font-medium">联系人</h3>
+        <button onclick="closeModal('contactModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4">
+        <button onclick="openContactForm()" class="mb-3 rounded bg-blue-600 px-3 py-1.5 text-sm text-white"><i class="fa fa-plus"></i> 新增联系人</button>
+        <table class="data-table">
+          <thead><tr><th>序号</th><th>姓名</th><th>部门</th><th>电话</th><th>手机</th><th>传真</th><th>邮箱</th><th>备注</th><th>操作</th></tr></thead>
+          <tbody id="contactBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="contactFormModal" class="modal-mask z60">
+    <div class="w-[560px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 id="contactFormTitle" class="text-base font-medium">添加联系人</h3>
+        <button onclick="closeModal('contactFormModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4">
+        <div class="form-grid">
+          <div class="form-row"><label><span class="req">*</span> 姓名</label><input id="p_name" /></div>
+          <div class="form-row"><label>部门</label><input id="p_dept" /></div>
+          <div class="form-row"><label><span class="req">*</span> 电话</label><input id="p_phone" /></div>
+          <div class="form-row"><label>手机</label><input id="p_mobile" /></div>
+          <div class="form-row"><label>传真</label><input id="p_fax" /></div>
+          <div class="form-row"><label>邮箱</label><input id="p_email" /></div>
+          <div class="form-row" style="grid-column:1 / -1"><label>备注</label><input id="p_remark" /></div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="resetContactForm()" class="rounded border border-slate-300 px-4 py-1.5 text-sm">重置</button>
+        <button onclick="saveContact()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 单位编码规则 -->
+  <div id="ruleModal" class="modal-mask">
+    <div class="flex max-h-[90vh] w-[760px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 class="text-base font-medium" data-annotate="cust-rule-title">修改单位编码规则</h3>
+        <button onclick="closeModal('ruleModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto px-5 py-4">
+        <div class="mb-4" data-annotate="cust-rule-chips">
+          <div class="mb-2 text-sm font-medium text-slate-600">当前规则</div>
+          <div id="ruleChipPreview" class="chip-preview"></div>
+        </div>
+        <div class="mb-4" data-annotate="cust-rule-tokens">
+          <div class="mb-2 flex items-center justify-between">
+            <div class="text-sm font-medium text-slate-600">规则组成</div>
+            <button type="button" onclick="addRuleToken()" class="rounded border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-600">+ 添加令牌</button>
+          </div>
+          <p class="mb-2 text-xs text-slate-400">仅允许指定字符 + 自增序号；自增必须是最后一段。不按年重置，删除不回收。</p>
+          <div id="tokenList"></div>
+        </div>
+        <div class="rounded border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" data-annotate="cust-rule-preview">
+          <span class="mr-2 font-medium">生成预览（下一空码）：</span><span id="rulePreview" class="font-mono">—</span>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeModal('ruleModal')" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
+        <button onclick="saveRule()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导入 -->
+  <div id="importModal" class="modal-mask">
+    <div class="w-[920px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 class="text-base font-medium">导入客户单位</h3>
+        <button onclick="closeModal('importModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4 text-sm" data-annotate="cust-import-preview">
+        <p class="mb-3 text-slate-500">单位编码可空，空则按当前规则自动生成；填写则须全文件 + 全库唯一。以下为原型演示文件，已解析 4 行。</p>
+        <div class="overflow-x-auto">
+          <table class="data-table">
+            <thead><tr><th>行</th><th>单位名称</th><th>单位编码</th><th>所在省市</th><th>预检</th></tr></thead>
+            <tbody id="importBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeModal('importModal')" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
+        <button onclick="startImport()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white">开始导入</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="importDupModal" class="modal-mask z60">
+    <div class="w-[520px] max-w-full rounded-lg bg-white shadow-xl" data-annotate="cust-import-dup">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 class="text-base font-medium">可能重复添加</h3>
+        <button onclick="closeModal('importDupModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4 text-sm text-slate-600">
+        <p id="importDupText">有 N 行单位名称+所在省市与已有客户（或文件内）重复，是否继续导入？</p>
+        <p class="mt-2 text-xs text-slate-400">继续后重复行仍会导入并另行发号；编码冲突行会失败。</p>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeModal('importDupModal')" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
+        <button onclick="confirmImportDup()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">继续导入</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/customer-store.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var Store = window.CustomerStore;
+    var customers = Store.loadCustomers();
+    var ruleDraft = null;
+    var editCtx = { id: null, skipDup: false };
+    var contactCtx = { customerId: null, editId: null };
+    var pendingImport = null;
+
+    var MOCK_IMPORT = [
+      { name: '嘉兴新能检测服务部', code: '', type: '委托单位', region: '浙江省 / 嘉兴市 / 南湖区', address: '嘉兴市南湖区中山东路 88 号', zip: '314000', protocol: '', discount: '', remark: '空码，系统发号' },
+      { name: '外部对齐示范单位', code: 'KH-HZ-01', type: '委托单位', region: '浙江省 / 杭州市 / 滨江区', address: '杭州市滨江区网商路', zip: '310052', protocol: '', discount: '', remark: '文件自带编码' },
+      { name: '杭州数蚕智能科技有限公司', code: '', type: '委托单位', region: '浙江省 / 杭州市 / 西湖区', address: '杭州市西湖区另一地址', zip: '310000', protocol: '', discount: '', remark: '名称+省市重复' },
+      { name: '编码冲突示范', code: '121001', type: '委托单位', region: '浙江省 / 宁波市 / 海曙区', address: '宁波市海曙区药行街', zip: '315000', protocol: '', discount: '', remark: '编码已被占用' }
+    ];
+
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    function resetFilter() {
+      ['f_name', 'f_code', 'f_type', 'f_addr', 'f_protocol'].forEach(function (id) {
+        document.getElementById(id).value = '';
+      });
+      renderTable();
+    }
+
+    function filteredList() {
+      var name = document.getElementById('f_name').value.trim();
+      var code = document.getElementById('f_code').value.trim();
+      var type = document.getElementById('f_type').value;
+      var addr = document.getElementById('f_addr').value.trim();
+      var protocol = document.getElementById('f_protocol').value;
+      return customers.filter(function (c) {
+        if (name && c.name.indexOf(name) < 0) return false;
+        if (code && (c.code || '').indexOf(code) < 0) return false;
+        if (type && c.type !== type) return false;
+        if (addr && (c.address || '').indexOf(addr) < 0 && (c.region || '').indexOf(addr) < 0) return false;
+        if (protocol && (c.protocol || '') !== protocol) return false;
+        return true;
+      });
+    }
+
+    function renderTable() {
+      var list = filteredList();
+      document.getElementById('rowCount').textContent = '共 ' + list.length + ' 条';
+      document.getElementById('tableBody').innerHTML = list.map(function (c, i) {
+        return '<tr>' +
+          '<td>' + (i + 1) + '</td>' +
+          '<td>' + esc(c.name) + '</td>' +
+          '<td>' + esc(c.code) + '</td>' +
+          '<td>' + esc(c.type) + '</td>' +
+          '<td>' + esc((c.region || '').replace(/ \/ /g, '，')) + '</td>' +
+          '<td>' + esc(c.address) + '</td>' +
+          '<td>' + esc(c.zip) + '</td>' +
+          '<td>' + esc(c.protocol) + '</td>' +
+          '<td>' + esc(c.discount) + '</td>' +
+          '<td>' + esc(c.remark) + '</td>' +
+          '<td class="whitespace-nowrap">' +
+            '<button class="text-blue-600 hover:underline" onclick="openEditModal(\'' + c.id + '\')">编辑</button> ' +
+            '<button class="ml-2 text-blue-600 hover:underline" onclick="openContacts(\'' + c.id + '\')">联系人</button> ' +
+            '<button class="ml-2 text-red-500 hover:underline" onclick="removeCustomer(\'' + c.id + '\')">删除</button>' +
+          '</td></tr>';
+      }).join('') || '<tr><td colspan="11" class="py-8 text-center text-slate-400">暂无数据</td></tr>';
+    }
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+      });
+    }
+
+    function openEditModal(id) {
+      editCtx = { id: id || null, skipDup: false };
+      var isEdit = !!id;
+      document.getElementById('editTitle').textContent = isEdit ? '编辑客户单位' : '新增客户单位';
+      var c = isEdit ? customers.filter(function (x) { return x.id === id; })[0] : null;
+      document.getElementById('m_name').value = c ? c.name : '';
+      document.getElementById('m_type').value = c ? c.type : '委托单位';
+      document.getElementById('m_region').value = c ? c.region : '';
+      document.getElementById('m_address').value = c ? c.address : '';
+      document.getElementById('m_zip').value = c ? c.zip : '';
+      document.getElementById('m_protocol').value = c ? c.protocol : '';
+      document.getElementById('m_discount').value = c ? c.discount : '';
+      document.getElementById('m_remark').value = c ? c.remark : '';
+      var codeInput = document.getElementById('m_code');
+      var codeLabel = document.getElementById('m_code_label');
+      if (isEdit) {
+        codeLabel.innerHTML = '<span class="req">*</span> 单位编码';
+        codeInput.readOnly = false;
+        codeInput.value = c.code;
+        codeInput.placeholder = '请输入单位编码';
+      } else {
+        codeLabel.textContent = '单位编码';
+        codeInput.readOnly = true;
+        codeInput.value = '';
+        codeInput.placeholder = '保存后自动生成';
+      }
+      openModal('editModal');
+    }
+
+    function resetEditForm() {
+      if (editCtx.id) openEditModal(editCtx.id);
+      else openEditModal();
+    }
+
+    function collectEditPayload() {
+      return {
+        name: document.getElementById('m_name').value,
+        code: document.getElementById('m_code').value.trim(),
+        type: document.getElementById('m_type').value,
+        region: document.getElementById('m_region').value,
+        address: document.getElementById('m_address').value.trim(),
+        zip: document.getElementById('m_zip').value.trim(),
+        protocol: document.getElementById('m_protocol').value,
+        discount: document.getElementById('m_discount').value.trim(),
+        remark: document.getElementById('m_remark').value.trim()
+      };
+    }
+
+    function submitEdit() {
+      var p = collectEditPayload();
+      if (!p.name.trim()) { alert('请填写单位名称'); return; }
+      if (!p.type) { alert('请选择客户类型'); return; }
+      if (!p.region) { alert('请选择所在省市'); return; }
+      if (!p.address) { alert('请填写详细地址'); return; }
+      if (editCtx.id) {
+        if (!p.code) { alert('请填写单位编码'); return; }
+        if (Store.isCodeTaken(customers, p.code, editCtx.id)) { alert('单位编码已存在，不能重复'); return; }
+      }
+      if (!editCtx.skipDup) {
+        var dups = Store.findNameRegionDups(customers, p.name, p.region, editCtx.id);
+        if (dups.length) {
+          showDup(dups, editCtx.id ? 'save' : 'add');
+          return;
+        }
+      }
+      persistEdit(p);
+    }
+
+    function showDup(dups, mode) {
+      document.getElementById('dupText').textContent = mode === 'save'
+        ? '系统中已存在相同单位名称和所在省市的客户，是否仍要保存？'
+        : '系统中已存在相同单位名称和所在省市的客户，是否仍要添加？';
+      document.getElementById('dupOkBtn').textContent = mode === 'save' ? '仍要保存' : '仍要添加';
+      document.getElementById('dupBody').innerHTML = dups.map(function (c) {
+        return '<tr><td>' + esc(c.name) + '</td><td>' + esc(c.code) + '</td><td>' + esc(c.region) + '</td></tr>';
+      }).join('');
+      openModal('dupModal');
+    }
+
+    function cancelDup() { closeModal('dupModal'); }
+
+    function confirmDup() {
+      closeModal('dupModal');
+      editCtx.skipDup = true;
+      submitEdit();
+    }
+
+    function persistEdit(p) {
+      if (editCtx.id) {
+        var row = customers.filter(function (c) { return c.id === editCtx.id; })[0];
+        Object.keys(p).forEach(function (k) { row[k] = p[k]; });
+      } else {
+        customers.push({
+          id: Store.newId('c'),
+          name: p.name.trim(),
+          code: Store.nextCode(customers, Store.loadRule()),
+          type: p.type,
+          region: p.region,
+          address: p.address,
+          zip: p.zip,
+          protocol: p.protocol,
+          discount: p.discount,
+          remark: p.remark,
+          contacts: []
+        });
+      }
+      Store.saveCustomers(customers);
+      closeModal('editModal');
+      renderTable();
+    }
+
+    function removeCustomer(id) {
+      if (!confirm('确定删除该客户单位？此操作不可恢复，单位编码不回收。')) return;
+      customers = customers.filter(function (c) { return c.id !== id; });
+      Store.saveCustomers(customers);
+      renderTable();
+    }
+
+    function openContacts(id) {
+      contactCtx.customerId = id;
+      renderContacts();
+      openModal('contactModal');
+    }
+
+    function renderContacts() {
+      var c = customers.filter(function (x) { return x.id === contactCtx.customerId; })[0];
+      var list = (c && c.contacts) || [];
+      document.getElementById('contactBody').innerHTML = list.map(function (p, i) {
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(p.name) + '</td><td>' + esc(p.dept) + '</td><td>' + esc(p.phone) + '</td><td>' + esc(p.mobile) + '</td><td>' + esc(p.fax) + '</td><td>' + esc(p.email) + '</td><td>' + esc(p.remark) + '</td>' +
+          '<td><button class="text-blue-600" onclick="openContactForm(\'' + p.id + '\')">编辑</button> <button class="ml-2 text-red-500" onclick="removeContact(\'' + p.id + '\')">删除</button></td></tr>';
+      }).join('') || '<tr><td colspan="9" class="py-6 text-center text-slate-400">暂无联系人</td></tr>';
+    }
+
+    function openContactForm(pid) {
+      contactCtx.editId = pid || null;
+      var c = customers.filter(function (x) { return x.id === contactCtx.customerId; })[0];
+      var p = pid ? (c.contacts || []).filter(function (x) { return x.id === pid; })[0] : null;
+      document.getElementById('contactFormTitle').textContent = pid ? '编辑联系人' : '添加联系人';
+      document.getElementById('p_name').value = p ? p.name : '';
+      document.getElementById('p_dept').value = p ? p.dept : '';
+      document.getElementById('p_phone').value = p ? p.phone : '';
+      document.getElementById('p_mobile').value = p ? p.mobile : '';
+      document.getElementById('p_fax').value = p ? p.fax : '';
+      document.getElementById('p_email').value = p ? p.email : '';
+      document.getElementById('p_remark').value = p ? p.remark : '';
+      openModal('contactFormModal');
+    }
+
+    function resetContactForm() { openContactForm(contactCtx.editId); }
+
+    function saveContact() {
+      var name = document.getElementById('p_name').value.trim();
+      var phone = document.getElementById('p_phone').value.trim();
+      if (!name) { alert('请填写姓名'); return; }
+      if (!phone) { alert('请填写电话'); return; }
+      var c = customers.filter(function (x) { return x.id === contactCtx.customerId; })[0];
+      if (!c.contacts) c.contacts = [];
+      var payload = {
+        name: name,
+        dept: document.getElementById('p_dept').value.trim(),
+        phone: phone,
+        mobile: document.getElementById('p_mobile').value.trim(),
+        fax: document.getElementById('p_fax').value.trim(),
+        email: document.getElementById('p_email').value.trim(),
+        remark: document.getElementById('p_remark').value.trim()
+      };
+      if (contactCtx.editId) {
+        var row = c.contacts.filter(function (x) { return x.id === contactCtx.editId; })[0];
+        Object.keys(payload).forEach(function (k) { row[k] = payload[k]; });
+      } else {
+        payload.id = Store.newId('p');
+        c.contacts.push(payload);
+      }
+      Store.saveCustomers(customers);
+      closeModal('contactFormModal');
+      renderContacts();
+    }
+
+    function removeContact(pid) {
+      if (!confirm('确定删除该联系人？')) return;
+      var c = customers.filter(function (x) { return x.id === contactCtx.customerId; })[0];
+      c.contacts = (c.contacts || []).filter(function (x) { return x.id !== pid; });
+      Store.saveCustomers(customers);
+      renderContacts();
+    }
+
+    function tokenChipHtml(tokens) {
+      if (!tokens || !tokens.length) return '<span class="text-slate-400 text-sm">请添加令牌</span>';
+      return tokens.map(function (t) {
+        if (t.type === 'seq') return '<span class="rule-chip seq">自增·' + t.digits + '位</span>';
+        return '<span class="rule-chip fixed">指定字符「' + esc(t.value || '') + '」</span>';
+      }).join('');
+    }
+
+    function openRuleModal() {
+      ruleDraft = JSON.parse(JSON.stringify(Store.loadRule()));
+      renderRuleEditor();
+      openModal('ruleModal');
+    }
+
+    function renderRuleEditor() {
+      document.getElementById('ruleChipPreview').innerHTML = tokenChipHtml(ruleDraft.tokens);
+      document.getElementById('rulePreview').textContent = Store.previewByRule(customers, ruleDraft);
+      document.getElementById('tokenList').innerHTML = ruleDraft.tokens.map(function (t, i) {
+        var typeSel = '<select onchange="changeTokenType(' + i + ', this.value)" class="rounded border border-slate-300 px-2 py-1 text-sm">' +
+          '<option value="literal"' + (t.type !== 'seq' ? ' selected' : '') + '>指定字符</option>' +
+          '<option value="seq"' + (t.type === 'seq' ? ' selected' : '') + '>自增序号</option></select>';
+        var extra = t.type === 'seq'
+          ? '<div class="mt-2 text-sm text-slate-600">序号位数 ' + [2, 3, 4, 5, 6].map(function (d) {
+              return '<label class="mr-3"><input type="radio" name="seqd' + i + '" ' + (Number(t.digits) === d ? 'checked' : '') + ' onchange="setSeqDigits(' + i + ',' + d + ')"/> ' + d + '位</label>';
+            }).join('') + '</div>'
+          : '<div class="mt-2"><input class="w-full rounded border border-slate-300 px-2 py-1 text-sm" value="' + esc(t.value || '') + '" placeholder="如 KH-HZ-" oninput="setLiteral(' + i + ', this.value)" /></div>';
+        return '<div class="token-seg"><div class="flex items-start gap-2"><span class="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-50 text-xs text-blue-600">' + (i + 1) + '</span><div class="flex-1">' + typeSel + extra + '</div>' +
+          '<button class="text-slate-400 hover:text-red-500" onclick="removeToken(' + i + ')"><i class="fa fa-trash-o"></i></button></div></div>';
+      }).join('');
+    }
+
+    function addRuleToken() {
+      ruleDraft.tokens.push({ type: 'literal', value: '' });
+      renderRuleEditor();
+    }
+    function removeToken(i) {
+      ruleDraft.tokens.splice(i, 1);
+      renderRuleEditor();
+    }
+    function changeTokenType(i, type) {
+      ruleDraft.tokens[i] = type === 'seq' ? { type: 'seq', digits: 6 } : { type: 'literal', value: '' };
+      renderRuleEditor();
+    }
+    function setLiteral(i, v) {
+      ruleDraft.tokens[i].value = v;
+      document.getElementById('ruleChipPreview').innerHTML = tokenChipHtml(ruleDraft.tokens);
+      document.getElementById('rulePreview').textContent = Store.previewByRule(customers, ruleDraft);
+    }
+    function setSeqDigits(i, d) {
+      ruleDraft.tokens[i].digits = d;
+      renderRuleEditor();
+    }
+    function saveRule() {
+      var err = Store.validateRule(ruleDraft);
+      if (err) { alert(err); return; }
+      Store.saveRule(ruleDraft);
+      closeModal('ruleModal');
+    }
+
+    function importPreviewStatus(row, idx, all) {
+      if (row.code && Store.isCodeTaken(customers, row.code)) return { kind: 'fail', text: '编码冲突（失败）' };
+      if (row.code && all.some(function (r, j) { return j < idx && r.code && r.code === row.code; })) return { kind: 'fail', text: '文件内编码重复（失败）' };
+      var dups = Store.findNameRegionDups(customers, row.name, row.region);
+      var fileDup = all.some(function (r, j) { return j < idx && r.name.trim() === row.name.trim() && r.region === row.region; });
+      if (dups.length || fileDup) return { kind: 'warn', text: '名称+省市重复（提醒仍导入）' };
+      if (!row.code) return { kind: 'ok', text: '空码 → 将发 ' + previewImportCode(row, idx, all) };
+      return { kind: 'ok', text: '使用文件编码' };
+    }
+
+    function previewImportCode(row, idx, all) {
+      if (row.code) return row.code;
+      var fake = customers.slice();
+      for (var i = 0; i < idx; i++) {
+        var r = all[i];
+        if (r.code && Store.isCodeTaken(customers, r.code)) continue;
+        fake.push({ code: r.code || Store.nextCode(fake, Store.loadRule()) });
+      }
+      return Store.nextCode(fake, Store.loadRule());
+    }
+
+    function openImportModal() {
+      document.getElementById('importBody').innerHTML = MOCK_IMPORT.map(function (row, i) {
+        var st = importPreviewStatus(row, i, MOCK_IMPORT);
+        var color = st.kind === 'fail' ? 'text-red-600' : st.kind === 'warn' ? 'text-amber-600' : 'text-emerald-600';
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(row.name) + '</td><td>' + esc(row.code || '（空）') + '</td><td>' + esc(row.region) + '</td><td class="' + color + '">' + esc(st.text) + '</td></tr>';
+      }).join('');
+      openModal('importModal');
+    }
+
+    function startImport() {
+      var warnN = MOCK_IMPORT.filter(function (row, i) {
+        var st = importPreviewStatus(row, i, MOCK_IMPORT);
+        return st.kind === 'warn';
+      }).length;
+      if (warnN) {
+        document.getElementById('importDupText').textContent = '有 ' + warnN + ' 行单位名称+所在省市与已有客户（或文件内）重复，是否继续导入？';
+        openModal('importDupModal');
+        return;
+      }
+      applyImport();
+    }
+
+    function confirmImportDup() {
+      closeModal('importDupModal');
+      applyImport();
+    }
+
+    function applyImport() {
+      var ok = 0, fail = 0, warn = 0;
+      MOCK_IMPORT.forEach(function (row, i) {
+        var st = importPreviewStatus(row, i, MOCK_IMPORT);
+        if (st.kind === 'fail') { fail += 1; return; }
+        if (st.kind === 'warn') warn += 1;
+        customers.push({
+          id: Store.newId('c'),
+          name: row.name.trim(),
+          code: row.code || Store.nextCode(customers, Store.loadRule()),
+          type: row.type,
+          region: row.region,
+          address: row.address,
+          zip: row.zip,
+          protocol: row.protocol,
+          discount: row.discount,
+          remark: row.remark,
+          contacts: []
+        });
+        ok += 1;
+      });
+      Store.saveCustomers(customers);
+      closeModal('importModal');
+      renderTable();
+      alert('导入完成：成功 ' + ok + ' 行，编码冲突失败 ' + fail + ' 行，重复提醒仍导入 ' + warn + ' 行。');
+    }
+
+    function doExport() {
+      var header = '单位名称,单位编码,客户类型,所在省市,详细地址,邮编,协议客户,折扣,备注';
+      var lines = customers.map(function (c) {
+        return [c.name, c.code, c.type, c.region, c.address, c.zip, c.protocol, c.discount, c.remark].join(',');
+      });
+      alert('导出（原型演示）\n' + header + '\n' + lines.slice(0, 3).join('\n') + (lines.length > 3 ? '\n…共 ' + lines.length + ' 行，含单位编码列' : ''));
+    }
+
+    renderTable();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'cust-toolbar',
+            selector: '[data-annotate="cust-toolbar"]',
+            position: 'top-right',
+            title: '操作栏（左配置 / 右常用）',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>编码规则改得少，新增/导入/导出用得多，惯用功能靠右。<br><strong>展示规则：</strong>左侧次要按钮「配置单位编码规则」；右侧「+ 新增」（主按钮）、「导入」、「导出」。<br><strong>交互逻辑：</strong>无配置权限时隐藏左侧按钮，有新增权限仍可建客户。不进入业务流程配置 › 编号规则。',
+            tag: '客户管理'
+          },
+          {
+            id: 'cust-rule-btn',
+            selector: '[data-annotate="cust-rule-btn"]',
+            position: 'bottom-right',
+            title: '配置单位编码规则',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>单位编码是主数据业务码，格式由实验室自己规定，以对齐内部流水或外部系统（如 KH-HZ-77）。<br><strong>展示规则：</strong>齿轮 + 文案，白底描边。弹窗标题「修改单位编码规则」，无样品大类后缀。<br><strong>交互逻辑：</strong>只允许指定字符 + 最后一段自增（2/3/4/5/6 位）。保存后立刻作用于之后的新增和导入空码；已发出的号不重算。',
+            tag: '客户管理'
+          },
+          {
+            id: 'cust-add-btn',
+            selector: '[data-annotate="cust-add-btn"]',
+            position: 'bottom-left',
+            title: '新增客户单位',
+            content: '<strong>需求逻辑：</strong>用户不必自己想编码。<br><strong>展示规则：</strong>新增弹窗单位编码只读，灰字「保存后自动生成」，无必填星号。<br><strong>交互逻辑：</strong>必填校验通过后查名称+省市重复（提醒可不拦）；保存成功才按规则占号，取消不耗号。',
+            tag: '客户管理'
+          },
+          {
+            id: 'cust-import-btn',
+            selector: '[data-annotate="cust-import-btn"]',
+            position: 'bottom-left',
+            title: '导入',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>批量建档与对齐外部系统共用导入。<br><strong>展示规则：</strong>编码列可空。预检区分：空码将发号、使用文件编码、名称省市重复提醒、编码冲突失败。<br><strong>交互逻辑：</strong>有名称+省市重复时先汇总确认，取消则整批不导入；继续则重复行仍写入。编码冲突行失败。导出始终带出单位编码。',
+            tag: '客户管理'
+          },
+          {
+            id: 'cust-code-col',
+            selector: '[data-annotate="cust-code-col"]',
+            position: 'bottom-right',
+            title: '单位编码列',
+            content: '<strong>需求逻辑：</strong>给人看、给人搜的业务码，不是库表主键。<br><strong>展示规则：</strong>列表与查询仍展示/筛选该列。默认规则下现网下一空码为 121017。<br><strong>交互逻辑：</strong>编辑可改码，须全库唯一（硬拦）。删除不回收号码。',
+            tag: '客户管理'
+          },
+          {
+            id: 'cust-code-field',
+            selector: '[data-annotate="cust-code-field"]',
+            position: 'top-right',
+            title: '新增/编辑 · 单位编码',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>新增不手填；编辑可改以便个例对齐外部系统。<br><strong>展示规则：</strong>新增只读占位「保存后自动生成」；编辑显示当前码且可改，带必填星号。<br><strong>交互逻辑：</strong>编辑保存时编码与他人冲突则拦住。名称+省市与他人相同则弹「可能重复添加」，取消留在表单，仍要添加/保存则落库。',
+            tag: '客户管理'
+          },
+          {
+            id: 'cust-dup-modal',
+            selector: '[data-annotate="cust-dup-modal"]',
+            position: 'top-right',
+            title: '名称 + 所在省市重复提醒',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>同名同地区只尽提醒义务，不禁止再建（分公司、脏数据、业务坚持）。<br><strong>展示规则：</strong>比对单位名称（去首尾空格后完全一致）+ 所在省市整条路径（省/市/区）。列出已有记录的名称、编码、省市。不同区不提醒。<br><strong>交互逻辑：</strong>取消不保存；仍要添加/保存后本次不再弹。编码唯一仍是硬拦，两套校验分开。',
+            tag: '客户管理'
+          },
+          {
+            id: 'cust-rule-tokens',
+            selector: '[data-annotate="cust-rule-tokens"]',
+            position: 'top-right',
+            title: '规则令牌',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>不猜前缀。要对齐 KH-HZ-01～76，把规则改成「KH-HZ-」+ 自增 2 位，下一空码即 KH-HZ-77。<br><strong>展示规则：</strong>禁止日期、分类、引用等无客户上下文的令牌。芯片：琥珀色=指定字符，紫色=自增。<br><strong>交互逻辑：</strong>自增不在最后、缺自增、指定字符为空/有空格时确定报错。序号取符合当前形态的最大号 +1，占用则跳号。',
+            tag: '单位编码规则'
+          },
+          {
+            id: 'cust-import-preview',
+            selector: '[data-annotate="cust-import-preview"]',
+            position: 'top-right',
+            title: '导入预检',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>导入不能绕开页面侧的提醒规则。<br><strong>展示规则：</strong>演示 4 行：空码发号、文件自带 KH-HZ-01、同名同区提醒、121001 编码冲突失败。<br><strong>交互逻辑：</strong>点「开始导入」若有提醒行则再确认；结果区分成功数 / 失败数 / 提醒仍导入数。',
+            tag: '客户管理'
+          }
+        ]
+      });
+    }
+  </script>
+</body>
+</html>

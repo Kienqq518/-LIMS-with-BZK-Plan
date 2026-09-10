@@ -6,6 +6,7 @@
   <title>试验检测编辑 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/record-export-drawer.css" />
   <style>
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
@@ -176,226 +177,6 @@
 
     .panel-hidden { display: none !important; }
 
-    /* 记录单导出详情抽屉 */
-    .drawer-mask {
-      position: fixed;
-      inset: 0;
-      z-index: 60;
-      display: none;
-      background: rgba(0, 0, 0, .35);
-    }
-    .drawer-mask.open { display: block; }
-    .export-drawer {
-      position: fixed;
-      top: 0;
-      right: 0;
-      z-index: 61;
-      width: 920px;
-      max-width: 100%;
-      height: 100%;
-      background: #fff;
-      box-shadow: -4px 0 24px rgba(15, 23, 42, .12);
-      transform: translateX(100%);
-      transition: transform .25s ease;
-      display: flex;
-      flex-direction: column;
-    }
-    .drawer-mask.open .export-drawer { transform: translateX(0); }
-    .export-drawer-header {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #f1f5f9;
-      padding: 12px 20px;
-    }
-    .export-drawer-close {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border-radius: 4px;
-      color: #64748b;
-      font-size: 16px;
-    }
-    .export-drawer-close:hover {
-      background: #f1f5f9;
-      color: #0f172a;
-    }
-    .export-drawer-footer {
-      flex-shrink: 0;
-      display: flex;
-      justify-content: flex-end;
-      border-top: 1px solid #f1f5f9;
-      padding: 12px 20px;
-      background: #fff;
-    }
-    .export-drawer-body {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      padding: 16px 20px;
-    }
-
-    .export-collapse {
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      background: #fff;
-      margin-bottom: 16px;
-      overflow: hidden;
-    }
-    .export-collapse-head {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 14px;
-      background: #f8fafc;
-      border-bottom: 1px solid #e2e8f0;
-      cursor: pointer;
-      user-select: none;
-      font-size: 14px;
-      font-weight: 600;
-      color: #1e293b;
-    }
-    .export-collapse-head .chev {
-      color: #64748b;
-      font-size: 12px;
-      transition: transform .2s;
-    }
-    .export-collapse.collapsed .export-collapse-head { border-bottom: none; }
-    .export-collapse.collapsed .export-collapse-head .chev { transform: rotate(-90deg); }
-    .export-collapse.collapsed .export-collapse-body { display: none; }
-    .export-collapse-body { padding: 12px 14px 14px; }
-
-    .export-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-    .export-table th,
-    .export-table td {
-      border: 1px solid #e2e8f0;
-      padding: 8px 10px;
-      vertical-align: middle;
-      text-align: left;
-    }
-    .export-table th {
-      background: #f8fafc;
-      color: #64748b;
-      font-weight: 500;
-      white-space: nowrap;
-      text-align: center;
-    }
-    .export-table td { color: #334155; }
-    .export-table .col-check { width: 40px; text-align: center; }
-    .export-table .col-specimen { width: 140px; font-size: 11px; word-break: break-all; }
-    .export-table .col-status { width: 120px; }
-    .export-table .col-filename { min-width: 180px; font-size: 11px; word-break: break-all; }
-    .export-table .col-op { width: 56px; text-align: center; }
-    .export-test-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-    .export-test-tag {
-      display: inline-block;
-      border-radius: 3px;
-      padding: 2px 6px;
-      font-size: 11px;
-      line-height: 1.4;
-    }
-    .export-test-tag.done {
-      background: #dcfce7;
-      color: #15803d;
-    }
-    .export-test-tag.pending {
-      background: #f1f5f9;
-      color: #94a3b8;
-    }
-    .export-status {
-      font-size: 11px;
-      line-height: 1.4;
-    }
-    .export-status.ready { color: #15803d; }
-    .export-status.incomplete { color: #c2410c; }
-    .export-status.missing_template { color: #b91c1c; }
-    .export-status-detail {
-      display: block;
-      margin-top: 2px;
-      color: #64748b;
-      font-size: 10px;
-    }
-    .export-mode-group { margin-bottom: 16px; }
-    .export-mode-group .export-collapse-head {
-      justify-content: flex-start;
-    }
-    .export-mode-count {
-      margin-left: auto;
-      font-size: 12px;
-      font-weight: 400;
-      color: #64748b;
-    }
-    .export-sample-block {
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      overflow: hidden;
-      margin-bottom: 12px;
-      background: #fff;
-    }
-    .export-sample-block:last-child { margin-bottom: 0; }
-    .export-sample-head {
-      padding: 8px 12px;
-      background: #f1f5f9;
-      border-bottom: 1px solid #e2e8f0;
-      font-size: 13px;
-      font-weight: 600;
-      color: #334155;
-    }
-    .export-sample-block .export-table { border: none; }
-    .export-sample-block .export-table th,
-    .export-sample-block .export-table td { border-left: none; border-right: none; }
-    .export-sample-block .export-table tr:last-child td { border-bottom: none; }
-    .export-select-all {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-right: auto;
-      font-size: 13px;
-      color: #475569;
-      cursor: pointer;
-    }
-    .export-select-all input { accent-color: #2563eb; }
-    .export-drawer-footer {
-      gap: 12px;
-    }
-    .export-warn {
-      margin-top: 10px;
-      padding: 8px 10px;
-      border-radius: 4px;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #b91c1c;
-      font-size: 12px;
-      display: none;
-    }
-    .export-warn.show { display: block; }
-    .export-op-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      border-radius: 4px;
-      color: #2563eb;
-    }
-    .export-op-btn:hover { background: #eff6ff; }
-    .export-op-btn:disabled {
-      color: #cbd5e1;
-      cursor: not-allowed;
-      background: transparent;
-    }
-
     /* 产品检测通知书：元信息与样品明细分表，避免共用 9 列导致标签挤叠 */
     .task-notice-doc { border: 1px solid #334155; }
     .task-doc-table {
@@ -474,9 +255,14 @@
 
   <div class="p-4">
     <!-- 提示条 -->
-    <div class="mb-3 flex items-start gap-2 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-      <i class="fa fa-info-circle mt-0.5 flex-shrink-0"></i>
-      <span>您好！完成所有试验项的检测并导出原始记录单后，该样品才能顺利流转到下一个环节。</span>
+    <div class="mb-3 flex flex-wrap items-start justify-between gap-3 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800" data-annotate="or-sim-retest">
+      <div class="flex items-start gap-2">
+        <i class="fa fa-info-circle mt-0.5 flex-shrink-0"></i>
+        <span>您好！完成所有试验项的检测并导出原始记录单后，该样品才能顺利流转到下一个环节。退回后更改检测结果会使覆盖范围内已导出记录单立刻失效。</span>
+      </div>
+      <button type="button" class="shrink-0 rounded border border-blue-300 bg-white px-2.5 py-1 text-xs text-blue-700 hover:bg-blue-50" onclick="simulateRecordInvalidate()">
+        模拟：退回-更改检测结果（交流耐压）
+      </button>
     </div>
 
     <!-- 样品页签 + 操作 -->
@@ -589,7 +375,10 @@
   <div id="exportDrawerMask" class="drawer-mask" data-annotate="export-drawer">
     <div class="export-drawer" onclick="event.stopPropagation()">
       <div class="export-drawer-header">
-        <h3 class="text-base font-medium text-slate-800">记录单导出详情</h3>
+        <div>
+          <h3 class="text-base font-medium text-slate-800">记录单导出详情</h3>
+          <p class="mt-0.5 text-xs text-slate-400">可临时改生成模式与分组；「保存为该样品默认」只写这一条样品名称(型号)</p>
+        </div>
         <button type="button" onclick="closeExportDrawer()" class="export-drawer-close" title="关闭" aria-label="关闭">
           <i class="fa fa-times"></i>
         </button>
@@ -612,6 +401,7 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/record-export.js"></script>
+  <script src="js/original-record-version.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     var params = new URLSearchParams(location.search);
@@ -670,7 +460,7 @@
               title: '抗弯静负荷试验',
               columns: ['试样编号', '试验设备', '试样长度/m', '标称值/N', '试验值/N', '时间/min', '状态描述', '结论', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '状态', '操作'],
               rows: specimenIdsForTest(entrustCode, '01', 4, 10).map(function (id, i) {
-                return [id, '设备', '1.5', '300', String(298 + (i % 2)), '1', '无异常', i === 3 ? '不合格' : '合格', '23', '1013', '55', i === 3 ? '变形超限' : '', i === 3 ? '检测中' : '已完成'];
+                return [id, '设备', '1.5', '300', String(298 + (i % 2)), '1', '无异常', i === 3 ? '不合格' : '合格', '23', '1013', '55', i === 3 ? '变形超限' : '', '已完成'];
               })
             }
           ]
@@ -948,14 +738,10 @@
     });
 
     /* ===== 记录单导出详情抽屉 ===== */
-    var DEMO_RECORD_RULES = [
-      { id: 1, bindType: 'category', bindTarget: '安全工器具', modeKey: 'model-all' },
-      { id: 2, bindType: 'category', bindTarget: '电网物资', modeKey: 'model-each' },
-      { id: 3, bindType: 'model', bindTarget: '绝缘横担 - 通用型', modeKey: 'specimen-each' }
-    ];
+    var DEMO_RECORD_RULES = RecordExport.loadRules();
 
     var RECORD_TEMPLATE_INDEX = {
-      rod: { '抗弯静负荷试验': false },
+      rod: {},
       crossarm: { '交流耐压试验': false }
     };
 
@@ -971,11 +757,68 @@
     };
 
     var exportPreviewFiles = [];
+    var exportSession = {};
+    var exportBoardBound = false;
+
+    function ensureExportSession() {
+      pageData.samples.forEach(function (sample) {
+        if (exportSession[sample.id]) return;
+        var rule = RecordExport.resolveRecordRule(sample, DEMO_RECORD_RULES);
+        exportSession[sample.id] = RecordExport.initExportSession(sample, rule);
+      });
+    }
+
+    function sessionRules() {
+      return RecordExport.applySessionRules(DEMO_RECORD_RULES, pageData.samples, exportSession);
+    }
+
+    function sampleById(id) {
+      for (var i = 0; i < pageData.samples.length; i++) {
+        if (pageData.samples[i].id === id) return pageData.samples[i];
+      }
+      return null;
+    }
+
+    function markSessionDirty(sampleId) {
+      if (exportSession[sampleId]) exportSession[sampleId].dirty = true;
+    }
+
+    function testDoneMap(sample) {
+      var map = {};
+      (sample.groups || []).forEach(function (g) {
+        var statusIdx = g.columns.indexOf('状态');
+        map[g.title] = statusIdx < 0 || g.rows.every(function (row) { return row[statusIdx] === '已完成'; });
+      });
+      return map;
+    }
+
+    function filesForSample(sampleId) {
+      return exportPreviewFiles.filter(function (f) { return f.sampleId === sampleId; });
+    }
+
+    function filesForGroup(sampleId, groupIndex) {
+      return exportPreviewFiles.filter(function (f) {
+        return f.sampleId === sampleId && f.groupIndex === groupIndex;
+      });
+    }
+
+    function cardStatus(files) {
+      if (!files.length) return { status: 'empty', label: '待点亮试验项', detail: '' };
+      var ready = files.filter(function (f) { return f.status === 'ready'; }).length;
+      if (ready === files.length) return { status: 'ready', label: '就绪', detail: files.length > 1 ? files.length + ' 个文件可导出' : '' };
+      var blocked = files.filter(function (f) { return f.status !== 'ready'; })[0];
+      return {
+        status: blocked.status,
+        label: exportStatusLabel(blocked.status),
+        detail: blocked.statusDetail || ''
+      };
+    }
 
     function exportStatusLabel(status) {
       if (status === 'ready') return '就绪';
       if (status === 'incomplete') return '试验未完成';
       if (status === 'missing_template') return '缺模版';
+      if (status === 'empty') return '待点亮试验项';
       return status;
     }
 
@@ -987,12 +830,26 @@
       }).join('') + '</div>';
     }
 
+    function renderPickTag(sampleId, testName, done, selected, groupIndex) {
+      var cls = 'export-test-tag is-pick ' + (selected ? 'is-on' : 'is-off') + (done ? '' : ' pending');
+      var suffix = done ? '' : '（未完成）';
+      return '<span class="' + cls + '" role="button" data-action="toggle-test" data-sample="' + sampleId +
+        '" data-group="' + groupIndex + '" data-test="' + testName + '" title="' +
+        (selected ? '再次点击取消点亮' : '点击点亮，纳入本文件') + '">' + testName + suffix + '</span>';
+    }
+
+    function modeSelectHtml(sampleId, modeKey) {
+      return '<select class="export-mode-select" data-sample="' + sampleId + '">' +
+        RecordExport.RECORD_MODES.map(function (m) {
+          return '<option value="' + m.key + '"' + (m.key === modeKey ? ' selected' : '') + '>' + m.label + '</option>';
+        }).join('') + '</select>';
+    }
+
     function renderExportFileRow(file, idx, showSpecimen, annotate) {
       var ready = file.status === 'ready';
       var html = '<tr data-idx="' + idx + '">';
       html += '<td class="col-check"><input type="checkbox" class="export-row-check" data-idx="' + idx + '"' +
-        (ready && file.checked ? ' checked' : '') + (ready ? '' : ' disabled') +
-        ' onchange="onExportRowCheck(' + idx + ', this.checked)" /></td>';
+        (ready && file.checked ? ' checked' : '') + (ready ? '' : ' disabled') + ' /></td>';
       html += '<td class="col-filename"' + (annotate === 'filename' ? ' data-annotate="export-filename"' : '') + '>' + file.fileName + '</td>';
       if (showSpecimen) {
         html += '<td class="col-specimen"' + (annotate === 'specimen' ? ' data-annotate="export-specimen"' : '') + '>' + (file.specimenId || '—') + '</td>';
@@ -1002,113 +859,122 @@
         exportStatusLabel(file.status) + '</span>' +
         (file.status !== 'ready' ? '<span class="export-status-detail">' + file.statusDetail + '</span>' : '') +
         '</td>';
-      html += '<td class="col-op"><button type="button" class="export-op-btn" title="导出"' +
+      html += '<td class="col-op"><button type="button" class="export-op-btn" data-idx="' + idx + '" title="导出"' +
         (annotate === 'op' ? ' data-annotate="export-row-op"' : '') +
         (ready ? '' : ' disabled') +
-        ' onclick="exportPreviewRow(' + idx + ')"><i class="fa fa-cloud-download"></i></button></td>';
+        '><i class="fa fa-cloud-download"></i></button></td>';
       html += '</tr>';
       return html;
     }
 
-    function groupExportFiles(files) {
-      var modeOrder = RecordExport.RECORD_MODES.map(function (m) { return m.key; });
-      var byMode = {};
-      files.forEach(function (file, idx) {
-        file._idx = idx;
-        if (!byMode[file.modeKey]) byMode[file.modeKey] = {};
-        var sampleKey = file.sampleId || file.sampleLabel;
-        if (!byMode[file.modeKey][sampleKey]) {
-          byMode[file.modeKey][sampleKey] = { sampleLabel: file.sampleLabel, files: [] };
+    function renderTableForSample(sample, files) {
+      var showSpecimen = RecordExport.modeByKey(exportSession[sample.id].modeKey).dim === 'specimen';
+      if (!files.length) {
+        return '<div class="px-4 py-8 text-center text-sm text-slate-400">当前模式下暂无可预览的导出文件</div>';
+      }
+      var html = '<div class="overflow-x-auto"><table class="export-table min-w-full"><thead><tr>';
+      html += '<th class="col-check"></th>';
+      html += '<th class="col-filename">文件名（预览）</th>';
+      if (showSpecimen) html += '<th class="col-specimen">试样编号</th>';
+      html += '<th>包含试验项</th><th class="col-status">状态</th><th class="col-op">操作</th>';
+      html += '</tr></thead><tbody>';
+      files.forEach(function (file) {
+        html += renderExportFileRow(file, file._idx, showSpecimen, null);
+      });
+      html += '</tbody></table></div>';
+      return html;
+    }
+
+    function renderBoardForSample(sample, sess) {
+      var allTests = sample.groups.map(function (g) { return g.title; });
+      var doneMap = testDoneMap(sample);
+      var part = RecordExport.partitionTestGroups(allTests, sess.testGroups);
+      var groups = sess.testGroups.length ? sess.testGroups : [[]];
+      var dim = RecordExport.modeByKey(sess.modeKey).dim;
+      var specCount = sample.groups[0] && sample.groups[0].rows ? sample.groups[0].rows.length : 0;
+
+      var html = '<div class="export-board" data-annotate="export-board">';
+      groups.forEach(function (names, gi) {
+        var groupFiles = filesForGroup(sample.id, gi);
+        var st = cardStatus(groupFiles);
+        var anyReady = groupFiles.some(function (f) { return f.status === 'ready'; });
+        var checked = anyReady && groupFiles.every(function (f) { return f.status !== 'ready' || f.checked; });
+        var fileName = groupFiles[0] ? groupFiles[0].fileName : '点亮试验项后生成文件名';
+        html += '<div class="export-file-bar' + (anyReady ? ' is-ready' : '') + '" data-sample="' + sample.id +
+          '" data-group="' + gi + '"' + (gi === 0 ? ' data-annotate="export-file-card"' : '') + '>';
+        html += '<div class="export-file-bar-main">';
+        html += '<div class="export-file-bar-head">';
+        html += '<input type="checkbox" class="export-card-check" data-sample="' + sample.id + '" data-group="' + gi + '"' +
+          (anyReady && checked ? ' checked' : '') + (anyReady ? '' : ' disabled') + ' />';
+        html += '<span class="export-card-kicker">文件 ' + (gi + 1) +
+          (dim === 'specimen' && names.length ? ' · 每试样 1 份' : '') + '</span>';
+        html += '<span class="export-card-name">' + fileName + '</span>';
+        html += '<div class="export-bar-status"' + (gi === 0 ? ' data-annotate="export-status"' : '') + '>';
+        html += '<span class="export-status ' + st.status + '">' + st.label + '</span>';
+        if (st.detail && st.status !== 'ready') {
+          html += '<span class="export-status-detail">' + st.detail + '</span>';
         }
-        byMode[file.modeKey][sampleKey].files.push(file);
+        html += '</div>';
+        if (groups.length > 1) {
+          html += '<button type="button" class="export-card-remove" data-action="remove-card" data-sample="' + sample.id +
+            '" data-group="' + gi + '" title="删除此文件，已点亮项变回未选中"><i class="fa fa-times"></i></button>';
+        }
+        html += '</div>';
+        html += '<div class="export-file-bar-tags"' + (gi === 0 ? ' data-annotate="export-tests"' : '') + '>';
+        allTests.forEach(function (name) {
+          var selected = names.indexOf(name) >= 0;
+          html += renderPickTag(sample.id, name, !!doneMap[name], selected, gi);
+        });
+        if (!allTests.length) html += '<div class="export-card-empty">没有可点亮的试验项</div>';
+        html += '</div></div>';
+        html += '<div class="export-file-bar-side">';
+        html += '<button type="button" class="export-op-btn export-bar-dl" data-action="export-group" data-sample="' +
+          sample.id + '" data-group="' + gi + '" title="' + (anyReady ? '导出本文件' : '请先点亮试验项') + '"' +
+          (anyReady ? '' : ' disabled') + '><i class="fa fa-cloud-download"></i></button>';
+        if (dim === 'specimen' && names.length) {
+          html += '<div class="export-card-meta">' + specCount + ' 份</div>';
+        }
+        html += '</div></div>';
       });
-      return modeOrder.filter(function (k) { return byMode[k]; }).map(function (modeKey) {
-        var sampleMap = byMode[modeKey];
-        var samples = Object.keys(sampleMap).map(function (k) { return sampleMap[k]; });
-        var totalFiles = samples.reduce(function (n, s) { return n + s.files.length; }, 0);
-        return {
-          modeKey: modeKey,
-          modeLabel: RecordExport.modeLabel(modeKey),
-          dim: RecordExport.modeByKey(modeKey).dim,
-          samples: samples,
-          totalFiles: totalFiles
-        };
-      });
+      html += '<button type="button" class="export-add-bar" data-action="add-card" data-sample="' + sample.id +
+        '" data-annotate="export-add-card"><i class="fa fa-plus"></i>添加文件</button>';
+      if (part.unassigned.length) {
+        html += '<div class="export-unassigned-hint">尚有 ' + part.unassigned.length +
+          ' 项未点亮，本次不会导出这些试验项。</div>';
+      }
+      html += '</div>';
+      return html;
     }
 
     function renderExportPreview() {
+      ensureExportSession();
       exportPreviewFiles = RecordExport.buildRecordFilePreview(
         entrustCode,
         pageData.samples,
-        DEMO_RECORD_RULES,
+        sessionRules(),
         RECORD_TEMPLATE_INDEX,
         DEMO_RECORD_COMBINED,
         RECORD_SAMPLE_ANCESTOR
       );
+      exportPreviewFiles.forEach(function (file, idx) { file._idx = idx; });
 
-      var groups = groupExportFiles(exportPreviewFiles);
-      var html = '';
-      var annotateFlags = { mode: false, sample: false, filename: false, specimen: false, tests: false, status: false, op: false };
+      var html = '<div class="export-drawer-hint" data-annotate="export-mode-group">从其它模式切到「多试验项」时，每条文件会列出该样品全部试验项，点亮后纳入该文件。绝缘操作杆已预置「单种样品多试验项」：默认一条空文件，点亮后才可导出。</div>';
 
-      function pickRowAnnotate(file, showSpecimen) {
-        if (!annotateFlags.status && file.status !== 'ready') {
-          annotateFlags.status = true;
-          return 'status';
-        }
-        if (!annotateFlags.specimen && showSpecimen && file.specimenId) {
-          annotateFlags.specimen = true;
-          return 'specimen';
-        }
-        if (!annotateFlags.tests && file.tests.length > 1) {
-          annotateFlags.tests = true;
-          return 'tests';
-        }
-        if (!annotateFlags.op && file.status === 'ready') {
-          annotateFlags.op = true;
-          return 'op';
-        }
-        if (!annotateFlags.filename) {
-          annotateFlags.filename = true;
-          return 'filename';
-        }
-        return null;
-      }
-
-      if (!groups.length) {
-        html = '<div class="py-10 text-center text-slate-400">暂无可预览的导出文件</div>';
-      } else {
-        groups.forEach(function (group) {
-          var modeId = 'exportMode-' + group.modeKey;
-          var showSpecimen = group.dim === 'specimen';
-          html += '<div class="export-mode-group export-collapse" id="' + modeId + '"' +
-            (annotateFlags.mode ? '' : ' data-annotate="export-mode-group"') + '>';
-          if (!annotateFlags.mode) annotateFlags.mode = true;
-          html += '<div class="export-collapse-head" onclick="toggleExportCollapse(\'' + modeId + '\')">';
-          html += '<i class="fa fa-chevron-down chev"></i>';
-          html += '<span>' + group.modeLabel + '</span>';
-          html += '<span class="export-mode-count">' + group.samples.length + ' 个样品 · ' + group.totalFiles + ' 个文件</span>';
-          html += '</div>';
-          html += '<div class="export-collapse-body">';
-
-          group.samples.forEach(function (sampleBlock) {
-            html += '<div class="export-sample-block"' + (annotateFlags.sample ? '' : ' data-annotate="export-sample-block"') + '>';
-            if (!annotateFlags.sample) annotateFlags.sample = true;
-            html += '<div class="export-sample-head">' + sampleBlock.sampleLabel + '</div>';
-            html += '<div class="overflow-x-auto"><table class="export-table min-w-full"><thead><tr>';
-            html += '<th class="col-check"></th>';
-            html += '<th class="col-filename">文件名（预览）</th>';
-            if (showSpecimen) html += '<th class="col-specimen">试样编号</th>';
-            html += '<th>包含试验项</th><th class="col-status">状态</th><th class="col-op">操作</th>';
-            html += '</tr></thead><tbody>';
-            sampleBlock.files.forEach(function (file) {
-              html += renderExportFileRow(file, file._idx, showSpecimen, pickRowAnnotate(file, showSpecimen));
-            });
-            html += '</tbody></table></div></div>';
-          });
-
-          html += '</div></div>';
-        });
-      }
+      pageData.samples.forEach(function (sample, si) {
+        var sess = exportSession[sample.id];
+        var files = filesForSample(sample.id);
+        html += '<div class="export-sample-block"' + (si === 0 ? ' data-annotate="export-sample-block"' : '') + '>';
+        html += '<div class="export-sample-head">';
+        html += '<span class="export-sample-title">' + RecordExport.sampleModelLabel(sample) + '</span>';
+        html += modeSelectHtml(sample.id, sess.modeKey);
+        html += '<button type="button" class="export-save-default" data-action="save-default" data-sample="' + sample.id + '"' +
+          (sess.dirty ? '' : ' disabled') + '>保存为该样品默认</button>';
+        html += '</div>';
+        html += RecordExport.isMultiMode(sess.modeKey)
+          ? renderBoardForSample(sample, sess)
+          : renderTableForSample(sample, files);
+        html += '</div>';
+      });
 
       document.getElementById('exportPreviewGroups').innerHTML = html;
 
@@ -1121,11 +987,6 @@
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
-    function toggleExportCollapse(id) {
-      var el = document.getElementById(id);
-      if (el) el.classList.toggle('collapsed');
-    }
-
     function syncExportSummary() {
       var warn = document.getElementById('exportSummaryWarn');
       if (!exportPreviewFiles.length) {
@@ -1134,14 +995,69 @@
         return;
       }
       var blocked = exportPreviewFiles.filter(function (f) { return f.status !== 'ready'; });
-      if (!blocked.length) {
+      var sessUnassigned = 0;
+      pageData.samples.forEach(function (sample) {
+        var sess = exportSession[sample.id];
+        if (!sess || !RecordExport.isMultiMode(sess.modeKey)) return;
+        var allTests = sample.groups.map(function (g) { return g.title; });
+        sessUnassigned += RecordExport.partitionTestGroups(allTests, sess.testGroups).unassigned.length;
+      });
+      if (!blocked.length && !sessUnassigned) {
         warn.classList.remove('show');
         warn.textContent = '';
         return;
       }
-      warn.textContent = '共 ' + blocked.length + ' 个文件暂不可导出：' +
-        blocked.map(function (f) { return f.fileName + '（' + exportStatusLabel(f.status) + '）'; }).join('；');
-      warn.classList.add('show');
+      var parts = [];
+      if (blocked.length) {
+        parts.push('共 ' + blocked.length + ' 个文件暂不可导出：' +
+          blocked.map(function (f) { return f.fileName + '（' + exportStatusLabel(f.status) + '）'; }).join('；'));
+      }
+      warn.textContent = parts.join(' ');
+      if (parts.length) warn.classList.add('show');
+      else warn.classList.remove('show');
+    }
+
+    function toggleTestOnBar(sampleId, groupIndex, testName) {
+      var sess = exportSession[sampleId];
+      if (!sess) return;
+      while (sess.testGroups.length <= groupIndex) sess.testGroups.push([]);
+      var g = sess.testGroups[groupIndex];
+      if (g.indexOf(testName) >= 0) {
+        sess.testGroups[groupIndex] = g.filter(function (t) { return t !== testName; });
+      } else {
+        sess.testGroups[groupIndex].push(testName);
+      }
+      markSessionDirty(sampleId);
+      renderExportPreview();
+    }
+
+    function onExportModeChange(sampleId, modeKey) {
+      var sample = sampleById(sampleId);
+      var sess = exportSession[sampleId];
+      if (!sample || !sess) return;
+      var allTests = sample.groups.map(function (g) { return g.title; });
+      var fromKey = sess.modeKey;
+      sess.modeKey = modeKey;
+      if (RecordExport.isMultiMode(modeKey)) {
+        if (!RecordExport.isMultiMode(fromKey)) {
+          sess.testGroups = [[]];
+        } else {
+          sess.testGroups = RecordExport.defaultMultiGroups(fromKey, allTests, sess.testGroups);
+        }
+      }
+      markSessionDirty(sampleId);
+      renderExportPreview();
+    }
+
+    function saveSampleDefault(sampleId) {
+      var sample = sampleById(sampleId);
+      var sess = exportSession[sampleId];
+      if (!sample || !sess) return;
+      var label = RecordExport.sampleModelLabel(sample);
+      DEMO_RECORD_RULES = RecordExport.saveModelDefault(label, sess.modeKey, sess.testGroups);
+      sess.dirty = false;
+      renderExportPreview();
+      alert('已保存为「' + label + '」的默认切分规则。\n下次打开导出抽屉将按此分组预填。\n不会改动其它型号或分类规则。');
     }
 
     function onExportRowCheck(idx, checked) {
@@ -1158,15 +1074,72 @@
         var el = document.querySelector('.export-row-check[data-idx="' + i + '"]');
         if (el && !el.disabled) el.checked = checked;
       });
+      document.querySelectorAll('.export-card-check').forEach(function (el) {
+        if (!el.disabled) el.checked = checked;
+      });
+    }
+
+    function toggleGroupCheck(sampleId, groupIndex, checked) {
+      filesForGroup(sampleId, groupIndex).forEach(function (file) {
+        if (file.status !== 'ready') return;
+        file.checked = checked;
+      });
+      var readyFiles = exportPreviewFiles.filter(function (f) { return f.status === 'ready'; });
+      document.getElementById('exportCheckAll').checked = readyFiles.length > 0 && readyFiles.every(function (f) { return f.checked; });
+    }
+
+    function normalizeRecordTestName(name) {
+      var s = String(name || '').replace(/试验$/g, '');
+      if (s.indexOf('外观') >= 0) return '外观尺寸';
+      return s;
+    }
+
+    function previewToRecordPayload(file) {
+      var tests = (file.tests || []).map(function (t) { return normalizeRecordTestName(t.name); });
+      var specIds = file.specimenId
+        ? [file.specimenId]
+        : (window.OriginalRecordVersion ? OriginalRecordVersion.load().liveSpecimenIds.slice() : []);
+      return {
+        specimenIds: specIds,
+        testNames: tests,
+        modeKey: file.modeKey || 'model-each',
+        fileName: file.fileName
+      };
+    }
+
+    function simulateRecordInvalidate() {
+      if (!window.OriginalRecordVersion) return;
+      var n = OriginalRecordVersion.invalidateByCoverage({
+        specimenIds: [OriginalRecordVersion.SPEC_A],
+        testNames: ['交流耐压'],
+        reason: OriginalRecordVersion.formatChangeNote('retest')
+      });
+      var go = confirm((n ? ('已立刻将 ' + n + ' 份原始记录单标为已失效。') : '没有仍有效且覆盖该范围的记录单。') +
+        '\n\n是否打开原始记录页查看？');
+      if (go) location.href = 'test-record.html';
     }
 
     function exportPreviewRow(idx) {
       var file = exportPreviewFiles[idx];
       if (!file || file.status !== 'ready') return;
       var tests = file.tests.map(function (t) { return t.name; }).join('、');
+      if (window.OriginalRecordVersion) OriginalRecordVersion.exportFile(previewToRecordPayload(file));
       alert('导出记录单（原型演示）\n文件：' + file.fileName +
         '\n生成模式：' + RecordExport.modeLabel(file.modeKey) +
         '\n包含试验项：' + tests);
+    }
+
+    function exportGroupFiles(sampleId, groupIndex) {
+      var files = filesForGroup(sampleId, groupIndex).filter(function (f) { return f.status === 'ready'; });
+      if (!files.length) {
+        alert('该文件暂不可导出，请先点亮试验项，并完成试验、配置模版后再试');
+        return;
+      }
+      if (window.OriginalRecordVersion) {
+        files.forEach(function (f) { OriginalRecordVersion.exportFile(previewToRecordPayload(f)); });
+      }
+      alert('导出记录单（原型演示）\n共 ' + files.length + ' 个文件：\n' +
+        files.map(function (f) { return f.fileName; }).join('\n'));
     }
 
     function batchExportRecords() {
@@ -1175,14 +1148,19 @@
       });
       if (!selected.length) {
         var anyReady = exportPreviewFiles.some(function (f) { return f.status === 'ready'; });
-        alert(anyReady ? '请至少勾选一条可导出的文件' : '当前没有可导出的文件，请完成试验或配置模版后再试');
+        alert(anyReady ? '请至少勾选一条可导出的文件' : '当前没有可导出的文件，请先点亮试验项');
         return;
+      }
+      if (window.OriginalRecordVersion) {
+        selected.forEach(function (f) { OriginalRecordVersion.exportFile(previewToRecordPayload(f)); });
       }
       alert('批量导出（原型演示）\n共 ' + selected.length + ' 个文件：\n' +
         selected.map(function (f) { return f.fileName; }).join('\n'));
     }
 
     function openExportDrawer() {
+      DEMO_RECORD_RULES = RecordExport.loadRules();
+      exportSession = {};
       renderExportPreview();
       document.getElementById('exportDrawerMask').classList.add('open');
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
@@ -1193,9 +1171,59 @@
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
+    function bindExportBoardEvents() {
+      if (exportBoardBound) return;
+      exportBoardBound = true;
+      var root = document.getElementById('exportPreviewGroups');
+
+      root.addEventListener('change', function (e) {
+        var t = e.target;
+        if (t.classList.contains('export-mode-select')) {
+          onExportModeChange(t.getAttribute('data-sample'), t.value);
+          return;
+        }
+        if (t.classList.contains('export-row-check')) {
+          onExportRowCheck(Number(t.getAttribute('data-idx')), t.checked);
+          return;
+        }
+        if (t.classList.contains('export-card-check')) {
+          toggleGroupCheck(t.getAttribute('data-sample'), Number(t.getAttribute('data-group')), t.checked);
+        }
+      });
+
+      root.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-action]');
+        if (btn) {
+          var action = btn.getAttribute('data-action');
+          var sampleId = btn.getAttribute('data-sample');
+          var group = Number(btn.getAttribute('data-group'));
+          if (action === 'save-default') saveSampleDefault(sampleId);
+          if (action === 'add-card') {
+            exportSession[sampleId].testGroups.push([]);
+            markSessionDirty(sampleId);
+            renderExportPreview();
+          }
+          if (action === 'remove-card') {
+            exportSession[sampleId].testGroups.splice(group, 1);
+            if (!exportSession[sampleId].testGroups.length) exportSession[sampleId].testGroups = [[]];
+            markSessionDirty(sampleId);
+            renderExportPreview();
+          }
+          if (action === 'export-group') exportGroupFiles(sampleId, group);
+          if (action === 'toggle-test') {
+            toggleTestOnBar(sampleId, group, btn.getAttribute('data-test'));
+          }
+          return;
+        }
+        var op = e.target.closest('.export-op-btn[data-idx]');
+        if (op && !op.disabled) exportPreviewRow(Number(op.getAttribute('data-idx')));
+      });
+    }
+
     document.getElementById('exportDrawerMask').addEventListener('click', function (e) {
       if (e.target === this) closeExportDrawer();
     });
+    bindExportBoardEvents();
 
     renderTabs();
     renderPanels();
@@ -1208,8 +1236,17 @@
           position: 'top-left',
           title: '导出管理入口',
           wide: true,
-          content: '打开「记录单导出详情」抽屉。导出切分规则由「业务流程配置 › 记录单设置」决定，操作员在此仅预览文件并确认导出，不可更改生成策略。',
+          content: '<strong>需求逻辑：</strong>打开「记录单导出详情」抽屉。默认切分来自「业务流程配置 › 记录单设置」。检测员临时改生成模式只影响本次/保存后的默认切分，<strong>不打</strong>已导出记录单失效。<br><strong>展示规则：</strong>可改生成模式、点亮试验项分组。<br><strong>交互逻辑：</strong>「保存为该样品默认」只写该样品名称/型号。导出成功才冻 usedFields 到 snapshot。',
           tag: '记录单导出'
+        },
+        {
+          id: 'or-sim-retest',
+          selector: '[data-annotate="or-sim-retest"]',
+          position: 'bottom-left',
+          title: '退回-更改检测结果',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>试验检测改数属于标准流程外的「退回-更改检测结果」。按文件身份覆盖范围立刻打失效，<strong>不查</strong>占位符清单。标准流程内首次回填核校人走 03-05 升版，不打失效。<br><strong>展示规则：</strong>提示条说明改数会立刻失效；历史说明记为「退回-更改检测结果」。<br><strong>交互逻辑：</strong>本按钮为原型模拟：立刻给覆盖「交流耐压」的当前有效记录单打标，可跳转原始记录页查看。数据改回不自动摘标。',
+          tag: '原始记录'
         },
         {
           id: 'export-drawer',
@@ -1217,7 +1254,7 @@
           position: 'top-left',
           title: '记录单导出详情',
           wide: true,
-          content: '按<strong>生成模式</strong>分组、同模式下按<strong>样品名称(型号)</strong>分块展示将导出的文件列表。打开时自动根据当前委托数据与模版配置计算预览与状态。',
+          content: '默认切分来自记录单设置。检测员可改模式、点亮试验项分组，并可保存为该样品名称(型号)的默认。切到「多试验项」时每条文件展示全部试验项；点亮后才可导出。',
           tag: '记录单导出'
         },
         {
@@ -1226,7 +1263,7 @@
           position: 'top-right',
           title: '按生成模式分组',
           wide: true,
-          content: '每个折叠区块对应一种「记录单设置」中的生成模式（如单种样品所有试验生成一份、单个试样单种试验生成一份等）。标题右侧显示该模式下样品数与文件数。不同模式之间以区块区分。',
+          content: '每个样品一块。可切换生成模式（含两种「多试验项」）。从其它模式切到「多试验项」时重置为一条文件，条上展示该样品全部试验项（灰=未点亮，绿=已纳入）。其它模式仍用文件表格。',
           tag: '记录单导出'
         },
         {
@@ -1235,7 +1272,7 @@
           position: 'top-right',
           title: '按样品分块',
           wide: true,
-          content: '同一生成模式内，不同样品名称(型号)各自成块。块内表格列出该样品在此模式下将生成的全部文件。',
+          content: '按样品展示将导出的文件。多试验项模式每条文件展示该样品全部试验项，点亮后纳入该文件；同一试验项可被多条文件同时点亮。未在任一文件点亮的项本次不导出。',
           tag: '记录单导出'
         },
         {
@@ -1262,7 +1299,7 @@
           position: 'top-right',
           title: '包含试验项',
           wide: true,
-          content: '只读展示写入该文件的试验项。合并模式列出全部试验项，未完成项标灰；切分模式仅展示对应单项。操作员不可勾选或删减。',
+          content: '多试验项模式下，每条文件展示该样品全部试验项。灰=未纳入本文件，绿=已点亮纳入。点击只改变本文件，同一试验项可被多条文件同时点亮并分别导出。未在任一文件点亮的项本次不导出。',
           tag: '记录单导出'
         },
         {
@@ -1271,7 +1308,7 @@
           position: 'top-right',
           title: '导出状态',
           wide: true,
-          content: '三种状态：<strong>就绪</strong>（可导出）、<strong>试验未完成</strong>（合并模式须全部试验项完成后才可导出）、<strong>缺模版</strong>（请在「模板管理 › 记录单模版」配置）。非就绪行禁用勾选与单行导出。',
+          content: '<strong>需求逻辑：</strong>导出成功才写入当前版，并把当时模版 usedFields（多模版拼接取并集）冻进 snapshot；换模版 / 改生成模式不打已导出文件失效。<br><strong>展示规则：</strong>三种状态：<strong>就绪</strong>、<strong>试验未完成</strong>、<strong>缺模版</strong>。多试验项就绪判定：①有组合模版则用组合模版；②否则勾选的每一项都必须有单试验项模版。缺模版原因：「组合模版和所选试验项单模版均缺少」或「缺少组合模版或xx试验项单模版」。第二行可提示将生成新版本 / 重新生成并解除失效 / 将生成新文件。<br><strong>交互逻辑：</strong>非就绪行禁用勾选与单行导出。重新生成同样走此校验。',
           tag: '记录单导出'
         },
         {
@@ -1279,7 +1316,8 @@
           selector: '[data-annotate="export-row-op"]',
           position: 'top-right',
           title: '单行导出',
-          content: '就绪状态下可导出单个文件。合并模式导出时系统自动拉取各试验项启用模版动态拼接。',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>导出时复制当时启用模版的 usedFields 到该次 snapshot；合并/拼接多模版取并集。<br><strong>展示规则：</strong>仅就绪行可点导出。<br><strong>交互逻辑：</strong>合并模式自动拉取各试验项启用模版动态拼接。同身份升主版本；已失效同身份则重新生成并摘标。',
           tag: '记录单导出'
         },
         {
@@ -1305,7 +1343,33 @@
           position: 'top-left',
           title: '批量导出',
           wide: true,
-          content: '导出所有已勾选且就绪的文件；跳过未就绪行。若当前无可导出文件则提示完成试验或配置模版。',
+          content: '<strong>需求逻辑：</strong>每份导出各自冻一份 snapshot（usedFields 并集 + 字段值）。<br><strong>展示规则：</strong>导出所有已勾选且就绪的文件；跳过未就绪行。<br><strong>交互逻辑：</strong>若当前无可导出文件则提示先点亮试验项。同身份升主版本；已失效同身份则重新生成并摘标。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-board',
+          selector: '[data-annotate="export-board"]',
+          position: 'top-right',
+          title: '文件条 · 点亮试验项',
+          wide: true,
+          content: '多试验项模式：从其它模式切过来时默认一条文件，条上列出该样品全部试验项（灰未点亮 / 绿已纳入）。需要拆成多份时点「添加文件」；同一试验项可在多条上同时点亮，会分别写入各文件。至少点亮一项、试验完成、且模版判定就绪后，右侧导出按钮才高亮。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-file-card',
+          selector: '[data-annotate="export-file-card"]',
+          position: 'top-right',
+          title: '文件条',
+          wide: true,
+          content: '一条对应一份 Word，始终展示该样品全部试验项。点亮项写入该文件。就绪判定：有组合模版则用组合模版；否则勾选的每一项都要有单试验项模版。缺模版时状态下方展示「组合模版和所选试验项单模版均缺少」或「缺少组合模版或xx试验项单模版」。可勾选后批量导出。',
+          tag: '记录单导出'
+        },
+        {
+          id: 'export-add-card',
+          selector: '[data-annotate="export-add-card"]',
+          position: 'top-left',
+          title: '添加文件',
+          content: '新增一条空白文件。新条同样展示该样品全部试验项，点亮即可纳入第二份记录单；已在其它条点亮的项仍可再次点亮，会同时写入两份文件。',
           tag: '记录单导出'
         }
       ]

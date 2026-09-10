@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>标准文件详情</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-700">
+  <div class="mx-auto max-w-xl p-4 pt-6">
+    <div class="overflow-hidden rounded-xl bg-white shadow-lg">
+      <div class="bg-blue-600 px-5 py-4 text-white">
+        <a id="backLink" href="report-verify.html" class="mb-2 inline-flex items-center gap-1 text-xs text-blue-100 hover:text-white">
+          <i class="fa fa-angle-left"></i> 返回溯源页
+        </a>
+        <h1 class="text-lg font-semibold">标准文件详情</h1>
+        <p id="topSub" class="mt-1 text-xs text-blue-100">公开只读 · 与本报告引用标准一致</p>
+      </div>
+      <div id="body" class="px-5 py-5"></div>
+    </div>
+  </div>
+
+  <script src="js/report-trace.js"></script>
+  <script src="js/report-trace-l1.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var stdCode = params.get('std') || '';
+      var code = params.get('code') || '';
+      if (code) document.getElementById('backLink').href = 'report-verify.html?code=' + encodeURIComponent(code);
+      var body = document.getElementById('body');
+      function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+      if (!stdCode) { body.innerHTML = '<p class="text-sm text-slate-500">未指定标准编号。</p>'; return; }
+
+      var doc = ReportTrace.getStdDoc(stdCode);
+      document.title = (doc.fullCode || doc.code) + ' · 标准文件详情';
+      document.getElementById('topSub').textContent = (doc.fullCode || doc.code) + '　·　' + (doc.status || '现行');
+
+      var statusMap = { '现行': 'bg-emerald-50 text-emerald-600', '作废': 'bg-rose-50 text-rose-600', '未生效': 'bg-amber-50 text-amber-600' };
+      var statusCls = statusMap[doc.status] || 'bg-emerald-50 text-emerald-600';
+
+      function row(k, v) {
+        return '<div class="flex border-b border-slate-100 py-2 last:border-0">' +
+          '<span class="w-28 flex-shrink-0 text-slate-500">' + k + '</span>' +
+          '<span class="flex-1 text-slate-800">' + (v || '—') + '</span></div>';
+      }
+
+      var viewHref = 'std-view.html?std=' + encodeURIComponent(stdCode) + (code ? '&code=' + encodeURIComponent(code) : '');
+      var onlineBtn = doc.onlineUrl
+        ? '<a href="' + esc(doc.onlineUrl) + '" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-blue-600 hover:underline">官方标准库 <i class="fa fa-external-link text-[11px]"></i></a>'
+        : '<span class="text-slate-400">—</span>';
+
+      body.innerHTML =
+        '<div class="rounded-lg border border-slate-200 p-4">' +
+          '<div class="flex items-start justify-between gap-2">' +
+            '<div>' +
+              '<p class="text-base font-semibold text-slate-800">' + esc(doc.name) + '</p>' +
+              (doc.enName ? '<p class="mt-0.5 text-xs italic text-slate-400">' + esc(doc.enName) + '</p>' : '') +
+            '</div>' +
+            '<span class="flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ' + statusCls + '">' + esc(doc.status || '现行') + '</span>' +
+          '</div>' +
+          '<div class="mt-3 text-[13px]">' +
+            row('标准号', '<span class="font-medium text-red-700">' + esc(doc.fullCode || doc.code) + '</span>') +
+            row('文件名称', esc(doc.name)) +
+            row('发布单位 / 类别', esc(doc.category || doc.publisher)) +
+            row('发布日期', esc(doc.publishDate)) +
+            row('实施日期', esc(doc.implementDate)) +
+            row('截止日期', esc(doc.expireDate || '长期有效')) +
+            row('ICS 分类号', esc(doc.ics)) +
+            row('在线阅览', onlineBtn) +
+          '</div>' +
+        '</div>' +
+        '<a href="' + viewHref + '" class="mt-4 flex items-center justify-center gap-2 rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700">' +
+          '<i class="fa fa-book"></i> 标准在线阅览（本报告引用条款）' +
+        '</a>' +
+        '<p class="mt-3 text-center text-[11px] text-slate-400">公开页只读展示签发时冻结的标准信息；在线阅览为标准条款公开摘录。</p>';
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>修改留痕</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    .meta-grid { display: grid; grid-template-columns: 88px 1fr; gap: 6px 8px; font-size: 12px; }
+    .meta-grid .k { color: #64748b; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-700">
+  <div class="mx-auto max-w-xl p-4 pt-6">
+    <div class="overflow-hidden rounded-xl bg-white shadow-lg">
+      <div class="bg-blue-600 px-5 py-4 text-white">
+        <a id="backLink" href="report-verify.html" class="mb-2 inline-flex items-center gap-1 text-xs text-blue-100 hover:text-white">
+          <i class="fa fa-angle-left"></i> 返回溯源页
+        </a>
+        <h1 class="text-lg font-semibold">修改留痕</h1>
+        <p id="topSub" class="mt-1 text-xs text-blue-100">公开只读 · 签发时冻结的字段修改与审批记录</p>
+      </div>
+      <div id="body" class="px-5 py-5"></div>
+    </div>
+  </div>
+
+  <script src="js/report-trace.js"></script>
+  <script src="js/report-trace-l1.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var code = params.get('code') || '';
+      if (code) document.getElementById('backLink').href = 'report-verify.html?code=' + encodeURIComponent(code);
+
+      var res = code ? ReportTrace.getVerify(code) : { ok: false };
+      var reportNo = (res.ok && res.entry) ? res.entry.reportNo : params.get('report');
+      var logs = ReportTrace.getChangeLog(reportNo);
+      var body = document.getElementById('body');
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      if (!res.ok || !logs.length) {
+        body.innerHTML = '<p class="text-sm text-slate-500">本报告无修改留痕，或溯源码无效。</p>';
+        return;
+      }
+
+      document.getElementById('topSub').textContent = (res.view && res.view.reportNo ? res.view.reportNo + '　·　' : '') + logs.length + ' 条';
+
+      body.innerHTML = logs.map(function (l, i) {
+        return '<article class="mb-3 rounded-lg border border-slate-200 p-4 last:mb-0">' +
+          '<p class="mb-3 text-xs font-medium text-slate-500">记录 ' + (i + 1) + '</p>' +
+          '<div class="meta-grid">' +
+            '<span class="k">试验项</span><span>' + esc(l.testName) + '</span>' +
+            '<span class="k">试样编号</span><span>' + esc(l.specimenNo) + '</span>' +
+            '<span class="k">字段</span><span>' + esc(l.field) + '</span>' +
+            '<span class="k">修改前</span><span>' + esc(l.before) + '</span>' +
+            '<span class="k">修改后</span><span class="font-medium text-slate-900">' + esc(l.after) + '</span>' +
+            '<span class="k">修改人</span><span>' + esc(l.who) + '　' + esc(l.at) + '</span>' +
+            '<span class="k">修改原因</span><span>' + esc(l.reason) + '</span>' +
+            '<span class="k">审批人</span><span>' + esc(l.approver) + '　' + esc(l.approvedAt) + '</span>' +
+          '</div>' +
+        '</article>';
+      }).join('') +
+        '<p class="mt-3 text-center text-[11px] text-slate-400">公开页只读展示签发时冻结的修改与审批记录，不可编辑。</p>';
+    })();
+  </script>
+</body>
+</html>

@@ -38,7 +38,7 @@
 
   function detectFocusScope() {
     // 取最后一个匹配：嵌套弹窗（如关联试验内的同步、履历内的表单）通常后挂载且 z-index 更高
-    var openModals = document.querySelectorAll('.modal-mask.open, .lc-modal-mask.open, .po-mask.open, .drawer-mask.open, .bind-popover-mask.open, #numberingModal.flex');
+    var openModals = document.querySelectorAll('.modal-mask.open, .lc-modal-mask.open, .po-mask.open, .drawer-mask.open, .drawer.open, .bind-popover-mask.open, #numberingModal.flex, #addModal.flex, #copyModal.flex');
     if (!openModals.length) return null;
     return openModals[openModals.length - 1];
   }

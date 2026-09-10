@@ -12,17 +12,30 @@
     { label: '平台管理', href: '#', demo: true }
   ];
 
+  function rootPrefix() {
+    var raw = (document.body && document.body.dataset.testosRoot) || '';
+    if (!raw) return '';
+    return raw.slice(-1) === '/' ? raw : raw + '/';
+  }
+
+  function withRoot(href) {
+    if (!href || href === '#' || /^(https?:|mailto:|javascript:)/i.test(href)) return href;
+    if (href.charAt(0) === '/') return href;
+    return rootPrefix() + href;
+  }
+
   function renderHeader(container) {
     if (!container) return;
+    var homeHref = withRoot('testos.html');
 
     container.innerHTML =
       '<header class="flex h-14 flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">' +
         '<div class="flex items-center gap-3">' +
-          '<div class="flex items-center gap-1.5">' +
+          '<a href="' + homeHref + '" class="flex items-center gap-1.5">' +
             '<span class="text-xl font-bold tracking-tight">' +
               '<span class="text-blue-600">Test</span><span class="text-slate-800">OS</span>' +
             '</span>' +
-          '</div>' +
+          '</a>' +
           '<span class="text-xs text-slate-400">版本号：V2.0.0</span>' +
         '</div>' +
         '<div class="flex items-center gap-4">' +
@@ -36,7 +49,7 @@
             '<div id="testosSettingsMenu" class="absolute right-0 top-full z-50 mt-2 hidden w-36 rounded-md border border-slate-100 bg-white py-1 shadow-lg">' +
               '<div class="absolute -top-1.5 right-3 h-3 w-3 rotate-45 border-l border-t border-slate-100 bg-white"></div>' +
               SETTINGS_ITEMS.map(function (item) {
-                return '<a href="' + item.href + '"' +
+                return '<a href="' + withRoot(item.href) + '"' +
                   (item.demo ? ' onclick="event.preventDefault();alert(\'原型演示：' + item.label + '\')"' : '') +
                   ' class="block px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600">' +
                   item.label + '</a>';

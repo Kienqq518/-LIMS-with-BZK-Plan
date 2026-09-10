@@ -25,12 +25,13 @@
     <!-- 搜索区 -->
     <div class="rounded bg-white p-4 shadow-sm">
       <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-3">
+        <div class="flex items-center gap-2" data-annotate="filter-major-cat"><label class="w-24 text-right text-sm text-slate-600">样品大类</label><select id="filterCat" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"><option value="">全部大类</option></select></div>
         <div class="flex items-center gap-2"><label class="w-24 text-right text-sm text-slate-600">委托编号</label><input type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
         <div class="flex items-center gap-2"><label class="w-24 text-right text-sm text-slate-600">合同编号</label><input type="text" placeholder="请输入合同编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
         <div class="flex items-center gap-2"><label class="w-24 text-right text-sm text-slate-600">样品名称</label><input type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
         <div class="flex items-center gap-2"><label class="w-24 text-right text-sm text-slate-600">客户单位</label><input type="text" placeholder="请输入委托单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div>
         <div class="flex items-center gap-2"><label class="w-24 text-right text-sm text-slate-600">委托受理日期</label><div class="relative flex-1"><input type="text" placeholder="开始日期 ~ 结束日期" class="w-full rounded border border-slate-300 px-3 py-1.5 pr-8 text-sm outline-none focus:border-blue-500" /><i class="fa fa-calendar-o absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"></i></div></div>
-        <div class="flex items-center justify-end gap-2">
+        <div class="flex items-center justify-end gap-2 md:col-span-2 xl:col-span-3">
           <button class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
           <button class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
         </div>
@@ -47,6 +48,7 @@
           <thead><tr class="bg-slate-100 text-slate-600">
             <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
             <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">样品大类</th>
             <th class="border border-slate-200 px-3 py-2 font-medium">是否关联框架合同</th>
             <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
             <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
@@ -68,7 +70,7 @@
     </div>
   </div>
 
-  <!-- 新增任务弹窗 - 步骤1：选择新增方式 -->
+  <!-- 新增任务弹窗 - 步骤1：先选样品大类，再选新增方式 -->
   <div id="addModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40">
     <div class="w-[480px] max-w-[92vw] rounded-lg bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
@@ -76,19 +78,28 @@
         <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="px-6 py-6">
-        <p class="mb-4 text-sm text-slate-600">请选择新增方式</p>
-        <label class="mb-3 flex cursor-pointer items-start gap-3 rounded border border-blue-200 bg-blue-50 p-4">
-          <input type="radio" name="addMode" value="manual" checked class="mt-1" />
-          <div><div class="text-sm font-medium text-slate-800">手动创建</div><div class="text-xs text-slate-500">手动录入数据</div></div>
-        </label>
-        <label class="flex cursor-pointer items-start gap-3 rounded border border-slate-200 p-4 hover:bg-slate-50">
-          <input type="radio" name="addMode" value="copy" class="mt-1" />
-          <div><div class="text-sm font-medium text-slate-800">复制任务</div><div class="text-xs text-slate-500">从现有任务中复制数据，复制后可修改</div></div>
-        </label>
+        <div class="mb-5" data-annotate="add-major-cat">
+          <label class="mb-2 block text-sm text-slate-600"><span class="text-red-500">*</span> 样品大类</label>
+          <select id="addCatSelect" onchange="onAddCatChange()" class="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500">
+            <option value="">请选择样品大类</option>
+          </select>
+          <p id="addCatHint" class="mt-2 hidden text-xs leading-5 text-slate-500"></p>
+        </div>
+        <p class="mb-3 text-sm text-slate-600">请选择新增方式</p>
+        <div data-annotate="add-mode">
+          <label id="modeManual" class="mb-3 flex cursor-pointer items-start gap-3 rounded border border-blue-200 bg-blue-50 p-4">
+            <input type="radio" name="addMode" value="manual" checked class="mt-1" onchange="syncAddModeStyle()" />
+            <div><div class="text-sm font-medium text-slate-800">手动创建</div><div class="text-xs text-slate-500">手动录入数据</div></div>
+          </label>
+          <label id="modeCopy" class="flex cursor-pointer items-start gap-3 rounded border border-slate-200 p-4 hover:bg-slate-50">
+            <input type="radio" name="addMode" value="copy" class="mt-1" onchange="syncAddModeStyle()" />
+            <div><div class="text-sm font-medium text-slate-800">复制任务</div><div class="text-xs text-slate-500">从现有任务中复制数据，复制后可修改</div></div>
+          </label>
+        </div>
       </div>
       <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
         <button onclick="closeAddModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
-        <button id="addNextBtn" onclick="handleAddNext()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+        <button id="addNextBtn" data-annotate="add-confirm" onclick="handleAddNext()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
       </div>
     </div>
   </div>
@@ -103,7 +114,7 @@
       <div class="px-6 py-6">
         <div class="flex items-center gap-3">
           <label class="whitespace-nowrap text-sm text-slate-600"><span class="text-red-500">*</span> 委托编号：</label>
-          <select id="copySelect" class="flex-1 rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500">
+          <select id="copySelect" data-annotate="copy-select" class="flex-1 rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500">
             <option value="">请选择要复制的任务</option>
           </select>
         </div>
@@ -116,32 +127,44 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
   <script>
-    // 委托登记列表 Mock 数据
+    // 与编号规则 / 模板管理一致的四大类
+    var MAJOR_CATS = [
+      { key: 'dlwz', name: '电力物资类', nextCode: 'SC2026/0210', ruleHint: 'SC + 年4位 + / + 自增4位' },
+      { key: 'aqgqj', name: '安全工器具类', nextCode: 'AQJYST-260013', ruleHint: 'AQ + 分类编号 + - + 年2位 + 自增4位' },
+      { key: 'hjjc', name: '环境检测', nextCode: 'SC2026/0006', ruleHint: 'SC + 年4位 + / + 自增4位' },
+      { key: 'gcjc', name: '工程检测', nextCode: 'SC2026/0010', ruleHint: 'SC + 年4位 + / + 自增4位' }
+    ];
+
+    function catByKey(key) {
+      return MAJOR_CATS.filter(function (c) { return c.key === key; })[0];
+    }
+
     var registerData = [
-      { code: 'SC2026/0209', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV·3芯、实壁类塑料电缆导管_直管', date: '2026-06-25', editor: 'admin', salesman: '业务员A' },
-      { code: 'SC2026/0208', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV·3芯', date: '2026-06-15', editor: 'admin', salesman: '梁倩' },
-      { code: 'SC2026/0207', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV·3芯', date: '2026-06-11', editor: 'admin', salesman: '梁倩' },
-      { code: 'SC2026/0206', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV·3芯', date: '2026-06-16', editor: 'admin', salesman: '业务员A' },
-      { code: 'SC2026/0205', contract: '/', customer: '东莞西洁有限公司', sample: '复合硅酸盐水泥', date: '2026-06-11', editor: 'admin', salesman: '梁倩' }
+      { code: 'SC2026/0209', cat: 'dlwz', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV·3芯、实壁类塑料电缆导管_直管', date: '2026-06-25', editor: 'admin', salesman: '业务员A' },
+      { code: 'SC2026/0208', cat: 'dlwz', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '8.7/10kV·3芯', date: '2026-06-15', editor: 'admin', salesman: '梁倩' },
+      { code: 'AQJYST-260012', cat: 'aqgqj', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', date: '2026-06-11', editor: 'admin', salesman: '梁倩' },
+      { code: 'SC2026/0005', cat: 'hjjc', contract: '/', customer: '宇宙设想有限公司', sample: '水质检测', date: '2026-06-16', editor: 'admin', salesman: '业务员A' },
+      { code: 'SC2026/0205', cat: 'gcjc', contract: '/', customer: '东莞西洁有限公司', sample: '复合硅酸盐水泥', date: '2026-06-11', editor: 'admin', salesman: '梁倩' }
     ];
 
-    // 可复制任务列表
-    var copyOptions = [
-      'SC2026/0212-杭州数蚕智能科技有限公司',
-      'SC2026/0211-杭州数蚕智能科技有限公司',
-      'SC2026/0210-杭州数蚕智能科技有限公司',
-      'SC2026/0209',
-      'SC2026/0205-东莞西洁有限公司',
-      'SC2026/0188-宇宙设想有限公司'
+    var copyTasks = [
+      { code: 'SC2026/0212', label: 'SC2026/0212-杭州数蚕智能科技有限公司', cat: 'dlwz' },
+      { code: 'SC2026/0211', label: 'SC2026/0211-杭州数蚕智能科技有限公司', cat: 'dlwz' },
+      { code: 'SC2026/0209', label: 'SC2026/0209', cat: 'dlwz' },
+      { code: 'AQJYST-260012', label: 'AQJYST-260012-杭州数蚕智能科技有限公司', cat: 'aqgqj' },
+      { code: 'SC2026/0005', label: 'SC2026/0005-宇宙设想有限公司', cat: 'hjjc' },
+      { code: 'SC2026/0205', label: 'SC2026/0205-东莞西洁有限公司', cat: 'gcjc' }
     ];
 
-    // 渲染登记列表
-    (function renderTable() {
+    function renderTable() {
       document.getElementById('registerTableBody').innerHTML = registerData.map(function (item, i) {
+        var cat = catByKey(item.cat);
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-create.html?mode=edit&code=' + item.code + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-create.html?mode=edit&amp;code=' + encodeURIComponent(item.code) + '&amp;cat=' + item.cat + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (cat ? cat.name : '') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
@@ -149,61 +172,168 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.salesman + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
-            '<a href="entrust-create.html?mode=edit&code=' + item.code + '" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</a>' +
+            '<a href="entrust-create.html?mode=edit&amp;code=' + encodeURIComponent(item.code) + '&amp;cat=' + item.cat + '" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</a>' +
             '<button class="ml-3 text-red-500 hover:underline"><i class="fa fa-trash-o"></i> 删除</button>' +
           '</td></tr>';
       }).join('');
-    })();
+    }
 
-    // 填充复制任务下拉选项
-    (function initCopySelect() {
+    function fillCatSelects() {
+      var addSel = document.getElementById('addCatSelect');
+      var filterSel = document.getElementById('filterCat');
+      MAJOR_CATS.forEach(function (c) {
+        var o1 = document.createElement('option');
+        o1.value = c.key;
+        o1.textContent = c.name;
+        addSel.appendChild(o1);
+        var o2 = document.createElement('option');
+        o2.value = c.key;
+        o2.textContent = c.name;
+        filterSel.appendChild(o2);
+      });
+    }
+
+    function fillCopySelect(catKey) {
       var sel = document.getElementById('copySelect');
-      copyOptions.forEach(function (opt) {
+      sel.innerHTML = '<option value="">请选择要复制的任务</option>';
+      copyTasks.filter(function (t) { return t.cat === catKey; }).forEach(function (t) {
         var o = document.createElement('option');
-        o.value = opt.split('-')[0];
-        o.textContent = opt;
+        o.value = t.code;
+        o.textContent = t.label;
         sel.appendChild(o);
       });
-    })();
+    }
 
-    // 弹窗显示/隐藏
-    function show(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
-    function hide(id) { var m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+    function show(id) {
+      var m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) {
+        requestAnimationFrame(function () { PrototypeAnnotation.refresh(); });
+      }
+    }
+    function hide(id) {
+      var m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
 
-    // 打开新增弹窗
-    function openAddModal() { show('addModal'); }
+    function syncAddModeStyle() {
+      var mode = document.querySelector('input[name="addMode"]:checked').value;
+      var on = 'flex cursor-pointer items-start gap-3 rounded border border-blue-200 bg-blue-50 p-4';
+      var off = 'flex cursor-pointer items-start gap-3 rounded border border-slate-200 p-4 hover:bg-slate-50';
+      document.getElementById('modeManual').className = (mode === 'manual' ? on : off) + ' mb-3';
+      document.getElementById('modeCopy').className = mode === 'copy' ? on : off;
+    }
+
+    function onAddCatChange() {
+      var cat = catByKey(document.getElementById('addCatSelect').value);
+      var hint = document.getElementById('addCatHint');
+      if (!cat) {
+        hint.classList.add('hidden');
+        hint.innerHTML = '';
+        return;
+      }
+      hint.classList.remove('hidden');
+      hint.innerHTML = '已加载「' + cat.name + '」委托编号规则（' + cat.ruleHint + '）。确定后按该规则生成委托号：<span class="font-mono text-slate-700">' + cat.nextCode + '</span>';
+    }
+
+    function openAddModal() {
+      document.getElementById('addCatSelect').value = '';
+      onAddCatChange();
+      document.querySelector('input[name="addMode"][value="manual"]').checked = true;
+      syncAddModeStyle();
+      show('addModal');
+    }
     function closeAddModal() { hide('addModal'); }
     function closeCopyModal() { hide('copyModal'); }
 
-    // 步骤1：根据选择跳转手动创建或进入复制步骤
     function handleAddNext() {
+      var catKey = document.getElementById('addCatSelect').value;
+      if (!catKey) { alert('请先选择样品大类'); return; }
+      var cat = catByKey(catKey);
       var mode = document.querySelector('input[name="addMode"]:checked').value;
       closeAddModal();
       if (mode === 'manual') {
-        window.location.href = 'entrust-create.html?mode=manual';
+        window.location.href = 'entrust-create.html?mode=manual&cat=' + encodeURIComponent(cat.key) + '&code=' + encodeURIComponent(cat.nextCode);
       } else {
+        fillCopySelect(cat.key);
         show('copyModal');
       }
     }
 
-    // 复制步骤：返回上一步
     function backToAddModal() {
       closeCopyModal();
       show('addModal');
       document.querySelector('input[name="addMode"][value="copy"]').checked = true;
+      syncAddModeStyle();
     }
 
-    // 复制步骤：确认后跳转委托新增详情页（带复制来源参数）
     function confirmCopy() {
+      var catKey = document.getElementById('addCatSelect').value;
+      var cat = catByKey(catKey);
       var code = document.getElementById('copySelect').value;
       if (!code) { alert('请选择要复制的任务'); return; }
-      window.location.href = 'entrust-create.html?mode=copy&from=' + encodeURIComponent(code);
+      window.location.href = 'entrust-create.html?mode=copy&from=' + encodeURIComponent(code) + '&cat=' + encodeURIComponent(cat.key) + '&code=' + encodeURIComponent(cat.nextCode);
     }
 
     ['addModal', 'copyModal'].forEach(function (id) {
       document.getElementById(id).addEventListener('click', function (e) {
         if (e.target === this) hide(id);
       });
+    });
+
+    fillCatSelects();
+    renderTable();
+
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'filter-major-cat',
+          selector: '[data-annotate="filter-major-cat"]',
+          position: 'top-right',
+          title: '样品大类（筛选项）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>编号规则按样品大类分套。列表用大类作为首要筛选项，便于按电力物资 / 安全工器具 / 环境检测 / 工程检测查看已有委托。<br><strong>展示规则：</strong>筛选项在「委托编号」之前；选项与模板管理、编号规则 Tab 一致。默认「全部大类」。<br><strong>交互逻辑：</strong>查询按所选大类过滤列表。新增任务不走此筛选，必须在弹窗内重新选择大类。',
+          tag: '委托登记'
+        },
+        {
+          id: 'add-major-cat',
+          selector: '[data-annotate="add-major-cat"]',
+          position: 'top-right',
+          title: '样品大类（必填前置）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>委托登记时尚无样品，无法从样品反推大类，因而找不到对应编号规则。若业务要求委托号必须体现大类（领导看单号即可区分电力还是环境），必须在登记入口先选定大类。一个委托单只对应一个大类；同一单混入电力物资与环境检测时本方案不适用（业务上基本不会出现）。<br><strong>展示规则：</strong>「新增任务」弹窗内「样品大类」置于新增方式之上，红色 * 必填。选项：电力物资类 / 安全工器具类 / 环境检测 / 工程检测。选中后展示该大类规则摘要与即将生成的委托号。<br><strong>交互逻辑：</strong>未选大类点确定 → 提示「请先选择样品大类」。选定后系统加载该大类委托编号规则，再按新增方式进入手动创建或复制。后续添加的样品必须属于该大类，不可改大类（改号需作废重建）。',
+          tag: '新增任务'
+        },
+        {
+          id: 'add-mode',
+          selector: '[data-annotate="add-mode"]',
+          position: 'bottom-left',
+          title: '新增方式',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>大类决定编号规则；新增方式决定表单数据来源。两者解耦：先定大类，再选手动或复制。<br><strong>展示规则：</strong>手动创建 / 复制任务单选，选中项蓝底蓝框。<br><strong>交互逻辑：</strong>手动创建 → 进入空白委托编辑页，委托号按所选大类规则新生成。复制任务 → 进入下一步，仅列出同大类已有任务；复制字段可改，委托号仍按当前大类规则新生成，不沿用被复制单的旧号。',
+          tag: '新增任务'
+        },
+        {
+          id: 'add-confirm',
+          selector: '[data-annotate="add-confirm"]',
+          position: 'top-left',
+          title: '确定并生成委托号',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>用户必须先声明「我要做某大类检测」，系统才能加载对应编号规则并生成委托号。<br><strong>展示规则：</strong>主按钮「确定」。<br><strong>交互逻辑：</strong>校验大类已选 → 加载该大类规则 → 手动创建则带 cat / code 进入编辑页；复制则打开同大类任务选择。编辑页委托号只读，样品大类只读。',
+          tag: '新增任务'
+        },
+        {
+          id: 'copy-select',
+          selector: '[data-annotate="copy-select"]',
+          position: 'top-right',
+          title: '复制同源任务',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>复制只复用同大类任务的业务字段，避免把环境检测样品拷进电力物资委托。<br><strong>展示规则：</strong>下拉仅显示当前所选大类的已有任务。<br><strong>交互逻辑：</strong>未选任务点确定 → 提示选择。确认后进入编辑页：字段来自源任务，委托号按当前大类规则新生成。',
+          tag: '新增任务'
+        }
+      ]
     });
   </script>
 </body>

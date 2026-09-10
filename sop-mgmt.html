@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>作业指导书 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .std-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .std-table th, .std-table td { border-bottom: 1px solid #e5e7eb; padding: 10px 12px; text-align: left; vertical-align: middle; }
+    .std-table th { background: #f8fafc; color: #64748b; font-weight: 500; }
+    .std-table tbody tr:hover { background: #f8fafc; }
+    .tag-current { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #dcfce7; color: #15803d; font-size: 12px; }
+    .tag-void { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #fee2e2; color: #b91c1c; font-size: 12px; }
+    .tag-draft { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #fef3c7; color: #b45309; font-size: 12px; }
+    .modal-mask { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+    .edit-modal { width: 640px; max-width: 100%; max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 8px; }
+    .form-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; font-size: 13px; }
+    .form-row > label { width: 110px; flex-shrink: 0; padding-top: 7px; text-align: right; color: #64748b; }
+    .form-row > label .req { color: #ef4444; }
+    .form-row .ctrl { flex: 1; }
+    .form-row input, .form-row select, .form-row textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; outline: none; font-size: 13px; }
+    .form-section { border: 1px solid #e2e8f0; border-radius: 8px; padding: 0; margin: 18px 0 14px; background: #f8fafc; overflow: hidden; }
+    .form-section-title { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 14px; font-weight: 600; color: #1e293b; font-size: 13px; background: linear-gradient(90deg, #eff6ff 0%, #f8fafc 100%); border-bottom: 1px solid #e2e8f0; }
+    .form-section-title::before { content: ''; width: 3px; height: 14px; border-radius: 2px; background: #2563eb; flex-shrink: 0; }
+    .form-section-body { padding: 14px 14px 4px; background: #fff; }
+    .status-radio-group { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 2px; }
+    .status-radio { position: relative; display: inline-flex; align-items: center; gap: 8px; min-width: 96px; padding: 7px 14px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #64748b; font-size: 13px; cursor: pointer; transition: border-color .15s, background .15s, color .15s, box-shadow .15s; user-select: none; }
+    .status-radio:hover { border-color: #93c5fd; color: #334155; }
+    .status-radio input { position: absolute; opacity: 0; pointer-events: none; }
+    .status-radio .dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #94a3b8; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color .15s, background .15s; }
+    .status-radio .dot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: transparent; transition: background .15s; }
+    .status-radio:has(input:checked) { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; box-shadow: 0 0 0 1px rgba(37, 99, 235, .12); font-weight: 500; }
+    .status-radio:has(input:checked) .dot { border-color: #2563eb; }
+    .status-radio:has(input:checked) .dot::after { background: #2563eb; }
+    .upload-box { border: 2px dashed #cbd5e1; border-radius: 6px; padding: 24px; text-align: center; color: #94a3b8; font-size: 12px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      作业指导书
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-3">
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">文件名称</label><input id="qName" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none" placeholder="请输入文件名称" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">文件编号</label><input id="qCode" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none" placeholder="请输入文件编号" /></div>
+        <div class="flex items-center gap-2"><label class="w-28 text-right text-sm text-slate-600">状态</label><select id="qStatus" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none"><option value="">全部状态</option><option>受控现行</option><option>受控作废</option><option>草稿</option></select></div>
+        <div class="flex items-center gap-2 md:col-span-3 md:justify-end">
+          <button onclick="applyFilter()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+          <button onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="mb-3"><button onclick="openEditModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新增</button></div>
+      <div class="overflow-x-auto">
+        <table class="std-table min-w-[1080px]">
+          <thead>
+            <tr>
+              <th class="w-12">序号</th>
+              <th class="w-32">文件编号</th>
+              <th>文件名称</th>
+              <th class="w-16">版本</th>
+              <th class="w-24">状态</th>
+              <th class="w-36">引用标准</th>
+              <th class="w-24">归口部门</th>
+              <th class="w-28">实施日期</th>
+              <th class="w-28">上传时间</th>
+              <th class="w-32">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500"><span id="countText">共 0 条</span></div>
+    </div>
+  </div>
+
+  <!-- 编辑 / 新增 作业指导书 -->
+  <div id="editModal" class="modal-mask">
+    <div class="edit-modal shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3 sticky top-0 bg-white">
+        <h3 id="modalTitle" class="text-base font-medium">新增作业指导书</h3>
+        <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4">
+        <div class="form-row"><label><span class="req">*</span> 上传文件</label><div class="ctrl"><div class="upload-box"><i class="fa fa-folder-open-o text-2xl"></i><p class="mt-2">点击上传/拖拽到此区域，只能上传一个 PDF 文件，大小限制不超过 60M</p><p id="fileHint" class="mt-2 text-blue-600"></p></div></div></div>
+        <div class="form-row"><label><span class="req">*</span> 文件编号</label><div class="ctrl"><input id="fCode" placeholder="如 SOP-ROD-01" /></div></div>
+        <div class="form-row"><label><span class="req">*</span> 文件名称</label><div class="ctrl"><input id="fName" placeholder="请输入文件名称" /></div></div>
+        <div class="form-row"><label><span class="req">*</span> 版本号</label><div class="ctrl"><input id="fVersion" placeholder="如 A/1" /></div></div>
+        <div class="form-row">
+          <label><span class="req">*</span> 状态</label>
+          <div class="ctrl">
+            <div class="status-radio-group" role="radiogroup" aria-label="状态">
+              <label class="status-radio"><input type="radio" name="sopStatus" value="受控现行" checked /><span class="dot" aria-hidden="true"></span>受控现行</label>
+              <label class="status-radio"><input type="radio" name="sopStatus" value="受控作废" /><span class="dot" aria-hidden="true"></span>受控作废</label>
+              <label class="status-radio"><input type="radio" name="sopStatus" value="草稿" /><span class="dot" aria-hidden="true"></span>草稿</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-row"><label><span class="req">*</span> 排序</label><div class="ctrl"><input id="fSort" type="number" value="1" /></div></div>
+        <div class="form-section">
+          <div class="form-section-title">基本信息</div>
+          <div class="form-section-body">
+            <div class="form-row"><label>引用标准</label><div class="ctrl"><input id="fStd" placeholder="如 DL/T 878-2004" /></div></div>
+            <div class="form-row"><label>归口部门</label><div class="ctrl"><input id="fDept" placeholder="如 电气试验室" /></div></div>
+            <div class="form-row"><label>编制人</label><div class="ctrl"><input id="fAuthor" placeholder="请输入" /></div></div>
+            <div class="form-row"><label>批准人</label><div class="ctrl"><input id="fApprover" placeholder="请输入" /></div></div>
+            <div class="form-row"><label>实施日期</label><div class="ctrl"><input id="fEffective" placeholder="请选择日期，如 2026-02-10" /></div></div>
+            <div class="form-row"><label>复审日期</label><div class="ctrl"><input id="fReview" placeholder="请选择日期" /></div></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">关联关系</div>
+          <div class="form-section-body">
+            <div class="form-row"><label>关联样品分类</label><div class="ctrl"><input id="fSample" placeholder="如 绝缘操作杆" /></div></div>
+            <div class="form-row"><label>关联试验项</label><div class="ctrl"><input id="fTests" placeholder="如 外观及尺寸 / 交流耐压试验 / 抗弯负荷" /></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3 sticky bottom-0 bg-white">
+        <button onclick="closeEditModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm">取消</button>
+        <button onclick="saveModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">提交</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var sops = [
+      { id: 1, code: 'SOP-ROD-01', name: '绝缘操作杆型式试验作业指导书', version: 'A/1', status: '受控现行', std: 'DL/T 878-2004', dept: '电气试验室', author: '王芳', approver: '陈建国', effective: '2026-02-10', review: '2028-02-10', sample: '绝缘操作杆', tests: '外观及尺寸 / 交流耐压试验 / 抗弯动负荷 / 抗弯静负荷', file: 'SOP-ROD-01 绝缘操作杆型式试验作业指导书 A1.pdf', uploaded: '2026-02-10' },
+      { id: 2, code: 'SOP-GLV-03', name: '绝缘手套交流耐压作业指导书', version: 'A/1', status: '受控现行', std: 'GB/T 17622-2008', dept: '电气试验室', author: '李强', approver: '陈建国', effective: '2026-01-08', review: '2028-01-08', sample: '绝缘手套', tests: '交流耐压试验', file: 'SOP-GLV-03 绝缘手套交流耐压作业指导书 A1.pdf', uploaded: '2026-01-08' },
+      { id: 3, code: 'SOP-HV-01', name: '工频耐压作业指导书', version: 'A/2', status: '受控现行', std: 'GB/T 7113.2-2014', dept: '电气试验室', author: '周梅', approver: '陈建国', effective: '2025-11-20', review: '2027-11-20', sample: '绝缘软管 / 通用', tests: '工频耐压试验', file: 'SOP-HV-01 工频耐压作业指导书 A2.pdf', uploaded: '2025-11-20' },
+      { id: 4, code: 'SOP-ROD-00', name: '绝缘操作杆型式试验作业指导书（旧版）', version: 'A/0', status: '受控作废', std: 'DL/T 878-2004', dept: '电气试验室', author: '王芳', approver: '陈建国', effective: '2024-05-01', review: '2026-02-09', sample: '绝缘操作杆', tests: '外观及尺寸 / 交流耐压试验', file: 'SOP-ROD-00 绝缘操作杆作业指导书 A0.pdf', uploaded: '2024-05-01' }
+    ];
+    var editingId = null;
+
+    function statusTag(s) {
+      if (s === '受控作废') return '<span class="tag-void">受控作废</span>';
+      if (s === '草稿') return '<span class="tag-draft">草稿</span>';
+      return '<span class="tag-current">受控现行</span>';
+    }
+
+    function currentList() {
+      var name = (document.getElementById('qName').value || '').trim();
+      var code = (document.getElementById('qCode').value || '').trim();
+      var status = document.getElementById('qStatus').value;
+      return sops.filter(function (s) {
+        if (name && s.name.indexOf(name) < 0) return false;
+        if (code && s.code.indexOf(code) < 0) return false;
+        if (status && s.status !== status) return false;
+        return true;
+      });
+    }
+
+    function renderTable() {
+      var list = currentList();
+      document.getElementById('tableBody').innerHTML = list.map(function (s, i) {
+        var viewHref = 'sop-view.html?sop=' + encodeURIComponent(s.code);
+        return '<tr><td>' + (i + 1) + '</td>' +
+          '<td class="font-medium text-slate-700">' + s.code + '</td>' +
+          '<td><a href="' + viewHref + '" target="_blank" class="text-blue-600 hover:underline">' + s.name + '</a>' +
+            '<div class="mt-0.5 text-xs text-slate-400"><i class="fa fa-file-pdf-o"></i> ' + s.file + '</div></td>' +
+          '<td>' + s.version + '</td>' +
+          '<td>' + statusTag(s.status) + '</td>' +
+          '<td>' + s.std + '</td>' +
+          '<td>' + s.dept + '</td>' +
+          '<td>' + s.effective + '</td>' +
+          '<td>' + s.uploaded + '</td>' +
+          '<td class="whitespace-nowrap">' +
+            '<a href="' + viewHref + '" target="_blank" class="text-blue-600 hover:underline"><i class="fa fa-book"></i> 阅览</a>' +
+            '<button onclick="openEditModal(' + s.id + ')" class="ml-2 text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</button>' +
+            '<button onclick="delRow(' + s.id + ')" class="ml-2 text-red-500 hover:underline"><i class="fa fa-trash-o"></i> 删除</button>' +
+          '</td></tr>';
+      }).join('') || '<tr><td colspan="10" class="py-10 text-center text-slate-400">暂无数据</td></tr>';
+      document.getElementById('countText').textContent = '共 ' + list.length + ' 条';
+    }
+
+    function applyFilter() { renderTable(); }
+    function resetFilter() { document.getElementById('qName').value = ''; document.getElementById('qCode').value = ''; document.getElementById('qStatus').value = ''; renderTable(); }
+    function delRow(id) { if (confirm('确定删除该作业指导书？')) { sops = sops.filter(function (s) { return s.id !== id; }); renderTable(); } }
+
+    function setStatusRadio(v) {
+      var els = document.getElementsByName('sopStatus');
+      for (var i = 0; i < els.length; i++) els[i].checked = (els[i].value === v);
+    }
+    function getStatusRadio() {
+      var els = document.getElementsByName('sopStatus');
+      for (var i = 0; i < els.length; i++) if (els[i].checked) return els[i].value;
+      return '受控现行';
+    }
+
+    function openEditModal(id) {
+      editingId = id || null;
+      var s = id ? sops.find(function (x) { return x.id === id; }) : null;
+      document.getElementById('modalTitle').textContent = s ? '编辑作业指导书' : '新增作业指导书';
+      document.getElementById('fileHint').textContent = s ? s.file : '';
+      document.getElementById('fCode').value = s ? s.code : '';
+      document.getElementById('fName').value = s ? s.name : '';
+      document.getElementById('fVersion').value = s ? s.version : 'A/1';
+      setStatusRadio(s ? s.status : '受控现行');
+      document.getElementById('fSort').value = s ? s.id : (sops.length + 1);
+      document.getElementById('fStd').value = s ? s.std : '';
+      document.getElementById('fDept').value = s ? s.dept : '电气试验室';
+      document.getElementById('fAuthor').value = s ? s.author : '';
+      document.getElementById('fApprover').value = s ? s.approver : '';
+      document.getElementById('fEffective').value = s ? s.effective : '';
+      document.getElementById('fReview').value = s ? s.review : '';
+      document.getElementById('fSample').value = s ? s.sample : '';
+      document.getElementById('fTests').value = s ? s.tests : '';
+      document.getElementById('editModal').classList.add('open');
+    }
+    function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
+
+    function saveModal() {
+      var data = {
+        code: document.getElementById('fCode').value.trim(),
+        name: document.getElementById('fName').value.trim(),
+        version: document.getElementById('fVersion').value.trim() || 'A/1',
+        status: getStatusRadio(),
+        std: document.getElementById('fStd').value.trim(),
+        dept: document.getElementById('fDept').value.trim(),
+        author: document.getElementById('fAuthor').value.trim(),
+        approver: document.getElementById('fApprover').value.trim(),
+        effective: document.getElementById('fEffective').value.trim(),
+        review: document.getElementById('fReview').value.trim(),
+        sample: document.getElementById('fSample').value.trim(),
+        tests: document.getElementById('fTests').value.trim()
+      };
+      if (!data.code || !data.name) { alert('请填写文件编号与文件名称'); return; }
+      if (editingId) {
+        var s = sops.find(function (x) { return x.id === editingId; });
+        Object.assign(s, data);
+      } else {
+        data.id = Date.now();
+        data.file = data.code + ' ' + data.name + '.pdf';
+        data.uploaded = new Date().toISOString().slice(0, 10);
+        sops.push(data);
+      }
+      closeEditModal();
+      renderTable();
+    }
+
+    document.getElementById('editModal').addEventListener('click', function (e) { if (e.target === this) closeEditModal(); });
+    renderTable();
+  </script>
+</body>
+</html>
