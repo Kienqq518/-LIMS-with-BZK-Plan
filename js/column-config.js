@@ -59,7 +59,9 @@
   function findTable() {
     var best = null, bestScore = -1;
     [].slice.call(doc.querySelectorAll('table')).forEach(function (t) {
-      if (t.closest('.fixed') || t.closest('#pa-doc') || t.closest('table')) return;
+      // closest() 会命中元素自身，嵌套判断要看父级
+      if (t.closest('.fixed') || t.closest('#pa-doc')) return;
+      if (t.parentElement && t.parentElement.closest('table')) return;
       var ths = t.querySelectorAll('thead th');
       if (ths.length < 4) return;
       var rows = t.querySelectorAll('tbody tr').length;
