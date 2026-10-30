@@ -363,7 +363,7 @@
             <div id="markPanelOff" class="hidden mb-3 text-sm text-slate-400">未开启：无需配置产品标记规则，LIMS 其它涉及样品信息的页面也不展示「产品标记」字段。</div>
             <div id="markPanel">
             <div class="text-sm text-slate-500 mb-2">产品标记规则预览</div>
-            <div class="mark-preview">
+            <div class="mark-preview" data-annotate="mark-rule">
               <textarea id="markRule" readonly></textarea>
               <div class="ops">
                 <button type="button" onclick="toast('已复制规则')">复制</button>
@@ -973,6 +973,17 @@
               title: '产品标记开关',
               wide: true,
               content: '<strong>需求逻辑：</strong>产品标记按样品逐个开关。<strong>关闭</strong>时不需要配置产品标记规则，LIMS 其它涉及样品信息的页面（委托登记样品表、委托详情检测信息、样品收样弹窗、委托确认等）也不展示「产品标记」字段；<strong>开启</strong>时必须配置产品标记规则，且上述页面统一在「样品名称」与「型号/分类」两个字段之间插入「产品标记」。<br><strong>展示规则：</strong>开关默认值 = 该样品是否已配过规则；关闭时收起「产品标记规则预览 / 可用元素 / 选择符号 / 保存」整块面板，仅留一行灰字说明。<br><strong>交互逻辑：</strong>拨动开关即按叶节点持久化（lims.sampleMarkFlags），切换样品时开关随该样品的状态回显；关闭不会清空已配置的规则，重新开启即恢复。',
+              tag: '产品标记'
+            },
+            {
+              id: 'mark-rule',
+              selector: '[data-annotate="mark-rule"]',
+              position: 'bottom-left',
+              title: '产品标记规则与缺值占位',
+              wide: true,
+              content: '<strong>需求逻辑：</strong>产品标记不人工填写，由本条规则按「型号信息 / 规格参数 / 样品信息」逐段实时拼装。规格参数允许在登记时留空（收样、委托确认阶段再补填），因此标记必须能一眼看出哪一段还没有值，而不是悄悄拼出一个带双空格的残缺串。<br>' +
+                '<strong>展示规则：</strong>规则里每个 [数据段]（型号信息.型号、规格参数.x.值、样品信息.标准号 等）取不到值时，该段渲染为「<strong>/</strong>」；字面量分隔符不参与占位、原样保留（[空格] 仍是空格、[ - ]、X 等照抄）。示例：规则 <code>[型号信息.型号][ - ][规格参数.额定电压.值][空格][样品信息.是否电缆.芯数][X][规格参数.导体标称截面积.值][空格][样品信息.标准号]</code>，额定电压与导体标称截面积未填时 → <code>YJV22 - / 3X/ GBT 12706.2-2020</code>；两段补上后 → <code>YJV22 - 8.7/15 3X300 GBT 12706.2-2020</code>。开关开启但整条规则为空 → 下游显示「未配置规则」；开关关闭 → 该字段在样品相关页面整体不展示。<br>' +
+                '<strong>交互逻辑：</strong>规则在本页维护（点「可用元素」插入字段段、「选择符号」插入分隔符），保存后所有下游页面同步生效；下游任何一处补填了规格参数，产品标记立即按新值重算，对应的「/」换成真实值。',
               tag: '产品标记'
             },
             {

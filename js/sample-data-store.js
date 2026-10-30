@@ -289,28 +289,32 @@
 
   // 产品标记：按样品数据里维护的「产品标记规则」实时拼装
   // 规则示例：[型号信息.型号][ - ][规格参数.额定电压.值][空格][样品信息.是否电缆.芯数][X][规格参数.导体标称截面积.值][空格][样品信息.标准号]
+  // 取不到值的「数据段」渲染成 /，让没填的段一眼可见（YJV22 - / 3X/ GBT 12706.2-2020）；
+  // 字面量分隔符（[空格]、[ - ]、X 等）不参与占位，原样保留。
+  var MARK_EMPTY = '/';
   function buildMark(sample, modelCode, specValues) {
     if (!sample || !sample.markRule) return '';
     var model = modelOf(sample, modelCode);
     function resolve(raw) {
       var t = String(raw).trim();
       if (t === '空格') return ' ';
+      var v = null; // null = 不是数据段，按字面量分隔符处理
       if (t.indexOf('规格参数.') === 0) {
         var name = t.split('.')[1] || '';
         var specs = (model && model.specs) || [];
+        v = '';
         for (var i = 0; i < specs.length; i++) {
           var title = String(specs[i].name || specs[i].title || '');
-          if (title.indexOf(name) >= 0) return (specValues && specValues[i]) || '';
+          if (title.indexOf(name) >= 0) { v = (specValues && specValues[i]) || ''; break; }
         }
-        return '';
-      }
-      if (t === '型号信息.型号') return model ? (model.code || '') : '';
-      if (t === '型号信息.名称') return model ? (model.name || '') : '';
-      if (t === '样品信息.标准号') return sample.standard || '';
-      if (t === '样品信息.样品名称') return sample.name || '';
-      if (t.indexOf('芯数') >= 0) return String(sample.cores || '').replace(/芯$/, '');
-      if (t === '样品信息.是否电缆') return sample.isCable ? '是' : '否';
-      return raw; // 其余按字面量分隔符处理（如 X、 - ）
+      } else if (t === '型号信息.型号') v = model ? (model.code || '') : '';
+      else if (t === '型号信息.名称') v = model ? (model.name || '') : '';
+      else if (t.indexOf('芯数') >= 0) v = String(sample.cores || '').replace(/芯$/, '');
+      else if (t === '样品信息.标准号') v = sample.standard || '';
+      else if (t === '样品信息.样品名称') v = sample.name || '';
+      else if (t === '样品信息.是否电缆') v = sample.isCable ? '是' : '否';
+      if (v === null) return raw;
+      return String(v).trim() === '' ? MARK_EMPTY : v;
     }
     var rule = sample.markRule, out = '', re = /\[([^\]]*)\]/g, m, last = 0;
     while ((m = re.exec(rule))) {
