@@ -3,7 +3,7 @@
  */
 (function (global) {
   /** 方案 3 / 方案 2 对外：公网短链 Base */
-  var BASE_PUBLIC = 'https://lims-plan.vercel.app/l/';
+  var BASE_PUBLIC = 'https://lims-with-bzk-plan.vercel.app/l/';
   /** 方案 1 / 方案 2 对内：内网短链 Base */
   var BASE_INTERNAL = 'http://lims.local/l/';
   var BASE = BASE_PUBLIC;

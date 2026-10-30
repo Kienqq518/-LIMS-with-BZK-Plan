@@ -187,7 +187,7 @@ def main():
     els.append(txt(80, y2, "方案 3 · 公网部署（内外任意网络可扫）", 22, "#5b21b6", 720))
     els.append(rect(60, y2 + 40, 1180, 210, "#f5f3ff", "#7c3aed"))
     els += labeled_box(80, y2 + 90, 180, 70, "任意手机\n4G / WiFi", "#fde68a", "#854d0e")
-    els += labeled_box(320, y2 + 90, 220, 70, "公网短链\nhttps://lims-plan.vercel.app/l/Ab3K9", "#ddd6fe", "#5b21b6")
+    els += labeled_box(320, y2 + 90, 220, 70, "公网短链\nhttps://lims-with-bzk-plan.vercel.app/l/Ab3K9", "#ddd6fe", "#5b21b6")
     els += labeled_box(600, y2 + 90, 200, 70, "短链服务\n查表 /l/{code}", "#c4b5fd", "#5b21b6")
     els += labeled_box(860, y2 + 90, 220, 70, "公网验真 H5/API\nLIMS 云或公网", "#a78bfa", "#5b21b6")
     els += arrow(260, y2 + 125, 320, y2 + 125, "扫码", "#5b21b6")

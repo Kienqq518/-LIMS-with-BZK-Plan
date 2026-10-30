@@ -9,7 +9,7 @@
  */
 (function (global) {
   /** 报告溯源码公网 Base（部署形态：公网可扫） */
-  var REPORT_BASE = 'https://lims-plan.vercel.app/rl/';
+  var REPORT_BASE = 'https://lims-with-bzk-plan.vercel.app/rl/';
   /** 扫码落地公开页 */
   var VERIFY_PAGE = 'report-verify.html?code=';
 
