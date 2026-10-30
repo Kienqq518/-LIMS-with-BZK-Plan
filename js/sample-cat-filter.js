@@ -49,7 +49,15 @@
     tr.insertBefore(td, nameCell.nextSibling);
   }
 
+  // 页面已有「样品大类」列/筛选时不重复注入（如委托登记页本就带该列）
+  function hasOverlayText(tag, text) {
+    return [].slice.call(doc.querySelectorAll(tag)).some(function (el) {
+      return el.textContent.trim() === text && !inOverlay(el);
+    });
+  }
+
   function addColumn() {
+    if (hasOverlayText('th', '样品大类')) return 'exists';
     var th = findNameHeader();
     if (!th) return false;
     var headRow = th.parentNode;
@@ -76,6 +84,7 @@
   }
 
   function addFilter() {
+    if (hasOverlayText('label', '样品大类')) return 'exists';
     var labels = [].slice.call(doc.querySelectorAll('label')).filter(function (l) {
       return l.textContent.trim() === '样品名称' && !inOverlay(l);
     });
