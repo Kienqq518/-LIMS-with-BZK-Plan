@@ -26,6 +26,38 @@
     .modal-form-item { display: flex; align-items: center; gap: 6px; min-width: 0; }
     .modal-form-item label { flex-shrink: 0; width: 108px; text-align: right; font-size: 13px; color: #64748b; }
     .modal-form-item.span-2 { grid-column: span 2; }
+    .modal-form-item.span-full { grid-column: 1 / -1; }
+    /* 样品名称树形下拉（结构对齐「样品数据」左侧树，支持搜索） */
+    .tree-select { position: relative; flex: 1; min-width: 0; }
+    .ts-control { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 32px; padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; cursor: pointer; background: #fff; }
+    .ts-control:hover { border-color: #3b82f6; }
+    .ts-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #334155; }
+    .ts-text.ph { color: #94a3b8; }
+    .ts-caret { color: #94a3b8; }
+    .ts-panel { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 30; display: none; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 8px 20px rgba(15,23,42,.12); }
+    .ts-panel.open { display: block; }
+    .ts-search { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid #f1f5f9; color: #94a3b8; }
+    .ts-search input { flex: 1; min-width: 0; border: none; outline: none; font-size: 13px; padding: 2px 0; }
+    .ts-tree { max-height: 240px; overflow-y: auto; padding: 4px 0; }
+    .ts-node { display: flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 13px; color: #475569; cursor: pointer; white-space: nowrap; }
+    .ts-node:hover { background: #f1f5f9; }
+    .ts-node.branch { color: #64748b; }
+    .ts-node.leaf.is-active { color: #2563eb; background: #eff6ff; }
+    .ts-node .ts-tw { width: 14px; flex-shrink: 0; text-align: center; color: #94a3b8; font-size: 11px; }
+    .ts-node .ts-lbl { overflow: hidden; text-overflow: ellipsis; }
+    .ts-empty { padding: 14px 10px; text-align: center; color: #94a3b8; font-size: 12px; }
+    /* 带清除按钮的输入（样品别名 / 样品单位由样品数据自动带出） */
+    .ts-input-wrap { position: relative; flex: 1; min-width: 0; display: flex; }
+    .ts-input-wrap input { flex: 1; min-width: 0; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 26px 6px 10px; font-size: 13px; outline: none; }
+    .ts-input-wrap input:focus { border-color: #3b82f6; }
+    .ts-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #cbd5e1; cursor: pointer; font-size: 13px; display: none; }
+    .ts-input-wrap.has-value .ts-clear { display: block; color: #94a3b8; }
+    .ts-input-wrap.has-value .ts-clear:hover { color: #64748b; }
+    /* 规格参数：选中型号后出现，横向排列该型号的各规格参数下拉 */
+    .spec-box { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 10px 18px; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; }
+    .spec-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #64748b; }
+    .spec-item span { max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .spec-item select { min-width: 130px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 5px 8px; font-size: 13px; background: #fff; outline: none; }
     .modal-form-item label .req { color: #ef4444; }
     .modal-form-item input, .modal-form-item select, .modal-form-item textarea { flex: 1; min-width: 0; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
     .modal-form-item input:focus, .modal-form-item select:focus, .modal-form-item textarea:focus { border-color: #3b82f6; }
@@ -175,55 +207,52 @@
       </div>
       <div class="flex-1 overflow-y-auto px-6 py-4">
         <div class="modal-form-grid">
-          <!-- 第 1 列 -->
           <div class="modal-form-item"><label><span class="req">*</span> 样品名称</label>
-            <select id="m_sampleName" onchange="onSampleNameChange()">
-              <option value="">请选择样品名称</option>
-              <optgroup label="电力物资类" data-cat="dlwz">
-                <option value="8.7/10kV·3芯">8.7/10kV·3芯</option>
-                <option value="实壁类塑料电缆导管_直管">实壁类塑料电缆导管_直管</option>
-              </optgroup>
-              <optgroup label="安全工器具 / 976" data-cat="aqgqj">
-                <option value="绝缘操作杆">绝缘操作杆</option>
-                <option value="绝缘支、拉、吊杆">绝缘支、拉、吊杆</option>
-                <option value="绝缘托瓶架">绝缘托瓶架</option>
-                <option value="绝缘硬梯">绝缘硬梯</option>
-                <option value="绝缘绳索类工具">绝缘绳索类工具</option>
-                <option value="绝缘软梯">绝缘软梯</option>
-                <option value="绝缘滑车">绝缘滑车</option>
-              </optgroup>
-              <optgroup label="环境检测" data-cat="hjjc">
-                <option value="水质检测">水质检测</option>
-              </optgroup>
-              <optgroup label="工程检测" data-cat="gcjc">
-                <option value="复合硅酸盐水泥">复合硅酸盐水泥</option>
-              </optgroup>
-            </select>
+            <div class="tree-select">
+              <div class="ts-control" onclick="toggleSampleTree(event)">
+                <span class="ts-text ph" id="m_sampleName_text">请选择样品名称</span>
+                <i class="fa fa-angle-down ts-caret"></i>
+              </div>
+              <div class="ts-panel" id="m_sampleName_panel">
+                <div class="ts-search"><i class="fa fa-search"></i><input id="m_sampleName_kw" placeholder="搜索关键字" oninput="renderSampleTree()" /></div>
+                <div class="ts-tree" id="m_sampleName_tree"></div>
+              </div>
+              <input type="hidden" id="m_sampleName" />
+            </div>
           </div>
-          <div class="modal-form-item"><label>样品别名</label><input id="m_alias" type="text" placeholder="请输入样品别名" /></div>
+          <div class="modal-form-item"><label>样品别名</label>
+            <div class="ts-input-wrap" id="wrap_alias"><input id="m_alias" type="text" placeholder="请输入样品别名" /><i class="fa fa-times-circle ts-clear" onclick="clearAutoField('m_alias')"></i></div>
+          </div>
+          <div class="modal-form-item"><label><span class="req">*</span> 型号/分类</label>
+            <select id="m_model" onchange="onModelChange()"><option value="">请选择型号/分类</option></select>
+          </div>
+
+          <!-- 规格参数：选中型号后出现（导体标称截面积 / 额定电压等，随型号配置变化） -->
+          <div class="modal-form-item span-full" id="specRow" style="display:none"><label>规格参数：</label>
+            <div class="spec-box" id="m_spec_box"></div>
+          </div>
+
           <div class="modal-form-item"><label><span class="req">*</span> 检测类别</label>
             <select id="m_testCategory"><option value="">请选择检测类别</option></select>
           </div>
           <div class="modal-form-item"><label><span class="req">*</span> 样品数量</label><input id="m_qty" type="text" value="1" oninput="recalcSamplePrice()" /></div>
-
-          <div class="modal-form-item"><label>型号规格</label>
-            <select id="m_spec"><option value="">请选择型号规格</option><option>300</option><option>WW</option><option>20kV</option><option>3</option><option>30kV</option><option>KK</option><option>10kV</option></select>
+          <div class="modal-form-item"><label><span class="req">*</span> 样品单位</label>
+            <div class="ts-input-wrap" id="wrap_unit"><input id="m_unit" type="text" placeholder="请输入样品单位" oninput="syncWrap('m_unit','wrap_unit')" /><i class="fa fa-times-circle ts-clear" onclick="clearAutoField('m_unit')"></i></div>
           </div>
-          <div class="modal-form-item"><label><span class="req">*</span> 样品单价/元</label><input id="m_unitPrice" type="text" placeholder="请输入样品单价" oninput="recalcSamplePrice()" /></div>
-          <div class="modal-form-item"><label>生产厂家地址</label><input id="m_factoryAddr" type="text" placeholder="请输入生产厂家地址" /></div>
 
-          <div class="modal-form-item"><label><span class="req">*</span> 总价</label><input id="m_totalPrice" type="text" placeholder="请输入总价" /></div>
+          <div class="modal-form-item"><label>样品单价(元)</label><input id="m_unitPrice" type="text" placeholder="请输入样品单价" oninput="recalcSamplePrice()" /></div>
+          <div class="modal-form-item"><label><span class="req">*</span> 总价(元)</label><input id="m_totalPrice" type="text" placeholder="请输入总价" /></div>
+          <div class="modal-form-item"><label>生产日期</label><input id="m_prodDate" type="text" placeholder="请选择日期" /></div>
+
           <div class="modal-form-item"><label>生产厂家</label><input id="m_factory" type="text" placeholder="请输入生产厂家" /></div>
-          <div class="modal-form-item"><label>制造商地址</label><input id="m_manufacturerAddr" type="text" placeholder="请输入制造商地址" /></div>
-
-          <div class="modal-form-item"><label>生产日期</label><input id="m_prodDate" type="text" placeholder="请选择生产日期" /></div>
+          <div class="modal-form-item"><label>生产厂家地址</label><input id="m_factoryAddr" type="text" placeholder="请输入生产厂家地址" /></div>
           <div class="modal-form-item"><label>制造商</label><input id="m_manufacturer" type="text" placeholder="请输入制造商" /></div>
 
+          <div class="modal-form-item"><label>制造商地址</label><input id="m_manufacturerAddr" type="text" placeholder="请输入制造商地址" /></div>
           <div class="modal-form-item"><label><span class="req">*</span> 样品状态</label>
             <select id="m_status"><option>完好</option><option>异常</option></select>
           </div>
           <div class="modal-form-item"><label>试样制备数量</label><input id="m_prepQty" type="text" placeholder="请输入试样制备数量" /></div>
-          <div class="modal-form-item"><label><span class="req">*</span> 样品单位</label><input id="m_unit" type="text" placeholder="请输入样品单位" /></div>
 
           <div class="modal-form-item"><label>样品排序</label><input id="m_sort" type="text" placeholder="请输入样品排序" /></div>
           <div class="modal-form-item"><label><span class="req">*</span> 是否制样</label>
@@ -241,10 +270,10 @@
             <table class="test-table min-w-[900px]">
               <thead><tr>
                 <th class="w-10 text-center"><input type="checkbox" id="testCheckAll" onchange="toggleAllTests(this.checked)" /></th>
-                <th>试验名称</th><th>试验单价</th><th>检测依据</th><th>判定依据</th><th>标准要求</th><th>试样数量</th><th>备注</th>
+                <th>试验名称</th><th>试验单价</th><th>试验依据</th><th>标准要求</th><th>试样数量</th><th>备注</th>
               </tr></thead>
               <tbody id="testTableBody">
-                <tr><td colspan="8" class="py-8 text-center text-slate-400">请先选择样品名称</td></tr>
+                <tr><td colspan="7" class="py-8 text-center text-slate-400">请先选择样品名称</td></tr>
               </tbody>
             </table>
           </div>
@@ -276,6 +305,7 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/mock-dict.js"></script>
+  <script src="js/sample-data-store.js"></script>
   <script src="js/entrust-field-config.js"></script>
   <script src="js/customer-store.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -382,18 +412,16 @@
       });
     }
     bindCustomerCombo();
-    // 样品试验 Mock 数据（绝缘操作杆 / 976 类）
-    var sampleTestMap = {
-      '绝缘操作杆': [
-        { name: '交流耐压试验', price: 40, basis: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', judge: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', requirement: '{bcz}/{sj}，应无击穿、无闪络', qty: 1, remark: '' },
-        { name: '外观及尺寸', price: 40, basis: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', judge: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', requirement: '试品应光滑洁净，无气泡、无裂纹、无明显杂质', qty: 1, remark: '' },
-        { name: '抗弯动负荷试验', price: 40, basis: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', judge: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', requirement: '在{bcz}下操作3次，要求无损伤、无变形', qty: 1, remark: '' },
-        { name: '抗弯静负荷试验', price: 40, basis: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', judge: 'DLT 976-2017 带电作业用绝缘杆通用技术条件', requirement: '应在{bcz}下持续1min无损伤、无变形', qty: 1, remark: '' }
-      ]
-    };
 
-    // 默认试验项（其他安全工器具复用）
-    var defaultTests = sampleTestMap['绝缘操作杆'];
+    // 树形下拉：点击面板外关闭
+    document.addEventListener('click', function (e) {
+      var panel = document.getElementById('m_sampleName_panel');
+      if (!panel || !panel.classList.contains('open')) return;
+      if (e.target.closest && e.target.closest('.tree-select')) return;
+      closeSampleTree();
+    });
+    // 样品试验 Mock 数据（绝缘操作杆 / 976 类）
+    // 样品试验项 mock 已迁至 js/sample-data-store.js（与「样品数据」模块同源，弹窗不再自带一份）
 
     // 手动创建默认数据（新建委托登记初始化）
     var manualData = {
@@ -471,41 +499,193 @@
       if (window._formData) window._formData.totalPrice = String(sum);
     }
 
-    function getTestsForSample(name) {
-      return sampleTestMap[name] || defaultTests;
-    }
+    /* ===== 样品名称：树形下拉（结构 = 样品数据左侧树：大类 › 类别 › 额定电压 › 标准 › 材质 › 样品） ===== */
+    var sampleTreeState = { open: {}, selectedId: '', kw: '' };
 
-    function renderTestTable(tests, checkedAll) {
-      var tbody = document.getElementById('testTableBody');
-      if (!tests.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-slate-400">请先选择样品名称</td></tr>';
-        document.getElementById('testCheckAll').checked = false;
+    function currentSampleCat() { return window._majorCat || 'dlwz'; }
+    function store() { return window.SampleDataStore || null; }
+    function currentSample() { var st = store(); return st ? st.getSample(sampleTreeState.selectedId) : null; }
+
+    function treeRoots() {
+      var st = store(); if (!st) return [];
+      var cat = currentSampleCat();
+      return [{ id: '__cat__' + cat, label: st.CAT_LABELS[cat] || '样品分类', children: st.getTree(cat) }];
+    }
+    function filterNodes(nodes, kw) {
+      if (!kw) return nodes;
+      var out = [];
+      (nodes || []).forEach(function (n) {
+        var kids = filterNodes(n.children, kw);
+        if (n.label.indexOf(kw) >= 0 || kids.length) {
+          var c = {}; Object.keys(n).forEach(function (k) { c[k] = n[k]; });
+          c.children = kids; out.push(c);
+        }
+      });
+      return out;
+    }
+    function toggleSampleTree(e) {
+      if (e && e.stopPropagation) e.stopPropagation();
+      var panel = document.getElementById('m_sampleName_panel');
+      var open = panel.classList.contains('open');
+      panel.classList.toggle('open', !open);
+      if (!open) { renderSampleTree(); document.getElementById('m_sampleName_kw').focus(); }
+    }
+    function closeSampleTree() {
+      var panel = document.getElementById('m_sampleName_panel');
+      if (panel) panel.classList.remove('open');
+    }
+    function toggleSampleNode(id) { sampleTreeState.open[id] = !sampleTreeState.open[id]; renderSampleTree(); }
+    function renderSampleTree() {
+      var box = document.getElementById('m_sampleName_tree');
+      var st = store(); if (!st) { box.innerHTML = '<div class="ts-empty">样品数据未加载</div>'; return; }
+      var kw = (document.getElementById('m_sampleName_kw').value || '').trim();
+      sampleTreeState.kw = kw;
+      var html = '';
+      function walk(nodes, depth) {
+        nodes.forEach(function (n) {
+          var kids = n.children || [];
+          var leaf = n.leaf === true || !kids.length;
+          var open = !!sampleTreeState.open[n.id] || !!kw;
+          var pad = 10 + depth * 16;
+          if (leaf && kids.length) {
+            // 有子节点但未定义为叶子的分类节点，按可展开处理
+            leaf = false;
+          }
+          if (leaf) {
+            var active = sampleTreeState.selectedId === n.id ? ' is-active' : '';
+            html += '<div class="ts-node leaf' + active + '" style="padding-left:' + (pad + 18) + 'px" onclick="selectSampleName(\'' + n.id + '\')"><span class="ts-lbl">' + esc(n.label) + '</span></div>';
+          } else {
+            html += '<div class="ts-node branch" style="padding-left:' + pad + 'px" onclick="toggleSampleNode(\'' + n.id + '\')">' +
+              '<span class="ts-tw"><i class="fa fa-caret-' + (open ? 'down' : 'right') + '"></i></span>' +
+              '<span class="ts-lbl">' + esc(n.label) + '</span></div>';
+            if (open) walk(kids, depth + 1);
+          }
+        });
+      }
+      walk(filterNodes(treeRoots(), kw), 0);
+      box.innerHTML = html || '<div class="ts-empty">无匹配样品</div>';
+    }
+    function findLeafIdByName(name) {
+      var st = store(); if (!st || !name) return '';
+      var found = '';
+      Object.keys(st.TREES).forEach(function (cat) {
+        (function walk(nodes) {
+          (nodes || []).forEach(function (n) {
+            if (!found && n.label === name) found = n.id;
+            walk(n.children);
+          });
+        })(st.getTree(cat));
+      });
+      return found;
+    }
+    function setAutoField(inputId, wrapId, val) {
+      var el = document.getElementById(inputId);
+      el.value = val || '';
+      syncWrap(inputId, wrapId);
+    }
+    function syncWrap(inputId, wrapId) {
+      var w = document.getElementById(wrapId);
+      if (w) w.classList.toggle('has-value', !!(document.getElementById(inputId).value || '').trim());
+    }
+    function clearAutoField(inputId) {
+      var wrapId = inputId === 'm_unit' ? 'wrap_unit' : 'wrap_alias';
+      setAutoField(inputId, wrapId, '');
+    }
+    function shortSpecLabel(title) {
+      return String(title || '').replace(/^规格参数\d+:/, '').replace(/\s*[\(（].*$/, '');
+    }
+    function selectSampleName(id) {
+      var st = store();
+      var sample = st ? st.getSample(id) : null;
+      var label = st ? (st.leafLabel(currentSampleCat(), id) || (sample && sample.name) || '') : '';
+      if (!label) return;
+      sampleTreeState.selectedId = id;
+      document.getElementById('m_sampleName').value = id;
+      var txt = document.getElementById('m_sampleName_text');
+      txt.textContent = label; txt.classList.remove('ph');
+      closeSampleTree();
+      // 图二/图三：选完样品名称，自动带出「样品别名 = 样品名称」「样品单位 = 样品数据维护的单位」
+      setAutoField('m_alias', 'wrap_alias', label);
+      setAutoField('m_unit', 'wrap_unit', (sample && sample.unit) || '');
+      // 型号/分类下拉 = 该样品在样品数据里维护的型号
+      var models = st ? st.modelsOf(sample) : [];
+      var sel = document.getElementById('m_model');
+      if (models.length) {
+        sel.innerHTML = '<option value="">请选择型号/分类</option>' + models.map(function (m) {
+          return '<option value="' + esc(m.code) + '">' + esc(m.label) + '</option>';
+        }).join('');
+        sel.disabled = false;
+      } else {
+        sel.innerHTML = '<option value="">该样品不分型号</option>';
+        sel.disabled = true;
+      }
+      document.getElementById('specRow').style.display = 'none';
+      document.getElementById('m_spec_box').innerHTML = '';
+      // 图二：未选型号前，选择样品试验为空；不分型号的样品直接带出试验项
+      window._currentTests = models.length ? [] : ((sample && sample.tests) || []);
+      renderTestTable(window._currentTests, true);
+    }
+    function onModelChange() {
+      var st = store();
+      var sample = currentSample();
+      var code = document.getElementById('m_model').value;
+      var row = document.getElementById('specRow');
+      var box = document.getElementById('m_spec_box');
+      var model = (st && sample) ? st.modelOf(sample, code) : null;
+      if (!model) {
+        row.style.display = 'none'; box.innerHTML = '';
+        window._currentTests = [];
+        renderTestTable([], false);
         return;
       }
-      tbody.innerHTML = tests.map(function (t, i) {
-        var checked = checkedAll !== false ? ' checked' : '';
-        return '<tr><td class="text-center"><input type="checkbox" class="test-check" data-index="' + i + '"' + checked + ' onchange="recalcSamplePrice()" /></td>' +
-          '<td>' + esc(t.name) + '</td><td>' + t.price + '</td>' +
-          '<td class="max-w-xs truncate" title="' + esc(t.basis) + '">' + esc(t.basis) + '</td>' +
-          '<td class="max-w-xs truncate" title="' + esc(t.judge) + '">' + esc(t.judge) + '</td>' +
-          '<td class="max-w-xs truncate" title="' + esc(t.requirement) + '">' + esc(t.requirement) + '</td>' +
-          '<td>' + t.qty + '</td><td>' + esc(t.remark) + '</td></tr>';
+      var specs = model.specs || [];
+      box.innerHTML = specs.map(function (sp, i) {
+        var opts = sp.options || [];
+        return '<div class="spec-item"><span title="' + esc(sp.title) + '">' + esc(shortSpecLabel(sp.title)) + '</span>' +
+          '<select id="m_spec_' + i + '">' +
+          (opts.length > 1 ? '<option value="">请选择</option>' : '') +
+          opts.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('') +
+          '</select></div>';
       }).join('');
-      document.getElementById('testCheckAll').checked = checkedAll !== false;
+      row.style.display = specs.length ? '' : 'none';
+      // 图三：候选值唯一的规格参数自动带出（额定电压 8.7/10），多值的仍需手选（导体标称截面积）
+      specs.forEach(function (sp, i) {
+        var el = document.getElementById('m_spec_' + i);
+        if (el && (sp.options || []).length === 1) el.value = sp.options[0];
+      });
+      window._currentTests = model.tests || [];
+      renderTestTable(window._currentTests, true); // 图四：试验项默认全选
+    }
+
+    function renderTestTable(tests, checked) {
+      var tbody = document.getElementById('testTableBody');
+      var all = document.getElementById('testCheckAll');
+      if (!tests.length) {
+        var tip = !document.getElementById('m_sampleName').value ? '请先选择样品名称'
+          : (document.getElementById('m_model').disabled ? '该样品暂无试验项' : '请先选择型号/分类');
+        tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-400">' + tip + '</td></tr>';
+        all.checked = false;
+        recalcSamplePrice();
+        return;
+      }
+      var checkedNames = Array.isArray(checked) ? checked : null;
+      tbody.innerHTML = tests.map(function (t, i) {
+        var on = checkedNames ? (checkedNames.indexOf(t.name) >= 0 ? ' checked' : '') : (checked !== false ? ' checked' : '');
+        var req = t.req || t.requirement || '';
+        return '<tr><td class="text-center"><input type="checkbox" class="test-check" data-index="' + i + '"' + on + ' onchange="recalcSamplePrice()" /></td>' +
+          '<td class="max-w-xs truncate" title="' + esc(t.name) + '">' + esc(t.name) + '</td>' +
+          '<td>' + (t.price || 0) + '</td>' +
+          '<td class="max-w-xs truncate" title="' + esc(t.basis) + '">' + esc(t.basis || '') + '</td>' +
+          '<td class="max-w-xs truncate" title="' + esc(req) + '">' + esc(req) + '</td>' +
+          '<td>' + (t.qty || 1) + '</td><td>' + esc(t.remark || '') + '</td></tr>';
+      }).join('');
+      all.checked = checkedNames ? tests.every(function (t) { return checkedNames.indexOf(t.name) >= 0; }) : checked !== false;
       recalcSamplePrice();
     }
 
     function toggleAllTests(checked) {
       document.querySelectorAll('.test-check').forEach(function (cb) { cb.checked = checked; });
       recalcSamplePrice();
-    }
-
-    function onSampleNameChange() {
-      var name = document.getElementById('m_sampleName').value;
-      var aliasEl = document.getElementById('m_alias');
-      if (name && !aliasEl.value) aliasEl.value = name;
-      window._currentTests = name ? getTestsForSample(name) : [];
-      renderTestTable(window._currentTests, !!name);
     }
 
     function getSelectedTests() {
@@ -520,9 +700,9 @@
     function recalcSamplePrice() {
       var selected = getSelectedTests();
       var unitPrice = selected.reduce(function (sum, t) { return sum + (t.price || 0); }, 0);
-      document.getElementById('m_unitPrice').value = unitPrice ? String(unitPrice) : '';
+      document.getElementById('m_unitPrice').value = String(unitPrice);
       var qty = parseFloat(document.getElementById('m_qty').value) || 1;
-      document.getElementById('m_totalPrice').value = unitPrice ? String(unitPrice * qty) : '';
+      document.getElementById('m_totalPrice').value = String(unitPrice * qty);
       var all = document.querySelectorAll('.test-check');
       var checked = document.querySelectorAll('.test-check:checked');
       document.getElementById('testCheckAll').checked = all.length > 0 && checked.length === all.length;
@@ -530,43 +710,58 @@
 
     function resetSampleModal() {
       editingSampleIndex = -1;
-      ['m_sampleName','m_alias','m_testCategory','m_spec','m_factory','m_manufacturer','m_factoryAddr','m_manufacturerAddr',
+      sampleTreeState = { open: {}, selectedId: '', kw: '' };
+      ['m_alias','m_testCategory','m_factory','m_manufacturer','m_factoryAddr','m_manufacturerAddr',
         'm_prodDate','m_prepQty','m_sort','m_length','m_unit','m_remark','m_unitPrice','m_totalPrice'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.value = '';
       });
+      document.getElementById('m_sampleName').value = '';
+      var txt = document.getElementById('m_sampleName_text');
+      txt.textContent = '请选择样品名称'; txt.classList.add('ph');
+      document.getElementById('m_sampleName_kw').value = '';
+      var sel = document.getElementById('m_model');
+      sel.innerHTML = '<option value="">请选择型号/分类</option>'; sel.disabled = false; sel.value = '';
+      document.getElementById('specRow').style.display = 'none';
+      document.getElementById('m_spec_box').innerHTML = '';
+      syncWrap('m_alias', 'wrap_alias'); syncWrap('m_unit', 'wrap_unit');
       document.getElementById('m_qty').value = '1';
       document.getElementById('m_status').value = '完好';
       document.getElementById('m_needPrep').value = '否';
+      closeSampleTree();
       window._currentTests = [];
       renderTestTable([], false);
     }
 
-    function filterSampleOptionsByCat() {
-      var cat = window._majorCat || 'dlwz';
-      document.querySelectorAll('#m_sampleName optgroup').forEach(function (g) {
-        g.hidden = g.getAttribute('data-cat') !== cat;
-      });
-    }
-
     function openSampleModal(index) {
       resetSampleModal();
-      filterSampleOptionsByCat();
       if (typeof index === 'number' && index >= 0) {
         editingSampleIndex = index;
         var s = window._formData.samples[index];
-        document.getElementById('m_sampleName').value = s.name || '';
+        var id = s.sampleId || findLeafIdByName(s.name);
+        if (id) selectSampleName(id);
         document.getElementById('m_alias').value = s.alias || '';
-        document.getElementById('m_spec').value = s.spec || '';
+        document.getElementById('m_unit').value = s.unit || '';
+        syncWrap('m_alias', 'wrap_alias'); syncWrap('m_unit', 'wrap_unit');
         document.getElementById('m_testCategory').value = s.testCategory || '';
         document.getElementById('m_qty').value = s.qty || '1';
-        document.getElementById('m_unitPrice').value = s.price || '';
-        document.getElementById('m_totalPrice').value = s.total || '';
         document.getElementById('m_factory').value = s.factory || '';
         document.getElementById('m_manufacturer').value = s.manufacturer || '';
         document.getElementById('m_remark').value = s.remark || '';
-        window._currentTests = getTestsForSample(s.name || '绝缘操作杆');
-        renderTestTable(window._currentTests, true);
+        if (s.modelCode) {
+          var sel = document.getElementById('m_model');
+          if (!sel.disabled) {
+            sel.value = s.modelCode;
+            onModelChange();
+            (s.specValues || []).forEach(function (v, i) {
+              var el = document.getElementById('m_spec_' + i);
+              if (el && v) el.value = v;
+            });
+          }
+        }
+        var names = (s.tests || []).map(function (t) { return t.name; });
+        if (names.length) renderTestTable(window._currentTests, names);
+        recalcSamplePrice();
       }
       showModal('sampleModal');
     }
@@ -574,24 +769,43 @@
     function closeSampleModal() { hideModal('sampleModal'); }
 
     function confirmSample() {
-      var name = document.getElementById('m_sampleName').value;
+      var st = store();
+      var id = document.getElementById('m_sampleName').value;
+      var picked = st ? st.getSample(id) : null;
+      var name = st ? (st.leafLabel(currentSampleCat(), id) || (picked && picked.name) || '') : '';
       var unit = document.getElementById('m_unit').value.trim();
       var category = document.getElementById('m_testCategory').value;
+      var modelCode = document.getElementById('m_model').value;
+      var hasModels = !!(st && st.modelsOf(picked).length);
       if (!name) { alert('请选择样品名称'); return; }
+      if (hasModels && !modelCode) { alert('请选择型号/分类'); return; }
       if (!unit) { alert('请输入样品单位'); return; }
       if (!category) { alert('请选择检测类别'); return; }
       var selectedTests = getSelectedTests();
       if (!selectedTests.length) { alert('请至少选择一项样品试验'); return; }
 
+      var specValues = [], specText = [];
+      for (var i = 0; ; i++) {
+        var el = document.getElementById('m_spec_' + i);
+        if (!el) break;
+        specValues.push(el.value);
+        if (el.value) specText.push(el.value);
+      }
+      var model = (st && picked && modelCode) ? st.modelOf(picked, modelCode) : null;
       var alias = document.getElementById('m_alias').value.trim() || name;
       var qty = document.getElementById('m_qty').value || '1';
       var unitPrice = document.getElementById('m_unitPrice').value || '0';
       var total = document.getElementById('m_totalPrice').value || unitPrice;
 
       var sample = {
+        sampleId: id,
         name: name,
         alias: alias,
-        spec: document.getElementById('m_spec').value,
+        modelCode: modelCode,
+        modelName: model ? model.name : '',
+        spec: [modelCode].concat(specText).filter(Boolean).join(' '),
+        specValues: specValues,
+        unit: unit,
         testCategory: category,
         items: selectedTests.map(function (t) { return t.name; }).join(','),
         qty: qty,
