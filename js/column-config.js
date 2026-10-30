@@ -213,7 +213,9 @@
     panel.classList.add('open');
     var r = anchor.getBoundingClientRect();
     var w = panel.offsetWidth || 380;
-    panel.style.top = Math.min(r.bottom + 6, global.innerHeight - 60) + 'px';
+    // 先量出面板实际高度再夹进视口，否则条目多时底部「保存」会被顶出屏幕外点不到
+    var h = panel.offsetHeight || 420;
+    panel.style.top = Math.max(12, Math.min(r.bottom + 6, global.innerHeight - h - 12)) + 'px';
     panel.style.left = Math.max(12, Math.min(r.left - w + 20, global.innerWidth - w - 12)) + 'px';
     var inp = panel.querySelector('#cc-kw');
     inp.value = '';
