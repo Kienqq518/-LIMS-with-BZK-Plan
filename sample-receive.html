@@ -489,20 +489,21 @@
           ? '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" disabled title="已收样，不可再勾选" /></div>'
           : '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" onchange="onRowCheck()" /></div>';
         var qtyCell = esc(r.qty);
-        // 型号/分类在委托登记添加样品时已确定，收样阶段只读、不可改
+        // 型号/分类在委托登记添加样品时已确定，收样阶段只读、不可改；两列无值统一显示「/」，原因放 title
         var modelCell;
         if (!r.models.length) {
-          modelCell = '<span class="spec-none">不分型号</span>';
+          modelCell = '<span class="spec-none" title="该样品不分型号">/</span>';
         } else {
           var mo = r.models.filter(function (m) { return m.code === r.modelCode; })[0];
           modelCell = mo
             ? '<span class="spec-readonly">' + esc(mo.label) + '</span>'
-            : '<span class="spec-none">未选择，请回委托登记补选</span>';
+            : '<span class="spec-none" title="登记未选型号，请回委托登记补选">/</span>';
         }
         var specSummary = SampleSpecUI.summary(r.sample, r.modelCode, r.specValues);
-        var specCell = r.sample && SampleSpecUI.specsOf(r.sample, r.modelCode).length
-          ? '<div class="spec-readonly-list">' + (esc(specSummary) || '<span class="spec-none">未填写</span>') + '</div>'
-          : '<span class="spec-none">无规格参数</span>';
+        var hasSpecs = !!(r.sample && SampleSpecUI.specsOf(r.sample, r.modelCode).length);
+        var specCell = (hasSpecs && specSummary)
+          ? '<div class="spec-readonly-list">' + esc(specSummary) + '</div>'
+          : '<span class="spec-none" title="' + (hasSpecs ? '规格参数未填写' : '该样品无规格参数') + '">/</span>';
         var imgCount = ReceiveStore.imCount(r.images);
         var imgCell = imgCount
           ? '<div class="thumb-strip">' + r.images.map(function (im, k) {
@@ -821,7 +822,7 @@
             title: '型号只读、规格可补填',
             wide: true,
             content: '<strong>需求逻辑：</strong>型号/分类在委托登记添加样品时已确定，收样阶段不允许改，避免收样与委托、后续流转对不上；规格参数若登记时未填，允许在收样和委托确认阶段补填，但委托确认时必须填全。<br>' +
-              '<strong>展示规则：</strong>型号/分类为纯文本（不分型号的样品显示「不分型号」，登记漏选的显示「未选择，请回委托登记补选」）；规格列显示只读摘要，未填显示「未填写」；产品标记按样品数据的规则实时拼装，样品未开启产品标记开关时该列整体隐藏、无值显示「—」。<br>' +
+              '<strong>展示规则：</strong>型号/分类为纯文本；<strong>两列没有值时统一显示「/」</strong>（不分型号、登记漏选型号、无规格参数、规格未填写都归为无值，具体原因放在单元格悬停提示里）；规格列有值时显示只读摘要；产品标记按样品数据的规则实时拼装，样品未开启产品标记开关时该列整体隐藏、无值显示「—」。<br>' +
               '<strong>交互逻辑：</strong>操作列「编辑规格」弹出规格参数弹窗（每个规格一行，有候选值用下拉、唯一候选值自动带出），确定后回写并联动刷新规格摘要与产品标记；委托确认页会自动带出收样阶段填过的规格值。',
             tag: '样品收样'
           },
