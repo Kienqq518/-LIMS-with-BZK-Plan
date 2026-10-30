@@ -16,6 +16,8 @@
     .form-item label .req { color: #ef4444; }
     .form-item input, .form-item select, .form-item textarea { flex: 1; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
     .form-item input:focus, .form-item select:focus, .form-item textarea:focus { border-color: #3b82f6; }
+    /* 合同信息带出字段：只读置灰，只能通过合同编号带出 */
+    .form-item input:disabled, .form-item textarea:disabled { background: #f8fafc; color: #94a3b8; cursor: not-allowed; border-color: #e2e8f0; }
     .data-table { width: 100%; border-collapse: collapse; }
     .data-table th, .data-table td { border: 1px solid #e5e7eb; padding: 8px 10px; font-size: 13px; text-align: left; }
     .data-table th { background: #f1f5f9; color: #64748b; font-weight: 500; }
@@ -118,15 +120,19 @@
     </section>
 
     <!-- 合同信息 -->
-    <section class="rounded bg-white p-4 shadow-sm">
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="create-contract">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>合同信息</h2>
       <div class="form-grid">
-        <div class="form-item"><label>合同编号</label><select id="f_contractCode"><option value="">请选择</option><option>KJHT2025112001</option></select></div>
-        <div class="form-item"><label>合同名称</label><input id="f_contractName" type="text" placeholder="请输入" /></div>
-        <div class="form-item"><label>签订时间</label><input id="f_signDate" type="text" placeholder="请选择日期" /></div>
-        <div class="form-item"><label>服务年限</label><input id="f_serviceYears" type="text" placeholder="请选择日期" /></div>
-        <div class="form-item"><label>中标价</label><input id="f_bidPrice" type="text" placeholder="请输入" /></div>
-        <div class="form-item span-full"><label>合同样品</label><textarea id="f_contractSample" rows="2" placeholder="请输入"></textarea></div>
+        <div class="form-item"><label>合同编号</label><select id="f_contractCode" onchange="applyContract(this.value)">
+          <option value="">请选择合同编号</option>
+          <option value="KJHT2025112001">KJHT2025112001</option>
+          <option value="HT11213253">HT11213253</option>
+        </select></div>
+        <div class="form-item"><label>合同名称</label><input id="f_contractName" type="text" disabled placeholder="请先选择合同编号" /></div>
+        <div class="form-item"><label>签订时间</label><input id="f_signDate" type="text" disabled placeholder="请先选择合同编号" /></div>
+        <div class="form-item"><label>服务年限</label><input id="f_serviceYears" type="text" disabled placeholder="请先选择合同编号" /></div>
+        <div class="form-item"><label>中标价</label><input id="f_bidPrice" type="text" disabled placeholder="请先选择合同编号" /></div>
+        <div class="form-item span-full"><label>合同样品</label><textarea id="f_contractSample" rows="2" disabled placeholder="请先选择合同编号"></textarea></div>
       </div>
     </section>
 
@@ -356,6 +362,29 @@
         sel.appendChild(opt);
       });
     })();
+
+    // 合同信息联动：选合同编号 → 带出合同字段并置灰；未选或清空则全部禁用清空
+    // 数据与「合同管理 › 框架合同」保持一致
+    var CONTRACT_MOCK = {
+      'KJHT2025112001': { name: '框架合同名称', signDate: '2025-11-20', serviceYears: '2026-01-22', price: '200', sample: '保护管-电缆保护管' },
+      'HT11213253': { name: '框架合同名称', signDate: '2025-07-18', serviceYears: '2028-07-17', price: '263320', sample: '' }
+    };
+    var CONTRACT_FIELD_KEY = {
+      f_contractName: 'name', f_signDate: 'signDate', f_serviceYears: 'serviceYears',
+      f_bidPrice: 'price', f_contractSample: 'sample'
+    };
+    function applyContract(code) {
+      var c = CONTRACT_MOCK[code] || null;
+      Object.keys(CONTRACT_FIELD_KEY).forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var val = c ? (c[CONTRACT_FIELD_KEY[id]] || '') : '';
+        el.value = val;
+        el.disabled = true;
+        el.placeholder = !c ? '请先选择合同编号' : (val ? '' : '合同未维护该信息');
+      });
+      if (window._formData) window._formData.contractCode = code || '';
+    }
 
     function findCustomer(nameOrId) {
       if (!nameOrId || !window.CustomerStore) return null;
@@ -916,6 +945,7 @@
       data.majorCat = cat.name;
       if (params.mode !== 'edit') data.acceptDate = todayStr();
       fillForm(data);
+      applyContract(data.contractCode || '');
       var catEl = document.getElementById('f_majorCat');
       if (catEl) catEl.value = cat.name;
       window._formData = data;
@@ -964,6 +994,15 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
+          {
+            id: 'create-contract',
+            selector: '[data-annotate="create-contract"]',
+            position: 'bottom-right',
+            title: '合同信息带出与置灰',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>合同信息不由登记人手工填写，只能由「合同编号」带出，避免与合同台账不一致。<br><strong>展示规则：</strong>未选合同编号时，合同名称 / 签订时间 / 服务年限 / 中标价 / 合同样品 全部禁用置灰、内容为空，占位提示「请先选择合同编号」；选中后自动带出对应值并保持只读；合同里没维护的项显示「合同未维护该信息」。<br><strong>交互逻辑：</strong>切换合同编号即重新带出；把合同编号改回「请选择合同编号」则清空这五个字段并继续禁用。数据来源与「合同管理 › 框架合同」一致。',
+            tag: '委托编辑'
+          },
           {
             id: 'create-sample-table',
             selector: '[data-annotate="create-sample-table"]',
