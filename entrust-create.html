@@ -60,7 +60,7 @@
     /* 规格参数：选中型号后出现，横向排列该型号的各规格参数下拉 */
     .spec-box { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 10px 18px; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; }
     .spec-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #64748b; }
-    .spec-item span { max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .spec-item span { flex-shrink: 0; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .spec-item select { min-width: 130px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 5px 8px; font-size: 13px; background: #fff; outline: none; }
     .modal-form-item label .req { color: #ef4444; }
     .modal-form-item input, .modal-form-item select, .modal-form-item textarea { flex: 1; min-width: 0; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
@@ -315,6 +315,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/mock-dict.js"></script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/sample-spec-ui.js"></script>
   <script src="js/entrust-field-config.js"></script>
   <script src="js/customer-store.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -726,10 +727,15 @@
         renderTestTable([], false);
         return;
       }
-      var specs = model.specs || [];
+      // 统一走 SampleSpecUI.specsOf：兼容样品数据里「title 写法」与「name+unit 写法」，
+      // 保证每个规格参数都把参数名完整显示出来（之前导管这类用 name+unit 的样品标签渲染成了空）
+      var specs = window.SampleSpecUI ? SampleSpecUI.specsOf(sample, code) : (model.specs || []).map(function (sp) {
+        return { name: sp.name || '', unit: sp.unit || '', options: sp.options || [] };
+      });
       box.innerHTML = specs.map(function (sp, i) {
         var opts = sp.options || [];
-        return '<div class="spec-item"><span title="' + esc(sp.title) + '">' + esc(shortSpecLabel(sp.title)) + '</span>' +
+        var label = window.SampleSpecUI ? SampleSpecUI.label(sp) : (sp.name + (sp.unit ? '（' + sp.unit + '）' : ''));
+        return '<div class="spec-item"><span title="' + esc(label) + '">' + esc(label) + '</span>' +
           '<select id="m_spec_' + i + '">' +
           (opts.length > 1 ? '<option value="">请选择</option>' : '') +
           opts.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('') +
