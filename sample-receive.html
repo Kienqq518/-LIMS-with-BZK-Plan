@@ -344,7 +344,43 @@
       { code: 'SC2026/0051', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '遮蔽罩、安全带', sendDate: '', requireDate: '2026-07-03', acceptDate: '2026-06-12', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '遮蔽罩', qty: '1', unit: '件' }, { name: '安全带', qty: '1', unit: '条' }] },
       { code: 'SC2026/0049', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '验电器', sendDate: '', requireDate: '2026-06-30', acceptDate: '2026-06-10', prepaid: '否', priority: '常规', status: '样品收样', editor: '潘哲宁', salesman: '梁倩', samples: [{ name: '验电器', qty: '2', unit: '支' }] },
       { code: 'SC2026/0047', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆', sendDate: '', requireDate: '2026-06-28', acceptDate: '2026-06-08', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '10kV3芯电力电缆', qty: '3', unit: '根', modelCode: 'YJV22' }] },
-      { code: 'SC2026/0045', contract: '/', customer: '东集西造有限公司', sample: 'DS实壁类塑料电缆导管_直管、10kV单芯电力电缆', sendDate: '', requireDate: '2026-06-25', acceptDate: '2026-06-05', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: 'DS实壁类塑料电缆导管_直管', qty: '4', unit: '根', modelCode: 'PVC-C' }, { name: '10kV单芯电力电缆', qty: '1', unit: '根' }] }
+      { code: 'SC2026/0045', contract: '/', customer: '东集西造有限公司', sample: 'DS实壁类塑料电缆导管_直管、10kV单芯电力电缆', sendDate: '', requireDate: '2026-06-25', acceptDate: '2026-06-05', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: 'DS实壁类塑料电缆导管_直管', qty: '4', unit: '根', modelCode: 'PVC-C' }, { name: '10kV单芯电力电缆', qty: '1', unit: '根' }] },
+      { code: 'SC2026/0043', contract: '/', customer: '东集西造有限公司', sample: '绝缘毯、安全带、安全帽', sendDate: '', requireDate: '2026-07-02', acceptDate: '2026-06-03', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘毯', qty: '2', unit: '块' }, { name: '安全带', qty: '1', unit: '条' }, { name: '安全帽', qty: '3', unit: '顶' }] },
+      { code: 'SC2026/0041', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆、DS实壁类塑料电缆导管_直管', sendDate: '', requireDate: '2026-06-30', acceptDate: '2026-06-02', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '10kV3芯电力电缆', qty: '3', unit: '根', modelCode: 'YJV22' }, { name: 'DS实壁类塑料电缆导管_直管', qty: '4', unit: '根', modelCode: 'PVC-C' }] },
+      { code: 'SC2026/0039', contract: '/', customer: '宇宙设想有限公司', sample: '验电器、绝缘杆', sendDate: '', requireDate: '2026-06-28', acceptDate: '2026-06-01', prepaid: '否', priority: '常规', status: '样品收样', editor: '潘哲宁', salesman: '梁倩', samples: [{ name: '验电器', qty: '2', unit: '支' }, { name: '绝缘杆', qty: '1', unit: '根' }] }
+    ];
+
+    // ===== 演示种子：已经收掉部分样品的委托（进页面即可看到「待收 N 类」状态）=====
+    // 只补不覆盖：手工收过的样品行不会被重复写入；图片用仓库已有素材，委托详情页可直接展示
+    var DEMO_RECEIVED = [
+      {
+        entrustCode: 'SC2026/0055', receiver: 'admin', status: '完好', receiveDate: '2026-10-27',
+        delivery: '送样', sender: '李工', senderPhone: '13900000000', remark: '样品外观完好，随货单齐全',
+        lines: [{ sampleKey: 'SC2026/0055|绝缘毯', name: '绝缘毯', qty: '3', unit: '块', leafId: '', modelCode: '', specValues: [], mark: '',
+          images: ['assets/report-trace/photo-receive-front.png', 'assets/report-trace/photo-receive-side.png'] }]
+      },
+      {
+        entrustCode: 'SC2026/0051', receiver: '张三', status: '完好', receiveDate: '2026-10-26',
+        delivery: '上门', sender: '王师傅', senderPhone: '13800001111', remark: '',
+        lines: [{ sampleKey: 'SC2026/0051|遮蔽罩', name: '遮蔽罩', qty: '1', unit: '件', leafId: '', modelCode: '', specValues: [], mark: '', images: [] }]
+      },
+      {
+        entrustCode: 'SC2026/0043', receiver: 'admin', status: '异常', receiveDate: '2026-10-25',
+        delivery: '送样', sender: '赵工', senderPhone: '13700002222', remark: '其中 1 顶帽壳有划痕，已拍照留证',
+        lines: [{ sampleKey: 'SC2026/0043|安全帽', name: '安全帽', qty: '3', unit: '顶', leafId: 'helmet', modelCode: '', specValues: [],
+          mark: '安全帽 DLT 1476-2023', images: ['assets/report-trace/photo-01-bench.jpg', 'assets/report-trace/photo-03-field.jpg'] }]
+      },
+      {
+        entrustCode: 'SC2026/0041', receiver: '李四', status: '完好', receiveDate: '2026-10-28',
+        delivery: '送样', sender: '孙工', senderPhone: '13600003333', remark: '规格参数已在收样时补填',
+        lines: [{ sampleKey: 'SC2026/0041|10kV3芯电力电缆', name: '10kV3芯电力电缆', qty: '3', unit: '根', leafId: 'cu6-3c', modelCode: 'YJV22',
+          specValues: ['95', '8.7/10'], mark: 'YJV22 - 8.7/10 3X95 GBT 12706.2-2020', images: ['assets/report-trace/photo-05-bend.jpg'] }]
+      },
+      {
+        entrustCode: 'SC2026/0039', receiver: 'admin', status: '完好', receiveDate: '2026-10-24',
+        delivery: '送样', sender: '', senderPhone: '', remark: '',
+        lines: [{ sampleKey: 'SC2026/0039|验电器', name: '验电器', qty: '2', unit: '支', leafId: '', modelCode: '', specValues: [], mark: '', images: [] }]
+      }
     ];
 
     var currentIndex = -1;
@@ -788,6 +824,7 @@
       });
     });
 
+    if (window.ReceiveStore && ReceiveStore.seedDemo) ReceiveStore.seedDemo(DEMO_RECEIVED);
     renderTable();
 
     if (window.PrototypeAnnotation) {
@@ -812,7 +849,7 @@
             wide: true,
             content: '<strong>需求逻辑：</strong>Story202611-01-05。不同样品可以分开收，也可以一次勾几类一起收；同一行数量大于 1 是同一批，只能整批一起收，不能拆成多次。列表仍一行一委托，且只展示还有待收样品的任务。<br>' +
               '<strong>展示规则：</strong>列为勾选、序号、样品名称、产品标记、数量、型号/分类、规格、样品图片、收样情况、操作。<strong>已收样行的复选框置为不可勾选态</strong>（灰化禁用，悬停提示「已收样，不可再勾选」），整行灰底，不会被表头全选带上；没有待收行时表头复选框禁用。<br>' +
-              '<strong>交互逻辑：</strong>未勾选任何待收行就点「确认提交」→ 提示「请勾选要收样的样品」且弹窗不关；收样人、收样日期必填。提交后只把勾选行标为已收样并记录本次收样信息；仍有待收时弹窗保持打开、表单清空、已收行锁定；全部收完则提示后关闭弹窗，该委托从列表移除，本页不再提供收样或退回。退回仍按委托整单。',
+              '<strong>交互逻辑：</strong>未勾选任何待收行就点「确认提交」→ 提示「请勾选要收样的样品」且弹窗不关；收样人、收样日期必填。提交后只把勾选行标为已收样并记录本次收样信息；仍有待收时弹窗保持打开、表单清空、已收行锁定；全部收完则提示后关闭弹窗，该委托从列表移除，本页不再提供收样或退回。退回仍按委托整单。<br><strong>演示数据：</strong>页面加载时会幂等播种几条「已收部分样品」的委托（SC2026/0055、0051、0043、0041、0039），便于直接演示分次收样与筛选；已手工收过的样品行不会被覆盖。',
             tag: '样品收样'
           },
           {

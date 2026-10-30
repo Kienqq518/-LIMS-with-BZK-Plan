@@ -64,6 +64,32 @@
   }
   function reset() { save([]); }
 
+  /* 演示种子：让「部分样品已收样」的委托开箱即见。
+   * 幂等且只补不删：已收过的样品行不会被重复写入，也不覆盖手工收样记录。
+   */
+  var demoSeq = 0;
+  function seedDemo(records) {
+    var cur = load();
+    var have = {};
+    cur.forEach(function (r) {
+      (r.lines || []).forEach(function (ln) { if (ln && ln.sampleKey) have[ln.sampleKey] = 1; });
+    });
+    var added = 0;
+    (records || []).forEach(function (r) {
+      var lines = (r.lines || []).filter(function (ln) { return ln && !have[ln.sampleKey]; });
+      if (!lines.length) return;
+      lines.forEach(function (ln) { have[ln.sampleKey] = 1; });
+      var rec = JSON.parse(JSON.stringify(r));
+      rec.lines = lines;
+      rec.demo = true;
+      rec.id = 'DEMO' + (++demoSeq) + '-' + Date.now();
+      cur.push(rec);
+      added++;
+    });
+    if (added) save(cur);
+    return added;
+  }
+
   // 图片既可能是字符串（素材库 URL / dataURL），也可能是 { name, url }
   function imName(im) {
     if (!im) return '';
@@ -105,6 +131,6 @@
     imName: imName, imSrc: imSrc, imCount: imCount, shrinkImage: shrinkImage,
     KEY: KEY, PHOTO_LIBRARY: PHOTO_LIBRARY,
     load: load, addRecord: addRecord, recordsOf: recordsOf,
-    receivedMap: receivedMap, isAllReceived: isAllReceived, reset: reset
+    receivedMap: receivedMap, isAllReceived: isAllReceived, reset: reset, seedDemo: seedDemo
   };
 })(window);
