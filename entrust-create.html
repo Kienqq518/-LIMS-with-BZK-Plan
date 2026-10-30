@@ -231,7 +231,8 @@
           <div class="modal-form-item"><label>样品别名</label>
             <div class="ts-input-wrap" id="wrap_alias"><input id="m_alias" type="text" placeholder="请输入样品别名" /><i class="fa fa-times-circle ts-clear" onclick="clearAutoField('m_alias')"></i></div>
           </div>
-          <div class="modal-form-item"><label><span class="req">*</span> 型号/分类</label>
+          <!-- 有的样品不分型号，所以该字段要等选定样品名称、确认该样品有型号后才展示 -->
+          <div class="modal-form-item" id="modelRow" style="display:none"><label><span class="req">*</span> 型号/分类</label>
             <select id="m_model" onchange="onModelChange()"><option value="">请选择型号/分类</option></select>
           </div>
 
@@ -475,6 +476,10 @@
     document.addEventListener('click', function (e) {
       var panel = document.getElementById('m_sampleName_panel');
       if (!panel || !panel.classList.contains('open')) return;
+      // 点分类节点会先触发整棵树重绘，被点的节点随即脱离文档，
+      // 此时 e.target.closest('.tree-select') 取不到容器，会被误判成「点了面板外」而把下拉收起。
+      // 目标已不在文档里 = 刚刚被我们自己的重绘移除，属于面板内点击，直接放行。
+      if (e.target && e.nodeType === 1 && !document.body.contains(e.target)) return;
       if (e.target.closest && e.target.closest('.tree-select')) return;
       closeSampleTree();
     });
@@ -660,6 +665,15 @@
     function clearAutoField(inputId) {
       setAutoField(inputId, 'wrap_alias', '');
     }
+    // 型号/分类行三种状态：hidden 未选样品不展示 / select 有型号需选择 / none 不分型号只读提示
+    function setModelRow(mode) {
+      var row = document.getElementById('modelRow');
+      if (!row) return;
+      row.style.display = mode === 'hidden' ? 'none' : '';
+      var req = row.querySelector('.req');
+      if (req) req.style.display = mode === 'select' ? '' : 'none';
+    }
+
     function shortSpecLabel(title) {
       return String(title || '').replace(/^规格参数\d+:/, '').replace(/\s*[\(（].*$/, '');
     }
@@ -676,9 +690,10 @@
       // 图二/图三：选完样品名称，自动带出「样品别名 = 样品名称」「样品单位 = 样品数据维护的单位」
       setAutoField('m_alias', 'wrap_alias', label);
       setSampleUnit((sample && sample.unit) || '');
-      // 型号/分类下拉 = 该样品在样品数据里维护的型号
+      // 型号/分类下拉 = 该样品在样品数据里维护的型号；不分型号的样品不出现该字段
       var models = st ? st.modelsOf(sample) : [];
       var sel = document.getElementById('m_model');
+      setModelRow(models.length ? 'select' : (sample ? 'none' : 'hidden'));
       if (models.length) {
         sel.innerHTML = '<option value="">请选择型号/分类</option>' + models.map(function (m) {
           return '<option value="' + esc(m.code) + '">' + esc(m.label) + '</option>';
@@ -791,6 +806,7 @@
       document.getElementById('m_sampleName_kw').value = '';
       var sel = document.getElementById('m_model');
       sel.innerHTML = '<option value="">请选择型号/分类</option>'; sel.disabled = false; sel.value = '';
+      setModelRow('hidden');
       document.getElementById('specRow').style.display = 'none';
       document.getElementById('m_spec_box').innerHTML = '';
       syncWrap('m_alias', 'wrap_alias');
@@ -809,7 +825,7 @@
         editingSampleIndex = index;
         var s = window._formData.samples[index];
         var id = s.sampleId || findLeafIdByName(s.name);
-        if (id) selectSampleName(id);
+        if (id) selectSampleName(id); else setModelRow('hidden');
         document.getElementById('m_alias').value = s.alias || '';
         syncWrap('m_alias', 'wrap_alias');
         setSampleUnit(s.unit);
@@ -1009,7 +1025,7 @@
             position: 'bottom-right',
             title: '样品信息表列与产品标记',
             wide: true,
-            content: '<strong>需求逻辑：</strong>样品明细以「一行一个样品」维护；产品标记按样品数据里配置的产品标记规则实时拼装（型号 + 规格参数取值 + 芯数 + 标准号），不由登记人填写。<br><strong>展示规则：</strong>列为序号、样品名称、<strong>产品标记</strong>、型号/分类、检测类别、试验项、数量、单价（元）、总价（元）、备注、操作。其中「产品标记」仅在样品数据的产品标记开关开启时展示，位置固定在「样品名称」与「型号/分类」之间；本委托内所有样品都关闭时整列隐藏；开关开启但未配置规则时显示「未配置规则」。样品名称为树形下拉，层级与样品数据左侧树一致，只列当前委托锁定的大类。<br><strong>交互逻辑：</strong>点「添加样品」在弹窗内选样品名称 → 带出别名/单位/型号 → 选型号后出现规格参数并自动加载试验项；确定后写入本表，可编辑、删除；金额按勾选试验项单价合计自动计算。',
+            content: '<strong>需求逻辑：</strong>样品明细以「一行一个样品」维护；产品标记按样品数据里配置的产品标记规则实时拼装（型号 + 规格参数取值 + 芯数 + 标准号），不由登记人填写。<br><strong>展示规则：</strong>列为序号、样品名称、<strong>产品标记</strong>、型号/分类、检测类别、试验项、数量、单价（元）、总价（元）、备注、操作。其中「产品标记」仅在样品数据的产品标记开关开启时展示，位置固定在「样品名称」与「型号/分类」之间；本委托内所有样品都关闭时整列隐藏；开关开启但未配置规则时显示「未配置规则」。样品名称为树形下拉，层级与样品数据左侧树一致，只列当前委托锁定的大类；<strong>「型号/分类」字段在选定样品名称后才展示</strong>（部分样品不分型号，未选样品前无法判断）。<br><strong>交互逻辑：</strong>点「添加样品」→ 树形下拉选样品名称（点分类节点只展开/收起，下拉不关闭）→ 带出别名/单位/样品单位 → 该样品有型号时展示必填「型号/分类」，选型号后出现规格参数并自动加载试验项；不分型号的样品不展示型号字段、直接带出其试验项；确定后写入本表，可编辑、删除；金额按勾选试验项单价合计自动计算。',
             tag: '委托编辑'
           },
           {
