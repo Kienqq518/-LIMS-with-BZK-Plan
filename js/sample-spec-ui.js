@@ -28,7 +28,7 @@
   function renderCells(sample, modelCode, values, idPrefix, editable, opts) {
     opts = opts || {};
     var list = specsOf(sample, modelCode);
-    if (!list.length) return '<span class="spec-none">无规格参数</span>';
+    if (!list.length) return '<span class="spec-none">/</span>';
     return list.map(function (sp, i) {
       var val = (values && values[i]) || (sp.options.length === 1 ? sp.options[0] : '');
       var id = idPrefix + '_' + i;
