@@ -19,6 +19,13 @@
     .nested-table { margin: 8px 0 8px 24px; }
     .tag-blue { display: inline-block; rounded: 9999px; background: #dbeafe; color: #2563eb; padding: 2px 8px; font-size: 12px; border-radius: 9999px; }
     .tag-orange { display: inline-block; background: #ffedd5; color: #ea580c; padding: 2px 8px; font-size: 12px; border-radius: 9999px; }
+    .spec-line { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .spec-line:last-child { margin-bottom: 0; }
+    .spec-name { width: 116px; flex-shrink: 0; text-align: right; font-size: 12px; color: #64748b; }
+    .spec-input { flex: 1; min-width: 90px; max-width: 150px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 12px; outline: none; background: #fff; }
+    .spec-input:focus { border-color: #3b82f6; }
+    .spec-none { font-size: 12px; color: #cbd5e1; }
+    .batch-badge { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px; background: #fef3c7; color: #b45309; font-size: 11px; line-height: 17px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700 pb-20">
@@ -93,16 +100,13 @@
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测信息</h2>
       <div class="overflow-x-auto">
-        <table class="data-table min-w-[900px]">
+        <table class="data-table min-w-[1000px]">
           <thead>
-            <tr><th>序号</th><th>样品名称</th><th>型号规格</th><th>样品数量</th><th>样品单位</th><th>备注</th></tr>
+            <tr><th>序号</th><th>样品名称</th><th>数量</th><th>型号/分类</th><th>规格</th><th>样品单位</th><th>备注</th></tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>1</td><td>遮蔽罩</td><td></td><td>1</td><td>件</td><td></td>
-            </tr>
-          </tbody>
+          <tbody id="confirmSampleBody"></tbody>
         </table>
+        <p class="mt-2 text-xs text-slate-400">规格参数在委托登记、样品收样阶段未填完的，可在此补填；<strong class="text-slate-500">委托确认时必须填写完整</strong>。</p>
       </div>
       <p class="mb-2 mt-4 text-sm font-medium text-slate-600">试验信息</p>
       <div class="overflow-x-auto">
@@ -169,13 +173,90 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/sample-data-store.js"></script>
+  <script src="js/sample-spec-ui.js"></script>
+  <script src="js/receive-store.js"></script>
   <script>
+    // 委托确认阶段的样品：型号/分类与规格参数可在此补填，确认通过前必须填全
+    var confirmSamples = [
+      { name: '遮蔽罩', qty: '1', unit: '件', leafId: '', modelCode: '', specValues: [] },
+      { name: '10kV3芯电力电缆', qty: '3', unit: '根', leafId: 'cu6-3c', modelCode: 'YJV22', specValues: [] }
+    ];
+
+    function cEsc(v) {
+      return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function sampleOf(row) {
+      return row.leafId && window.SampleDataStore ? SampleDataStore.getSample(row.leafId) : null;
+    }
+    // 收样阶段填过的规格值，带出来不用重复填
+    function prefillFromReceive() {
+      if (!window.ReceiveStore) return;
+      var code = new URLSearchParams(window.location.search).get('code') || 'SC2026/0071';
+      var got = ReceiveStore.receivedMap(code);
+      confirmSamples.forEach(function (row) {
+        var hit = got[code + '|' + row.name];
+        if (hit && hit.line) {
+          if (hit.line.modelCode) row.modelCode = hit.line.modelCode;
+          if (hit.line.specValues && hit.line.specValues.length) row.specValues = hit.line.specValues.slice();
+        }
+      });
+    }
+    function renderConfirmSamples() {
+      document.getElementById('confirmSampleBody').innerHTML = confirmSamples.map(function (row, i) {
+        var st = sampleOf(row);
+        var models = st && window.SampleDataStore ? SampleDataStore.modelsOf(st) : [];
+        var modelCell;
+        if (!models.length) {
+          modelCell = '<span class="spec-none">' + (row.leafId ? '不分型号' : '—') + '</span>';
+        } else {
+          modelCell = '<select class="spec-input" style="max-width:200px" onchange="onConfirmModel(' + i + ', this.value)">' +
+            '<option value="">请选择型号/分类</option>' +
+            models.map(function (m) {
+              return '<option value="' + cEsc(m.code) + '"' + (m.code === row.modelCode ? ' selected' : '') + '>' + cEsc(m.label) + '</option>';
+            }).join('') + '</select>';
+        }
+        var qty = cEsc(row.qty) + (parseInt(row.qty, 10) > 1 ? '<span class="batch-badge">整批</span>' : '');
+        return '<tr><td>' + (i + 1) + '</td><td>' + cEsc(row.name) + '</td><td>' + qty + '</td><td>' + modelCell + '</td>' +
+          '<td>' + SampleSpecUI.renderCells(st, row.modelCode, row.specValues, 'cf' + i, true) + '</td>' +
+          '<td>' + cEsc(row.unit) + '</td><td></td></tr>';
+      }).join('');
+    }
+    function collectConfirmSpecs() {
+      confirmSamples.forEach(function (row, i) {
+        var st = sampleOf(row);
+        if (st) row.specValues = SampleSpecUI.readValues(st, row.modelCode, 'cf' + i);
+      });
+    }
+    function onConfirmModel(i, code) {
+      collectConfirmSpecs();
+      confirmSamples[i].modelCode = code;
+      confirmSamples[i].specValues = [];
+      renderConfirmSamples();
+    }
+
     function returnRegister() {
       if (confirm('确认退回至委托登记吗？')) alert('已退回登记（原型演示）');
     }
     function confirmPass() {
+      collectConfirmSpecs();
+      var problems = [];
+      confirmSamples.forEach(function (row) {
+        var st = sampleOf(row);
+        if (!st) return;
+        var models = SampleDataStore.modelsOf(st);
+        if (models.length && !row.modelCode) problems.push('· ' + row.name + '：未选择型号/分类');
+        var miss = SampleSpecUI.missing(st, row.modelCode, row.specValues);
+        if (miss.length) problems.push('· ' + row.name + '：规格参数未填写 —— ' + miss.join('、'));
+      });
+      if (problems.length) {
+        alert('规格参数未填写完整，无法确认通过：\n' + problems.join('\n'));
+        return;
+      }
       if (confirm('确认通过该委托吗？')) alert('确认通过（原型演示）');
     }
+    prefillFromReceive();
+    renderConfirmSamples();
   </script>
 </body>
 </html>
