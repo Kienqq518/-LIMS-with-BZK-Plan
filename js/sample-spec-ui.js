@@ -25,7 +25,8 @@
   function label(sp) { return sp.name + (sp.unit ? '（' + sp.unit + '）' : ''); }
 
   // 行内控件：有候选值用下拉，无候选值用文本输入
-  function renderCells(sample, modelCode, values, idPrefix, editable) {
+  function renderCells(sample, modelCode, values, idPrefix, editable, opts) {
+    opts = opts || {};
     var list = specsOf(sample, modelCode);
     if (!list.length) return '<span class="spec-none">无规格参数</span>';
     return list.map(function (sp, i) {
@@ -33,15 +34,15 @@
       var id = idPrefix + '_' + i;
       var ctrl;
       if (!editable) {
-        ctrl = '<span class="spec-readonly">' + esc(val || '—') + '</span>';
+        ctrl = '<span class="spec-readonly">' + esc(val || (opts.emptyLabel || '/')) + '</span>';
       } else if (sp.options.length) {
-        ctrl = '<select id="' + id + '" class="spec-input">' +
-          '<option value="">' + (val ? '' : '请选择') + '</option>' +
+        ctrl = '<select id="' + id + '" class="spec-input"' + (opts.onChange ? ' onchange="' + opts.onChange + '"' : '') + '>' +
+          '<option value="">' + (val ? '' : esc(opts.emptyLabel || '请选择')) + '</option>' +
           sp.options.map(function (o) {
             return '<option value="' + esc(o) + '"' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>';
           }).join('') + '</select>';
       } else {
-        ctrl = '<input id="' + id + '" class="spec-input" type="text" value="' + esc(val) + '" placeholder="请输入" />';
+        ctrl = '<input id="' + id + '" class="spec-input" type="text" value="' + esc(val) + '" placeholder="' + esc(opts.emptyLabel || '请输入') + '"' + (opts.onChange ? ' onchange="' + opts.onChange + '"' : '') + ' />';
       }
       return '<div class="spec-line"><span class="spec-name">' + esc(label(sp)) + '</span>' + ctrl + '</div>';
     }).join('');
