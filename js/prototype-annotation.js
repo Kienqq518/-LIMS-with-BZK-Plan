@@ -198,14 +198,16 @@
       var t = modalTitleOf(focusScopeEl);
       var cnt = inScopeCount();
       if (sub) {
-        sub.innerHTML = docPageName() + ' · 页面 ' + total + ' 条' +
+        sub.innerHTML = (docShowAll
+          ? '全部需求（含弹窗） · ' + total + ' 条'
+          : '弹窗需求：' + t + ' · ' + cnt + ' 条') +
           '<span class="pa-doc-scope" onclick="PrototypeAnnotation._toggleScope()">' +
-          (docShowAll ? '只看「' + t + '」需求' : '看全部页面需求') + '</span>';
+          (docShowAll ? '只看「' + t + '」需求' : '看全部需求') + '</span>';
       }
       if (hint) {
         if (docShowAll) {
           hint.className = 'pa-doc-focus warn';
-          hint.innerHTML = '已切回页面全部需求。<span class="pa-doc-scope" onclick="PrototypeAnnotation._toggleScope()">只看「' + t + '」弹窗需求</span>';
+          hint.innerHTML = '已切回全部需求（含其他弹窗）。<span class="pa-doc-scope" onclick="PrototypeAnnotation._toggleScope()">只看「' + t + '」弹窗需求</span>';
           hint.style.display = '';
         } else if (cnt) {
           hint.className = 'pa-doc-focus';
