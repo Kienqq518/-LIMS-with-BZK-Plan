@@ -63,6 +63,22 @@
   function saveCfg(o) {
     try { global.localStorage.setItem(storeKey(), JSON.stringify(o)); } catch (e) {}
   }
+  // 合并「已保存的列顺序」与「页面当前列」：新出现的列插回它在页面里的原始位置，
+  // 而不是追加到末尾（否则后来新增的列会跑到「操作」列右边，看起来位置错了）
+  function mergeOrder(savedOrder, all) {
+    var known = (savedOrder || []).filter(function (k) { return all.indexOf(k) >= 0; });
+    var idxOf = {};
+    all.forEach(function (k, i) { idxOf[k] = i; });
+    var result = known.slice();
+    all.forEach(function (k) {
+      if (known.indexOf(k) >= 0) return;
+      var pos = result.length;
+      for (var i = 0; i < result.length; i++) { if (idxOf[result[i]] > idxOf[k]) { pos = i; break; } }
+      result.splice(pos, 0, k);
+    });
+    return result;
+  }
+
   function esc(v) {
     return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
@@ -321,8 +337,7 @@
     panel.classList.remove('open');
     if (revert) {
       var saved = loadCfg();
-      order = saved && saved.order ? saved.order.filter(function (k) { return colOf(k); }) : cols.map(function (c) { return c.key; });
-      cols.forEach(function (c) { if (!order.length || order.indexOf(c.key) < 0) order.push(c.key); });
+      order = mergeOrder(saved && saved.order, cols.map(function (c) { return c.key; }));
       hidden = {};
       ((saved && saved.hidden) || []).forEach(function (k) { hidden[k] = 1; });
       apply();
@@ -356,7 +371,7 @@
     tagBodyCells();
     var all = cols.map(function (c) { return c.key; });
     var cfg = loadCfg();
-    order = (cfg && cfg.order ? cfg.order.filter(function (k) { return all.indexOf(k) >= 0; }) : []).concat(all.filter(function (k) { return !(cfg && cfg.order && cfg.order.indexOf(k) >= 0); }));
+    order = mergeOrder(cfg && cfg.order, all);
     hidden = {};
     (cfg && cfg.hidden ? cfg.hidden : []).forEach(function (k) { hidden[k] = 1; });
     buildPanel();
@@ -376,6 +391,7 @@
   }
 
   global.ColumnConfig = {
+    _mergeOrder: mergeOrder,
     init: boot,
     _toggle: function (k, on) { if (on) delete hidden[k]; else hidden[k] = 1; apply(); },
     _search: function (v) { renderList(v); },
