@@ -99,9 +99,9 @@
         <button onclick="openSampleModal()" class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">添加样品</button>
       </div>
       <div class="overflow-x-auto">
-        <table class="data-table min-w-[1200px]">
+        <table class="data-table min-w-[1400px]">
           <thead><tr>
-            <th>序号</th><th>样品别名</th><th>型号规格</th><th>试验项目</th><th>数量</th><th>单价</th><th>总价</th><th>生产厂</th><th>制造商</th><th>备注</th><th>操作</th>
+            <th>序号</th><th>样品名称</th><th>产品标记</th><th>型号/分类</th><th>检测类别</th><th>试验项</th><th>数量</th><th>单价（元）</th><th>总价（元）</th><th>备注</th><th>操作</th>
           </tr></thead>
           <tbody id="sampleTableBody"></tbody>
         </table>
@@ -138,7 +138,7 @@
         <div class="form-item"><label><span class="req">*</span> 优先等级</label><select id="f_priority"><option>常规</option><option>加急</option></select></div>
         <div class="form-item"><label>检测类型</label><select id="f_testType"><option>常规</option></select></div>
         <div class="form-item"><label>检测类别</label><select id="f_testCategory"><option>例行试验</option></select></div>
-        <div class="form-item" data-annotate="create-client-unit"><label><span class="req">*</span> 委托单位</label>
+        <div class="form-item" data-annotate="create-client-unit"><label><span class="req">*</span> 客户单位</label>
           <div class="client-combo" id="customerCombo">
             <input id="f_customer_display" type="text" placeholder="请选择 / 输入名称或编码" autocomplete="off" />
             <input type="hidden" id="f_customer" />
@@ -154,7 +154,7 @@
         <div class="form-item"><label><span class="req">*</span> 实验室检测中心</label><select id="f_lab"><option>应敏科技有限公司</option></select></div>
         <div class="form-item"><label><span class="req">*</span> 委托受理日期</label><input id="f_acceptDate" type="text" /></div>
         <div class="form-item"><label>客户要求完成日期</label><input id="f_requireDate" type="text" placeholder="请选择日期" /></div>
-        <div class="form-item"><label>要求检测完成天数</label><input id="f_days" type="text" placeholder="请输入" /></div>
+        <div class="form-item"><label><span class="req">*</span> 要求检测完成天数</label><input id="f_days" type="text" placeholder="请输入" /></div>
         <div class="form-item"><label><span class="req">*</span> 编制人</label><input id="f_editor" type="text" readonly class="bg-slate-50" value="admin" /></div>
         <div class="form-item"><label>代理单位</label><select id="f_agent"><option value="">请选择</option></select></div>
         <div class="form-item"><label>代理人联系方式</label><input id="f_agentPhone" type="text" placeholder="请输入" /></div>
@@ -479,9 +479,13 @@
         return;
       }
       tbody.innerHTML = samples.map(function (s, i) {
-        return '<tr><td>' + (i + 1) + '</td><td>' + esc(s.alias || s.name || '') + '</td><td>' + esc(s.spec || s.model || '') + '</td>' +
-          '<td class="max-w-[200px] truncate" title="' + esc(s.items || '') + '">' + esc(s.items || '') + '</td><td>' + esc(s.qty || '') + '</td><td>' + esc(s.price || '') + '</td><td>' + esc(s.total || '') + '</td>' +
-          '<td>' + esc(s.factory || '') + '</td><td>' + esc(s.manufacturer || '') + '</td><td>' + esc(s.remark || '') + '</td>' +
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(s.name || s.alias || '') + '</td>' +
+          '<td class="max-w-[240px] truncate" title="' + esc(s.mark || '') + '">' + esc(s.mark || '') + '</td>' +
+          '<td>' + esc(s.modelCode || s.spec || '') + '</td>' +
+          '<td>' + esc(s.testCategory || '') + '</td>' +
+          '<td class="max-w-[200px] truncate" title="' + esc(s.items || '') + '">' + esc(s.items || '') + '</td>' +
+          '<td>' + esc(s.qty || '') + '</td><td>' + esc(s.price || '') + '</td><td>' + esc(s.total || '') + '</td>' +
+          '<td>' + esc(s.remark || '') + '</td>' +
           '<td class="whitespace-nowrap"><button onclick="editSample(' + i + ')" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</button> ' +
           '<button onclick="deleteSample(' + i + ')" class="ml-2 text-red-500 hover:underline"><i class="fa fa-trash-o"></i> 删除</button></td></tr>';
       }).join('');
@@ -805,6 +809,7 @@
         modelName: model ? model.name : '',
         spec: [modelCode].concat(specText).filter(Boolean).join(' '),
         specValues: specValues,
+        mark: st ? st.buildMark(picked, modelCode, specValues) : '',
         unit: unit,
         testCategory: category,
         items: selectedTests.map(function (t) { return t.name; }).join(','),
@@ -847,6 +852,12 @@
       m.classList.remove('flex');
     }
 
+    function todayStr() {
+      var d = new Date();
+      var p = function (n) { return (n < 10 ? '0' : '') + n; };
+      return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    }
+
     (function init() {
       var params = getParams();
       var catMap = {
@@ -866,6 +877,7 @@
         data.code = params.code;
       }
       data.majorCat = cat.name;
+      if (params.mode !== 'edit') data.acceptDate = todayStr();
       fillForm(data);
       var catEl = document.getElementById('f_majorCat');
       if (catEl) catEl.value = cat.name;
