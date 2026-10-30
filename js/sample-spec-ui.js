@@ -10,7 +10,8 @@
   function parseTitle(title) {
     var t = String(title || '').replace(/^规格参数\d+:/, '');
     var m = t.match(/^(.*?)\s*[\(（]([^\)）]+)[\)）]\s*$/);
-    return m ? { name: m[1], unit: m[2] } : { name: t, unit: '' };
+    var name = (m ? m[1] : t).replace(/[A-Za-z]\s*$/, '').trim();
+    return { name: name, unit: m ? m[2] : '' };
   }
   function specsOf(sample, modelCode) {
     var st = global.SampleDataStore; if (!st || !sample) return [];
@@ -28,7 +29,7 @@
     var list = specsOf(sample, modelCode);
     if (!list.length) return '<span class="spec-none">无规格参数</span>';
     return list.map(function (sp, i) {
-      var val = (values && values[i]) || '';
+      var val = (values && values[i]) || (sp.options.length === 1 ? sp.options[0] : '');
       var id = idPrefix + '_' + i;
       var ctrl;
       if (!editable) {
