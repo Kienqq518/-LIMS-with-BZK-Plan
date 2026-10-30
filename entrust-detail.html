@@ -811,6 +811,7 @@
   <script src="js/sample-data-store.js"></script>
   <script src="js/sample-spec-ui.js"></script>
   <script src="js/receive-store.js"></script>
+  <script src="js/receive-history-mock.js"></script>
   <script>
     // 收样信息：一次收样可包含多类样品（一起勾选提交），每类样品有各自的规格取值与收样图片
     function rcvEsc(v) {
@@ -869,6 +870,14 @@
       var body = document.getElementById('receiveInfoBody');
       if (!body) return;
       var code = new URLSearchParams(window.location.search).get('code') || 'SC2026/0073';
+      // 节点在样品收样之后的委托，收样信息必须有内容：缺记录时按本委托自己的样品补一条历史 mock
+      if (window.ReceiveHistory) {
+        ReceiveHistory.ensure(code, {
+          accept: '2026-07-08',
+          samples: [{ name: detailSample.name, qty: detailSample.qty, unit: detailSample.unit,
+                      leafId: detailSample.leafId, spec: detailSample.spec, imgs: 1 }]
+        });
+      }
       var recs = window.ReceiveStore ? ReceiveStore.recordsOf(code) : [];
       var retTable = document.getElementById('returnInfoTable');
       if (!recs.length) {
@@ -894,7 +903,8 @@
           var sample = ln.leafId && window.SampleDataStore ? SampleDataStore.getSample(ln.leafId) : null;
           // 产品标记按样品数据的规则实时重算（缺值段渲染成「/」）；解析不到样品时沿用记录里存的文本
           var markText = sample ? (SampleDataStore.markOf(ln.leafId, ln.modelCode, ln.specValues || []) || ln.mark) : ln.mark;
-          var spec = window.SampleSpecUI ? SampleSpecUI.summary(sample, ln.modelCode, ln.specValues) : '';
+          var spec = (window.SampleSpecUI ? SampleSpecUI.summary(sample, ln.modelCode, ln.specValues) : '')
+            || ln.spec || '';   // 样品数据里没配规格参数时，用记录里存的规格文本
           var imgs = ReceiveStore.imCount(ln.images)
             ? '<div class="thumb-strip">' + ln.images.map(function (im) {
                 var src = ReceiveStore.imSrc(im);
@@ -1328,9 +1338,9 @@
             position: 'bottom-right',
             title: '收样信息展示',
             wide: true,
-            content: '<strong>需求逻辑：</strong>一次收样可以一起收多类样品（在样品收样弹窗里一起勾选即可），但每类样品的收样图片独属于自己的，所以本区域按「每次收样」分组，而不是整单一条收样记录。<br>' +
-              '<strong>展示规则：</strong>有收样记录时，每个批次一张卡片：卡头为「第 N 次收样 · 收样日期 · 收样人 · 收样状态 · 送样方式 · 送样人/电话 · 备注」，卡内表格按样品逐行列出序号、样品名称、数量、产品标记（该样品产品标记开关开启时）、型号/分类、规格、收样图片缩略图；型号/分类与规格没有值时显示「/」。<strong>该委托尚无收样提交记录时，本区域不展示任何表格（含「还样方式 / 退样地址」行），只显示一行文本「该委托尚无收样提交记录」。</strong><br>' +
-              '<strong>交互逻辑：</strong>数据来自「样品管理 › 样品收样」的提交记录；缩略图可点开看大图。还样方式、退样地址属退样环节，仅在该委托已有收样提交记录时随批次卡片一起展示。',
+            content: '<strong>需求逻辑：</strong>一次收样可以一起收多类样品（在样品收样弹窗里一起勾选即可），但每类样品的收样图片独属于自己的，所以本区域按「每次收样」分组，而不是整单一条收样记录。<strong>凡节点已走过「样品收样」的委托，本区域必须有收样信息</strong>：详情页在查不到收样提交记录时，会按本委托自己的样品清单幂等补一条历史收样记录（js/receive-history-mock.js，只补缺、不覆盖手工收样记录）；仍停留在样品收样节点的委托（即样品收样页列表里的 16 个委托）不补，只有其中已收过样的样品行会显示出来。<br>' +
+              '<strong>展示规则：</strong>有收样记录时，每个批次一张卡片：卡头为「第 N 次收样 · 收样日期 · 收样人 · 收样状态 · 送样方式 · 送样人/电话 · 备注」，卡内表格按样品逐行列出序号、样品名称、数量、产品标记（该样品产品标记开关开启时）、型号/分类、规格、收样图片缩略图；型号/分类与规格没有值时显示「/」（样品主数据里没配规格参数的，规格取收样时记录的文本，如「300」「YJV22-8.7/15kV 3×95」）。同一次收样里各行的收样图片互相独立，未上传的行显示「未上传」。<strong>该委托尚无收样提交记录时，本区域不展示任何表格（含「还样方式 / 退样地址」行），只显示一行文本「该委托尚无收样提交记录」。</strong><br>' +
+              '<strong>交互逻辑：</strong>数据来自「样品管理 › 样品收样」的提交记录（本地 lims.receiveRecords）+ 历史 mock 补齐；缩略图可点开看大图。还样方式、退样地址属退样环节，仅在该委托已有收样提交记录时随批次卡片一起展示。',
             tag: '收样'
           },
           { id: 'flow-sheet-entry', selector: '[data-annotate="flow-sheet-entry"]', position: 'top-right', title: '检测任务及样品流转单', wide: true, content: '入口位于委托详情页「检测任务及样品流转单」区块（收样后<strong>系统自动生成</strong>）。点击文档链接或「查看」打开流转单；各业务节点操作完成时自动追加回填检测流程行。', tag: '流转单' },
