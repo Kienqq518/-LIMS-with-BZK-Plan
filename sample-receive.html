@@ -431,8 +431,11 @@
               return '<span class="thumb" title="' + esc(u) + '"><img src="' + esc(u) + '" alt="收样图片" /></span>';
             }).join('') + '</div>'
           : '';
-        var mark = (window.SampleDataStore && SampleDataStore.isMarkEnabled(r.leafId))
-          ? (SampleDataStore.markOf(r.leafId, r.modelCode, r.specValues) || '未配置规则') : '';
+        var mark = '';
+        if (window.SampleDataStore && SampleDataStore.isMarkEnabled(r.leafId)) {
+          mark = r.models.length && !r.modelCode ? '选择型号后生成'
+            : (SampleDataStore.markOf(r.leafId, r.modelCode, r.specValues) || '未配置规则');
+        }
         return '<tr' + cls + '>' +
           '<td>' + checkCell + '</td>' +
           '<td>' + (i + 1) + '</td>' +

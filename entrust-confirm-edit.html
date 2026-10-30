@@ -224,8 +224,12 @@
             }).join('') + '</select>';
         }
         var qty = cEsc(row.qty) + (parseInt(row.qty, 10) > 1 ? '<span class="batch-badge">整批</span>' : '');
-        var mark = (window.SampleDataStore && SampleDataStore.isMarkEnabled(row.leafId))
-          ? (SampleDataStore.markOf(row.leafId, row.modelCode, row.specValues) || '未配置规则') : '';
+        var mark = '';
+        if (window.SampleDataStore && SampleDataStore.isMarkEnabled(row.leafId)) {
+          var ms = SampleDataStore.modelsOf(sample);
+          mark = (ms.length && !row.modelCode) ? '选择型号后生成'
+            : (SampleDataStore.markOf(row.leafId, row.modelCode, row.specValues) || '未配置规则');
+        }
         return '<tr><td>' + (i + 1) + '</td><td>' + cEsc(row.name) + '</td>' +
           '<td class="col-mark">' + cEsc(mark) + '</td>' +
           '<td>' + qty + '</td><td>' + modelCell + '</td>' +
