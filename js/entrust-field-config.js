@@ -9,6 +9,7 @@
     bidPrice: 'f_bidPrice',
     contractSample: 'f_contractSample',
     entrustNo: 'f_code',
+    majorCat: 'f_majorCat',
     taskType: 'f_taskType',
     priority: 'f_priority',
     detectType: 'f_testType',
@@ -47,9 +48,9 @@
       fields: [
         { id: 'contractNo', label: '合同编号', placeholder: '合同编号', fieldType: 'select', dictType: null, locked: true, checked: true },
         { id: 'contractName', label: '合同名称', placeholder: '合同名称', fieldType: 'text', dictType: null, checked: true },
-        { id: 'signTime', label: '合同签订时间', placeholder: '合同签订时间', fieldType: 'text', dictType: null, checked: true },
-        { id: 'servicePeriod', label: '合同服务期限', placeholder: '合同服务期限', fieldType: 'text', dictType: null, checked: true },
-        { id: 'bidPrice', label: '合同招标价款', placeholder: '合同招标价款', fieldType: 'text', dictType: null, checked: true },
+        { id: 'signTime', label: '签订时间', placeholder: '签订时间', fieldType: 'text', dictType: null, checked: true },
+        { id: 'servicePeriod', label: '服务年限', placeholder: '服务年限', fieldType: 'text', dictType: null, checked: true },
+        { id: 'bidPrice', label: '中标价', placeholder: '中标价', fieldType: 'text', dictType: null, checked: true },
         { id: 'contractSample', label: '合同样品', placeholder: '合同样品', fieldType: 'text', dictType: null, checked: true }
       ]
     },
@@ -57,46 +58,47 @@
       title: '委托信息', id: 'entrustInfo', checked: true,
       fields: [
         { id: 'entrustNo', label: '委托编号', placeholder: '委托编号', fieldType: 'text', dictType: null, locked: true, checked: true },
+        { id: 'majorCat', label: '样品大类', placeholder: '样品大类', fieldType: 'text', dictType: null, locked: true, checked: false },
         { id: 'taskType', label: '任务类型', placeholder: '任务类型', fieldType: 'select', dictType: 'lims_task_type', locked: true, checked: true },
         { id: 'priority', label: '优先等级', placeholder: '优先等级', fieldType: 'select', dictType: 'lims_priority', locked: true, checked: true },
         { id: 'detectType', label: '检测类型', placeholder: '检测类型', fieldType: 'select', dictType: 'lims_detect_type', checked: true },
-        { id: 'detectNature', label: '检测类别', placeholder: '检测类别', fieldType: 'select', dictType: 'lims_detect_category', checked: true },
-        { id: 'clientUnit', label: '委托单位', placeholder: '委托单位', fieldType: 'select', dictType: null, locked: true, checked: true },
-        { id: 'address', label: '地址', placeholder: '地址', fieldType: 'text', dictType: null, checked: true },
-        { id: 'zipCode', label: '邮编', placeholder: '邮编', fieldType: 'text', dictType: null, checked: true },
-        { id: 'contact', label: '联系人', placeholder: '联系人', fieldType: 'select', dictType: null, locked: true, checked: true },
-        { id: 'contactPhone', label: '联系方式', placeholder: '联系方式', fieldType: 'text', dictType: null, locked: true, checked: true },
-        { id: 'salesman', label: '业务负责人', placeholder: '业务员', fieldType: 'select', dictType: null, checked: true, removable: true, annotate: 'salesman-field' },
+        { id: 'detectNature', label: '检测类别', placeholder: '检测类别', fieldType: 'select', dictType: 'lims_detect_category', checked: false },
+        { id: 'clientUnit', label: '客户单位', placeholder: '客户单位', fieldType: 'select', dictType: null, locked: true, checked: true },
+        { id: 'address', label: '客户地址', placeholder: '客户地址', fieldType: 'text', dictType: null, checked: true },
+        { id: 'zipCode', label: '客户邮政编码', placeholder: '客户邮政编码', fieldType: 'text', dictType: null, checked: true },
+        { id: 'contact', label: '客户联系人', placeholder: '客户联系人', fieldType: 'select', dictType: null, locked: true, checked: true },
+        { id: 'contactPhone', label: '客户联系方式', placeholder: '客户联系方式', fieldType: 'text', dictType: null, locked: true, checked: true },
+        { id: 'salesman', label: '业务负责人', placeholder: '业务员', fieldType: 'select', dictType: null, checked: false, removable: true, annotate: 'salesman-field' },
         { id: 'signPlace', label: '签订地点', placeholder: '签订地点', fieldType: 'select', dictType: null, checked: true },
-        { id: 'testCenter', label: '检测中心', placeholder: '检测中心', fieldType: 'select', dictType: null, locked: true, checked: true },
-        { id: 'acceptDate', label: '受理日期', placeholder: '受理日期', fieldType: 'text', dictType: null, locked: true, checked: true },
+        { id: 'testCenter', label: '实验室检测中心', placeholder: '实验室检测中心', fieldType: 'select', dictType: null, locked: true, checked: true },
+        { id: 'acceptDate', label: '委托受理日期', placeholder: '委托受理日期', fieldType: 'text', dictType: null, locked: true, checked: true },
         { id: 'requireDate', label: '客户要求完成日期', placeholder: '客户要求完成日期', fieldType: 'text', dictType: null, checked: true },
         { id: 'requireDays', label: '要求检测完成天数', placeholder: '要求检测完成天数', fieldType: 'text', dictType: null, locked: true, checked: true, help: true },
         { id: 'compiler', label: '编制人', placeholder: '编制人', fieldType: 'text', dictType: null, locked: true, checked: true },
-        { id: 'agentUnit', label: '代检单位', placeholder: '代检单位', fieldType: 'select', dictType: null, checked: true },
-        { id: 'agentPhone', label: '代检联系方式', placeholder: '代检联系方式', fieldType: 'text', dictType: null, checked: true },
-        { id: 'entrustRemark', label: '委托备注', placeholder: '委托备注', fieldType: 'text', dictType: null, checked: true }
+        { id: 'agentUnit', label: '代理单位', placeholder: '代理单位', fieldType: 'select', dictType: null, checked: true },
+        { id: 'agentPhone', label: '代理人联系方式', placeholder: '代理人联系方式', fieldType: 'text', dictType: null, checked: true },
+        { id: 'entrustRemark', label: '备注', placeholder: '备注', fieldType: 'text', dictType: null, checked: true }
       ]
     },
     {
       title: '付款信息', id: 'payment', checked: true,
       fields: [
-        { id: 'totalPrice', label: '样品检测总价格', placeholder: '样品检测总价格', fieldType: 'text', dictType: null, locked: true, checked: true },
-        { id: 'actualCost', label: '实际费用', placeholder: '实际费用', fieldType: 'text', dictType: null, locked: true, checked: true },
-        { id: 'discount', label: '折扣率', placeholder: '折扣率', fieldType: 'text', dictType: null, locked: true, checked: true },
+        { id: 'totalPrice', label: '样品检测总价(元)', placeholder: '样品检测总价(元)', fieldType: 'text', dictType: null, locked: true, checked: true },
+        { id: 'actualCost', label: '实际费用(元)', placeholder: '实际费用(元)', fieldType: 'text', dictType: null, locked: true, checked: true },
+        { id: 'discount', label: '折扣率(%)', placeholder: '折扣率(%)', fieldType: 'text', dictType: null, locked: true, checked: true },
         { id: 'payerUnit', label: '付款单位', placeholder: '付款单位', fieldType: 'text', dictType: null, checked: true },
         { id: 'payMethod', label: '付款方式', placeholder: '付款方式', fieldType: 'select', dictType: 'lims_pay_method', checked: true },
-        { id: 'bizRemark', label: '业务备注', placeholder: '业务备注', fieldType: 'text', dictType: null, checked: true }
+        { id: 'bizRemark', label: '费用备注', placeholder: '费用备注', fieldType: 'text', dictType: null, checked: true }
       ]
     },
     {
       title: '报告信息', id: 'reportInfo', checked: true,
       fields: [
-        { id: 'reportDelivery', label: '报告交付方式', placeholder: '报告交付方式', fieldType: 'select', dictType: 'lims_report_delivery', checked: true },
+        { id: 'reportDelivery', label: '报告传送方式', placeholder: '报告传送方式', fieldType: 'select', dictType: 'lims_report_delivery', checked: true },
         { id: 'reportQual', label: '报告资质', placeholder: '报告资质', fieldType: 'select', dictType: 'lims_report_qual', locked: true, checked: true },
-        { id: 'reportDesc', label: '报告说明', placeholder: '报告说明', fieldType: 'select', dictType: 'lims_report_desc', checked: true },
+        { id: 'reportDesc', label: '报告描述', placeholder: '报告描述', fieldType: 'select', dictType: 'lims_report_desc', checked: true },
         { id: 'reportQty', label: '报告数量', placeholder: '报告数量', fieldType: 'text', dictType: null, checked: true },
-        { id: 'resultFormat', label: '结果格式', placeholder: '结果格式', fieldType: 'select', dictType: 'lims_result_format', checked: true }
+        { id: 'resultFormat', label: '结果方式', placeholder: '结果方式', fieldType: 'select', dictType: 'lims_result_format', checked: true }
       ]
     }
   ];
@@ -105,10 +107,27 @@
     return JSON.parse(JSON.stringify(sections));
   }
 
+  // 字段显示名/类型以代码里的默认配置为准，localStorage 只沿用用户的「启用/停用」勾选，
+  // 避免改了字段名却被浏览器里的旧缓存挡住。
+  function syncWithDefaults(sections) {
+    var out = cloneSections(DEFAULT_FIELD_SECTIONS);
+    var stored = {};
+    (sections || []).forEach(function (sec) {
+      (sec.fields || []).forEach(function (f) { stored[f.id] = f; });
+    });
+    out.forEach(function (sec) {
+      sec.fields.forEach(function (f) {
+        var old = stored[f.id];
+        if (old && typeof old.checked === 'boolean') f.checked = old.checked;
+      });
+    });
+    return out;
+  }
+
   function load() {
     try {
       var raw = global.localStorage && global.localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) return syncWithDefaults(JSON.parse(raw));
     } catch (e) { /* ignore */ }
     return cloneSections(DEFAULT_FIELD_SECTIONS);
   }
@@ -212,6 +231,7 @@
 
   global.EntrustFieldConfig = {
     STORAGE_KEY: STORAGE_KEY,
+    syncWithDefaults: syncWithDefaults,
     FORM_FIELD_MAP: FORM_FIELD_MAP,
     DEFAULT_FIELD_SECTIONS: DEFAULT_FIELD_SECTIONS,
     cloneSections: cloneSections,
