@@ -178,7 +178,7 @@
     <section class="rounded bg-white p-4 shadow-sm" data-annotate="receive-info">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>收样信息</h2>
       <div id="receiveInfoBody"></div>
-      <table class="info-table mt-3">
+      <table class="info-table mt-3" id="returnInfoTable">
         <tr><td class="lbl">还样方式</td><td class="val"></td><td class="lbl">退样地址</td><td class="val" colspan="3"></td></tr>
       </table>
     </section>
@@ -870,11 +870,14 @@
       if (!body) return;
       var code = new URLSearchParams(window.location.search).get('code') || 'SC2026/0073';
       var recs = window.ReceiveStore ? ReceiveStore.recordsOf(code) : [];
+      var retTable = document.getElementById('returnInfoTable');
       if (!recs.length) {
-        // 没有收样记录时不展示表格，只给一行说明
+        // 没有收样记录时不展示任何表格，只给一行说明（含还样方式/退样地址行）
         body.innerHTML = '<p class="text-sm text-slate-500">该委托尚无收样提交记录</p>';
+        if (retTable) retTable.style.display = 'none';
         return;
       }
+      if (retTable) retTable.style.display = '';
       var markColOn = recs.some(function (r) {
         return (r.lines || []).some(function (ln) {
           return window.SampleDataStore && SampleDataStore.isMarkEnabled(ln.leafId);
@@ -1324,8 +1327,8 @@
             title: '收样信息展示',
             wide: true,
             content: '<strong>需求逻辑：</strong>一次收样可以一起收多类样品（在样品收样弹窗里一起勾选即可），但每类样品的收样图片独属于自己的，所以本区域按「每次收样」分组，而不是整单一条收样记录。<br>' +
-              '<strong>展示规则：</strong>有收样记录时，每个批次一张卡片：卡头为「第 N 次收样 · 收样日期 · 收样人 · 收样状态 · 送样方式 · 送样人/电话 · 备注」，卡内表格按样品逐行列出序号、样品名称、数量、产品标记（该样品产品标记开关开启时）、型号/分类、规格、收样图片缩略图；型号/分类与规格没有值时显示「/」。<strong>该委托尚无收样提交记录时，不展示任何表格，只显示一行文本「该委托尚无收样提交记录」。</strong><br>' +
-              '<strong>交互逻辑：</strong>数据来自「样品管理 › 样品收样」的提交记录；缩略图可点开看大图。还样方式、退样地址属退样环节，单独保留在下方。',
+              '<strong>展示规则：</strong>有收样记录时，每个批次一张卡片：卡头为「第 N 次收样 · 收样日期 · 收样人 · 收样状态 · 送样方式 · 送样人/电话 · 备注」，卡内表格按样品逐行列出序号、样品名称、数量、产品标记（该样品产品标记开关开启时）、型号/分类、规格、收样图片缩略图；型号/分类与规格没有值时显示「/」。<strong>该委托尚无收样提交记录时，本区域不展示任何表格（含「还样方式 / 退样地址」行），只显示一行文本「该委托尚无收样提交记录」。</strong><br>' +
+              '<strong>交互逻辑：</strong>数据来自「样品管理 › 样品收样」的提交记录；缩略图可点开看大图。还样方式、退样地址属退样环节，仅在该委托已有收样提交记录时随批次卡片一起展示。',
             tag: '收样'
           },
           { id: 'flow-sheet-entry', selector: '[data-annotate="flow-sheet-entry"]', position: 'top-right', title: '检测任务及样品流转单', wide: true, content: '入口位于委托详情页「检测任务及样品流转单」区块（收样后<strong>系统自动生成</strong>）。点击文档链接或「查看」打开流转单；各业务节点操作完成时自动追加回填检测流程行。', tag: '流转单' },
