@@ -201,6 +201,9 @@
             </select>
           </div>
           <div class="modal-form-item"><label>样品别名</label><input id="m_alias" type="text" placeholder="请输入样品别名" /></div>
+          <div class="modal-form-item"><label><span class="req">*</span> 检测类别</label>
+            <select id="m_testCategory"><option value="">请选择检测类别</option></select>
+          </div>
           <div class="modal-form-item"><label><span class="req">*</span> 样品数量</label><input id="m_qty" type="text" value="1" oninput="recalcSamplePrice()" /></div>
 
           <div class="modal-form-item"><label>型号规格</label>
@@ -281,6 +284,18 @@
       var sections = EntrustFieldConfig.load();
       var dictTypes = MockDictStore.load();
       EntrustFieldConfig.applyToForm(sections, dictTypes);
+    })();
+
+    // 添加样品弹窗「检测类别」：与委托级同源，取字典 lims_detect_category（值用中文名，便于样品数据直接展示）
+    (function fillSampleCategoryOptions() {
+      var sel = document.getElementById('m_testCategory');
+      if (!sel || !window.MockDictStore) return;
+      MockDictStore.getActiveItems(MockDictStore.load(), 'lims_detect_category').forEach(function (it) {
+        var opt = document.createElement('option');
+        opt.value = it.label;
+        opt.textContent = it.label;
+        sel.appendChild(opt);
+      });
     })();
 
     function findCustomer(nameOrId) {
@@ -515,7 +530,7 @@
 
     function resetSampleModal() {
       editingSampleIndex = -1;
-      ['m_sampleName','m_alias','m_spec','m_factory','m_manufacturer','m_factoryAddr','m_manufacturerAddr',
+      ['m_sampleName','m_alias','m_testCategory','m_spec','m_factory','m_manufacturer','m_factoryAddr','m_manufacturerAddr',
         'm_prodDate','m_prepQty','m_sort','m_length','m_unit','m_remark','m_unitPrice','m_totalPrice'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.value = '';
@@ -543,6 +558,7 @@
         document.getElementById('m_sampleName').value = s.name || '';
         document.getElementById('m_alias').value = s.alias || '';
         document.getElementById('m_spec').value = s.spec || '';
+        document.getElementById('m_testCategory').value = s.testCategory || '';
         document.getElementById('m_qty').value = s.qty || '1';
         document.getElementById('m_unitPrice').value = s.price || '';
         document.getElementById('m_totalPrice').value = s.total || '';
@@ -560,8 +576,10 @@
     function confirmSample() {
       var name = document.getElementById('m_sampleName').value;
       var unit = document.getElementById('m_unit').value.trim();
+      var category = document.getElementById('m_testCategory').value;
       if (!name) { alert('请选择样品名称'); return; }
       if (!unit) { alert('请输入样品单位'); return; }
+      if (!category) { alert('请选择检测类别'); return; }
       var selectedTests = getSelectedTests();
       if (!selectedTests.length) { alert('请至少选择一项样品试验'); return; }
 
@@ -574,6 +592,7 @@
         name: name,
         alias: alias,
         spec: document.getElementById('m_spec').value,
+        testCategory: category,
         items: selectedTests.map(function (t) { return t.name; }).join(','),
         qty: qty,
         price: unitPrice,
