@@ -179,6 +179,35 @@
       }
     };
 
+  // DS 实壁类塑料电缆导管（图二的第 2 行样品）：型号 PVC-C，规格参数为环刚度等级 / 公称长度 / 公称内径
+  function conduitSample(id, name, sort, spigot) {
+    SAMPLE_MOCK[id] = {
+      name: name, code: '', sort: sort, category: 'BHG电缆保护管 / DS实壁类塑料电缆导管',
+      standard: 'DLT 802.3-2023', fee: '', cycle: 3, diffModel: '是', unit: '根',
+      remark: 'PVC-C 氯化聚氯乙烯实壁电力电缆导管', isCable: false,
+      cableStruct: '', cores: '', coreColor: '', phases: [], sampleSpecs: [],
+      markRule: '[型号信息.型号][ - ][规格参数.公称内径.值][空格][样品信息.标准号]',
+      models: [{
+        code: 'PVC-C', name: '氯化聚氯乙烯实壁电力电缆导管', sort: 1, cycle: 3,
+        desc: spigot ? '承插口连接。' : '直管，平口连接。',
+        specs: [
+          { name: '环刚度等级', unit: '', options: ['SN4', 'SN8', 'SN12.5', 'SN16'] },
+          { name: '公称长度', unit: 'mm', options: ['2000', '3000', '4000', '6000'] },
+          { name: '公称内径', unit: 'mm', options: ['50', '75', '110', '160', '200'] }
+        ],
+        tests: [
+          { name: '环刚度试验', quality: '', category: '型式检验', basis: 'DLT 802.3-2023', req: '环刚度不低于标称等级', qty: 3, price: 0, on: true },
+          { name: '扁平试验', quality: '', category: '型式检验', basis: 'DLT 802.3-2023', req: '压至外径 1/2 无破裂', qty: 3, price: 0, on: true },
+          { name: '冲击试验', quality: '', category: '抽样试验', basis: 'DLT 802.3-2023', req: '常温冲击，通过率≥90%', qty: 5, price: 0, on: true },
+          { name: '热变形试验', quality: '', category: '型式检验', basis: 'DLT 802.3-2023', req: '加热后无气泡、裂纹', qty: 2, price: 0, on: true }
+        ],
+        judges: [{ category: '例行试验', scheme: '规则判定方案-简单合格/不合格判定' }]
+      }]
+    };
+  }
+  conduitSample('ds-s', 'DS实壁类塑料电缆导管_直管', 1, false);
+  conduitSample('ds-k', 'DS实壁类塑料电缆导管_带承口', 2, true);
+
   // 安全工器具类：试验项原先散落在委托登记弹窗的 mock 里，现并入样品数据共享源（数据不变）
   function tests976(standard) {
     return [
@@ -268,7 +297,8 @@
         var name = t.split('.')[1] || '';
         var specs = (model && model.specs) || [];
         for (var i = 0; i < specs.length; i++) {
-          if (String(specs[i].title || '').indexOf(name) >= 0) return (specValues && specValues[i]) || '';
+          var title = String(specs[i].name || specs[i].title || '');
+          if (title.indexOf(name) >= 0) return (specValues && specValues[i]) || '';
         }
         return '';
       }
