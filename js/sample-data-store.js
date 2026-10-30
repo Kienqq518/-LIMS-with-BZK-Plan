@@ -347,7 +347,44 @@
     return buildMark(SAMPLE_MOCK[id], modelCode, specValues);
   }
 
+  // 样品名 → 样品大类：优先在样品数据树里精确命中叶节点，命中不了按关键词兜底（原型 mock 数据用）
+  var CAT_KEYWORDS = [
+    ['dlwz', ['电缆', '导管', '保护管', '铜芯', '铝芯', '电力']],
+    ['aqgqj', ['绝缘', '安全', '遮蔽罩', '验电器', '斗臂车', '旁路', '接地线', '安全帽', '安全带', '绝缘服']],
+    ['hjjc', ['水质', '环境', '噪声', '土壤', '废气', '废水']],
+    ['gcjc', ['水泥', '混凝土', '砂浆', '骨料', '钢筋']]
+  ];
+  function catKeyOfName(name) {
+    if (!name) return '';
+    var cats = Object.keys(TREES);
+    for (var i = 0; i < cats.length; i++) {
+      var hit = false;
+      (function walk(nodes) {
+        (nodes || []).forEach(function (n) {
+          if (!hit && n.leaf && n.label === name) hit = true;
+          walk(n.children);
+        });
+      })(TREES[cats[i]]);
+      if (hit) return cats[i];
+    }
+    for (var k = 0; k < CAT_KEYWORDS.length; k++) {
+      var words = CAT_KEYWORDS[k][1];
+      for (var w = 0; w < words.length; w++) { if (name.indexOf(words[w]) >= 0) return CAT_KEYWORDS[k][0]; }
+    }
+    return '';
+  }
+  // 一行里可能是「绝缘毯、安全带」多个样品名，取第一个能判定出大类的
+  function catLabelOfNames(text) {
+    var parts = String(text || '').split(/[、,，\\/]/);
+    for (var i = 0; i < parts.length; i++) {
+      var key = catKeyOfName(parts[i].trim());
+      if (key) return CAT_LABELS[key];
+    }
+    return '';
+  }
+
   global.SampleDataStore = {
+    catKeyOfName: catKeyOfName, catLabelOfNames: catLabelOfNames,
     isMarkEnabled: isMarkEnabled, setMarkEnabled: setMarkEnabled, markOf: markOf,
     MARK_FLAG_KEY: MARK_FLAG_KEY,
     TREES: TREES, SAMPLE_MOCK: SAMPLE_MOCK, CAT_LABELS: CAT_LABELS,
