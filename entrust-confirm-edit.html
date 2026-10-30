@@ -226,12 +226,12 @@
         var qty = cEsc(row.qty);
         var mark = '';
         if (window.SampleDataStore && SampleDataStore.isMarkEnabled(row.leafId)) {
-          var ms = SampleDataStore.modelsOf(sample);
+          var ms = SampleDataStore.modelsOf(st);
           mark = (ms.length && !row.modelCode) ? '选择型号后生成'
             : (SampleDataStore.markOf(row.leafId, row.modelCode, row.specValues) || '未配置规则');
         }
         return '<tr><td>' + (i + 1) + '</td><td>' + cEsc(row.name) + '</td>' +
-          '<td class="col-mark">' + cEsc(mark) + '</td>' +
+          '<td class="col-mark">' + (cEsc(mark) || '<span class="spec-none">/</span>') + '</td>' +
           '<td>' + qty + '</td><td>' + modelCell + '</td>' +
           '<td>' + SampleSpecUI.renderCells(st, row.modelCode, row.specValues, 'cf' + i, true) + '</td>' +
           '<td>' + cEsc(row.unit) + '</td><td></td></tr>';
