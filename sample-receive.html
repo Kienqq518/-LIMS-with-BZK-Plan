@@ -17,6 +17,32 @@
     .modal-form-item input, .modal-form-item select, .modal-form-item textarea { flex: 1; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
     .modal-form-item input:focus, .modal-form-item select:focus, .modal-form-item textarea:focus { border-color: #3b82f6; }
     .modal-form-item.span-full { grid-column: span 2; }
+    .rcv-table { width: 100%; border-collapse: collapse; }
+    .rcv-table th, .rcv-table td { border: 1px solid #e2e8f0; padding: 6px 8px; font-size: 13px; text-align: left; vertical-align: top; }
+    .rcv-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
+    .rcv-table tr.is-received { background: #f8fafc; color: #94a3b8; }
+    .rcv-table tr.is-received td { border-color: #eef2f7; }
+    .batch-badge { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px; background: #fef3c7; color: #b45309; font-size: 11px; line-height: 17px; }
+    .state-badge { display: inline-block; padding: 1px 6px; border-radius: 999px; font-size: 12px; }
+    .state-todo { background: #eff6ff; color: #2563eb; }
+    .state-done { background: #f1f5f9; color: #64748b; }
+    .spec-line { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .spec-line:last-child { margin-bottom: 0; }
+    .spec-name { width: 116px; flex-shrink: 0; text-align: right; font-size: 12px; color: #64748b; }
+    .spec-input { flex: 1; min-width: 90px; max-width: 150px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 12px; outline: none; background: #fff; }
+    .spec-input:focus { border-color: #3b82f6; }
+    .spec-readonly { font-size: 12px; color: #475569; }
+    .spec-none { font-size: 12px; color: #cbd5e1; }
+    .model-select { width: 100%; max-width: 168px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 12px; outline: none; background: #fff; }
+    .row-link { color: #2563eb; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    .row-link:hover { text-decoration: underline; }
+    .thumb-strip { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .thumb { position: relative; width: 34px; height: 34px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .tip-line { margin-top: 8px; font-size: 12px; color: #94a3b8; line-height: 1.7; }
+    .photo-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; }
+    .photo-item:hover { border-color: #93c5fd; background: #f8fafc; }
+    .photo-item img { width: 44px; height: 44px; object-fit: cover; border-radius: 3px; background: #f1f5f9; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -102,7 +128,7 @@
       </div>
 
       <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
-        <span>共 11 条</span>
+        <span id="receiveTotalCount">共 11 条</span>
         <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
         <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
         <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
@@ -113,26 +139,31 @@
 
   <!-- 收样弹窗 -->
   <div id="receiveModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-    <div class="flex max-h-[90vh] w-[760px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+    <div class="flex max-h-[92vh] w-[1040px] max-w-full flex-col rounded-lg bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <h3 id="receiveModalTitle" class="text-base font-medium text-slate-800">SC2026/0080-收样</h3>
         <button onclick="closeReceiveModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="flex-1 overflow-y-auto px-6 py-4">
-        <!-- 弹窗内样品表格 -->
+        <!-- 弹窗内样品表：按样品行勾选，可只收其中几类（Story202611-01-05） -->
         <div class="overflow-x-auto">
-          <table class="w-full border-collapse text-left text-sm">
+          <table class="rcv-table min-w-[900px]">
             <thead>
-              <tr class="bg-slate-50 text-slate-600">
-                <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
-                <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
-                <th class="border border-slate-200 px-3 py-2 font-medium">数量</th>
-                <th class="border border-slate-200 px-3 py-2 font-medium">型号规格</th>
+              <tr>
+                <th class="w-10 text-center"><input type="checkbox" id="rcvCheckAll" onchange="onCheckAll(this.checked)" /></th>
+                <th class="w-10">序号</th>
+                <th>样品名称</th>
+                <th class="w-16">数量</th>
+                <th class="w-44">型号/分类</th>
+                <th class="w-60">规格</th>
+                <th class="w-20">收样情况</th>
+                <th class="w-28">操作</th>
               </tr>
             </thead>
             <tbody id="modalSampleBody"></tbody>
           </table>
         </div>
+        <p class="tip-line">不同样品可分开勾选、分次收样；同一行数量大于 1 时是同一批样品，只能整批一起收，不能拆成多次。规格参数在委托登记未填的，可在此补填（委托确认时必须填写完整）。收样图片按样品逐张上传。</p>
 
         <!-- 收样表单 -->
         <div class="modal-form-grid mt-5">
@@ -161,10 +192,6 @@
             <input id="r_senderPhone" type="text" placeholder="请输入送样人电话" />
           </div>
           <div class="modal-form-item">
-            <label>样品图片</label>
-            <button type="button" class="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"><i class="fa fa-paperclip"></i> 上传附件</button>
-          </div>
-          <div class="modal-form-item">
             <label>备注</label>
             <textarea id="r_remark" rows="3" placeholder="请输入备注"></textarea>
           </div>
@@ -173,6 +200,26 @@
       <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
         <button onclick="closeReceiveModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
         <button onclick="confirmReceive()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确认提交</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 收样图片选择（按样品行，一次收样中每类样品各自拥有图片） -->
+  <div id="photoModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[80vh] w-[520px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 id="photoModalTitle" class="text-base font-medium text-slate-800">添加收样图片</h3>
+        <button onclick="closePhotoPicker()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-5 py-4">
+        <div id="photoList" class="grid grid-cols-2 gap-2"></div>
+      </div>
+      <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+        <span id="photoCount" class="text-sm text-slate-500">已选 0 张</span>
+        <div class="flex gap-2">
+          <button onclick="closePhotoPicker()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+          <button onclick="applyPhotoPicker()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+        </div>
       </div>
     </div>
   </div>
@@ -199,31 +246,73 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
+  <script src="js/sample-data-store.js"></script>
+  <script src="js/sample-spec-ui.js"></script>
+  <script src="js/receive-store.js"></script>
   <script>
+    // 列表仍一行一委托；samples 为委托内的样品行（名称不同即不同行，同名多数量整批一行）
     var receiveData = [
-      { code: 'SC2026/0080', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', sendDate: '', requireDate: '2026-07-30', acceptDate: '2026-07-03', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘操作杆', qty: '1', spec: '' }] },
-      { code: 'SC2026/0067', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', sendDate: '', requireDate: '2026-07-25', acceptDate: '2026-06-28', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘操作杆', qty: '1', spec: '' }] },
-      { code: 'SC2026/0065', contract: '/', customer: '东集西造有限公司', sample: '10kV带电作业用绝缘服', sendDate: '', requireDate: '2026-07-20', acceptDate: '2026-06-26', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '10kV带电作业用绝缘服', qty: '2', spec: '' }] },
-      { code: 'SC2026/0063', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘斗臂车-t', sendDate: '', requireDate: '2026-07-18', acceptDate: '2026-06-24', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘斗臂车-t', qty: '1', spec: '' }] },
-      { code: 'SC2026/0061', contract: '/', customer: '宇宙设想有限公司', sample: '10kV旁路作业设备', sendDate: '', requireDate: '2026-07-15', acceptDate: '2026-06-22', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '10kV旁路作业设备', qty: '1', spec: '' }] },
-      { code: 'SC2026/0059', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', sendDate: '', requireDate: '2026-07-12', acceptDate: '2026-06-20', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '绝缘操作杆', qty: '1', spec: '' }] },
-      { code: 'SC2026/0057', contract: '/', customer: '东集西造有限公司', sample: '安全帽', sendDate: '', requireDate: '2026-07-10', acceptDate: '2026-06-18', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '安全帽', qty: '5', spec: '' }] },
-      { code: 'SC2026/0055', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘毯、安全带', sendDate: '', requireDate: '2026-07-08', acceptDate: '2026-06-16', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘毯、安全带', qty: '3', spec: '' }] },
-      { code: 'SC2026/0053', contract: '/', customer: '灵知益义有限公司', sample: '绝缘杆', sendDate: '', requireDate: '2026-07-05', acceptDate: '2026-06-14', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '绝缘杆', qty: '2', spec: '' }] },
-      { code: 'SC2026/0051', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '遮蔽罩、安全带', sendDate: '', requireDate: '2026-07-03', acceptDate: '2026-06-12', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '遮蔽罩、安全带', qty: '1', spec: '' }] },
-      { code: 'SC2026/0049', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '验电器', sendDate: '', requireDate: '2026-06-30', acceptDate: '2026-06-10', prepaid: '否', priority: '常规', status: '样品收样', editor: '潘哲宁', salesman: '梁倩', samples: [{ name: '验电器', qty: '2', spec: '' }] }
+      { code: 'SC2026/0080', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', sendDate: '', requireDate: '2026-07-30', acceptDate: '2026-07-03', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘操作杆', qty: '1', unit: '根' }] },
+      { code: 'SC2026/0067', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', sendDate: '', requireDate: '2026-07-25', acceptDate: '2026-06-28', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘操作杆', qty: '1', unit: '根' }] },
+      { code: 'SC2026/0065', contract: '/', customer: '东集西造有限公司', sample: '10kV带电作业用绝缘服', sendDate: '', requireDate: '2026-07-20', acceptDate: '2026-06-26', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '10kV带电作业用绝缘服', qty: '2', unit: '套' }] },
+      { code: 'SC2026/0063', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘斗臂车-t', sendDate: '', requireDate: '2026-07-18', acceptDate: '2026-06-24', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘斗臂车-t', qty: '1', unit: '台' }] },
+      { code: 'SC2026/0061', contract: '/', customer: '宇宙设想有限公司', sample: '10kV旁路作业设备', sendDate: '', requireDate: '2026-07-15', acceptDate: '2026-06-22', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '10kV旁路作业设备', qty: '1', unit: '套' }] },
+      { code: 'SC2026/0059', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', sendDate: '', requireDate: '2026-07-12', acceptDate: '2026-06-20', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '绝缘操作杆', qty: '1', unit: '根' }] },
+      { code: 'SC2026/0057', contract: '/', customer: '东集西造有限公司', sample: '安全帽', sendDate: '', requireDate: '2026-07-10', acceptDate: '2026-06-18', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '安全帽', qty: '5', unit: '顶' }] },
+      { code: 'SC2026/0055', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘毯、安全带', sendDate: '', requireDate: '2026-07-08', acceptDate: '2026-06-16', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '绝缘毯', qty: '3', unit: '块' }, { name: '安全带', qty: '1', unit: '条' }] },
+      { code: 'SC2026/0053', contract: '/', customer: '灵知益义有限公司', sample: '绝缘杆', sendDate: '', requireDate: '2026-07-05', acceptDate: '2026-06-14', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '绝缘杆', qty: '2', unit: '根' }] },
+      { code: 'SC2026/0051', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '遮蔽罩、安全带', sendDate: '', requireDate: '2026-07-03', acceptDate: '2026-06-12', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '遮蔽罩', qty: '1', unit: '件' }, { name: '安全带', qty: '1', unit: '条' }] },
+      { code: 'SC2026/0049', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '验电器', sendDate: '', requireDate: '2026-06-30', acceptDate: '2026-06-10', prepaid: '否', priority: '常规', status: '样品收样', editor: '潘哲宁', salesman: '梁倩', samples: [{ name: '验电器', qty: '2', unit: '支' }] },
+      { code: 'SC2026/0047', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆', sendDate: '', requireDate: '2026-06-28', acceptDate: '2026-06-08', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '10kV3芯电力电缆', qty: '3', unit: '根' }] },
+      { code: 'SC2026/0045', contract: '/', customer: '东集西造有限公司', sample: 'DS实壁类塑料电缆导管_直管、10kV单芯电力电缆', sendDate: '', requireDate: '2026-06-25', acceptDate: '2026-06-05', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: 'DS实壁类塑料电缆导管_直管', qty: '4', unit: '根' }, { name: '10kV单芯电力电缆', qty: '1', unit: '根' }] }
     ];
 
     var currentIndex = -1;
+    var modalRows = [];
+    var pickerRow = -1;
+    var pickerDraft = [];
+
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // 样品名 → 样品数据里的叶子（拿到型号/分类与规格参数定义）
+    function leafOf(name) {
+      if (!window.SampleDataStore) return null;
+      var cats = Object.keys(SampleDataStore.TREES);
+      for (var i = 0; i < cats.length; i++) {
+        var hit = null;
+        (function walk(nodes) {
+          (nodes || []).forEach(function (n) {
+            if (!hit && n.leaf && n.label === name) hit = n.id;
+            walk(n.children);
+          });
+        })(SampleDataStore.getTree(cats[i]));
+        if (hit) return { id: hit, sample: SampleDataStore.getSample(hit) };
+      }
+      return null;
+    }
+
+    function pendingRows(item) {
+      var got = window.ReceiveStore ? ReceiveStore.receivedMap(item.code) : {};
+      return (item.samples || []).filter(function (sn) { return !got[item.code + '|' + sn.name]; });
+    }
 
     function renderTable() {
-      document.getElementById('receiveTableBody').innerHTML = receiveData.map(function (item, i) {
+      // 只展示还有待收样品的委托；全部收完后该委托从列表移除（任务状态列始终为「样品收样」）
+      var rows = receiveData.map(function (item, i) { return { item: item, i: i }; })
+        .filter(function (r) { return pendingRows(r.item).length > 0; });
+      document.getElementById('receiveTableBody').innerHTML = rows.map(function (r) {
+        var item = r.item, todo = pendingRows(item);
+        var sampleText = item.samples.length > 1
+          ? esc(item.sample) + '<span class="ml-1 text-xs text-slate-400">（待收 ' + todo.length + ' 类）</span>'
+          : esc(item.sample);
         return '<tr class="hover:bg-slate-50">' +
-          '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (r.i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + esc(item.customer) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + sampleText + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (item.sendDate || '') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.requireDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.acceptDate + '</td>' +
@@ -231,12 +320,14 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + item.priority + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.status + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5">' + item.salesman + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + esc(item.salesman) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
-            '<button onclick="openReceiveModal(' + i + ')" class="text-blue-600 hover:underline"><i class="fa fa-edit"></i> 收样</button>' +
-            '<button onclick="openReturnModal(' + i + ')" class="ml-3 text-orange-500 hover:underline"><i class="fa fa-reply"></i> 退回</button>' +
+            '<button onclick="openReceiveModal(' + r.i + ')" class="text-blue-600 hover:underline"><i class="fa fa-edit"></i> 收样</button>' +
+            '<button onclick="openReturnModal(' + r.i + ')" class="ml-3 text-orange-500 hover:underline"><i class="fa fa-reply"></i> 退回</button>' +
           '</td></tr>';
       }).join('');
+      var cnt = document.getElementById('receiveTotalCount');
+      if (cnt) cnt.textContent = '共 ' + rows.length + ' 条';
     }
 
     function showModal(id) {
@@ -244,7 +335,6 @@
       m.classList.remove('hidden');
       m.classList.add('flex');
     }
-
     function hideModal(id) {
       var m = document.getElementById(id);
       m.classList.add('hidden');
@@ -254,30 +344,191 @@
     function resetReceiveForm() {
       document.getElementById('r_receiver').value = '';
       document.getElementById('r_status').value = '完好';
-      document.getElementById('r_date').value = '2026-07-11';
+      document.getElementById('r_date').value = todayStr();
       document.getElementById('r_delivery').value = '送样';
       document.getElementById('r_sender').value = '';
       document.getElementById('r_senderPhone').value = '';
       document.getElementById('r_remark').value = '';
     }
 
+    function todayStr() {
+      var d = new Date();
+      var p = function (n) { return (n < 10 ? '0' : '') + n; };
+      return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    }
+
     function openReceiveModal(index) {
       currentIndex = index;
       var item = receiveData[index];
+      var got = window.ReceiveStore ? ReceiveStore.receivedMap(item.code) : {};
       document.getElementById('receiveModalTitle').textContent = item.code + '-收样';
-      document.getElementById('modalSampleBody').innerHTML = item.samples.map(function (s, i) {
-        return '<tr><td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + s.name + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + s.qty + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + (s.spec || '') + '</td></tr>';
-      }).join('');
+      modalRows = (item.samples || []).map(function (sn) {
+        var leaf = leafOf(sn.name);
+        var models = leaf && leaf.sample ? SampleDataStore.modelsOf(leaf.sample) : [];
+        var rec = got[item.code + '|' + sn.name];
+        var line = rec ? rec.line : null;
+        var modelCode = line ? line.modelCode : (models.length === 1 ? models[0].code : '');
+        return {
+          sampleKey: item.code + '|' + sn.name,
+          name: sn.name,
+          qty: String(sn.qty || '1'),
+          unit: sn.unit || '',
+          leafId: leaf ? leaf.id : '',
+          sample: leaf ? leaf.sample : null,
+          models: models,
+          modelCode: modelCode,
+          specValues: line ? (line.specValues || []) : [],
+          images: line ? (line.images || []) : [],
+          received: !!rec,
+          editing: !rec,
+          record: rec ? rec.record : null
+        };
+      });
       resetReceiveForm();
+      renderModalRows();
       showModal('receiveModal');
+    }
+
+    function renderModalRows() {
+      var todo = modalRows.filter(function (r) { return !r.received; });
+      document.getElementById('modalSampleBody').innerHTML = modalRows.map(function (r, i) {
+        var cls = r.received ? ' class="is-received"' : '';
+        var checkCell = r.received
+          ? '<div class="text-center text-xs text-slate-400">已收</div>'
+          : '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" onchange="onRowCheck()" /></div>';
+        var qtyCell = esc(r.qty) + (parseInt(r.qty, 10) > 1 ? '<span class="batch-badge">整批</span>' : '');
+        var modelCell;
+        if (!r.models.length) {
+          modelCell = '<span class="spec-none">不分型号</span>';
+        } else if (r.received || !r.editing) {
+          var mo = r.models.filter(function (m) { return m.code === r.modelCode; })[0];
+          modelCell = '<span class="spec-readonly">' + esc(mo ? mo.label : (r.modelCode || '—')) + '</span>';
+        } else {
+          modelCell = '<select class="model-select" onchange="onRowModel(' + i + ', this.value)">' +
+            '<option value="">请选择型号/分类</option>' +
+            r.models.map(function (m) {
+              return '<option value="' + esc(m.code) + '"' + (m.code === r.modelCode ? ' selected' : '') + '>' + esc(m.label) + '</option>';
+            }).join('') + '</select>';
+        }
+        var specCell = SampleSpecUI.renderCells(r.sample, r.modelCode, r.specValues, 'sp' + i, !r.received && r.editing);
+        var opCell;
+        if (r.received) {
+          opCell = '<span class="row-link" onclick="viewReceiveInfo(' + i + ')">收样详情</span>';
+        } else {
+          opCell = '<span class="row-link" onclick="toggleRowEdit(' + i + ')">' + (r.editing ? '完成编辑' : '编辑') + '</span>' +
+            '<span class="row-link ml-2" onclick="openPhotoPicker(' + i + ')"><i class="fa fa-camera"></i> 收样图片' + (r.images.length ? '（' + r.images.length + '）' : '') + '</span>';
+        }
+        var thumbs = r.images.length
+          ? '<div class="thumb-strip">' + r.images.map(function (u) {
+              return '<span class="thumb" title="' + esc(u) + '"><img src="' + esc(u) + '" alt="收样图片" /></span>';
+            }).join('') + '</div>'
+          : '';
+        return '<tr' + cls + '>' +
+          '<td>' + checkCell + '</td>' +
+          '<td>' + (i + 1) + '</td>' +
+          '<td>' + esc(r.name) + '</td>' +
+          '<td>' + qtyCell + '</td>' +
+          '<td>' + modelCell + '</td>' +
+          '<td>' + specCell + thumbs + '</td>' +
+          '<td><span class="state-badge ' + (r.received ? 'state-done' : 'state-todo') + '">' + (r.received ? '已收样' : '待收样') + '</span></td>' +
+          '<td>' + opCell + '</td>' +
+        '</tr>';
+      }).join('');
+      var all = document.getElementById('rcvCheckAll');
+      all.checked = false;
+      all.disabled = todo.length === 0;
+      all.indeterminate = false;
+      all.title = todo.length === 0 ? '没有待收样样品' : '仅作用于待收样行';
+    }
+
+    function collectRowSpecs() {
+      modalRows.forEach(function (r, i) {
+        if (!r.received && r.sample) r.specValues = SampleSpecUI.readValues(r.sample, r.modelCode, 'sp' + i);
+      });
+    }
+
+    function onRowModel(i, code) {
+      collectRowSpecs();
+      modalRows[i].modelCode = code;
+      modalRows[i].specValues = [];
+      renderModalRows();
+    }
+
+    function toggleRowEdit(i) {
+      collectRowSpecs();
+      modalRows[i].editing = !modalRows[i].editing;
+      renderModalRows();
+    }
+
+    function onRowCheck() {
+      var boxes = [].slice.call(document.querySelectorAll('.rcv-check'));
+      var checked = boxes.filter(function (b) { return b.checked; }).length;
+      var all = document.getElementById('rcvCheckAll');
+      all.checked = checked > 0 && checked === boxes.length;
+      all.indeterminate = checked > 0 && checked < boxes.length;
+    }
+
+    // 表头复选框只作用于待收样行：未全选→全选待收；已全选→取消
+    function onCheckAll(checked) {
+      document.querySelectorAll('.rcv-check').forEach(function (b) { b.checked = checked; });
+      onRowCheck();
+    }
+
+    function openPhotoPicker(i) {
+      collectRowSpecs();
+      pickerRow = i;
+      pickerDraft = modalRows[i].images.slice();
+      document.getElementById('photoModalTitle').textContent = '添加收样图片 - ' + modalRows[i].name;
+      document.getElementById('photoList').innerHTML = ReceiveStore.PHOTO_LIBRARY.map(function (ph, k) {
+        var on = pickerDraft.indexOf(ph.url) >= 0;
+        return '<label class="photo-item"><input type="checkbox" data-url="' + esc(ph.url) + '"' + (on ? ' checked' : '') + ' onchange="onPhotoPick(this)" />' +
+          '<img src="' + esc(ph.url) + '" alt="' + esc(ph.name) + '" /><span class="text-sm">' + esc(ph.name) + '</span></label>';
+      }).join('');
+      updatePhotoCount();
+      showModal('photoModal');
+    }
+    function onPhotoPick(cb) {
+      var url = cb.getAttribute('data-url');
+      var at = pickerDraft.indexOf(url);
+      if (cb.checked && at < 0) pickerDraft.push(url);
+      if (!cb.checked && at >= 0) pickerDraft.splice(at, 1);
+      updatePhotoCount();
+    }
+    function updatePhotoCount() {
+      document.getElementById('photoCount').textContent = '已选 ' + pickerDraft.length + ' 张';
+    }
+    function applyPhotoPicker() {
+      if (pickerRow >= 0) modalRows[pickerRow].images = pickerDraft.slice();
+      closePhotoPicker();
+      renderModalRows();
+    }
+    function closePhotoPicker() { hideModal('photoModal'); }
+
+    function viewReceiveInfo(i) {
+      var r = modalRows[i], rec = r.record || {};
+      alert('收样信息（' + r.name + '）\n收样人：' + (rec.receiver || '—') +
+        '\n收样日期：' + (rec.receiveDate || '—') +
+        '\n收样状态：' + (rec.status || '—') +
+        '\n送样方式：' + (rec.delivery || '—') +
+        '\n送样人：' + (rec.sender || '—') + '　电话：' + (rec.senderPhone || '—') +
+        '\n规格：' + (SampleSpecUI.summary(r.sample, r.modelCode, r.specValues) || '—') +
+        '\n收样图片：' + (r.images.length ? r.images.length + ' 张' : '未上传') +
+        '\n备注：' + (rec.remark || '—'));
     }
 
     function closeReceiveModal() { hideModal('receiveModal'); }
 
     function confirmReceive() {
+      collectRowSpecs();
+      var picked = modalRows.filter(function (r, i) {
+        if (r.received) return false;
+        var box = document.querySelector('.rcv-check[data-row="' + i + '"]');
+        return box && box.checked;
+      });
+      if (!picked.length) {
+        alert('请勾选要收样的样品');
+        return;
+      }
       if (!document.getElementById('r_receiver').value) {
         alert('请选择收样人');
         return;
@@ -286,8 +537,43 @@
         alert('请填写收样日期');
         return;
       }
-      alert('收样提交成功（原型演示）');
+      var item = receiveData[currentIndex];
+      ReceiveStore.addRecord({
+        entrustCode: item.code,
+        receiver: document.getElementById('r_receiver').value,
+        status: document.getElementById('r_status').value,
+        receiveDate: document.getElementById('r_date').value.trim(),
+        delivery: document.getElementById('r_delivery').value,
+        sender: document.getElementById('r_sender').value.trim(),
+        senderPhone: document.getElementById('r_senderPhone').value.trim(),
+        remark: document.getElementById('r_remark').value.trim(),
+        lines: picked.map(function (r) {
+          return {
+            sampleKey: r.sampleKey, name: r.name, qty: r.qty, unit: r.unit,
+            leafId: r.leafId, modelCode: r.modelCode,
+            specValues: r.specValues.slice(), images: r.images.slice()
+          };
+        })
+      });
+
+      var desc = picked.map(function (r) {
+        return parseInt(r.qty, 10) > 1 ? r.name + '（数量 ' + r.qty + '，整批）' : r.name;
+      }).join('、');
+      var left = modalRows.filter(function (r) {
+        return !r.received && picked.indexOf(r) < 0;
+      });
+
+      if (left.length) {
+        // 仍有待收样品：弹窗保持打开，已收行锁定，表单清空，可继续收下一批
+        alert('本次已收样：' + desc + '\n其余 ' + left.length + ' 类样品可稍后继续收样。');
+        openReceiveModal(currentIndex);
+        renderTable();
+        return;
+      }
+      // 全部收完：关闭弹窗，该委托从列表移除
+      alert('该委托样品已全部收样。');
       closeReceiveModal();
+      renderTable();
     }
 
     function openReturnModal(index) {
@@ -299,6 +585,7 @@
 
     function closeReturnModal() { hideModal('returnModal'); }
 
+    // 退回仍按委托整单，不拆到样品
     function confirmReturn() {
       if (!document.getElementById('returnReason').value.trim()) {
         alert('请输入退回原因');
@@ -308,7 +595,7 @@
       closeReturnModal();
     }
 
-    ['receiveModal', 'returnModal'].forEach(function (id) {
+    ['receiveModal', 'returnModal', 'photoModal'].forEach(function (id) {
       document.getElementById(id).addEventListener('click', function (e) {
         if (e.target === this) hideModal(id);
       });
