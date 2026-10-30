@@ -210,16 +210,17 @@
     if (!panel) return;
     var d = draftFromCurrent();
     order = d.order; hidden = d.hidden;
-    panel.classList.add('open');
     var r = anchor.getBoundingClientRect();
+    var inp = panel.querySelector('#cc-kw');
+    inp.value = '';
+    // 先渲染列表再定位：面板高度要等条目填充后才准，否则底部「保存」会被顶出视口
+    panel.style.maxHeight = Math.max(280, global.innerHeight - 24) + 'px';
+    panel.classList.add('open');
+    renderList('');
     var w = panel.offsetWidth || 380;
-    // 先量出面板实际高度再夹进视口，否则条目多时底部「保存」会被顶出屏幕外点不到
     var h = panel.offsetHeight || 420;
     panel.style.top = Math.max(12, Math.min(r.bottom + 6, global.innerHeight - h - 12)) + 'px';
     panel.style.left = Math.max(12, Math.min(r.left - w + 20, global.innerWidth - w - 12)) + 'px';
-    var inp = panel.querySelector('#cc-kw');
-    inp.value = '';
-    renderList('');
     inp.focus();
   }
   function closePanel(revert) {
