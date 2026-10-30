@@ -895,9 +895,12 @@
         var rows = (r.lines || []).map(function (ln, i) {
           var sample = ln.leafId && window.SampleDataStore ? SampleDataStore.getSample(ln.leafId) : null;
           var spec = window.SampleSpecUI ? SampleSpecUI.summary(sample, ln.modelCode, ln.specValues) : '';
-          var imgs = (ln.images && ln.images.length)
-            ? '<div class="thumb-strip">' + ln.images.map(function (u) {
-                return '<span class="thumb" title="' + rcvEsc(u) + '"><img src="' + rcvEsc(u) + '" alt="收样图片" /></span>';
+          var imgs = ReceiveStore.imCount(ln.images)
+            ? '<div class="thumb-strip">' + ln.images.map(function (im) {
+                var src = ReceiveStore.imSrc(im);
+                return src
+                  ? '<span class="thumb" title="' + rcvEsc(ReceiveStore.imName(im)) + '"><img src="' + rcvEsc(src) + '" alt="收样图片" /></span>'
+                  : '<span class="thumb" title="' + rcvEsc(ReceiveStore.imName(im)) + '">仅存名</span>';
               }).join('') + '</div>'
             : '<span class="spec-none">未上传</span>';
           var qty = rcvEsc(ln.qty) + (parseInt(ln.qty, 10) > 1 ? '<span class="batch-badge">整批</span>' : '');

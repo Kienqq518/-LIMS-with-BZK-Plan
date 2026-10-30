@@ -22,7 +22,6 @@
     .rcv-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
     .rcv-table tr.is-received { background: #f8fafc; color: #94a3b8; }
     .rcv-table tr.is-received td { border-color: #eef2f7; }
-    .batch-badge { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px; background: #fef3c7; color: #b45309; font-size: 11px; line-height: 17px; }
     .state-badge { display: inline-block; padding: 1px 6px; border-radius: 999px; font-size: 12px; }
     .state-todo { background: #eff6ff; color: #2563eb; }
     .state-done { background: #f1f5f9; color: #64748b; }
@@ -39,6 +38,12 @@
     .thumb { position: relative; width: 34px; height: 34px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
     .thumb img { width: 100%; height: 100%; object-fit: cover; }
     .rcv-table.hide-mark-col .col-mark { display: none; }
+    .op-btn { display: block; color: #2563eb; font-size: 12px; cursor: pointer; white-space: nowrap; margin-bottom: 4px; }
+    .op-btn:hover { text-decoration: underline; }
+    .op-btn:disabled { color: #cbd5e1; cursor: not-allowed; text-decoration: none; }
+    .thumb.is-clickable { cursor: zoom-in; }
+    .thumb.is-empty { display: flex; align-items: center; justify-content: center; color: #cbd5e1; font-size: 11px; }
+    .spec-readonly-list { font-size: 12px; color: #475569; line-height: 1.8; }
     .tip-line { margin-top: 8px; font-size: 12px; color: #94a3b8; line-height: 1.7; }
     .photo-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; }
     .photo-item:hover { border-color: #93c5fd; background: #f8fafc; }
@@ -156,7 +161,8 @@
                 <th class="col-mark w-52">产品标记</th>
                 <th class="w-16">数量</th>
                 <th class="w-44">型号/分类</th>
-                <th class="w-60">规格</th>
+                <th class="w-56">规格</th>
+                <th class="w-40">样品图片</th>
                 <th class="w-20">收样情况</th>
                 <th class="w-28">操作</th>
               </tr>
@@ -205,15 +211,33 @@
     </div>
   </div>
 
-  <!-- 收样图片选择（按样品行，一次收样中每类样品各自拥有图片） -->
-  <div id="photoModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 p-4">
-    <div class="flex max-h-[80vh] w-[520px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+  <!-- 编辑样品规格参数（图2）：型号/分类在收样阶段只读，规格在此弹窗填写 -->
+  <div id="specModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-[560px] max-w-full rounded-lg bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
-        <h3 id="photoModalTitle" class="text-base font-medium text-slate-800">添加收样图片</h3>
+        <h3 id="specModalTitle" class="text-base font-medium text-slate-800">编辑样品规格参数</h3>
+        <button onclick="closeSpecModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-5 py-4">
+        <div id="specModalBody" class="space-y-3"></div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <button onclick="closeSpecModal()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取消</button>
+        <button onclick="applySpecModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 上传收样图片：选择文件后在此确认，确定才写入该样品行 -->
+  <div id="photoModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[80vh] w-[560px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <h3 id="photoModalTitle" class="text-base font-medium text-slate-800">上传收样图片</h3>
         <button onclick="closePhotoPicker()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="flex-1 overflow-y-auto px-5 py-4">
-        <div id="photoList" class="grid grid-cols-2 gap-2"></div>
+        <div id="photoList" class="grid grid-cols-3 gap-3"></div>
+        <p class="mt-3 text-xs text-slate-400">支持多选图片；图片会压缩后随本次收样记录保存，仅属于该样品行。</p>
       </div>
       <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3">
         <span id="photoCount" class="text-sm text-slate-500">已选 0 张</span>
@@ -224,6 +248,20 @@
       </div>
     </div>
   </div>
+
+  <!-- 收样图片大图预览 -->
+  <div id="lightbox" class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/70 p-6" onclick="closeLightbox()">
+    <div class="max-h-full max-w-full overflow-auto rounded-lg bg-white p-3" onclick="event.stopPropagation()">
+      <div class="mb-2 flex items-center justify-between gap-4">
+        <span id="lightboxName" class="truncate text-sm text-slate-600"></span>
+        <button onclick="closeLightbox()" class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 hover:bg-slate-50">关闭</button>
+      </div>
+      <img id="lightboxImg" alt="收样图片" class="max-h-[76vh] w-auto max-w-full rounded" />
+    </div>
+  </div>
+
+  <!-- 模拟调用系统文件管理器选择收样图片 -->
+  <input type="file" id="rcvFileInput" accept="image/*" multiple class="hidden" onchange="onFilesChosen(this)" />
 
   <!-- 退回弹窗 -->
   <div id="returnModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
@@ -273,6 +311,7 @@
     var modalRows = [];
     var pickerRow = -1;
     var pickerDraft = [];
+    var specRow = -1;
 
     function esc(v) {
       return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -387,7 +426,6 @@
               }),
           images: line ? (line.images || []) : [],
           received: !!rec,
-          editing: !rec,
           record: rec ? rec.record : null
         };
       });
@@ -409,7 +447,7 @@
         var checkCell = r.received
           ? '<div class="text-center text-xs text-slate-400">已收</div>'
           : '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" onchange="onRowCheck()" /></div>';
-        var qtyCell = esc(r.qty) + (parseInt(r.qty, 10) > 1 ? '<span class="batch-badge">整批</span>' : '');
+        var qtyCell = esc(r.qty);
         // 型号/分类在委托登记添加样品时已确定，收样阶段只读、不可改
         var modelCell;
         if (!r.models.length) {
@@ -420,19 +458,28 @@
             ? '<span class="spec-readonly">' + esc(mo.label) + '</span>'
             : '<span class="spec-none">未选择，请回委托登记补选</span>';
         }
-        var specCell = SampleSpecUI.renderCells(r.sample, r.modelCode, r.specValues, 'sp' + i, !r.received && r.editing);
+        var specSummary = SampleSpecUI.summary(r.sample, r.modelCode, r.specValues);
+        var specCell = r.sample && SampleSpecUI.specsOf(r.sample, r.modelCode).length
+          ? '<div class="spec-readonly-list">' + (esc(specSummary) || '<span class="spec-none">未填写</span>') + '</div>'
+          : '<span class="spec-none">无规格参数</span>';
+        var imgCount = ReceiveStore.imCount(r.images);
+        var imgCell = imgCount
+          ? '<div class="thumb-strip">' + r.images.map(function (im, k) {
+              var src = ReceiveStore.imSrc(im);
+              return src
+                ? '<span class="thumb is-clickable" title="' + esc(ReceiveStore.imName(im)) + '" onclick="openLightbox(' + i + ',' + k + ')"><img src="' + esc(src) + '" alt="收样图片" /></span>'
+                : '<span class="thumb is-empty" title="' + esc(ReceiveStore.imName(im)) + '">仅存名</span>';
+            }).join('') + '</div>'
+          : '<span class="spec-none">未上传</span>';
         var opCell;
         if (r.received) {
           opCell = '<span class="row-link" onclick="viewReceiveInfo(' + i + ')">收样详情</span>';
         } else {
-          opCell = '<span class="row-link" onclick="toggleRowEdit(' + i + ')">' + (r.editing ? '完成编辑' : '编辑') + '</span>' +
-            '<span class="row-link ml-2" onclick="openPhotoPicker(' + i + ')"><i class="fa fa-camera"></i> 收样图片' + (r.images.length ? '（' + r.images.length + '）' : '') + '</span>';
+          var canSpec = !!(r.sample && SampleSpecUI.specsOf(r.sample, r.modelCode).length);
+          opCell = '<button type="button" class="op-btn" onclick="openSpecModal(' + i + ')"' + (canSpec ? '' : ' disabled') + '>' +
+            '<i class="fa fa-sliders"></i> 编辑规格' + (canSpec ? '' : '（无规格参数）') + '</button>' +
+            '<button type="button" class="op-btn" onclick="openPhotoPicker(' + i + ')"><i class="fa fa-camera"></i> 上传收样图片' + (imgCount ? '（' + imgCount + '）' : '') + '</button>';
         }
-        var thumbs = r.images.length
-          ? '<div class="thumb-strip">' + r.images.map(function (u) {
-              return '<span class="thumb" title="' + esc(u) + '"><img src="' + esc(u) + '" alt="收样图片" /></span>';
-            }).join('') + '</div>'
-          : '';
         var mark = '';
         if (window.SampleDataStore && SampleDataStore.isMarkEnabled(r.leafId)) {
           mark = r.models.length && !r.modelCode ? '选择型号后生成'
@@ -445,7 +492,8 @@
           '<td class="col-mark"><span class="mark-text">' + esc(mark) + '</span></td>' +
           '<td>' + qtyCell + '</td>' +
           '<td>' + modelCell + '</td>' +
-          '<td>' + specCell + thumbs + '</td>' +
+          '<td>' + specCell + '</td>' +
+          '<td>' + imgCell + '</td>' +
           '<td><span class="state-badge ' + (r.received ? 'state-done' : 'state-todo') + '">' + (r.received ? '已收样' : '待收样') + '</span></td>' +
           '<td>' + opCell + '</td>' +
         '</tr>';
@@ -457,17 +505,8 @@
       all.title = todo.length === 0 ? '没有待收样样品' : '仅作用于待收样行';
     }
 
-    function collectRowSpecs() {
-      modalRows.forEach(function (r, i) {
-        if (!r.received && r.sample) r.specValues = SampleSpecUI.readValues(r.sample, r.modelCode, 'sp' + i);
-      });
-    }
-
-    function toggleRowEdit(i) {
-      collectRowSpecs();
-      modalRows[i].editing = !modalRows[i].editing;
-      renderModalRows();
-    }
+    // 规格值在「编辑规格」弹窗里维护，行内不再放控件
+    function collectRowSpecs() {}
 
     function onRowCheck() {
       var boxes = [].slice.call(document.querySelectorAll('.rcv-check'));
@@ -483,35 +522,84 @@
       onRowCheck();
     }
 
+    /* ===== 上传收样图片：调用系统文件管理器选图，确认后写入该样品行 ===== */
     function openPhotoPicker(i) {
-      collectRowSpecs();
       pickerRow = i;
       pickerDraft = modalRows[i].images.slice();
-      document.getElementById('photoModalTitle').textContent = '添加收样图片 - ' + modalRows[i].name;
-      document.getElementById('photoList').innerHTML = ReceiveStore.PHOTO_LIBRARY.map(function (ph, k) {
-        var on = pickerDraft.indexOf(ph.url) >= 0;
-        return '<label class="photo-item"><input type="checkbox" data-url="' + esc(ph.url) + '"' + (on ? ' checked' : '') + ' onchange="onPhotoPick(this)" />' +
-          '<img src="' + esc(ph.url) + '" alt="' + esc(ph.name) + '" /><span class="text-sm">' + esc(ph.name) + '</span></label>';
-      }).join('');
-      updatePhotoCount();
+      renderPhotoList();
       showModal('photoModal');
+      // 打开确认弹窗即唤起文件选择，选完的文件追加进草稿
+      var input = document.getElementById('rcvFileInput');
+      input.value = '';
+      input.click();
     }
-    function onPhotoPick(cb) {
-      var url = cb.getAttribute('data-url');
-      var at = pickerDraft.indexOf(url);
-      if (cb.checked && at < 0) pickerDraft.push(url);
-      if (!cb.checked && at >= 0) pickerDraft.splice(at, 1);
-      updatePhotoCount();
+    function onFilesChosen(input) {
+      var files = [].slice.call(input.files || []);
+      if (!files.length) return;
+      var pending = files.length;
+      nodeReplHint();
+      files.forEach(function (file) {
+        ReceiveStore.shrinkImage(file, function (im) {
+          if (im) pickerDraft.push(im);
+          if (--pending === 0) renderPhotoList();
+        });
+      });
     }
-    function updatePhotoCount() {
+    function nodeReplHint() {}
+    function renderPhotoList() {
+      if (pickerRow >= 0 && modalRows[pickerRow]) {
+        document.getElementById('photoModalTitle').textContent = '上传收样图片 - ' + modalRows[pickerRow].name;
+      }
+      var host = document.getElementById('photoList');
+      if (!pickerDraft.length) {
+        host.innerHTML = '<div class="col-span-3 py-6 text-center text-sm text-slate-400">尚未选择图片，请在文件管理器中选择收样照片</div>';
+      } else {
+        host.innerHTML = pickerDraft.map(function (im, k) {
+          var src = ReceiveStore.imSrc(im);
+          return '<div class="relative">' +
+            (src ? '<img src="' + esc(src) + '" alt="' + esc(ReceiveStore.imName(im)) + '" class="h-24 w-full rounded border border-slate-200 object-cover" />'
+                 : '<div class="flex h-24 w-full items-center justify-center rounded border border-slate-200 bg-slate-50 text-xs text-slate-400">仅保留文件名</div>') +
+            '<span class="mt-1 block truncate text-xs text-slate-500" title="' + esc(ReceiveStore.imName(im)) + '">' + esc(ReceiveStore.imName(im) || ('图片' + (k + 1))) + '</span>' +
+            '<button type="button" class="absolute right-1 top-1 rounded bg-white/90 px-1 text-xs text-red-500 hover:bg-white" onclick="removeDraftPhoto(' + k + ')"><i class="fa fa-times"></i></button>' +
+          '</div>';
+        }).join('');
+      }
       document.getElementById('photoCount').textContent = '已选 ' + pickerDraft.length + ' 张';
     }
+    function removeDraftPhoto(k) { pickerDraft.splice(k, 1); renderPhotoList(); }
     function applyPhotoPicker() {
-      if (pickerRow >= 0) modalRows[pickerRow].images = pickerDraft.slice();
+      if (pickerRow >= 0 && modalRows[pickerRow]) modalRows[pickerRow].images = pickerDraft.slice();
       closePhotoPicker();
       renderModalRows();
     }
-    function closePhotoPicker() { hideModal('photoModal'); }
+    function closePhotoPicker() { hideModal('photoModal'); pickerRow = -1; }
+
+    /* ===== 编辑样品规格参数（图2） ===== */
+    function openSpecModal(i) {
+      specRow = i;
+      var r = modalRows[i];
+      document.getElementById('specModalTitle').textContent = '编辑样品规格参数 - ' + r.name;
+      document.getElementById('specModalBody').innerHTML =
+        SampleSpecUI.renderCells(r.sample, r.modelCode, r.specValues, 'sk', true) || '<div class="text-sm text-slate-400">该样品无规格参数</div>';
+      showModal('specModal');
+    }
+    function applySpecModal() {
+      var r = modalRows[specRow];
+      if (r && r.sample) r.specValues = SampleSpecUI.readValues(r.sample, r.modelCode, 'sk');
+      closeSpecModal();
+      renderModalRows();
+    }
+    function closeSpecModal() { hideModal('specModal'); specRow = -1; }
+
+    /* ===== 收样图片大图预览 ===== */
+    function openLightbox(i, k) {
+      var im = (modalRows[i].images || [])[k];
+      if (!im || !ReceiveStore.imSrc(im)) return;
+      document.getElementById('lightboxImg').src = ReceiveStore.imSrc(im);
+      document.getElementById('lightboxName').textContent = modalRows[i].name + ' · ' + (ReceiveStore.imName(im) || '收样图片');
+      showModal('lightbox');
+    }
+    function closeLightbox() { hideModal('lightbox'); }
 
     function viewReceiveInfo(i) {
       var r = modalRows[i], rec = r.record || {};
@@ -606,7 +694,7 @@
       closeReturnModal();
     }
 
-    ['receiveModal', 'returnModal', 'photoModal'].forEach(function (id) {
+    ['receiveModal', 'returnModal', 'photoModal', 'specModal', 'lightbox'].forEach(function (id) {
       document.getElementById(id).addEventListener('click', function (e) {
         if (e.target === this) hideModal(id);
       });
