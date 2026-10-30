@@ -212,7 +212,7 @@
         } else if (cnt) {
           hint.className = 'pa-doc-focus';
           hint.innerHTML = '当前弹窗：<strong>' + t + '</strong> · 已切换为该弹窗的 ' + cnt + ' 条需求' +
-            '<span class="pa-doc-scope" onclick="PrototypeAnnotation._toggleScope()">看页面需求</span>';
+            '<span class="pa-doc-scope" onclick="PrototypeAnnotation._toggleScope()">看全部需求</span>';
           hint.style.display = '';
         } else {
           hint.className = 'pa-doc-focus warn';
