@@ -21,7 +21,6 @@
     .rcv-mini { width: 100%; border-collapse: collapse; }
     .rcv-mini th, .rcv-mini td { border-top: 1px solid #eef2f7; padding: 6px 10px; font-size: 12px; text-align: left; vertical-align: top; color: #475569; }
     .rcv-mini th { background: #fff; color: #94a3b8; font-weight: 500; }
-    .batch-badge { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px; background: #fef3c7; color: #b45309; font-size: 11px; line-height: 16px; }
     .thumb-strip { display: flex; flex-wrap: wrap; gap: 4px; }
     .thumb { width: 40px; height: 40px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
     .thumb img { width: 100%; height: 100%; object-fit: cover; }
@@ -903,7 +902,7 @@
                   : '<span class="thumb" title="' + rcvEsc(ReceiveStore.imName(im)) + '">仅存名</span>';
               }).join('') + '</div>'
             : '<span class="spec-none">未上传</span>';
-          var qty = rcvEsc(ln.qty) + (parseInt(ln.qty, 10) > 1 ? '<span class="batch-badge">整批</span>' : '');
+          var qty = rcvEsc(ln.qty);
           return '<tr><td>' + (i + 1) + '</td><td>' + rcvEsc(ln.name) + '</td><td>' + qty + '</td>' +
             (markColOn ? '<td class="col-mark">' + (rcvEsc(ln.mark) || '未配置规则') + '</td>' : '') +
             '<td>' + rcvModelLabel(sample, ln.modelCode) + '</td>' +
