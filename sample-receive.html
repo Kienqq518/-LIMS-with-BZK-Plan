@@ -33,7 +33,6 @@
     .spec-input:focus { border-color: #3b82f6; }
     .spec-readonly { font-size: 12px; color: #475569; }
     .spec-none { font-size: 12px; color: #cbd5e1; }
-    .model-select { width: 100%; max-width: 168px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 12px; outline: none; background: #fff; }
     .row-link { color: #2563eb; font-size: 12px; cursor: pointer; white-space: nowrap; }
     .row-link:hover { text-decoration: underline; }
     .thumb-strip { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
@@ -165,7 +164,7 @@
             <tbody id="modalSampleBody"></tbody>
           </table>
         </div>
-        <p class="tip-line">不同样品可分开勾选、分次收样；同一行数量大于 1 时是同一批样品，只能整批一起收，不能拆成多次。规格参数在委托登记未填的，可在此补填（委托确认时必须填写完整）。收样图片按样品逐张上传。</p>
+        <p class="tip-line">不同样品可分开勾选、分次收样；同一行数量大于 1 时是同一批样品，只能整批一起收，不能拆成多次。型号/分类以委托登记添加样品时的选择为准，收样阶段只读不可改；规格参数在委托登记未填的，可在此补填（委托确认时必须填写完整）。收样图片按样品逐张上传。</p>
 
         <!-- 收样表单 -->
         <div class="modal-form-grid mt-5">
@@ -266,8 +265,8 @@
       { code: 'SC2026/0053', contract: '/', customer: '灵知益义有限公司', sample: '绝缘杆', sendDate: '', requireDate: '2026-07-05', acceptDate: '2026-06-14', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '绝缘杆', qty: '2', unit: '根' }] },
       { code: 'SC2026/0051', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '遮蔽罩、安全带', sendDate: '', requireDate: '2026-07-03', acceptDate: '2026-06-12', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '遮蔽罩', qty: '1', unit: '件' }, { name: '安全带', qty: '1', unit: '条' }] },
       { code: 'SC2026/0049', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '验电器', sendDate: '', requireDate: '2026-06-30', acceptDate: '2026-06-10', prepaid: '否', priority: '常规', status: '样品收样', editor: '潘哲宁', salesman: '梁倩', samples: [{ name: '验电器', qty: '2', unit: '支' }] },
-      { code: 'SC2026/0047', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆', sendDate: '', requireDate: '2026-06-28', acceptDate: '2026-06-08', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '10kV3芯电力电缆', qty: '3', unit: '根' }] },
-      { code: 'SC2026/0045', contract: '/', customer: '东集西造有限公司', sample: 'DS实壁类塑料电缆导管_直管、10kV单芯电力电缆', sendDate: '', requireDate: '2026-06-25', acceptDate: '2026-06-05', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: 'DS实壁类塑料电缆导管_直管', qty: '4', unit: '根' }, { name: '10kV单芯电力电缆', qty: '1', unit: '根' }] }
+      { code: 'SC2026/0047', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆', sendDate: '', requireDate: '2026-06-28', acceptDate: '2026-06-08', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '梁倩', samples: [{ name: '10kV3芯电力电缆', qty: '3', unit: '根', modelCode: 'YJV22' }] },
+      { code: 'SC2026/0045', contract: '/', customer: '东集西造有限公司', sample: 'DS实壁类塑料电缆导管_直管、10kV单芯电力电缆', sendDate: '', requireDate: '2026-06-25', acceptDate: '2026-06-05', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: 'DS实壁类塑料电缆导管_直管', qty: '4', unit: '根', modelCode: 'PVC-C' }, { name: '10kV单芯电力电缆', qty: '1', unit: '根' }] }
     ];
 
     var currentIndex = -1;
@@ -370,7 +369,8 @@
         var models = leaf && leaf.sample ? SampleDataStore.modelsOf(leaf.sample) : [];
         var rec = got[item.code + '|' + sn.name];
         var line = rec ? rec.line : null;
-        var modelCode = line ? line.modelCode : (models.length === 1 ? models[0].code : '');
+        var modelCode = line ? line.modelCode
+          : (sn.modelCode || (models.length === 1 ? models[0].code : ''));
         return {
           sampleKey: item.code + '|' + sn.name,
           name: sn.name,
@@ -379,6 +379,7 @@
           leafId: leaf ? leaf.id : '',
           sample: leaf ? leaf.sample : null,
           models: models,
+          fromEntrust: !!sn.modelCode,
           modelCode: modelCode,
           specValues: line ? (line.specValues || []) : [],
           images: line ? (line.images || []) : [],
@@ -406,18 +407,15 @@
           ? '<div class="text-center text-xs text-slate-400">已收</div>'
           : '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" onchange="onRowCheck()" /></div>';
         var qtyCell = esc(r.qty) + (parseInt(r.qty, 10) > 1 ? '<span class="batch-badge">整批</span>' : '');
+        // 型号/分类在委托登记添加样品时已确定，收样阶段只读、不可改
         var modelCell;
         if (!r.models.length) {
           modelCell = '<span class="spec-none">不分型号</span>';
-        } else if (r.received || !r.editing) {
-          var mo = r.models.filter(function (m) { return m.code === r.modelCode; })[0];
-          modelCell = '<span class="spec-readonly">' + esc(mo ? mo.label : (r.modelCode || '—')) + '</span>';
         } else {
-          modelCell = '<select class="model-select" onchange="onRowModel(' + i + ', this.value)">' +
-            '<option value="">请选择型号/分类</option>' +
-            r.models.map(function (m) {
-              return '<option value="' + esc(m.code) + '"' + (m.code === r.modelCode ? ' selected' : '') + '>' + esc(m.label) + '</option>';
-            }).join('') + '</select>';
+          var mo = r.models.filter(function (m) { return m.code === r.modelCode; })[0];
+          modelCell = mo
+            ? '<span class="spec-readonly">' + esc(mo.label) + '</span>'
+            : '<span class="spec-none">未选择，请回委托登记补选</span>';
         }
         var specCell = SampleSpecUI.renderCells(r.sample, r.modelCode, r.specValues, 'sp' + i, !r.received && r.editing);
         var opCell;
@@ -460,13 +458,6 @@
       modalRows.forEach(function (r, i) {
         if (!r.received && r.sample) r.specValues = SampleSpecUI.readValues(r.sample, r.modelCode, 'sp' + i);
       });
-    }
-
-    function onRowModel(i, code) {
-      collectRowSpecs();
-      modalRows[i].modelCode = code;
-      modalRows[i].specValues = [];
-      renderModalRows();
     }
 
     function toggleRowEdit(i) {
