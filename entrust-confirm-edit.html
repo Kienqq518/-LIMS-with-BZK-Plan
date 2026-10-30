@@ -19,6 +19,8 @@
     .nested-table { margin: 8px 0 8px 24px; }
     .tag-blue { display: inline-block; rounded: 9999px; background: #dbeafe; color: #2563eb; padding: 2px 8px; font-size: 12px; border-radius: 9999px; }
     .tag-orange { display: inline-block; background: #ffedd5; color: #ea580c; padding: 2px 8px; font-size: 12px; border-radius: 9999px; }
+    #confirmSampleBody .col-mark, .data-table thead .col-mark { }
+    .hide-mark-col .col-mark { display: none; }
     .spec-line { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
     .spec-line:last-child { margin-bottom: 0; }
     .spec-name { width: 116px; flex-shrink: 0; text-align: right; font-size: 12px; color: #64748b; }
@@ -100,9 +102,9 @@
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测信息</h2>
       <div class="overflow-x-auto">
-        <table class="data-table min-w-[1000px]">
+        <table class="data-table min-w-[1000px]" id="confirmSampleTable">
           <thead>
-            <tr><th>序号</th><th>样品名称</th><th>数量</th><th>型号/分类</th><th>规格</th><th>样品单位</th><th>备注</th></tr>
+            <tr><th>序号</th><th>样品名称</th><th class="col-mark">产品标记</th><th>数量</th><th>型号/分类</th><th>规格</th><th>样品单位</th><th>备注</th></tr>
           </thead>
           <tbody id="confirmSampleBody"></tbody>
         </table>
@@ -203,6 +205,11 @@
       });
     }
     function renderConfirmSamples() {
+      var markColOn = confirmSamples.some(function (row) {
+        return window.SampleDataStore && SampleDataStore.isMarkEnabled(row.leafId);
+      });
+      var tbl = document.getElementById('confirmSampleTable');
+      if (tbl) tbl.classList.toggle('hide-mark-col', !markColOn);
       document.getElementById('confirmSampleBody').innerHTML = confirmSamples.map(function (row, i) {
         var st = sampleOf(row);
         var models = st && window.SampleDataStore ? SampleDataStore.modelsOf(st) : [];
@@ -217,7 +224,11 @@
             }).join('') + '</select>';
         }
         var qty = cEsc(row.qty) + (parseInt(row.qty, 10) > 1 ? '<span class="batch-badge">整批</span>' : '');
-        return '<tr><td>' + (i + 1) + '</td><td>' + cEsc(row.name) + '</td><td>' + qty + '</td><td>' + modelCell + '</td>' +
+        var mark = (window.SampleDataStore && SampleDataStore.isMarkEnabled(row.leafId))
+          ? (SampleDataStore.markOf(row.leafId, row.modelCode, row.specValues) || '未配置规则') : '';
+        return '<tr><td>' + (i + 1) + '</td><td>' + cEsc(row.name) + '</td>' +
+          '<td class="col-mark">' + cEsc(mark) + '</td>' +
+          '<td>' + qty + '</td><td>' + modelCell + '</td>' +
           '<td>' + SampleSpecUI.renderCells(st, row.modelCode, row.specValues, 'cf' + i, true) + '</td>' +
           '<td>' + cEsc(row.unit) + '</td><td></td></tr>';
       }).join('');

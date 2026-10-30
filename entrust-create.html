@@ -27,6 +27,8 @@
     .modal-form-item label { flex-shrink: 0; width: 108px; text-align: right; font-size: 13px; color: #64748b; }
     .modal-form-item.span-2 { grid-column: span 2; }
     .modal-form-item.span-full { grid-column: 1 / -1; }
+    /* 产品标记开关关闭时，整列不展示（样品数据 › 产品标记开关） */
+    #sampleInfoTable.hide-mark-col .col-mark { display: none; }
     /* 样品名称树形下拉（结构对齐「样品数据」左侧树，支持搜索） */
     .tree-select { position: relative; flex: 1; min-width: 0; }
     .ts-control { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 32px; padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; cursor: pointer; background: #fff; }
@@ -93,15 +95,15 @@
 
   <div class="space-y-4 p-4 pb-24">
     <!-- 样品信息 -->
-    <section class="rounded bg-white p-4 shadow-sm">
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="create-sample-table">
       <div class="mb-3 flex items-center justify-between">
         <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>样品信息</h2>
         <button onclick="openSampleModal()" class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">添加样品</button>
       </div>
       <div class="overflow-x-auto">
-        <table class="data-table min-w-[1400px]">
+        <table class="data-table min-w-[1400px]" id="sampleInfoTable">
           <thead><tr>
-            <th>序号</th><th>样品名称</th><th>产品标记</th><th>型号/分类</th><th>检测类别</th><th>试验项</th><th>数量</th><th>单价（元）</th><th>总价（元）</th><th>备注</th><th>操作</th>
+            <th>序号</th><th>样品名称</th><th class="col-mark">产品标记</th><th>型号/分类</th><th>检测类别</th><th>试验项</th><th>数量</th><th>单价（元）</th><th>总价（元）</th><th>备注</th><th>操作</th>
           </tr></thead>
           <tbody id="sampleTableBody"></tbody>
         </table>
@@ -501,13 +503,21 @@
     function renderSamples(samples) {
       var tbody = document.getElementById('sampleTableBody');
       document.getElementById('sampleTotalCount').textContent = '共 ' + samples.length + ' 条';
+      // 只要有一行样品开启了产品标记就保留该列；全部关闭时整列隐藏
+      var tbl = document.getElementById('sampleInfoTable');
+      if (tbl) {
+        var anyMark = (samples || []).some(function (x) {
+          return window.SampleDataStore && SampleDataStore.isMarkEnabled(x.sampleId);
+        });
+        tbl.classList.toggle('hide-mark-col', !anyMark);
+      }
       if (!samples.length) {
         tbody.innerHTML = '<tr><td colspan="11" class="py-8 text-center text-slate-400"><i class="fa fa-inbox text-2xl text-slate-200"></i><div class="mt-1">暂无数据</div></td></tr>';
         return;
       }
       tbody.innerHTML = samples.map(function (s, i) {
         return '<tr><td>' + (i + 1) + '</td><td>' + esc(s.name || s.alias || '') + '</td>' +
-          '<td class="max-w-[240px] truncate" title="' + esc(s.mark || '') + '">' + esc(s.mark || '') + '</td>' +
+          '<td class="col-mark max-w-[240px] truncate" title="' + esc(s.mark || '') + '">' + (esc(s.mark || '') || '未配置规则') + '</td>' +
           '<td>' + esc(s.modelCode || s.spec || '') + '</td>' +
           '<td>' + esc(s.testCategory || '') + '</td>' +
           '<td class="max-w-[200px] truncate" title="' + esc(s.items || '') + '">' + esc(s.items || '') + '</td>' +
@@ -836,7 +846,7 @@
         modelName: model ? model.name : '',
         spec: [modelCode].concat(specText).filter(Boolean).join(' '),
         specValues: specValues,
-        mark: st ? st.buildMark(picked, modelCode, specValues) : '',
+        mark: st ? st.markOf(id, modelCode, specValues) : '',
         unit: unit,
         testCategory: category,
         items: selectedTests.map(function (t) { return t.name; }).join(','),
@@ -954,6 +964,15 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
+          {
+            id: 'create-sample-table',
+            selector: '[data-annotate="create-sample-table"]',
+            position: 'bottom-right',
+            title: '样品信息表列与产品标记',
+            wide: true,
+            content: '<strong>列集：</strong>序号、样品名称、<strong>产品标记</strong>、型号/分类、检测类别、试验项、数量、单价（元）、总价（元）、备注、操作。<br><strong>产品标记展示条件：</strong>仅当该样品在「样品管理 › 样品数据」里的<strong>产品标记开关为开启</strong>时展示该列（列位于「样品名称」与「型号/分类」之间）；本委托内所有样品都关闭时整列隐藏。<br><strong>取值：</strong>按样品数据里配置的产品标记规则实时拼装（型号 + 规格参数取值 + 芯数 + 标准号），开关开启但未配置规则时显示「未配置规则」。<br><strong>样品名称：</strong>树形下拉，层级与样品数据左侧树一致，只列当前委托锁定的大类。',
+            tag: '委托编辑'
+          },
           {
             id: 'create-code',
             selector: '[data-annotate="create-code"]',

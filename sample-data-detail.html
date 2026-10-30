@@ -355,8 +355,13 @@
 
         <!-- 产品标记 / 试验项 / 样品判定 始终展示；型号专属区随「区分型号」显隐 -->
         <div data-annotate="model-panel">
-          <div class="section-card">
-            <div class="section-title">产品标记：</div>
+          <div class="section-card" data-annotate="mark-switch">
+            <div class="section-title flex items-center gap-3">产品标记：
+              <label class="toggle"><input type="checkbox" id="markEnabledSwitch" onchange="onMarkEnabledChange(this.checked)" /><span class="toggle-slider"></span></label>
+              <span id="markEnabledHint" class="text-xs font-normal text-slate-400"></span>
+            </div>
+            <div id="markPanelOff" class="hidden mb-3 text-sm text-slate-400">未开启：无需配置产品标记规则，LIMS 其它涉及样品信息的页面也不展示「产品标记」字段。</div>
+            <div id="markPanel">
             <div class="text-sm text-slate-500 mb-2">产品标记规则预览</div>
             <div class="mark-preview">
               <textarea id="markRule" readonly></textarea>
@@ -398,6 +403,7 @@
               </div>
             </div>
             <div class="mt-5 flex justify-end"><button class="btn-save" onclick="toast('产品标记已保存（原型）')">保存</button></div>
+            </div>
           </div>
 
           <!-- 区分型号=是：型号/分类选择条 -->
@@ -820,8 +826,27 @@
       }).join('') || emptyTableRow(4, '暂无数据');
     }
 
+    // 产品标记开关：关闭时收起规则面板、无需配置；开启时才需要配置规则，且下游页面才展示该字段
+    function applyMarkEnabled(id) {
+      var on = window.SampleDataStore ? SampleDataStore.isMarkEnabled(id) : false;
+      var sw = document.getElementById('markEnabledSwitch');
+      if (sw) sw.checked = on;
+      document.getElementById('markPanel').classList.toggle('hidden', !on);
+      document.getElementById('markPanelOff').classList.toggle('hidden', on);
+      document.getElementById('markEnabledHint').textContent = on
+        ? '已开启：需配置产品标记规则，样品信息相关页面在「样品名称」与「型号/分类」之间展示产品标记'
+        : '已关闭：无需配置产品标记规则';
+    }
+    function onMarkEnabledChange(on) {
+      if (window.SampleDataStore && state.selectedId) SampleDataStore.setMarkEnabled(state.selectedId, on);
+      applyMarkEnabled(state.selectedId);
+      toast(on ? '已开启产品标记：请配置规则（样品信息相关页面将展示该字段）'
+               : '已关闭产品标记：无需配置规则，样品信息相关页面不再展示该字段');
+    }
+
     function renderSharedPanels(sample) {
       document.getElementById('markRule').value = sample.markRule || '';
+      applyMarkEnabled(state.selectedId);
       var diffYes = (document.getElementById('b_diffModel').value || sample.diffModel) === '是';
       if (diffYes) {
         var model = currentModel(sample);
@@ -940,6 +965,15 @@
               wide: true,
               content: '按大类进入后的详情页：左树选样品叶节点，右侧维护样品基础信息；「区分型号=是」时展示下方型号面板。',
               tag: '结构'
+            },
+            {
+              id: 'mark-switch',
+              selector: '[data-annotate="mark-switch"]',
+              position: 'top-right',
+              title: '产品标记开关',
+              wide: true,
+              content: '<strong>需求逻辑：</strong>产品标记按样品逐个开关。<strong>关闭</strong>时不需要配置产品标记规则，LIMS 其它涉及样品信息的页面（委托登记样品表、委托详情检测信息、样品收样弹窗、委托确认等）也不展示「产品标记」字段；<strong>开启</strong>时必须配置产品标记规则，且上述页面统一在「样品名称」与「型号/分类」两个字段之间插入「产品标记」。<br><strong>展示规则：</strong>开关默认值 = 该样品是否已配过规则；关闭时收起「产品标记规则预览 / 可用元素 / 选择符号 / 保存」整块面板，仅留一行灰字说明。<br><strong>交互逻辑：</strong>拨动开关即按叶节点持久化（lims.sampleMarkFlags），切换样品时开关随该样品的状态回显；关闭不会清空已配置的规则，重新开启即恢复。',
+              tag: '产品标记'
             },
             {
               id: 'model-scope',

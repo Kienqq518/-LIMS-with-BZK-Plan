@@ -39,6 +39,7 @@
     .thumb-strip { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
     .thumb { position: relative; width: 34px; height: 34px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
     .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .rcv-table.hide-mark-col .col-mark { display: none; }
     .tip-line { margin-top: 8px; font-size: 12px; color: #94a3b8; line-height: 1.7; }
     .photo-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; }
     .photo-item:hover { border-color: #93c5fd; background: #f8fafc; }
@@ -153,6 +154,7 @@
                 <th class="w-10 text-center"><input type="checkbox" id="rcvCheckAll" onchange="onCheckAll(this.checked)" /></th>
                 <th class="w-10">序号</th>
                 <th>样品名称</th>
+                <th class="col-mark w-52">产品标记</th>
                 <th class="w-16">数量</th>
                 <th class="w-44">型号/分类</th>
                 <th class="w-60">规格</th>
@@ -391,6 +393,12 @@
 
     function renderModalRows() {
       var todo = modalRows.filter(function (r) { return !r.received; });
+      // 产品标记列：只要有样品开启产品标记就展示（样品数据 › 产品标记开关）
+      var markColOn = modalRows.some(function (r) {
+        return window.SampleDataStore && SampleDataStore.isMarkEnabled(r.leafId);
+      });
+      var tbl = document.querySelector('#receiveModal .rcv-table');
+      if (tbl) tbl.classList.toggle('hide-mark-col', !markColOn);
       document.getElementById('modalSampleBody').innerHTML = modalRows.map(function (r, i) {
         var cls = r.received ? ' class="is-received"' : '';
         var checkCell = r.received
@@ -423,10 +431,13 @@
               return '<span class="thumb" title="' + esc(u) + '"><img src="' + esc(u) + '" alt="收样图片" /></span>';
             }).join('') + '</div>'
           : '';
+        var mark = (window.SampleDataStore && SampleDataStore.isMarkEnabled(r.leafId))
+          ? (SampleDataStore.markOf(r.leafId, r.modelCode, r.specValues) || '未配置规则') : '';
         return '<tr' + cls + '>' +
           '<td>' + checkCell + '</td>' +
           '<td>' + (i + 1) + '</td>' +
           '<td>' + esc(r.name) + '</td>' +
+          '<td class="col-mark"><span class="mark-text">' + esc(mark) + '</span></td>' +
           '<td>' + qtyCell + '</td>' +
           '<td>' + modelCell + '</td>' +
           '<td>' + specCell + thumbs + '</td>' +
@@ -551,6 +562,8 @@
           return {
             sampleKey: r.sampleKey, name: r.name, qty: r.qty, unit: r.unit,
             leafId: r.leafId, modelCode: r.modelCode,
+            mark: (window.SampleDataStore && SampleDataStore.isMarkEnabled(r.leafId)) ? SampleDataStore.markOf(r.leafId, r.modelCode, r.specValues) : '',
+            markEnabled: !!(window.SampleDataStore && SampleDataStore.isMarkEnabled(r.leafId)),
             specValues: r.specValues.slice(), images: r.images.slice()
           };
         })

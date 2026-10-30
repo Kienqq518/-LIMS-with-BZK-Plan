@@ -221,7 +221,8 @@
     SAMPLE_MOCK[id] = {
       name: name, code: '', sort: sort, category: '安全工器具类', standard: standard,
       fee: '', cycle: 5, diffModel: '否', unit: '', remark: '', isCable: false,
-      cableStruct: '', cores: '', coreColor: '', phases: [], sampleSpecs: [], markRule: '',
+      cableStruct: '', cores: '', coreColor: '', phases: [], sampleSpecs: [],
+      markRule: '[样品信息.样品名称][空格][样品信息.标准号]',
       models: [], tests: tests976(standard), judges: []
     };
   }
@@ -318,7 +319,37 @@
     return out + rule.slice(last);
   }
 
+  /* ===== 产品标记开关（图2）=====
+   * 关闭：不需要配置产品标记，LIMS 其它页面也不展示「产品标记」字段；
+   * 开启：必须配置产品标记规则，且所有涉及样品信息的地方，在「样品名称」与「型号/分类」之间展示「产品标记」。
+   * 默认值 = 该样品是否配过规则；在样品数据页拨动开关后按叶节点持久化。
+   */
+  var MARK_FLAG_KEY = 'lims.sampleMarkFlags';
+  function markFlags() {
+    try { return JSON.parse(global.localStorage.getItem(MARK_FLAG_KEY) || '{}'); } catch (e) { return {}; }
+  }
+  function isMarkEnabled(id) {
+    if (!id) return false;
+    var f = markFlags();
+    if (Object.prototype.hasOwnProperty.call(f, id)) return !!f[id];
+    var sample = SAMPLE_MOCK[id];
+    return !!(sample && sample.markRule);
+  }
+  function setMarkEnabled(id, on) {
+    if (!id) return;
+    var f = markFlags();
+    f[id] = !!on;
+    try { global.localStorage.setItem(MARK_FLAG_KEY, JSON.stringify(f)); } catch (e) { /* 原型忽略 */ }
+  }
+  // 统一入口：未开启返回空串，页面据此决定是否展示该字段
+  function markOf(id, modelCode, specValues) {
+    if (!isMarkEnabled(id)) return '';
+    return buildMark(SAMPLE_MOCK[id], modelCode, specValues);
+  }
+
   global.SampleDataStore = {
+    isMarkEnabled: isMarkEnabled, setMarkEnabled: setMarkEnabled, markOf: markOf,
+    MARK_FLAG_KEY: MARK_FLAG_KEY,
     TREES: TREES, SAMPLE_MOCK: SAMPLE_MOCK, CAT_LABELS: CAT_LABELS,
     getTree: getTree, getSample: getSample, findNode: findNode, leafLabel: leafLabel,
     modelsOf: modelsOf, modelOf: modelOf, testsOf: testsOf, sampleSpecsOf: sampleSpecsOf,
