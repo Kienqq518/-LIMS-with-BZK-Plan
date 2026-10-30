@@ -38,9 +38,24 @@
 
   function detectFocusScope() {
     // 取最后一个匹配：嵌套弹窗（如关联试验内的同步、履历内的表单）通常后挂载且 z-index 更高
-    var openModals = document.querySelectorAll('.modal-mask.open, .lc-modal-mask.open, .po-mask.open, .drawer-mask.open, .drawer.open, .bind-popover-mask.open, #numberingModal.flex, #addModal.flex, #copyModal.flex');
-    if (!openModals.length) return null;
-    return openModals[openModals.length - 1];
+    var list = [].slice.call(document.querySelectorAll('.modal-mask.open, .lc-modal-mask.open, .po-mask.open, .drawer-mask.open, .drawer.open, .bind-popover-mask.open, #numberingModal.flex, #addModal.flex, #copyModal.flex'));
+    // 兜底：任何全屏遮罩型弹窗（fixed + inset-0 + 当前可见 + z-index>=40）都算焦点弹窗。
+    // 白名单靠逐页补容易漏，漏掉的弹窗会出现「悬浮球压住弹窗底部按钮、点击被吃掉」的问题
+    // （例如委托登记「添加样品」弹窗的确定按钮）。
+    [].slice.call(document.querySelectorAll('.fixed.inset-0')).forEach(function (el) {
+      if (list.indexOf(el) >= 0) return;
+      var st = window.getComputedStyle(el);
+      if (st.display === 'none' || st.visibility === 'hidden') return;
+      if ((parseInt(st.zIndex, 10) || 0) < 40) return;
+      list.push(el);
+    });
+    if (!list.length) return null;
+    list.sort(function (x, y) {
+      var zx = parseInt(window.getComputedStyle(x).zIndex, 10) || 0;
+      var zy = parseInt(window.getComputedStyle(y).zIndex, 10) || 0;
+      return zx - zy;
+    });
+    return list[list.length - 1];
   }
 
   function isInFocusScope(el) {
