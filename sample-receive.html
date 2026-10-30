@@ -38,6 +38,21 @@
     .thumb { position: relative; width: 34px; height: 34px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
     .thumb img { width: 100%; height: 100%; object-fit: cover; }
     .rcv-table.hide-mark-col .col-mark { display: none; }
+    .rcv-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 16px; margin-bottom: 10px; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; }
+    .rf-item { display: flex; align-items: center; gap: 6px; }
+    .rf-item label { flex-shrink: 0; font-size: 12px; color: #64748b; }
+    .rf-item select, .rf-item input { border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 8px; font-size: 12px; outline: none; background: #fff; }
+    .rf-item select { min-width: 86px; }
+    .rf-item input { width: 190px; }
+    .rf-item select:focus, .rf-item input:focus { border-color: #3b82f6; }
+    .rf-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .rf-summary { font-size: 12px; color: #94a3b8; }
+    .rf-summary b { color: #2563eb; font-weight: 600; }
+    .rf-reset { border: 1px solid #cbd5e1; background: #fff; color: #475569; border-radius: 4px; padding: 3px 9px; font-size: 12px; cursor: pointer; }
+    .rf-reset:hover { border-color: #94a3b8; background: #f1f5f9; }
+    .rcv-table tr.is-filtered { display: none; }
+    /* 已收样行：复选框保留但置为不可勾选态 */
+    .rcv-check:disabled { cursor: not-allowed; opacity: .45; }
     .op-btn { display: block; color: #2563eb; font-size: 12px; cursor: pointer; white-space: nowrap; margin-bottom: 4px; }
     .op-btn:hover { text-decoration: underline; }
     .op-btn:disabled { color: #cbd5e1; cursor: not-allowed; text-decoration: none; }
@@ -150,8 +165,33 @@
         <button onclick="closeReceiveModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="flex-1 overflow-y-auto px-6 py-4">
+        <!-- 弹窗内筛选：收样状态 / 样品名称模糊 / 是否已有收样图片 -->
+        <div class="rcv-filters" data-annotate="rcv-filters">
+          <div class="rf-item"><label>收样状态</label>
+            <select id="rf_state" onchange="applyRowFilters()">
+              <option value="todo" selected>待收样</option>
+              <option value="done">已收样</option>
+              <option value="all">全部</option>
+            </select>
+          </div>
+          <div class="rf-item"><label>样品名称</label>
+            <input id="rf_name" type="text" placeholder="请输入样品名称，支持模糊查询" oninput="applyRowFilters()" />
+          </div>
+          <div class="rf-item"><label>收样图片</label>
+            <select id="rf_img" onchange="applyRowFilters()">
+              <option value="" selected>/</option>
+              <option value="yes">有</option>
+              <option value="no">无</option>
+            </select>
+          </div>
+          <div class="rf-right">
+            <span id="rfSummary" class="rf-summary"></span>
+            <button type="button" class="rf-reset" onclick="resetRowFilters()">重置筛选</button>
+          </div>
+        </div>
+
         <!-- 弹窗内样品表：按样品行勾选，可只收其中几类（Story202611-01-05） -->
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" data-annotate="rcv-table">
           <table class="rcv-table min-w-[900px]">
             <thead>
               <tr>
@@ -170,7 +210,7 @@
             <tbody id="modalSampleBody"></tbody>
           </table>
         </div>
-        <p class="tip-line">不同样品可分开勾选、分次收样；同一行数量大于 1 时是同一批样品，只能整批一起收，不能拆成多次。型号/分类以委托登记添加样品时的选择为准，收样阶段只读不可改；规格参数在委托登记未填的，可在此补填（委托确认时必须填写完整）。收样图片按样品逐张上传。</p>
+        <p class="tip-line" data-annotate="rcv-tip">不同样品可分开勾选、分次收样；同一行数量大于 1 时是同一批样品，只能整批一起收，不能拆成多次。型号/分类以委托登记添加样品时的选择为准，收样阶段只读不可改；规格参数在委托登记未填的，可在此补填（委托确认时必须填写完整）。收样图片按样品逐张上传。</p>
 
         <!-- 收样表单 -->
         <div class="modal-form-grid mt-5">
@@ -431,6 +471,7 @@
       });
       resetReceiveForm();
       renderModalRows();
+      applyRowFilters();
       showModal('receiveModal');
     }
 
@@ -445,7 +486,7 @@
       document.getElementById('modalSampleBody').innerHTML = modalRows.map(function (r, i) {
         var cls = r.received ? ' class="is-received"' : '';
         var checkCell = r.received
-          ? '<div class="text-center text-xs text-slate-400">已收</div>'
+          ? '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" disabled title="已收样，不可再勾选" /></div>'
           : '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" onchange="onRowCheck()" /></div>';
         var qtyCell = esc(r.qty);
         // 型号/分类在委托登记添加样品时已确定，收样阶段只读、不可改
@@ -485,7 +526,7 @@
           mark = r.models.length && !r.modelCode ? '选择型号后生成'
             : (SampleDataStore.markOf(r.leafId, r.modelCode, r.specValues) || '未配置规则');
         }
-        return '<tr' + cls + '>' +
+        return '<tr' + cls + ' data-row="' + i + '">' +
           '<td>' + checkCell + '</td>' +
           '<td>' + (i + 1) + '</td>' +
           '<td>' + esc(r.name) + '</td>' +
@@ -502,24 +543,72 @@
       all.checked = false;
       all.disabled = todo.length === 0;
       all.indeterminate = false;
-      all.title = todo.length === 0 ? '没有待收样样品' : '仅作用于待收样行';
+      all.title = todo.length === 0 ? '没有待收样样品' : '仅作用于当前筛选结果中的待收样行';
     }
 
     // 规格值在「编辑规格」弹窗里维护，行内不再放控件
     function collectRowSpecs() {}
 
-    function onRowCheck() {
-      var boxes = [].slice.call(document.querySelectorAll('.rcv-check'));
-      var checked = boxes.filter(function (b) { return b.checked; }).length;
-      var all = document.getElementById('rcvCheckAll');
-      all.checked = checked > 0 && checked === boxes.length;
-      all.indeterminate = checked > 0 && checked < boxes.length;
+    // 参与勾选的行 = 未禁用（待收样）且当前未被筛选隐藏的行
+    function selectableBoxes() {
+      return [].slice.call(document.querySelectorAll('.rcv-check')).filter(function (b) {
+        return !b.disabled && !b.closest('tr').classList.contains('is-filtered');
+      });
     }
 
-    // 表头复选框只作用于待收样行：未全选→全选待收；已全选→取消
+    function onRowCheck() {
+      var boxes = selectableBoxes();
+      var checked = boxes.filter(function (b) { return b.checked; }).length;
+      var all = document.getElementById('rcvCheckAll');
+      all.checked = boxes.length > 0 && checked === boxes.length;
+      all.indeterminate = checked > 0 && checked < boxes.length;
+      updateFilterSummary();
+    }
+
+    // 表头复选框只作用于当前筛选结果里的待收样行：未全选→全选；已全选→取消
     function onCheckAll(checked) {
-      document.querySelectorAll('.rcv-check').forEach(function (b) { b.checked = checked; });
+      selectableBoxes().forEach(function (b) { b.checked = checked; });
       onRowCheck();
+    }
+
+    /* ===== 弹窗内筛选：收样状态 / 样品名称模糊 / 是否已有收样图片 ===== */
+    function applyRowFilters() {
+      var state = document.getElementById('rf_state').value;
+      var kw = document.getElementById('rf_name').value.trim().toLowerCase();
+      var img = document.getElementById('rf_img').value;
+      document.querySelectorAll('#modalSampleBody tr').forEach(function (tr) {
+        var r = modalRows[parseInt(tr.getAttribute('data-row'), 10)];
+        if (!r) return;
+        var ok = true;
+        if (state === 'todo' && r.received) ok = false;
+        if (state === 'done' && !r.received) ok = false;
+        if (kw && String(r.name).toLowerCase().indexOf(kw) < 0) ok = false;
+        if (img === 'yes' && !ReceiveStore.imCount(r.images)) ok = false;
+        if (img === 'no' && ReceiveStore.imCount(r.images)) ok = false;
+        tr.classList.toggle('is-filtered', !ok);
+      });
+      // 被隐藏行的勾选保留（可跨筛选累积一次收样），表头状态按可见行重算
+      var all = document.getElementById('rcvCheckAll');
+      all.checked = false;
+      all.indeterminate = false;
+      onRowCheck();
+    }
+
+    function resetRowFilters() {
+      document.getElementById('rf_state').value = 'todo';
+      document.getElementById('rf_name').value = '';
+      document.getElementById('rf_img').value = '';
+      applyRowFilters();
+    }
+
+    function updateFilterSummary() {
+      var el = document.getElementById('rfSummary');
+      if (!el) return;
+      var rows = [].slice.call(document.querySelectorAll('#modalSampleBody tr'));
+      var shown = rows.filter(function (tr) { return !tr.classList.contains('is-filtered'); }).length;
+      var picked = document.querySelectorAll('.rcv-check:checked').length;
+      el.innerHTML = '当前筛选 <b>' + shown + '</b> / 共 ' + rows.length + ' 行' +
+        (picked ? '　已选 <b>' + picked + '</b> 项' : '');
     }
 
     /* ===== 上传收样图片：调用系统文件管理器选图，确认后写入该样品行 ===== */
@@ -699,6 +788,57 @@
     });
 
     renderTable();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'rcv-filters',
+            selector: '[data-annotate="rcv-filters"]',
+            position: 'top-right',
+            title: '收样弹窗筛选栏',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>一个委托可能有很多类样品，收样人只关心「还剩哪些没收」，因此弹窗内先按条件过滤再勾选，避免在长表格里翻找。<br>' +
+              '<strong>展示规则：</strong>表格上方固定一条筛选栏，含三个条件：① 收样状态（全部 / 已收样 / 待收样，<strong>默认待收样</strong>）；② 样品名称输入框（<strong>模糊查询</strong>，忽略大小写，输入即过滤）；③ 收样图片（<code>/</code> 不限 / 有 / 无，<strong>默认 /</strong>）。右侧实时显示「当前筛选 M / 共 N 行」与「已选 K 项」，并提供「重置筛选」回到默认组合。<br>' +
+              '<strong>交互逻辑：</strong>条件变化即时过滤行（不重新请求数据）；表头全选只作用于<strong>当前筛选结果中的待收样行</strong>；被筛选隐藏的行的勾选状态保留，可跨筛选累积成一次收样；提交仍按勾选行写入。',
+            tag: '样品收样'
+          },
+          {
+            id: 'rcv-rows',
+            selector: '[data-annotate="rcv-table"]',
+            position: 'top-right',
+            title: '按样品行勾选、分次收样',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>Story202611-01-05。不同样品可以分开收，也可以一次勾几类一起收；同一行数量大于 1 是同一批，只能整批一起收，不能拆成多次。列表仍一行一委托，且只展示还有待收样品的任务。<br>' +
+              '<strong>展示规则：</strong>列为勾选、序号、样品名称、产品标记、数量、型号/分类、规格、样品图片、收样情况、操作。<strong>已收样行的复选框置为不可勾选态</strong>（灰化禁用，悬停提示「已收样，不可再勾选」），整行灰底，不会被表头全选带上；没有待收行时表头复选框禁用。<br>' +
+              '<strong>交互逻辑：</strong>未勾选任何待收行就点「确认提交」→ 提示「请勾选要收样的样品」且弹窗不关；收样人、收样日期必填。提交后只把勾选行标为已收样并记录本次收样信息；仍有待收时弹窗保持打开、表单清空、已收行锁定；全部收完则提示后关闭弹窗，该委托从列表移除，本页不再提供收样或退回。退回仍按委托整单。',
+            tag: '样品收样'
+          },
+          {
+            id: 'rcv-model-spec',
+            selector: '[data-annotate="rcv-tip"]',
+            position: 'bottom-right',
+            title: '型号只读、规格可补填',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>型号/分类在委托登记添加样品时已确定，收样阶段不允许改，避免收样与委托、后续流转对不上；规格参数若登记时未填，允许在收样和委托确认阶段补填，但委托确认时必须填全。<br>' +
+              '<strong>展示规则：</strong>型号/分类为纯文本（不分型号的样品显示「不分型号」，登记漏选的显示「未选择，请回委托登记补选」）；规格列显示只读摘要，未填显示「未填写」；产品标记按样品数据的规则实时拼装，样品未开启产品标记开关时该列整体隐藏、无值显示「—」。<br>' +
+              '<strong>交互逻辑：</strong>操作列「编辑规格」弹出规格参数弹窗（每个规格一行，有候选值用下拉、唯一候选值自动带出），确定后回写并联动刷新规格摘要与产品标记；委托确认页会自动带出收样阶段填过的规格值。',
+            tag: '样品收样'
+          },
+          {
+            id: 'rcv-images',
+            selector: '[data-annotate="rcv-table"]',
+            position: 'bottom-right',
+            title: '收样图片按样品各一份',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>一次收样可以收多类样品，但每类样品的收样图片独属于自己的，因此图片不再挂在收样表单上，而是挂在样品行。表单区原「样品图片」字段已去除。<br>' +
+              '<strong>展示规则：</strong>样品图片列平铺该行的缩略图，未上传显示「未上传」；操作列按钮显示「上传收样图片（N）」。弹窗内不再有样品图片字段。<br>' +
+              '<strong>交互逻辑：</strong>点「上传收样图片」唤起系统文件管理器多选图片，选中后先在确认弹窗里预览（可逐张删除、显示已选张数），点确定才写入该行；点缩略图打开大图预览。图片压缩后随收样记录保存，委托详情页的收样信息按每次收样分组展示各自的图片。',
+            tag: '样品收样'
+          }
+        ]
+      });
+    }
   </script>
 </body>
 </html>
