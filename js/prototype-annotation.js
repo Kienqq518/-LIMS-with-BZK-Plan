@@ -143,7 +143,9 @@
   }
 
   function loadEnabled() {
-    try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch (e) { return false; }
+    // 默认「开」：整个原型以「左原型 + 右需求文档」双栏为基线布局，
+    // 只有用户点过「收起」才记住关闭
+    try { return localStorage.getItem(STORAGE_KEY) !== '0'; } catch (e) { return true; }
   }
 
   function saveEnabled(on) {
@@ -630,9 +632,20 @@
       boot();
     }
   }
+  window.addEventListener('load', autoBoot);
+
+  // 未被页面显式 init 时，自动兜底启动一次：没有批注的页面也给出统一的文档侧栏与空态提示
+  function autoBoot() {
+    if (window._paBooted) return;
+    window._paBooted = true;
+    init({ annotations: [] });
+  }
 
   global.PrototypeAnnotation = {
-    init: init,
+    init: function (options) {
+      window._paBooted = true;
+      init(options);
+    },
     _startResize: startResize,
     _filter: filterDoc,
     _fromDoc: fromDocEntry,
