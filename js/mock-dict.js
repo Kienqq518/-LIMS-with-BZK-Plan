@@ -29,7 +29,9 @@
       items: [
         item(1, '例行试验', 'routine', 1, ''),
         item(2, '型式试验', 'type', 2, ''),
-        item(3, '抽样试验', 'sampling', 3, '')
+        item(3, '抽样试验', 'sampling', 3, ''),
+        item(4, '委托检测', 'entrust', 4, ''),
+        item(5, '出厂检验', 'factory', 5, '')
       ]
     },
     { id: 19, name: '试样色号', type: 'lims_sample_color', status: '正常', time: '2026-07-28 08:00:00', remark: '样品试验配置-试样色号', expanded: false,
