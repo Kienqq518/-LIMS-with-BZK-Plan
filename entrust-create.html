@@ -237,7 +237,7 @@
           </div>
           <div class="modal-form-item"><label><span class="req">*</span> 样品数量</label><input id="m_qty" type="text" value="1" oninput="recalcSamplePrice()" /></div>
           <div class="modal-form-item"><label><span class="req">*</span> 样品单位</label>
-            <div class="ts-input-wrap" id="wrap_unit"><input id="m_unit" type="text" placeholder="请输入样品单位" oninput="syncWrap('m_unit','wrap_unit')" /><i class="fa fa-times-circle ts-clear" onclick="clearAutoField('m_unit')"></i></div>
+            <select id="m_unit"><option value="">请选择样品单位</option></select>
           </div>
 
           <div class="modal-form-item"><label>样品单价(元)</label><input id="m_unitPrice" type="text" placeholder="请输入样品单价" oninput="recalcSamplePrice()" /></div>
@@ -315,6 +315,33 @@
       var dictTypes = MockDictStore.load();
       EntrustFieldConfig.applyToForm(sections, dictTypes);
     })();
+
+    // 样品单位：下拉选项来自字典 lims_sample_unit（件/根/个/盘），默认「件」
+    var SAMPLE_UNIT_DEFAULT = '件';
+    function sampleUnitOptions() {
+      var list = [];
+      if (window.MockDictStore) {
+        list = MockDictStore.getActiveItems(MockDictStore.load(), 'lims_sample_unit').map(function (it) { return it.label; });
+      }
+      return list.length ? list : [SAMPLE_UNIT_DEFAULT];
+    }
+    function fillSampleUnitOptions() {
+      var sel = document.getElementById('m_unit');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">请选择样品单位</option>' + sampleUnitOptions().map(function (u) {
+        return '<option value="' + u + '">' + u + '</option>';
+      }).join('');
+    }
+    // 样品数据里维护了单位且在选项内则带出，否则回到默认「件」
+    function setSampleUnit(unit) {
+      var sel = document.getElementById('m_unit');
+      if (!sel) return;
+      var list = sampleUnitOptions();
+      var want = (unit && list.indexOf(unit) >= 0) ? unit : SAMPLE_UNIT_DEFAULT;
+      if (list.indexOf(want) < 0) want = list[0];
+      sel.value = want;
+    }
+    fillSampleUnitOptions();
 
     // 添加样品弹窗「检测类别」：与委托级同源，取字典 lims_detect_category（值用中文名，便于样品数据直接展示）
     (function fillSampleCategoryOptions() {
@@ -592,8 +619,7 @@
       if (w) w.classList.toggle('has-value', !!(document.getElementById(inputId).value || '').trim());
     }
     function clearAutoField(inputId) {
-      var wrapId = inputId === 'm_unit' ? 'wrap_unit' : 'wrap_alias';
-      setAutoField(inputId, wrapId, '');
+      setAutoField(inputId, 'wrap_alias', '');
     }
     function shortSpecLabel(title) {
       return String(title || '').replace(/^规格参数\d+:/, '').replace(/\s*[\(（].*$/, '');
@@ -610,7 +636,7 @@
       closeSampleTree();
       // 图二/图三：选完样品名称，自动带出「样品别名 = 样品名称」「样品单位 = 样品数据维护的单位」
       setAutoField('m_alias', 'wrap_alias', label);
-      setAutoField('m_unit', 'wrap_unit', (sample && sample.unit) || '');
+      setSampleUnit((sample && sample.unit) || '');
       // 型号/分类下拉 = 该样品在样品数据里维护的型号
       var models = st ? st.modelsOf(sample) : [];
       var sel = document.getElementById('m_model');
@@ -716,7 +742,7 @@
       editingSampleIndex = -1;
       sampleTreeState = { open: {}, selectedId: '', kw: '' };
       ['m_alias','m_testCategory','m_factory','m_manufacturer','m_factoryAddr','m_manufacturerAddr',
-        'm_prodDate','m_prepQty','m_sort','m_length','m_unit','m_remark','m_unitPrice','m_totalPrice'].forEach(function (id) {
+        'm_prodDate','m_prepQty','m_sort','m_length','m_remark','m_unitPrice','m_totalPrice'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.value = '';
       });
@@ -728,7 +754,8 @@
       sel.innerHTML = '<option value="">请选择型号/分类</option>'; sel.disabled = false; sel.value = '';
       document.getElementById('specRow').style.display = 'none';
       document.getElementById('m_spec_box').innerHTML = '';
-      syncWrap('m_alias', 'wrap_alias'); syncWrap('m_unit', 'wrap_unit');
+      syncWrap('m_alias', 'wrap_alias');
+      setSampleUnit('');
       document.getElementById('m_qty').value = '1';
       document.getElementById('m_status').value = '完好';
       document.getElementById('m_needPrep').value = '否';
@@ -745,8 +772,8 @@
         var id = s.sampleId || findLeafIdByName(s.name);
         if (id) selectSampleName(id);
         document.getElementById('m_alias').value = s.alias || '';
-        document.getElementById('m_unit').value = s.unit || '';
-        syncWrap('m_alias', 'wrap_alias'); syncWrap('m_unit', 'wrap_unit');
+        syncWrap('m_alias', 'wrap_alias');
+        setSampleUnit(s.unit);
         document.getElementById('m_testCategory').value = s.testCategory || '';
         document.getElementById('m_qty').value = s.qty || '1';
         document.getElementById('m_factory').value = s.factory || '';

@@ -34,6 +34,14 @@
         item(5, '出厂检验', 'factory', 5, '')
       ]
     },
+    { id: 20, name: '样品单位', type: 'lims_sample_unit', status: '正常', time: '2026-10-30 08:00:00', remark: '委托登记添加样品的样品单位', expanded: false,
+      items: [
+        item(1, '件', 'piece', 1, ''),
+        item(2, '根', 'stick', 2, ''),
+        item(3, '个', 'unit', 3, ''),
+        item(4, '盘', 'coil', 4, '')
+      ]
+    },
     { id: 19, name: '试样色号', type: 'lims_sample_color', status: '正常', time: '2026-07-28 08:00:00', remark: '样品试验配置-试样色号', expanded: false,
       items: [
         item(1, '黄', 'yellow', 1, ''),
