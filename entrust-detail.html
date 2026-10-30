@@ -841,7 +841,7 @@
       if (!code) return '—';
       if (!sample || !window.SampleDataStore) return rcvEsc(code);
       var m = SampleDataStore.modelOf(sample, code);
-      return rcvEsc(m ? m.label : code);
+      return rcvEsc(m ? ((m.code || '') + (m.name ? '-' + m.name : '')) : code);
     }
     function renderReceiveInfo() {
       var body = document.getElementById('receiveInfoBody');
