@@ -110,19 +110,19 @@
             ],
             tests: [
               { name: '导体直流电阻', quality: '', category: '抽样试验', basis: 'GBT 3956-2008', req: '20℃时，导体直流电阻应符合标准要求', on: true },
-              { name: '结构尺寸检查', quality: '', category: '型式检验', basis: 'GBT 12706.2-2020', req: '绝缘厚度、外护套厚度等符合标准', on: true },
-              { name: '老化前绝缘的机械性能', quality: '', category: '型式检验', basis: 'GBT 2951.11-2008', req: '老化前：抗张强度中间值≥12.5 N/mm²', on: true },
-              { name: '非金属护套老化前机械性能', quality: '', category: '型式检验', basis: 'GBT 2951.11-2008', req: '抗张强度中间值≥12.5 N/mm²；断裂伸长率中间值≥150%', on: true },
-              { name: 'XLPE绝缘的热延伸试验', quality: '', category: '型式检验', basis: 'GBT 2951.21-2008', req: '负荷下伸长率 ≤ 175%；冷却后永久伸长率 ≤ 15%', on: true },
+              { name: '结构尺寸检查', quality: '', category: '型式试验', basis: 'GBT 12706.2-2020', req: '绝缘厚度、外护套厚度等符合标准', on: true },
+              { name: '老化前绝缘的机械性能', quality: '', category: '型式试验', basis: 'GBT 2951.11-2008', req: '老化前：抗张强度中间值≥12.5 N/mm²', on: true },
+              { name: '非金属护套老化前机械性能', quality: '', category: '型式试验', basis: 'GBT 2951.11-2008', req: '抗张强度中间值≥12.5 N/mm²；断裂伸长率中间值≥150%', on: true },
+              { name: 'XLPE绝缘的热延伸试验', quality: '', category: '型式试验', basis: 'GBT 2951.21-2008', req: '负荷下伸长率 ≤ 175%；冷却后永久伸长率 ≤ 15%', on: true },
               { name: '结构尺寸检查（铜带屏蔽）', quality: '', category: '抽样试验', basis: 'GBT 12706.2-2020', req: '铜带屏蔽：搭盖率平均值≥15%', on: true },
-              { name: '局部放电试验', quality: '', category: '型式检验', basis: 'GBT 3048.12-2007', req: '在规定电压下局部放电量不超过标准限值', on: true },
-              { name: '4h电压试验', quality: '', category: '型式检验', basis: 'GBT 12706.2-2020', req: '施加规定电压 4h 不击穿', on: true }
+              { name: '局部放电试验', quality: '', category: '型式试验', basis: 'GBT 3048.12-2007', req: '在规定电压下局部放电量不超过标准限值', on: true },
+              { name: '4h电压试验', quality: '', category: '型式试验', basis: 'GBT 12706.2-2020', req: '施加规定电压 4h 不击穿', on: true }
             ],
             judges: [
               { category: '例行试验', scheme: '规则判定方案-简单合格/不合格判定' },
               { category: '出厂检验', scheme: '规则判定方案-简单合格/不合格判定' },
               { category: '抽样试验', scheme: '规则判定方案-简单合格/不合格判定' },
-              { category: '型式检验', scheme: '规则判定方案-简单合格/不合格判定' }
+              { category: '型式试验', scheme: '规则判定方案-简单合格/不合格判定' }
             ]
           },
           {
@@ -145,12 +145,12 @@
             ],
             tests: [
               { name: '导体直流电阻', quality: '', category: '抽样试验', basis: 'GBT 3956-2008', req: '20℃时，导体直流电阻应符合标准要求', on: true },
-              { name: '结构尺寸检查', quality: '', category: '型式检验', basis: 'GBT 12706.2-2020', req: '铠装层、护套厚度符合标准', on: true }
+              { name: '结构尺寸检查', quality: '', category: '型式试验', basis: 'GBT 12706.2-2020', req: '铠装层、护套厚度符合标准', on: true }
             ],
             judges: [
               { category: '例行试验', scheme: '规则判定方案-简单合格/不合格判定' },
               { category: '抽样试验', scheme: '规则判定方案-简单合格/不合格判定' },
-              { category: '型式检验', scheme: '规则判定方案-简单合格/不合格判定' }
+              { category: '型式试验', scheme: '规则判定方案-简单合格/不合格判定' }
             ]
           }
         ]
@@ -196,10 +196,10 @@
           { name: '公称内径', unit: 'mm', options: ['50', '75', '110', '160', '200'] }
         ],
         tests: [
-          { name: '环刚度试验', quality: '', category: '型式检验', basis: 'DLT 802.3-2023', req: '环刚度不低于标称等级', qty: 3, price: 0, on: true },
-          { name: '扁平试验', quality: '', category: '型式检验', basis: 'DLT 802.3-2023', req: '压至外径 1/2 无破裂', qty: 3, price: 0, on: true },
+          { name: '环刚度试验', quality: '', category: '型式试验', basis: 'DLT 802.3-2023', req: '环刚度不低于标称等级', qty: 3, price: 0, on: true },
+          { name: '扁平试验', quality: '', category: '型式试验', basis: 'DLT 802.3-2023', req: '压至外径 1/2 无破裂', qty: 3, price: 0, on: true },
           { name: '冲击试验', quality: '', category: '抽样试验', basis: 'DLT 802.3-2023', req: '常温冲击，通过率≥90%', qty: 5, price: 0, on: true },
-          { name: '热变形试验', quality: '', category: '型式检验', basis: 'DLT 802.3-2023', req: '加热后无气泡、裂纹', qty: 2, price: 0, on: true }
+          { name: '热变形试验', quality: '', category: '型式试验', basis: 'DLT 802.3-2023', req: '加热后无气泡、裂纹', qty: 2, price: 0, on: true }
         ],
         judges: [{ category: '例行试验', scheme: '规则判定方案-简单合格/不合格判定' }]
       }]
