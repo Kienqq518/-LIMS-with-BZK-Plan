@@ -40,7 +40,15 @@
     '.cc-mv { display: flex; gap: 2px; flex-shrink: 0; }',
     '.cc-mv button { border: 1px solid #e2e8f0; background: #fff; color: #94a3b8; border-radius: 3px; width: 20px; height: 20px; line-height: 1; font-size: 11px; cursor: pointer; padding: 0; }',
     '.cc-mv button:hover:not([disabled]) { border-color: #2563eb; color: #2563eb; }',
-    '.cc-mv button[disabled] { opacity: .35; cursor: not-allowed; }'
+    '.cc-mv button[disabled] { opacity: .35; cursor: not-allowed; }',
+    /* ===== 冻结列：前两列（序号、委托编号）与最后一列（操作）左右固定，中间列横向滚动 ===== */
+    '.cc-fz { position: sticky; z-index: 2; background-clip: padding-box; }',
+    'thead .cc-fz { z-index: 3; }',
+    '.cc-fz-edge { box-shadow: inset -1px 0 0 #e5e7eb; }',
+    '[data-cc-scroll="1"] .cc-fz-edge { box-shadow: inset -1px 0 0 #e5e7eb, 10px 0 10px -10px rgba(15,23,42,.28); }',
+    '.cc-fz-r { box-shadow: inset 1px 0 0 #e5e7eb; }',
+    '[data-cc-scroll="1"] .cc-fz-r { box-shadow: inset 1px 0 0 #e5e7eb, -10px 0 10px -10px rgba(15,23,42,.28); }',
+    'tr:hover > .cc-fz { background-color: #f8fafc; }'
   ].join('\n');
 
   var table = null, cols = [], order = [], hidden = {}, panel = null, applying = false;
@@ -135,9 +143,85 @@
       });
     });
     moveTriggerIfHidden();
+    applyStickyColumns();
     applying = false;
   }
   function cssEsc(v) { return String(v).replace(/"/g, '\\"'); }
+
+  /* ===== 冻结列 ===== */
+  function opaqueBg(el) {
+    var node = el;
+    while (node && node.nodeType === 1) {
+      var bg = global.getComputedStyle(node).backgroundColor;
+      if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return bg;
+      node = node.parentElement;
+    }
+    return '';
+  }
+  function stickySets() {
+    var vis = order.filter(function (k) { return !hidden[k]; });
+    return { leftKeys: vis.slice(0, 2), rightKey: vis.length > 2 ? vis[vis.length - 1] : null };
+  }
+  function applyStickyColumns() {
+    if (!table) return;
+    var hr = headRow();
+    var sets = stickySets();
+    // 表格列数太少就不冻结，避免左右两块叠在一起
+    var enough = order.filter(function (k) { return !hidden[k]; }).length > 4;
+    // 先算左侧偏移（按当前实际渲染宽度累加）
+    var lefts = {}, acc = 0;
+    sets.leftKeys.forEach(function (k) {
+      var th = hr.querySelector('[data-col-key="' + cssEsc(k) + '"]');
+      if (!th) return;
+      lefts[k] = acc;
+      acc += th.getBoundingClientRect().width;
+    });
+    var rows = [].slice.call(hr.parentNode.querySelectorAll('tr'));
+    rows = rows.concat([].slice.call(table.tBodies).reduce(function (a, tb) { return a.concat([].slice.call(tb.rows)); }, []));
+    rows.forEach(function (tr) {
+      [].slice.call(tr.cells).forEach(function (cell) {
+        var k = cell.getAttribute('data-col-key');
+        cell.classList.remove('cc-fz', 'cc-fz-edge', 'cc-fz-r');
+        cell.style.left = '';
+        cell.style.right = '';
+        cell.style.zIndex = '';
+        if (!enough || !k) return;
+        var bg = opaqueBg(cell) || (cell.tagName === 'TH' ? '#f8fafc' : '#fff');
+        if (sets.leftKeys.indexOf(k) >= 0) {
+          cell.classList.add('cc-fz');
+          cell.style.left = lefts[k] + 'px';
+          cell.style.backgroundColor = bg;
+          if (k === sets.leftKeys[sets.leftKeys.length - 1]) cell.classList.add('cc-fz-edge');
+        } else if (sets.rightKey && k === sets.rightKey) {
+          cell.classList.add('cc-fz', 'cc-fz-r');
+          cell.style.right = '0px';
+          cell.style.backgroundColor = bg;
+        }
+      });
+    });
+    bindScrollMark();
+  }
+  function scrollHost() {
+    var node = table && table.parentElement;
+    while (node && node !== doc.body) {
+      var ox = global.getComputedStyle(node).overflowX;
+      if (ox === 'auto' || ox === 'scroll') return node;
+      node = node.parentElement;
+    }
+    return global;
+  }
+  function bindScrollMark() {
+    if (!table) return;
+    var host = scrollHost();
+    if (host === global) return;
+    if (host._ccScrollBound) return;
+    host._ccScrollBound = true;
+    var onScroll = function () {
+      host.setAttribute('data-cc-scroll', host.scrollLeft > 2 ? '1' : '0');
+    };
+    host.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
 
   function moveTriggerIfHidden() {
     var t = doc.getElementById('cc-trigger');
@@ -286,6 +370,7 @@
       }).observe(table.tBodies[0], { childList: true });
     }
     doc.addEventListener('click', function () { if (panel && panel.classList.contains('open')) closePanel(true); });
+    global.addEventListener('resize', function () { applyStickyColumns(); });
   }
 
   global.ColumnConfig = {
@@ -302,7 +387,8 @@
       renderList(panel.querySelector('#cc-kw').value);
     },
     _close: function () { closePanel(true); },
-    refresh: function () { if (table) { collectCols(); tagBodyCells(); apply(); } }
+    refresh: function () { if (table) { collectCols(); tagBodyCells(); apply(); } },
+    refreshSticky: function () { applyStickyColumns(); }
   };
 
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot);
