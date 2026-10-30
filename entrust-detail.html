@@ -817,7 +817,7 @@
       return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
     function rcvModelLabel(sample, code) {
-      if (!code) return '—';
+      if (!code) return '/';
       if (!sample || !window.SampleDataStore) return rcvEsc(code);
       var m = SampleDataStore.modelOf(sample, code);
       return rcvEsc(m ? ((m.code || '') + (m.name ? '-' + m.name : '')) : code);
@@ -832,7 +832,7 @@
       var host = document.getElementById('detectSampleFields');
       if (!host) return;
       var st = window.SampleDataStore, d = detailSample;
-      var markOn = false, mark = '', modelText = '不分型号';
+      var markOn = false, mark = '', modelText = '/';
       if (st) {
         markOn = st.isMarkEnabled(d.leafId);
         mark = st.markOf(d.leafId, d.modelCode, []);
@@ -846,7 +846,7 @@
       var fields = [['样品名称', d.name], ['样品别名', d.alias]];
       if (markOn) fields.push(['产品标记', mark || '未配置规则']);
       fields = fields.concat([
-        ['型号/分类', modelText], ['规格', d.spec || '—'],
+        ['型号/分类', modelText], ['规格', d.spec || '/'],
         ['样品数量', d.qty], ['样品单位', d.unit], ['是否制样', d.needPrep],
         ['生产厂家', d.factory], ['生产厂家地址', d.factoryAddr],
         ['制造商', d.manufacturer], ['制造商地址', d.manufacturerAddr],
@@ -906,7 +906,7 @@
           return '<tr><td>' + (i + 1) + '</td><td>' + rcvEsc(ln.name) + '</td><td>' + qty + '</td>' +
             (markColOn ? '<td class="col-mark">' + (rcvEsc(ln.mark) || '未配置规则') + '</td>' : '') +
             '<td>' + rcvModelLabel(sample, ln.modelCode) + '</td>' +
-            '<td>' + (rcvEsc(spec) || '—') + '</td><td>' + imgs + '</td></tr>';
+            '<td>' + (rcvEsc(spec) || '/') + '</td><td>' + imgs + '</td></tr>';
         }).join('');
         return '<div class="rcv-batch"><div class="rcv-batch-head">' + head + '</div>' +
           '<table class="rcv-mini"><thead><tr><th>序号</th><th>样品名称</th><th>数量</th>' +
@@ -1300,7 +1300,7 @@
         annotations: [
           { id: 'report-result-mode', selector: '[data-annotate="report-result-mode"]', position: 'top-right', title: '结果方式', content: '「判定」是<strong>结果方式</strong>字段的取值，不是独立参数标签。勿再拆成「结果方式 / 判定」两列标签。', tag: '字段' },
           { id: 'detect-info', selector: '[data-annotate="detect-info"]', position: 'top-left', title: '检测信息', wide: true, content: '详情页样品信息精简展示（嵌套「试验信息」表）。试验行含「制样信息」列。不含型号关联、试样制备数量及是否合并/单价等编辑态字段。', tag: '检测' },
-          { id: 'detect-sample-fields', selector: '[data-annotate="detect-sample-fields"]', position: 'bottom-right', title: '样品字段', wide: true, content: '<strong>展示规则：</strong>详情展示样品名称/别名、<strong>产品标记（仅当该样品在产品标记开关开启时展示）</strong>、型号/分类、规格、数量、单位、是否制样、厂家与地址、制造商与地址、备注信息。<strong>已去掉原「规格型号」字段</strong>，拆为「产品标记 / 型号 / 规格」三项；「产品标记」固定插在「样品名称」与「型号/分类」之间。不分型号的样品型号/分类显示「不分型号」。已去除型号关联、试样制备数量（制样数量改由试验行「制样信息」展示）。<br><strong>开关来源：</strong>样品管理 › 样品数据 › 产品标记开关（关闭时本区域不展示该字段）。', tag: '检测' },
+          { id: 'detect-sample-fields', selector: '[data-annotate="detect-sample-fields"]', position: 'bottom-right', title: '样品字段', wide: true, content: '<strong>展示规则：</strong>详情展示样品名称/别名、<strong>产品标记（仅当该样品在产品标记开关开启时展示）</strong>、型号/分类、规格、数量、单位、是否制样、厂家与地址、制造商与地址、备注信息。<strong>已去掉原「规格型号」字段</strong>，拆为「产品标记 / 型号 / 规格」三项；「产品标记」固定插在「样品名称」与「型号/分类」之间。型号/分类、规格没有值时统一显示「/」。已去除型号关联、试样制备数量（制样数量改由试验行「制样信息」展示）。<br><strong>开关来源：</strong>样品管理 › 样品数据 › 产品标记开关（关闭时本区域不展示该字段）。', tag: '检测' },
           { id: 'detect-prep-info', selector: '[data-annotate="detect-prep-info"]', position: 'top-left', title: '制样信息', wide: true, content: '来自样品数据试验配置：不制样显示「无需制样」；制样则显示「试样数量-N」（N 为编辑试验抽屉中「试样数量」步进器取值）。', tag: '检测' },
           { id: 'batch-export-bar', selector: '[data-annotate="batch-export-bar"]', position: 'bottom-left', title: '批量导出入口', wide: true, content: '位于「还样记录」上方的高亮条。范围含下方还样记录中的<strong>还样退库确认表 / 退样申请表</strong>，以及「委托单文件」→「原始记录单」。勾选类型打包 ZIP；仅最新版。', tag: '导出' },
           { id: 'doc-files-zone', selector: '[data-annotate="doc-files-zone"]', position: 'top-right', title: '可导出文件区', content: '本区域为委托单→原始记录单主文件区；还样记录在批量导出条下方、本区上方，其退库确认表/退样申请表亦纳入导出。开票记录不在范围内。', tag: '导出' },
