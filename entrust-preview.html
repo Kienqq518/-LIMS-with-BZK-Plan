@@ -152,7 +152,7 @@
 
   <!-- ============ 报告记录弹窗 ============ -->
   <div id="reportModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40">
-    <div class="w-[900px] max-w-[94vw] rounded-lg bg-white shadow-xl">
+    <div class="w-[900px] max-w-[94vw] rounded-lg bg-white shadow-xl"> data-annotate="pv-report-modal"
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <h3 class="text-base font-medium text-slate-800">报告记录</h3>
         <button onclick="closeReport()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
@@ -454,7 +454,51 @@
             '3. 导出报告发放记录<br>' +
             '4. 导出报告记录表',
           tag: '交互优化'
-        }
+        },
+        {
+          id: 'pv-report',
+          selector: '[data-annotate="pv-report-modal"]',
+          position: 'bottom-right',
+          title: '报告记录（节点签署留痕）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>一份报告从编制到发放经过多个节点，列表页要能就地核对每个节点是谁签的、什么时候签的，不必逐份打开报告文件。<br>' +
+          '<strong>展示规则：</strong>列为序号、报告编号、编制、审核、签发、处理、收费审批、发放、操作；单元格为「签署人 + 时间」，未发生的节点留空；底部带分页。<br>' +
+          '<strong>交互逻辑：</strong>操作列「日志」打开该报告的报告操作日志；点遮罩或右上角 × 关闭。数据来源与委托详情页「报告文件 / 报告发放记录表」一致。',
+          tag: '委托预览'
+        },
+        {
+          id: 'pv-log',
+          selector: '#logList',
+          position: 'bottom-right',
+          title: '报告操作日志',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>报告的每一次流转（提交、审核、签发、发放）都要留可追溯的操作痕迹，用于事后定责。<br>' +
+          '<strong>展示规则：</strong>竖向时间轴，每条为「时间 + 谁 在 哪个环节 把 报告编号 XXX 提交至 下一环节」，按时间倒序。<br>' +
+          '<strong>交互逻辑：</strong>从「报告记录」弹窗的「日志」进入；只读，不可编辑删除。',
+          tag: '委托预览'
+        },
+        {
+          id: 'pv-sign',
+          selector: '#signLink',
+          position: 'bottom-right',
+          title: '手机签署链接',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>审核/签发人不一定在电脑前，需要一条可在手机上打开的链接完成签署，签署结果回写到对应节点。<br>' +
+          '<strong>展示规则：</strong>提示语（含委托单位名与「您有一份委托合同文件待签署」）+ 一条可复制的签署短链；链接带 token，指向移动端签署页。<br>' +
+          '<strong>交互逻辑：</strong>「一键复制」把链接写入剪贴板并提示成功；「取消」关闭。列表页每行的「手机签署链接」按钮打开本弹窗。',
+          tag: '委托预览'
+        },
+        {
+          id: 'pv-flow',
+          selector: '#flowList',
+          position: 'bottom-right',
+          title: '合同流程（委托全链路进度）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>委托从登记到报告发放共 14 个环节，业务侧需要在列表页直接看进度卡在哪一步、每一步谁在什么时候做的。<br>' +
+          '<strong>展示规则：</strong>弹窗头部显示委托编号与样品名称；正文为环节列表（委托登记 → 样品收样 → 委托确认 → 费用审核 → 样品准备 → 样品入库 → 试样分发 → 试验检测 → 组内审核 → 数据审核 → … → 报告发放），已完成环节显示操作人与时间并以实线连接，<strong>当前环节 = 第一个没有时间的步骤</strong>并以高亮标记，其后环节置灰未开始。<br>' +
+          '<strong>交互逻辑：</strong>点列表「委托进度」单元格打开；只读。',
+          tag: '委托预览'
+        },
       ]
     });
   </script>

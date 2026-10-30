@@ -1369,7 +1369,29 @@
           title: '添加文件',
           content: '新增一条空白文件。新条同样展示该样品全部试验项，点亮即可纳入第二份记录单；已在其它条点亮的项仍可再次点亮，会同时写入两份文件。',
           tag: '记录单导出'
-        }
+        },
+        {
+          id: 'tde-rowedit',
+          selector: '#rowEditBody',
+          position: 'bottom-right',
+          title: '编辑检测数据（单条试验记录）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>批量录入之外，还要能只改某一条试样的数据（复测、笔误修正），改动要保留可追溯痕迹。<br>' +
+          '<strong>展示规则：</strong>标题为「编辑 · 样品名 / 试验项」；字段为试样编号（按编号规则自动生成）、试验值、状态描述、结论（合格/不合格）、备注。<br>' +
+          '<strong>交互逻辑：</strong>「保存」写回该条记录并刷新表格与判定；「取消」丢弃改动。',
+          tag: '试验检测'
+        },
+        {
+          id: 'tde-tasksheet',
+          selector: '#taskSheetTable',
+          position: 'bottom-right',
+          title: '产品检测通知书（检测员签收）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>试样分发到检测员手上时要有正式单据，检测员在系统里点「已接受」即完成签收，签收动作会写入电子签名并升主版本。<br>' +
+          '<strong>展示规则：</strong>单据版式：顶部委托/样品元信息，中间表格只列<strong>分发给当前检测员的试验项目</strong>，底部为下发人/日期与接收人/日期落款。<br>' +
+          '<strong>交互逻辑：</strong>「打印此页」走浏览器打印；「已接受」= 接收试样签收（与流转单「接收试样」行回填并行，互不替代）。',
+          tag: '试验检测'
+        },
       ]
     });
   </script>

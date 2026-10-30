@@ -23,6 +23,8 @@
     }
   ];
   var focusScopeEl = null;
+  var docShowAll = false;   // 弹窗打开时，用户手动切回「看页面全部需求」
+  var docQuery = '';        // 需求文档搜索词
 
   var css = [
     'html { position: relative; }',
@@ -87,6 +89,9 @@
     '.pa-doc-todo { color: #cbd5e1; }',
     '.pa-doc-empty { padding: 26px 12px; text-align: center; color: #94a3b8; line-height: 1.8; }',
     '.pa-doc-focus { margin-bottom: 8px; padding: 5px 9px; border-radius: 5px; background: #eff6ff; color: #1d4ed8; font-size: 12px; }',
+    '.pa-doc-focus.warn { background: #fffbeb; color: #92400e; }',
+    '.pa-doc-scope { margin-left: 6px; color: #1d4ed8; text-decoration: underline; cursor: pointer; white-space: nowrap; }',
+    '.pa-doc-sub .pa-doc-scope { margin-left: 4px; }',
     '.pa-doc-resizer { position: absolute; left: -3px; top: 0; bottom: 0; width: 7px; cursor: col-resize; z-index: 1; }',
     '.pa-doc-resizer:hover { background: rgba(249,115,22,.35); }',
     '@media (max-width: 1100px) { :root { --pa-doc-w: 320px; } }'
@@ -114,10 +119,128 @@
     return list[list.length - 1];
   }
 
+  var MODAL_SEL = '.fixed.inset-0, .modal-mask, .lc-modal-mask, .po-mask, .drawer-mask, .drawer, .bind-popover-mask';
+  function modalAncestor(el) {
+    if (!el || !el.closest) return null;
+    var host = el.closest(MODAL_SEL);
+    if (!host) return null;
+    // 右侧需求文档面板本身不是弹窗
+    if (host.id === 'pa-doc' || host.classList.contains('pa-doc')) return null;
+    return host;
+  }
+
   function isInFocusScope(el) {
     if (!focusScopeEl) return true;
     if (!el) return false;
     return focusScopeEl.contains(el);
+  }
+
+  function modalTitleOf(el) {
+    if (!el) return '';
+    var h = el.querySelector('h3, h2, .pa-doc-title, .modal-title');
+    var t = h ? (h.textContent || '').replace(/\s+/g, ' ').trim() : '';
+    if (!t) {
+      // 有些弹窗标题在带标题样式的 div 里
+      var cand = el.querySelectorAll('div,span');
+      for (var i = 0; i < cand.length && i < 12; i++) {
+        var txt = (cand[i].textContent || '').replace(/\s+/g, ' ').trim();
+        if (txt && txt.length <= 22 && cand[i].children.length === 0) { t = txt; break; }
+      }
+    }
+    return t || '弹窗';
+  }
+
+  function inScopeCount() {
+    var n = 0;
+    config.annotations.forEach(function (item) {
+      if (item._target && isInFocusScope(item._target)) n++;
+    });
+    return n;
+  }
+
+  // 弹窗打开 → 右侧需求文档只列该弹窗内的需求（并重新编号）；无子需求时自动回退列页面需求
+  function applyDocVisibility() {
+    var n = 0;
+    config.annotations.forEach(function (item) {
+      if (!item._target) return;
+      var inScope;
+      if (docShowAll) inScope = true;
+      else if (focusScopeEl) inScope = isInFocusScope(item._target);
+      else inScope = !item._inModal;   // 弹窗内的需求只在弹窗打开时列出
+      var hay = (item.title + ' ' + (item.tag || '') + ' ' + item.content).toLowerCase();
+      var match = !docQuery || hay.indexOf(docQuery) >= 0;
+      var show = inScope && match;
+      item._visible = show;
+      if (show) n++;
+      if (item._entry) item._entry.classList.toggle('is-hidden', !show);
+      if (item._entryNum) item._entryNum.textContent = show ? String(n) : '';
+      if (item._marker) {
+        item._marker.textContent = show ? String(n) : '';
+        item._marker.classList.toggle('pa-dimmed', !inScope);
+        if (!inScope) item._marker.classList.remove('visible');
+      }
+      if (item._cardNum) item._cardNum.textContent = show ? String(n) : '';
+      if (item._card && !inScope) {
+        item._card.classList.remove('visible');
+        if (item._target) item._target.classList.remove('pa-highlight');
+      }
+    });
+    return n;
+  }
+
+  function updateDocHeader(visibleCount) {
+    var panel = document.getElementById('pa-doc');
+    if (!panel) return;
+    var sub = panel.querySelector('.pa-doc-sub');
+    var hint = document.getElementById('pa-doc-focus');
+    var total = config.annotations.filter(function (i) { return !!i._target; }).length;
+    if (focusScopeEl) {
+      var t = modalTitleOf(focusScopeEl);
+      var cnt = inScopeCount();
+      if (sub) {
+        sub.innerHTML = docPageName() + ' · 页面 ' + total + ' 条' +
+          '<span class="pa-doc-scope" onclick="PrototypeAnnotation._toggleScope()">' +
+          (docShowAll ? '只看「' + t + '」需求' : '看全部页面需求') + '</span>';
+      }
+      if (hint) {
+        if (docShowAll) {
+          hint.className = 'pa-doc-focus warn';
+          hint.innerHTML = '已切回页面全部需求。<span class="pa-doc-scope" onclick="PrototypeAnnotation._toggleScope()">只看「' + t + '」弹窗需求</span>';
+          hint.style.display = '';
+        } else if (cnt) {
+          hint.className = 'pa-doc-focus';
+          hint.innerHTML = '当前弹窗：<strong>' + t + '</strong> · 已切换为该弹窗的 ' + cnt + ' 条需求' +
+            '<span class="pa-doc-scope" onclick="PrototypeAnnotation._toggleScope()">看页面需求</span>';
+          hint.style.display = '';
+        } else {
+          hint.className = 'pa-doc-focus warn';
+          hint.innerHTML = '「' + t + '」弹窗暂未挂需求批注，先显示页面需求。' +
+            '<span class="pa-doc-scope" onclick="PrototypeAnnotation._toggleScope()">知道了</span>';
+          hint.style.display = '';
+        }
+      }
+    } else {
+      docShowAll = false;
+      if (sub) sub.textContent = docPageName() + ' · 共 ' + visibleCount + ' 条页面需求（弹窗需求点开弹窗查看）';
+      if (hint) hint.style.display = 'none';
+    }
+  }
+
+  var OBS_OPTS = { attributes: true, attributeFilter: ['class', 'style'], subtree: true };
+  var rebinding = false;
+
+  // 有些锚点是页面脚本重绘后才出现的（例如列表行里按条件生成的链接），
+  // init 时 querySelector 拿不到就被整条丢掉；这里在 DOM 变化后补挂一次。
+  function hasNewTargets() {
+    var missing = false;
+    config.annotations.forEach(function (item) {
+      if (item._target) return;
+      missing = true;
+    });
+    if (!missing) return false;
+    return config.annotations.some(function (item) {
+      return !item._target && !!document.querySelector(item.selector);
+    });
   }
 
   function applyFocusScope() {
@@ -126,38 +249,34 @@
     // 形成死循环导致页面卡死（点击弹窗等场景会明显卡死）。
     var obs = window._paModalObserver;
     if (obs) obs.disconnect();
+    if (!rebinding && hasNewTargets()) {
+      rebinding = true;
+      try { buildUI(); } finally { rebinding = false; }
+      if (obs) obs.observe(document.body, OBS_OPTS);
+      return;
+    }
     focusScopeEl = detectFocusScope();
     var toggle = document.querySelector('.pa-toggle');
     if (toggle) toggle.classList.toggle('pa-modal-open', !!focusScopeEl);
-    config.annotations.forEach(function (item) {
-      var inScope = isInFocusScope(item._target);
-      if (item._marker) {
-        item._marker.classList.toggle('pa-dimmed', !inScope);
-        if (!inScope) item._marker.classList.remove('visible');
-        else if (enabled) item._marker.classList.add('visible');
-      }
-      if (item._card) {
-        item._card.classList.toggle('pa-dimmed', !inScope);
-        if (!inScope) {
-          item._card.classList.remove('visible');
-          if (item._target) item._target.classList.remove('pa-highlight');
-        }
-      }
-      var entry = document.getElementById('pa-doc-' + item.id);
-      if (entry) entry.classList.toggle('is-dim', !inScope);
-    });
-    var hint = document.getElementById('pa-doc-focus');
-    if (hint) {
-      if (focusScopeEl) {
-        var t = (focusScopeEl.querySelector('h3, h2, .pa-doc-title') || {}).textContent;
-        hint.textContent = '当前聚焦：' + (t || '弹窗') + ' 内批注（其余条目已置灰）';
-        hint.style.display = '';
-      } else {
-        hint.style.display = 'none';
-      }
+    // 弹窗内一条需求都没有时不切换，避免右侧突然空掉
+    if (focusScopeEl && !docShowAll && !inScopeCount()) {
+      var scopedEl = focusScopeEl;
+      focusScopeEl = null;
+      var n0 = applyDocVisibility();
+      focusScopeEl = scopedEl;
+      updateDocHeader(n0);
+    } else {
+      var n1 = applyDocVisibility();
+      updateDocHeader(n1);
     }
-    if (enabled) refreshPositions();
-    if (obs) obs.observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
+    if (enabled) {
+      // 只有「当前作用域内且命中搜索」的批注才显示编号点
+      config.annotations.forEach(function (item) {
+        if (item._marker) item._marker.classList.toggle('visible', !!item._visible);
+      });
+      refreshPositions();
+    }
+    if (obs) obs.observe(document.body, OBS_OPTS);
   }
 
   function loadEnabled() {
@@ -461,6 +580,11 @@
           '<div class="pa-doc-secs">' + docSectionsHtml(item) + '</div>' +
         '</div>';
       }).join('');
+    // 条目节点已生成，缓存引用供作用域切换时快速显隐/重编号
+    config.annotations.forEach(function (item) {
+      item._entry = document.getElementById('pa-doc-' + item.id);
+      item._entryNum = item._entry ? item._entry.querySelector('.pa-doc-num') : null;
+    });
     applyDocWidth();
   }
 
@@ -523,22 +647,29 @@
   }
 
   function filterDoc(kw) {
-    var q = String(kw || '').trim().toLowerCase();
-    config.annotations.forEach(function (item) {
-      var entry = document.getElementById('pa-doc-' + item.id);
-      if (!entry) return;
-      var hay = (item.title + ' ' + item.tag + ' ' + item.content).toLowerCase();
-      entry.classList.toggle('is-hidden', !!q && hay.indexOf(q) < 0);
-    });
+    docQuery = String(kw || '').trim().toLowerCase();
+    var n = applyDocVisibility();
+    updateDocHeader(n);
+    if (enabled) refreshPositions();
+  }
+
+  function toggleScope() {
+    docShowAll = !docShowAll;
+    var n = applyDocVisibility();
+    updateDocHeader(n);
+    if (enabled) refreshPositions();
   }
 
   function refreshPositions() {
     config.annotations.forEach(function (item) {
       if (!item._marker || !item._target) return;
-      if (focusScopeEl && !isInFocusScope(item._target)) {
+      // 目标不可见（弹窗未打开、display:none、position:fixed 但被隐藏）时不定位
+      if (!item._visible || !item._target.getClientRects().length) {
+        item._marker.classList.remove('visible');
         item._marker.style.display = 'none';
         return;
       }
+      item._marker.style.display = '';
       positionMarker(item._marker, item._target, item.position);
     });
   }
@@ -586,19 +717,17 @@
       });
       root.appendChild(card);
 
+      item._inModal = !!modalAncestor(target);
       item._marker = marker;
       item._card = card;
+      item._cardNum = card.querySelector('.pa-card-num');
       item._target = target;
     });
 
     buildDocPanel();
     bindScrollListeners();
+    // 可见性（含「弹窗内需求只在弹窗打开时列出/显示」）统一由 applyFocusScope → applyDocVisibility 决定
     applyFocusScope();
-    if (enabled) {
-      config.annotations.forEach(function (item) {
-        if (item._marker && isInFocusScope(item._target)) item._marker.classList.add('visible');
-      });
-    }
   }
 
   function setEnabled(on) {
@@ -617,10 +746,6 @@
       document.querySelectorAll('.pa-marker').forEach(function (m) { m.classList.remove('visible'); });
       document.querySelectorAll('.pa-card').forEach(function (c) { c.classList.remove('visible'); });
       document.querySelectorAll('.pa-highlight').forEach(function (el) { el.classList.remove('pa-highlight'); });
-    } else {
-      config.annotations.forEach(function (item) {
-        if (item._marker && isInFocusScope(item._target)) item._marker.classList.add('visible');
-      });
     }
   }
 
@@ -644,13 +769,13 @@
       }
       if (!window._paModalObserver) {
         window._paModalObserver = new MutationObserver(function () {
-          applyFocusScope();
+          if (window._paScopeRaf) return;
+          window._paScopeRaf = window.requestAnimationFrame(function () {
+            window._paScopeRaf = 0;
+            applyFocusScope();
+          });
         });
-        window._paModalObserver.observe(document.body, {
-          attributes: true,
-          attributeFilter: ['class'],
-          subtree: true
-        });
+        window._paModalObserver.observe(document.body, OBS_OPTS);
       }
     }
     if (document.readyState === 'loading') {
@@ -675,6 +800,7 @@
     },
     _startResize: startResize,
     _filter: filterDoc,
+    _toggleScope: toggleScope,
     _fromDoc: fromDocEntry,
     setEnabled: setEnabled,
     refresh: buildUI,

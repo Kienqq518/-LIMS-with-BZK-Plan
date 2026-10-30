@@ -519,7 +519,7 @@
 
   <!-- 产品检测预通知书弹窗 -->
   <div id="noticeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-    <div class="flex max-h-[90vh] w-[900px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+    <div class="flex max-h-[90vh] w-[900px] max-w-full flex-col rounded-lg bg-white shadow-xl"> data-annotate="detail-notice-modal"
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <h3 class="text-base font-medium text-slate-800">产品检测预通知书</h3>
         <button onclick="closeModal('noticeModal')" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
@@ -1338,8 +1338,52 @@
           { id: 'flow-sheet-process', selector: '[data-annotate="flow-sheet-process"]', position: 'top-right', title: '检测流程回填表', wide: true, content: '<strong>完整流转节点示例：</strong><br>① 样品制备（可选，部门+样品制备）<br>② 发样领样（部门+领样）<br>③ 接收试样（检测员部门+接收试样，可多行）<br>④ 还样（检测员部门+还样，可多行）<br>⑤ 退样（自取：委托单位取回余样签收+联系人；快递：余样快递退回委托单位+操作员电子签）', tag: '流转单' },
           { id: 'flow-sheet-rules', selector: '[data-annotate="flow-sheet-rules"]', position: 'top-left', title: '回填规则总览', wide: true, content: '各节点回填时机见对应业务页面批注。多检测员接收/还样同一样品下不同试样时，按检测员人数各回填一行。', tag: '流转单' },
           { id: 'doc-edit', selector: 'tr[data-doc="entrust_form"] [data-annotate="doc-edit"]', position: 'top-left', title: '编辑', content: 'PageOffice 在线编辑；会话内保存不落版，关闭落次版本。操作列无下载按钮（批量导出另见顶部导出条）。', tag: '版本' },
-          { id: 'doc-history', selector: 'tr[data-doc="entrust_form"] [data-annotate="doc-history"]', position: 'top-right', title: '查看历史', wide: true, content: '全员看到的历史条数一致，含全部系统主版本。来源为「系统更新 / 人工编辑」；系统更新说明写流程节点；不支持回滚；历史版不可下载。', tag: '版本' }
-        ]
+          { id: 'doc-history', selector: 'tr[data-doc="entrust_form"] [data-annotate="doc-history"]', position: 'top-right', title: '查看历史', wide: true, content: '全员看到的历史条数一致，含全部系统主版本。来源为「系统更新 / 人工编辑」；系统更新说明写流程节点；不支持回滚；历史版不可下载。', tag: '版本' },
+        {
+          id: 'detail-ledger',
+          selector: '#ledgerTimeline',
+          position: 'bottom-right',
+          title: '台账信息（样品流转时间轴）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>样品在实验室内部的每一次交接（入库、发放、接收、还样、退库）都要能按时间顺序还原，用于追查样品去向。<br>' +
+          '<strong>展示规则：</strong>竖向时间轴，每条为「时间 + 操作描述」，如 admin 将 绝缘操作杆[SC2026/00730101] 申请归还样品库；顶部提供「时间范围（开始~结束日期）」与「关键字」两个筛选控件——<strong>原型内为展示占位，未接过滤逻辑</strong>。<br>' +
+          '<strong>交互逻辑：</strong>由「查看更多」菜单进入；内容超出高度时弹窗内部滚动；点遮罩或 × 关闭。',
+          tag: '委托详情'
+        },
+        {
+          id: 'detail-notice',
+          selector: '[data-annotate="detail-notice-modal"]',
+          position: 'bottom-right',
+          title: '产品检测预通知书',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>收样后即向客户/生产厂出具的检测预告单据，说明本次要检哪些项目、样品与数量，作为检测任务的前置告知。<br>' +
+          '<strong>展示规则：</strong>列为编号、样品名称、型号规格、数量、检测项目、生产厂/制造商、试验状态、备注信息，逐行列出本委托的样品。<br>' +
+          '<strong>交互逻辑：</strong>由「查看更多」菜单打开；只读，可滚动，× 关闭。',
+          tag: '委托详情'
+        },
+        {
+          id: 'detail-syslog',
+          selector: '#sysLogTimeline',
+          position: 'bottom-right',
+          title: '系统操作日志',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>记录本委托在系统各功能模块里的操作痕迹（谁 在 哪个模块 做了什么），与「台账信息（样品实物去向）」分开维护、互不替代。<br>' +
+          '<strong>展示规则：</strong>竖向时间轴，每条为「时间 + admin 在 委托登记/样品收样/试验检测/数据审核/报告编制 完成了某操作」；顶部「时间 / 关键字」筛选控件在原型内为展示占位。<br>' +
+          '<strong>交互逻辑：</strong>由「查看更多」菜单打开；只读。',
+          tag: '委托详情'
+        },
+        {
+          id: 'detail-history',
+          selector: '#docHistoryBody',
+          position: 'bottom-right',
+          title: '文件历史版本（查看历史）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>委托单、检测任务单、报告、原始记录等文件会随流程多次重新生成，需要保留版本链并区分「系统重新生成的主版本」与「人工编辑版本」，且全员看到的版本一致。<br>' +
+          '<strong>展示规则：</strong>标题带文件名，元信息行显示「当前主版本 V2.x · 共展示 N 条（全员一致，含全部系统主版本）」；表格列为版本、来源、操作人、时间、说明、操作；当前版本行标注「当前」。<br>' +
+          '<strong>交互逻辑：</strong>操作列可预览/下载该历史版本；运行模式（LimsLabRunMode）会过滤可见版本范围，无权限时点「查看历史」直接提示无权。',
+          tag: '委托详情'
+        },
+      ]
       });
     }
   </script>

@@ -117,7 +117,7 @@
 
   <!-- ============ 新增/编辑弹窗 ============ -->
   <div id="contractModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
-    <div class="w-[720px] max-w-[92vw] rounded-lg bg-white shadow-xl">
+    <div class="w-[720px] max-w-[92vw] rounded-lg bg-white shadow-xl"> data-annotate="fc-form"
       <!-- 弹窗标题 -->
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <h3 id="modalTitle" class="text-base font-medium text-slate-800">新增框架合同</h3>
@@ -342,5 +342,33 @@
   </script>
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
+  <script>
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'fc-form',
+          selector: '[data-annotate="fc-form"]',
+          position: 'bottom-right',
+          title: '新增框架合同（字段与校验）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>框架合同是委托登记的前置数据源——委托侧只能「选合同带出」，不能手填合同信息，所以合同台账里维护的字段必须完整、可复用。<br>' +
+          '<strong>展示规则：</strong>两列栅格：合同编号、合同名称、客户名称、联系人、联系方式、地址、邮政编码、中标价、签订时间、服务年限、合同样品、备注；必填项带红星（编号/名称/客户/联系人/联系方式/地址/中标价）；日期项走日期选择器；底部可上传附件。<br>' +
+          '<strong>交互逻辑：</strong>「确定」时必填项为空则提示并聚焦该项，合同编号重复时提示编号已存在；校验通过后写入列表并关闭；「取消」或点遮罩关闭且不保存。编辑已有合同时标题与回填值随之变化。',
+          tag: '框架合同'
+        },
+        {
+          id: 'fc-sample',
+          selector: '#f_sample',
+          position: 'bottom-right',
+          title: '合同样品（决定委托可登记的样品）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>框架合同先约定本次可送检的样品范围，委托登记选到该合同后只能在这些样品里添加，避免超范围检测与结算争议。<br>' +
+          '<strong>展示规则：</strong>下拉选择，选项为该合同已约定的样品；未选择时该项为空。<br>' +
+          '<strong>交互逻辑：</strong>与委托登记页的「合同信息带出与置灰」联动：委托侧选中本合同后，合同样品随其他合同字段一起带出并只读展示；合同里没维护该项时委托侧显示「合同未维护该信息」。',
+          tag: '框架合同'
+        },
+      ]
+    });
+  </script>
 </body>
 </html>

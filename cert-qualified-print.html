@@ -81,7 +81,7 @@
   </div>
 
   <div id="inspectorModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-    <div class="w-[480px] max-w-full rounded-lg bg-white shadow-xl">
+    <div class="w-[480px] max-w-full rounded-lg bg-white shadow-xl"> data-annotate="qc-person"
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <h3 class="text-base font-medium">选择人员</h3>
         <button onclick="closeInspectorModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
@@ -106,6 +106,23 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
+  <script>
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'qc-person',
+          selector: '[data-annotate="qc-person"]',
+          position: 'bottom-right',
+          title: '选择人员（检测员 / 记录员）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>合格证与标签上要落检测员、记录员的名字，且必须是在职人员台账里的人，不能手输；不同打印场景需要的角色不同（有的只需检测员，有的检测员+记录员）。<br>' +
+          '<strong>展示规则：</strong>两行多选：检测员、记录员；候选来自人员台账（PersonnelStore），已选中的以勾选态显示；不需要记录员时该行整行隐藏，下方灰字提示当前需要哪些角色。<br>' +
+          '<strong>交互逻辑：</strong>点「确定」按角色校验：需要检测员而未选 → 提示「请至少选择 1 名检测员」；需要记录员而未选 → 提示「请至少选择 1 名记录员」；校验不通过弹窗不关闭。确认后所选人员写入选中行的合格证/标签预览，并按人员分别记忆（localStorage），下次进入自动回填。',
+          tag: '合格证打印'
+        },
+      ]
+    });
+  </script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>

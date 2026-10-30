@@ -125,6 +125,23 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
+  <script>
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'group-audit-return',
+          selector: '#returnReason',
+          position: 'bottom-right',
+          title: '退回（原因必填）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>本环节审核不通过时不直接改数据，而是把委托退回上一环节（试验检测（组内检测数据录入人））由经办人修正后重新提交；退回必须写明原因，作为退回留痕与责任依据。<br>' +
+          '<strong>展示规则：</strong>正文提示「确认退回委托 <编号>？」，唯一必填项为「退回原因」多行文本框（红星标记）。<br>' +
+          '<strong>交互逻辑：</strong>原因留空点「确认退回」→ 提示「请填写退回原因」且弹窗不关；填写后确认 → 提示已退回该委托并关闭弹窗、该行从本环节列表移除（原型仅演示提示，不改动列表数据）；点「取消」或遮罩关闭。',
+          tag: '组内审核'
+        },
+      ]
+    });
+  </script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>

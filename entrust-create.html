@@ -217,7 +217,7 @@
       <div class="flex-1 overflow-y-auto px-6 py-4">
         <div class="modal-form-grid">
           <div class="modal-form-item"><label><span class="req">*</span> 样品名称</label>
-            <div class="tree-select">
+            <div class="tree-select"> data-annotate="sm-name-tree"
               <div class="ts-control" onclick="toggleSampleTree(event)">
                 <span class="ts-text ph" id="m_sampleName_text">请选择样品名称</span>
                 <i class="fa fa-angle-down ts-caret"></i>
@@ -1065,8 +1065,52 @@
             wide: true,
             content: '<strong>需求逻辑：</strong>客户管理允许同名同地区并存，下拉只显示名称会分不清点哪一家。选择客户时必须能看到单位编码。<br><strong>展示规则：</strong>选项与选中态均为「单位名称（单位编码）」，如 杭州数蚕智能科技有限公司（121001）。预览/套打仍只打名称。<br><strong>交互逻辑：</strong>输入名称或编码均可过滤。选中后回填地址、邮编、联系人。取值仍是客户 id。',
             tag: '委托编辑'
-          }
-        ]
+          },
+        {
+          id: 'sm-name-tree',
+          selector: '[data-annotate="sm-name-tree"]',
+          position: 'bottom-right',
+          title: '样品名称（树形下拉）与别名/单位',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>样品必须取自「样品数据」主数据，且只能落在本委托已锁定的样品大类里，禁止手输自由文本，否则后续型号、规格参数、试验项都无从带出。<br>' +
+          '<strong>展示规则：</strong>下拉面板层级与样品数据左侧树完全一致（大类 › 类别 › 额定电压 › 标准 › 材质 › 样品），只列当前委托锁定的大类；顶部有关键字搜索框，命中时自动展开父级；<strong>只有叶节点（样品）可选</strong>，分类节点只负责展开/收起。选中后「样品别名」「样品单位」自动带出（别名可改，单位来自字典 lims_sample_unit：件/根/个/盘，默认件、必填）。<br>' +
+          '<strong>交互逻辑：</strong>点分类节点展开或收起，<strong>下拉不关闭</strong>；点叶节点即选中并收起下拉；点弹窗内其他区域或再次点控件才收起。未选样品名称时「型号/分类」「规格参数」整行不展示——部分样品不分型号，未选样品前无法判断该展示哪种形态。',
+          tag: '添加样品'
+        },
+        {
+          id: 'sm-spec',
+          selector: '#specRow',
+          position: 'bottom-right',
+          title: '规格参数（选型号后出现）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>规格参数属于「型号」而不是样品本身，同一型号一套参数；登记时允许留空，后续在样品收样、委托确认阶段补填，但委托确认通过前必须填全。<br>' +
+          '<strong>展示规则：</strong>选定「型号/分类」后本行才出现，逐个列出该型号配置的规格参数名（含单位，如「规格参数1:导体标称截面积S (mm²)」）；有候选值的用下拉选择、只有唯一候选值的自动带出；不分型号的样品本行不出现。<br>' +
+          '<strong>交互逻辑：</strong>切换型号即按新型号的参数清单重建本行（已填值不跨型号保留）；填写值参与产品标记拼装，缺值的段在产品标记里显示「/」。',
+          tag: '添加样品'
+        },
+        {
+          id: 'sm-tests',
+          selector: '#testTableBody',
+          position: 'bottom-right',
+          title: '试验项表（勾选决定金额）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>试验项来自样品数据里该型号（或不分型号时该样品）维护的试验清单，登记人只勾选、不新增；勾选结果直接决定委托金额与后续任务单/流转单的项目范围。<br>' +
+          '<strong>展示规则：</strong>列为勾选、试验名称、试验单价、试验依据、标准要求、试样数量、备注；表头勾选框全选/全不选；未选样品名称时整表显示「请先选择样品名称」。<br>' +
+          '<strong>交互逻辑：</strong>默认按主数据的启用状态预勾选；改动即时重算「总价(元)」= Σ(单价×是否勾选)，并写回委托付款信息；一项都不选时点「确定」会被拦下并提示。',
+          tag: '添加样品'
+        },
+        {
+          id: 'sm-preview',
+          selector: '#previewContent',
+          position: 'bottom-right',
+          title: '预览委托单',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>提交前让登记人按正式委托单的版式复核一遍，避免纸质单据与系统数据不一致。<br>' +
+          '<strong>展示规则：</strong>套打版式（检测委托合同标题、委托编号、客户与联系人、样品与试验项、金额、页码「第1页 共2页」），内容取当前表单实时值，不是固定样例。<br>' +
+          '<strong>交互逻辑：</strong>「打印」走浏览器打印；关闭回到编辑页，不影响已填内容。',
+          tag: '委托编辑'
+        },
+      ]
       });
     }
   </script>
