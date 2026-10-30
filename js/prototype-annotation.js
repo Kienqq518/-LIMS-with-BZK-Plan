@@ -342,7 +342,14 @@
   var DOC_W_KEY = 'lims-prototype-doc-width';
   var CANON = ['需求逻辑', '展示规则', '交互逻辑'];
   var EXTRA_ORDER = ['校验规则', '边界与异常', '权限与角色', '数据与取值', '非目标', '范围', '状态', '说明', '列集', '取值'];
-  var LABEL_RE = /<strong>\s*([^<：:]{2,12})\s*(?:[：:]\s*)?<\/strong>/g;
+  // 同义标签归一，保证文档结构统一
+  var LABEL_ALIAS = {
+    '列集': '展示规则', '展示条件': '展示规则', '弹窗列': '展示规则', '页面展示': '展示规则',
+    '展示信息': '展示规则', '取值': '数据与取值', '校验范围': '校验规则',
+    '描述': '需求逻辑', '逻辑': '需求逻辑', '交互': '交互逻辑', '校验': '校验规则', '边界': '边界与异常'
+  };
+  // 分段标签形如 <strong>需求逻辑：</strong>；冒号必须存在，避免把行内加粗误判成分段
+  var LABEL_RE = /<strong>\s*([^<：:]{2,12})\s*[：:]\s*<\/strong>/g;
 
   // 把 <strong>需求逻辑：</strong>…<br><strong>展示规则：</strong>… 这类内容切成结构化分段
   function parseContent(html) {
@@ -362,8 +369,18 @@
     }
     marks.forEach(function (mk, i) {
       var end = i + 1 < marks.length ? marks[i + 1].start : text.length;
-      parts.push({ label: mk.label, body: text.slice(mk.bodyStart, end).replace(/<\/?p[^>]*>/g, '') });
+      var label = LABEL_ALIAS[mk.label] || mk.label;
+      parts.push({ label: label, body: text.slice(mk.bodyStart, end).replace(/<\/?p[^>]*>/g, '') });
     });
+    // 同一标签合并成一段
+    var merged = {};
+    var ordered = [];
+    parts.forEach(function (p) {
+      if (merged[p.label]) { merged[p.label].body += '<br>' + p.body; return; }
+      merged[p.label] = { label: p.label, body: p.body };
+      ordered.push(merged[p.label]);
+    });
+    parts = ordered;
     // 已知段落按规范顺序排，未知段落保持原顺序跟在后面
     function rank(label) {
       var i = CANON.indexOf(label);
