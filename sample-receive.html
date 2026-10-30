@@ -381,7 +381,10 @@
           models: models,
           fromEntrust: !!sn.modelCode,
           modelCode: modelCode,
-          specValues: line ? (line.specValues || []) : [],
+          specValues: line && line.specValues && line.specValues.length ? line.specValues.slice()
+            : SampleSpecUI.specsOf(leaf ? leaf.sample : null, modelCode).map(function (sp) {
+                return sp.options.length === 1 ? sp.options[0] : '';   // 唯一候选值预置，与委托登记一致
+              }),
           images: line ? (line.images || []) : [],
           received: !!rec,
           editing: !rec,
