@@ -419,13 +419,14 @@
       // 只展示还有待收样品的委托；全部收完后该委托从列表移除（任务状态列始终为「样品收样」）
       var rows = receiveData.map(function (item, i) { return { item: item, i: i }; })
         .filter(function (r) { return pendingRows(r.item).length > 0; });
-      document.getElementById('receiveTableBody').innerHTML = rows.map(function (r) {
+      document.getElementById('receiveTableBody').innerHTML = rows.map(function (r, no) {
         var item = r.item, todo = pendingRows(item);
         var sampleText = item.samples.length > 1
           ? esc(item.sample) + '<span class="ml-1 text-xs text-slate-400">（待收 ' + todo.length + ' 类）</span>'
           : esc(item.sample);
+        // 序号按当前列表位置连续编号（已收完的委托移出列表后不留断号）
         return '<tr class="hover:bg-slate-50">' +
-          '<td class="border border-slate-200 px-3 py-2.5">' + (r.i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (no + 1) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + esc(item.customer) + '</td>' +
