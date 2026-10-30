@@ -7,6 +7,21 @@
   var STORAGE_KEY = 'lims-prototype-annotation-enabled';
   var enabled = false;
   var config = { annotations: [] };
+
+  /* 引擎内置批注：不依赖各页面手写，凡是接入该能力的页面自动带上 */
+  var BUILTIN_ANNOTATIONS = [
+    {
+      id: 'column-config',
+      selector: '#cc-trigger',
+      position: 'top-left',
+      title: '列配置（排序 / 是否展示）与冻结列',
+      wide: true,
+      content: '<strong>需求逻辑：</strong>主查询列表字段多、不同角色关注的列不一样，需要按页面自定义列；配置属于个人视图，必须刷新后仍然保留，不能影响他人。<br>' +
+        '<strong>展示规则：</strong>表头最后一列（操作）右侧固定一个 ☰ 入口。点开为「列配置」面板：顶部搜索框（按字段名过滤条目），每行依次是拖拽手柄 ≡、字段名、上移/下移按钮、是否展示开关，底部为「重 置」「保 存」。关闭的字段在表头与表体一起不展示，不留空列；空态行的跨列宽度同步修正。横向滚动时<strong>前两列与最后一列冻结</strong>，中间列滚动；可见列不足 5 列时不冻结，避免左右两块重叠。冻结边界仅在真正滚动后显示分隔投影。<br>' +
+        '<strong>交互逻辑：</strong>面板内改动即时预览但不落库；点「保存」写入 localStorage（按页面分别记忆），刷新、重进、跳转回来都保持；点 × 或面板外区域关闭则丢弃未保存的草稿；「重 置」恢复该页默认顺序与全部展示。拖拽或 ↑↓ 调整顺序后，冻结列、序号列编号、入口按钮位置都会跟着重算；列表被页面重绘或窗口尺寸变化时自动重新套用。',
+      tag: '列表通用'
+    }
+  ];
   var focusScopeEl = null;
 
   var css = [
@@ -609,8 +624,17 @@
     }
   }
 
+  function mergeBuiltin(list) {
+    var arr = (list || []).slice();
+    BUILTIN_ANNOTATIONS.forEach(function (b) {
+      if (!arr.some(function (a) { return a.id === b.id; })) arr.push(b);
+    });
+    return arr;
+  }
+
   function init(options) {
     config = options || { annotations: [] };
+    config.annotations = mergeBuiltin(config.annotations);
     function boot() {
       buildUI();
       if (options && options.defaultOn) {

@@ -362,6 +362,8 @@
     buildPanel();
     injectTrigger();
     apply();
+    // 入口注入后再刷一次批注，保证「列配置」这条内置批注能定位到 ☰ 入口
+    if (global.PrototypeAnnotation && global.PrototypeAnnotation.refresh) global.PrototypeAnnotation.refresh();
     // 表格由页面脚本重绘时，重新打标并套用列配置
     if (global.MutationObserver && table.tBodies[0]) {
       new MutationObserver(function () {

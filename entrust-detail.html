@@ -175,7 +175,7 @@
     </section>
 
     <!-- ========== 收样信息 ========== -->
-    <section class="rounded bg-white p-4 shadow-sm">
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="receive-info">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>收样信息</h2>
       <div id="receiveInfoBody"></div>
       <table class="info-table mt-3">
@@ -871,12 +871,8 @@
       var code = new URLSearchParams(window.location.search).get('code') || 'SC2026/0073';
       var recs = window.ReceiveStore ? ReceiveStore.recordsOf(code) : [];
       if (!recs.length) {
-        body.innerHTML = '<table class="info-table">' +
-          '<tr><td class="lbl">委托编号</td><td class="val">' + rcvEsc(code) + '</td><td class="lbl">收样人</td><td class="val">admin</td>' +
-          '<td class="lbl">收样状态</td><td class="val">完好</td></tr>' +
-          '<tr><td class="lbl">收样日期</td><td class="val">2026-07-30</td><td class="lbl">送样方式</td><td class="val">送样</td>' +
-          '<td class="lbl">送样人 / 电话</td><td class="val">—</td></tr>' +
-          '</table><p class="mt-2 text-xs text-slate-400">该委托尚无收样提交记录，展示为原型默认值。样品收样页提交后，这里会按每次收样分组展示，并显示每类样品各自的收样图片。</p>';
+        // 没有收样记录时不展示表格，只给一行说明
+        body.innerHTML = '<p class="text-sm text-slate-500">该委托尚无收样提交记录</p>';
         return;
       }
       var markColOn = recs.some(function (r) {
@@ -1321,6 +1317,17 @@
           { id: 'task-sheet-auto', selector: '[data-annotate="task-sheet-auto"]', position: 'bottom-left', title: '生成时机', content: '不再在委托确认/样品发样生成。试样分发「发放」瞬间生成；下发人=分发操作人，下发日期=分发日。', tag: '任务单' },
           { id: 'task-sheet-preview', selector: '[data-annotate="task-sheet-preview"]', position: 'top-right', title: '单据内容范围', wide: true, content: '表格行仅展示该检测员被分发的试验项目。同一委托下同一检测员多次分发且任务单仍有效时合并进同一张（升主版本）。', tag: '任务单' },
           { id: 'task-sheet-sign', selector: '[data-annotate="task-sheet-sign"]', position: 'bottom-left', title: '签收留痕', wide: true, content: '落款：下发人/日期 + 接收人/日期。接收时写检测员电子签名与接收日期，并升系统主版本（节点=试验检测接收）。与流转单「接收试样」行回填并行，互不替代。', tag: '任务单' },
+          {
+            id: 'receive-info',
+            selector: '[data-annotate="receive-info"]',
+            position: 'bottom-right',
+            title: '收样信息展示',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>一次收样可以一起收多类样品（在样品收样弹窗里一起勾选即可），但每类样品的收样图片独属于自己的，所以本区域按「每次收样」分组，而不是整单一条收样记录。<br>' +
+              '<strong>展示规则：</strong>有收样记录时，每个批次一张卡片：卡头为「第 N 次收样 · 收样日期 · 收样人 · 收样状态 · 送样方式 · 送样人/电话 · 备注」，卡内表格按样品逐行列出序号、样品名称、数量、产品标记（该样品产品标记开关开启时）、型号/分类、规格、收样图片缩略图；型号/分类与规格没有值时显示「/」。<strong>该委托尚无收样提交记录时，不展示任何表格，只显示一行文本「该委托尚无收样提交记录」。</strong><br>' +
+              '<strong>交互逻辑：</strong>数据来自「样品管理 › 样品收样」的提交记录；缩略图可点开看大图。还样方式、退样地址属退样环节，单独保留在下方。',
+            tag: '收样'
+          },
           { id: 'flow-sheet-entry', selector: '[data-annotate="flow-sheet-entry"]', position: 'top-right', title: '检测任务及样品流转单', wide: true, content: '入口位于委托详情页「检测任务及样品流转单」区块（收样后<strong>系统自动生成</strong>）。点击文档链接或「查看」打开流转单；各业务节点操作完成时自动追加回填检测流程行。', tag: '流转单' },
           { id: 'flow-sheet-auto', selector: '[data-annotate="flow-sheet-auto"]', position: 'bottom-left', title: '自动生成', content: '委托受理/收样后系统自动生成本单，样品编号、检测项目、检测依据等自动带入。', tag: '流转单' },
           { id: 'flow-sheet-process', selector: '[data-annotate="flow-sheet-process"]', position: 'top-right', title: '检测流程回填表', wide: true, content: '<strong>完整流转节点示例：</strong><br>① 样品制备（可选，部门+样品制备）<br>② 发样领样（部门+领样）<br>③ 接收试样（检测员部门+接收试样，可多行）<br>④ 还样（检测员部门+还样，可多行）<br>⑤ 退样（自取：委托单位取回余样签收+联系人；快递：余样快递退回委托单位+操作员电子签）', tag: '流转单' },
