@@ -69,8 +69,16 @@
           </select>
         </div>
         <div class="flex items-center gap-2">
-          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">检测性质</label>
-          <input type="text" placeholder="请输入检测性质" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">检测类型</label>
+          <select class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-500 outline-none focus:border-blue-500">
+            <option value="">请选择检测类型</option><option>常规</option><option>非常规</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">优先等级</label>
+          <select class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-500 outline-none focus:border-blue-500">
+            <option value="">请选择优先等级</option><option>常规</option><option>加急</option>
+          </select>
         </div>
         <!-- 查询 / 重置：占最后一格右对齐 -->
         <div class="flex items-center justify-end gap-2 xl:col-start-4">
@@ -91,8 +99,8 @@
       </div>
 
       <!-- 表格（列很多，横向滚动） -->
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[2400px] border-collapse text-left text-sm">
+      <div class="overflow-x-auto" data-annotate="preview-cols">
+        <table class="w-full min-w-[2760px] border-collapse text-left text-sm">
           <thead>
             <tr class="bg-slate-100 text-xs text-slate-600">
               <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
@@ -111,7 +119,9 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">付款单位</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">实际费用(元)</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">检测性质</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">任务类型</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测类型</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">优先等级</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">报告</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
@@ -244,18 +254,18 @@
     // ================= Mock 数据 =================
     // 委托预览列表数据
     const entrustData = [
-      { code: 'SC2026/0212', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', status: '已复审', progress: '报告处理', acceptDate: '2026-07-08', receiveDate: '2026-07-08', requireDate: '2026-07-10', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '业务员A', nature: '', editor: 'admin', hasReport: true },
-      { code: 'SC2026/0211', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', status: '检测中', progress: '试验检测', acceptDate: '2026-07-07', receiveDate: '2026-07-07', requireDate: '2026-07-09', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '梁倩', nature: '', editor: 'admin', hasReport: false },
-      { code: 'SC2026/0210', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘毯、安全带', status: '已复审', progress: '报告签发', acceptDate: '2026-07-07', receiveDate: '2026-07-07', requireDate: '2026-07-10', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '梁倩', nature: '', editor: 'admin', hasReport: false },
-      { code: 'SC2026/0208', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆、绝缘杆', status: '已复审', progress: '报告签发', acceptDate: '2026-06-15', receiveDate: '2026-06-15', requireDate: '2026-06-18', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '15', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: true },
-      { code: 'SC2026/0207', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '遮蔽罩、安全带', status: '已复审', progress: '报告签发', acceptDate: '2026-06-11', receiveDate: '2026-06-11', requireDate: '2026-06-13', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '梁倩', nature: '', editor: 'admin', hasReport: false },
-      { code: 'SC2026/0206', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '安全帽', status: '已复审', progress: '样品发放', acceptDate: '2026-06-16', receiveDate: '2026-06-16', requireDate: '', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '18', salesman: '业务员A', nature: '', editor: 'admin', hasReport: false },
-      { code: 'SC2026/0205', contract: '/', customer: '东莞西洁有限公司', sample: '绝缘操作杆', status: '已复审', progress: '报告发放', acceptDate: '2026-06-11', receiveDate: '2026-06-11', requireDate: '2026-06-22', customerDate: '2026-06-26', invoice: '未开票', payment: '未收款', payer: '东莞西洁有限公司', fee: '400', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: false },
-      { code: 'SC2026/0204', contract: '/', customer: '宇宙设想有限公司', sample: '绝缘杆', status: '已复审', progress: '检测检验', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-13', customerDate: '', invoice: '未开票', payment: '未收款', payer: '宇宙设想有限公司', fee: '200', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: true, overdue: true },
-      { code: 'SC2026/0203', contract: '/', customer: '灵知益义有限公司', sample: '电线电缆', status: '已复审', progress: '报告签发', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-20', customerDate: '', invoice: '未开票', payment: '未收款', payer: '灵知益义有限公司', fee: '200', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: true },
-      { code: 'SC2026/0202', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', status: '检测中', progress: '试验检测', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-19', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '200', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: false },
-      { code: 'SC2026/0201', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘毯、安全带', status: '检测中', progress: '试验检测', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-19', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '业务员A', nature: '例行试验', editor: 'admin', hasReport: true },
-      { code: 'SC2026/0200', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', status: '已复审', progress: '报告审核', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-20', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '200', salesman: '梁倩', nature: '例行试验', editor: 'admin', hasReport: true }
+      { code: 'SC2026/0212', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', status: '已复审', progress: '报告处理', acceptDate: '2026-07-08', receiveDate: '2026-07-08', requireDate: '2026-07-10', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '业务员A', taskType: '电气（输配电类）', testType: '常规', priority: '常规', editor: 'admin', hasReport: true },
+      { code: 'SC2026/0211', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', status: '检测中', progress: '试验检测', acceptDate: '2026-07-07', receiveDate: '2026-07-07', requireDate: '2026-07-09', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '梁倩', taskType: '电气（输配电类）', testType: '常规', priority: '加急', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0210', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘毯、安全带', status: '已复审', progress: '报告签发', acceptDate: '2026-07-07', receiveDate: '2026-07-07', requireDate: '2026-07-10', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '梁倩', taskType: '材料（安全工器具类）', testType: '常规', priority: '常规', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0208', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆、绝缘杆', status: '已复审', progress: '报告签发', acceptDate: '2026-06-15', receiveDate: '2026-06-15', requireDate: '2026-06-18', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '15', salesman: '梁倩', taskType: '材料（安全工器具类）', testType: '常规', priority: '常规', editor: 'admin', hasReport: true },
+      { code: 'SC2026/0207', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '遮蔽罩、安全带', status: '已复审', progress: '报告签发', acceptDate: '2026-06-11', receiveDate: '2026-06-11', requireDate: '2026-06-13', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '梁倩', taskType: '材料（安全工器具类）', testType: '非常规', priority: '常规', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0206', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '安全帽', status: '已复审', progress: '样品发放', acceptDate: '2026-06-16', receiveDate: '2026-06-16', requireDate: '', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '18', salesman: '业务员A', taskType: '材料（安全工器具类）', testType: '常规', priority: '常规', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0205', contract: '/', customer: '东莞西洁有限公司', sample: '绝缘操作杆', status: '已复审', progress: '报告发放', acceptDate: '2026-06-11', receiveDate: '2026-06-11', requireDate: '2026-06-22', customerDate: '2026-06-26', invoice: '未开票', payment: '未收款', payer: '东莞西洁有限公司', fee: '400', salesman: '梁倩', taskType: '电气（输配电类）', testType: '常规', priority: '加急', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0204', contract: '/', customer: '宇宙设想有限公司', sample: '绝缘杆', status: '已复审', progress: '检测检验', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-13', customerDate: '', invoice: '未开票', payment: '未收款', payer: '宇宙设想有限公司', fee: '200', salesman: '梁倩', taskType: '电气（输配电类）', testType: '非常规', priority: '常规', editor: 'admin', hasReport: true, overdue: true },
+      { code: 'SC2026/0203', contract: '/', customer: '灵知益义有限公司', sample: '电线电缆', status: '已复审', progress: '报告签发', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-20', customerDate: '', invoice: '未开票', payment: '未收款', payer: '灵知益义有限公司', fee: '200', salesman: '梁倩', taskType: '材料（电线电缆、金具、金属材料类）', testType: '常规', priority: '常规', editor: 'admin', hasReport: true },
+      { code: 'SC2026/0202', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', status: '检测中', progress: '试验检测', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-19', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '200', salesman: '梁倩', taskType: '材料（安全工器具类）', testType: '常规', priority: '常规', editor: 'admin', hasReport: false },
+      { code: 'SC2026/0201', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘毯、安全带', status: '检测中', progress: '试验检测', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-19', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '业务员A', taskType: '电气（输配电类）', testType: '常规', priority: '常规', editor: 'admin', hasReport: true },
+      { code: 'SC2026/0200', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', status: '已复审', progress: '报告审核', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-20', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '200', salesman: '梁倩', taskType: '材料（安全工器具类）', testType: '常规', priority: '常规', editor: 'admin', hasReport: true }
     ];
 
     // 合同流程步骤数据（前 13 步已完成带时间，第 14 步为当前进度，其后未开始）
@@ -316,7 +326,9 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + item.payer + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.fee + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.salesman + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5">' + (item.nature || '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (item.taskType || '/') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (item.testType || '/') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (item.priority || '/') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + reportCell + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
@@ -417,6 +429,18 @@
   <script>
     PrototypeAnnotation.init({
       annotations: [
+        {
+          id: 'preview-cols',
+          selector: '[data-annotate="preview-cols"]',
+          position: 'top-left',
+          title: '「检测性质」拆为任务类型/检测类型/优先等级',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>原「检测性质」一列口径含糊（历史值里混着「例行试验」这类检测类别，和登记字段对不上）。委托预览列表要一眼看出这一单属于哪类任务、走不走常规流程、急不急，因此取消「检测性质」，直接展示委托登记时已按字典维护的三项原值。<br>' +
+            '<strong>展示规则：</strong>三列位于「业务员」与「编制人」之间，顺序为 <strong>任务类型 → 检测类型 → 优先等级</strong>。取值与委托登记同源字典：任务类型 = <code>lims_task_type</code>（电气（输配电类）/ 电气（低压电器类）/ 电气（电工电子产品类）/ 电气（抗震检测类）/ 材料（安全工器具类）/ 材料（电线电缆、金具、金属材料类））；检测类型 = <code>lims_detect_type</code>（常规 / 非常规，本次在字典里补齐「非常规」）；优先等级 = <code>lims_priority</code>（常规 / 加急）。<strong>没有值统一显示「/」</strong>，不留空单元格。<br>' +
+            '<strong>查询条件同步：</strong>查询区原「检测性质」文本框去掉，改为「检测类型」「优先等级」两个下拉（「任务类型」下拉原本就有），选项与字典一致。<br>' +
+            '<strong>交互逻辑：</strong>三列都纳入本页「列配置」面板，可拖拽排序、可开关是否展示；横向滚动时前两列（序号、委托编号）与最后一列（操作）保持冻结；列数增加后表格最小宽度相应加宽，避免列被压扁。',
+          tag: '列表列'
+        },
         {
           id: 'export-btns',
           selector: '[data-annotate="export-btns"]',

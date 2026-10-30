@@ -23,7 +23,7 @@
       ]
     },
     { id: 3, name: '检测类型', type: 'lims_detect_type', status: '正常', time: '2026-07-15 08:00:00', remark: '检测类型', expanded: false,
-      items: [ item(1, '常规', 'normal', 1, '') ]
+      items: [ item(1, '常规', 'normal', 1, ''), item(2, '非常规', 'abnormal', 2, '不走常规流程的委托（科研、比对、临时加测等）') ]
     },
     { id: 4, name: '检测类别', type: 'lims_detect_category', status: '正常', time: '2026-07-15 08:00:00', remark: '检测类别', expanded: false,
       items: [
