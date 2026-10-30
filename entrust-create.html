@@ -472,6 +472,11 @@
     }
     bindCustomerCombo();
 
+    // 树容器内部点击不冒泡到 document，避免重绘后误判成「点了外面」
+    [].slice.call(document.querySelectorAll('.tree-select')).forEach(function (box) {
+      box.addEventListener('click', function (e) { e.stopPropagation(); });
+    });
+
     // 树形下拉：点击面板外关闭
     document.addEventListener('click', function (e) {
       var panel = document.getElementById('m_sampleName_panel');
@@ -483,7 +488,6 @@
       if (e.target.closest && e.target.closest('.tree-select')) return;
       closeSampleTree();
     });
-    // 样品试验 Mock 数据（绝缘操作杆 / 976 类）
     // 样品试验项 mock 已迁至 js/sample-data-store.js（与「样品数据」模块同源，弹窗不再自带一份）
 
     // 手动创建默认数据（新建委托登记初始化）
