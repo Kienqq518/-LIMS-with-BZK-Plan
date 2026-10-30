@@ -41,6 +41,9 @@
     'html.pa-doc-open body > .fixed[class*="bottom-0"], html.pa-doc-open body > .fixed[class*="inset-x-0"] { right: var(--pa-doc-w) !important; }',
     'html.pa-doc-open .fixed.inset-0 { right: var(--pa-doc-w) !important; }',
     'html.pa-doc-open .pa-toggle { right: calc(var(--pa-doc-w) + 20px); }',
+    /* 弹窗打开时悬浮球回到左下角；上面那条 right 规则优先级更高，这里必须同等优先级复位，
+       否则 left+right 同时生效会把胶囊横向拉伸，重新压住弹窗底部的确定按钮 */
+    'html.pa-doc-open .pa-toggle.pa-modal-open { right: auto; left: 20px; }',
     '#pa-doc { position: fixed; top: 0; right: 0; bottom: 0; width: var(--pa-doc-w); z-index: 10002; background: #fff; border-left: 1px solid #e2e8f0; box-shadow: -6px 0 18px rgba(15,23,42,.06); display: none; flex-direction: column; font-size: 13px; color: #334155; }',
     'html.pa-doc-open #pa-doc { display: flex; }',
     '.pa-doc-head { flex-shrink: 0; padding: 12px 14px 10px; border-bottom: 1px solid #eef2f7; background: #fff7ed; }',
