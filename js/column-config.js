@@ -36,7 +36,11 @@
     '.cc-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 14px; border-top: 1px solid #eef2f7; }',
     '.cc-btn { border: 1px solid #cbd5e1; background: #fff; color: #475569; border-radius: 4px; padding: 4px 14px; font-size: 13px; cursor: pointer; }',
     '.cc-btn.primary { border-color: #2563eb; background: #2563eb; color: #fff; }',
-    '.cc-empty { padding: 18px; text-align: center; color: #94a3b8; font-size: 12px; }'
+    '.cc-empty { padding: 18px; text-align: center; color: #94a3b8; font-size: 12px; }',
+    '.cc-mv { display: flex; gap: 2px; flex-shrink: 0; }',
+    '.cc-mv button { border: 1px solid #e2e8f0; background: #fff; color: #94a3b8; border-radius: 3px; width: 20px; height: 20px; line-height: 1; font-size: 11px; cursor: pointer; padding: 0; }',
+    '.cc-mv button:hover:not([disabled]) { border-color: #2563eb; color: #2563eb; }',
+    '.cc-mv button[disabled] { opacity: .35; cursor: not-allowed; }'
   ].join('\n');
 
   var table = null, cols = [], order = [], hidden = {}, panel = null, applying = false;
@@ -170,9 +174,14 @@
       return !q || (c && c.label.toLowerCase().indexOf(q) >= 0);
     }).map(function (k) {
       var c = colOf(k);
+      var pos = order.indexOf(k);
       return '<div class="cc-row" draggable="true" data-key="' + esc(k) + '">' +
-        '<i class="fa fa-ellipsis-h cc-grip"></i>' +
+        '<i class="fa fa-ellipsis-h cc-grip" title="拖拽排序"></i>' +
         '<span class="cc-name">' + esc(c ? c.label : k) + '</span>' +
+        '<span class="cc-mv">' +
+          '<button type="button" title="上移" onclick="ColumnConfig._move(\'' + esc(k) + '\',-1)"' + (pos === 0 ? ' disabled' : '') + '><i class="fa fa-angle-up"></i></button>' +
+          '<button type="button" title="下移" onclick="ColumnConfig._move(\'' + esc(k) + '\',1)"' + (pos === order.length - 1 ? ' disabled' : '') + '><i class="fa fa-angle-down"></i></button>' +
+        '</span>' +
         '<label class="cc-sw"><input type="checkbox" data-toggle="' + esc(k) + '"' + (hidden[k] ? '' : ' checked') + ' onchange="ColumnConfig._toggle(this.getAttribute(\'data-toggle\'), this.checked)" /><span></span></label>' +
       '</div>';
     }).join('');
@@ -285,6 +294,13 @@
     _search: function (v) { renderList(v); },
     _reset: function () { order = cols.map(function (c) { return c.key; }); hidden = {}; apply(); renderList(panel.querySelector('#cc-kw').value); },
     _save: function () { saveCfg({ order: order, hidden: Object.keys(hidden) }); panel.classList.remove('open'); apply(); },
+    _move: function (k, dir) {
+      var i = order.indexOf(k), j = i + dir;
+      if (i < 0 || j < 0 || j >= order.length) return;
+      order.splice(j, 0, order.splice(i, 1)[0]);
+      apply();
+      renderList(panel.querySelector('#cc-kw').value);
+    },
     _close: function () { closePanel(true); },
     refresh: function () { if (table) { collectCols(); tagBodyCells(); apply(); } }
   };
