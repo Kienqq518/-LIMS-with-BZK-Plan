@@ -25,13 +25,13 @@
       {
         entrustCode: 'SC2026/0055', receiver: 'admin', status: '完好', receiveDate: '2026-10-27',
         delivery: '送样', sender: '李工', senderPhone: '13900000000', remark: '样品外观完好，随货单齐全',
-        lines: [{ sampleKey: 'SC2026/0055|绝缘毯', name: '绝缘毯', qty: '3', unit: '块', leafId: '', modelCode: '', specValues: [], mark: '',
+        lines: [{ sampleKey: 'SC2026/0055|绝缘毯', name: '绝缘毯', qty: '3', unit: '块', leafId: 'blanket', modelCode: '', specValues: [], mark: '绝缘毯 DLT 976-2017',
           images: ['assets/report-trace/photo-receive-front.png', 'assets/report-trace/photo-receive-side.png'] }]
       },
       {
         entrustCode: 'SC2026/0051', receiver: '张三', status: '完好', receiveDate: '2026-10-26',
         delivery: '上门', sender: '王师傅', senderPhone: '13800001111', remark: '',
-        lines: [{ sampleKey: 'SC2026/0051|遮蔽罩', name: '遮蔽罩', qty: '1', unit: '件', leafId: '', modelCode: '', specValues: [], mark: '', images: [] }]
+        lines: [{ sampleKey: 'SC2026/0051|遮蔽罩', name: '遮蔽罩', qty: '1', unit: '件', leafId: 'shield', modelCode: '', specValues: [], mark: '遮蔽罩 DLT 976-2017', images: [] }]
       },
       {
         entrustCode: 'SC2026/0043', receiver: 'admin', status: '异常', receiveDate: '2026-10-25',
@@ -48,7 +48,7 @@
       {
         entrustCode: 'SC2026/0039', receiver: 'admin', status: '完好', receiveDate: '2026-10-24',
         delivery: '送样', sender: '', senderPhone: '', remark: '',
-        lines: [{ sampleKey: 'SC2026/0039|验电器', name: '验电器', qty: '2', unit: '支', leafId: '', modelCode: '', specValues: [], mark: '', images: [] }]
+        lines: [{ sampleKey: 'SC2026/0039|验电器', name: '验电器', qty: '2', unit: '支', leafId: 'detector', modelCode: '', specValues: [], mark: '验电器 DLT 976-2017', images: [] }]
       },
       {
         // 规格参数只填了一部分：产品标记里缺的那段渲染成「/」，一眼看出公称内径还没填
