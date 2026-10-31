@@ -61,7 +61,7 @@ def txt(x, y, content, font_size=18, color="#0f172a", width=None):
         "x": x,
         "y": y,
         "width": w,
-        "height": font_size * 1.35 * lines,
+        "height": round(font_size * 1.35 * lines, 2),
         "seed": abs(hash(content)) % 10_000_000,
         "groupIds": [],
         "frameId": None,
@@ -106,8 +106,8 @@ def arrow(x1, y1, x2, y2, label="", color="#334155"):
         "angle": 0,
         "x": x1,
         "y": y1,
-        "width": x2 - x1,
-        "height": y2 - y1,
+        "width": abs(x2 - x1),
+        "height": abs(y2 - y1),   # 与 Excalidraw 保存口径一致：宽高取正，方向由 points 表达
         "seed": abs(hash((x1, x2, label))) % 10_000_000,
         "groupIds": [],
         "frameId": None,
@@ -168,10 +168,10 @@ def main():
 
     els.append(txt(80, y1 + 175, "对外发放标签路径", 16, "#b91c1c", 200))
     els += labeled_box(80, y1 + 205, 150, 60, "外网手机\n4G / 5G", "#fecaca", "#9a3412")
-    els += labeled_box(280, y1 + 205, 230, 60, "公网短链边缘 / DMZ\nlab.example.com/l/{code}", "#fdba74", "#9a3412")
+    els += labeled_box(280, y1 + 205, 250, 60, "公网短链边缘 / DMZ\nlab.example.com/l/{code}", "#fdba74", "#9a3412")
     els += labeled_box(560, y1 + 205, 200, 60, "公网验真 H5\n(可读内网 API)", "#fca5a5", "#9a3412")
     els += arrow(230, y1 + 235, 280, y1 + 235, "", "#b91c1c")
-    els += arrow(510, y1 + 235, 560, y1 + 235, "302", "#b91c1c")
+    els += arrow(530, y1 + 235, 560, y1 + 235, "302", "#b91c1c")
     els += arrow(690, y1 + 115, 780, y1 + 170, "查表", "#9a3412")
     els += arrow(760, y1 + 235, 780, y1 + 210, "查表", "#9a3412")
 
@@ -187,17 +187,19 @@ def main():
     els.append(txt(80, y2, "方案 3 · 公网部署（内外任意网络可扫）", 22, "#5b21b6", 720))
     els.append(rect(60, y2 + 40, 1180, 210, "#f5f3ff", "#7c3aed"))
     els += labeled_box(80, y2 + 90, 180, 70, "任意手机\n4G / WiFi", "#fde68a", "#854d0e")
-    els += labeled_box(320, y2 + 90, 220, 70, "公网短链\nhttps://lims-with-bzk-plan.vercel.app/l/Ab3K9", "#ddd6fe", "#5b21b6")
-    els += labeled_box(600, y2 + 90, 200, 70, "短链服务\n查表 /l/{code}", "#c4b5fd", "#5b21b6")
-    els += labeled_box(860, y2 + 90, 220, 70, "公网验真 H5/API\nLIMS 云或公网", "#a78bfa", "#5b21b6")
+    # 公网短链框：URL 变长后单独加宽并把「域名 / 路径」拆成两行，后续框整体右移
+    els += labeled_box(320, y2 + 81, 360, 88,
+                       "公网短链\nhttps://lims-with-bzk-plan.vercel.app\n/l/Ab3K9", "#ddd6fe", "#5b21b6")
+    els += labeled_box(740, y2 + 90, 200, 70, "短链服务\n查表 /l/{code}", "#c4b5fd", "#5b21b6")
+    els += labeled_box(1000, y2 + 90, 220, 70, "公网验真 H5/API\nLIMS 云或公网", "#a78bfa", "#5b21b6")
     els += arrow(260, y2 + 125, 320, y2 + 125, "扫码", "#5b21b6")
-    els += arrow(540, y2 + 125, 600, y2 + 125, "", "#5b21b6")
-    els += arrow(800, y2 + 125, 860, y2 + 125, "HTTP 302", "#5b21b6")
-    els.append(rect(80, y2 + 175, 1050, 55, "#fff3bf", "#e67700"))
+    els += arrow(680, y2 + 125, 740, y2 + 125, "", "#5b21b6")
+    els += arrow(940, y2 + 125, 1000, y2 + 125, "HTTP 302", "#5b21b6")
+    els.append(rect(80, y2 + 185, 1140, 55, "#fff3bf", "#e67700"))
     els.append(txt(
-        94, y2 + 188,
+        94, y2 + 198,
         "要点：架构与方案1相同，仅域名换成公网可达地址。内外都能扫；纯隔离内网需另建内网入口或改用方案1/2。",
-        15, "#7c2d12", 1020,
+        15, "#7c2d12", 1110,
     ))
 
     els.append(txt(
@@ -220,10 +222,11 @@ def main():
         "files": {},
     }
 
-    out = Path("/workspace/docs/feishu/合格证短链-三种部署方案.excalidraw")
+    # 输出到仓库内 docs/feishu/，脚本可从任意工作目录运行
+    repo = Path(__file__).resolve().parents[1]
+    out = repo / "docs" / "feishu" / "合格证短链-三种部署方案.excalidraw"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
-    shutil.copy(out, "/opt/cursor/artifacts/cert-shortlink-3-schemes.excalidraw")
     print("wrote", out, "elements=", len(els))
 
 
