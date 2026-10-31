@@ -57,6 +57,8 @@
         { id: 'hook', label: '吊钩（环）t', leaf: true },
         { id: 'bucket', label: '绝缘斗臂车-t', leaf: true },
         { id: 'bypass', label: '10kV旁路作业设备', leaf: true },
+        { id: 'glove', label: '绝缘手套', leaf: true },
+        { id: 'flyingcar', label: '导线飞车', leaf: true },
         { id: 'belt976', label: '安全带', leaf: true }
       ]},
       { id: 'dlt1476', label: 'DLT 1476-2023', open: true, children: [
@@ -69,7 +71,8 @@
       { id: 'cement', label: '通用硅酸盐水泥', open: true, children: [
         { id: 'gb175', label: 'GB 175-2023', open: true, children: [
           { id: 'p', label: '硅酸盐水泥', leaf: true },
-          { id: 'po', label: '普通硅酸盐水泥', leaf: true }
+          { id: 'po', label: '普通硅酸盐水泥', leaf: true },
+          { id: 'pc', label: '复合硅酸盐水泥', leaf: true }
         ]}
       ]}
     ];
@@ -315,6 +318,15 @@
     t('工频耐压试验', '例行试验', S976, '10kV 等级耐压 1min，无击穿、无闪络', 1, 200),
     t('温升试验', '型式试验', S976, '额定电流下温升不超过标准限值', 1, 260)
   ]);
+  aqSample('glove', '绝缘手套', 15, S976, '副', [
+    t('外观检查', '例行试验', S976, '表面无裂纹、无发黏、无穿刺，成套无破损', 1, 40),
+    t('工频耐压试验', '例行试验', S976, '8kV 耐压 1min，泄漏电流不大于 9mA', 1, 80)
+  ]);
+  aqSample('flyingcar', '导线飞车', 16, S976, '台', [
+    t('外观检查', '例行试验', S976, '车架、卡线器、保险绳无变形裂纹，转动件灵活', 1, 60),
+    t('静负荷试验', '例行试验', S976, '施加 2.5 倍额定载荷 1min，无永久变形、无滑移', 1, 200),
+    t('工频耐压试验', '例行试验', S976, '按等级耐压 1min，无击穿、无闪络', 1, 150)
+  ]);
   aqgqjSample('rod', '绝缘操作杆', 1, 'DLT 976-2017');
   aqSample('ladder', '绝缘软梯', 2, S976, '架', [
     t('外观检查', '例行试验', S976, '梯绳无断股、磨损，挂钩完好', 1, 40),
@@ -351,6 +363,29 @@
   deriveCableSample('cu6-20s', '20kV单芯电力电缆', '1芯', '12/20', 3);
   deriveCableSample('cu6-30', '30kV电力电缆', '3芯', '18/30', 4);
   deriveCableSample('cu6-40', '40kV电力电缆', '3芯', '24/35', 5);
+
+  /* 通用硅酸盐水泥：GB 175-2023 的例行试验项，三种水泥共用一套项目、强度指标不同 */
+  function cementSample(id, name, sort, strength3d, strength28d) {
+    var GB = 'GB 175-2023';
+    SAMPLE_MOCK[id] = {
+      name: name, code: '', sort: sort, category: '工程检测', standard: GB,
+      fee: '', cycle: 7, diffModel: '否', unit: '组', remark: '', isCable: false,
+      cableStruct: '', cores: '', coreColor: '', phases: [], sampleSpecs: [],
+      markRule: '[样品信息.样品名称][空格][样品信息.标准号]',
+      models: [],
+      tests: [
+        { name: '标准稠度用水量', quality: '', category: '例行试验', basis: GB, req: '按 GB/T 1346 测定，记录实测值', qty: 1, price: 80, on: true },
+        { name: '凝结时间', quality: '', category: '例行试验', basis: GB, req: '初凝不小于 45min，终凝不大于 600min', qty: 1, price: 120, on: true },
+        { name: '安定性', quality: '', category: '例行试验', basis: GB, req: '雷氏夹法煮沸后膨胀值不大于 5.0mm', qty: 1, price: 120, on: true },
+        { name: '胶砂强度', quality: '', category: '例行试验', basis: GB, req: '3d 抗压不小于 ' + strength3d + 'MPa，28d 抗压不小于 ' + strength28d + 'MPa', qty: 1, price: 260, on: true },
+        { name: '密度比表面积', quality: '', category: '型式试验', basis: GB, req: '比表面积不小于 300m²/kg', qty: 1, price: 140, on: true }
+      ],
+      judges: [{ category: '例行试验', scheme: '规则判定方案-简单合格/不合格判定' }]
+    };
+  }
+  cementSample('p', '硅酸盐水泥', 1, '23.0', '42.5');
+  cementSample('po', '普通硅酸盐水泥', 2, '17.0', '42.5');
+  cementSample('pc', '复合硅酸盐水泥', 3, '15.0', '32.5');
 
   var CAT_LABELS = { dlwz: '电力物资类', aqgqj: '安全工器具类', hjjc: '环境检测', gcjc: '工程检测' };
 

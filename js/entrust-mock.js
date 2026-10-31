@@ -1,6 +1,6 @@
 /* 委托详情共享 mock（「点哪单看哪单」的数据源）
  * 数据来源：各列表页现有 mock 的并集（委托预览 / 样品收样 / 数据审核 / 组内审核 / 委托确认 /
- * 样品发样 / 样品制备 / 退样 / 试验检测 / 试样分发 / 标签打印 / 合同详情），共 60 个委托号；
+ * 样品发样 / 样品制备 / 退样 / 试验检测 / 试样分发 / 标签打印 / 合同详情），共 67 个委托号；
  * 列表里没给出样品名的编号，按编号稳定轮转推导（同一编号每次刷新结果一致）。
  * 样品主数据能解析到的（绝缘操作杆/安全带/安全帽/电缆/导管…），型号、规格参数、试验项、
  * 产品标记全部走「样品数据」，解析不到的用候选值兜底。
@@ -13,7 +13,8 @@
     '东集西造有限公司': { addr: '东莞市松山湖科技产业园工业南路12号', zip: '523808', contact: '陈默', phone: '13905710021', place: '广东' },
     '宇宙设想有限公司': { addr: '杭州市余杭区文一西路1218号', zip: '311100', contact: '孙倩', phone: '13600001234', place: '浙江' },
     '灵知益义有限公司': { addr: '合肥市蜀山区长江西路218号', zip: '230031', contact: '何宇', phone: '15800002345', place: '安徽' },
-    '东莞西洁有限公司': { addr: '东莞市南城街道簪花路8号', zip: '523000', contact: '李伟', phone: '13798001122', place: '广东' }
+    '东莞西洁有限公司': { addr: '东莞市南城街道簪花路8号', zip: '523000', contact: '李伟', phone: '13798001122', place: '广东' },
+    '南京远能电力工程有限公司监理分公司': { addr: '南京市经济技术开发区', zip: '610222', contact: '张华', phone: '13766664444', place: '江苏' }
   };
   var CUSTOMER_POOL = Object.keys(CUSTOMERS);
   var LAB = '应敏科技有限公司';
@@ -42,7 +43,13 @@
     '绝缘斗臂车-t': { leaf: 'bucket', unit: '台', spec: ['10kV 12m'] },
     '10kV旁路作业设备': { leaf: 'bypass', unit: '套', spec: ['10kV'] },
     '10kV带电作业用绝缘服': { leaf: 'suit', unit: '套', spec: ['10kV'] },
-    '电线电缆': { leaf: 'cu6-3c', unit: '米', spec: ['YJV22-8.7/15kV 3×95'] }
+    '电线电缆': { leaf: 'cu6-3c', unit: '米', spec: ['YJV22-8.7/15kV 3×95'] },
+    '8.7/10kV·3芯': { leaf: 'cu6-3c', unit: '米', spec: ['3×95'] },
+    '绝缘手套': { leaf: 'glove', unit: '副', spec: ['12kV'] },
+    '导线飞车': { leaf: 'flyingcar', unit: '台', spec: ['10kV'] },
+    '复合硅酸盐水泥': { leaf: 'pc', unit: '组', spec: ['P·C 32.5'] },
+    '硅酸盐水泥': { leaf: 'p', unit: '组', spec: ['P·I 42.5'] },
+    '普通硅酸盐水泥': { leaf: 'po', unit: '组', spec: ['P·O 42.5'] }
   };
   var DERIVE_POOL = ['绝缘操作杆', '安全带', '安全帽', '验电器', '绝缘毯', '10kV3芯电力电缆'];
   var FACTORIES = ['杭州华辰电力设备有限公司', '河北恒信安全器材厂', '江苏远缆电缆有限公司', '广东坚盾电力器材有限公司'];
@@ -109,6 +116,14 @@
     'SC2026/0037': ['杭州数蚕智能科技有限公司', '绝缘操作杆|1|', '', '', 'admin', '', ''],
     'SC2026/0030': ['东集西造有限公司', '安全带|1|', '', '', 'admin', '', '任务完成'],
     'SC2026/0024': ['杭州数蚕智能科技有限公司', '绝缘操作杆|1|', '', '', 'admin', '', '任务完成'],
+    /* 框架合同 KJHT2025112001（南京远能）名下的 7 单：原先只存在于合同详情页，现收进同一数据源 */
+    'SC2025/0003': ['南京远能电力工程有限公司监理分公司', '绝缘操作杆|1|根', '2025-11-20', '', 'admin', '梁倩', '试样分发'],
+    'SC2025/0004': ['南京远能电力工程有限公司监理分公司', '导线飞车|1|台', '2025-11-21', '', 'admin', '梁倩', '报告编制'],
+    'SC2025/0005': ['南京远能电力工程有限公司监理分公司', '8.7/10kV·3芯|1|米', '2025-11-22', '', 'admin', '业务员A', '试验检测'],
+    'SC2025/0006': ['南京远能电力工程有限公司监理分公司', '复合硅酸盐水泥|1|组', '2025-11-23', '', 'admin', '梁倩', '试验检测'],
+    'SC2025/0007': ['南京远能电力工程有限公司监理分公司', '电缆保护管|1|根', '2025-11-24', '', 'admin', '梁倩', '报告签发'],
+    'SC2025/0008': ['南京远能电力工程有限公司监理分公司', '电线电缆|1|米', '2025-11-25', '', 'admin', '业务员A', '报告发放'],
+    'SC2025/0009': ['南京远能电力工程有限公司监理分公司', '绝缘手套|1|副', '2025-11-26', '', 'admin', '梁倩', '试验检测'],
   };
 
   /* 页面里已人工写定的字段固化到这里（单一数据源）：
@@ -190,6 +205,29 @@
     };
   }
 
+  /** 任务类型按样品大类推导；lims_task_type 里没有对应项的大类（工程检测 / 环境检测）返回空，
+   *  由页面显示「/」，不硬套一个不相干的字典值 */
+  function taskTypeOf(samples) {
+    var st = global.SampleDataStore;
+    var cats = {};
+    samples.forEach(function (sm) {
+      var c = (st && st.catKeyOfName) ? st.catKeyOfName(sm.name) : '';
+      // 名称不是树节点标签时（如「8.7/10kV·3芯」这种规格式写法），退回按已解析到的主数据判断
+      if (!c && sm.leafId && st) {
+        var master = st.getSample(sm.leafId);
+        var cc = (master && master.category) || '';
+        if (/电力电缆|电缆保护管|导管/.test(cc)) c = 'dlwz';
+        else if (/安全工器具/.test(cc)) c = 'aqgqj';
+        else if (/工程检测|环境检测/.test(cc)) c = 'gcjc';
+      }
+      if (!c && /电缆|导线|保护管|导管|金具/.test(sm.name)) c = 'dlwz';
+      if (c) cats[c] = 1;
+    });
+    if (cats.dlwz) return '材料（电线电缆、金具、金属材料类）';
+    if (cats.aqgqj) return '材料（安全工器具类）';
+    return '';
+  }
+
   function get(code) {
     code = String(code || '').trim() || DEFAULT_CODE;
     var r = ROWS[code], h = hash(code), ex = EXACT[code];
@@ -213,8 +251,7 @@
     }, 0);
     return {
       code: code, dash: code.replace('/', '-'), status: (r && r[6]) || '', known: !!r,
-      taskType: (ex && ex.taskType) || (samples.some(function (s) { return /电缆|导管|保护管/.test(s.name); })
-        ? '材料（电线电缆、金具、金属材料类）' : '电气（输配电类）'),
+      taskType: (ex && ex.taskType) || taskTypeOf(samples),
       priority: (ex && ex.priority !== undefined) ? ex.priority : '常规',
       testType: (ex && ex.testType !== undefined) ? ex.testType : '常规',
       testCategory: (ex && ex.testCategory) || ['例行试验', '委托检测', '型式试验'][h % 3],
