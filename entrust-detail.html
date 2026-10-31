@@ -223,7 +223,7 @@
           <tbody>
             <tr>
               <td>1</td>
-              <td>绝缘操作杆(1)</td>
+              <td id="returnSampleCell">绝缘操作杆(1)</td>
               <td></td>
               <td>admin</td>
               <td>2026-07-28</td>
@@ -795,6 +795,8 @@
         ['受理日期', r.acceptDate], ['客户要求完成日期', r.customerDate], ['要求检测完成天数', r.days],
         ['要求检测完成时间', r.requireDate], ['编制人', r.editor]
       ]);
+      var ret = di('returnSampleCell');          // 还样记录首行跟随本单第一个样品
+      if (ret && r.samples[0]) ret.textContent = r.samples[0].name + '(' + r.samples[0].qty + ')';
       var pay = di('payInfoTable');
       if (pay) pay.innerHTML = infoRows([
         ['样品检测总价(元)', r.totalPrice], ['实际费用(元)', r.actualFee], ['折扣率(%)', r.discount],
