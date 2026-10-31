@@ -67,6 +67,7 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -76,6 +77,10 @@
       { code: 'SC2026/0086', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '电缆保护管', sendDate: '2026-07-13', requireDate: '', acceptDate: '2026-07-13', prepaid: '否', priority: '2', status: '样品发样', editor: 'admin', salesman: '梁倩' },
       { code: 'SC2026/0084', contract: '/', customer: '东集西造有限公司', sample: '绝缘操作杆', sendDate: '2026-07-12', requireDate: '', acceptDate: '2026-07-12', prepaid: '否', priority: '常规', status: '样品发样', editor: 'admin', salesman: '业务员A' }
     ];
+
+    // 公共字段（委托单位 / 样品 / 日期 / 编制人 / 业务员 / 任务类型…）统一取自 js/entrust-mock.js，
+    // 保证「列表看到的」与「点进详情页看到的」是同一份数据
+    EntrustMock.enrich(listData);
 
     document.getElementById('tableBody').innerHTML = listData.map(function (item, i) {
       return '<tr class="hover:bg-slate-50">' +

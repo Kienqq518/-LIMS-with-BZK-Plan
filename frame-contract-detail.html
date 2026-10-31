@@ -94,6 +94,7 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     // 关联委托任务 Mock 数据
@@ -106,6 +107,10 @@
       { code: 'SC2025/0008', sample: '电线电缆', date: '2025-11-25', fee: '103', status: '已复审', progress: '报告发放', invoice: '未开票', payment: '未收款', salesman: '业务员A', hasReport: true },
       { code: 'SC2025/0009', sample: '绝缘手套', date: '2025-11-26', fee: '100', status: '检测中', progress: '试验检测', invoice: '未开票', payment: '未收款', salesman: '梁倩', hasReport: false }
     ];
+
+    // 公共字段（委托单位 / 样品 / 日期 / 编制人 / 业务员 / 任务类型…）统一取自 js/entrust-mock.js，
+    // 保证「列表看到的」与「点进详情页看到的」是同一份数据
+    EntrustMock.enrich(taskData, { accept: 'date', samples: null });
 
     // 渲染关联委托任务表格
     (function renderTasks() {

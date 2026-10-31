@@ -130,12 +130,17 @@
     });
   </script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>
   <script>
     var confirmData = [
       { code: 'SC2026/0071', contract: '/', customer: '宇宙设想有限公司', sample: '遮蔽罩、安全带', sendDate: '', requireDate: '2026-06-20', acceptDate: '2026-06-09', editor: 'admin', salesman: '梁倩' }
     ];
+
+    // 公共字段（委托单位 / 样品 / 日期 / 编制人 / 业务员 / 任务类型…）统一取自 js/entrust-mock.js，
+    // 保证「列表看到的」与「点进详情页看到的」是同一份数据
+    EntrustMock.enrich(confirmData);
 
     function renderTable() {
       document.getElementById('confirmTableBody').innerHTML = confirmData.map(function (item, i) {

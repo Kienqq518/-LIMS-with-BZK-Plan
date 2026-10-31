@@ -118,6 +118,7 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script src="js/flow-stages.js"></script>
   <script src="js/personnel-store.js"></script>
   <script src="js/inspector-select.js"></script>
@@ -139,6 +140,10 @@
       { code: 'SC2026/0069', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-06', requireDate: '2026-07-19', status: '报告编制', editor: 'admin', judgment: '合格' },
       { code: 'SC2026/0068', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-05', requireDate: '2026-07-18', status: '数据审核', editor: 'admin', judgment: '合格' }
     ];
+
+    // 公共字段（委托单位 / 样品 / 日期 / 编制人 / 业务员 / 任务类型…）统一取自 js/entrust-mock.js，
+    // 保证「列表看到的」与「点进详情页看到的」是同一份数据
+    EntrustMock.enrich(listData);
 
     var filtered = listData.slice();
     var MAX_INSPECTORS = LabelCertConfig.getInspectorMax();

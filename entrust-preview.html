@@ -250,6 +250,9 @@
     </div>
   </div>
 
+  <!-- 委托公共数据源：必须在下面的列表脚本之前加载（列表要按它对齐客户/样品/日期） -->
+  <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script>
     // ================= Mock 数据 =================
     // 委托预览列表数据
@@ -267,6 +270,10 @@
       { code: 'SC2026/0201', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘毯、安全带', status: '检测中', progress: '试验检测', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-19', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '0', salesman: '业务员A', taskType: '电气（输配电类）', testType: '常规', priority: '常规', editor: 'admin', hasReport: true },
       { code: 'SC2026/0200', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', status: '已复审', progress: '报告审核', acceptDate: '2026-06-10', receiveDate: '2026-06-10', requireDate: '2026-06-20', customerDate: '', invoice: '未开票', payment: '未收款', payer: '杭州数蚕智能科技有限公司', fee: '200', salesman: '梁倩', taskType: '材料（安全工器具类）', testType: '常规', priority: '常规', editor: 'admin', hasReport: true }
     ];
+
+    // 公共字段（委托单位 / 样品 / 日期 / 编制人 / 业务员 / 任务类型…）统一取自 js/entrust-mock.js，
+    // 保证「列表看到的」与「点进详情页看到的」是同一份数据
+    EntrustMock.enrich(entrustData, { require: 'customerDate', finish: 'requireDate' });
 
     // 合同流程步骤数据（前 13 步已完成带时间，第 14 步为当前进度，其后未开始）
     const flowSteps = [
@@ -422,7 +429,6 @@
     });
   </script>
   <script src="js/tab-bar.js"></script>
-  <script src="js/sample-data-store.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>

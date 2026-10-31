@@ -48,6 +48,15 @@
       { id: 'dlt976', label: 'DLT 976-2017', open: true, children: [
         { id: 'rod', label: '绝缘操作杆', leaf: true },
         { id: 'ladder', label: '绝缘软梯', leaf: true },
+        { id: 'hardladder', label: '绝缘硬梯', leaf: true },
+        { id: 'pole', label: '绝缘杆', leaf: true },
+        { id: 'blanket', label: '绝缘毯', leaf: true },
+        { id: 'shield', label: '遮蔽罩', leaf: true },
+        { id: 'suit', label: '10kV带电作业用绝缘服', leaf: true },
+        { id: 'detector', label: '验电器', leaf: true },
+        { id: 'hook', label: '吊钩（环）t', leaf: true },
+        { id: 'bucket', label: '绝缘斗臂车-t', leaf: true },
+        { id: 'bypass', label: '10kV旁路作业设备', leaf: true },
         { id: 'belt976', label: '安全带', leaf: true }
       ]},
       { id: 'dlt1476', label: 'DLT 1476-2023', open: true, children: [
@@ -156,27 +165,49 @@
         ]
       },
       'cu6-1c': {
-        name: '10kV单芯电力电缆',
-        code: '',
-        sort: 2,
-        category: '电力电缆类 / 额定电压 6kV-30kV',
-        standard: 'GBT 12706.2-2020',
-        fee: '',
-        cycle: 5,
-        diffModel: '否',
-        unit: '',
-        remark: '',
-        isCable: false,
-        cableStruct: '单芯',
-        cores: '1芯',
-        coreColor: '绝缘分色',
-        phases: [],
-        sampleSpecs: [],
-        markRule: '',
-        models: [],
-        tests: [],
-        judges: []
-      }
+        name: '10kV单芯电力电缆', code: '', sort: 2, category: '电力电缆类 / 额定电压 6kV-30kV',
+        standard: 'GBT 12706.2-2020', fee: '', cycle: 5, diffModel: '是', unit: '米', remark: '',
+        isCable: true, cableStruct: '单芯', cores: '1芯', coreColor: '绝缘分色', phases: [],
+        sampleSpecs: [
+          { name: '导体标称截面积', symbol: 'S', unit: 'mm²' },
+          { name: '额定电压', symbol: 'Uo/U(Um)', unit: 'kV' }
+        ],
+        markRule: '[型号信息.型号][ - ][规格参数.额定电压.值][空格][样品信息.是否电缆.芯数][X][规格参数.导体标称截面积.值][空格][样品信息.标准号]',
+        models: [
+          {
+            code: 'YJY', name: '交联聚乙烯绝缘聚乙烯护套电力电缆', sort: 1, cycle: 5,
+            desc: '单芯无铠装，适用于固定敷设的 10kV 线路。',
+            specs: [
+              { title: '规格参数1:导体标称截面积S (mm²)', options: ['25', '35', '50', '70', '95', '120', '150', '185', '240', '300', '400'] },
+              { title: '规格参数2:额定电压Uo/U(Um) (kV)', options: ['8.7/10'] }
+            ],
+            tests: [
+              { name: '交流耐压试验', quality: '', category: '例行试验', basis: 'GBT 12706.2-2020', req: '2.5U0 电压耐压 30min，无击穿、无闪络', qty: 1, price: 120, on: true },
+              { name: '局部放电试验', quality: '', category: '例行试验', basis: 'GBT 12706.2-2020', req: '1.73U0 下放电量不大于 10pC', qty: 1, price: 150, on: true },
+              { name: '导体直流电阻测量', quality: '', category: '例行试验', basis: 'GBT 12706.2-2020', req: '20℃ 直流电阻不超过标准规定值', qty: 1, price: 60, on: true },
+              { name: '绝缘电阻测量', quality: '', category: '例行试验', basis: 'GBT 12706.2-2020', req: '换算至 20℃ 不小于 1000MΩ·km', qty: 1, price: 60, on: true },
+              { name: '结构尺寸检查', quality: '', category: '型式试验', basis: 'GBT 12706.2-2020', req: '绝缘厚度、护套厚度等符合标准', qty: 1, price: 80, on: true }
+            ],
+            judges: [{ category: '例行试验', scheme: '规则判定方案-简单合格/不合格判定' }]
+          },
+          {
+            code: 'YJV22', name: '交联聚乙烯绝缘钢带铠装聚氯乙烯护套电力电缆', sort: 2, cycle: 5,
+            desc: '单芯钢带铠装，可承受一定的机械外力。',
+            specs: [
+              { title: '规格参数1:导体标称截面积S (mm²)', options: ['25', '35', '50', '70', '95', '120', '150', '185', '240', '300', '400'] },
+              { title: '规格参数2:额定电压Uo/U(Um) (kV)', options: ['8.7/10'] }
+            ],
+            tests: [
+              { name: '交流耐压试验', quality: '', category: '例行试验', basis: 'GBT 12706.2-2020', req: '2.5U0 电压耐压 30min，无击穿、无闪络', qty: 1, price: 120, on: true },
+              { name: '局部放电试验', quality: '', category: '例行试验', basis: 'GBT 12706.2-2020', req: '1.73U0 下放电量不大于 10pC', qty: 1, price: 150, on: true },
+              { name: '导体直流电阻测量', quality: '', category: '例行试验', basis: 'GBT 12706.2-2020', req: '20℃ 直流电阻不超过标准规定值', qty: 1, price: 60, on: true },
+              { name: '铠装层连续性试验', quality: '', category: '例行试验', basis: 'GBT 12706.2-2020', req: '铠装层导通良好，无断点', qty: 1, price: 70, on: true }
+            ],
+            judges: [{ category: '例行试验', scheme: '规则判定方案-简单合格/不合格判定' }]
+          }
+        ],
+        tests: [], judges: []
+      },
     };
 
   // DS 实壁类塑料电缆导管（图二的第 2 行样品）：型号 PVC-C，规格参数四项：环刚度等级 / 公称长度 / 公称内径 / 公称壁厚
@@ -227,11 +258,83 @@
       models: [], tests: tests976(standard), judges: []
     };
   }
+  /* 扩展：不同安全工器具的预防性试验项差别很大（耐压 / 启动电压 / 静负荷 / 泄漏电流…），
+   * 不能都套绝缘操作杆那 4 项，否则详情页与原始记录的试验项就是错的。 */
+  function t(name, category, standard, req, qty, price) {
+    return { name: name, quality: '', category: category, basis: standard, req: req, qty: qty, price: price, on: true };
+  }
+  function aqSample(id, name, sort, standard, unit, tests) {
+    SAMPLE_MOCK[id] = {
+      name: name, code: '', sort: sort, category: '安全工器具类', standard: standard,
+      fee: '', cycle: 5, diffModel: '否', unit: unit, remark: '', isCable: false,
+      cableStruct: '', cores: '', coreColor: '', phases: [], sampleSpecs: [],
+      markRule: '[样品信息.样品名称][空格][样品信息.标准号]',
+      models: [], tests: tests, judges: []
+    };
+  }
+  var S976 = 'DLT 976-2017';
+  aqSample('blanket', '绝缘毯', 6, S976, '块', [
+    t('外观检查', '例行试验', S976, '表面光滑、无气泡/裂纹/杂质', 1, 40),
+    t('工频耐压试验', '例行试验', S976, '按标称电压等级耐压 1min，无击穿、无闪络', 1, 80),
+    t('穿刺耐压试验', '抽样试验', S976, '穿刺点耐压通过，无贯穿性击穿', 1, 80)
+  ]);
+  aqSample('shield', '遮蔽罩', 7, S976, '件', [
+    t('外观检查', '例行试验', S976, '无裂纹、无穿孔、表面清洁', 1, 40),
+    t('工频耐压试验', '例行试验', S976, '10kV 等级耐压 1min，无击穿、无闪络', 1, 80)
+  ]);
+  aqSample('suit', '10kV带电作业用绝缘服', 8, S976, '套', [
+    t('外观检查', '例行试验', S976, '无破损、无老化、接缝完好', 1, 40),
+    t('工频耐压试验', '例行试验', S976, '12kV 耐压 1min，无击穿、无闪络', 1, 100),
+    t('泄漏电流试验', '例行试验', S976, '泄漏电流不大于 0.5mA', 1, 100)
+  ]);
+  aqSample('detector', '验电器', 9, S976, '支', [
+    t('外观检查', '例行试验', S976, '指示部分完好，绝缘杆无裂纹', 1, 40),
+    t('启动电压试验', '例行试验', S976, '启动电压应在额定电压的 15%~40% 之间', 1, 80),
+    t('绝缘杆工频耐压试验', '例行试验', S976, '按等级耐压 1min，无击穿、无闪络', 1, 80)
+  ]);
+  aqSample('pole', '绝缘杆', 10, S976, '根', [
+    t('外观及尺寸', '例行试验', S976, '表面光滑洁净，长度与截面符合标称', 1, 40),
+    t('工频耐压试验', '例行试验', S976, '按额定电压耐压 1min，无击穿、无闪络', 1, 80)
+  ]);
+  aqSample('hardladder', '绝缘硬梯', 11, S976, '架', [
+    t('外观检查', '例行试验', S976, '梯梁梯级无裂纹、无变形、连接牢固', 1, 40),
+    t('静负荷试验', '例行试验', S976, '施加标称负荷 1min，无损伤、无永久变形', 2, 120),
+    t('工频耐压试验', '例行试验', S976, '按等级耐压 1min，无击穿、无闪络', 1, 80)
+  ]);
+  aqSample('hook', '吊钩（环）t', 12, S976, '只', [
+    t('外观检查', '例行试验', S976, '无裂纹、无磨损、防脱卡有效', 1, 40),
+    t('静负荷试验', '例行试验', S976, '2.5 倍额定载荷保持 1min，无永久变形、无裂纹', 2, 150)
+  ]);
+  aqSample('bucket', '绝缘斗臂车-t', 13, S976, '台', [
+    t('外观检查', '例行试验', S976, '斗体绝缘层无破损，金属件无变形', 1, 60),
+    t('臂件静负荷试验', '例行试验', S976, '额定载荷 1.5 倍保持 1min，无永久变形', 1, 200),
+    t('工频耐压试验', '例行试验', S976, '10kV 等级耐压 1min，无击穿、无闪络', 1, 150)
+  ]);
+  aqSample('bypass', '10kV旁路作业设备', 14, S976, '套', [
+    t('外观检查', '例行试验', S976, '屏蔽与绝缘部件完好，接头无损伤', 1, 60),
+    t('工频耐压试验', '例行试验', S976, '10kV 等级耐压 1min，无击穿、无闪络', 1, 200),
+    t('温升试验', '型式试验', S976, '额定电流下温升不超过标准限值', 1, 260)
+  ]);
   aqgqjSample('rod', '绝缘操作杆', 1, 'DLT 976-2017');
-  aqgqjSample('ladder', '绝缘软梯', 2, 'DLT 976-2017');
-  aqgqjSample('belt976', '安全带', 3, 'DLT 976-2017');
-  aqgqjSample('rope1476', '安全绳', 4, 'DLT 1476-2023');
-  aqgqjSample('helmet', '安全帽', 5, 'DLT 1476-2023');
+  aqSample('ladder', '绝缘软梯', 2, S976, '架', [
+    t('外观检查', '例行试验', S976, '梯绳无断股、磨损，挂钩完好', 1, 40),
+    t('静负荷试验', '例行试验', S976, '施加 2205N 静负荷 5min，无滑脱、无断股', 1, 120),
+    t('工频耐压试验', '例行试验', S976, '按等级耐压 1min，无击穿、无闪络', 1, 80)
+  ]);
+  aqSample('belt976', '安全带', 3, S976, '条', [
+    t('外观检查', '例行试验', S976, '带体无裂纹、无烧灼，缝线无脱线，配件完整', 1, 40),
+    t('围杆带静负荷试验', '例行试验', S976, '施加 4.5kN 静负荷 5min，无滑脱、无断裂', 1, 120),
+    t('整体冲击试验', '抽样试验', S976, '100kg 自由坠落冲击，带体与挂点无破损', 1, 150)
+  ]);
+  aqSample('rope1476', '安全绳', 4, 'DLT 1476-2023', '条', [
+    t('外观检查', '例行试验', 'DLT 1476-2023', '绳体无磨损、无断股，端头固定可靠', 1, 40),
+    t('静负荷试验', '例行试验', 'DLT 1476-2023', '施加标称负荷 5min，无滑移、无断裂', 1, 120)
+  ]);
+  aqSample('helmet', '安全帽', 5, 'DLT 1476-2023', '顶', [
+    t('外观检查', '例行试验', 'DLT 1476-2023', '帽壳无裂纹、无穿孔，内衬与下颏带完好', 1, 40),
+    t('冲击性能试验', '例行试验', 'DLT 1476-2023', '5kg 钢锤自 1m 冲击，头模受力不超过标准限值', 2, 120),
+    t('电绝缘性能试验', '例行试验', 'DLT 1476-2023', '12kV 耐压 1min，泄漏电流不大于 1.2mA', 2, 100)
+  ]);
 
   // 铜芯新增 3 个样品：沿用 GBT 12706.2-2020 同组型号与试验项，仅改额定电压与芯数（原型 Mock）
   function deriveCableSample(id, name, cores, voltage, sort) {

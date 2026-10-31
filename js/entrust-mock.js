@@ -22,7 +22,7 @@
   var SAMPLE_META = {
     '绝缘操作杆': { leaf: 'rod', unit: '根', spec: ['300', '600'] },
     '绝缘软梯': { leaf: 'ladder', unit: '架', spec: ['20m'] },
-    '绝缘硬梯': { leaf: 'ladder', unit: '架', spec: ['10m'] },
+    '绝缘硬梯': { leaf: 'hardladder', unit: '架', spec: ['10m'] },
     '安全带': { leaf: 'belt976', unit: '条', spec: ['围杆式'] },
     '安全绳': { leaf: 'rope1476', unit: '条', spec: ['16m'] },
     '安全帽': { leaf: 'helmet', unit: '顶', spec: ['ABS'] },
@@ -31,15 +31,18 @@
     'DS实壁类塑料电缆导管_直管': { leaf: 'ds-s', unit: '根', spec: [] },
     '实壁类塑料电缆导管_直管': { leaf: 'ds-s', unit: '根', spec: [] },
     '电缆保护管': { leaf: 'ds-s', unit: '根', spec: ['DN150'] },
-    '绝缘毯': { unit: '块', spec: ['10kV 二级'] },
-    '遮蔽罩': { unit: '件', spec: ['10kV'] },
-    '验电器': { unit: '支', spec: ['10kV'] },
-    '绝缘杆': { unit: '根', spec: ['35kV 2000'] },
-    '吊钩（环）t': { unit: '只', spec: ['20t'] },
-    '绝缘斗臂车-t': { unit: '台', spec: ['10kV 12m'] },
-    '10kV旁路作业设备': { unit: '套', spec: ['10kV'] },
-    '10kV带电作业用绝缘服': { unit: '套', spec: ['10kV'] },
-    '电线电缆': { unit: '米', spec: ['YJV22-8.7/15kV 3×95'] }
+    '电缆导管': { leaf: 'ds-s', unit: '根', spec: ['DN110'] },
+    /* 以下样品已在「样品数据」补了主数据（试验项 / 产品标记 / 判定各自不同），
+       这里只保留委托侧的规格候选文本（这些样品不分型号，无型号级规格参数） */
+    '绝缘毯': { leaf: 'blanket', unit: '块', spec: ['10kV 二级'] },
+    '遮蔽罩': { leaf: 'shield', unit: '件', spec: ['10kV'] },
+    '验电器': { leaf: 'detector', unit: '支', spec: ['10kV'] },
+    '绝缘杆': { leaf: 'pole', unit: '根', spec: ['35kV 2000'] },
+    '吊钩（环）t': { leaf: 'hook', unit: '只', spec: ['20t'] },
+    '绝缘斗臂车-t': { leaf: 'bucket', unit: '台', spec: ['10kV 12m'] },
+    '10kV旁路作业设备': { leaf: 'bypass', unit: '套', spec: ['10kV'] },
+    '10kV带电作业用绝缘服': { leaf: 'suit', unit: '套', spec: ['10kV'] },
+    '电线电缆': { leaf: 'cu6-3c', unit: '米', spec: ['YJV22-8.7/15kV 3×95'] }
   };
   var DERIVE_POOL = ['绝缘操作杆', '安全带', '安全帽', '验电器', '绝缘毯', '10kV3芯电力电缆'];
   var FACTORIES = ['杭州华辰电力设备有限公司', '河北恒信安全器材厂', '江苏远缆电缆有限公司', '广东坚盾电力器材有限公司'];
@@ -210,8 +213,54 @@
       editor: (r && r[4]) || 'admin', salesman: (r && r[5]) || '梁倩',
       totalPrice: String(total), actualFee: String(total), discount: '0',
       payer: customer, payMethod: h % 2 ? '电汇' : '对公转账', feeRemark: '',
-      samples: samples
+      samples: samples,
+      sampleNames: samples.map(function (sm) { return sm.name; }).join('、'),
+      receiveDate: plusDays(accept, 1)
     };
+  }
+
+  /**
+   * 让各列表页的公共字段以本 mock 为准：列表看到的客户 / 样品 / 日期 / 人员，
+   * 与点进详情页看到的完全一致（各页只保留自己环节特有的字段：状态、进度、模版、勾选…）。
+   * 只覆盖行对象里「已存在」的键，不给页面凭空加字段。
+   * @param rows 列表数据数组
+   * @param opts 覆盖默认列名映射，例如委托预览的「要求完成时间」列名是 requireDate、「客户要求完成日期」是 customerDate
+   */
+  function enrich(rows, opts) {
+    if (!rows || !rows.forEach) return rows;
+    var map = {
+      customer: 'customer', sample: 'sample', samples: 'samples',
+      accept: 'acceptDate', require: 'requireDate', finish: null, customerDate: null,
+      editor: 'editor', salesman: 'salesman',
+      taskType: 'taskType', testType: 'testType', priority: 'priority',
+      receiveDate: 'receiveDate', arriveDate: 'arriveDate', payer: 'payer'
+    };
+    Object.keys(opts || {}).forEach(function (k) { map[k] = opts[k]; });
+    rows.forEach(function (row) {
+      if (!row || !row.code) return;
+      var r = get(row.code);
+      function set(key, val) { if (key && key in row && val !== undefined) row[key] = val; }
+      set(map.customer, r.customer);
+      set(map.sample, r.sampleNames);
+      set(map.payer, r.payer);
+      set(map.accept, r.acceptDate);
+      set(map.require, r.customerDate);        // 多数页面 requireDate 列 = 客户要求完成日期
+      set(map.finish, r.requireDate);          // 委托预览另有「要求检测完成时间」列
+      set(map.customerDate, r.customerDate);
+      set(map.receiveDate, r.receiveDate);
+      set(map.arriveDate, r.receiveDate);
+      set(map.editor, r.editor);
+      set(map.salesman, r.salesman);
+      set(map.taskType, r.taskType);
+      set(map.testType, r.testType);
+      set(map.priority, r.priority);
+      if (map.samples && Array.isArray(row[map.samples])) {
+        row[map.samples] = r.samples.map(function (sm) {
+          return { name: sm.name, qty: sm.qty, unit: sm.unit, modelCode: sm.modelCode || '' };
+        });
+      }
+    });
+    return rows;
   }
 
   /** 节点是否已过「样品收样」：优先按任务状态在流程阶段里的位置判断，状态未知按已过处理 */
@@ -228,6 +277,6 @@
 
   global.EntrustMock = {
     DEFAULT_CODE: DEFAULT_CODE, ROWS: ROWS, CUSTOMERS: CUSTOMERS, SAMPLE_META: SAMPLE_META,
-    get: get, isPastReceive: isPastReceive, plusDays: plusDays, diffDays: diffDays, hash: hash
+    get: get, enrich: enrich, isPastReceive: isPastReceive, plusDays: plusDays, diffDays: diffDays, hash: hash
   };
 })(window);

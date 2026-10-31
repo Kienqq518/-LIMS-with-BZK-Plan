@@ -331,6 +331,7 @@
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script src="js/sample-spec-ui.js"></script>
   <script src="js/receive-store.js"></script>
   <script src="js/receive-history-mock.js"></script>
@@ -354,6 +355,10 @@
       { code: 'SC2026/0041', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆、DS实壁类塑料电缆导管_直管', sendDate: '', requireDate: '2026-06-30', acceptDate: '2026-06-02', prepaid: '否', priority: '常规', status: '样品收样', editor: 'admin', salesman: '业务员A', samples: [{ name: '10kV3芯电力电缆', qty: '3', unit: '根', modelCode: 'YJV22' }, { name: 'DS实壁类塑料电缆导管_直管', qty: '4', unit: '根', modelCode: 'PVC-C' }] },
       { code: 'SC2026/0039', contract: '/', customer: '宇宙设想有限公司', sample: '验电器、绝缘杆', sendDate: '', requireDate: '2026-06-28', acceptDate: '2026-06-01', prepaid: '否', priority: '常规', status: '样品收样', editor: '潘哲宁', salesman: '梁倩', samples: [{ name: '验电器', qty: '2', unit: '支' }, { name: '绝缘杆', qty: '1', unit: '根' }] }
     ];
+
+    // 公共字段（委托单位 / 样品 / 日期 / 编制人 / 业务员 / 任务类型…）统一取自 js/entrust-mock.js，
+    // 保证「列表看到的」与「点进详情页看到的」是同一份数据
+    EntrustMock.enrich(receiveData);
 
     // ===== 演示种子：已经收掉部分样品的委托（进页面即可看到「待收 N 类」状态）=====
     // 数据源在 js/receive-history-mock.js（委托详情页要用同一份，避免两个页面口径不一致）；

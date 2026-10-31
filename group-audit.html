@@ -143,6 +143,7 @@
     });
   </script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>
   <script>
@@ -152,6 +153,10 @@
       { code: 'SC2026/0060', contract: '/', sample: '绝缘操作杆', customer: '东集西造有限公司', acceptDate: '2026-05-28', arriveDate: '2026-05-28', requireDate: '2026-06-10', finance: '已付款', payer: '东集西造有限公司', detectStatus: STAGE, progress: STAGE, tester: '李四', editor: 'admin' },
       { code: 'SC2026/0058', contract: 'HT2026-001', sample: '安全带', customer: '宇宙设想有限公司', acceptDate: '2026-05-20', arriveDate: '2026-05-21', requireDate: '2026-06-05', finance: '待付款', payer: '宇宙设想有限公司', detectStatus: STAGE, progress: STAGE, tester: '张三', editor: 'admin' }
     ];
+
+    // 公共字段（委托单位 / 样品 / 日期 / 编制人 / 业务员 / 任务类型…）统一取自 js/entrust-mock.js，
+    // 保证「列表看到的」与「点进详情页看到的」是同一份数据
+    EntrustMock.enrich(listData);
     var filtered = listData.slice();
     var returnIndex = -1;
 
