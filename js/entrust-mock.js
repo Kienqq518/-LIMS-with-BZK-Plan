@@ -205,8 +205,19 @@
     };
   }
 
-  /** 任务类型按样品大类推导；lims_task_type 里没有对应项的大类（工程检测 / 环境检测）返回空，
-   *  由页面显示「/」，不硬套一个不相干的字典值 */
+  /* 样品大类 → lims_task_type 字典项（字典只有图一那 6 项，列表与详情页都只能取其中的值）
+   * gcjc 工程检测：6 项里没有建材专属项，取「电气（抗震检测类）」——现有选项里唯一与建筑结构 /
+   *   建材检测相关的一类，水泥等建材归此最贴近；要改只动这张表。
+   * hjjc 环境检测：6 项里没有可归靠的选项，且当前没有环境检测类委托，先留空由页面显示「/」，
+   *   等字典补项（或在委托登记里人工选定）后在这里填上即可。 */
+  var TASK_TYPE_BY_CAT = {
+    dlwz: '材料（电线电缆、金具、金属材料类）',
+    aqgqj: '材料（安全工器具类）',
+    gcjc: '电气（抗震检测类）',
+    hjjc: ''
+  };
+
+  /** 任务类型按样品大类推导；一个委托含多大类时按 dlwz > aqgqj > gcjc > hjjc 取先 */
   function taskTypeOf(samples) {
     var st = global.SampleDataStore;
     var cats = {};
@@ -218,13 +229,16 @@
         var cc = (master && master.category) || '';
         if (/电力电缆|电缆保护管|导管/.test(cc)) c = 'dlwz';
         else if (/安全工器具/.test(cc)) c = 'aqgqj';
-        else if (/工程检测|环境检测/.test(cc)) c = 'gcjc';
+        else if (/工程检测/.test(cc)) c = 'gcjc';
+        else if (/环境/.test(cc)) c = 'hjjc';
       }
       if (!c && /电缆|导线|保护管|导管|金具/.test(sm.name)) c = 'dlwz';
       if (c) cats[c] = 1;
     });
-    if (cats.dlwz) return '材料（电线电缆、金具、金属材料类）';
-    if (cats.aqgqj) return '材料（安全工器具类）';
+    var order = ['dlwz', 'aqgqj', 'gcjc', 'hjjc'];
+    for (var i = 0; i < order.length; i++) {
+      if (cats[order[i]] && TASK_TYPE_BY_CAT[order[i]]) return TASK_TYPE_BY_CAT[order[i]];
+    }
     return '';
   }
 
