@@ -5280,73 +5280,203 @@
 
     PrototypeAnnotation.init({
       annotations: [
-        { id: 'tree-count', selector: '[data-annotate="tree-count"]', position: 'top-right', title: '关联模板数量', content: '括号内数字表示该分类/型号下已配置的报告模板变体数量。左侧树已按当前进入的大类过滤。', tag: '报告模板' },
-        { id: 'record-tree-tests', selector: '[data-annotate="record-tree-tests"]', position: 'top-right', title: '型号下展开试验项', wide: true, content: '左侧树层级与「报告模版 › 报告模版」一致，并在型号节点下增加试验项层级；绿点表示已上传模板。点击某一试验项可快速定位右侧列表，括号内为（已配置数 / 试验项总数）。试验项名称不再拼接 A/B 等前缀字母。', tag: '记录单' },
-        { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板变体', content: '打开新增弹窗，配置样品、模板名称、是否默认、模版正文文件（上传/复制/引用公共正文）及公共头尾引用。', tag: '报告模板' },
-        { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '可编辑模板名称、是否默认、引用公共头尾，以及正文来源（本地/引用）。本地正文可在此重新上传/复制（追加为新版本并启用），也可到操作列「版本」管理；引用时可改公共正文目标。', tag: '操作说明' },
-        { id: 'body-file-source', selector: '[data-annotate="body-file-source"]', position: 'top-right', title: '模版正文文件', wide: true, content: '支持<strong>上传</strong>、<strong>复制</strong>、<strong>引用</strong>三种来源。已有本地文件时，重新上传/复制会追加为新版本并启用；也可到操作列「版本」管理。选「引用」时从「公共模版」选择正文，文件名只读，活引用随公共启用版本同步。', tag: '报告模板' },
-        { id: 'body-public-ref', selector: '[data-annotate="body-public-ref"]', position: 'top-right', title: '引用公共模版头/尾', wide: true, content: '公共模版<strong>无关联绑定</strong>；头/尾下拉列出当前大类下全部对应内容样式的公共模版，由本变体直接勾选引用。新增时若库内已有头/尾则软默认选中首条，可手动改选（切换不会回写公共库）。', tag: '报告模板' },
-        { id: 'body-version', selector: '[data-annotate="body-version"]', position: 'top-right', title: '版本管理', wide: true, content: '本地正文：同一变体可存多个版本，单选启用。<strong>若变体引用公共正文</strong>，则打开被引用公共模版的版本管理（版本归属公共侧）。', tag: '报告模板' },
-        { id: 'body-default', selector: '[data-annotate="body-default"]', position: 'top-right', title: '设为默认', content: '同一样品型号下可设一个默认模板变体（<strong>可选</strong>）。报告生成时若已设默认则默认选中该变体，用户可切换其他变体；未设默认时生成报告需用户手动选择。', tag: '报告模板' },
-        { id: 'row-delete', selector: '[data-annotate="row-delete"]', position: 'top-right', title: '删除', content: '删除该模板变体及其全部版本。不受是否设为默认、版本是否启用影响。', tag: '操作说明' },
+        { id: 'tree-count', selector: '[data-annotate="tree-count"]', position: 'top-right', title: '关联模板数量', content: '<strong>需求逻辑：</strong>配置是否覆盖到位，要看每个分类 / 型号下已经配了几个变体。<br>' +
+            '<strong>展示规则：</strong>分类与型号节点括号内的数字 = 该节点下已配置的报告模板变体数量；左侧树已按当前进入的大类过滤。<br>' +
+            '<strong>交互逻辑：</strong>数字随新增 / 删除 / 启用变化，只读展示。', tag: '报告模板' },
+        { id: 'record-tree-tests', selector: '[data-annotate="record-tree-tests"]', position: 'top-right', title: '型号下展开试验项', wide: true, content: '<strong>需求逻辑：</strong>记录单模版按试验项维护，树层级要与报告模版一致并多一层试验项。<br>' +
+            '<strong>展示规则：</strong>左侧树层级与「报告模版 › 报告模版」一致，并在型号节点下增加试验项层级；绿点表示该试验项已上传模板；试验项名称不再拼接型号后缀；括号内为（已配置数 / 试验项总数）。<br>' +
+            '<strong>交互逻辑：</strong>点击某一试验项即定位右侧列表并过滤。', tag: '记录单' },
+        { id: 'btn-add', selector: '[data-annotate="btn-add"]', position: 'top-left', title: '新增模板变体', content: '<strong>需求逻辑：</strong>模板变体是报告产出的基础，需要统一的配置入口。<br>' +
+            '<strong>展示规则：</strong>「新增模板变体」按钮打开新增弹窗，含样品、模板名称、是否默认、模版正文文件（上传 / 复制 / 引用公共正文）与公共头尾引用。<br>' +
+            '<strong>交互逻辑：</strong>保存后写入当前大类的变体列表。', tag: '报告模板' },
+        { id: 'row-edit', selector: '[data-annotate="row-edit"]', position: 'top-right', title: '编辑', wide: true, content: '<strong>需求逻辑：</strong>变体建好后仍需调整名称、默认位与正文来源。<br>' +
+            '<strong>展示规则：</strong>操作列「编辑」。<br>' +
+            '<strong>交互逻辑：</strong>可编辑模板名称、是否默认、引用公共头尾，以及正文来源（本地 / 引用）：本地正文可在此重新上传或复制（追加为新版本并启用），也可到操作列「版本」管理；引用时可改公共正文目标。', tag: '操作说明' },
+        { id: 'body-file-source', selector: '[data-annotate="body-file-source"]', position: 'top-right', title: '模版正文文件', wide: true, content: '<strong>需求逻辑：</strong>正文可能全机构共用，也可能某型号专用，三种来源要都能选。<br>' +
+            '<strong>展示规则：</strong>支持上传、复制、引用三种来源；选「引用」时从「公共模版」中选择正文，文件名只读。<br>' +
+            '<strong>交互逻辑：</strong>已有本地文件时重新上传 / 复制会追加为新版本并启用；引用为活引用，随公共启用版本同步。', tag: '报告模板' },
+        { id: 'body-public-ref', selector: '[data-annotate="body-public-ref"]', position: 'top-right', title: '引用公共模版头/尾', wide: true, content: '<strong>需求逻辑：</strong>页眉页脚式的头尾应集中维护，由各变体引用而不是各自上传。<br>' +
+            '<strong>展示规则：</strong>头 / 尾下拉列出当前大类下全部对应内容样式的公共模版；公共模版侧无关联绑定。<br>' +
+            '<strong>交互逻辑：</strong>新增时若库内已有头 / 尾则软默认选中首条，可手动改选；切换只影响本变体，不回写公共库。', tag: '报告模板' },
+        { id: 'body-version', selector: '[data-annotate="body-version"]', position: 'top-right', title: '版本管理', wide: true, content: '<strong>需求逻辑：</strong>同一变体要能留多个正文版本，且只有一个生效。<br>' +
+            '<strong>展示规则：</strong>本地正文：同一变体可存多个版本，单选启用。若变体引用公共正文，则打开被引用公共模版的版本管理（版本归属公共侧）。<br>' +
+            '<strong>交互逻辑：</strong>启用版本即时影响新生成的报告。', tag: '报告模板' },
+        { id: 'body-default', selector: '[data-annotate="body-default"]', position: 'top-right', title: '设为默认', content: '<strong>需求逻辑：</strong>多数型号有常用版式，报告生成时应默认选中它。<br>' +
+            '<strong>展示规则：</strong>「默认」标记，同一样品型号下最多一个默认变体（可不设）。<br>' +
+            '<strong>交互逻辑：</strong>生成报告时已设默认则默认选中，用户仍可切换其他变体；未设默认时需手动选择。', tag: '报告模板' },
+        { id: 'row-delete', selector: '[data-annotate="row-delete"]', position: 'top-right', title: '删除', content: '<strong>需求逻辑：</strong>废弃变体要能彻底清理。<br>' +
+            '<strong>展示规则：</strong>操作列「删除」。<br>' +
+            '<strong>交互逻辑：</strong>删除该模板变体及其全部版本，不受是否设为默认、版本是否启用影响；删除前需确认。', tag: '操作说明' },
         { id: 'record-config', selector: '[data-annotate="record-config"]', position: 'top-right', title: '版本管理', wide: true, content: '<strong>需求逻辑：</strong>同一试验项可存多个模板版本，单选启用其中一个。换启用版本<strong>不打</strong>已导出原始记录单失效（03-07）；只影响下一次导出冻进 snapshot 的 usedFields。<br><strong>展示规则：</strong>新上传/复制的版本默认启用最新版，有文件则必有一版启用。弹窗含上传人列。<br><strong>交互逻辑：</strong>可上传、复制其他项、改文件名、删除（不受是否启用影响）；也可在「编辑」弹窗内重新上传/复制追加新版本。', tag: '记录单' },
-        { id: 'record-edit', selector: '[data-annotate="record-edit"]', position: 'top-right', title: '编辑记录单模版', wide: true, content: '配置模版文件来源：上传 / 复制 / 引用公共模版。已有本地文件时，可在此重新上传/复制（追加为新版本并启用），也可到操作列「版本」管理；可切换为「引用」。', tag: '记录单' },
-        { id: 'record-file-source', selector: '[data-annotate="record-file-source"]', position: 'top-right', title: '记录单模版文件', wide: true, content: '支持<strong>上传</strong>、<strong>复制</strong>、<strong>引用</strong>。已有本地文件时，重新上传/复制会追加为新版本并启用；也可到操作列「版本」管理。选「引用」时文件名只读，活引用随公共启用版本同步。', tag: '记录单' },
+        { id: 'record-edit', selector: '[data-annotate="record-edit"]', position: 'top-right', title: '编辑记录单模版', wide: true, content: '<strong>需求逻辑：</strong>记录单模版与报告模版一样需要灵活的正文来源。<br>' +
+            '<strong>展示规则：</strong>操作列「编辑」弹窗，配置模版文件来源：上传 / 复制 / 引用公共模版。<br>' +
+            '<strong>交互逻辑：</strong>已有本地文件时可在此重新上传或复制（追加为新版本并启用），也可到「版本」管理；可切换为「引用」。', tag: '记录单' },
+        { id: 'record-file-source', selector: '[data-annotate="record-file-source"]', position: 'top-right', title: '记录单模版文件', wide: true, content: '<strong>需求逻辑：</strong>记录单正文有共用也有专用，来源要能切换。<br>' +
+            '<strong>展示规则：</strong>支持上传、复制、引用；选「引用」时文件名只读。<br>' +
+            '<strong>交互逻辑：</strong>已有本地文件时重新上传 / 复制追加为新版本并启用；引用随公共启用版本同步。', tag: '记录单' },
         { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '<strong>需求逻辑：</strong>点击「配置」打开 PageOffice：左侧 Word 预览，右侧字段面板（检测中心/合同/报告/设备/样品/试验结果集）。<strong>记录单模版保存时</strong>解析已插入的 <code>{{占位符}}</code>，写入该模版版本 usedFields；导出原始记录时把这份清单和字段值冻进 snapshot，之后判断委托/样品基本信息是否失效只看快照、不再打开 Word。报告/单据同样可插占位符，但不驱动原始记录失效。<br><strong>展示规则：</strong>记录单与报告模板左侧内容不同；已导出 Word 里是值不是占位符，故不能事后再解析。<br><strong>交互逻辑：</strong>保存模版=解析并更新 usedFields；不因此打已导出记录单失效。', tag: '模板配置' },
-        { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
-        { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '试验项模版列表', wide: true, content: '仅展示<strong>试验项单模版</strong>；组合模版在上方表格区域管理。样品层选中时按型号分组。首列复选框勾选已上传模版行，配合工具栏「批量下载」。未上传行复选框禁用。', tag: '记录单' },
-        { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '版本弹窗内提供「复制其他项」，可从其他样品/试验项复制已有模板；列表操作列在未上传时仅展示「版本」。', tag: '记录单' },
-        { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出模版逻辑', wide: true, content: '支持样品层/型号层<strong>组合模版</strong>与各<strong>试验项单模版</strong>并存。「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」优先本型号组合模版，否则上级样品组合模版，否则试验项动态拼接；切分类两种模式始终用试验项单模版。UI 仅显示 xxx.docx/未上传，继承在导出时自动解析。', tag: '产品逻辑' },
-        { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版表格', wide: true, content: '按左侧选中节点展示<strong>本层级及以下</strong>全部组合模版：分类层汇总下属样品层与型号层；样品层展示本样品 + 其下各型号；型号层仅本型号。试验项节点不展示此区域。首列复选框配合工具栏「批量下载」；未上传行禁用。可与下方试验项表一并勾选后批量下载（仅当前启用版本）。', tag: '记录单' },
-        { id: 'batch-download', selector: '[data-annotate="batch-download"]', position: 'top-left', title: '批量下载', wide: true, content: '报告/记录单及其公共模版、以及记录单<strong>组合模版表</strong>均支持批量下载。勾选后按钮高亮；未选置灰。仅已配置/已上传行可选。<strong>默认只下载当前启用版本</strong>，不含历史版本（历史版本请到「版本」弹窗单条下载）。原型以提示演示。', tag: '模板管理' },
-        { id: 'report-table', selector: '[data-annotate="report-table"]', position: 'top-right', title: '报告模版列表', wide: true, content: '表头增加复选框列，配合工具栏「批量下载」。未配置正文文件的行复选框禁用。其余列：模板名称、样品名称(型号)、样品分类、默认、当前启用版本、引用公共头/尾、操作。', tag: '报告模板' },
-        { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '统一维护 6 类流程单据模版。进入后通过顶部横向 Tab 切换四大类；页面采用<strong>左列表 + 右详情</strong>：左侧选单据，右侧配置生成开关、字段分流与版本。', tag: '模板管理' },
-        { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护一套 6 类单据模版，切换 Tab 加载对应大类配置。若当前大类有未保存修改，切换时弹出【保存 / 不保存 / 取消】。', tag: '单据模版' },
-        { id: 'doc-nav', selector: '[data-annotate="doc-nav"]', position: 'top-right', title: '单据列表', wide: true, content: '左侧列出 6 种单据。副文案展示状态：统一模版 / 按某字段分流进度 / 缺默认模版 / 已关闭。点击切换右侧详情；保存校验失败时对应项标红。', tag: '单据模版' },
-        { id: 'doc-card-switch', selector: '[data-annotate="doc-card-switch"]', position: 'top-right', title: '系统生成开关', wide: true, content: '控制该单据类型是否支持系统生成。关闭时右侧详情置灰，但保留已上传模版及启用记忆；关闭状态下保存时不校验「默认」桶是否已上传模版。', tag: '单据模版' },
-        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '固定可选委托信息设置中已绑字典的 9 个下拉字段：任务类型、优先等级、检测类型、检测类别、付款方式、报告交付方式、报告资质、报告说明、结果格式。显示名随字段别名变化。<br><br><strong>开启分流：</strong>右侧出现「默认」+ 各选项列表；上传/启用仅作用于当前选项桶；生成时按委托单该字段值匹配，未命中回退「默认」。<br><br><strong>改回「不分流（统一模版）」：</strong>弹出确认；确认后仅保留「默认」桶中的模版版本，各选项桶内已上传文件清空；右侧选项列表收起，版本区恢复为统一列表。<br><br><strong>更换分流字段：</strong>同样需确认；保留默认桶，按新字段重建空选项桶并清空旧选项桶。', tag: '单据模版' },
-        { id: 'doc-option-tabs', selector: '[data-annotate="doc-option-tabs"]', position: 'top-right', title: '选项列表', wide: true, content: '「默认」用于未命中选项时的回退；其余项对应该字段各选项。长文案纵向展示，不再横向挤兑。点击切换右侧版本列表。', tag: '单据模版' },
-        { id: 'doc-card-version', selector: '[data-annotate="doc-card-version"]', position: 'top-right', title: '版本启用', wide: true, content: '当前选项桶内可存多个模版版本，通过单选启用其中一个；新上传的版本默认启用最新版。可直接配置、预览、删除。', tag: '单据模版' },
-        { id: 'doc-upload', selector: '[data-annotate="doc-upload"]', position: 'top-right', title: '上传模版', content: '打开文件选择弹窗上传 .docx 模版；新上传版本自动启用，原启用版本取消选中。', tag: '单据模版' },
-        { id: 'doc-config', selector: '[data-annotate="doc-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '点击「配置」调用 PageOffice 打开该单据的 Word 模版，右侧字段面板可插入占位符。', tag: '模板管理' },
-        { id: 'doc-save', selector: '[data-annotate="doc-save"]', position: 'top-left', title: '保存校验', wide: true, content: '<strong>校验范围：</strong>仅校验<strong>当前大类</strong>下 6 种单据。<br><br><strong>规则：</strong>系统生成为「开启」且「默认」桶无模版 → 保存失败。选项桶可为空（生成时回退默认）。<br><br><strong>失败表现：</strong>① toast 提示；② 左侧列表对应项标红并自动选中；③ 滚动定位到该项。', tag: '单据模版' },
-        { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模版逻辑', wide: true, content: '<strong>主从布局：</strong>左选单据、右配详情。<br><br><strong>字段分流：</strong>固定绑定任务类型等 9 个字典下拉字段，按选项分桶配置版本；未命中回退默认桶。<br><br><strong>保存：</strong>仅保存当前大类。', tag: '模板管理' },
-        { id: 'public-filter', selector: '[data-annotate="public-filter"]', position: 'top-left', title: '公共模版筛选', wide: true, content: '筛选字段：<strong>模版内容样式</strong>（模板头/模板尾/正文）、<strong>模版文件名</strong>。无关联绑定筛选。', tag: '报告模板' },
-        { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共模版列表', wide: true, content: '表头：复选框、<strong>模版内容样式</strong>、<strong>模版文件</strong>、操作。无关联绑定列。首列复选框配合工具栏「批量下载」；未配置文件行禁用。列表已按当前大类过滤。', tag: '报告模板' },
-        { id: 'public-add', selector: '[data-annotate="public-add"]', position: 'top-left', title: '新增公共模版', content: '打开新增弹窗：配置模版内容样式、上传/复制文件并填写模版名称。无需关联绑定，由报告模版侧直接引用。', tag: '报告模板' },
-        { id: 'public-edit', selector: '[data-annotate="public-edit"]', position: 'top-right', title: '编辑公共模版', wide: true, content: '仅改<strong>模版内容样式</strong>与<strong>模版名称</strong>；当前启用文件只读。文件上传/复制/启用/改名请到「版本」。已被引用时不可改内容样式。', tag: '报告模板' },
-        { id: 'public-version', selector: '[data-annotate="public-version"]', position: 'top-right', title: '公共模版版本', wide: true, content: '头/尾/正文均可多版本单启用；是唯一改文件实体的入口。公共正文被报告模版引用时，启用版本变更后引用方同步跟随。', tag: '报告模板' },
-        { id: 'public-delete', selector: '[data-annotate="public-delete"]', position: 'top-right', title: '删除', content: '删除公共模版时<strong>不受是否被报告模版引用</strong>的影响；确认后删除，引用该正文的报告变体将清空正文关联。', tag: '报告模板' },
-        { id: 'public-content-style', selector: '[data-annotate="public-content-style"]', position: 'top-right', title: '模版内容样式', content: '选择「模板头」「模板尾」或「正文」。正文可供报告模版变体以「引用」方式共用。已被引用时不可更改。', tag: '报告模板' },
-        { id: 'public-file', selector: '[data-annotate="public-file"]', position: 'top-right', title: '模板文件', wide: true, content: '新增：上传或复制，写入首个启用版本。编辑：只读展示当前启用文件；后续文件变更一律走「版本」。', tag: '报告模板' },
-        { id: 'public-template-name', selector: '[data-annotate="public-template-name"]', position: 'top-right', title: '模版名称', wide: true, content: '库内展示名，与启用版本文件名相互独立。新增时可随上传回显并编辑；编辑时可单独改名称而不改文件。', tag: '报告模板' },
-        { id: 'record-public-filter', selector: '[data-annotate="record-public-filter"]', position: 'top-left', title: '记录单公共模版筛选', wide: true, content: '筛选：<strong>模版内容样式</strong>（组合记录单模版 / 试验项模版）、<strong>模版文件名</strong>。无关联绑定。', tag: '记录单' },
-        { id: 'record-public-table', selector: '[data-annotate="record-public-table"]', position: 'top-right', title: '记录单公共模版列表', wide: true, content: '表头：复选框、模版内容样式、模版文件、操作。操作列：编辑 | 版本 | 配置 | 预览 | 删除。首列复选框配合工具栏「批量下载」。按当前大类过滤。', tag: '记录单' },
-        { id: 'record-public-add', selector: '[data-annotate="record-public-add"]', position: 'top-left', title: '新增记录单公共模版', content: '配置内容样式、上传/复制文件并填写模版名称。无需关联绑定，由「记录单模版」Tab 选择引用。', tag: '记录单' },
-        { id: 'record-public-edit', selector: '[data-annotate="record-public-edit"]', position: 'top-right', title: '编辑记录单公共模版', wide: true, content: '仅改内容样式与模版名称；当前启用文件只读。文件变更请到「版本」。已被引用时不可改内容样式。', tag: '记录单' },
-        { id: 'record-public-version', selector: '[data-annotate="record-public-version"]', position: 'top-right', title: '记录单公共模版版本', wide: true, content: '多版本单启用；唯一改文件实体入口。被记录单模版引用后，启用版本变更同步跟随。', tag: '记录单' },
-        { id: 'record-public-delete', selector: '[data-annotate="record-public-delete"]', position: 'top-right', title: '删除记录单公共模版', content: '删除不受是否被引用影响；确认后删除，引用方清空文件关联。', tag: '记录单' },
-        { id: 'record-public-content-style', selector: '[data-annotate="record-public-content-style"]', position: 'top-right', title: '记录单公共 · 内容样式', content: '「组合记录单模版」或「试验项模版」。决定在记录单模版编辑弹窗中可被哪类行引用。已被引用时不可更改。', tag: '记录单' },
-        { id: 'record-public-file', selector: '[data-annotate="record-public-file"]', position: 'top-right', title: '记录单公共 · 模板文件', wide: true, content: '新增可上传/复制；编辑只读展示启用文件。后续文件变更走「版本」。', tag: '记录单' },
-        { id: 'label-cert-entry', selector: '[data-annotate="label-cert-entry"]', position: 'top-left', title: '标签与合格证模版', wide: true, content: '维护<strong>样品标签</strong>与<strong>合格证</strong>的<strong>自由设计</strong>版式。按样品大类隔离；每类型一份默认模版兜底，个性化模版绑定样品叶节点后覆盖默认。', tag: '模板管理' },
-        { id: 'label-cert-cat-tabs', selector: '[data-annotate="label-cert-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '四大类各自独立维护标签/合格证配置。切换 Tab 加载该大类的默认模版与个性化列表；绑定样品树也按当前大类过滤。', tag: '标签合格证' },
-        { id: 'label-cert-type-nav', selector: '[data-annotate="label-cert-type-nav"]', position: 'top-right', title: '类型切换', wide: true, content: '左侧切换<strong>合格证</strong> / <strong>样品标签</strong>。配置相互独立：各自默认模版、个性化列表与字段池。样品标签无人员字段；合格证字段池含<strong>检测员</strong>、<strong>记录员</strong>、<strong>检测员/记录员</strong>（合并位，与单项互斥）。二维码用途：样品标签为内部流转，合格证为短链验真。', tag: '标签合格证' },
-        { id: 'label-cert-logic', selector: '[data-annotate="label-cert-logic"]', position: 'top-left', title: '默认 + 个性化', wide: true, content: '<strong>默认模版</strong>兜底未单独配置的样品，只可改自由设计版式，不可删除/停用/绑定。<br><br><strong>个性化模版</strong>可空白新建或复制已有模版；绑定 ≥1 个样品叶节点后覆盖默认。同大类同类型下，一样品仅可属于一个启用中的个性化模版。', tag: '标签合格证' },
-        { id: 'label-cert-default', selector: '[data-annotate="label-cert-default"]', position: 'top-right', title: '默认模版', wide: true, content: '每大类 × 类型固定一份。展示纸张尺寸、材质 / 安装方式 / 赋码打印方式；「编辑版式」打开自由设计编辑器，「预览」只读查看。', tag: '标签合格证' },
-        { id: 'label-cert-default-edit', selector: '[data-annotate="label-cert-default-edit"]', position: 'top-right', title: '编辑默认版式', content: '打开自由设计编辑器：纸张与元信息、三层元件库、画布预览、布局/内容属性。默认模版不展示绑定样品。', tag: '标签合格证' },
-        { id: 'label-cert-personal', selector: '[data-annotate="label-cert-personal"]', position: 'top-right', title: '个性化模版列表', wide: true, content: '列：名称、纸张、材质、安装方式、赋码打印方式、已绑样品、启用、操作。无个性化时全部样品走上方默认模版。', tag: '标签合格证' },
-        { id: 'label-cert-new', selector: '[data-annotate="label-cert-new"]', position: 'top-left', title: '新增个性化模版', wide: true, content: '两种方式：<strong>空白创建</strong>（定纸张后进空白画布，从元件库摆元素）或<strong>复制已有模版</strong>（深拷贝纸张与元素，清空绑定）。保存并启用前须绑定 ≥1 个样品叶节点。', tag: '标签合格证' },
-        { id: 'label-cert-enable', selector: '[data-annotate="label-cert-enable"]', position: 'top-right', title: '启用开关', wide: true, content: '启用中：已绑样品使用该模版。停用后相关样品回退默认。<strong>未绑定样品不可启用</strong>；启用时若样品已被其他启用模版占用则提示冲突。', tag: '标签合格证' },
-        { id: 'label-cert-ops', selector: '[data-annotate="label-cert-ops"]', position: 'top-right', title: '行操作', wide: true, content: '<strong>编辑</strong>打开自由设计编辑器（含绑定样品）；<strong>预览</strong>只读查看证面；<strong>删除</strong>后已绑样品回退默认（需确认）。', tag: '标签合格证' },
-        { id: 'label-cert-edit-base', selector: '[data-annotate="label-cert-edit-base"]', position: 'top-right', title: '模版元信息', wide: true, content: '名称、纸张宽高与尺寸快捷（改尺寸时元素等比缩放）、边框有/无及色/粗细（无边框时隐藏色与粗细）、材质 / 安装方式 / 赋码打印方式。个性化第二行还可绑定样品。', tag: '标签合格证' },
-        { id: 'label-cert-edit-bind', selector: '[data-annotate="label-cert-edit-bind"]', position: 'top-right', title: '绑定样品', wide: true, content: '仅个性化模版显示。按当前大类样品树勾选<strong>叶节点</strong>（不到规格型号），可多选；同一样品不可同时属于两个启用中的个性化模版。', tag: '标签合格证' },
-        { id: 'label-cert-edit-workspace', selector: '[data-annotate="label-cert-edit-workspace"]', position: 'top-right', title: '自由设计工作区', wide: true, content: '三栏：左<strong>元件库</strong>（背景 / 内容 / 水印三层）→ 中<strong>实时预览 + 编辑覆盖</strong> → 右<strong>布局 / 内容</strong>属性。元素绝对定位，可拖拽缩放、叠放与旋转。', tag: '标签合格证' },
-        { id: 'label-cert-edit-palette', selector: '[data-annotate="label-cert-edit-palette"]', position: 'top-right', title: '元件库（三层）', wide: true, content: '<strong>背景层</strong>：仅静态文本。<br><strong>内容层</strong>：品牌（单位/标题/Logo）、业务字段、静态文本、二维码、分割线、悬挂孔。合格证业务字段含<strong>检测员</strong>、<strong>记录员</strong>、<strong>检测员/记录员</strong>（合并位）；合并位与单项互斥，检测员与记录员可并存。<br><strong>水印层</strong>：检测章、文本水印。<br>唯一类再次点击可移除；可重复类点名称循环选中，右侧 <b>+</b> 新增。背景/内容区的静态文本分属不同逻辑层。', tag: '标签合格证' },
-        { id: 'label-cert-edit-layers', selector: '[data-annotate="label-cert-edit-layers"]', position: 'bottom-right', title: '分层显隐', wide: true, content: '预览左上角「背景层 / 内容层 / 水印层」+ 小眼睛：点击可单独隐藏该层元素（画布选区同步），便于定位被挡住的元素。仅编辑辅助，不写入模版。', tag: '标签合格证' },
-        { id: 'label-cert-edit-preview', selector: '[data-annotate="label-cert-edit-preview"]', position: 'left', title: '实时预览与画布', wide: true, content: '底层演示数据实时渲染，上层为可编辑定位框。支持缩放、撤销/重做（Ctrl+Z / Ctrl+Y）、空白处取消选中；被挡时可 Alt+点击或「选中下层」穿透。人员字段（检测员/记录员/合并位）若选「电子签名」，预览以手写签样式占位展示姓名（无底线）。点「刷新」强制重绘。', tag: '标签合格证' },
-        { id: 'label-cert-edit-props', selector: '[data-annotate="label-cert-edit-props"]', position: 'top-right', title: '布局 / 内容属性', wide: true, content: '<strong>布局</strong>：坐标尺寸、层级、旋转、锁定与叠放。<br><strong>内容</strong>：按元件类型编辑文案/字体/颜色/透明度等。检测章可选系统公章或上传自定义；日期类字段可切换常见日期格式。<br><strong>人员字段</strong>（检测员 / 记录员 / 检测员/记录员）：元件库互斥——有合并位则不可再放单项，有单项则不可放合并位；检测员与记录员可同时存在。展示方式（姓名文本 / 电子签名）模版内全局统一，在任一人员字段修改后同步到全部人员字段；选电子签名时下划线固定为「无」且不可改，预览显示手写签占位。', tag: '标签合格证' },
-        { id: 'label-cert-edit-save', selector: '[data-annotate="label-cert-edit-save"]', position: 'top-left', title: '保存模版', wide: true, content: '写入当前大类 × 类型配置（纸张、元信息、元素列表）。个性化须已绑 ≥1 样品；启用时校验绑定冲突。默认模版仅保存版式，不改身份与绑定。', tag: '标签合格证' },
-        { id: 'label-cert-preview', selector: '[data-annotate="label-cert-preview"]', position: 'top-right', title: '只读预览', wide: true, content: '列表「预览」打开的只读弹窗，按当前模版渲染证面/标签（含系统检测章、日期格式、人员字段按模版配置的检测员/记录员/合并位以姓名文本或电子签名占位）。「去编辑」跳转自由设计编辑器。', tag: '标签合格证' }
+        { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '<strong>需求逻辑：</strong>有时只想解除文件关联，不想丢试验项配置行。<br>' +
+            '<strong>展示规则：</strong>「清除」按钮。<br>' +
+            '<strong>交互逻辑：</strong>仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
+        { id: 'record-table', selector: '[data-annotate="record-table"]', position: 'top-right', title: '试验项模版列表', wide: true, content: '<strong>需求逻辑：</strong>试验项单模版数量大，需要与组合模版分区管理并支持批量下载。<br>' +
+            '<strong>展示规则：</strong>仅展示试验项单模版（组合模版在上方表格区管理）；样品层选中时按型号分组；首列复选框配合工具栏「批量下载」；未上传行复选框禁用。<br>' +
+            '<strong>交互逻辑：</strong>勾选后可批量下载已上传的模版文件。', tag: '记录单' },
+        { id: 'record-copy', selector: '[data-annotate="record-copy"]', position: 'top-right', title: '复制', content: '<strong>需求逻辑：</strong>新试验项常与已有试验项版式相同，复制比重新上传快。<br>' +
+            '<strong>展示规则：</strong>版本弹窗内提供「复制其他项」，可从其他样品 / 试验项复制已有模板；列表操作列在未上传时仅展示「版本」。<br>' +
+            '<strong>交互逻辑：</strong>复制生成的是本行的新版本并启用。', tag: '记录单' },
+        { id: 'record-export-logic', selector: '#infoBar', position: 'top-left', title: '导出模版逻辑', wide: true, content: '<strong>需求逻辑：</strong>记录单一份文件可能覆盖多个试验项，取哪套模版必须有确定优先级。<br>' +
+            '<strong>展示规则：</strong>支持样品层 / 型号层组合模版与各试验项单模版并存。<br>' +
+            '<strong>交互逻辑：</strong>「单种样品所有试验生成一份文件」「单个样品所有试验生成一份文件」优先取本型号组合模版，其次上级样品组合模版，最后按试验项动态拼接；切分类的两种模式同理。', tag: '产品逻辑' },
+        { id: 'record-combined-panel', selector: '[data-annotate="record-combined-panel"]', position: 'top-right', title: '组合模版表格', wide: true, content: '<strong>需求逻辑：</strong>组合模版按层级生效，必须能看清当前层级会用到哪些。<br>' +
+            '<strong>展示规则：</strong>按左侧选中节点展示本层级及以下全部组合模版：分类层汇总下属样品层与型号层；样品层展示本样品及其下各型号；型号层仅本型号；试验项节点不展示此区。<br>' +
+            '<strong>交互逻辑：</strong>首列复选框配合「批量下载」；未上传行不可勾选。', tag: '记录单' },
+        { id: 'batch-download', selector: '[data-annotate="batch-download"]', position: 'top-left', title: '批量下载', wide: true, content: '<strong>需求逻辑：</strong>模版文件多，逐个下载效率低。<br>' +
+            '<strong>展示规则：</strong>报告 / 记录单及其公共模版、记录单组合模版表均支持批量下载；勾选后按钮高亮，未选置灰；仅已配置 / 已上传行可选。<br>' +
+            '<strong>交互逻辑：</strong>默认只下载当前启用版本，不含历史版本（历史请到「版本」弹窗单条下载）；原型给出打包提示。', tag: '模板管理' },
+        { id: 'report-table', selector: '[data-annotate="report-table"]', position: 'top-right', title: '报告模版列表', wide: true, content: '<strong>需求逻辑：</strong>报告变体列表是本页主视图，要能看出启用版本与引用关系。<br>' +
+            '<strong>展示规则：</strong>列为复选框、模板名称、样品名称(型号)、样品分类、默认、当前启用版本、引用公共头 / 尾、操作；未配置正文文件的行复选框禁用。<br>' +
+            '<strong>交互逻辑：</strong>勾选配合「批量下载」；操作列给编辑 / 版本 / 删除。', tag: '报告模板' },
+        { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '<strong>需求逻辑：</strong>6 类流程单据的版式各机构不同，要统一一处维护。<br>' +
+            '<strong>展示规则：</strong>统一维护 6 类流程单据模版；进入后通过顶部横向 Tab 切换四大类；页面为左列表 + 右详情。<br>' +
+            '<strong>交互逻辑：</strong>左侧选单据，右侧配置生成开关、字段分流与版本。', tag: '模板管理' },
+        { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '<strong>需求逻辑：</strong>不同样品大类的单据差异大，配置必须隔离。<br>' +
+            '<strong>展示规则：</strong>四大类各自独立维护一套 6 类单据模版。<br>' +
+            '<strong>交互逻辑：</strong>切换 Tab 加载对应大类配置；当前大类有未保存修改时弹出「保存 / 不保存 / 取消」。', tag: '单据模版' },
+        { id: 'doc-nav', selector: '[data-annotate="doc-nav"]', position: 'top-right', title: '单据列表', wide: true, content: '<strong>需求逻辑：</strong>6 类单据的配置状态要一眼可见。<br>' +
+            '<strong>展示规则：</strong>左侧列出 6 种单据，副文案展示状态：统一模版 / 按某字段分流进度 / 缺默认模版 / 已关闭。<br>' +
+            '<strong>交互逻辑：</strong>点击切换右侧详情；保存校验失败时对应项标红。', tag: '单据模版' },
+        { id: 'doc-card-switch', selector: '[data-annotate="doc-card-switch"]', position: 'top-right', title: '系统生成开关', wide: true, content: '<strong>需求逻辑：</strong>不是所有机构都要系统生成某类单据。<br>' +
+            '<strong>展示规则：</strong>「系统生成」开关；关闭时右侧详情置灰，但保留已上传模版与启用记忆。<br>' +
+            '<strong>交互逻辑：</strong>关闭状态下保存不校验「默认」桶是否已上传模版。', tag: '单据模版' },
+        { id: 'doc-bind-field', selector: '[data-annotate="doc-bind-field"]', position: 'top-right', title: '按字段分流', wide: true, content: '<strong>需求逻辑：</strong>同一单据在不同任务类型下版式不同，需要按字段分桶配置。<br>' +
+            '<strong>展示规则：</strong>可选字段固定为委托信息设置中已绑字典的 9 个下拉字段：任务类型、优先等级、检测类型、检测类别、付款方式、报告交付方式、报告资质、报告说明、结果格式；显示名随字段别名变化。<br>' +
+            '<strong>交互逻辑：</strong>开启分流后右侧出现选项桶，按选项分别配置版本；未命中选项时回退「默认」桶。', tag: '单据模版' },
+        { id: 'doc-option-tabs', selector: '[data-annotate="doc-option-tabs"]', position: 'top-right', title: '选项列表', wide: true, content: '<strong>需求逻辑：</strong>选项桶数量多，横向排布会挤坏文案。<br>' +
+            '<strong>展示规则：</strong>「默认」用于未命中选项时的回退，其余项对应该字段各选项；长文案纵向展示。<br>' +
+            '<strong>交互逻辑：</strong>点击切换右侧版本列表。', tag: '单据模版' },
+        { id: 'doc-card-version', selector: '[data-annotate="doc-card-version"]', position: 'top-right', title: '版本启用', wide: true, content: '<strong>需求逻辑：</strong>每个选项桶都要能留多个版本并指定生效版本。<br>' +
+            '<strong>展示规则：</strong>当前选项桶内可存多个模版版本，单选启用其中一个；新上传版本默认启用最新版。<br>' +
+            '<strong>交互逻辑：</strong>可直接配置、预览、删除。', tag: '单据模版' },
+        { id: 'doc-upload', selector: '[data-annotate="doc-upload"]', position: 'top-right', title: '上传模版', content: '<strong>需求逻辑：</strong>上传是配置的第一步，格式要限定。<br>' +
+            '<strong>展示规则：</strong>「上传模版」按钮打开文件选择弹窗，仅 .docx。<br>' +
+            '<strong>交互逻辑：</strong>新上传版本自动启用，原启用版本取消选中。', tag: '单据模版' },
+        { id: 'doc-config', selector: '[data-annotate="doc-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '<strong>需求逻辑：</strong>占位符要插在真实 Word 版式上，不能用表单描述代替。<br>' +
+            '<strong>展示规则：</strong>「配置」按钮调用 PageOffice 打开该单据的 Word 模版，右侧字段面板可插入占位符。<br>' +
+            '<strong>交互逻辑：</strong>在 PageOffice 内编辑并关闭后落版本。', tag: '模板管理' },
+        { id: 'doc-save', selector: '[data-annotate="doc-save"]', position: 'top-left', title: '保存校验', wide: true, content: '<strong>需求逻辑：</strong>保存要挡住会导致生成失败的配置。<br>' +
+            '<strong>展示规则：</strong>「保存」按钮，校验范围仅当前大类下 6 种单据。<br>' +
+            '<strong>交互逻辑：</strong>规则：系统生成为「开启」且「默认」桶无模版 → 保存失败；选项桶可为空（生成时回退默认）。失败表现：toast 提示 + 左侧对应单据标红。', tag: '单据模版' },
+        { id: 'doc-logic', selector: '[data-annotate="doc-logic"]', position: 'top-left', title: '单据模版逻辑', wide: true, content: '<strong>需求逻辑：</strong>单据模版的核心是主从布局 + 字段分流 + 分桶版本。<br>' +
+            '<strong>展示规则：</strong>左选单据、右配详情；字段分流固定绑定任务类型等 9 个字典下拉字段，按选项分桶配置版本，未命中回退默认桶。<br>' +
+            '<strong>交互逻辑：</strong>保存仅保存当前大类。', tag: '模板管理' },
+        { id: 'public-filter', selector: '[data-annotate="public-filter"]', position: 'top-left', title: '公共模版筛选', wide: true, content: '<strong>需求逻辑：</strong>公共模版数量多，需要按内容样式与名称检索。<br>' +
+            '<strong>展示规则：</strong>筛选字段：模版内容样式（模板头 / 模板尾 / 正文）、模版文件名；无关联绑定筛选。<br>' +
+            '<strong>交互逻辑：</strong>点「查询」过滤列表，「重置」清空。', tag: '报告模板' },
+        { id: 'public-table', selector: '[data-annotate="public-table"]', position: 'top-right', title: '公共模版列表', wide: true, content: '<strong>需求逻辑：</strong>公共模版由报告模版侧引用，列表不必展示绑定关系。<br>' +
+            '<strong>展示规则：</strong>表头：复选框、模版内容样式、模版文件、操作；无关联绑定列；列表已按当前大类过滤；未配置文件行复选框禁用。<br>' +
+            '<strong>交互逻辑：</strong>首列复选框配合「批量下载」。', tag: '报告模板' },
+        { id: 'public-add', selector: '[data-annotate="public-add"]', position: 'top-left', title: '新增公共模版', content: '<strong>需求逻辑：</strong>共用文件要先入库才能被引用。<br>' +
+            '<strong>展示规则：</strong>「新增」弹窗：配置模版内容样式、上传 / 复制文件并填写模版名称；无需关联绑定。<br>' +
+            '<strong>交互逻辑：</strong>保存后由报告模版侧直接引用。', tag: '报告模板' },
+        { id: 'public-edit', selector: '[data-annotate="public-edit"]', position: 'top-right', title: '编辑公共模版', wide: true, content: '<strong>需求逻辑：</strong>编辑入口只做轻改动，文件实体归版本管理。<br>' +
+            '<strong>展示规则：</strong>仅可改模版内容样式与模版名称；当前启用文件只读。<br>' +
+            '<strong>交互逻辑：</strong>文件上传 / 复制 / 启用 / 改名请到「版本」；已被引用时不可改内容样式。', tag: '报告模板' },
+        { id: 'public-version', selector: '[data-annotate="public-version"]', position: 'top-right', title: '公共模版版本', wide: true, content: '<strong>需求逻辑：</strong>公共文件的版本变更要能一次影响所有引用方。<br>' +
+            '<strong>展示规则：</strong>头 / 尾 / 正文均可多版本单启用，是唯一改文件实体的入口。<br>' +
+            '<strong>交互逻辑：</strong>公共正文被报告模版引用时，启用版本变更后引用方同步跟随。', tag: '报告模板' },
+        { id: 'public-delete', selector: '[data-annotate="public-delete"]', position: 'top-right', title: '删除', content: '<strong>需求逻辑：</strong>公共模版删除要可控，且不能让引用方留下坏链接。<br>' +
+            '<strong>展示规则：</strong>操作列「删除」。<br>' +
+            '<strong>交互逻辑：</strong>删除不受是否被报告模版引用影响；确认后删除，引用该正文的报告变体清空正文关联。', tag: '报告模板' },
+        { id: 'public-content-style', selector: '[data-annotate="public-content-style"]', position: 'top-right', title: '模版内容样式', content: '<strong>需求逻辑：</strong>内容样式决定这个文件能被当作头、尾还是正文引用。<br>' +
+            '<strong>展示规则：</strong>可选「模板头」「模板尾」「正文」；正文可供报告模版变体以「引用」方式共用。<br>' +
+            '<strong>交互逻辑：</strong>已被引用时不可更改。', tag: '报告模板' },
+        { id: 'public-file', selector: '[data-annotate="public-file"]', position: 'top-right', title: '模板文件', wide: true, content: '<strong>需求逻辑：</strong>新增与编辑对文件的操作权限不同，避免绕过版本管理。<br>' +
+            '<strong>展示规则：</strong>新增：上传或复制，写入首个启用版本；编辑：只读展示当前启用文件。<br>' +
+            '<strong>交互逻辑：</strong>后续文件变更一律走「版本」。', tag: '报告模板' },
+        { id: 'public-template-name', selector: '[data-annotate="public-template-name"]', position: 'top-right', title: '模版名称', wide: true, content: '<strong>需求逻辑：</strong>库内展示名与文件名要能各自维护。<br>' +
+            '<strong>展示规则：</strong>模版名称为库内展示名，与启用版本文件名相互独立；新增时可随上传回显并编辑。<br>' +
+            '<strong>交互逻辑：</strong>编辑时可单独改名称而不改文件。', tag: '报告模板' },
+        { id: 'record-public-filter', selector: '[data-annotate="record-public-filter"]', position: 'top-left', title: '记录单公共模版筛选', wide: true, content: '<strong>需求逻辑：</strong>记录单公共模版与报告公共模版分属两套，检索条件也要分开。<br>' +
+            '<strong>展示规则：</strong>筛选：模版内容样式（组合记录单模版 / 试验项模版）、模版文件名；无关联绑定。<br>' +
+            '<strong>交互逻辑：</strong>点「查询」过滤，「重置」清空。', tag: '记录单' },
+        { id: 'record-public-table', selector: '[data-annotate="record-public-table"]', position: 'top-right', title: '记录单公共模版列表', wide: true, content: '<strong>需求逻辑：</strong>记录单公共模版供记录单模版 Tab 引用，列表要能直接操作文件与版本。<br>' +
+            '<strong>展示规则：</strong>表头：复选框、模版内容样式、模版文件、操作（编辑 | 版本 | 配置 | 预览 | 删除）；按当前大类过滤。<br>' +
+            '<strong>交互逻辑：</strong>首列复选框配合工具栏「批量下载」。', tag: '记录单' },
+        { id: 'record-public-add', selector: '[data-annotate="record-public-add"]', position: 'top-left', title: '新增记录单公共模版', content: '<strong>需求逻辑：</strong>组合与试验项两类记录单模版都可能全机构共用，需要先入库。<br>' +
+            '<strong>展示规则：</strong>弹窗配置内容样式、上传 / 复制文件并填写模版名称；无需关联绑定。<br>' +
+            '<strong>交互逻辑：</strong>保存后由「记录单模版」Tab 选择引用。', tag: '记录单' },
+        { id: 'record-public-edit', selector: '[data-annotate="record-public-edit"]', position: 'top-right', title: '编辑记录单公共模版', wide: true, content: '<strong>需求逻辑：</strong>编辑入口保持轻量，文件实体归版本管理。<br>' +
+            '<strong>展示规则：</strong>仅可改内容样式与模版名称；当前启用文件只读。<br>' +
+            '<strong>交互逻辑：</strong>文件变更请到「版本」；已被引用时不可改内容样式。', tag: '记录单' },
+        { id: 'record-public-version', selector: '[data-annotate="record-public-version"]', position: 'top-right', title: '记录单公共模版版本', wide: true, content: '<strong>需求逻辑：</strong>记录单文件版本变更要同步到所有引用它的模版行。<br>' +
+            '<strong>展示规则：</strong>多版本单启用，是唯一改文件实体的入口。<br>' +
+            '<strong>交互逻辑：</strong>被记录单模版引用后，启用版本变更同步跟随。', tag: '记录单' },
+        { id: 'record-public-delete', selector: '[data-annotate="record-public-delete"]', position: 'top-right', title: '删除记录单公共模版', content: '<strong>需求逻辑：</strong>公共记录单模版删除后引用方不能留悬空关联。<br>' +
+            '<strong>展示规则：</strong>操作列「删除」。<br>' +
+            '<strong>交互逻辑：</strong>删除不受是否被引用影响；确认后删除，引用方清空文件关联。', tag: '记录单' },
+        { id: 'record-public-content-style', selector: '[data-annotate="record-public-content-style"]', position: 'top-right', title: '记录单公共 · 内容样式', content: '<strong>需求逻辑：</strong>内容样式决定该文件可被哪类记录单行引用。<br>' +
+            '<strong>展示规则：</strong>可选「组合记录单模版」或「试验项模版」。<br>' +
+            '<strong>交互逻辑：</strong>已被引用时不可更改。', tag: '记录单' },
+        { id: 'record-public-file', selector: '[data-annotate="record-public-file"]', position: 'top-right', title: '记录单公共 · 模板文件', wide: true, content: '<strong>需求逻辑：</strong>新增与编辑对文件的权限不同，避免绕过版本管理。<br>' +
+            '<strong>展示规则：</strong>新增可上传 / 复制；编辑只读展示启用文件。<br>' +
+            '<strong>交互逻辑：</strong>后续文件变更走「版本」。', tag: '记录单' },
+        { id: 'label-cert-entry', selector: '[data-annotate="label-cert-entry"]', position: 'top-left', title: '标签与合格证模版', wide: true, content: '<strong>需求逻辑：</strong>标签与合格证版式差异大（纸张、材质、安装方式、赋码方式都不同），需要自由设计而不是固定表单。<br>' +
+            '<strong>展示规则：</strong>维护样品标签与合格证的自由设计版式；按样品大类隔离；每类型一份默认模版兜底，个性化模版绑定样品叶节点后覆盖默认。<br>' +
+            '<strong>交互逻辑：</strong>进入后可切大类、切类型，并管理默认与个性化模版。', tag: '模板管理' },
+        { id: 'label-cert-cat-tabs', selector: '[data-annotate="label-cert-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '<strong>需求逻辑：</strong>不同大类的标签与合格证配置互不影响。<br>' +
+            '<strong>展示规则：</strong>四大类各自独立维护标签 / 合格证配置。<br>' +
+            '<strong>交互逻辑：</strong>切换 Tab 加载该大类的默认模版与个性化列表；绑定样品树也按当前大类过滤。', tag: '标签合格证' },
+        { id: 'label-cert-type-nav', selector: '[data-annotate="label-cert-type-nav"]', position: 'top-right', title: '类型切换', wide: true, content: '<strong>需求逻辑：</strong>合格证与样品标签的字段池与二维码用途不同，必须分开配置。<br>' +
+            '<strong>展示规则：</strong>左侧切换合格证 / 样品标签；两者配置相互独立（各自默认模版、个性化列表与字段池）；样品标签无人员字段；合格证字段池含检测员、记录员、检测员/记录员（合并位，与单项互斥）；二维码用途不同（标签指向样品，合格证指向验真短链）。<br>' +
+            '<strong>交互逻辑：</strong>切换类型即切换右侧列表与编辑器字段池。', tag: '标签合格证' },
+        { id: 'label-cert-logic', selector: '[data-annotate="label-cert-logic"]', position: 'top-left', title: '默认 + 个性化', wide: true, content: '<strong>需求逻辑：</strong>不可能每个样品都做一版模版，需要默认兜底 + 个性化覆盖。<br>' +
+            '<strong>展示规则：</strong>默认模版兜底未单独配置的样品，只可改自由设计版式，不可删除 / 停用 / 绑定；个性化模版可空白新建或复制已有模版，绑定 ≥1 个样品叶节点后覆盖默认。<br>' +
+            '<strong>交互逻辑：</strong>同大类同类型下，一个样品只能属于一个启用中的个性化模版。', tag: '标签合格证' },
+        { id: 'label-cert-default', selector: '[data-annotate="label-cert-default"]', position: 'top-right', title: '默认模版', wide: true, content: '<strong>需求逻辑：</strong>默认模版是每个大类的兜底版式，身份固定不可删。<br>' +
+            '<strong>展示规则：</strong>每大类 × 类型固定一份；展示纸张尺寸、材质 / 安装方式 / 赋码打印方式。<br>' +
+            '<strong>交互逻辑：</strong>「编辑版式」打开自由设计编辑器，「预览」只读查看。', tag: '标签合格证' },
+        { id: 'label-cert-default-edit', selector: '[data-annotate="label-cert-default-edit"]', position: 'top-right', title: '编辑默认版式', content: '<strong>需求逻辑：</strong>默认版式也要能自由排版，但不涉及绑定。<br>' +
+            '<strong>展示规则：</strong>打开自由设计编辑器：纸张与元信息、三层元件库、画布预览、布局 / 内容属性；默认模版不展示绑定样品。<br>' +
+            '<strong>交互逻辑：</strong>保存仅更新版式，不改变默认模版身份。', tag: '标签合格证' },
+        { id: 'label-cert-personal', selector: '[data-annotate="label-cert-personal"]', position: 'top-right', title: '个性化模版列表', wide: true, content: '<strong>需求逻辑：</strong>个性化模版数量多，需要看清绑定与启用情况。<br>' +
+            '<strong>展示规则：</strong>列为名称、纸张、材质、安装方式、赋码打印方式、已绑样品、启用、操作；无个性化模版时全部样品走上方默认模版。<br>' +
+            '<strong>交互逻辑：</strong>行操作编辑 / 预览 / 删除。', tag: '标签合格证' },
+        { id: 'label-cert-new', selector: '[data-annotate="label-cert-new"]', position: 'top-left', title: '新增个性化模版', wide: true, content: '<strong>需求逻辑：</strong>从零排版与复制既有版式都是常见起点。<br>' +
+            '<strong>展示规则：</strong>两种方式：空白创建（定纸张后进空白画布，从元件库摆元素）或复制已有模版（深拷贝纸张与元素，清空绑定）。<br>' +
+            '<strong>交互逻辑：</strong>保存并启用前须绑定 ≥1 个样品叶节点。', tag: '标签合格证' },
+        { id: 'label-cert-enable', selector: '[data-annotate="label-cert-enable"]', position: 'top-right', title: '启用开关', wide: true, content: '<strong>需求逻辑：</strong>启用状态直接决定样品出证时用哪版模版，必须可回退且防冲突。<br>' +
+            '<strong>展示规则：</strong>行内「启用」开关。<br>' +
+            '<strong>交互逻辑：</strong>启用中：已绑样品使用该模版；停用后相关样品回退默认。未绑定样品不可启用；启用时若样品已被其他启用模版占用则提示冲突。', tag: '标签合格证' },
+        { id: 'label-cert-ops', selector: '[data-annotate="label-cert-ops"]', position: 'top-right', title: '行操作', wide: true, content: '<strong>需求逻辑：</strong>配置、核对、下线三类动作要分开。<br>' +
+            '<strong>展示规则：</strong>行操作：编辑、预览、删除。<br>' +
+            '<strong>交互逻辑：</strong>编辑打开自由设计编辑器（含绑定样品）；预览只读查看证面；删除后已绑样品回退默认（需确认）。', tag: '标签合格证' },
+        { id: 'label-cert-edit-base', selector: '[data-annotate="label-cert-edit-base"]', position: 'top-right', title: '模版元信息', wide: true, content: '<strong>需求逻辑：</strong>纸张与材质决定元素坐标与打印方式，必须与版式一起维护。<br>' +
+            '<strong>展示规则：</strong>字段：名称、纸张宽高与尺寸快捷、边框有 / 无及色 / 粗细（无边框时隐藏色与粗细）、材质 / 安装方式 / 赋码打印方式；个性化模版第二行还可绑定样品。<br>' +
+            '<strong>交互逻辑：</strong>改尺寸时元素等比缩放，避免版式错位。', tag: '标签合格证' },
+        { id: 'label-cert-edit-bind', selector: '[data-annotate="label-cert-edit-bind"]', position: 'top-right', title: '绑定样品', wide: true, content: '<strong>需求逻辑：</strong>个性化模版靠绑定样品生效，绑定粒度到样品叶节点即可。<br>' +
+            '<strong>展示规则：</strong>仅个性化模版显示；按当前大类样品树勾选叶节点（不到规格型号），可多选。<br>' +
+            '<strong>交互逻辑：</strong>同一样品不可同时属于两个启用中的个性化模版。', tag: '标签合格证' },
+        { id: 'label-cert-edit-workspace', selector: '[data-annotate="label-cert-edit-workspace"]', position: 'top-right', title: '自由设计工作区', wide: true, content: '<strong>需求逻辑：</strong>自由设计需要「选元件 → 摆位置 → 改属性」的连贯操作。<br>' +
+            '<strong>展示规则：</strong>三栏：左元件库（背景 / 内容 / 水印三层）→ 中实时预览 + 编辑覆盖 → 右布局 / 内容属性。<br>' +
+            '<strong>交互逻辑：</strong>元素绝对定位，可拖拽缩放、叠放与旋转。', tag: '标签合格证' },
+        { id: 'label-cert-edit-palette', selector: '[data-annotate="label-cert-edit-palette"]', position: 'top-right', title: '元件库（三层）', wide: true, content: '<strong>需求逻辑：</strong>元件按层分类，才能保证背景、内容与水印的叠放关系稳定。<br>' +
+            '<strong>展示规则：</strong>背景层：仅静态文本；内容层：品牌（单位 / 标题 / Logo）、业务字段、静态文本、二维码、分割线、悬挂孔；水印层：水印文本 / 图形。合格证业务字段含检测员、记录员、检测员/记录员（合并位）。<br>' +
+            '<strong>交互逻辑：</strong>合并位与单项互斥，选择其一会禁用另一个。', tag: '标签合格证' },
+        { id: 'label-cert-edit-layers', selector: '[data-annotate="label-cert-edit-layers"]', position: 'bottom-right', title: '分层显隐', wide: true, content: '<strong>需求逻辑：</strong>元素叠放后会被挡住，需要临时分层显隐来定位。<br>' +
+            '<strong>展示规则：</strong>预览左上角「背景层 / 内容层 / 水印层」各带小眼睛图标。<br>' +
+            '<strong>交互逻辑：</strong>点击单独隐藏该层元素（画布选区同步）；仅编辑辅助，不写入模版。', tag: '标签合格证' },
+        { id: 'label-cert-edit-preview', selector: '[data-annotate="label-cert-edit-preview"]', position: 'left', title: '实时预览与画布', wide: true, content: '<strong>需求逻辑：</strong>所见即所得是自由设计的前提。<br>' +
+            '<strong>展示规则：</strong>底层用演示数据实时渲染，上层为可编辑定位框。<br>' +
+            '<strong>交互逻辑：</strong>支持缩放、撤销 / 重做（Ctrl+Z / Ctrl+Y）、空白处取消选中；被挡住时可 Alt+点击或「选中下层」穿透；人员字段按模版配置渲染。', tag: '标签合格证' },
+        { id: 'label-cert-edit-props', selector: '[data-annotate="label-cert-edit-props"]', position: 'top-right', title: '布局 / 内容属性', wide: true, content: '<strong>需求逻辑：</strong>元素的位置与内容要分开编辑，避免互相干扰。<br>' +
+            '<strong>展示规则：</strong>布局：坐标尺寸、层级、旋转、锁定与叠放；内容：按元件类型编辑文案 / 字体 / 颜色 / 透明度等；检测章可选系统公章或上传自定义；日期类字段可切换常见日期格式；人员字段（检测员 / 记录员 / 合并位）可选姓名文本或电子签名。<br>' +
+            '<strong>交互逻辑：</strong>改属性即时反映到画布。', tag: '标签合格证' },
+        { id: 'label-cert-edit-save', selector: '[data-annotate="label-cert-edit-save"]', position: 'top-left', title: '保存模版', wide: true, content: '<strong>需求逻辑：</strong>模版保存要校验生效前提，避免启用后无样品可用。<br>' +
+            '<strong>展示规则：</strong>「保存模版」按钮，写入当前大类 × 类型配置（纸张、元信息、元素列表）。<br>' +
+            '<strong>交互逻辑：</strong>个性化须已绑 ≥1 样品；启用时校验绑定冲突；默认模版仅保存版式，不改身份与绑定。', tag: '标签合格证' },
+        { id: 'label-cert-preview', selector: '[data-annotate="label-cert-preview"]', position: 'top-right', title: '只读预览', wide: true, content: '<strong>需求逻辑：</strong>上线前要能按真实数据核对证面。<br>' +
+            '<strong>展示规则：</strong>列表「预览」打开只读弹窗，按当前模版渲染证面 / 标签（含系统检测章、日期格式、人员字段按模版配置的检测员 / 记录员 / 合并位，以姓名文本或电子签名占位）。<br>' +
+            '<strong>交互逻辑：</strong>「去编辑」跳转自由设计编辑器。', tag: '标签合格证' }
       ]
     });
   </script>
