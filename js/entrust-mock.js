@@ -111,10 +111,24 @@
     'SC2026/0024': ['杭州数蚕智能科技有限公司', '绝缘操作杆|1|', '', '', 'admin', '', '任务完成'],
   };
 
-  /* 默认委托 SC2026/0073 的详情页取值锁定：与既有截图/演示口径一致，避免推导规则改动它 */
+  /* 页面里已人工写定的字段固化到这里（单一数据源）：
+   * customerDate=客户要求完成日期、requireDate=要求检测完成时间、receiveDate=收样时间、
+   * taskType/testType/priority/testCategory。没列出的编号走文件末尾的推导规则。 */
   var EXACT = {
+    'SC2026/0212': { customerDate: '', requireDate: '2026-07-10', receiveDate: '2026-07-08', taskType: '电气（输配电类）', testType: '常规', priority: '常规' },
+    'SC2026/0211': { customerDate: '', requireDate: '2026-07-09', receiveDate: '2026-07-07', taskType: '电气（输配电类）', testType: '常规', priority: '加急' },
+    'SC2026/0210': { customerDate: '', requireDate: '2026-07-10', receiveDate: '2026-07-07', taskType: '材料（安全工器具类）', testType: '常规', priority: '常规' },
+    'SC2026/0208': { customerDate: '', requireDate: '2026-06-18', receiveDate: '2026-06-15', taskType: '材料（安全工器具类）', testType: '常规', priority: '常规' },
+    'SC2026/0207': { customerDate: '', requireDate: '2026-06-13', receiveDate: '2026-06-11', taskType: '材料（安全工器具类）', testType: '非常规', priority: '常规' },
+    'SC2026/0206': { customerDate: '', requireDate: '', receiveDate: '2026-06-16', taskType: '材料（安全工器具类）', testType: '常规', priority: '常规' },
+    'SC2026/0205': { customerDate: '2026-06-26', requireDate: '2026-06-22', receiveDate: '2026-06-11', taskType: '电气（输配电类）', testType: '常规', priority: '加急' },
+    'SC2026/0204': { customerDate: '', requireDate: '2026-06-13', receiveDate: '2026-06-10', taskType: '电气（输配电类）', testType: '非常规', priority: '常规' },
+    'SC2026/0203': { customerDate: '', requireDate: '2026-06-20', receiveDate: '2026-06-10', taskType: '材料（电线电缆、金具、金属材料类）', testType: '常规', priority: '常规' },
+    'SC2026/0202': { customerDate: '', requireDate: '2026-06-19', receiveDate: '2026-06-10', taskType: '材料（安全工器具类）', testType: '常规', priority: '常规' },
+    'SC2026/0201': { customerDate: '', requireDate: '2026-06-19', receiveDate: '2026-06-10', taskType: '电气（输配电类）', testType: '常规', priority: '常规' },
+    'SC2026/0200': { customerDate: '', requireDate: '2026-06-20', receiveDate: '2026-06-10', taskType: '材料（安全工器具类）', testType: '常规', priority: '常规' },
     'SC2026/0073': {
-      customerDate: '', requireDate: '2026-08-01', days: '2',
+      customerDate: '2026-07-23', requireDate: '2026-08-01', days: '2', receiveDate: '2026-07-09',
       taskType: '电气（输配电类）', priority: '常规', testType: '常规', testCategory: '委托检测',
       samples: { '绝缘操作杆': { spec: '300', qty: '1', unit: '根', needPrep: '否' } }
     }
@@ -201,8 +215,8 @@
       code: code, dash: code.replace('/', '-'), status: (r && r[6]) || '', known: !!r,
       taskType: (ex && ex.taskType) || (samples.some(function (s) { return /电缆|导管|保护管/.test(s.name); })
         ? '材料（电线电缆、金具、金属材料类）' : '电气（输配电类）'),
-      priority: (ex && ex.priority) || (h % 7 === 0 ? '加急' : '常规'),
-      testType: (ex && ex.testType) || (h % 11 === 0 ? '非常规' : '常规'),
+      priority: (ex && ex.priority !== undefined) ? ex.priority : '常规',
+      testType: (ex && ex.testType !== undefined) ? ex.testType : '常规',
       testCategory: (ex && ex.testCategory) || ['例行试验', '委托检测', '型式试验'][h % 3],
       customer: customer, addr: cust.addr, zip: cust.zip, contact: cust.contact, phone: cust.phone,
       signPlace: cust.place, lab: LAB,
@@ -215,7 +229,7 @@
       payer: customer, payMethod: h % 2 ? '电汇' : '对公转账', feeRemark: '',
       samples: samples,
       sampleNames: samples.map(function (sm) { return sm.name; }).join('、'),
-      receiveDate: plusDays(accept, 1)
+      receiveDate: (ex && ex.receiveDate !== undefined) ? ex.receiveDate : plusDays(accept, 1)
     };
   }
 
@@ -238,6 +252,8 @@
     Object.keys(opts || {}).forEach(function (k) { map[k] = opts[k]; });
     rows.forEach(function (row) {
       if (!row || !row.code) return;
+      // 不认识的编号（例如合同详情里的 SC2025/000x）保持页面原样，不拿推导值盖掉
+      if (!ROWS[row.code]) return;
       var r = get(row.code);
       function set(key, val) { if (key && key in row && val !== undefined) row[key] = val; }
       set(map.customer, r.customer);
@@ -255,8 +271,10 @@
       set(map.testType, r.testType);
       set(map.priority, r.priority);
       if (map.samples && Array.isArray(row[map.samples])) {
+        var old = {};
+        row[map.samples].forEach(function (sm) { if (sm && sm.name) old[sm.name] = sm.modelCode || ''; });
         row[map.samples] = r.samples.map(function (sm) {
-          return { name: sm.name, qty: sm.qty, unit: sm.unit, modelCode: sm.modelCode || '' };
+          return { name: sm.name, qty: sm.qty, unit: sm.unit, modelCode: old[sm.name] || sm.modelCode || '' };
         });
       }
     });
