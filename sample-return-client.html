@@ -245,12 +245,24 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
-          { id: 'return-skip-hint', selector: '[data-annotate="return-skip-hint"]', position: 'bottom-left', title: '可选节点', content: '仅当委托需要退回委托方样品时才走「样品退样」并回填流转单。', tag: '流转单' },
-          { id: 'pending-list', selector: '[data-annotate="pending-list"]', position: 'top-right', title: '待退样列表', content: '样品库样品员操作退库。可查看/生成「退样申请表」(PageOffice 单据模板)。', tag: '流转单' },
-          { id: 'return-action', selector: '[data-annotate="return-action"]', position: 'top-right', title: '退样操作', content: '点击后打开「填写退样信息」弹窗。', tag: '流转单' },
-          { id: 'return-type', selector: '[data-annotate="return-type"]', position: 'top-left', title: '自取 / 快递', wide: true, content: '<strong>自取：</strong>检测流程=「委托单位取回余样签收」；签名/日期=弹窗联系人 + 点击退样时间（客户无电子签）。<br><strong>快递：</strong>检测流程=「余样快递退回委托单位」；签名/日期=退库操作员电子签名 + 点击退样时间。', tag: '流转单' },
-          { id: 'return-writeback', selector: '[data-annotate="return-writeback"]', position: 'top-right', title: '退样回填预览', wide: true, content: '回填时机：样品退样页点击「确定」完成退样记录时。', tag: '流转单' },
-          { id: 'return-confirm', selector: '[data-annotate="return-confirm"]', position: 'bottom-right', title: '确定退样', content: '确认后立即写入流转单最后一行（若该委托需要退样）。', tag: '流转单' }
+          { id: 'return-skip-hint', selector: '[data-annotate="return-skip-hint"]', position: 'bottom-left', title: '可选节点', content: '<strong>需求逻辑：</strong>不是所有委托都要把余样退回委托方（如约定由实验室留存或销毁），退样是可选节点，不能强制走。<br>' +
+            '<strong>展示规则：</strong>提示条说明：仅当委托需要退回委托方样品时才走「样品退样」并回填流转单；不需要退样的委托停在本页不操作即可。<br>' +
+            '<strong>交互逻辑：</strong>跳过本节点不影响任务归档；后续若需退样，仍可从本页发起。', tag: '流转单' },
+          { id: 'pending-list', selector: '[data-annotate="pending-list"]', position: 'top-right', title: '待退样列表', content: '<strong>需求逻辑：</strong>退样由样品库样品员执行，需要一张可追溯的待退清单与凭据单据。<br>' +
+            '<strong>展示规则：</strong>列表列：委托编号、委托单位、样品名称(数量)、还样日期、退样申请表、操作；「退样申请表」为 PageOffice 单据模板，可查看或生成。<br>' +
+            '<strong>交互逻辑：</strong>行内「退样」打开「填写退样信息」弹窗；申请表未生成的行显示生成入口，生成后可直接查看。', tag: '流转单' },
+          { id: 'return-action', selector: '[data-annotate="return-action"]', position: 'top-right', title: '退样操作', content: '<strong>需求逻辑：</strong>退样要留下退样方式、签收人与时间，才能与流转单、退样申请表对得上。<br>' +
+            '<strong>展示规则：</strong>行内「退样」按钮。<br>' +
+            '<strong>交互逻辑：</strong>点击打开「填写退样信息」弹窗（退样方式、联系人、电话、地址、签收人）；点「确定」写入退样记录并回填流转单，取消则不留痕。', tag: '流转单' },
+          { id: 'return-type', selector: '[data-annotate="return-type"]', position: 'top-left', title: '自取 / 快递', wide: true, content: '<strong>需求逻辑：</strong>自取与快递的责任主体不同：自取由委托方人员现场签收，快递由实验室操作员交付寄出，两者写进流转单的签名与流程文案不一样。<br>' +
+            '<strong>展示规则：</strong>退样方式二选一。<strong>自取</strong>：检测流程 = 「委托单位取回余样签收」，签名/日期 = 弹窗联系人 + 点击退样时间（客户无电子签）。<strong>快递</strong>：检测流程 = 「余样快递退回委托单位」，签名/日期 = 退库操作员电子签名 + 点击退样时间。<br>' +
+            '<strong>交互逻辑：</strong>切换方式时弹窗内联系人/签收人字段随之变化；确认后按所选方式生成流转单行。', tag: '流转单' },
+          { id: 'return-writeback', selector: '[data-annotate="return-writeback"]', position: 'top-right', title: '退样回填预览', wide: true, content: '<strong>需求逻辑：</strong>退样完成的瞬间就要在流转单上留痕，避免事后补记对不上。<br>' +
+            '<strong>展示规则：</strong>预览区展示本次将追加的流转单行（检测流程、签名、日期）。<br>' +
+            '<strong>交互逻辑：</strong>回填时机 = 样品退样页点「确定」完成退样记录时；同一样品多条退样按次各生成一行。', tag: '流转单' },
+          { id: 'return-confirm', selector: '[data-annotate="return-confirm"]', position: 'bottom-right', title: '确定退样', content: '<strong>需求逻辑：</strong>退样是不可逆的出库动作，确认即写凭据。<br>' +
+            '<strong>展示规则：</strong>「填写退样信息」弹窗底部的「确定」按钮。<br>' +
+            '<strong>交互逻辑：</strong>确认后写入退样记录并立即回填流转单最后一行（若该委托需要退样）；必填项缺失时提示且不关闭弹窗。', tag: '流转单' }
         ]
       });
     }

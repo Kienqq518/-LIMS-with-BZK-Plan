@@ -380,7 +380,9 @@
             selector: '[data-annotate="tab-detect"]',
             position: 'bottom',
             title: '检测信息',
-            content: '报告生成编辑页默认 Tab。展示委托下各样品组的只读信息与试样勾选表，编制员在此确定本次生成范围。',
+            content: '<strong>需求逻辑：</strong>报告编制的第一步是确定「本次给哪些试样出报告」，因此进入页面默认停在本 Tab；样品信息只读，唯一可操作的是试样勾选。<br>' +
+            '<strong>展示规则：</strong>Tab 名「检测信息」，其下按样品组展开：只读样品信息块 + 试样勾选表；本 Tab 不提供任何字段编辑控件。<br>' +
+            '<strong>交互逻辑：</strong>切换 Tab 不丢已勾选状态；勾选结果是「生成报告」的唯一输入，未勾选时生成按钮不可用。',
             tag: '检测信息'
           },
           {
@@ -389,7 +391,9 @@
             position: 'top-left',
             title: '选取检测信息',
             wide: true,
-            content: '按样品名称(型号)分组展示。每组含只读<strong>样品信息</strong>与试样勾选表。导出方式在点击「生成报告」后的确认弹窗中配置。',
+            content: '<strong>需求逻辑：</strong>报告以「样品名称(型号)」为单位产出，分组边界必须与委托收样的样品分组一致，避免一份报告混装不同型号。<br>' +
+            '<strong>展示规则：</strong>按样品名称(型号)分组，每组含只读「样品信息」与该组试样勾选表；导出方式不在这里配置，放在点「生成报告」后的确认弹窗。<br>' +
+            '<strong>交互逻辑：</strong>各组勾选互不影响；至少一个组有勾选才能生成报告。',
             tag: '检测信息'
           },
           {
@@ -398,7 +402,9 @@
             position: 'top-right',
             title: '样品信息（只读）',
             wide: true,
-            content: '展示样品名称、型号、产品标识、检测类别、数量、厂家等委托收样信息，编制员不可修改。',
+            content: '<strong>需求逻辑：</strong>编制阶段不允许改样品数据：报告内容必须与委托登记、收样结果一致，改动只能走委托变更。<br>' +
+            '<strong>展示规则：</strong>展示样品名称、型号、产品标识、检测类别、数量、厂家等委托收样信息，全部只读。<br>' +
+            '<strong>交互逻辑：</strong>要改字段回委托变更（基本信息变更 / 样品修改变更），变更生效后本页重新取数。',
             tag: '检测信息'
           },
           {
@@ -406,7 +412,9 @@
             selector: '[data-annotate="product-mark"]',
             position: 'right',
             title: '产品标识',
-            content: '展示产品标识的实际值，用于报告生成时写入报告正文。',
+            content: '<strong>需求逻辑：</strong>报告正文要写产品标识，取值口径与「样品数据」的产品标记一致，不由编制员手填。<br>' +
+            '<strong>展示规则：</strong>展示产品标记的实际值；该样品开关关闭或未配规则时显示「未配置规则」；标记规则里取不到值的段显示「/」。<br>' +
+            '<strong>交互逻辑：</strong>只读；规格参数在样品收样或委托确认阶段补填后，产品标记自动重算并同步到报告正文。',
             tag: '检测信息'
           },
           {
@@ -414,7 +422,9 @@
             selector: '[data-annotate="pick-all-tests"]',
             position: 'top-left',
             title: '勾选全部',
-            content: '一键勾选/取消当前样品组下全部试样，便于批量选择本次参与生成的试样。',
+            content: '<strong>需求逻辑：</strong>一组试样常常全部参与出报告，逐个勾选太慢。<br>' +
+            '<strong>展示规则：</strong>试样勾选表表头的复选框。<br>' +
+            '<strong>交互逻辑：</strong>点一下全选本组试样，再点全不选；只作用于当前样品组，不影响其它组。',
             tag: '检测信息'
           },
           {
@@ -423,7 +433,9 @@
             position: 'top-left',
             title: '试样勾选表',
             wide: true,
-            content: '编制员勾选本次参与生成的试样。每行对应一个样品编号及其检测项目列表；至少勾选 1 个试样方可点击「生成报告」。',
+            content: '<strong>需求逻辑：</strong>生成范围以「试样」为单位，而不是以样品或试验项为单位。<br>' +
+            '<strong>展示规则：</strong>每行对应一个样品编号及其检测项目列表。<br>' +
+            '<strong>交互逻辑：</strong>勾选本次参与生成的试样；至少勾选 1 个试样方可点「生成报告」。',
             tag: '检测信息'
           },
           {
@@ -431,7 +443,9 @@
             selector: '[data-annotate="btn-generate-row"]',
             position: 'top',
             title: '生成报告',
-            content: '勾选试样后点击，弹出「生成报告确认」弹窗。在弹窗中确认或修改导出方式与模版变体，确认后生成 Word 报告并写入下方「报告文件」列表。',
+            content: '<strong>需求逻辑：</strong>生成动作要有唯一入口，且参数在确认弹窗里定，避免误点直接产出文件。<br>' +
+            '<strong>展示规则：</strong>「生成报告」按钮（样品组区与页面底部各一处）。<br>' +
+            '<strong>交互逻辑：</strong>点击弹出「生成报告确认」→ 确认或修改导出方式与模版变体 → 确认后生成 Word 报告并写入下方「报告文件」列表。',
             tag: '检测信息'
           },
           {
@@ -440,7 +454,9 @@
             position: 'top-left',
             title: '报告文件',
             wide: true,
-            content: '已生成报告列表，含报告编号、试样编号、文件名、生成/修改时间。支持<strong>添加报告图片</strong>（PageOffice 粘贴）与<strong>导出 PDF</strong>。',
+            content: '<strong>需求逻辑：</strong>已生成报告要可追溯、可补图、可单独出 PDF。<br>' +
+            '<strong>展示规则：</strong>列表含报告编号、试样编号、文件名、生成时间、修改时间。<br>' +
+            '<strong>交互逻辑：</strong>「添加报告图片」走 PageOffice 粘贴；「导出 PDF」单独导出；重新生成会升版本并保留历史。',
             tag: '检测信息'
           },
           {
@@ -449,7 +465,9 @@
             position: 'top-left',
             title: '确认：导出方式',
             wide: true,
-            content: '预填「业务流程配置 › 报告设置」解析出的默认导出模式，编制员可在确认前修改：<strong>单种样品一份报告</strong>（全部勾选试样 → 1 份）或 <strong>单个样品一份报告</strong>（每个试样各 1 份）。切换选项时底部预览份数实时更新。',
+            content: '<strong>需求逻辑：</strong>不同业务线的报告粒度不同，默认值取「业务流程配置 › 报告设置」的解析结果，但允许本次生成前临时改。<br>' +
+            '<strong>展示规则：</strong>两个单选项：「单种样品一份报告」（全部勾选试样 → 1 份）与「单个样品一份报告」（每个试样各 1 份），预填默认值。<br>' +
+            '<strong>交互逻辑：</strong>切换选项时弹窗底部的预览份数实时更新；确认后按所选粒度产出。',
             tag: '检测信息'
           },
           {
@@ -458,7 +476,9 @@
             position: 'top-left',
             title: '确认：模版变体',
             wide: true,
-            content: '预填「模板管理 › 报告模版」中该型号的<strong>默认变体</strong>（isDefault）。多型号委托时分组展示，各组独立选择变体。',
+            content: '<strong>需求逻辑：</strong>同一型号可能维护多个模版变体，默认用「模板管理 › 报告模版」里设为默认的变体，特殊需求可本次改选。<br>' +
+            '<strong>展示规则：</strong>预填该型号的默认变体（isDefault）；多型号委托时按型号分组展示，各组独立选择。<br>' +
+            '<strong>交互逻辑：</strong>改选只影响本型号分组的产出文件。',
             tag: '检测信息'
           },
           {
@@ -466,7 +486,9 @@
             selector: '[data-annotate="modal-preview"]',
             position: 'top-left',
             title: '生成预览份数',
-            content: '根据当前勾选的试样数、导出方式与模版变体，实时计算将生成的报告份数。',
+            content: '<strong>需求逻辑：</strong>生成前要让编制员知道会产出几份文件，避免事后发现多生成或漏生成。<br>' +
+            '<strong>展示规则：</strong>实时展示「将生成 N 份」。<br>' +
+            '<strong>交互逻辑：</strong>N 随勾选试样数、导出方式、模版变体即时重算。',
             tag: '检测信息'
           },
           {
@@ -474,7 +496,9 @@
             selector: '[data-annotate="confirm-generate"]',
             position: 'left',
             title: '确认生成',
-            content: '校验各涉及型号须有启用模版变体；缺模版则阻断并提示。通过后生成 Word 报告写入「报告文件」列表。',
+            content: '<strong>需求逻辑：</strong>生成前必须校验模版，避免产出缺内容的报告。<br>' +
+            '<strong>展示规则：</strong>「生成报告确认」弹窗底部的「确认生成」按钮。<br>' +
+            '<strong>交互逻辑：</strong>点击后校验各涉及型号是否都有启用的模版变体：缺模版则阻断并提示缺哪一个；校验通过才生成 Word 报告并写入下方「报告文件」列表。',
             tag: '检测信息'
           }
         ]

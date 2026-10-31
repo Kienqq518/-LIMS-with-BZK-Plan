@@ -263,11 +263,21 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
-          { id: 'issue-btn', selector: '[data-annotate="issue-btn"]', position: 'bottom-left', title: '发样', wide: true, content: '勾选至少一条试样后按钮点亮。点击后弹出「试样分发」弹窗，选择检测时效与领样人完成发放。', tag: '任务单' },
-          { id: 'issue-all-btn', selector: '[data-annotate="issue-all-btn"]', position: 'bottom-left', title: '全部发样', wide: true, content: '无需勾选，将当前列表全部试样一次性分发给同一领样人，并生成/合并该检测员的检测任务单。', tag: '任务单' },
-          { id: 'receiver-list', selector: '[data-annotate="receiver-list"]', position: 'top-left', title: '领样人', wide: true, content: '取自基础数据 › 人员资质的<b>在岗</b>试验员（底座「试验员」角色仍在）。已离岗不出现。展示「姓名 — 部门」。无人时提示去人员资质同步底座。', tag: '选人' },
-          { id: 'distribute-note', selector: '[data-annotate="distribute-note"]', position: 'top-left', title: '任务单生成 + 流转单时机', wide: true, content: '<strong>检测任务单：</strong>点击「发放」瞬间按检测员生成（一人一单）；内容仅含分给此人的试样/项目；接收人/日期置空。同检测员已有有效单则合并。<br><strong>流转单：</strong>「接收试样」行仍在试验检测页点「接收」时回填。', tag: '任务单' },
-          { id: 'issue-confirm', selector: '[data-annotate="issue-confirm"]', position: 'top-left', title: '发放', wide: true, content: '确认后：① 试样指派给领样人并进入「待接收」；② 生成或合并该检测员的检测任务单（下发人/日期写入，接收栏空）。领样人必须来自在岗试验员。', tag: '任务单' }
+          { id: 'issue-btn', selector: '[data-annotate="issue-btn"]', position: 'bottom-left', title: '发样', wide: true, content: '<strong>需求逻辑：</strong>发样是「谁做哪些试验」的正式指令，必须按勾选范围发放，不能整表盲发。<br>' +
+            '<strong>展示规则：</strong>「发样」按钮，未勾选试样时置灰。<br>' +
+            '<strong>交互逻辑：</strong>勾选至少一条试样后按钮点亮；点击弹出「试样分发」弹窗，选择检测时效与领样人后完成发放。', tag: '任务单' },
+          { id: 'issue-all-btn', selector: '[data-annotate="issue-all-btn"]', position: 'bottom-left', title: '全部发样', wide: true, content: '<strong>需求逻辑：</strong>常见场景是整个样品的试样都交给同一检测员，需要一次性发放。<br>' +
+            '<strong>展示规则：</strong>「全部发样」按钮，无需勾选。<br>' +
+            '<strong>交互逻辑：</strong>点击把当前列表全部试样一次性分发给同一领样人，并按人生成或合并该检测员的检测任务单。', tag: '任务单' },
+          { id: 'receiver-list', selector: '[data-annotate="receiver-list"]', position: 'top-left', title: '领样人', wide: true, content: '<strong>需求逻辑：</strong>领样人必须是在岗试验员，否则任务会派给不能做试验的人。<br>' +
+            '<strong>展示规则：</strong>候选取自「基础数据 › 人员资质」的在岗试验员（底座「试验员」角色仍在），展示「姓名 — 部门」；已离岗人员不出现。<br>' +
+            '<strong>交互逻辑：</strong>无可选人员时提示去人员资质同步底座数据。', tag: '选人' },
+          { id: 'distribute-note', selector: '[data-annotate="distribute-note"]', position: 'top-left', title: '任务单生成 + 流转单时机', wide: true, content: '<strong>需求逻辑：</strong>任务单与流转单是两条留痕链路，生成时机不同，不能互相替代。<br>' +
+            '<strong>展示规则：</strong><strong>检测任务单</strong>：点「发放」瞬间按检测员生成（一人一单），内容仅含分给此人的试样/项目，接收人与接收日期置空；同检测员已有有效单则合并并升主版本。<strong>流转单</strong>：「接收试样」行仍在试验检测页点「接收」时回填。<br>' +
+            '<strong>交互逻辑：</strong>本页只负责发放与任务单产出，签收动作在试验检测页完成。', tag: '任务单' },
+          { id: 'issue-confirm', selector: '[data-annotate="issue-confirm"]', position: 'top-left', title: '发放', wide: true, content: '<strong>需求逻辑：</strong>发放是派工生效点，一旦发放试样就离开样品库，必须二次确认。<br>' +
+            '<strong>展示规则：</strong>「试样分发」弹窗底部的「发放」按钮；领样人候选只允许来自「人员资质」的在岗试验员。<br>' +
+            '<strong>交互逻辑：</strong>确认后：① 试样指派给领样人并进入「待接收」；② 生成或合并该检测员的检测任务单（下发人 / 下发日期写入，接收栏置空）；取消则不改任何状态。', tag: '任务单' }
         ]
       });
     }

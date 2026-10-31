@@ -177,10 +177,18 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
-          { id: 'assign-btn', selector: '[data-annotate="assign-btn"]', position: 'top-left', title: '样品分发', wide: true, content: '固定在页面底部。点击后选择领样人并「发放」，触发流转单领样节点回填。', tag: '流转单' },
-          { id: 'assign-writeback', selector: '[data-annotate="assign-writeback"]', position: 'top-left', title: '领样回填规则', wide: true, content: '检测流程 = 领样人部门 +「领样」<br>签名/日期 = 领样人电子签名 + 发样日期<br>样品数量 = 发样数量', tag: '流转单' },
-          { id: 'assign-confirm', selector: '[data-annotate="assign-confirm"]', position: 'top-left', title: '发放', content: '确认后将领样信息写入检测任务及样品流转单。', tag: '流转单' },
-          { id: 'task-sheet-empty', selector: '[data-annotate="task-sheet-empty"]', position: 'top-right', title: '检测任务单尚未生成', wide: true, content: '样品发样<strong>不再</strong>生成检测任务单。任务单在后续<strong>试样分发</strong>按检测员一人一单生成；本页为空态。', tag: '任务单' }
+          { id: 'assign-btn', selector: '[data-annotate="assign-btn"]', position: 'top-left', title: '样品分发', wide: true, content: '<strong>需求逻辑：</strong>样品分发是「样品从样品库交给领样人」的正式交接，必须显式触发。<br>' +
+            '<strong>展示规则：</strong>「样品分发」按钮固定在页面底部。<br>' +
+            '<strong>交互逻辑：</strong>点击后在弹窗选择领样人并点「发放」，触发流转单领样节点回填。', tag: '流转单' },
+          { id: 'assign-writeback', selector: '[data-annotate="assign-writeback"]', position: 'top-left', title: '领样回填规则', wide: true, content: '<strong>需求逻辑：</strong>领样交接要在流转单上留痕，字段口径必须固定，不能每次手写。<br>' +
+            '<strong>展示规则：</strong>检测流程 = 领样人部门 +「领样」；签名 / 日期 = 领样人电子签名 + 发样日期；样品数量 = 发样数量。<br>' +
+            '<strong>交互逻辑：</strong>发放成功即追加一行；同一领样人多次发放各成一行，不合并。', tag: '流转单' },
+          { id: 'assign-confirm', selector: '[data-annotate="assign-confirm"]', position: 'top-left', title: '发放', content: '<strong>需求逻辑：</strong>发放是不可逆的交接动作，需要二次确认。<br>' +
+            '<strong>展示规则：</strong>弹窗内「发放」按钮。<br>' +
+            '<strong>交互逻辑：</strong>确认后将领样信息写入检测任务及样品流转单，并更新样品状态为已发放；取消则不写。', tag: '流转单' },
+          { id: 'task-sheet-empty', selector: '[data-annotate="task-sheet-empty"]', position: 'top-right', title: '检测任务单尚未生成', wide: true, content: '<strong>需求逻辑：</strong>任务单由「试样分发」产出，本页在发放前不该出现任务单内容，需要明确空态指引。<br>' +
+            '<strong>展示规则：</strong>未发放时任务单区显示空态文案，说明生成时机为试样分发点「发放」的瞬间。<br>' +
+            '<strong>交互逻辑：</strong>发放后回到本页可见对应检测员的任务单行；未发放时不提供查看入口。', tag: '任务单' }
         ]
       });
     }

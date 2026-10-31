@@ -302,18 +302,9 @@
           position: 'bottom-right',
           title: '短链二维码整改',
           wide: true,
-          content: '<strong>原问题：</strong>QR 编码完整验真 URL（60+ 字符），码点密集，微信/支付宝扫码易失败。<br><br>' +
-            '<strong>技术方案：</strong><br>' +
-            '① 打印时为试样编号生成唯一短链映射（如 SC2026/00790101 → https://lims-with-bzk-plan.vercel.app/l/Ab3K9）<br>' +
-            '② QR 仅编码短链（≤20 字符）<br>' +
-            '③ 扫码后短链服务 HTTP 302 跳转至 H5 验真页<br><br>' +
-            '<strong>扫码方式：</strong>微信、支付宝、手机系统相机均可，无特殊限制<br><br>' +
-            '<strong>跳转页面：</strong>「合格证验真」H5 页（原型 cert-verify.html）<br><br>' +
-            '<strong>展示信息：</strong>试样编号/名称、型号规格、检验/再检日期、检测员、检验机构、验真结论<br><br>' +
-            '<strong>验真有效：</strong>短链存在 + 处于报告签发后续流程 + 未超过再检日期 + 未作废<br>' +
-            '<strong>验真无效：</strong>短链不存在/已失效、超过再检日期、已作废/撤回（含<strong>流程回退</strong>：从报告签发后续退至报告签发及之前，短链自动作废）<br><br>' +
-            '<strong>演示：</strong>有效 Ab3K9 · 过期 Ex1p1 · 回退作废 Rv0k1 · 不存在 XXXXX<br><br>' +
-            '<strong>预期效果：</strong>识别率提升；QR 可缩小仍清晰；URL 变更时只改短链映射，无需重印',
+          content: '<strong>需求逻辑：</strong>原问题：QR 直接编码完整验真 URL（60+ 字符），码点密集，微信 / 支付宝扫码易失败。<br>' +
+            '<strong>展示规则：</strong>技术方案：① 打印时为试样编号生成唯一短链映射（如 SC2026/00790101 → <code>https://lims-with-bzk-plan.vercel.app/l/Ab3K9</code>）；② QR 仅编码短链（≤20 字符）；③ 扫码后短链服务 HTTP 302 跳转 H5 验真页。<br>' +
+            '<strong>交互逻辑：</strong>微信、支付宝、手机系统相机均可扫码，无特殊限制；短链作废后扫码显示无效。',
           tag: '核心整改'
         },
         {
@@ -321,7 +312,9 @@
           selector: '[data-annotate="qr-area"]',
           position: 'top-left',
           title: '短链地址展示',
-          content: '预览区二维码下方展示短链地址，便于打印前核对。点击 QR 可模拟扫码，打开验真页查看实际展示内容。',
+          content: '<strong>需求逻辑：</strong>打印前需要人工核对二维码指向的地址是否正确。<br>' +
+            '<strong>展示规则：</strong>预览区二维码下方展示短链地址。<br>' +
+            '<strong>交互逻辑：</strong>点击 QR 可模拟扫码，打开验真页查看实际展示内容。',
           tag: '交互说明'
         },
         {
@@ -330,11 +323,9 @@
           position: 'bottom-left',
           title: '方案2：打印前切换短链 Base',
           wide: true,
-          content: '<strong>场景：</strong>局域网部署 + 对外发放标签时，内网扫码与外网 4G 扫码需要不同的短链域名前缀。<br><br>' +
-            '<strong>做法：</strong>打印前在此切换「对内（内网）」/「对外（公网）」Base，再点打印。QR 写入 <code>Base + code</code>，因此<strong>二维码图案会随 Base 变化</strong>。<br><br>' +
-            '<strong>不变：</strong>同一试样的短码 <code>code</code> 内外共用一张映射表，不会生成两套短码。<br><br>' +
-            '<strong>示例：</strong>对内 <code>http://lims.local/l/Ab3K9</code> · 对外 <code>https://lims-with-bzk-plan.vercel.app/l/Ab3K9</code><br><br>' +
-            '<strong>注意：</strong>外网扫到内网 Base 的标签打不开；对外发放请选「对外（公网）」。',
+          content: '<strong>需求逻辑：</strong>局域网部署 + 对外发放标签时，内网扫码与外网 4G 扫码需要不同短链前缀。<br>' +
+            '<strong>展示规则：</strong>打印前切换「对内（内网）」/「对外（公网）」Base 再点打印；QR 写入 <code>Base + code</code>，二维码图案随 Base 变化；示例：对内 <code>http://lims.local/l/Ab3K9</code> · 对外 <code>https://lims-with-bzk-plan.vercel.app/l/Ab3K9</code>。<br>' +
+            '<strong>交互逻辑：</strong>同一试样的短码 <code>code</code> 内外共用一张映射表，不会生成两套短码。',
           tag: '方案2'
         },
         {
@@ -343,7 +334,9 @@
           position: 'top-right',
           title: '检测员选择',
           wide: true,
-          content: '检测员取自基础数据 › 人员资质的<b>在岗</b>试验员。已离岗不出现。列按模版角色并集显示；修改后左侧合格证预览实时同步。记录员名单本期不变。',
+          content: '<strong>需求逻辑：</strong>单张合格证的人员可与默认不同（如复核人变更），要能打印前就地改。<br>' +
+            '<strong>展示规则：</strong>「检测员 / 记录员」编辑区，候选来自人员台账在岗人员。<br>' +
+            '<strong>交互逻辑：</strong>改后即时重绘预览；按当前试样记忆，下次打开同一试样回填；人数超上限时提示并不允许提交。',
           tag: '选人'
         }
       ]

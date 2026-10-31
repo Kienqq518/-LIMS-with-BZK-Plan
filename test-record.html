@@ -147,10 +147,16 @@
           { id: 'or-regen', selector: '[data-annotate="or-regen"]', position: 'top-left', title: '重新生成', wide: true, content: '<strong>需求逻辑：</strong>摘标只能靠按原文件身份重新导出成功；数据改回或换模版都不自动摘标。<br><strong>展示规则：</strong>仅当前版「已失效」行显示橙色「重新生成」。<br><strong>交互逻辑：</strong>原试样仍在则升主版本并摘标，说明写入导致上一版失效的操作动作；原范围做不到则弹出「无法按原范围重导」。校验不通过则保持已失效。', tag: '失效' },
           { id: 'or-regen-dialog', selector: '[data-annotate="or-regen-dialog"]', position: 'top-left', title: '无法按原范围重导', wide: true, content: '<strong>需求逻辑：</strong>删样等使原文件身份无法满足时，不能按原范围重导，也不能自动把旧文件接进新文件历史。<br><strong>展示规则：</strong>提示列出已删对象；剩余为空时「确认」不可用。<br><strong>交互逻辑：</strong>取消=关闭且旧行仍失效；跳转原始记录页面=自选范围导出（新文件）；确认=按剩余对象、原生成模式新开一行且有效，旧行保持已失效。', tag: '失效' },
           { id: 'export-drawer', selector: '[data-annotate="export-drawer"]', position: 'top-left', title: '记录单导出详情', wide: true, content: '<strong>需求逻辑：</strong>导出成功才写入当前版，并把当时模版已插入占位符清单（多模版拼接取并集）和字段值冻进该次 snapshot；之后判断委托/样品基本信息是否失效只看这份快照，不再打开 Word。<br><strong>展示规则：</strong>与试验检测页同一套抽屉：按<strong>生成模式</strong>分组、同模式下按<strong>样品名称</strong>分块。表格列为勾选、文件名、包含试验项、状态、单行导出。<br><strong>交互逻辑：</strong>模版换版、生成模式变更不打已导出文件失效，只影响下一次导出的 snapshot。', tag: '记录单导出' },
-          { id: 'export-mode-group', selector: '[data-annotate="export-mode-group"]', position: 'top-right', title: '按生成模式分组', wide: true, content: '每个折叠区块对应一种记录单生成模式。标题右侧显示该模式下样品数与文件数。', tag: '记录单导出' },
-          { id: 'export-sample-block', selector: '[data-annotate="export-sample-block"]', position: 'top-right', title: '按样品分块', wide: true, content: '同一生成模式内，不同样品各自成块。块内表格列出该样品在此模式下将生成的全部文件。', tag: '记录单导出' },
+          { id: 'export-mode-group', selector: '[data-annotate="export-mode-group"]', position: 'top-right', title: '按生成模式分组', wide: true, content: '<strong>需求逻辑：</strong>记录单生成模式决定一份文件覆盖多少试样与试验项，必须按模式分组呈现，才能看清每种模式会产出什么。<br>' +
+            '<strong>展示规则：</strong>每个折叠区块对应一种记录单生成模式；标题右侧显示该模式下的样品数与文件数。<br>' +
+            '<strong>交互逻辑：</strong>折叠 / 展开只影响浏览，不改变勾选与导出范围；切换模式在样品块内进行。', tag: '记录单导出' },
+          { id: 'export-sample-block', selector: '[data-annotate="export-sample-block"]', position: 'top-right', title: '按样品分块', wide: true, content: '<strong>需求逻辑：</strong>同一生成模式下不同样品的记录单互不相干，按样品分块才不会误勾别的样品的文件。<br>' +
+            '<strong>展示规则：</strong>同一生成模式内，不同样品各自成块；块内表格列出该样品在此模式下将生成的全部文件。<br>' +
+            '<strong>交互逻辑：</strong>块内可勾选文件、全选就绪项；勾选状态跨模式切换保留。', tag: '记录单导出' },
           { id: 'export-status', selector: '[data-annotate="export-status"]', position: 'top-right', title: '导出状态', wide: true, content: '<strong>需求逻辑：</strong>导出成功才写入/更新该文件身份的当前版，并冻进当时模版的 usedFields。<br><strong>展示规则：</strong>就绪行可导出。第二行提示：<strong>将生成新版本</strong>（身份已存在且有效）、<strong>将重新生成并解除失效</strong>（身份已存在且已失效）、<strong>将生成新文件</strong>（身份不存在）。<br><strong>交互逻辑：</strong>试验未完成、缺模版行不可导出。重新生成同样校验，不通过则保持已失效。', tag: '记录单导出' },
-          { id: 'export-select-all', selector: '[data-annotate="export-select-all"]', position: 'top-left', title: '全选可导出项', content: '仅勾选状态为「就绪」的文件；未就绪行不参与全选。', tag: '记录单导出' },
+          { id: 'export-select-all', selector: '[data-annotate="export-select-all"]', position: 'top-left', title: '全选可导出项', content: '<strong>需求逻辑：</strong>批量导出前只应选中真正可导出的文件，避免把未就绪的带进包里。<br>' +
+            '<strong>展示规则：</strong>底部「全选」复选框。<br>' +
+            '<strong>交互逻辑：</strong>仅勾选状态为「就绪」的文件；未就绪行（试验未完成或缺模版）不参与全选。', tag: '记录单导出' },
           { id: 'export-batch', selector: '[data-annotate="export-batch"]', position: 'top-left', title: '批量导出', wide: true, content: '<strong>需求逻辑：</strong>每份导出各自冻一份 snapshot；同身份升主版本，不同身份新开一行。<br><strong>展示规则：</strong>导出所有已勾选且就绪的文件。<br><strong>交互逻辑：</strong>未就绪行跳过。已失效同身份会按「将重新生成并解除失效」处理。', tag: '记录单导出' }
         ]
       });

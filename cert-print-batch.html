@@ -374,7 +374,9 @@
           selector: '#previewContainer',
           position: 'top-left',
           title: '批量打印预览',
-          content: '从列表页多选委托并指定默认检测员/记录员后进入本页。左侧滚动展示全部待打印合格证，右侧可按模版角色逐条调整或取消勾选。',
+          content: '<strong>需求逻辑：</strong>批量打印要一次覆盖多台试样，且允许在打印前按张微调人员与勾选，避免整批错打。<br>' +
+            '<strong>展示规则：</strong>从列表页多选委托并指定默认检测员 / 记录员后进入本页；左侧滚动展示全部待打印合格证，右侧可按模版角色逐条调整或取消勾选。<br>' +
+            '<strong>交互逻辑：</strong>右侧改勾选即时更新左侧预览；取消勾选的不进入本次打印；「打印」走浏览器打印。',
           tag: '流程 · 图5'
         },
         {
@@ -383,18 +385,9 @@
           position: 'bottom-right',
           title: '短链二维码（批量）',
           wide: true,
-          content: '<strong>原问题：</strong>批量打印时每张合格证 QR 若编码完整 URL，码图复杂，现场用微信/支付宝扫码失败率高。<br><br>' +
-            '<strong>技术方案：</strong><br>' +
-            '① 每张合格证按试样编号独立生成短链（一一映射，互不复用）<br>' +
-            '② QR 仅编码短链，如 https://lims-with-bzk-plan.vercel.app/l/Xk7m2（约 20 字符）<br>' +
-            '③ 用户扫码 → 短链网关 302 → 正式 H5 验真页<br><br>' +
-            '<strong>扫码方式：</strong>微信扫一扫、支付宝扫一扫、iOS/Android 相机均可<br><br>' +
-            '<strong>跳转页面：</strong>智慧实验室「合格证验真」H5 页（原型 cert-verify.html，移动端适配）<br><br>' +
-            '<strong>页面展示：</strong>验真结论、试样编号/名称、型号规格、检验/再检日期、检测员、检验机构<br><br>' +
-            '<strong>验真有效条件：</strong>短链存在；委托处于报告签发及后续流程；未超过再检日期；未被作废 → 「短链有效，验真通过」<br><br>' +
-            '<strong>验真无效条件：</strong>① 短链不存在 ② 超过再检日期 ③ 已作废/撤回（含流程从报告签发后续<strong>回退</strong>至报告签发及之前，短链自动作废）→ 「短链无效，无法验真」<br><br>' +
-            '<strong>原型演示码：</strong>有效 Ab3K9 · 过期 Ex1p1 · 回退作废 Rv0k1 · 不存在 cert-verify.html?code=XXXXX<br><br>' +
-            '<strong>预期效果：</strong>① 扫码成功率提升 ② QR 面积可缩小 ③ 验真 URL 变更时仅更新短链映射',
+          content: '<strong>需求逻辑：</strong>原问题：批量打印时每张合格证 QR 若编码完整验真 URL（60+ 字符），码图密集，现场用微信 / 支付宝扫码失败率高。<br>' +
+            '<strong>展示规则：</strong>技术方案：① 每张合格证按试样编号独立生成短链（一一映射，互不复用）；② QR 仅编码短链，如 <code>https://lims-with-bzk-plan.vercel.app/l/Xk7m2</code>（约 20 字符）；③ 扫码后短链网关 HTTP 302 跳转正式 H5 验真页。<br>' +
+            '<strong>交互逻辑：</strong>微信扫一扫、支付宝扫一扫、iOS / Android 相机均可；点预览中的 QR 可模拟扫码直接打开验真页。',
           tag: '核心整改'
         },
         {
@@ -403,10 +396,9 @@
           position: 'bottom-left',
           title: '方案2：打印前切换短链 Base',
           wide: true,
-          content: '<strong>场景：</strong>局域网部署 + 对外发放时，批量打印也需按发放对象选择短链域名。<br><br>' +
-            '<strong>做法：</strong>打印前切换「对内（内网）」/「对外（公网）」后，左侧全部待打合格证的 QR 统一按当前 Base 重绘。<br><br>' +
-            '<strong>不变：</strong>各试样 <code>code</code> 仍一一映射、内外共用；变的是 URL 前缀，因此会形成对内/对外两套二维码图案。<br><br>' +
-            '<strong>示例：</strong>对内 <code>http://lims.local/l/Xk7m2</code> · 对外 <code>https://lims-with-bzk-plan.vercel.app/l/Xk7m2</code>',
+          content: '<strong>需求逻辑：</strong>局域网部署 + 对外发放时，内网扫码与外网扫码需要不同的短链域名前缀。<br>' +
+            '<strong>展示规则：</strong>打印前可切换「对内（内网）」/「对外（公网）」；QR 写入 <code>Base + code</code>，因此二维码图案随 Base 变化，形成对内 / 对外两套码图；示例：对内 <code>http://lims.local/l/Xk7m2</code> · 对外 <code>https://lims-with-bzk-plan.vercel.app/l/Xk7m2</code>。<br>' +
+            '<strong>交互逻辑：</strong>切换后左侧全部待打合格证 QR 按当前 Base 统一重绘；各试样 <code>code</code> 仍一一映射、内外共用一张表，不会生成两套短码。',
           tag: '方案2'
         },
         {
@@ -415,7 +407,9 @@
           position: 'top-right',
           title: '检测员选择',
           wide: true,
-          content: '检测员取自基础数据 › 人员资质的<b>在岗</b>试验员。已离岗不出现。列按当前样品模版角色并集显示；可逐条增删，左侧预览同步更新。记录员名单本期不变。',
+          content: '<strong>需求逻辑：</strong>批量场景下每张合格证都要落检测员 / 记录员，逐张选人不可接受，需要一次指定、按张覆盖。<br>' +
+            '<strong>展示规则：</strong>页面顶部「默认检测员 / 记录员」选择区，人数上限随参数配置（检测员默认 ≤2、记录员默认 ≤1）。<br>' +
+            '<strong>交互逻辑：</strong>默认值应用到全部待打印张；个别张可在右侧行内单独改；已记忆的人员下次进入自动回填。',
           tag: '选人'
         }
       ]

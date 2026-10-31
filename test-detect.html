@@ -178,9 +178,15 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
-          { id: 'receive-btn', selector: '[data-annotate="receive-btn"]', position: 'bottom-left', title: '接收试样', wide: true, content: '流程节点：<strong>试样分发 → 试验检测接收</strong>。点击「接收」同时回填：① 分给该检测员的<strong>检测任务单</strong>接收人/日期；② 流转单「接收试样」行。', tag: '任务单' },
-          { id: 'receive-writeback', selector: '[data-annotate="receive-writeback"]', position: 'top-left', title: '接收回填规则', wide: true, content: '<strong>检测任务单：</strong>只写分给当前检测员的那张（电子签名 + 接收日期），升系统主版本；不覆盖其他检测员任务单。<br><strong>流转单：</strong>检测流程 = 部门 +「接收试样」；签名/日期 = 电子签名 + 接收日期；多检测员各一行。', tag: '任务单' },
-          { id: 'receive-confirm', selector: '[data-annotate="receive-confirm"]', position: 'top-left', title: '确认接收', content: '回填时机：点击「确认接收」瞬间写入对应任务单与流转单。', tag: '任务单' }
+          { id: 'receive-btn', selector: '[data-annotate="receive-btn"]', position: 'bottom-left', title: '接收试样', wide: true, content: '<strong>需求逻辑：</strong>检测员接收试样即代表责任转移，必须同时更新任务单与流转单两处留痕。<br>' +
+            '<strong>展示规则：</strong>行内「接收」按钮；流程节点：试样分发 → 试验检测接收。<br>' +
+            '<strong>交互逻辑：</strong>点击「接收」同时回填：① 分给该检测员的检测任务单接收人 / 日期；② 流转单「接收试样」行。', tag: '任务单' },
+          { id: 'receive-writeback', selector: '[data-annotate="receive-writeback"]', position: 'top-left', title: '接收回填规则', wide: true, content: '<strong>需求逻辑：</strong>两处留痕职责不同：任务单证明检测员接单，流转单证明实物交接，二者并行不可互相替代。<br>' +
+            '<strong>展示规则：</strong><strong>检测任务单</strong>：只写分给当前检测员的那张（电子签名 + 接收日期），升系统主版本，不覆盖其他检测员任务单。<strong>流转单</strong>：检测流程 = 部门 +「接收试样」；签名 / 日期 = 电子签名 + 接收日期；多检测员各一行。<br>' +
+            '<strong>交互逻辑：</strong>接收成功后任务单「接收时间」由「—」变为实际日期。', tag: '任务单' },
+          { id: 'receive-confirm', selector: '[data-annotate="receive-confirm"]', position: 'top-left', title: '确认接收', content: '<strong>需求逻辑：</strong>接收是不可撤销的责任确认，需要弹窗二次确认并显示接收范围。<br>' +
+            '<strong>展示规则：</strong>「接收试样」确认弹窗，展示本次接收的试样与试验项目。<br>' +
+            '<strong>交互逻辑：</strong>确认后执行上述双回填并刷新列表；取消则不写任何留痕。', tag: '任务单' }
         ]
       });
     }

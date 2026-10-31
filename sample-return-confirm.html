@@ -198,11 +198,21 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
-          { id: 'return-record-link', selector: '[data-annotate="return-record-link"]', position: 'top-right', title: '还样记录', content: '流程节点：<strong>还样确认</strong>。检测员将试样退回承检方样品库，样品员在此确认。', tag: '流转单' },
-          { id: 'return-date-col', selector: '[data-annotate="return-date-col"]', position: 'bottom-left', title: '还样日期', content: '还样日期取自还样记录弹窗，写入流转单「样品交接人签名/日期」的日期部分。', tag: '流转单' },
-          { id: 'confirm-one', selector: '[data-annotate="confirm-one"]', position: 'top-right', title: '单条确认', content: '点击 ✓ 确认单条还样记录时触发流转单回填。', tag: '流转单' },
-          { id: 'approve-all', selector: '[data-annotate="approve-all"]', position: 'top-left', title: '全部通过', wide: true, content: '点击「全部通过」对未确认记录逐条触发回填。检测流程 = 还样人部门 +「还样」；签名 = 还样人电子签名 + 还样日期。多检测员各一行。', tag: '流转单' },
-          { id: 'return-writeback', selector: '[data-annotate="return-writeback"]', position: 'top-right', title: '还样回填规则', wide: true, content: '回填时机：还样确认页点击 ✓ 或「全部通过」。还样人一般为对应检测员。', tag: '流转单' }
+          { id: 'return-record-link', selector: '[data-annotate="return-record-link"]', position: 'top-right', title: '还样记录', content: '<strong>需求逻辑：</strong>检测员把试样退回承检方样品库后，需要样品员逐条确认，确认才算还样完成。<br>' +
+            '<strong>展示规则：</strong>「还样记录」链接打开记录弹窗；流程节点为「还样确认」。<br>' +
+            '<strong>交互逻辑：</strong>点击打开还样记录列表，可逐条确认或全部通过。', tag: '流转单' },
+          { id: 'return-date-col', selector: '[data-annotate="return-date-col"]', position: 'bottom-left', title: '还样日期', content: '<strong>需求逻辑：</strong>还样日期是流转单签名的时间依据，必须与还样记录一致，不能在确认时另填。<br>' +
+            '<strong>展示规则：</strong>「还样日期」列。<br>' +
+            '<strong>交互逻辑：</strong>日期取自还样记录弹窗，写入流转单「样品交接人签名/日期」的日期部分。', tag: '流转单' },
+          { id: 'confirm-one', selector: '[data-annotate="confirm-one"]', position: 'top-right', title: '单条确认', content: '<strong>需求逻辑：</strong>逐条确认可避免把有争议的还样一起放过。<br>' +
+            '<strong>展示规则：</strong>行内「✓」按钮。<br>' +
+            '<strong>交互逻辑：</strong>点击确认单条还样记录，同时触发流转单回填（检测流程 = 还样人部门 +「还样」，签名 = 还样人电子签名 + 还样日期）。', tag: '流转单' },
+          { id: 'approve-all', selector: '[data-annotate="approve-all"]', position: 'top-left', title: '全部通过', wide: true, content: '<strong>需求逻辑：</strong>还样量大时逐条点确认效率低，需要批量通过，但留痕必须与逐条确认完全一致。<br>' +
+            '<strong>展示规则：</strong>「全部通过」按钮，仅对未确认记录生效。<br>' +
+            '<strong>交互逻辑：</strong>点击后对未确认记录逐条触发回填；多检测员各回填一行，不合并。', tag: '流转单' },
+          { id: 'return-writeback', selector: '[data-annotate="return-writeback"]', position: 'top-right', title: '还样回填规则', wide: true, content: '<strong>需求逻辑：</strong>还样确认是试样回到承检方样品库的交接点，确认后必须立刻在流转单留痕，事后补记无法核对。<br>' +
+            '<strong>展示规则：</strong>回填内容：检测流程 = 还样人部门 +「还样」；签名 / 日期 = 还样人电子签名 + 还样日期；还样人一般为对应检测员。<br>' +
+            '<strong>交互逻辑：</strong>回填时机 = 本页点击行内 ✓ 或「全部通过」；多检测员还同一样品下的不同试样时各回填一行。', tag: '流转单' }
         ]
       });
     }

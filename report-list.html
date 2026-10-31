@@ -450,11 +450,21 @@
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({ annotations: [
-        { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '「报告生成」进入报告编制编辑页；「编制」弹出报告列表，勾选后进入 Word 在线编制。', tag: '报告编制' },
-        { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '点击「报告记录」查看各报告在编制/审核/签发等节点的流转记录。', tag: '报告编制' },
-        { id: 'report-gen-link', selector: '[data-annotate="report-generate"]', position: 'left', title: '报告生成', content: '演示委托 SCZN202508/0009 · 实壁塑料电缆导管 PVC-C。', tag: '报告编制' },
-        { id: 'compile-modal', selector: '[data-annotate="compile-confirm"]', position: 'left', title: '编制确认', content: '勾选报告后点击「编制」进入 Word 在线编辑（原型演示）。', tag: '报告列表' },
-        { id: 'col-transparency', selector: '[data-annotate="col-transparency"]', position: 'top', title: '透明度等级 / 溯源', content: '检测前为本次报告选定透明度等级（四级）。一/二级为预留等级：可选但受能力门禁拦截、暂不放行出具（登记升级预留）。签发后生成唯一溯源码印刷于报告首页，「查看溯源」即扫码公开页。', tag: '透明检测' },
+        { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '<strong>需求逻辑：</strong>报告列表是编制与签发的总入口，两个动作职责不同：「报告生成」产出文件，「编制」修改文件内容。<br>' +
+            '<strong>展示规则：</strong>操作列：「报告生成」「编制」。<br>' +
+            '<strong>交互逻辑：</strong>「报告生成」跳转报告编制编辑页；「编制」弹出报告列表，勾选后进入 Word 在线编制（PageOffice）。', tag: '报告编制' },
+        { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>报告要经过编制、审核、签发、发放多个节点，列表页要能直接看到每份报告卡在哪个节点、谁签的。<br>' +
+            '<strong>展示规则：</strong>「报告记录」列/链接。<br>' +
+            '<strong>交互逻辑：</strong>点击弹出报告记录表：序号、报告编号、编制、审核、签发、处理、收费审批、发放、操作（日志）。', tag: '报告编制' },
+        { id: 'report-gen-link', selector: '[data-annotate="report-generate"]', position: 'left', title: '报告生成', content: '<strong>需求逻辑：</strong>演示要能一键走到完整生成流程，因此给一个默认委托入口。<br>' +
+            '<strong>展示规则：</strong>「报告生成」链接，演示委托 SCZN202508/0009 · 实壁塑料电缆导管 PVC-C。<br>' +
+            '<strong>交互逻辑：</strong>点击进入报告编制编辑页；换其它委托从委托列表进入。', tag: '报告编制' },
+        { id: 'compile-modal', selector: '[data-annotate="compile-confirm"]', position: 'left', title: '编制确认', content: '<strong>需求逻辑：</strong>一次可能要多份报告同时编制，先勾选再进编辑器，避免误改。<br>' +
+            '<strong>展示规则：</strong>弹窗列出该委托下可编制的报告，含报告编号与试样编号。<br>' +
+            '<strong>交互逻辑：</strong>勾选后点「编制」进入 Word 在线编辑（原型演示），关闭弹窗不改变报告状态。', tag: '报告列表' },
+        { id: 'col-transparency', selector: '[data-annotate="col-transparency"]', position: 'top', title: '透明度等级 / 溯源', content: '<strong>需求逻辑：</strong>透明度等级决定报告可核验到什么程度，必须在签发前选定；等级越高对采集能力要求越高，因此一/二级为预留等级：可选但受能力门禁拦截，暂不放行出具（登记升级预留）。<br>' +
+            '<strong>展示规则：</strong>「透明度等级」列展示所选等级；「溯源」列在签发后显示唯一溯源码与「查看溯源」。<br>' +
+            '<strong>交互逻辑：</strong>检测前为本次报告选定等级（四级）；签发后生成溯源码印刷于报告首页，「查看溯源」即打开扫码公开页。', tag: '透明检测' },
         {
           id: 'rl-record',
           selector: '#reportRecordBody',
