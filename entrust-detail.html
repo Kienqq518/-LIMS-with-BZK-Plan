@@ -136,7 +136,7 @@
     <!-- ========== 合同信息 ========== -->
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>合同信息</h2>
-      <table class="info-table">
+      <table class="info-table" id="contractInfoTable">
         <tr><td class="lbl">合同编号</td><td class="val">/</td><td class="lbl">合同名称</td><td class="val">/</td><td class="lbl">签订时间</td><td class="val">/</td></tr>
         <tr><td class="lbl">服务年限</td><td class="val">/</td><td class="lbl">中标价</td><td class="val">/</td><td class="lbl">合同样品</td><td class="val">/</td></tr>
         <tr><td class="lbl">合同备注</td><td class="val" colspan="5">/</td></tr>
@@ -144,9 +144,9 @@
     </section>
 
     <!-- ========== 委托信息 ========== -->
-    <section class="rounded bg-white p-4 shadow-sm">
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="entrust-code-view">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
-      <table class="info-table">
+      <table class="info-table" id="entrustInfoTable">
         <tr><td class="lbl">委托编号</td><td class="val">SC2026/0073</td><td class="lbl">任务类型</td><td class="val">电气（输配电类）</td><td class="lbl">优先等级</td><td class="val">常规</td></tr>
         <tr><td class="lbl">检测类型</td><td class="val">常规</td><td class="lbl">检测类别</td><td class="val">委托检测</td><td class="lbl">委托单位</td><td class="val">杭州数蚕智能科技有限公司</td></tr>
         <tr><td class="lbl">地址</td><td class="val">杭州市西湖区文三路西溪银座E座</td><td class="lbl">邮政编码</td><td class="val">310000</td><td class="lbl">联系人</td><td class="val">安可</td></tr>
@@ -159,7 +159,7 @@
     <!-- ========== 付款信息 ========== -->
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>付款信息</h2>
-      <table class="info-table">
+      <table class="info-table" id="payInfoTable">
         <tr><td class="lbl">样品检测总价(元)</td><td class="val">2</td><td class="lbl">实际费用(元)</td><td class="val">2</td><td class="lbl">折扣率(%)</td><td class="val">0</td></tr>
         <tr><td class="lbl">付款方式</td><td class="val"></td><td class="lbl">付款单位</td><td class="val">杭州数蚕智能科技有限公司</td><td class="lbl">业务备注</td><td class="val"></td></tr>
       </table>
@@ -186,79 +186,7 @@
     <!-- ========== 检测信息 ========== -->
     <section class="rounded bg-white p-4 shadow-sm" data-annotate="detect-info">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>检测信息</h2>
-      <div class="detect-card overflow-x-auto">
-        <div class="flex">
-          <div class="detect-idx shrink-0">1</div>
-          <div class="min-w-0 flex-1">
-            <!-- 样品字段：详情精简（不含型号关联/试样制备数量等） -->
-            <table class="info-table" id="detectSampleFields" data-annotate="detect-sample-fields"></table>
-            <div class="detect-subhead">试验信息</div>
-            <div class="overflow-x-auto">
-              <table class="data-table min-w-[1040px]" data-annotate="detect-prep-info">
-                <thead>
-                  <tr>
-                    <th>序号</th>
-                    <th>名称</th>
-                    <th>制样信息</th>
-                    <th>检测依据</th>
-                    <th>判定依据</th>
-                    <th>标准要求</th>
-                    <th>负责人</th>
-                    <th>状态</th>
-                    <th>备注</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>1</td>
-                    <td>交流耐压试验</td>
-                    <td>无需制样</td>
-                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
-                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
-                    <td class="text-xs text-slate-600">按标准要求执行</td>
-                    <td>暂无</td>
-                    <td><span class="status-chip">未领样</span></td>
-                    <td></td>
-                  </tr>
-                  <tr>
-                    <td>2</td>
-                    <td>外观及尺寸</td>
-                    <td>无需制样</td>
-                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
-                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
-                    <td class="text-xs text-slate-600">按标准要求执行</td>
-                    <td>暂无</td>
-                    <td><span class="status-chip">未领样</span></td>
-                    <td></td>
-                  </tr>
-                  <tr>
-                    <td>3</td>
-                    <td>抗弯动负荷试验</td>
-                    <td>试样数量-3</td>
-                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
-                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
-                    <td class="text-xs text-slate-600">按标准要求执行</td>
-                    <td>暂无</td>
-                    <td><span class="status-chip">未领样</span></td>
-                    <td></td>
-                  </tr>
-                  <tr>
-                    <td>4</td>
-                    <td>抗弯静负荷试验</td>
-                    <td>试样数量-2</td>
-                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
-                    <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> DL/T 976-2017</a></td>
-                    <td class="text-xs text-slate-600">按标准要求执行</td>
-                    <td>暂无</td>
-                    <td><span class="status-chip">未领样</span></td>
-                    <td></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div id="detectCards"></div>
     </section>
 
     <!-- ========== 批量导出（置于还样记录上方） ========== -->
@@ -812,6 +740,8 @@
   <script src="js/sample-spec-ui.js"></script>
   <script src="js/receive-store.js"></script>
   <script src="js/receive-history-mock.js"></script>
+  <script src="js/flow-stages.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script>
     // 收样信息：一次收样可包含多类样品（一起勾选提交），每类样品有各自的规格取值与收样图片
     function rcvEsc(v) {
@@ -823,59 +753,154 @@
       var m = SampleDataStore.modelOf(sample, code);
       return rcvEsc(m ? ((m.code || '') + (m.name ? '-' + m.name : '')) : code);
     }
-    // 检测信息 · 样品字段：去掉「规格型号」，改为「产品标记」「型号/分类」「规格」；
-    // 其中「产品标记」仅在该样品的产品标记开关开启时展示，位置固定在「样品名称」与「型号/分类」之间
-    var detailSample = { leafId: 'rod', name: '绝缘操作杆', alias: '绝缘操作杆', modelCode: '', spec: '300',
-      qty: '1', unit: '根', needPrep: '否', factory: '生产厂家', factoryAddr: '生产厂家地址',
-      manufacturer: '制造商', manufacturerAddr: '制造商地址', remark: '备注' };
+    /* ===== 委托号驱动整页：?code= 决定合同/委托/付款/检测信息（点哪单看哪单） ===== */
+    var PAGE_CODE = new URLSearchParams(window.location.search).get('code') || '';
+    var entrustRec = window.EntrustMock ? EntrustMock.get(PAGE_CODE || EntrustMock.DEFAULT_CODE) : null;
+    if (!entrustRec) {                       // mock 脚本缺失时的兜底：保持原静态内容
+      entrustRec = {
+        code: 'SC2026/0073', dash: 'SC2026-0073', customer: '杭州数蚕智能科技有限公司',
+        addr: '杭州市西湖区文三路西溪银座E座', zip: '310000', contact: '安可', phone: '17835503262',
+        taskType: '电气（输配电类）', priority: '常规', testType: '常规', testCategory: '委托检测',
+        signPlace: '湖北', lab: '应敏科技有限公司', acceptDate: '2026-07-08', customerDate: '',
+        days: '2', requireDate: '2026-08-01', editor: 'admin', totalPrice: '2', actualFee: '2',
+        discount: '0', payer: '杭州数蚕智能科技有限公司', payMethod: '', feeRemark: '',
+        samples: [{ name: '绝缘操作杆', alias: '绝缘操作杆', leafId: 'rod', modelCode: '', spec: '300',
+                    qty: '1', unit: '根', needPrep: '否', factory: '生产厂家', factoryAddr: '生产厂家地址',
+                    manufacturer: '制造商', manufacturerAddr: '制造商地址', remark: '备注', tests: null }]
+      };
+    }
+    PAGE_CODE = entrustRec.code;
+    var detailSample = entrustRec.samples[0];   // 兼容旧引用
 
-    function renderDetectSampleFields() {
-      var host = document.getElementById('detectSampleFields');
-      if (!host) return;
-      var st = window.SampleDataStore, d = detailSample;
-      var markOn = false, mark = '', modelText = '/';
-      if (st) {
-        markOn = st.isMarkEnabled(d.leafId);
-        mark = st.markOf(d.leafId, d.modelCode, []);
-        var sample = st.getSample(d.leafId);
-        var models = st.modelsOf(sample);
-        if (models.length) {
-          var m = st.modelOf(sample, d.modelCode) || models[0];
-          modelText = m.code + (m.name ? '-' + m.name : '');
-        }
-      }
-      var fields = [['样品名称', d.name], ['样品别名', d.alias]];
-      if (markOn) fields.push(['产品标记', mark || '未配置规则']);
-      fields = fields.concat([
-        ['型号/分类', modelText], ['规格', d.spec || '/'],
-        ['样品数量', d.qty], ['样品单位', d.unit], ['是否制样', d.needPrep],
-        ['生产厂家', d.factory], ['生产厂家地址', d.factoryAddr],
-        ['制造商', d.manufacturer], ['制造商地址', d.manufacturerAddr],
-        ['备注信息', d.remark]
-      ]);
+    function di(id) { return document.getElementById(id); }
+    function infoRows(pairs) {
       var html = '';
-      for (var i = 0; i < fields.length; i += 3) {
-        var chunk = fields.slice(i, i + 3);
-        html += '<tr>' + chunk.map(function (f, k) {
-          var span = (k === chunk.length - 1 && chunk.length < 3) ? ' colspan="' + (7 - chunk.length * 2) + '"' : '';
-          return '<td class="lbl">' + rcvEsc(f[0]) + '</td><td class="val"' + span + '>' + rcvEsc(f[1]) + '</td>';
+      for (var i = 0; i < pairs.length; i += 3) {
+        var chunk = pairs.slice(i, i + 3);
+        html += '<tr>' + chunk.map(function (f, k2) {
+          var span = (k2 === chunk.length - 1 && chunk.length < 3) ? ' colspan="' + (7 - chunk.length * 2) + '"' : '';
+          return '<td class="lbl">' + rcvEsc(f[0]) + '</td><td class="val"' + span + '>' + rcvEsc(f[1] == null ? '' : f[1]) + '</td>';
         }).join('') + '</tr>';
       }
-      host.innerHTML = html;
+      return html;
     }
-    document.addEventListener('DOMContentLoaded', renderDetectSampleFields);
-    if (document.readyState !== 'loading') renderDetectSampleFields();
 
+    function applyEntrustMock() {
+      var r = entrustRec, t = di('entrustInfoTable');
+      if (t) t.innerHTML = infoRows([
+        ['委托编号', r.code], ['任务类型', r.taskType], ['优先等级', r.priority],
+        ['检测类型', r.testType], ['检测类别', r.testCategory], ['委托单位', r.customer],
+        ['地址', r.addr], ['邮政编码', r.zip], ['联系人', r.contact],
+        ['联系方式', r.phone], ['签约地点', r.signPlace], ['检测中心', r.lab],
+        ['受理日期', r.acceptDate], ['客户要求完成日期', r.customerDate], ['要求检测完成天数', r.days],
+        ['要求检测完成时间', r.requireDate], ['编制人', r.editor]
+      ]);
+      var pay = di('payInfoTable');
+      if (pay) pay.innerHTML = infoRows([
+        ['样品检测总价(元)', r.totalPrice], ['实际费用(元)', r.actualFee], ['折扣率(%)', r.discount],
+        ['付款方式', r.payMethod], ['付款单位', r.payer], ['业务备注', r.feeRemark]
+      ]);
+    }
+
+    /** 检测信息：一个样品一张卡；型号/规格参数/试验项/产品标记能解析到主数据的都取样品数据 */
+    function renderDetectCards() {
+      var host = di('detectCards');
+      if (!host) return;
+      var st = window.SampleDataStore;
+      var fallbackTests = st ? ((st.getSample('rod') || {}).tests || []) : [];
+      host.innerHTML = entrustRec.samples.map(function (d, idx) {
+        var markOn = false, mark = '/', modelText = '/';
+        if (st && d.leafId) {
+          markOn = st.isMarkEnabled(d.leafId);
+          mark = st.markOf(d.leafId, d.modelCode, d.specValues || []) || '';
+          var sample = st.getSample(d.leafId), models = st.modelsOf(sample);
+          if (models.length) {
+            var m = st.modelOf(sample, d.modelCode) || models[0];
+            modelText = m.code + (m.name ? '-' + m.name : '');
+          }
+        }
+        var specText = d.spec || '';
+        if (!specText && window.SampleSpecUI && st) {
+          specText = SampleSpecUI.summary(st.getSample(d.leafId), d.modelCode, d.specValues || '');
+        }
+        var fields = [['样品名称', d.name], ['样品别名', d.alias || d.name]];
+        if (markOn) fields.push(['产品标记', mark || '未配置规则']);
+        fields = fields.concat([
+          ['型号/分类', modelText], ['规格', specText || '/'], ['样品数量', d.qty], ['样品单位', d.unit],
+          ['是否制样', d.needPrep], ['生产厂家', d.factory], ['生产厂家地址', d.factoryAddr],
+          ['制造商', d.manufacturer], ['制造商地址', d.manufacturerAddr], ['备注信息', d.remark]
+        ]);
+        var tests = (d.tests && d.tests.length) ? d.tests : fallbackTests;
+        var rows = tests.map(function (t2, n) {
+          var prep = d.needPrep === '是' ? '试样数量-' + (t2.qty || 1) : '无需制样';
+          var basis = '<a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> ' +
+            rcvEsc(t2.basis || '—') + '</a>';
+          return '<tr><td>' + (n + 1) + '</td><td>' + rcvEsc(t2.name) + '</td><td>' + prep + '</td>' +
+            '<td>' + basis + '</td><td>' + basis + '</td>' +
+            '<td class="text-xs text-slate-600">' + rcvEsc(t2.req || '按标准要求执行') + '</td>' +
+            '<td>暂无</td><td><span class="status-chip">未领样</span></td><td></td></tr>';
+        }).join('') || '<tr><td colspan="9" class="py-6 text-center text-slate-400">该样品暂无试验项</td></tr>';
+        return '<div class="detect-card overflow-x-auto"><div class="flex">' +
+          '<div class="detect-idx shrink-0">' + (idx + 1) + '</div>' +
+          '<div class="min-w-0 flex-1">' +
+            '<table class="info-table"' + (idx === 0 ? ' id="detectSampleFields" data-annotate="detect-sample-fields"' : '') + '>' +
+              infoRows(fields) + '</table>' +
+            '<div class="detect-subhead">试验信息</div>' +
+            '<div class="overflow-x-auto"><table class="data-table min-w-[1040px]"' +
+              (idx === 0 ? ' data-annotate="detect-prep-info"' : '') + '>' +
+              '<thead><tr><th>序号</th><th>名称</th><th>制样信息</th><th>检测依据</th><th>判定依据</th>' +
+              '<th>标准要求</th><th>负责人</th><th>状态</th><th>备注</th></tr></thead>' +
+              '<tbody>' + rows + '</tbody></table></div>' +
+          '</div></div></div>';
+      }).join('');
+    }
+
+    /** 把页面各处静态演示文案里的委托号/样品编号换成本单（文件表、日志、还样记录、导出条等） */
+    function reseedTokens() {
+      var r = entrustRec;
+      var map = [
+        ['SC2026/00730101', r.code.replace('/', '') + '0101'],
+        ['SC2026/00730101-01', r.code.replace('/', '') + '0101-01'],
+        ['SC2026-0111-01', r.dash + '-01'],
+        ['SC2026-0111', r.dash],
+        ['SC2026/0212', r.code],
+        ['SC2026/0073', r.code]
+      ];
+      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, null);
+      var nodes = [], n;
+      while ((n = walker.nextNode())) {
+        if (n.nodeValue && /SC2026/.test(n.nodeValue)) nodes.push(n);
+      }
+      nodes.forEach(function (node) {
+        var parent = node.parentNode;
+        if (!parent || /^(SCRIPT|STYLE|TEXTAREA)$/.test(parent.tagName)) return;
+        if (parent.closest && parent.closest('#pa-doc')) return;   // 需求文档正文里的示例编号不改
+        var v = node.nodeValue;
+        map.forEach(function (pair) { v = v.split(pair[0]).join(pair[1]); });
+        if (v !== node.nodeValue) node.nodeValue = v;
+      });
+    }
+
+    function applyEntrustView() {
+      applyEntrustMock();
+      renderDetectCards();
+      reseedTokens();
+    }
+    document.addEventListener('DOMContentLoaded', applyEntrustView);
+    if (document.readyState !== 'loading') applyEntrustView();
+    window.addEventListener('load', reseedTokens);   // 表格由脚本重绘后再扫一次编号
     function renderReceiveInfo() {
       var body = document.getElementById('receiveInfoBody');
       if (!body) return;
-      var code = new URLSearchParams(window.location.search).get('code') || 'SC2026/0073';
-      // 节点在样品收样之后的委托，收样信息必须有内容：缺记录时按本委托自己的样品补一条历史 mock
+      var code = PAGE_CODE;
+      // 节点在样品收样之后的委托，收样信息必须有内容：缺记录时按本委托自己的样品补历史 mock
       if (window.ReceiveHistory) {
         ReceiveHistory.ensure(code, {
-          accept: '2026-07-08',
-          samples: [{ name: detailSample.name, qty: detailSample.qty, unit: detailSample.unit,
-                      leafId: detailSample.leafId, spec: detailSample.spec, imgs: 1 }]
+          accept: entrustRec.acceptDate,
+          samples: entrustRec.samples.map(function (sm, i) {
+            return { name: sm.name, qty: sm.qty, unit: sm.unit, leafId: sm.leafId,
+                     modelCode: sm.modelCode, specs: sm.specValues, spec: sm.spec, imgs: i === 0 ? 2 : 1 };
+          })
         });
       }
       var recs = window.ReceiveStore ? ReceiveStore.recordsOf(code) : [];
@@ -1332,6 +1357,22 @@
           { id: 'task-sheet-auto', selector: '[data-annotate="task-sheet-auto"]', position: 'bottom-left', title: '生成时机', content: '不再在委托确认/样品发样生成。试样分发「发放」瞬间生成；下发人=分发操作人，下发日期=分发日。', tag: '任务单' },
           { id: 'task-sheet-preview', selector: '[data-annotate="task-sheet-preview"]', position: 'top-right', title: '单据内容范围', wide: true, content: '表格行仅展示该检测员被分发的试验项目。同一委托下同一检测员多次分发且任务单仍有效时合并进同一张（升主版本）。', tag: '任务单' },
           { id: 'task-sheet-sign', selector: '[data-annotate="task-sheet-sign"]', position: 'bottom-left', title: '签收留痕', wide: true, content: '落款：下发人/日期 + 接收人/日期。接收时写检测员电子签名与接收日期，并升系统主版本（节点=试验检测接收）。与流转单「接收试样」行回填并行，互不替代。', tag: '任务单' },
+          {
+            id: 'entrust-code-view',
+            selector: '[data-annotate="entrust-code-view"]',
+            position: 'bottom-right',
+            title: '整页随委托号切换（点哪单看哪单）',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>详情页必须按进来的委托号呈现该单数据，不能所有委托都看到同一张单。' +
+            '各列表页（委托预览 / 样品收样 / 委托确认 / 数据审核 / 组内审核 / 样品制备 / 样品发样 / 试样分发 / 试验检测 / 退样 / 标签打印 / 合同详情）的「委托编号」链接统一带 <code>?code=</code>，详情页据此渲染合同、委托、付款、检测信息与收样信息。' +
+            '数据源单一化在 <code>js/entrust-mock.js</code>：60 个委托号取自各列表页现有 mock 的并集（委托单位 / 样品 / 受理日期 / 客户要求完成日期 / 编制人 / 业务员 / 任务状态），列表没给出样品名的编号按编号稳定轮转推导，同一单每次刷新结果一致。<br>' +
+            '<strong>展示规则：</strong>委托编号、任务类型、优先等级、检测类型、检测类别、委托单位、地址、邮政编码、联系人、联系方式、签约地点、检测中心、受理日期、客户要求完成日期、要求检测完成天数、要求检测完成时间、编制人，以及付款信息的三项金额与付款单位，全部取自该委托记录；' +
+            '「检测信息」按样品逐张卡片（一张卡 = 一个样品），卡内为样品字段表 + 试验信息表，试验项、检测依据、标准要求取「样品数据」里该型号的配置；' +
+            '页面其余位置的委托编号 / 样品编号 / 文件名（委托单、检测任务单、报告、原始记录、还样退库确认表、流转单、批量导出条、台账与系统日志）统一替换为本单编号。' +
+            '默认委托 SC2026/0073 的取值锁定为既有演示口径（受理 2026-07-08、要求完成 2026-08-01、天数 2、检测类别 委托检测、规格 300），不受推导规则影响。<br>' +
+            '<strong>交互逻辑：</strong>改地址栏 <code>?code=</code> 即切单；无参数时用默认编号；编号不在 60 条清单内时按推导规则生成一单稳定数据；不带参数的历史入口（页面标签里的「委托详情」）仍打开默认单。',
+              tag: '数据一致'
+          },
           {
             id: 'receive-info',
             selector: '[data-annotate="receive-info"]',

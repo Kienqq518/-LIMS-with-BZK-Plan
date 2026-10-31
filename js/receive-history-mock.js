@@ -140,14 +140,22 @@
     var RS = global.ReceiveStore;
     if (!RS || !code) return 0;
     RS.seedDemo(PARTIAL_RECEIVED);                             // 先补「部分已收样」种子（幂等）
-    if (PENDING_RECEIVE.indexOf(code) >= 0) return 0;          // 还停在收样节点：只可能有部分收样
+    // 节点判定优先看流程阶段（EntrustMock + FlowStages），拿不到时退回样品收样页名单
+    var past = (global.EntrustMock && global.EntrustMock.isPastReceive)
+      ? global.EntrustMock.isPastReceive(code)
+      : PENDING_RECEIVE.indexOf(code) < 0;
+    if (!past) return 0;                                       // 尚未过收样节点：只可能有部分收样
     if (RS.recordsOf(code).length) return 0;                   // 已有记录（手工收过或已播种）
     var ent = ENTRUSTS[code];
     var accept, samples;
     if (ent) {
       accept = ent.accept; samples = ent.samples;
     } else {
-      samples = (fallback && (fallback.samples || fallback)) || [];
+      samples = ((fallback && (fallback.samples || fallback)) || []).map(function (s) {
+        // 兼容两种写法：mock 里用 specs 存规格取值，收样记录字段名是 specValues
+        if (s && s.specs && !s.specValues) { s.specValues = s.specs; }
+        return s;
+      });
       if (!samples.length) return 0;
       accept = (fallback && fallback.accept) || '2026-07-08';
     }
