@@ -779,7 +779,8 @@
         var chunk = pairs.slice(i, i + 3);
         html += '<tr>' + chunk.map(function (f, k2) {
           var span = (k2 === chunk.length - 1 && chunk.length < 3) ? ' colspan="' + (7 - chunk.length * 2) + '"' : '';
-          return '<td class="lbl">' + rcvEsc(f[0]) + '</td><td class="val"' + span + '>' + rcvEsc(f[1] == null ? '' : f[1]) + '</td>';
+          var v = (f[1] == null || f[1] === '') ? '/' : f[1];   // 空值统一显示「/」，与合同信息区一致
+          return '<td class="lbl">' + rcvEsc(f[0]) + '</td><td class="val"' + span + '>' + rcvEsc(v) + '</td>';
         }).join('') + '</tr>';
       }
       return html;
