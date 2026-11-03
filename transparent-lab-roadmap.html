@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>透明实验室 · 迭代路线与阶段规划方案</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+/* ============ 设计变量：沿用产品战略 deck 的蓝/米配色，保证品牌统一 ============ */
+:root{
+  --cream:#F2F0E8;--cream-soft:#EBE8DF;--cream-card:#FAF8F2;
+  --stage-bg:#E5E2D8;
+  --ink:#4A4A4A;--ink2:#2C2C2C;
+  --muted:#6B7280;--muted2:#9CA3AF;
+  --line:#D8D4C8;--line2:#C5C0B4;
+  --blue:#1A365D;--blue-slate:#4A6B8C;--blue-bright:#0047AB;
+  --blue-pale:#E4EBF2;--blue-border:#B8C5D4;--blue-deep:#0F2440;
+  --red:#8B3030;--red-bg:#F0E8E8;--red-line:#D4A8A8;
+  --amber:#7A5C1A;--amber-bg:#F0EBDF;--amber-line:#D4C4A0;
+  --green:#2F6B4F;--green-bg:#E4EEE7;--green-line:#A8C9B6;
+  --maxw:1180px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-snap-type:y proximity}
+body{font-family:'Noto Sans SC',sans-serif;-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--stage-bg)}
+
+/* ============ 滚动进度条 ============ */
+#progress{position:fixed;left:0;top:0;height:4px;width:0;background:var(--blue-bright);z-index:1001;transition:width .1s linear}
+
+/* ============ 右侧圆点导航 ============ */
+#dots{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:1000;display:flex;flex-direction:column;gap:11px}
+#dots a{width:11px;height:11px;border-radius:50%;background:rgba(26,54,93,.22);border:1px solid rgba(26,54,93,.35);transition:all .25s;position:relative}
+#dots a:hover{background:var(--blue-slate);transform:scale(1.25)}
+#dots a.active{background:var(--blue);transform:scale(1.35)}
+#dots a .lbl{position:absolute;right:20px;top:50%;transform:translateY(-50%);white-space:nowrap;background:var(--blue);color:#fff;font-size:12px;font-weight:600;padding:3px 9px;border-radius:5px;opacity:0;pointer-events:none;transition:opacity .2s}
+#dots a:hover .lbl{opacity:1}
+@media(max-width:920px){#dots{display:none}}
+
+/* ============ slide 通用：整屏、可纵向滚动兜底、滚动吸附 ============ */
+.slide{min-height:100vh;width:100%;scroll-snap-align:start;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:64px 40px 72px;position:relative;background:var(--cream)}
+.slide:nth-child(even){background:var(--cream-soft)}
+.slide.dark-slide{background:var(--blue)}
+.wrap{width:100%;max-width:var(--maxw);margin:0 auto}
+
+/* 章节头 */
+.kicker{font-size:13px;font-weight:800;letter-spacing:.16em;color:var(--blue-slate);text-transform:uppercase;margin-bottom:10px}
+.kicker::before{content:"— "}
+.s-title{font-size:38px;font-weight:900;color:var(--blue);line-height:1.16;margin-bottom:8px}
+.s-sub{font-size:17px;color:var(--muted);font-weight:500;line-height:1.5;margin-bottom:26px;max-width:860px}
+.dark-slide .kicker{color:#9DB6D0}.dark-slide .s-title{color:#fff}.dark-slide .s-sub{color:#C6D3E2}
+
+/* 卡片 / 栅格 */
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:820px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.card{background:var(--cream-card);border:1px solid var(--blue-border);border-radius:10px;padding:20px 22px}
+.card h3{font-size:18px;font-weight:800;color:var(--blue);margin-bottom:9px;display:flex;align-items:center;gap:9px}
+.card p,.card li{font-size:15.5px;line-height:1.6;color:var(--ink)}
+.card.soft{background:var(--cream-soft)}
+.card.blue{background:var(--blue);border-color:var(--blue)}
+.card.blue h3,.card.blue p,.card.blue li{color:#fff}
+.card.slate{background:var(--blue-slate);border-color:var(--blue-slate)}
+.card.slate h3,.card.slate p,.card.slate li{color:#fff}
+.card.accent{border-left:4px solid var(--blue-bright)}
+.num-badge{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:var(--blue);color:#fff;font-size:16px;font-weight:900;flex-shrink:0}
+
+/* 列表 */
+ul.clean{list-style:none;display:flex;flex-direction:column;gap:7px}
+ul.clean li{position:relative;padding-left:20px;font-size:15.5px;line-height:1.55;color:var(--ink)}
+ul.clean li::before{content:"";position:absolute;left:0;top:9px;width:7px;height:7px;border-radius:50%;background:var(--blue-bright)}
+.card.blue ul.clean li::before,.card.slate ul.clean li::before{background:#9DB6D0}
+.card.blue ul.clean li,.card.slate ul.clean li{color:#EAF0F6}
+
+/* callout / 强调 */
+.callout{padding:16px 20px;border:1px solid var(--blue-border);border-radius:10px;background:var(--blue-pale)}
+.callout .lbl{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:6px}
+.callout p{font-size:16.5px;line-height:1.55;font-weight:600;color:var(--ink2)}
+.callout.solid{background:var(--blue-bright);border-color:var(--blue-bright)}
+.callout.solid .lbl,.callout.solid p{color:#fff}
+.callout.warn{background:var(--amber-bg);border-color:var(--amber-line)}.callout.warn .lbl{color:var(--amber)}
+.callout.green{background:var(--green-bg);border-color:var(--green-line)}.callout.green .lbl{color:var(--green)}
+.b{font-weight:800;color:var(--ink2)}
+.hl{background:linear-gradient(180deg,transparent 58%,#C8D4E0 58%);font-weight:700;padding:0 2px}
+.hl-a{background:linear-gradient(180deg,transparent 58%,#E0D4B8 58%);font-weight:700;padding:0 2px}
+
+/* 表格 */
+.tbl-wrap{border:1px solid var(--blue-border);border-radius:10px;overflow:hidden}
+table.t{width:100%;border-collapse:collapse;font-size:14px;background:var(--cream-card)}
+table.t th{background:var(--blue);color:#fff;font-weight:700;padding:10px 12px;text-align:left;font-size:13.5px}
+table.t td{padding:9px 12px;border-bottom:1px solid var(--line);color:var(--ink);vertical-align:top;line-height:1.5}
+table.t tr:last-child td{border-bottom:none}
+table.t tr:nth-child(even) td{background:var(--cream-soft)}
+.ok{color:var(--green);font-weight:800}.no{color:var(--red);font-weight:800}.wait{color:var(--amber);font-weight:800}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:800;line-height:1.6}
+.pill-l1{background:#1A365D;color:#fff}.pill-l2{background:#3A5C82;color:#fff}
+.pill-l3{background:#2F6B4F;color:#fff}.pill-l4{background:#7A5C1A;color:#fff}
+
+/* 统计块 */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:820px){.stats{grid-template-columns:1fr 1fr}}
+.stat{border:1px solid var(--blue-border);border-radius:10px;padding:18px;background:var(--cream-card);text-align:center}
+.stat .v{font-size:34px;font-weight:900;color:var(--blue);line-height:1.05}
+.stat .k{font-size:14px;color:var(--muted);font-weight:600;margin-top:7px;line-height:1.4}
+
+/* 封面 */
+.cover{justify-content:center;text-align:center;background:var(--blue)!important;overflow:hidden}
+.cover::before{content:"";position:absolute;width:620px;height:620px;border:2px dashed rgba(255,255,255,.16);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%)}
+.cover::after{content:"";position:absolute;width:420px;height:420px;border:1px solid rgba(255,255,255,.12);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%)}
+.cover .inner{position:relative;z-index:2;max-width:900px}
+.cover .eyebrow{font-size:16px;letter-spacing:.2em;color:#9DB6D0;font-weight:700;text-transform:uppercase;margin-bottom:22px}
+.cover h1{font-size:60px;font-weight:900;color:#fff;line-height:1.14;letter-spacing:.01em}
+.cover .lede{font-size:20px;color:#C6D3E2;margin-top:22px;line-height:1.6}
+.cover .tags{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.cover .tags span{border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:7px 18px;font-size:14px;color:#DCE6F0;font-weight:600}
+.cover .meta{margin-top:44px;color:#8FA6BF;font-size:15px;font-weight:500}
+.scroll-hint{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);z-index:3;color:#9DB6D0;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:6px}
+.scroll-hint .mouse{width:24px;height:38px;border:2px solid #9DB6D0;border-radius:14px;position:relative}
+.scroll-hint .mouse::after{content:"";position:absolute;left:50%;top:7px;transform:translateX(-50%);width:4px;height:8px;border-radius:2px;background:#9DB6D0;animation:sMove 1.5s infinite}
+@keyframes sMove{0%{opacity:0;top:6px}30%{opacity:1}60%{opacity:1}100%{opacity:0;top:18px}}
+
+/* 章节分隔页 */
+.divider{background:var(--blue-deep)!important;text-align:center}
+.divider .idx{font-size:20px;font-weight:800;color:#7E9BBB;letter-spacing:.2em;margin-bottom:16px}
+.divider h2{font-size:52px;font-weight:900;color:#fff;line-height:1.18}
+.divider p{font-size:19px;color:#B8C9DC;margin-top:18px;max-width:760px;line-height:1.6}
+
+/* 页脚品牌 */
+.foot{position:absolute;left:40px;right:40px;bottom:24px;display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted2);font-weight:600}
+.foot .brand{color:var(--blue-slate);letter-spacing:.08em;text-transform:uppercase}
+.dark-slide .foot .brand,.divider .foot .brand,.cover .foot .brand{color:#7E9BBB}
+.dark-slide .foot,.divider .foot,.cover .foot{color:#6E86A0}
+
+/* 时间轴（路线总览） */
+.timeline{display:flex;flex-direction:column;gap:0;position:relative;margin-top:8px}
+.tl-item{display:grid;grid-template-columns:120px 1fr;gap:22px;position:relative;padding-bottom:22px}
+.tl-item:last-child{padding-bottom:0}
+.tl-left{text-align:right;padding-top:2px}
+.tl-left .ph{font-size:24px;font-weight:900;color:var(--blue)}
+.tl-left .lv{font-size:12.5px;font-weight:700;color:var(--blue-bright);margin-top:3px}
+.tl-mid{position:relative}
+.tl-dot{position:absolute;left:-19px;top:6px;width:15px;height:15px;border-radius:50%;background:var(--blue);border:3px solid var(--cream);box-shadow:0 0 0 2px var(--blue)}
+.tl-line{position:absolute;left:-12.5px;top:22px;bottom:-22px;width:2px;background:var(--blue-border)}
+.tl-item:last-child .tl-line{display:none}
+.tl-right{border:1px solid var(--blue-border);border-radius:10px;background:var(--cream-card);padding:14px 18px}
+.tl-right h4{font-size:17px;font-weight:800;color:var(--blue);margin-bottom:5px}
+.tl-right p{font-size:14.5px;line-height:1.55;color:var(--ink)}
+@media(max-width:820px){.tl-item{grid-template-columns:74px 1fr;gap:16px}.tl-dot,.tl-line{display:none}}
+
+/* 阶段详情页头部条 */
+.phase-head{display:flex;align-items:center;gap:18px;margin-bottom:22px;flex-wrap:wrap}
+.phase-tag{font-size:40px;font-weight:900;color:#fff;background:var(--blue);border-radius:12px;padding:6px 20px;line-height:1.1}
+.phase-title{font-size:30px;font-weight:900;color:var(--blue);line-height:1.15}
+.phase-goal{font-size:16px;color:var(--muted);font-weight:600;margin-top:3px}
+.unlock{margin-left:auto;text-align:center;border:1px dashed var(--blue-border);border-radius:10px;padding:8px 16px;background:var(--blue-pale)}
+.unlock .u-lbl{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--blue-slate);text-transform:uppercase}
+.unlock .u-val{font-size:18px;font-weight:900;color:var(--blue);margin-top:2px}
+
+/* 维度网格 */
+.dim-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:820px){.dim-grid{grid-template-columns:1fr 1fr}}
+.dim{border:1px solid var(--blue-border);border-radius:10px;background:var(--cream-card);padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.dim .d-t{font-size:17px;font-weight:900;color:var(--blue)}
+.dim .d-d{font-size:13.5px;line-height:1.5;color:var(--ink)}
+.dim.core{background:var(--blue);border-color:var(--blue)}
+.dim.core .d-t{color:#fff}.dim.core .d-d{color:#D6E1EE}
+
+.print-tip{position:fixed;right:22px;bottom:22px;z-index:1000;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+.print-tip:hover{background:var(--blue-deep)}
+
+@media print{
+  html{scroll-snap-type:none}
+  .slide{min-height:auto;page-break-after:always;padding:40px}
+  #progress,#dots,.scroll-hint,.print-tip{display:none!important}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<nav id="dots"></nav>
+<button class="print-tip" onclick="window.print()">打印 / 导出 PDF</button>
+
+<!-- ============ 00 封面 ============ -->
+<section class="slide cover" data-nav="封面">
+  <div class="inner">
+    <div class="eyebrow">数蚕智能 · 透明检测产品线</div>
+    <h1>透明实验室<br>迭代路线与阶段规划方案</h1>
+    <div class="lede">把检测「黑箱」变「玻璃房」 · 一报一码，检测即所见<br>基于企业标准 Q/YM 006—2026 的透明度分级与数据防篡改能力建设</div>
+    <div class="tags">
+      <span>透明检测理念</span><span>四级透明度模型</span><span>八大维度</span>
+      <span>组态物联 + 数采</span><span>P0–P4 分期落地</span>
+    </div>
+    <div class="meta">向管理层汇报 · 应敏科技（杭州） · 2026 年 8 月</div>
+  </div>
+  <div class="scroll-hint"><div class="mouse"></div><span>向下滑动浏览</span></div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span></span></div>
+</section>
+
+<!-- ============ 01 汇报导览 ============ -->
+<section class="slide" data-nav="汇报导览">
+  <div class="wrap">
+    <div class="kicker">Agenda</div>
+    <h2 class="s-title">本次汇报的三条主线</h2>
+    <div class="s-sub">先讲清"为什么做（理念与标准）"，再讲清"做成什么样（透明实验室整体方案）"，最后讲清"怎么一步步做（迭代路线与每阶段开发目标）"。</div>
+    <div class="grid g3">
+      <div class="card accent">
+        <h3><span class="num-badge">1</span>理念与标准</h3>
+        <ul class="clean">
+          <li>透明检测理念：从结果交付到过程交付</li>
+          <li>企业标准 Q/YM 006—2026 四级模型</li>
+          <li>八大维度与"双核心"评级逻辑</li>
+        </ul>
+      </div>
+      <div class="card accent">
+        <h3><span class="num-badge">2</span>整体方案</h3>
+        <ul class="clean">
+          <li>技术底座：组态物联终端 + 数采 + LIMS</li>
+          <li>五大骨架构件 + 维度可插拔架构</li>
+          <li>分级公开矩阵与数据防篡改能力</li>
+        </ul>
+      </div>
+      <div class="card accent">
+        <h3><span class="num-badge">3</span>迭代路线</h3>
+        <ul class="clean">
+          <li>能力现状盘点与四级可达性评估</li>
+          <li>P0–P4 五阶段路线总览</li>
+          <li>每阶段开发目标、交付物、解锁等级</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout solid" style="margin-top:20px">
+      <div class="lbl">核心策略</div>
+      <p>框架先搭、能力分期补齐——骨架一次搭稳，八大维度做成"可插拔适配器"，透明度等级随实验室能力逐级解锁。现网数据即可先出具三级 / 四级报告，一级 / 二级预留占位、能力就绪后开锁。</p>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>01</span></div>
+</section>
+
+<!-- ============ 02 章节分隔：理念与标准 ============ -->
+<section class="slide divider dark-slide" data-nav="第一部分">
+  <div class="wrap">
+    <div class="idx">PART 01</div>
+    <h2>理念与标准<br>为什么要做透明实验室</h2>
+    <p>透明检测把检测过程从"交付一纸结论"升级为"交付可核验的全过程"，用一份企业标准，把"透明度"变成可评级、可承诺、可招投标的核心竞争力。</p>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>02</span></div>
+</section>
+
+<!-- ============ 03 透明检测理念 ============ -->
+<section class="slide" data-nav="透明检测理念">
+  <div class="wrap">
+    <div class="kicker">Concept · 透明检测理念</div>
+    <h2 class="s-title">把检测"黑箱"变"玻璃房"</h2>
+    <div class="s-sub">核心理念：从「结果交付」升级为「过程交付」，实现「检测即所见」。"一报一码"是实验室诚信与能力的数字身份证——扫码即可远程审计本次检测的全要素。</div>
+    <div class="grid g3">
+      <div class="card">
+        <h3>对客户</h3>
+        <ul class="clean">
+          <li>扫码远程审计，检测过程可视</li>
+          <li>降低采信风险，结论有据可溯</li>
+          <li>不必到场，随时回看关键节点</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>对实验室</h3>
+        <ul class="clean">
+          <li>招投标差异化，不再单拼价格</li>
+          <li>透明度=能力等级，可对外承诺</li>
+          <li>面向国央企 / 电网等高端市场</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>对行业</h3>
+        <ul class="clean">
+          <li>从"人防 / 制度防"转向"技防 / 物联防"</li>
+          <li>物联数据自动上报，天然防篡改</li>
+          <li>重塑检测公信力评价体系</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:20px">
+      <div class="lbl">一句话</div>
+      <p>透明检测卖的不再只是"结论"，而是"看得见、可核验、改不了"的<span class="hl">过程信任</span>。这正是我们区别于传统 LIMS 的护城河。</p>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>03</span></div>
+</section>
+
+<!-- ============ 04 企业标准 + 四级模型 ============ -->
+<section class="slide" data-nav="四级透明度模型">
+  <div class="wrap">
+    <div class="kicker">Standard · Q/YM 006—2026</div>
+    <h2 class="s-title">四级透明度模型与"双核心"评级</h2>
+    <div class="s-sub">依据《检测报告透明度等级评价规范》，以「① 二维码信息公开完整度 + ② 数据流转自动化程度」为双核心，由高到低分四级；报告等级 = 实验室对应的透明运行与数据防篡改能力等级。</div>
+    <div class="grid g4">
+      <div class="card blue">
+        <h3><span class="pill" style="background:#fff;color:#1A365D">一级</span>全要素</h3>
+        <p>八维度 100% + 全程连续视频 + 实时监控；全链路自动闭环、人员不可篡改。</p>
+      </div>
+      <div class="card slate">
+        <h3><span class="pill" style="background:#fff;color:#3A5C82">二级</span>可视化</h3>
+        <p>八维度完整 + 关键节点视频；高度自动化，仅少量人工复核。</p>
+      </div>
+      <div class="card">
+        <h3><span class="pill pill-l3">三级</span>可追溯</h3>
+        <p>八维度核心信息 + 2–5 张关键照片，无视频；数据修改全程留痕。</p>
+      </div>
+      <div class="card">
+        <h3><span class="pill pill-l4">四级</span>可公示</h3>
+        <p>最低合规信息，无任何影像；人工录入为主，简单存储。</p>
+      </div>
+    </div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="callout warn">
+        <div class="lbl">关键规则 · 等级前置选定</div>
+        <p>检测前按客户需求选定本次报告等级，选定后必须严格执行，<span class="b">严禁降级出具</span>；报告一码终身绑定、不可复用、不可篡改。</p>
+      </div>
+      <div class="callout">
+        <div class="lbl">产品策略</div>
+        <p>一 / 二级为核心竞争力（国央企 / 电网 / 招投标）；三级面向普通市场化业务；四级仅内部整改，不外推。</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>04</span></div>
+</section>
+
+<!-- ============ 05 八大维度 ============ -->
+<section class="slide" data-nav="八大维度">
+  <div class="wrap">
+    <div class="kicker">Eight Dimensions · 八大维度</div>
+    <h2 class="s-title">扫码可见的八个维度</h2>
+    <div class="s-sub">在传统"人机料法环 + 试验流程 + 过程影像"基础上，标准新增了核心维度——「数据流转」：人员干预越少、自动流转越高、篡改概率越低，等级越高。</div>
+    <div class="dim-grid">
+      <div class="dim"><div class="d-t">人</div><div class="d-d">姓名、资质证书、操作授权、培训考核；且不接触原始数据</div></div>
+      <div class="dim"><div class="d-t">机</div><div class="d-d">设备编号、校准证书、维护记录、实时运行参数曲线</div></div>
+      <div class="dim"><div class="d-t">料</div><div class="d-d">样品来源、编号、全流程自动流转、耗材合格证明 / 批次</div></div>
+      <div class="dim"><div class="d-t">法</div><div class="d-d">执行标准全文、作业指导书、算法固化自动计算</div></div>
+      <div class="dim"><div class="d-t">环</div><div class="d-d">全过程温湿度曲线、环境布局、安全环保、自动上传</div></div>
+      <div class="dim"><div class="d-t">试验流程</div><div class="d-d">委托—收样—制样—检测—复核—报告全节点时间 / 责任人留痕</div></div>
+      <div class="dim"><div class="d-t">过程影像</div><div class="d-d">关键节点照片 / 关键环节视频 / 全程连续视频 / 实时监控</div></div>
+      <div class="dim core"><div class="d-t">数据流转 ★</div><div class="d-d">采集→传输→存储→计算→复核→生成全自动，人员不可篡改、全程留痕</div></div>
+    </div>
+    <div class="callout green" style="margin-top:18px">
+      <div class="lbl">诚实降级原则</div>
+      <p>缺失维度一律显式标注「暂未采集」或「该等级不公开」，<span class="b">绝不用占位数据充数</span>——透明的前提是真实。</p>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>05</span></div>
+</section>
+
+<!-- ============ 06 章节分隔：整体方案 ============ -->
+<section class="slide divider dark-slide" data-nav="第二部分">
+  <div class="wrap">
+    <div class="idx">PART 02</div>
+    <h2>整体方案<br>透明实验室长什么样</h2>
+    <p>一套稳定的技术底座 + 五大骨架构件 + 可插拔的维度适配器，让"报告级溯源二维码"承载八维度信息，并按透明度等级分级公开。</p>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>06</span></div>
+</section>
+
+<!-- ============ 07 技术底座 ============ -->
+<section class="slide" data-nav="技术底座">
+  <div class="wrap">
+    <div class="kicker">Foundation · 技术底座</div>
+    <h2 class="s-title">四方协同的物联采集底座</h2>
+    <div class="s-sub">透明度的物理基础，是「组态物联终端 + 数采系统 + 上位机 + LIMS」的协同：物联数据自动上报、减少人工干预、天然防篡改。LIMS 不直连硬件，而是经数采系统中转。</div>
+    <div class="grid g4">
+      <div class="card"><h3>组态物联终端</h3><p>公司另一款产品，温湿度 / 视觉 / 水浸等物联节点，负责现场环境与影像的原始采集。</p></div>
+      <div class="card"><h3>数采系统</h3><p>绑定设备与试验项，中转采集任务与数据回传，是 LIMS 与物联终端之间的桥梁。</p></div>
+      <div class="card"><h3>上位机</h3><p>拉取试验任务、做物模型绑定（点选具体节点）、控制试验开始 / 结束。</p></div>
+      <div class="card blue"><h3>LIMS（本系统）</h3><p>下发采集任务、消费数采回传，归一化为维度快照，出具透明报告。</p></div>
+    </div>
+    <div class="tbl-wrap" style="margin-top:16px">
+      <table class="t">
+        <tr><th style="width:130px">采集能力</th><th style="width:90px">现状</th><th>说明与规划</th></tr>
+        <tr><td>温湿度（单点/均值）</td><td class="ok">已打通</td><td>LIMS 下发任务→数采→组态物联终端温湿度节点→回传，无在线数据可手输兜底，第一阶段即可用于"环"维度</td></tr>
+        <tr><td>连续型温湿度曲线</td><td class="wait">规划中</td><td>数采能力就绪，作为 P1 硬目标；快照存连续曲线、公开页展示曲线</td></tr>
+        <tr><td>视频节点采集</td><td class="wait">硬件将就绪</td><td>视觉节点硬件即将到位；设计时同步纳入，先预留数据结构与公开位</td></tr>
+        <tr><td>设备运行参数自动采集</td><td class="no">待建设</td><td>现为人工录入，二 / 一级需求，经数采对接组态物联终端</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>07</span></div>
+</section>
+
+<!-- ============ 08 五大骨架构件 ============ -->
+<section class="slide" data-nav="架构骨架">
+  <div class="wrap">
+    <div class="kicker">Architecture · 架构骨架</div>
+    <h2 class="s-title">五个骨架构件：一次搭好、后续不动</h2>
+    <div class="s-sub">聚合器与公开引擎都面向"维度契约"而非具体模块。新增或补强某维度时，只实现该维度适配器，骨架与公开页零改动——这就是"后续慢慢加模块"的技术保障。</div>
+    <div class="grid g2">
+      <div class="card accent"><h3><span class="num-badge">1</span>报告透明度等级配置</h3><p>检测前为本次报告选定 level（1–4），受"能力门禁"约束，当前仅放行三 / 四级。</p></div>
+      <div class="card accent"><h3><span class="num-badge">2</span>维度采集适配器接口</h3><p>每维度统一契约 <code>collect(ctx)→DimensionSnapshot</code>；缺失能力返回 <code>not_collected</code>。</p></div>
+      <div class="card accent"><h3><span class="num-badge">3</span>八维度信息聚合器</h3><p>调用各适配器，产出本次报告的全量维度快照 + 采集状态。</p></div>
+      <div class="card accent"><h3><span class="num-badge">4</span>分级公开引擎</h3><p>以"等级 × 维度公开矩阵"过滤快照，只吐出该等级应公开的字段。</p></div>
+      <div class="card accent"><h3><span class="num-badge">5</span>报告码 + 公开页 + 存证</h3><p>签发生成唯一码、冻结快照、写防篡改存证；扫码走公网只读公开页。</p></div>
+      <div class="card blue"><h3>设计原则</h3><ul class="clean"><li>骨架稳定 · 一次搭好不随维度增减而变</li><li>维度可插拔 · 每维度一个采集适配器</li><li>等级按能力解锁 · 缺失降级为占位</li></ul></div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>08</span></div>
+</section>
+
+<!-- ============ 09 数据流路径 ============ -->
+<section class="slide" data-nav="数据流路径">
+  <div class="wrap">
+    <div class="kicker">Data Flow · 溯源链路</div>
+    <h2 class="s-title">从"选定等级"到"扫码核验"的全链路</h2>
+    <div class="s-sub">报告级溯源二维码复用现网"合格证短链"基建（QR→/l/{code}→302→公开 H5），仅新增报告码命名空间与公开页，最小改动、快速落地。</div>
+    <div class="grid g2">
+      <div class="card soft">
+        <h3>链路六步</h3>
+        <ul class="clean">
+          <li><span class="b">① 检测前</span>：为本次报告选定透明度等级（受能力门禁约束）</li>
+          <li><span class="b">② 采集</span>：各模块经适配器暴露维度数据（按试验项下发采集任务）</li>
+          <li><span class="b">③ 聚合</span>：八维度聚合器归集为报告快照</li>
+          <li><span class="b">④ 签发</span>：生成唯一报告码、冻结快照、写存证（哈希 / 时间戳）</li>
+          <li><span class="b">⑤ 印刷</span>：报告首页显著位置印刷溯源二维码</li>
+          <li><span class="b">⑥ 核验</span>：委托方 / 监管扫码，分级公开引擎按等级展示八维度</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>与"合格证短链"的边界</h3>
+        <div class="tbl-wrap">
+          <table class="t xs">
+            <tr><th>维度</th><th>合格证短链</th><th>报告溯源码</th></tr>
+            <tr><td>绑定对象</td><td>单个样品</td><td>整份报告</td></tr>
+            <tr><td>载体</td><td>合格证 / 标签</td><td>报告首页</td></tr>
+            <tr><td>扫码内容</td><td>合格与否、再检期</td><td>八维度分级公开</td></tr>
+            <tr><td>状态</td><td>回退即作废</td><td>永久可查、按业务动作变更</td></tr>
+          </table>
+        </div>
+        <p style="margin-top:10px;font-size:14px;color:var(--muted)">两条溯源线平行、不混用；报告码建议用 <code>R</code> 段前缀区分。</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>09</span></div>
+</section>
+
+<!-- ============ 10 分级公开矩阵 ============ -->
+<section class="slide" data-nav="分级公开矩阵">
+  <div class="wrap">
+    <div class="kicker">Grading Matrix · 分级公开矩阵</div>
+    <h2 class="s-title">等级 × 维度 → 系统字段公开矩阵</h2>
+    <div class="s-sub">「✅」= 现网数据可直接支撑；「(需模块)」= 依赖尚未建设的能力模块；「—」= 该等级不公开。此表印证：三 / 四级可先落地。</div>
+    <div class="tbl-wrap">
+      <table class="t xs">
+        <tr>
+          <th style="width:80px">维度</th>
+          <th><span class="pill pill-l4">四级·可公示</span></th>
+          <th><span class="pill pill-l3">三级·可追溯</span></th>
+          <th><span class="pill pill-l2">二级·可视化</span></th>
+          <th><span class="pill pill-l1">一级·全要素</span></th>
+        </tr>
+        <tr><td>人</td><td>操作人员姓名</td><td>姓名、资质编号 <span class="wait">(资质)</span></td><td>+ 有效资质、操作授权 <span class="wait">(资质)</span></td><td>+ 资质证书、培训考核 <span class="wait">(资质)</span></td></tr>
+        <tr><td>机</td><td>编号 + 合格</td><td>编号、有效校准证书 <span class="ok">✅</span></td><td>+ 维护、关键运行数据 <span class="wait">(采集)</span></td><td>+ 实时参数曲线 <span class="wait">(采集)</span></td></tr>
+        <tr><td>料</td><td>样品编号 <span class="ok">✅</span></td><td>+ 关键流转节点 <span class="ok">✅</span></td><td>+ 耗材合格证明 <span class="wait">(耗材)</span></td><td>全流程自动流转、批次 <span class="wait">(耗材)</span></td></tr>
+        <tr><td>法</td><td>执行标准名称 <span class="ok">✅</span></td><td>+ 原始数据摘要 <span class="ok">✅</span></td><td>+ 作业流程、记录摘要</td><td>标准全文、算法固化 <span class="wait">(SOP)</span></td></tr>
+        <tr><td>环</td><td>—</td><td>平均温湿度 <span class="ok">✅ 已采集</span></td><td>温湿度汇总 <span class="wait">(环境)</span></td><td>全程曲线、布局 <span class="wait">(环境)</span></td></tr>
+        <tr><td>试验流程</td><td>起止时间 <span class="ok">✅</span></td><td>三节点 <span class="ok">✅</span></td><td>全节点+责任人 <span class="ok">✅</span></td><td>全节点自动留痕 <span class="ok">✅</span></td></tr>
+        <tr><td>过程影像</td><td>—</td><td>2–5 张关键照片 <span class="wait">(照片)</span></td><td>关键节点视频 <span class="wait">(视频)</span></td><td>全程视频+实时监控 <span class="wait">(监控)</span></td></tr>
+        <tr><td>数据流转</td><td>人工、简单存储 <span class="ok">✅</span></td><td>半自动、修改留痕 <span class="ok">✅</span></td><td>大部分自动 <span class="wait">(采集+存证)</span></td><td>全链路无人化 <span class="wait">(采集+存证)</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>10</span></div>
+</section>
+
+<!-- ============ 11 能力现状盘点 ============ -->
+<section class="slide" data-nav="能力盘点">
+  <div class="wrap">
+    <div class="kicker">Gap Analysis · 现状盘点</div>
+    <h2 class="s-title">现网能力 × 八维度差距分析</h2>
+    <div class="s-sub">结论：三 / 四级所需信息现网基本齐备；一 / 二级所需的实时影像、设备自动采集、人员资质、强制防篡改属当前缺口。</div>
+    <div class="grid g2">
+      <div class="card green" style="background:var(--green-bg);border-color:var(--green-line)">
+        <h3 style="color:var(--green)">现在就能达标</h3>
+        <ul class="clean">
+          <li><span class="b">人</span>：检测员 / 角色管理（姓名、编号）</li>
+          <li><span class="b">机</span>：设备编号、校准状态与证书、维护历史</li>
+          <li><span class="b">料</span>：样品收样—制样—发样—还样全流程流转</li>
+          <li><span class="b">法</span>：标准管理、判定规则、报告判定</li>
+          <li><span class="b">环</span>：温湿度自动采集（数采回传）已打通</li>
+          <li><span class="b">试验流程</span>：全流程节点时间 / 责任人留痕</li>
+        </ul>
+      </div>
+      <div class="card" style="background:var(--red-bg);border-color:var(--red-line)">
+        <h3 style="color:var(--red)">待补齐的缺口</h3>
+        <ul class="clean">
+          <li><span class="b">过程影像（照片）</span>：三级唯一待补，各环节即拍即传</li>
+          <li><span class="b">过程影像（视频/监控）</span>：二 / 一级，硬件将就绪</li>
+          <li><span class="b">连续型温湿度曲线</span>：数采已可用，P1 硬目标</li>
+          <li><span class="b">设备运行参数自动采集</span>：现为人工录入</li>
+          <li><span class="b">人员资质管理</span>：证书 / 授权 / 培训考核，LIMS 自建</li>
+          <li><span class="b">强制防篡改存证</span>：哈希 / 时间戳 / 区块链</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:16px">
+      <div class="lbl">最短路径</div>
+      <p>四级<span class="b">现在即可出具</span>；三级<span class="b">仅需补"关键照片上传"</span>一个缺口（环的温湿度已自动采集）；一 / 二级预留占位，能力模块逐个接入后解锁。</p>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>11</span></div>
+</section>
+
+<!-- ============ 12 可达性评估 ============ -->
+<section class="slide" data-nav="可达性评估">
+  <div class="wrap">
+    <div class="kicker">Feasibility · 可达性评估</div>
+    <h2 class="s-title">四级等级当前可达性</h2>
+    <div class="s-sub">框架必须一次性把四级模型建全（等级选择、公开矩阵、锁定逻辑都覆盖一 / 二级），只是"能力门禁"先只放行三 / 四级。</div>
+    <div class="tbl-wrap">
+      <table class="t">
+        <tr><th style="width:120px">等级</th><th>公开总要求</th><th style="width:230px">依赖能力</th><th style="width:150px">当前可达性</th></tr>
+        <tr><td><span class="pill pill-l4">四级·可公示</span></td><td>最低合规信息，无影像</td><td>现网数据即可</td><td class="ok">✅ 现在可出具</td></tr>
+        <tr><td><span class="pill pill-l3">三级·可追溯</span></td><td>八维度核心 + 2–5 张关键照片，有修改留痕</td><td>平均温湿度（已采集）+ 关键照片上传 + 修改留痕</td><td class="ok">✅ 补照片即可出具</td></tr>
+        <tr><td><span class="pill pill-l2">二级·可视化</span></td><td>八维度完整 + 关键节点视频，高自动化</td><td>视频采集（硬件将就绪）+ 设备自动采集 + 数据自动流转</td><td class="wait">⛔ 预留，视频到位后临门</td></tr>
+        <tr><td><span class="pill pill-l1">一级·全要素</span></td><td>100% + 全程连续视频 + 实时监控，全自动闭环</td><td>无人化试验 + 全链路自动 + 强制防篡改存证</td><td class="wait">⛔ 预留，待模块接入解锁</td></tr>
+      </table>
+    </div>
+    <div class="stats" style="margin-top:18px">
+      <div class="stat"><div class="v">4级</div><div class="k">现在可出具</div></div>
+      <div class="stat"><div class="v">3级</div><div class="k">补 1 个缺口即达</div></div>
+      <div class="stat"><div class="v">8</div><div class="k">维度全模型建全</div></div>
+      <div class="stat"><div class="v">5</div><div class="k">阶段渐进解锁</div></div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>12</span></div>
+</section>
+
+<!-- ============ 13 章节分隔：迭代路线 ============ -->
+<section class="slide divider dark-slide" data-nav="第三部分">
+  <div class="wrap">
+    <div class="idx">PART 03</div>
+    <h2>迭代路线<br>五阶段渐进解锁</h2>
+    <p>P0 搭骨架 → P1 三级达标 → P2 数据防篡改 → P3 二级 → P4 一级。每一期只新增或升级对应维度适配器与其独立模块，骨架始终不动。</p>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>13</span></div>
+</section>
+
+<!-- ============ 14 路线总览 ============ -->
+<section class="slide" data-nav="路线总览">
+  <div class="wrap">
+    <div class="kicker">Roadmap · 路线总览</div>
+    <h2 class="s-title">P0 → P4 迭代路线一览</h2>
+    <div class="s-sub">框架先行、能力渐进：先支撑现实可达的三 / 四级完整闭环，一 / 二级预留占位，随物联与自动化能力接入逐级解锁。</div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-left"><div class="ph">P0</div><div class="lv">解锁 四级</div></div>
+        <div class="tl-mid"><div class="tl-dot"></div><div class="tl-line"></div>
+          <div class="tl-right"><h4>骨架搭建</h4><p>五大构件 + 原型；接入已打通的温湿度自动采集；缺失维度显示"暂未采集"。</p></div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-left"><div class="ph">P1</div><div class="lv">解锁 三级</div></div>
+        <div class="tl-mid"><div class="tl-dot"></div><div class="tl-line"></div>
+          <div class="tl-right"><h4>三级达标</h4><p>各流程环节关键照片上传 + 修改留痕强化 + 连续型温湿度曲线 + 视频时间锚结构预留。</p></div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-left"><div class="ph">P2</div><div class="lv">强化公信力</div></div>
+        <div class="tl-mid"><div class="tl-dot"></div><div class="tl-line"></div>
+          <div class="tl-right"><h4>数据防篡改</h4><p>快照哈希 + 可信时间戳（TSA）+ 原始数据只读约束；公开页展示"防篡改校验通过"。</p></div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-left"><div class="ph">P3</div><div class="lv">解锁 二级</div></div>
+        <div class="tl-mid"><div class="tl-dot"></div><div class="tl-line"></div>
+          <div class="tl-right"><h4>影像视频 + 设备自动采集</h4><p>组态物联视觉节点关键视频 + 设备运行参数自动采集 + 人员资质模块 v0。</p></div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-left"><div class="ph">P4</div><div class="lv">解锁 一级</div></div>
+        <div class="tl-mid"><div class="tl-dot"></div>
+          <div class="tl-right"><h4>无人化 + 全程监控 + 链上存证</h4><p>全程连续视频 / 实时监控 + 全链路自动闭环 + 区块链存证 + 资质 / 耗材 / 环境模块完整。</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>14</span></div>
+</section>
+
+<!-- ============ 15 P0 详情 ============ -->
+<section class="slide" data-nav="P0 骨架">
+  <div class="wrap">
+    <div class="phase-head">
+      <span class="phase-tag">P0</span>
+      <div><div class="phase-title">骨架搭建</div><div class="phase-goal">目标：搭好五大构件 + 可运行原型，用现网数据出具四级报告</div></div>
+      <div class="unlock"><div class="u-lbl">解锁等级</div><div class="u-val">四级 · 可公示</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>开发目标</h3>
+        <ul class="clean">
+          <li>建立四级透明度等级模型与等级选择控件</li>
+          <li>定义维度采集适配器统一契约 <code>collect()</code></li>
+          <li>实现八维度聚合器与分级公开引擎</li>
+          <li>报告码映射表（复用短链基建，独立 <code>R</code> 命名空间）</li>
+          <li>报告首页版式增加"溯源二维码"占位元素</li>
+        </ul>
+      </div>
+      <div class="card soft">
+        <h3>关键交付物</h3>
+        <ul class="clean">
+          <li>报告溯源公开页 <code>report-verify.html</code></li>
+          <li>聚合器 + 公开引擎 <code>js/report-trace.js</code></li>
+          <li>报告编制页集成"透明度等级选择"</li>
+          <li>「环」维度接入已打通的温湿度自动采集（按试验项、数采回传）</li>
+          <li>数据模型预留连续型曲线与视频时间锚字段</li>
+          <li>缺失维度诚实显示"暂未采集"</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout green" style="margin-top:16px">
+      <div class="lbl">成功标准</div>
+      <p>能用现网数据真实出具一份<span class="b">四级报告</span>并扫码核验；骨架五大构件稳定，后续新增维度无需改动骨架与公开页。</p>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>15</span></div>
+</section>
+
+<!-- ============ 16 P1 详情 ============ -->
+<section class="slide" data-nav="P1 三级达标">
+  <div class="wrap">
+    <div class="phase-head">
+      <span class="phase-tag">P1</span>
+      <div><div class="phase-title">三级达标</div><div class="phase-goal">目标：补齐三级唯一缺口 + 环境增强，出具三级可追溯报告</div></div>
+      <div class="unlock"><div class="u-lbl">解锁等级</div><div class="u-val">四级 + 三级</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>开发目标</h3>
+        <ul class="clean">
+          <li>过程影像 v0：收样 / 制样 / 检测 / 复核各环节<span class="b">关键照片即拍即传</span>，绑定流程节点</li>
+          <li>数据流转审计增强：数据修改全程留痕</li>
+          <li>连续型温湿度曲线（硬目标，数采已可用）：快照存曲线、公开页展示</li>
+          <li>视频节点时间锚数据结构与公开位预留（硬件就绪即接）</li>
+        </ul>
+      </div>
+      <div class="card soft">
+        <h3>关键交付物</h3>
+        <ul class="clean">
+          <li>各流程页新增照片上传入口（LIMS 轻量上传）</li>
+          <li>数据审核 / 操作日志的修改留痕闭环</li>
+          <li>公开页"环"维度曲线展示组件</li>
+          <li>视频维度契约：存"节点标识 + 起止时间 + 校验哈希"，凭时间锚回源</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout green" style="margin-top:16px">
+      <div class="lbl">成功标准</div>
+      <p>能出具含<span class="b">关键照片 + 温湿度曲线 + 修改留痕</span>的三级报告；三级面向普通市场化业务可对外交付。</p>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>16</span></div>
+</section>
+
+<!-- ============ 17 P2 详情 ============ -->
+<section class="slide" data-nav="P2 防篡改">
+  <div class="wrap">
+    <div class="phase-head">
+      <span class="phase-tag">P2</span>
+      <div><div class="phase-title">数据防篡改</div><div class="phase-goal">目标：数据存证接口落地，强化三级公信力</div></div>
+      <div class="unlock"><div class="u-lbl">能力增强</div><div class="u-val">强化三级公信力</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>开发目标</h3>
+        <ul class="clean">
+          <li>快照哈希：签发时对报告快照计算哈希指纹</li>
+          <li>可信时间戳（TSA）：接入联合信任授时中心固化时间</li>
+          <li>原始数据只读 / 不可改约束</li>
+          <li>公开页展示"防篡改校验通过 / 授时中心固化"</li>
+        </ul>
+      </div>
+      <div class="card slate">
+        <h3>技术要点</h3>
+        <ul class="clean">
+          <li>存证接口在 P0 已预留，本期填充实现</li>
+          <li>TSA 服务商选型可后置（视预算）</li>
+          <li>区块链存证留待一级冲刺时叠加</li>
+          <li>公开页只读、仅吐分级字段、与内网主数据隔离</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout warn" style="margin-top:16px">
+      <div class="lbl">价值</div>
+      <p>把"透明"从"看得见"升级为"<span class="b">改不了、可校验</span>"——这是从制度防迈向技防的关键一步，也是招投标中的硬承诺。</p>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>17</span></div>
+</section>
+
+<!-- ============ 18 P3 详情 ============ -->
+<section class="slide" data-nav="P3 二级">
+  <div class="wrap">
+    <div class="phase-head">
+      <span class="phase-tag">P3</span>
+      <div><div class="phase-title">二级 · 影像视频 + 设备自动采集</div><div class="phase-goal">目标：接入视频与设备自动采集，出具二级可视化报告</div></div>
+      <div class="unlock"><div class="u-lbl">解锁等级</div><div class="u-val">+ 二级</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>开发目标</h3>
+        <ul class="clean">
+          <li>过程影像 v1：组态物联视觉节点关键视频，凭时间锚回源拉取</li>
+          <li>设备运行参数自动采集适配器（经数采对接组态物联终端）</li>
+          <li>人员资质模块 v0：资质证书 / 操作授权 / 培训考核</li>
+        </ul>
+      </div>
+      <div class="card soft">
+        <h3>关键交付物</h3>
+        <ul class="clean">
+          <li>视频采集前置校验：节点非离线、未被占用方可开始试验</li>
+          <li>数采回传"开始 / 结束时间"→ 公开页按时段回看视频</li>
+          <li>设备关键运行数据进入"机"维度公开</li>
+          <li>人员资质进入"人"维度公开</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout green" style="margin-top:16px">
+      <div class="lbl">成功标准</div>
+      <p>能出具含<span class="b">关键节点视频 + 设备自动采集数据 + 人员资质</span>的二级报告；面向国央企 / 电网高端业务形成差异化竞争力。</p>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>18</span></div>
+</section>
+
+<!-- ============ 19 P4 详情 ============ -->
+<section class="slide" data-nav="P4 一级">
+  <div class="wrap">
+    <div class="phase-head">
+      <span class="phase-tag">P4</span>
+      <div><div class="phase-title">一级 · 无人化 + 全程监控 + 链上存证</div><div class="phase-goal">目标：全链路自动闭环，出具最高级别全要素报告</div></div>
+      <div class="unlock"><div class="u-lbl">解锁等级</div><div class="u-val">+ 一级</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>开发目标</h3>
+        <ul class="clean">
+          <li>全程连续视频 / 实时监控回看</li>
+          <li>全链路自动采集—计算—复核闭环，人员不可篡改</li>
+          <li>区块链存证叠加（在哈希 + TSA 之上）</li>
+          <li>资质 / 耗材 / 环境模块完整化</li>
+        </ul>
+      </div>
+      <div class="card blue">
+        <h3>依赖能力</h3>
+        <ul class="clean">
+          <li>无人化试验能力（设备 + 物联全自动）</li>
+          <li>影像存储期限按标准分级保障（一级视频 ≥ 3 年）</li>
+          <li>耗材管理、作业指导书 / 算法固化模块</li>
+          <li>数据全链路可信、全程留痕</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:16px">
+      <div class="lbl">终极形态</div>
+      <p>八维度 100% 公开 + 全程可回看 + 全自动不可篡改——这是"玻璃房实验室"的完整形态，也是透明检测的行业标杆。</p>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>19</span></div>
+</section>
+
+<!-- ============ 20 可插拔能力模块清单 ============ -->
+<section class="slide" data-nav="能力模块清单">
+  <div class="wrap">
+    <div class="kicker">Modules · 可插拔能力模块</div>
+    <h2 class="s-title">后续按需接入的能力模块</h2>
+    <div class="s-sub">每个模块对聚合器实现统一适配器契约，即插即用。对接组态物联终端的维度（环 / 影像 / 设备自动采集），适配器只负责"下发任务 / 消费回传→归一化快照"，物联硬件与原始采集由数采系统 + 组态物联终端承接。</div>
+    <div class="tbl-wrap">
+      <table class="t xs">
+        <tr><th style="width:150px">模块</th><th style="width:90px">支撑维度</th><th style="width:80px">解锁</th><th style="width:110px">现状</th><th>建设方式</th></tr>
+        <tr><td>环境监测（温湿度/曲线）</td><td>环</td><td>三→更高</td><td class="ok">已打通</td><td>经数采对接组态物联终端；连续曲线待接入，烟雾/水浸等后续</td></tr>
+        <tr><td>过程影像（照片→视频→监控）</td><td>过程影像</td><td>三→一级</td><td class="wait">照片无/视频将就绪</td><td>三级照片 LIMS 轻量上传；视频经视觉节点，凭时间锚回源</td></tr>
+        <tr><td>人员资质管理</td><td>人</td><td>三→一级</td><td class="no">无</td><td>LIMS 自建：资质证书 / 授权 / 培训考核</td></tr>
+        <tr><td>设备自动采集</td><td>机、数据流转</td><td>二/一级</td><td class="no">人工录入</td><td>经数采对接组态物联终端；LIMS 保留设备台账</td></tr>
+        <tr><td>数据存证 / 防篡改</td><td>数据流转</td><td>全等级</td><td class="no">无</td><td>LIMS 自建：哈希 + TSA；一级叠加区块链</td></tr>
+        <tr><td>耗材管理</td><td>料</td><td>二/一级</td><td class="no">无</td><td>LIMS 自建：合格证明 / 批次自动记录</td></tr>
+        <tr><td>作业指导书 / 算法固化</td><td>法</td><td>二/一级</td><td class="wait">占位</td><td>LIMS 自建：SOP + 计算逻辑固化</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>20</span></div>
+</section>
+
+<!-- ============ 21 风险与保障 ============ -->
+<section class="slide" data-nav="风险与保障">
+  <div class="wrap">
+    <div class="kicker">Risk & Governance · 风险与保障</div>
+    <h2 class="s-title">四条底线，确保"透明"不失真</h2>
+    <div class="s-sub">透明度是对外的能力承诺，必须与实际能力严格一致，否则名不副实反而损公信力。</div>
+    <div class="grid g2">
+      <div class="card accent"><h3>能力与承诺一致</h3><p>等级即能力承诺。能力门禁必须与等级严格绑定，<span class="b">禁止降级出具</span>；建议以全局参数 <code>lab.transparency.authorizedLevel</code> 统一"实验室授权等级"，单报告等级 ≤ min(能力门禁, 授权等级)。</p></div>
+      <div class="card accent"><h3>公网暴露面安全</h3><p>报告全要素公开涉及数据安全：公开页<span class="b">只读、仅吐分级字段</span>，与内网主数据隔离（参考短链方案 2 边缘只读）。</p></div>
+      <div class="card accent"><h3>存储期限合规</h3><p>影像 / 日志按标准分级留存（一级视频 ≥ 3 年、数据流转日志永久等），在参数与归档策略中落地。</p></div>
+      <div class="card accent"><h3>诚实降级</h3><p>缺失维度一律显式"暂未采集"，<span class="b">不得用占位数据充数</span>，避免造假风险。</p></div>
+    </div>
+    <div class="callout" style="margin-top:16px">
+      <div class="lbl">报告码作废联动</div>
+      <p>报告码永久可查：三态 <code>valid / revoked / superseded</code>；作废召回后扫码仍可打开并醒目标注，换版则旧码指向新版——契合监管溯源诉求，区别于合格证短链的"回退即作废"。</p>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>21</span></div>
+</section>
+
+<!-- ============ 22 收尾 ============ -->
+<section class="slide dark-slide" data-nav="结语">
+  <div class="wrap" style="text-align:center">
+    <div class="kicker" style="justify-content:center">Summary · 结语</div>
+    <h2 class="s-title" style="font-size:44px">框架先搭稳，能力分期补<br>让透明度成为可承诺的竞争力</h2>
+    <div class="s-sub" style="margin:20px auto 30px">现网数据即可先出具三 / 四级报告形成闭环；一 / 二级预留占位，随物联采集、设备自动化、防篡改存证逐级解锁——每一步都可交付、可验证、可对外承诺。</div>
+    <div class="stats" style="max-width:900px;margin:0 auto">
+      <div class="stat" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2)"><div class="v" style="color:#fff">P0</div><div class="k" style="color:#C6D3E2">骨架 + 四级</div></div>
+      <div class="stat" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2)"><div class="v" style="color:#fff">P1</div><div class="k" style="color:#C6D3E2">三级达标</div></div>
+      <div class="stat" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2)"><div class="v" style="color:#fff">P2</div><div class="k" style="color:#C6D3E2">数据防篡改</div></div>
+      <div class="stat" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2)"><div class="v" style="color:#fff">P3·P4</div><div class="k" style="color:#C6D3E2">二级 · 一级</div></div>
+    </div>
+    <div class="callout solid" style="max-width:900px;margin:30px auto 0">
+      <p style="text-align:center">检测即所见 · 一报一码——把检测的"黑箱"变成客户看得见、监管查得清、我们改不了的"玻璃房"。</p>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">数蚕智能 · 透明实验室方案</span><span>22</span></div>
+</section>
+
+<script>
+/* ============ 滚动进度条 ============ */
+const progress=document.getElementById('progress');
+function updateProgress(){
+  const h=document.documentElement;
+  const scrolled=h.scrollTop/(h.scrollHeight-h.clientHeight);
+  progress.style.width=(scrolled*100)+'%';
+}
+
+/* ============ 生成右侧圆点导航 ============ */
+const slides=[...document.querySelectorAll('.slide')];
+const dots=document.getElementById('dots');
+slides.forEach((s,i)=>{
+  const a=document.createElement('a');
+  a.href='#';
+  a.setAttribute('aria-label',s.dataset.nav||('第'+(i+1)+'页'));
+  a.innerHTML='<span class="lbl">'+(s.dataset.nav||('第'+(i+1)+'页'))+'</span>';
+  a.addEventListener('click',e=>{e.preventDefault();s.scrollIntoView({behavior:'smooth'});});
+  dots.appendChild(a);
+});
+const dotEls=[...dots.children];
+
+/* ============ 用 IntersectionObserver 高亮当前页圆点 ============ */
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(en=>{
+    if(en.isIntersecting){
+      const idx=slides.indexOf(en.target);
+      dotEls.forEach((d,i)=>d.classList.toggle('active',i===idx));
+    }
+  });
+},{threshold:.5});
+slides.forEach(s=>io.observe(s));
+
+/* ============ 键盘上下键翻页 ============ */
+let curIdx=0;
+const io2=new IntersectionObserver(entries=>{
+  entries.forEach(en=>{if(en.isIntersecting)curIdx=slides.indexOf(en.target);});
+},{threshold:.6});
+slides.forEach(s=>io2.observe(s));
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowDown'||e.key==='PageDown'){e.preventDefault();if(curIdx<slides.length-1)slides[curIdx+1].scrollIntoView({behavior:'smooth'});}
+  if(e.key==='ArrowUp'||e.key==='PageUp'){e.preventDefault();if(curIdx>0)slides[curIdx-1].scrollIntoView({behavior:'smooth'});}
+});
+
+window.addEventListener('scroll',updateProgress,{passive:true});
+updateProgress();
+</script>
+</body>
+</html>
