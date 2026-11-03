@@ -186,6 +186,11 @@
     // 保证「列表看到的」与「点进详情页看到的」是同一份数据
     EntrustMock.enrich(listData);
 
+    // 样品信息列（产品标记 / 型号分类 / 规格）要按收样记录取值：先把退回重流转型委托的上次收样提交播种进来
+    if (window.ReceiveStore && window.ReceiveHistory && ReceiveHistory.redoRecords) {
+      ReceiveStore.seedDemo(ReceiveHistory.redoRecords());
+    }
+
     /* 本页只消费「申请退样」提交过的申请：
      * 先补演示数据，再把申请过但本页还没有的委托补进来，最后把没有待退样样品的委托移出列表 */
     if (window.ReturnApplyStore) {

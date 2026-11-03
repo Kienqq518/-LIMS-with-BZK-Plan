@@ -190,6 +190,11 @@
     // 公共字段统一取自 js/entrust-mock.js，保证列表与详情页一致
     EntrustMock.enrich(listData);
 
+    // 样品信息列（产品标记 / 型号分类 / 规格）要按收样记录取值：先把退回重流转型委托的上次收样提交播种进来
+    if (window.ReceiveStore && window.ReceiveHistory && ReceiveHistory.redoRecords) {
+      ReceiveStore.seedDemo(ReceiveHistory.redoRecords());
+    }
+
     // 委托确认退回委托登记、变更删掉样品的委托：被删样品没还样动作，只能在这里发起退样
     if (window.ReceiveHistory && ReceiveHistory.RETURN_REDO) {
       ReceiveHistory.RETURN_REDO.filter(function (e) { return (e.removed || []).length; }).forEach(function (e) {

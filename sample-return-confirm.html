@@ -148,6 +148,11 @@
     // 保证「列表看到的」与「点进详情页看到的」是同一份数据
     EntrustMock.enrich(listData);
 
+    // 样品信息列（产品标记 / 型号分类 / 规格）要按收样记录取值：先把退回重流转型委托的上次收样提交播种进来
+    if (window.ReceiveStore && window.ReceiveHistory && ReceiveHistory.redoRecords) {
+      ReceiveStore.seedDemo(ReceiveHistory.redoRecords());
+    }
+
     // 委托确认退回委托登记、变更删掉样品的委托：被删的样品不走收样也不走还样，
     // 要在退样环节做退样处理，因此连同其收样时上传的图片一起出现在还样记录里
     if (window.ReceiveHistory && ReceiveHistory.RETURN_REDO) {
