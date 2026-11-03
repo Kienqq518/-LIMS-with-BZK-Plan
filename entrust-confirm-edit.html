@@ -28,6 +28,17 @@
     .spec-input { flex: 1; min-width: 90px; max-width: 150px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 12px; outline: none; background: #fff; }
     .spec-input:focus { border-color: #3b82f6; }
     .spec-none { font-size: 12px; color: #cbd5e1; }
+    /* 收样信息：与委托详情页同款样式（一次收样 = 一张批次卡） */
+    .rcv-batch { margin-bottom: 12px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
+    .rcv-batch-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 7px 10px; background: #f8fafc; font-size: 12px; color: #475569; }
+    .rcv-batch-head b { color: #1e293b; font-weight: 600; }
+    .rcv-batch-head .rcv-remark { color: #94a3b8; }
+    .rcv-mini { width: 100%; border-collapse: collapse; }
+    .rcv-mini th, .rcv-mini td { border-top: 1px solid #eef2f7; padding: 6px 10px; font-size: 12px; text-align: left; vertical-align: top; color: #475569; }
+    .rcv-mini th { background: #fff; color: #94a3b8; font-weight: 500; }
+    .thumb-strip { display: flex; flex-wrap: wrap; gap: 4px; }
+    .thumb { width: 40px; height: 40px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700 pb-20">
@@ -84,18 +95,10 @@
       </table>
     </section>
 
-    <!-- 收样信息 -->
-    <section class="rounded bg-white p-4 shadow-sm">
+    <!-- 收样信息：与委托详情页同款，按「第 N 次收样」分批次卡展示该委托全部已收样品 -->
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="receive-info">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>收样信息</h2>
-      <table class="info-table">
-        <tr><td class="lbl">收样人</td><td class="val">admin</td><td class="lbl">收样状态</td><td class="val">完好</td><td class="lbl">收样日期</td><td class="val">2026-06-24</td></tr>
-        <tr><td class="lbl">送样方式</td><td class="val">送样</td><td class="lbl">送样人</td><td class="val">/</td><td class="lbl">送样人电话</td><td class="val">/</td></tr>
-        <tr><td class="lbl">备注</td><td class="val" colspan="5">/</td></tr>
-      </table>
-      <div class="mt-3 space-y-1 text-sm">
-        <a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> 数量logo(1).png</a><br>
-        <a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> ceshi.png</a>
-      </div>
+      <div id="receiveInfoBody"></div>
     </section>
 
     <!-- 检测信息 -->
@@ -179,6 +182,7 @@
   <script src="js/sample-data-store.js"></script>
   <script src="js/sample-spec-ui.js"></script>
   <script src="js/receive-store.js"></script>
+  <script src="js/receive-history-mock.js"></script>
   <script>
     // 委托确认阶段的样品：型号/分类与规格参数可在此补填，确认通过前必须填全
     var confirmSamples = [
@@ -195,7 +199,7 @@
     // 收样阶段填过的规格值，带出来不用重复填
     function prefillFromReceive() {
       if (!window.ReceiveStore) return;
-      var code = new URLSearchParams(window.location.search).get('code') || 'SC2026/0071';
+      var code = CONFIRM_CODE;   // 与下方收样信息批次卡同一个委托编号
       var got = ReceiveStore.receivedMap(code);
       confirmSamples.forEach(function (row) {
         var hit = got[code + '|' + row.name];
@@ -271,8 +275,91 @@
       }
       if (confirm('确认通过该委托吗？')) alert('确认通过（原型演示）');
     }
+    /* ===== 收样信息：与委托详情页同款（一次收样提交 = 一张批次卡） ===== */
+    var CONFIRM_CODE = new URLSearchParams(window.location.search).get('code') || 'SC2026/0071';
+    function rcvEsc(v) {
+      return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function rcvModelLabel(sample, code) {
+      if (!code) return '/';
+      if (!sample || !window.SampleDataStore) return rcvEsc(code);
+      var m = SampleDataStore.modelOf(sample, code);
+      return rcvEsc(m ? ((m.code || '') + (m.name ? '-' + m.name : '')) : code);
+    }
+    function renderReceiveInfo() {
+      var body = document.getElementById('receiveInfoBody');
+      if (!body) return;
+      // 走到委托确认，样品必然已收样：查不到提交记录时按本页样品清单幂等补历史收样
+      if (window.ReceiveHistory) {
+        ReceiveHistory.ensure(CONFIRM_CODE, {
+          accept: '2026-06-09',
+          samples: confirmSamples.map(function (sm, i) {
+            return { name: sm.name, qty: sm.qty, unit: sm.unit, leafId: sm.leafId,
+                     modelCode: sm.modelCode, specs: sm.specValues, imgs: i === 0 ? 2 : 1 };
+          })
+        });
+      }
+      var recs = window.ReceiveStore ? ReceiveStore.recordsOf(CONFIRM_CODE) : [];
+      if (!recs.length) {
+        body.innerHTML = '<p class="text-sm text-slate-500">该委托尚无收样提交记录</p>';
+        return;
+      }
+      var markColOn = recs.some(function (r) {
+        return (r.lines || []).some(function (ln) {
+          return window.SampleDataStore && SampleDataStore.isMarkEnabled(ln.leafId);
+        });
+      });
+      body.innerHTML = recs.map(function (r, n) {
+        var head = '<b>第 ' + (n + 1) + ' 次收样</b><span>' + rcvEsc(r.receiveDate) + '</span>' +
+          '<span>收样人 ' + rcvEsc(r.receiver) + '</span>' +
+          '<span>收样状态 ' + rcvEsc(r.status) + '</span>' +
+          '<span>送样方式 ' + rcvEsc(r.delivery) + '</span>' +
+          (r.sender ? '<span>送样人 ' + rcvEsc(r.sender) + (r.senderPhone ? ' ' + rcvEsc(r.senderPhone) : '') + '</span>' : '') +
+          (r.remark ? '<span class="rcv-remark">备注：' + rcvEsc(r.remark) + '</span>' : '');
+        var rows = (r.lines || []).map(function (ln, i) {
+          var sample = ln.leafId && window.SampleDataStore ? SampleDataStore.getSample(ln.leafId) : null;
+          var markText = sample ? (SampleDataStore.markOf(ln.leafId, ln.modelCode, ln.specValues || []) || ln.mark) : ln.mark;
+          var spec = (window.SampleSpecUI ? SampleSpecUI.summary(sample, ln.modelCode, ln.specValues) : '') || ln.spec || '';
+          var imgs = ReceiveStore.imCount(ln.images)
+            ? '<div class="thumb-strip">' + ln.images.map(function (im) {
+                var src = ReceiveStore.imSrc(im);
+                return src
+                  ? '<span class="thumb" title="' + rcvEsc(ReceiveStore.imName(im)) + '"><img src="' + rcvEsc(src) + '" alt="收样图片" /></span>'
+                  : '<span class="thumb" title="' + rcvEsc(ReceiveStore.imName(im)) + '">仅存名</span>';
+              }).join('') + '</div>'
+            : '<span class="spec-none">未上传</span>';
+          return '<tr><td>' + (i + 1) + '</td><td>' + rcvEsc(ln.name) + '</td><td>' + rcvEsc(ln.qty) + '</td>' +
+            (markColOn ? '<td class="col-mark">' + (rcvEsc(markText) || (ln.leafId ? '未配置规则' : '/')) + '</td>' : '') +
+            '<td>' + rcvModelLabel(sample, ln.modelCode) + '</td>' +
+            '<td>' + (rcvEsc(spec) || '/') + '</td><td>' + imgs + '</td></tr>';
+        }).join('');
+        return '<div class="rcv-batch"><div class="rcv-batch-head">' + head + '</div>' +
+          '<table class="rcv-mini"><thead><tr><th>序号</th><th>样品名称</th><th>数量</th>' +
+            (markColOn ? '<th class="col-mark">产品标记</th>' : '') +
+            '<th>型号/分类</th><th>规格</th><th>收样图片</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody></table></div>';
+      }).join('');
+    }
+
     prefillFromReceive();
     renderConfirmSamples();
+    renderReceiveInfo();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [{
+          id: 'cf-receive-info',
+          selector: '[data-annotate="receive-info"]',
+          position: 'top-right',
+          title: '收样信息（按次分块）',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>委托确认要看到该委托<strong>全部样品</strong>的收样情况才能确认，所以本区域与委托详情页同款：一次收样提交 = 一张批次卡，而不是整单一条收样信息。<br>' +
+            '<strong>展示规则：</strong>卡头「第 N 次收样 · 收样日期 · 收样人 · 收样状态 · 送样方式 · 送样人/电话 · 备注」；卡内按样品逐行列序号、样品名称、数量、产品标记（该批次内任一样品开启产品标记开关时出列）、型号/分类、规格、收样图片缩略图；没有值统一显示「/」，未上传显示「未上传」；查不到提交记录时只显示一行「该委托尚无收样提交记录」。<br>' +
+            '<strong>交互逻辑：</strong>数据来自「样品管理 › 样品收样」的提交记录（本地 lims.receiveRecords）；到确认阶段仍缺记录时按本页样品清单幂等补历史收样（js/receive-history-mock.js，只补缺、不覆盖手工收样记录）。本区域只读，本页「检测信息」里补填的规格参数不回写这里——收样信息反映的是收样当时的记录；反向的联动保留：收样阶段填过的型号与规格值会自动带进检测信息表，不用重复填。',
+          tag: '委托确认'
+        }]
+      });
+    }
   </script>
   <script src="js/ui-a11y.js" defer></script>
 </body>
