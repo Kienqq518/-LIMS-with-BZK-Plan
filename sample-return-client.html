@@ -364,6 +364,21 @@
       document.getElementById(id).addEventListener('click', function (e) { if (e.target === this) hideModal(id); });
     });
 
+    // 待退样行的型号/分类、规格、图片按收样记录展示：为本页委托幂等补齐历史收样记录（只补缺不覆盖）
+    if (window.ReceiveHistory && window.ReceiveStore && window.EntrustMock) {
+      listData.forEach(function (r) {
+        var m = EntrustMock.get(r.code);
+        if (!m || !m.samples || !m.samples.length) return;
+        ReceiveHistory.ensure(r.code, {
+          accept: m.acceptDate,
+          samples: m.samples.map(function (sm, i) {
+            return { name: sm.name, qty: sm.qty, unit: sm.unit, leafId: sm.leafId,
+                     modelCode: sm.modelCode, specs: sm.specValues, imgs: i === 0 ? 2 : 1 };
+          })
+        });
+      });
+    }
+
     renderTable();
     toggleReturnFields();
 
