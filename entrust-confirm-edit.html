@@ -98,7 +98,7 @@
     <!-- 收样信息：与委托详情页同款，按「第 N 次收样」分批次卡展示该委托全部已收样品 -->
     <section class="rounded bg-white p-4 shadow-sm" data-annotate="receive-info">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>收样信息</h2>
-      <div id="receiveInfoBody"></div>
+      <div id="receiveInfoBody" data-img-scope></div>
     </section>
 
     <!-- 检测信息 -->
@@ -172,6 +172,7 @@
   <script src="js/entrust-mock.js"></script>
   <script src="js/receive-store.js"></script>
   <script src="js/receive-history-mock.js"></script>
+  <script src="js/image-viewer.js"></script>
   <script>
     /* ===== 点哪单看哪单：?code= 决定整页（与委托详情页同一数据源 js/entrust-mock.js） ===== */
     // 不带参数时落在委托确认列表里那张演示委托（SC2026/0071），与列表首行一致
@@ -317,11 +318,15 @@
           var markText = sample ? (SampleDataStore.markOf(ln.leafId, ln.modelCode, ln.specValues || []) || ln.mark) : ln.mark;
           var spec = (window.SampleSpecUI ? SampleSpecUI.summary(sample, ln.modelCode, ln.specValues) : '') || ln.spec || '';
           var imgs = ReceiveStore.imCount(ln.images)
-            ? '<div class="thumb-strip">' + ln.images.map(function (im) {
+            ? '<div class="thumb-strip">' + ln.images.map(function (im, k) {
                 var src = ReceiveStore.imSrc(im);
+                var nm = ReceiveStore.imName(im) || ('收样图片 ' + (k + 1));
+                // 点缩略图看大图：同一样品的多张算一组，可左右切换（js/image-viewer.js 事件委托）
                 return src
-                  ? '<span class="thumb" title="' + rcvEsc(ReceiveStore.imName(im)) + '"><img src="' + rcvEsc(src) + '" alt="收样图片" /></span>'
-                  : '<span class="thumb" title="' + rcvEsc(ReceiveStore.imName(im)) + '">仅存名</span>';
+                  ? '<span class="thumb" title="' + rcvEsc(nm) + '（点击看大图）" data-img-src="' + rcvEsc(src) + '"' +
+                    ' data-img-group="rcv-' + n + '-' + i + '" data-img-name="' + rcvEsc(ln.name + ' · ' + nm) + '">' +
+                    '<img src="' + rcvEsc(src) + '" alt="收样图片" /></span>'
+                  : '<span class="thumb" title="' + rcvEsc(nm) + '">仅存名</span>';
               }).join('') + '</div>'
             : '<span class="spec-none">未上传</span>';
           return '<tr><td>' + (i + 1) + '</td><td>' + rcvEsc(ln.name) + '</td><td>' + rcvEsc(ln.qty) + '</td>' +
@@ -447,7 +452,7 @@
           wide: true,
           content: '<strong>需求逻辑：</strong>委托确认要看到该委托<strong>全部样品</strong>的收样情况才能确认，所以本区域与委托详情页同款：一次收样提交 = 一张批次卡，而不是整单一条收样信息。<br>' +
             '<strong>展示规则：</strong>卡头「第 N 次收样 · 收样日期 · 收样人 · 收样状态 · 送样方式 · 送样人/电话 · 备注」；卡内按样品逐行列序号、样品名称、数量、产品标记（该批次内任一样品开启产品标记开关时出列）、型号/分类、规格、收样图片缩略图；没有值统一显示「/」，未上传显示「未上传」；查不到提交记录时只显示一行「该委托尚无收样提交记录」。<br>' +
-            '<strong>交互逻辑：</strong>数据来自「样品管理 › 样品收样」的提交记录（本地 lims.receiveRecords）；到确认阶段仍缺记录时按本页样品清单幂等补历史收样（js/receive-history-mock.js，只补缺、不覆盖手工收样记录）。本区域只读，本页「检测信息」里补填的规格参数不回写这里——收样信息反映的是收样当时的记录；反向的联动保留：收样阶段填过的型号与规格值会自动带进检测信息表，不用重复填。',
+            '<strong>交互逻辑：</strong>数据来自「样品管理 › 样品收样」的提交记录（本地 lims.receiveRecords）；到确认阶段仍缺记录时按本页样品清单幂等补历史收样（js/receive-history-mock.js，只补缺、不覆盖手工收样记录）。本区域只读，但<strong>收样图片缩略图可点开看大图</strong>（同一样品的多张可左右切换，点遮罩或按 Esc 关闭）。本页「检测信息」里补填的规格参数不回写这里——收样信息反映的是收样当时的记录；反向的联动保留：收样阶段填过的型号与规格值会自动带进检测信息表，不用重复填。',
           tag: '委托确认'
           }
         ]
