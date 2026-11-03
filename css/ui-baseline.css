@@ -1,0 +1,84 @@
+/* ==========================================================================
+   LIMS 原型 UI 基线（全站共享）
+   依据：design-system/lims-prototype/MASTER.md + ui-ux-pro-max 规则库
+   只做「底线修复」：焦点可见、对比度、字号下限、reduced-motion、可点击性、
+   表格横向溢出。不重绘既有页面配色。
+   ========================================================================== */
+
+/* ---------- 设计令牌（MASTER.md，含本项目 CJK / 数据密集修正） ---------- */
+:root {
+  --color-primary: #1e40af;
+  --color-secondary: #3b82f6;
+  --color-accent: #d97706;
+  --color-background: #f8fafc;
+  --color-foreground: #1e293b;
+  --color-card: #ffffff;
+  --color-muted: #e9eef6;
+  --color-muted-foreground: #475569;
+  --color-border: #e2e8f0;
+  --color-destructive: #dc2626;
+  --color-ring: #1e40af;
+  /* 中文优先字体栈：库内配对均为拉丁字体，正文交给系统 CJK，数字用等宽对齐 */
+  --font-ui: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC", system-ui, sans-serif;
+  --font-num: "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --space-md: 8px;
+  --space-lg: 12px;
+  --space-xl: 16px;
+}
+
+/* 编号 / 日期 / 检测值这类数据列用等宽数字，避免跳动 */
+.mono-num, .tabular-nums, td[class*="text-right"] { font-variant-numeric: tabular-nums; }
+
+/* ---------- 1. 焦点可见（ux: Focus States / Focus Not Obscured，High） ----------
+   全站 239 处 outline-none 把键盘焦点抹掉了。这里只补「页面自己没写 focus 反馈」的控件，
+   已经自带 focus:ring 的控件不重复加，避免双层描边；只改 focus:border 的（1px 边框变色）
+   在密集表单里几乎看不见，这里补上真正的焦点环。 */
+:is(a, button, input, select, textarea, summary, [tabindex], [role="button"], [contenteditable="true"]):focus-visible:not([class*="focus:ring"]):not([class*="focus:outline"]) {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* 深色底上的焦点环换成高对比色 */
+.bg-slate-800 :focus-visible, .bg-blue-600 :focus-visible, .bg-blue-700 :focus-visible,
+header :focus-visible, nav :focus-visible {
+  outline-color: #93c5fd;
+}
+
+/* ---------- 2. 对比度（ux: Color Contrast，High） ----------
+   text-slate-400(#94a3b8 ≈2.8:1) / text-slate-300(#cbd5e1 ≈1.9:1) 在白底上都不达标。
+   用 html 前缀提权，压过 Tailwind CDN 后注入的同名规则，不用 !important。 */
+html .text-slate-400 { color: #64748b; }   /* slate-500，白底 4.7:1 */
+html .text-slate-300 { color: #64748b; }
+html .text-gray-400  { color: #6b7280; }
+html .placeholder\:text-slate-300::placeholder,
+html .placeholder\:text-gray-300::placeholder { color: #94a3b8; } /* 占位符只做提示，允许略低 */
+
+/* 弱化文本最低可读字号（ux: Readable Font Size，High） */
+html .text-\[9px\], html .text-\[10px\] { font-size: 11px; }
+
+/* ---------- 3. 动效底线（ux: Reduced Motion，High） ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- 4. 可点击性（checklist: cursor-pointer on clickable） ---------- */
+button:not(:disabled), [role="button"]:not(:disabled), select, summary,
+label[for], [data-act]:not(:disabled), .pa-stage-btn, .pa-doc-itemhead { cursor: pointer; }
+button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
+
+/* ---------- 5. 表格横向溢出（ux: Table Handling / Horizontal Scroll） ----------
+   由 js/ui-a11y.js 在实际溢出的表格外层挂 .ui-table-scroll。 */
+.ui-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ui-table-scroll > table { min-width: 100%; }
+.ui-table-scroll::-webkit-scrollbar { height: 8px; }
+.ui-table-scroll::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, .45); border-radius: 4px; }
+.ui-table-scroll:focus-visible { outline: 2px solid var(--color-ring); outline-offset: -2px; }
+
+/* ---------- 6. 选中态 / 滚动条一致性 ---------- */
+::selection { background: #dbeafe; color: #1e3a8a; }
