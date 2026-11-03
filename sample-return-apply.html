@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>申请退样 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    .del-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
+      background: #fdeeee; color: #cf1322; font-size: 11px; line-height: 16px; }
+    #recordModalBody tr.is-deleted { background: #fbfcfe; color: #b6bcc7; }
+    #recordModalBody tr.is-deleted td { border-color: #f1f3f7; }
+    .thumb-strip { display: flex; flex-wrap: wrap; gap: 4px; }
+    .thumb { width: 40px; height: 40px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cell-none { color: #cbd5e1; }
+    .req { color: #ef4444; margin-right: 2px; }
+    .apply-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; }
+    .apply-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #64748b; }
+    .apply-item label { width: 76px; flex-shrink: 0; text-align: right; }
+    .apply-item input { flex: 1; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
+    .apply-item input:focus { border-color: #3b82f6; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      申请退样
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4">
+    <div class="mb-3 rounded border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600" data-annotate="apply-scope">
+      <i class="fa fa-info-circle text-blue-500"></i>
+      本页发起余样退回委托方的申请：勾选还样记录里的样品、填好联系与地址信息后提交，申请进入「样品退样」环节的待退样列表；变更删掉的样品也在这里发起退样。
+    </div>
+
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-3">
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label>
+          <input type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">是否关联框架合同</label>
+          <select class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-500 outline-none focus:border-blue-500">
+            <option value="">请选择是否关联…</option><option>是</option><option>否</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">合同编号</label>
+          <input type="text" placeholder="请输入框架合同编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
+          <input type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">客户单位</label>
+          <input type="text" placeholder="请输入委托单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-24 flex-shrink-0 text-right text-sm text-slate-600">委托受理日期</label>
+          <div class="relative flex-1">
+            <input type="text" placeholder="开始日期 ~ 结束日期" class="w-full rounded border border-slate-300 px-3 py-1.5 pr-8 text-sm outline-none focus:border-blue-500" />
+            <i class="fa fa-calendar-o absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 md:col-span-2 xl:justify-end">
+          <button class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>
+          <button class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i>重置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1500px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">先收费</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">优先等级</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">任务状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-3 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="totalCount"></span>
+        <button class="h-7 w-7 rounded border border-slate-300 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+        <button class="h-7 w-7 rounded bg-blue-600 text-white">1</button>
+        <button class="h-7 w-7 rounded border border-slate-300 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 还样记录 -->
+  <div id="returnRecordModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[90vh] w-[1080px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">还样记录</h3>
+        <button onclick="closeReturnRecordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <table class="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-50 text-slate-600">
+              <th class="border border-slate-200 px-3 py-2 font-medium w-10 text-center"><input type="checkbox" id="recCheckAll" onchange="onCheckAll(this.checked)" /></th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称(数量)</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">还样人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">还样日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">还样退库确认表</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">图片</th>
+            </tr>
+          </thead>
+          <tbody id="recordModalBody"></tbody>
+        </table>
+        <div class="mt-2 flex items-center justify-end gap-2 text-sm text-slate-500">
+          <button class="h-6 w-6 rounded border border-slate-300 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+          <button class="h-6 w-6 rounded bg-blue-600 text-white">1</button>
+          <button class="h-6 w-6 rounded border border-slate-300 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+        </div>
+
+        <div class="mt-4 apply-form" data-annotate="apply-fields">
+          <div class="apply-item"><label><span class="req">*</span>联系人</label><input id="a_contact" placeholder="请输入联系人" /></div>
+          <div class="apply-item"><label><span class="req">*</span>联系方式</label><input id="a_phone" placeholder="请输入联系方式" /></div>
+          <div class="apply-item"><label><span class="req">*</span>联系地址</label><input id="a_address" placeholder="请输入联系地址" /></div>
+          <div class="apply-item"><label>备注</label><input id="a_remark" placeholder="请输入备注" /></div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button onclick="closeReturnRecordModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取 消</button>
+        <button onclick="applyReturn()" class="rounded bg-blue-600 px-5 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="apply-submit">确 认</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
+  <script src="js/receive-store.js"></script>
+  <script src="js/receive-history-mock.js"></script>
+  <script src="js/image-viewer.js?v=2"></script>
+  <script src="js/sample-cat-filter.js"></script>
+  <script src="js/column-config.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var listData = [
+      { code: 'SC2026/0082', contract: 'SC2026/0082', customer: '杭州数蚕智能科技有限公司', sample: '安全带、安全绳',
+        sendDate: '2026-07-13', acceptDate: '2026-07-08', prepaid: '否', priority: '常规', status: '任务完成', editor: 'admin', salesman: '梁倩',
+        records: [
+          { name: '安全带(1)', returner: 'admin', returnDate: '2026-07-13 09:12:20', doc: 'SC2026-0082还样退库确认表.docx' },
+          { name: '安全绳(1)', returner: '潘哲宁', returnDate: '2026-07-13 09:14:05', doc: 'SC2026-0082还样退库确认表.docx' }
+        ] },
+      { code: 'SC2026/0075', contract: '/', customer: '东集西造有限公司', sample: '安全帽',
+        sendDate: '2026-07-10', acceptDate: '2026-07-05', prepaid: '否', priority: '常规', status: '任务完成', editor: 'admin', salesman: '业务员A',
+        records: [{ name: '安全帽(2)', returner: '李四', returnDate: '2026-07-10 16:20:31', doc: 'SC2026-0075还样退库确认表.docx' }] }
+    ];
+
+    // 公共字段统一取自 js/entrust-mock.js，保证列表与详情页一致
+    EntrustMock.enrich(listData);
+
+    // 委托确认退回委托登记、变更删掉样品的委托：被删样品没还样动作，只能在这里发起退样
+    if (window.ReceiveHistory && ReceiveHistory.RETURN_REDO) {
+      ReceiveHistory.RETURN_REDO.filter(function (e) { return (e.removed || []).length; }).forEach(function (e) {
+        listData.push({
+          code: e.code, contract: e.contract, customer: e.customer,
+          sample: e.kept.map(function (sn) { return sn.name; }).join('、'),
+          sendDate: e.sendDate, acceptDate: e.acceptDate, prepaid: e.prepaid, priority: e.priority,
+          status: e.status, editor: e.editor, salesman: e.salesman,
+          records: ReceiveHistory.redoReturnRecords(e)
+        });
+      });
+    }
+
+    var currentIndex = -1;
+
+    function renderTable() {
+      document.getElementById('tableBody').innerHTML = listData.map(function (item, i) {
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + (item.contract || '/') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + (item.sendDate || '/') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + (item.requireDate || '/') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + (item.acceptDate || '/') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center"><span class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-600">' + (item.prepaid || '否') + '</span></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (item.priority || '常规') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.status + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
+            '<button onclick="openReturnRecordModal(' + i + ')" class="text-blue-600 hover:underline" data-annotate="apply-record-link"><i class="fa fa-file-text-o"></i> 还样记录</button>' +
+          '</td></tr>';
+      }).join('');
+      document.getElementById('totalCount').textContent = '共 ' + listData.length + ' 条';
+    }
+
+    function renderRecordModal() {
+      var item = listData[currentIndex];
+      document.getElementById('recordModalBody').innerHTML = item.records.map(function (r, ri) {
+        // 变更删掉的样品：没有还样动作 → 还样人 / 还样日期 / 还样退库确认表都是「/」，
+        // 图片沿用收样时上传的，名称后标「已删除」，可以勾选发起退样
+        if (r.deleted) {
+          var pics = (r.images || []).length
+            ? '<div class="thumb-strip">' + r.images.map(function (u) {
+                return '<span class="thumb" data-img-src="' + u + '" data-img-name="' + r.name + ' 收样图片" title="' + u.split('/').pop() + '（点击看大图）"><img src="' + u + '" alt="收样图片" /></span>';
+              }).join('') + '</div>'
+            : '<span class="cell-none">/</span>';
+          return '<tr class="is-deleted">' +
+            '<td class="border border-slate-200 px-3 py-2.5 text-center"><input type="checkbox" class="rec-check" data-ri="' + ri + '" onchange="onRowCheck()" /></td>' +
+            '<td class="border border-slate-200 px-3 py-2.5">' + r.name + '<span class="del-tag">已删除</span></td>' +
+            '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
+            '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
+            '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
+            '<td class="border border-slate-200 px-3 py-2.5">' + pics + '</td></tr>';
+        }
+        return '<tr>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center"><input type="checkbox" class="rec-check" data-ri="' + ri + '" onchange="onRowCheck()" /></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + r.name + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + r.returner + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + r.returnDate + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="template-config.html" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> ' + r.doc + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-xs text-slate-400">暂无图片</td></tr>';
+      }).join('');
+      var all = document.getElementById('recCheckAll');
+      all.checked = false; all.indeterminate = false;
+    }
+
+    function checkedRows() {
+      return [].slice.call(document.querySelectorAll('.rec-check')).filter(function (b) { return b.checked; });
+    }
+    function onRowCheck() {
+      var boxes = [].slice.call(document.querySelectorAll('.rec-check'));
+      var n = checkedRows().length;
+      var all = document.getElementById('recCheckAll');
+      all.checked = boxes.length > 0 && n === boxes.length;
+      all.indeterminate = n > 0 && n < boxes.length;
+    }
+    function onCheckAll(on) {
+      [].slice.call(document.querySelectorAll('.rec-check')).forEach(function (b) { b.checked = on; });
+      onRowCheck();
+    }
+
+    function showModal(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
+    function hideModal(id) { var m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+    function openReturnRecordModal(index) {
+      currentIndex = index;
+      renderRecordModal();
+      showModal('returnRecordModal');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+    function closeReturnRecordModal() { hideModal('returnRecordModal'); }
+
+    function applyReturn() {
+      var picked = checkedRows();
+      if (!picked.length) { alert('请勾选要退样的样品'); return; }
+      var miss = [['a_contact', '联系人'], ['a_phone', '联系方式'], ['a_address', '联系地址']].filter(function (f) {
+        return !document.getElementById(f[0]).value.trim();
+      });
+      if (miss.length) { alert('请填写必填项：' + miss.map(function (m) { return m[1]; }).join('、')); return; }
+      alert('已提交退样申请（' + picked.length + ' 件样品）。\n' +
+        '联系人：' + document.getElementById('a_contact').value + '　联系方式：' + document.getElementById('a_phone').value + '\n' +
+        '联系地址：' + document.getElementById('a_address').value + '\n' +
+        '申请已进入「样品退样」的待退样列表，由样品库执行退样并回填流转单（原型演示）');
+      closeReturnRecordModal();
+    }
+
+    renderTable();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          { id: 'apply-scope', selector: '[data-annotate="apply-scope"]', position: 'bottom-left',
+            title: '申请退样的位置', wide: true,
+            content: '<strong>需求逻辑：</strong>还样确认只管试样回到实验室样品库，余样要退回委托方得由样品员在这里发起申请，所以菜单顺序是 还样确认 › 申请退样 › 样品退样：本页发起、后一页执行。<br>' +
+              '<strong>展示规则：</strong>一行一委托，列为序号、委托编号、合同编号、客户单位、样品名称、送样时间、客户要求完成日期、委托受理日期、先收费、优先等级、任务状态、编制人、操作（还样记录）；查询区支持委托编号、是否关联框架合同、合同编号、样品名称、客户单位、委托受理日期区间。<br>' +
+              '<strong>交互逻辑：</strong>点「还样记录」打开该委托的还样记录，勾选要退的样品、填联系信息后点「确认」提交申请，申请进入「样品退样」的待退样列表；委托编号点进委托详情。', tag: '样品退样' },
+          { id: 'apply-record', selector: '#returnRecordModal', position: 'top-right',
+            title: '还样记录里的「已删除」样品', wide: true,
+            content: '<strong>需求逻辑：</strong>委托确认退回委托登记后删掉的样品，实物不在库里、也没有还样动作，它只能在这里发起退样；但收样时留下的图片和数量必须还能查得到，所以这条记录留在还样记录里。<br>' +
+              '<strong>展示规则：</strong>该行整行灰底，「样品名称(数量)」后带红色「已删除」标签；「还样人」「还样日期」「还样退库确认表」三列都显示「/」，不出确认单链接；「图片」列沿用收样时上传的图片（有图显示缩略图、点缩略图看大图，没上传显示「/」）。正常还样的行仍显示还样人、还样日期、还样退库确认表链接与「暂无图片」。<br>' +
+              '<strong>交互逻辑：</strong>已删除行同样可以勾选发起退样；演示委托 SC2026/0031（只删样品）与 SC2026/0029（既删又增）由 js/receive-history-mock.js › RETURN_REDO 提供。', tag: '样品退样' },
+          { id: 'apply-fields', selector: '[data-annotate="apply-fields"]', position: 'top-right',
+            title: '退样申请的必填项', wide: true,
+            content: '<strong>需求逻辑：</strong>退样是把样品寄回或交给委托方，必须有收件三要素（联系人、联系方式、联系地址）才能执行并回填流转单，备注选填。<br>' +
+              '<strong>展示规则：</strong>弹窗底部四格表单：*联系人、*联系方式、*联系地址、备注；默认带出委托单位与登记时的联系人信息，可改。<br>' +
+              '<strong>交互逻辑：</strong>没勾选样品点「确认」提示「请勾选要退样的样品」；三项必填没填全提示缺哪几项且不关闭弹窗；确认后退样申请进入「样品退样」待退样列表，由样品库选「自留 / 客户」执行并回填流转单。', tag: '样品退样' }
+        ]
+      });
+    }
+  </script>
+  <script src="js/ui-a11y.js" defer></script>
+</body>
+</html>

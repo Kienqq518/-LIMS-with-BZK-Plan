@@ -85,6 +85,8 @@
             <tr class="bg-slate-50 text-slate-600">
               <th class="border border-slate-200 px-3 py-2 font-medium">样品名称(数量)</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">图片</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">还样人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">还样日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">退样申请表</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
             </tr>
@@ -93,7 +95,9 @@
             <tr>
               <td class="border border-slate-200 px-3 py-2.5">绝缘操作杆--(1)个</td>
               <td class="border border-slate-200 px-3 py-2.5 text-xs text-slate-400">暂无图片</td>
-              <td class="border border-slate-200 px-3 py-2.5"><a href="template-config.html" class="text-blue-600 hover:underline">退样申请表.docx</a></td>
+              <td class="border border-slate-200 px-3 py-2.5">admin</td>
+              <td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">2026-10-08 08:48:07</td>
+              <td class="border border-slate-200 px-3 py-2.5"><a href="template-config.html" class="text-blue-600 hover:underline">SC2026-0024退样申请表.docx</a></td>
               <td class="border border-slate-200 px-3 py-2.5">
                 <button onclick="openReturnInfoModal()" class="text-blue-600 hover:underline" data-annotate="return-action">退样</button>
               </td>
@@ -115,19 +119,19 @@
         <div class="modal-form-grid text-sm">
           <div class="modal-form-item">
             <label>还样方式</label>
-            <div class="radio-group">
-              <label><input type="radio" name="returnMethod" value="self" /> 自留</label>
-              <label><input type="radio" name="returnMethod" value="client" checked /> 客户</label>
+            <div class="radio-group" data-annotate="return-method">
+              <label><input type="radio" name="returnMethod" value="self" onchange="onReturnMethodChange()" /> 自留</label>
+              <label><input type="radio" name="returnMethod" value="client" checked onchange="onReturnMethodChange()" /> 客户</label>
             </div>
           </div>
           <div class="modal-form-item">
             <label>样品处置方式</label>
-            <div class="radio-group">
-              <label><input type="radio" name="dispose" value="internal" /> 内部处置</label>
-              <label><input type="radio" name="dispose" value="client" checked /> 退回客户</label>
+            <div class="radio-group" data-annotate="return-dispose">
+              <label><input type="radio" name="dispose" value="internal" onchange="onDisposeChange()" /> 内部处置</label>
+              <label><input type="radio" name="dispose" value="client" checked onchange="onDisposeChange()" /> 退回客户</label>
             </div>
           </div>
-          <div class="modal-form-item">
+          <div class="modal-form-item" id="fieldType">
             <label>类型</label>
             <div class="radio-group" data-annotate="return-type">
               <label><input type="radio" name="returnType" value="pickup" checked onchange="toggleReturnFields()" /> 自取</label>
@@ -139,8 +143,10 @@
             <div class="modal-form-item"><label>快递单号</label><input id="f_tracking" placeholder="请输入快递单号" /></div>
             <div class="modal-form-item"><label>地址</label><input id="f_address" placeholder="请输入详细地址" /></div>
           </div>
-          <div class="modal-form-item"><label>联系人</label><input id="f_contact" placeholder="请输入联系人" /></div>
-          <div class="modal-form-item"><label>联系方式</label><input id="f_phone" placeholder="请输入联系方式" /></div>
+          <div id="fieldContact" class="space-y-3">
+            <div class="modal-form-item"><label>联系人</label><input id="f_contact" placeholder="请输入联系人" /></div>
+            <div class="modal-form-item"><label>联系方式</label><input id="f_phone" placeholder="请输入联系方式" /></div>
+          </div>
         </div>
         <div class="mt-4 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800 leading-relaxed" id="writebackPreview" data-annotate="return-writeback">
           <strong>流转单回填预览（自取）：</strong><br>
@@ -200,6 +206,8 @@
 
     function openReturnInfoModal() {
       closePendingModal();
+      // 默认：客户 / 退回客户 / 自取
+      applyMethod('client');
       document.querySelector('input[name="returnType"][value="pickup"]').checked = true;
       toggleReturnFields();
       showModal('returnInfoModal');
@@ -207,17 +215,42 @@
     }
     function closeReturnInfoModal() { hideModal('returnInfoModal'); }
 
+    function getMethod() {
+      var el = document.querySelector('input[name="returnMethod"]:checked');
+      return el ? el.value : 'client';
+    }
+
+    // 还样方式与样品处置方式一一对应：自留 → 内部处置；客户 → 退回客户
+    function applyMethod(m) {
+      var rm = document.querySelector('input[name="returnMethod"][value="' + m + '"]');
+      var dp = document.querySelector('input[name="dispose"][value="' + (m === 'self' ? 'internal' : 'client') + '"]');
+      if (rm) rm.checked = true;
+      if (dp) dp.checked = true;
+      toggleReturnFields();
+    }
+    function onReturnMethodChange() { applyMethod(getMethod()); }
+    function onDisposeChange() {
+      var dp = document.querySelector('input[name="dispose"]:checked');
+      applyMethod(dp && dp.value === 'internal' ? 'self' : 'client');
+    }
+
     function getReturnType() {
       var el = document.querySelector('input[name="returnType"]:checked');
       return el ? el.value : 'pickup';
     }
 
     function toggleReturnFields() {
+      var isClient = getMethod() === 'client';
       var isExpress = getReturnType() === 'express';
-      document.getElementById('fieldExpress').classList.toggle('hidden', !isExpress);
+      // 自留（内部处置）只留两个单选；退回客户才出现类型与联系/快递字段
+      document.getElementById('fieldType').classList.toggle('hidden', !isClient);
+      document.getElementById('fieldContact').classList.toggle('hidden', !isClient);
+      document.getElementById('fieldExpress').classList.toggle('hidden', !(isClient && isExpress));
       var now = new Date().toISOString().slice(0, 16).replace('T', ' ');
       var preview = document.getElementById('writebackPreview');
-      if (isExpress) {
+      if (!isClient) {
+        preview.innerHTML = '<strong>流转单回填预览（内部处置）：</strong><br>检测流程 = 余样内部处置（不出退样行）<br>签名/日期 = 操作员电子签名 / ' + now;
+      } else if (isExpress) {
         preview.innerHTML = '<strong>流转单回填预览（快递）：</strong><br>检测流程 = 余样快递退回委托单位<br>签名/日期 = 操作员电子签名 / ' + now;
       } else {
         var contact = document.getElementById('f_contact').value || '（联系人）';
@@ -232,6 +265,11 @@
     function confirmReturn() {
       var type = getReturnType();
       var now = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      if (getMethod() === 'self') {
+        alert('退样成功（自留 / 内部处置）。\n样品不出库、不生成退样行；流转单记「余样内部处置」\n签名/日期：操作员电子签名 / ' + now + '（原型演示）');
+        closeReturnInfoModal();
+        return;
+      }
       if (type === 'pickup') {
         var contact = document.getElementById('f_contact').value || '联系人';
         alert('退样成功（自取）。\n流转单：委托单位取回余样签收\n签名/日期：' + contact + ' / ' + now + '（原型演示）');
@@ -255,11 +293,19 @@
             '<strong>展示规则：</strong>提示条说明：仅当委托需要退回委托方样品时才走「样品退样」并回填流转单；不需要退样的委托停在本页不操作即可。<br>' +
             '<strong>交互逻辑：</strong>跳过本节点不影响任务归档；后续若需退样，仍可从本页发起。', tag: '流转单' },
           { id: 'pending-list', selector: '[data-annotate="pending-list"]', position: 'top-right', title: '待退样列表', content: '<strong>需求逻辑：</strong>退样由样品库样品员执行，需要一张可追溯的待退清单与凭据单据。<br>' +
-            '<strong>展示规则：</strong>列表列：委托编号、委托单位、样品名称(数量)、还样日期、退样申请表、操作；「退样申请表」为 PageOffice 单据模板，可查看或生成。<br>' +
+            '<strong>展示规则：</strong>列表列：样品名称(数量)、图片、还样人、还样日期、退样申请表、操作；「退样申请表」为 PageOffice 单据模板（文件名 = 委托编号 + 退样申请表.docx），可查看或生成；还样人 / 还样日期取自该样品的还样确认记录。<br>' +
             '<strong>交互逻辑：</strong>行内「退样」打开「填写退样信息」弹窗；申请表未生成的行显示生成入口，生成后可直接查看。', tag: '流转单' },
           { id: 'return-action', selector: '[data-annotate="return-action"]', position: 'top-right', title: '退样操作', content: '<strong>需求逻辑：</strong>退样要留下退样方式、签收人与时间，才能与流转单、退样申请表对得上。<br>' +
             '<strong>展示规则：</strong>行内「退样」按钮。<br>' +
             '<strong>交互逻辑：</strong>点击打开「填写退样信息」弹窗（退样方式、联系人、电话、地址、签收人）；点「确定」写入退样记录并回填流转单，取消则不留痕。', tag: '流转单' },
+          { id: 'return-method-link', selector: '[data-annotate="return-method"]', position: 'top-right',
+            title: '还样方式与样品处置方式联动', wide: true,
+            content: '<strong>需求逻辑：</strong>余样只有两个去向——留在实验室内部处置，或者退回委托方；「还样方式」和「样品处置方式」其实是同一件事的两种说法，必须联动，不能出现「自留 + 退回客户」这种自相矛盾的组合。<br>' +
+              '<strong>展示规则：</strong>弹窗前两行是单选组：<strong>还样方式</strong>（自留 / 客户）与<strong>样品处置方式</strong>（内部处置 / 退回客户）。' +
+              '选<strong>自留</strong>时，样品处置方式自动选中「内部处置」，<strong>类型 / 快递公司 / 快递单号 / 地址 / 联系人 / 联系方式全部收起</strong>，弹窗只剩两个单选；' +
+              '选<strong>客户</strong>时，样品处置方式自动选中「退回客户」，并展开<strong>类型</strong>（默认自取）与联系人、联系方式；类型切到<strong>快递</strong>再展开快递公司、快递单号、地址。<br>' +
+              '<strong>交互逻辑：</strong>两个单选组双向联动——反过来改「样品处置方式 = 内部处置」也会把还样方式拨回自留；切换即时重算底部「流转单回填预览」：自留＝「余样内部处置（不出退样行）」，客户自取＝「委托单位取回余样签收 + 联系人」，客户快递＝「余样快递退回委托单位 + 操作员电子签名」。' +
+              '打开弹窗默认「客户 / 退回客户 / 自取」；点「确定」按所选组合写退样记录，点「取消」不留痕。', tag: '流转单' },
           { id: 'return-type', selector: '[data-annotate="return-type"]', position: 'top-left', title: '自取 / 快递', wide: true, content: '<strong>需求逻辑：</strong>自取与快递的责任主体不同：自取由委托方人员现场签收，快递由实验室操作员交付寄出，两者写进流转单的签名与流程文案不一样。<br>' +
             '<strong>展示规则：</strong>退样方式二选一。<strong>自取</strong>：检测流程 = 「委托单位取回余样签收」，签名/日期 = 弹窗联系人 + 点击退样时间（客户无电子签）。<strong>快递</strong>：检测流程 = 「余样快递退回委托单位」，签名/日期 = 退库操作员电子签名 + 点击退样时间。<br>' +
             '<strong>交互逻辑：</strong>切换方式时弹窗内联系人/签收人字段随之变化；确认后按所选方式生成流转单行。', tag: '流转单' },
