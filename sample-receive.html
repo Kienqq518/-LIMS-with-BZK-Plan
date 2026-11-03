@@ -377,7 +377,7 @@
       ReceiveHistory.redoReceiveRows().forEach(function (row) { receiveData.push(row); });
     }
 
-    // ===== 演示种子：已经收掉部分样品的委托（进页面即可看到「待收 N 类」状态）=====
+    // ===== 演示种子：已经收掉部分样品的委托（进页面即可看到部分收样状态）=====
     // 数据源在 js/receive-history-mock.js（委托详情页要用同一份，避免两个页面口径不一致）；
     // 播种只补不覆盖：手工收过的样品行不会被重复写入
     var DEMO_RECEIVED = (window.ReceiveHistory && window.ReceiveHistory.PARTIAL_RECEIVED) || [];
@@ -428,9 +428,7 @@
         .filter(function (r) { return pendingRows(r.item).length > 0; });
       document.getElementById('receiveTableBody').innerHTML = rows.map(function (r, no) {
         var item = r.item, todo = pendingRows(item);
-        var sampleText = item.samples.length > 1
-          ? esc(item.sample) + '<span class="ml-1 text-xs text-slate-400">（待收 ' + todo.length + ' 类）</span>'
-          : esc(item.sample);
+        var sampleText = esc(item.sample);   // 样品名称列不再追加「（待收 n 类）」，还剩几类看弹窗里的待收行
         // 序号按当前列表位置连续编号（已收完的委托移出列表后不留断号）
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (no + 1) + '</td>' +
