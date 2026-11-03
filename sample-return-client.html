@@ -17,6 +17,13 @@
     .modal-form-item input { flex: 1; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; }
     .radio-group { display: flex; gap: 16px; padding-top: 6px; }
     .radio-group label { width: auto; display: flex; align-items: center; gap: 4px; padding-top: 0; cursor: pointer; }
+    .del-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
+      background: #fdeeee; color: #cf1322; font-size: 11px; line-height: 16px; }
+    #pendingBody tr.is-deleted { background: #fbfcfe; color: #b6bcc7; }
+    .thumb-strip { display: flex; flex-wrap: wrap; gap: 4px; }
+    .thumb { width: 40px; height: 40px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cell-none { color: #cbd5e1; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -91,18 +98,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td class="border border-slate-200 px-3 py-2.5">绝缘操作杆--(1)个</td>
-              <td class="border border-slate-200 px-3 py-2.5 text-xs text-slate-400">暂无图片</td>
-              <td class="border border-slate-200 px-3 py-2.5">admin</td>
-              <td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">2026-10-08 08:48:07</td>
-              <td class="border border-slate-200 px-3 py-2.5"><a href="template-config.html" class="text-blue-600 hover:underline">SC2026-0024退样申请表.docx</a></td>
-              <td class="border border-slate-200 px-3 py-2.5">
-                <button onclick="openReturnInfoModal()" class="text-blue-600 hover:underline" data-annotate="return-action">退样</button>
-              </td>
-            </tr>
-          </tbody>
+          <tbody id="pendingBody"></tbody>
         </table>
       </div>
     </div>
@@ -164,6 +160,10 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/entrust-mock.js"></script>
+  <script src="js/receive-store.js"></script>
+  <script src="js/receive-history-mock.js"></script>
+  <script src="js/return-apply-store.js"></script>
+  <script src="js/image-viewer.js?v=2"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -179,6 +179,23 @@
     // 保证「列表看到的」与「点进详情页看到的」是同一份数据
     EntrustMock.enrich(listData);
 
+    /* 本页只消费「申请退样」提交过的申请：
+     * 先补演示数据，再把申请过但本页还没有的委托补进来，最后把没有待退样样品的委托移出列表 */
+    if (window.ReturnApplyStore) {
+      ReturnApplyStore.seedDemoIfEmpty();
+      var seen = {};
+      listData.forEach(function (r) { seen[r.code] = 1; });
+      ReturnApplyStore.load().forEach(function (rec) {
+        if (seen[rec.code] || !ReturnApplyStore.pendingCount(rec.code)) return;
+        seen[rec.code] = 1;
+        var m = window.EntrustMock ? EntrustMock.get(rec.code) : {};
+        listData.push({ code: rec.code, contract: '/', customer: rec.customer || m.customer || '/',
+          sample: m.sampleNames || rec.sample || '/', status: m.status || '任务完成',
+          editor: m.editor || 'admin', salesman: m.salesman || '' });
+      });
+      listData = listData.filter(function (r) { return ReturnApplyStore.pendingCount(r.code) > 0; });
+    }
+
     function renderTable() {
       document.getElementById('tableBody').innerHTML = listData.map(function (item, i) {
         return '<tr class="hover:bg-slate-50">' +
@@ -190,7 +207,8 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + item.status + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' +
-            '<button onclick="openPendingModal()" class="text-blue-600 hover:underline" data-annotate="pending-list"><i class="fa fa-list"></i> 待退样</button>' +
+            '<button onclick="openPendingModal(' + i + ')" class="text-blue-600 hover:underline" data-annotate="pending-list"><i class="fa fa-list"></i> 待退样' +
+            (window.ReturnApplyStore ? (ReturnApplyStore.pendingCount(item.code) || '') : '') .replace(/^(\d+)$/, '（$1）') + '</button>' +
           '</td></tr>';
       }).join('');
     }
@@ -198,13 +216,46 @@
     function showModal(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
     function hideModal(id) { var m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
 
-    function openPendingModal() {
+    var pendingCode = '', pendingName = '';
+
+    function renderPendingModal() {
+      var lines = window.ReturnApplyStore ? ReturnApplyStore.pendingLines(pendingCode) : [];
+      var body = document.getElementById('pendingBody');
+      if (!lines.length) {
+        body.innerHTML = '<tr><td colspan="6" class="border border-slate-200 px-3 py-8 text-center text-slate-400">' +
+          '该委托已无待退样样品（退样完成）</td></tr>';
+        return;
+      }
+      body.innerHTML = lines.map(function (row) {
+        var l = row.line;
+        var pics = (l.images || []).length
+          ? '<div class="thumb-strip">' + l.images.map(function (u) {
+              return '<span class="thumb" data-img-src="' + u + '" data-img-name="' + l.name + ' 收样图片" title="' + u.split('/').pop() + '（点击看大图）"><img src="' + u + '" alt="收样图片" /></span>';
+            }).join('') + '</div>'
+          : '<span class="cell-none">暂无图片</span>';
+        return '<tr' + (l.deleted ? ' class="is-deleted"' : '') + '>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + l.name + (l.deleted ? '<span class="del-tag">已删除</span>' : '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + pics + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5' + (l.deleted ? ' cell-none' : '') + '">' + (l.returner || '/') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap' + (l.deleted ? ' cell-none' : '') + '">' + (l.returnDate || '/') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (l.deleted
+              ? '<span class="cell-none">/</span>'
+              : '<a href="template-config.html" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> ' + (l.doc || (pendingCode.replace('/', '-') + '退样申请表.docx')) + '</a>') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><button onclick="openReturnInfoModal(\'' + l.name.replace(/'/g, '') + '\')" class="text-blue-600 hover:underline" data-annotate="return-action">退样</button></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function openPendingModal(index) {
+      pendingCode = listData[index] ? listData[index].code : '';
+      renderPendingModal();
       showModal('pendingModal');
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
     function closePendingModal() { hideModal('pendingModal'); }
 
-    function openReturnInfoModal() {
+    function openReturnInfoModal(name) {
+      pendingName = name || '';
       closePendingModal();
       // 默认：客户 / 退回客户 / 自取
       applyMethod('client');
@@ -264,19 +315,30 @@
 
     function confirmReturn() {
       var type = getReturnType();
+      var method = getMethod();
       var now = new Date().toISOString().slice(0, 16).replace('T', ' ');
-      if (getMethod() === 'self') {
-        alert('退样成功（自留 / 内部处置）。\n样品不出库、不生成退样行；流转单记「余样内部处置」\n签名/日期：操作员电子签名 / ' + now + '（原型演示）');
-        closeReturnInfoModal();
-        return;
-      }
-      if (type === 'pickup') {
-        var contact = document.getElementById('f_contact').value || '联系人';
-        alert('退样成功（自取）。\n流转单：委托单位取回余样签收\n签名/日期：' + contact + ' / ' + now + '（原型演示）');
+      var info = { method: method, type: type, at: now,
+        contact: document.getElementById('f_contact').value.trim(),
+        phone: document.getElementById('f_phone').value.trim(),
+        company: document.getElementById('f_company').value.trim(),
+        tracking: document.getElementById('f_tracking').value.trim(),
+        address: document.getElementById('f_address').value.trim() };
+      // 自留与退回客户都算这条待退样处理完了：写回申请存储，待退样列表与主表同步
+      if (window.ReturnApplyStore && pendingName) ReturnApplyStore.markReturned(pendingCode, pendingName, info);
+      if (method === 'self') {
+        alert('退样完成（自留 / 内部处置）。\n样品：' + (pendingName || '—') +
+          '\n样品不出库、不生成退样行；流转单记「余样内部处置」\n签名/日期：操作员电子签名 / ' + now + '（原型演示）');
+      } else if (type === 'pickup') {
+        alert('退样成功（自取）。\n样品：' + (pendingName || '—') +
+          '\n流转单：委托单位取回余样签收\n签名/日期：' + (info.contact || '联系人') + ' / ' + now + '（原型演示）');
       } else {
-        alert('退样成功（快递）。\n流转单：余样快递退回委托单位\n签名/日期：操作员电子签名 / ' + now + '（原型演示）');
+        alert('退样成功（快递）。\n样品：' + (pendingName || '—') +
+          '\n流转单：余样快递退回委托单位\n签名/日期：操作员电子签名 / ' + now + '（原型演示）');
       }
       closeReturnInfoModal();
+      renderPendingModal();
+      renderTable();   // 该委托已无待退样样品时，整行从本页列表消失
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     ['pendingModal', 'returnInfoModal'].forEach(function (id) {
@@ -294,10 +356,11 @@
             '<strong>交互逻辑：</strong>跳过本节点不影响任务归档；后续若需退样，仍可从本页发起。', tag: '流转单' },
           { id: 'pending-list', selector: '[data-annotate="pending-list"]', position: 'top-right', title: '待退样列表', content: '<strong>需求逻辑：</strong>退样由样品库样品员执行，需要一张可追溯的待退清单与凭据单据。<br>' +
             '<strong>展示规则：</strong>列表列：样品名称(数量)、图片、还样人、还样日期、退样申请表、操作；「退样申请表」为 PageOffice 单据模板（文件名 = 委托编号 + 退样申请表.docx），可查看或生成；还样人 / 还样日期取自该样品的还样确认记录。<br>' +
-            '<strong>交互逻辑：</strong>行内「退样」打开「填写退样信息」弹窗；申请表未生成的行显示生成入口，生成后可直接查看。', tag: '流转单' },
+            '<strong>交互逻辑：</strong>本页只消费「申请退样」提交的申请（本地 <code>lims.returnApply</code>）：按钮上带待退样件数，没有待退样样品的委托不列在本页；' +
+              '行内「退样」打开「填写退样信息」弹窗，确定后该行从待退样列表消失，最后一件退完后该委托整行从本页列表消失。', tag: '流转单' },
           { id: 'return-action', selector: '[data-annotate="return-action"]', position: 'top-right', title: '退样操作', content: '<strong>需求逻辑：</strong>退样要留下退样方式、签收人与时间，才能与流转单、退样申请表对得上。<br>' +
             '<strong>展示规则：</strong>行内「退样」按钮。<br>' +
-            '<strong>交互逻辑：</strong>点击打开「填写退样信息」弹窗（退样方式、联系人、电话、地址、签收人）；点「确定」写入退样记录并回填流转单，取消则不留痕。', tag: '流转单' },
+            '<strong>交互逻辑：</strong>点击打开「填写退样信息」弹窗（还样方式、样品处置方式、类型、联系与快递信息）；点「确定」把该样品标记为已退样、回填流转单，并同步刷新待退样列表与本页主表；取消则不留痕。', tag: '流转单' },
           { id: 'return-method-link', selector: '[data-annotate="return-method"]', position: 'top-right',
             title: '还样方式与样品处置方式联动', wide: true,
             content: '<strong>需求逻辑：</strong>余样只有两个去向——留在实验室内部处置，或者退回委托方；「还样方式」和「样品处置方式」其实是同一件事的两种说法，必须联动，不能出现「自留 + 退回客户」这种自相矛盾的组合。<br>' +

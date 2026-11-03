@@ -20,6 +20,9 @@
     .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .cell-none { color: #cbd5e1; }
     .req { color: #ef4444; margin-right: 2px; }
+    .applied-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
+      background: #fff7e8; color: #ad6800; font-size: 11px; line-height: 16px; }
+    .pend-tag { margin-left: 6px; font-size: 11px; color: #ad6800; white-space: nowrap; }
     .apply-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; }
     .apply-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #64748b; }
     .apply-item label { width: 76px; flex-shrink: 0; text-align: right; }
@@ -159,6 +162,7 @@
   <script src="js/entrust-mock.js"></script>
   <script src="js/receive-store.js"></script>
   <script src="js/receive-history-mock.js"></script>
+  <script src="js/return-apply-store.js"></script>
   <script src="js/image-viewer.js?v=2"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>
@@ -211,6 +215,8 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
             '<button onclick="openReturnRecordModal(' + i + ')" class="text-blue-600 hover:underline" data-annotate="apply-record-link"><i class="fa fa-file-text-o"></i> 还样记录</button>' +
+            (window.ReturnApplyStore && ReturnApplyStore.pendingCount(item.code)
+              ? '<span class="pend-tag"><i class="fa fa-arrow-right"></i> 待退样 ' + ReturnApplyStore.pendingCount(item.code) + ' 件</span>' : '') +
           '</td></tr>';
       }).join('');
       document.getElementById('totalCount').textContent = '共 ' + listData.length + ' 条';
@@ -218,6 +224,15 @@
 
     function renderRecordModal() {
       var item = listData[currentIndex];
+      var applied = window.ReturnApplyStore ? ReturnApplyStore.appliedMap(item.code) : {};
+      function box(ri, name) {
+        var st = applied[name];
+        if (st) {
+          return '<div class="text-center"><input type="checkbox" class="rec-check" disabled title="' +
+            (st === 'returned' ? '已退样完成' : '已提交退样申请，等待样品退样执行') + '" /></div>';
+        }
+        return '<input type="checkbox" class="rec-check" data-ri="' + ri + '" onchange="onRowCheck()" />';
+      }
       document.getElementById('recordModalBody').innerHTML = item.records.map(function (r, ri) {
         // 变更删掉的样品：没有还样动作 → 还样人 / 还样日期 / 还样退库确认表都是「/」，
         // 图片沿用收样时上传的，名称后标「已删除」，可以勾选发起退样
@@ -228,16 +243,18 @@
               }).join('') + '</div>'
             : '<span class="cell-none">/</span>';
           return '<tr class="is-deleted">' +
-            '<td class="border border-slate-200 px-3 py-2.5 text-center"><input type="checkbox" class="rec-check" data-ri="' + ri + '" onchange="onRowCheck()" /></td>' +
-            '<td class="border border-slate-200 px-3 py-2.5">' + r.name + '<span class="del-tag">已删除</span></td>' +
+            '<td class="border border-slate-200 px-3 py-2.5 text-center">' + box(ri, r.name) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2.5">' + r.name + '<span class="del-tag">已删除</span>' +
+            (applied[r.name] ? '<span class="applied-tag">' + (applied[r.name] === 'returned' ? '已退样' : '已申请') + '</span>' : '') + '</td>' +
             '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
             '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
             '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
             '<td class="border border-slate-200 px-3 py-2.5">' + pics + '</td></tr>';
         }
         return '<tr>' +
-          '<td class="border border-slate-200 px-3 py-2.5 text-center"><input type="checkbox" class="rec-check" data-ri="' + ri + '" onchange="onRowCheck()" /></td>' +
-          '<td class="border border-slate-200 px-3 py-2.5">' + r.name + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 text-center">' + box(ri, r.name) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + r.name +
+          (applied[r.name] ? '<span class="applied-tag">' + (applied[r.name] === 'returned' ? '已退样' : '已申请') + '</span>' : '') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + r.returner + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + r.returnDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5"><a href="template-config.html" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> ' + r.doc + '</a></td>' +
@@ -274,17 +291,34 @@
     function closeReturnRecordModal() { hideModal('returnRecordModal'); }
 
     function applyReturn() {
+      var item = listData[currentIndex];
       var picked = checkedRows();
       if (!picked.length) { alert('请勾选要退样的样品'); return; }
       var miss = [['a_contact', '联系人'], ['a_phone', '联系方式'], ['a_address', '联系地址']].filter(function (f) {
         return !document.getElementById(f[0]).value.trim();
       });
       if (miss.length) { alert('请填写必填项：' + miss.map(function (m) { return m[1]; }).join('、')); return; }
-      alert('已提交退样申请（' + picked.length + ' 件样品）。\n' +
+      var lines = picked.map(function (b) {
+        var r = listData[currentIndex].records[parseInt(b.getAttribute('data-ri'), 10)];
+        return { name: r.name, qty: r.qty || '', unit: r.unit || '', deleted: !!r.deleted,
+                 images: (r.images || []).slice(), returner: r.returner || '', returnDate: r.returnDate || '',
+                 doc: r.doc || (item.code.replace('/', '-') + '退样申请表.docx'), returned: false };
+      });
+      ReturnApplyStore.addApply({
+        code: item.code, customer: item.customer, operator: 'admin',
+        contact: document.getElementById('a_contact').value.trim(),
+        phone: document.getElementById('a_phone').value.trim(),
+        address: document.getElementById('a_address').value.trim(),
+        remark: document.getElementById('a_remark').value.trim(),
+        lines: lines
+      });
+      alert('已提交退样申请（' + lines.length + ' 件样品）。\n' +
         '联系人：' + document.getElementById('a_contact').value + '　联系方式：' + document.getElementById('a_phone').value + '\n' +
         '联系地址：' + document.getElementById('a_address').value + '\n' +
-        '申请已进入「样品退样」的待退样列表，由样品库执行退样并回填流转单（原型演示）');
-      closeReturnRecordModal();
+        '申请已写入「样品退样」的待退样列表（左侧菜单：样品管理 › 样品退样），由样品库选「自留 / 客户」执行并回填流转单。');
+      renderTable();
+      renderRecordModal();
+      onRowCheck();
     }
 
     renderTable();
@@ -306,7 +340,15 @@
             title: '退样申请的必填项', wide: true,
             content: '<strong>需求逻辑：</strong>退样是把样品寄回或交给委托方，必须有收件三要素（联系人、联系方式、联系地址）才能执行并回填流转单，备注选填。<br>' +
               '<strong>展示规则：</strong>弹窗底部四格表单：*联系人、*联系方式、*联系地址、备注；默认带出委托单位与登记时的联系人信息，可改。<br>' +
-              '<strong>交互逻辑：</strong>没勾选样品点「确认」提示「请勾选要退样的样品」；三项必填没填全提示缺哪几项且不关闭弹窗；确认后退样申请进入「样品退样」待退样列表，由样品库选「自留 / 客户」执行并回填流转单。', tag: '样品退样' }
+              '<strong>交互逻辑：</strong>没勾选样品点「确认」提示「请勾选要退样的样品」；三项必填没填全提示缺哪几项且不关闭弹窗；' +
+                '确认后申请写入本地 <code>lims.returnApply</code>（js/return-apply-store.js），弹窗内该行标「已申请」且复选框置灰防止重复申请，' +
+                '同时「样品退样」页的待退样列表出现这些样品，由样品库选「自留 / 客户」执行；执行完该行标「已退样」并从待退样列表消失。', tag: '样品退样' },
+          { id: 'apply-loop', selector: '[data-annotate="apply-scope"]', position: 'bottom-right',
+            title: '申请退样 → 样品退样 的闭环', wide: true,
+            content: '<strong>需求逻辑：</strong>申请与执行分两人两页：样品员在本页发起并给出收件信息，样品库在「样品退样」执行出库并回填流转单，所以两边的数据必须打通、不能各说各话。<br>' +
+              '<strong>展示规则：</strong>提交过申请的委托，操作列「还样记录」后跟一条「待退样 n 件」；弹窗内已申请的行带橙色「已申请」标签（退样完成后变「已退样」），复选框置灰。<br>' +
+              '<strong>交互逻辑：</strong>数据落在 <code>lims.returnApply</code>（一次确认 = 一条申请，可含多件样品，每件各自记退样结果）；' +
+              '「样品退样」列表只列还有待退样样品的委托，退样完成最后一件后该委托自动从列表消失；刷新、换页都保持，清浏览器本地数据可回到初始演示。', tag: '样品退样' }
         ]
       });
     }
