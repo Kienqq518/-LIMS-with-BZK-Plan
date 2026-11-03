@@ -132,6 +132,8 @@
   </script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/entrust-mock.js"></script>
+  <script src="js/receive-store.js"></script>
+  <script src="js/receive-history-mock.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>
   <script>
@@ -142,6 +144,12 @@
     // 公共字段（委托单位 / 样品 / 日期 / 编制人 / 业务员 / 任务类型…）统一取自 js/entrust-mock.js，
     // 保证「列表看到的」与「点进详情页看到的」是同一份数据
     EntrustMock.enrich(confirmData);
+
+    // 委托确认退回委托登记、变更只删掉样品（没有新增）的委托：不用再收样，直接回到委托确认，
+    // 确认页的收样信息保留上次记录，被删的样品置灰标「已删除」
+    if (window.ReceiveHistory && ReceiveHistory.redoConfirmRows) {
+      ReceiveHistory.redoConfirmRows().forEach(function (row) { confirmData.push(row); });
+    }
 
     function renderTable() {
       document.getElementById('confirmTableBody').innerHTML = confirmData.map(function (item, i) {

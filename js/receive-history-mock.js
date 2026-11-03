@@ -60,6 +60,105 @@
       }
     ];
 
+
+  /* ===== 委托确认退回委托登记、变更委托信息后重新往下流转的三种演示委托 =====
+   * kept    ：上次已收样、本次仍保留的样品 → 收样信息原样保留，不重复收
+   * added   ：变更新增的样品          → 待收
+   * removed ：变更删掉的样品          → 不走收样，要走退样；各处置灰并标「已删除」
+   * 场景1 = 0033 只增加样品；场景2 = 0031 只减少样品（跳过收样，直接到委托确认）；
+   * 场景3 = 0029 既减少又增加（回到收样页，只收新增的那件）。
+   */
+  var RETURN_REDO = [
+    {
+      code: 'SC2026/0033', scene: '增加样品', status: '样品收样', contract: '/',
+      customer: '杭州数蚕智能科技有限公司', sendDate: '2026-10-27', requireDate: '2026-11-20',
+      acceptDate: '2026-10-20', prepaid: '否', priority: '常规', editor: 'admin', salesman: '梁倩',
+      recv: { receiver: 'admin', status: '完好', receiveDate: '2026-10-21', delivery: '送样',
+              sender: '李工', senderPhone: '13900000000', remark: '委托确认退回登记后，保留上次收样信息' },
+      kept: [{ name: '绝缘操作杆', qty: '1', unit: '根', leafId: 'rod',
+               imgs: ['assets/report-trace/photo-receive-front.png', 'assets/report-trace/photo-receive-side.png'] }],
+      added: [{ name: '绝缘杆', qty: '2', unit: '根', leafId: 'pole' }],
+      removed: []
+    },
+    {
+      code: 'SC2026/0031', scene: '减少样品', status: '委托确认', contract: '/',
+      customer: '东集西造有限公司', sendDate: '2026-10-19', requireDate: '2026-11-18',
+      acceptDate: '2026-10-18', prepaid: '否', priority: '常规', editor: 'admin', salesman: '业务员A',
+      recv: { receiver: '张三', status: '完好', receiveDate: '2026-10-19', delivery: '快递',
+              sender: '周师傅', senderPhone: '13500004444', remark: '安全帽已退回委托方，本单不再检测' },
+      kept: [{ name: '遮蔽罩', qty: '1', unit: '件', leafId: 'shield',
+               imgs: ['assets/report-trace/photo-receive-front.png'] }],
+      added: [],
+      removed: [{ name: '安全帽', qty: '3', unit: '顶', leafId: 'helmet', deleted: true,
+                  imgs: ['assets/report-trace/photo-01-bench.jpg', 'assets/report-trace/photo-03-field.jpg'] }]
+    },
+    {
+      code: 'SC2026/0029', scene: '既减少又增加', status: '样品收样', contract: '/',
+      customer: '宇宙设想有限公司', sendDate: '2026-10-17', requireDate: '2026-11-16',
+      acceptDate: '2026-10-16', prepaid: '否', priority: '加急', editor: 'admin', salesman: '梁倩',
+      recv: { receiver: '李四', status: '完好', receiveDate: '2026-10-17', delivery: '送样',
+              sender: '孙工', senderPhone: '13600003333', remark: '验电器由客户补送；绝缘毯维持原收样记录' },
+      kept: [{ name: '绝缘毯', qty: '2', unit: '块', leafId: 'blanket',
+               imgs: ['assets/report-trace/photo-receive-side.png'] }],
+      added: [{ name: '验电器', qty: '2', unit: '支', leafId: 'detector' }],
+      removed: [{ name: '绝缘硬梯', qty: '1', unit: '把', leafId: 'hardladder', deleted: true,
+                  imgs: ['assets/report-trace/photo-05-bend.jpg'] }]
+    }
+  ];
+
+  /* 上次那一次收样提交 = 一条记录：保留的样品与被删的样品都在里面（被删的带 deleted 标记） */
+  function redoRecords() {
+    return RETURN_REDO.map(function (e) {
+      var lines = (e.kept || []).concat(e.removed || []).map(function (sn) {
+        return { sampleKey: e.code + '|' + sn.name, name: sn.name, qty: sn.qty, unit: sn.unit,
+                 leafId: sn.leafId || '', modelCode: sn.modelCode || '', specValues: sn.specs || [],
+                 mark: '', images: (sn.imgs || []).slice(), deleted: !!sn.deleted };
+      });
+      return { entrustCode: e.code, receiver: e.recv.receiver, status: e.recv.status,
+               receiveDate: e.recv.receiveDate, delivery: e.recv.delivery, sender: e.recv.sender,
+               senderPhone: e.recv.senderPhone, remark: e.recv.remark, lines: lines };
+    });
+  }
+
+  /* 收样列表用的行：保留 + 新增 + 被删（被删的带 deleted，行内置灰标「已删除」） */
+  function redoReceiveRows() {
+    return RETURN_REDO.filter(function (e) { return e.status === '样品收样'; }).map(function (e) {
+      return {
+        code: e.code, contract: e.contract, customer: e.customer,
+        sample: e.kept.concat(e.added).map(function (sn) { return sn.name; }).join('、'),
+        sendDate: e.sendDate, requireDate: e.requireDate, acceptDate: e.acceptDate,
+        prepaid: e.prepaid, priority: e.priority, status: '样品收样', editor: e.editor, salesman: e.salesman,
+        samples: e.kept.concat(e.added).concat(e.removed).map(function (sn) {
+          return { name: sn.name, qty: sn.qty, unit: sn.unit, leafId: sn.leafId, deleted: !!sn.deleted };
+        })
+      };
+    });
+  }
+
+  /* 委托确认列表用的行：变更删掉样品后跳过收样、直接回到委托确认的委托 */
+  function redoConfirmRows() {
+    return RETURN_REDO.filter(function (e) { return e.status === '委托确认'; }).map(function (e) {
+      return {
+        code: e.code, contract: e.contract, customer: e.customer,
+        sample: e.kept.map(function (sn) { return sn.name; }).join('、'),
+        sendDate: e.sendDate, requireDate: e.requireDate, acceptDate: e.acceptDate,
+        editor: e.editor, salesman: e.salesman
+      };
+    });
+  }
+
+  /* 还样记录行：被删的样品没有还样动作，还样人/日期/确认表都是「/」，图片沿用收样时上传的 */
+  function redoReturnRecords(e) {
+    var rows = (e.kept || []).map(function (sn) {
+      return { name: sn.name + '(' + sn.qty + ')', returner: e.recv.receiver, returnDate: e.recv.receiveDate,
+               doc: e.code.replace('/', '-') + '还样退库确认表.docx', confirmed: false };
+    });
+    (e.removed || []).forEach(function (sn) {
+      rows.push({ name: sn.name + '(' + sn.qty + ')', deleted: true, images: (sn.imgs || []).slice() });
+    });
+    return rows;
+  }
+
   function S(name, qty, unit, leafId, o) {
     o = o || {};
     return { name: name, qty: qty, unit: unit, leafId: leafId || '',
@@ -182,6 +281,11 @@
     ensure: ensure,
     PARTIAL_RECEIVED: PARTIAL_RECEIVED,
     PENDING_RECEIVE: PENDING_RECEIVE,
-    ENTRUSTS: ENTRUSTS
+    ENTRUSTS: ENTRUSTS,
+    RETURN_REDO: RETURN_REDO,
+    redoRecords: redoRecords,
+    redoReceiveRows: redoReceiveRows,
+    redoConfirmRows: redoConfirmRows,
+    redoReturnRecords: redoReturnRecords
   };
 })(window);

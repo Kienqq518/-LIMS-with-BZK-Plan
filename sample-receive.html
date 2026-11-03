@@ -22,6 +22,13 @@
     .rcv-table th, .rcv-table td { border: 1px solid #e2e8f0; padding: 6px 8px; font-size: 13px; text-align: left; vertical-align: top; }
     .rcv-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
     .rcv-table tr.is-received { background: #f8fafc; color: #94a3b8; }
+    /* 变更删掉的样品：不参与收样，整行灰到底并标「已删除」，要退样去退样环节 */
+    .rcv-table tr.is-deleted { background: #fbfcfe; color: #b6bcc7; }
+    .rcv-table tr.is-deleted td { border-color: #f1f3f7; }
+    .rcv-table tr.is-deleted .mark-text, .rcv-table tr.is-deleted .thumb { opacity: .55; }
+    .state-deleted { background: #fdeeee; color: #cf1322; }
+    .del-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
+      background: #fdeeee; color: #cf1322; font-size: 11px; line-height: 16px; }
     .rcv-table tr.is-received td { border-color: #eef2f7; }
     .state-badge { display: inline-block; padding: 1px 6px; border-radius: 999px; font-size: 12px; }
     .state-todo { background: #eff6ff; color: #2563eb; }
@@ -146,7 +153,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">任务状态</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="rcv-return-col">操作</th>
             </tr>
           </thead>
           <tbody id="receiveTableBody" class="text-slate-600"></tbody>
@@ -363,6 +370,13 @@
     // 保证「列表看到的」与「点进详情页看到的」是同一份数据
     EntrustMock.enrich(receiveData);
 
+    // ===== 委托确认退回委托登记、变更后再往下流转的演示委托 =====
+    // 场景1（只增加样品）与场景3（既减少又增加）回到本页：新增的样品待收，
+    // 上次已收的样品保留收样信息，被删的样品置灰标「已删除」并等退样。
+    if (window.ReceiveHistory && ReceiveHistory.redoReceiveRows) {
+      ReceiveHistory.redoReceiveRows().forEach(function (row) { receiveData.push(row); });
+    }
+
     // ===== 演示种子：已经收掉部分样品的委托（进页面即可看到「待收 N 类」状态）=====
     // 数据源在 js/receive-history-mock.js（委托详情页要用同一份，避免两个页面口径不一致）；
     // 播种只补不覆盖：手工收过的样品行不会被重复写入
@@ -501,6 +515,8 @@
               }),
           images: line ? (line.images || []) : [],
           received: !!rec,
+          // 变更删掉的样品：不参与收样，行内置灰并标「已删除」，实物走退样
+          deleted: !!sn.deleted || !!(line && line.deleted),
           record: rec ? rec.record : null
         };
       });
@@ -519,10 +535,12 @@
       var tbl = document.querySelector('#receiveModal .rcv-table');
       if (tbl) tbl.classList.toggle('hide-mark-col', !markColOn);
       document.getElementById('modalSampleBody').innerHTML = modalRows.map(function (r, i) {
-        var cls = r.received ? ' class="is-received"' : '';
-        var checkCell = r.received
-          ? '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" disabled title="已收样，不可再勾选" /></div>'
-          : '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" onchange="onRowCheck()" /></div>';
+        var cls = r.deleted ? ' class="is-received is-deleted"' : (r.received ? ' class="is-received"' : '');
+        var checkCell = r.deleted
+          ? '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" disabled title="样品已删除，不参与收样；实物请在退样环节做退样" /></div>'
+          : (r.received
+              ? '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" disabled title="已收样，不可再勾选" /></div>'
+              : '<div class="text-center"><input type="checkbox" class="rcv-check" data-row="' + i + '" onchange="onRowCheck()" /></div>');
         var qtyCell = esc(r.qty);
         // 型号/分类在委托登记添加样品时已确定，收样阶段只读、不可改；两列无值统一显示「/」，原因放 title
         var modelCell;
@@ -567,13 +585,14 @@
         return '<tr' + cls + ' data-row="' + i + '">' +
           '<td>' + checkCell + '</td>' +
           '<td>' + (i + 1) + '</td>' +
-          '<td>' + esc(r.name) + '</td>' +
+          '<td>' + esc(r.name) + (r.deleted ? '<span class="del-tag">已删除</span>' : '') + '</td>' +
           '<td class="col-mark"><span class="mark-text">' + (esc(mark) || '<span class="spec-none">/</span>') + '</span></td>' +
           '<td>' + qtyCell + '</td>' +
           '<td>' + modelCell + '</td>' +
           '<td>' + specCell + '</td>' +
           '<td>' + imgCell + '</td>' +
-          '<td><span class="state-badge ' + (r.received ? 'state-done' : 'state-todo') + '">' + (r.received ? '已收样' : '待收样') + '</span></td>' +
+          '<td><span class="state-badge ' + (r.deleted ? 'state-deleted' : (r.received ? 'state-done' : 'state-todo')) + '">' +
+            (r.deleted ? '已删除' : (r.received ? '已收样' : '待收样')) + '</span></td>' +
           '<td>' + opCell + '</td>' +
         '</tr>';
       }).join('');
@@ -629,7 +648,8 @@
         var r = modalRows[parseInt(tr.getAttribute('data-row'), 10)];
         if (!r) return;
         var ok = true;
-        if (state === 'todo' && r.received) ok = false;
+        // 已删除的行既不是待收也不是已收，任何收样状态筛选下都保留，避免看不见
+        if (state === 'todo' && r.received && !r.deleted) ok = false;
         if (state === 'done' && !r.received) ok = false;
         if (kw && String(r.name).toLowerCase().indexOf(kw) < 0) ok = false;
         if (img === 'yes' && !ReceiveStore.imCount(r.images)) ok = false;
@@ -852,12 +872,34 @@
       });
     });
 
-    if (window.ReceiveStore && ReceiveStore.seedDemo) ReceiveStore.seedDemo(DEMO_RECEIVED);
+    if (window.ReceiveStore && ReceiveStore.seedDemo) {
+      ReceiveStore.seedDemo(DEMO_RECEIVED);
+      // 三张退回重流转型委托：上次的收样记录原样保留（被删样品也在同一条记录里，带 deleted 标记）
+      if (window.ReceiveHistory && ReceiveHistory.redoRecords) ReceiveStore.seedDemo(ReceiveHistory.redoRecords());
+    }
     renderTable();
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
         annotations: [
+          {
+            id: 'rcv-return-col',
+            selector: '[data-annotate="rcv-return-col"]',
+            position: 'top-right',
+            title: '退回（整单）与退回登记后的重新流转',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>退回仍按委托整单：只填一个必填的「退回原因」，不拆到样品行。' +
+              '<strong>退回只在「全部样品均未收样」时开放</strong>：该委托一旦收过任一样品，收样记录已经生效并被委托详情、样品发样等环节取用，这时整单退回会把已收的部分作废、两端数据对不上，所以只能把剩余样品收完；委托收齐后离开本列表。' +
+              '上一环节的退回口径：<strong>委托确认退回是退到委托登记，不是退回收样</strong>。更改委托信息后再次往下流转到样品收样阶段时，' +
+              '对委托里仍然存在的样品<strong>保留上次的收样信息</strong>（不重复收样）；对委托里删掉的样品<strong>不走收样而要走退样</strong>，样品收样弹窗内该行置灰并标记「样品已删除」。' + '<br>' +
+              '<strong>展示规则：</strong>操作列两个入口：「收样」（蓝）与「退回」（橙）。该委托一件都没收 → 「退回」可点；已收过任一样品 → 「退回」置灰不可点，悬停提示「已有 n 类样品收样，不能退回；请把剩余样品收完」。' +
+              '退回弹窗标题为「{委托编号}-退回」，只有一个必填项「退回原因」。收样弹窗里上次已收的行是灰底 +「已收样」，被删的行灰底 + 名称后带红色「已删除」标签、收样情况为「已删除」，且在任何收样状态筛选下都保留可见。' + '<br>' +
+              '<strong>交互逻辑：</strong>置灰的退回点不动，弹窗入口另有二次校验兜底（提示「该委托已有 n 类样品收样，不能退回」）。填了原因确认后整单退回委托登记。' +
+              '退回登记并变更后再流转到本页：新增的样品是「待收样」可勾选，未改动的样品直接显示「已收样」并带出上次的收样人 / 收样日期 / 收样状态 / 送样方式 / 规格 / 收样图片（点缩略图看大图），被删样品不可勾选、不参与提交，需在退样环节做退样处理；' +
+              '若本次变更只删样品、没有新增，委托不再回到本页，直接进委托确认。' + '<br>' +
+              '<strong>演示数据：</strong>SC2026/0033（只增加样品）、SC2026/0029（既减少又增加）在本页待收列表内；SC2026/0031（只减少样品）跳过本页，直接出现在委托确认列表。三张单的样品清单与收样记录统一由 js/receive-history-mock.js › RETURN_REDO 提供。',
+            tag: '样品收样'
+          },
           {
             id: 'rcv-list-days',
             selector: '[data-annotate="rcv-list"]',

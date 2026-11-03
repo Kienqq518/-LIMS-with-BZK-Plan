@@ -39,6 +39,12 @@
     .thumb-strip { display: flex; flex-wrap: wrap; gap: 4px; }
     .thumb { width: 40px; height: 40px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
     .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    /* 变更删掉的样品：收样信息里保留上次记录，但整行灰到底并标「已删除」 */
+    .rcv-mini tr.is-deleted { background: #fbfcfe; color: #b6bcc7; }
+    .rcv-mini tr.is-deleted td { border-color: #f1f3f7; }
+    .rcv-mini tr.is-deleted .col-mark, .rcv-mini tr.is-deleted .thumb { opacity: .55; }
+    .del-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
+      background: #fdeeee; color: #cf1322; font-size: 11px; line-height: 16px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700 pb-20">
@@ -286,6 +292,11 @@
     function renderReceiveInfo() {
       var body = document.getElementById('receiveInfoBody');
       if (!body) return;
+      // 委托确认退回委托登记、变更删掉样品的演示委托：先把上次那次收样提交原样播种进来
+      // （被删的样品也在同一条记录里，带 deleted 标记），保证「保留上次收样信息」看得见
+      if (window.ReceiveHistory && window.ReceiveStore && ReceiveHistory.redoRecords) {
+        ReceiveStore.seedDemo(ReceiveHistory.redoRecords());
+      }
       // 走到委托确认，样品必然已收样：查不到提交记录时按本页样品清单幂等补历史收样
       if (window.ReceiveHistory) {
         ReceiveHistory.ensure(PAGE_CODE, {
@@ -329,7 +340,8 @@
                   : '<span class="thumb" title="' + rcvEsc(nm) + '">仅存名</span>';
               }).join('') + '</div>'
             : '<span class="spec-none">未上传</span>';
-          return '<tr><td>' + (i + 1) + '</td><td>' + rcvEsc(ln.name) + '</td><td>' + rcvEsc(ln.qty) + '</td>' +
+          return '<tr' + (ln.deleted ? ' class="is-deleted"' : '') + '><td>' + (i + 1) + '</td>' +
+            '<td>' + rcvEsc(ln.name) + (ln.deleted ? '<span class="del-tag">已删除</span>' : '') + '</td><td>' + rcvEsc(ln.qty) + '</td>' +
             (markColOn ? '<td class="col-mark">' + (rcvEsc(markText) || (ln.leafId ? '未配置规则' : '/')) + '</td>' : '') +
             '<td>' + rcvModelLabel(sample, ln.modelCode) + '</td>' +
             '<td>' + (rcvEsc(spec) || '/') + '</td><td>' + imgs + '</td></tr>';
@@ -452,6 +464,7 @@
           wide: true,
           content: '<strong>需求逻辑：</strong>委托确认要看到该委托<strong>全部样品</strong>的收样情况才能确认，所以本区域与委托详情页同款：一次收样提交 = 一张批次卡，而不是整单一条收样信息。<br>' +
             '<strong>展示规则：</strong>卡头「第 N 次收样 · 收样日期 · 收样人 · 收样状态 · 送样方式 · 送样人/电话 · 备注」；卡内按样品逐行列序号、样品名称、数量、产品标记（该批次内任一样品开启产品标记开关时出列）、型号/分类、规格、收样图片缩略图；没有值统一显示「/」，未上传显示「未上传」；查不到提交记录时只显示一行「该委托尚无收样提交记录」。<br>' +
+            '<strong>变更删掉的样品：</strong>委托确认退回委托登记后删掉的样品不再参与收样与确认，但上次的收样信息要留得住——该行仍列在本批次卡里、整行灰底、样品名称后带红色「已删除」标签，收样人 / 日期 / 规格 / 图片按上次提交原样展示；它不在「检测信息」的样品表里（已从委托中移除），实物走退样，退样与还样记录见样品退样 / 还样确认页。<br>' +
             '<strong>交互逻辑：</strong>数据来自「样品管理 › 样品收样」的提交记录（本地 lims.receiveRecords）；到确认阶段仍缺记录时按本页样品清单幂等补历史收样（js/receive-history-mock.js，只补缺、不覆盖手工收样记录）。本区域只读，但<strong>收样图片缩略图可点开看大图</strong>（同一样品的多张可左右切换，点遮罩或按 Esc 关闭）。本页「检测信息」里补填的规格参数不回写这里——收样信息反映的是收样当时的记录；反向的联动保留：收样阶段填过的型号与规格值会自动带进检测信息表，不用重复填。',
           tag: '委托确认'
           }

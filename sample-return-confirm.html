@@ -11,6 +11,15 @@
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
+    /* 变更删掉的样品：没有还样动作，整行灰到底并标「已删除」 */
+    #returnRecordModal tr.is-deleted { background: #fbfcfe; color: #b6bcc7; }
+    #returnRecordModal tr.is-deleted td { border-color: #f1f3f7; }
+    .del-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
+      background: #fdeeee; color: #cf1322; font-size: 11px; line-height: 16px; }
+    .thumb-strip { display: flex; flex-wrap: wrap; gap: 4px; }
+    .thumb { width: 40px; height: 40px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cell-none { color: #cbd5e1; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -102,6 +111,9 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/entrust-mock.js"></script>
+  <script src="js/receive-store.js"></script>
+  <script src="js/receive-history-mock.js"></script>
+  <script src="js/image-viewer.js?v=2"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -128,6 +140,19 @@
     // 保证「列表看到的」与「点进详情页看到的」是同一份数据
     EntrustMock.enrich(listData);
 
+    // 委托确认退回委托登记、变更删掉样品的委托：被删的样品不走收样也不走还样，
+    // 要在退样环节做退样处理，因此连同其收样时上传的图片一起出现在还样记录里
+    if (window.ReceiveHistory && ReceiveHistory.RETURN_REDO) {
+      ReceiveHistory.RETURN_REDO.filter(function (e) { return (e.removed || []).length; }).forEach(function (e) {
+        listData.push({
+          code: e.code, contract: e.contract, customer: e.customer,
+          sample: e.kept.map(function (sn) { return sn.name; }).join('、'),
+          status: e.status, editor: e.editor, salesman: e.salesman,
+          records: ReceiveHistory.redoReturnRecords(e)
+        });
+      });
+    }
+
     var currentIndex = -1;
 
     function renderTable() {
@@ -150,6 +175,23 @@
     function renderRecordModal() {
       var item = listData[currentIndex];
       document.getElementById('recordModalBody').innerHTML = item.records.map(function (r, ri) {
+        // 变更删掉的样品：没有还样动作 → 还样人 / 还样日期 / 还样退库确认表都是「/」，
+        // 图片沿用收样时上传的，样品名称(数量)后标「已删除」，不参与确认
+        if (r.deleted) {
+          var pics = (r.images || []).length
+            ? '<div class="thumb-strip">' + r.images.map(function (u) {
+                return '<span class="thumb" data-img-src="' + u + '" data-img-name="' + r.name + ' 收样图片" title="' + u.split('/').pop() + '（点击看大图）">' +
+                  '<img src="' + u + '" alt="收样图片" /></span>';
+              }).join('') + '</div>'
+            : '<span class="cell-none">/</span>';
+          return '<tr class="is-deleted">' +
+            '<td class="border border-slate-200 px-3 py-2.5">' + r.name + '<span class="del-tag">已删除</span></td>' +
+            '<td class="border border-slate-200 px-3 py-2.5">' + pics + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
+            '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
+            '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
+            '<td class="border border-slate-200 px-3 py-2.5 text-center cell-none">/</td></tr>';
+        }
         var confirmBtn = r.confirmed
           ? '<span class="text-green-600"><i class="fa fa-check-circle"></i></span>'
           : '<button onclick="confirmOne(' + ri + ')" class="text-blue-600 hover:text-blue-700" data-annotate="confirm-one" title="确认"><i class="fa fa-check"></i></button>';
@@ -182,7 +224,7 @@
 
     function confirmOne(ri) {
       var r = listData[currentIndex].records[ri];
-      if (r.confirmed) return;
+      if (r.confirmed || r.deleted) return;
       r.confirmed = true;
       alert(writebackMsg(r) + '（原型演示）');
       renderRecordModal();
@@ -191,7 +233,7 @@
 
     function approveAll() {
       var item = listData[currentIndex];
-      var pending = item.records.filter(function (r) { return !r.confirmed; });
+      var pending = item.records.filter(function (r) { return !r.confirmed && !r.deleted; });
       if (!pending.length) { alert('已全部确认'); return; }
       pending.forEach(function (r) { r.confirmed = true; });
       alert('全部通过 ' + pending.length + ' 条还样记录，流转单已逐条回填（原型演示）。\n示例：' + writebackMsg(pending[0]));
@@ -207,6 +249,13 @@
           { id: 'return-record-link', selector: '[data-annotate="return-record-link"]', position: 'top-right', title: '还样记录', content: '<strong>需求逻辑：</strong>检测员把试样退回承检方样品库后，需要样品员逐条确认，确认才算还样完成。<br>' +
             '<strong>展示规则：</strong>「还样记录」链接打开记录弹窗；流程节点为「还样确认」。<br>' +
             '<strong>交互逻辑：</strong>点击打开还样记录列表，可逐条确认或全部通过。', tag: '流转单' },
+          { id: 'return-deleted-row', selector: '#recordModalBody', position: 'top-right',
+            title: '还样记录里的「已删除」样品',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>委托确认退回委托登记后删掉的样品，实物不在库里、也没有还样动作，它要走的是退样；但收样时留下的图片和数量必须还能查得到，所以这条记录留在还样记录里，只是不参与确认。<br>' +
+              '<strong>展示规则：</strong>该行整行灰底，「样品名称(数量)」后带红色「已删除」标签；「还样人」「还样日期」「还样退库确认表」「操作」四列都显示「/」，不出确认按钮；「图片」列沿用收样时上传的图片（有图显示缩略图、点缩略图看大图，没上传显示「/」）。<br>' +
+              '<strong>交互逻辑：</strong>已删除行不可确认，「全部通过」只统计未确认且未删除的行；演示委托 SC2026/0031（只删样品）与 SC2026/0029（既删又增）由 js/receive-history-mock.js › RETURN_REDO 提供。',
+            tag: '退样' },
           { id: 'return-date-col', selector: '[data-annotate="return-date-col"]', position: 'bottom-left', title: '还样日期', content: '<strong>需求逻辑：</strong>还样日期是流转单签名的时间依据，必须与还样记录一致，不能在确认时另填。<br>' +
             '<strong>展示规则：</strong>「还样日期」列。<br>' +
             '<strong>交互逻辑：</strong>日期取自还样记录弹窗，写入流转单「样品交接人签名/日期」的日期部分。', tag: '流转单' },
