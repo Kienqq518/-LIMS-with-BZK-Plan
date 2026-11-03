@@ -108,6 +108,22 @@
     }
   ];
 
+  /* ===== 已收样后被删掉的样品：标签打印 / 合格打印 共用同一份口径 =====
+   * kind = back   ：委托确认退回委托登记后，把这件样品删掉了（样品已收过样）
+   * kind = change ：变更申请删除样品
+   * 编号不回收、永久占位；已打印标签与已发合格证一律标「已作废」并禁止再次打印。
+   */
+  var DELETED_SAMPLES = {
+    'SC2026/0031': [{ name: '安全帽', sampleNo: 'SC2026/00310201', qty: '3', unit: '顶', kind: 'back', masterId: 'helmet', cat: 'aqgqj' }],
+    'SC2026/0029': [{ name: '绝缘硬梯', sampleNo: 'SC2026/00290301', qty: '1', unit: '把', kind: 'change', masterId: 'hardladder', cat: 'aqgqj' }],
+    'SC2026/0073': [{ name: '安全帽', sampleNo: 'SC2026/00730201', qty: '2', unit: '顶', kind: 'change', masterId: 'helmet', cat: 'aqgqj' }],
+    'SC2026/0071': [{ name: '绝缘硬梯', sampleNo: 'SC2026/00710201', qty: '1', unit: '把', kind: 'back', masterId: 'hardladder', cat: 'aqgqj' }]
+  };
+  var DELETE_KIND_TEXT = {
+    back: '委托确认退回委托登记后删除样品',
+    change: '变更申请删除样品'
+  };
+
   /* 上次那一次收样提交 = 一条记录：保留的样品与被删的样品都在里面（被删的带 deleted 标记） */
   function redoRecords() {
     return RETURN_REDO.map(function (e) {
@@ -285,6 +301,8 @@
     PENDING_RECEIVE: PENDING_RECEIVE,
     ENTRUSTS: ENTRUSTS,
     RETURN_REDO: RETURN_REDO,
+    DELETED_SAMPLES: DELETED_SAMPLES,
+    DELETE_KIND_TEXT: DELETE_KIND_TEXT,
     redoRecords: redoRecords,
     redoReceiveRows: redoReceiveRows,
     redoConfirmRows: redoConfirmRows,

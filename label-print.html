@@ -12,6 +12,11 @@
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     .status-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; background: #f1f5f9; color: #64748b; }
+    .del-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
+      background: #fdeeee; color: #cf1322; font-size: 11px; line-height: 16px; }
+    tr.row-deleted, tr.row-deleted:hover { background: #fbfcfe; color: #b6bcc7; }
+    tr.row-deleted td { border-color: #f1f3f7; }
+
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -70,7 +75,7 @@
             <tr class="bg-slate-100 text-slate-600">
               <th class="border border-slate-200 px-3 py-2 font-medium w-10"><input type="checkbox" id="checkAll" onchange="toggleAll(this.checked)" /></th>
               <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="deleted-void">委托编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th>
@@ -139,7 +144,10 @@
       { code: 'SC2026/0071', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-08', requireDate: '2026-07-21', status: '报告签发', editor: 'admin', judgment: '合格' },
       { code: 'SC2026/0070', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-07', requireDate: '2026-07-20', status: '任务归档', editor: 'admin', judgment: '合格' },
       { code: 'SC2026/0069', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-06', requireDate: '2026-07-19', status: '报告编制', editor: 'admin', judgment: '合格' },
-      { code: 'SC2026/0068', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-05', requireDate: '2026-07-18', status: '数据审核', editor: 'admin', judgment: '合格' }
+      { code: 'SC2026/0068', contract: '/', customer: '杭州数蚕智能科技有限公司', sendDate: '2026-06-05', requireDate: '2026-07-18', status: '数据审核', editor: 'admin', judgment: '合格' },
+      // 已收样后被删掉样品的两张演示委托：0031 退回委托登记后删除、0029 变更删除
+      { code: 'SC2026/0031', contract: '/', customer: '东集西造有限公司', sendDate: '2026-10-19', requireDate: '2026-11-18', status: '委托确认', editor: 'admin', judgment: '合格' },
+      { code: 'SC2026/0029', contract: '/', customer: '宇宙设想有限公司', sendDate: '2026-10-17', requireDate: '2026-11-16', status: '样品收样', editor: 'admin', judgment: '合格' }
     ];
 
     // 公共字段（委托单位 / 样品 / 日期 / 编制人 / 业务员 / 任务类型…）统一取自 js/entrust-mock.js，
@@ -325,13 +333,15 @@
     function renderTable() {
       document.getElementById('tableBody').innerHTML = filtered.map(function (item, i) {
         var showCert = canShowCert(item);
+        var dels = (window.ReceiveHistory && ReceiveHistory.DELETED_SAMPLES[item.code]) || [];
         var certBtn = showCert
           ? '<a id="' + (item.code === 'SC2026/0079' ? 'linkSingleCert' : '') + '" href="#" onclick="onSingleCertClick(event,\'' + item.code + '\')" class="text-green-600 hover:underline"><i class="fa fa-print"></i> 合格证</a>'
           : '';
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2.5"><input type="checkbox" class="row-check" data-code="' + item.code + '" data-cert="' + (showCert ? '1' : '0') + '" /></td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a>' +
+            (dels.length ? '<span class="del-tag" title="' + dels.map(function (d) { return d.name + '（' + ReceiveHistory.DELETE_KIND_TEXT[d.kind] + '）'; }).join('；') + '">含已删除样品 ' + dels.length + ' 件</span>' : '') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.sendDate + '</td>' +
@@ -484,6 +494,17 @@
 
     PrototypeAnnotation.init({
       annotations: [
+        {
+          id: 'lp-deleted-void',
+          selector: '[data-annotate="deleted-void"]',
+          position: 'top-right',
+          title: '已删除样品：标签作废、禁止重打',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>样品收样之后被删掉有两种来源：① 委托确认退回委托登记，把这件样品删了；② 变更申请删除样品。两种情况样品都已经收过样、标签可能已打印、合格证可能已发，实物则要走退样还给委托方，所以记录不能删——编号不回收、永久占位，旧标签与旧合格证标「已作废」并禁止再次打印，避免作废的样品还在流通。<br>' +
+            '<strong>展示规则：</strong>这类委托在列表的委托编号后带红色「含已删除样品 n 件」标记，悬停显示样品名与删除来源（委托确认退回委托登记后删除 / 变更申请删除）；点进「样品标签」页，被删样品仍列在清单里，整行灰底、样品编号后标「标签已作废」、样品名称后标「已删除」。<br>' +
+            '<strong>交互逻辑：</strong>作废行的复选框置灰不可勾选，「全选」与「批量打印样品标签」都不含它；需要新标签的（如客户补送同款样品）走新增样品重新发号，不复用作废编号。演示数据：SC2026/0031（退回登记后删安全帽）、SC2026/0029（变更删绝缘硬梯），清单在 js/receive-history-mock.js › DELETED_SAMPLES。',
+          tag: '标签打印'
+        },
         {
           id: 'single-cert',
           selector: '#linkSingleCert',
