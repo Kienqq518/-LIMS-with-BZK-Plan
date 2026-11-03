@@ -198,6 +198,7 @@
 
     function renderTable() {
       document.getElementById('tableBody').innerHTML = listData.map(function (item, i) {
+        var pend = window.ReturnApplyStore ? ReturnApplyStore.pendingCount(item.code) : 0;
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
@@ -208,9 +209,10 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' +
             '<button onclick="openPendingModal(' + i + ')" class="text-blue-600 hover:underline" data-annotate="pending-list"><i class="fa fa-list"></i> 待退样' +
-            (window.ReturnApplyStore ? (ReturnApplyStore.pendingCount(item.code) || '') : '') .replace(/^(\d+)$/, '（$1）') + '</button>' +
+            (pend ? '（' + pend + '）' : '') + '</button>' +
           '</td></tr>';
-      }).join('');
+      }).join('') || '<tr><td colspan="8" class="border border-slate-200 px-3 py-8 text-center text-slate-400">' +
+        '<i class="fa fa-inbox"></i> 暂无待退样委托：请先在「申请退样」勾选样品并提交申请</td></tr>';
     }
 
     function showModal(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
