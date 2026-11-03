@@ -52,6 +52,7 @@
   ].join('\n');
 
   var table = null, cols = [], order = [], hidden = {}, panel = null, applying = false;
+  var sourceOrder = null;   // 源码里的列顺序（首次收集时记录），供表体重绘后按位打标
 
   function pageKey() {
     return (global.location.pathname.split('/').pop() || 'index').replace(/\.html?$/i, '');
@@ -101,18 +102,37 @@
 
   function headRow() { return table.querySelector('thead tr') || table.querySelector('tr'); }
 
+  function sameKeySet(a, b) {
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) { if (a.indexOf(b[i]) < 0) return false; }
+    return true;
+  }
+
   function collectCols() {
     var seen = {};
-    cols = [].slice.call(headRow().children).map(function (th, i) {
+    var list = [].slice.call(headRow().children).map(function (th, i) {
       var label = (th.textContent || '').replace(/\s+/g, ' ').trim();
       var base = label || (th.querySelector('input[type=checkbox]') ? '勾选' : '列' + (i + 1));
-      var key = base;
+      // 列身份优先取表头显式声明的 data-col-key：这样只改列名时，用户此前保存的
+      // 列顺序与显隐（按 key 存）不会因改名而失效；面板里仍显示新的列名。
+      var key = (th.getAttribute('data-col-key') || '').trim() || base;
       // 同名列加序号后缀，保证 key 唯一
       for (var n = 2; seen[key]; n++) key = base + '#' + n;
       seen[key] = 1;
       th.setAttribute('data-col-key', key);
       return { key: key, label: base, index: i };
     });
+    var keys = list.map(function (c) { return c.key; });
+    // 列集合没变时，cols 始终按源码顺序排：表体每次重绘出来的单元格都是源码顺序，
+    // tagBodyCells 靠位置打标，若跟着已被重排的表头顺序打标会串列。
+    if (sourceOrder && sameKeySet(sourceOrder, keys)) {
+      var byKey = {};
+      list.forEach(function (c) { byKey[c.key] = c; });
+      cols = sourceOrder.map(function (k) { return byKey[k]; });
+    } else {
+      cols = list;
+      sourceOrder = keys;
+    }
   }
 
   function tagBodyCells() {
