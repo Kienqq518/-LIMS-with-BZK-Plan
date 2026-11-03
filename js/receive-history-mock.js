@@ -99,7 +99,9 @@
       recv: { receiver: '李四', status: '完好', receiveDate: '2026-10-17', delivery: '送样',
               sender: '孙工', senderPhone: '13600003333', remark: '验电器由客户补送；绝缘毯维持原收样记录' },
       kept: [{ name: '绝缘毯', qty: '2', unit: '块', leafId: 'blanket',
-               imgs: ['assets/report-trace/photo-receive-side.png'] }],
+               imgs: ['assets/report-trace/photo-receive-side.png'] },
+             { name: '10kV3芯电力电缆', qty: '1', unit: '根', leafId: 'cu6-3c', modelCode: 'YJV22',
+               specs: ['95', '8.7/10'], imgs: ['assets/report-trace/photo-03-field.jpg'] }],
       added: [{ name: '验电器', qty: '2', unit: '支', leafId: 'detector' }],
       removed: [{ name: '绝缘硬梯', qty: '1', unit: '把', leafId: 'hardladder', deleted: true,
                   imgs: ['assets/report-trace/photo-05-bend.jpg'] }]

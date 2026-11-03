@@ -24,6 +24,8 @@
     .thumb { width: 40px; height: 40px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
     .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .cell-none { color: #cbd5e1; }
+    .hide-mark-col .col-mark { display: none; }
+
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -87,10 +89,13 @@
         <button onclick="closePendingModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="flex-1 overflow-y-auto px-6 py-4">
-        <table class="w-full border-collapse text-left text-sm">
+        <table class="w-full border-collapse text-left text-sm" id="pendingTable">
           <thead>
             <tr class="bg-slate-50 text-slate-600">
               <th class="border border-slate-200 px-3 py-2 font-medium">样品名称(数量)</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium col-mark">产品标记</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">型号/分类</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">规格</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">图片</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">还样人</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">还样日期</th>
@@ -159,6 +164,8 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/sample-spec-ui.js"></script>
+  <script src="js/sample-info.js"></script>
   <script src="js/entrust-mock.js"></script>
   <script src="js/receive-store.js"></script>
   <script src="js/receive-history-mock.js"></script>
@@ -224,11 +231,15 @@
       var lines = window.ReturnApplyStore ? ReturnApplyStore.pendingLines(pendingCode) : [];
       var body = document.getElementById('pendingBody');
       if (!lines.length) {
-        body.innerHTML = '<tr><td colspan="6" class="border border-slate-200 px-3 py-8 text-center text-slate-400">' +
+        body.innerHTML = '<tr><td colspan="9" class="border border-slate-200 px-3 py-8 text-center text-slate-400">' +
           '该委托已无待退样样品（退样完成）</td></tr>';
         return;
       }
-      body.innerHTML = lines.map(function (row) {
+      // 样品信息（产品标记 / 型号分类 / 规格）取自该委托的收样记录与样品数据主数据
+      var infos = lines.map(function (row) { return SampleInfo.row(pendingCode, row.line.name); });
+      var tbl = document.getElementById('pendingTable');
+      if (tbl) tbl.classList.toggle('hide-mark-col', !SampleInfo.anyMarkOn(infos));
+      body.innerHTML = lines.map(function (row, ri) {
         var l = row.line;
         var pics = (l.images || []).length
           ? '<div class="thumb-strip">' + l.images.map(function (u) {
@@ -237,6 +248,7 @@
           : '<span class="cell-none">暂无图片</span>';
         return '<tr' + (l.deleted ? ' class="is-deleted"' : '') + '>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + l.name + (l.deleted ? '<span class="del-tag">已删除</span>' : '') + '</td>' +
+          SampleInfo.cells(infos[ri]) +
           '<td class="border border-slate-200 px-3 py-2.5">' + pics + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5' + (l.deleted ? ' cell-none' : '') + '">' + (l.returner || '/') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap' + (l.deleted ? ' cell-none' : '') + '">' + (l.returnDate || '/') + '</td>' +
@@ -357,7 +369,7 @@
             '<strong>展示规则：</strong>提示条说明：仅当委托需要退回委托方样品时才走「样品退样」并回填流转单；不需要退样的委托停在本页不操作即可。<br>' +
             '<strong>交互逻辑：</strong>跳过本节点不影响任务归档；后续若需退样，仍可从本页发起。', tag: '流转单' },
           { id: 'pending-list', selector: '[data-annotate="pending-list"]', position: 'top-right', title: '待退样列表', content: '<strong>需求逻辑：</strong>退样由样品库样品员执行，需要一张可追溯的待退清单与凭据单据。<br>' +
-            '<strong>展示规则：</strong>列表列：样品名称(数量)、图片、还样人、还样日期、退样申请表、操作；「退样申请表」为 PageOffice 单据模板（文件名 = 委托编号 + 退样申请表.docx），可查看或生成；还样人 / 还样日期取自该样品的还样确认记录。<br>' +
+            '<strong>展示规则：</strong>列表列：样品名称(数量)、产品标记、型号/分类、规格、图片、还样人、还样日期、退样申请表、操作（整表没有样品开启产品标记开关时产品标记列隐藏）；「退样申请表」为 PageOffice 单据模板（文件名 = 委托编号 + 退样申请表.docx），可查看或生成；还样人 / 还样日期取自该样品的还样确认记录。<br>' +
             '<strong>交互逻辑：</strong>本页只消费「申请退样」提交的申请（本地 <code>lims.returnApply</code>）：按钮上带待退样件数，没有待退样样品的委托不列在本页；' +
               '行内「退样」打开「填写退样信息」弹窗，确定后该行从待退样列表消失，最后一件退完后该委托整行从本页列表消失。', tag: '流转单' },
           { id: 'return-action', selector: '[data-annotate="return-action"]', position: 'top-right', title: '退样操作', content: '<strong>需求逻辑：</strong>退样要留下退样方式、签收人与时间，才能与流转单、退样申请表对得上。<br>' +

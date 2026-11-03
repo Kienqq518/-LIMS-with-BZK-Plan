@@ -19,6 +19,8 @@
     .thumb { width: 40px; height: 40px; border-radius: 3px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; }
     .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .cell-none { color: #cbd5e1; }
+    .hide-mark-col .col-mark { display: none; }
+
     .req { color: #ef4444; margin-right: 2px; }
     .applied-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
       background: #fff7e8; color: #ad6800; font-size: 11px; line-height: 16px; }
@@ -124,11 +126,14 @@
         <button onclick="closeReturnRecordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
       <div class="flex-1 overflow-y-auto px-6 py-4">
-        <table class="w-full border-collapse text-left text-sm">
+        <table class="w-full border-collapse text-left text-sm" id="applyRecordTable">
           <thead>
             <tr class="bg-slate-50 text-slate-600">
               <th class="border border-slate-200 px-3 py-2 font-medium w-10 text-center"><input type="checkbox" id="recCheckAll" onchange="onCheckAll(this.checked)" /></th>
               <th class="border border-slate-200 px-3 py-2 font-medium">样品名称(数量)</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium col-mark">产品标记</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">型号/分类</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">规格</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">还样人</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">还样日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">还样退库确认表</th>
@@ -159,6 +164,8 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/sample-spec-ui.js"></script>
+  <script src="js/sample-info.js"></script>
   <script src="js/entrust-mock.js"></script>
   <script src="js/receive-store.js"></script>
   <script src="js/receive-history-mock.js"></script>
@@ -224,6 +231,10 @@
 
     function renderRecordModal() {
       var item = listData[currentIndex];
+      // 样品信息（产品标记 / 型号分类 / 规格）取自该委托的收样记录与样品数据主数据
+      var infos = item.records.map(function (r) { return SampleInfo.row(item.code, r.name); });
+      var tbl = document.getElementById('applyRecordTable');
+      if (tbl) tbl.classList.toggle('hide-mark-col', !SampleInfo.anyMarkOn(infos));
       var applied = window.ReturnApplyStore ? ReturnApplyStore.appliedMap(item.code) : {};
       function box(ri, name) {
         var st = applied[name];
@@ -246,6 +257,7 @@
             '<td class="border border-slate-200 px-3 py-2.5 text-center">' + box(ri, r.name) + '</td>' +
             '<td class="border border-slate-200 px-3 py-2.5">' + r.name + '<span class="del-tag">已删除</span>' +
             (applied[r.name] ? '<span class="applied-tag">' + (applied[r.name] === 'returned' ? '已退样' : '已申请') + '</span>' : '') + '</td>' +
+            SampleInfo.cells(infos[ri]) +
             '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
             '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
             '<td class="border border-slate-200 px-3 py-2.5 cell-none">/</td>' +
@@ -255,6 +267,7 @@
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + box(ri, r.name) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + r.name +
           (applied[r.name] ? '<span class="applied-tag">' + (applied[r.name] === 'returned' ? '已退样' : '已申请') + '</span>' : '') + '</td>' +
+          SampleInfo.cells(infos[ri]) +
           '<td class="border border-slate-200 px-3 py-2.5">' + r.returner + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + r.returnDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5"><a href="template-config.html" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> ' + r.doc + '</a></td>' +
@@ -334,7 +347,7 @@
           { id: 'apply-record', selector: '#returnRecordModal', position: 'top-right',
             title: '还样记录里的「已删除」样品', wide: true,
             content: '<strong>需求逻辑：</strong>委托确认退回委托登记后删掉的样品，实物不在库里、也没有还样动作，它只能在这里发起退样；但收样时留下的图片和数量必须还能查得到，所以这条记录留在还样记录里。<br>' +
-              '<strong>展示规则：</strong>该行整行灰底，「样品名称(数量)」后带红色「已删除」标签；「还样人」「还样日期」「还样退库确认表」三列都显示「/」，不出确认单链接；「图片」列沿用收样时上传的图片（有图显示缩略图、点缩略图看大图，没上传显示「/」）。正常还样的行仍显示还样人、还样日期、还样退库确认表链接与「暂无图片」。<br>' +
+              '<strong>展示规则：</strong>该行整行灰底，「样品名称(数量)」后带红色「已删除」标签；「还样人」「还样日期」「还样退库确认表」三列都显示「/」，不出确认单链接；产品标记 / 型号分类 / 规格照常按样品数据展示；「图片」列沿用收样时上传的图片（有图显示缩略图、点缩略图看大图，没上传显示「/」）。正常还样的行仍显示还样人、还样日期、还样退库确认表链接与「暂无图片」。<br>' +
               '<strong>交互逻辑：</strong>已删除行同样可以勾选发起退样；演示委托 SC2026/0031（只删样品）与 SC2026/0029（既删又增）由 js/receive-history-mock.js › RETURN_REDO 提供。', tag: '样品退样' },
           { id: 'apply-fields', selector: '[data-annotate="apply-fields"]', position: 'top-right',
             title: '退样申请的必填项', wide: true,
