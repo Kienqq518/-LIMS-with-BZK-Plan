@@ -101,6 +101,17 @@
     '.pa-stage-btn { border: 1px solid #e2e8f0; background: #fff; color: #475569; border-radius: 5px; padding: 2px 8px; font-size: 12px; cursor: pointer; transition: all .18s; }',
     '.pa-stage-btn:hover { border-color: #fb923c; color: #c2410c; }',
     '.pa-stage-btn:focus-visible { outline: 2px solid #1e40af; outline-offset: 1px; }',
+    '.pa-stage-btn.is-active { border-color: #fb923c; background: #ffedd5; color: #c2410c; font-weight: 600; }',
+    /* 外壳导航（侧边栏 + 顶栏）克隆进画布：菜单栏属于原型的一部分 */
+    '.pa-chrome { position: absolute; inset: 0; z-index: 2; pointer-events: none; }',
+    '.pa-chrome > * { pointer-events: auto; }',
+    '.pa-chrome-head { position: absolute; left: 0; right: 0; top: 0; }',
+    '.pa-chrome-side { position: absolute; left: 0; top: ' + HEAD_H + 'px; bottom: 0; width: ' + SIDE_W + 'px; }',
+    '.pa-chrome-side > aside { height: 100%; }',
+    '.pa-chrome .submenu { max-height: 0; overflow: hidden; transition: max-height .3s ease; }',
+    '.pa-chrome .submenu.open { max-height: 500px; }',
+    '.pa-chrome .menu-arrow { transition: transform .3s ease; }',
+    '.pa-chrome .menu-arrow.open { transform: rotate(90deg); }',
     '.pa-stage-view { position: absolute; top: 36px; left: 0; right: 0; bottom: 0; overflow: auto; background: #eef2f7; }',
     /* canvas = 固定尺寸的可视视口，本身不滚动，弹窗等 fixed 层才能钉在框内 */
     '#pa-canvas { position: absolute; top: 0; left: 0; width: 1440px; height: 900px; transform-origin: 0 0; transform: scale(var(--pa-scale)); overflow: hidden; background: #fff; box-shadow: 0 0 0 1px rgba(15,23,42,.06); }',
@@ -383,18 +394,19 @@
   var STAGE_ID = 'pa-stage';
   var CANVAS_ID = 'pa-canvas';
   var RATIO_KEY = 'lims-prototype-stage-ratio';
-  var ZOOM_KEY = 'lims-prototype-stage-zoom';
   var DESIGN_W = 1440;
   var BAR_H = 36;
   var PAD = 14;
+  // 舞台只提供三个固定宽高比，缩放一律自适应画布（不再要「适应 / 1:1」开关）
+  var SIDE_W = 192;      // 外壳侧边栏宽度（w-48）
+  var HEAD_H = 56;       // 外壳顶栏高度（h-14）
+  var RATIO_ORDER = ['4/3', '16/9', '16/10'];
   var RATIOS = { '16/10': [16, 10], '16/9': [16, 9], '4/3': [4, 3] };
-  var stage = { scale: 1, ratio: '16/10', zoom: 'fit', designH: 900, moving: false };
+  var stage = { scale: 1, ratio: '16/10', designH: 900, moving: false, hasChrome: false };
 
   try {
     var _r = localStorage.getItem(RATIO_KEY);
     if (_r && RATIOS[_r]) stage.ratio = _r;
-    var _z = localStorage.getItem(ZOOM_KEY);
-    if (_z === 'actual' || _z === 'fit') stage.zoom = _z;
   } catch (e) { /* ignore */ }
 
   function stageEl() { return document.getElementById(STAGE_ID); }
@@ -491,6 +503,92 @@
     });
   }
 
+  function stripIds(node) {
+    if (node.removeAttribute) node.removeAttribute('id');
+    [].slice.call(node.querySelectorAll('[id]')).forEach(function (n) { n.removeAttribute('id'); });
+    return node;
+  }
+
+  /** 把外壳（index.html）的侧边栏 + 顶栏克隆进画布；同源拿不到（例如直接打开单页）时原样跳过 */
+  function buildChrome(cv) {
+    if (cv.querySelector('.pa-chrome')) return true;
+    var shellDoc = null;
+    try {
+      shellDoc = (window.parent && window.parent !== window) ? window.parent.document : null;
+    } catch (e) { return false; }
+    if (!shellDoc) return false;
+    var side = shellDoc.querySelector('aside');
+    var head = shellDoc.querySelector('header');
+    if (!side || !head) return false;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'pa-chrome';
+    var headBox = document.createElement('div');
+    headBox.className = 'pa-chrome-head';
+    var sideBox = document.createElement('div');
+    sideBox.className = 'pa-chrome-side';
+    headBox.appendChild(stripIds(head.cloneNode(true)));
+    sideBox.appendChild(stripIds(side.cloneNode(true)));
+    wrap.appendChild(headBox);
+    wrap.appendChild(sideBox);
+    cv.insertBefore(wrap, cv.firstChild);
+    wireChrome(wrap);
+    return true;
+  }
+
+  function chromeNav(href) {
+    if (!href) return;
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'lims-pa-nav', href: href }, '*');
+        return;
+      }
+    } catch (e) { /* 跨域时退回本页跳转 */ }
+    window.location.href = href;
+  }
+
+  function wireChrome(wrap) {
+    var here = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    var title = wrap.querySelector('#pageTitle, .pa-chrome-head span');
+    if (title) title.textContent = docPageName();
+    wrap.querySelectorAll('.menu-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var sub = btn.nextElementSibling, arrow = btn.querySelector('.menu-arrow');
+        if (sub) sub.classList.toggle('open');
+        if (arrow) arrow.classList.toggle('open');
+      });
+    });
+    wrap.querySelectorAll('a').forEach(function (a) {
+      var href = a.getAttribute('href') || '';
+      // 「返回实验室数智化系统」这类 _top 链接保持原语义，不改走画布内换页
+      if (a.getAttribute('target') === '_top') return;
+      var file = (href.split('?')[0].split('/').pop() || '').toLowerCase();
+      if (file === here) {
+        a.classList.add('bg-slate-700', 'text-white');
+        var grp = a.closest('.menu-group');
+        if (grp) {
+          var sub = grp.querySelector('.submenu'), arrow = grp.querySelector('.menu-arrow');
+          if (sub) sub.classList.add('open');
+          if (arrow) arrow.classList.add('open');
+        }
+      }
+      a.addEventListener('click', function (ev) {
+        if (!href || href.charAt(0) === '#') return;
+        ev.preventDefault();
+        chromeNav(href);
+      });
+    });
+  }
+
+  // 舞台开启时让外壳收起自己的导航，避免画布内外各一份
+  function notifyShellChrome(hidden) {
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'lims-pa-chrome', hidden: !!hidden }, '*');
+      }
+    } catch (e) { /* 忽略 */ }
+  }
+
   function ensureStage() {
     var cv = canvasEl();
     if (cv) return cv;
@@ -507,8 +605,10 @@
         '<span class="pa-stage-name"></span>' +
         '<span class="pa-stage-meta"></span>' +
         '<span class="pa-stage-acts">' +
-          '<button type="button" class="pa-stage-btn" data-act="zoom"></button>' +
-          '<button type="button" class="pa-stage-btn" data-act="ratio"></button>' +
+          RATIO_ORDER.map(function (k) {
+            return '<button type="button" class="pa-stage-btn" data-ratio="' + k + '">' +
+              k.replace('/', ':') + '</button>';
+          }).join('') +
         '</span>' +
       '</div>' +
       '<div class="pa-stage-view"><div id="' + CANVAS_ID + '" class="pa-canvas">' +
@@ -535,6 +635,8 @@
       else sc.appendChild(node);
     });
     liftFixedInside(sc);
+    stage.hasChrome = buildChrome(cv);
+    if (stage.hasChrome) notifyShellChrome(true);
     // body 上的背景/内边距等表现类搬到滚动层，保持页面观感一致
     if (document.body.className) sc.className = 'pa-scroll ' + document.body.className;
     stage.moving = false;
@@ -542,11 +644,8 @@
     host.querySelector('.pa-stage-acts').addEventListener('click', function (ev) {
       var btn = ev.target.closest ? ev.target.closest('.pa-stage-btn') : null;
       if (!btn) return;
-      if (btn.getAttribute('data-act') === 'zoom') setStageZoom(stage.zoom === 'fit' ? 'actual' : 'fit');
-      else {
-        var keys = Object.keys(RATIOS);
-        setStageRatio(keys[(keys.indexOf(stage.ratio) + 1) % keys.length]);
-      }
+      var ratio = btn.getAttribute('data-ratio');
+      if (ratio) setStageRatio(ratio);
     });
     if (!window._paFitHandler) {
       window._paFitHandler = function () { if (canvasEl()) fitStage(); };
@@ -577,6 +676,7 @@
   function teardownStage() {
     var host = stageEl();
     if (!host) return;
+    if (stage.hasChrome) notifyShellChrome(false);
     var cv = canvasEl();
     var sc = scrollerEl();
     var anchorNode = window._paStageAnchor;
@@ -615,6 +715,7 @@
     document.documentElement.style.setProperty('--pa-sl', '0px');
     document.documentElement.style.setProperty('--pa-st', '0px');
     stage.moving = false;
+    stage.hasChrome = false;
   }
 
   function fitStage() {
@@ -636,28 +737,38 @@
 
     var viewW = sw;
     var viewH = sh - BAR_H;
+    var chromeOn = stage.hasChrome && host.querySelector('.pa-chrome');
+    var sideW = chromeOn ? SIDE_W : 0;
+    var headH = chromeOn ? HEAD_H : 0;
     cv.style.width = DESIGN_W + 'px';
     cv.style.height = stage.designH + 'px';
     var sc = scrollerEl();
-    if (sc) { sc.style.width = DESIGN_W + 'px'; sc.style.height = stage.designH + 'px'; }
-    var s = stage.zoom === 'actual' ? 1 : Math.min(1, viewW / DESIGN_W, viewH / stage.designH);
+    if (sc) {
+      sc.style.left = sideW + 'px';
+      sc.style.top = headH + 'px';
+      sc.style.width = (DESIGN_W - sideW) + 'px';
+      sc.style.height = (stage.designH - headH) + 'px';
+    }
+    var s = Math.min(1, viewW / DESIGN_W, viewH / stage.designH);   // 只有自适应一种缩放
     stage.scale = s;
     var root = document.documentElement;
     root.style.setProperty('--pa-scale', String(s));
     root.style.setProperty('--pa-inv', String(1 / s));
-    root.style.setProperty('--pa-design-h', stage.designH + 'px');
+    root.style.setProperty('--pa-design-h', (stage.designH - headH) + 'px');
     root.style.setProperty('--pa-design-w', DESIGN_W + 'px');
     var name = host.querySelector('.pa-stage-name');
     if (name) name.textContent = docPageName();
     var meta = host.querySelector('.pa-stage-meta');
     if (meta) meta.textContent = DESIGN_W + '×' + stage.designH + ' · ' + Math.round(s * 100) + '%';
     host.querySelectorAll('.pa-stage-btn').forEach(function (btn) {
-      btn.textContent = btn.getAttribute('data-act') === 'zoom'
-        ? (stage.zoom === 'fit' ? '适应' : '1:1')
-        : r[0] + ':' + r[1];
-      btn.setAttribute('title', btn.getAttribute('data-act') === 'zoom'
-        ? '缩放：当前' + (stage.zoom === 'fit' ? '适应画布' : '原始尺寸') + '，点击切换'
-        : '宽高比：当前 ' + r[0] + ':' + r[1] + '，点击切换');
+      var k = btn.getAttribute('data-ratio');
+      var rr = RATIOS[k] || [0, 0];
+      var on = k === stage.ratio;
+      btn.classList.toggle('is-active', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.setAttribute('title', '画布宽高比 ' + rr[0] + ':' + rr[1] +
+        '（设计尺寸 ' + DESIGN_W + '×' + Math.round(DESIGN_W * rr[1] / rr[0]) + '，等比自适应）' +
+        (on ? '，当前使用中' : '，点击切换'));
     });
     syncScrollVars();
     scheduleRefreshPositions();
@@ -667,12 +778,6 @@
     if (!RATIOS[ratio]) return;
     stage.ratio = ratio;
     try { localStorage.setItem(RATIO_KEY, ratio); } catch (e) {}
-    fitStage();
-  }
-
-  function setStageZoom(mode) {
-    stage.zoom = mode === 'actual' ? 'actual' : 'fit';
-    try { localStorage.setItem(ZOOM_KEY, stage.zoom); } catch (e) {}
     fitStage();
   }
 
@@ -1153,10 +1258,9 @@
       init(options);
     },
     setStageRatio: setStageRatio,
-    setStageZoom: setStageZoom,
     stageInfo: function () {
       var cv = canvasEl();
-      return { ratio: stage.ratio, zoom: stage.zoom, scale: stage.scale, designW: DESIGN_W, designH: stage.designH,
+      return { ratio: stage.ratio, scale: stage.scale, designW: DESIGN_W, designH: stage.designH,
         stageOn: !!cv, scrollTop: cv && scrollerEl() ? scrollerEl().scrollTop : 0 };
     },
     _startResize: startResize,

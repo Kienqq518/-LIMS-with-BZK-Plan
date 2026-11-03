@@ -20,6 +20,9 @@
     /* 菜单箭头旋转动画 */
     .menu-arrow { transition: transform .3s ease; }
     .menu-arrow.open { transform: rotate(90deg); }
+    /* 需求文档舞台开启时收起外壳导航：画布内会带一份克隆，菜单栏属于原型的一部分 */
+    html.pa-shell-chrome-hidden aside,
+    html.pa-shell-chrome-hidden header { display: none !important; }
   </style>
 </head>
 <body class="h-screen w-screen overflow-hidden bg-slate-100">
@@ -264,18 +267,50 @@
         });
       });
 
-      // 菜单链接点击：高亮当前项并更新顶部标题（iframe 通过 target 自行加载）
-      nav.querySelectorAll('.menu-link').forEach(function (link) {
-        link.addEventListener('click', function () {
-          nav.querySelectorAll('.menu-link').forEach(function (l) {
-            l.classList.remove('bg-slate-700', 'text-white');
-            l.removeAttribute('data-active');
-          });
-          link.classList.add('bg-slate-700', 'text-white');
-          link.setAttribute('data-active', 'true');
-          // 更新顶部标题为菜单文字
-          pageTitle.textContent = link.textContent.trim();
+      // 高亮当前项并更新顶部标题（iframe 通过 target 自行加载）
+      function markActive(link) {
+        nav.querySelectorAll('.menu-link').forEach(function (l) {
+          l.classList.remove('bg-slate-700', 'text-white');
+          l.removeAttribute('data-active');
         });
+        link.classList.add('bg-slate-700', 'text-white');
+        link.setAttribute('data-active', 'true');
+        // 更新顶部标题为菜单文字
+        pageTitle.textContent = link.textContent.trim();
+      }
+      nav.querySelectorAll('.menu-link').forEach(function (link) {
+        link.addEventListener('click', function () { markActive(link); });
+      });
+
+      /* ===== 与 iframe 里的需求文档舞台联动 =====
+       * 画布内会克隆一份侧边栏 + 顶栏，此时外壳自己的导航收起，避免出现两份；
+       * 画布内点菜单通过 postMessage 换页，外壳负责切 iframe 与高亮。 */
+      const frame = document.getElementById('mainFrame');
+      let chromeFallbackTimer = null;
+      window.addEventListener('message', function (ev) {
+        const d = ev.data || {};
+        if (d.type === 'lims-pa-chrome') {
+          clearTimeout(chromeFallbackTimer);
+          document.documentElement.classList.toggle('pa-shell-chrome-hidden', !!d.hidden);
+        } else if (d.type === 'lims-pa-nav' && d.href) {
+          const href = String(d.href);
+          const link = nav.querySelector('a[href="' + href.split('?')[0] + '"]');
+          if (link) markActive(link);
+          if (frame) frame.src = href;
+        }
+      });
+      if (frame) frame.addEventListener('load', function () {
+        // 换页后新页面若没接上文档模式，兜底把外壳导航显示回来
+        if (!document.documentElement.classList.contains('pa-shell-chrome-hidden')) return;
+        clearTimeout(chromeFallbackTimer);
+        chromeFallbackTimer = setTimeout(function () {
+          // 新页面仍在文档模式里就别动它，画布内已带了一份导航
+          try {
+            const d = frame.contentDocument;
+            if (d && d.documentElement && d.documentElement.classList.contains('pa-doc-open')) return;
+          } catch (e) { /* 跨域时按兜底处理 */ }
+          document.documentElement.classList.remove('pa-shell-chrome-hidden');
+        }, 500);
       });
 
       // 初始化：默认高亮“工作台”
