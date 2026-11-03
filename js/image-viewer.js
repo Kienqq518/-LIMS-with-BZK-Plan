@@ -54,7 +54,6 @@
         '</div>' +
       '</div>';
     doc.body.appendChild(mask);
-    mask.addEventListener('click', function (e) { if (e.target === mask) close(); });
     mask.querySelector('#iv-close').addEventListener('click', close);
     mask.querySelector('#iv-prev').addEventListener('click', function () { step(-1); });
     mask.querySelector('#iv-next').addEventListener('click', function () { step(1); });
@@ -106,13 +105,20 @@
     render();
   }
 
-  // 事件委托：静态写死的缩略图和脚本重绘出来的都能用
+  /* 文档级事件委托：静态写死的缩略图与脚本重绘出来的都能用；
+   * 顺带处理「点图片以外的遮罩区域关闭」，不依赖遮罩节点身份（舞台会把浮层搬进画布） */
   doc.addEventListener('click', function (e) {
     var el = e.target && e.target.closest ? e.target.closest('[data-img-src]') : null;
-    if (!el) return;
-    e.preventDefault();
-    e.stopPropagation();
-    openFrom(el);
+    if (el) {
+      e.preventDefault();
+      e.stopPropagation();
+      openFrom(el);
+      return;
+    }
+    var mask = doc.getElementById('iv-mask');
+    if (!mask || !mask.classList.contains('iv-open')) return;
+    var inBox = e.target && e.target.closest ? e.target.closest('#iv-box') : null;
+    if (!inBox) close();
   }, true);
 
   global.ImageViewer = { open: openFrom, close: close };
