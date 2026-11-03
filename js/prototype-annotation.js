@@ -37,6 +37,10 @@
   var docShowAll = false;   // 弹窗打开时，用户手动切回「看页面全部需求」
   var docQuery = '';        // 需求文档搜索词
 
+  /* 外壳导航尺寸：侧边栏 w-48、顶栏 h-14（css 字符串里要用，必须先于 css 定义） */
+  var SIDE_W = 192;
+  var HEAD_H = 56;
+
   var css = [
     'html { position: relative; }',
     '#prototype-annotation-root { position: absolute; top: 0; left: 0; width: 0; height: 0; pointer-events: none; z-index: 9990; overflow: visible; }',
@@ -409,8 +413,6 @@
   var BAR_H = 36;
   var PAD = 14;
   // 舞台只提供三个固定宽高比，缩放一律自适应画布（不再要「适应 / 1:1」开关）
-  var SIDE_W = 192;      // 外壳侧边栏宽度（w-48）
-  var HEAD_H = 56;       // 外壳顶栏高度（h-14）
   var RATIO_ORDER = ['4/3', '16/9', '16/10'];
   var RATIOS = { '16/10': [16, 10], '16/9': [16, 9], '4/3': [4, 3] };
   var stage = { scale: 1, ratio: '16/10', designH: 900, moving: false, hasChrome: false };
