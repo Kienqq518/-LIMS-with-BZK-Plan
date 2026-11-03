@@ -64,9 +64,9 @@
     </section>
 
     <!-- 委托信息 -->
-    <section class="rounded bg-white p-4 shadow-sm">
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="entrust-info">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
-      <table class="info-table">
+      <table class="info-table" id="entrustInfoTable">
         <tr><td class="lbl">委托编号</td><td class="val">SC2026/0071</td><td class="lbl">任务类型</td><td class="val">电气（输配电类）</td><td class="lbl">优先等级</td><td class="val">常规</td></tr>
         <tr><td class="lbl">检测类型</td><td class="val">常规</td><td class="lbl">检测类别</td><td class="val">例行试验</td><td class="lbl">客户单位</td><td class="val">宇宙设想有限公司</td></tr>
         <tr><td class="lbl">客户地址</td><td class="val">/</td><td class="lbl">客户邮政编码</td><td class="val">/</td><td class="lbl">客户联系人</td><td class="val">张三</td></tr>
@@ -80,7 +80,7 @@
     <!-- 付款信息 -->
     <section class="rounded bg-white p-4 shadow-sm">
       <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>付款信息</h2>
-      <table class="info-table">
+      <table class="info-table" id="payInfoTable">
         <tr><td class="lbl">样品检测总价(元)</td><td class="val">238</td><td class="lbl">实际费用(元)</td><td class="val">45</td><td class="lbl">折扣率(%)</td><td class="val">81.09</td></tr>
         <tr><td class="lbl">付款单位</td><td class="val">宇宙设想有限公司</td><td class="lbl">付款方式</td><td class="val">电汇</td><td class="lbl">费用备注</td><td class="val">/</td></tr>
       </table>
@@ -119,20 +119,7 @@
           <thead>
             <tr><th>序号</th><th>名称</th><th>检测依据</th><th>判定依据</th><th>标准要求</th><th>负责人</th><th>状态</th><th>备注</th></tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>1</td><td>交流耐压试验</td>
-              <td><a href="#" class="text-blue-600 hover:underline">DL/T 976-2017</a></td>
-              <td>DL/T 976-2017</td><td>应无击穿、无闪络</td><td>admin</td>
-              <td><span class="tag-blue">待接收</span></td><td></td>
-            </tr>
-            <tr>
-              <td>2</td><td>外观及尺寸</td>
-              <td><a href="#" class="text-blue-600 hover:underline">DL/T 976-2017</a></td>
-              <td>DL/T 976-2017</td><td>试品应光滑洁净</td><td>admin</td>
-              <td><span class="tag-orange">未领样</span></td><td></td>
-            </tr>
-          </tbody>
+          <tbody id="confirmTestBody"></tbody>
         </table>
       </div>
     </section>
@@ -147,7 +134,7 @@
             <tr>
               <td>1</td>
               <td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-file-word-o"></i> SC2026/0071-06检测委托书.docx</a></td>
-              <td>2026-06-09</td>
+              <td id="entrustFileDate">2026-06-09</td>
               <td><button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">导出</button></td>
             </tr>
           </tbody>
@@ -181,11 +168,21 @@
   <script src="js/prototype-annotation.js"></script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/sample-spec-ui.js"></script>
+  <script src="js/flow-stages.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script src="js/receive-store.js"></script>
   <script src="js/receive-history-mock.js"></script>
   <script>
-    // 委托确认阶段的样品：型号/分类与规格参数可在此补填，确认通过前必须填全
-    var confirmSamples = [
+    /* ===== 点哪单看哪单：?code= 决定整页（与委托详情页同一数据源 js/entrust-mock.js） ===== */
+    // 不带参数时落在委托确认列表里那张演示委托（SC2026/0071），与列表首行一致
+    var PAGE_CODE = new URLSearchParams(window.location.search).get('code') || 'SC2026/0071';
+    var entrustRec = window.EntrustMock ? EntrustMock.get(PAGE_CODE) : null;
+
+    // 委托确认阶段的样品：跟随本单样品；型号/分类与规格参数可在此补填，确认通过前必须填全
+    var confirmSamples = entrustRec ? entrustRec.samples.map(function (sm) {
+      return { name: sm.name, qty: sm.qty, unit: sm.unit, leafId: sm.leafId || '',
+               modelCode: sm.modelCode || '', specValues: (sm.specValues || []).slice() };
+    }) : [
       { name: '遮蔽罩', qty: '1', unit: '件', leafId: '', modelCode: '', specValues: [] },
       { name: '10kV3芯电力电缆', qty: '3', unit: '根', leafId: 'cu6-3c', modelCode: 'YJV22', specValues: [] }
     ];
@@ -199,7 +196,7 @@
     // 收样阶段填过的规格值，带出来不用重复填
     function prefillFromReceive() {
       if (!window.ReceiveStore) return;
-      var code = CONFIRM_CODE;   // 与下方收样信息批次卡同一个委托编号
+      var code = PAGE_CODE;   // 与下方收样信息批次卡同一个委托编号
       var got = ReceiveStore.receivedMap(code);
       confirmSamples.forEach(function (row) {
         var hit = got[code + '|' + row.name];
@@ -276,7 +273,6 @@
       if (confirm('确认通过该委托吗？')) alert('确认通过（原型演示）');
     }
     /* ===== 收样信息：与委托详情页同款（一次收样提交 = 一张批次卡） ===== */
-    var CONFIRM_CODE = new URLSearchParams(window.location.search).get('code') || 'SC2026/0071';
     function rcvEsc(v) {
       return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
@@ -291,15 +287,15 @@
       if (!body) return;
       // 走到委托确认，样品必然已收样：查不到提交记录时按本页样品清单幂等补历史收样
       if (window.ReceiveHistory) {
-        ReceiveHistory.ensure(CONFIRM_CODE, {
-          accept: '2026-06-09',
+        ReceiveHistory.ensure(PAGE_CODE, {
+          accept: entrustRec ? entrustRec.acceptDate : '2026-06-09',
           samples: confirmSamples.map(function (sm, i) {
             return { name: sm.name, qty: sm.qty, unit: sm.unit, leafId: sm.leafId,
                      modelCode: sm.modelCode, specs: sm.specValues, imgs: i === 0 ? 2 : 1 };
           })
         });
       }
-      var recs = window.ReceiveStore ? ReceiveStore.recordsOf(CONFIRM_CODE) : [];
+      var recs = window.ReceiveStore ? ReceiveStore.recordsOf(PAGE_CODE) : [];
       if (!recs.length) {
         body.innerHTML = '<p class="text-sm text-slate-500">该委托尚无收样提交记录</p>';
         return;
@@ -341,13 +337,109 @@
       }).join('');
     }
 
-    prefillFromReceive();
-    renderConfirmSamples();
-    renderReceiveInfo();
+    function di(id) { return document.getElementById(id); }
+
+    /** 字段-值表格：三列一组，空值统一显示「/」，末行不足三列时合并（与委托详情页同款） */
+    function infoRows(pairs) {
+      var html = '';
+      for (var i = 0; i < pairs.length; i += 3) {
+        var chunk = pairs.slice(i, i + 3);
+        html += '<tr>' + chunk.map(function (f, k) {
+          var span = (k === chunk.length - 1 && chunk.length < 3) ? ' colspan="' + (7 - chunk.length * 2) + '"' : '';
+          var v = (f[1] == null || f[1] === '') ? '/' : f[1];
+          return '<td class="lbl">' + cEsc(f[0]) + '</td><td class="val"' + span + '>' + cEsc(v) + '</td>';
+        }).join('') + '</tr>';
+      }
+      return html;
+    }
+
+    function applyEntrustMock() {
+      if (!entrustRec) return;
+      var r = entrustRec, t = di('entrustInfoTable');
+      if (t) t.innerHTML = infoRows([
+        ['委托编号', r.code], ['任务类型', r.taskType], ['优先等级', r.priority],
+        ['检测类型', r.testType], ['检测类别', r.testCategory], ['客户单位', r.customer],
+        ['客户地址', r.addr], ['客户邮政编码', r.zip], ['客户联系人', r.contact],
+        ['客户联系方式', r.phone], ['业务员', r.salesman], ['签约地点', r.signPlace],
+        ['实验室检测中心', r.lab], ['委托受理日期', r.acceptDate], ['客户要求完成日期', r.customerDate],
+        ['要求检测完成天数', r.days], ['编制人', r.editor], ['代理单位', ''], ['备注', '']
+      ]);
+      var pay = di('payInfoTable');
+      if (pay) pay.innerHTML = infoRows([
+        ['样品检测总价(元)', r.totalPrice], ['实际费用(元)', r.actualFee], ['折扣率(%)', r.discount],
+        ['付款单位', r.payer], ['付款方式', r.payMethod], ['费用备注', r.feeRemark]
+      ]);
+      var fd = di('entrustFileDate');
+      if (fd) fd.textContent = r.acceptDate;   // 委托书生成时间 = 委托受理日期
+    }
+
+    /** 试验信息：把本单各样品的试验项汇成一张表，备注写所属样品；确认环节尚未分发，状态统一未领样 */
+    function renderConfirmTests() {
+      var body = di('confirmTestBody');
+      if (!body || !entrustRec) return;
+      var st = window.SampleDataStore;
+      var fallback = st ? ((st.getSample('rod') || {}).tests || []) : [];
+      var rows = [], n = 0;
+      entrustRec.samples.forEach(function (d) {
+        var tests = (d.tests && d.tests.length) ? d.tests : fallback;
+        tests.forEach(function (t) {
+          n++;
+          rows.push('<tr><td>' + n + '</td><td>' + cEsc(t.name) + '</td>' +
+            '<td><a href="#" class="text-blue-600 hover:underline"><i class="fa fa-paperclip"></i> ' + cEsc(t.basis || '—') + '</a></td>' +
+            '<td>' + cEsc(t.basis || '—') + '</td><td>' + cEsc(t.req || '按标准要求执行') + '</td>' +
+            '<td>' + cEsc(entrustRec.editor) + '</td><td><span class="tag-orange">未领样</span></td>' +
+            '<td>' + cEsc(d.name) + '</td></tr>');
+        });
+      });
+      body.innerHTML = rows.join('') ||
+        '<tr><td colspan="8" class="py-6 text-center text-slate-400">该委托暂无试验项</td></tr>';
+    }
+
+    /** 页面各处静态文案里的委托号换成本单（委托书文件名等） */
+    function reseedTokens() {
+      if (!entrustRec || !document.createTreeWalker) return;
+      var map = [['SC2026/0071', entrustRec.code]];
+      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, null);
+      var nodes = [], node;
+      while ((node = walker.nextNode())) {
+        if (node.nodeValue && /SC2026/.test(node.nodeValue)) nodes.push(node);
+      }
+      nodes.forEach(function (t) {
+        var parent = t.parentNode;
+        if (!parent || /^(SCRIPT|STYLE|TEXTAREA)$/.test(parent.tagName)) return;
+        if (parent.closest && parent.closest('#pa-doc')) return;   // 需求文档正文里的示例编号不改
+        var v = t.nodeValue;
+        map.forEach(function (pair) { v = v.split(pair[0]).join(pair[1]); });
+        if (v !== t.nodeValue) t.nodeValue = v;
+      });
+    }
+
+    function applyEntrustView() {
+      applyEntrustMock();
+      prefillFromReceive();
+      renderConfirmSamples();
+      renderConfirmTests();
+      renderReceiveInfo();
+      reseedTokens();
+    }
+    applyEntrustView();
+    window.addEventListener('load', reseedTokens);   // 表格由脚本重绘后再扫一遍编号
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({
-        annotations: [{
+        annotations: [
+          {
+            id: 'cf-code-driven',
+            selector: '[data-annotate="entrust-info"]',
+            position: 'top-right',
+            title: '整页随 ?code= 切换（点哪单确认哪单）',
+            wide: true,
+            content: '<strong>需求逻辑：</strong>委托确认编辑页必须按进来的委托号呈现该单数据，不能所有委托都看到同一张单。委托确认列表每行的「编辑」链接统一带 <code>?code=</code>，本页据此渲染委托信息、付款信息、检测信息（样品表 + 试验信息）、收样信息与委托书文件名；数据源与委托详情页同一份 <code>js/entrust-mock.js</code>，所以同一编号在委托确认列表、委托确认编辑、委托详情里看到的客户 / 样品 / 日期 / 金额完全一致。<br>' +
+              '<strong>展示规则：</strong>委托信息 19 项、付款信息 6 项全部取自该委托记录，空值统一显示「/」；检测信息样品表逐行列本单样品（型号/分类与规格可在此补填）；试验信息把本单各样品的试验项汇成一张表，备注写所属样品，确认环节尚未分发，状态统一「未领样」；委托书的生成时间取委托受理日期。<br>' +
+              '<strong>交互逻辑：</strong>改地址栏 <code>?code=</code> 即切单；不带参数时用默认委托号；编号不在清单内时按推导规则生成一单稳定数据。规格参数的强校验仍按本页样品清单逐行检查，未填全不能确认通过。',
+            tag: '数据一致'
+          },
+          {
           id: 'cf-receive-info',
           selector: '[data-annotate="receive-info"]',
           position: 'top-right',
@@ -357,7 +449,8 @@
             '<strong>展示规则：</strong>卡头「第 N 次收样 · 收样日期 · 收样人 · 收样状态 · 送样方式 · 送样人/电话 · 备注」；卡内按样品逐行列序号、样品名称、数量、产品标记（该批次内任一样品开启产品标记开关时出列）、型号/分类、规格、收样图片缩略图；没有值统一显示「/」，未上传显示「未上传」；查不到提交记录时只显示一行「该委托尚无收样提交记录」。<br>' +
             '<strong>交互逻辑：</strong>数据来自「样品管理 › 样品收样」的提交记录（本地 lims.receiveRecords）；到确认阶段仍缺记录时按本页样品清单幂等补历史收样（js/receive-history-mock.js，只补缺、不覆盖手工收样记录）。本区域只读，本页「检测信息」里补填的规格参数不回写这里——收样信息反映的是收样当时的记录；反向的联动保留：收样阶段填过的型号与规格值会自动带进检测信息表，不用重复填。',
           tag: '委托确认'
-        }]
+          }
+        ]
       });
     }
   </script>
