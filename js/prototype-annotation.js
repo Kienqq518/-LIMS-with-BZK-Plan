@@ -52,11 +52,8 @@
     '.pa-card-tag { display: inline-block; margin-top: 8px; padding: 2px 8px; border-radius: 4px; background: #ffedd5; color: #c2410c; font-size: 11px; }',
     '.pa-highlight { outline: 2px dashed #f97316 !important; outline-offset: 3px; border-radius: 4px; }',
     /* ===== 需求文档侧栏：左原型 + 右文档，批注点双向联动 ===== */
-    ':root { --pa-doc-w: 400px; }',
-    'html.pa-doc-open body { padding-right: var(--pa-doc-w); }',
-    /* 通栏固定条与全屏遮罩弹窗跟随收窄，避免被面板压住 */
-    'html.pa-doc-open body > .fixed[class*="bottom-0"], html.pa-doc-open body > .fixed[class*="inset-x-0"] { right: var(--pa-doc-w) !important; }',
-    'html.pa-doc-open .fixed.inset-0 { right: var(--pa-doc-w) !important; }',
+    ':root { --pa-doc-w: 400px; --pa-scale: 1; --pa-inv: 1; --pa-design-h: 900px; }',
+    /* 原型不再靠 body 收窄重排，而是进固定宽高比舞台；开关让位给舞台 */
     'html.pa-doc-open .pa-toggle { right: calc(var(--pa-doc-w) + 20px); }',
     /* 弹窗打开时悬浮球回到左下角；上面那条 right 规则优先级更高，这里必须同等优先级复位，
        否则 left+right 同时生效会把胶囊横向拉伸，重新压住弹窗底部的确定按钮 */
@@ -94,6 +91,30 @@
     '.pa-doc-sub .pa-doc-scope { margin-left: 4px; }',
     '.pa-doc-resizer { position: absolute; left: -3px; top: 0; bottom: 0; width: 7px; cursor: col-resize; z-index: 1; }',
     '.pa-doc-resizer:hover { background: rgba(249,115,22,.35); }',
+    /* ===== 原型舞台：需求文档打开时，左侧原型收进固定宽高比画布，等比缩放不重排 ===== */
+    '#pa-stage { position: fixed; z-index: 9998; display: none; overflow: hidden; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 18px 48px rgba(15,23,42,.16); }',
+    'html.pa-doc-open #pa-stage { display: block; }',
+    '.pa-stage-bar { position: absolute; top: 0; left: 0; right: 0; height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 10px 0 12px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 12px; color: #64748b; z-index: 2; }',
+    '.pa-stage-name { font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
+    '.pa-stage-meta { flex-shrink: 0; color: #94a3b8; font-variant-numeric: tabular-nums; }',
+    '.pa-stage-acts { margin-left: auto; display: flex; gap: 6px; flex-shrink: 0; }',
+    '.pa-stage-btn { border: 1px solid #e2e8f0; background: #fff; color: #475569; border-radius: 5px; padding: 2px 8px; font-size: 12px; cursor: pointer; transition: all .18s; }',
+    '.pa-stage-btn:hover { border-color: #fb923c; color: #c2410c; }',
+    '.pa-stage-btn:focus-visible { outline: 2px solid #1e40af; outline-offset: 1px; }',
+    '.pa-stage-view { position: absolute; top: 36px; left: 0; right: 0; bottom: 0; overflow: auto; background: #eef2f7; }',
+    /* canvas = 固定尺寸的可视视口，本身不滚动，弹窗等 fixed 层才能钉在框内 */
+    '#pa-canvas { position: absolute; top: 0; left: 0; width: 1440px; height: 900px; transform-origin: 0 0; transform: scale(var(--pa-scale)); overflow: hidden; background: #fff; box-shadow: 0 0 0 1px rgba(15,23,42,.06); }',
+    '#pa-scroll { position: absolute; top: 0; left: 0; width: 1440px; height: 900px; overflow: auto; }',
+    '#pa-scroll:focus-visible { outline: 2px solid #1e40af; outline-offset: -2px; }',
+    /* vh 依赖换算成设计视口，避免 min-h-screen 被真实窗口高度撑破 */
+    '#pa-scroll .min-h-screen { min-height: var(--pa-design-h) !important; }',
+    '#pa-scroll .h-screen { height: var(--pa-design-h) !important; }',
+    /* 批注层挂在 canvas 上（不受滚动裁剪），再用位移跟随内容滚动 */
+    '#prototype-annotation-root { transform: translate(calc(-1 * var(--pa-sl, 0px)), calc(-1 * var(--pa-st, 0px))); }',
+    /* 批注层搬进画布后反向缩放：画布缩到多小，圆点与卡片都保持可读尺寸 */
+    '#pa-canvas .pa-marker { transform-origin: 0 0; transform: scale(var(--pa-inv)); }',
+    '#pa-canvas .pa-marker:hover { transform: scale(calc(var(--pa-inv) * 1.1)); }',
+    '#pa-canvas .pa-card { transform-origin: 0 0; transform: scale(var(--pa-inv)); max-height: calc(var(--pa-design-h) - 100px); max-width: calc(var(--pa-design-w) - 24px); }',
     '@media (max-width: 1100px) { :root { --pa-doc-w: 320px; } }'
   ].join('\n');
 
@@ -258,6 +279,8 @@
       return;
     }
     focusScopeEl = detectFocusScope();
+    // 弹窗此前被隐藏祖先挡住而未提升，此刻可见了，补一次提升，否则会跟着滚动层跑
+    if (focusScopeEl && enabled) { var _sc = scrollerEl(); if (_sc) liftFixedInside(_sc); }
     var toggle = document.querySelector('.pa-toggle');
     if (toggle) toggle.classList.toggle('pa-modal-open', !!focusScopeEl);
     // 弹窗内一条需求都没有时不切换，避免右侧突然空掉
@@ -301,10 +324,13 @@
 
   function ensureRoot() {
     var root = document.getElementById(ROOT_ID);
-    if (root) return root;
-    root = document.createElement('div');
-    root.id = ROOT_ID;
-    document.body.appendChild(root);
+    if (!root) {
+      root = document.createElement('div');
+      root.id = ROOT_ID;
+    }
+    var host = annotationHost();
+    if (root.parentNode !== host) host.appendChild(root);
+    raiseRoot(root);
     return root;
   }
 
@@ -329,6 +355,13 @@
   }
 
   function toDocPoint(viewLeft, viewTop) {
+    var cv = canvasEl();
+    if (cv && enabled) {
+      var cr = cv.getBoundingClientRect();
+      var s = stage.scale;
+      var si = scrollInfo();
+      return { left: (viewLeft - cr.left) / s + si.sl, top: (viewTop - cr.top) / s + si.st };
+    }
     var scroll = getPageScroll();
     return { left: scroll.x + viewLeft, top: scroll.y + viewTop };
   }
@@ -346,10 +379,308 @@
     return parents;
   }
 
+  /* ===================== 原型舞台（固定宽高比画布） ===================== */
+  var STAGE_ID = 'pa-stage';
+  var CANVAS_ID = 'pa-canvas';
+  var RATIO_KEY = 'lims-prototype-stage-ratio';
+  var ZOOM_KEY = 'lims-prototype-stage-zoom';
+  var DESIGN_W = 1440;
+  var BAR_H = 36;
+  var PAD = 14;
+  var RATIOS = { '16/10': [16, 10], '16/9': [16, 9], '4/3': [4, 3] };
+  var stage = { scale: 1, ratio: '16/10', zoom: 'fit', designH: 900, moving: false };
+
+  try {
+    var _r = localStorage.getItem(RATIO_KEY);
+    if (_r && RATIOS[_r]) stage.ratio = _r;
+    var _z = localStorage.getItem(ZOOM_KEY);
+    if (_z === 'actual' || _z === 'fit') stage.zoom = _z;
+  } catch (e) { /* ignore */ }
+
+  function stageEl() { return document.getElementById(STAGE_ID); }
+  function canvasEl() { return document.getElementById(CANVAS_ID); }
+  function scrollerEl() { return document.getElementById('pa-scroll'); }
+  // 内容滚动发生在 #pa-scroll：视口尺寸与滚动偏移都以它为准
+  function scrollInfo() {
+    var sc = scrollerEl();
+    if (!sc) {
+      var s0 = getPageScroll();
+      return { sl: s0.x, st: s0.y, w: window.innerWidth, h: window.innerHeight, originLeft: s0.x, originTop: s0.y };
+    }
+    return { sl: sc.scrollLeft, st: sc.scrollTop, w: sc.clientWidth, h: sc.clientHeight };
+  }
+  function syncScrollVars() {
+    var sc = scrollerEl();
+    if (!sc) return;
+    var root = document.documentElement;
+    root.style.setProperty('--pa-sl', sc.scrollLeft + 'px');
+    root.style.setProperty('--pa-st', sc.scrollTop + 'px');
+  }
+  function currentScale() { return stage.scale || 1; }
+  function invScale() { return 1 / (stage.scale || 1); }
+  function docWidth() {
+    var w = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--pa-doc-w'), 10);
+    return isNaN(w) ? 400 : w;
+  }
+
+  // 元素矩形 → 画布内容坐标（未缩放的设计像素），舞台未开启时退回旧的文档坐标
+  function localRect(el) {
+    var r = el.getBoundingClientRect();
+    var cv = canvasEl();
+    if (!cv || !enabled) {
+      var sc = getPageScroll();
+      return { left: r.left + sc.x, top: r.top + sc.y, right: r.right + sc.x, bottom: r.bottom + sc.y, width: r.width, height: r.height };
+    }
+    var cr = cv.getBoundingClientRect();
+    var s = stage.scale;
+    var si = scrollInfo();
+    return {
+      left: (r.left - cr.left) / s + si.sl,
+      top: (r.top - cr.top) / s + si.st,
+      right: (r.right - cr.left) / s + si.sl,
+      bottom: (r.bottom - cr.top) / s + si.st,
+      width: r.width / s,
+      height: r.height / s
+    };
+  }
+
+  // 当前可见视口 → 画布内容坐标
+  function localViewport() {
+    var cv = canvasEl();
+    if (!cv || !enabled) {
+      var sc = getPageScroll();
+      return { left: sc.x, top: sc.y, width: window.innerWidth, height: window.innerHeight };
+    }
+    var si = scrollInfo();
+    return { left: si.sl, top: si.st, width: si.w, height: si.h };
+  }
+
+  function annotationHost() {
+    return enabled ? ensureStage() : document.body;
+  }
+
+  // 批注层始终排在 canvas 最后，保证圆点/卡片压在弹窗之上
+  function raiseRoot(root) {
+    var cv = canvasEl();
+    if (cv && root.parentNode === cv) cv.appendChild(root);
+  }
+
+  // 嵌套 fixed 层的原位还原记录（body 级节点用整条原始顺序还原，更可靠）
+  function snapshot(node) {
+    return { node: node, parent: node.parentNode, next: node.nextSibling };
+  }
+
+  // 内容里嵌套的 fixed 层要提到 canvas，否则会跟着滚动层跑；
+  // 但被隐藏祖先包住的不能提——一提就脱离 display:none 显形糊住画布。
+  function liftFixedInside(sc) {
+    var cv = canvasEl();
+    if (!cv || !sc) return;
+    [].slice.call(sc.querySelectorAll('*')).forEach(function (node) {
+      if (node.nodeType !== 1) return;
+      if (node.id === ROOT_ID) return;
+      if (cv.contains(node.parentElement)) return;
+      if (window.getComputedStyle(node).position !== 'fixed') return;
+      var n = node.parentElement, hidden = false;
+      while (n && n !== sc) {
+        if (window.getComputedStyle(n).display === 'none') { hidden = true; break; }
+        n = n.parentElement;
+      }
+      if (hidden) return;
+      stage.lifts.push(snapshot(node));
+      cv.appendChild(node);
+    });
+  }
+
+  function ensureStage() {
+    var cv = canvasEl();
+    if (cv) return cv;
+    var anchorNode = document.createComment('pa-stage');
+    document.body.insertBefore(anchorNode, document.body.firstChild);
+    window._paStageAnchor = anchorNode;
+
+    var host = document.createElement('div');
+    host.id = STAGE_ID;
+    host.setAttribute('role', 'region');
+    host.setAttribute('aria-label', '原型预览画布（可用鼠标滚轮或方向键滚动）');
+    host.innerHTML =
+      '<div class="pa-stage-bar">' +
+        '<span class="pa-stage-name"></span>' +
+        '<span class="pa-stage-meta"></span>' +
+        '<span class="pa-stage-acts">' +
+          '<button type="button" class="pa-stage-btn" data-act="zoom"></button>' +
+          '<button type="button" class="pa-stage-btn" data-act="ratio"></button>' +
+        '</span>' +
+      '</div>' +
+      '<div class="pa-stage-view"><div id="' + CANVAS_ID + '" class="pa-canvas">' +
+        '<div id="pa-scroll" class="pa-scroll" tabindex="0"></div></div></div>';
+    document.body.insertBefore(host, anchorNode.nextSibling);
+    cv = host.querySelector('#' + CANVAS_ID);
+    var sc = host.querySelector('#pa-scroll');
+
+    // 记下打开前的 body 顺序，关闭时按这条顺序重排，保证 DOM 与打开前完全一致
+    stage.originalOrder = [].slice.call(document.body.children).filter(function (n) {
+      return n !== host && n !== anchorNode;
+    });
+    stage.lifts = [];
+    stage.moving = true;
+    [].slice.call(document.body.children).forEach(function (node) {
+      if (node === host || node === anchorNode) return;
+      if (node.id === 'pa-doc' || node.id === STAGE_ID || node.id === 'pa-scroll') return;
+      if (node.classList && node.classList.contains('pa-toggle')) return;
+      if (/^(SCRIPT|LINK|META|TITLE|BASE)$/.test(node.tagName)) return;
+      // 批注层留在 canvas（配 --pa-sl/--pa-st 位移跟随内容），既不撑大滚动层，也压在弹窗上
+      if (node.id === ROOT_ID) cv.appendChild(node);
+      // fixed 层（弹窗/抽屉/通栏条）留在 canvas，才能钉在可视框里；普通内容进滚动层
+      else if (window.getComputedStyle(node).position === 'fixed') cv.appendChild(node);
+      else sc.appendChild(node);
+    });
+    liftFixedInside(sc);
+    // body 上的背景/内边距等表现类搬到滚动层，保持页面观感一致
+    if (document.body.className) sc.className = 'pa-scroll ' + document.body.className;
+    stage.moving = false;
+
+    host.querySelector('.pa-stage-acts').addEventListener('click', function (ev) {
+      var btn = ev.target.closest ? ev.target.closest('.pa-stage-btn') : null;
+      if (!btn) return;
+      if (btn.getAttribute('data-act') === 'zoom') setStageZoom(stage.zoom === 'fit' ? 'actual' : 'fit');
+      else {
+        var keys = Object.keys(RATIOS);
+        setStageRatio(keys[(keys.indexOf(stage.ratio) + 1) % keys.length]);
+      }
+    });
+    if (!window._paFitHandler) {
+      window._paFitHandler = function () { if (canvasEl()) fitStage(); };
+    }
+    window.addEventListener('resize', window._paFitHandler);
+    // 页面脚本偶尔把节点追加到 body（复制用的 textarea、浮层等），搬进画布免得掉在舞台外
+    if (!window._paStageObserver) {
+      window._paStageObserver = new MutationObserver(function (muts) {
+        if (stage.moving || !canvasEl()) return;
+        var cv2 = canvasEl();
+        var sc2 = scrollerEl();
+        muts.forEach(function (m) {
+          [].slice.call(m.addedNodes).forEach(function (node) {
+            if (node.nodeType !== 1 || cv2.contains(node)) return;
+            if (node.id === STAGE_ID || node.id === 'pa-doc' || node.id === 'prototype-annotation-root') return;
+            if (node.classList && node.classList.contains('pa-toggle')) return;
+            if (/^(SCRIPT|LINK|META|TITLE|BASE)$/.test(node.tagName)) return;
+            if (window.getComputedStyle(node).position === 'fixed') cv2.appendChild(node);
+            else if (sc2) sc2.appendChild(node);
+          });
+        });
+      });
+      window._paStageObserver.observe(document.body, { childList: true });
+    }
+    return cv;
+  }
+
+  function teardownStage() {
+    var host = stageEl();
+    if (!host) return;
+    var cv = canvasEl();
+    var sc = scrollerEl();
+    var anchorNode = window._paStageAnchor;
+    var lifts = stage.lifts || [];
+    var orig = stage.originalOrder || [];
+    stage.moving = true;
+    // 1) 嵌套提升的 fixed 层先回原位（此时滚动层子树完整，兄弟节点还能定位）
+    lifts.forEach(function (rec) {
+      if (!rec.parent) return;
+      if (rec.next && rec.next.parentNode === rec.parent) rec.parent.insertBefore(rec.node, rec.next);
+      else rec.parent.appendChild(rec.node);
+    });
+    stage.lifts = [];
+    // 2) 画布与滚动层里的节点全部搬回 body
+    [sc, cv].forEach(function (layer) {
+      if (!layer) return;
+      [].slice.call(layer.children).forEach(function (n) {
+        if (n.id === 'pa-scroll' || n.id === CANVAS_ID) return;
+        document.body.appendChild(n);
+      });
+    });
+    // 3) 按打开前的顺序重排，消除移动造成的顺序漂移
+    orig.forEach(function (n) { if (n.parentNode === document.body) document.body.appendChild(n); });
+    stage.originalOrder = [];
+    if (sc) sc.className = 'pa-scroll';
+    if (window._paStageObserver) window._paStageObserver.disconnect();
+    if (window._paFitHandler) window.removeEventListener('resize', window._paFitHandler);
+    if (anchorNode && anchorNode.parentNode) anchorNode.parentNode.removeChild(anchorNode);
+    if (host.parentNode) host.parentNode.removeChild(host);
+    window._paStageAnchor = null;
+    window._paStageObserver = null;
+    window._paFitHandler = null;
+    stage.scale = 1;
+    document.documentElement.style.setProperty('--pa-scale', '1');
+    document.documentElement.style.setProperty('--pa-inv', '1');
+    document.documentElement.style.setProperty('--pa-sl', '0px');
+    document.documentElement.style.setProperty('--pa-st', '0px');
+    stage.moving = false;
+  }
+
+  function fitStage() {
+    var host = stageEl();
+    var cv = canvasEl();
+    if (!host || !cv) return;
+    var r = RATIOS[stage.ratio] || RATIOS['16/10'];
+    stage.designH = Math.round(DESIGN_W * r[1] / r[0]);
+    var dw = docWidth();
+    var availW = Math.max(320, window.innerWidth - dw - PAD * 2);
+    var availH = Math.max(240, window.innerHeight - PAD * 2);
+    var sw = availW;
+    var sh = Math.round(sw * r[1] / r[0]);
+    if (sh > availH) { sh = availH; sw = Math.round(sh * r[0] / r[1]); }
+    host.style.width = sw + 'px';
+    host.style.height = sh + 'px';
+    host.style.left = Math.round((window.innerWidth - dw - sw) / 2) + 'px';
+    host.style.top = Math.round((window.innerHeight - sh) / 2) + 'px';
+
+    var viewW = sw;
+    var viewH = sh - BAR_H;
+    cv.style.width = DESIGN_W + 'px';
+    cv.style.height = stage.designH + 'px';
+    var sc = scrollerEl();
+    if (sc) { sc.style.width = DESIGN_W + 'px'; sc.style.height = stage.designH + 'px'; }
+    var s = stage.zoom === 'actual' ? 1 : Math.min(1, viewW / DESIGN_W, viewH / stage.designH);
+    stage.scale = s;
+    var root = document.documentElement;
+    root.style.setProperty('--pa-scale', String(s));
+    root.style.setProperty('--pa-inv', String(1 / s));
+    root.style.setProperty('--pa-design-h', stage.designH + 'px');
+    root.style.setProperty('--pa-design-w', DESIGN_W + 'px');
+    var name = host.querySelector('.pa-stage-name');
+    if (name) name.textContent = docPageName();
+    var meta = host.querySelector('.pa-stage-meta');
+    if (meta) meta.textContent = DESIGN_W + '×' + stage.designH + ' · ' + Math.round(s * 100) + '%';
+    host.querySelectorAll('.pa-stage-btn').forEach(function (btn) {
+      btn.textContent = btn.getAttribute('data-act') === 'zoom'
+        ? (stage.zoom === 'fit' ? '适应' : '1:1')
+        : r[0] + ':' + r[1];
+      btn.setAttribute('title', btn.getAttribute('data-act') === 'zoom'
+        ? '缩放：当前' + (stage.zoom === 'fit' ? '适应画布' : '原始尺寸') + '，点击切换'
+        : '宽高比：当前 ' + r[0] + ':' + r[1] + '，点击切换');
+    });
+    syncScrollVars();
+    scheduleRefreshPositions();
+  }
+
+  function setStageRatio(ratio) {
+    if (!RATIOS[ratio]) return;
+    stage.ratio = ratio;
+    try { localStorage.setItem(RATIO_KEY, ratio); } catch (e) {}
+    fitStage();
+  }
+
+  function setStageZoom(mode) {
+    stage.zoom = mode === 'actual' ? 'actual' : 'fit';
+    try { localStorage.setItem(ZOOM_KEY, stage.zoom); } catch (e) {}
+    fitStage();
+  }
+
   function scheduleRefreshPositions() {
     if (window._paScrollRaf) return;
     window._paScrollRaf = window.requestAnimationFrame(function () {
       window._paScrollRaf = null;
+      syncScrollVars();
       refreshPositions();
     });
   }
@@ -379,7 +710,7 @@
   }
 
   function positionMarker(marker, target, position) {
-    var rect = target.getBoundingClientRect();
+    var rect = localRect(target);
     if (!rect.width && !rect.height) {
       marker.style.display = 'none';
       return;
@@ -387,44 +718,52 @@
     marker.style.display = '';
     position = position || 'top-right';
     var size = 22;
-    var nearRight = rect.right > window.innerWidth * 0.72;
-    var nearBottom = rect.bottom > window.innerHeight * 0.72;
+    var vp = localViewport();
+    var inv = enabled ? invScale() : 1;
+    // 圆点反向缩放后占据 size*inv 的设计像素，判定贴边时要按放大后的实际占位算
+    var sizeEff = size * inv;
+    var nearRight = rect.right > vp.left + vp.width * 0.72;
+    var nearBottom = rect.bottom > vp.top + vp.height * 0.72;
     var point;
 
     if (position === 'left' || (position === 'bottom-left' && nearRight)) {
-      point = toDocPoint(rect.left - size - 4, rect.top + rect.height / 2 - 11);
+      point = { left: rect.left - sizeEff - 4, top: rect.top + rect.height / 2 - sizeEff / 2 };
     } else if (position === 'top-right') {
       // 锚在目标右上角外侧，避免与相邻按钮左上角打点重叠
-      point = toDocPoint(rect.right - 2, rect.top - 8);
+      point = { left: rect.right - 2, top: rect.top - sizeEff * 0.4 };
     } else if (position === 'top-left') {
-      point = toDocPoint(rect.left - 12, rect.top - 8);
+      point = { left: rect.left - sizeEff / 2, top: rect.top - sizeEff * 0.4 };
     } else if (position === 'bottom-right') {
-      point = toDocPoint(rect.right - 10, rect.bottom - 14);
+      point = { left: rect.right - sizeEff * 0.5, top: rect.bottom - sizeEff * 0.7 };
     } else if (position === 'bottom-left') {
-      point = toDocPoint(
-        nearRight ? rect.left - size - 4 : rect.left - 10,
-        nearBottom ? rect.top - size - 4 : rect.bottom - 14
-      );
+      point = {
+        left: nearRight ? rect.left - sizeEff - 4 : rect.left - sizeEff * 0.5,
+        top: nearBottom ? rect.top - sizeEff - 4 : rect.bottom - sizeEff * 0.7
+      };
     } else {
-      point = toDocPoint(rect.right + 4, rect.top + rect.height / 2 - 11);
+      point = { left: rect.right + 4, top: rect.top + rect.height / 2 - sizeEff / 2 };
     }
 
-    marker.style.top = point.top + 'px';
-    marker.style.left = point.left + 'px';
+    marker.style.top = Math.round(point.top) + 'px';
+    marker.style.left = Math.round(point.left) + 'px';
   }
 
   function positionCard(card, marker, item) {
     card.classList.add('visible');
-    var cardW = card.offsetWidth || (item.wide ? 400 : 340);
-    var cardH = card.offsetHeight || 160;
-    var mRect = marker.getBoundingClientRect();
-    var scroll = getPageScroll();
-    var pad = 12;
-    var bottomReserve = 88;
+    var inv = enabled ? invScale() : 1;
+    var layoutW = card.offsetWidth || (item.wide ? 400 : 340);
+    var layoutH = card.offsetHeight || 160;
+    // 卡片反向缩放，换算回画布内容坐标里的实际占位
+    var cardW = layoutW * inv;
+    var cardH = layoutH * inv;
+    var mRect = localRect(marker);
+    var vp = localViewport();
+    var pad = 12 * inv;
+    var bottomReserve = 88 * inv;
+    var nearRight = mRect.left > vp.left + vp.width * 0.55;
+    var nearBottom = mRect.top > vp.top + vp.height * 0.55;
     var viewLeft;
     var viewTop;
-    var nearRight = mRect.left > window.innerWidth * 0.55;
-    var nearBottom = mRect.top > window.innerHeight * 0.55;
 
     if (item.position === 'top-left') {
       viewLeft = mRect.left - cardW + 20;
@@ -443,22 +782,22 @@
       viewTop = mRect.bottom + 8;
     }
 
-    if (viewTop + cardH > window.innerHeight - bottomReserve) {
+    if (viewTop + cardH > vp.top + vp.height - bottomReserve) {
       viewTop = mRect.top - cardH - 8;
     }
-    if (viewTop < pad) viewTop = pad;
-    if (viewLeft + cardW > window.innerWidth - pad) {
-      viewLeft = window.innerWidth - cardW - pad;
+    if (viewTop < vp.top + pad) viewTop = vp.top + pad;
+    if (viewLeft + cardW > vp.left + vp.width - pad) {
+      viewLeft = vp.left + vp.width - cardW - pad;
     }
-    if (viewLeft < pad) {
-      viewLeft = pad;
-      if (mRect.right + cardW + 16 < window.innerWidth - pad) {
+    if (viewLeft < vp.left + pad) {
+      viewLeft = vp.left + pad;
+      if (mRect.right + cardW + 16 < vp.left + vp.width - pad) {
         viewLeft = mRect.right + 8;
       }
     }
 
-    card.style.top = (scroll.y + viewTop) + 'px';
-    card.style.left = (scroll.x + viewLeft) + 'px';
+    card.style.top = Math.round(viewTop) + 'px';
+    card.style.left = Math.round(viewLeft) + 'px';
   }
 
   function showCard(item, marker) {
@@ -608,6 +947,7 @@
     function move(e) {
       var w = Math.min(680, Math.max(300, startW + (startX - e.clientX)));
       root.style.setProperty('--pa-doc-w', w + 'px');
+      fitStage();
       scheduleRefreshPositions();
     }
     function up(e) {
@@ -615,6 +955,7 @@
       document.removeEventListener('mouseup', up);
       var w = parseInt(getComputedStyle(root).getPropertyValue('--pa-doc-w'), 10) || 400;
       try { localStorage.setItem(DOC_W_KEY, String(w)); } catch (err) {}
+      fitStage();
       scheduleRefreshPositions();
     }
     document.addEventListener('mousemove', move);
@@ -643,7 +984,7 @@
     if (entry) entry.classList.add('is-active');
     document.querySelectorAll('.pa-highlight').forEach(function (el) { el.classList.remove('pa-highlight'); });
     item._target.classList.add('pa-highlight');
-    if (item._target.scrollIntoView) item._target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (item._target.scrollIntoView) item._target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     scheduleRefreshPositions();
     window.setTimeout(function () { item._target.classList.remove('pa-highlight'); }, 2600);
   }
@@ -678,8 +1019,9 @@
 
   function buildUI() {
     injectStyles();
-    ensureRoot();
     createToggle();
+    if (enabled) ensureStage();
+    ensureRoot();
 
     var root = document.getElementById(ROOT_ID);
     root.innerHTML = '';
@@ -694,6 +1036,8 @@
       marker.className = 'pa-marker';
       marker.textContent = String(num);
       marker.title = item.title;
+      // 圆点只有数字，读屏需要说清这是第几条、讲的是哪块
+      marker.setAttribute('aria-label', '批注 ' + num + '：' + item.title);
       marker.addEventListener('click', function (e) {
         e.stopPropagation();
         if (!enabled) setEnabled(true);
@@ -742,13 +1086,21 @@
       btn.querySelector('span').textContent = enabled ? '需求文档：开' : '需求文档';
     }
     document.documentElement.classList.toggle('pa-doc-open', enabled);
-    if (enabled) { buildDocPanel(); }
+    if (enabled) {
+      applyDocWidth();
+      ensureStage();
+      fitStage();
+      buildDocPanel();
+    } else {
+      teardownStage();
+    }
     applyFocusScope();
     if (!enabled) {
       document.querySelectorAll('.pa-marker').forEach(function (m) { m.classList.remove('visible'); });
       document.querySelectorAll('.pa-card').forEach(function (c) { c.classList.remove('visible'); });
       document.querySelectorAll('.pa-highlight').forEach(function (el) { el.classList.remove('pa-highlight'); });
     }
+    scheduleRefreshPositions();
   }
 
   function mergeBuiltin(list) {
@@ -799,6 +1151,13 @@
     init: function (options) {
       window._paBooted = true;
       init(options);
+    },
+    setStageRatio: setStageRatio,
+    setStageZoom: setStageZoom,
+    stageInfo: function () {
+      var cv = canvasEl();
+      return { ratio: stage.ratio, zoom: stage.zoom, scale: stage.scale, designW: DESIGN_W, designH: stage.designH,
+        stageOn: !!cv, scrollTop: cv && scrollerEl() ? scrollerEl().scrollTop : 0 };
     },
     _startResize: startResize,
     _filter: filterDoc,
