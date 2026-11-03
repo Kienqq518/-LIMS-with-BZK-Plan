@@ -225,8 +225,8 @@
             <select id="r_receiver"><option value="">请选择收样人</option><option>admin</option><option>张三</option><option>李四</option></select>
           </div>
           <div class="modal-form-item">
-            <label>收样状态</label>
-            <select id="r_status"><option>完好</option><option>异常</option></select>
+            <label><span class="req">*</span> 收样状态</label>
+            <select id="r_status"><option value="">请选择收样状态</option><option selected>完好</option><option>异常</option></select>
           </div>
           <div class="modal-form-item">
             <label><span class="req">*</span> 收样日期</label>
@@ -234,7 +234,7 @@
           </div>
           <div class="modal-form-item">
             <label><span class="req">*</span> 送样方式</label>
-            <select id="r_delivery"><option>送样</option><option>上门</option></select>
+            <select id="r_delivery"><option value="">请选择送样方式</option><option selected>送样</option><option>上门</option></select>
           </div>
           <div class="modal-form-item">
             <label>送样人</label>
@@ -766,8 +766,17 @@
         alert('请选择收样人');
         return;
       }
+      // 与 App 对齐：收样人、收样状态、收样日期、送样方式四项齐全才能提交
+      if (!document.getElementById('r_status').value) {
+        alert('请选择收样状态');
+        return;
+      }
       if (!document.getElementById('r_date').value.trim()) {
         alert('请填写收样日期');
+        return;
+      }
+      if (!document.getElementById('r_delivery').value) {
+        alert('请选择送样方式');
         return;
       }
       var item = receiveData[currentIndex];
@@ -879,7 +888,7 @@
             wide: true,
             content: '<strong>需求逻辑：</strong>Story202611-01-05。不同样品可以分开收，也可以一次勾几类一起收；同一行数量大于 1 是同一批，只能整批一起收，不能拆成多次。列表仍一行一委托，且只展示还有待收样品的任务。<br>' +
               '<strong>展示规则：</strong>列为勾选、序号、样品名称、产品标记、数量、型号/分类、规格、样品图片、收样情况、操作。<strong>已收样行的复选框置为不可勾选态</strong>（灰化禁用，悬停提示「已收样，不可再勾选」），整行灰底，不会被表头全选带上；没有待收行时表头复选框禁用。<br>' +
-              '<strong>交互逻辑：</strong>未勾选任何待收行就点「确认提交」→ 提示「请勾选要收样的样品」且弹窗不关；收样人、收样日期必填。提交后只把勾选行标为已收样并记录本次收样信息；仍有待收时弹窗保持打开、表单清空、已收行锁定；全部收完则提示后关闭弹窗，该委托从列表移除，本页不再提供收样或退回。退回仍按委托整单，且只有全部样品均未收样时才允许退回——收过任一样品后退回置灰。<br><strong>演示数据：</strong>页面加载时会幂等播种几条「已收部分样品」的委托（SC2026/0055、0051、0043、0041、0039、0045），便于直接演示分次收样与筛选；已手工收过的样品行不会被覆盖。其中 SC2026/0045 的导管只填了部分规格参数，产品标记展示为 <code>PVC-C - / DLT 802.3-2023</code>，用来演示缺值段占位。',
+              '<strong>交互逻辑：</strong>未勾选任何待收行就点「确认提交」→ 提示「请勾选要收样的样品」且弹窗不关；<strong>收样人、收样状态、收样日期、送样方式四项必填</strong>（与 App 一致：默认已选完好 / 送样，改回空值后不能提交，分别提示「请选择收样人」「请选择收样状态」「请填写收样日期」「请选择送样方式」）。提交后只把勾选行标为已收样并记录本次收样信息；仍有待收时弹窗保持打开、表单清空、已收行锁定；全部收完则提示后关闭弹窗，该委托从列表移除，本页不再提供收样或退回。退回仍按委托整单，且只有全部样品均未收样时才允许退回——收过任一样品后退回置灰。<br><strong>演示数据：</strong>页面加载时会幂等播种几条「已收部分样品」的委托（SC2026/0055、0051、0043、0041、0039、0045），便于直接演示分次收样与筛选；已手工收过的样品行不会被覆盖。其中 SC2026/0045 的导管只填了部分规格参数，产品标记展示为 <code>PVC-C - / DLT 802.3-2023</code>，用来演示缺值段占位。',
             tag: '样品收样'
           },
           {
