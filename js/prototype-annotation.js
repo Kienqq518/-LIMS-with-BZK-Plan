@@ -690,11 +690,14 @@
       else rec.parent.appendChild(rec.node);
     });
     stage.lifts = [];
-    // 2) 画布与滚动层里的节点全部搬回 body
+    // 2) 画布与滚动层里的节点全部搬回 body（外壳导航的克隆是临时借来的，直接丢掉）
+    var chrome = cv && cv.querySelector('.pa-chrome');
+    if (chrome && chrome.parentNode) chrome.parentNode.removeChild(chrome);
     [sc, cv].forEach(function (layer) {
       if (!layer) return;
       [].slice.call(layer.children).forEach(function (n) {
         if (n.id === 'pa-scroll' || n.id === CANVAS_ID) return;
+        if (n.classList && n.classList.contains('pa-chrome')) return;
         document.body.appendChild(n);
       });
     });
