@@ -119,14 +119,15 @@
           id: 'qc-void-cert',
           selector: '[data-annotate="void-cert"]',
           position: 'top-right',
-          title: '已删除样品的合格证作废',
+          title: '已删除样品不进合格打印',
           wide: true,
-          content: '<strong>需求逻辑：</strong>样品收样之后被删掉有两种来源：① 委托确认退回委托登记，把这件样品删了；② 变更申请删除样品。两种情况样品都已收过样、证可能已发，实物走退样还给委托方，所以记录不能删——样品编号不回收、永久占位，已发合格证标「已作废」并禁止再次打印。<br>' +
-            '<strong>展示规则：</strong>只有委托已到报告签发及以后、且该样品曾判定合格的作废记录才列在本页（还没签发的委托本来就不出证，不列）。' +
-            '这类行整行灰底，样品名称后标红色「已删除」，样品编号后标「合格证已作废」，底部计数写「共 n 条（含 m 条已删除，合格证作废）」。<br>' +
-            '<strong>交互逻辑：</strong>作废行的复选框置灰（悬停「样品已删除，合格证已作废，不可打印」）且不计入「全选」，' +
-            '行内「打印合格证」变灰不可点，批量打印也不会带上它；判定重出或客户补送样品走新编号，不复用作废编号。' +
-            '演示：SC2026/0073（变更删安全帽）、SC2026/0071（退回登记后删绝缘硬梯），清单在 js/receive-history-mock.js › DELETED_SAMPLES。',
+          content: '<strong>需求逻辑：</strong>样品收样之后被删掉有两种来源：① 委托确认退回委托登记，把这件样品删了；② 变更申请删除样品。' +
+            '删掉的样品实物要走退样还给委托方，已不属于这张委托，合格证打印再列出它就会给不在库的样品出证。<br>' +
+            '<strong>展示规则：</strong>本页只列<strong>在委托内的正常样品</strong>：判定合格且委托处于报告签发及后续流程的才出现，' +
+            '已删除的样品不列、也不标"作废"；不合格的样品本来就禁止打证，同样不出现。<br>' +
+            '<strong>交互逻辑：</strong>清单里没有的记录无法勾选，批量打印只覆盖正常样品；' +
+            '若某委托的正常样品全部不合格或已全部删除，标签打印页该委托的「合格证」入口不展示。' +
+            '样品编号不回收，客户补送走新增样品重新发号。演示数据在 js/receive-history-mock.js › DELETED_SAMPLES。',
           tag: '合格证打印'
         },
         {
@@ -174,24 +175,6 @@
       { sampleName: '绝缘软梯', sampleNo: 'SC2026/00690101', entrust: 'SC2026/0069', contract: '/', client: '杭州数蚕智能科技有限公司', sendDate: '2026-06-06', requireDate: '2026-07-19', status: '报告编制', judgment: '合格', cat: 'aqgqj', masterId: 'ladder' },
       { sampleName: '卸扣', sampleNo: 'SC2026/00740101', entrust: 'SC2026/0074', contract: '/', client: '杭州数蚕智能科技有限公司', sendDate: '2026-06-11', requireDate: '2026-07-24', status: '任务完成', judgment: '不合格', cat: 'aqgqj', masterId: 'shackle' }
     ];
-
-    /* 已收样后被删掉的样品：委托已到报告签发及以后时，本页仍列得出来，
-     * 但合格证已作废、复选框与打印都禁用（编号不回收，旧证留痕可查） */
-    (function appendDeletedRows() {
-      var RH = window.ReceiveHistory;
-      if (!RH || !RH.DELETED_SAMPLES) return;
-      Object.keys(RH.DELETED_SAMPLES).forEach(function (code) {
-        var base = allRows.filter(function (r) { return r.entrust === code && !r.deleted; })[0];
-        if (!base) return;   // 该委托还没到签发及以后，本来就不该出现在本页
-        RH.DELETED_SAMPLES[code].forEach(function (d) {
-          allRows.push({ sampleName: d.name, sampleNo: d.sampleNo, entrust: code, contract: base.contract,
-            client: base.client, sendDate: base.sendDate, requireDate: base.requireDate,
-            status: base.status, judgment: '合格', cat: d.cat, masterId: d.masterId,
-            inspectDate: base.inspectDate, reinspectDate: base.reinspectDate, model: '',
-            deleted: true, deleteReason: RH.DELETE_KIND_TEXT[d.kind] || '样品已删除' });
-        });
-      });
-    })();
 
     function eligible(row) {
       return FlowStages.canShowCert(row);
@@ -334,25 +317,20 @@
 
     function renderTable() {
       document.getElementById('tableBody').innerHTML = filtered.map(function (r, i) {
-        var op = r.deleted
-          ? '<span class="text-slate-300 cursor-not-allowed" title="' + r.deleteReason + '，合格证已作废，禁止再次打印"><i class="fa fa-print"></i> 打印合格证</span>'
-          : '<a href="#" class="text-green-600 hover:underline" onclick="printOne(event,\'' + r.sampleNo + '\')"><i class="fa fa-print"></i> 打印合格证</a>';
-        return '<tr class="' + (r.deleted ? 'row-deleted' : 'hover:bg-slate-50') + '">' +
-          '<td class="border border-slate-200 px-3 py-2"><input type="checkbox" class="row-check" data-no="' + r.sampleNo + '"' +
-          (r.deleted ? ' disabled title="样品已删除，合格证已作废，不可打印"' : '') + ' /></td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + r.sampleName + (r.deleted ? '<span class="del-tag">已删除</span>' : '') + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + r.sampleNo + (r.deleted ? '<span class="del-tag">合格证已作废</span>' : '') + '</td>' +
+        return '<tr class="hover:bg-slate-50">' +
+          '<td class="border border-slate-200 px-3 py-2"><input type="checkbox" class="row-check" data-no="' + r.sampleNo + '" /></td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + r.sampleName + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + r.sampleNo + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + r.entrust + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + r.contract + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + r.client + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + r.sendDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + r.requireDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' +
-            op +
+            '<a href="#" class="text-green-600 hover:underline" onclick="printOne(event,\'' + r.sampleNo + '\')"><i class="fa fa-print"></i> 打印合格证</a>' +
           '</td></tr>';
       }).join('') || '<tr><td colspan="9" class="border border-slate-200 px-3 py-10 text-center text-slate-400">暂无已合格可打印样品</td></tr>';
-      var delN = filtered.filter(function (r) { return r.deleted; }).length;
-      document.getElementById('totalText').textContent = '共 ' + filtered.length + ' 条' + (delN ? '（含 ' + delN + ' 条已删除，合格证作废）' : '');
+      document.getElementById('totalText').textContent = '共 ' + filtered.length + ' 条';
       document.getElementById('checkAll').checked = false;
     }
 

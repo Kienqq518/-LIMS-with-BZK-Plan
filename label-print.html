@@ -333,16 +333,22 @@
 
     function renderTable() {
       document.getElementById('tableBody').innerHTML = filtered.map(function (item, i) {
-        var showCert = canShowCert(item);
+        // 被删样品不在本页提示，只在打印页里不展示；
+        // 若委托里剩下的正常样品为 0（全部被删），则不展示「合格证」入口
         var dels = (window.ReceiveHistory && ReceiveHistory.DELETED_SAMPLES[item.code]) || [];
+        var mSamples = window.EntrustMock ? (EntrustMock.get(item.code).samples || []) : [];
+        var liveN = mSamples.filter(function (sm) {
+          return !dels.some(function (d) { return d.name === sm.name; });
+        }).length;
+        var allGone = mSamples.length > 0 && liveN <= 0;
+        var showCert = canShowCert(item) && !allGone;
         var certBtn = showCert
           ? '<a id="' + (item.code === 'SC2026/0079' ? 'linkSingleCert' : '') + '" href="#" onclick="onSingleCertClick(event,\'' + item.code + '\')" class="text-green-600 hover:underline"><i class="fa fa-print"></i> 合格证</a>'
           : '';
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2.5"><input type="checkbox" class="row-check" data-code="' + item.code + '" data-cert="' + (showCert ? '1' : '0') + '" /></td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a>' +
-            (dels.length ? '<span class="del-tag" title="' + dels.map(function (d) { return d.name + '（' + ReceiveHistory.DELETE_KIND_TEXT[d.kind] + '）'; }).join('；') + '">含已删除样品 ' + dels.length + ' 件</span>' : '') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.sendDate + '</td>' +
@@ -499,11 +505,11 @@
           id: 'lp-deleted-void',
           selector: '[data-annotate="deleted-void"]',
           position: 'top-right',
-          title: '已删除样品：标签作废、禁止重打',
+          title: '已删除样品不进打印页',
           wide: true,
-          content: '<strong>需求逻辑：</strong>样品收样之后被删掉有两种来源：① 委托确认退回委托登记，把这件样品删了；② 变更申请删除样品。两种情况样品都已经收过样、标签可能已打印、合格证可能已发，实物则要走退样还给委托方，所以记录不能删——编号不回收、永久占位，旧标签与旧合格证标「已作废」并禁止再次打印，避免作废的样品还在流通。<br>' +
-            '<strong>展示规则：</strong>这类委托在列表的委托编号后带红色「含已删除样品 n 件」标记，悬停显示样品名与删除来源（委托确认退回委托登记后删除 / 变更申请删除）；点进「样品标签」页，被删样品仍列在清单里，整行灰底、样品编号后标「标签已作废」、样品名称后标「已删除」。<br>' +
-            '<strong>交互逻辑：</strong>作废行的复选框置灰不可勾选，「全选」与「批量打印样品标签」都不含它；需要新标签的（如客户补送同款样品）走新增样品重新发号，不复用作废编号。演示数据：SC2026/0031（退回登记后删安全帽）、SC2026/0029（变更删绝缘硬梯），清单在 js/receive-history-mock.js › DELETED_SAMPLES。',
+          content: '<strong>需求逻辑：</strong>样品收样之后被删掉有两种来源：① 委托确认退回委托登记，把这件样品删了；② 变更申请删除样品。删掉的样品实物要走退样还给委托方，已经不再属于这张委托，所以打印环节不该再看到它。<br>' +
+            '<strong>展示规则：</strong>本页列表<strong>不做任何标记</strong>——委托编号列就是委托编号，不挂「含已删除样品」之类的提示；被删样品只在点进去的打印页（样品标签 / 合格证）里彻底不出现。<br>' +
+            '<strong>交互逻辑：</strong>若某委托剩下的正常样品为 0（全被删掉），该委托的「合格证」入口不再展示，只留「样品标签」；样品编号不回收，客户补送同款样品走新增样品重新发号。演示数据在 js/receive-history-mock.js › DELETED_SAMPLES：SC2026/0031（退回登记后删安全帽）、SC2026/0029（变更删绝缘硬梯）、SC2026/0073 / SC2026/0071。',
           tag: '标签打印'
         },
         {
