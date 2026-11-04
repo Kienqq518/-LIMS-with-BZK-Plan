@@ -104,7 +104,10 @@
     try { global.localStorage.setItem(storeKey(), JSON.stringify(o)); } catch (e) {}
   }
   // 合并「已保存的列顺序」与「页面当前列」：新出现的列插回它在页面里的原始位置，
-  // 而不是追加到末尾（否则后来新增的列会跑到「操作」列右边，看起来位置错了）
+  // 而不是追加到末尾（否则后来新增的列会跑到「操作」列右边，看起来位置错了）。
+  // 插入点取「已保存顺序里最后一个源码位置在它前面的列」之后：
+  // 用户自定义过顺序时（例如把「编制人」提前），老算法会把新增的「样品大类」
+  // 塞到「编制人」前面，脱离它本该挨着的「样品名称」；按前驱列贴边插才符合预期。
   function mergeOrder(savedOrder, all) {
     var known = (savedOrder || []).filter(function (k) { return all.indexOf(k) >= 0; });
     var idxOf = {};
@@ -112,8 +115,8 @@
     var result = known.slice();
     all.forEach(function (k) {
       if (known.indexOf(k) >= 0) return;
-      var pos = result.length;
-      for (var i = 0; i < result.length; i++) { if (idxOf[result[i]] > idxOf[k]) { pos = i; break; } }
+      var pos = 0;
+      for (var i = 0; i < result.length; i++) { if (idxOf[result[i]] < idxOf[k]) pos = i + 1; }
       result.splice(pos, 0, k);
     });
     return result;
