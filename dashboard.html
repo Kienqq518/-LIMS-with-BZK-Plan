@@ -128,6 +128,37 @@
           </div>
         </div>
       </section>
+
+      <!-- 年度业务分析汇总表（任务总览下方，与实验室业务管理系统首页同一张图） -->
+      <section class="rounded-lg bg-white p-4 shadow-sm" data-annotate="annual-analysis">
+        <div class="mb-3 flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-slate-600" for="abCat">各种类名称</label>
+            <select id="abCat" class="w-56 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-sky-500">
+              <option value="">请选择各种类名称</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-slate-600">按年/月筛选</span>
+            <select id="abMode" class="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500">
+              <option value="year">年</option>
+              <option value="month">月</option>
+            </select>
+            <select id="abYear" class="w-24 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-sky-500"></select>
+            <input id="abMonth" type="month" class="hidden w-40 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-sky-500" />
+          </div>
+          <button id="abQuery" class="rounded bg-sky-500 px-4 py-1.5 text-sm text-white hover:bg-sky-600"><i class="fa fa-search"></i> 查询</button>
+          <button id="abReset" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+        </div>
+        <h2 class="mb-1 flex items-center gap-2 text-base font-semibold text-slate-800">
+          <span class="h-4 w-1 rounded bg-sky-500"></span>年度业务分析汇总表
+        </h2>
+        <div id="chartAnnual" class="h-72"></div>
+        <p class="mt-1 text-xs text-slate-400">
+          单位：万元。按委托受理日期归月、按「任务类型」分组，金额取该月委托的样品检测总价合计；
+          字典里存在但当年没有委托的分类仍画出来（值为 0），总量线为各分类合计。
+        </p>
+      </section>
     </div>
 
     <!-- ========== 右列（约 30%） ========== -->
@@ -293,6 +324,10 @@
     </div>
   </section>
 
+  <script src="js/sample-data-store.js"></script>
+  <script src="js/flow-stages.js"></script>
+  <script src="js/mock-dict.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script>
     // 统一收集图表实例，用于窗口尺寸变化时自适应
     const charts = [];
@@ -495,9 +530,135 @@
       });
       registerResize(chart);
     })();
+
+    // ================= 年度业务分析汇总表（任务总览下方） =================
+    (function initAnnualAnalysis() {
+      var host = document.getElementById('chartAnnual');
+      if (!host || !window.echarts) return;
+
+      // 分类取「任务类型」字典（基础配置 › 字典管理），字典不可用时退回内置 6 项
+      var CATS = ['电气（输配电类）', '电气（低压电器类）', '电气（电工电子产品类）',
+                  '电气（抗震检测类）', '材料（安全工器具类）', '材料（电线电缆、金具、金属材料类）'];
+      try {
+        if (window.MockDictStore) {
+          var items = MockDictStore.getActiveItems(MockDictStore.load(), 'lims_task_type') || [];
+          if (items.length) CATS = items.map(function (it) { return it.label; });
+        }
+      } catch (e) { /* 退回内置分类 */ }
+
+      var elCat = document.getElementById('abCat'), elMode = document.getElementById('abMode'),
+          elYear = document.getElementById('abYear'), elMonth = document.getElementById('abMonth');
+
+      // 年份来自委托数据本身（EntrustMock），不再另写一份假年份
+      var seen = {};
+      if (window.EntrustMock) {
+        Object.keys(EntrustMock.ROWS).forEach(function (code) {
+          var y = String(EntrustMock.get(code).acceptDate || '').slice(0, 4);
+          if (/^\d{4}$/.test(y)) seen[y] = 1;
+        });
+      }
+      var years = Object.keys(seen).sort().reverse();
+      if (!years.length) years = ['2026'];
+      elYear.innerHTML = years.map(function (y) { return '<option value="' + y + '">' + y + '</option>'; }).join('');
+      var defYear = years.indexOf('2026') >= 0 ? '2026' : years[0];
+      elYear.value = defYear;
+      elMonth.value = defYear + '-07';
+      elCat.innerHTML = '<option value="">请选择各种类名称</option>' +
+        CATS.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
+
+      function aggregate(year, monthKey) {
+        var labels = [], i;
+        if (monthKey) labels = [monthKey];
+        else { for (i = 1; i <= 12; i++) labels.push(year + '-' + (i < 10 ? '0' + i : i)); }
+        var data = {};
+        CATS.concat(['未分类']).forEach(function (c) { data[c] = labels.map(function () { return 0; }); });
+        if (window.EntrustMock) {
+          Object.keys(EntrustMock.ROWS).forEach(function (code) {
+            var m = EntrustMock.get(code);
+            var key = String(m.acceptDate || '').slice(0, 7);
+            var idx = labels.indexOf(key);
+            if (idx < 0) return;
+            var cat = data[m.taskType] ? m.taskType : '未分类';
+            data[cat][idx] += (Number(m.totalPrice) || 0) / 10000;   // 元 → 万元
+          });
+        }
+        Object.keys(data).forEach(function (k) {
+          data[k] = data[k].map(function (v) { return Math.round(v * 10000) / 10000; });
+        });
+        return { labels: labels, data: data };
+      }
+
+      var chart = echarts.init(host);
+
+      function render() {
+        var year = elYear.value, monthMode = elMode.value === 'month';
+        var agg = aggregate(year, monthMode ? elMonth.value : '');
+        var only = elCat.value;
+        var names = only ? [only] : CATS.filter(function (c) { return agg.data[c]; });
+        if (agg.data['未分类'] && agg.data['未分类'].some(function (v) { return v; }) && !only) names.push('未分类');
+        var total = agg.labels.map(function (_, i) {
+          var sum = 0;
+          Object.keys(agg.data).forEach(function (k) { sum += agg.data[k][i] || 0; });
+          return Math.round(sum * 10000) / 10000;
+        });
+        var series = names.map(function (c) {
+          return { name: c, type: 'line', symbol: 'circle', symbolSize: 5, smooth: false,
+                   lineStyle: { width: 2 }, data: agg.data[c] };
+        });
+        series.push({ name: '总量', type: 'line', symbol: 'circle', symbolSize: 5,
+                      lineStyle: { width: 2.5, type: 'solid' }, data: total });
+        chart.setOption({
+          color: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#22c55e', '#ef4444', '#eab308', '#f97316', '#14b8a6', '#334155'],
+          tooltip: { trigger: 'axis', axisPointer: { type: 'line' } },
+          grid: { left: 48, right: 24, top: 18, bottom: 56 },
+          xAxis: { type: 'category', boundaryGap: false, data: agg.labels,
+                   axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
+          yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
+          legend: { bottom: 0, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { color: '#64748b', fontSize: 11 } },
+          series: series
+        }, true);
+      }
+
+      elMode.addEventListener('change', function () {
+        elMonth.classList.toggle('hidden', elMode.value !== 'month');
+        render();
+      });
+      document.getElementById('abQuery').addEventListener('click', render);
+      document.getElementById('abReset').addEventListener('click', function () {
+        elCat.value = ''; elMode.value = 'year'; elMonth.classList.add('hidden');
+        elYear.value = defYear; elMonth.value = defYear + '-07';
+        render();
+      });
+      render();
+      registerResize(chart);
+    })();
   </script>
 
 <script src="js/prototype-annotation.js"></script>
+  <script>
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'annual-analysis',
+          selector: '[data-annotate="annual-analysis"]',
+          position: 'top-right',
+          title: '年度业务分析汇总表',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>工作台要一眼看到全年业务量随时间的走势，' +
+            '并且能按「任务类型」拆开对比——哪个分类在做、哪个分类空转，直接决定排产与人员安排。<br>' +
+            '<strong>展示规则：</strong>位置固定在「任务总览」下方；折线图，横轴为该年 1-12 月，' +
+            '纵轴单位为万元；每个「任务类型」字典项一条线，另加一条「总量」线为各分类合计；' +
+            '字典里有、当年却没有委托的分类仍然画出来（值为 0），表示该分类当年没接单，' +
+            '而不是把线藏掉。数值全部来自共享委托数据 <code>js/entrust-mock.js</code>' +
+            '（按受理日期归月、金额取样品检测总价），与委托预览 / 委托详情同一份数据。<br>' +
+            '<strong>交互逻辑：</strong>「各种类名称」选中某类时只画该类一条线（便于单看走势），' +
+            '留空则画全部分类 + 总量；「按年/月筛选」选「年」按 12 个月铺开、选「月」只画所选月份那一个点；' +
+            '年份下拉只列委托数据里真实出现过的年份；「查询」按当前条件重算，「重置」回到默认（全部类 + 按年 + 当年）。',
+          tag: '工作台'
+        }
+      ]
+    });
+  </script>
   <script src="js/ui-a11y.js" defer></script>
 </body>
 </html>
