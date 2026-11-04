@@ -369,7 +369,7 @@
           '<button type="button" title="' + (pinned ? '固定列不可上移' : '上移') + '" onclick="ColumnConfig._move(\'' + esc(k) + '\',-1)"' + (pinned || pos === 0 ? ' disabled' : '') + '><i class="fa fa-angle-up"></i></button>' +
           '<button type="button" title="' + (pinned ? '固定列不可下移' : '下移') + '" onclick="ColumnConfig._move(\'' + esc(k) + '\',1)"' + (pinned || pos === order.length - 1 ? ' disabled' : '') + '><i class="fa fa-angle-down"></i></button>' +
         '</span>' +
-        '<label class="cc-sw"><input type="checkbox" data-toggle="' + esc(k) + '"' + (noHide ? ' disabled title="序号 / 委托编号 / 操作 为固定列，不可隐藏"' : (hidden[k] ? '' : ' checked')) + ' onchange="ColumnConfig._toggle(this.getAttribute(\'data-toggle\'), this.checked)" /><span></span></label>' +
+        '<label class="cc-sw"><input type="checkbox" data-toggle="' + esc(k) + '"' + (noHide ? ' checked disabled title="序号 / 委托编号 / 操作 为固定列，不可隐藏"' : (hidden[k] ? '' : ' checked')) + ' onchange="ColumnConfig._toggle(this.getAttribute(\'data-toggle\'), this.checked)" /><span></span></label>' +
       '</div>';
     }).join('');
     host.innerHTML = html || '<div class="cc-empty">无匹配字段</div>';
