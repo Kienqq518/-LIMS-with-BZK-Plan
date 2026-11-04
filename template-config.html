@@ -1290,7 +1290,7 @@
           <button class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white">查询</button>
         </div>
         <table class="tpl-table">
-          <thead id="copyTableHead"><tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>模版内容样式</th><th>操作</th></tr></thead>
+          <thead id="copyTableHead"><tr><th style="width:40px"></th><th class="whitespace-nowrap">序号</th><th>模板文件</th><th>模版内容样式</th><th>操作</th></tr></thead>
           <tbody id="copyTableBody"></tbody>
         </table>
       </div>
@@ -1840,7 +1840,7 @@
 
     function combinedTableHeadHtml(withPickCols) {
       var cols = '<th style="width:88px">绑定层级</th><th class="cell-combined-bind">绑定对象</th><th style="width:132px">覆盖范围</th><th style="width:168px">模板文件</th><th class="cell-ops-tight">操作</th>';
-      if (withPickCols) return '<tr><th style="width:40px"></th><th>序号</th>' + cols + '</tr>';
+      if (withPickCols) return '<tr><th style="width:40px"></th><th class="whitespace-nowrap">序号</th>' + cols + '</tr>';
       return '<tr><th class="cell-check"><input type="checkbox" id="combinedCheckAll" class="accent-blue-600" onchange="toggleCombinedCheckAll(this.checked)" /></th>' + cols + '</tr>';
     }
 
@@ -2638,7 +2638,7 @@
       if (state.main === 'report' && state.sub === 'body') {
         document.getElementById('dataTable').classList.remove('record-tpl-table');
         document.getElementById('dataTable').classList.add('tpl-table-pin');
-        head.innerHTML = '<tr data-annotate="report-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th class="cell-seq">序号</th><th class="cell-tpl-name">模板名称</th><th class="cell-sample-name">样品名称(型号)</th><th style="width:240px">样品分类</th><th class="cell-default">默认</th><th class="cell-version">当前启用版本</th><th class="cell-public-ref">引用公共模版头</th><th class="cell-public-ref">引用公共模版尾</th><th class="cell-ops">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="report-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th class="whitespace-nowrap cell-seq">序号</th><th class="cell-tpl-name">模板名称</th><th class="cell-sample-name">样品名称(型号)</th><th style="width:240px">样品分类</th><th class="cell-default">默认</th><th class="cell-version">当前启用版本</th><th class="cell-public-ref">引用公共模版头</th><th class="cell-public-ref">引用公共模版尾</th><th class="cell-ops">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           var defaultCell = r.isDefault
             ? '<span class="badge-default">默认</span>'
@@ -2658,7 +2658,7 @@
         updateBatchDownloadBtn();
       } else if (state.main === 'report' && state.sub === 'public') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin', 'record-tpl-table');
-        head.innerHTML = '<tr data-annotate="public-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th>序号</th><th>模版内容样式</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="public-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th class="whitespace-nowrap">序号</th><th>模版内容样式</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           ensurePublicTemplates(r);
           var fileCell = r.file ? '<span class="link">' + r.file + '</span>' : '<span class="badge-none">未配置</span>';
@@ -2667,7 +2667,7 @@
         updateBatchDownloadBtn();
       } else if (state.main === 'record' && state.sub === 'public') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin', 'record-tpl-table');
-        head.innerHTML = '<tr data-annotate="record-public-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th>序号</th><th>模版内容样式</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="record-public-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th class="whitespace-nowrap">序号</th><th>模版内容样式</th><th>模版文件</th><th class="cell-ops">操作</th></tr>';
         body.innerHTML = rows.map(function (r, i) {
           ensureRecordPublicTemplates(r);
           var fileCell = r.file ? '<span class="link">' + r.file + '</span>' : '<span class="badge-none">未配置</span>';
@@ -2677,7 +2677,7 @@
       } else if (state.main === 'record') {
         document.getElementById('dataTable').classList.remove('tpl-table-pin');
         document.getElementById('dataTable').classList.add('record-tpl-table');
-        head.innerHTML = '<tr data-annotate="record-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th style="width:48px">序号</th><th class="cell-record-sample">样品名称(型号)</th><th style="width:240px">样品分类</th><th style="width:88px">试验项</th><th class="cell-record-file">模板文件</th><th class="cell-ops-tight">操作</th></tr>';
+        head.innerHTML = '<tr data-annotate="record-table"><th class="cell-check"><input type="checkbox" id="checkAll" class="accent-blue-600" onchange="toggleCheckAll(this.checked)" /></th><th class="whitespace-nowrap" style="width:48px">序号</th><th class="cell-record-sample">样品名称(型号)</th><th style="width:240px">样品分类</th><th style="width:88px">试验项</th><th class="cell-record-file">模板文件</th><th class="cell-ops-tight">操作</th></tr>';
         var seq = 0;
         body.innerHTML = rows.map(function (row) {
           if (row.rowType === 'group') {
@@ -3296,7 +3296,7 @@
       var catKw = categoryEl ? categoryEl.value.trim() : '';
       if (sampleKw) sources = sources.filter(function (r) { return getBodySampleDisplay(r.tree).includes(sampleKw); });
       if (catKw) sources = sources.filter(function (r) { return getBodyCategoryPath(r.tree).includes(catKw); });
-      document.getElementById('copyTableHead').innerHTML = '<tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>样品名称(型号)</th><th>样品分类</th><th>操作</th></tr>';
+      document.getElementById('copyTableHead').innerHTML = '<tr><th style="width:40px"></th><th class="whitespace-nowrap">序号</th><th>模板文件</th><th>样品名称(型号)</th><th>样品分类</th><th>操作</th></tr>';
       document.getElementById('copyTableBody').innerHTML = sources.map(function (r, i) {
         return '<tr><td><input type="radio" name="copyPick" value="' + r.id + '"' + (i === 0 ? ' checked' : '') + ' /></td><td>' + (i + 1) + '</td>' +
           '<td>' + resolveBodyFile(r) + '</td><td>' + getBodySampleDisplay(r.tree) + '</td><td>' + getBodyCategoryPath(r.tree) + '</td>' +
@@ -3317,7 +3317,7 @@
       document.getElementById('copyModalTitle').textContent = '公共模版复制';
       document.getElementById('copyBodyToolbar').classList.add('hidden');
       document.getElementById('copyPublicToolbar').classList.remove('hidden');
-      document.getElementById('copyTableHead').innerHTML = '<tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>模版内容样式</th><th>操作</th></tr>';
+      document.getElementById('copyTableHead').innerHTML = '<tr><th style="width:40px"></th><th class="whitespace-nowrap">序号</th><th>模板文件</th><th>模版内容样式</th><th>操作</th></tr>';
       var sources = PUBLIC_DATA.filter(function (r) {
         if (state.copyTarget === 'version' && r.id === state.publicRowId) return false;
         return !!r.file;
@@ -3992,7 +3992,7 @@
       document.getElementById('copyModalTitle').textContent = '记录单公共模版复制';
       document.getElementById('copyBodyToolbar').classList.add('hidden');
       document.getElementById('copyPublicToolbar').classList.add('hidden');
-      document.getElementById('copyTableHead').innerHTML = '<tr><th style="width:40px"></th><th>序号</th><th>模板文件</th><th>模版内容样式</th><th>操作</th></tr>';
+      document.getElementById('copyTableHead').innerHTML = '<tr><th style="width:40px"></th><th class="whitespace-nowrap">序号</th><th>模板文件</th><th>模版内容样式</th><th>操作</th></tr>';
       var sources = RECORD_PUBLIC_DATA.filter(function (r) {
         if (state.copyTarget === 'version' && r.id === state.publicRowId) return false;
         return !!r.file;
@@ -4240,7 +4240,7 @@
       if (head) {
         head.innerHTML = isCombined
           ? combinedTableHeadHtml(true)
-          : '<tr><th style="width:40px"></th><th style="width:48px">序号</th><th class="cell-record-file">模板文件</th><th class="cell-record-sample">样品名称(型号)</th><th style="width:240px">样品分类</th><th style="width:88px">试验项</th><th class="cell-ops-tight">操作</th></tr>';
+          : '<tr><th style="width:40px"></th><th class="whitespace-nowrap" style="width:48px">序号</th><th class="cell-record-file">模板文件</th><th class="cell-record-sample">样品名称(型号)</th><th style="width:240px">样品分类</th><th style="width:88px">试验项</th><th class="cell-ops-tight">操作</th></tr>';
       }
       var testLabel = document.getElementById('rc_testLabel');
       var testInput = document.getElementById('rc_test');
