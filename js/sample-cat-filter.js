@@ -57,6 +57,9 @@
   }
 
   function addColumn() {
+    // 标签 / 合格证打印页的列就是模版字段，多插一列会把表格挤没：
+    // <body data-cat-col="off"> 只保留「样品大类」筛选条件，不再注入列
+    if (doc.body && doc.body.getAttribute('data-cat-col') === 'off') return false;
     if (hasOverlayText('th', '样品大类')) return 'exists';
     var th = findNameHeader();
     if (!th) return false;

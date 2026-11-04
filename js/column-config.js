@@ -86,8 +86,12 @@
 
   // 主列表表格：不在弹窗/文档面板里，表头列数 >=4，且行数最多
   function findTable() {
+    // 打印预览这类「列就是打印字段」的页面用 <body data-col-config="off"> 关掉列配置入口，
+    // 单表 data-no-col-config 也支持（同一页里只想关某一张表时用它）
+    if (doc.body && doc.body.getAttribute('data-col-config') === 'off') return null;
     var best = null, bestScore = -1;
     [].slice.call(doc.querySelectorAll('table')).forEach(function (t) {
+      if (t.hasAttribute('data-no-col-config')) return;
       // closest() 会命中元素自身，嵌套判断要看父级
       if (t.closest('.fixed') || t.closest('#pa-doc')) return;
       if (t.parentElement && t.parentElement.closest('table')) return;
