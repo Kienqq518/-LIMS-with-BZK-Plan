@@ -846,14 +846,16 @@
         elTitle.textContent = (elFrom.value ? elFrom.value.slice(0, 4) : '2026') + ' 检测报告及时率统计';
         chart.setOption({
           tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-          legend: { top: 0, right: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 8, textStyle: { color: '#64748b', fontSize: 11 } },
-          grid: { left: 56, right: 56, top: 34, bottom: 34 },
+          legend: { top: 2, right: 14, itemGap: 14, icon: 'roundRect', itemWidth: 10, itemHeight: 8,
+                    textStyle: { color: '#64748b', fontSize: 11 } },
+          grid: { left: 64, right: 66, top: 46, bottom: 34 },
           xAxis: { type: 'category', data: list.map(function (d) { return d.name; }),
                    axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#64748b' } },
           yAxis: [
-            { type: 'value', name: '检测报告数量', nameTextStyle: { color: '#94a3b8', fontSize: 11 },
+            { type: 'value', name: '检测报告数量', nameGap: 16,
+              nameTextStyle: { color: '#94a3b8', fontSize: 11, align: 'right' },
               splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
-            { type: 'value', name: '及时率', min: 0, max: 100, axisLabel: { formatter: '{value}%', color: '#94a3b8' },
+            { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%', color: '#94a3b8' },
               splitLine: { show: false } }
           ],
           series: [
