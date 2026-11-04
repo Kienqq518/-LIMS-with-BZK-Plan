@@ -44,7 +44,7 @@
       <table class="info-table" id="receiveInfoTable"><tr><td class="lbl">收样人</td><td>梁倩</td><td class="lbl">收样状态</td><td>完好</td><td class="lbl">收样日期</td><td>2026-04-01</td></tr><tr><td class="lbl">送样方式</td><td>送样</td><td class="lbl"></td><td></td><td class="lbl"></td><td></td></tr></table>
       <div id="receiveDetailHost"></div>
     </section>
-    <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息变更记录</h2>
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="entrust-change-log"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息变更记录</h2>
       <table class="data-table min-w-[900px]"><thead><tr><th>序号</th><th>变更类型</th><th>变更内容</th><th>操作人</th><th>变更时间</th><th>变更原因</th><th>驳回原因</th><th>状态</th></tr></thead>
       <tbody id="entrustChangeBody">
         <tr><td>1</td><td>修改</td><td class="max-w-md text-xs">客户单位、客户联系人、客户地址等多项信息变更</td><td>admin</td><td>2026-04-02</td><td>信息更正</td><td></td><td><span class="text-green-600">通过</span></td></tr>
@@ -285,7 +285,8 @@
     /* 其余委托：演示一次「基本信息 + 样品试验项」的常规变更 */
     eb.innerHTML = [
       row(1, '修改', '客户单位、客户联系人、客户地址等委托基本信息变更', op, '信息更正'),
-      row(2, '修改', '优先等级 从 常规 修改为 加急；要求检测完成时间随之提前', op, '客户催办')
+      row(2, '修改', '业务员 从 ' + (M.salesman === '梁倩' ? '业务员A' : '梁倩') +
+        ' 改为 ' + M.salesman + '；优先等级与要求检测完成时间维持不变', op, '人员调整')
     ].join('');
 
     var sm0 = M.samples[0] || null, ts = sampleTests(sm0);
@@ -349,6 +350,19 @@
           '两张变更表的「变更时间」用列表带过来的 <code>&approve=</code>，本页不再各写一套日期。<br>' +
           '<strong>交互逻辑：</strong>变更删除掉的样品在收样明细里保留原收样记录并整行置灰、名称后带红色「已删除」标签，' +
           '图片沿用收样时上传的（点缩略图看大图）；样品列表按变更后现状展示，被删样品单列一行且费用不计入委托总价。',
+        tag: '变更记录'
+      },
+      {
+        id: 'entrust-change-log', selector: '[data-annotate="entrust-change-log"]', position: 'top-right',
+        title: '委托信息变更记录只在字段真变时出账', wide: true,
+        content: '<strong>需求逻辑：</strong>变更类型不同，对委托基本信息的影响也不同：只删样品或只删试验项时，' +
+          '基本信息通常只有「样品检测总价(元)」「实际费用(元)」随删除减少，其余字段不动；' +
+          '变更增加样品或试验项时，变的也只有金额与完成时间。<br>' +
+          '<strong>展示规则：</strong>「变更时间」= 变更审批通过时间（由变更记录页带过来的 <code>&approve=</code>），' +
+          '「操作人」= 变更申请人，「状态」统一是「通过」——本页只登记审批已完成的变更，' +
+          '在途的变更去「变更审批」页看。<br>' +
+          '<strong>交互逻辑：</strong>金额真变了才在「委托确认」之后追加「费用审核」，没变就不走；' +
+          '同一张委托同一时刻只允许一张在途变更单；报告已发放或任务已归档后默认封板，不再受理变更。',
         tag: '变更记录'
       },
       {
