@@ -28,7 +28,7 @@
     { id: 'stick', name: '粘贴证', wMm: 65, hMm: 45 },
     { id: 'hang', name: '悬挂牌', wMm: 50, hMm: 25 },
     { id: 'lr', name: '左文右码', wMm: 90, hMm: 50 },
-    { id: 'label', name: '样品标签', wMm: 60, hMm: 40 }
+    { id: 'label', name: '样品标签', wMm: 80, hMm: 35 }
   ];
 
   /** 内置开源字体（Google Fonts / SIL OFL 等，无版权争议） */
@@ -246,7 +246,7 @@
       qr: true, border: { enabled: true, color: '#cbd5e1', widthPx: 1 }
     },
     label_style_1: {
-      type: 'sample_label', name: '左文右码（流转）', paper: { wMm: 60, hMm: 40 },
+      type: 'sample_label', name: '左文右码（流转）', paper: { wMm: 80, hMm: 35 },
       title: '',
       fieldIds: ['sampleNo', 'sampleName', 'specModel', 'receiveDate', 'clientName', 'detectStatus'],
       qr: true, border: { enabled: true, color: '#cbd5e1', widthPx: 1 }
@@ -936,6 +936,23 @@
     return cfg;
   }
 
+  /** 样品标签默认纸张 60×40 → 80×35（模板管理里存过的老配置一并跟上，元素等比缩放） */
+  function migrateLabelPaper80x35(cfg) {
+    if (!cfg || cfg._migrateLabelPaper80x35) return cfg;
+    CATEGORIES.forEach(function (c) {
+      var bucket = getBucket(cfg, c.key, 'sample_label');
+      (bucket.templates || []).forEach(function (t) {
+        if (!t || !t.paper) return;
+        if (Math.abs(t.paper.wMm - 60) > 0.01 || Math.abs(t.paper.hMm - 40) > 0.01) return;
+        var from = { wMm: t.paper.wMm, hMm: t.paper.hMm };
+        t.paper.wMm = 80; t.paper.hMm = 35;
+        if (Array.isArray(t.elements)) scaleElementsToPaper(t.elements, from, { wMm: 80, hMm: 35 });
+      });
+    });
+    cfg._migrateLabelPaper80x35 = 1;
+    return cfg;
+  }
+
   function load() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
@@ -945,6 +962,7 @@
           migrateFreeLayout(parsed);
           migrateHangPaper50x25(parsed);
           migrateSpecModelLabel(parsed);
+          migrateLabelPaper80x35(parsed);
           normalizeConfig(parsed);
           save(parsed);
           return parsed;
@@ -954,6 +972,7 @@
     var cfg = buildDefaultConfig();
     cfg._migrateHangPaper50x25 = 1;
     cfg._migrateSpecModelLabelV1 = 1;
+    cfg._migrateLabelPaper80x35 = 1;
     normalizeConfig(cfg);
     save(cfg);
     return cfg;

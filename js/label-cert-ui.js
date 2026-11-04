@@ -481,8 +481,12 @@
       mount: $('lc_e_mount').value || '',
       printMethod: $('lc_e_print').value || ''
     };
-    // 宽高由 applyPaperSize / 尺寸快捷管理，避免无缩放地覆盖
-    if (state.lastPaper) {
+    // 宽高以输入框为准：直接点「保存」时，浏览器不一定已经派发过 change，
+    // 以前这里会用 lastPaper 回写，把刚输入的 80×35 又冲回 60×40
+    var pw = parseFloat($('lc_e_w').value), ph = parseFloat($('lc_e_h').value);
+    if (pw >= 20 && pw <= 200 && ph >= 15 && ph <= 200) {
+      applyPaperSize(pw, ph, true);            // 与当前一致时内部直接 return
+    } else if (state.lastPaper) {
       state.draft.paper.wMm = state.lastPaper.wMm;
       state.draft.paper.hMm = state.lastPaper.hMm;
     }
