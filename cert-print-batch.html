@@ -77,8 +77,8 @@
               <th class="border border-slate-200 px-3 py-2 font-medium w-[72px] whitespace-nowrap">序号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium w-[150px]">样品编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium w-[104px]" data-annotate="unified-samples">样品名称</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium w-[92px]">规格</th>
               <th class="border border-slate-200 px-3 py-2 font-medium w-[92px]">型号/分类</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-[92px]">规格</th>
               <th class="border border-slate-200 px-3 py-2 font-medium w-[100px]">检验日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium w-[100px]">再检日期</th>
               <th id="thInspector" class="border border-slate-200 px-3 py-2 font-medium">检测员</th>
@@ -302,8 +302,8 @@
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + (gIdx + 1) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.sampleNo + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.name + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + (item.spec || '/') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + (item.model || '/') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + (item.spec || '/') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.inspectDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + item.reinspectDate + '</td>' +
           inspTd + recTd + '</tr>';
@@ -401,7 +401,7 @@
             'SC2026/0073 一边显示安全带、一边显示验电器，而委托详情里其实是绝缘操作杆。<br>' +
             '<strong>展示规则：</strong>委托下有哪些样品一律取 <code>js/entrust-mock.js</code>' +
             '（与委托详情 / 样品收样 / 变更记录同源），样品编号 = 委托号 + 两位组号 + 试样号（如 SC2026/00730101）；' +
-            '「型号规格」字段（合格证与样品标签两个字段池同名）取值 = 「型号/分类」+「规格」，两段之间一个空格；规格段把该型号下的多个规格取值与各自单位用空格拼接，如 <code>YJV 185 mm² 8.7/10 kV</code>；样品没配规格参数时退回委托登记的规格文本（如 <code>300</code>、<code>10kV 二级</code>）。' + '列表里「型号/分类」「规格」两列是分开的两段，证面与标签上的「型号规格」是把它们拼成一段。' +
+            '「型号规格」字段（合格证与样品标签两个字段池同名）取值 = 「型号/分类」+「规格」，两段之间一个空格；规格段把该型号下的多个规格取值与各自单位用空格拼接，如 <code>YJV 185 mm² 8.7/10 kV</code>；样品没配规格参数时退回委托登记的规格文本（如 <code>300</code>、<code>10kV 二级</code>）。' + '列表里「型号/分类」「规格」两列是分开的两段，证面与标签上的「型号规格」是把它们拼成一段。<strong>列序全原型统一：「型号/分类」排在「规格」前面</strong>（列表页、打印页、单据都一样）。' +
             '被删除的样品（变更删除、退回登记后删除）不进打印清单，但它占用的组号不回收——' +
             'SC2026/0029 的 03 号位留给被删的绝缘硬梯，变更新增的验电器排在 00290401；' +
             '收样日期与检测日期取委托收样日期，复检日期 = 检测日期 + 1 年 - 1 天；' +
