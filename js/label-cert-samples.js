@@ -64,6 +64,25 @@
     return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
   }
 
+  /**
+   * 规格段：把该型号下的多个规格取值与各自单位用空格拼起来（如「95 mm² 8.7/10 kV」）；
+   * 样品没配规格参数时退回委托里的规格文本（如「10m」「10kV 二级」）。
+   */
+  function specText(sm) {
+    var st = global.SampleDataStore;
+    var sample = (st && sm.leafId) ? st.getSample(sm.leafId) : null;
+    var parts = [];
+    if (sample && global.SampleSpecUI && SampleSpecUI.specsOf) {
+      (SampleSpecUI.specsOf(sample, sm.modelCode) || []).forEach(function (sp, i) {
+        var v = (sm.specValues && sm.specValues[i]) || '';
+        if (!v) return;
+        parts.push(sp.unit ? (v + ' ' + sp.unit) : v);
+      });
+    }
+    if (!parts.length && sm.spec) parts.push(sm.spec);
+    return parts.join(' ');
+  }
+
   function row(code, group, sm, m) {
     var receive = m.receiveDate || m.acceptDate || '';
     var no = noOf(code, group);
@@ -72,7 +91,9 @@
       entrustNo: code, entrust: code, orderNo: code,
       name: sm.name, sampleName: sm.name, alias: sm.alias || sm.name,
       qty: sm.qty, unit: sm.unit,
-      spec: sm.spec || '', model: sm.modelCode || '',
+      spec: specText(sm), model: sm.modelCode || '',
+      // 模版里的「型号规格」= 型号/分类 + 规格，两段各存一份，渲染时按顺序空格拼接
+      specModel: [sm.modelCode || '', specText(sm)].filter(Boolean).join(' '),
       masterId: masterOf(sm), cat: catOf(sm),
       clientName: m.customer, customer: m.customer, client: m.customer,
       contract: '/', editor: m.editor, salesman: m.salesman,

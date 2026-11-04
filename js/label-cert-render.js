@@ -18,7 +18,8 @@
       case 'sampleName':
         return data.name || data.sampleName || '';
       case 'specModel':
-        return data.specModel || [data.spec, data.model].filter(Boolean).join(' ') || '';
+        // 型号规格 = 「型号/分类」+「规格」，两段之间一个空格；规格段本身已把多个取值与单位用空格拼好
+        return data.specModel || [data.model, data.spec].filter(Boolean).join(' ') || '';
       case 'inspectors':
         return Array.isArray(data.inspectors) ? data.inspectors.join('、') : (data.inspectors || '');
       case 'recorders':

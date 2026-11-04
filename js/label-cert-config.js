@@ -196,9 +196,12 @@
     gcjc: flattenSampleLeaves(SAMPLE_TREE.gcjc)
   };
 
+  var SPECMODEL_LABEL = '型号规格';
+
   var CERT_FIELD_POOL = [
     { id: 'sampleName', label: '试样名称' },
-    { id: 'specModel', label: '规格型号' },
+    // 与样品标签字段池同名：同一个 fieldId 在两个类型里都叫「型号规格」，不再一边「规格型号」
+    { id: 'specModel', label: SPECMODEL_LABEL },
     { id: 'specimenNo', label: '试样编号' },
     { id: 'inspectors', label: '检测员' },
     { id: 'recorders', label: '记录员' },
@@ -215,7 +218,7 @@
     { id: 'sampleNo', label: '样品编号' },
     { id: 'entrustNo', label: '委托编号' },
     { id: 'sampleName', label: '样品名称' },
-    { id: 'specModel', label: '型号规格' },
+    { id: 'specModel', label: SPECMODEL_LABEL },
     { id: 'receiveDate', label: '收样日期' },
     { id: 'clientName', label: '送检单位' },
     { id: 'detectStatus', label: '检测状态' }
@@ -915,6 +918,24 @@
     return cfg;
   }
 
+  /** 历史配置里合格证该字段叫「规格型号」，统一到「型号规格」 */
+  function migrateSpecModelLabel(cfg) {
+    if (!cfg || cfg._migrateSpecModelLabelV1) return cfg;
+    CATEGORIES.forEach(function (c) {
+      ['certificate', 'sample_label'].forEach(function (type) {
+        var bucket = getBucket(cfg, c.key, type);
+        (bucket.templates || []).forEach(function (t) {
+          (t && t.elements || []).forEach(function (el) {
+            var pp = el && el.props;
+            if (pp && pp.fieldId === 'specModel' && pp.label !== SPECMODEL_LABEL) pp.label = SPECMODEL_LABEL;
+          });
+        });
+      });
+    });
+    cfg._migrateSpecModelLabelV1 = 1;
+    return cfg;
+  }
+
   function load() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
@@ -923,6 +944,7 @@
         if (parsed && typeof parsed === 'object') {
           migrateFreeLayout(parsed);
           migrateHangPaper50x25(parsed);
+          migrateSpecModelLabel(parsed);
           normalizeConfig(parsed);
           save(parsed);
           return parsed;
@@ -931,6 +953,7 @@
     } catch (e) { /* ignore */ }
     var cfg = buildDefaultConfig();
     cfg._migrateHangPaper50x25 = 1;
+    cfg._migrateSpecModelLabelV1 = 1;
     normalizeConfig(cfg);
     save(cfg);
     return cfg;
