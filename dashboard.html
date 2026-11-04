@@ -25,18 +25,9 @@
       position: absolute; left: 0; top: 6px; width: 12px; height: 12px; border-radius: 9999px;
       border: 2px solid #fff; box-shadow: 0 0 0 2px currentColor;
     }
-    /* 流程图热区：按百分比叠在图片上，画布怎么缩放都不漂移 */
+    /* 流程图只是看图，不再叠跳转热区（位图重绘会让热区漂移）；
+     * 需要点进某个环节，走上面「数据概览」的功能卡片或左侧菜单。 */
     .flow-map { position: relative; }
-    .flow-hot { position: absolute; display: block; border-radius: 7px; text-decoration: none; }
-    .flow-hot:hover, .flow-hot:focus-visible { background: rgba(37, 99, 235, .14); box-shadow: inset 0 0 0 2px #2563eb; }
-    .flow-hot:focus-visible { outline: 2px solid #1e40af; outline-offset: 1px; }
-    .flow-hot .flow-hot-tag {
-      display: none; position: absolute; left: 0; top: -17px; white-space: nowrap;
-      font-size: 11px; line-height: 15px; padding: 0 5px; border-radius: 3px;
-      background: #1e293b; color: #fff;
-    }
-    .flow-hot:hover .flow-hot-tag, .flow-cal .flow-hot .flow-hot-tag { display: block; }
-    .flow-cal .flow-hot { box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .75); background: rgba(37, 99, 235, .06); }
   </style>
 </head>
 <body class="bg-slate-50 p-4 text-slate-700">
@@ -48,57 +39,17 @@
     <div class="flex w-full flex-col gap-4 lg:w-[70%]">
 
       <!-- 数据概览 -->
-      <section class="rounded-lg bg-white p-4 shadow-sm">
+      <section class="rounded-lg bg-white p-4 shadow-sm" data-annotate="stat-cards">
         <div class="mb-4 flex items-center justify-between">
           <h2 class="flex items-center gap-2 text-base font-semibold text-slate-800">
             <span class="h-4 w-1 rounded bg-sky-500"></span>数据概览
           </h2>
-          <button class="text-sm text-sky-600 hover:text-sky-700">展开全部 <i class="fa fa-angle-down"></i></button>
+          <button id="statToggle" onclick="toggleStatCards()" class="flex items-center gap-1 text-sm text-sky-600 hover:text-sky-700">
+            <span id="statToggleLabel">展开全部</span><i id="statToggleIcon" class="fa fa-angle-down"></i>
+          </button>
         </div>
-        <!-- 10 个统计卡片 -->
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-          <!-- 卡片模板：彩色图标 + 数字 + 底部文字 -->
-          <div class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-shadow hover:shadow-md">
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-sky-100 text-sky-600"><i class="fa fa-file-text-o text-lg"></i></div>
-            <div><div class="text-xl font-bold text-slate-800">16</div><div class="text-xs text-slate-400">委托登记</div></div>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-shadow hover:shadow-md">
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-green-100 text-green-600"><i class="fa fa-inbox text-lg"></i></div>
-            <div><div class="text-xl font-bold text-slate-800">9</div><div class="text-xs text-slate-400">样品收样</div></div>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-shadow hover:shadow-md">
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-100 text-amber-600"><i class="fa fa-random text-lg"></i></div>
-            <div><div class="text-xl font-bold text-slate-800">1</div><div class="text-xs text-slate-400">待分配</div></div>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-shadow hover:shadow-md">
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600"><i class="fa fa-flask text-lg"></i></div>
-            <div><div class="text-xl font-bold text-slate-800">4</div><div class="text-xs text-slate-400">试验中</div></div>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-shadow hover:shadow-md">
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-purple-100 text-purple-600"><i class="fa fa-check-square-o text-lg"></i></div>
-            <div><div class="text-xl font-bold text-slate-800">0</div><div class="text-xs text-slate-400">待审核</div></div>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-shadow hover:shadow-md">
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-rose-100 text-rose-600"><i class="fa fa-file-o text-lg"></i></div>
-            <div><div class="text-xl font-bold text-slate-800">0</div><div class="text-xs text-slate-400">待报告</div></div>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-shadow hover:shadow-md">
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-100 text-cyan-600"><i class="fa fa-search text-lg"></i></div>
-            <div><div class="text-xl font-bold text-slate-800">4</div><div class="text-xs text-slate-400">报告审核</div></div>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-shadow hover:shadow-md">
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600"><i class="fa fa-check-circle-o text-lg"></i></div>
-            <div><div class="text-xl font-bold text-slate-800">7</div><div class="text-xs text-slate-400">已完成</div></div>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-shadow hover:shadow-md">
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-teal-100 text-teal-600"><i class="fa fa-archive text-lg"></i></div>
-            <div><div class="text-xl font-bold text-slate-800">1</div><div class="text-xs text-slate-400">已归档</div></div>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-shadow hover:shadow-md">
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-red-100 text-red-600"><i class="fa fa-exclamation-circle text-lg"></i></div>
-            <div><div class="text-xl font-bold text-slate-800">1</div><div class="text-xs text-slate-400">已逾期</div></div>
-          </div>
-        </div>
+        <!-- 19 张功能卡片 = 18 个流程阶段 + 设备校准；数字来自 js/entrust-mock.js，点卡片进对应功能页 -->
+        <div id="statGrid" class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6"></div>
       </section>
 
       <!-- 任务总览 -->
@@ -339,6 +290,7 @@
   <script src="js/flow-stages.js"></script>
   <script src="js/mock-dict.js"></script>
   <script src="js/entrust-mock.js"></script>
+  <script src="js/equip-store.js"></script>
   <script src="js/image-viewer.js?v=2"></script>
   <script>
     // 统一收集图表实例，用于窗口尺寸变化时自适应
@@ -840,68 +792,122 @@
 
 <script src="js/prototype-annotation.js"></script>
   <script>
-    // ================= 流程图热区：点节点跳到对应页面 =================
-    /* box 是原图（3634×1254）里的像素框，渲染时换算成百分比叠上去，
-     * 所以画布缩放、窗口变宽都不会漂移；换图后只需重新校准这些框——
-     * 地址栏加 ?flowcal=1 会把所有热区连节点名一起画出来，对着图改。 */
-    var FLOW_IMG_W = 3634, FLOW_IMG_H = 1254;
+    // ================= 数据概览：18 个流程阶段 + 设备校准 =================
+    /* 卡片名称与顺序对齐真系统工作台，也等于 js/flow-stages.js 的 FLOW_ORDER；
+     * href 与 index.html 左侧菜单同一份指向（还没有独立列表页的环节走节点占位页）；
+     * 数字取 js/entrust-mock.js 里当前停留在该阶段的委托数，与本页各图表同源。 */
     var PH = 'data-placeholder.html?name=';
-    var FLOW_LINKS = [
-      // 泳道 1 · 业务部（洽谈报价）
-      { name: '业务洽谈', href: 'entrust-preview.html', box: [228, 220, 132, 56] },
-      // 泳道 2 · 业务部（合同与委托登记）
-      { name: '合同管理', href: 'frame-contract.html', box: [936, 220, 136, 56] },
-      { name: '线上委托登记', href: 'entrust-register.html', box: [936, 576, 136, 60] },
-      { name: '委托确认', href: 'entrust-confirm.html', box: [936, 1068, 136, 60] },
-      // 泳道 3 · 样品组
-      { name: '样品管理', href: 'sample-receive.html', box: [1656, 220, 136, 56] },
-      { name: '收样', href: 'sample-receive.html', box: [1660, 400, 132, 60] },
-      { name: '样品制备', href: 'sample-prepare.html', box: [1656, 520, 132, 60] },
-      { name: '发样', href: 'sample-dispatch.html', box: [1656, 764, 132, 60] },
-      { name: '还样确认', href: 'sample-return-confirm.html', box: [1656, 884, 132, 60] },
-      // 泳道 4 · 实验室
-      { name: '实验室检测', href: 'test-detect.html', box: [2436, 220, 156, 56] },
-      { name: '领样', href: 'test-distribute.html', box: [2448, 400, 132, 60] },
-      { name: '开展试验', href: 'test-detect.html', box: [2448, 508, 132, 60] },
-      { name: '填写记录单', href: 'test-record.html', box: [2448, 616, 132, 60] },
-      { name: '申请还样', href: 'sample-return-confirm.html', box: [2360, 836, 132, 60] },
-      { name: '编制报告', href: 'report-list.html', box: [2536, 836, 136, 60] },
-      { name: '审核报告', href: PH + encodeURIComponent('报告审核') + '&group=' + encodeURIComponent('报告管理'), box: [2536, 972, 136, 60] },
-      // 泳道 5 · 业务部（报告与交付）
-      { name: '报告处理（模块）', href: PH + encodeURIComponent('报告处理') + '&group=' + encodeURIComponent('报告管理'), box: [3212, 220, 132, 56] },
-      { name: '报告签发', href: PH + encodeURIComponent('报告签发') + '&group=' + encodeURIComponent('报告管理'), box: [3212, 400, 132, 60] },
-      { name: '报告处理', href: PH + encodeURIComponent('报告处理') + '&group=' + encodeURIComponent('报告管理'), box: [3212, 556, 132, 60] },
-      { name: '收费确认', href: 'fee-audit.html', box: [3152, 688, 136, 112] },
-      { name: '审批', href: PH + encodeURIComponent('收费审批') + '&group=' + encodeURIComponent('报告管理'), box: [3268, 804, 136, 112] },
-      { name: '报告发放', href: PH + encodeURIComponent('报告发放') + '&group=' + encodeURIComponent('报告管理'), box: [3212, 1008, 132, 60] },
-      { name: '归档', href: PH + encodeURIComponent('任务归档') + '&group=' + encodeURIComponent('报告管理'), box: [3212, 1132, 132, 60] }
+    function phNode(n) { return PH + encodeURIComponent(n) + '&group=' + encodeURIComponent('报告管理'); }
+
+    var STAT_TONES = {
+      sky:      ['#e0f2fe', '#0284c7'], pink:     ['#fce7f3', '#db2777'],
+      violet:   ['#ede9fe', '#7c3aed'], amber:    ['#fef3c7', '#d97706'],
+      blue:     ['#dbeafe', '#2563eb'], fuchsia:  ['#fae8ff', '#c026d3'],
+      emerald:  ['#d1fae5', '#059669'], rose:     ['#ffe4e6', '#e11d48'],
+      indigo:   ['#e0e7ff', '#4f46e5'], green:    ['#dcfce7', '#16a34a'],
+      yellow:   ['#fef9c3', '#ca8a04'], purple:   ['#f3e8ff', '#9333ea'],
+      orange:   ['#ffedd5', '#ea580c'], teal:     ['#ccfbf1', '#0d9488']
+    };
+
+    var STAT_CARDS = [
+      { name: '委托登记', icon: 'fa-file-text-o',    tone: 'sky',     href: 'entrust-register.html' },
+      { name: '样品收样', icon: 'fa-inbox',          tone: 'pink',    href: 'sample-receive.html' },
+      { name: '委托确认', icon: 'fa-check-square-o', tone: 'violet',  href: 'entrust-confirm.html' },
+      { name: '费用审核', icon: 'fa-money',          tone: 'amber',   href: 'fee-audit.html' },
+      { name: '样品制备', icon: 'fa-cube',           tone: 'blue',    href: 'sample-prepare.html' },
+      { name: '样品发样', icon: 'fa-share',          tone: 'fuchsia', href: 'sample-dispatch.html' },
+      { name: '试样分发', icon: 'fa-th-large',       tone: 'emerald', href: 'test-distribute.html' },
+      { name: '试验检测', icon: 'fa-line-chart',     tone: 'rose',    href: 'test-detect.html' },
+      { name: '组内审核', icon: 'fa-user-circle-o',  tone: 'indigo',  href: 'group-audit.html' },
+      { name: '数据审核', icon: 'fa-bar-chart',      tone: 'green',   href: 'data-audit.html' },
+      { name: '报告编制', icon: 'fa-file-text',      tone: 'yellow',  href: 'report-list.html' },
+      { name: '报告审核', icon: 'fa-eye',            tone: 'purple',  href: phNode('报告审核') },
+      { name: '报告签发', icon: 'fa-pencil',         tone: 'orange',  href: phNode('报告签发') },
+      { name: '报告处理', icon: 'fa-wrench',         tone: 'blue',    href: phNode('报告处理') },
+      { name: '收费审批', icon: 'fa-jpy',       tone: 'amber',   href: phNode('收费审批') },
+      { name: '报告发放', icon: 'fa-send-o',         tone: 'sky',     href: phNode('报告发放') },
+      { name: '任务归档', icon: 'fa-archive',        tone: 'indigo',  href: phNode('任务归档') },
+      { name: '任务完成', icon: 'fa-check-circle',   tone: 'teal',    href: phNode('任务完成') },
+      { name: '设备校准', icon: 'fa-desktop',        tone: 'violet',  href: 'equip-mgmt.html', special: 'calib' }
     ];
-    (function buildFlowHotspots() {
-      var map = document.getElementById('flowMap');
-      if (!map) return;
-      var frag = document.createDocumentFragment();
-      FLOW_LINKS.forEach(function (n) {
-        var a = document.createElement('a');
-        a.className = 'flow-hot';
-        a.href = n.href;
-        a.title = n.name + ' › 打开对应页面';
-        a.setAttribute('aria-label', a.title);
-        a.style.left = (n.box[0] / FLOW_IMG_W * 100).toFixed(3) + '%';
-        a.style.top = (n.box[1] / FLOW_IMG_H * 100).toFixed(3) + '%';
-        a.style.width = (n.box[2] / FLOW_IMG_W * 100).toFixed(3) + '%';
-        a.style.height = (n.box[3] / FLOW_IMG_H * 100).toFixed(3) + '%';
-        var tag = document.createElement('span');
-        tag.className = 'flow-hot-tag';
-        tag.textContent = n.name;
-        a.appendChild(tag);
-        frag.appendChild(a);
-      });
-      map.appendChild(frag);
-      if (/[?&]flowcal=1/.test(location.search)) map.classList.add('flow-cal');
-    })();
+
+    /* entrust-mock 里还有几个老的状态写法，它们不是阶段名，按「这单实际卡在哪个环节」折算，
+     * 保证 19 张卡片加起来 = 委托总数，不会出现「有的单子哪个卡片都不算」。 */
+    var STAGE_ALIAS = { '': '委托登记', '待接收': '试验检测', '未领样': '试验检测', '已审核': '试验检测', '已完成': '任务完成' };
+
+    function statCounts() {
+      var out = {};
+      STAT_CARDS.forEach(function (c) { out[c.name] = 0; });
+      try {
+        Biz.rows().forEach(function (r) {
+          var st = r.status || '';
+          var stage = (window.FlowStages && FlowStages.FLOW_ORDER.indexOf(st) >= 0) ? st : STAGE_ALIAS[st];
+          if (stage && out[stage] != null) out[stage]++;
+        });
+      } catch (e) { /* 委托数据不可用时保持 0 */ }
+      try {
+        if (window.EquipStore) {
+          var today = new Date(); today.setHours(0, 0, 0, 0);
+          EquipStore.listAll().forEach(function (eq) {
+            if (!eq.enabled || !eq.nextCalib) return;
+            var p = String(eq.nextCalib).split('-');
+            var days = Math.round((new Date(+p[0], +p[1] - 1, +p[2]) - today) / 86400000);
+            if (days <= (Number(eq.warnDays) || 30)) out['设备校准']++;   // 已过期或进入预警窗口
+          });
+        }
+      } catch (e) { /* 设备台账不可用时保持 0 */ }
+      return out;
+    }
+
+    var STAT_COLLAPSED = 12;      // 收起态两行 × 6 = 12 张，展开全部 19 张
+    var statExpanded = false;
+
+    function renderStatCards() {
+      var grid = document.getElementById('statGrid');
+      if (!grid) return;
+      var counts = statCounts();
+      var list = statExpanded ? STAT_CARDS : STAT_CARDS.slice(0, STAT_COLLAPSED);
+      grid.innerHTML = list.map(function (c) {
+        var tone = STAT_TONES[c.tone] || STAT_TONES.sky;
+        return '<a href="' + c.href + '" title="' + c.name + ' › 打开对应页面" ' +
+          'class="flex flex-col items-center justify-center gap-1 rounded-lg border border-slate-100 bg-white px-2 py-3 transition-shadow hover:shadow-md">' +
+          '<span class="flex h-8 w-8 items-center justify-center rounded-md" style="background:' + tone[0] + ';color:' + tone[1] + '">' +
+          '<i class="fa ' + c.icon + ' text-base"></i></span>' +
+          '<span class="text-2xl font-bold leading-tight text-slate-800">' + (counts[c.name] || 0) + '</span>' +
+          '<span class="text-xs text-slate-500">' + c.name + '</span></a>';
+      }).join('');
+      var lb = document.getElementById('statToggleLabel');
+      var ic = document.getElementById('statToggleIcon');
+      if (lb) lb.textContent = statExpanded ? '收起' : '展开全部';
+      if (ic) ic.className = 'fa ' + (statExpanded ? 'fa-angle-up' : 'fa-angle-down');
+    }
+
+    function toggleStatCards() { statExpanded = !statExpanded; renderStatCards(); }
+
+    renderStatCards();
 
     PrototypeAnnotation.init({
       annotations: [
+        {
+          id: 'stat-cards', selector: '[data-annotate="stat-cards"]', position: 'top-right',
+          title: '数据概览：19 张功能卡片与页面跳转', wide: true,
+          content: '<strong>需求逻辑：</strong>工作台首屏要回答两个问题——每个环节压了多少单、点哪里去处理。' +
+            '所以卡片不按「待分配 / 试验中 / 已完成」这种笼统口径，而是与真系统一致：<strong>一个流程阶段一张卡</strong>，卡片名就是菜单名，点了直接进那个功能页。<br>' +
+            '<strong>展示规则：</strong>19 张 = 18 个流程阶段（顺序与 <code>js/flow-stages.js</code> 的 <code>FLOW_ORDER</code> 完全一致：' +
+            '委托登记 → 样品收样 → 委托确认 → 费用审核 → 样品制备 → 样品发样 → 试样分发 → 试验检测 → 组内审核 → 数据审核 → 报告编制 → 报告审核 → 报告签发 → 报告处理 → 收费审批 → 报告发放 → 任务归档 → 任务完成）' +
+            '+ 设备校准。竖排卡片：图标在上、数字居中、功能名在下，与真系统版面一致；' +
+            '<strong>收起态显示前 12 张（两行 × 6），点「展开全部」显示 19 张</strong>，按钮文字随之变「收起 / 展开全部」。<br>' +
+            '<strong>数字口径：</strong>全部实时取 <code>js/entrust-mock.js</code>（与年度业务分析、及时率、待办事项同一份数据）——' +
+            '某阶段卡片数字 = 当前 <code>status</code> 停在该阶段的委托数；设备校准 = <code>js/equip-store.js</code> 里下次校准日期已过期或已进入预警期（<code>warnDays</code>）的在用设备数。' +
+            '老数据里还有几个不是阶段名的状态（空、待接收、未领样、已审核、已完成），按这单实际卡在哪个环节折算：空 → 委托登记，待接收 / 未领样 / 已审核 → 试验检测，已完成 → 任务完成；' +
+            '这样 18 张阶段卡加起来正好等于委托总数 74，不会出现「有的单子哪张卡都不算」。当前分布：委托登记 9、样品收样 18、委托确认 1、费用审核 0、样品制备 0、样品发样 3、试样分发 1、试验检测 13、' +
+            '组内审核 0、数据审核 2、报告编制 2、报告审核 12、报告签发 2、报告处理 0、收费审批 1、报告发放 3、任务归档 1、任务完成 6、设备校准 4。<br>' +
+            '<strong>跳转：</strong>每张卡是一个 <code>&lt;a&gt;</code>，指向与 <code>index.html</code> 左侧菜单同一份——委托登记 / 样品收样 / 委托确认 / 费用审核 / 样品制备 / 样品发样 / 试样分发 / 试验检测 / 组内审核 / 数据审核 / 报告编制 / 设备管理走各自列表页；' +
+            '报告审核、报告签发、报告处理、收费审批、报告发放、任务归档、任务完成这 7 个环节还没有独立列表页，走 <code>data-placeholder.html?name=…&amp;group=报告管理</code> 节点占位页，与菜单里点进去看到的内容一致。<br>' +
+            '<strong>注意：</strong>卡片是「委托停留在哪个阶段」的口径，进页面后列表还会按业务规则再过滤一层' +
+            '（例如样品收齐的委托会离开样品收样列表、组内审核只列在检任务），所以页内条数可能少于卡片数字，这不是数据对不上，是两个口径。',
+          tag: '工作台'
+        },
         {
           id: 'cat-sales', selector: '[data-annotate="cat-sales"]', position: 'top-right',
           title: '全年各类型销售额情况', wide: true,
@@ -944,22 +950,17 @@
         },
         {
           id: 'biz-flow', selector: '[data-annotate="biz-flow"]', position: 'top-right',
-          title: '实验室业务管理系统流程图（真系统原图 + 节点热区）', wide: true,
-          content: '<strong>需求逻辑：</strong>一张图讲清「谁做、做什么、留什么单」，并且要能从图上的节点直接跳到对应功能页——评审时点着图走一遍流程，比逐个子菜单找快得多。' +
-            '这里直接放真系统导出的流程图原图，不再用 HTML 复刻一遍（复刻版每次都要人工对齐节点，容易和真系统越改越偏），跳转用透明热区叠在图上实现。<br>' +
-            '<strong>展示规则：</strong>图片资源 <code>assets/flow/biz-swimlane.png</code>（3634×1254，真系统导出），按容器宽度等比铺开、表格区最小宽 1180px，窄窗口下横向滚动不裁图。' +
+          title: '实验室业务管理系统流程图（真系统原图，只做看图）', wide: true,
+          content: '<strong>需求逻辑：</strong>一张图讲清「谁做、做什么、留什么单」，评审时对着它把全流程走一遍。' +
+            '这里直接放真系统导出的流程图原图，不再用 HTML 复刻一遍（复刻版每次都要人工对齐节点，容易和真系统越改越偏）。<br>' +
+            '<strong>展示规则：</strong>图片资源 <code>assets/flow/biz-swimlane.png</code>（3634×1254，真系统导出），按容器宽度等比铺开、图片区最小宽 1180px，窄窗口下横向滚动不裁图。' +
             '五条泳道：业务部（洽谈报价）→ 业务部（合同与委托登记）→ 样品组 → 实验室 → 业务部（报告与交付），每条泳道固定三列「负责人 / 主流程 / 表单」；' +
             '主流程首行为跨部门主线（业务洽谈 → 合同管理 → 样品管理 → 实验室检测 → 报告处理）；节点配色按部门区分（绿 / 青 / 蓝 / 紫 / 红），' +
             '虚线边框的是判定或分支节点（样品预告、收费确认、审批），黄色小块是负责人，橙色是表单单据（收集表、收费通知书、检测委托书、制备清单、线上领样操作、盖章/复印/扫描/上传/装订）。<br>' +
-            '<strong>节点热区：</strong>23 个有对应页面的节点叠了透明链接（<code>dashboard.html › FLOW_LINKS</code>），点节点直接跳到该功能页：' +
-            '合同管理→框架合同、线上委托登记→委托登记、委托确认→委托确认、收样→样品收样、样品制备→样品制备、发样→样品发样、还样确认→还样确认、' +
-            '领样→试样分发、开展试验→试验检测、填写记录单→原始记录、申请还样→还样确认、编制报告→报告编制、审核报告→报告审核、' +
-            '报告签发 / 报告处理 / 收费审批 / 报告发放 / 任务归档→对应流程节点页、收费确认→费用审核。' +
-            '<strong>没有对应页面的节点不做热区</strong>（信息收集、信息分析、报价单、样品预告、等待样品、编号、留样、台账、试验完成），避免点了跳不到地方。<br>' +
-            '<strong>交互逻辑：</strong>热区坐标存的是<strong>原图像素框</strong>，渲染时换算成百分比叠加，所以画布缩放、切 4:3 / 16:9 / 16:10 都不会漂移；' +
-            '悬停或键盘 Tab 聚焦时节点亮蓝框并浮出节点名，点击即跳转；点空白处仍是放大查看（复用 <code>js/image-viewer.js</code>，Esc 或点遮罩关闭），放大视图里不带动作热区。<br>' +
-            '<strong>换图怎么校准：</strong>地址栏加 <code>?flowcal=1</code> 会把全部热区连节点名画出来，对着图改 <code>FLOW_LINKS</code> 里的 box 即可；' +
-            '图片资源同名覆盖（<code>assets/flow/biz-swimlane.png</code>）不用改页面代码，只有节点位置挪了才需要校准热区。',
+            '<strong>交互逻辑：</strong>点图只做一件事——放大查看（复用 <code>js/image-viewer.js</code>，Esc 或点遮罩关闭）。' +
+            '<strong>图上不再叠跳转热区</strong>：热区是按百分比坐标盖在位图上的透明链接，图一重绘坐标就漂，每次换图都得重新校准，维护成本大于收益；' +
+            '要进某个环节，用本页最上方「数据概览」的 19 张功能卡片（每个流程阶段一张，点了直接进对应页面）或左侧菜单。<br>' +
+            '<strong>换图：</strong>同名覆盖 <code>assets/flow/biz-swimlane.png</code> 即可，页面代码不用改。',
           tag: '工作台'
         },
         {
