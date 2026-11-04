@@ -4448,11 +4448,11 @@
         { title: '检测设备', open: true, fields: ['设备名称', '设备编号', '设备型号', '检定有效期', '测量范围'] }
       ]},
       { id: 'sample', label: '样品信息', groups: [
-        { title: '当前样品信息', open: true, fields: ['样品名称', '型号规格', '生产单位', '样品编号', '送样日期', '样品数量'] },
+        { title: '当前样品信息', open: true, fields: ['样品名称', '型号/分类', '规格', '生产单位', '样品编号', '送样日期', '样品数量'] },
         { title: '基本信息', open: true, fields: ['样品外观', '样品状态', '样品标识', '收样日期'] }
       ]},
       { id: 'result', label: '试验结果集', groups: [
-        { title: '汇总信息', open: true, fields: ['summaryInfo.sumSampleName', 'summaryInfo.sumModel', 'summaryInfo.nextTime', 'standardRequest'] },
+        { title: '汇总信息', open: true, fields: ['summaryInfo.sumSampleName', 'summaryInfo.sumModel', 'summaryInfo.sumSpec', 'summaryInfo.nextTime', 'standardRequest'] },
         { title: '样品列表 sampleList', open: true, fields: ['samNumber', 'wgjc[0].wg', 'wgjc[1].wg', 'gpnysy[0].syz', 'gpnysy[0].xldlsy', 'gpnysy[0].ztms', 'gpnysy[1].syz', 'gpnysy[1].xldlsy', 'gpnysy[1].ztms', 'jl'] }
       ]}
     ];
@@ -4483,10 +4483,11 @@
       return '<table class="doc-tbl">' +
         '<tr>' +
         '<td class="label" style="width:11%">试样名称</td><td colspan="2">' + ph('summaryInfo.sumSampleName') + '</td>' +
-        '<td class="label" style="width:11%">型号规格</td><td colspan="2">' + ph('summaryInfo.sumModel') + '</td>' +
-        '<td class="label" rowspan="6" style="width:7%;writing-mode:vertical-rl;letter-spacing:4px">合格证编号</td>' +
+        '<td class="label" style="width:11%">型号/分类</td><td colspan="2">' + ph('summaryInfo.sumModel') + '</td>' +
+        '<td class="label" rowspan="7" style="width:7%;writing-mode:vertical-rl;letter-spacing:4px">合格证编号</td>' +
         '</tr>' +
         '<tr><td class="label" colspan="2">要 · 求</td><td colspan="4" style="text-align:left">' + ph('standardRequest') + '</td></tr>' +
+        '<tr><td class="label" colspan="2">规 · 格</td><td colspan="4" style="text-align:left">' + ph('summaryInfo.sumSpec') + '</td></tr>' +
         '<tr><td colspan="6" style="text-align:left;font-size:11px;color:#64748b;padding:3px 6px">' + ph('#sampleList') + ' … ' + ph('/sampleList') + '</td></tr>' +
         '<tr>' +
         '<td>试样编号</td><td>—</td><td>外观</td><td>试验电压<br>(kV·60s)</td><td>泄漏电流<br>(mA)</td><td>状态描述</td>' +
@@ -4515,7 +4516,8 @@
         '<tr><td class="label" style="width:22%">委托单位<br><span style="font-size:11px">Consignor</span></td><td style="text-align:left">' + ph('ordConsigner') + '</td></tr>' +
         '<tr><td class="label">工程名称<br><span style="font-size:11px">Project name</span></td><td style="text-align:left">—</td></tr>' +
         '<tr><td class="label">试样名称<br><span style="font-size:11px">Sample name</span></td><td style="text-align:left">' + ph('samSampleName') + '</td></tr>' +
-        '<tr><td class="label">型号规格<br><span style="font-size:11px">Type</span></td><td style="text-align:left">' + ph('samModel') + '</td></tr>' +
+        '<tr><td class="label">型号/分类<br><span style="font-size:11px">Type</span></td><td style="text-align:left">' + ph('samModel') + '</td></tr>' +
+        '<tr><td class="label">规格<br><span style="font-size:11px">Specification</span></td><td style="text-align:left">' + ph('samSpec') + '</td></tr>' +
         '<tr><td class="label">生产单位<br><span style="font-size:11px">Production unit</span></td><td style="text-align:left">' + ph('samProducer') + '</td></tr>' +
         '<tr><td class="label">检测类别<br><span style="font-size:11px">Test category</span></td><td style="text-align:left">' + ph('ordQuality') + '</td></tr>' +
         '<tr><td class="label">检测项目<br><span style="font-size:11px">Test items</span></td><td style="text-align:left">' + ph('resName') + '</td></tr>' +
@@ -5179,9 +5181,9 @@
             '<tr><td class="label">制造商</td><td style="text-align:left">' + ph('samProducer') + '</td><td class="label">联系电话</td><td style="text-align:left">' + ph('consignerPhone') + '</td></tr>' +
             '<tr><td class="label">送样人/电话</td><td style="text-align:left">' + ph('deliverMan') + '</td><td class="label">送样时间</td><td style="text-align:left">' + ph('deliverDate') + '</td></tr>' +
             '<tr><td class="label">经办人</td><td style="text-align:left">' + ph('handler') + '</td><td class="label">检测委托时间</td><td style="text-align:left">' + ph('entrustDate') + '</td></tr>' +
-            '<tr><td>序号</td><td>样品名称</td><td>型号规格</td><td>检测项目</td></tr>' +
-            '<tr><td>1</td><td>' + ph('#sampleList samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('testItems') + '</td></tr>' +
-            '<tr><td class="label">检测费用(合计)</td><td colspan="3" style="text-align:left">' + ph('totalFee') + '　大写：' + ph('totalFeeCN') + '</td></tr>' +
+            '<tr><td>序号</td><td>样品名称</td><td>型号/分类</td><td>规格</td><td>检测项目</td></tr>' +
+            '<tr><td>1</td><td>' + ph('#sampleList samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('samSpec') + '</td><td>' + ph('testItems') + '</td></tr>' +
+            '<tr><td class="label">检测费用(合计)</td><td colspan="4" style="text-align:left">' + ph('totalFee') + '　大写：' + ph('totalFeeCN') + '</td></tr>' +
             '</table>';
         case '收费通知单':
           return '<div class="doc-title" style="letter-spacing:4px">收费通知</div>' +
@@ -5194,15 +5196,15 @@
             '<tr><td class="label">开户行</td><td style="text-align:left">' + ph('bankName') + '</td></tr>' +
             '</table>' +
             '<p style="margin:14px 0 6px;font-weight:bold">附表1：委托检测内容及费用摘要</p>' +
-            '<table class="doc-tbl"><tr><td>序号</td><td>产品名称</td><td>型号规格</td><td>数量</td><td>检测项目</td><td>检测费元(含税)</td></tr>' +
-            '<tr><td>1</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('sampleQty') + '</td><td>' + ph('testItems') + '</td><td>' + ph('feeInclTax') + '</td></tr>' +
-            '<tr><td colspan="5">合计</td><td>' + ph('totalFee') + '</td></tr></table>';
+            '<table class="doc-tbl"><tr><td>序号</td><td>产品名称</td><td>型号/分类</td><td>规格</td><td>数量</td><td>检测项目</td><td>检测费元(含税)</td></tr>' +
+            '<tr><td>1</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('samSpec') + '</td><td>' + ph('sampleQty') + '</td><td>' + ph('testItems') + '</td><td>' + ph('feeInclTax') + '</td></tr>' +
+            '<tr><td colspan="6">合计</td><td>' + ph('totalFee') + '</td></tr></table>';
         case '检测任务单':
           return '<div class="doc-meta"><span>' + ph('undertakerName') + '</span><span>SL/ZJ15-01</span></div>' +
             '<div class="doc-title" style="letter-spacing:4px">检测任务单</div>' +
             '<div class="doc-meta" style="margin-top:8px"><span>送检时间：' + ph('deliverDate') + '</span></div>' +
-            '<table class="doc-tbl" style="margin-top:6px"><tr><td>委托合同编号</td><td>样品名称</td><td>规格型号</td><td>样品数量</td><td>标准试样制备数量</td><td>样品编号</td><td>试验项目</td><td>试验标准</td><td>备注</td></tr>' +
-            '<tr><td>' + ph('contractNo') + '</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('sampleQty') + '</td><td>' + ph('prepQty') + '</td><td>' + ph('samNumber') + '</td><td>' + ph('testItems') + '</td><td>' + ph('testStandard') + '</td><td>/</td></tr></table>' +
+            '<table class="doc-tbl" style="margin-top:6px"><tr><td>委托合同编号</td><td>样品名称</td><td>型号/分类</td><td>规格</td><td>样品数量</td><td>标准试样制备数量</td><td>样品编号</td><td>试验项目</td><td>试验标准</td><td>备注</td></tr>' +
+            '<tr><td>' + ph('contractNo') + '</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('samSpec') + '</td><td>' + ph('sampleQty') + '</td><td>' + ph('prepQty') + '</td><td>' + ph('samNumber') + '</td><td>' + ph('testItems') + '</td><td>' + ph('testStandard') + '</td><td>/</td></tr></table>' +
             '<div style="margin-top:14px">下发人：' + ph('issuer') + '　日期：' + ph('issueDate') + '　　接收人：' + ph('receiverSign') + '　日期：' + ph('receiveDate') + '</div>';
         case '检测任务及流转单':
           return '<div class="doc-meta"><span>QD088-2022</span><span></span></div>' +
@@ -5211,7 +5213,8 @@
             '<tr><td class="label" style="width:22%">样品编号</td><td style="text-align:left">' + ph('samNumber') + '</td></tr>' +
             '<tr><td class="label">样品名称</td><td style="text-align:left">' + ph('samSampleName') + '</td></tr>' +
             '<tr><td class="label">检测类别</td><td style="text-align:left">' + ph('ordQuality') + '</td></tr>' +
-            '<tr><td class="label">型号规格/样品等级</td><td style="text-align:left">' + ph('samModel') + '</td></tr>' +
+            '<tr><td class="label">型号/分类</td><td style="text-align:left">' + ph('samModel') + '</td></tr>' +
+            '<tr><td class="label">规格</td><td style="text-align:left">' + ph('samSpec') + '</td></tr>' +
             '<tr><td class="label">商定完成时间</td><td style="text-align:left">' + ph('requireDate') + '</td></tr>' +
             '<tr><td class="label">检测项目及要求</td><td style="text-align:left">' + ph('testItems') + '</td></tr>' +
             '<tr><td class="label">检测依据</td><td style="text-align:left">' + ph('testStandard') + '</td></tr>' +
@@ -5227,8 +5230,8 @@
           return '<div class="doc-meta"><span>' + ph('undertakerName') + '</span><span>2024 版</span></div>' +
             '<div class="doc-title" style="letter-spacing:4px">还样退库确认表</div>' +
             '<div style="text-align:center;font-size:11px;color:#64748b;margin-bottom:8px">(内部样品流程管控表单)</div>' +
-            '<table class="doc-tbl"><tr><td>序号</td><td>还样合同编号</td><td>还样日期</td><td>送样单位</td><td>样品名称</td><td>型号规格</td><td>数量</td><td>标准试样制备数量</td><td>试验结论不合格样品</td><td>还样人签字</td><td>样品员签字确认</td><td>备注</td></tr>' +
-            '<tr><td>1</td><td>' + ph('contractNo') + '</td><td>' + ph('returnDate') + '</td><td>' + ph('ordConsigner') + '</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('sampleQty') + '</td><td>/</td><td></td><td>' + ph('returnSign') + '</td><td>' + ph('keeperSign') + '</td><td>' + ph('contractNo') + '</td></tr></table>' +
+            '<table class="doc-tbl"><tr><td>序号</td><td>还样合同编号</td><td>还样日期</td><td>送样单位</td><td>样品名称</td><td>型号/分类</td><td>规格</td><td>数量</td><td>标准试样制备数量</td><td>试验结论不合格样品</td><td>还样人签字</td><td>样品员签字确认</td><td>备注</td></tr>' +
+            '<tr><td>1</td><td>' + ph('contractNo') + '</td><td>' + ph('returnDate') + '</td><td>' + ph('ordConsigner') + '</td><td>' + ph('samSampleName') + '</td><td>' + ph('samModel') + '</td><td>' + ph('samSpec') + '</td><td>' + ph('sampleQty') + '</td><td>/</td><td></td><td>' + ph('returnSign') + '</td><td>' + ph('keeperSign') + '</td><td>' + ph('contractNo') + '</td></tr></table>' +
             '<p style="margin-top:10px;font-size:11px;line-height:1.6;color:#475569">说明：上表中"试验结论不合格样品"栏，针对此类样品在还样退库时，请反馈给样品员，便于对已检样品进行合理的保存和管控。</p>';
         case '退样申请表':
           return '<div class="doc-meta"><span>实链检测（浙江）有限公司</span><span>2024 版</span></div>' +
@@ -5315,7 +5318,7 @@
         { id: 'record-file-source', selector: '[data-annotate="record-file-source"]', position: 'top-right', title: '记录单模版文件', wide: true, content: '<strong>需求逻辑：</strong>记录单正文有共用也有专用，来源要能切换。<br>' +
             '<strong>展示规则：</strong>支持上传、复制、引用；选「引用」时文件名只读。<br>' +
             '<strong>交互逻辑：</strong>已有本地文件时重新上传 / 复制追加为新版本并启用；引用随公共启用版本同步。', tag: '记录单' },
-        { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '<strong>需求逻辑：</strong>点击「配置」打开 PageOffice：左侧 Word 预览，右侧字段面板（检测中心/合同/报告/设备/样品/试验结果集）。<strong>记录单模版保存时</strong>解析已插入的 <code>{{占位符}}</code>，写入该模版版本 usedFields；导出原始记录时把这份清单和字段值冻进 snapshot，之后判断委托/样品基本信息是否失效只看快照、不再打开 Word。报告/单据同样可插占位符，但不驱动原始记录失效。<br><strong>展示规则：</strong>记录单与报告模板左侧内容不同；已导出 Word 里是值不是占位符，故不能事后再解析。<br><strong>交互逻辑：</strong>保存模版=解析并更新 usedFields；不因此打已导出记录单失效。', tag: '模板配置' },
+        { id: 'po-config', selector: '[data-annotate="po-config"]', position: 'top-right', title: 'PageOffice 配置', wide: true, content: '<strong>需求逻辑：</strong>点击「配置」打开 PageOffice：左侧 Word 预览，右侧字段面板（检测中心/合同/报告/设备/样品/试验结果集）。<strong>记录单模版保存时</strong>解析已插入的 <code>{{占位符}}</code>，写入该模版版本 usedFields；导出原始记录时把这份清单和字段值冻进 snapshot，之后判断委托/样品基本信息是否失效只看快照、不再打开 Word。报告/单据同样可插占位符，但不驱动原始记录失效。<br><strong>展示规则：</strong>记录单与报告模板左侧内容不同；已导出 Word 里是值不是占位符，故不能事后再解析。右侧「样品信息 › 当前样品信息」字段池按 <code>型号/分类</code> + <code>规格</code> 两个字段提供（不再有「型号规格」这一项），「试验结果集 › 汇总信息」同理为 <code>summaryInfo.sumModel</code> + <code>summaryInfo.sumSpec</code>；模板要合成一行由模板作者自行拼接。<br><strong>交互逻辑：</strong>保存模版=解析并更新 usedFields；不因此打已导出记录单失效。', tag: '模板配置' },
         { id: 'record-clear', selector: '[data-annotate="record-clear"]', position: 'top-right', title: '清除', content: '<strong>需求逻辑：</strong>有时只想解除文件关联，不想丢试验项配置行。<br>' +
             '<strong>展示规则：</strong>「清除」按钮。<br>' +
             '<strong>交互逻辑：</strong>仅清除模板文件关联，不删除试验项数据行。', tag: '记录单' },
@@ -5338,7 +5341,7 @@
             '<strong>展示规则：</strong>列为复选框、模板名称、样品名称(型号)、样品分类、默认、当前启用版本、引用公共头 / 尾、操作；未配置正文文件的行复选框禁用。<br>' +
             '<strong>交互逻辑：</strong>勾选配合「批量下载」；操作列给编辑 / 版本 / 删除。', tag: '报告模板' },
         { id: 'doc-entry', selector: '[data-annotate="doc-entry"]', position: 'top-left', title: '单据模版', wide: true, content: '<strong>需求逻辑：</strong>6 类流程单据的版式各机构不同，要统一一处维护。<br>' +
-            '<strong>展示规则：</strong>统一维护 6 类流程单据模版；进入后通过顶部横向 Tab 切换四大类；页面为左列表 + 右详情。<br>' +
+            '<strong>展示规则：</strong>统一维护 6 类流程单据模版；进入后通过顶部横向 Tab 切换四大类；页面为左列表 + 右详情。点开「配置」看到的 PageOffice 文档示例（检测委托书 / 收费通知单 / 检测任务单 / 检测任务及流转单 / 还样退库确认表 / 退样申请表）里，<strong>不再出现「型号规格」「规格型号」「型号规格/样品等级」这类混排字段</strong>：表格类一律拆成「型号/分类」「规格」两列，单头表单类拆成两行，占位符分别为 <code>{{samModel}}</code> 与 <code>{{samSpec}}</code>。<br>' +
             '<strong>交互逻辑：</strong>左侧选单据，右侧配置生成开关、字段分流与版本。', tag: '模板管理' },
         { id: 'doc-cat-tabs', selector: '[data-annotate="doc-cat-tabs"]', position: 'top-right', title: '大类 Tab', wide: true, content: '<strong>需求逻辑：</strong>不同样品大类的单据差异大，配置必须隔离。<br>' +
             '<strong>展示规则：</strong>四大类各自独立维护一套 6 类单据模版。<br>' +

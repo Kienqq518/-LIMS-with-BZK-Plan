@@ -299,7 +299,7 @@
 
   <!-- 预览委托单弹窗（图11 Mock） -->
   <div id="previewModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
-    <div class="flex max-h-[92vh] w-[800px] max-w-full flex-col rounded-lg bg-white shadow-2xl">
+    <div class="flex max-h-[92vh] w-[800px] max-w-full flex-col rounded-lg bg-white shadow-2xl" data-annotate="create-preview">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <h3 class="text-base font-medium text-slate-800">预览委托单</h3>
         <button onclick="closePreview()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
@@ -902,6 +902,7 @@
         modelCode: modelCode,
         modelName: model ? model.name : '',
         spec: [modelCode].concat(specText).filter(Boolean).join(' '),
+        specText: specText.join(' '),   // 不含型号的那一段，供单据按「型号/分类」「规格」分两格打印
         specValues: specValues,
         mark: st ? st.markOf(id, modelCode, specValues) : '',
         unit: unit,
@@ -990,10 +991,23 @@
       var acceptDate = document.getElementById('f_acceptDate').value || d.acceptDate;
       var requireDate = document.getElementById('f_requireDate').value || d.requireDate || '';
       var salesman = document.getElementById('f_salesman').value || d.salesman;
-      var firstSample = (d.samples && d.samples[0]) ? d.samples[0] : null;
-      var sampleName = firstSample ? (firstSample.alias || firstSample.name) : '绝缘操作杆';
-      var samplePrice = firstSample ? firstSample.price : '0';
-      var sampleItems = firstSample ? firstSample.items : '';
+      var sampleList = (d.samples && d.samples.length) ? d.samples : [];
+      // 「型号规格」这种混排写法在单据里同样取消：型号/分类 与 规格 分两列，空值印「/」
+      function modelSpecPair(s) {
+        var model = s.modelCode || '';
+        var spec = '';
+        if (s.specText != null) spec = s.specText;
+        else if (s.spec) spec = (s.modelCode && String(s.spec).indexOf(s.modelCode) === 0)
+          ? String(s.spec).slice(s.modelCode.length).trim() : s.spec;
+        return { model: model || '/', spec: spec || '/' };
+      }
+      var sampleRows = sampleList.length ? sampleList.map(function (s, i) {
+        var pair = modelSpecPair(s);
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(s.alias || s.name || '') + '</td>' +
+          '<td>' + pair.model + '</td><td>' + pair.spec + '</td>' +
+          '<td>' + esc(s.qty || '1') + '</td><td>' + esc(s.items || '') + '</td>' +
+          '<td>' + esc(s.price || '0') + '</td><td>' + esc(s.total || s.price || '0') + '</td></tr>';
+      }).join('') : '<tr><td colspan="8" style="text-align:center;color:#94a3b8">尚未添加样品</td></tr>';
 
       document.getElementById('previewContent').innerHTML =
         '<div style="text-align:center;font-size:18px;font-weight:bold;margin-bottom:12px">检测委托合同（电气类）</div>' +
@@ -1005,8 +1019,8 @@
         '<tr><td>客户要求时间：' + requireDate + '</td><td>经办人：' + salesman + '　检测类型：☑委托检测</td></tr></table>' +
         '<p style="margin:8px 0"><b>检测费用：</b>合计金额：' + fee + '元</p>' +
         '<div style="text-align:center;font-size:16px;font-weight:bold;margin:16px 0 8px">委托内容明细表</div>' +
-        '<table><tr><th class="whitespace-nowrap">序号</th><th>样品名称</th><th>型号规格</th><th>数量</th><th>检测项目</th><th>单价</th><th>总价</th></tr>' +
-        '<tr><td>1</td><td>' + sampleName + '</td><td>' + (firstSample ? firstSample.spec || '' : '') + '</td><td>' + (firstSample ? firstSample.qty || '1' : '1') + '</td><td>' + sampleItems + '</td><td>' + samplePrice + '</td><td>' + (firstSample ? firstSample.total || samplePrice : samplePrice) + '</td></tr></table>';
+        '<table><tr><th class="whitespace-nowrap">序号</th><th>样品名称</th><th>型号/分类</th><th>规格</th><th>数量</th><th>检测项目</th><th>单价</th><th>总价</th></tr>' +
+        sampleRows + '</table>';
 
       showModal('previewModal');
     }
@@ -1039,6 +1053,17 @@
             wide: true,
             content: '<strong>需求逻辑：</strong>样品明细以「一行一个样品」维护；产品标记按样品数据里配置的产品标记规则实时拼装（型号 + 规格参数取值 + 芯数 + 标准号），不由登记人填写。<br><strong>展示规则：</strong>列为序号、样品名称、<strong>产品标记</strong>、型号/分类、检测类别、试验项、数量、单价（元）、总价（元）、备注、操作。其中「产品标记」仅在样品数据的产品标记开关开启时展示，位置固定在「样品名称」与「型号/分类」之间；本委托内所有样品都关闭时整列隐藏；开关开启但未配置规则时显示「未配置规则」；<strong>规则里取不到值的数据段渲染为「/」</strong>，字面量分隔符不占位，例如额定电压与导体标称截面积未填时显示 <code>YJV22 - / 3X/ GBT 12706.2-2020</code>，补全后为 <code>YJV22 - 8.7/15 3X300 GBT 12706.2-2020</code>，便于一眼看出哪段还没填。样品名称为树形下拉，层级与样品数据左侧树一致，只列当前委托锁定的大类；<strong>「型号/分类」字段在选定样品名称后才展示</strong>（部分样品不分型号，未选样品前无法判断）。<br><strong>交互逻辑：</strong>点「添加样品」→ 树形下拉选样品名称（点分类节点只展开/收起，下拉不关闭）→ 带出别名/单位/样品单位 → 该样品有型号时展示必填「型号/分类」，选型号后出现规格参数并自动加载试验项；不分型号的样品不展示型号字段、直接带出其试验项；确定后写入本表，可编辑、删除；金额按勾选试验项单价合计自动计算。',
             tag: '委托编辑'
+          },
+          {
+            id: 'create-preview',
+            selector: '[data-annotate="create-preview"]',
+            position: 'top-right',
+            wide: true,
+            title: '委托单打印预览',
+            content: '<strong>需求逻辑：</strong>「预览委托单」就是这张单最终打印出去的版式，登记页看到什么，委托单就印什么，不能在这里另写一套字段。<br>' +
+            '<strong>展示规则：</strong>「委托内容明细表」列为序号、样品名称、<strong>型号/分类</strong>、<strong>规格</strong>、数量、检测项目、单价、总价，<strong>本单添加几个样品就印几行</strong>（原来固定只印第一个样品）。原来那一列「型号规格」已取消：型号取「添加样品」里选定的型号/分类，规格取该型号下已填的规格参数取值（多个取值与单位之间空格拼接），两格都为空时印「/」；不分型号的样品型号印「/」、规格照常印。<br>' +
+            '<strong>交互逻辑：</strong>表头的委托编号、委托单位、地址、委托日期、客户要求时间、联系人、电话、经办人取当前表单值，改完即预览即所见；「打印」为原型演示。同一口径贯穿委托详情里的产品检测预通知书 / 检测任务单 / 检测任务及流转单与模板管理的单据模板示例；只有样品标签与合格证证面保留一个拼接字段「型号规格」。',
+            tag: '委托单'
           },
           {
             id: 'create-code',
