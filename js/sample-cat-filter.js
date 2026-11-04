@@ -164,7 +164,15 @@
         }
       }
     });
-    var counters = [].slice.call(doc.querySelectorAll('#receiveTotalCount, #reportTotalCount, #totalText, [id*="TotalCount"]'));
+    var counters = [].slice.call(doc.querySelectorAll(
+      '#receiveTotalCount, #reportTotalCount, #totalText, [id*="otalCount"], [id*="otalText"]'));
+    if (!counters.length) {
+      // 有些页面的「共 N 条」是个没有 id 的 span（如委托预览），按文本兜底找叶子节点
+      counters = [].slice.call(doc.querySelectorAll('span, div')).filter(function (el) {
+        return !el.children.length && /^共\s*\d+\s*条$/.test(el.textContent.trim()) &&
+          !inOverlay(el) && !(el.closest && el.closest('#pa-doc'));
+      });
+    }
     counters.forEach(function (el) {
       var m = el.textContent.match(/^共\s*\d+\s*条$/);
       if (m) el.textContent = '共 ' + visible + ' 条';
