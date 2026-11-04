@@ -70,7 +70,7 @@
         <button id="btnBatchCert" data-annotate="batch-cert" onclick="openInspectorModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">批量打印合格证</button>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[1400px] border-collapse text-left text-sm">
+        <table class="w-full min-w-[1560px] border-collapse text-left text-sm">
           <thead>
             <tr class="bg-slate-100 text-slate-600">
               <th class="border border-slate-200 px-3 py-2 font-medium w-10"><input type="checkbox" id="checkAll" onchange="toggleAll(this.checked)" /></th>
@@ -79,6 +79,8 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
               <th class="border border-slate-200 px-3 py-2 font-medium" data-col-key="样品名称" data-annotate="unified-samples">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium whitespace-nowrap">样品大类</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium whitespace-nowrap" data-annotate="label-extra-cols">委托日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">委托状态</th>
@@ -168,6 +170,10 @@
       var list = (window.LabelCertSamples && LabelCertSamples.of(r.code)) || [];
       r.sample = list.map(function (x) { return x.name; }).join('、');
       r.sampleNos = list.map(function (x) { return x.name + '(' + x.sampleNo + ')'; }).join(' ');
+      /* 委托日期取委托登记的受理日期（编号规则令牌「委托日期」同源），与送样时间是两回事 */
+      r.entrustDate = (m && m.acceptDate) || '/';
+      /* 样品大类按样品名推导，与「样品数据」左侧树的大类一致；多样品跨大类时取第一个命中的大类 */
+      r.sampleCat = (window.SampleDataStore && SampleDataStore.catLabelOfNames(r.sample)) || '—';
     });
 
     var filtered = listData.slice();
@@ -367,6 +373,8 @@
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5" title="' + (item.sampleNos || '') + '">' + (item.sample || '/') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + (item.sampleCat || '—') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + (item.entrustDate || '/') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.sendDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.requireDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5"><span class="status-tag">' + item.status + '</span></td>' +
@@ -539,6 +547,25 @@
             '打印出来的样品与扫码看到的完全一致；判定不合格按委托号配置（演示单 SC2026/0074），' +
             '不合格与报告签发之前的委托照旧不出现合格证入口。',
           tag: '标签与合格证'
+        },
+        {
+          id: 'label-extra-cols',
+          selector: '[data-annotate="label-extra-cols"]',
+          position: 'top-right',
+          title: '委托日期与样品大类',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>打标签、打合格证前要先圈定范围——这张单是哪天登记的、属于哪个样品大类，' +
+            '决定该用哪套标签/合格证模版（模版就是按样品大类配置的）。原来列表只有「送样时间」，看不出委托登记时间，也没有大类列，只能逐单点进去看。<br>' +
+            '<strong>展示规则：</strong><strong>委托日期</strong>取委托登记的受理日期，与「系统参数 › 业务流程配置 › 编号规则」里的「委托日期」令牌、' +
+            '委托详情的「受理日期」同一份数据（<code>js/entrust-mock.js › acceptDate</code>）；' +
+            '<strong>送样时间</strong>仍取收样日期（<code>receiveDate</code>），两个日期不是一回事，不能互相顶替。' +
+            '<strong>样品大类</strong>按「样品名称」列里的样品名推导（<code>SampleDataStore.catLabelOfNames</code>，与「样品数据」左侧树的大类一致），' +
+            '规则与各列表页由 <code>js/sample-cat-filter.js</code> 注入的「样品大类」列完全相同：跨大类的一张单取第一个命中的大类' +
+            '（所以 SC2026/0029 显示安全工器具类，而它的「任务类型」按 电力物资 › 安全工器具 › 工程检测 › 环境检测 取先、显示材料（电线电缆、金具、金属材料类），两者口径本就不同），推导不出显示「—」；' +
+            '委托日期取不到显示「/」。列序为 样品名称 → 样品大类 → 委托日期 → 送样时间。<br>' +
+            '<strong>交互逻辑：</strong>两列都是普通列，进「列配置」可排序、可显隐（不像 勾选/序号/委托编号/操作 那样锁定）；' +
+            '新增列在合并已保存配置时按它在表格里的原始位置插回，不会跑到「操作」列右边，此前保存的列顺序与显隐保持不变。',
+          tag: '列与筛选'
         },
         {
           id: 'lp-deleted-void',
