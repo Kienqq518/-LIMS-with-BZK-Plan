@@ -70,14 +70,14 @@
         <button id="btnBatchCert" data-annotate="batch-cert" onclick="openInspectorModal()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">批量打印合格证</button>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[1360px] border-collapse text-left text-sm">
+        <table class="w-full min-w-[1440px] border-collapse text-left text-sm">
           <thead>
             <tr class="bg-slate-100 text-slate-600">
               <th class="border border-slate-200 px-3 py-2 font-medium w-10"><input type="checkbox" id="checkAll" onchange="toggleAll(this.checked)" /></th>
               <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">序号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="deleted-void">委托编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium w-[190px]">客户单位</th>
               <th class="border border-slate-200 px-3 py-2 font-medium w-[200px] max-w-[200px]" data-col-key="样品名称" data-annotate="unified-samples">样品名称</th>
               <th class="border border-slate-200 px-3 py-2 font-medium whitespace-nowrap">样品大类</th>
               <th class="border border-slate-200 px-3 py-2 font-medium whitespace-nowrap" data-annotate="label-extra-cols">委托日期</th>
@@ -538,7 +538,7 @@
             'SC2026/0073 一边显示安全带、一边显示验电器，而委托详情里其实是绝缘操作杆。' +
             '本页「样品名称」列直接列出这张单会打出的样品（悬停看各自的样品编号），' +
             '「样品名称」查询条件也按同一份清单过滤，列出来什么，两个入口就打什么。<br>' +
-            '<strong>展示规则：</strong>「样品名称」列固定 200px（与「样品收样」同一口径），一张单多个样品时在格内换行，不再因为别的列被隐藏而跟着拉宽；' +
+            '<strong>展示规则：</strong>「样品名称」列固定 200px（与「样品收样」同一口径），一张单多个样品时在格内换行，不再因为别的列被隐藏而跟着拉宽；「客户单位」列固定 190px，表格最小宽 1440px，两者都不随显隐列被压缩或撑开；' +
             '委托下有哪些样品一律取 <code>js/entrust-mock.js</code>' +
             '（与委托详情 / 样品收样 / 变更记录同源），样品编号 = 委托号 + 两位组号 + 试样号（如 SC2026/00730101）；' +
             '「型号规格」字段（合格证与样品标签两个字段池同名）取值 = 「型号/分类」+「规格」，两段之间一个空格；规格段把该型号下的多个规格取值与各自单位用空格拼接，如 <code>YJV 185 mm² 8.7/10 kV</code>；样品没配规格参数时退回委托登记的规格文本（如 <code>300</code>、<code>10kV 二级</code>）。' + '列表里「型号/分类」「规格」两列是分开的两段，证面与标签上的「型号规格」是把它们拼成一段。<strong>列序全原型统一：「型号/分类」排在「规格」前面</strong>（列表页、打印页、单据都一样）。' +
