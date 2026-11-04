@@ -25,6 +25,18 @@
       position: absolute; left: 0; top: 6px; width: 12px; height: 12px; border-radius: 9999px;
       border: 2px solid #fff; box-shadow: 0 0 0 2px currentColor;
     }
+    /* 流程图热区：按百分比叠在图片上，画布怎么缩放都不漂移 */
+    .flow-map { position: relative; }
+    .flow-hot { position: absolute; display: block; border-radius: 7px; text-decoration: none; }
+    .flow-hot:hover, .flow-hot:focus-visible { background: rgba(37, 99, 235, .14); box-shadow: inset 0 0 0 2px #2563eb; }
+    .flow-hot:focus-visible { outline: 2px solid #1e40af; outline-offset: 1px; }
+    .flow-hot .flow-hot-tag {
+      display: none; position: absolute; left: 0; top: -17px; white-space: nowrap;
+      font-size: 11px; line-height: 15px; padding: 0 5px; border-radius: 3px;
+      background: #1e293b; color: #fff;
+    }
+    .flow-hot:hover .flow-hot-tag, .flow-cal .flow-hot .flow-hot-tag { display: block; }
+    .flow-cal .flow-hot { box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .75); background: rgba(37, 99, 235, .06); }
   </style>
 </head>
 <body class="bg-slate-50 p-4 text-slate-700">
@@ -308,12 +320,14 @@
       <span class="text-xs font-normal text-slate-400">真系统原图 · 点图看大图</span>
     </h3>
     <div class="overflow-x-auto rounded-md border border-slate-200 bg-white p-2">
-      <img src="assets/flow/biz-swimlane.png"
-           alt="实验室业务管理系统流程图：业务部（洽谈报价）/ 业务部（合同与委托登记）/ 样品组 / 实验室 / 业务部（报告与交付）五条泳道，每条泳道分负责人、主流程、表单三列"
-           class="block w-full min-w-[1180px] select-none" loading="lazy" decoding="async"
-           data-img-src="assets/flow/biz-swimlane.png"
-           data-img-group="biz-flow"
-           data-img-name="实验室业务管理系统流程图" />
+      <div class="flow-map" id="flowMap">
+        <img src="assets/flow/biz-swimlane.png"
+             alt="实验室业务管理系统流程图：业务部（洽谈报价）/ 业务部（合同与委托登记）/ 样品组 / 实验室 / 业务部（报告与交付）五条泳道，每条泳道分负责人、主流程、表单三列"
+             class="block w-full min-w-[1180px] select-none" loading="lazy" decoding="async"
+             data-img-src="assets/flow/biz-swimlane.png"
+             data-img-group="biz-flow"
+             data-img-name="实验室业务管理系统流程图" />
+      </div>
     </div>
     <p class="mt-2 text-xs leading-relaxed text-slate-500">
       五条泳道依次为 业务部（洽谈报价）→ 业务部（合同与委托登记）→ 样品组 → 实验室 → 业务部（报告与交付），每条泳道三列「负责人 / 主流程 / 表单」；
@@ -827,6 +841,66 @@
 
 <script src="js/prototype-annotation.js"></script>
   <script>
+    // ================= 流程图热区：点节点跳到对应页面 =================
+    /* box 是原图（3634×1254）里的像素框，渲染时换算成百分比叠上去，
+     * 所以画布缩放、窗口变宽都不会漂移；换图后只需重新校准这些框——
+     * 地址栏加 ?flowcal=1 会把所有热区连节点名一起画出来，对着图改。 */
+    var FLOW_IMG_W = 3634, FLOW_IMG_H = 1254;
+    var PH = 'data-placeholder.html?name=';
+    var FLOW_LINKS = [
+      // 泳道 1 · 业务部（洽谈报价）
+      { name: '业务洽谈', href: 'entrust-preview.html', box: [228, 220, 132, 56] },
+      // 泳道 2 · 业务部（合同与委托登记）
+      { name: '合同管理', href: 'frame-contract.html', box: [936, 220, 136, 56] },
+      { name: '线上委托登记', href: 'entrust-register.html', box: [936, 576, 136, 60] },
+      { name: '委托确认', href: 'entrust-confirm.html', box: [936, 1068, 136, 60] },
+      // 泳道 3 · 样品组
+      { name: '样品管理', href: 'sample-receive.html', box: [1656, 220, 136, 56] },
+      { name: '收样', href: 'sample-receive.html', box: [1660, 400, 132, 60] },
+      { name: '样品制备', href: 'sample-prepare.html', box: [1656, 520, 132, 60] },
+      { name: '发样', href: 'sample-dispatch.html', box: [1656, 764, 132, 60] },
+      { name: '还样确认', href: 'sample-return-confirm.html', box: [1656, 884, 132, 60] },
+      // 泳道 4 · 实验室
+      { name: '实验室检测', href: 'test-detect.html', box: [2436, 220, 156, 56] },
+      { name: '领样', href: 'test-distribute.html', box: [2448, 400, 132, 60] },
+      { name: '开展试验', href: 'test-detect.html', box: [2448, 508, 132, 60] },
+      { name: '填写记录单', href: 'test-record.html', box: [2448, 616, 132, 60] },
+      { name: '申请还样', href: 'sample-return-confirm.html', box: [2360, 836, 132, 60] },
+      { name: '编制报告', href: 'report-list.html', box: [2536, 836, 136, 60] },
+      { name: '审核报告', href: PH + encodeURIComponent('报告审核') + '&group=' + encodeURIComponent('报告管理'), box: [2536, 972, 136, 60] },
+      // 泳道 5 · 业务部（报告与交付）
+      { name: '报告处理（模块）', href: PH + encodeURIComponent('报告处理') + '&group=' + encodeURIComponent('报告管理'), box: [3212, 220, 132, 56] },
+      { name: '报告签发', href: PH + encodeURIComponent('报告签发') + '&group=' + encodeURIComponent('报告管理'), box: [3212, 400, 132, 60] },
+      { name: '报告处理', href: PH + encodeURIComponent('报告处理') + '&group=' + encodeURIComponent('报告管理'), box: [3212, 556, 132, 60] },
+      { name: '收费确认', href: 'fee-audit.html', box: [3152, 688, 136, 112] },
+      { name: '审批', href: PH + encodeURIComponent('收费审批') + '&group=' + encodeURIComponent('报告管理'), box: [3268, 804, 136, 112] },
+      { name: '报告发放', href: PH + encodeURIComponent('报告发放') + '&group=' + encodeURIComponent('报告管理'), box: [3212, 1008, 132, 60] },
+      { name: '归档', href: PH + encodeURIComponent('任务归档') + '&group=' + encodeURIComponent('报告管理'), box: [3212, 1132, 132, 60] }
+    ];
+    (function buildFlowHotspots() {
+      var map = document.getElementById('flowMap');
+      if (!map) return;
+      var frag = document.createDocumentFragment();
+      FLOW_LINKS.forEach(function (n) {
+        var a = document.createElement('a');
+        a.className = 'flow-hot';
+        a.href = n.href;
+        a.title = n.name + ' › 打开对应页面';
+        a.setAttribute('aria-label', a.title);
+        a.style.left = (n.box[0] / FLOW_IMG_W * 100).toFixed(3) + '%';
+        a.style.top = (n.box[1] / FLOW_IMG_H * 100).toFixed(3) + '%';
+        a.style.width = (n.box[2] / FLOW_IMG_W * 100).toFixed(3) + '%';
+        a.style.height = (n.box[3] / FLOW_IMG_H * 100).toFixed(3) + '%';
+        var tag = document.createElement('span');
+        tag.className = 'flow-hot-tag';
+        tag.textContent = n.name;
+        a.appendChild(tag);
+        frag.appendChild(a);
+      });
+      map.appendChild(frag);
+      if (/[?&]flowcal=1/.test(location.search)) map.classList.add('flow-cal');
+    })();
+
     PrototypeAnnotation.init({
       annotations: [
         {
