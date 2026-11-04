@@ -59,8 +59,8 @@
       </tbody></table>
     </section>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>样品列表</h2>
-      <table class="data-table"><thead><tr><th>序号</th><th>样品名称</th><th>型号规格</th><th>数量</th><th>单价</th><th>总价</th><th>备注</th></tr></thead>
-      <tbody id="sampleListBody"><tr><td>1</td><td>绝缘操作杆</td><td></td><td>1</td><td>160</td><td>160</td><td></td></tr></tbody></table>
+      <table class="data-table"><thead><tr><th>序号</th><th>样品名称</th><th>型号/分类</th><th>规格</th><th>数量</th><th>单价</th><th>总价</th><th>备注</th></tr></thead>
+      <tbody id="sampleListBody"><tr><td>1</td><td>绝缘操作杆</td><td>/</td><td>300</td><td>1</td><td>160</td><td>160</td><td></td></tr></tbody></table>
     </section>
   </div>
   <script src="js/tab-bar.js"></script>
@@ -323,13 +323,15 @@
       var sample = view.leafId && window.SampleDataStore ? SampleDataStore.getSample(view.leafId) : null;
       var price = unitPrice(sm), qty = Number(sm.qty) || 1;
       return '<tr><td>' + (i + 1) + '</td><td>' + esc(sm.name) + '</td>' +
+        '<td>' + modelLabel(sample, view.modelCode) + '</td>' +
         '<td>' + (esc(specText(sample, view)) || '/') + '</td>' +
         '<td>' + esc(sm.qty) + (sm.unit ? ' ' + esc(sm.unit) : '') + '</td>' +
         '<td>' + price + '</td><td>' + price * qty + '</td><td>' + (esc(sm.remark) || '/') + '</td></tr>';
     });
     DELS.forEach(function (d) {
       rows.push('<tr class="is-deleted"><td>·</td><td>' + esc(d.name) +
-        '<span class="del-tag">已删除</span></td><td>' + (esc(DELETED_SPEC[d.name] || '') || '/') + '</td>' +
+        '<span class="del-tag">已删除</span></td><td>/</td>' +
+        '<td>' + (esc(DELETED_SPEC[d.name] || '') || '/') + '</td>' +
         '<td>' + esc(d.qty) + ' ' + esc(d.unit) + '</td>' +
         '<td>' + (deletedFee(d) / (Number(d.qty) || 1)) + '</td><td>/</td>' +
         '<td>变更删除：原检测费 ' + deletedFee(d) + ' 元已不计入委托总价；样品编号不回收，实物走退样</td></tr>');
@@ -355,7 +357,7 @@
           '<code>js/receive-history-mock.js</code>），与委托详情页、样品收样页同源；' +
           '两张变更表的「变更时间」用列表带过来的 <code>&approve=</code>，本页不再各写一套日期。<br>' +
           '<strong>交互逻辑：</strong>变更删除掉的样品在收样明细里保留原收样记录并整行置灰、名称后带红色「已删除」标签，' +
-          '图片沿用收样时上传的（点缩略图看大图）；样品列表按变更后现状展示，被删样品单列一行且费用不计入委托总价。',
+          '图片沿用收样时上传的（点缩略图看大图）；样品列表按变更后现状展示，被删样品单列一行且费用不计入委托总价；样品列表的型号与规格分两列展示（「型号/分类」+「规格」），没有型号的样品型号列显示「/」。',
         tag: '变更记录'
       },
       {

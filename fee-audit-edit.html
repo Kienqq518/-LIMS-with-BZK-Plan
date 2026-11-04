@@ -29,23 +29,23 @@
       </table>
       <table class="fee-table min-w-[900px]">
         <thead>
-          <tr><th rowspan="2">编号</th><th rowspan="2">样品名称</th><th rowspan="2">型号规格</th><th rowspan="2">样品数量</th><th colspan="4">检测信息</th></tr>
+          <tr><th rowspan="2">编号</th><th rowspan="2">样品名称</th><th rowspan="2" data-annotate="sample-model-spec-cols">型号/分类</th><th rowspan="2">规格</th><th rowspan="2">样品数量</th><th colspan="4">检测信息</th></tr>
           <tr class="sub-head"><th>名称</th><th>试样数量</th><th>收费(元)</th><th>备注</th></tr>
         </thead>
         <tbody>
-          <tr><td rowspan="4">1</td><td rowspan="4">绝缘操作杆</td><td rowspan="4"></td><td rowspan="4">1</td><td>弯曲静载荷试验</td><td>1</td><td>40</td><td></td></tr>
+          <tr><td rowspan="4">1</td><td rowspan="4">绝缘操作杆</td><td rowspan="4">/</td><td rowspan="4">300</td><td rowspan="4">1</td><td>弯曲静载荷试验</td><td>1</td><td>40</td><td></td></tr>
           <tr><td>弯曲动载荷试验</td><td>1</td><td>40</td><td></td></tr>
           <tr><td>外观及尺寸</td><td>1</td><td>40</td><td></td></tr>
           <tr><td>交流耐压试验</td><td>1</td><td>40</td><td></td></tr>
-          <tr><td rowspan="4">2</td><td rowspan="4">验电器</td><td rowspan="4"></td><td rowspan="4">1</td><td>启动电压试验</td><td>1</td><td>1</td><td></td></tr>
+          <tr><td rowspan="4">2</td><td rowspan="4">验电器</td><td rowspan="4">/</td><td rowspan="4">10kV</td><td rowspan="4">1</td><td>启动电压试验</td><td>1</td><td>1</td><td></td></tr>
           <tr><td>工频耐压试验</td><td>1</td><td>1</td><td></td></tr>
           <tr><td>交流耐压试验</td><td>1</td><td>1</td><td></td></tr>
           <tr><td>外观及尺寸</td><td>1</td><td>0</td><td></td></tr>
         </tbody>
         <tfoot>
-          <tr class="bg-slate-50 text-left"><td colspan="2">样品检测总价</td><td colspan="2">163</td><td colspan="2">实际费用</td><td colspan="2">160</td></tr>
-          <tr class="bg-slate-50 text-left"><td colspan="2">折扣率</td><td colspan="2">98.16%</td><td colspan="2">委托受理日期</td><td colspan="2">2026-06-01</td></tr>
-          <tr class="bg-slate-50 text-left"><td colspan="2">编制人</td><td colspan="6">admin</td></tr>
+          <tr class="bg-slate-50 text-left"><td colspan="2">样品检测总价</td><td colspan="3">163</td><td colspan="2">实际费用</td><td colspan="2">160</td></tr>
+          <tr class="bg-slate-50 text-left"><td colspan="2">折扣率</td><td colspan="3">98.16%</td><td colspan="2">委托受理日期</td><td colspan="2">2026-06-01</td></tr>
+          <tr class="bg-slate-50 text-left"><td colspan="2">编制人</td><td colspan="7">admin</td></tr>
         </tfoot>
       </table>
     </div>
@@ -54,6 +54,26 @@
     <button class="rounded border border-slate-300 px-8 py-2 text-sm text-slate-600 hover:bg-slate-50">审核不通过</button>
     <button class="rounded bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700">审核通过</button>
   </div>
+  <script>
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'sample-model-spec-cols', selector: '[data-annotate="sample-model-spec-cols"]', position: 'top-right',
+          title: '样品表拆成「型号/分类」与「规格」两列', wide: true,
+          content: '<strong>需求逻辑：</strong>「型号规格」把型号与规格混在一格里，审批 / 制样 / 分发时看不出' +
+            '型号（如 YJV22、PVC-C）和规格（截面积、内径、壁厚、长度）分别是什么，' +
+            '和收样信息、样品数据里的字段也对不上。<br>' +
+            '<strong>展示规则：</strong>本表拆成「型号/分类」+「规格」两列：' +
+            '型号/分类取样品数据的型号（代码-名称，如 <code>YJV22-交联聚乙烯绝缘钢带铠装聚氯乙烯护套电力电缆</code>），' +
+            '规格取该型号下的规格参数取值（多个取值与单位用空格拼接）；' +
+            '没有型号的样品（绝缘操作杆、验电器等）型号列显示「/」，规格列仍显示规格文本。' +
+            '与「样品收样」弹窗、委托详情收样信息、标签 / 合格证打印页同一口径。<br>' +
+            '<strong>交互逻辑：</strong>标签 / 证面上仍是一个「型号规格」字段，由这两段按「型号/分类 + 规格」空格拼接生成。',
+          tag: '费用审核'
+        }
+      ]
+    });
+  </script>
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script src="js/ui-a11y.js" defer></script>
