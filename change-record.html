@@ -111,6 +111,13 @@
       };
     });
 
+    /* 「查看」链接带上本页的申请 / 审批时间，详情页的两张变更表才有据可查 */
+    function detailHref(d) {
+      return 'change-record-detail.html?code=' + encodeURIComponent(d.code) +
+        '&apply=' + encodeURIComponent(d.applyTime || '') +
+        '&approve=' + encodeURIComponent(d.approveTime || '');
+    }
+
     var sortState = { field: 'approveTime', dir: 'desc' };
 
     function toggleSort(field) {
@@ -136,7 +143,7 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + d.applyTime + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + d.approveTime + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5"><a href="change-record-detail.html?code=' + encodeURIComponent(d.code) + '" class="text-blue-600 hover:underline">' + d.code + ' 【变更】</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="' + detailHref(d) + '" class="text-blue-600 hover:underline">' + d.code + ' 【变更】</a></td>' +
           '<td class="border border-slate-200 px-3 py-2.5 text-center">/</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + d.customer + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + d.sample + '</td>' +
@@ -145,7 +152,7 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + d.acceptDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + d.editor + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + d.salesman + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5"><a href="change-record-detail.html?code=' + encodeURIComponent(d.code) + '" class="text-blue-600 hover:underline"><i class="fa fa-eye"></i> 查看</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5"><a href="' + detailHref(d) + '" class="text-blue-600 hover:underline"><i class="fa fa-eye"></i> 查看</a></td>' +
           '</tr>';
       }).join('');
 

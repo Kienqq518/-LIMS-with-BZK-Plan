@@ -74,12 +74,30 @@
   <script src="js/prototype-annotation.js"></script>
   <script>
   /* 变更申请删除样品的演示委托（SC2026/0029、SC2026/0073）在本页按「变更类型」重写各区块。 */
-  var RAW_CODE = new URLSearchParams(window.location.search).get('code') || '';
+  var PARAM = new URLSearchParams(window.location.search);
+  var RAW_CODE = PARAM.get('code') || '';
   /* 列表链接里的编号带「 【变更】」后缀，取干净的委托号再查公共 mock */
   var CODE = RAW_CODE.replace(/\s*【.*?】\s*/g, '').trim();
   var M = window.EntrustMock ? EntrustMock.get(CODE || EntrustMock.DEFAULT_CODE) : null;
   var DELS = (window.ReceiveHistory && ReceiveHistory.changeDeleteRecords)
     ? ReceiveHistory.changeDeleteRecords().filter(function (r) { return r.code === CODE; }) : [];
+  /* 变更申请 / 审批时间由变更记录页带过来；变更删除样品那两单再退回同源数据 */
+  var APPLY_TIME = (PARAM.get('apply') || '') || (DELS[0] && DELS[0].applyTime) || '';
+  var APPROVE_TIME = (PARAM.get('approve') || '') || (DELS[0] && DELS[0].approveTime) || '';
+  function changeDate() {
+    return (APPROVE_TIME || APPLY_TIME || '').split(' ')[0] || '';
+  }
+  /** 该委托第一个样品的试验项（样品数据解析不到时返回空数组） */
+  function sampleTests(sm) {
+    if (!sm) return [];
+    if (sm.tests && sm.tests.length) return sm.tests;
+    var st = window.SampleDataStore;
+    if (!st || !sm.leafId) return [];
+    var sp = st.getSample(sm.leafId);
+    if (!sp) return [];
+    var ms = st.modelsOf(sp);
+    return st.testsOf(sp, ms.length ? ms[0].code : '') || [];
+  }
 
   function esc(v) {
     return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -128,7 +146,11 @@
   var DELETED_SPEC = { '安全帽': 'ABS', '绝缘硬梯': '10m' };
   function specText(sample, sm) {
     var txt = (window.SampleSpecUI && sample) ? SampleSpecUI.summary(sample, sm.modelCode, sm.specValues) : '';
-    return txt || sm.spec || (sm.deleted ? (DELETED_SPEC[sm.name] || '') : '');
+    if (txt || sm.spec) return txt || sm.spec;
+    if (sm.deleted && DELETED_SPEC[sm.name]) return DELETED_SPEC[sm.name];
+    /* 没配规格参数的样品（绝缘毯 / 验电器等）沿用委托样品清单里的规格文本，不留空 */
+    var own = (M && M.samples || []).filter(function (x) { return x.name === sm.name; })[0];
+    return (own && own.spec) || '';
   }
 
   /* ===== 委托信息 / 付款信息 ===== */
@@ -229,31 +251,51 @@
     }).join('');
   }
 
-  /* ===== 变更记录两张表：变更删除样品的委托按真实口径重写，其余保持演示数据 ===== */
+  /* ===== 变更记录两张表：都按本单真实数据出账，变更删除样品那两单走删除口径 ===== */
   function renderChangeLogs(recs) {
-    if (!DELS.length) return;
-    var rec = DELS[0];
-    var date = (rec.approveTime || '').split(' ')[0] || (recs[0] && recs[0].receiveDate) || '';
-    var eb = di('entrustChangeBody');
-    if (eb && M) {
-      var after = Number(M.totalPrice) || 0, before = after + deletedFee(rec);
-      eb.innerHTML = '<tr><td>1</td><td>修改</td><td class="max-w-md text-xs">删除样品后重新核算：' +
-        '「样品检测总价(元)」「实际费用(元)」由 ' + before + ' 元调整为 ' + after + ' 元；' +
-        '委托基本信息其余字段未改</td><td>' + esc(rec.operator) + '</td><td>' + esc(date) + '</td>' +
-        '<td>' + esc(rec.reason) + '</td><td>/</td><td><span class="text-green-600">通过</span></td></tr>';
+    var eb = di('entrustChangeBody'), sb = di('sampleChangeBody');
+    if (!eb || !sb || !M) return;
+    var date = changeDate() || (recs[0] && recs[0].receiveDate) || '/';
+    var op = (DELS[0] && DELS[0].operator) || M.editor || 'admin';
+
+    function row(n, type, content, operator, reason, extra) {
+      return '<tr><td>' + n + '</td><td>' + type + '</td><td class="max-w-md text-xs">' + content + '</td>' +
+        '<td>' + esc(operator) + '</td><td>' + esc(date) + '</td>' +
+        '<td class="max-w-md text-xs">' + esc(reason) + '</td>' +
+        '<td class="max-w-md text-xs">' + (extra || '/') + '</td>' +
+        '<td><span class="text-green-600">通过</span></td></tr>';
     }
-    var sb = di('sampleChangeBody');
-    if (sb) {
-      sb.innerHTML = DELS.map(function (d, i) {
-        return '<tr><td>' + (i + 1) + '</td><td>删除</td><td class="max-w-md text-xs">' +
-          '删除样品「' + esc(d.name) + '」（数量 ' + esc(d.qty) + ' ' + esc(d.unit) +
-          '，样品编号 ' + esc(d.sampleNo) + '）；该样品已收过样，' +
-          '<strong>不再进入收样 / 发样 / 检测</strong>；标签与合格证作废、实物走退样</td>' +
-          '<td>' + esc(d.operator) + '</td><td>' + esc(date) + '</td>' +
-          '<td class="max-w-md text-xs">' + esc(d.reason) + '</td><td>/</td>' +
-          '<td><span class="text-green-600">通过</span></td></tr>';
+
+    if (DELS.length) {
+      /* 变更删除样品：委托基本信息里只有费用跟着变，其余字段没动 */
+      var after = Number(M.totalPrice) || 0, before = after + deletedFee(DELS[0]);
+      eb.innerHTML = row(1, '修改',
+        '删除样品后重新核算：「样品检测总价(元)」「实际费用(元)」由 ' + before + ' 元调整为 ' + after +
+        ' 元；委托基本信息其余字段未改', op, DELS[0].reason);
+      sb.innerHTML = DELS.map(function (x, i) {
+        return row(i + 1, '删除',
+          '删除样品「' + esc(x.name) + '」（数量 ' + esc(x.qty) + ' ' + esc(x.unit) +
+          '，样品编号 ' + esc(x.sampleNo) + '）；该样品已收过样，' +
+          '<strong>不再进入收样 / 发样 / 检测</strong>；标签与合格证作废、实物走退样',
+          x.operator, x.reason);
       }).join('');
+      return;
     }
+
+    /* 其余委托：演示一次「基本信息 + 样品试验项」的常规变更 */
+    eb.innerHTML = [
+      row(1, '修改', '客户单位、客户联系人、客户地址等委托基本信息变更', op, '信息更正'),
+      row(2, '修改', '优先等级 从 常规 修改为 加急；要求检测完成时间随之提前', op, '客户催办')
+    ].join('');
+
+    var sm0 = M.samples[0] || null, ts = sampleTests(sm0);
+    var addTest = ts[1] || ts[0] || null;
+    sb.innerHTML = [
+      row(1, '删除', '删除「' + esc(sm0 ? sm0.name : '—') + '」部分试验项' +
+        (ts[0] ? '（' + esc(ts[0].name) + '）' : ''), op, '检测调整'),
+      row(2, '新增', (addTest ? '新增试验项「' + esc(addTest.name) + '」，检测依据 ' + esc(addTest.basis || '—') + '；' : '新增试验项；') +
+        '<strong>在原有样品上加项：跳过「样品发样」及之前的节点</strong>，只补录「委托确认」', op, '补充检测')
+    ].join('');
   }
 
   /* ===== 样品列表：变更后的委托现状；被删的样品保留一行置灰标记，费用不再计入 ===== */
@@ -293,7 +335,8 @@
         content: '<strong>需求逻辑：</strong>变更记录是「点哪单看哪单」，详情页的合同 / 委托 / 付款 / 收样 / 样品列表必须是被点的那一张单，不能固定显示同一条演示数据。<br>' +
           '<strong>展示规则：</strong>页面读取 <code>?code=</code>（兼容带「【变更】」后缀的旧链接，先剥掉再查数据），' +
           '委托信息与付款信息取 <code>js/entrust-mock.js</code>，收样信息取共享收样记录（<code>js/receive-store.js</code> + ' +
-          '<code>js/receive-history-mock.js</code>），与委托详情页、样品收样页同源。<br>' +
+          '<code>js/receive-history-mock.js</code>），与委托详情页、样品收样页同源；' +
+          '两张变更表的「变更时间」用列表带过来的 <code>&approve=</code>，本页不再各写一套日期。<br>' +
           '<strong>交互逻辑：</strong>变更删除掉的样品在收样明细里保留原收样记录并整行置灰、名称后带红色「已删除」标签，' +
           '图片沿用收样时上传的（点缩略图看大图）；样品列表按变更后现状展示，被删样品单列一行且费用不计入委托总价。',
         tag: '变更记录'
