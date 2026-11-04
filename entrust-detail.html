@@ -266,15 +266,15 @@
               <td>1</td>
               <td><a href="#" class="text-blue-600 hover:underline" onclick="openTaskSheetModal('pan');return false;" data-annotate="task-sheet-entry"><i class="fa fa-file-word-o"></i> SC2026/0212-检测任务单-潘哲宁.docx</a></td>
               <td>潘哲宁</td>
-              <td class="demo-date" data-demo-group="receive">2026-07-08</td>
-              <td class="demo-date" data-demo-group="receive">2026-07-09</td>
+              <td class="demo-date" data-demo-group="task">2026-07-08</td>
+              <td class="demo-date" data-demo-group="task">2026-07-09</td>
               <td class="doc-ops whitespace-nowrap"></td>
             </tr>
             <tr data-doc="task_sheet__li" data-tester="李四">
               <td>2</td>
               <td><a href="#" class="text-blue-600 hover:underline" onclick="openTaskSheetModal('li');return false;"><i class="fa fa-file-word-o"></i> SC2026/0212-检测任务单-李四.docx</a></td>
               <td>李四</td>
-              <td class="demo-date" data-demo-group="receive">2026-07-08</td>
+              <td class="demo-date" data-demo-group="task">2026-07-08</td>
               <td class="text-slate-400">—</td>
               <td class="doc-ops whitespace-nowrap"></td>
             </tr>
@@ -297,7 +297,7 @@
                   <i class="fa fa-file-word-o"></i> SC2026/0212-检测任务及样品流转单.docx
                 </button>
               </td>
-              <td class="demo-date" data-demo-group="receive">2026-07-08</td>
+              <td class="demo-date" data-demo-group="task">2026-07-08</td>
               <td class="doc-ops whitespace-nowrap"></td>
             </tr>
           </tbody>
@@ -982,7 +982,8 @@
      * 否则会出现「受理在后、留痕在前」或「报告早于收样」这类倒挂。
      *   ledger  台账 / 系统日志          → 受理日期
      *   accept  委托单 / 收费通知单、版本历史 → 受理日期
-     *   receive 检测任务单 / 流转单及其交接行 → 收样日期
+     *   receive 流转单交接行            → 收样日期
+     *   task    检测任务单 / 流转单生成时间 → 收样日期 + 2
      *   ret     还样记录                 → 收样日期 + 21 天
      *   deliver 报告文件 / 原始记录       → 收样日期 + 30 天
      * 组内相对间隔保持不变：把整组最早的日期挪到目标节点上。 */
@@ -1040,7 +1041,7 @@
       var t0 = entrustRec.acceptDate;
       var t1 = entrustRec.receiveDate || EntrustMock.plusDays(t0, 1);
       var TARGET = {
-        ledger: t0, accept: t0, receive: t1,
+        ledger: t0, accept: t0, receive: t1, task: EntrustMock.plusDays(t1, 2),
         ret: EntrustMock.plusDays(t1, 21),
         deliver: EntrustMock.plusDays(t1, 30)
       };
@@ -1055,7 +1056,7 @@
         if (d) arr.forEach(function (v) { v.time = shiftBy(v.time, d); });
       });
       /* DOM 里的留痕（台账容器此时还是旧文本，同样按 ledger 组平移一次） */
-      ['ledger', 'accept', 'receive', 'ret', 'deliver'].forEach(function (name) {
+      ['ledger', 'accept', 'receive', 'task', 'ret', 'deliver'].forEach(function (name) {
         shiftDomGroup(name, TARGET[name]);
       });
     }
