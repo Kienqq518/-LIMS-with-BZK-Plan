@@ -70,12 +70,21 @@
     // 标签 / 合格证打印页的列就是模版字段，多插一列会把表格挤没：
     // <body data-cat-col="off"> 只保留「样品大类」筛选条件，不再注入列
     if (doc.body && doc.body.getAttribute('data-cat-col') === 'off') return false;
-    if (hasOverlayText('th', '样品大类')) return 'exists';
     var th = findNameHeader();
     if (!th) return false;
     var headRow = th.parentNode;
     state.nameIdx = [].slice.call(headRow.children).indexOf(th);
     state.table = th.closest('table');
+    if (hasOverlayText('th', '样品大类')) {
+      // 页面自己已经写了「样品大类」列（如标签打印）：不再克隆注入，
+      // 但状态照样要建起来，否则「样品大类」下拉选了值不会过滤行
+      state.tbody = state.table.tBodies[0];
+      if (!state.tbody) return false;
+      state.rows = [].slice.call(state.tbody.rows);
+      state.rows.forEach(fillRow);
+      watchRows(state.tbody);
+      return true;
+    }
     var newTh = th.cloneNode(true);
     newTh.textContent = '样品大类';
     newTh.setAttribute('data-cat-col', '');
@@ -85,16 +94,21 @@
     if (!state.tbody) return true;
     state.rows = [].slice.call(state.tbody.rows);
     state.rows.forEach(fillRow);
+    watchRows(state.tbody);
+    return true;
+  }
+
+  /** 表体被页面重绘时重新补单元格并套用当前筛选 */
+  function watchRows(tbody) {
     var obs = new MutationObserver(function () {
       if (state.filling) return;
       state.filling = true;
-      state.rows = [].slice.call(state.tbody.rows);
+      state.rows = [].slice.call(tbody.rows);
       state.rows.forEach(fillRow);
       applyFilter();
       state.filling = false;
     });
-    obs.observe(state.tbody, { childList: true });
-    return true;
+    obs.observe(tbody, { childList: true });
   }
 
   function addFilter() {
@@ -143,8 +157,11 @@
       tr.style.display = ok ? '' : 'none';
       if (ok) {
         visible++;
-        var first = tr.cells[0];
-        if (first && /^\d+$/.test(first.textContent.trim())) first.textContent = String(visible);
+        // 带勾选列的页面序号在第 2 格，逐格找第一个纯数字的单元格
+        for (var ci = 0; ci < Math.min(3, tr.cells.length); ci++) {
+          var c = tr.cells[ci];
+          if (/^\d+$/.test(c.textContent.trim())) { c.textContent = String(visible); break; }
+        }
       }
     });
     var counters = [].slice.call(doc.querySelectorAll('#receiveTotalCount, #reportTotalCount, #totalText, [id*="TotalCount"]'));

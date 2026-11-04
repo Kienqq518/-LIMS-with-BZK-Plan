@@ -56,7 +56,7 @@
           <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
           <input id="f_sample" type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
         </div>
-        <div class="flex items-center gap-2 xl:col-span-3 xl:justify-end">
+        <div class="flex items-center gap-2 xl:col-span-2 xl:justify-end">
           <button onclick="doSearch()" class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>
           <button onclick="doReset()" class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i>重置</button>
         </div>
@@ -129,6 +129,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/entrust-mock.js"></script>
+  <script src="js/sample-cat-filter.js"></script>
   <script src="js/flow-stages.js"></script>
   <script src="js/receive-store.js"></script>
   <script src="js/receive-history-mock.js"></script>
@@ -373,7 +374,8 @@
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5" title="' + (item.sampleNos || '') + '">' + (item.sample || '/') + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + (item.sampleCat || '—') + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap" data-cat-col' +
+            (item.sampleCat && item.sampleCat !== '—' ? ' data-cat="' + item.sampleCat + '"' : '') + '>' + (item.sampleCat || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + (item.entrustDate || '/') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.sendDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + item.requireDate + '</td>' +
