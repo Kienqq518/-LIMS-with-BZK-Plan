@@ -40,8 +40,8 @@
       <tbody><tr><td>1</td><td>绝缘斗臂车-t</td><td></td><td>1</td><td>9</td><td>9</td><td></td><td></td><td></td></tr></tbody></table>
     </section>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托变更待审批列表</h2>
-      <table class="data-table min-w-[1000px]"><thead><tr><th class="w-8"></th><th>序号</th><th>变更类型</th><th>变更内容</th><th>变更原因</th><th>操作人</th><th>变更时间</th><th>状态</th></tr></thead>
-      <tbody><tr><td><input type="checkbox" checked class="accent-blue-600" /></td><td>1</td><td>修改</td><td class="max-w-lg text-xs leading-relaxed">业务员 从 梁倩 修改为 业务员A；客户单位 从 杭州数蚕智能科技有限公司 修改为 东集西造有限公司；客户地址 从 … 修改为 杭州市西湖区文三路159号…</td><td>11</td><td>admin</td><td>2026-06-01</td><td><span class="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-600">待处理</span></td></tr></tbody></table>
+      <table class="data-table min-w-[1000px]"><thead><tr><th class="w-8"></th><th>序号</th><th data-annotate="chg-type-col">变更类型</th><th>变更内容</th><th>变更原因</th><th>操作人</th><th>变更时间</th><th>状态</th></tr></thead>
+      <tbody><tr><td><input type="checkbox" checked class="accent-blue-600" /></td><td>1</td><td><span class="chg-type chg-type--modify">修改</span></td><td class="max-w-lg text-xs leading-relaxed">业务员 从 梁倩 修改为 业务员A；客户单位 从 杭州数蚕智能科技有限公司 修改为 东集西造有限公司；客户地址 从 … 修改为 杭州市西湖区文三路159号…</td><td>11</td><td>admin</td><td>2026-06-01</td><td><span class="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-600">待处理</span></td></tr></tbody></table>
     </section>
   </div>
   <div class="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-center gap-3 border-t border-slate-200 bg-white px-6 py-3 shadow-lg">
@@ -50,6 +50,25 @@
   </div>
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
+  <script>
+    PrototypeAnnotation.init({
+      annotations: [
+        {
+          id: 'chg-type-col', selector: '[data-annotate="chg-type-col"]', position: 'top-right',
+          title: '变更类型用带颜色的标签', wide: true,
+          content: '<strong>需求逻辑：</strong>审批人要判断的是「这次动的是加东西还是砍东西」，' +
+            '纯文字「新增 / 修改 / 删除」扫一眼分不出来，颜色比文字先被读到。<br>' +
+            '<strong>展示规则：</strong>「新增」「修改」= 蓝标（浅蓝底 #e6f4ff / 蓝字 #1677ff / 蓝边 #91caff），' +
+            '「删除」= 红标（浅红底 #fff1f0 / 红字 #f5222d / 红边 #ffa39e）；' +
+            '标签只在「变更类型」这一列出现，「变更内容」里仍是正文文字。' +
+            '同一套样式在变更申请编辑、变更审批详情、变更记录详情三处共用（<code>.chg-type</code>，定义在 css/ui-baseline.css）。<br>' +
+            '<strong>交互逻辑：</strong>标签只读，不随勾选变化；一行一条变更，类型由变更申请时选的操作决定' +
+            '（改字段=修改、加样品或试验项=新增、去掉样品或试验项=删除）。',
+          tag: '变更审批'
+        }
+      ]
+    });
+  </script>
   <script src="js/ui-a11y.js" defer></script>
 </body>
 </html>

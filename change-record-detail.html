@@ -47,15 +47,15 @@
     <section class="rounded bg-white p-4 shadow-sm" data-annotate="entrust-change-log"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息变更记录</h2>
       <table class="data-table min-w-[900px]"><thead><tr><th>序号</th><th>变更类型</th><th>变更内容</th><th>操作人</th><th>变更时间</th><th>变更原因</th><th>驳回原因</th><th>状态</th></tr></thead>
       <tbody id="entrustChangeBody">
-        <tr><td>1</td><td>修改</td><td class="max-w-md text-xs">客户单位、客户联系人、客户地址等多项信息变更</td><td>admin</td><td>2026-04-02</td><td>信息更正</td><td></td><td><span class="text-green-600">通过</span></td></tr>
-        <tr><td>2</td><td>修改</td><td class="max-w-md text-xs">优先等级 从 常规 修改为 2</td><td>admin</td><td>2026-05-25</td><td>加急</td><td></td><td><span class="text-blue-600">待处理</span></td></tr>
+        <tr><td>1</td><td><span class="chg-type chg-type--modify">修改</span></td><td class="max-w-md text-xs">客户单位、客户联系人、客户地址等多项信息变更</td><td>admin</td><td>2026-04-02</td><td>信息更正</td><td></td><td><span class="text-green-600">通过</span></td></tr>
+        <tr><td>2</td><td><span class="chg-type chg-type--modify">修改</span></td><td class="max-w-md text-xs">优先等级 从 常规 修改为 2</td><td>admin</td><td>2026-05-25</td><td>加急</td><td></td><td><span class="text-blue-600">待处理</span></td></tr>
       </tbody></table>
     </section>
     <section class="rounded bg-white p-4 shadow-sm" data-annotate="sample-change-log"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>样品信息变更记录</h2>
       <table class="data-table min-w-[900px]"><thead><tr><th>序号</th><th>变更类型</th><th>变更内容</th><th>操作人</th><th>变更时间</th><th>变更原因</th><th>驳回原因</th><th>状态</th></tr></thead>
       <tbody id="sampleChangeBody">
-        <tr><td>1</td><td>删除</td><td class="max-w-md text-xs">删除「绝缘操作杆」部分试验项</td><td>admin</td><td>2026-05-20</td><td>检测调整</td><td></td><td><span class="text-blue-600">待处理</span></td></tr>
-        <tr><td>2</td><td>新增</td><td class="max-w-md text-xs">新增试验项，检测依据 DLT 976-2017</td><td>admin</td><td>2026-05-22</td><td>补充检测</td><td></td><td><span class="text-blue-600">待处理</span></td></tr>
+        <tr><td>1</td><td><span class="chg-type chg-type--del">删除</span></td><td class="max-w-md text-xs">删除「绝缘操作杆」部分试验项</td><td>admin</td><td>2026-05-20</td><td>检测调整</td><td></td><td><span class="text-blue-600">待处理</span></td></tr>
+        <tr><td>2</td><td><span class="chg-type chg-type--add">新增</span></td><td class="max-w-md text-xs">新增试验项，检测依据 DLT 976-2017</td><td>admin</td><td>2026-05-22</td><td>补充检测</td><td></td><td><span class="text-blue-600">待处理</span></td></tr>
       </tbody></table>
     </section>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>样品列表</h2>
@@ -258,8 +258,14 @@
     var date = changeDate() || (recs[0] && recs[0].receiveDate) || '/';
     var op = (DELS[0] && DELS[0].operator) || M.editor || 'admin';
 
+    /** 变更类型标签：新增 / 修改 = 蓝，删除 = 红（与真系统变更记录配色一致） */
+    function typeTag(type) {
+      var cls = type === '删除' ? 'chg-type--del' : (type === '新增' ? 'chg-type--add' : 'chg-type--modify');
+      return '<span class="chg-type ' + cls + '">' + esc(type) + '</span>';
+    }
+
     function row(n, type, content, operator, reason, extra) {
-      return '<tr><td>' + n + '</td><td>' + type + '</td><td class="max-w-md text-xs">' + content + '</td>' +
+      return '<tr><td>' + n + '</td><td>' + typeTag(type) + '</td><td class="max-w-md text-xs">' + content + '</td>' +
         '<td>' + esc(operator) + '</td><td>' + esc(date) + '</td>' +
         '<td class="max-w-md text-xs">' + esc(reason) + '</td>' +
         '<td class="max-w-md text-xs">' + (extra || '/') + '</td>' +
@@ -360,6 +366,8 @@
           '变更增加样品或试验项时，变的也只有金额与完成时间。<br>' +
           '<strong>展示规则：</strong>「变更时间」= 变更审批通过时间（由变更记录页带过来的 <code>&approve=</code>），' +
           '「操作人」= 变更申请人，「状态」统一是「通过」——本页只登记审批已完成的变更，' +
+          '「变更类型」是带颜色的标签：新增 / 修改 = 蓝标，删除 = 红标（<code>.chg-type</code>，' +
+          '与变更申请编辑、变更审批详情同一套样式），' +
           '在途的变更去「变更审批」页看。<br>' +
           '<strong>交互逻辑：</strong>金额真变了才在「委托确认」之后追加「费用审核」，没变就不走；' +
           '同一张委托同一时刻只允许一张在途变更单；报告已发放或任务已归档后默认封板，不再受理变更。',
