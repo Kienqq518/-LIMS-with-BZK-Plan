@@ -42,6 +42,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>
   <script>
@@ -51,6 +52,9 @@
       { code:'SC2026/0055', customer:'东集西造有限公司', sample:'绝缘斗臂车-t', sendDate:'2026-05-25', acceptDate:'2026-05-25' },
       { code:'SC2026/0053', customer:'宇宙设想有限公司', sample:'遮蔽罩、安全带', sendDate:'2026-05-20', acceptDate:'2026-05-20' }
     ];
+    // 公共字段（客户 / 样品 / 受理日期 / 送样时间 / 编制人 / 业务员）统一取 js/entrust-mock.js，
+    // 受理日期已按全年铺排，页面里再写死 5-6 月就会和详情页两张皮
+    EntrustMock.enrich(data, { arriveDate: 'sendDate' });
     document.getElementById('tableBody').innerHTML = data.map(function(d,i){
       return '<tr class="hover:bg-slate-50"><td class="border border-slate-200 px-3 py-2.5">'+(i+1)+'</td><td class="border border-slate-200 px-3 py-2.5"><a href="fee-audit-edit.html?code='+d.code+'" class="text-blue-600 hover:underline">'+d.code+'</a></td><td class="border border-slate-200 px-3 py-2.5 text-center">/</td><td class="border border-slate-200 px-3 py-2.5">'+d.customer+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.sample+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.sendDate+'</td><td class="border border-slate-200 px-3 py-2.5"></td><td class="border border-slate-200 px-3 py-2.5">'+d.acceptDate+'</td><td class="border border-slate-200 px-3 py-2.5"><span class="rounded border border-green-200 bg-green-50 px-2 py-0.5 text-xs text-green-600">否</span></td><td class="border border-slate-200 px-3 py-2.5">常规</td><td class="border border-slate-200 px-3 py-2.5">费用审核</td><td class="border border-slate-200 px-3 py-2.5">admin</td><td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="fee-audit-edit.html?code='+d.code+'" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</a><button class="ml-3 text-green-600 hover:underline"><i class="fa fa-check-circle"></i> 通过</button><button class="ml-3 text-orange-500 hover:underline"><i class="fa fa-reply"></i> 退回</button></td></tr>';
     }).join('');

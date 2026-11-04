@@ -58,6 +58,7 @@
   </div>
   <script src="js/tab-bar.js"></script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -71,6 +72,15 @@
       { code: 'SC2026/0045', customer: '宇宙设想有限公司', sample: '10kV旁路作业设备', sendDate: '2026-05-15', acceptDate: '2026-05-15', editor: 'admin', salesman: '业务员A', applyTime: '2026-06-13 08:50:00' },
       { code: 'SC2026/0043', customer: '杭州数蚕智能科技有限公司', sample: '验电器', sendDate: '2026-05-12', acceptDate: '2026-05-12', editor: 'admin', salesman: '梁倩', applyTime: '2026-06-07 15:10:00' }
     ];
+    // 公共字段统一取 js/entrust-mock.js：受理日期、送样时间、编制人、业务员与详情页一致
+    EntrustMock.enrich(DATA, { arriveDate: 'sendDate' });
+    // 变更申请时间派生到「本单收样之后一个月左右」，不再写死 6 月，避免出现「先变更后受理」
+    DATA.forEach(function (r) {
+      var m = EntrustMock.get(r.code);
+      if (!m || !m.receiveDate) return;
+      var tm = String(r.applyTime || '').slice(10);
+      r.applyTime = EntrustMock.plusDays(m.receiveDate, 30) + (tm ? ' ' + tm : '');
+    });
 
     var sortState = { field: 'applyTime', dir: 'desc' };
 

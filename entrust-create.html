@@ -317,6 +317,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/mock-dict.js"></script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script src="js/sample-spec-ui.js"></script>
   <script src="js/entrust-field-config.js"></script>
   <script src="js/customer-store.js"></script>
@@ -973,6 +974,19 @@
       }
       data.majorCat = cat.name;
       if (params.mode !== 'edit') data.acceptDate = todayStr();
+      /* 编辑已有委托时，日期与人员一律取 js/entrust-mock.js（受理日期已按全年铺排），
+       * 页面自带的示例日期只在新建/复制时兜底，避免登记页与详情页两套日期。
+       * 表单里的「客户要求完成日期」对应 mock 的 customerDate。 */
+      if (params.mode === 'edit' && window.EntrustMock && EntrustMock.ROWS[data.code]) {
+        var em = EntrustMock.get(data.code);
+        data.acceptDate = em.acceptDate || data.acceptDate;
+        data.requireDate = em.customerDate || data.requireDate;
+        data.days = em.days || data.days;
+        data.customer = em.customer || data.customer;
+        data.payer = em.payer || data.payer;
+        data.salesman = em.salesman || data.salesman;
+        data.editor = em.editor || data.editor;
+      }
       fillForm(data);
       applyContract(data.contractCode || '');
       var catEl = document.getElementById('f_majorCat');

@@ -188,7 +188,17 @@
     ];
 
     // 公共字段统一取自 js/entrust-mock.js，保证列表与详情页一致
-    EntrustMock.enrich(listData);
+    EntrustMock.enrich(listData, { arriveDate: 'sendDate' });
+
+    // 还样时间跟随本单收样日期（收样后第三周起逐条错开），避免写死日期早于受理/收样
+    listData.forEach(function (r) {
+      var m = window.EntrustMock ? EntrustMock.get(r.code) : null;
+      if (!m || !m.receiveDate || !r.records) return;
+      r.records.forEach(function (rc, k) {
+        var tm = String(rc.returnDate || '').slice(10).trim();
+        rc.returnDate = EntrustMock.plusDays(m.receiveDate, 21 + k) + (tm ? ' ' + tm : '');
+      });
+    });
 
     // 样品信息列（产品标记 / 型号分类 / 规格）要按收样记录取值：先把退回重流转型委托的上次收样提交播种进来
     if (window.ReceiveStore && window.ReceiveHistory && ReceiveHistory.redoRecords) {

@@ -775,9 +775,9 @@
           series: [
             { name: '报告总数', type: 'bar', barMaxWidth: 34, itemStyle: { color: '#2f7bf0', borderRadius: [3, 3, 0, 0] },
               label: { show: true, position: 'top', color: '#475569', fontSize: 11 }, data: list.map(function (d) { return d.total; }) },
-            { name: '及时', type: 'bar', barMaxWidth: 34, itemStyle: { color: '#ef4444', borderRadius: [3, 3, 0, 0] },
+            { name: '及时', type: 'bar', barMaxWidth: 34, itemStyle: { color: '#22c55e', borderRadius: [3, 3, 0, 0] },
               label: { show: true, position: 'top', color: '#475569', fontSize: 11 }, data: list.map(function (d) { return d.onTime; }) },
-            { name: '未及时', type: 'bar', barMaxWidth: 34, itemStyle: { color: '#22c55e', borderRadius: [3, 3, 0, 0] },
+            { name: '未及时', type: 'bar', barMaxWidth: 34, itemStyle: { color: '#ef4444', borderRadius: [3, 3, 0, 0] },
               label: { show: true, position: 'top', color: '#475569', fontSize: 11 }, data: list.map(function (d) { return d.late; }) },
             { name: '及时率', type: 'line', yAxisIndex: 1, symbol: 'circle', symbolSize: 6,
               lineStyle: { width: 2, color: '#94a3b8' }, itemStyle: { color: '#94a3b8' },
@@ -865,7 +865,7 @@
           id: 'report-ontime', selector: '[data-annotate="report-ontime"]', position: 'top-right',
           title: '检测报告及时率统计', wide: true,
           content: '<strong>需求逻辑：</strong>交付及时率是对外承诺的核心指标，要能按人、按时间段看。<br>' +
-            '<strong>展示规则：</strong>柱线组合：左轴「检测报告数量」三根柱（报告总数 / 及时 / 未及时），右轴「及时率」折线带百分比标签；分母只算已出报告（状态到报告签发及之后）的委托，在制单不进分母；口径——<strong>及时 = 已到报告发放 / 任务归档 / 任务完成，或仍在签发~收费审批但未过要求检测完成时间</strong>，<strong>未及时 = 已出报告却过了要求检测完成时间仍未发放（逾期）</strong>，及时率 = 及时 / 已出报告数；标题带年份，右上角「总计 N 份」。<br>' +
+            '<strong>展示规则：</strong>柱线组合：左轴「检测报告数量」三根柱（报告总数蓝 / <strong>及时绿</strong> / <strong>未及时红</strong>），右轴「及时率」折线带百分比标签——颜色按好坏分，绿=好、红=差，不跟随系列顺序；分母只算已出报告（状态到报告签发及之后）的委托，在制单不进分母；口径——<strong>及时 = 已到报告发放 / 任务归档 / 任务完成，或仍在签发~收费审批但未过要求检测完成时间</strong>，<strong>未及时 = 已出报告却过了要求检测完成时间仍未发放（逾期）</strong>，及时率 = 及时 / 已出报告数；标题带年份，右上角「总计 N 份」。<br>' +
             '<strong>交互逻辑：</strong>「人员名称」留空 = 全员对比；填了「时间范围」按起止月份过滤（不再叠加年份）；「查询」重算，「重置」清空人员与时间范围；「导出」为原型演示，提示当前口径与合计。',
           tag: '工作台'
         },
