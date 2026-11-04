@@ -41,6 +41,10 @@
     '.cc-mv button { border: 1px solid #e2e8f0; background: #fff; color: #94a3b8; border-radius: 3px; width: 20px; height: 20px; line-height: 1; font-size: 11px; cursor: pointer; padding: 0; }',
     '.cc-mv button:hover:not([disabled]) { border-color: #2563eb; color: #2563eb; }',
     '.cc-mv button[disabled] { opacity: .35; cursor: not-allowed; }',
+    '.cc-row.cc-locked { background: #f8fafc; }',
+    '.cc-row.cc-locked .cc-grip { color: #cbd5e1; }',
+    '.cc-row.cc-locked .cc-name::after { content: "固定"; margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #eef2f7; color: #94a3b8; font-size: 10px; }',
+    '.cc-sw input[disabled] + span { opacity: .45; cursor: not-allowed; }',
     /* ===== 冻结列：前两列（序号、委托编号）与最后一列（操作）左右固定，中间列横向滚动 ===== */
     '.cc-fz { position: sticky; z-index: 2; background-clip: padding-box; }',
     'thead .cc-fz { z-index: 3; }',
@@ -52,6 +56,41 @@
   ].join('\n');
 
   var table = null, cols = [], order = [], hidden = {}, panel = null, applying = false;
+
+  /* ===== 固定列（横向滚动不动、列配置里不可隐藏 / 不可调序） =====
+   * 按列名认，不按位置认：以前是「可见列的头两列 + 末列」，
+   * 带勾选列的页面会把冻结落在「勾选 + 序号」上，委托编号照样滚走；
+   * 末列若不是「操作」（例如是「备注」），也会被误钉住。 */
+  var PIN_LEFT_LABELS = ['勾选', '序号', '委托编号'];   // 左侧钉住的一组（勾选列存在就一起钉，否则会被滚走）
+  var PIN_STICKY_LABELS = ['序号', '委托编号'];         // 至少要命中一个才启用左侧冻结
+  var PIN_RIGHT_LABEL = '操作';
+  var PIN_LOCK_LABELS = ['序号', '委托编号', '操作'];    // 这三列在面板里不可隐藏、不可调序
+
+  function labelOfKey(k) {
+    for (var i = 0; i < cols.length; i++) { if (cols[i].key === k) return cols[i].label; }
+    return '';
+  }
+  function keyOfLabel(lb) {
+    for (var i = 0; i < cols.length; i++) { if (cols[i].label === lb) return cols[i].key; }
+    return null;
+  }
+  function isLockKey(k) {
+    var lb = labelOfKey(k);
+    return PIN_LEFT_LABELS.indexOf(lb) >= 0 || lb === PIN_RIGHT_LABEL;   // 位置锁：含勾选列
+  }
+  function isHideLockKey(k) { return PIN_LOCK_LABELS.indexOf(labelOfKey(k)) >= 0; }  // 隐藏锁：三列
+  /** 把固定列归位：勾选/序号/委托编号在最左，操作在最右，其余列保持当前相对顺序 */
+  function enforcePins(list) {
+    var head = [], tail = [];
+    PIN_LEFT_LABELS.forEach(function (lb) {
+      var k = keyOfLabel(lb);
+      if (k && list.indexOf(k) >= 0) head.push(k);
+    });
+    var op = keyOfLabel(PIN_RIGHT_LABEL);
+    if (op && list.indexOf(op) >= 0) tail.push(op);
+    var rest = list.filter(function (k) { return head.indexOf(k) < 0 && tail.indexOf(k) < 0; });
+    return head.concat(rest, tail);
+  }
   var sourceOrder = null;   // 源码里的列顺序（首次收集时记录），供表体重绘后按位打标
 
   function pageKey() {
@@ -157,6 +196,12 @@
   function apply() {
     if (!table || applying) return;
     applying = true;
+    // 固定列不可隐藏、不可挪位：先清掉历史草稿里对它们的隐藏与乱序
+    PIN_LOCK_LABELS.forEach(function (lb) {
+      var k = keyOfLabel(lb);
+      if (k) delete hidden[k];
+    });
+    order = enforcePins(order);
     // 表头
     var hr = headRow();
     [].slice.call(hr.children).forEach(function (th) {
@@ -200,7 +245,22 @@
   }
   function stickySets() {
     var vis = order.filter(function (k) { return !hidden[k]; });
-    return { leftKeys: vis.slice(0, 2), rightKey: vis.length > 2 ? vis[vis.length - 1] : null };
+    // 左侧：从最左边起连续的「勾选 / 序号 / 委托编号」
+    var leftKeys = [];
+    for (var i = 0; i < vis.length; i++) {
+      if (PIN_LEFT_LABELS.indexOf(labelOfKey(vis[i])) < 0) break;
+      leftKeys.push(vis[i]);
+    }
+    var hasSticky = leftKeys.some(function (k) { return PIN_STICKY_LABELS.indexOf(labelOfKey(k)) >= 0; });
+    // 表里没有「序号 / 委托编号」（如人员、设备、字典类台账）时，退回按位置钉住头两列，别把原有的冻结弄丢
+    if (!hasSticky) leftKeys = vis.slice(0, 2);
+    var rightKey = null;
+    for (var j = vis.length - 1; j >= 0; j--) {
+      if (labelOfKey(vis[j]) === PIN_RIGHT_LABEL) { rightKey = vis[j]; break; }
+    }
+    // 没有「操作」列的表退回末列，保持旧行为
+    if (!rightKey && vis.length > 2) rightKey = vis[vis.length - 1];
+    return { leftKeys: leftKeys, rightKey: rightKey };
   }
   function applyStickyColumns() {
     if (!table) return;
@@ -299,14 +359,17 @@
     }).map(function (k) {
       var c = colOf(k);
       var pos = order.indexOf(k);
-      return '<div class="cc-row" draggable="true" data-key="' + esc(k) + '">' +
-        '<i class="fa fa-ellipsis-h cc-grip" title="拖拽排序"></i>' +
+      var pinned = isLockKey(k);
+      var noHide = isHideLockKey(k);
+      var lockTip = pinned ? (noHide ? '固定列：不可调序、不可隐藏' : '固定列：随左侧一组钉住，不可调序') : '拖拽排序';
+      return '<div class="cc-row' + (pinned ? ' cc-locked' : '') + '" draggable="' + (pinned ? 'false' : 'true') + '" data-key="' + esc(k) + '">' +
+        '<i class="fa ' + (pinned ? 'fa-lock' : 'fa-ellipsis-h') + ' cc-grip" title="' + lockTip + '"></i>' +
         '<span class="cc-name">' + esc(c ? c.label : k) + '</span>' +
         '<span class="cc-mv">' +
-          '<button type="button" title="上移" onclick="ColumnConfig._move(\'' + esc(k) + '\',-1)"' + (pos === 0 ? ' disabled' : '') + '><i class="fa fa-angle-up"></i></button>' +
-          '<button type="button" title="下移" onclick="ColumnConfig._move(\'' + esc(k) + '\',1)"' + (pos === order.length - 1 ? ' disabled' : '') + '><i class="fa fa-angle-down"></i></button>' +
+          '<button type="button" title="' + (pinned ? '固定列不可上移' : '上移') + '" onclick="ColumnConfig._move(\'' + esc(k) + '\',-1)"' + (pinned || pos === 0 ? ' disabled' : '') + '><i class="fa fa-angle-up"></i></button>' +
+          '<button type="button" title="' + (pinned ? '固定列不可下移' : '下移') + '" onclick="ColumnConfig._move(\'' + esc(k) + '\',1)"' + (pinned || pos === order.length - 1 ? ' disabled' : '') + '><i class="fa fa-angle-down"></i></button>' +
         '</span>' +
-        '<label class="cc-sw"><input type="checkbox" data-toggle="' + esc(k) + '"' + (hidden[k] ? '' : ' checked') + ' onchange="ColumnConfig._toggle(this.getAttribute(\'data-toggle\'), this.checked)" /><span></span></label>' +
+        '<label class="cc-sw"><input type="checkbox" data-toggle="' + esc(k) + '"' + (noHide ? ' disabled title="序号 / 委托编号 / 操作 为固定列，不可隐藏"' : (hidden[k] ? '' : ' checked')) + ' onchange="ColumnConfig._toggle(this.getAttribute(\'data-toggle\'), this.checked)" /><span></span></label>' +
       '</div>';
     }).join('');
     host.innerHTML = html || '<div class="cc-empty">无匹配字段</div>';
@@ -317,7 +380,11 @@
   function bindDrag(host) {
     var dragEl = null;
     [].slice.call(host.querySelectorAll('.cc-row')).forEach(function (row) {
-      row.addEventListener('dragstart', function () { dragEl = row; row.classList.add('dragging'); });
+      var rowLocked = row.classList.contains('cc-locked');
+      row.addEventListener('dragstart', function () {
+        if (rowLocked) { return; }
+        dragEl = row; row.classList.add('dragging');
+      });
       row.addEventListener('dragend', function () {
         row.classList.remove('dragging');
         [].slice.call(host.querySelectorAll('.cc-row.over')).forEach(function (r) { r.classList.remove('over'); });
@@ -326,11 +393,11 @@
         order = next.concat(order.filter(function (k) { return next.indexOf(k) < 0; }));
         apply();
       });
-      row.addEventListener('dragover', function (e) { e.preventDefault(); if (row !== dragEl) row.classList.add('over'); });
+      row.addEventListener('dragover', function (e) { if (row.classList.contains('cc-locked')) return; e.preventDefault(); if (row !== dragEl) row.classList.add('over'); });
       row.addEventListener('dragleave', function () { row.classList.remove('over'); });
       row.addEventListener('drop', function (e) {
         e.preventDefault();
-        if (!dragEl || dragEl === row) return;
+        if (!dragEl || dragEl === row || row.classList.contains('cc-locked')) return;
         var rows = [].slice.call(host.querySelectorAll('.cc-row'));
         if (rows.indexOf(dragEl) < rows.indexOf(row)) row.parentNode.insertBefore(dragEl, row.nextSibling);
         else row.parentNode.insertBefore(dragEl, row);
@@ -417,13 +484,16 @@
   global.ColumnConfig = {
     _mergeOrder: mergeOrder,
     init: boot,
-    _toggle: function (k, on) { if (on) delete hidden[k]; else hidden[k] = 1; apply(); },
+    _toggle: function (k, on) {
+      if (isHideLockKey(k)) { apply(); renderList(panel.querySelector('#cc-kw').value); return; }
+      if (on) delete hidden[k]; else hidden[k] = 1; apply();
+    },
     _search: function (v) { renderList(v); },
     _reset: function () { order = cols.map(function (c) { return c.key; }); hidden = {}; apply(); renderList(panel.querySelector('#cc-kw').value); },
     _save: function () { saveCfg({ order: order, hidden: Object.keys(hidden) }); panel.classList.remove('open'); apply(); },
     _move: function (k, dir) {
       var i = order.indexOf(k), j = i + dir;
-      if (i < 0 || j < 0 || j >= order.length) return;
+      if (i < 0 || j < 0 || j >= order.length || isLockKey(k) || isLockKey(order[j])) return;
       order.splice(j, 0, order.splice(i, 1)[0]);
       apply();
       renderList(panel.querySelector('#cc-kw').value);
