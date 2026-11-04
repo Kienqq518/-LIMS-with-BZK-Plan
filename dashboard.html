@@ -25,6 +25,21 @@
       position: absolute; left: 0; top: 6px; width: 12px; height: 12px; border-radius: 9999px;
       border: 2px solid #fff; box-shadow: 0 0 0 2px currentColor;
     }
+    /* 业务流程图泳道 */
+    .flow-lane { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+    .flow-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) minmax(0, 74px); gap: 6px; align-items: center; }
+    .flow-who { font-size: 11px; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; border-radius: 3px; padding: 2px 4px; text-align: center; }
+    .flow-node { font-size: 12px; text-align: center; padding: 4px 6px; border-radius: 6px; border: 1px solid transparent; color: #fff; }
+    .flow-head { font-weight: 600; padding: 6px; border-radius: 9999px; }
+    .flow-judge { transform: none; border-radius: 4px; border-style: dashed; }
+    .flow-form { font-size: 11px; color: #9a5b06; background: #ffedd5; border: 1px solid #fed7aa; border-radius: 4px; padding: 3px 4px; text-align: center; }
+    .flow-note { font-size: 11px; color: #64748b; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px; padding: 3px 4px; line-height: 1.5; }
+    .flow-none { color: #cbd5e1; background: #fff; border-color: #e2e8f0; }
+    .node-green { background: #86efac; border-color: #16a34a; color: #14532d; }
+    .node-cyan { background: #67e8f9; border-color: #0891b2; color: #083344; }
+    .node-blue { background: #60a5fa; border-color: #2563eb; color: #1e3a8a; }
+    .node-purple { background: #c084fc; border-color: #9333ea; color: #4a044e; }
+    .node-red { background: #fca5a5; border-color: #dc2626; color: #7f1d1d; }
   </style>
 </head>
 <body class="bg-slate-50 p-4 text-slate-700">
@@ -219,108 +234,182 @@
     </div>
   </div>
 
-  <!-- ================= 下半部分：6 个图表 ================= -->
-  <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-    <section class="rounded-lg bg-white p-4 shadow-sm">
-      <h3 class="mb-2 text-sm font-semibold text-slate-700">委托量月度趋势</h3>
-      <div id="chartTrend" class="h-64"></div>
+  <!-- ================= 下半部分：业务分析图表（与实验室业务管理系统首页同一套） ================= -->
+  <div class="mt-4 flex flex-col gap-4">
+
+    <!-- 全年各类型销售额情况 -->
+    <section class="rounded-lg bg-white p-4 shadow-sm" data-annotate="cat-sales">
+      <div class="mb-3 flex flex-wrap items-center gap-3">
+        <label class="text-sm text-slate-600" for="csYear">选择年份</label>
+        <select id="csYear" class="w-28 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-sky-500"></select>
+        <button id="csQuery" class="rounded bg-sky-500 px-4 py-1.5 text-sm text-white hover:bg-sky-600"><i class="fa fa-search"></i> 查询</button>
+        <button id="csReset" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+        <span id="csTotal" class="ml-auto text-sm text-slate-500"></span>
+      </div>
+      <h3 class="mb-2 text-sm font-semibold text-slate-700">全年各类型销售额情况</h3>
+      <div id="chartCatSales" class="h-80"></div>
     </section>
-    <section class="rounded-lg bg-white p-4 shadow-sm">
-      <h3 class="mb-2 text-sm font-semibold text-slate-700">各分类样品数量统计</h3>
-      <div id="chartSampleBar" class="h-64"></div>
+
+    <!-- 年/月度个人业绩统计 -->
+    <section class="rounded-lg bg-white p-4 shadow-sm" data-annotate="person-performance">
+      <div class="mb-3 flex flex-wrap items-center gap-3">
+        <span class="text-sm text-slate-600">按年/月筛选</span>
+        <select id="ppMode" class="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500"><option value="year">年</option><option value="month">月</option></select>
+        <select id="ppYear" class="w-28 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-sky-500"></select>
+        <input id="ppMonth" type="month" class="hidden w-40 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-sky-500" />
+        <button id="ppQuery" class="rounded bg-sky-500 px-4 py-1.5 text-sm text-white hover:bg-sky-600"><i class="fa fa-search"></i> 查询</button>
+        <button id="ppReset" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+        <span id="ppTotal" class="ml-auto text-sm text-slate-500"></span>
+      </div>
+      <h3 class="mb-2 text-sm font-semibold text-slate-700">年/月度个人业绩统计</h3>
+      <div id="chartPersonPerf" class="h-72"></div>
     </section>
-    <section class="rounded-lg bg-white p-4 shadow-sm">
-      <h3 class="mb-2 text-sm font-semibold text-slate-700">各项目委托量分布</h3>
-      <div id="chartProject" class="h-64"></div>
+
+    <!-- 各类型检测报告数量统计 -->
+    <section class="rounded-lg bg-white p-4 shadow-sm" data-annotate="report-by-type">
+      <div class="mb-3 flex flex-wrap items-center gap-3">
+        <span class="text-sm text-slate-600">按年/月筛选</span>
+        <select id="rtMode" class="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500"><option value="year">年</option><option value="month">月</option></select>
+        <select id="rtYear" class="w-28 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-sky-500"></select>
+        <input id="rtMonth" type="month" class="hidden w-40 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-sky-500" />
+        <button id="rtQuery" class="rounded bg-sky-500 px-4 py-1.5 text-sm text-white hover:bg-sky-600"><i class="fa fa-search"></i> 查询</button>
+        <button id="rtReset" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+        <span id="rtTotal" class="ml-auto text-sm text-slate-500"></span>
+      </div>
+      <h3 class="mb-2 text-sm font-semibold text-slate-700">各类型检测报告数量统计</h3>
+      <div id="chartReportType" class="h-72"></div>
     </section>
-    <section class="rounded-lg bg-white p-4 shadow-sm">
-      <h3 class="mb-2 text-sm font-semibold text-slate-700">各检验项目数量趋势</h3>
-      <div id="chartItemTrend" class="h-64"></div>
+
+    <!-- 人员检测报告统计 -->
+    <section class="rounded-lg bg-white p-4 shadow-sm" data-annotate="report-by-person">
+      <div class="mb-3 flex flex-wrap items-center gap-3">
+        <label class="text-sm text-slate-600" for="rpName">人员名称</label>
+        <select id="rpName" class="w-40 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-sky-500"><option value="">请选择人员</option></select>
+        <span class="text-sm text-slate-600">按年/月筛选</span>
+        <select id="rpMode" class="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500"><option value="year">年</option><option value="month">月</option></select>
+        <select id="rpYear" class="w-28 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-sky-500"></select>
+        <input id="rpMonth" type="month" class="hidden w-40 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-sky-500" />
+        <button id="rpQuery" class="rounded bg-sky-500 px-4 py-1.5 text-sm text-white hover:bg-sky-600"><i class="fa fa-search"></i> 查询</button>
+        <button id="rpReset" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+        <span id="rpTotal" class="ml-auto text-sm text-slate-500"></span>
+      </div>
+      <h3 class="mb-2 text-sm font-semibold text-slate-700">人员检测报告统计</h3>
+      <div id="chartReportPerson" class="h-72"></div>
     </section>
-    <section class="rounded-lg bg-white p-4 shadow-sm">
-      <h3 class="mb-2 text-sm font-semibold text-slate-700">人员工作量统计</h3>
-      <div id="chartStaff" class="h-64"></div>
-    </section>
-    <section class="rounded-lg bg-white p-4 shadow-sm">
-      <h3 class="mb-2 text-sm font-semibold text-slate-700">各检测类别占比</h3>
-      <div id="chartCategory" class="h-64"></div>
+
+    <!-- 检测报告及时率统计 -->
+    <section class="rounded-lg bg-white p-4 shadow-sm" data-annotate="report-ontime">
+      <div class="mb-3 flex flex-wrap items-center gap-3">
+        <label class="text-sm text-slate-600" for="otName">人员名称</label>
+        <select id="otName" class="w-40 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-sky-500"><option value="">请选择人员</option></select>
+        <label class="text-sm text-slate-600">时间范围</label>
+        <input id="otFrom" type="date" class="w-40 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-sky-500" />
+        <span class="text-slate-400">-</span>
+        <input id="otTo" type="date" class="w-40 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-sky-500" />
+        <button id="otQuery" class="rounded bg-sky-500 px-4 py-1.5 text-sm text-white hover:bg-sky-600"><i class="fa fa-search"></i> 查询</button>
+        <button id="otReset" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+        <button id="otExport" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-download"></i> 导出</button>
+        <span id="otTotal" class="ml-auto text-sm text-slate-500"></span>
+      </div>
+      <h3 id="otTitle" class="mb-2 text-sm font-semibold text-slate-700">检测报告及时率统计</h3>
+      <div id="chartOnTime" class="h-80"></div>
     </section>
   </div>
 
-  <!-- ================= 底部：实验室业务管理系统流程图 ================= -->
-  <section class="mt-4 rounded-lg bg-white p-4 shadow-sm">
-    <h3 class="mb-4 flex items-center gap-2 text-base font-semibold text-slate-800">
+  <!-- ================= 底部：实验室业务管理系统流程图（泳道：负责人 / 主流程 / 表单） ================= -->
+  <section class="mt-4 rounded-lg bg-white p-4 shadow-sm" data-annotate="biz-flow">
+    <h3 class="mb-3 flex items-center gap-2 text-base font-semibold text-slate-800">
       <span class="h-4 w-1 rounded bg-sky-500"></span>实验室业务管理系统流程图
     </h3>
     <div class="overflow-x-auto">
-      <div class="flex min-w-[900px] gap-4">
-        <!-- 泳道 1：委托收样 -->
-        <div class="flex-1">
-          <div class="mb-3 rounded-md bg-sky-500 py-2 text-center text-sm font-medium text-white">委托收样</div>
-          <div class="flex flex-col items-center gap-2">
-            <div class="w-full rounded-md border border-sky-200 bg-sky-50 py-2 text-center text-xs text-sky-700">客户委托登记</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-sky-200 bg-sky-50 py-2 text-center text-xs text-sky-700">合同评审</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-sky-200 bg-sky-50 py-2 text-center text-xs text-sky-700">样品接收</div>
+      <div class="grid min-w-[1180px] gap-3" style="grid-template-columns:repeat(5,minmax(0,1fr))">
+
+        <!-- 泳道 1：业务部 · 洽谈与报价 -->
+        <div class="rounded-md border border-slate-200">
+          <div class="border-b border-slate-200 bg-slate-50 py-1.5 text-center text-sm font-semibold text-slate-700">业务部</div>
+          <div class="grid grid-cols-3 border-b border-slate-100 text-center text-[11px] text-slate-400">
+            <div class="py-1">负责人</div><div class="py-1">主流程</div><div class="py-1">表单</div>
+          </div>
+          <div class="flow-lane">
+            <div class="flow-node node-green flow-head">业务洽谈</div>
+            <div class="flow-row"><span class="flow-who">业务员A</span><span class="flow-node node-green">信息收集</span><span class="flow-form">收集表</span></div>
+            <div class="flow-row"><span class="flow-who">业务员A</span><span class="flow-node node-green">信息分析</span><span class="flow-note">特殊总负责：XXX<br/>技术专家支持：XXX<br/>1、安全工器具：XXX<br/>2、高压：XXX<br/>3、低压：XXX<br/>4、电力器材：XXX</span></div>
+            <div class="flow-row"><span class="flow-who">业务员B</span><span class="flow-node node-green">报价单</span><span class="flow-form">报价单</span></div>
           </div>
         </div>
-        <!-- 泳道 2：任务分配 -->
-        <div class="flex-1">
-          <div class="mb-3 rounded-md bg-amber-500 py-2 text-center text-sm font-medium text-white">任务分配</div>
-          <div class="flex flex-col items-center gap-2">
-            <div class="w-full rounded-md border border-amber-200 bg-amber-50 py-2 text-center text-xs text-amber-700">样品编号入库</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-amber-200 bg-amber-50 py-2 text-center text-xs text-amber-700">任务下达</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-amber-200 bg-amber-50 py-2 text-center text-xs text-amber-700">检测人员分配</div>
+
+        <!-- 泳道 2：业务部 · 合同与委托登记 -->
+        <div class="rounded-md border border-slate-200">
+          <div class="border-b border-slate-200 bg-slate-50 py-1.5 text-center text-sm font-semibold text-slate-700">业务部</div>
+          <div class="grid grid-cols-3 border-b border-slate-100 text-center text-[11px] text-slate-400">
+            <div class="py-1">负责人</div><div class="py-1">主流程</div><div class="py-1">表单</div>
+          </div>
+          <div class="flow-lane">
+            <div class="flow-node node-cyan flow-head">合同管理</div>
+            <div class="flow-row"><span class="flow-who">业务员B</span><span class="flow-node node-cyan">报价单和后退确认表</span><span class="flow-form">收费通知书</span></div>
+            <div class="flow-row"><span class="flow-who">业务员C</span><span class="flow-node node-cyan">线上委托登记</span><span class="flow-form flow-none">—</span></div>
+            <div class="flow-row"><span class="flow-who">样品员</span><span class="flow-node node-cyan flow-judge">样品预告</span><span class="flow-note">样品到 → 继续；样品没到 → 等待样品</span></div>
+            <div class="flow-row"><span class="flow-who">样品员</span><span class="flow-node node-cyan">等待样品</span><span class="flow-form flow-none">—</span></div>
+            <div class="flow-row"><span class="flow-who">业务C</span><span class="flow-node node-cyan">委托确认</span><span class="flow-form flow-none">—</span></div>
           </div>
         </div>
-        <!-- 泳道 3：样品准备 -->
-        <div class="flex-1">
-          <div class="mb-3 rounded-md bg-indigo-500 py-2 text-center text-sm font-medium text-white">样品准备</div>
-          <div class="flex flex-col items-center gap-2">
-            <div class="w-full rounded-md border border-indigo-200 bg-indigo-50 py-2 text-center text-xs text-indigo-700">前处理</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-indigo-200 bg-indigo-50 py-2 text-center text-xs text-indigo-700">设备准备</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-indigo-200 bg-indigo-50 py-2 text-center text-xs text-indigo-700">试剂配置</div>
+
+        <!-- 泳道 3：样品组 -->
+        <div class="rounded-md border border-slate-200">
+          <div class="border-b border-slate-200 bg-slate-50 py-1.5 text-center text-sm font-semibold text-slate-700">样品组</div>
+          <div class="grid grid-cols-3 border-b border-slate-100 text-center text-[11px] text-slate-400">
+            <div class="py-1">负责人</div><div class="py-1">主流程</div><div class="py-1">表单</div>
+          </div>
+          <div class="flow-lane">
+            <div class="flow-node node-blue flow-head">样品管理</div>
+            <div class="flow-row"><span class="flow-who">样品员</span><span class="flow-node node-blue">收样</span><span class="flow-form">检测委托书</span></div>
+            <div class="flow-row"><span class="flow-who">样品员</span><span class="flow-node node-blue">样品制备</span><span class="flow-form">制备清单</span></div>
+            <div class="flow-row"><span class="flow-who">样品员</span><span class="flow-node node-blue">编号</span><span class="flow-form flow-none">—</span></div>
+            <div class="flow-row"><span class="flow-who">样品员</span><span class="flow-node node-blue">发样</span><span class="flow-form flow-none">—</span></div>
+            <div class="flow-row"><span class="flow-who">样品员</span><span class="flow-node node-blue">还样确认</span><span class="flow-form flow-none">—</span></div>
+            <div class="flow-row"><span class="flow-who">样品员</span><span class="flow-node node-blue">留样</span><span class="flow-form flow-none">—</span></div>
+            <div class="flow-row"><span class="flow-who">样品员</span><span class="flow-node node-blue">台账</span><span class="flow-form flow-none">—</span></div>
           </div>
         </div>
-        <!-- 泳道 4：检测检验 -->
-        <div class="flex-1">
-          <div class="mb-3 rounded-md bg-purple-500 py-2 text-center text-sm font-medium text-white">检测检验</div>
-          <div class="flex flex-col items-center gap-2">
-            <div class="w-full rounded-md border border-purple-200 bg-purple-50 py-2 text-center text-xs text-purple-700">上机检测</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-purple-200 bg-purple-50 py-2 text-center text-xs text-purple-700">数据录入</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-purple-200 bg-purple-50 py-2 text-center text-xs text-purple-700">结果计算</div>
+
+        <!-- 泳道 4：实验室 -->
+        <div class="rounded-md border border-slate-200">
+          <div class="border-b border-slate-200 bg-slate-50 py-1.5 text-center text-sm font-semibold text-slate-700">实验室</div>
+          <div class="grid grid-cols-3 border-b border-slate-100 text-center text-[11px] text-slate-400">
+            <div class="py-1">负责人</div><div class="py-1">主流程</div><div class="py-1">表单</div>
+          </div>
+          <div class="flow-lane">
+            <div class="flow-node node-purple flow-head">实验室检测</div>
+            <div class="flow-row"><span class="flow-who">各试验员</span><span class="flow-node node-purple">领样</span><span class="flow-form">线上领样操作</span></div>
+            <div class="flow-row"><span class="flow-who">各试验员</span><span class="flow-node node-purple">开展试验</span><span class="flow-form flow-none">—</span></div>
+            <div class="flow-row"><span class="flow-who">各试验员</span><span class="flow-node node-purple">填写记录单</span><span class="flow-form flow-none">—</span></div>
+            <div class="flow-row"><span class="flow-who flow-none">—</span><span class="flow-node node-purple">试验完成</span><span class="flow-form flow-none">—</span></div>
+            <div class="flow-row"><span class="flow-who">各试验员</span><span class="flow-node node-purple">申请还样</span><span class="flow-node node-purple">编制报告</span></div>
+            <div class="flow-row"><span class="flow-who">实验室主任</span><span class="flow-node node-purple">审核报告</span><span class="flow-form flow-none">—</span></div>
           </div>
         </div>
-        <!-- 泳道 5：报告审核 -->
-        <div class="flex-1">
-          <div class="mb-3 rounded-md bg-emerald-500 py-2 text-center text-sm font-medium text-white">报告审核</div>
-          <div class="flex flex-col items-center gap-2">
-            <div class="w-full rounded-md border border-emerald-200 bg-emerald-50 py-2 text-center text-xs text-emerald-700">报告编制</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-emerald-200 bg-emerald-50 py-2 text-center text-xs text-emerald-700">三级审核</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-emerald-200 bg-emerald-50 py-2 text-center text-xs text-emerald-700">报告签发</div>
+
+        <!-- 泳道 5：业务部 · 报告与交付 -->
+        <div class="rounded-md border border-slate-200">
+          <div class="border-b border-slate-200 bg-slate-50 py-1.5 text-center text-sm font-semibold text-slate-700">业务部</div>
+          <div class="grid grid-cols-3 border-b border-slate-100 text-center text-[11px] text-slate-400">
+            <div class="py-1">负责人</div><div class="py-1">主流程</div><div class="py-1">表单</div>
           </div>
-        </div>
-        <!-- 泳道 6：交付归档 -->
-        <div class="flex-1">
-          <div class="mb-3 rounded-md bg-rose-500 py-2 text-center text-sm font-medium text-white">交付归档</div>
-          <div class="flex flex-col items-center gap-2">
-            <div class="w-full rounded-md border border-rose-200 bg-rose-50 py-2 text-center text-xs text-rose-700">报告发放</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-rose-200 bg-rose-50 py-2 text-center text-xs text-rose-700">样品退回</div>
-            <i class="fa fa-arrow-down text-slate-300"></i>
-            <div class="w-full rounded-md border border-rose-200 bg-rose-50 py-2 text-center text-xs text-rose-700">资料归档</div>
+          <div class="flow-lane">
+            <div class="flow-node node-red flow-head">报告处理</div>
+            <div class="flow-row"><span class="flow-who">样品员</span><span class="flow-node node-red">报告签发</span><span class="flow-form">收费通知书</span></div>
+            <div class="flow-row"><span class="flow-who">业务员C</span><span class="flow-node node-red">报告处理</span><span class="flow-form">盖章 / 复印 / 扫描 / 上传 / 装订</span></div>
+            <div class="flow-row"><span class="flow-who">LIMS自动判定</span><span class="flow-node node-red flow-judge">收费确认</span><span class="flow-note">未全部收费 / 抵扣 → 退回报告处理；全部已收费 / 已抵扣 → 审批</span></div>
+            <div class="flow-row"><span class="flow-who">业务员D</span><span class="flow-node node-red flow-judge">审批</span><span class="flow-note">通过 → 报告发放；不通过 → 退回报告处理</span></div>
+            <div class="flow-row"><span class="flow-who">业务员C</span><span class="flow-node node-red">报告发放</span><span class="flow-form flow-none">—</span></div>
+            <div class="flow-row"><span class="flow-who">业务员C</span><span class="flow-node node-red">归档</span><span class="flow-form flow-none">—</span></div>
           </div>
         </div>
       </div>
+      <p class="mt-3 text-xs text-slate-400">
+        五条泳道按「负责人 / 主流程 / 表单」三列对齐；主流程首行（业务洽谈 → 合同管理 → 样品管理 → 实验室检测 → 报告处理）为跨部门主线，
+        菱形节点是判定/分支节点，虚线为回退路径。节点名称与系统内菜单、流程配置一一对应。
+      </p>
     </div>
   </section>
 
@@ -435,108 +524,10 @@
       registerResize(chart);
     })();
 
-    // 委托量月度趋势（折线图）
-    (function initTrend() {
-      const chart = echarts.init(document.getElementById('chartTrend'));
-      chart.setOption({
-        tooltip: { trigger: 'axis' }, color: ['#0ea5e9'],
-        grid: { left: 40, right: 20, top: 20, bottom: 30 },
-        xAxis: { type: 'category', boundaryGap: false, data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月'], axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8' } },
-        yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
-        series: [{ type: 'line', smooth: true, data: [12, 19, 25, 41, 38, 52, 47, 60], areaStyle: { color: 'rgba(14,165,233,.12)' }, lineStyle: { width: 3 } }]
-      });
-      registerResize(chart);
-    })();
-
-    // 各分类样品数量统计（柱状图）
-    (function initSampleBar() {
-      const chart = echarts.init(document.getElementById('chartSampleBar'));
-      chart.setOption({
-        tooltip: { trigger: 'axis' }, color: ['#6366f1'],
-        grid: { left: 40, right: 20, top: 20, bottom: 30 },
-        xAxis: { type: 'category', data: ['水质', '土壤', '食品', '建材', '金属', '医药'], axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8' } },
-        yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
-        series: [{ type: 'bar', barWidth: '45%', data: [23, 18, 31, 15, 12, 20], itemStyle: { borderRadius: [4, 4, 0, 0] } }]
-      });
-      registerResize(chart);
-    })();
-
-    // 各项目委托量分布（带峰值的折线图）
-    (function initProject() {
-      const chart = echarts.init(document.getElementById('chartProject'));
-      chart.setOption({
-        tooltip: { trigger: 'axis' }, color: ['#f43f5e'],
-        grid: { left: 40, right: 20, top: 20, bottom: 30 },
-        xAxis: { type: 'category', boundaryGap: false, data: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'], axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8' } },
-        yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
-        series: [{ type: 'line', smooth: true, data: [5, 8, 15, 78, 20, 12, 9, 6, 4], lineStyle: { width: 3 } }]
-      });
-      registerResize(chart);
-    })();
-
-    // 各检验项目数量趋势（多线折线图）
-    (function initItemTrend() {
-      const chart = echarts.init(document.getElementById('chartItemTrend'));
-      chart.setOption({
-        tooltip: { trigger: 'axis' }, color: ['#0ea5e9', '#22c55e', '#f59e0b'],
-        legend: { data: ['理化', '微生物', '重金属'], right: 0, textStyle: { color: '#94a3b8' } },
-        grid: { left: 40, right: 20, top: 30, bottom: 30 },
-        xAxis: { type: 'category', boundaryGap: false, data: ['1月', '2月', '3月', '4月', '5月', '6月'], axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8' } },
-        yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
-        series: [
-          { name: '理化', type: 'line', smooth: true, data: [20, 32, 28, 45, 38, 50] },
-          { name: '微生物', type: 'line', smooth: true, data: [15, 18, 25, 22, 30, 28] },
-          { name: '重金属', type: 'line', smooth: true, data: [10, 12, 15, 20, 18, 24] }
-        ]
-      });
-      registerResize(chart);
-    })();
-
-    // 人员工作量统计（多线折线图）
-    (function initStaff() {
-      const chart = echarts.init(document.getElementById('chartStaff'));
-      chart.setOption({
-        tooltip: { trigger: 'axis' }, color: ['#8b5cf6', '#ec4899'],
-        legend: { data: ['张工', '李工'], right: 0, textStyle: { color: '#94a3b8' } },
-        grid: { left: 40, right: 20, top: 30, bottom: 30 },
-        xAxis: { type: 'category', boundaryGap: false, data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'], axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8' } },
-        yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
-        series: [
-          { name: '张工', type: 'line', smooth: true, data: [8, 12, 10, 15, 13, 6, 4] },
-          { name: '李工', type: 'line', smooth: true, data: [6, 9, 14, 11, 16, 8, 5] }
-        ]
-      });
-      registerResize(chart);
-    })();
-
-    // 各检测类别占比（柱状图）
-    (function initCategory() {
-      const chart = echarts.init(document.getElementById('chartCategory'));
-      chart.setOption({
-        tooltip: { trigger: 'axis' },
-        grid: { left: 40, right: 20, top: 20, bottom: 30 },
-        xAxis: { type: 'category', data: ['理化', '微生物', '重金属', '农残', '添加剂'], axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8' } },
-        yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
-        series: [{
-          type: 'bar', barWidth: '45%', itemStyle: { borderRadius: [4, 4, 0, 0] },
-          data: [
-            { value: 45, itemStyle: { color: '#0ea5e9' } },
-            { value: 30, itemStyle: { color: '#22c55e' } },
-            { value: 25, itemStyle: { color: '#f59e0b' } },
-            { value: 18, itemStyle: { color: '#f43f5e' } },
-            { value: 12, itemStyle: { color: '#8b5cf6' } }
-          ]
-        }]
-      });
-      registerResize(chart);
-    })();
-
-    // ================= 年度业务分析汇总表（任务总览下方） =================
-    (function initAnnualAnalysis() {
-      var host = document.getElementById('chartAnnual');
-      if (!host || !window.echarts) return;
-
-      // 分类取「任务类型」字典（基础配置 › 字典管理），字典不可用时退回内置 6 项
+    // ================= 业务分析图表：公共数据层 =================
+    // 所有指标只从共享委托数据 js/entrust-mock.js + 「任务类型」字典推导，
+    // 不再像以前那样每个图各写一份假数组（那样图和数据永远对不上）。
+    var Biz = (function () {
       var CATS = ['电气（输配电类）', '电气（低压电器类）', '电气（电工电子产品类）',
                   '电气（抗震检测类）', '材料（安全工器具类）', '材料（电线电缆、金具、金属材料类）'];
       try {
@@ -544,100 +535,431 @@
           var items = MockDictStore.getActiveItems(MockDictStore.load(), 'lims_task_type') || [];
           if (items.length) CATS = items.map(function (it) { return it.label; });
         }
-      } catch (e) { /* 退回内置分类 */ }
+      } catch (e) { /* 字典不可用时用内置 6 项 */ }
 
-      var elCat = document.getElementById('abCat'), elMode = document.getElementById('abMode'),
-          elYear = document.getElementById('abYear'), elMonth = document.getElementById('abMonth');
+      var POST_SIGN = (window.FlowStages && FlowStages.POST_SIGN_STAGES) ||
+        ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
+      var DELIVERED = ['报告发放', '任务归档', '任务完成'];
 
-      // 年份来自委托数据本身（EntrustMock），不再另写一份假年份
-      var seen = {};
-      if (window.EntrustMock) {
+      function rows() {
+        var out = [];
+        if (!window.EntrustMock) return out;
         Object.keys(EntrustMock.ROWS).forEach(function (code) {
-          var y = String(EntrustMock.get(code).acceptDate || '').slice(0, 4);
-          if (/^\d{4}$/.test(y)) seen[y] = 1;
+          var m = EntrustMock.get(code);
+          var d = String(m.acceptDate || '');
+          out.push({
+            code: code,
+            year: d.slice(0, 4),
+            month: d.slice(0, 7),
+            cat: m.taskType || '未分类',
+            salesman: m.salesman || '未指派',
+            editor: m.editor || '未填写',
+            fee: (Number(m.totalPrice) || 0) / 10000,          // 元 → 万元
+            status: m.status || '',
+            requireDate: m.requireDate || '',
+            reported: POST_SIGN.indexOf(m.status) >= 0,        // 报告已签发及之后 = 已出报告
+            delivered: DELIVERED.indexOf(m.status) >= 0        // 已发放/归档/完成 = 已按时交付
+          });
+        });
+        return out;
+      }
+
+      function years() {
+        var set = {};
+        rows().forEach(function (r) { if (/^\d{4}$/.test(r.year)) set[r.year] = 1; });
+        var list = Object.keys(set).sort().reverse();
+        return list.length ? list : ['2026'];
+      }
+      function names(key) {
+        var set = {};
+        rows().forEach(function (r) { if (r[key]) set[r[key]] = 1; });
+        return Object.keys(set).sort();
+      }
+      function labels(year, monthKey) {
+        var out = [], i;
+        if (monthKey) return [monthKey];
+        for (i = 1; i <= 12; i++) out.push(year + '-' + (i < 10 ? '0' + i : i));
+        return out;
+      }
+      function round4(v) { return Math.round(v * 10000) / 10000; }
+
+      /** 按 key 分组、按月份聚合；metric: 'fee' 金额（万元） / 'count' 份数 */
+      function byMonth(list, key, labs, metric) {
+        var data = {};
+        list.forEach(function (r) {
+          var k = r[key] || '未指派';
+          if (!data[k]) data[k] = labs.map(function () { return 0; });
+          var idx = labs.indexOf(r.month);
+          if (idx < 0) return;
+          data[k][idx] += metric === 'fee' ? r.fee : 1;
+        });
+        Object.keys(data).forEach(function (k) { data[k] = data[k].map(function (v) { return round4(v); }); });
+        return data;
+      }
+
+      /** 全年按分类的金额合计（万元） */
+      function catAmount(year) {
+        var out = [];
+        CATS.forEach(function (c) { out.push({ name: c, value: 0 }); });
+        rows().forEach(function (r) {
+          if (r.year !== year) return;
+          var hit = null;
+          for (var i = 0; i < out.length; i++) { if (out[i].name === r.cat) hit = out[i]; }
+          if (!hit) { hit = { name: r.cat, value: 0 }; out.push(hit); }
+          hit.value = round4(hit.value + r.fee);
+        });
+        return out;
+      }
+
+      var TODAY = (function () {
+        var d = new Date();
+        var m = d.getMonth() + 1, day = d.getDate();
+        return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+      })();
+
+      /**
+       * 及时率：只统计「已出报告」（状态到报告签发及之后）的委托，在制单不进分母。
+       *   及时   = 已到报告发放 / 任务归档 / 任务完成，或仍在签发~收费审批但未过「要求检测完成时间」
+       *   未及时 = 已出报告却过了要求检测完成时间仍未发放（逾期）
+       */
+      function onTime(year, from, to, onlyName) {
+        var map = {};
+        rows().forEach(function (r) {
+          if (!r.reported) return;
+          if (onlyName && r.editor !== onlyName) return;
+          var d = r.month;
+          if (from && d < from.slice(0, 7)) return;
+          if (to && d > to.slice(0, 7)) return;
+          if (!from && !to && r.year !== year) return;
+          var k = r.editor;
+          if (!map[k]) map[k] = { name: k, total: 0, onTime: 0 };
+          map[k].total++;
+          var overdue = !r.delivered && r.requireDate && r.requireDate < TODAY;
+          if (!overdue) map[k].onTime++;
+        });
+        return Object.keys(map).sort().map(function (k) {
+          var it = map[k];
+          it.late = it.total - it.onTime;
+          it.rate = it.total ? Math.round(it.onTime / it.total * 1000) / 10 : 0;
+          return it;
         });
       }
-      var years = Object.keys(seen).sort().reverse();
-      if (!years.length) years = ['2026'];
-      elYear.innerHTML = years.map(function (y) { return '<option value="' + y + '">' + y + '</option>'; }).join('');
-      var defYear = years.indexOf('2026') >= 0 ? '2026' : years[0];
+
+      return { CATS: CATS, rows: rows, years: years, names: names, labels: labels,
+               byMonth: byMonth, catAmount: catAmount, onTime: onTime, round4: round4 };
+    })();
+
+    // 图表通用：年份/月份筛选控件的样板
+    function bindYearMonth(opts) {
+      var elMode = document.getElementById(opts.mode), elYear = document.getElementById(opts.year),
+          elMonth = document.getElementById(opts.month);
+      var ys = Biz.years();
+      elYear.innerHTML = ys.map(function (y) { return '<option value="' + y + '">' + y + '</option>'; }).join('');
+      var defYear = ys.indexOf('2026') >= 0 ? '2026' : ys[0];
       elYear.value = defYear;
       elMonth.value = defYear + '-07';
-      elCat.innerHTML = '<option value="">请选择各种类名称</option>' +
-        CATS.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
-
-      function aggregate(year, monthKey) {
-        var labels = [], i;
-        if (monthKey) labels = [monthKey];
-        else { for (i = 1; i <= 12; i++) labels.push(year + '-' + (i < 10 ? '0' + i : i)); }
-        var data = {};
-        CATS.concat(['未分类']).forEach(function (c) { data[c] = labels.map(function () { return 0; }); });
-        if (window.EntrustMock) {
-          Object.keys(EntrustMock.ROWS).forEach(function (code) {
-            var m = EntrustMock.get(code);
-            var key = String(m.acceptDate || '').slice(0, 7);
-            var idx = labels.indexOf(key);
-            if (idx < 0) return;
-            var cat = data[m.taskType] ? m.taskType : '未分类';
-            data[cat][idx] += (Number(m.totalPrice) || 0) / 10000;   // 元 → 万元
-          });
-        }
-        Object.keys(data).forEach(function (k) {
-          data[k] = data[k].map(function (v) { return Math.round(v * 10000) / 10000; });
-        });
-        return { labels: labels, data: data };
-      }
-
-      var chart = echarts.init(host);
-
-      function render() {
-        var year = elYear.value, monthMode = elMode.value === 'month';
-        var agg = aggregate(year, monthMode ? elMonth.value : '');
-        var only = elCat.value;
-        var names = only ? [only] : CATS.filter(function (c) { return agg.data[c]; });
-        if (agg.data['未分类'] && agg.data['未分类'].some(function (v) { return v; }) && !only) names.push('未分类');
-        var total = agg.labels.map(function (_, i) {
-          var sum = 0;
-          Object.keys(agg.data).forEach(function (k) { sum += agg.data[k][i] || 0; });
-          return Math.round(sum * 10000) / 10000;
-        });
-        var series = names.map(function (c) {
-          return { name: c, type: 'line', symbol: 'circle', symbolSize: 5, smooth: false,
-                   lineStyle: { width: 2 }, data: agg.data[c] };
-        });
-        series.push({ name: '总量', type: 'line', symbol: 'circle', symbolSize: 5,
-                      lineStyle: { width: 2.5, type: 'solid' }, data: total });
-        chart.setOption({
-          color: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#22c55e', '#ef4444', '#eab308', '#f97316', '#14b8a6', '#334155'],
-          tooltip: { trigger: 'axis', axisPointer: { type: 'line' } },
-          grid: { left: 48, right: 24, top: 18, bottom: 56 },
-          xAxis: { type: 'category', boundaryGap: false, data: agg.labels,
-                   axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
-          yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
-          legend: { bottom: 0, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { color: '#64748b', fontSize: 11 } },
-          series: series
-        }, true);
-      }
-
       elMode.addEventListener('change', function () {
         elMonth.classList.toggle('hidden', elMode.value !== 'month');
-        render();
+        opts.render();
       });
-      document.getElementById('abQuery').addEventListener('click', render);
-      document.getElementById('abReset').addEventListener('click', function () {
-        elCat.value = ''; elMode.value = 'year'; elMonth.classList.add('hidden');
-        elYear.value = defYear; elMonth.value = defYear + '-07';
-        render();
+      document.getElementById(opts.query).addEventListener('click', function () { opts.render(); });
+      document.getElementById(opts.reset).addEventListener('click', function () {
+        elMode.value = 'year'; elMonth.classList.add('hidden'); elYear.value = defYear; elMonth.value = defYear + '-07';
+        if (opts.onReset) opts.onReset();
+        opts.render();
+      });
+      return {
+        year: function () { return elYear.value; },
+        month: function () { return elMode.value === 'month' ? elMonth.value : ''; }
+      };
+    }
+
+    function lineOption(labels, seriesMap, order, opts) {
+      opts = opts || {};
+      var series = order.filter(function (k) { return seriesMap[k]; }).map(function (k) {
+        return { name: k, type: 'line', symbol: 'circle', symbolSize: 5, smooth: !!opts.smooth,
+                 lineStyle: { width: 2 }, data: seriesMap[k] };
+      });
+      var total = labels.map(function (_, i) {
+        var s = 0;
+        Object.keys(seriesMap).forEach(function (k) { s += seriesMap[k][i] || 0; });
+        return Biz.round4(s);
+      });
+      series.push({ name: '总量', type: 'line', symbol: 'circle', symbolSize: 5,
+                    lineStyle: { width: 2.5 }, data: total });
+      return {
+        color: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#22c55e', '#ef4444', '#eab308', '#f97316', '#14b8a6', '#334155', '#6366f1'],
+        tooltip: { trigger: 'axis', axisPointer: { type: 'line' } },
+        grid: { left: 52, right: 24, top: 18, bottom: 56 },
+        xAxis: { type: 'category', boundaryGap: false, data: labels,
+                 axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
+        yAxis: { type: 'value', name: opts.unit || '', nameTextStyle: { color: '#94a3b8', fontSize: 11 },
+                 splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
+        legend: { bottom: 0, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { color: '#64748b', fontSize: 11 } },
+        series: series
+      };
+    }
+
+    // ================= 全年各类型销售额情况 =================
+    (function initCatSales() {
+      var host = document.getElementById('chartCatSales');
+      if (!host || !window.echarts) return;
+      var chart = echarts.init(host);
+      var elYear = document.getElementById('csYear'), elTotal = document.getElementById('csTotal');
+      var ys = Biz.years();
+      elYear.innerHTML = ys.map(function (y) { return '<option value="' + y + '">' + y + '</option>'; }).join('');
+      elYear.value = ys.indexOf('2026') >= 0 ? '2026' : ys[0];
+
+      function render() {
+        var data = Biz.catAmount(elYear.value);
+        var sum = Biz.round4(data.reduce(function (a, b) { return a + b.value; }, 0));
+        elTotal.textContent = '总额：' + sum + ' 万元';
+        chart.setOption({
+          tooltip: {
+            trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: function (ps) {
+              var p = ps[0];
+              return p.name + '<br/>' + p.marker + p.name + '：' + p.value + ' 万元<br/>占比：' +
+                (sum ? Math.round(p.value / sum * 1000) / 10 : 0) + '%<br/>总金额：' + sum + ' 万元';
+            }
+          },
+          grid: { left: 56, right: 24, top: 28, bottom: 40 },
+          xAxis: { type: 'category', data: data.map(function (d) { return d.name; }),
+                   axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#64748b', fontSize: 11, interval: 0 } },
+          yAxis: { type: 'value', name: '万元', nameTextStyle: { color: '#94a3b8', fontSize: 11 },
+                   splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
+          series: [{
+            type: 'bar', barMaxWidth: 46,
+            itemStyle: { borderRadius: [4, 4, 0, 0], color: function (p) { return p.value ? '#2f7bf0' : '#e8edf5'; } },
+            label: {
+              show: true, position: 'top', color: '#475569', fontSize: 11,
+              formatter: function (p) { return p.value + '\n' + (sum ? Math.round(p.value / sum * 1000) / 10 : 0) + '%'; }
+            },
+            data: data.map(function (d) { return d.value; })
+          }]
+        }, true);
+      }
+      document.getElementById('csQuery').addEventListener('click', render);
+      document.getElementById('csReset').addEventListener('click', function () {
+        elYear.value = ys.indexOf('2026') >= 0 ? '2026' : ys[0]; render();
       });
       render();
       registerResize(chart);
     })();
+
+    // ================= 年/月度个人业绩统计 =================
+    (function initPersonPerf() {
+      var host = document.getElementById('chartPersonPerf');
+      if (!host || !window.echarts) return;
+      var chart = echarts.init(host);
+      var elTotal = document.getElementById('ppTotal');
+      var ctl = bindYearMonth({ mode: 'ppMode', year: 'ppYear', month: 'ppMonth',
+                                query: 'ppQuery', reset: 'ppReset', render: render });
+
+      function render() {
+        var labs = Biz.labels(ctl.year(), ctl.month());
+        var map = Biz.byMonth(Biz.rows(), 'salesman', labs, 'fee');
+        var order = Object.keys(map).sort();
+        var sum = 0;
+        order.forEach(function (k) { map[k].forEach(function (v) { sum += v; }); });
+        elTotal.textContent = '总额：' + Biz.round4(sum) + ' 万元';
+        chart.setOption(lineOption(labs, map, order, { unit: '万元', smooth: true }), true);
+      }
+      render();
+      registerResize(chart);
+    })();
+
+    // ================= 各类型检测报告数量统计 =================
+    (function initReportType() {
+      var host = document.getElementById('chartReportType');
+      if (!host || !window.echarts) return;
+      var chart = echarts.init(host);
+      var elTotal = document.getElementById('rtTotal');
+      var ctl = bindYearMonth({ mode: 'rtMode', year: 'rtYear', month: 'rtMonth',
+                                query: 'rtQuery', reset: 'rtReset', render: render });
+
+      function render() {
+        var labs = Biz.labels(ctl.year(), ctl.month());
+        var reported = Biz.rows().filter(function (r) { return r.reported; });
+        var map = Biz.byMonth(reported, 'cat', labs, 'count');
+        Biz.CATS.forEach(function (c) { if (!map[c]) map[c] = labs.map(function () { return 0; }); });
+        var order = Biz.CATS.concat(Object.keys(map).filter(function (k) { return order.indexOf(k) < 0; }));
+        var sum = 0;
+        Object.keys(map).forEach(function (k) { map[k].forEach(function (v) { sum += v; }); });
+        elTotal.textContent = '总计：' + sum + ' 份';
+        chart.setOption(lineOption(labs, map, order, { unit: '份' }), true);
+      }
+      render();
+      registerResize(chart);
+    })();
+
+    // ================= 人员检测报告统计 =================
+    (function initReportPerson() {
+      var host = document.getElementById('chartReportPerson');
+      if (!host || !window.echarts) return;
+      var chart = echarts.init(host);
+      var elName = document.getElementById('rpName'), elTotal = document.getElementById('rpTotal');
+      var ppl = Biz.names('editor');
+      elName.innerHTML = '<option value="">请选择人员</option>' +
+        ppl.map(function (n) { return '<option value="' + n + '">' + n + '</option>'; }).join('');
+      var ctl = bindYearMonth({ mode: 'rpMode', year: 'rpYear', month: 'rpMonth',
+                                query: 'rpQuery', reset: 'rpReset', render: render,
+                                onReset: function () { elName.value = ''; } });
+
+      function render() {
+        var labs = Biz.labels(ctl.year(), ctl.month());
+        var reported = Biz.rows().filter(function (r) { return r.reported; });
+        var map = Biz.byMonth(reported, 'editor', labs, 'count');
+        var order = Object.keys(map).sort();
+        if (elName.value) order = order.filter(function (k) { return k === elName.value; });
+        var sum = 0;
+        order.forEach(function (k) { map[k].forEach(function (v) { sum += v; }); });
+        elTotal.textContent = '总计：' + sum + ' 份';
+        chart.setOption(lineOption(labs, map, order.length ? order : ppl, { unit: '份', smooth: true }), true);
+      }
+      render();
+      registerResize(chart);
+    })();
+
+    // ================= 检测报告及时率统计 =================
+    (function initOnTime() {
+      var host = document.getElementById('chartOnTime');
+      if (!host || !window.echarts) return;
+      var chart = echarts.init(host);
+      var elName = document.getElementById('otName'), elFrom = document.getElementById('otFrom'),
+          elTo = document.getElementById('otTo'), elTotal = document.getElementById('otTotal'),
+          elTitle = document.getElementById('otTitle');
+      var ppl = Biz.names('editor');
+      elName.innerHTML = '<option value="">请选择人员</option>' +
+        ppl.map(function (n) { return '<option value="' + n + '">' + n + '</option>'; }).join('');
+
+      function render() {
+        var list = Biz.onTime('', elFrom.value, elTo.value, elName.value);
+        if (!elFrom.value && !elTo.value) {
+          var ys = Biz.years();
+          list = Biz.onTime(ys.indexOf('2026') >= 0 ? '2026' : ys[0], '', '', elName.value);
+        }
+        var total = list.reduce(function (a, b) { return a + b.total; }, 0);
+        var onTime = list.reduce(function (a, b) { return a + b.onTime; }, 0);
+        elTotal.textContent = '总计：' + total + ' 份';
+        elTitle.textContent = (elFrom.value ? elFrom.value.slice(0, 4) : '2026') + ' 检测报告及时率统计';
+        chart.setOption({
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+          legend: { top: 0, right: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 8, textStyle: { color: '#64748b', fontSize: 11 } },
+          grid: { left: 56, right: 56, top: 34, bottom: 34 },
+          xAxis: { type: 'category', data: list.map(function (d) { return d.name; }),
+                   axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#64748b' } },
+          yAxis: [
+            { type: 'value', name: '检测报告数量', nameTextStyle: { color: '#94a3b8', fontSize: 11 },
+              splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
+            { type: 'value', name: '及时率', min: 0, max: 100, axisLabel: { formatter: '{value}%', color: '#94a3b8' },
+              splitLine: { show: false } }
+          ],
+          series: [
+            { name: '报告总数', type: 'bar', barMaxWidth: 34, itemStyle: { color: '#2f7bf0', borderRadius: [3, 3, 0, 0] },
+              label: { show: true, position: 'top', color: '#475569', fontSize: 11 }, data: list.map(function (d) { return d.total; }) },
+            { name: '及时', type: 'bar', barMaxWidth: 34, itemStyle: { color: '#ef4444', borderRadius: [3, 3, 0, 0] },
+              label: { show: true, position: 'top', color: '#475569', fontSize: 11 }, data: list.map(function (d) { return d.onTime; }) },
+            { name: '未及时', type: 'bar', barMaxWidth: 34, itemStyle: { color: '#22c55e', borderRadius: [3, 3, 0, 0] },
+              label: { show: true, position: 'top', color: '#475569', fontSize: 11 }, data: list.map(function (d) { return d.late; }) },
+            { name: '及时率', type: 'line', yAxisIndex: 1, symbol: 'circle', symbolSize: 6,
+              lineStyle: { width: 2, color: '#94a3b8' }, itemStyle: { color: '#94a3b8' },
+              label: { show: true, position: 'top', color: '#64748b', fontSize: 11, formatter: '{c}%' },
+              data: list.map(function (d) { return d.rate; }) }
+          ]
+        }, true);
+        if (!list.length) chart.clear();
+      }
+      document.getElementById('otQuery').addEventListener('click', render);
+      document.getElementById('otReset').addEventListener('click', function () {
+        elName.value = ''; elFrom.value = ''; elTo.value = ''; render();
+      });
+      document.getElementById('otExport').addEventListener('click', function () {
+        alert('导出（原型演示）：检测报告及时率统计\n共 ' + document.getElementById('otTotal').textContent.replace('总计：', '') + '\n口径：分母只算已出报告；及时 = 已发放/归档/完成或未过要求完成时间；未及时 = 逾期。');
+      });
+      render();
+      registerResize(chart);
+    })();
+
+    // ================= 年度业务分析汇总表（任务总览下方） =================
+    (function initAnnualAnalysis() {
+      var host = document.getElementById('chartAnnual');
+      if (!host || !window.echarts) return;
+      var elCat = document.getElementById('abCat'), elTotal = null;
+      elCat.innerHTML = '<option value="">请选择各种类名称</option>' +
+        Biz.CATS.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
+      var chart = echarts.init(host);
+      var ctl = bindYearMonth({ mode: 'abMode', year: 'abYear', month: 'abMonth',
+                                query: 'abQuery', reset: 'abReset', render: render,
+                                onReset: function () { elCat.value = ''; } });
+
+      function render() {
+        var labs = Biz.labels(ctl.year(), ctl.month());
+        var map = Biz.byMonth(Biz.rows(), 'cat', labs, 'fee');
+        Biz.CATS.forEach(function (c) { if (!map[c]) map[c] = labs.map(function () { return 0; }); });
+        var order = Biz.CATS.slice();
+        Object.keys(map).forEach(function (k) { if (order.indexOf(k) < 0) order.push(k); });
+        if (elCat.value) order = order.filter(function (k) { return k === elCat.value; });
+        chart.setOption(lineOption(labs, map, order, { unit: '万元' }), true);
+      }
+      render();
+      registerResize(chart);
+    })();
+
   </script>
 
 <script src="js/prototype-annotation.js"></script>
   <script>
     PrototypeAnnotation.init({
       annotations: [
+        {
+          id: 'cat-sales', selector: '[data-annotate="cat-sales"]', position: 'top-right',
+          title: '全年各类型销售额情况', wide: true,
+          content: '<strong>需求逻辑：</strong>看全年业务结构：钱是从哪类检测来的，哪个分类在空转。<br>' +
+            '<strong>展示规则：</strong>柱状图，横轴为「任务类型」字典项，纵轴单位万元；柱顶同时标金额与占比，金额为 0 的分类画浅灰柱（0 + 0.00%）而不是不画；右上角「总额」为该年全部委托的样品检测总价合计。数值来自 <code>js/entrust-mock.js</code>，与委托详情同源。<br>' +
+            '<strong>交互逻辑：</strong>「选择年份」+「查询」按该年重算；「重置」回到默认年份（2026）；鼠标悬停显示该分类金额、占比与总金额。',
+          tag: '工作台'
+        },
+        {
+          id: 'person-performance', selector: '[data-annotate="person-performance"]', position: 'top-right',
+          title: '年/月度个人业绩统计', wide: true,
+          content: '<strong>需求逻辑：</strong>按业务员看业绩走势，作为排产与考核依据。<br>' +
+            '<strong>展示规则：</strong>折线图，一人一条线 + 一条「总量」线；纵轴万元；分组口径为委托的「业务员」，金额取样品检测总价，按受理日期归月；右上角「总额」为当前筛选范围内的合计。<br>' +
+            '<strong>交互逻辑：</strong>「按年/月筛选」：年 = 12 个月铺开，月 = 只看所选月份那一个点；「查询」重算，「重置」回到年 + 默认月。',
+          tag: '工作台'
+        },
+        {
+          id: 'report-by-type', selector: '[data-annotate="report-by-type"]', position: 'top-right',
+          title: '各类型检测报告数量统计', wide: true,
+          content: '<strong>需求逻辑：</strong>看各类报告的产出节奏，判断哪些分类积压。<br>' +
+            '<strong>展示规则：</strong>折线图，横轴月份，纵轴「份」；一份报告 = 一张状态已进入「报告签发」及之后的委托（与流程阶段 <code>FlowStages.POST_SIGN_STAGES</code> 同源）；字典里的 6 个分类即使当年为 0 也各画一条线，另加「总量」线；右上角「总计 N 份」。<br>' +
+            '<strong>交互逻辑：</strong>同「年/月筛选」；「查询」重算，「重置」复原。',
+          tag: '工作台'
+        },
+        {
+          id: 'report-by-person', selector: '[data-annotate="report-by-person"]', position: 'top-right',
+          title: '人员检测报告统计', wide: true,
+          content: '<strong>需求逻辑：</strong>把报告产出落到具体的人，避免只看总量看不出谁在做。<br>' +
+            '<strong>展示规则：</strong>折线图，一人一条线 + 总量线；分组口径为委托的「编制人」（报告责任人），只统计已出报告的委托；右上角「总计 N 份」。<br>' +
+            '<strong>交互逻辑：</strong>「人员名称」留空 = 全部人员各一条线；选中某人 = 只画该人（此时总计只算该人）；年/月筛选同上。',
+          tag: '工作台'
+        },
+        {
+          id: 'report-ontime', selector: '[data-annotate="report-ontime"]', position: 'top-right',
+          title: '检测报告及时率统计', wide: true,
+          content: '<strong>需求逻辑：</strong>交付及时率是对外承诺的核心指标，要能按人、按时间段看。<br>' +
+            '<strong>展示规则：</strong>柱线组合：左轴「检测报告数量」三根柱（报告总数 / 及时 / 未及时），右轴「及时率」折线带百分比标签；分母只算已出报告（状态到报告签发及之后）的委托，在制单不进分母；口径——<strong>及时 = 已到报告发放 / 任务归档 / 任务完成，或仍在签发~收费审批但未过要求检测完成时间</strong>，<strong>未及时 = 已出报告却过了要求检测完成时间仍未发放（逾期）</strong>，及时率 = 及时 / 已出报告数；标题带年份，右上角「总计 N 份」。<br>' +
+            '<strong>交互逻辑：</strong>「人员名称」留空 = 全员对比；填了「时间范围」按起止月份过滤（不再叠加年份）；「查询」重算，「重置」清空人员与时间范围；「导出」为原型演示，提示当前口径与合计。',
+          tag: '工作台'
+        },
+        {
+          id: 'biz-flow', selector: '[data-annotate="biz-flow"]', position: 'top-right',
+          title: '实验室业务管理系统流程图（泳道）', wide: true,
+          content: '<strong>需求逻辑：</strong>一张图讲清「谁做、做什么、留什么单」，对齐真系统的五泳道流程图。<br>' +
+            '<strong>展示规则：</strong>五条泳道：业务部（洽谈报价）→ 业务部（合同与委托登记）→ 样品组 → 实验室 → 业务部（报告与交付）；每条泳道固定三列「负责人 / 主流程 / 表单」，主流程首行为跨部门主线（业务洽谈 → 合同管理 → 样品管理 → 实验室检测 → 报告处理）；节点配色按部门区分（绿 / 青 / 蓝 / 紫 / 红），虚线边框的是判定或分支节点（样品预告、收费确认、审批），黄色小块是负责人，橙色是表单单据（收集表、收费通知书、检测委托书、制备清单、线上领样操作、盖章/复印/扫描/上传/装订）。<br>' +
+            '<strong>交互逻辑：</strong>只读展示；节点名称与系统菜单、业务流程配置一一对应，改流程配置时这张图要同步更新。',
+          tag: '工作台'
+        },
         {
           id: 'annual-analysis',
           selector: '[data-annotate="annual-analysis"]',
