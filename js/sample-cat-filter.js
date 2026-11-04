@@ -31,6 +31,15 @@
     return null;
   }
 
+  /* 克隆来的列不该带上源列的宽度（样品收样的「样品名称」是定宽的，
+     大类文本很短，跟着定宽会白占一大块） */
+  function dropWidthClasses(el) {
+    el.className = String(el.className || '').replace(/(^|\s)(w-|max-w-|min-w-)[^\s]+/g, ' ').trim();
+    el.style.width = '';
+    el.style.maxWidth = '';
+    return el;
+  }
+
   function fillRow(tr) {
     if (!state.table || !tr || !tr.cells) return;
     var cells = tr.cells;
@@ -43,6 +52,7 @@
     var td = doc.createElement('td');
     td.setAttribute('data-cat-col', '');
     td.className = nameCell.className;
+    dropWidthClasses(td);
     var cat = catOfText(nameCell.textContent);
     td.textContent = cat || '—';
     if (cat) td.setAttribute('data-cat', cat);
@@ -69,6 +79,7 @@
     var newTh = th.cloneNode(true);
     newTh.textContent = '样品大类';
     newTh.setAttribute('data-cat-col', '');
+    dropWidthClasses(newTh);
     headRow.insertBefore(newTh, th.nextSibling);
     state.tbody = state.table.tBodies[0];
     if (!state.tbody) return true;
