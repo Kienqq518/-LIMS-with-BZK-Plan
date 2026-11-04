@@ -5,7 +5,17 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <link rel="stylesheet" href="css/ui-baseline.css" />
-  <style>.info-table{width:100%;border-collapse:collapse}.info-table td{border:1px solid #e5e7eb;padding:8px 12px;font-size:13px;vertical-align:top}.info-table .lbl{background:#f8fafc;color:#64748b;width:120px;white-space:nowrap}.data-table{width:100%;border-collapse:collapse}.data-table th,.data-table td{border:1px solid #e5e7eb;padding:8px 10px;font-size:13px;text-align:left}.data-table th{background:#f1f5f9;color:#64748b;font-weight:500}</style>
+  <style>.info-table{width:100%;border-collapse:collapse}.info-table td{border:1px solid #e5e7eb;padding:8px 12px;font-size:13px;vertical-align:top}.info-table .lbl{background:#f8fafc;color:#64748b;width:120px;white-space:nowrap}.data-table{width:100%;border-collapse:collapse}.data-table th,.data-table td{border:1px solid #e5e7eb;padding:8px 10px;font-size:13px;text-align:left}.data-table th{background:#f1f5f9;color:#64748b;font-weight:500}
+    .info-table .val{color:#334155}
+    .thumb-strip{display:flex;flex-wrap:wrap;gap:4px}
+    .thumb{width:38px;height:38px;border-radius:3px;overflow:hidden;border:1px solid #e2e8f0;background:#f1f5f9}
+    .thumb img{width:100%;height:100%;object-fit:cover}
+    .spec-none{color:#cbd5e1}
+    .del-tag{display:inline-block;margin-left:6px;padding:0 5px;border-radius:3px;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;font-size:11px;line-height:16px;vertical-align:1px}
+    tr.is-deleted{background:#fbfcfe;color:#b6bcc7}
+    tr.is-deleted td{border-color:#f1f3f7}
+    tr.is-deleted .thumb{opacity:.55}
+    .sub-head{margin:14px 0 6px;font-size:12px;color:#64748b}</style>
 </head>
 <body class="bg-slate-100 text-slate-700">
   <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="change-record.html">
@@ -17,43 +27,293 @@
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>合同信息</h2>
       <table class="info-table"><tr><td class="lbl">合同编号</td><td>/</td><td class="lbl">合同名称</td><td>/</td><td class="lbl">签订时间</td><td>/</td></tr><tr><td class="lbl">服务年限</td><td>/</td><td class="lbl">中标价</td><td>/</td><td class="lbl">合同样品</td><td>/</td></tr><tr><td class="lbl">合同备注</td><td colspan="5">/</td></tr></table>
     </section>
-    <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
-      <table class="info-table"><tr><td class="lbl">委托编号</td><td>SC2026/0027</td><td class="lbl">任务类型</td><td>材料（安全工器具类）</td><td class="lbl">优先等级</td><td>常规</td></tr>
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="detail-by-code"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
+      <table class="info-table" id="entrustInfoTable"><tr><td class="lbl">委托编号</td><td>SC2026/0027</td><td class="lbl">任务类型</td><td>材料（安全工器具类）</td><td class="lbl">优先等级</td><td>常规</td></tr>
       <tr><td class="lbl">检测类型</td><td>常规</td><td class="lbl">检测类别</td><td>例行试验</td><td class="lbl">客户单位</td><td>宇宙设想有限公司</td></tr>
       <tr><td class="lbl">客户地址</td><td colspan="3">福州市鼓楼区五四路158号环球广场东塔1407</td><td class="lbl">客户联系人</td><td>张三</td></tr>
       <tr><td class="lbl">客户联系方式</td><td>18888885555</td><td class="lbl">业务员</td><td>梁倩</td><td class="lbl">实验室检测中心</td><td>应敏科技有限公司</td></tr>
       <tr><td class="lbl">委托受理日期</td><td>2026-03-17</td><td class="lbl">要求检测完成天数</td><td>5</td><td class="lbl">编制人</td><td>admin</td></tr></table>
     </section>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>付款信息</h2>
-      <table class="info-table"><tr><td class="lbl">样品检测总价(元)</td><td>160</td><td class="lbl">实际费用(元)</td><td>160</td><td class="lbl">付款单位</td><td>宇宙设想有限公司</td></tr></table>
+      <table class="info-table" id="payInfoTable"><tr><td class="lbl">样品检测总价(元)</td><td>160</td><td class="lbl">实际费用(元)</td><td>160</td><td class="lbl">付款单位</td><td>宇宙设想有限公司</td></tr></table>
     </section>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>报告信息</h2>
       <table class="info-table"><tr><td class="lbl">报告传送方式</td><td>邮寄</td><td class="lbl">报告资质</td><td>CNAS CMA</td><td class="lbl">报告描述</td><td>全部生成一份</td></tr><tr><td class="lbl">报告数量</td><td>1</td><td class="lbl">结果方式</td><td>判定</td><td class="lbl"></td><td></td></tr></table>
     </section>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>收样信息</h2>
-      <table class="info-table"><tr><td class="lbl">收样人</td><td>梁倩</td><td class="lbl">收样状态</td><td>完好</td><td class="lbl">收样日期</td><td>2026-04-01</td></tr><tr><td class="lbl">送样方式</td><td>送样</td><td class="lbl"></td><td></td><td class="lbl"></td><td></td></tr></table>
+      <table class="info-table" id="receiveInfoTable"><tr><td class="lbl">收样人</td><td>梁倩</td><td class="lbl">收样状态</td><td>完好</td><td class="lbl">收样日期</td><td>2026-04-01</td></tr><tr><td class="lbl">送样方式</td><td>送样</td><td class="lbl"></td><td></td><td class="lbl"></td><td></td></tr></table>
+      <div id="receiveDetailHost"></div>
     </section>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息变更记录</h2>
       <table class="data-table min-w-[900px]"><thead><tr><th>序号</th><th>变更类型</th><th>变更内容</th><th>操作人</th><th>变更时间</th><th>变更原因</th><th>驳回原因</th><th>状态</th></tr></thead>
-      <tbody>
+      <tbody id="entrustChangeBody">
         <tr><td>1</td><td>修改</td><td class="max-w-md text-xs">客户单位、客户联系人、客户地址等多项信息变更</td><td>admin</td><td>2026-04-02</td><td>信息更正</td><td></td><td><span class="text-green-600">通过</span></td></tr>
         <tr><td>2</td><td>修改</td><td class="max-w-md text-xs">优先等级 从 常规 修改为 2</td><td>admin</td><td>2026-05-25</td><td>加急</td><td></td><td><span class="text-blue-600">待处理</span></td></tr>
       </tbody></table>
     </section>
-    <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>样品信息变更记录</h2>
+    <section class="rounded bg-white p-4 shadow-sm" data-annotate="sample-change-log"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>样品信息变更记录</h2>
       <table class="data-table min-w-[900px]"><thead><tr><th>序号</th><th>变更类型</th><th>变更内容</th><th>操作人</th><th>变更时间</th><th>变更原因</th><th>驳回原因</th><th>状态</th></tr></thead>
-      <tbody>
+      <tbody id="sampleChangeBody">
         <tr><td>1</td><td>删除</td><td class="max-w-md text-xs">删除「绝缘操作杆」部分试验项</td><td>admin</td><td>2026-05-20</td><td>检测调整</td><td></td><td><span class="text-blue-600">待处理</span></td></tr>
         <tr><td>2</td><td>新增</td><td class="max-w-md text-xs">新增试验项，检测依据 DLT 976-2017</td><td>admin</td><td>2026-05-22</td><td>补充检测</td><td></td><td><span class="text-blue-600">待处理</span></td></tr>
       </tbody></table>
     </section>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>样品列表</h2>
       <table class="data-table"><thead><tr><th>序号</th><th>样品名称</th><th>型号规格</th><th>数量</th><th>单价</th><th>总价</th><th>备注</th></tr></thead>
-      <tbody><tr><td>1</td><td>绝缘操作杆</td><td></td><td>1</td><td>160</td><td>160</td><td></td></tr></tbody></table>
+      <tbody id="sampleListBody"><tr><td>1</td><td>绝缘操作杆</td><td></td><td>1</td><td>160</td><td>160</td><td></td></tr></tbody></table>
     </section>
   </div>
   <script src="js/tab-bar.js"></script>
+  <script src="js/sample-data-store.js"></script>
+  <script src="js/sample-spec-ui.js"></script>
+  <script src="js/flow-stages.js"></script>
+  <script src="js/entrust-mock.js"></script>
+  <script src="js/receive-store.js"></script>
+  <script src="js/receive-history-mock.js"></script>
+  <script src="js/image-viewer.js?v=2"></script>
   <script src="js/prototype-annotation.js"></script>
+  <script>
+  /* 变更申请删除样品的演示委托（SC2026/0029、SC2026/0073）在本页按「变更类型」重写各区块。 */
+  var RAW_CODE = new URLSearchParams(window.location.search).get('code') || '';
+  /* 列表链接里的编号带「 【变更】」后缀，取干净的委托号再查公共 mock */
+  var CODE = RAW_CODE.replace(/\s*【.*?】\s*/g, '').trim();
+  var M = window.EntrustMock ? EntrustMock.get(CODE || EntrustMock.DEFAULT_CODE) : null;
+  var DELS = (window.ReceiveHistory && ReceiveHistory.changeDeleteRecords)
+    ? ReceiveHistory.changeDeleteRecords().filter(function (r) { return r.code === CODE; }) : [];
+
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function di(id) { return document.getElementById(id); }
+  /** 字段-值表格：三列一组，空值统一显示「/」，末行不足三列时合并（与委托详情页同款） */
+  function infoRows(pairs) {
+    var html = '';
+    for (var i = 0; i < pairs.length; i += 3) {
+      var chunk = pairs.slice(i, i + 3);
+      html += '<tr>' + chunk.map(function (f, k) {
+        var span = (k === chunk.length - 1 && chunk.length < 3) ? ' colspan="' + (7 - chunk.length * 2) + '"' : '';
+        var v = (f[1] == null || f[1] === '') ? '/' : f[1];
+        return '<td class="lbl">' + esc(f[0]) + '</td><td class="val"' + span + '>' + esc(v) + '</td>';
+      }).join('') + '</tr>';
+    }
+    return html;
+  }
+  /** 单件样品的检测单价 = 试验项单价合计；解析不到试验项按 40 兜底（与 EntrustMock 合计口径一致） */
+  function unitPrice(sm) {
+    if (sm.tests && sm.tests.length) {
+      return sm.tests.reduce(function (a, t2) { return a + (Number(t2.price) || 0); }, 0);
+    }
+    return 40;
+  }
+  /** 被删样品的检测费用：按样品主数据的试验项单价合计 × 数量（用于「费用随删除减少」） */
+  function deletedFee(rec) {
+    var st = window.SampleDataStore;
+    if (!st || !rec.leafId) return 0;
+    var sample = st.getSample(rec.leafId);
+    if (!sample) return 0;
+    var models = st.modelsOf(sample);
+    var tests = st.testsOf(sample, models.length ? models[0].code : '') || [];
+    var one = tests.reduce(function (a, t2) { return a + (Number(t2.price) || 0); }, 0) || 40;
+    return one * (Number(rec.qty) || 1);
+  }
+  function modelLabel(sample, code) {
+    if (!code) return '/';
+    if (!sample || !window.SampleDataStore) return esc(code);
+    var mm = SampleDataStore.modelOf(sample, code);
+    return esc(mm ? ((mm.code || '') + (mm.name ? '-' + mm.name : '')) : code);
+  }
+  /* 被删样品不再进委托样品主数据，规格取 EntrustMock 里该样品名的规格候选首项，
+     免得收样 / 退样 / 打印各页的同一件样品一会儿有规格、一会儿空着 */
+  var DELETED_SPEC = { '安全帽': 'ABS', '绝缘硬梯': '10m' };
+  function specText(sample, sm) {
+    var txt = (window.SampleSpecUI && sample) ? SampleSpecUI.summary(sample, sm.modelCode, sm.specValues) : '';
+    return txt || sm.spec || (sm.deleted ? (DELETED_SPEC[sm.name] || '') : '');
+  }
+
+  /* ===== 委托信息 / 付款信息 ===== */
+  function renderInfo() {
+    if (!M) return;
+    var t = di('entrustInfoTable');
+    if (t) t.innerHTML = infoRows([
+      ['委托编号', M.code], ['任务类型', M.taskType], ['优先等级', M.priority],
+      ['检测类型', M.testType], ['检测类别', M.testCategory], ['客户单位', M.customer],
+      ['客户地址', M.addr], ['邮政编码', M.zip], ['客户联系人', M.contact],
+      ['客户联系方式', M.phone], ['业务员', M.salesman], ['实验室检测中心', M.lab],
+      ['委托受理日期', M.acceptDate], ['客户要求完成日期', M.customerDate], ['要求检测完成天数', M.days],
+      ['要求检测完成时间', M.requireDate], ['编制人', M.editor]
+    ]);
+    var pay = di('payInfoTable');
+    if (pay) pay.innerHTML = infoRows([
+      ['样品检测总价(元)', M.totalPrice], ['实际费用(元)', M.actualFee], ['折扣率(%)', M.discount],
+      ['付款方式', M.payMethod], ['付款单位', M.payer], ['业务备注', M.feeRemark]
+    ]);
+  }
+
+  /* ===== 收样信息：先看真实收样提交记录，缺记录时按本单样品补历史 mock ===== */
+  function receiveRecords() {
+    var recs = [];
+    if (M && window.ReceiveHistory && ReceiveHistory.ensure) {
+      ReceiveHistory.ensure(M.code, {
+        accept: M.acceptDate,
+        samples: M.samples.map(function (sm, i) {
+          return { name: sm.name, qty: sm.qty, unit: sm.unit, leafId: sm.leafId,
+                   modelCode: sm.modelCode, specs: sm.specValues, spec: sm.spec, imgs: i === 0 ? 2 : 1 };
+        })
+      });
+    }
+    if (window.ReceiveStore && M) recs = ReceiveStore.recordsOf(M.code);
+    recs = recs.slice();
+    if (!recs.length && window.ReceiveHistory && ReceiveHistory.redoRecords) {
+      recs = ReceiveHistory.redoRecords().filter(function (r) { return r.entrustCode === CODE; });
+    }
+    /* 变更删掉的样品在删除前是收过样的：补一行「已删除」，图片沿用收样时上传的 */
+    if (recs.length) {
+      var got = {};
+      recs.forEach(function (r) { (r.lines || []).forEach(function (ln) { got[ln.name] = 1; }); });
+      DELS.forEach(function (d) {
+        if (got[d.name]) return;
+        recs[recs.length - 1].lines = (recs[recs.length - 1].lines || []).concat([{
+          name: d.name, qty: d.qty, unit: d.unit, leafId: d.leafId || '',
+          modelCode: '', specValues: [], deleted: true, images: d.images || []
+        }]);
+        got[d.name] = 1;
+      });
+    }
+    return recs;
+  }
+
+  function renderReceive(recs) {
+    var head = di('receiveInfoTable'), host = di('receiveDetailHost');
+    if (!head || !host) return;
+    if (!recs.length) {
+      head.innerHTML = infoRows([['收样人', ''], ['收样状态', ''], ['收样日期', ''],
+                                 ['送样方式', ''], ['送样人', ''], ['备注', '']]);
+      host.innerHTML = '<p class="mt-2 text-sm text-slate-500">该委托尚无收样提交记录（样品还在「样品收样」环节等待收样）。</p>';
+      return;
+    }
+    var first = recs[0];
+    head.innerHTML = infoRows([
+      ['收样人', first.receiver], ['收样状态', first.status], ['收样日期', first.receiveDate],
+      ['送样方式', first.delivery], ['送样人', first.sender], ['备注', first.remark]
+    ]);
+    var st = window.SampleDataStore;
+    var markOn = recs.some(function (r) {
+      return (r.lines || []).some(function (ln) { return ln.leafId && st && st.isMarkEnabled(ln.leafId); });
+    });
+    host.innerHTML = recs.map(function (r, n) {
+      var rows = (r.lines || []).map(function (ln, i) {
+        var sample = ln.leafId && st ? st.getSample(ln.leafId) : null;
+        var mark = sample ? (st.markOf(ln.leafId, ln.modelCode, ln.specValues || []) || ln.mark) : ln.mark;
+        var imgs = (window.ReceiveStore && ReceiveStore.imCount(ln.images))
+          ? '<div class="thumb-strip">' + ln.images.map(function (im, k) {
+              var src = ReceiveStore.imSrc(im), nm = ReceiveStore.imName(im) || ('收样图片 ' + (k + 1));
+              return src
+                ? '<span class="thumb" title="' + esc(nm) + '（点击看大图）" data-img-src="' + esc(src) + '"' +
+                  ' data-img-group="rcv-' + n + '-' + i + '" data-img-name="' + esc(ln.name + ' · ' + nm) + '">' +
+                  '<img src="' + esc(src) + '" alt="收样图片" /></span>'
+                : '<span class="thumb" title="' + esc(nm) + '">仅存名</span>';
+            }).join('') + '</div>'
+          : '<span class="spec-none">/</span>';
+        return '<tr' + (ln.deleted ? ' class="is-deleted"' : '') + '><td>' + (i + 1) + '</td>' +
+          '<td>' + esc(ln.name) + (ln.deleted ? '<span class="del-tag">已删除</span>' : '') + '</td>' +
+          '<td>' + esc(ln.qty) + (ln.unit ? ' ' + esc(ln.unit) : '') + '</td>' +
+          (markOn ? '<td>' + (esc(mark) || (ln.leafId ? '未配置规则' : '/')) + '</td>' : '') +
+          '<td>' + modelLabel(sample, ln.modelCode) + '</td>' +
+          '<td>' + esc(specText(sample, ln)) + '</td><td>' + imgs + '</td></tr>';
+      }).join('');
+      return '<div class="sub-head">第 ' + (n + 1) + ' 次收样 · ' + esc(r.receiveDate) + ' · 收样人 ' + esc(r.receiver) + '</div>' +
+        '<table class="data-table min-w-[760px]"><thead><tr><th>序号</th><th>样品名称</th><th>数量</th>' +
+        (markOn ? '<th>产品标记</th>' : '') + '<th>型号/分类</th><th>规格</th><th>收样图片</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table>';
+    }).join('');
+  }
+
+  /* ===== 变更记录两张表：变更删除样品的委托按真实口径重写，其余保持演示数据 ===== */
+  function renderChangeLogs(recs) {
+    if (!DELS.length) return;
+    var rec = DELS[0];
+    var date = (rec.approveTime || '').split(' ')[0] || (recs[0] && recs[0].receiveDate) || '';
+    var eb = di('entrustChangeBody');
+    if (eb && M) {
+      var after = Number(M.totalPrice) || 0, before = after + deletedFee(rec);
+      eb.innerHTML = '<tr><td>1</td><td>修改</td><td class="max-w-md text-xs">删除样品后重新核算：' +
+        '「样品检测总价(元)」「实际费用(元)」由 ' + before + ' 元调整为 ' + after + ' 元；' +
+        '委托基本信息其余字段未改</td><td>' + esc(rec.operator) + '</td><td>' + esc(date) + '</td>' +
+        '<td>' + esc(rec.reason) + '</td><td>/</td><td><span class="text-green-600">通过</span></td></tr>';
+    }
+    var sb = di('sampleChangeBody');
+    if (sb) {
+      sb.innerHTML = DELS.map(function (d, i) {
+        return '<tr><td>' + (i + 1) + '</td><td>删除</td><td class="max-w-md text-xs">' +
+          '删除样品「' + esc(d.name) + '」（数量 ' + esc(d.qty) + ' ' + esc(d.unit) +
+          '，样品编号 ' + esc(d.sampleNo) + '）；该样品已收过样，' +
+          '<strong>不再进入收样 / 发样 / 检测</strong>；标签与合格证作废、实物走退样</td>' +
+          '<td>' + esc(d.operator) + '</td><td>' + esc(date) + '</td>' +
+          '<td class="max-w-md text-xs">' + esc(d.reason) + '</td><td>/</td>' +
+          '<td><span class="text-green-600">通过</span></td></tr>';
+      }).join('');
+    }
+  }
+
+  /* ===== 样品列表：变更后的委托现状；被删的样品保留一行置灰标记，费用不再计入 ===== */
+  function renderSampleList() {
+    var body = di('sampleListBody');
+    if (!body || !M) return;
+    var rows = M.samples.map(function (sm, i) {
+      var sample = sm.leafId && window.SampleDataStore ? SampleDataStore.getSample(sm.leafId) : null;
+      var price = unitPrice(sm), qty = Number(sm.qty) || 1;
+      return '<tr><td>' + (i + 1) + '</td><td>' + esc(sm.name) + '</td>' +
+        '<td>' + (esc(specText(sample, sm)) || '/') + '</td>' +
+        '<td>' + esc(sm.qty) + (sm.unit ? ' ' + esc(sm.unit) : '') + '</td>' +
+        '<td>' + price + '</td><td>' + price * qty + '</td><td>' + (esc(sm.remark) || '/') + '</td></tr>';
+    });
+    DELS.forEach(function (d) {
+      rows.push('<tr class="is-deleted"><td>·</td><td>' + esc(d.name) +
+        '<span class="del-tag">已删除</span></td><td>' + (esc(DELETED_SPEC[d.name] || '') || '/') + '</td>' +
+        '<td>' + esc(d.qty) + ' ' + esc(d.unit) + '</td>' +
+        '<td>' + (deletedFee(d) / (Number(d.qty) || 1)) + '</td><td>/</td>' +
+        '<td>变更删除：原检测费 ' + deletedFee(d) + ' 元已不计入委托总价；样品编号不回收，实物走退样</td></tr>');
+    });
+    body.innerHTML = rows.join('');
+  }
+
+  renderInfo();
+  var RECS = receiveRecords();
+  renderReceive(RECS);
+  renderChangeLogs(RECS);
+  renderSampleList();
+  if (CODE) document.title = '变更记录详情 · ' + CODE + ' - 智慧实验室';
+
+  PrototypeAnnotation.init({
+    annotations: [
+      {
+        id: 'detail-by-code', selector: '[data-annotate="detail-by-code"]', position: 'top-right',
+        title: '变更记录详情按委托编号整页切换', wide: true,
+        content: '<strong>需求逻辑：</strong>变更记录是「点哪单看哪单」，详情页的合同 / 委托 / 付款 / 收样 / 样品列表必须是被点的那一张单，不能固定显示同一条演示数据。<br>' +
+          '<strong>展示规则：</strong>页面读取 <code>?code=</code>（兼容带「【变更】」后缀的旧链接，先剥掉再查数据），' +
+          '委托信息与付款信息取 <code>js/entrust-mock.js</code>，收样信息取共享收样记录（<code>js/receive-store.js</code> + ' +
+          '<code>js/receive-history-mock.js</code>），与委托详情页、样品收样页同源。<br>' +
+          '<strong>交互逻辑：</strong>变更删除掉的样品在收样明细里保留原收样记录并整行置灰、名称后带红色「已删除」标签，' +
+          '图片沿用收样时上传的（点缩略图看大图）；样品列表按变更后现状展示，被删样品单列一行且费用不计入委托总价。',
+        tag: '变更记录'
+      },
+      {
+        id: 'sample-change-log', selector: '[data-annotate="sample-change-log"]', position: 'top-right',
+        title: '变更删除样品的记录与后续流程', wide: true,
+        content: '<strong>需求逻辑：</strong>变更审批通过后<strong>不再从「样品收样」重新开始</strong>，删除类变更没有新增对象，' +
+          '只需额外走一次「委托确认」让业务员确认变更后的委托。<br>' +
+          '<strong>展示规则：</strong>「变更类型」为删除，「变更内容」写清被删样品、数量与样品编号、是否已收样，' +
+          '以及标签 / 合格证作废、实物走退样；「委托信息变更记录」只在费用等字段真的发生变化时才出账，' +
+          '费用无变动就不写。<br>' +
+          '<strong>交互逻辑：</strong>已还样确认或已退样的样品同样允许删除；不允许把样品或试验项删空（删空在变更申请处即被拦截）；' +
+          '费用有变动才在「委托确认」之后追加「费用审核」；报告已发放或任务已归档的委托封板，不允许再发起变更。' +
+          '演示委托：SC2026/0029（删绝缘硬梯）、SC2026/0073（删安全帽），数据在 <code>js/receive-history-mock.js › DELETED_SAMPLES</code>。',
+        tag: '变更记录'
+      }
+    ]
+  });
+  </script>
   <script src="js/ui-a11y.js" defer></script>
 </body>
 </html>

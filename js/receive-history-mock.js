@@ -115,14 +115,35 @@
    */
   var DELETED_SAMPLES = {
     'SC2026/0031': [{ name: '安全帽', sampleNo: 'SC2026/00310201', qty: '3', unit: '顶', kind: 'back', masterId: 'helmet', cat: 'aqgqj' }],
-    'SC2026/0029': [{ name: '绝缘硬梯', sampleNo: 'SC2026/00290301', qty: '1', unit: '把', kind: 'change', masterId: 'hardladder', cat: 'aqgqj' }],
-    'SC2026/0073': [{ name: '安全帽', sampleNo: 'SC2026/00730201', qty: '2', unit: '顶', kind: 'change', masterId: 'helmet', cat: 'aqgqj' }],
+    'SC2026/0029': [{ name: '绝缘硬梯', sampleNo: 'SC2026/00290301', qty: '1', unit: '把', kind: 'change', masterId: 'hardladder', cat: 'aqgqj',
+      reason: '客户撤样，不再检测', operator: 'admin',
+      applyTime: '2026-10-20 09:10:00', approveTime: '2026-10-21 14:30:00',
+      imgs: ['assets/report-trace/photo-05-bend.jpg'] }],
+    'SC2026/0073': [{ name: '安全帽', sampleNo: 'SC2026/00730201', qty: '2', unit: '顶', kind: 'change', masterId: 'helmet', cat: 'aqgqj',
+      reason: '现场核对多送，客户撤回报废', operator: 'admin',
+      applyTime: '2026-07-13 10:20:00', approveTime: '2026-07-14 09:05:00',
+      imgs: ['assets/report-trace/photo-01-bench.jpg'] }],
     'SC2026/0071': [{ name: '绝缘硬梯', sampleNo: 'SC2026/00710201', qty: '1', unit: '把', kind: 'back', masterId: 'hardladder', cat: 'aqgqj' }]
   };
   var DELETE_KIND_TEXT = {
     back: '委托确认退回委托登记后删除样品',
     change: '变更申请删除样品'
   };
+
+  /* 变更申请删除样品的记录（变更记录页与变更详情页共用；退回登记那种不算变更） */
+  function changeDeleteRecords() {
+    var out = [];
+    Object.keys(DELETED_SAMPLES).forEach(function (code) {
+      DELETED_SAMPLES[code].forEach(function (d) {
+        if (d.kind !== 'change') return;
+        out.push({ code: code, name: d.name, qty: d.qty, unit: d.unit, sampleNo: d.sampleNo,
+          leafId: d.masterId || '', images: (d.imgs || []).slice(),
+          reason: d.reason || '客户撤样', operator: d.operator || 'admin',
+          applyTime: d.applyTime || '', approveTime: d.approveTime || '' });
+      });
+    });
+    return out.sort(function (a, b) { return a.approveTime < b.approveTime ? 1 : -1; });
+  }
 
   /* 上次那一次收样提交 = 一条记录：保留的样品与被删的样品都在里面（被删的带 deleted 标记） */
   function redoRecords() {
@@ -302,6 +323,7 @@
     ENTRUSTS: ENTRUSTS,
     RETURN_REDO: RETURN_REDO,
     DELETED_SAMPLES: DELETED_SAMPLES,
+    changeDeleteRecords: changeDeleteRecords,
     DELETE_KIND_TEXT: DELETE_KIND_TEXT,
     redoRecords: redoRecords,
     redoReceiveRows: redoReceiveRows,
