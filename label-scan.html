@@ -20,7 +20,13 @@
     <p class="mt-4 text-center text-xs text-slate-400">展示字段与样品标签模版左侧配置一致</p>
   </div>
 
+  <script src="js/flow-stages.js"></script>
+  <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
+  <script src="js/receive-store.js"></script>
+  <script src="js/receive-history-mock.js"></script>
   <script src="js/label-cert-config.js"></script>
+  <script src="js/label-cert-samples.js"></script>
   <script src="js/label-cert-render.js"></script>
   <script>
     var params = new URLSearchParams(location.search);
@@ -32,7 +38,9 @@
       'SC2026/00800101': { sampleNo: 'SC2026/00800101', name: '安全帽', model: '', receiveDate: '2026-07-09', clientName: '杭州数蚕智能科技有限公司', detectStatus: '样品收样', cat: 'aqgqj', masterId: 'helmet' }
     };
 
-    var data = MOCK[no] || {
+    /* 扫码看到的样品必须与标签上打印的那一件一致：一律按样品编号回查共享委托数据
+     * （js/entrust-mock.js），本页写死的 MOCK 只在共享数据缺失时兜底 */
+    var data = (window.LabelCertSamples && LabelCertSamples.byNo(no)) || MOCK[no] || {
       sampleNo: no,
       name: '绝缘操作杆',
       model: '10kV',

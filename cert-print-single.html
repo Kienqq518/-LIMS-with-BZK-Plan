@@ -70,7 +70,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium w-10"><input type="checkbox" id="sampleCheckAll" onchange="toggleSampleAll(this.checked)" /></th>
               <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">样品编号</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="unified-samples">样品名称</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">规格</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">型号规格</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">检验日期</th>
@@ -93,7 +93,12 @@
   <script src="js/short-link-qr.js"></script>
   <script src="js/personnel-store.js"></script>
   <script src="js/inspector-select.js"></script>
+  <script src="js/flow-stages.js"></script>
+  <script src="js/entrust-mock.js"></script>
+  <script src="js/receive-store.js"></script>
+  <script src="js/receive-history-mock.js"></script>
   <script src="js/label-cert-config.js"></script>
+  <script src="js/label-cert-samples.js"></script>
   <script src="js/label-cert-render.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
@@ -136,16 +141,25 @@
       syncShortlinkBaseHint();
     })();
 
-    // 00790101 → 个性化不粘胶纸；00790201 → 未绑定个性化，走默认左文右码版式 mock
-    var allSamples = [
-      { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', spec: '', model: '10kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), recorders: urlRecorders.slice(), entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'rod', judgment: '合格', status: '报告发放' },
-      { sampleNo: 'SC2026/00790201', name: '验电器', spec: '', model: '35kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', inspectors: urlInspectors.slice(), recorders: urlRecorders.slice(), entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'electroscope', judgment: '合格', status: '报告发放' }
-    ];
-    if (entrustCode !== 'SC2026/0079') {
+    /* 样品清单统一取 js/entrust-mock.js（与「样品标签」同一份），本页不再自己写样品；
+     * 共享数据缺失时才退回下面的演示行（0079：绝缘操作杆绑了不粘胶纸个性化，验电器未绑定走默认版式） */
+    var allSamples = window.LabelCertSamples ? LabelCertSamples.of(entrustCode) : null;
+    if (!allSamples || !allSamples.length) {
       allSamples = [
-        { sampleNo: entrustCode + '0101', name: '验电器', spec: '', model: '10kV', inspectDate: '2026-07-01', reinspectDate: '2027-07-01', inspectors: urlInspectors.slice(), recorders: urlRecorders.slice(), entrust: entrustCode, cat: 'aqgqj', masterId: 'electroscope', judgment: '合格', status: '报告签发' }
+        { sampleNo: 'SC2026/00790101', name: '绝缘操作杆', spec: '', model: '10kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'rod', judgment: '合格', status: '报告发放' },
+        { sampleNo: 'SC2026/00790201', name: '验电器', spec: '', model: '35kV', inspectDate: '2026-07-09', reinspectDate: '2027-07-08', entrust: 'SC2026/0079', cat: 'aqgqj', masterId: 'electroscope', judgment: '合格', status: '报告发放' }
       ];
+      if (entrustCode !== 'SC2026/0079') {
+        allSamples = [
+          { sampleNo: entrustCode + '0101', name: '验电器', spec: '', model: '10kV', inspectDate: '2026-07-01', reinspectDate: '2027-07-01', entrust: entrustCode, cat: 'aqgqj', masterId: 'electroscope', judgment: '合格', status: '报告签发' }
+        ];
+      }
     }
+    allSamples.forEach(function (sm) {
+      sm.inspectors = urlInspectors.slice();
+      sm.recorders = urlRecorders.slice();
+      sm._checked = true;
+    });
 
     var samples = allSamples.slice();
     var INSPECTOR_OPTIONS = PersonnelStore.rosterNames();
@@ -297,6 +311,26 @@
 
     PrototypeAnnotation.init({
       annotations: [
+        {
+          id: 'unified-samples',
+          selector: '[data-annotate="unified-samples"]',
+          position: 'top-right',
+          title: '样品标签与合格证共用同一份样品清单',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>同一张委托，点「样品标签」和点「合格证」必须看到同一批样品。' +
+            '以前样品标签预览、合格证单张、合格证批量、合格打印四个页面各写了一份样品表，' +
+            'SC2026/0073 一边显示安全带、一边显示验电器，而委托详情里其实是绝缘操作杆。<br>' +
+            '<strong>展示规则：</strong>委托下有哪些样品一律取 <code>js/entrust-mock.js</code>' +
+            '（与委托详情 / 样品收样 / 变更记录同源），样品编号 = 委托号 + 两位组号 + 试样号（如 SC2026/00730101）；' +
+            '被删除的样品（变更删除、退回登记后删除）不进打印清单，但它占用的组号不回收——' +
+            'SC2026/0029 的 03 号位留给被删的绝缘硬梯，变更新增的验电器排在 00290401；' +
+            '收样日期与检测日期取委托收样日期，复检日期 = 检测日期 + 1 年 - 1 天；' +
+            '检测状态按流程阶段推导（发样前未检测 / 检测环节在检 / 报告编制及之后已检测）。<br>' +
+            '<strong>交互逻辑：</strong>标签上的二维码扫码后（<code>label-scan.html</code>）按样品编号回查同一份数据，' +
+            '打印出来的样品与扫码看到的完全一致；判定不合格按委托号配置（演示单 SC2026/0074），' +
+            '不合格与报告签发之前的委托照旧不出现合格证入口。',
+          tag: '标签与合格证'
+        },
         {
           id: 'qr-shortlink',
           selector: '[data-annotate="qr-area"]',

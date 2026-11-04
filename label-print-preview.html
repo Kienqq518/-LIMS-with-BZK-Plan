@@ -60,7 +60,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium w-10"><input type="checkbox" id="sampleCheckAll" onchange="toggleSampleAll(this.checked)" checked /></th>
               <th class="border border-slate-200 px-3 py-2 font-medium">序号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="void-label">样品编号</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="unified-samples">样品名称</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">规格</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">型号规格</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">收样日期</th>
@@ -82,7 +82,12 @@
     </div>
   </div>
 
+  <script src="js/flow-stages.js"></script>
+  <script src="js/entrust-mock.js"></script>
+  <script src="js/receive-store.js"></script>
+  <script src="js/receive-history-mock.js"></script>
   <script src="js/label-cert-config.js"></script>
+  <script src="js/label-cert-samples.js"></script>
   <script src="js/label-cert-render.js"></script>
   <script src="js/short-link-qr.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -146,7 +151,14 @@
       });
     }
 
-    if (sampleNos.length) {
+    /* 统一数据源：委托下有哪些样品一律取 js/entrust-mock.js（与合格证、委托详情同源），
+     * 只有共享数据缺失时才退回本页写死的样品表 */
+    var unified = window.LabelCertSamples
+      ? (sampleNos.length ? LabelCertSamples.byNos(sampleNos) : LabelCertSamples.ofCodes(entrustCodes))
+      : null;
+    if (unified && unified.length) {
+      allSamples = unified;
+    } else if (sampleNos.length) {
       sampleNos.forEach(function (no) {
         var s = SAMPLE_BY_NO[no.trim()];
         if (s) pushSample(s);
@@ -275,6 +287,26 @@
 
     PrototypeAnnotation.init({
       annotations: [
+        {
+          id: 'unified-samples',
+          selector: '[data-annotate="unified-samples"]',
+          position: 'top-right',
+          title: '样品标签与合格证共用同一份样品清单',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>同一张委托，点「样品标签」和点「合格证」必须看到同一批样品。' +
+            '以前样品标签预览、合格证单张、合格证批量、合格打印四个页面各写了一份样品表，' +
+            'SC2026/0073 一边显示安全带、一边显示验电器，而委托详情里其实是绝缘操作杆。<br>' +
+            '<strong>展示规则：</strong>委托下有哪些样品一律取 <code>js/entrust-mock.js</code>' +
+            '（与委托详情 / 样品收样 / 变更记录同源），样品编号 = 委托号 + 两位组号 + 试样号（如 SC2026/00730101）；' +
+            '被删除的样品（变更删除、退回登记后删除）不进打印清单，但它占用的组号不回收——' +
+            'SC2026/0029 的 03 号位留给被删的绝缘硬梯，变更新增的验电器排在 00290401；' +
+            '收样日期与检测日期取委托收样日期，复检日期 = 检测日期 + 1 年 - 1 天；' +
+            '检测状态按流程阶段推导（发样前未检测 / 检测环节在检 / 报告编制及之后已检测）。<br>' +
+            '<strong>交互逻辑：</strong>标签上的二维码扫码后（<code>label-scan.html</code>）按样品编号回查同一份数据，' +
+            '打印出来的样品与扫码看到的完全一致；判定不合格按委托号配置（演示单 SC2026/0074），' +
+            '不合格与报告签发之前的委托照旧不出现合格证入口。',
+          tag: '标签与合格证'
+        },
         {
           id: 'lpv-void-label',
           selector: '[data-annotate="void-label"]',
