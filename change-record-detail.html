@@ -298,15 +298,25 @@
     ].join('');
   }
 
-  /* ===== 样品列表：变更后的委托现状；被删的样品保留一行置灰标记，费用不再计入 ===== */
-  function renderSampleList() {
+  /* ===== 样品列表：变更后的委托现状；被删的样品保留一行置灰标记，费用不再计入
+   * 数量与费用取委托口径，型号 / 规格取收样实测记录，两栏才不会各说各话 ===== */
+  function renderSampleList(recs) {
     var body = di('sampleListBody');
     if (!body || !M) return;
+    var got = {};
+    (recs || []).forEach(function (r) {
+      (r.lines || []).forEach(function (ln) { if (ln && ln.name) got[ln.name] = ln; });
+    });
     var rows = M.samples.map(function (sm, i) {
-      var sample = sm.leafId && window.SampleDataStore ? SampleDataStore.getSample(sm.leafId) : null;
+      var ln = got[sm.name];
+      var view = ln
+        ? { name: sm.name, leafId: ln.leafId || sm.leafId, modelCode: ln.modelCode || '',
+            specValues: ln.specValues || [], spec: ln.spec || sm.spec }
+        : sm;
+      var sample = view.leafId && window.SampleDataStore ? SampleDataStore.getSample(view.leafId) : null;
       var price = unitPrice(sm), qty = Number(sm.qty) || 1;
       return '<tr><td>' + (i + 1) + '</td><td>' + esc(sm.name) + '</td>' +
-        '<td>' + (esc(specText(sample, sm)) || '/') + '</td>' +
+        '<td>' + (esc(specText(sample, view)) || '/') + '</td>' +
         '<td>' + esc(sm.qty) + (sm.unit ? ' ' + esc(sm.unit) : '') + '</td>' +
         '<td>' + price + '</td><td>' + price * qty + '</td><td>' + (esc(sm.remark) || '/') + '</td></tr>';
     });
@@ -324,7 +334,7 @@
   var RECS = receiveRecords();
   renderReceive(RECS);
   renderChangeLogs(RECS);
-  renderSampleList();
+  renderSampleList(RECS);
   if (CODE) document.title = '变更记录详情 · ' + CODE + ' - 智慧实验室';
 
   PrototypeAnnotation.init({
