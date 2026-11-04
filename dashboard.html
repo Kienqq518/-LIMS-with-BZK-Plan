@@ -206,13 +206,13 @@
         </div>
       </section>
 
-      <!-- 待办事项 -->
-      <section class="rounded-lg bg-white p-4 shadow-sm">
+      <!-- 待办事项（卡片随右列拉伸到底，列表撑满卡片、超出滚动） -->
+      <section class="flex flex-1 flex-col rounded-lg bg-white p-4 shadow-sm" data-annotate="todo-list">
         <h2 class="mb-3 flex items-center gap-2 text-base font-semibold text-slate-800">
           <span class="h-4 w-1 rounded bg-sky-500"></span>待办事项
           <span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-normal text-red-500">57</span>
         </h2>
-        <div id="todoList" class="max-h-72 space-y-4 overflow-y-auto">
+        <div id="todoList" class="min-h-0 flex-1 space-y-4 overflow-y-auto">
           <!-- 待办列表由 JS 使用 Mock 数据渲染 -->
         </div>
       </section>
@@ -359,12 +359,16 @@
     ];
 
     // 待办事项数据（含时间轴颜色）
+    // 每条都取 js/entrust-mock.js 里真实在册的委托，事项与该委托当前流程阶段一致
     const todoData = [
-      { code: 'SC2026/0022', desc: '样品前处理待完成', time: '10:30', color: 'text-sky-500' },
-      { code: 'SC2026/0021', desc: '检测数据待审核', time: '09:45', color: 'text-amber-500' },
-      { code: 'SC2026/0020', desc: '报告待编制', time: '09:10', color: 'text-emerald-500' },
-      { code: 'SC2026/0019', desc: '样品即将超期预警', time: '08:50', color: 'text-red-500' },
-      { code: 'SC2026/0018', desc: '设备校准提醒', time: '08:20', color: 'text-purple-500' }
+      { code: 'SC2026/0068', desc: '检测数据待审核', time: '10:30', color: 'text-amber-500' },
+      { code: 'SC2026/0069', desc: '报告待编制', time: '10:12', color: 'text-sky-500' },
+      { code: 'SC2026/0071', desc: '报告待签发', time: '09:55', color: 'text-purple-500' },
+      { code: 'SC2026/0072', desc: '收费待审批', time: '09:40', color: 'text-emerald-500' },
+      { code: 'SC2026/0079', desc: '报告待发放', time: '09:22', color: 'text-sky-500' },
+      { code: 'SC2026/0029', desc: '样品即将超期预警', time: '09:05', color: 'text-red-500' },
+      { code: 'SC2026/0033', desc: '样品待收样', time: '08:50', color: 'text-amber-500' },
+      { code: 'SC2026/0031', desc: '委托待确认', time: '08:22', color: 'text-emerald-500' }
     ];
 
     // ================= 渲染 Mock 数据 =================
@@ -893,6 +897,22 @@
             '<strong>交互逻辑：</strong>「各种类名称」选中某类时只画该类一条线（便于单看走势），' +
             '留空则画全部分类 + 总量；「按年/月筛选」选「年」按 12 个月铺开、选「月」只画所选月份那一个点；' +
             '年份下拉只列委托数据里真实出现过的年份；「查询」按当前条件重算，「重置」回到默认（全部类 + 按年 + 当年）。',
+          tag: '工作台'
+        },
+        {
+          id: 'todo-list',
+          selector: '[data-annotate="todo-list"]',
+          position: 'top-left',
+          title: '待办事项卡片高度与列表内容',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>待办事项是工作台最该被一眼看到的区块，但右列以前按内容自然高度排，' +
+            '卡片下面空着一截（左列卡片底边比它低约 157px），页面看着没排满、也放不下更多待办。<br>' +
+            '<strong>展示规则：</strong>待办卡片 <code>flex-1</code> 吃掉右列剩余高度，<strong>底边与左列「年度业务分析汇总表」卡片对齐</strong>；' +
+            '列表区跟着卡片一起撑满，去掉了原来 288px 的高度上限，默认展示最近 8 条，条目多于可视高度时<strong>列表内部滚动</strong>而不是整页滚。' +
+            '标题右侧红标「57」是待办总数，与本页展示的条数无关。每条为「委托编号 + 事项 + 时间」，时间轴圆点按事项类型着色（审核橙 / 报告蓝 / 签发紫 / 收费绿 / 超期红）。<br>' +
+            '<strong>交互逻辑：</strong>8 条演示数据全部取 <code>js/entrust-mock.js</code> 里真实在册的委托，事项与该委托当前流程阶段一一对应' +
+            '（0068 数据审核、0069 报告编制、0071 报告签发、0072 收费审批、0079 报告发放、0029 即将超期、0033 样品收样、0031 委托确认），' +
+            '不再用系统里查不到的编号；正式实现点击应跳到对应环节的待办列表（原型未接跳转）。',
           tag: '工作台'
         }
       ]
