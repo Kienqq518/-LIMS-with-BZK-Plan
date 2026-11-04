@@ -68,7 +68,35 @@
    * 幂等且只补不删：已收过的样品行不会被重复写入，也不覆盖手工收样记录。
    */
   var demoSeq = 0;
+  function plusDaysLocal(str, n) {
+    var p = String(str || '').split('-');
+    var d = new Date(+p[0], (+p[1] || 1) - 1, +p[2] || 1);
+    d.setDate(d.getDate() + n);
+    var mo = d.getMonth() + 1, dd = d.getDate(), z = function (v) { return (v < 10 ? '0' : '') + v; };
+    return d.getFullYear() + '-' + z(mo) + '-' + z(dd);
+  }
+
+  /* 演示种子（带 demo 标记）的收样日一律跟着委托受理日走。
+   * 委托受理日期已按全年铺排，写死在种子里的日期会与之脱节（同一单在收样页看到 8 月、
+   * 在详情页看到 11 月）；这里按「收样日 = 受理日 + 1，第二批 +3、第三批再 +3」重算。
+   * 手工收样产生的记录没有 demo 标记，一律不动。 */
+  function normalizeDemoDates() {
+    var list = load(), seq = {}, changed = false;
+    list.forEach(function (r) {
+      if (!r || !r.demo) return;
+      var m = (global.EntrustMock && global.EntrustMock.get) ? global.EntrustMock.get(r.entrustCode) : null;
+      var base = m && m.receiveDate;
+      if (!base) return;
+      var n = seq[r.entrustCode] || 0;
+      seq[r.entrustCode] = n + 1;
+      var want = plusDaysLocal(base, n * 3);
+      if (r.receiveDate !== want) { r.receiveDate = want; changed = true; }
+    });
+    if (changed) save(list);
+  }
+
   function seedDemo(records) {
+    normalizeDemoDates();
     var cur = load();
     var have = {};
     cur.forEach(function (r) {
@@ -131,6 +159,7 @@
     imName: imName, imSrc: imSrc, imCount: imCount, shrinkImage: shrinkImage,
     KEY: KEY, PHOTO_LIBRARY: PHOTO_LIBRARY,
     load: load, addRecord: addRecord, recordsOf: recordsOf,
-    receivedMap: receivedMap, isAllReceived: isAllReceived, reset: reset, seedDemo: seedDemo
+    receivedMap: receivedMap, isAllReceived: isAllReceived, reset: reset, seedDemo: seedDemo,
+    normalizeDemoDates: normalizeDemoDates
   };
 })(window);
