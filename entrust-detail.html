@@ -528,7 +528,7 @@
 
   <!-- 检测任务单弹窗（试样分发按检测员生成） -->
   <div id="taskSheetModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-    <div class="flex max-h-[90vh] w-[860px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+    <div class="flex max-h-[90vh] w-[1000px] max-w-full flex-col rounded-lg bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <h3 class="text-base font-medium text-slate-800">检测任务单</h3>
         <div class="flex items-center gap-3">
@@ -782,6 +782,14 @@
      * 单据里同样拆成「型号/分类」+「规格」两项，空值显示「/」，
      * 与「收样信息」「检测信息」样品卡同源（同一段解析逻辑，不另写一套）。 */
     function pad2(n) { return (n < 10 ? '0' : '') + n; }
+    /** 受理日期 + 1 天（任务单签收演示用，避免日期跟着委托号跑却停在 7 月） */
+    function nextDay(date) {
+      var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date || ''));
+      if (!m) return '';
+      var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + 1);
+      var mo = d.getMonth() + 1, dd = d.getDate();
+      return d.getFullYear() + '-' + pad2(mo) + '-' + pad2(dd);
+    }
     function sampleNoOf(group) { return PAGE_CODE + pad2(group || 1) + '01'; }
     function modelSpecOf(sm) {
       var st = window.SampleDataStore, modelText = '', specText = '';
@@ -881,9 +889,11 @@
       var take = which === 'second' ? tests.slice(cut) : tests.slice(0, cut);
       if (!take.length) take = tests;
       return take.map(function (t) {
-        return { qty: t.qty || sm.qty || '1',
-                 prep: sm.needPrep === '是' ? '试样数量-' + (t.qty || 1) : '/',
-                 item: t.name, std: t.basis || '/', remark: t.remark || '/' };
+        return {
+          qty: sm.qty || '1',                       // 样品数量取样品的，不是试样的
+          prep: sm.needPrep === '是' ? '试样数量-' + (t.qty || 1) : '/',
+          item: t.name, std: t.basis || '/', remark: t.remark || '/'
+        };
       });
     }
 
@@ -1179,15 +1189,16 @@
 
     function openTaskSheetModal(key) {
       var data = TASK_SHEET_PREVIEW[key] || TASK_SHEET_PREVIEW.pan;
+      var accept = entrustRec.acceptDate || data.issueDate;
       document.getElementById('tsVerLabel').textContent = data.ver;
       document.getElementById('tsIssuer').textContent = data.issuer;
-      document.getElementById('tsIssueDate').textContent = data.issueDate;
+      document.getElementById('tsIssueDate').textContent = accept;
       var recvEl = document.getElementById('tsReceiver');
       var recvDateEl = document.getElementById('tsReceiveDate');
       if (data.received) {
         recvEl.textContent = data.receiver;
         recvEl.className = 'italic text-blue-700';
-        recvDateEl.textContent = data.receiveDate;
+        recvDateEl.textContent = nextDay(accept) || data.receiveDate;
         recvDateEl.className = '';
       } else {
         recvEl.textContent = '（空）';
