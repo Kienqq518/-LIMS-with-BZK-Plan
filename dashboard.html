@@ -783,7 +783,8 @@
         var reported = Biz.rows().filter(function (r) { return r.reported; });
         var map = Biz.byMonth(reported, 'cat', labs, 'count');
         Biz.CATS.forEach(function (c) { if (!map[c]) map[c] = labs.map(function () { return 0; }); });
-        var order = Biz.CATS.concat(Object.keys(map).filter(function (k) { return order.indexOf(k) < 0; }));
+        var extra = Object.keys(map).filter(function (k) { return Biz.CATS.indexOf(k) < 0; });
+        var order = Biz.CATS.concat(extra);
         var sum = 0;
         Object.keys(map).forEach(function (k) { map[k].forEach(function (v) { sum += v; }); });
         elTotal.textContent = '总计：' + sum + ' 份';
