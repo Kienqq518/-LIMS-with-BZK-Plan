@@ -1029,7 +1029,12 @@
       var box = document.getElementById('todoList');
       if (!box) return;
       var open = entrustList().filter(function (r) { return !r.signed; });
-      open.sort(function (a, b) {
+      var yearNow = new Date().getFullYear();
+      /* 列表只排当年受理的委托（与「检测报告及时率统计」默认当年同一口径），
+       * 更早年份的未完成委托去委托预览查；红标仍是全部未完成，和委托统计「未完成」同一个数。 */
+      var inYear = open.filter(function (r) { return String(r.acceptDate).slice(0, 4) === String(yearNow); });
+      var offYear = open.length - inYear.length;
+      inYear.sort(function (a, b) {
         var x = a.requireDate || '9999', y = b.requireDate || '9999';
         if (x !== y) return x < y ? -1 : 1;
         return a.code < b.code ? -1 : 1;
@@ -1037,19 +1042,34 @@
       var badge = document.getElementById('todoCount');
       if (badge) badge.textContent = open.length;
 
-      box.innerHTML = open.slice(0, TODO_SHOW).map(function (r) {
+      var items = inYear.slice(0, TODO_SHOW).map(function (r) {
         var st = stageStyle(r.stage);
         var label = r.code + ' ' + r.customer;
-        return '<div class="timeline-item" style="color:' + st.color + '">' +
+        /* 已逾期的：期限文字标红 + 角标；未到期的保持灰色（与任务总览的红点同一判定） */
+        var late = r.overdue;
+        return '<div class="timeline-item" style="color:' + (late ? '#dc2626' : st.color) + '">' +
           '<span class="timeline-dot bg-white"></span>' +
           '<div class="flex items-start justify-between gap-2">' +
             '<a href="entrust-detail.html?code=' + encodeURIComponent(r.code) + '" title="' + escNews(label) + '" ' +
               'class="block min-w-0 truncate text-sm font-medium text-slate-700 hover:text-sky-600">' + escNews(label) + '</a>' +
             '<span class="flex-shrink-0 text-xs text-slate-500">' + escNews(r.stage || '/') + '</span>' +
           '</div>' +
-          '<p class="mt-0.5 text-xs text-slate-400">期限：' + (r.requireDate || '/') + '</p>' +
+          '<p class="mt-0.5 flex items-center gap-1.5 text-xs">' +
+            '<span class="' + (late ? 'text-red-500' : 'text-slate-400') + '">期限：' + escNews(r.requireDate || '/') + '</span>' +
+            (late ? '<span class="rounded bg-red-50 px-1 py-0.5 text-[10px] leading-none text-red-500">已逾期</span>' : '') +
+          '</p>' +
         '</div>';
-      }).join('') || '<p class="text-xs text-slate-400">当前没有待办委托</p>';
+      }).join('');
+
+      var note = '';
+      if (inYear.length > TODO_SHOW || offYear > 0) {
+        note = '<p class="pl-6 pt-1 text-[11px] leading-relaxed text-slate-400">' +
+          '列表只排 ' + yearNow + ' 年受理的 ' + inYear.length + ' 张，按期限升序、最急在前' +
+          (offYear > 0 ? '；另有 ' + offYear + ' 张更早受理的未完成委托不在此列，可在' +
+            '<a href="entrust-preview.html" class="text-sky-600 hover:underline">委托预览</a>里查。' : '。') +
+          '</p>';
+      }
+      box.innerHTML = (items || '<p class="text-xs text-slate-400">当年没有待办委托</p>') + note;
     })();
 
     PrototypeAnnotation.init({
@@ -1192,21 +1212,25 @@
           content: '<strong>需求逻辑：</strong>待办是要拿去派活的，只看编号不够——得同时知道是谁家的单、什么时候到期、现在卡在哪个环节。' +
             '以前这块是 8 条手写文案（编号 +「报告待编制」+ 一个假时间点 10:30），那个时间点跟系统里任何日期都对不上。<br>' +
             '<strong>展示规则：</strong>一条 = 一张<strong>报告还没全部签发完成</strong>的委托，与右侧「委托统计」的未完成同一口径、同一份 <code>js/entrust-mock.js</code>；' +
-            '标题右侧红标就是这个总数（当前 61，不再是写死的 57）。列表按<strong>期限升序</strong>排（最急的在前），默认展示前 8 条，其余在列表里上下滚动；' +
+            '标题右侧红标就是这个总数（当前 61，不再是写死的 57）。' +
+            '<strong>列表只排当年受理的委托</strong>（当前 56 张，与「检测报告及时率统计」默认当年同一口径）：更早受理的 5 张不挤在这里，' +
+            '列表底部给一句说明并带「委托预览」链接过去查；红标仍是全部未完成 61，不跟委托统计拆成两套数。' +
+            '排序按<strong>期限升序</strong>（最急的在前，首张就是 <code>SC2026/0200 期限 2026-03-08</code>），默认展示前 8 条，其余在列表里上下滚动；' +
             '卡片仍走 <code>flex-1</code> 撑满右列、底边与左列「年度业务分析汇总表」对齐。每条三处信息：' +
             '① 第一行<strong>委托编号 + 委托单位</strong>拼在一起，超宽省略号截断，<strong>鼠标悬停显示完整文本</strong>（如 <code>SC2026/0168 有点东西有限公司</code>）；' +
             '② 第二行<strong>期限：YYYY-MM-DD</strong> = 该委托的要求检测完成日期 <code>requireDate</code>，与委托详情、任务总览、及时率统计同一字段；' +
+            '期限已过的<strong>文字标红并挂「已逾期」角标、时间轴圆点同步转红</strong>，未到期的期限保持灰色——判定与任务总览的红点、委托统计的已逾期是同一条规则；' +
             '③ 右侧显示<strong>当前流程节点名</strong>（委托登记 / 样品收样 / 试验检测 / 组内审核 / 报告编制…），与数据概览卡片、任务总览状态列同源。' +
-            '时间轴圆点颜色 = 该节点的配色，直接复用数据概览卡片的阶段配色表，不再另写一套。<br>' +
+            '未逾期的条目，时间轴圆点颜色 = 该节点的配色，直接复用数据概览卡片的阶段配色表，不再另写一套。<br>' +
             '<strong>交互逻辑：</strong>点条目（编号+单位那行就是链接）进 <code>entrust-detail.html?code=…</code>；' +
-            '条数、期限、节点全部随委托数据重算，页面上没有手写文案与假时间。',
+            '条数、期限、是否逾期、节点全部随委托数据重算，页面上没有手写文案与假时间；跨年那几张不是被删掉，只是挪到委托预览里查。',
           tag: '工作台'
         }
       ]
     });
   </script>
-  <script src="js/message-store.js?v=3" defer></script>
-  <script src="js/message-center.js?v=3" defer></script>
+  <script src="js/message-store.js?v=4" defer></script>
+  <script src="js/message-center.js?v=4" defer></script>
   <script src="js/ui-a11y.js" defer></script>
 </body>
 </html>

@@ -110,11 +110,16 @@
     if (global.EntrustMock) {
       var list = Object.keys(EntrustMock.ROWS).map(function (code) {
         var m = EntrustMock.get(code);
-        return { code: code, stage: stageOf(m), requireDate: m.requireDate || '', customer: m.customer || '/' };
+        return { code: code, stage: stageOf(m), requireDate: m.requireDate || '', acceptDate: m.acceptDate || '', customer: m.customer || '/' };
       });
       var open = list.filter(function (r) { return POST_SIGN.indexOf(r.stage) < 0; });
-      var late = open.filter(isOverdue).sort(function (a, b) { return a.requireDate < b.requireDate ? -1 : 1; });
-      var soon = open.slice().sort(function (a, b) { return a.requireDate < b.requireDate ? -1 : 1; }).slice(0, 3);
+      var lateAll = open.filter(isOverdue).sort(function (a, b) { return a.requireDate < b.requireDate ? -1 : 1; });
+      /* 明细条与工作台「待办事项」同一条筛选：只排当年受理的委托；
+       * 更早年份的只算进聚合条的总数，不占明细位 */
+      var yNow = String(new Date().getFullYear());
+      var inYear = function (r) { return String(r.acceptDate || '').slice(0, 4) === yNow; };
+      var late = lateAll.filter(inYear);
+      var soon = open.filter(inYear).sort(function (a, b) { return a.requireDate < b.requireDate ? -1 : 1; }).slice(0, 3);
 
       out.push({ id: 'todo-sum', type: 'todo', time: t('todo-sum', 18), href: 'entrust-preview.html',
         title: '待处理委托 ' + open.length + ' 张',
@@ -126,9 +131,10 @@
       });
 
       out.push({ id: 'warn-sum', type: 'warn', time: t('warn-sum', 96), href: 'entrust-preview.html',
-        title: '超期委托 ' + late.length + ' 张',
-        body: '已过客户要求完成日期但报告还没签发完的委托共 ' + late.length + ' 张，逾期最久的一张期限是 ' +
-          (late.length ? late[0].requireDate : '/') + '。' });
+        title: '超期委托 ' + lateAll.length + ' 张',
+        body: '已过客户要求完成日期但报告还没签发完的委托共 ' + lateAll.length + ' 张（其中 ' + late.length +
+          ' 张是 ' + yNow + ' 年受理、' + (lateAll.length - late.length) + ' 张更早年份受理），逾期最久的一张期限是 ' +
+          (lateAll.length ? lateAll[0].requireDate : '/') + '。' });
       late.slice(0, 2).forEach(function (r, i) {
         out.push({ id: 'warn-' + r.code, type: 'warn', time: t('warn-' + r.code, 150 + i * 64), href: 'entrust-detail.html?code=' + encodeURIComponent(r.code),
           title: r.code + ' 已超期（期限 ' + r.requireDate + '）',
