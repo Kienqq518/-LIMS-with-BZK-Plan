@@ -2,7 +2,7 @@
  * 设备台账 Mock Store（设备管理 + 样品试验「检测设备」共用）
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-equip-store-v10';
+  var STORAGE_KEY = 'lims-equip-store-v11';
 
   var DEPTS = ['材料检测组', '应敏科技1', '电气检测组', '力学检测组', '数蚕智能', '应敏科技', '未来实验室'];
   var AREAS = ['控制室', '智能力学室', '材料试验区', '智能高压室', '智能样品室', '数智化电气试验区', '无人化电缆试验区', '环境试验区', '综合试验区'];
@@ -73,6 +73,84 @@
         accuracy: '',
         info: '',
         remark: '',
+        needCalib: true,
+        lastCalib: '',
+        cycleY: 1, cycleM: 0, cycleD: 0,
+        nextCalib: '',
+        agency: '',
+        warnDays: 30,
+        maxError: '',
+        calibStatus: '正常',
+        enabled: true,
+        files: [],
+        linkedTests: [],
+        history: [],
+        maintain: []
+      },
+      {
+        /* 数字孪生 106 制样区红标1设备，信息按商品资料录入（2026-11-05） */
+        id: 'eq_y0301011103',
+        code: 'Y0301011103',
+        name: '电缆径向全自动制样智能平台',
+        model: 'YWJQ-500G',
+        dept: '应敏科技',
+        area: '无人化电缆试验区',
+        certNo: '',
+        accuracy: '',
+        info: '',
+        remark: '1 套',
+        needCalib: true,
+        lastCalib: '',
+        cycleY: 1, cycleM: 0, cycleD: 0,
+        nextCalib: '',
+        agency: '',
+        warnDays: 30,
+        maxError: '',
+        calibStatus: '正常',
+        enabled: true,
+        files: [],
+        linkedTests: [],
+        history: [],
+        maintain: []
+      },
+      {
+        /* 数字孪生 106 制样区红标2设备，信息按商品资料录入（2026-11-05） */
+        id: 'eq_y0302010102',
+        code: 'Y0302010102',
+        name: '全自动一体式哑铃片制样机',
+        model: 'YMZL-2500A',
+        dept: '应敏科技',
+        area: '无人化电缆试验区',
+        certNo: '',
+        accuracy: '',
+        info: '',
+        remark: '1 套',
+        needCalib: true,
+        lastCalib: '',
+        cycleY: 1, cycleM: 0, cycleD: 0,
+        nextCalib: '',
+        agency: '',
+        warnDays: 30,
+        maxError: '',
+        calibStatus: '正常',
+        enabled: true,
+        files: [],
+        linkedTests: [],
+        history: [],
+        maintain: []
+      },
+      {
+        /* 数字孪生 106 制样区红标3设备，信息按商品资料录入（2026-11-05） */
+        id: 'eq_y0301011102',
+        code: 'Y0301011102',
+        name: '电缆热收缩全自动切割智能平台',
+        model: 'YWRS-500G',
+        dept: '应敏科技',
+        area: '无人化电缆试验区',
+        certNo: '',
+        accuracy: '',
+        info: '',
+        remark: '1 套',
         needCalib: true,
         lastCalib: '',
         cycleY: 1, cycleM: 0, cycleD: 0,
