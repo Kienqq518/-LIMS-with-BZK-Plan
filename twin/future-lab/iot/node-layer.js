@@ -65,7 +65,7 @@ export class NodeLayer{
    ctx.save();ctx.beginPath();ctx.arc(x,y,15,0,Math.PI*2);ctx.fillStyle=fill;ctx.strokeStyle=s.status==='offline'?fill:color;ctx.lineWidth=1.4;ctx.fill();ctx.stroke();
    const svg=icon(n.type,color,20),img=new Image();img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);await img.decode();ctx.drawImage(img,x-10,y-10,20,20);if(s.status==='offline'){ctx.fillStyle='#343d45';ctx.fillRect(x+6,y+7,12,10);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+7,y+8);ctx.lineTo(x+15,y+14);ctx.stroke();}ctx.restore();
   }
-  ctx.save();ctx.fillStyle='rgba(255,255,255,.94)';ctx.fillRect(20,20,350,56);ctx.fillStyle='#153b55';ctx.font='600 20px "PingFang SC",sans-serif';ctx.textAlign='left';ctx.fillText('未来实验室物联空间可视化',34,44);ctx.font='12px sans-serif';ctx.fillStyle='#768696';ctx.fillText('安全管家',34,64);ctx.restore();
+  ctx.save();ctx.fillStyle='rgba(255,255,255,.94)';ctx.fillRect(20,20,350,56);ctx.fillStyle='#153b55';ctx.font='600 20px "PingFang SC",sans-serif';ctx.textAlign='left';ctx.fillText('未来实验室数字孪生',34,44);ctx.font='12px sans-serif';ctx.fillStyle='#768696';ctx.fillText('安全管家',34,64);ctx.restore();
  }
  dispose(){this.unsubscribe?.();window.removeEventListener('lab-mode-change',this.onMode);this.el.remove();}
 }
