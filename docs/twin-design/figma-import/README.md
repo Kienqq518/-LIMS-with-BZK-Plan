@@ -30,7 +30,29 @@
 - 106 设备清单：`twin/future-lab/visual_106.json` + `equipment_inventory.csv`。
 - 对象字段：《数字孪生对象模型与数据字典 V1.md》——Task.source=LIMS/WORKSTATION、deviceChain 四工位链路、DAQ-SUB 与检测设备 1:1、E9 上下料握手、Grade A→主任台+App / B→工位屏 / C→运维队列。
 
-## 4. Figma 文件当前状态
+## 4. Figma 文件（两个）
+
+**当前主文件（数字孪生 team）**：未来实验室数字孪生 · 关键页面原型 V1 — https://www.figma.com/design/vVKMD1ut298dww1CSUOPkb
+页面 `01 · 关键页面原型` 内 4 个 1920×1080 frame（S1 总览 / S2 106 重点区 / 设备详情弹层 / S3 告警回溯），由本目录 HTML 经 `html_to_figma` 导入，已接好原型：
+
+| 连线 | 触发 | 动作 |
+|---|---|---|
+| S1 区域卡「106 无人化电缆试验区」 | click | Navigate → S2（Smart Animate 300ms） |
+| S1 区域告警行 / 导航「告警」 | click | Navigate → S3 告警回溯 |
+| 导航「设备」 | click | Navigate → S2 |
+| S2 andon 卡 / 设备状态条 / 任务号 | click | **Open overlay** → 设备详情弹层（Dissolve 250ms） |
+| 弹层 ✕ / 关闭 | click | Back（回来源页，状态回落数据源） |
+| S3 列表项 / 关联任务 / 查看原始记录 | click | Open overlay → 设备详情弹层 |
+| 5M1E 胶囊（S1、S2） | click 任一维度 | **Change to** `维度=…` 变体（5 变体交互组件） |
+| 底部「今日任务 / 告警流」 | click | Change to `页签=…` 变体 |
+| 弹层「运行 / 告警 / 离线 / 维护」 | click | Change to `状态=…` 变体（4 变体） |
+
+交互组件集：`Nav/5M1E`、`Nav/5M1E · S2`、`Segment/底部页签`、`Segment/弹层状态`（组件集放在画布外 x=-4200，实例已回原位）。
+注：`Change to` 指向自身变体时 Figma 拒绝建连线（点当前已选中的胶囊无反应，符合预期）。
+
+---
+
+## 4b. 旧文件（个人 team，Starter 额度已用尽）
 
 文件：**未来实验室数字孪生 · 关键页面原型 V1** — https://www.figma.com/design/KTfYjgOvvFcBopH15m0UV1
 

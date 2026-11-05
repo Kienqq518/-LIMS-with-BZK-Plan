@@ -128,13 +128,6 @@ body = nav("总览") + f"""<style>{EXTRA_CSS}</style>
     <div class="arow"><span class="id num">108</span><span>环境试验区 · 湿度 58%RH</span><span class="pill amb">C</span><span class="t">13:58</span></div>
   </div>
   <div class="card pnl">
-    <div class="hd"><h3>数据链路</h3><span class="sub">V1 三源</span></div>
-    <div class="row" style="flex-wrap:wrap;gap:8px">
-      <span class="pill soft">① 无人检测调度</span><span class="pill soft">② 检测数据采集</span><span class="pill soft">③ 智慧实验室物联网</span>
-      <span class="pill off">④ LIMS · 二期接入</span></div>
-    <div style="font-size:11px;color:var(--t3);margin-top:10px;line-height:1.7">位置流 1–5s · 状态同步 2s · 环境节点 30s<br>灰态 = 未接入，界面不伪造数据</div>
-  </div>
-  <div class="card pnl">
     <div class="hd"><h3>机器人与载具</h3><span class="sub">机器人调度系统</span></div>
     <div class="arow"><span class="dot g"></span><span style="color:var(--t1)">复合机器人 1</span><span class="num" style="color:var(--t3);font-size:11px">RB-C-01</span><span style="margin-left:auto;font-size:11px;color:var(--blue)">106 · 前往检测台</span></div>
     <div class="arow"><span class="dot b"></span><span style="color:var(--t1)">复合机器人 2</span><span class="num" style="color:var(--t3);font-size:11px">RB-C-02</span><span style="margin-left:auto;font-size:11px;color:var(--t2)">106 · 充电 62%</span></div>

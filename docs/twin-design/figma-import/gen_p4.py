@@ -119,10 +119,11 @@ body = nav("告警") + f"""<style>{EXTRA}
     <div class="spark">{SPARK}</div>
     <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-top:6px" class="num"><span>00:00</span><span>08:00</span><span>14:00</span></div></div>
   <div class="card pnl"><div class="hd"><h3>关联对象</h3><span class="sub">孪生对象模型</span></div>
-    <div class="arow"><span class="dot r"></span><span style="color:var(--t1)">设备</span><span class="num" style="margin-left:auto">106-06</span></div>
-    <div class="arow"><span class="dot b"></span><span style="color:var(--t1)">数采分系统</span><span class="num" style="margin-left:auto">DAQ-SUB-106-06</span></div>
+    <div class="arow"><span class="dot r"></span><span style="color:var(--t1)">设备</span><span class="num" style="margin-left:auto">106-06 绝缘层厚度检测工位</span></div>
     <div class="arow"><span class="dot o"></span><span style="color:var(--t1)">任务</span><span class="num" style="margin-left:auto">TK-2026-1105-018</span></div>
     <div class="arow"><span class="dot a"></span><span style="color:var(--t1)">样品</span><span class="num" style="margin-left:auto">SPL-2611-0342</span></div>
-    <div class="arow"><span class="dot m"></span><span style="color:var(--t1)">LIMS 委托</span><span class="num" style="margin-left:auto">二期接入</span></div></div>
+    <div class="arow"><span class="dot g"></span><span style="color:var(--t1)">AMR 上料</span><span class="num" style="margin-left:auto">RB-A-01 · 载货 3 件</span></div>
+    <div class="arow"><span class="dot b"></span><span style="color:var(--t1)">复合机器人</span><span class="num" style="margin-left:auto">RB-C-01 · 前往 检测台 1</span></div>
+  </div>
 </div>"""
 print(write("04-alarm-review.html", page("alarm", body, "S3 · 告警回溯")))
