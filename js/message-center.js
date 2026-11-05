@@ -133,7 +133,10 @@
     }
     function close() { panel.classList.remove('open'); bell.setAttribute('aria-expanded', 'false'); }
 
+    // 面板内的一切点击都不让它冒到 document：render() 会把被点的节点换掉，
+    // 冒泡时 target 已经脱离文档，靠 closest 判断「点的是不是面板内部」会失效。
     panel.addEventListener('click', function (e) {
+      e.stopPropagation();
       var MS2 = global.MessageStore;
       var tab = e.target.closest ? e.target.closest('[data-tab]') : null;
       if (tab) { state.tab = tab.getAttribute('data-tab'); render(); return; }
