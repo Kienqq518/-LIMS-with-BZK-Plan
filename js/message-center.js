@@ -184,7 +184,12 @@
     });
   }
 
-  document.addEventListener('click', function () { panels.forEach(function (p) { p.close(); }); });
+  // 点面板外面才收起；点面板内部（页签、条目、按钮）不能把面板自己关掉
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t && t.closest && (t.closest('.pa-msg-panel') || t.closest('.pa-msg-bell'))) return;
+    panels.forEach(function (p) { p.close(); });
+  });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') panels.forEach(function (p) { p.close(); });
   });
