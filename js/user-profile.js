@@ -52,6 +52,7 @@
     '  color: #94a3b8; font-size: 11px; cursor: pointer; }',
     '.pa-user-empty:hover { border-color: #3b82f6; color: #2563eb; }',
     '.pa-user-signnote { margin-top: 5px; font-size: 11px; color: #94a3b8; width: 116px; line-height: 1.45; text-align: center; }',
+    '.pa-user-reset { border: 0; background: none; color: #2563eb; font-size: 11px; cursor: pointer; padding: 0; text-decoration: underline; }',
     '.pa-user-right { flex: 1; min-width: 0; }',
     '.pa-user-row { display: flex; align-items: baseline; gap: 10px; padding: 5px 0; border-bottom: 1px dashed rgba(148,163,184,.22); }',
     '.pa-user-row:last-of-type { border-bottom: 0; }',
@@ -126,9 +127,11 @@
       note.className = 'pa-user-signnote';
       box.parentNode.insertBefore(note, box.nextSibling);
     }
-    note.textContent = sig.src
-      ? (sig.builtin ? '内置签名 · 悬停可放大/删除' : (sig.name || '签名图') + ' · ' + kb(sig.size || 0))
-      : '已删除，点此重新上传';
+    if (sig.src) {
+      note.textContent = sig.builtin ? '内置签名 · 悬停可放大/删除' : (sig.name || '签名图') + ' · ' + kb(sig.size || 0);
+    } else {
+      note.innerHTML = '已删除，点格子重新上传<br><button type="button" class="pa-user-reset" data-act="reset">恢复内置签名</button>';
+    }
   }
   function renderAll() { [].slice.call(doc.querySelectorAll('.pa-user-sign')).forEach(renderSign); }
 
@@ -225,6 +228,12 @@
         text: '删除后气泡里的签名格子会换成上传入口，需要重新上传才恢复。此操作只影响本机浏览器里保存的签名，不动内置演示图。',
         onOk: function () { sigSet(null); toast('电子签名已删除，可点格子重新上传'); } });
     } else if (act === 'pick') { e.stopPropagation(); openPicker(); }
+    else if (act === 'reset') {
+      e.stopPropagation();
+      try { global.localStorage.removeItem(SIG_KEY); } catch (err) { toast('本机存储不可用，已在本页恢复内置签名'); }
+      renderAll();
+      toast('已恢复内置演示签名');
+    }
   }
 
   function askLogout(e) {
