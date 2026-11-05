@@ -50,6 +50,15 @@
 交互组件集：`Nav/5M1E`、`Nav/5M1E · S2`、`Segment/底部页签`、`Segment/弹层状态`（组件集放在画布外 x=-4200，实例已回原位）。
 注：`Change to` 指向自身变体时 Figma 拒绝建连线（点当前已选中的胶囊无反应，符合预期）。
 
+**已知瑕疵（1 次调用可修）**：S1 底部「今日任务 / 告警流」页签实例与表格表头重叠——原分组被隐藏后，卡片的 auto-layout 把表格上移了。修法：把实例插回原索引并交还给自动布局，再删掉隐藏的源分组：
+
+```js
+const inst=await figma.getNodeByIdAsync('10:190'), src=await figma.getNodeByIdAsync('1:562'), parent=src.parent;
+inst.layoutPositioning='AUTO'; parent.insertChild(parent.children.indexOf(src),inst); src.remove();
+```
+
+其余三处实例（S1/S2 的 5M1E、弹层状态分段）父级为绝对定位，未受影响，位置已核对正确。HTML 源文件本身无此问题。
+
 ---
 
 ## 4b. 旧文件（个人 team，Starter 额度已用尽）
