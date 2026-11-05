@@ -53,12 +53,12 @@
       </section>
 
       <!-- 任务总览 -->
-      <section class="rounded-lg bg-white p-4 shadow-sm">
+      <section class="rounded-lg bg-white p-4 shadow-sm" data-annotate="task-overview">
         <div class="mb-4 flex items-center justify-between">
           <h2 class="flex items-center gap-2 text-base font-semibold text-slate-800">
             <span class="h-4 w-1 rounded bg-sky-500"></span>任务总览
           </h2>
-          <button class="text-sm text-sky-600 hover:text-sky-700">查看更多 <i class="fa fa-angle-right"></i></button>
+          <a href="entrust-preview.html" class="text-sm text-sky-600 hover:text-sky-700">查看更多 <i class="fa fa-angle-right"></i></a>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full min-w-[640px] text-left text-sm">
@@ -77,18 +77,10 @@
             </tbody>
           </table>
         </div>
-        <!-- 分页器 -->
+        <!-- 分页器：条数与页码由委托数据算出来，点页码可翻 -->
         <div class="mt-4 flex items-center justify-between text-sm text-slate-400">
-          <span>共 94 条</span>
-          <div class="flex items-center gap-1">
-            <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-left"></i></button>
-            <button class="flex h-7 w-7 items-center justify-center rounded bg-sky-500 text-white">1</button>
-            <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">2</button>
-            <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">3</button>
-            <span class="px-1">...</span>
-            <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">10</button>
-            <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
-          </div>
+          <span id="taskTotal">共 0 条</span>
+          <div id="taskPager" class="flex items-center gap-1"></div>
         </div>
       </section>
 
@@ -141,30 +133,33 @@
       </section>
 
       <!-- 委托统计 -->
-      <section class="rounded-lg bg-white p-4 shadow-sm">
+      <section class="rounded-lg bg-white p-4 shadow-sm" data-annotate="entrust-stats">
         <h2 class="mb-3 flex items-center gap-2 text-base font-semibold text-slate-800">
           <span class="h-4 w-1 rounded bg-sky-500"></span>委托统计
         </h2>
         <div class="flex items-center">
           <!-- 左侧文字统计 -->
           <div class="flex flex-col gap-3 pr-2 text-sm">
-            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-green-500"></span><span class="text-slate-500">已完成</span><span class="font-semibold text-slate-800">43</span></div>
-            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span><span class="text-slate-500">未完成</span><span class="font-semibold text-slate-800">51</span></div>
-            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-red-500"></span><span class="text-slate-500">已逾期</span><span class="font-semibold text-slate-800">23</span></div>
+            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-green-500"></span><span class="text-slate-500">已完成</span><span id="statDone" class="font-semibold text-slate-800">0</span></div>
+            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span><span class="text-slate-500">未完成</span><span id="statDoing" class="font-semibold text-slate-800">0</span></div>
+            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-red-500"></span><span class="text-slate-500">已逾期</span><span id="statLate" class="font-semibold text-slate-800">0</span></div>
           </div>
           <!-- 右侧环形图 -->
           <div id="donutChart" class="h-40 flex-1"></div>
         </div>
+        <p class="mt-2 border-t border-slate-50 pt-2 text-xs leading-relaxed text-slate-400">
+          口径：已完成 = 已到报告发放 / 任务归档 / 任务完成；已逾期 = 过了客户要求完成日期仍未交付；未完成 = 其余在制。三片相加 = 委托总量。
+        </p>
       </section>
 
       <!-- 数值统计 -->
       <section class="grid grid-cols-2 gap-4">
         <div class="rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 p-4 text-white shadow-sm">
-          <div class="text-3xl font-bold">94</div>
+          <div id="kpiTasks" class="text-3xl font-bold">0</div>
           <div class="mt-1 text-sm opacity-90">任务总数</div>
         </div>
         <div class="rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 text-white shadow-sm">
-          <div class="text-3xl font-bold">20</div>
+          <div id="kpiCustomers" class="text-3xl font-bold">0</div>
           <div class="mt-1 text-sm opacity-90">客户总数</div>
         </div>
       </section>
@@ -303,16 +298,61 @@
       charts.forEach(function (c) { c.resize(); });
     });
 
-    // ================= Mock 数据 =================
-    // 任务总览表格数据
-    const taskData = [
-      { code: 'WT2026030001', customer: '华东检测科技有限公司', sample: '土壤样品', category: '理化检测', date: '2026-03-01' },
-      { code: 'WT2026030002', customer: '绿源环保集团', sample: '地表水', category: '水质分析', date: '2026-03-02' },
-      { code: 'WT2026030003', customer: '安泰食品股份公司', sample: '面粉制品', category: '食品安全', date: '2026-03-03' },
-      { code: 'WT2026030004', customer: '恒信建材有限公司', sample: '混凝土试块', category: '力学性能', date: '2026-03-04' },
-      { code: 'WT2026030005', customer: '康德医药科技', sample: '原料药', category: '成分分析', date: '2026-03-05' },
-      { code: 'WT2026030006', customer: '中科新材料研究院', sample: '合金样品', category: '金属检测', date: '2026-03-06' }
-    ];
+    // ================= 委托口径（任务总览 / 委托统计 / 数据概览卡片共用） =================
+    /* 委托的流程阶段一律取 js/entrust-mock.js 的 status；老数据里几个不是阶段名的写法
+     * （空、待接收、未领样、已审核、已完成）按这单实际卡在哪个环节折算，
+     * 保证每张阶段卡、每个统计切片都能把它们算进去，不会「哪个口径都不沾」。 */
+    var STAGE_ALIAS = { '': '委托登记', '待接收': '试验检测', '未领样': '试验检测', '已审核': '试验检测', '已完成': '任务完成' };
+    var DELIVERED_STAGES = ['报告发放', '任务归档', '任务完成'];   // 报告已交付给客户 = 这单做完了
+
+    function stageOf(m) {
+      var st = (m && m.status) || '';
+      if (window.FlowStages && FlowStages.FLOW_ORDER.indexOf(st) >= 0) return st;
+      return STAGE_ALIAS[st] || '';
+    }
+    function isDelivered(m) { return DELIVERED_STAGES.indexOf(stageOf(m)) >= 0; }
+    /* 逾期 = 过了客户要求完成日期（requireDate，与委托详情同名字段同源）却还没交付 */
+    function isOverdue(m) {
+      if (!m || isDelivered(m)) return false;
+      var d = String(m.requireDate || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+      var p = d.split('-');
+      var today = new Date(); today.setHours(0, 0, 0, 0);
+      return new Date(+p[0], +p[1] - 1, +p[2]) < today;
+    }
+
+    /** 全部委托（74 单）按登记日期倒序，任务总览与委托统计都从这里取数 */
+    function entrustList() {
+      var out = [];
+      try {
+        if (!window.EntrustMock) return out;
+        Object.keys(EntrustMock.ROWS).forEach(function (code) {
+          var m = EntrustMock.get(code);
+          out.push({
+            code: code, customer: m.customer || '/', sample: m.sampleNames || '/',
+            category: m.testCategory || '/', acceptDate: m.acceptDate || '',
+            requireDate: m.requireDate || '', stage: stageOf(m),
+            delivered: isDelivered(m), overdue: isOverdue(m)
+          });
+        });
+      } catch (e) { /* 数据源不可用时给空表，页面其余部分照常 */ }
+      out.sort(function (a, b) {
+        if (a.acceptDate !== b.acceptDate) return a.acceptDate < b.acceptDate ? 1 : -1;
+        return a.code < b.code ? 1 : -1;
+      });
+      return out;
+    }
+
+    /** 委托统计三片 + 两个总数，三片相加 = total */
+    function entrustStats() {
+      var list = entrustList(), done = 0, late = 0, cust = {};
+      list.forEach(function (r) {
+        if (r.customer !== '/') cust[r.customer] = 1;
+        if (r.delivered) done++; else if (r.overdue) late++;
+      });
+      return { total: list.length, done: done, late: late, doing: list.length - done - late,
+               customers: Object.keys(cust).length };
+    }
 
     // 快讯中心数据
     const newsData = [
@@ -337,21 +377,67 @@
     ];
 
     // ================= 渲染 Mock 数据 =================
-    // 渲染任务表格
-    (function renderTaskTable() {
-      const tbody = document.getElementById('taskTableBody');
-      tbody.innerHTML = taskData.map(function (item) {
+    // 任务总览：真实委托 + 翻页（每页 6 条，与卡片高度匹配）
+    var TASK_PAGE_SIZE = 6;
+    var taskPage = 1;
+    var taskRowsCache = null;
+
+    function taskRowsOnce() {
+      if (!taskRowsCache) taskRowsCache = entrustList();
+      return taskRowsCache;
+    }
+
+    function renderTaskTable() {
+      var tbody = document.getElementById('taskTableBody');
+      if (!tbody) return;
+      var list = taskRowsOnce();
+      var pages = Math.max(1, Math.ceil(list.length / TASK_PAGE_SIZE));
+      if (taskPage > pages) taskPage = pages;
+      var slice = list.slice((taskPage - 1) * TASK_PAGE_SIZE, taskPage * TASK_PAGE_SIZE);
+      tbody.innerHTML = slice.map(function (r) {
+        var dot = r.delivered ? 'bg-green-500' : (r.overdue ? 'bg-red-500' : 'bg-sky-500');
+        var tone = r.delivered ? 'text-green-600' : (r.overdue ? 'text-red-600' : 'text-sky-600');
         return '<tr class="hover:bg-slate-50">' +
-          '<td class="px-3 py-2.5 text-sky-600">' + item.code + '</td>' +
-          '<td class="px-3 py-2.5">' + item.customer + '</td>' +
-          '<td class="px-3 py-2.5">' + item.sample + '</td>' +
-          '<td class="px-3 py-2.5">' + item.category + '</td>' +
-          '<td class="px-3 py-2.5">' + item.date + '</td>' +
-          '<td class="px-3 py-2.5"><span class="inline-flex items-center gap-1.5 text-xs text-sky-600">' +
-          '<span class="h-2 w-2 rounded-full bg-sky-500"></span>进行中</span></td>' +
+          '<td class="px-3 py-2.5"><a class="text-sky-600 hover:underline" href="entrust-detail.html?code=' +
+            encodeURIComponent(r.code) + '">' + r.code + '</a></td>' +
+          '<td class="px-3 py-2.5">' + r.customer + '</td>' +
+          '<td class="px-3 py-2.5">' + r.sample + '</td>' +
+          '<td class="px-3 py-2.5">' + r.category + '</td>' +
+          '<td class="px-3 py-2.5">' + (r.acceptDate || '/') + '</td>' +
+          '<td class="px-3 py-2.5"><span class="inline-flex items-center gap-1.5 text-xs ' + tone + '">' +
+            '<span class="h-2 w-2 rounded-full ' + dot + '"></span>' + (r.stage || '/') + '</span></td>' +
           '</tr>';
+      }).join('') || '<tr><td colspan="6" class="px-3 py-6 text-center text-slate-400">暂无委托</td></tr>';
+
+      var total = document.getElementById('taskTotal');
+      if (total) total.textContent = '共 ' + list.length + ' 条';
+      renderTaskPager(pages);
+    }
+
+    /* 页码：首页、末页、当前页左右各一页，其余折成 …；‹ › 直接翻 */
+    function renderTaskPager(pages) {
+      var box = document.getElementById('taskPager');
+      if (!box) return;
+      var cell = 'flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50';
+      var on = 'flex h-7 w-7 items-center justify-center rounded bg-sky-500 text-white';
+      var slots = [];
+      for (var i = 1; i <= pages; i++) {
+        if (i === 1 || i === pages || Math.abs(i - taskPage) <= 1) slots.push(String(i));
+        else if (slots[slots.length - 1] !== '…') slots.push('…');
+      }
+      var html = '<button class="' + cell + '"' + (taskPage === 1 ? ' disabled style="opacity:.4"' : ' onclick="gotoTaskPage(' + (taskPage - 1) + ')"') + '><i class="fa fa-angle-left"></i></button>';
+      html += slots.map(function (t) {
+        if (t === '…') return '<span class="px-1">…</span>';
+        var n = Number(t);
+        return '<button class="' + (n === taskPage ? on : cell) + '" onclick="gotoTaskPage(' + n + ')">' + n + '</button>';
       }).join('');
-    })();
+      html += '<button class="' + cell + '"' + (taskPage === pages ? ' disabled style="opacity:.4"' : ' onclick="gotoTaskPage(' + (taskPage + 1) + ')"') + '><i class="fa fa-angle-right"></i></button>';
+      box.innerHTML = html;
+    }
+
+    function gotoTaskPage(n) { taskPage = n; renderTaskTable(); }
+
+    renderTaskTable();
 
     // 渲染快讯列表
     (function renderNews() {
@@ -381,12 +467,13 @@
     // ================= ECharts 图表 =================
     // 环形图：委托统计
     (function initDonut() {
+      var st = entrustStats();
       const chart = echarts.init(document.getElementById('donutChart'));
       chart.setOption({
         tooltip: { trigger: 'item' },
         color: ['#22c55e', '#f59e0b', '#ef4444'],
         title: {
-          text: '94', subtext: '委托总量', left: 'center', top: '38%',
+          text: String(st.total), subtext: '委托总量', left: 'center', top: '38%',
           textStyle: { fontSize: 22, fontWeight: 'bold', color: '#1e293b' },
           subtextStyle: { fontSize: 12, color: '#94a3b8' }
         },
@@ -394,12 +481,15 @@
           type: 'pie', radius: ['58%', '78%'], center: ['50%', '50%'],
           avoidLabelOverlap: false, label: { show: false }, labelLine: { show: false },
           data: [
-            { value: 43, name: '已完成' },
-            { value: 51, name: '未完成' },
-            { value: 23, name: '已逾期' }
+            { value: st.done, name: '已完成' },
+            { value: st.doing, name: '未完成' },
+            { value: st.late, name: '已逾期' }
           ]
         }]
       });
+      var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+      set('statDone', st.done); set('statDoing', st.doing); set('statLate', st.late);
+      set('kpiTasks', st.total); set('kpiCustomers', st.customers);
       registerResize(chart);
     })();
 
@@ -831,17 +921,14 @@
       { name: '设备校准', icon: 'fa-desktop',        tone: 'violet',  href: 'equip-mgmt.html', special: 'calib' }
     ];
 
-    /* entrust-mock 里还有几个老的状态写法，它们不是阶段名，按「这单实际卡在哪个环节」折算，
-     * 保证 19 张卡片加起来 = 委托总数，不会出现「有的单子哪个卡片都不算」。 */
-    var STAGE_ALIAS = { '': '委托登记', '待接收': '试验检测', '未领样': '试验检测', '已审核': '试验检测', '已完成': '任务完成' };
-
+    /* 阶段归属与逾期口径统一在上面的 stageOf / isDelivered / isOverdue，
+     * 卡片、任务总览、委托统计三处共用一份，不会出现两个口径。 */
     function statCounts() {
       var out = {};
       STAT_CARDS.forEach(function (c) { out[c.name] = 0; });
       try {
         Biz.rows().forEach(function (r) {
-          var st = r.status || '';
-          var stage = (window.FlowStages && FlowStages.FLOW_ORDER.indexOf(st) >= 0) ? st : STAGE_ALIAS[st];
+          var stage = stageOf(r);
           if (stage && out[stage] != null) out[stage]++;
         });
       } catch (e) { /* 委托数据不可用时保持 0 */ }
@@ -906,6 +993,37 @@
             '报告审核、报告签发、报告处理、收费审批、报告发放、任务归档、任务完成这 7 个环节还没有独立列表页，走 <code>data-placeholder.html?name=…&amp;group=报告管理</code> 节点占位页，与菜单里点进去看到的内容一致。<br>' +
             '<strong>注意：</strong>卡片是「委托停留在哪个阶段」的口径，进页面后列表还会按业务规则再过滤一层' +
             '（例如样品收齐的委托会离开样品收样列表、组内审核只列在检任务），所以页内条数可能少于卡片数字，这不是数据对不上，是两个口径。',
+          tag: '工作台'
+        },
+        {
+          id: 'task-overview', selector: '[data-annotate="task-overview"]', position: 'top-right',
+          title: '任务总览：改成真实委托 + 可翻页', wide: true,
+          content: '<strong>需求逻辑：</strong>工作台这块以前写死了 6 个系统里查不到的编号（WT2026030001 华东检测科技有限公司 / 土壤样品 / 理化检测……），' +
+            '既点不动，也和「数据概览」「委托统计」对不上号。现在整块直接读 <code>js/entrust-mock.js</code>。<br>' +
+            '<strong>展示规则：</strong>全部 74 单按<strong>登记日期（= 委托受理日期 acceptDate）倒序</strong>，每页 6 条；' +
+            '列为 委托编号 / 客户单位 / 样品名称 / 检测类别 / 登记日期 / 状态。' +
+            '「检测类别」取委托的 <code>testCategory</code>（型式试验 / 例行试验 / 委托检测，与委托详情同一字段），不是原来那套「理化检测 / 水质分析」假分类；' +
+            '「状态」显示<strong>流程阶段名</strong>（委托登记、样品收样、报告审核…）而不是笼统的「进行中」，' +
+            '圆点配色与右侧「委托统计」三片同一套口径：绿 = 已交付（报告发放及之后）、蓝 = 在制且未到客户要求完成日期、红 = 过了要求完成日期仍未交付。<br>' +
+            '<strong>交互逻辑：</strong>委托编号点进 <code>entrust-detail.html?code=…</code>；「查看更多」进<strong>委托预览</strong>（完整列表与全部筛选列）；' +
+            '底部「共 N 条」与页码都是算出来的（74 条 / 每页 6 条 = 13 页），首页与末页的 ‹ › 置灰，中间页码折成 …，翻页只在前端切数组。',
+          tag: '工作台'
+        },
+        {
+          id: 'entrust-stats', selector: '[data-annotate="entrust-stats"]', position: 'top-right',
+          title: '委托统计与任务总数、客户总数：全部按委托数据算', wide: true,
+          content: '<strong>需求逻辑：</strong>这块以前是三个写死的数（已完成 43 / 未完成 51 / 已逾期 23，中心 94），' +
+            '三片相加 117 既不等于 94，也和任务总数、和列表页都对不上，是典型的「图和数据各说各话」。现在全部由 <code>js/entrust-mock.js</code> 现算。<br>' +
+            '<strong>口径（三片互斥、相加 = 委托总量）：</strong>' +
+            '<strong>已完成 10</strong> = 阶段已到 报告发放 / 任务归档 / 任务完成（报告已交付客户）；' +
+            '<strong>已逾期 57</strong> = 未交付且已过了「客户要求完成日期」（<code>requireDate</code>，与委托详情、及时率统计同一字段）；' +
+            '<strong>未完成 7</strong> = 未交付且还没到期。中心数字与「任务总数」= 74，与任务总览底部「共 74 条」、数据概览 18 张阶段卡之和完全一致；' +
+            '「客户总数」= 委托里去重后的委托单位数。<br>' +
+            '<strong>为什么逾期占这么多：</strong>这是演示数据本身的分布造成的，不是口径放水——受理日期为了让「年度业务分析汇总表」1~12 月都有量被铺满全年，' +
+            '而在制单占了 64/74，于是凡是受理超过一个检测周期还没交付的都算逾期。<br>' +
+            '<strong>与「检测报告及时率统计」的区别：</strong>那张图的分母只算<strong>已出报告</strong>的委托（2026 年 11 份，其中未及时 2 份），' +
+            '这里算的是<strong>所有未交付</strong>的委托，两个数不一样是正常的，不是数据打架。' +
+            '真要把逾期比例做低，得改数据本身：把 1~8 月的在制单改成已交付，同时同步 样品收样 / 试验检测 / 报告审核 等列表页各自维护的在册编号——那是一次数据重排，不是改统计口径能解决的。',
           tag: '工作台'
         },
         {
