@@ -3,19 +3,20 @@
  * 列表与设备管理「所在区域」共用场地名称。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims.venues.v1';
+  var STORAGE_KEY = 'lims.venues.v2';
 
   var DEFAULT_VENUES = [
-    { id: 'v1', name: '力学检测室2', location: '二楼202', remark: '' },
-    { id: 'v2', name: '电气检测室1', location: '一楼110', remark: '' },
-    { id: 'v3', name: '力学检测室1', location: '二楼201', remark: '' },
-    { id: 'v4', name: '电气检测室', location: '一楼109', remark: '' },
-    { id: 'v5', name: '老化试验室', location: '一楼108', remark: '' },
-    { id: 'v6', name: '综合检测区', location: '一楼大厅', remark: '' },
-    { id: 'v7', name: '无人机实验室', location: '三楼301', remark: '' },
-    { id: 'v8', name: '样品制备室', location: '二楼205', remark: '场地备注' },
-    { id: 'v9', name: '标准室', location: '三楼310', remark: '示例数据' }
+    { id: 'v1', name: '控制室', location: '104', remark: '' },
+    { id: 'v2', name: '智能力学室', location: '103', remark: '' },
+    { id: 'v3', name: '材料试验区', location: '107', remark: '' },
+    { id: 'v4', name: '智能高压室', location: '105', remark: '' },
+    { id: 'v5', name: '智能样品室', location: '102', remark: '' },
+    { id: 'v6', name: '数智化电气试验区', location: '110', remark: '' },
+    { id: 'v7', name: '无人化电缆试验区', location: '106', remark: '' },
+    { id: 'v8', name: '环境试验区', location: '108', remark: '' },
+    { id: 'v9', name: '综合试验区', location: '109', remark: '' }
   ];
+
 
   function clone(obj) {
     return JSON.parse(JSON.stringify(obj));

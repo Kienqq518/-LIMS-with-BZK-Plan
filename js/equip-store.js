@@ -2,10 +2,10 @@
  * 设备台账 Mock Store（设备管理 + 样品试验「检测设备」共用）
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-equip-store-v7';
+  var STORAGE_KEY = 'lims-equip-store-v8';
 
   var DEPTS = ['材料检测组', '应敏科技1', '电气检测组', '力学检测组', '数蚕智能', '应敏科技', '未来实验室'];
-  var AREAS = ['力学检测室1', '电气检测室', '老化试验室', '综合检测区', '无人化试验室'];
+  var AREAS = ['控制室', '智能力学室', '材料试验区', '智能高压室', '智能样品室', '数智化电气试验区', '无人化电缆试验区', '环境试验区', '综合试验区'];
 
   function defaultSeed() {
     return [
@@ -16,7 +16,7 @@
         name: '智能型数字电桥',
         model: 'QJ-36',
         dept: '数蚕智能',
-        area: '无人化试验室',
+        area: '无人化电缆试验区',
         certNo: '',
         accuracy: '全量程优于0.1uΩ或0.1%',
         info: '',
@@ -42,7 +42,7 @@
         name: '数显千分尺',
         model: '(0~25)mm/0.001mm',
         dept: '未来实验室',
-        area: '',
+        area: '材料试验区',
         certNo: '',
         accuracy: '',
         info: '',
@@ -68,7 +68,7 @@
         name: '电子天平',
         model: 'HZK-FA110',
         dept: '应敏科技',
-        area: '',
+        area: '材料试验区',
         certNo: '',
         accuracy: '',
         info: '',
@@ -94,7 +94,7 @@
         name: '全自动绝缘厚度测试仪（无人化版）',
         model: 'YWD-11F',
         dept: '应敏科技',
-        area: '无人化试验室',
+        area: '无人化电缆试验区',
         certNo: '',
         accuracy: '',
         info: '',
@@ -120,7 +120,7 @@
         name: '绝缘层机械性能智能测试系统-无人化版',
         model: 'YWL-5D',
         dept: '应敏科技',
-        area: '无人化试验室',
+        area: '无人化电缆试验区',
         certNo: '',
         accuracy: '',
         info: '',
@@ -146,7 +146,7 @@
         name: '电缆热延伸全自动检测系统-无人化版',
         model: 'YWH-6D',
         dept: '应敏科技',
-        area: '无人化试验室',
+        area: '无人化电缆试验区',
         certNo: '',
         accuracy: '',
         info: '',
@@ -172,7 +172,7 @@
         name: '电缆热收缩试验智能检测系统-无人化版',
         model: 'YRSC-200I',
         dept: '应敏科技',
-        area: '无人化试验室',
+        area: '无人化电缆试验区',
         certNo: '',
         accuracy: '',
         info: '',
@@ -198,7 +198,7 @@
         name: '砝码库',
         model: 'YM-FMK',
         dept: '应敏科技',
-        area: '无人化试验室',
+        area: '无人化电缆试验区',
         certNo: '',
         accuracy: '',
         info: '',
@@ -223,7 +223,7 @@
         name: '绝缘安全工器具试验装置',
         model: 'YFG-150A',
         dept: '电气检测组',
-        area: '电气检测室',
+        area: '智能高压室',
         certNo: 'CERT-YFG-001',
         accuracy: '±1%',
         info: '带电作业工器具耐压试验',
@@ -262,7 +262,7 @@
         name: '数显卡尺',
         model: '(0~300)mm/0.01mm',
         dept: '材料检测组',
-        area: '力学检测室1',
+        area: '材料试验区',
         certNo: '',
         accuracy: '0.01mm',
         info: '',
@@ -309,7 +309,7 @@
         name: '数显卡尺',
         model: '(0~300)mm/0.01mm',
         dept: '材料检测组',
-        area: '力学检测室1',
+        area: '材料试验区',
         certNo: 'CERT-03',
         accuracy: '0.01mm',
         info: '',
@@ -338,7 +338,7 @@
         name: '空气老化试验箱',
         model: '300DU',
         dept: '应敏科技1',
-        area: '力学检测室1',
+        area: '环境试验区',
         certNo: '001',
         accuracy: '003',
         info: '',
@@ -369,7 +369,7 @@
         name: '微机控制电子万能试验机',
         model: 'LD26504',
         dept: '力学检测组',
-        area: '力学检测室1',
+        area: '材料试验区',
         certNo: 'CERT-LX05',
         accuracy: '0.5级',
         info: '',
@@ -397,7 +397,7 @@
         name: '停用示例设备',
         model: 'DEMO',
         dept: '材料检测组',
-        area: '综合检测区',
+        area: '综合试验区',
         certNo: '',
         accuracy: '',
         info: '',
