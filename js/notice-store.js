@@ -8,7 +8,7 @@
 (function (global) {
   'use strict';
 
-  var STORE_KEY = 'lims-notice-store-v1';
+  var STORE_KEY = 'lims-notice-store-v2';
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
@@ -22,6 +22,8 @@
   function day(n) { return ago(n, '00:00:00').slice(0, 10); }
 
   /** 演示数据：正常公告/通知 + 一条停用（停用的不进快讯中心，列表页能看到） */
+  /* 注意：正文里点名的设备必须与 js/equip-store.js 的台账一致；
+   * 台账一变，这里的种子键就要跟着升版，否则老浏览器里的本地数据会把旧文案留住。 */
   function seed() {
     return [
       { id: 12, title: '实验室AI助手已升级', type: '公告', status: '正常', operator: 'admin', createTime: ago(0, '09:12:30'),
