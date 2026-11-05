@@ -67,7 +67,7 @@
   <div id="toast"></div>
 
   <script src="js/tab-bar.js"></script>
-  <script src="js/current-user.js?v=2"></script>
+  <script src="js/current-user.js?v=3"></script>
   <script src="js/user-profile.js?v=2"></script>
   <script src="js/message-store.js?v=4"></script>
   <script src="js/message-center.js?v=4"></script>
@@ -170,7 +170,10 @@
               '<strong>公告通知</strong>（通知公告里状态正常的最新几条）、<strong>系统消息</strong>（设备校准到期/过期）。' +
               '每行右侧显示该分类条数，红字显示未读条数；底部三个操作：只看未读、全部标记已读、清除已读记录（把全部消息退回未读，方便反复演示）。<br>' +
               '<strong>个人信息气泡（点/悬停右上角头像）：</strong>左侧是头像 + 昵称 + 电子签名（签名图 <code>assets/profile/signature-admin.svg</code>），' +
-            '右侧七行——用户昵称、用户账号、性别、部门、手机号、电子邮箱、创建日期，空值统一显示「/」；底部一颗「退出登录」主色按钮，' +
+            '右侧七行——用户昵称、用户账号、性别、部门、手机号、电子邮箱、创建日期，空值统一显示「/」；' +
+            '其中<strong>部门就是「/」</strong>——这个登录账号没有挂部门（<code>js/current-user.js</code> 里 <code>dept</code> 留空，走的就是上面那条空值规则，不是写死的斜杠）。' +
+            '注意它和「样品管理 › 样品制备」交接人下拉里的「张三（样品库）」不是一回事：那个括号是<strong>样品制备岗的岗位名单</strong>，由该页自己维护、不读账号部门；' +
+            '所以气泡里部门显示「/」、下拉里仍写（样品库），两边都对、也不冲突。底部一颗「退出登录」主色按钮，' +
             '点它先弹二次确认（说清会跳回 TestOS 首页、不会清掉本机 localStorage 里的列配置和已读状态），确认后才跳 <code>testos.html</code>。' +
             '气泡内容全部读 <code>js/current-user.js</code> 的 <code>LimsCurrentUser.profile</code>——顶栏小头像、气泡大头像、昵称三处同一个来源，改一处全站跟着变。' +
             '交互与铃铛一致：悬停展开、移开自动收（160ms 宽限，方便把鼠标移进气泡里看内容），点头像可点开/点掉，点空白或按 Esc 关闭。<br>' +
