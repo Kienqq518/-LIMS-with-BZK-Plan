@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN"><head><script src="../src/runtime-audit.js"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>未来实验室物联空间可视化</title><link rel="stylesheet" href="tech-blue.css"><link rel="stylesheet" href="spatial-layout.css"><script defer src="assets/lucide.min.js"></script><script defer src="assets/node-icons.js"></script><script defer src="tech-blue-data.js"></script><script type="module" src="whiteblue-bootstrap-v2.js"></script><link rel="stylesheet" href="tour-embed.css"><script defer src="tour-bridge.js?v=7"></script><link rel="stylesheet" href="whiteblue-embed.css"></head>
+<body>
+<header class="header">
+ <a class="brand" href="#" aria-label="安全管家首页"><img src="assets/safety-steward.png" alt="安全管家"><div><strong>安全管家</strong><span>SMART SAFETY</span></div></a>
+ <div class="heading"><h1>未来实验室物联空间可视化</h1><span>FUTURE LAB · IoT VISUALIZATION</span></div>
+<button id="preview-expand" class="full-btn" type="button"><i data-lucide="maximize"></i><span>放大预览</span></button></header>
+<main id="workspace">
+ <aside class="side-left" aria-label="空间操作">
+  <section class="side-panel context"><small>101—110 · 可交互三维空间</small><div class="location"><i data-lucide="map-pin"></i><div><strong>未来实验室体验中心</strong><span>101—110</span></div></div></section>
+  <nav class="side-panel side-controls" aria-label="三维模型导航">
+   <button id="panorama-home" class="side-control primary" type="button"><i data-lucide="layout-grid"></i>全景总览</button>
+   <label><span>房间</span><select id="room-select" aria-label="选择房间"><option value="">101—110 全实验室</option><option value="101">101 接待大厅</option><option value="102">102 智能样品室</option><option value="103">103 智能力学室</option><option value="104">104 控制室</option><option value="105">105 智能高压室</option><option value="106">106 无人化电缆试验区</option><option value="107">107 材料试验区</option><option value="108">108 环境试验区</option><option value="109">109 综合试验区</option><option value="110">110 数智化电气试验区</option></select></label>
+   <label><span>视角</span><select id="view-select" aria-label="选择视角"><option value="overall-101">107方向斜俯视</option><option value="top">正俯视</option></select></label>
+   <button id="view-reset" class="side-control" type="button"><i data-lucide="rotate-ccw"></i>恢复默认</button>
+  </nav>
+  <section class="space-summary side-panel" aria-label="空间摘要"><div class="stats-title">空间概况</div><div class="stat-grid"><div><strong id="node-count">16</strong><span>物联节点</span></div><div><strong id="room-count">10</strong><span>实验区域</span></div><div><strong id="type-count">8</strong><span>感知类型</span></div><div><strong id="camera-count">4</strong><span>视觉点位</span></div></div><div class="summary-status"><i></i><span id="summary-status">运行正常</span></div></section>
+ </aside>
+ <section id="stage" aria-label="未来实验室三维空间"><div class="stage-background"></div><iframe id="cad-space" title="未来实验室实时三维空间"></iframe><div id="markers" aria-label="16个物联节点"></div><section id="node-detail" class="detail-card" aria-label="节点详情" hidden></section></section>
+ <aside class="side-right" aria-label="当前空间"><div class="view-context"><span id="context-room">101—110 全实验室</span><strong id="context-view">107方向斜俯视</strong></div></aside>
+</main>
+<dialog id="catalog" class="catalog-dialog">
+ <header class="dialog-header"><div class="dialog-title"><div class="dialog-icon"><i data-lucide="network"></i></div><div><small>CONNECTED SPACE</small><h2>全区节点总览</h2></div></div><button class="icon-button" data-close="catalog" aria-label="关闭节点总览"><i data-lucide="x"></i></button></header>
+ <div class="catalog-toolbar"><p>101—110 区域 <span>·</span> <b>16</b> 个物联节点</p><div class="group-switch" role="group" aria-label="节点分组"><button data-group="type" aria-pressed="true">按类型</button><button data-group="room" aria-pressed="false">按区域</button></div></div>
+ <div id="catalog-grid" class="catalog-grid"></div>
+</dialog>
+<dialog id="vision" class="vision-dialog">
+ <header class="dialog-header"><div class="dialog-title"><div class="dialog-icon"><i data-lucide="cctv"></i></div><div><small>VISUAL CONNECTION</small><h2>现场视觉监控</h2></div></div><div class="dialog-actions"><button id="vision-expand" class="button"><i data-lucide="expand"></i><span>放大画面</span></button><button class="icon-button" data-close="vision" aria-label="关闭视觉监控"><i data-lucide="x"></i></button></div></header>
+ <div class="vision-content"><section class="camera-main"><img id="camera-image" alt="视觉节点画面"><div class="camera-topline"><div><i></i><span id="camera-name">视觉03</span><span class="camera-separator">/</span><span id="camera-room">106 无人化电缆试验区</span></div><time id="camera-time"></time></div><div class="camera-bottomline"><span id="camera-id"></span><span>画面预览</span></div><div id="camera-error" hidden><i data-lucide="video-off"></i><strong>画面加载失败</strong></div></section><nav id="camera-rail" class="camera-rail" aria-label="切换视觉点位"></nav></div>
+</dialog>
+<script id="showcase-audit" type="application/json">{}</script>
+<script>if(location.protocol==='file:'){const tip=document.createElement('p');tip.className='startup-error';tip.setAttribute('role','alert');tip.textContent='请双击工程目录中的「启动未来实验室.command」打开完整交互页面。';document.getElementById('stage').append(tip);}</script></body></html>

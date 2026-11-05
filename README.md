@@ -15,3 +15,4 @@
 - **新页面必须引用 UI 基线**：`<link rel="stylesheet" href="css/ui-baseline.css">`（焦点环、对比度、最小字号、reduced-motion）+ `<script src="js/ui-a11y.js" defer></script>`（装饰图标 `aria-hidden`、纯图标按钮补可访问名、溢出表格包滚动容器、`onclick` 非按钮元素补 `role=button`）。全站 84 页已统一，漏掉新页会立刻成为体验孤岛。
 - **视觉决策先读** `design-system/lims-prototype/MASTER.md`，尤其文末「本项目修正」——库生成的字体方案不含中文字形，中文走系统 CJK 栈，`Fira Code` 只用于编号/标准号/日期/金额等数据列。
 - 走查与待办见 `docs/ui-audit-2026-11-03.md`（`docs/` 不在部署产物内）。
+- **数字孪生**：`twin/` 为实验室三维图独立包（`future-lab`/`src`/`mock` 三目录同级，相对路径不可拆），入口 `twin/future-lab/tour-space-v3-1.html`，从 `testos.html` 应用卡片进入；数据契约与真实数据对接设计见 `docs/digital-twin-integration.md`。

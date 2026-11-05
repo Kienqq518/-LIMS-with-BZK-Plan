@@ -1,0 +1,16 @@
+/* Prototype display layer: retain room names, suppress dense equipment annotations. */
+body:not([data-tour-mode="overview"]) .room-label[class*="device-"]{display:none!important}
+.room-label.tour-active-room{background:#167edc!important;color:white!important;border:1px solid #9cd2ff!important;box-shadow:0 2px 13px #1783d54a;font-weight:650}
+.room-label.tour-muted-room{background:#edf1f4db!important;color:#7e8b98!important;border-color:#cbd7e1!important;opacity:.68;box-shadow:none!important}
+.room-label.tour-active-room{font-weight:700!important;border:1px solid #62c3ff!important;box-shadow:0 0 0 4px #008cff20,0 4px 18px #0076dc42!important;animation:tour-label-breathe 3s ease-in-out infinite}
+@keyframes tour-label-breathe{50%{box-shadow:0 0 0 7px #008cff13,0 4px 23px #0076dc55}}
+@media(prefers-reduced-motion:reduce){.room-label.tour-active-room{animation:none}}
+
+/* Floating room presentation captions, independent of the source scene labels. */
+#tour-device-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3}
+#tour-device-labels>svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#tour-device-labels line{stroke:#64b8ff;stroke-width:1;opacity:.85}
+#tour-device-labels circle{fill:#159bff;stroke:white;stroke-width:2}
+.tour-device-caption{position:absolute;max-width:220px;padding:6px 10px;font:500 11px/1.4 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#fafdfff5;border:1px solid #aed5f7;border-radius:6px;color:#315f86;box-shadow:0 3px 12px #20639b12;text-align:center;overflow-wrap:anywhere}
+.room-label.tour-active-room{font-size:20px!important;max-width:400px!important;white-space:normal!important;line-height:1.35!important;padding:10px 18px!important;background:#048fff!important;box-shadow:0 0 0 3px #a9e6ff80,0 8px 24px #007ac34f!important}
+@media(max-width:1100px){.room-label.tour-active-room{font-size:16px!important;padding:8px 12px!important}.tour-device-caption{font-size:10px;max-width:180px}}

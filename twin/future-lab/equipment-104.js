@@ -1,0 +1,14 @@
+import * as THREE from './vendor/three.module.js';
+import {RoundedBoxGeometry} from './vendor/RoundedBoxGeometry.js';
+import {finishes as M} from './equipment-106.js?rev=106-seating-v2';
+function box(p,w,h,d,x,y,z,m=M.white,r=.008){const v=new THREE.Mesh(new RoundedBoxGeometry(Math.max(w,.006),Math.max(h,.006),Math.max(d,.006),2,Math.min(r,w/5,h/5,d/5)),m);v.position.set(x,y,z);v.castShadow=v.receiveShadow=true;p.add(v);return v;}
+function cyl(p,r,h,x,y,z,m=M.steel,axis='y'){const v=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,20),m);v.position.set(x,y,z);if(axis==='x')v.rotation.z=Math.PI/2;if(axis==='z')v.rotation.x=Math.PI/2;v.castShadow=v.receiveShadow=true;p.add(v);return v;}
+function screen(p,w,h,x,y,z){box(p,w,h,.035,x,y,z,M.dark,.006);box(p,w*.80,h*.72,.003,x,y+.006,z+.020,M.blue,.001);}
+function chair(p,x,z){const q=new THREE.Group();q.position.set(x,0,z);p.add(q);for(let i=0;i<5;i++){const a=i*Math.PI*2/5;cyl(q,.018,.34,Math.cos(a)*.16,.10,Math.sin(a)*.16,M.steel,'x');cyl(q,.035,.035,Math.cos(a)*.29,.035,Math.sin(a)*.29,M.rubber,'z');}cyl(q,.035,.36,0,.31,0,M.steel);box(q,.43,.10,.43,0,.53,0,M.dark,.035);box(q,.43,.52,.10,0,.84,-.18,M.dark,.05);for(const x of [-1,1]){box(q,.035,.28,.035,x*.23,.67,0,M.steel,.004);box(q,.18,.035,.07,x*.23,.82,0,M.dark,.01);}return q;}
+function controlStation(p,w,d,id){
+ const deskZ=d*.20,chairZ=-d*.28;box(p,w*.86,.54,d*.38,0,.34,deskZ,M.white,.02);box(p,w*.91,.055,d*.43,0,.64,deskZ,M.steel,.007);box(p,w*.88,.025,.02,0,.57,deskZ+d*.22,M.blue,.002);
+ for(const x of [-.25,.25])screen(p,w*.34,.27,x*w,.91,deskZ-d*.10);box(p,w*.34,.025,d*.13,0,.69,deskZ+d*.08,M.dark,.004);box(p,.12,.025,.16,w*.28,.69,deskZ+d*.08,M.dark,.02);
+ for(let i=0;i<7;i++)cyl(p,.008,.008,(i-3)*w*.055,.72,deskZ+d*.205,i%3?M.blue:M.red,'z');chair(p,0,chairZ);box(p,.26,.065,.008,-w*.27,.38,deskZ+d*.215,new THREE.MeshBasicMaterial({color:'#eef3f4',toneMapped:false}),.001);
+}
+function panel(p,w,d){box(p,w*.82,1.12,d*.64,0,.80,0,M.white,.016);box(p,w*.70,.62,.015,0,.88,d*.33,M.dark,.006);for(let y=0;y<3;y++)for(let x=0;x<4;x++)cyl(p,.018,.01,(x-1.5)*w*.14,.79+(y-1)*.13,d*.35,(x+y)%3?M.blue:M.red,'z');box(p,w*.70,.035,.025,0,1.37,d*.34,M.blue,.003);}
+export function create104Model(e,spec){const b=e.rotatedBBox,sx=(b[2]-b[0])*.05,sz=(b[3]-b[1])*.05,root=new THREE.Group();root.name=e.id;root.position.set((b[0]+b[2])*.025,0,(b[1]+b[3])*.025);root.userData={id:e.id,name:spec.name,modelStatus:spec.modelStatus,operatingFace:{degrees:spec.appearanceFrontDegrees,status:spec.operatingFaceStatus}};const body=new THREE.Group();body.rotation.y=-spec.appearanceFrontDegrees*Math.PI/180;root.add(body);const swap=Math.abs(Math.sin(body.rotation.y))>.7,w=(swap?sz:sx)*.88,d=(swap?sx:sz)*.82;if(spec.type==='control-station')controlStation(body,w,d,e.id);else panel(body,w,d);root.updateMatrixWorld(true);return root;}
