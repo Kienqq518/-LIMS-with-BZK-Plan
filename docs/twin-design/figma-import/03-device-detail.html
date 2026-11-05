@@ -99,6 +99,11 @@ body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han 
 /* ---------- 标注 ---------- */
 .note{position:absolute;font-size:11px;color:var(--t3);letter-spacing:.2px}
 .ov{position:absolute}
+.clickable{cursor:pointer}
+[data-role=chart][data-state=offline] .plot,[data-role=chart][data-state=missing] .plot{filter:grayscale(1);opacity:.5}
+[data-role=chart][data-state=maintain] .plot{opacity:.35}
+body[data-devstate=offline] [data-role=dev-cta]{opacity:.5}
+
 /* ---------- 共享布局 ---------- */
 .rail{position:absolute;right:22px;top:86px;width:458px;display:flex;flex-direction:column;gap:16px;align-items:flex-start;z-index:6}
 .rail>*{width:458px;flex:0 0 auto}
@@ -120,12 +125,23 @@ body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han 
 .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
 .camchip{position:absolute;right:18px;bottom:16px;display:flex;gap:10px;align-items:center;font-size:11px;color:var(--t3);
   background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:999px;padding:7px 14px;box-shadow:var(--pill);z-index:6}
-</style></head>
-<body data-page="device"><header class="nav">
+</style><style>
+[data-goto],[data-back],[data-switch],[data-view],[data-sel]{cursor:pointer}
+[hidden]{display:none!important}
+.proto-toast{position:fixed;left:50%;bottom:44px;transform:translate(-50%,12px);background:#0F2740;color:#fff;
+  font-size:12px;padding:9px 16px;border-radius:999px;box-shadow:0 14px 40px rgba(15,40,80,.3);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:99;letter-spacing:.2px}
+.proto-toast.on{opacity:1;transform:translate(-50%,0)}
+[data-role=chart][data-state=offline] svg,[data-role=chart][data-state=offline] .legend2{filter:grayscale(1);opacity:.45}
+[data-role=chart][data-state=maintain] svg{opacity:.4}
+body[data-devstate=offline] [data-role=dev-cta]{opacity:.45;pointer-events:none}
+body[data-devstate=offline] [data-role=daq-online]{color:var(--t3)}
+.al.sel{background:#F5F9FF;border-color:var(--blue);box-shadow:0 0 0 3px rgba(40,120,255,.10)}
+</style></head><body data-page="device" data-devstate="running"><header class="nav">
   <div class="logo"><i></i></div>
   <div class="brand"><b>未来实验室数字孪生</b><span>FUTURE LAB · DIGITAL TWIN</span></div>
   <div class="sep"></div>
-  <div class="tabs"><div class="tab on">总览</div><div class="tab">设备</div><div class="tab">任务</div><div class="tab">系统</div><div class="tab">告警</div></div>
+  <div class="tabs"><div class="tab on">总览</div><div class="tab" data-goto="zone106">设备</div><div class="tab" data-todo="任务看板：V1 未覆盖（PRD 只锁 S1/S2/S3）">任务</div><div class="tab" data-todo="系统交互视图：二期，当前只在告警页关联对象里出现">系统</div><div class="tab" data-goto="alarm">告警</div></div>
   <div class="nav-r"><span class="src">数据源 <b>3/3 已接入</b></span>
     <span class="num" style="font-size:12px;color:var(--t3)">2026-11-05 14:32:08</span><div class="av">李</div></div>
 </header><style>
@@ -134,6 +150,7 @@ body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han 
 .beats .stem{left:50%}
 .andon-pos{position:absolute;left:18px;bottom:64px;z-index:5}
 .andon{display:flex;gap:12px;padding:14px;width:392px}
+.andon:hover{box-shadow:0 14px 40px rgba(15,40,80,.2)}
 .andon .ai{width:34px;height:34px;border-radius:10px;background:var(--red);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto}
 .andon .ab{flex:1;min-width:0}
 .andon b{font-size:14px;display:block}
@@ -171,9 +188,9 @@ body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han 
 <div class="modal">
   <div class="mh"><span class="pill ghost" style="height:26px">106 · A 区</span>
     <h2>机械性能无人化检测工位</h2><span class="num" style="color:var(--t3);font-size:12px">EQ-106-05 · Z-106-TEST</span>
-    <span class="dot g" style="margin-left:6px"></span><span style="font-size:12px;color:var(--t2)">运行中</span>
-    <span class="seg" style="margin-left:18px"><i class="on">运行</i><i>告警</i><i>离线</i><i>维护</i></span>
-    <span class="x">✕</span></div>
+    <span class="dot g" style="margin-left:6px" data-role="dev-dot"></span><span style="font-size:12px;color:var(--t2)" data-role="dev-status">运行中</span>
+    <span class="seg" style="margin-left:18px" data-switch><i class="on" data-state="running">运行</i><i data-state="alarm">告警</i><i data-state="offline">离线</i><i data-state="maintain">维护</i></span>
+    <span class="x" data-back>✕</span></div>
   <div class="mbody">
     <div class="mcol" style="width:420px;flex:0 0 auto">
       <div class="blk"><h4>基本信息<span class="r">设备台账 · equip-mgmt</span></h4><dl class="kv"><dt>设备编号</dt><dd>EQ-106-05</dd><dt>设备名称</dt><dd>机械性能无人化检测工位</dd><dt>型号 / 厂家</dt><dd>UTM-200 · 国产（外形待厂家确认）</dd><dt>所属区域</dt><dd>106 无人化电缆试验区 · A 区</dd><dt>设备类别</dt><dd>检测设备（1:1 绑定数采分系统）</dd><dt>责任人</dt><dd>检测四组 · 王工</dd><dt>启用日期</dt><dd>2025-03-18</dd><dt>下次校准</dt><dd>2026-12-20 · 剩余 45 天</dd></dl></div>
@@ -181,20 +198,76 @@ body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han 
         <div class="row" style="margin-top:12px"><div class="bar" style="width:100%"><i style="width:68%"></i></div><span class="num" style="font-size:11px;color:var(--t2)">68%</span></div></div>
       <div class="blk"><h4>所属 LIMS 任务<span class="r">二期深链 · 当前灰态</span></h4>
         <div class="row" style="gap:8px;flex-wrap:wrap"><span class="pill soft">委托 WT-2026-1105-006</span><span class="pill soft">报告 BJ-2026-1105-011</span>
-        <span class="pill off">跳转 LIMS 详情</span></div>
+        <span class="pill off" data-todo="LIMS 深链为二期，当前只做孪生侧来源标记">跳转 LIMS 详情</span></div>
         <div style="font-size:11px;color:var(--t3);margin-top:9px;line-height:1.7">V1 仅呈现孪生侧任务对象与来源标记（source=LIMS / WORKSTATION），深链跳转列为二期。</div></div>
     </div>
     <div class="mcol lims">
-      <div class="blk"><h4>实时数据曲线<span class="r">采控主系统 · 2s 采样</span>
-        </h4><div class="row" style="margin-bottom:8px"><span class="seg"><i>1h</i><i>6h</i><i class="on">24h</i></span>
-        <span class="pill ghost" style="margin-left:auto">窗口 13:32–14:32</span></div>
+      <div class="blk" data-role="chart"><h4>实时数据曲线<span class="r" data-role="chart-src">采控主系统 · 2s 采样</span>
+        </h4><div class="row" style="margin-bottom:8px"><span class="seg" data-switch><i data-span="最近 1 小时">1h</i><i data-span="最近 6 小时">6h</i><i class="on" data-span="最近 24 小时">24h</i></span>
+        <span class="pill ghost" style="margin-left:auto" data-role="range-note">窗口 13:32–14:32</span></div>
         <svg width="388" height="176"><line x1="44" y1="150.0" x2="374" y2="150.0" stroke="#EDF1F6"/><line x1="44" y1="122.8" x2="374" y2="122.8" stroke="#EDF1F6"/><line x1="44" y1="95.6" x2="374" y2="95.6" stroke="#EDF1F6"/><line x1="44" y1="68.4" x2="374" y2="68.4" stroke="#EDF1F6"/><line x1="44" y1="41.2" x2="374" y2="41.2" stroke="#EDF1F6"/><line x1="44" y1="14.0" x2="374" y2="14.0" stroke="#EDF1F6"/><text x="34" y="153.0" text-anchor="end" font-size="10" fill="#8A97A7" font-family="Fira Code">9</text><text x="34" y="98.6" text-anchor="end" font-size="10" fill="#8A97A7" font-family="Fira Code">11</text><text x="34" y="44.2" text-anchor="end" font-size="10" fill="#8A97A7" font-family="Fira Code">13</text><text x="44.0" y="168" text-anchor="middle" font-size="10" fill="#8A97A7" font-family="Fira Code">13:32</text><text x="126.5" y="168" text-anchor="middle" font-size="10" fill="#8A97A7" font-family="Fira Code">13:47</text><text x="209.0" y="168" text-anchor="middle" font-size="10" fill="#8A97A7" font-family="Fira Code">14:02</text><text x="291.5" y="168" text-anchor="middle" font-size="10" fill="#8A97A7" font-family="Fira Code">14:17</text><text x="374.0" y="168" text-anchor="middle" font-size="10" fill="#8A97A7" font-family="Fira Code">14:32</text><polygon points="66.0,90.2 88.0,82.0 110.0,84.7 132.0,71.1 154.0,63.0 176.0,68.4 198.0,57.5 220.0,49.4 242.0,54.8 264.0,43.9 286.0,52.1 308.0,57.5 330.0,46.6 352.0,38.5 374.0,43.9 396.0,57.5 396.0,150.0 66.0,150.0" fill="rgba(40,120,255,.10)"/><line x1="44" y1="122.8" x2="374" y2="122.8" stroke="#E5484D" stroke-width="1.6" stroke-dasharray="5 4"/><circle cx="396.0" cy="57.5" r="4.5" fill="#2878FF" stroke="#fff" stroke-width="2"/><polyline points="66.0,90.2 88.0,82.0 110.0,84.7 132.0,71.1 154.0,63.0 176.0,68.4 198.0,57.5 220.0,49.4 242.0,54.8 264.0,43.9 286.0,52.1 308.0,57.5 330.0,46.6 352.0,38.5 374.0,43.9 396.0,57.5" fill="none" stroke="#2878FF" stroke-width="2.2" stroke-linejoin="round"/><polyline points="66.0,101.0 88.0,93.3 110.0,89.5 132.0,78.0 154.0,70.3 176.0,66.5 198.0,58.8 220.0,55.0 242.0,51.2 264.0,47.3 286.0,43.5 308.0,43.5 330.0,39.7 352.0,43.5 374.0,43.5 396.0,43.5" fill="none" stroke="#8B5CF6" stroke-width="2.2" stroke-dasharray="0"/><circle cx="396.0" cy="43.5" r="4.5" fill="#8B5CF6" stroke="#fff" stroke-width="2"/></svg>
         <div class="legend2"><span><i style="background:#2878FF"></i>抗拉强度 N/mm²</span><span><i style="background:#8B5CF6"></i>绝缘层厚度 mm</span>
         <span><i style="background:#E5484D"></i>下限 10.0</span><span style="margin-left:auto" class="num">stale 0 · missing 0</span></div></div>
-      <div class="blk"><h4>数采分系统状态<span class="r">与检测设备 1:1</span></h4><div class="arow"><span class="dot g"></span><span style="color:var(--t1)">分系统在线</span><span style="margin-left:auto;font-size:11px;color:var(--t3)">DAQ-SUB-106-05 · 心跳 1.4s</span></div><div class="arow"><span class="dot b"></span><span style="color:var(--t1)">上位机握手</span><span style="margin-left:auto;font-size:11px;color:var(--t3)">已获取任务与参数（E7）</span></div><div class="arow"><span class="dot g"></span><span style="color:var(--t1)">数据推送</span><span style="margin-left:auto;font-size:11px;color:var(--t3)">最近上报 14:32:06 · 2s 前</span></div><div class="arow"><span class="dot a"></span><span style="color:var(--t1)">条码衔接</span><span style="margin-left:auto;font-size:11px;color:var(--t3)">扫码触发正常 · 1 次待重试</span></div></div>
+      <div class="blk"><h4>数采分系统状态<span class="r">与检测设备 1:1</span></h4><div class="arow"><span class="dot g"></span><span style="color:var(--t1)">分系统在线</span><span style="margin-left:auto;font-size:11px;color:var(--t3)" data-role="daq-heart">DAQ-SUB-106-05 · 心跳 1.4s</span></div><div class="arow"><span class="dot b"></span><span style="color:var(--t1)">上位机握手</span><span style="margin-left:auto;font-size:11px;color:var(--t3)">已获取任务与参数（E7）</span></div><div class="arow"><span class="dot g"></span><span style="color:var(--t1)">数据推送</span><span style="margin-left:auto;font-size:11px;color:var(--t3)">最近上报 14:32:06 · 2s 前</span></div><div class="arow"><span class="dot a"></span><span style="color:var(--t1)">条码衔接</span><span style="margin-left:auto;font-size:11px;color:var(--t3)">扫码触发正常 · 1 次待重试</span></div></div>
       <div class="blk"><h4>最近告警<span class="r">24h 回溯</span></h4><div class="arow"><span class="pill red">Grade A</span><span>绝缘层厚度 0.71mm 低于下限</span><span class="t">14:31</span><span class="btn pri" style="margin-left:10px">未处置</span></div><div class="arow"><span class="pill org">Grade B</span><span>待检样品 6 件 · 队列瓶颈</span><span class="t">14:22</span><span class="btn gho" style="margin-left:10px">处理中</span></div><div class="arow"><span class="pill amb">Grade C</span><span>夹具气压波动 0.52MPa</span><span class="t">11:08</span><span class="btn gho" style="margin-left:10px">已处置</span></div></div>
     </div>
   </div>
-  <div class="mfoot"><span class="btn pri">安灯呼叫</span><span class="btn sec">查看原始记录</span><span class="btn gho">忽略</span>
-    <span class="btn dan">立即停机</span><span class="hint">关闭后状态回落数据源，不做前端本地隐藏</span><span class="btn gho" style="margin-left:14px">关闭</span></div>
-</div></body></html>
+  <div class="mfoot"><span class="btn pri" data-todo="已发起安灯呼叫（演示）· 派发主任台 + 运维队列">安灯呼叫</span><span class="btn sec" data-todo="原始记录页在 LIMS 侧，本期未接深链">查看原始记录</span><span class="btn gho" data-todo="忽略只记录一次，告警状态仍来自数据源">忽略</span>
+    <span class="btn dan" data-role="dev-cta" data-todo="停机指令下发给集控系统（演示，不改变真实设备）">立即停机</span><span class="hint">关闭后状态回落数据源，不做前端本地隐藏</span><span class="btn gho" style="margin-left:14px" data-back>关闭</span></div>
+</div><script>
+(function(){
+  var PAGES={overview:'01-overview.html',zone106:'02-zone-106.html',device:'03-device-detail.html',alarm:'04-alarm-review.html'};
+  var toast;
+  function say(t){ if(!toast){toast=document.createElement('div');toast.className='proto-toast';document.body.appendChild(toast);}
+    toast.textContent=t; toast.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(function(){toast.classList.remove('on');},2000); }
+  function pick(group,el){ Array.prototype.forEach.call(group.querySelectorAll('.on'),function(k){ if(k!==el&&k.closest('[data-switch]')===group) k.classList.remove('on'); });
+    el.classList.add('on'); }
+  function applyView(name){ var any=false;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-panel-view]'),function(p){ var m=(p.getAttribute('data-panel-view')===name); p.hidden=!m; if(m) any=true; });
+    if(!any) say('该内容块本期未展开'); }
+  var DEV={running:['运行中','g','采控主系统 · 2s 采样','心跳 1.4s · 数据连续'],
+           alarm:['告警','r','采控主系统 · 2s 采样','心跳 1.4s · 上料已暂停'],
+           offline:['离线','m','连接恢复后更新','分系统离线 · 最近上报 10:12:44'],
+           maintain:['维护','a','保养模式 · 数据不入库','联锁开启 · 仅演示不动作']};
+  function applyDevState(st){ document.body.setAttribute('data-devstate',st);
+    var m=DEV[st]||DEV.running, ch=document.querySelector('[data-role=chart]');
+    var d=document.querySelector('[data-role=dev-dot]'); if(d) d.className='dot '+m[1];
+    var s=document.querySelector('[data-role=dev-status]'); if(s) s.textContent=m[0];
+    var c=document.querySelector('[data-role=chart-src]'); if(c) c.textContent=m[2];
+    var q=document.querySelector('[data-role=daq-heart]'); if(q) q.textContent=m[3];
+    if(ch) ch.setAttribute('data-state',st); }
+  function applyReplay(el){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-sel]'),function(x){x.classList.remove('sel')}); el.classList.add('sel');
+    var g=el.getAttribute('data-grade'), title=el.querySelector('.b b');
+    var badge=document.querySelector('[data-role=replay-grade]'), head=document.querySelector('[data-role=replay-title]'),
+        val=document.querySelector('[data-role=replay-val]'), sub=document.querySelector('[data-role=replay-sub]'),
+        tm=document.querySelector('[data-role=replay-time]'), win=document.querySelector('[data-role=replay-window]');
+    if(badge){ badge.textContent='Grade '+g; badge.className='pill '+({A:'red',B:'org',C:'amb'}[g]||'ghost'); }
+    if(head&&title) head.innerHTML=title.textContent+' <span style="font-weight:400;color:var(--t3);font-size:11px">· 回放 '+el.getAttribute('data-window')+'</span>';
+    if(win) win.textContent='回放 '+el.getAttribute('data-window');
+    var unit=document.querySelector('[data-role=replay-unit]'), lab=document.querySelector('[data-role=replay-label]');
+    if(val){ val.textContent=el.getAttribute('data-value'); val.style.color=el.getAttribute('data-vcolor')||'var(--red)'; }
+    if(unit) unit.textContent=el.getAttribute('data-unit')||'';
+    if(lab) lab.textContent=el.getAttribute('data-label')||'';
+    if(sub) sub.textContent=el.getAttribute('data-limit');
+    if(tm) tm.textContent=el.getAttribute('data-time')+':04'; }
+  document.addEventListener('click',function(e){
+    var el=e.target.closest('[data-back],[data-todo],[data-goto],[data-view],[data-sel],[data-switch]');
+    if(!el) return;
+    if(el.hasAttribute('data-back')){ if(history.length>1) history.back(); else location.href=PAGES.zone106; return; }
+    if(el.hasAttribute('data-todo')){ say(el.getAttribute('data-todo')||'本期未覆盖'); return; }
+    if(el.hasAttribute('data-goto')){ var k=el.getAttribute('data-goto'); if(PAGES[k]){ location.href=PAGES[k]; return; } }
+    if(el.hasAttribute('data-view')){ var g=el.closest('[data-switch]')||el.parentNode; if(g) pick(g,el); applyView(el.getAttribute('data-view')); return; }
+    if(el.hasAttribute('data-sel')){ applyReplay(el); return; }
+    if(el.hasAttribute('data-switch')){ var it=e.target.closest('[data-on],i,b,.pill,.seg i,.btn,[data-state],[data-dim],[data-span]');
+      if(it&&el.contains(it)){ pick(el,it);
+        if(it.hasAttribute('data-state')) applyDevState(it.getAttribute('data-state'));
+        var hint=document.querySelector('[data-role=dim-hint]');
+        if(it.hasAttribute('data-dim')&&hint) hint.textContent='叠加层：'+it.textContent.trim()+' · '+(it.getAttribute('data-desc')||'');
+        var note=document.querySelector('[data-role=range-note]');
+        if(it.hasAttribute('data-span')&&note) note.textContent='窗口 '+it.getAttribute('data-span'); } }
+  });
+  applyView(document.body.getAttribute('data-view-start')||'task');
+  var st0=document.body.getAttribute('data-devstate'); if(st0) applyDevState(st0);
+})();
+</script></body></html>

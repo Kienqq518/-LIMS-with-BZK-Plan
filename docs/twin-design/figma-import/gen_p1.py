@@ -37,7 +37,8 @@ def zone_labels():
         cu,cv=(u1+u2)/2,(v1+v2)/2
         badge=ALARM.get(rid)
         cls='zfocus' if ZSTAT.get(rid)=='focus' else ('zalarm' if badge else '')
-        html=f'''<div class="zone {cls}"><b class="num">{rid}</b><span>{nm}</span>'''
+        jump = {"106": " data-goto='zone106'", "108": " data-goto='alarm'"}.get(rid, " data-todo='%s：V1 只做 S1 总览与 S2 的 106 机位'" % nm)
+        html=f'''<div class="zone {cls}"{jump}><b class="num">{rid}</b><span>{nm}</span>'''
         if badge: html+=f'<i class="zb num">{badge[0]} 告警</i>'
         html+='</div>'
         out.append(at(iso,cu,cv,20,html,'zl '+cls))
@@ -53,6 +54,7 @@ EXTRA_CSS="""
 .zone.zfocus b{color:var(--blue)}
 .zone.zalarm{border-color:rgba(229,72,77,.6)}
 .zl{z-index:4}
+.dimhint{position:absolute;right:22px;top:56px;z-index:7;font-size:11px;color:var(--t3);background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:999px;padding:5px 12px}
 .bt-anchor{position:absolute;z-index:5}
 .bt-anchor:after{content:"";position:absolute;left:88px;top:104px;width:2px;height:56px;background:#B7C4D2}
 .bt-anchor .beats{color:#8B5CF6}
@@ -96,10 +98,24 @@ def _trow(t):
             f'<td><div class="bar"><i style="width:{pct}%;background:{color}"></i></div></td>'
             f'<td class="num">{pct}%</td><td class="num">{tm}</td></tr>')
 
+FLOW=[("14:31","A","106-06 绝缘层厚度检测工位","读数 0.71mm 低于下限 0.70mm","未处置","r"),
+       ("14:22","B","106-05 机械性能无人化检测工位","待检样品 6 件 · 等待 18min","处理中","o"),
+       ("13:58","C","108 环境试验区","相对湿度 58%RH 接近上限 60%RH","已处置","m"),
+       ("11:08","C","106-03 热收缩样制工位","夹具气压波动 0.52MPa","已处置","m"),
+       ("10:12","A","106-11 尺寸测量小工位","数采分系统离线 · 无上报","处理中","r")]
+def frow(f):
+    tm,lv,obj,desc,st,cl=f
+    col={"A":"red","B":"org","C":"amb"}[lv]
+    act="立即处置" if st=="未处置" else "查看回溯"
+    return (f'<tr><td class="id">{tm}</td><td><span class="pill {col}">Grade {lv}</span></td><td>{obj}</td>'
+            f'<td>{desc}</td><td><span class="dot {cl}"></span> {st}</td>'
+            f'<td><span class="btn pri" data-goto="alarm">{act}</span></td></tr>')
+FLOWROWS="".join(frow(f) for f in FLOW)
+
 body = nav("总览") + f"""<style>{EXTRA_CSS}</style>
 <div class="scene card" style="left:22px;top:86px;width:1396px;height:656px;overflow:hidden;padding:0">
   <div style="position:absolute;left:16px;top:14px;font-size:14px;font-weight:700">实验室总览 <span style="font-weight:400;color:var(--t3);font-size:12px">· 10 个区域 · 实时轴测</span></div>
-  <div class="dim" style="right:16px;top:14px"><i class="on">人 Man</i><i>机 Machine</i><i>料 Material</i><i>法 Method</i><i>环 Environment</i></div>
+  <div class="dim" style="right:16px;top:14px" data-switch><i class="on" data-dim data-desc="在场人员与授权">人 Man</i><i data-dim data-desc="设备状态与告警">机 Machine</i><i data-dim data-desc="样品 / 耗材位置">料 Material</i><i data-dim data-desc="执行标准与判定规则">法 Method</i><i data-dim data-desc="环境 / 安防 / 影像">环 Environment</i></div>  <div class="dimhint" data-role="dim-hint">叠加层：人 Man · 在场人员与授权</div>
   <svg width="1396" height="656" viewBox="0 0 1396 656" style="position:absolute;inset:0">{guides()}{room_svg()}</svg>
   {zone_labels()}
   <div class="bt-anchor" style="left:648px;top:126px">
@@ -118,27 +134,33 @@ body = nav("总览") + f"""<style>{EXTRA_CSS}</style>
       <div class="kpi"><div class="k">在线设备</div><div class="v">42<span class="u">/46 台</span><span class="d up">↑4</span></div><div class="s">采控系统 · 1:1 数采分系统</div></div>
       <div class="kpi"><div class="k">运行任务</div><div class="v">8<span class="u">个</span><span class="d dn">↓2</span></div><div class="s">调度系统 · 任务编排</div></div>
       <div class="kpi"><div class="k">今日完成</div><div class="v">126<span class="u">项</span><span class="d up">↑18</span></div><div class="s">判定规则已出结果</div></div>
-      <div class="kpi" style="border-color:rgba(229,72,77,.45)"><div class="k">告警数</div><div class="v rd">3<span class="u">条</span><span class="d rd">↑1</span></div><div class="s">A×1 · B×1 · C×1</div></div>
+      <div class="kpi" data-goto="alarm" style="border-color:rgba(229,72,77,.45)"><div class="k">告警数</div><div class="v rd">3<span class="u">条</span><span class="d rd">↑1</span></div><div class="s">A×1 · B×1 · C×1</div></div>
     </div>
   </div>
   <div class="card pnl">
     <div class="hd"><h3>区域告警</h3><span class="sub">同屏脉冲 ≤3</span></div>
-    <div class="arow"><span class="id num">106</span><span>绝缘层厚度检测工位</span><span class="pill red">A</span><span class="t">14:31</span></div>
-    <div class="arow"><span class="id num">106</span><span>机械性能无人化检测工位</span><span class="pill org">B</span><span class="t">14:22</span></div>
-    <div class="arow"><span class="id num">108</span><span>环境试验区 · 湿度 58%RH</span><span class="pill amb">C</span><span class="t">13:58</span></div>
+    <div class="arow" data-goto="alarm"><span class="id num">106</span><span>绝缘层厚度检测工位</span><span class="pill red">A</span><span class="t">14:31</span></div>
+    <div class="arow" data-goto="alarm"><span class="id num">106</span><span>机械性能无人化检测工位</span><span class="pill org">B</span><span class="t">14:22</span></div>
+    <div class="arow" data-goto="alarm"><span class="id num">108</span><span>环境试验区 · 湿度 58%RH</span><span class="pill amb">C</span><span class="t">13:58</span></div>
   </div>
   <div class="card pnl">
     <div class="hd"><h3>机器人与载具</h3><span class="sub">机器人调度系统</span></div>
-    <div class="arow"><span class="dot g"></span><span style="color:var(--t1)">复合机器人 1</span><span class="num" style="color:var(--t3);font-size:11px">RB-C-01</span><span style="margin-left:auto;font-size:11px;color:var(--blue)">106 · 前往检测台</span></div>
-    <div class="arow"><span class="dot b"></span><span style="color:var(--t1)">复合机器人 2</span><span class="num" style="color:var(--t3);font-size:11px">RB-C-02</span><span style="margin-left:auto;font-size:11px;color:var(--t2)">106 · 充电 62%</span></div>
-    <div class="arow"><span class="dot g"></span><span style="color:var(--t1)">AMR 上料</span><span class="num" style="color:var(--t3);font-size:11px">RB-A-01</span><span style="margin-left:auto;font-size:11px;color:var(--t2)">102 → 106 · 3 件</span></div>
+    <div class="arow" data-goto="zone106"><span class="dot g"></span><span style="color:var(--t1)">复合机器人 1</span><span class="num" style="color:var(--t3);font-size:11px">RB-C-01</span><span style="margin-left:auto;font-size:11px;color:var(--blue)">106 · 前往检测台</span></div>
+    <div class="arow" data-goto="zone106"><span class="dot b"></span><span style="color:var(--t1)">复合机器人 2</span><span class="num" style="color:var(--t3);font-size:11px">RB-C-02</span><span style="margin-left:auto;font-size:11px;color:var(--t2)">106 · 充电 62%</span></div>
+    <div class="arow" data-goto="zone106"><span class="dot g"></span><span style="color:var(--t1)">AMR 上料</span><span class="num" style="color:var(--t3);font-size:11px">RB-A-01</span><span style="margin-left:auto;font-size:11px;color:var(--t2)">102 → 106 · 3 件</span></div>
     <div class="arow"><span class="dot m"></span><span style="color:var(--t1)">载具周转</span><span style="margin-left:auto;font-size:11px;color:var(--t2)">12 / 20 在用</span></div>
   </div>
 </div>
 
 <div class="card btm">
-  <div class="tabs2"><i class="on">今日任务</i><i>告警流</i><span class="cnt">共 126 项 · 运行 8 · 待上料 3 · 告警 1 · 已完成 114</span></div>
+  <div class="tabs2" data-switch><i class="on" data-view="task">今日任务</i><i data-view="alarm">告警流</i>
+    <span class="cnt" data-panel-view="task">共 126 项 · 运行 8 · 待上料 3 · 告警 1 · 已完成 114</span>
+    <span class="cnt" data-panel-view="alarm" hidden>近 24h 8 条 · 未处置 1 · 处理中 2 · 已处置 5</span></div>
+  <div data-panel-view="task">
   <table class="tbl"><thead><tr><th>任务编号</th><th>来源</th><th>样品</th><th>区域</th><th>执行设备</th><th>状态</th><th>进度</th><th>%</th><th>更新</th></tr></thead>
-  <tbody>{''.join(_trow(t) for t in TASKS)}</tbody></table>
+  <tbody>{''.join(_trow(t) for t in TASKS)}</tbody></table></div>
+  <div data-panel-view="alarm" hidden>
+  <table class="tbl"><thead><tr><th>时间</th><th>等级</th><th>对象</th><th>触发原因</th><th>状态</th><th>动作</th></tr></thead>
+  <tbody>{FLOWROWS}</tbody></table></div>
 </div>"""
 print(write("01-overview.html", page("overview", body, "S1 · 实验室总览")))

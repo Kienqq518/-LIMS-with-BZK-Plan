@@ -76,9 +76,9 @@ def scene106(k=1.72, ox=700, oy=60, w=1396, h=656, with_overlay=True, dim=False)
         ov.append('<div class="beats-wrap" style="left:%dpx;top:%dpx">%s</div>'%(cx,cy,card))
     s2=svg.replace('</svg>',''.join(lead)+'</svg>')
     # Andon 卡（Grade A）
-    ov.append('<div class="andon-pos"><div class="card andon"><div class="ai">A</div><div class="ab">'
+    ov.append('<div class="andon-pos"><div class="card andon" data-goto="device"><div class="ai">A</div><div class="ab">'
       '<b>绝缘层厚度检测工位 · 数据超限</b><span class="reason"><i class="dot r"></i>读数 0.71mm 低于下限 0.70mm，已暂停上料</span>'
-      '<div class="row" style="gap:8px;margin-top:9px"><span class="btn pri">安灯呼叫</span><span class="btn gho">忽略</span><span class="pill ghost">派发：主任台 + 运维队列</span></div>'
+      '<div class="row" style="gap:8px;margin-top:9px"><span class="btn pri" data-todo="已发起安灯呼叫（演示）· 派发主任台 + 运维队列">安灯呼叫</span><span class="btn gho" data-todo="忽略只记录一次，告警状态仍来自数据源">忽略</span><span class="pill ghost">派发：主任台 + 运维队列</span></div>'
       '</div></div></div>')
     return s2,''.join(ov)
 
@@ -88,6 +88,7 @@ EXTRA="""
 .beats .stem{left:50%}
 .andon-pos{position:absolute;left:18px;bottom:64px;z-index:5}
 .andon{display:flex;gap:12px;padding:14px;width:392px}
+.andon:hover{box-shadow:0 14px 40px rgba(15,40,80,.2)}
 .andon .ai{width:34px;height:34px;border-radius:10px;background:var(--red);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto}
 .andon .ab{flex:1;min-width:0}
 .andon b{font-size:14px;display:block}

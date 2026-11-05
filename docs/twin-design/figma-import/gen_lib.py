@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """数字孪生关键页面 · HTML 生成器（视觉语言提取 V1 / design-tokens.ts）"""
 import json, math, os
+from proto_layer import PROTO, JS, HOOKS
 
 ROOT = "/Users/a1-6/.codex/worktrees/9fb6/-LIMS with BZK-Plan"
 OUT  = "/tmp/twfig/pages"
@@ -172,6 +173,11 @@ body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han 
 /* ---------- 标注 ---------- */
 .note{position:absolute;font-size:11px;color:var(--t3);letter-spacing:.2px}
 .ov{position:absolute}
+.clickable{cursor:pointer}
+[data-role=chart][data-state=offline] .plot,[data-role=chart][data-state=missing] .plot{filter:grayscale(1);opacity:.5}
+[data-role=chart][data-state=maintain] .plot{opacity:.35}
+body[data-devstate=offline] [data-role=dev-cta]{opacity:.5}
+
 /* ---------- 共享布局 ---------- */
 .rail{position:absolute;right:22px;top:86px;width:458px;display:flex;flex-direction:column;gap:16px;align-items:flex-start;z-index:6}
 .rail>*{width:458px;flex:0 0 auto}
@@ -195,20 +201,28 @@ body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han 
   background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:999px;padding:7px 14px;box-shadow:var(--pill);z-index:6}
 """
 
+GOTO={"总览":"overview","设备":"zone106","任务":None,"系统":None,"告警":"alarm"}
+TODO={"任务":"任务看板：V1 未覆盖（PRD 只锁 S1/S2/S3）","系统":"系统交互视图：二期，当前只在告警页关联对象里出现"}
+
 def nav(active, src="3/3 已接入", right_extra=""):
     tabs = ["总览", "设备", "任务", "系统", "告警"]
+    def tab(t):
+        if t==active: return f'<div class="tab on">{t}</div>'
+        if GOTO.get(t): return f'<div class="tab" data-goto="{GOTO[t]}">{t}</div>'
+        return f'<div class="tab" data-todo="{TODO.get(t,"本期未覆盖")}">{t}</div>'
     return f"""<header class="nav">
   <div class="logo"><i></i></div>
   <div class="brand"><b>未来实验室数字孪生</b><span>FUTURE LAB · DIGITAL TWIN</span></div>
   <div class="sep"></div>
-  <div class="tabs">{''.join(f'<div class="tab{" on" if t==active else ""}">{t}</div>' for t in tabs)}</div>
+  <div class="tabs">{''.join(tab(t) for t in tabs)}</div>
   <div class="nav-r">{right_extra}<span class="src">数据源 <b>{src}</b></span>
     <span class="num" style="font-size:12px;color:var(--t3)">2026-11-05 14:32:08</span><div class="av">李</div></div>
 </header>"""
 
-def page(name, body, title):
-    return f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>{title}</title><style>{CSS}</style></head>
-<body data-page="{name}">{body}</body></html>"""
+def page(name, body, title, **kw):
+    extra = "".join(' %s="%s"' % (k, v) for k, v in kw.items())
+    return (f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>{title}</title><style>{CSS}</style>"""
+            f"""<style>{PROTO}</style></head><body data-page="{name}"{extra}>{body}<script>{JS}</script></body></html>""")
 
 def write(fn, html):
     os.makedirs(OUT, exist_ok=True)

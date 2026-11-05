@@ -73,6 +73,38 @@ inst.layoutPositioning='AUTO'; parent.insertChild(parent.children.indexOf(src),i
 
 **未完成**：四个页面 frame 与原型连线（状态切换）。原因：Figma MCP 在 Starter 计划下每月 20 次调用额度已用尽，读写均被拒。
 
+## 6. 现在直接在 HTML 上改设计（交互已内建）
+
+四页已经做成**可点击的浏览器原型**，不依赖 Figma。双击 `01-overview.html` 即可，页面间跳转用相对路径，`file://` 下直接可用。
+
+**交互钩子（改结构时保留这些属性就还能点）**
+
+| 钩子 | 作用 |
+|---|---|
+| `data-goto="overview\|zone106\|device\|alarm"` | 跳到对应页面 |
+| `data-back` | 返回上一页（弹层 ✕ / 关闭） |
+| `data-todo="提示文案"` | 本期未覆盖入口 → 底部轻提示，不留死链 |
+| `data-switch` | 容器：内部互斥选中（分段控件、胶囊组、筛选） |
+| `data-view` + `data-panel-view` | 同页内容切换（S1 今日任务 / 告警流） |
+| `data-sel` + `data-grade/value/unit/limit/window/time` | S4 列表项选中并联动回放面板 |
+| `data-state` / `body[data-devstate]` | 弹层设备状态 running·alarm·offline·maintain（曲线与数采文案随之降级） |
+| `data-dim` / `data-desc` | 5M1E 维度切换 → 更新「叠加层：…」说明 |
+| `data-span` | 时间范围切换 → 更新曲线窗口说明 |
+| `data-role="…"` | 被脚本写入的锚点：`replay-title/grade/val/unit/label/sub/time/window`、`dev-dot/dev-status/chart/chart-src/daq-heart/range-note/dim-hint` |
+
+交互层集中在 `proto_layer.py`（`PROTO` 样式 + `JS` 行为 + `HOOKS` 注释），生成时注入每页 `<head>`/`<body>` 尾部，四页共用一份逻辑。
+
+**已验证（17 项自动化点击用例全通过）**：`test_harness.html` 用三个 iframe 分别跑 S1 / 弹层 / S4，覆盖 5M1E 切换、今日任务↔告警流、未覆盖入口提示、区域卡跳转、弹层四态降级、时间范围说明、列表选中联动回放数值/Grade/时间轴、跨页跳转。复跑：
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --disable-gpu \
+  --allow-file-access-from-files --virtual-time-budget=9000 --dump-dom \
+  "file://$(pwd)/test_harness.html" | grep -o 'PASS\|FAIL' | sort | uniq -c
+```
+
+**注意**：`gen_*.py` 是这四页 HTML 的上游。你若直接改 HTML，别重跑 `gen_p1.py` 等脚本（会被覆盖）；改完把 HTML 丢回给我，我把变更同步回生成器即可。
+
+
 ## 5. 额度恢复后的收尾（约 6–8 次调用）
 
 1. 四份 HTML 依次 `html_to_figma` 导入到页面 `01 · 关键页面`。

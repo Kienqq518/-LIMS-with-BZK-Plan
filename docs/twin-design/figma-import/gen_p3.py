@@ -38,7 +38,7 @@ task=''.join(f'<dt>{k}</dt><dd>{v}</dd>' for k,v in TASK)
 
 DAQ=[('g','分系统在线','DAQ-SUB-106-05 · 心跳 1.4s'),('b','上位机握手','已获取任务与参数（E7）'),
      ('g','数据推送','最近上报 14:32:06 · 2s 前'),('a','条码衔接','扫码触发正常 · 1 次待重试')]
-daq=''.join(f'<div class="arow"><span class="dot {c}"></span><span style="color:var(--t1)">{t}</span><span style="margin-left:auto;font-size:11px;color:var(--t3)">{d}</span></div>' for c,t,d in DAQ)
+daq=''.join(f'<div class="arow"><span class="dot {c}"></span><span style="color:var(--t1)">{t}</span><span style="margin-left:auto;font-size:11px;color:var(--t3)"' + (' data-role="daq-heart"' if i2==0 else '') + f'>{d}</span></div>' for i2,(c,t,d) in enumerate(DAQ))
 
 REC=[('A','绝缘层厚度 0.71mm 低于下限','14:31','未处置'),('B','待检样品 6 件 · 队列瓶颈','14:22','处理中'),
      ('C','夹具气压波动 0.52MPa','11:08','已处置')]
@@ -69,9 +69,9 @@ body = nav("总览") + f"""<style>{EXTRA}
 <div class="modal">
   <div class="mh"><span class="pill ghost" style="height:26px">106 · A 区</span>
     <h2>机械性能无人化检测工位</h2><span class="num" style="color:var(--t3);font-size:12px">EQ-106-05 · Z-106-TEST</span>
-    <span class="dot g" style="margin-left:6px"></span><span style="font-size:12px;color:var(--t2)">运行中</span>
-    <span class="seg" style="margin-left:18px"><i class="on">运行</i><i>告警</i><i>离线</i><i>维护</i></span>
-    <span class="x">✕</span></div>
+    <span class="dot g" style="margin-left:6px" data-role="dev-dot"></span><span style="font-size:12px;color:var(--t2)" data-role="dev-status">运行中</span>
+    <span class="seg" style="margin-left:18px" data-switch><i class="on" data-state="running">运行</i><i data-state="alarm">告警</i><i data-state="offline">离线</i><i data-state="maintain">维护</i></span>
+    <span class="x" data-back>✕</span></div>
   <div class="mbody">
     <div class="mcol" style="width:420px;flex:0 0 auto">
       <div class="blk"><h4>基本信息<span class="r">设备台账 · equip-mgmt</span></h4><dl class="kv">{kv}</dl></div>
@@ -79,13 +79,13 @@ body = nav("总览") + f"""<style>{EXTRA}
         <div class="row" style="margin-top:12px"><div class="bar" style="width:100%"><i style="width:68%"></i></div><span class="num" style="font-size:11px;color:var(--t2)">68%</span></div></div>
       <div class="blk"><h4>所属 LIMS 任务<span class="r">二期深链 · 当前灰态</span></h4>
         <div class="row" style="gap:8px;flex-wrap:wrap"><span class="pill soft">委托 WT-2026-1105-006</span><span class="pill soft">报告 BJ-2026-1105-011</span>
-        <span class="pill off">跳转 LIMS 详情</span></div>
+        <span class="pill off" data-todo="LIMS 深链为二期，当前只做孪生侧来源标记">跳转 LIMS 详情</span></div>
         <div style="font-size:11px;color:var(--t3);margin-top:9px;line-height:1.7">V1 仅呈现孪生侧任务对象与来源标记（source=LIMS / WORKSTATION），深链跳转列为二期。</div></div>
     </div>
     <div class="mcol lims">
-      <div class="blk"><h4>实时数据曲线<span class="r">采控主系统 · 2s 采样</span>
-        </h4><div class="row" style="margin-bottom:8px"><span class="seg"><i>1h</i><i>6h</i><i class="on">24h</i></span>
-        <span class="pill ghost" style="margin-left:auto">窗口 13:32–14:32</span></div>
+      <div class="blk" data-role="chart"><h4>实时数据曲线<span class="r" data-role="chart-src">采控主系统 · 2s 采样</span>
+        </h4><div class="row" style="margin-bottom:8px"><span class="seg" data-switch><i data-span="最近 1 小时">1h</i><i data-span="最近 6 小时">6h</i><i class="on" data-span="最近 24 小时">24h</i></span>
+        <span class="pill ghost" style="margin-left:auto" data-role="range-note">窗口 13:32–14:32</span></div>
         {chart()}
         <div class="legend2"><span><i style="background:#2878FF"></i>抗拉强度 N/mm²</span><span><i style="background:#8B5CF6"></i>绝缘层厚度 mm</span>
         <span><i style="background:#E5484D"></i>下限 10.0</span><span style="margin-left:auto" class="num">stale 0 · missing 0</span></div></div>
@@ -93,7 +93,7 @@ body = nav("总览") + f"""<style>{EXTRA}
       <div class="blk"><h4>最近告警<span class="r">24h 回溯</span></h4>{rec}</div>
     </div>
   </div>
-  <div class="mfoot"><span class="btn pri">安灯呼叫</span><span class="btn sec">查看原始记录</span><span class="btn gho">忽略</span>
-    <span class="btn dan">立即停机</span><span class="hint">关闭后状态回落数据源，不做前端本地隐藏</span><span class="btn gho" style="margin-left:14px">关闭</span></div>
+  <div class="mfoot"><span class="btn pri" data-todo="已发起安灯呼叫（演示）· 派发主任台 + 运维队列">安灯呼叫</span><span class="btn sec" data-todo="原始记录页在 LIMS 侧，本期未接深链">查看原始记录</span><span class="btn gho" data-todo="忽略只记录一次，告警状态仍来自数据源">忽略</span>
+    <span class="btn dan" data-role="dev-cta" data-todo="停机指令下发给集控系统（演示，不改变真实设备）">立即停机</span><span class="hint">关闭后状态回落数据源，不做前端本地隐藏</span><span class="btn gho" style="margin-left:14px" data-back>关闭</span></div>
 </div>"""
-print(write("03-device-detail.html", page("device", body, "设备详情弹层")))
+print(write("03-device-detail.html", page("device", body, "设备详情弹层", **{"data-devstate":"running"})))

@@ -13,10 +13,22 @@ LIST=[('A','106-06 绝缘层厚度检测工位','读数 0.71mm 低于下限 0.70
       ('A','106-11 尺寸测量小工位','数采分系统离线 · 无上报','10:12','处理中',''),
       ('C','102 智能样品室','RFID 读写失败 2 次','09:36','已处置',''),
       ('B','110 数智化电气试验区','金具温升工位 温度 78K 接近限值','08:52','已处置','')]
+EXTRA={
+ '106-06':('0.71','mm','绝缘层厚度 · 回放','下限 0.70 · 判定 V3','14:28–14:34','var(--red)'),
+ '106-05':('6','件','待检样品 · 队列','等待 18min · 瓶颈','14:15–14:25','var(--orange)'),
+ '108':('58','%RH','环境试验区 · 湿度','上限 60%RH','13:40–14:00','var(--amber)'),
+ '106-03':('0.52','MPa','夹具气压','下限 0.55MPa','10:55–11:15','var(--amber)'),
+ '105':('12','s','耐压系统通讯中断','> 10s 触发','10:30–10:50','var(--orange)'),
+ '106-11':('—','','数采分系统 · 上报','无上报 · 离线','09:55–10:20','var(--red)'),
+ '102':('2','次','RFID 读写失败','扫码台 3','09:25–09:45','var(--amber)'),
+ '110':('78','K','金具温升','限值 80K','08:40–09:00','var(--orange)')}
 def lrow(a):
     lv,dv,rs,tm,st,sel=a
     col={'A':'red','B':'org','C':'amb'}[lv]
-    return (f'<div class="al {sel}"><span class="pill {col}">{lv}</span><div class="b"><b>{dv}</b><span>{rs}</span>'
+    key=dv.split()[0]; ex=EXTRA.get(key,('—','','','—','','var(--red)'))
+    return (f'<div class="al {sel}" data-sel data-grade="{lv}" data-value="{ex[0]}" data-unit="{ex[1]}" data-label="{ex[2]}" '
+            f'data-limit="{ex[3]}" data-window="{ex[4]}" data-vcolor="{ex[5]}" data-time="{tm}">'
+            f'<span class="pill {col}">{lv}</span><div class="b"><b>{dv}</b><span>{rs}</span>'
             f'<div class="m"><span class="num">{tm}</span><span class="st {"un" if st=="未处置" else ("ing" if st=="处理中" else "ok")}">{st}</span>'
             f'<span class="num" style="margin-left:auto">影响 1 样品 · 1 任务</span></div></div></div>')
 
@@ -41,7 +53,8 @@ body = nav("告警") + f"""<style>{EXTRA}
   background:rgba(255,255,255,.88);border-bottom:1px solid var(--line);backdrop-filter:blur(8px);z-index:8}}
 .fbar h2{{font-size:15px;font-weight:700;margin-right:8px}}
 .fbar .lbl{{font-size:11px;color:var(--t3);margin-left:8px}}
-.al{{display:flex;gap:10px;padding:12px;border-radius:12px;border:1px solid transparent;cursor:default}}
+.al{{display:flex;gap:10px;padding:12px;border-radius:12px;border:1px solid transparent;cursor:pointer}}
+.al:hover{{background:#FAFCFF}}
 .al.sel{{background:#F5F9FF;border-color:var(--blue);box-shadow:0 0 0 3px rgba(40,120,255,.10)}}
 .al+.al{{margin-top:6px}}
 .al .b{{flex:1;min-width:0}}.al .b b{{font-size:12px;display:block;color:var(--t1)}}
@@ -68,8 +81,8 @@ body = nav("告警") + f"""<style>{EXTRA}
 .spark i{{width:12px;border-radius:3px 3px 0 0;background:var(--blue-soft);display:block}}
 .spark i.hi{{background:var(--red)}}
 </style>
-<div class="fbar"><h2>告警回溯</h2><span class="lbl">范围</span><span class="seg"><i class="on">近 24h</i><i>近 7 日</i></span>
-  <span class="lbl">等级</span><span class="pill red">A ×2</span><span class="pill org">B ×3</span><span class="pill amb">C ×3</span>
+<div class="fbar"><h2>告警回溯</h2><span class="lbl">范围</span><span class="seg" data-switch><i class="on">近 24h</i><i data-todo="近 7 日超出 V1 范围（只做 24h 回溯）">近 7 日</i></span>
+  <span class="lbl">等级</span><span data-switch style="display:flex;gap:8px"><span class="pill red on">A ×2</span><span class="pill org on">B ×3</span><span class="pill amb on">C ×3</span></span>
   <span class="lbl">区域</span><span class="pill ghost">106 无人化电缆试验区 ▾</span><span class="pill ghost">状态：全部 ▾</span>
   <span style="margin-left:auto" class="btn gho">导出回溯报告</span></div>
 
@@ -80,19 +93,19 @@ body = nav("告警") + f"""<style>{EXTRA}
 </div>
 
 <div class="card" style="position:absolute;left:468px;top:130px;width:950px;height:600px;overflow:hidden">
-  <div style="position:absolute;left:16px;top:12px;z-index:7;font-size:13px;font-weight:700">告警现场 · 106-06 绝缘层厚度检测工位
-    <span style="font-weight:400;color:var(--t3);font-size:11px"> · 回放 14:28–14:34</span></div>
-  <div style="position:absolute;right:16px;top:12px;z-index:7" class="row"><span class="pill red">Grade A</span><span class="seg"><i class="on">回放</i><i>实时</i></span></div>
+  <div style="position:absolute;left:16px;top:12px;z-index:7;font-size:13px;font-weight:700" data-role="replay-title">告警现场 · 106-06 绝缘层厚度检测工位
+    <span style="font-weight:400;color:var(--t3);font-size:11px" data-role="replay-window"> · 回放 14:28–14:34</span></div>
+  <div style="position:absolute;right:16px;top:12px;z-index:7" class="row"><span class="pill red" data-role="replay-grade">Grade A</span><span class="seg" data-switch><i class="on">回放</i><i data-todo="实时视图在 S2 重点监控页">实时</i></span></div>
   <div style="position:absolute;left:0;top:0">{svg}</div>
   <div style="position:absolute;left:560px;top:232px;z-index:5">
-    <div class="beats" style="color:#E5484D;width:186px"><div class="k">绝缘层厚度 · 回放</div><div class="v">0.71<span class="u">mm</span></div>
-      <div style="font-size:11px;color:var(--t3);margin-top:6px">下限 0.70 · 判定 V3</div></div></div>
+    <div class="beats" style="color:#E5484D;width:186px"><div class="k" data-role="replay-label">绝缘层厚度 · 回放</div><div class="v"><span data-role="replay-val">0.71</span><span class="u" data-role="replay-unit">mm</span></div>
+      <div style="font-size:11px;color:var(--t3);margin-top:6px" data-role="replay-sub">下限 0.70 · 判定 V3</div></div></div>
   <div class="scrub" style="position:absolute;left:0;right:0;bottom:0;background:rgba(255,255,255,.94)">
     <span class="btn pri" style="width:34px;justify-content:center">▶</span>
-    <span class="num" style="font-size:12px;color:var(--t2)">14:31:04</span>
+    <span class="num" style="font-size:12px;color:var(--t2)" data-role="replay-time">14:31:04</span>
     <div class="track"><i></i>{TICKS}<b></b></div>
     <span class="num" style="font-size:12px;color:var(--t3)">14:34:00</span>
-    <span class="seg"><i>0.5×</i><i class="on">1×</i><i>4×</i></span>
+    <span class="seg" data-switch><i>0.5×</i><i class="on">1×</i><i>4×</i></span>
     <span class="pill ghost">关键帧 3</span></div>
 </div>
 
@@ -105,7 +118,7 @@ body = nav("告警") + f"""<style>{EXTRA}
       <span class="sub" style="margin-left:auto;font-size:11px;color:var(--t3)">数采分系统 DAQ-SUB-106-06</span></div>
       <table class="tbl"><thead><tr><th>时间</th><th>绝缘层厚度</th><th>抗拉强度</th><th>夹具气压</th></tr></thead><tbody>{snap}</tbody></table>
       <div class="row" style="margin-top:12px;gap:8px"><span class="pill soft">影响样品 SPL-2611-0342</span>
-        <span class="pill soft">影响任务 TK-2026-1105-018</span><span class="btn sec" style="margin-left:auto">查看原始记录</span></div></div>
+        <span class="pill soft">影响任务 TK-2026-1105-018</span><span class="btn sec" style="margin-left:auto" data-goto="device">查看原始记录</span></div></div>
   </div>
 </div>
 
@@ -119,8 +132,8 @@ body = nav("告警") + f"""<style>{EXTRA}
     <div class="spark">{SPARK}</div>
     <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-top:6px" class="num"><span>00:00</span><span>08:00</span><span>14:00</span></div></div>
   <div class="card pnl"><div class="hd"><h3>关联对象</h3><span class="sub">孪生对象模型</span></div>
-    <div class="arow"><span class="dot r"></span><span style="color:var(--t1)">设备</span><span class="num" style="margin-left:auto">106-06 绝缘层厚度检测工位</span></div>
-    <div class="arow"><span class="dot o"></span><span style="color:var(--t1)">任务</span><span class="num" style="margin-left:auto">TK-2026-1105-018</span></div>
+    <div class="arow" data-goto="device"><span class="dot r"></span><span style="color:var(--t1)">设备</span><span class="num" style="margin-left:auto">106-06 绝缘层厚度检测工位</span></div>
+    <div class="arow" data-goto="device"><span class="dot o"></span><span style="color:var(--t1)">任务</span><span class="num" style="margin-left:auto">TK-2026-1105-018</span></div>
     <div class="arow"><span class="dot a"></span><span style="color:var(--t1)">样品</span><span class="num" style="margin-left:auto">SPL-2611-0342</span></div>
     <div class="arow"><span class="dot g"></span><span style="color:var(--t1)">AMR 上料</span><span class="num" style="margin-left:auto">RB-A-01 · 载货 3 件</span></div>
     <div class="arow"><span class="dot b"></span><span style="color:var(--t1)">复合机器人</span><span class="num" style="margin-left:auto">RB-C-01 · 前往 检测台 1</span></div>

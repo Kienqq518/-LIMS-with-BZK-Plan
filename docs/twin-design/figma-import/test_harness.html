@@ -1,0 +1,62 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font:13px monospace;color:#0F2740}iframe{width:1920px;height:1080px;border:0;display:block}</style></head><body>
+<iframe id="f1" src="pages/01-overview.html"></iframe>
+<iframe id="f3" src="pages/03-device-detail.html"></iframe>
+<iframe id="f4" src="pages/04-alarm-review.html"></iframe>
+<div id="R"></div>
+<script>
+var out=[];
+function ok(n,c,e){ out.push((c?'PASS':'FAIL')+' · '+n+(c?'':' → '+e)); }
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms)});}
+(async function(){
+  await sleep(600);
+  var w1=f1.contentDocument, d1=f1.contentDocument;
+  // 1) 5M1E 切换
+  var pills=[].slice.call(d1.querySelectorAll('.dim [data-dim]'));
+  pills[1].click(); await sleep(60);
+  ok('S1 5M1E 点击「机 Machine」变选中', pills[1].classList.contains('on') && !pills[0].classList.contains('on'), pills.map(function(p){return p.className}).join('|'));
+  ok('S1 5M1E 更新叠加层说明', /机 Machine/.test(d1.querySelector('[data-role=dim-hint]').textContent), d1.querySelector('[data-role=dim-hint]').textContent);
+  // 2) 底部页签切换
+  var tabs=[].slice.call(d1.querySelectorAll('.tabs2 [data-view]'));
+  tabs[1].click(); await sleep(60);
+  var tp=d1.querySelector('div[data-panel-view=task]'), ap=d1.querySelector('div[data-panel-view=alarm]');
+  ok('S1 切到告警流：任务面板隐藏 / 告警面板显示', tp.hidden && !ap.hidden, 'task.hidden='+tp.hidden+' alarm.hidden='+ap.hidden);
+  ok('S1 告警流有 5 行', ap.querySelectorAll('tbody tr').length===5, ap.querySelectorAll('tbody tr').length);
+  tabs[0].click(); await sleep(60);
+  ok('S1 切回今日任务', !tp.hidden && ap.hidden, 'task.hidden='+tp.hidden);
+  // 3) 未覆盖入口提示
+  var sys=[].slice.call(d1.querySelectorAll('.tab')).filter(function(t){return t.textContent==='系统'})[0];
+  sys.click(); await sleep(60);
+  var tst=d1.querySelector('.proto-toast');
+  ok('S1 导航「系统」给轻提示而非死链', tst && tst.classList.contains('on') && /二期/.test(tst.textContent), tst?tst.textContent:'no toast');
+  // 4) 区域卡跳转
+  var z=d1.querySelector('.zone[data-goto=zone106]'); z.click(); await sleep(500);
+  ok('S1 点 106 区域 → 02-zone-106.html', /02-zone-106/.test(f1.contentWindow.location.pathname), f1.contentWindow.location.pathname);
+  // 5) 弹层状态切换
+  var d3=f3.contentDocument;
+  var seg=[].slice.call(d3.querySelectorAll('.seg[data-switch] i[data-state]'));
+  seg[2].click(); await sleep(60);
+  ok('弹层切「离线」→ body[data-devstate]', d3.body.getAttribute('data-devstate')==='offline', d3.body.getAttribute('data-devstate'));
+  ok('弹层离线：状态文案与曲线降级', d3.querySelector('[data-role=dev-status]').textContent==='离线' && d3.querySelector('[data-role=chart]').getAttribute('data-state')==='offline',
+     d3.querySelector('[data-role=dev-status]').textContent+'/'+d3.querySelector('[data-role=chart]').getAttribute('data-state'));
+  ok('弹层离线：数采心跳文案变化', /离线/.test(d3.querySelector('[data-role=daq-heart]').textContent), d3.querySelector('[data-role=daq-heart]').textContent);
+  seg[0].click(); await sleep(60);
+  ok('弹层切回「运行」', d3.body.getAttribute('data-devstate')==='running', d3.body.getAttribute('data-devstate'));
+  // 6) 时间范围
+  var sp=[].slice.call(d3.querySelectorAll('.seg[data-switch] i[data-span]'));
+  sp[0].click(); await sleep(60);
+  ok('弹层 1h → 窗口说明更新', /最近 1 小时/.test(d3.querySelector('[data-role=range-note]').textContent), d3.querySelector('[data-role=range-note]').textContent);
+  // 7) 告警列表选择联动回放
+  var d4=f4.contentDocument;
+  var rows=[].slice.call(d4.querySelectorAll('[data-sel]'));
+  rows[2].click(); await sleep(60);
+  ok('S4 点第 3 条 → 该行选中', rows[2].classList.contains('sel') && !rows[0].classList.contains('sel'), rows.map(function(r){return r.className}).join('|'));
+  ok('S4 回放数值联动 58 %RH', d4.querySelector('[data-role=replay-val]').textContent==='58' && d4.querySelector('[data-role=replay-unit]').textContent==='%RH',
+     d4.querySelector('[data-role=replay-val]').textContent+' '+d4.querySelector('[data-role=replay-unit]').textContent);
+  ok('S4 Grade 徽标联动 C', d4.querySelector('[data-role=replay-grade]').textContent==='Grade C', d4.querySelector('[data-role=replay-grade]').textContent);
+  ok('S4 回放时间轴起点联动 13:58', /13:58/.test(d4.querySelector('[data-role=replay-time]').textContent), d4.querySelector('[data-role=replay-time]').textContent);
+  // 8) S4 跳转设备详情
+  d4.querySelector('.btn[data-goto=device]').click(); await sleep(500);
+  ok('S4 查看原始记录 → 03-device-detail.html', /03-device-detail/.test(f4.contentWindow.location.pathname), f4.contentWindow.location.pathname);
+  document.getElementById('R').textContent=out.join('\n');
+})();
+</script></body></html>
