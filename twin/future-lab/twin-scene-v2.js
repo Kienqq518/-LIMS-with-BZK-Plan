@@ -2,7 +2,7 @@
 (function () {
   var $ = function (s) { return document.querySelector(s); };
   var scene = $('#scene'), devices = [], robots = [], alarms = [], tasks = [], samples = [];
-  var mode = 'S1', dim = 'machine', rtTimer = null, detailDev = null;
+  var mode = 'S1', dim = 'machine', rtTimer = null, detailDev = null, dispatchTasks = [];
   var VIEWS = { S1: 'overall-101', S2: 'close', S3: 'close' };
   var KIND_STYLE = { command: ['#2878FF', '6 0'], data: ['#16A34A', '6 0'], sync: ['#94A3B8', '5 5'], query: ['#8B5CF6', '2 5'] };
 
@@ -18,12 +18,13 @@
       TwinApi.get('/api/overview/lab-status'), TwinApi.get('/api/overview/zones'),
       TwinApi.get('/api/overview/today-tasks'), TwinApi.get('/api/overview/alarms'),
       TwinApi.get('/api/zone/106/devices'), TwinApi.get('/api/zone/106/robots'),
-      TwinApi.get('/api/zone/106/samples')
+      TwinApi.get('/api/zone/106/samples'),
+      TwinApi.get('/api/zone/106/dispatch-tasks')
     ]);
   }).then(function (res) {
     renderStatus(res[0].data); renderZones(res[1].data); tasks = res[2].data; renderTasks();
-    alarms = res[3].data; renderAlarms(); devices = res[4].data; robots = res[5].data; samples = res[6].data;
-    renderRobots(); pushState();
+    alarms = res[3].data; renderAlarms(); devices = res[4].data; robots = res[5].data; samples = res[6].data; dispatchTasks = res[7].data || [];
+    renderRobots(); pushState(); renderTasks();
     TwinApi.ws(onEvent);
   }).catch(function (e) { fail(e.message); });
 
@@ -60,6 +61,14 @@
     }).join('');
   }
   function renderTasks() {
+    if (mode === 'S2') {  /* 调度任务流：真实流程配置（调度系统任务明细结构） */
+      $('#taskStrip').innerHTML = dispatchTasks.slice().sort(function (a, b) { return (b.status === 'running') - (a.status === 'running'); }).slice(0, 10).map(function (t) {
+        return '<div class="task-chip ' + (t.status === 'running' ? 'run' : 'ok') + '" data-devcode="' + t.deviceCode + '">' +
+          '<b>' + t.flowName + '</b><small>' + t.time + ' · ' + t.deviceCode + ' · ' + (t.robotId || '') + '</small>' +
+          '<div class="bar"><i style="width:' + (t.status === 'running' ? 55 : 100) + '%"></i></div></div>';
+      }).join('');
+      return;
+    }
     $('#taskStrip').innerHTML = tasks.map(function (t) {
       var cls = t.result === 'alarm' ? 'abn' : t.source === 'WORKSTATION' ? 'ws' : '';
       return '<div class="task-chip ' + cls + '" data-task="' + t.taskId + '"><b>' + t.sampleId + ' · ' + t.type + '</b>' +
@@ -87,7 +96,7 @@
   /* ---------- 视角与模式（gameplay-systems：视角切换/告警联动） ---------- */
   document.querySelectorAll('.mode').forEach(function (b) { b.onclick = function () {
     document.querySelectorAll('.mode').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active');
-    mode = b.dataset.mode; $('#s3Drawer').hidden = mode !== 'S3';
+    mode = b.dataset.mode; $('#s3Drawer').hidden = mode !== 'S3'; renderTasks();
     if (mode === 'S3') renderS3();
     sceneCmd('view', { view: VIEWS[mode] });
   }; });
@@ -134,6 +143,13 @@
   }
   function openDetail(html) { $('#detailBody').innerHTML = html; $('#detail').hidden = false; }
   $('#detailClose').onclick = function () { $('#detail').hidden = true; clearInterval(rtTimer); detailDev = null; };
+
+  $('#taskStrip').addEventListener('click', function (e) {
+    var chip = e.target.closest('[data-devcode]'); if (!chip) return;
+    var code = chip.dataset.devcode;
+    var match = devices.filter(function (x) { return x.code === code; })[0];
+    if (match) { detailDev = match; openDetail(deviceHtml(match)); pollRealtime(); }
+  });
 
   /* ---------- S3 告警回溯（24h，PRD 非目标边界内） ---------- */
   $('#andonZone').addEventListener('click', function (e) {

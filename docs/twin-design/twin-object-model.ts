@@ -102,6 +102,19 @@ export interface Task {
   createdAt: string; finishedAt: string | null;
 }
 
+/** 1.5b 调度任务（真实调度系统任务明细：任务号={流程前缀5位}{yyyyMMdd}{HHmm}） */
+export interface DispatchTask {
+  taskId: string;              // 14144202611051004
+  remark: string;              // 默认=任务号，历史压缩为前5位
+  flowCode: string;            // 0115|0121|0122|0131|0132|0141|0142|0152|0172
+  flowName: string;            // 如 "0141 哑铃样取料"
+  deviceId: string;            // 绑定设备（流程名↔工位名推断，待接口核对）
+  deviceCode: string;
+  time: string;                // HH:mm，从任务号尾部解析
+  status: 'done' | 'running';
+  robotId: string;             // RB-C-01 | RB-A-01
+}
+
 /** 1.6 系统交互视图 */
 export type Lane = '业务层'|'调度层'|'执行层'|'采集层'|'物联层'|'外部物联'|'展示层';
 export type EdgeKind = 'command'|'data'|'sync'|'query';

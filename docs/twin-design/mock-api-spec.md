@@ -19,6 +19,7 @@
 | `GET /api/zone/106/robots` | RB-C-01/RB-A-01：path(three-world-m 已标定 x[10,18] z[11,26])、progress、battery、action | ①经机器人调度 | 1–5s |
 | `GET /api/zone/106/samples` | Sample[]：barcode、location(holder=device/shelf/robot)、transferHistory | ①调度 | 事件驱动 |
 | `GET /api/zone/106/current-tasks` | 在制 taskId 列表 | ①调度 | 10s |
+| `GET /api/zone/106/dispatch-tasks` | DispatchTask[]（真实任务号/流程配置/绑定设备/执行机器人，见对象模型 §1.5b） | ①调度 | 事件驱动 |
 
 ## 3. 详情与回溯组（S3/P1）
 | 端点 | 说明 |
