@@ -19,11 +19,12 @@
       TwinApi.get('/api/overview/today-tasks'), TwinApi.get('/api/overview/alarms'),
       TwinApi.get('/api/zone/106/devices'), TwinApi.get('/api/zone/106/robots'),
       TwinApi.get('/api/zone/106/samples'),
-      TwinApi.get('/api/zone/106/dispatch-tasks')
+      TwinApi.get('/api/zone/106/dispatch-tasks'),
+      TwinApi.get('/api/zone/103/devices')
     ]);
   }).then(function (res) {
     renderStatus(res[0].data); renderZones(res[1].data); tasks = res[2].data; renderTasks();
-    alarms = res[3].data; renderAlarms(); devices = res[4].data; robots = res[5].data; samples = res[6].data; dispatchTasks = res[7].data || [];
+    alarms = res[3].data; renderAlarms(); devices = (res[4].data || []).concat(res[8].data || []); robots = res[5].data; samples = res[6].data; dispatchTasks = res[7].data || [];
     renderRobots(); pushState(); renderTasks();
     TwinApi.ws(onEvent);
   }).catch(function (e) { fail(e.message); });
@@ -118,7 +119,7 @@
   });
   function openDeviceByCad(dev) {
     var match = devices.filter(function (x) { return x.modelNode === 'cad:' + dev.id; })[0];
-    if (!match) { openDetail('<h3>' + escapeHtml(dev.name || dev.id) + '</h3><div class="sub">该设备未纳入 106 V1 对象清单（诚实降级：无 mock 档案）</div>'); return; }
+    if (!match) { openDetail('<h3>' + escapeHtml(dev.name || dev.id) + '</h3><div class="sub">该设备未纳入孪生对象清单（诚实降级：无 mock 档案）</div>'); return; }
     detailDev = match; openDetail(deviceHtml(match)); pollRealtime();
   }
   function deviceHtml(d) {

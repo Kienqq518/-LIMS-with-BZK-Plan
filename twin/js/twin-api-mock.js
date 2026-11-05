@@ -58,8 +58,9 @@
       var m;
       if ((m = path.match(/^\/api\/overview\/([\w-]+)$/))) return resolve(envelope(clone(state.overview[m[1]] || null)));
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/([\w-]+)$/))) {
-        if (m[1] !== '106') return resolve(envelope({ unsupported: true, zoneId: m[1], note: 'V1 仅 106 细分（PRD S2）' }));
-        return resolve(envelope(clone(state.zone106[m[2]] || null)));
+        var zone = state['zone' + m[1]];
+        if (!zone) return resolve(envelope({ unsupported: true, zoneId: m[1], note: '该区未建 mock 分区数据（V1 监控细分仅 106，PRD S2）' }));
+        return resolve(envelope(clone(zone[m[2]] || null)));
       }
       if ((m = path.match(/^\/api\/alarm\/([\w-]+)\/trace$/))) {
         var alarm = state.overview.alarms.filter(function (a) { return a.alarmId === m[1]; })[0];
