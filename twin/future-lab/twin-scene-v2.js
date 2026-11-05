@@ -94,6 +94,27 @@
     });
   }
 
+  /* ---------- V4 节点协议：nodes-ready → 推送快照点亮 IoT 层；room-selected → 切特写 ---------- */
+  let nodeConfigs = null;
+  fetch('data/iot-nodes.json').then(function (r) { return r.json(); }).then(function (c) { nodeConfigs = c.nodes; });
+  function sendSnapshots() {
+    if (!nodeConfigs || !scene.contentWindow) return;
+    import('./iot/monitoring-data.js').then(function (m) {
+      var now = new Date().toISOString();
+      var nodes = nodeConfigs.map(function (n) {
+        var v = m.normalValues(n);
+        Object.keys(v).forEach(function (k) { if (typeof v[k] === 'number') v[k] = Math.round((v[k] + (Math.random() - 0.5) * 0.6) * 10) / 10; });
+        return { id: n.id, roomId: n.roomId, name: n.name, type: n.type, position: n.position, status: 'normal', values: v, updatedAt: now };
+      });
+      scene.contentWindow.postMessage({ channel: 'room-tour-node-v3', type: 'snapshots', nodes: nodes }, location.origin);
+    });
+  }
+  window.addEventListener('message', function (e) {
+    var d = e.data; if (!d || d.channel !== 'room-tour-node-v3') return;
+    if (d.type === 'nodes-ready') { sendSnapshots(); setInterval(sendSnapshots, 5000); }
+    if (d.type === 'room-selected') sceneCmd('view', { view: d.roomId === '106' ? 'close' : d.roomId + '-close' });
+  });
+
   /* ---------- 视角与模式（gameplay-systems：视角切换/告警联动） ---------- */
   document.querySelectorAll('.mode').forEach(function (b) { b.onclick = function () {
     document.querySelectorAll('.mode').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active');

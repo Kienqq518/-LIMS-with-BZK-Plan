@@ -149,6 +149,65 @@ function startAnimLoop() {
   requestAnimationFrame(loop);
 }
 
+
+/* ---------- IoT 节点标注：身份标签 + 点击详情卡（V2 门禁内） ---------- */
+const NODE_TYPE_CN = { temperature: '温湿度', light: '光照', smoke: '烟感', water: '水浸', gas: '可燃气体', motion: '人体活动', switch: '开关量', camera: '视觉' };
+let nodeMeta = null, popEl = null, popFor = null;
+function injectNodeStyle() {
+  if (document.getElementById('twin-v2-node-style')) return;
+  const st = document.createElement('style'); st.id = 'twin-v2-node-style';
+  st.textContent = `.orb-tag{position:absolute;right:calc(100% + 6px);top:50%;transform:translateY(-50%);white-space:nowrap;font-size:10px;line-height:1;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,.92);border:1px solid #E3E9F2;color:#415063;box-shadow:0 4px 14px rgba(15,40,80,.08);pointer-events:none;font-family:"PingFang SC",system-ui,sans-serif}
+  .orb-tag b{color:#0F2740;font-weight:600}
+  .orb-pop{position:absolute;z-index:30;width:216px;background:#fff;border-radius:14px;box-shadow:0 14px 40px rgba(15,40,80,.14);padding:12px 14px;font-family:"PingFang SC",system-ui,sans-serif}
+  .orb-pop h4{margin:0 0 2px;font-size:13px;color:#0F2740}
+  .orb-pop .id{font-size:10px;color:#8A97A7;font-family:"Fira Code",monospace;margin-bottom:8px}
+  .orb-pop .row{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px dashed #EDF1F7;color:#5B6B7D}
+  .orb-pop .row b{color:#0F2740;font-weight:500}
+  .orb-pop .close{position:absolute;right:8px;top:8px;border:0;background:0;font-size:15px;color:#8A97A7;cursor:pointer}
+  .orb-pop .honest{font-size:10px;color:#F59E0B;margin-top:6px}`;
+  document.head.append(st);
+}
+function annotateNodes() {
+  injectNodeStyle();
+  const timer = setInterval(() => {
+    const orbs = document.querySelectorAll('.node-marker[data-node-id], .node-orb[data-node-id]');
+    if (!orbs.length) return;
+    clearInterval(timer);
+    if (!nodeMeta) fetch('./data/iot-nodes.json').then(r => r.json()).then(meta => { nodeMeta = meta; paint(); });
+    function paint() {
+      orbs.forEach(orb => {
+        if (orb.querySelector('.orb-tag')) return;
+        const n = nodeMeta && nodeMeta.nodes.find(x => x.id === orb.dataset.nodeId);
+        const tag = document.createElement('span'); tag.className = 'orb-tag';
+        tag.innerHTML = n ? '<b>' + n.name + '</b> · ' + (NODE_TYPE_CN[n.type] || n.type) : orb.dataset.nodeId;
+        orb.style.position = orb.style.position || 'absolute';
+        orb.append(tag);
+        /* 点击详情交给 NodeLayer 自带 NodeDetail 卡（实时读数/离线态/时间戳），此处不重复挂卡避免双卡 */
+      });
+    }
+    if (nodeMeta) paint();
+  }, 800);
+}
+function showPop(orb, n) {
+  if (!popEl) { popEl = document.createElement('div'); popEl.className = 'orb-pop'; document.body.append(popEl); }
+  if (popFor === orb.dataset.nodeId && !popEl.hidden) { closePop(); return; }
+  popFor = orb.dataset.nodeId;
+  const r = orb.getBoundingClientRect();
+  popEl.innerHTML = '<button class="close" aria-label="关闭">×</button><h4>' + (n ? n.name : orb.dataset.nodeId) + '</h4><div class="id">' + orb.dataset.nodeId + '</div>' +
+    (n ? '<div class="row"><span>类型</span><b>' + (NODE_TYPE_CN[n.type] || n.type) + '</b></div>' +
+         '<div class="row"><span>房间</span><b>' + n.roomId + '</b></div>' +
+         '<div class="row"><span>数据来源</span><b>' + (n.dataSource === 'mock' ? 'mock（待接三源）' : n.dataSource) + '</b></div>' +
+         (n.associatedDeviceId ? '<div class="row"><span>关联设备</span><b>' + n.associatedDeviceId + '</b></div>' : '') +
+         (n.placement === 'planned' ? '<div class="honest">⚠ 位置为规划示意（' + (n.placementNote || '候选位置') + '），非施工坐标</div>' : '') : '') +
+    '<div class="row"><span>状态</span><b>' + (orb.getAttribute('aria-label') || '').split('，').pop() + '</b></div>';
+  popEl.style.left = Math.min(innerWidth - 230, r.right + 10) + 'px';
+  popEl.style.top = Math.max(66, r.top - 40) + 'px';
+  popEl.hidden = false;
+  popEl.querySelector('.close').onclick = closePop;
+}
+function closePop() { if (popEl) popEl.hidden = true; popFor = null; }
+document.addEventListener('click', e => { if (popEl && !popEl.hidden && !e.target.closest('.node-orb,.node-marker') && !e.target.closest('.orb-pop')) closePop(); });
+
 function boot() {
   const wait = setInterval(async () => {
     const v = window.visual106;
@@ -175,6 +234,7 @@ function build(v) {
   treatArchitecture();
   applyMaterialPass();
   startAnimLoop();
+  annotateNodes();
   /* QA 自检钩子（DOM 可被隔离世界读取） */
   const hook = document.createElement('div'); hook.id = 'twin-v2-bridge';
   hook.dataset.guide = String(guide.children.length); hook.dataset.robots = String(Object.keys(robots).length); hook.dataset.walls = wallMesh ? '1' : '0';
