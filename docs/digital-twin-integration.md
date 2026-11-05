@@ -5,9 +5,9 @@
 
 ## 1. 并入结果（T0，本次并入）
 
-- 入口：`twin/future-lab/tour-space-v3-1.html`（101—110 房间三维模型，原生 ESM + 本地 Three.js，无 CDN、无构建）。
+- 入口：`twin/future-lab/tour-lab-v3-1.html`（101—110 房间三维模型 + IoT 节点层，原生 ESM + 本地 Three.js，无 CDN、无构建）；纯模型版 `tour-space-v3-1.html` 保留，可直链访问。
 - 挂接：`testos.html` 应用矩阵「实验室数字孪生」卡片已指向该入口。
-- 规范：入口页已按全站约定引用 `css/ui-baseline.css`（置于包样式之前，包内视觉保持最终话语权）与 `js/ui-a11y.js`。
+- 规范：两个入口页均已按全站约定引用 `css/ui-baseline.css`（置于包样式之前，包内视觉保持最终话语权）与 `js/ui-a11y.js`。
 - 体积：约 36 MB 静态资源，Vercel 单文件均远小于 100 MB 限制，构建无风险。
 - 不要直接双击 HTML：ES Module 需要 http 源，本地预览用 `python3 -m http.server`。
 
@@ -59,6 +59,8 @@ new LiveNodeAdapter({ loadInitial, subscribe, decode })  // iot/api-adapter.js �
 | 101/105 PIR | motion | 无人化试验区活动检测 | P4 无人化叙事位；未部署前保持 `missing`，不造假 |
 | 106 IO | switch | 复合机器人充电桩/门禁触点 | 组态物联下发任务/消费回传 |
 | 全部节点 `associatedDeviceId` | — | `equip-mgmt.html` 设备台账（校准/维护状态角标） | 台账 ID 对齐后即可挂接 |
+
+> 2026-11-05 台账首挂：107 材料试验区箭头点名设备 = 智能型数字电桥（编号 2411020108 / 型号 QJ-36 / 数蚕智能 / 无人化试验室 / 精度全量程优于 0.1uΩ或0.1%），已录入 `js/equip-store.js` 种子（存储键升 v4 强制重播）。T1 时把对应节点 `associatedDeviceId` 填 `eq_qj36`。
 | `roomId` 101—110 | — | `venue-mgmt.html` 场地主数据 | 命名已一致，建映射表落库 |
 
 ## 4. 对接架构（建议）

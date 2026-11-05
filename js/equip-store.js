@@ -2,13 +2,39 @@
  * 设备台账 Mock Store（设备管理 + 样品试验「检测设备」共用）
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-equip-store-v3';
+  var STORAGE_KEY = 'lims-equip-store-v4';
 
-  var DEPTS = ['材料检测组', '应敏科技1', '电气检测组', '力学检测组'];
-  var AREAS = ['力学检测室1', '电气检测室', '老化试验室', '综合检测区'];
+  var DEPTS = ['材料检测组', '应敏科技1', '电气检测组', '力学检测组', '数蚕智能'];
+  var AREAS = ['力学检测室1', '电气检测室', '老化试验室', '综合检测区', '无人化试验室'];
 
   function defaultSeed() {
     return [
+      {
+        /* 数字孪生 107 材料试验区·箭头点名设备，信息按真系统设备管理弹窗录入（2026-11-05） */
+        id: 'eq_qj36',
+        code: '2411020108',
+        name: '智能型数字电桥',
+        model: 'QJ-36',
+        dept: '数蚕智能',
+        area: '无人化试验室',
+        certNo: '',
+        accuracy: '全量程优于0.1uΩ或0.1%',
+        info: '',
+        remark: '',
+        needCalib: true,
+        lastCalib: '',
+        cycleY: 1, cycleM: 0, cycleD: 0,
+        nextCalib: '',
+        agency: '',
+        warnDays: 30,
+        maxError: '',
+        calibStatus: '正常',
+        enabled: true,
+        files: [],
+        linkedTests: [],
+        history: [],
+        maintain: []
+      },
       {
         id: 'eq_yfg150',
         code: 'YFG-150A',
