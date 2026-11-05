@@ -235,10 +235,10 @@
             <input type="text" placeholder="搜索..."
               class="w-48 rounded-full border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-sm outline-none focus:border-sky-400 focus:bg-white" />
           </div>
-          <!-- 消息图标 -->
-          <button class="relative text-lg hover:text-slate-700">
+          <!-- 消息图标：未读数由 js/message-center.js 按消息数据算出来，0 条时整个红标隐藏 -->
+          <button class="pa-msg-bell relative text-lg hover:text-slate-700" aria-haspopup="true" aria-expanded="false" title="消息中心">
             <i class="fa fa-bell-o"></i>
-            <span class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">5</span>
+            <span class="pa-msg-badge absolute -right-1 -top-1 flex h-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">0</span>
           </button>
           <!-- 管理员头像 -->
           <div class="flex items-center gap-2">
@@ -323,6 +323,8 @@
       if (active) active.classList.add('bg-slate-700', 'text-white');
     })();
   </script>
+  <script src="js/message-store.js" defer></script>
+  <script src="js/message-center.js" defer></script>
   <script src="js/ui-a11y.js" defer></script>
 </body>
 </html>

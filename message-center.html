@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>消息中心 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .mc-nav-item { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; cursor: pointer;
+      padding: 9px 12px; border-radius: 6px; font-size: 13px; color: #475569; text-align: left; }
+    .mc-nav-item:hover { background: #f1f5f9; }
+    .mc-nav-item.on { background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+    .mc-nav-item .mc-num { margin-left: auto; font-size: 12px; color: #dc2626; font-weight: 600; }
+    .mc-card { border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 12px 14px; }
+    .mc-card.unread { border-left: 3px solid #2563eb; }
+    .mc-card.read { background: #fafbfc; }
+    .mc-card.read .mc-title { color: #64748b; }
+    .mc-title { font-size: 14px; font-weight: 600; color: #0f172a; }
+    .mc-tag { display: inline-block; border-radius: 3px; padding: 1px 6px; font-size: 11px; }
+    .mc-switch { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; cursor: pointer; }
+    #toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(0,0,0,.76);
+      color: #fff; padding: 8px 22px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      消息中心
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="flex gap-4 p-4">
+    <!-- 左：分类导航 -->
+    <div class="w-[228px] flex-shrink-0 rounded bg-white p-3 shadow-sm" data-annotate="mc-nav">
+      <p class="mb-2 px-2 text-sm font-medium text-slate-700">消息分类</p>
+      <div id="navList" class="space-y-1"></div>
+      <div class="mt-3 space-y-2 border-t border-slate-100 pt-3 px-2">
+        <label class="mc-switch"><input id="onlyUnread" type="checkbox" onchange="render()" /> 只看未读</label>
+        <button type="button" onclick="markAll()" class="w-full rounded border border-slate-300 px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-50">全部标记已读</button>
+        <button type="button" onclick="clearRead()" class="w-full rounded border border-slate-300 px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-50">清除已读记录</button>
+      </div>
+      <p class="mt-3 border-t border-slate-100 px-2 pt-3 text-xs leading-relaxed text-slate-400">
+        消息全部由系统数据现算：待办与超期来自委托数据，公告来自「通知公告」，设备校准来自「设备管理」。已读状态记在浏览器本地，只影响自己的视图。
+      </p>
+    </div>
+
+    <!-- 右：消息列表 -->
+    <div class="min-w-0 flex-1">
+      <div class="mb-3 flex flex-wrap items-center gap-3 rounded bg-white p-3 shadow-sm" data-annotate="mc-filter">
+        <label class="text-sm text-slate-600" for="kw">关键词</label>
+        <input id="kw" class="w-64 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="搜索消息标题或内容" />
+        <button type="button" onclick="render()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i> 查询</button>
+        <button type="button" onclick="resetFilter()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i> 重置</button>
+        <span id="sumLine" class="ml-auto text-sm text-slate-500"></span>
+      </div>
+      <div id="msgList" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/message-store.js"></script>
+  <script src="js/message-center.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var tab = 'all';
+
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function toast(m) {
+      var t = document.getElementById('toast');
+      t.textContent = m; t.classList.add('show');
+      setTimeout(function () { t.classList.remove('show'); }, 1700);
+    }
+    function rel(iso) {
+      var d = new Date(String(iso || '').replace(' ', 'T'));
+      if (isNaN(d.getTime())) return iso || '/';
+      var diff = (Date.now() - d.getTime()) / 1000;
+      if (diff < 60) return '刚刚';
+      if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
+      if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
+      return iso;
+    }
+
+    function pick(k) { tab = k; render(); }
+
+    function navHtml() {
+      var u = MessageStore.unreadByType();
+      var rows = [{ k: 'all', n: '全部消息', c: MessageStore.list().length }].concat(
+        MessageStore.TYPE_ORDER.map(function (k) {
+          return { k: k, n: MessageStore.TYPES[k].label, c: MessageStore.byType(k).length };
+        }));
+      document.getElementById('navList').innerHTML = rows.map(function (r) {
+        return '<button type="button" onclick="pick(\'' + r.k + '\')" class="mc-nav-item' + (tab === r.k ? ' on' : '') + '">' +
+          '<i class="fa ' + (r.k === 'all' ? 'fa-inbox' : (MessageStore.TYPES[r.k] || {}).icon) + ' w-4 text-center"></i>' +
+          '<span>' + r.n + '</span><span class="mc-num">' + ((u[r.k] || 0) ? u[r.k] + ' 未读' : '') + '</span>' +
+          '<span class="ml-auto text-xs text-slate-400">' + r.c + '</span></button>';
+      }).join('');
+    }
+
+    function render() {
+      if (!window.MessageStore) return;
+      navHtml();
+      var kw = document.getElementById('kw').value.trim().toLowerCase();
+      var only = document.getElementById('onlyUnread').checked;
+      var list = MessageStore.byType(tab).filter(function (m) {
+        if (only && MessageStore.isRead(m.id)) return false;
+        if (kw && (m.title + m.body).toLowerCase().indexOf(kw) < 0) return false;
+        return true;
+      });
+      var total = MessageStore.list().length, unread = MessageStore.unreadCount();
+      document.getElementById('sumLine').textContent = '共 ' + total + ' 条消息 · 未读 ' + unread + ' 条 · 当前筛选 ' + list.length + ' 条';
+
+      document.getElementById('msgList').innerHTML = list.map(function (m) {
+        var ty = MessageStore.TYPES[m.type] || MessageStore.TYPES.todo;
+        var read = MessageStore.isRead(m.id);
+        return '<div class="mc-card ' + (read ? 'read' : 'unread') + '">' +
+          '<div class="flex items-center gap-2">' +
+            '<span class="mc-tag" style="background:' + ty.color + '14;color:' + ty.color + '">' + ty.label + '</span>' +
+            '<span class="mc-title">' + esc(m.title) + '</span>' +
+            (read ? '' : '<span class="rounded bg-red-50 px-1.5 py-0.5 text-[11px] text-red-500">未读</span>') +
+            '<span class="ml-auto text-xs text-slate-400">' + rel(m.time) + '</span>' +
+          '</div>' +
+          '<p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">' + esc(m.body) + '</p>' +
+          '<div class="mt-2 flex items-center gap-3 text-xs">' +
+            '<a href="' + esc(m.href) + '" onclick="go(\'' + esc(m.id) + '\')" class="text-blue-600 hover:underline"><i class="fa fa-external-link"></i> 前往处理</a>' +
+            (read ? '<span class="text-slate-300">已读 ' + esc(String(m.readAt || '').slice(0, 16)) + '</span>'
+                  : '<button type="button" onclick="readOne(\'' + esc(m.id) + '\')" class="text-slate-500 hover:text-slate-700">标记已读</button>') +
+            '<span class="ml-auto text-slate-400">' + esc(m.time) + '</span>' +
+          '</div></div>';
+      }).join('') || '<div class="rounded bg-white p-10 text-center text-sm text-slate-400 shadow-sm">没有符合条件的消息</div>';
+    }
+
+    function go(id) { if (window.MessageStore) MessageStore.markRead(id); }
+    function readOne(id) { MessageStore.markRead(id); render(); toast('已标记为已读'); }
+    function markAll() { MessageStore.markAll(); render(); toast('已全部标记为已读，顶栏红标同步消失'); }
+    function clearRead() { MessageStore.clearReadState(); render(); toast('已清除已读记录，全部消息回到未读'); }
+    function resetFilter() {
+      document.getElementById('kw').value = '';
+      document.getElementById('onlyUnread').checked = false;
+      tab = 'all';
+      render();
+    }
+
+    MessageStore.ready().then(function () { MessageStore.refresh(); render(); });
+    document.getElementById('kw').addEventListener('keydown', function (e) { if (e.key === 'Enter') render(); });
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'mc-nav', selector: '[data-annotate="mc-nav"]', position: 'bottom-left',
+            title: '消息分类与已读操作', wide: true,
+            content: '<strong>需求逻辑：</strong>顶栏铃铛只放最近几条，进到这个页面要看全、要能筛、要能一次处理掉未读。<br>' +
+              '<strong>展示规则：</strong>四个分类 + 全部：<strong>待办提醒</strong>（报告还没全部签发完成的委托）、<strong>超期预警</strong>（过了客户要求完成日期仍未签发）、' +
+              '<strong>公告通知</strong>（通知公告里状态正常的最新几条）、<strong>系统消息</strong>（设备校准到期/过期）。' +
+              '每行右侧显示该分类条数，红字显示未读条数；底部三个操作：只看未读、全部标记已读、清除已读记录（把全部消息退回未读，方便反复演示）。<br>' +
+              '<strong>交互逻辑：</strong>分类、只看未读、关键词都是即时筛选，不改数据；标记已读后顶栏红标数字同步减少，' +
+              '未读清零时红标整个隐藏——铃铛上的数字、面板里的「未读 N」、本页的未读合计，三处永远同一个数。',
+            tag: '消息中心'
+          },
+          {
+            id: 'mc-filter', selector: '[data-annotate="mc-filter"]', position: 'bottom-left',
+            title: '消息列表与数据来源', wide: true,
+            content: '<strong>需求逻辑：</strong>消息不能是手写的演示文案，否则委托状态一变、公告一加，消息就和数据打架。<br>' +
+              '<strong>展示规则：</strong>一条消息 = 类型标签 + 标题 + 正文 + 时间 + 处理入口。标题与正文全部现算：' +
+              '待办/超期取 <code>js/entrust-mock.js</code>（与工作台数据概览、任务总览、委托统计同一口径，聚合条带总数、明细条给最急的几张）；' +
+              '公告取 <code>js/notice-store.js</code>（与快讯中心、通知公告同一份，时间就用公告创建时间）；设备校准取 <code>js/equip-store.js</code>（与设备管理同一份）。' +
+              '时间显示按「刚刚 / x 分钟前 / x 小时前 / 日期」，首次生成后落盘复用，刷新不会越放越旧。' +
+              '未读卡片左侧蓝色竖条 + 「未读」标签，已读灰化。<br>' +
+              '<strong>交互逻辑：</strong>「前往处理」= 先标记已读再跳到对应页面（委托进委托详情、待办/超期进委托预览、公告进通知公告、设备进设备管理）；' +
+              '关键词按标题+正文模糊匹配，回车即查；「重置」清关键词、清只看未读、回到全部。',
+            tag: '消息中心'
+          },
+          {
+            id: 'mc-bell', selector: '.pa-msg-bell', position: 'bottom-left',
+            title: '顶栏铃铛：未读红标与下拉面板', wide: true,
+            content: '<strong>需求逻辑：</strong>不打开任何页面也要知道自己有几件事没处理，所以红标常驻顶栏；点开就能就地处理，不用先跳页。<br>' +
+              '<strong>展示规则：</strong>红标数字 = 未读条数（超过 99 显示 99+，为 0 时整个隐藏）；面板宽 384px，' +
+              '依次为 标题行（消息中心 / 未读 N / 全部标记已读）、分类页签（每个页签带未读数）、消息列表（最多显示约 6 条高度，内部滚动）、底部条（当前分类条数与未读 + 「查看全部消息」）。' +
+              '列表里未读带红点、已读灰化；每条显示类型图标与配色（与本页分类色一致）。<br>' +
+              '<strong>交互逻辑：</strong>点铃铛开合，点其它地方或按 Esc 关闭；点某条 = 标记已读并跳转目标页；' +
+              '「全部标记已读」一次清空未读；面板在每一页的顶栏里都有（外壳由 <code>index.html</code> 统一提供），' +
+              '已读状态记在 localStorage，切页面、刷新都保持，且只影响自己。<br>' +
+              '<strong>权限：</strong>消息中心本身对所有角色开放（都是系统给本人的提醒），但<strong>公告类消息只给有「通知公告」页面权限的角色</strong>——' +
+              '与快讯中心「更多」用的是同一份 <code>js/web-perms.js</code> 判定。',
+            tag: '消息中心'
+          }
+        ]
+      });
+    }
+  </script>
+  <script src="js/ui-a11y.js" defer></script>
+</body>
+</html>
