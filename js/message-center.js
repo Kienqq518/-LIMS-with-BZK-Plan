@@ -11,6 +11,10 @@
   var STYLE_ID = 'pa-msg-style';
   var PAGE = 'message-center.html';
   var panels = [];
+  /* 已绑定的铃铛用 WeakSet 记，不用 data-* 属性：
+   * 画布里的顶栏是从 index.html 克隆的，属性会被一起克隆过来，
+   * 那样克隆件就会被当成「已绑过」而永远点不开。 */
+  var bound = new WeakSet();
 
   var CSS = [
     '.pa-msg-wrap { position: relative; display: inline-flex; align-items: center; }',
@@ -167,8 +171,15 @@
   function bindAll() {
     injectStyle();
     document.querySelectorAll('.pa-msg-bell').forEach(function (bell) {
-      if (bell.getAttribute('data-msg-bound')) return;
-      bell.setAttribute('data-msg-bound', '1');
+      if (bound.has(bell)) return;
+      // 克隆件可能带着外壳里的包装层和空面板，先拆干净再重建
+      var old = bell.closest('.pa-msg-wrap');
+      if (old && old.parentNode) {
+        old.parentNode.insertBefore(bell, old);
+        old.parentNode.removeChild(old);
+      }
+      bell.removeAttribute('data-msg-bound');
+      bound.add(bell);
       makePanel(bell);
     });
   }
