@@ -68,7 +68,7 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/current-user.js?v=3"></script>
-  <script src="js/user-profile.js?v=4"></script>
+  <script src="js/user-profile.js?v=7"></script>
   <script src="js/message-store.js?v=4"></script>
   <script src="js/message-center.js?v=4"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -174,17 +174,17 @@
             '其中<strong>部门就是「/」</strong>——这个登录账号没有挂部门（<code>js/current-user.js</code> 里 <code>dept</code> 留空，走的就是上面那条空值规则，不是写死的斜杠）。' +
             '注意它和「样品管理 › 样品制备」交接人下拉里的「张三（样品库）」不是一回事：那个括号是<strong>样品制备岗的岗位名单</strong>，由该页自己维护、不读账号部门；' +
             '所以气泡里部门显示「/」、下拉里仍写（样品库），两边都对、也不冲突。' +
-            '<strong>电子签名可以自助维护</strong>（左侧格子里），悬停出现两个动作：' +
-            '中间的<strong>放大镜</strong>点开是全屏放大查看（带文件名、大小、来源「内置签名 / 本人上传」，按 Esc 或点空白关闭）；' +
-            '右上角的<strong>✕</strong> 删除，先弹二次确认，删除后格子换成虚线「+ 上传电子签名」，点它选文件即可重新上传；' +            '删除态下格子下方另给一个「恢复内置签名」小链接，一键退回仓库里的演示图（方便反复演示，不用清浏览器数据）。' +
+            '<strong>电子签名可以自助维护</strong>（左侧格子里），三个动作常驻可见、不靠悬停出现：' +
+            '整张签名图或右下角的<strong>放大镜</strong> = 全屏放大查看（带文件名、大小、来源「内置签名 / 本人上传」，按 Esc 或点空白关闭）；' +
+            '右上角的<strong>✕</strong> = 删除，先弹二次确认，删除后格子换成虚线「+ 上传电子签名」；' +            '格子下方常驻一个<strong>重新上传</strong>链接（不删也能直接换图），删除态下这个位置换成<strong>恢复内置签名</strong>，一键退回仓库里的演示图（方便反复演示，不用清浏览器数据）。' +
             '上传校验与「系统参数 › 签名与印章」一致：只收图片（PNG / JPG / GIF / WebP / SVG）、单文件不超过 2MB，建议 PNG 透明底、宽不小于 300 像素；' +
-            '成功后立刻替换，并在格子下方标出文件名与大小。签名落在本机 <code>lims-user-signature-v1</code>：' +
+            '成功后立刻替换，并在格子下方标出文件名与大小；没传过就标「内置签名」。三个动作都是常驻的，触屏、键盘同样能点。签名落在本机 <code>lims-user-signature-v1</code>：' +
             '没写过就用内置的 <code>assets/profile/signature-admin.svg</code>，删过就是空，传过就是本人的图——刷新、换页都按这份走，只影响本机，不会改动仓库里的演示图。' +
             '放大层由 <code>js/user-profile.js</code> 自带，不依赖 <code>js/image-viewer.js</code>（那个只在部分页面加载，顶栏是全站都有的）。' +
             '底部一颗「退出登录」主色按钮，' +
             '点它先弹二次确认（说清会跳回 TestOS 首页、不会清掉本机 localStorage 里的列配置和已读状态），确认后才跳 <code>testos.html</code>。' +
             '气泡内容全部读 <code>js/current-user.js</code> 的 <code>LimsCurrentUser.profile</code>——顶栏小头像、气泡大头像、昵称三处同一个来源，改一处全站跟着变。' +
-            '交互与铃铛一致：悬停展开、移开自动收（160ms 宽限，方便把鼠标移进气泡里看内容），点头像可点开/点掉，点空白或按 Esc 关闭。<br>' +
+            '交互与铃铛一致：悬停即展开、移开自动收（160ms 宽限，方便把鼠标移进气泡里看内容）；点一下头像 = 固定展开，这时移开鼠标也不收，再点一次头像、点空白或按 Esc 才收起——避免悬停刚点开又被这一下点击关掉。<br>' +
             '<strong>交互逻辑：</strong>分类、只看未读、关键词都是即时筛选，不改数据；标记已读后顶栏红标数字同步减少，' +
               '未读清零时红标整个隐藏——铃铛上的数字、面板里的「未读 N」、本页的未读合计，三处永远同一个数。' +
               '铃铛在每一页的顶栏里都有（外壳由 <code>index.html</code> 统一提供），已读状态记在 localStorage，切页面、刷新都保持，且只影响自己。' +

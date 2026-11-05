@@ -6,6 +6,7 @@
  *   没写过 → 用内置签名 assets/profile/signature-admin.svg
  *   写成空 → 已删除，格子里换成上传入口
  *   上传过 → 存 dataURL + 文件名 + 大小 + 上传时间
+ * 签名的三个动作（放大 / 重新上传 / 删除）全部常驻可见，不靠 hover 出现，触屏和键盘都能用。
  * 放大查看自带遮罩，不依赖 js/image-viewer.js（那个只在部分页面加载，顶栏是全站都有的）。
  *
  * 外壳由 index.html 提供、画布内是它的克隆件，所以只认 class，绑定状态用 WeakSet 记。
@@ -18,6 +19,7 @@
   var MAX_SIZE = 2 * 1024 * 1024;          // 2MB，与「系统参数 › 签名与印章」一致
   var bound = new WeakSet();
   var pops = [];
+  var modalCount = 0;      // 当前打开的放大层 / 确认框数量
   var doc = global.document;
 
   var CSS = [
@@ -38,21 +40,27 @@
     '.pa-user-name { margin-top: 8px; font-size: 17px; font-weight: 700; color: #0f172a; max-width: 148px;',
     '  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
     '.pa-user-kicker { margin-top: 6px; font-size: 12px; color: #64748b; }',
-    '.pa-user-sign { position: relative; margin-top: 4px; width: 116px; height: 62px; background: #fff;',
+    '.pa-user-sign { position: relative; margin-top: 6px; width: 116px; height: 62px; background: #fff;',
     '  border: 1px solid #e2e8f0; border-radius: 8px; overflow: visible; }',
     '.pa-user-sign img { width: 100%; height: 100%; object-fit: contain; border-radius: 7px; cursor: zoom-in; }',
-    '.pa-user-zoom { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;',
-    '  border-radius: 7px; background: rgba(100, 116, 139, .42); color: #fff; font-size: 17px; cursor: zoom-in; border: 0; }',
-    '.pa-user-sign.has:hover .pa-user-zoom, .pa-user-sign.has:focus-within .pa-user-zoom { display: flex; }',
+    // 常驻动作：整张图可点放大，右下角放大镜是明示，右上角 ✕ 是删除
+    '.pa-user-zoom { position: absolute; right: 4px; bottom: 4px; width: 21px; height: 21px; display: flex;',
+    '  align-items: center; justify-content: center; border-radius: 6px; background: rgba(15, 23, 42, .5);',
+    '  color: #fff; font-size: 10px; cursor: zoom-in; border: 0; }',
+    '.pa-user-zoom:hover { background: rgba(15, 23, 42, .82); }',
     '.pa-user-del { position: absolute; right: -7px; top: -7px; width: 20px; height: 20px; border-radius: 50%;',
-    '  border: 0; background: #1e293b; color: #fff; font-size: 11px; line-height: 20px; cursor: pointer; display: none; }',
-    '.pa-user-sign.has:hover .pa-user-del, .pa-user-sign.has:focus-within .pa-user-del { display: block; }',
+    '  border: 2px solid #fff; background: #64748b; color: #fff; font-size: 10px; line-height: 16px;',
+    '  cursor: pointer; display: block; }',
+    '.pa-user-del:hover { background: #ef4444; }',
     '.pa-user-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;',
     '  justify-content: center; gap: 3px; border: 1px dashed #cbd5e1; border-radius: 7px; background: #fff;',
     '  color: #94a3b8; font-size: 11px; cursor: pointer; }',
     '.pa-user-empty:hover { border-color: #3b82f6; color: #2563eb; }',
-    '.pa-user-signnote { margin-top: 5px; font-size: 11px; color: #94a3b8; width: 116px; line-height: 1.45; text-align: center; }',
-    '.pa-user-reset { border: 0; background: none; color: #2563eb; font-size: 11px; cursor: pointer; padding: 0; text-decoration: underline; }',
+    '.pa-user-signnote { margin-top: 6px; font-size: 11px; color: #94a3b8; width: 116px; line-height: 1.45;',
+    '  text-align: center; word-break: break-all; }',
+    '.pa-user-signacts { margin-top: 2px; font-size: 11px; width: 116px; text-align: center; }',
+    '.pa-user-link { border: 0; background: none; color: #2563eb; font-size: 11px; cursor: pointer; padding: 0;',
+    '  text-decoration: underline; }',
     '.pa-user-right { flex: 1; min-width: 0; }',
     '.pa-user-row { display: flex; align-items: baseline; gap: 10px; padding: 5px 0; border-bottom: 1px dashed rgba(148,163,184,.22); }',
     '.pa-user-row:last-of-type { border-bottom: 0; }',
@@ -73,12 +81,12 @@
     '.pa-user-confirm button.ok { background: #3b82f6; border-color: #3b82f6; color: #fff; }',
     '.pa-user-confirm button.danger { background: #ef4444; border-color: #ef4444; color: #fff; }',
     '.pa-user-confirm button:hover { filter: brightness(.97); }',
-    '.pa-user-view { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: min(860px, 92vw); }',
+    '.pa-user-view { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: min(860px, 92vw); }',
     '.pa-user-view img { max-width: 100%; max-height: 68vh; background: #fff; border-radius: 10px; padding: 18px;',
     '  box-shadow: 0 18px 44px rgba(0,0,0,.35); }',
     '.pa-user-view .cap { color: #e2e8f0; font-size: 12px; display: flex; gap: 12px; align-items: center; }',
-    '.pa-user-view .x { position: absolute; right: 18px; top: 14px; width: 34px; height: 34px; border-radius: 50%;',
-    '  border: 1px solid rgba(255,255,255,.5); background: rgba(255,255,255,.12); color: #fff; cursor: pointer; font-size: 15px; }',
+    '.pa-user-view .x { position: absolute; right: -6px; top: -34px; width: 30px; height: 30px; border-radius: 50%;',
+    '  border: 1px solid rgba(255,255,255,.5); background: rgba(255,255,255,.16); color: #fff; cursor: pointer; font-size: 14px; }',
     '.pa-user-toast { position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%); z-index: 10000;',
     '  background: rgba(15,23,42,.86); color: #fff; padding: 8px 20px; border-radius: 6px; font-size: 13px;',
     '  opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; }',
@@ -121,21 +129,29 @@
         '<button type="button" class="pa-user-zoom" data-act="zoom" title="放大查看电子签名"><i class="fa fa-search-plus"></i></button>' +
         '<button type="button" class="pa-user-del" data-act="del" title="删除电子签名">&times;</button>'
       : '<button type="button" class="pa-user-empty" data-act="pick"><i class="fa fa-plus-circle text-base"></i><span>上传电子签名</span></button>';
-    var note = box.parentNode.querySelector('.pa-user-signnote');
-    if (!note) {
-      note = doc.createElement('p');
-      note.className = 'pa-user-signnote';
-      box.parentNode.insertBefore(note, box.nextSibling);
+    var foot = box.parentNode.querySelector('.pa-user-signfoot');
+    if (!foot) {
+      foot = doc.createElement('div');
+      foot.className = 'pa-user-signfoot';
+      box.parentNode.insertBefore(foot, box.nextSibling);
     }
     if (sig.src) {
-      note.textContent = sig.builtin ? '内置签名 · 悬停可放大/删除' : (sig.name || '签名图') + ' · ' + kb(sig.size || 0);
+      foot.innerHTML = '<p class="pa-user-signnote">' + (sig.builtin ? '内置签名' : esc(sig.name || '签名图') + ' · ' + kb(sig.size || 0)) + '</p>' +
+        '<p class="pa-user-signacts"><button type="button" class="pa-user-link" data-act="pick">重新上传</button></p>';
     } else {
-      note.innerHTML = '已删除，点格子重新上传<br><button type="button" class="pa-user-reset" data-act="reset">恢复内置签名</button>';
+      foot.innerHTML = '<p class="pa-user-signnote">已删除，点格子重新上传</p>' +
+        '<p class="pa-user-signacts"><button type="button" class="pa-user-link" data-act="reset">恢复内置签名</button></p>';
     }
   }
   function renderAll() { [].slice.call(doc.querySelectorAll('.pa-user-sign')).forEach(renderSign); }
 
   /* ---------------- 通用确认框 / 放大层 ---------------- */
+  function modalShown() { modalCount++; }
+  function modalHidden() {
+    modalCount = Math.max(0, modalCount - 1);
+    pops.forEach(function (p) { p.settle(); });   // 遮罩关掉后按「固定/悬停」重新判定一次
+  }
+  function maskOff(mask) { mask.remove(); modalHidden(); }
   function askConfirm(opt) {
     var mask = doc.createElement('div');
     mask.className = 'pa-user-mask open';
@@ -143,10 +159,12 @@
       '<div class="btns"><button type="button" data-act="cancel">取 消</button>' +
       '<button type="button" class="' + (opt.danger ? 'danger' : 'ok') + '" data-act="ok">' + esc(opt.ok || '确 定') + '</button></div></div>';
     doc.body.appendChild(mask);
+    modalShown();
     mask.addEventListener('click', function (e) {
+      e.stopPropagation();   // 弹窗里的点击不该顺带把后面的个人信息气泡关掉
       var b = e.target.closest ? e.target.closest('[data-act]') : null;
-      if (b && b.getAttribute('data-act') === 'ok') { mask.remove(); opt.onOk(); return; }
-      if (!b || e.target === mask) mask.remove();
+      if (b && b.getAttribute('data-act') === 'ok') { maskOff(mask); opt.onOk(); return; }
+      if (!b || e.target === mask) maskOff(mask);
     });
   }
 
@@ -160,9 +178,10 @@
       '<span>按 Esc 或点空白关闭</span></p></div>';
     doc.body.appendChild(mask);
     mask.addEventListener('click', function (e) {
-      if (e.target === mask || (e.target.closest && e.target.closest('[data-act="close"]'))) mask.remove();
+      e.stopPropagation();   // 同上：关掉放大层后气泡还在，能接着做删除/重新上传
+      if (e.target === mask || (e.target.closest && e.target.closest('[data-act="close"]'))) maskOff(mask);
     });
-    doc.addEventListener('keydown', function h(e) { if (e.key === 'Escape') { mask.remove(); doc.removeEventListener('keydown', h); } });
+    doc.addEventListener('keydown', function h(e) { if (e.key === 'Escape') { maskOff(mask); doc.removeEventListener('keydown', h); } });
   }
 
   /* ---------------- 上传 ---------------- */
@@ -174,6 +193,8 @@
       picker.accept = 'image/png,image/jpeg,image/gif,image/webp,image/svg+xml';
       picker.style.display = 'none';
       doc.body.appendChild(picker);
+      // 这一下 picker.click() 也会冒泡到 document，不挡住的话选完文件气泡就自己关了，看不到更新结果
+      picker.addEventListener('click', function (e) { e.stopPropagation(); });
       picker.addEventListener('change', function () {
         var f = picker.files && picker.files[0];
         if (!f) return;
@@ -221,7 +242,7 @@
     if (!b) return;
     var act = b.getAttribute('data-act');
     var sig = sigGet();
-    if (act === 'zoom') { e.stopPropagation(); zoom(sig.src, sig.name, sig.size, sig.builtin); }
+    if (act === 'zoom') { e.stopPropagation(); if (sig.src) zoom(sig.src, sig.name, sig.size, sig.builtin); }
     else if (act === 'del') {
       e.stopPropagation();
       askConfirm({ title: '确认删除电子签名？', danger: true, ok: '删 除',
@@ -252,15 +273,20 @@
     if (!pop) return;
     fill(wrap);
     var timer = null;
+    var pinned = false;   // 点过一次 = 固定展开，鼠标移开也不收；再点一次 / 点空白 / Esc 才收
+    var hovering = false;
     function open() { clearTimeout(timer); pops.forEach(function (o) { if (o !== api) o.close(); }); fill(wrap); pop.classList.add('open'); chip.setAttribute('aria-expanded', 'true'); }
-    function close() { pop.classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); }
-    function later() { clearTimeout(timer); timer = setTimeout(close, 160); }
-    wrap.addEventListener('mouseenter', open);
-    wrap.addEventListener('mouseleave', later);
-    pop.addEventListener('mouseenter', function () { clearTimeout(timer); });
-    chip.addEventListener('click', function (e) { e.stopPropagation(); if (pop.classList.contains('open')) close(); else open(); });
+    function close() { pop.classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); pinned = false; }
+    // 放大层/确认框盖在指针上时会触发 mouseleave，这时不能收气泡，否则关掉弹窗后人走丢了
+    function later() { clearTimeout(timer); timer = setTimeout(function () { if (!pinned && !modalCount) close(); }, 160); }
+    wrap.addEventListener('mouseenter', function () { hovering = true; if (!pinned) open(); });
+    wrap.addEventListener('mouseleave', function () { hovering = false; later(); });
+    pop.addEventListener('mouseenter', function () { hovering = true; clearTimeout(timer); });
+    // 悬停刚打开、紧接着的这一下点击不能反过来把它点掉，否则「点开→立刻关」
+    chip.addEventListener('click', function (e) { e.stopPropagation(); if (pinned) close(); else { open(); pinned = true; } });
     pop.addEventListener('click', function (e) { e.stopPropagation(); onPopClick(e); });
-    var api = { close: close, open: open };
+    var api = { close: close, open: function () { open(); pinned = true; },
+      settle: function () { if (!pinned && !hovering && !modalCount) close(); } };
     pops.push(api);
   }
 
