@@ -40,13 +40,13 @@
     '.pa-user-kicker { margin-top: 6px; font-size: 12px; color: #64748b; }',
     '.pa-user-sign { position: relative; margin-top: 4px; width: 116px; height: 62px; background: #fff;',
     '  border: 1px solid #e2e8f0; border-radius: 8px; overflow: visible; }',
-    '.pa-user-sign img { width: 100%; height: 100%; object-fit: contain; border-radius: 7px; }',
+    '.pa-user-sign img { width: 100%; height: 100%; object-fit: contain; border-radius: 7px; cursor: zoom-in; }',
     '.pa-user-zoom { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;',
     '  border-radius: 7px; background: rgba(100, 116, 139, .42); color: #fff; font-size: 17px; cursor: zoom-in; border: 0; }',
-    '.pa-user-sign.has:hover .pa-user-zoom { display: flex; }',
+    '.pa-user-sign.has:hover .pa-user-zoom, .pa-user-sign.has:focus-within .pa-user-zoom { display: flex; }',
     '.pa-user-del { position: absolute; right: -7px; top: -7px; width: 20px; height: 20px; border-radius: 50%;',
     '  border: 0; background: #1e293b; color: #fff; font-size: 11px; line-height: 20px; cursor: pointer; display: none; }',
-    '.pa-user-sign.has:hover .pa-user-del { display: block; }',
+    '.pa-user-sign.has:hover .pa-user-del, .pa-user-sign.has:focus-within .pa-user-del { display: block; }',
     '.pa-user-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;',
     '  justify-content: center; gap: 3px; border: 1px dashed #cbd5e1; border-radius: 7px; background: #fff;',
     '  color: #94a3b8; font-size: 11px; cursor: pointer; }',
@@ -117,7 +117,7 @@
     var sig = sigGet();
     box.className = 'pa-user-sign' + (sig.src ? ' has' : '');
     box.innerHTML = sig.src
-      ? '<img src="' + esc(sig.src) + '" alt="电子签名" />' +
+      ? '<img src="' + esc(sig.src) + '" alt="电子签名" data-act="zoom" title="放大查看电子签名" />' +
         '<button type="button" class="pa-user-zoom" data-act="zoom" title="放大查看电子签名"><i class="fa fa-search-plus"></i></button>' +
         '<button type="button" class="pa-user-del" data-act="del" title="删除电子签名">&times;</button>'
       : '<button type="button" class="pa-user-empty" data-act="pick"><i class="fa fa-plus-circle text-base"></i><span>上传电子签名</span></button>';
