@@ -67,6 +67,8 @@
   <div id="toast"></div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/current-user.js?v=2"></script>
+  <script src="js/user-profile.js?v=1"></script>
   <script src="js/message-store.js?v=4"></script>
   <script src="js/message-center.js?v=4"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -159,7 +161,7 @@
         annotations: [
           {
             id: 'mc-nav', selector: '[data-annotate="mc-nav"]', position: 'bottom-left',
-            title: '顶栏铃铛与消息中心页', wide: true,
+            title: '顶栏交互：消息中心 + 个人信息气泡', wide: true,
             content: '<strong>需求逻辑：</strong>顶栏铃铛负责「一眼知道有几件事没处理 + 就地处理最近几条」，进到这个页面要看全、要能筛、要能一次清掉未读。<br>' +
               '<strong>展示规则：</strong>顶栏铃铛红标数字 = 未读条数（超过 99 显示 99+，为 0 时整个隐藏）；面板宽 384px，依次为 标题行（消息中心 / 未读 N / 全部标记已读）、' +
               '分类页签（每个页签带该分类未读数）、消息列表（图标按类型配色 + 标题 + 正文两行截断 + 相对时间 + 未读红点，最高约 6 条高度、内部滚动）、' +
@@ -167,7 +169,12 @@
               '本页四个分类 + 全部：<strong>待办提醒</strong>（报告还没全部签发完成的委托）、<strong>超期预警</strong>（过了客户要求完成日期仍未签发）、' +
               '<strong>公告通知</strong>（通知公告里状态正常的最新几条）、<strong>系统消息</strong>（设备校准到期/过期）。' +
               '每行右侧显示该分类条数，红字显示未读条数；底部三个操作：只看未读、全部标记已读、清除已读记录（把全部消息退回未读，方便反复演示）。<br>' +
-              '<strong>交互逻辑：</strong>分类、只看未读、关键词都是即时筛选，不改数据；标记已读后顶栏红标数字同步减少，' +
+              '<strong>个人信息气泡（点/悬停右上角头像）：</strong>左侧是头像 + 昵称 + 电子签名（签名图 <code>assets/profile/signature-admin.svg</code>），' +
+            '右侧七行——用户昵称、用户账号、性别、部门、手机号、电子邮箱、创建日期，空值统一显示「/」；底部一颗「退出登录」主色按钮，' +
+            '点它先弹二次确认（说清会跳回 TestOS 首页、不会清掉本机 localStorage 里的列配置和已读状态），确认后才跳 <code>testos.html</code>。' +
+            '气泡内容全部读 <code>js/current-user.js</code> 的 <code>LimsCurrentUser.profile</code>——顶栏小头像、气泡大头像、昵称三处同一个来源，改一处全站跟着变。' +
+            '交互与铃铛一致：悬停展开、移开自动收（160ms 宽限，方便把鼠标移进气泡里看内容），点头像可点开/点掉，点空白或按 Esc 关闭。<br>' +
+            '<strong>交互逻辑：</strong>分类、只看未读、关键词都是即时筛选，不改数据；标记已读后顶栏红标数字同步减少，' +
               '未读清零时红标整个隐藏——铃铛上的数字、面板里的「未读 N」、本页的未读合计，三处永远同一个数。' +
               '铃铛在每一页的顶栏里都有（外壳由 <code>index.html</code> 统一提供），已读状态记在 localStorage，切页面、刷新都保持，且只影响自己。' +
               '<strong>公告类消息按权限下发</strong>：只有角色勾了「基础配置 › 通知公告」（<code>js/web-perms.js</code>）才收得到公告通知，没勾的角色这一类就是 0 条——' +

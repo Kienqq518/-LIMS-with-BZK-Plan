@@ -240,11 +240,31 @@
             <i class="fa fa-bell-o"></i>
             <span class="pa-msg-badge absolute -right-1 -top-1 flex h-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">0</span>
           </button>
-          <!-- 管理员头像 -->
-          <div class="flex items-center gap-2">
-            <img src="https://ui-avatars.com/api/?name=Admin&background=0ea5e9&color=fff&size=64"
-              alt="admin" class="h-8 w-8 rounded-full" />
-            <span class="text-sm text-slate-700">管理员</span>
+          <!-- 管理员头像：hover / 点击出个人信息气泡（js/user-profile.js + js/current-user.js） -->
+          <div class="pa-user-wrap relative flex items-center">
+            <button type="button" class="pa-user-chip flex items-center gap-2" aria-haspopup="true" aria-expanded="false" title="个人信息">
+              <img data-up="avatar" src="https://ui-avatars.com/api/?name=Admin&background=0ea5e9&color=fff&size=64"
+                alt="admin" class="h-8 w-8 rounded-full" />
+              <span class="text-sm text-slate-700" data-up="label">管理员</span>
+            </button>
+            <div class="pa-user-pop" role="dialog" aria-label="个人信息">
+              <div class="pa-user-left">
+                <img class="pa-user-avatar" data-up="avatarBig" alt="admin" />
+                <p class="pa-user-name" data-up="nickname">admin</p>
+                <p class="pa-user-kicker">电子签名</p>
+                <div class="pa-user-sign"><img data-up="signature" alt="电子签名" /></div>
+              </div>
+              <div class="pa-user-right">
+                <div class="pa-user-row"><span>用户昵称</span><b data-up="nickname"></b></div>
+                <div class="pa-user-row"><span>用户账号</span><b data-up="account"></b></div>
+                <div class="pa-user-row"><span>性别</span><b data-up="gender"></b></div>
+                <div class="pa-user-row"><span>部门</span><b data-up="dept"></b></div>
+                <div class="pa-user-row"><span>手机号</span><b data-up="phone"></b></div>
+                <div class="pa-user-row"><span>电子邮箱</span><b data-up="email"></b></div>
+                <div class="pa-user-row"><span>创建日期</span><b data-up="createTime"></b></div>
+                <button type="button" class="pa-user-logout" data-up="logout">退出登录</button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -323,6 +343,8 @@
       if (active) active.classList.add('bg-slate-700', 'text-white');
     })();
   </script>
+  <script src="js/current-user.js?v=2" defer></script>
+  <script src="js/user-profile.js?v=1" defer></script>
   <script src="js/message-store.js?v=4" defer></script>
   <script src="js/message-center.js?v=4" defer></script>
   <script src="js/ui-a11y.js" defer></script>
