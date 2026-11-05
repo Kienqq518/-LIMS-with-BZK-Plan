@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>未来实验室数字孪生 · 实验室3D场景 V2</title>
+<link rel="stylesheet" href="../../css/ui-baseline.css">
+<link rel="stylesheet" href="twin-scene-v2.css">
+<script src="../../js/ui-a11y.js" defer></script>
+<script src="../js/twin-api-mock.js" defer></script>
+<script src="../src/runtime-audit.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><img src="assets/yingmin.png" alt="应敏科技"><span>应敏科技 · 未来实验室数字孪生</span></div>
+  <nav class="modes" aria-label="场景模式（PRD S1–S3）">
+    <button class="mode active" data-mode="S1">S1 实验室总览</button>
+    <button class="mode" data-mode="S2">S2 · 106 重点监控</button>
+    <button class="mode" data-mode="S3">S3 告警回溯</button>
+  </nav>
+  <nav class="dims" aria-label="5M1E 维度切换">
+    <button class="pill" data-dim="man">人</button>
+    <button class="pill" data-dim="machine">机</button>
+    <button class="pill" data-dim="material">料</button>
+    <button class="pill" data-dim="method">法</button>
+    <button class="pill" data-dim="env">环</button>
+    <button class="pill flow" data-dim="flow" id="flowBtn">⇄ 系统流</button>
+  </nav>
+</header>
+
+<aside class="rail" aria-label="运行指标">
+  <div class="kpi"><b id="kDone" class="up">–</b><small>今日任务完成</small></div>
+  <div class="kpi"><b id="kRun">–</b><small>在制任务</small></div>
+  <div class="kpi"><b id="kAb" class="warn">–</b><small>异常挂起</small></div>
+  <div class="kpi"><b id="kSp">–</b><small>今日样品</small></div>
+  <div class="alarm-sum"><span class="ga" id="aA">A 0</span><span class="gb" id="aB">B 0</span><span class="gc" id="aC">C 0</span></div>
+  <div class="fresh"><span id="freshDot" class="dot live"></span><span id="freshTxt">数据源 live-mock · 2s 推送</span></div>
+  <div class="src-chips"><span>① 无人检测调度</span><span>② 检测数据采控</span><span>③ 智慧实验室物联网</span><span class="off">LIMS（二期）</span></div>
+  <div class="perf" id="perf" title="debug-profiler 实测">draw calls –</div>
+  <a class="back" href="twin-style.html">风格预览</a>
+</aside>
+
+<main class="stage">
+  <iframe id="scene" src="tour-space-v3-1.html?v2=1&native-nodes=1" title="未来实验室三维场景" allow="fullscreen"></iframe>
+
+  <section class="andon-zone" id="andonZone" aria-live="polite"></section>
+  <section class="robot-zone" id="robotZone"></section>
+
+  <footer class="taskstrip" id="taskStrip" aria-label="今日任务进度"></footer>
+
+  <aside class="detail" id="detail" hidden aria-label="详情面板">
+    <button class="close" id="detailClose" aria-label="关闭详情">×</button>
+    <div id="detailBody"></div>
+  </aside>
+
+  <section class="flowview" id="flowView" hidden>
+    <header><b>系统交互可视化 · 18 条数据流</b><span>command 蓝 / data 绿 / sync 灰虚 / query 紫点 · 线速=近5min消息量</span><button class="close" id="flowClose">×</button></header>
+    <svg id="flowSvg" viewBox="0 0 1200 640"></svg>
+    <div class="flow-legend"><span class="l-c">指令 command</span><span class="l-d">数据 data</span><span class="l-s">同步 sync</span><span class="l-q">查询 query</span></div>
+  </section>
+
+  <section class="s3drawer" id="s3Drawer" hidden>
+    <header><b>告警回溯 · 最近 24h</b><span class="honest">Mock 数据 · 接入调度/数采后替换</span><button class="close" id="s3Close">×</button></header>
+    <div id="s3Body"></div>
+  </section>
+
+  <div class="watermark">V2 实验室3D场景 · 数据经 Mock API 层（/api/*）· 前端不直连三系统</div>
+</main>
+<script src="twin-scene-v2.js" defer></script>
+</body>
+</html>
