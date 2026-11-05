@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>角色管理 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .role-item { border-left: 3px solid transparent; }
+    .role-item.active { border-left-color: #2563eb; background: #eff6ff; }
+    .perm-box { appearance: none; width: 16px; height: 16px; border: 1px solid #cbd5e1; border-radius: 3px; background: #fff; cursor: pointer; flex-shrink: 0; position: relative; }
+    .perm-box:checked { background: #2563eb; border-color: #2563eb; }
+    .perm-box:checked::after { content: ''; position: absolute; left: 4px; top: 1px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+    .perm-box:disabled { background: #f1f5f9; border-color: #e2e8f0; cursor: not-allowed; }
+    .perm-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #475569; cursor: pointer; }
+    #toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(0,0,0,.76); color: #fff; padding: 8px 22px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      角色管理
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="flex gap-4 p-4">
+    <!-- 左：角色清单 -->
+    <div class="w-[248px] flex-shrink-0 rounded bg-white p-3 shadow-sm" data-annotate="role-list">
+      <p class="mb-2 px-2 text-sm font-medium text-slate-700">角色</p>
+      <div id="roleList" class="space-y-1"></div>
+      <p class="mt-3 border-t border-slate-100 px-2 pt-3 text-xs leading-relaxed text-slate-400">
+        原型演示：选中角色后点「以此角色身份预览」，工作台与本页都会按该角色的权限判断；
+        系统管理员是原型默认登录角色。
+      </p>
+    </div>
+
+    <!-- 右：菜单权限矩阵 -->
+    <div class="min-w-0 flex-1 rounded bg-white p-4 shadow-sm" data-annotate="role-matrix">
+      <div class="mb-3 flex flex-wrap items-center gap-3 border-b border-slate-100 pb-3">
+        <h2 id="roleTitle" class="text-base font-medium text-slate-800">系统管理员</h2>
+        <p id="roleDesc" class="text-xs text-slate-400"></p>
+        <span id="loginTag" class="hidden rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-600">当前登录角色</span>
+        <div class="ml-auto flex items-center gap-2">
+          <button type="button" onclick="useThisRole()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">以此角色身份预览</button>
+          <button type="button" onclick="resetPerms()" class="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">恢复默认权限</button>
+        </div>
+      </div>
+      <div id="matrix" class="space-y-1"></div>
+      <div class="mt-4 flex items-center justify-center gap-2 border-t border-slate-100 pt-4">
+        <button type="button" onclick="cancelEdit()" class="rounded border border-slate-300 px-6 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取 消</button>
+        <button type="button" onclick="savePerms()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white hover:bg-blue-700">保 存</button>
+      </div>
+      <p class="mt-3 text-xs leading-relaxed text-slate-400">
+        勾选 = 该角色能看到这个菜单并进入对应页面；原型里已接入判定的入口有两个：
+        工作台「快讯中心」的<strong>更多</strong>按钮，以及<strong>通知公告</strong>页本身。
+      </p>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/web-perms.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var selected = 'admin';
+    var draft = {};   // { roleKey: { page: true } }
+
+    function pagesOfGroup(g) { return WebPerms.MENU.filter(function (m) { return m.group === g; })[0].items; }
+
+    function toast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(function () { t.classList.remove('show'); }, 1800);
+    }
+
+    function draftFor(key) {
+      if (!draft[key]) draft[key] = WebPerms.granted(key);
+      return draft[key];
+    }
+
+    function renderRoles() {
+      document.getElementById('roleList').innerHTML = WebPerms.roles().map(function (r) {
+        var n = Object.keys(draftFor(r.key)).length;
+        return '<button type="button" onclick="pickRole(\'' + r.key + '\')" class="role-item w-full rounded px-2 py-2 text-left text-sm hover:bg-slate-50 ' +
+          (r.key === selected ? 'active text-blue-700' : 'text-slate-600') + '">' +
+          '<span class="flex items-center gap-2"><i class="fa fa-user-secret w-4 text-center text-xs text-slate-400"></i>' +
+          '<span class="flex-1">' + r.name + '</span>' +
+          (r.key === WebPerms.currentKey() ? '<i class="fa fa-circle text-[6px] text-emerald-500"></i>' : '') + '</span>' +
+          '<span class="mt-1 block pl-6 text-xs text-slate-400">' + n + ' 个页面</span></button>';
+      }).join('');
+    }
+
+    function renderMatrix() {
+      var set = draftFor(selected);
+      var role = WebPerms.role(selected);
+      document.getElementById('roleTitle').textContent = role.name;
+      document.getElementById('roleDesc').textContent = role.desc;
+      var tag = document.getElementById('loginTag');
+      tag.classList.toggle('hidden', role.key !== WebPerms.currentKey());
+
+      document.getElementById('matrix').innerHTML = WebPerms.MENU.map(function (g) {
+        var head = '<div class="flex items-center gap-3 rounded bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">' +
+          '<span class="w-[88px] flex-shrink-0">' + g.group + '</span>';
+        if (!g.items.length) {
+          return head + '<span class="flex-1 text-xs font-normal text-slate-400">一级页面，所有角色都能进</span>' +
+            '<span class="ml-auto text-xs text-slate-400">—</span></div>';
+        }
+        var all = g.items.every(function (p) { return set[p]; });
+        return head + '<span class="flex flex-1 flex-wrap gap-x-6 gap-y-2">' +
+          g.items.map(function (p) {
+            return '<label class="perm-label"><input type="checkbox" class="perm-box" data-group="' + g.group + '" data-page="' + p + '"' +
+              (set[p] ? ' checked' : '') + ' onchange="togglePage(\'' + g.group + '\', this)" />' + p + '</label>';
+          }).join('') + '</span>' +
+          '<label class="perm-label ml-auto"><input type="checkbox" class="perm-box" data-grouplist="' + g.group + '"' + (all ? ' checked' : '') +
+          ' onchange="toggleGroup(\'' + g.group + '\', this.checked)" /><span class="text-xs text-slate-400">全选</span></label></div>';
+      }).join('');
+    }
+
+    function pickRole(key) { selected = key; renderRoles(); renderMatrix(); }
+
+    function togglePage(group, box) {
+      var set = draftFor(selected);
+      if (box.checked) set[box.getAttribute('data-page')] = true; else delete set[box.getAttribute('data-page')];
+      var g = pagesOfGroup(group);
+      var head = document.querySelector('#matrix [data-grouplist="' + group + '"]');
+      if (head) head.checked = g.every(function (p) { return set[p]; });
+      renderRoles();
+    }
+
+    function toggleGroup(group, on) {
+      var set = draftFor(selected);
+      pagesOfGroup(group).forEach(function (p) { if (on) set[p] = true; else delete set[p]; });
+      renderMatrix(); renderRoles();
+    }
+
+    function savePerms() {
+      var set = draftFor(selected);
+      WebPerms.save(selected, Object.keys(set));
+      toast('已保存「' + WebPerms.role(selected).name + '」的菜单权限');
+      renderRoles();
+    }
+    function cancelEdit() {
+      delete draft[selected];
+      renderMatrix(); renderRoles();
+      toast('已放弃未保存的改动');
+    }
+    function resetPerms() {
+      WebPerms.resetAll(); draft = {};
+      renderMatrix(); renderRoles();
+      toast('已恢复各角色的默认权限');
+    }
+    function useThisRole() {
+      WebPerms.setCurrent(selected);
+      renderRoles(); renderMatrix();
+      toast('已切换为「' + WebPerms.role(selected).name + '」，回工作台看快讯中心的「更多」');
+    }
+
+    renderRoles(); renderMatrix();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'role-list', selector: '[data-annotate="role-list"]', position: 'bottom-left',
+            title: '角色清单与登录角色', wide: true,
+            content: '<strong>需求逻辑：</strong>页面权限是按角色给的，先选中角色，右边才是这个角色的菜单勾选。<br>' +
+              '<strong>展示规则：</strong>四个演示角色——系统管理员（全部菜单）、样品库管理员、检测员、报告审核员；' +
+              '每个角色下面标它当前勾了多少个页面，绿点表示这就是现在登录的角色。默认登录角色是系统管理员。<br>' +
+              '<strong>交互逻辑：</strong>点角色名切换右侧矩阵；「以此角色身份预览」把当前登录角色换成它——' +
+              '工作台快讯中心的「更多」和通知公告页立刻按新角色判定；选择记在 localStorage，刷新保留。',
+            tag: '角色管理'
+          },
+          {
+            id: 'role-matrix', selector: '[data-annotate="role-matrix"]', position: 'top-right',
+            title: '菜单权限矩阵（勾了才看得见）', wide: true,
+            content: '<strong>需求逻辑：</strong>对应真系统 TestOS 角色管理里那张菜单勾选表：一个角色能进哪些页面，就在这里勾；' +
+              '没勾的页面，菜单入口和页面本身都不给。<br>' +
+              '<strong>展示规则：</strong>行 = 一级模块（合同管理 / 样品管理 / 试验管理 / 报告管理 / 检测管理 / 基础数据 / 文件管理 / 基础配置 / 日志管理），' +
+              '格 = 该模块下的二级菜单；每行最右侧是本级「全选」；「工作台」是一级页面，所有角色都能进，所以不给勾。<br>' +
+              '<strong>交互逻辑：</strong>勾选只改草稿，点「保 存」才写进 <code>js/web-perms.js</code> 的配置，「取 消」丢弃未保存改动，' +
+              '「恢复默认权限」清掉所有改动回到出厂勾选；<strong>基础配置 › 通知公告</strong>这一项就是快讯中心「更多」的开关。<br>' +
+              '<strong>已接入的判定点：</strong>① 工作台快讯中心的「更多」——没勾就不显示；② 通知公告页——没勾只看到无权限提示。' +
+              '其余菜单在原型里仍全部可见（原型不做全站菜单裁剪，避免演示时到处点不进去）。',
+            tag: '权限'
+          }
+        ]
+      });
+    }
+  </script>
+  <script src="js/ui-a11y.js" defer></script>
+</body>
+</html>

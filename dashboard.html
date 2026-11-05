@@ -28,6 +28,14 @@
     /* 流程图只是看图，不再叠跳转热区（位图重绘会让热区漂移）；
      * 需要点进某个环节，走上面「数据概览」的功能卡片或左侧菜单。 */
     .flow-map { position: relative; }
+    /* 快讯详情弹窗的顶部装饰带 */
+    .news-head { position: relative; background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 45%, #eef2ff 100%); }
+    .news-head::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .55;
+      background: repeating-radial-gradient(circle at 16% 128%, rgba(147,197,253,.38) 0 1px, transparent 1px 15px),
+        repeating-radial-gradient(circle at 88% -18%, rgba(165,180,252,.3) 0 1px, transparent 1px 17px);
+    }
+    .news-title { position: relative; box-shadow: 0 2px 10px rgba(37,99,235,.12); }
     /* 委托统计图例：口径说明收进悬停气泡，不再在卡片底下铺一行文字 */
     .st-item { position: relative; cursor: help; }
     .st-tip {
@@ -131,16 +139,16 @@
     <!-- ========== 右列（约 30%） ========== -->
     <div class="flex w-full flex-col gap-4 lg:w-[30%]">
 
-      <!-- 快讯中心 -->
-      <section class="rounded-lg bg-white p-4 shadow-sm">
+      <!-- 快讯中心：卡片高度固定，条目多了列表内部上下滚 -->
+      <section class="rounded-lg bg-white p-4 shadow-sm" data-annotate="news-center">
         <div class="mb-3 flex items-center justify-between">
           <h2 class="flex items-center gap-2 text-base font-semibold text-slate-800">
             <span class="h-4 w-1 rounded bg-sky-500"></span>快讯中心
           </h2>
-          <button class="text-xs text-sky-600 hover:text-sky-700">更多</button>
+          <a id="newsMore" href="notice-mgmt.html" class="flex items-center gap-1 text-xs text-sky-600 hover:text-sky-700">更多 <i class="fa fa-angle-right"></i></a>
         </div>
-        <ul id="newsList" class="space-y-3 text-sm">
-          <!-- 快讯列表由 JS 使用 Mock 数据渲染 -->
+        <ul id="newsList" class="h-[176px] space-y-3 overflow-y-auto pr-1 text-sm">
+          <!-- 快讯列表由 js/notice-store.js 渲染，只取状态正常的最新 8 条 -->
         </ul>
       </section>
 
@@ -290,11 +298,30 @@
     </p>
   </section>
 
+  <!-- 快讯详情弹窗（点快讯条目打开，样式照真系统那张公告弹窗：顶部装饰带 + 居中标题胶囊） -->
+  <div id="newsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="relative w-[720px] max-w-full overflow-hidden rounded-2xl bg-white shadow-xl">
+      <div class="news-head flex items-center justify-center px-6 pb-6 pt-10">
+        <span class="news-title rounded-lg border border-sky-200 bg-white/85 px-10 py-3 text-xl font-semibold tracking-wide text-sky-700">快讯中心</span>
+      </div>
+      <div class="px-8 pb-14 pt-5">
+        <p id="newsMeta" class="mb-3 text-xs text-slate-400"></p>
+        <div id="newsBody" class="whitespace-pre-line text-sm leading-relaxed text-slate-700"></div>
+      </div>
+      <button type="button" onclick="closeNews()" aria-label="关闭快讯"
+        class="absolute bottom-3 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600">
+        <i class="fa fa-times"></i>
+      </button>
+    </div>
+  </div>
+
   <script src="js/sample-data-store.js"></script>
   <script src="js/flow-stages.js"></script>
   <script src="js/mock-dict.js"></script>
   <script src="js/entrust-mock.js"></script>
   <script src="js/equip-store.js"></script>
+  <script src="js/notice-store.js"></script>
+  <script src="js/web-perms.js"></script>
   <script src="js/image-viewer.js?v=2"></script>
   <script>
     // 统一收集图表实例，用于窗口尺寸变化时自适应
@@ -367,14 +394,9 @@
                notLate: list.length - done - late, customers: Object.keys(cust).length };
     }
 
-    // 快讯中心数据
-    const newsData = [
-      { title: '关于实验室 CMA 资质复审的通知', date: '03-08' },
-      { title: '新一批检测设备已完成校准验收', date: '03-07' },
-      { title: '3 月检测业务量创历史新高', date: '03-06' },
-      { title: '样品管理系统升级维护公告', date: '03-05' },
-      { title: '实验室安全生产月活动启动', date: '03-04' }
-    ];
+    // 快讯中心数据：与「基础配置 › 通知公告」共用 js/notice-store.js，
+    // 只取状态=正常、按创建时间倒序的最新 8 条；日期按「距今天 N 天前」生成，不会放着放着变陈旧。
+    var newsList = [];
 
     // 待办事项数据（含时间轴颜色）
     // 每条都取 js/entrust-mock.js 里真实在册的委托，事项与该委托当前流程阶段一致
@@ -452,17 +474,45 @@
 
     renderTaskTable();
 
-    // 渲染快讯列表
+    function escNews(v) {
+      return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // 渲染快讯列表：整行可点，点开就是快讯详情弹窗
     (function renderNews() {
-      const ul = document.getElementById('newsList');
-      ul.innerHTML = newsData.map(function (item) {
-        return '<li class="flex items-center justify-between gap-2">' +
-          '<div class="flex min-w-0 items-center gap-2">' +
+      var ul = document.getElementById('newsList');
+      newsList = window.NoticeStore ? NoticeStore.latest(8) : [];
+      ul.innerHTML = newsList.map(function (r, i) {
+        return '<li><button type="button" onclick="openNews(' + i + ')" class="flex w-full items-center justify-between gap-2 text-left">' +
+          '<span class="flex min-w-0 items-center gap-2">' +
           '<span class="h-2.5 w-2.5 flex-shrink-0 rounded-sm bg-amber-400"></span>' +
-          '<span class="truncate text-slate-600 hover:text-sky-600">' + item.title + '</span></div>' +
-          '<span class="flex-shrink-0 text-xs text-slate-400">' + item.date + '</span></li>';
-      }).join('');
+          '<span class="truncate text-slate-600 hover:text-sky-600 hover:underline">' + escNews(r.title) + '</span></span>' +
+          '<span class="flex-shrink-0 text-xs text-slate-400">' + NoticeStore.day(r.createTime) + '</span></button></li>';
+      }).join('') || '<li class="text-xs text-slate-400">暂无公告</li>';
+
+      // 「更多」= 通知公告页；角色没勾这个页面权限就不给入口
+      var more = document.getElementById('newsMore');
+      if (more && window.WebPerms && !WebPerms.can('通知公告')) more.classList.add('hidden');
     })();
+
+    function openNews(i) {
+      var r = newsList[i];
+      if (!r) return;
+      document.getElementById('newsMeta').textContent = r.type + ' · ' + (r.operator || '/') + ' · ' + r.createTime;
+      document.getElementById('newsBody').textContent = r.body || '（暂无正文）';
+      var m = document.getElementById('newsModal');
+      m.classList.remove('hidden'); m.classList.add('flex');
+    }
+    function closeNews() {
+      var m = document.getElementById('newsModal');
+      m.classList.add('hidden'); m.classList.remove('flex');
+    }
+    document.getElementById('newsModal').addEventListener('click', function (e) {
+      if (e.target === this) closeNews();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeNews();
+    });
 
     // 渲染待办事项时间轴
     (function renderTodo() {
@@ -1010,6 +1060,23 @@
             '圆点配色与右侧「委托统计」同一套口径：绿 = 报告全部签发完成（阶段已到报告签发及之后）、蓝 = 还没签发完且未到客户要求完成日期、红 = 到了要求完成日期还没签发完。<br>' +
             '<strong>交互逻辑：</strong>委托编号点进 <code>entrust-detail.html?code=…</code>；「查看更多」进<strong>委托预览</strong>（完整列表与全部筛选列）；' +
             '底部「共 N 条」与页码都是算出来的（74 条 / 每页 6 条 = 13 页），首页与末页的 ‹ › 置灰，中间页码折成 …，翻页只在前端切数组。',
+          tag: '工作台'
+        },
+        {
+          id: 'news-center', selector: '[data-annotate="news-center"]', position: 'top-right',
+          title: '快讯中心：真实公告数据、点击看正文、更多按权限', wide: true,
+          content: '<strong>需求逻辑：</strong>快讯中心是公告的入口，不该另写一套文案。' +
+            '以前这里写死 5 条 3 月的通知，日期越放越旧、点没反应、「更多」也是空按钮。<br>' +
+            '<strong>展示规则：</strong>数据与「基础配置 › 通知公告」共用同一份 <code>js/notice-store.js</code>，' +
+            '只取<strong>状态 = 正常</strong>、按创建时间倒序的<strong>最新 8 条</strong>；每行 = 类型色块 + 标题（超长省略）+ 右侧完整日期 <code>YYYY-MM-DD</code>（不再写「03-08」这种没年份的）。' +
+            '日期是按「距今天 N 天前」生成的，所以任何时候打开都还是「最近」。' +
+            '<strong>卡片高度固定</strong>：列表区高 176px，条目超出只在列表内部上下滚动，卡片不会跟着长高，右列几块卡片的排布保持稳定。<br>' +
+            '<strong>交互逻辑：</strong>点任意一条弹出「快讯中心」详情弹窗——顶部装饰带 + 居中「快讯中心」标题胶囊，' +
+            'meta 行给公告类型、发布人、精确到秒的创建时间，正文按原样换行显示；关闭方式：底部圆形关闭按钮、点遮罩、或按 Esc。' +
+            '右上角「更多」进入通知公告页做全部公告的增删改查。<br>' +
+            '<strong>权限：</strong>「更多」按角色的菜单权限显示——<code>js/web-perms.js</code> 里该角色勾了「基础配置 › 通知公告」才出现；' +
+            '没勾的角色<strong>整个按钮不渲染</strong>（不是置灰），通知公告页本身也会挡住。' +
+            '原型默认以「系统管理员」登录（有权限）；在「基础配置 › 角色管理」点「以此角色身份预览」切到样品库管理员 / 检测员 / 报告审核员，回来就看不到「更多」了。',
           tag: '工作台'
         },
         {

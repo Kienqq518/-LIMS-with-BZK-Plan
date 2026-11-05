@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>通知公告 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th, .data-table td { border: 1px solid #e5e7eb; padding: 9px 10px; text-align: left; vertical-align: middle; }
+    .data-table th { background: #f8fafc; color: #64748b; font-weight: 500; white-space: nowrap; }
+    .data-table tbody tr:hover { background: #f8fafc; }
+    .modal-mask { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.4); padding: 16px; }
+    .modal-mask.open { display: flex; }
+    .form-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; margin-bottom: 14px; }
+    .form-row > label { width: 76px; flex-shrink: 0; text-align: right; color: #64748b; padding-top: 7px; }
+    .form-row .req { color: #ef4444; }
+    .form-row input, .form-row select, .form-row textarea { flex: 1; min-width: 0; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; outline: none; font-size: 13px; background: #fff; }
+    .form-row textarea { min-height: 128px; resize: vertical; line-height: 1.7; }
+    .form-row input:focus, .form-row textarea:focus, .form-row select:focus { border-color: #3b82f6; }
+    #toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(0,0,0,.76); color: #fff; padding: 8px 22px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; }
+    #toast.show { opacity: 1; }
+    .tag-ok, .tag-off { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 12px; }
+    .tag-ok { background: #dcfce7; color: #15803d; }
+    .tag-off { background: #f1f5f9; color: #64748b; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      通知公告
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <!-- 没有「通知公告」权限时的兜底页（真系统是直接不给菜单，这里保留一个可解释的落点） -->
+  <div id="noPerm" class="hidden p-4">
+    <div class="rounded bg-white p-10 text-center shadow-sm">
+      <i class="fa fa-lock mb-3 text-3xl text-slate-300"></i>
+      <p class="text-sm text-slate-600">当前角色没有「通知公告」页面权限，无法查看和维护公告。</p>
+      <p id="noPermWho" class="mt-1 text-xs text-slate-400"></p>
+      <a href="role-mgmt.html" class="mt-4 inline-block rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">去「角色管理」看权限怎么勾</a>
+    </div>
+  </div>
+
+  <div id="mainWrap" class="p-4 space-y-4">
+    <!-- 查询区 -->
+    <div class="rounded bg-white p-4 shadow-sm" data-annotate="notice-filter">
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div class="flex items-center gap-2">
+          <label class="whitespace-nowrap text-sm text-slate-600">公告标题:</label>
+          <input id="f_title" class="w-52 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="whitespace-nowrap text-sm text-slate-600">操作人员:</label>
+          <input id="f_operator" class="w-52 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="whitespace-nowrap text-sm text-slate-600">公告类型:</label>
+          <select id="f_type" class="w-40 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">请选择</option><option>公告</option><option>通知</option>
+          </select>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          <button type="button" onclick="doSearch()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">查询</button>
+          <button type="button" onclick="doReset()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 列表区 -->
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center gap-2 bg-slate-50 px-2 py-2" data-annotate="notice-toolbar">
+        <button type="button" onclick="openEdit(null)" class="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-plus"></i> 新增</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[1080px]">
+          <thead>
+            <tr>
+              <th class="w-[92px]">公告编号</th>
+              <th>公告标题</th>
+              <th class="w-[92px]">公告类型</th>
+              <th class="w-[80px]">状态</th>
+              <th class="w-[110px]">操作人员</th>
+              <th class="w-[170px]">创建时间</th>
+              <th class="w-[132px]">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="totalText">共 0 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-right"></i></button>
+        <select class="rounded border border-slate-200 px-2 py-1"><option>50条/页</option><option>20条/页</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增 / 编辑弹窗 -->
+  <div id="editModal" class="modal-mask" data-annotate="notice-edit">
+    <div class="w-[640px] max-w-full rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 id="editTitle" class="text-base font-medium text-slate-800">新增公告</h3>
+        <button type="button" onclick="closeEdit()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-5">
+        <div class="form-row"><label><span class="req">*</span> 公告标题</label><input id="e_title" maxlength="60" placeholder="请输入公告标题" /></div>
+        <div class="form-row"><label><span class="req">*</span> 公告类型</label>
+          <select id="e_type"><option>公告</option><option>通知</option></select>
+        </div>
+        <div class="form-row"><label><span class="req">*</span> 状态</label>
+          <select id="e_status"><option>正常</option><option>停用</option></select>
+        </div>
+        <div class="form-row"><label><span class="req">*</span> 公告内容</label><textarea id="e_body" placeholder="请输入公告内容，换行会原样展示在快讯弹窗里"></textarea></div>
+        <p class="pl-[84px] text-xs leading-relaxed text-slate-400">
+          操作人员与创建时间由系统写入，不可手填：操作人员 = 当前登录用户，创建时间 = 保存这一刻。
+          状态为「正常」的公告才会出现在工作台快讯中心。
+        </p>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button type="button" onclick="closeEdit()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取 消</button>
+        <button type="button" onclick="saveEdit()" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">确 定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认 -->
+  <div id="delModal" class="modal-mask" data-annotate="notice-delete">
+    <div class="w-[380px] max-w-full rounded-lg bg-white p-6 shadow-xl">
+      <div class="flex items-start gap-3">
+        <i class="fa fa-exclamation-circle mt-0.5 text-xl text-amber-500"></i>
+        <div>
+          <p class="text-sm font-medium text-slate-800">确认删除这条公告？</p>
+          <p id="delInfo" class="mt-1 text-xs leading-relaxed text-slate-500"></p>
+          <p class="mt-1 text-xs text-slate-400">删除后工作台快讯中心同步不再展示，且不可恢复。</p>
+        </div>
+      </div>
+      <div class="mt-5 flex justify-end gap-2">
+        <button type="button" onclick="closeDel()" class="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">取 消</button>
+        <button type="button" onclick="confirmDel()" class="rounded bg-red-600 px-4 py-1.5 text-sm text-white hover:bg-red-700">删 除</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/current-user.js"></script>
+  <script src="js/web-perms.js"></script>
+  <script src="js/notice-store.js"></script>
+  <script src="js/column-config.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    var USER = window.LimsCurrentUser || { name: 'admin' };
+    var filter = { title: '', operator: '', type: '' };
+    var editingId = null;
+    var deletingId = null;
+
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function toast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(function () { t.classList.remove('show'); }, 1800);
+    }
+
+    function rows() {
+      return NoticeStore.list().filter(function (r) {
+        if (filter.title && String(r.title).toLowerCase().indexOf(filter.title.toLowerCase()) < 0) return false;
+        if (filter.operator && String(r.operator).toLowerCase().indexOf(filter.operator.toLowerCase()) < 0) return false;
+        if (filter.type && r.type !== filter.type) return false;
+        return true;
+      });
+    }
+
+    function renderTable() {
+      var list = rows();
+      document.getElementById('tableBody').innerHTML = list.map(function (r) {
+        return '<tr>' +
+          '<td>' + r.id + '</td>' +
+          '<td class="max-w-[420px]">' + esc(r.title) + '</td>' +
+          '<td>' + esc(r.type) + '</td>' +
+          '<td><span class="' + (r.status === '正常' ? 'tag-ok">正常' : 'tag-off">停用') + '</span></td>' +
+          '<td>' + esc(r.operator) + '</td>' +
+          '<td class="whitespace-nowrap">' + esc(r.createTime) + '</td>' +
+          '<td class="whitespace-nowrap">' +
+            '<button type="button" onclick="openEdit(' + r.id + ')" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</button>' +
+            '<span class="mx-1 text-slate-200">|</span>' +
+            '<button type="button" onclick="askDel(' + r.id + ')" class="text-red-600 hover:underline"><i class="fa fa-trash"></i> 删除</button>' +
+          '</td></tr>';
+      }).join('') || '<tr><td colspan="7" class="py-6 text-center text-slate-400">没有符合条件的公告</td></tr>';
+      document.getElementById('totalText').textContent = '共 ' + list.length + ' 条';
+      if (window.ColumnConfig) ColumnConfig.refresh();
+    }
+
+    function doSearch() {
+      filter.title = document.getElementById('f_title').value.trim();
+      filter.operator = document.getElementById('f_operator').value.trim();
+      filter.type = document.getElementById('f_type').value;
+      renderTable();
+    }
+    function doReset() {
+      ['f_title', 'f_operator'].forEach(function (id) { document.getElementById(id).value = ''; });
+      document.getElementById('f_type').value = '';
+      filter = { title: '', operator: '', type: '' };
+      renderTable();
+    }
+
+    function openEdit(id) {
+      editingId = id == null ? null : id;
+      var r = editingId == null ? null : NoticeStore.get(editingId);
+      document.getElementById('editTitle').textContent = r ? '编辑公告' : '新增公告';
+      document.getElementById('e_title').value = r ? r.title : '';
+      document.getElementById('e_type').value = r ? r.type : '公告';
+      document.getElementById('e_status').value = r ? r.status : '正常';
+      document.getElementById('e_body').value = r ? r.body : '';
+      document.getElementById('editModal').classList.add('open');
+      document.getElementById('e_title').focus();
+    }
+    function closeEdit() { document.getElementById('editModal').classList.remove('open'); }
+
+    function saveEdit() {
+      var title = document.getElementById('e_title').value.trim();
+      var body = document.getElementById('e_body').value.trim();
+      if (!title) { toast('请填写公告标题'); return; }
+      if (!body) { toast('请填写公告内容'); return; }
+      var old = editingId == null ? null : NoticeStore.get(editingId);
+      var row = {
+        id: editingId,
+        title: title,
+        type: document.getElementById('e_type').value,
+        status: document.getElementById('e_status').value,
+        operator: old ? old.operator : USER.name,
+        createTime: old ? old.createTime : now(),
+        body: body
+      };
+      NoticeStore.upsert(row);
+      closeEdit();
+      renderTable();
+      toast(editingId == null ? '已新增公告' : '已保存修改');
+    }
+
+    function now() {
+      var d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; };
+      return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' +
+        p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+    }
+
+    function askDel(id) {
+      var r = NoticeStore.get(id);
+      if (!r) return;
+      deletingId = id;
+      document.getElementById('delInfo').textContent = r.id + ' · ' + r.title + '（' + r.type + '，' + r.createTime + '）';
+      document.getElementById('delModal').classList.add('open');
+    }
+    function closeDel() { document.getElementById('delModal').classList.remove('open'); }
+    function confirmDel() {
+      NoticeStore.remove(deletingId);
+      closeDel();
+      renderTable();
+      toast('已删除');
+    }
+
+    /* 权限：没有「通知公告」页面权限的角色，只给一个可解释的落点 */
+    (function guard() {
+      if (window.WebPerms && WebPerms.can('通知公告')) return;
+      document.getElementById('mainWrap').classList.add('hidden');
+      document.getElementById('noPerm').classList.remove('hidden');
+      var role = WebPerms.current();
+      document.getElementById('noPermWho').textContent = '当前登录角色：' + role.name + '（' + role.desc + '）';
+      return;
+    })();
+
+    ['f_title', 'f_operator'].forEach(function (id) {
+      document.getElementById(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(); });
+    });
+
+    renderTable();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({
+        annotations: [
+          {
+            id: 'notice-filter', selector: '[data-annotate="notice-filter"]', position: 'bottom-left',
+            title: '公告查询条件', wide: true,
+            content: '<strong>需求逻辑：</strong>公告是发给全实验室的，时间一长就翻不动，需要按标题、发单人、类型快速定位。<br>' +
+              '<strong>展示规则：</strong>三个条件——公告标题（模糊）、操作人员（模糊）、公告类型（下拉：公告 / 通知），与真系统通知公告页一致；本列表不按状态筛，停用的也在表里，只是不进快讯中心。<br>' +
+              '<strong>交互逻辑：</strong>「查询」三个条件是「且」的关系、标题与操作人员忽略大小写；「重置」清空条件回到全量；输入框里回车等同查询；底部「共 N 条」跟着筛选结果变。',
+            tag: '通知公告'
+          },
+          {
+            id: 'notice-toolbar', selector: '[data-annotate="notice-toolbar"]', position: 'bottom-left',
+            title: '公告列表与新增入口', wide: true,
+            content: '<strong>需求逻辑：</strong>维护公告档案，工作台快讯中心展示的就是这里「状态 = 正常」的最新几条。<br>' +
+              '<strong>展示规则：</strong>列为 公告编号 / 公告标题 / 公告类型 / 状态 / 操作人员 / 创建时间 / 操作，与真系统同一套；' +
+              '公告编号是递增整数（不是业务单号格式），创建时间精确到秒、按创建时间倒序；状态用绿「正常」/ 灰「停用」标签；' +
+              '数据由 <code>js/notice-store.js</code> 统一提供，日期按「距今天几天」生成，不会放着放着变成陈年旧闻。<br>' +
+              '<strong>交互逻辑：</strong>「+ 新增」打开弹窗；「编辑」改同一条（编号、创建时间、操作人员不变）；「删除」二次确认后移除，快讯中心同步消失；' +
+              '增删改都写进 localStorage，刷新保留，「重置」列配置不影响数据。',
+            tag: '通知公告'
+          },
+          {
+            id: 'notice-edit', selector: '[data-annotate="notice-edit"]', position: 'top-right',
+            title: '新增 / 编辑公告', wide: true,
+            content: '<strong>需求逻辑：</strong>公告正文就是快讯弹窗里的正文，字段不能太多，否则发一条公告要填半张表。<br>' +
+              '<strong>展示规则：</strong>标题、类型、状态、内容四项必填（带 <code>*</code>）；操作人员与创建时间由系统写入、不给填——操作人员 = 当前登录用户（原型为 admin），创建时间 = 保存这一刻。<br>' +
+              '<strong>交互逻辑：</strong>标题与内容去首尾空格后为空则拦下并提示；内容里的换行原样保留，快讯弹窗按行显示；' +
+              '状态改成「停用」，这条立刻从工作台快讯中心消失但仍在列表里；取消不保存。',
+            tag: '通知公告'
+          },
+          {
+            id: 'notice-delete', selector: '[data-annotate="notice-delete"]', position: 'top-right',
+            title: '删除公告',
+            content: '<strong>需求逻辑：</strong>公告删掉就等于全员看不到，必须二次确认。<br>' +
+              '<strong>展示规则：</strong>确认框里带上编号、标题、类型与创建时间，避免删错。<br>' +
+              '<strong>交互逻辑：</strong>删除不可恢复；原型里点「重置演示数据」可回到初始 10 条。',
+            tag: '通知公告'
+          },
+          {
+            id: 'notice-perm', selector: '#noPerm', position: 'top-right',
+            title: '页面权限：谁能进通知公告', wide: true,
+            content: '<strong>需求逻辑：</strong>公告是对外发布口径的内容，不能让所有人都能发。真系统是在角色管理的菜单权限里勾选「通知公告」，勾了才有菜单和入口。<br>' +
+              '<strong>展示规则：</strong>本原型默认以「系统管理员」登录（有该权限）；样品库管理员 / 检测员 / 报告审核员 三个角色都没勾，' +
+              '打开这一页只能看到无权限提示，并给出「去角色管理看权限怎么勾」的入口。<br>' +
+              '<strong>交互逻辑：</strong>权限判定走 <code>js/web-perms.js</code> 的 <code>WebPerms.can(\'通知公告\')</code>，' +
+              '与工作台快讯中心「更多」按钮用的是同一份配置；在「角色管理」里勾或取消后，两个地方同时生效。',
+            tag: '权限'
+          }
+        ]
+      });
+    }
+  </script>
+  <script src="js/modal-drag.js"></script>
+  <script src="js/ui-a11y.js" defer></script>
+</body>
+</html>
