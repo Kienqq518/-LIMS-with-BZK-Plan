@@ -246,9 +246,9 @@ body[data-devstate=offline] [data-role=daq-online]{color:var(--t3)}
     toast.textContent=t; toast.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(function(){toast.classList.remove('on');},2000); }
   function pick(group,el){ Array.prototype.forEach.call(group.querySelectorAll('.on'),function(k){ if(k!==el&&k.closest('[data-switch]')===group) k.classList.remove('on'); });
     el.classList.add('on'); }
-  function applyView(name){ var any=false;
-    Array.prototype.forEach.call(document.querySelectorAll('[data-panel-view]'),function(p){ var m=(p.getAttribute('data-panel-view')===name); p.hidden=!m; if(m) any=true; });
-    if(!any) say('该内容块本期未展开'); }
+  function applyView(name,silent){ var any=false,n=0;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-panel-view]'),function(p){ n++; var m=(p.getAttribute('data-panel-view')===name); p.hidden=!m; if(m) any=true; });
+    if(!any&&n&&!silent) say('该内容块本期未展开'); }
   var DEV={running:['运行中','g','采控主系统 · 2s 采样','心跳 1.4s · 数据连续'],
            alarm:['告警','r','采控主系统 · 2s 采样','心跳 1.4s · 上料已暂停'],
            offline:['离线','m','连接恢复后更新','分系统离线 · 最近上报 10:12:44'],
@@ -281,7 +281,7 @@ body[data-devstate=offline] [data-role=daq-online]{color:var(--t3)}
     if(el.hasAttribute('data-back')){ if(history.length>1) history.back(); else location.href=PAGES.zone106; return; }
     if(el.hasAttribute('data-todo')){ say(el.getAttribute('data-todo')||'本期未覆盖'); return; }
     if(el.hasAttribute('data-goto')){ var k=el.getAttribute('data-goto'); if(PAGES[k]){ location.href=PAGES[k]; return; } }
-    if(el.hasAttribute('data-view')){ var g=el.closest('[data-switch]')||el.parentNode; if(g) pick(g,el); applyView(el.getAttribute('data-view')); return; }
+    if(el.hasAttribute('data-view')){ var g=el.closest('[data-switch]')||el.parentNode; if(g) pick(g,el); applyView(el.getAttribute('data-view'),false); return; }
     if(el.hasAttribute('data-sel')){ applyReplay(el); return; }
     if(el.hasAttribute('data-switch')){ var it=e.target.closest('[data-on],i,b,.pill,.seg i,.btn,[data-state],[data-dim],[data-span]');
       if(it&&el.contains(it)){ pick(el,it);
@@ -307,7 +307,7 @@ body[data-devstate=offline] [data-role=daq-online]{color:var(--t3)}
     }
     window.addEventListener('resize',apply); return {apply:apply};
   })();
-  applyView(document.body.getAttribute('data-view-start')||'task');
+  applyView(document.body.getAttribute('data-view-start')||'task',true);
   var st0=document.body.getAttribute('data-devstate'); if(st0) applyDevState(st0);
   FIT.apply();
 })();
