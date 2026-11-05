@@ -76,8 +76,19 @@ composer: RenderPass → OutlinePass → UnrealBloomPass(res, 0.22, 0.3, 0.90) �
 | 项 | 现状 | 目标 | 工作量 |
 |---|---|---|---|
 | 地面引导线 | 无 | #E8D77A 通道贴花 | S（新增 decal 层） |
+| 墙体处理 ✅(V2 桥接层已实现) | 前侧外墙压至 10cm 地脚带（按相机朝向逐段重算）、玻璃 rail 框 #788c97→#c9d4da、玻璃 opacity .16→.08、柱子降对比 0.92、每房间淡分区色块+边界线 | 见 §8 |
 | 地面反射 | 无 | 0.15 弱反射 | M（Reflector 或 env） |
 | 背景虚化 | 纯色底 | FogExp2 0.012 | S |
 | 阴影 | 无/硬 | PCFSoft 五层光栈 | M（需重调 exposure） |
 | Grade 描边 | CSS 红框近似 | OutlinePass 世界空间 | M（接相机投影） |
 | 相机 | 透视可自由转 | 正交 + 有限环绕 + S1/S2 机位 | S |
+
+## 8. 墙体处理实施记录（V2 桥接层，2026-11-05）
+
+实现位置：`twin/future-lab/twin-scene-bridge.js`（`?v2=1` 门禁，tour-lab/tour-space 原入口零影响）。
+
+- **前侧外墙**：示意墙为单 mesh、每段 18 floats（6 顶点两三角）。按 `camera.getWorldDirection` 求相机外方向，段中点相对实验室中心 `dot>0.30` 判定为相机侧 → 顶部三点 y 压至 0.10m 地脚带；背侧保留全高作背景。视角切换/拖拽后重算（`space-view-change`/`lab-view-change`/`pointerup`）。
+- **玻璃隔断**：rail 材质 `#788c97`(metalness .75) → `#c9d4da`(.18/.55)，玻璃面板 opacity .16→.08——边界保留、不抢设备。
+- **柱子**：`visual.columns` 克隆材质降对比（#dde3e6、opacity .92、去 clearcoat），保留空间锚定作用。
+- **地面分区**：按 `cad_geometry.rooms` 每房间生成极淡交替色块（opacity .34）+ `#c8d3dc` 边界线（opacity .8），AMR 浅金引导线保留。
+- 实测：S1 2676 dc / S2 542 dc，0 运行错误；墙体处理不增加 draw call 负担（材质复用+静态层）。

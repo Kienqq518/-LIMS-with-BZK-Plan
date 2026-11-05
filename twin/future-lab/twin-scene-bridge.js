@@ -7,6 +7,74 @@ import * as THREE from './vendor/three.module.js';
 const CHANNEL = 'twin-v2';
 if (new URLSearchParams(location.search).get('v2') === '1') boot();
 
+
+/* ---------- 墙体/隔断/柱子/地面分区处理（V1 视觉语言 §3：看设备运行，不看房间布局） ---------- */
+let wallMesh = null, wallBase = null, labCenter = null;
+function findWalls() {
+  visual.overview.children.forEach(c => {
+    if (c.isMesh && c.material && c.material.transparent && c.material.color && c.material.color.getHex() === 0xbbcbd7) {
+      wallMesh = c; wallBase = Float32Array.from(c.geometry.attributes.position.array);
+    }
+  });
+  if (wallMesh && !labCenter) {
+    const rooms = visual.g.rooms || [];
+    let mx = 0, mz = 0, n = 0;
+    rooms.forEach(r => r.points.forEach(q => { mx += q[0] * 0.05; mz += q[1] * 0.05; n++; }));
+    labCenter = new THREE.Vector3(mx / n, 0, mz / n);
+  }
+}
+function fadeFrontWalls() {
+  if (!wallMesh) return;
+  findWalls();
+  const camDir = new THREE.Vector3(); visual.camera.getWorldDirection(camDir);
+  const out = camDir.clone().negate(); out.y = 0; if (out.lengthSq() < 1e-6) return; out.normalize();
+  const pos = wallMesh.geometry.attributes.position, arr = pos.array;
+  for (let seg = 0; seg * 6 * 3 < arr.length; seg++) {
+    const o = seg * 18;
+    const ax = wallBase[o], az = wallBase[o + 2], bx = wallBase[o + 3], bz = wallBase[o + 5];
+    const rel = new THREE.Vector3((ax + bx) / 2 - labCenter.x, 0, (az + bz) / 2 - labCenter.z);
+    const facing = rel.lengthSq() > 0.01 && rel.clone().normalize().dot(out) > 0.30;
+    /* 每段 18 floats：v0(x,0,z) v1(X,0,Z) v2(X,h,Z) v3(x,0,z) v4(X,h,Z) v5(x,h,z) —— 顶部 y 在 o+7/o+13/o+16 */
+    const h = facing ? 0.10 : wallBase[o + 7];   /* 前侧外墙压成 10cm 地脚带，其余保留 */
+    arr[o + 7] = h; arr[o + 13] = h; arr[o + 16] = h;
+  }
+  pos.needsUpdate = true;
+  wallMesh.geometry.computeBoundingSphere();
+  wallMesh.material.opacity = 0.12;
+}
+function softenGlassAndColumns() {
+  const seen = new Set();
+  visual.detail.traverse(m => {
+    if (!m.isMesh || !m.material || seen.has(m.material.uuid)) return;
+    const hex = m.material.color ? m.material.color.getHex() : -1;
+    if (hex === 0x788c97) { m.material.color.set(0xc9d4da); m.material.metalness = 0.18; m.material.roughness = 0.55; seen.add(m.material.uuid); }      /* 玻璃深色金属框 → 弱化 */
+    else if (hex === 0xd3e6e7 && m.material.transparent) { m.material.opacity = 0.08; seen.add(m.material.uuid); }                                          /* 玻璃面板更透 */
+  });
+  (visual.columns || []).forEach(c => {                                                                                                                    /* 柱子保留、降对比 */
+    c.material = c.material.clone(); c.material.color.set(0xdde3e6); c.material.metalness = 0; c.material.clearcoat = 0; c.material.transparent = true; c.material.opacity = 0.92;
+  });
+}
+function paintZoneFloors() {
+  const layer = new THREE.Group(); layer.name = 'twin-v2-zones';
+  const tints = [0xeef3f8, 0xeaf0f6];
+  (visual.g.rooms || []).forEach((r, i) => {
+    const pts = r.points.map(q => new THREE.Vector2(q[0] * 0.05, -q[1] * 0.05));
+    const shape = new THREE.Shape(pts);
+    const fill = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: tints[i % 2], transparent: true, opacity: 0.34, depthWrite: false, toneMapped: false }));
+    fill.rotation.x = -Math.PI / 2; fill.position.y = 0.006 + (i % 2) * 0.001; layer.add(fill);
+    const loop = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts.map(v => new THREE.Vector3(v.x, 0.02, -v.y))),
+      new THREE.LineBasicMaterial({ color: 0xc8d3dc, transparent: true, opacity: 0.8, toneMapped: false }));
+    layer.add(loop);
+  });
+  visual.scene.add(layer);
+}
+function treatArchitecture() {
+  findWalls(); softenGlassAndColumns(); paintZoneFloors(); fadeFrontWalls();
+  addEventListener('space-view-change', fadeFrontWalls);
+  addEventListener('lab-view-change', fadeFrontWalls);
+  visual.renderer.domElement.addEventListener('pointerup', fadeFrontWalls);
+}
+
 function boot() {
   const wait = setInterval(async () => {
     const v = window.visual106;
@@ -34,9 +102,10 @@ function build(v) {
   };
   Object.values(robots).forEach(g => v.scene.add(g));
 
+  treatArchitecture();
   /* QA 自检钩子（DOM 可被隔离世界读取） */
   const hook = document.createElement('div'); hook.id = 'twin-v2-bridge';
-  hook.dataset.guide = String(guide.children.length); hook.dataset.robots = String(Object.keys(robots).length);
+  hook.dataset.guide = String(guide.children.length); hook.dataset.robots = String(Object.keys(robots).length); hook.dataset.walls = wallMesh ? '1' : '0';
   document.body.append(hook);
   parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'bridge-ready', guide: guide.children.length, robots: Object.keys(robots).length }, location.origin);
 
