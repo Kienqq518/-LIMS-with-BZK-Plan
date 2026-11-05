@@ -147,6 +147,9 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 
 | 方向 | 消息 | 载荷 | 说明 |
 |---|---|---|---|
+| 宿主→网关（REST） | `GET /api/zone/{z}/task-stats` | 区域任务统计：`{periods{day,month,year}{total,done,running,abnormal}, note}`；非试验区 note 说明「无任务口径」 |
+| 宿主→网关（REST） | `GET /api/zone/{z}/running-tasks` | 在制任务合并流：`{tasks[{kind:'dispatch'\|'daq', taskId, name, deviceCode, robotId, startedAt, elapsedMin, plannedMin, stage, percent}]}`；`elapsedMin>plannedMin` → 前端标「超时」 |
+| 宿主→网关（REST） | `GET /api/zone/{z}/alarms` | 本区告警（只读三态 + 派至 + 来源） |
 | 宿主→场景 | `state` | `{robots[], deviceStatus{}, layers{}, quality, routeNote}` | 幂等全量推，场景侧收到即应用图层与画质（避免 ready 竞态） |
 | 宿主→场景 | `layer` | `{layer:'path\|labels\|zones\|walls\|heatmap', enabled:bool}` | 图层=渲染可见性，与业务无关；`walls` 关=还原墙体不剖切 |
 | 宿主→场景 | `quality` | `{level:'high'\|'low'}` | 低配：关 Reflector、pixelRatio→1、动画环 66→125ms、光点静态 |

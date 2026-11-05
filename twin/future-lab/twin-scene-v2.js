@@ -10,6 +10,7 @@
   var scene = $('#scene');
   var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '';
   var rtTimer = null, detailDev = null, bridgeReady = false, pendingState = null;
+  var zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' };
   var SRC_NAME = { daq: '数采', dispatch: '调度', iot: '物联', lims: 'LIMS', rule: '判定规则' };
   var ORDER = [];  /* 遥控翻页序列 */
 
@@ -59,11 +60,11 @@
     if (ev.type === 'tick') {
       robots = (ev.payload.robots && ev.payload.robots.length ? ev.payload.robots : robots);
       devices.forEach(function (d) { var s = ev.payload.devices.filter(function (x) { return x.deviceId === d.deviceId; })[0]; if (s) d.status = s.status; });
-      renderRobots(); renderBoard(); pushState();
+      renderRobots(); renderZonePanel(); pushState();
     } else if (ev.type === 'task.progress') {
       var t = tasks.filter(function (x) { return x.taskId === ev.payload.taskId; })[0];
       if (t) { t.progress.percent = ev.payload.percent; t.stage = ev.payload.stage; if (ev.payload.percent >= 100) t.result = 'passed'; renderStrip(); }
-    } else if (ev.type === 'device.status') { renderBoard(); }
+    } else if (ev.type === 'device.status') { renderZonePanel(); }
     else if (ev.type === 'alarm.update') { renderAlarms(); pushState(); }
   }
 
@@ -72,9 +73,10 @@
     var m = status.metrics[st.period], meta = status.metricMeta;
     $('#metrics').innerHTML = Object.keys(meta).map(function (k) {
       var v = m[k].value, src = SRC_NAME[meta[k].source] || meta[k].source, c = m[k].compare;
-      if (v == null) return '<div class="metric na"><b>—</b><span class="lab">' + meta[k].label + '</span><span class="src">' + src + ' 未接入' + (meta[k].note ? ' · ' + meta[k].note : '') + '</span></div>';
+      var tip = '来源：' + src + (meta[k].note ? ' · ' + meta[k].note : '') + ' · 刷新 ' + meta[k].refresh;
+      if (v == null) return '<div class="metric na" title="' + tip + '"><b>—</b><span class="lab">' + meta[k].label + '<small>（' + meta[k].unit + '）</small></span><span class="src">' + src + ' 未接入</span></div>';
       var delta = c == null ? '' : '<span class="delta ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</span>';
-      return '<div class="metric"><b>' + v + '</b><span class="lab">' + meta[k].label + '<small>（' + meta[k].unit + '）</small></span>' + delta + '<span class="src">' + src + '</span></div>';
+      return '<div class="metric" title="' + tip + '"><b>' + v + '</b><span class="lab">' + meta[k].label + '<small>（' + meta[k].unit + '）</small></span>' + delta + '<span class="src">' + src + '</span></div>';
     }).join('');
     $('#freshTxt').textContent = '数据源 live-mock · 最近更新 ' + new Date(status.updatedAt || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
   }
@@ -121,27 +123,108 @@
     });
   }
   function stamp(z) { return function (d) { d.zoneId = d.zoneId || 'Z-' + z; return d; }; }
-  /* 区域归属以数据分区为准（部分设备的 CAD 模型号在邻区，如 2411020108 借 107-01 建模） */
+  /* 区域归属以数据分区为准（部分设备的 CAD 模型号在邻区，如 2411020108 借 107-01 建模却属 106 分区） */
   function zoneDevices(z) { return devices.filter(function (d) { return (d.zoneId || '').slice(2) === z; }); }
-  function renderBoard() {
-    var pool = zoneDevices(st.zone);
-    var el = $('#deviceBoard'), sig = pool.map(function (d) { return d.deviceId; }).join('|');
-    if (el.dataset.sig !== sig) {
-      el.dataset.sig = sig;
-      el.innerHTML = '<span class="bh">设备状态一览 · 异常置顶</span>' + pool.map(function (d) {
-        return '<button class="dev-chip" data-dev="' + d.deviceId + '" data-cad="' + (d.modelNode || '').replace('cad:', '') + '"><i></i><span class="dc">' + d.code + ' <small>' + escapeHtml(d.subZone) + '</small></span></button>';
-      }).join('');
-    }
-    var bad = {}, n = { working: 0, ready: 0 };
-    alarms.forEach(function (a) { if (a.status !== 'resolved' && a.deviceId) bad[a.deviceId] = 1; });
-    pool.forEach(function (d) {
-      var c = el.querySelector('[data-dev="' + d.deviceId + '"]'); if (!c) return;
-      var cls = bad[d.deviceId] ? 'alarm' : d.status;
-      c.className = 'dev-chip ' + cls; c.title = (cls === 'alarm' ? '异常' : cls === 'working' ? '在测' : cls === 'ready' ? '就绪' : cls === 'standby' ? '待机' : '停止') + ' · ' + (d.currentTaskId || '无在制任务');
-      if (n[cls] != null) n[cls]++;
-    });
-    var bh = el.querySelector('.bh'); if (bh) bh.textContent = '设备状态一览 · 异常置顶（在测 ' + n.working + ' / 就绪 ' + n.ready + '）';
+
+  /* ---------- 区域视图五类信息：设备 / 环境数据 / 任务统计 / 正在运行的任务 / 告警 ---------- */
+  function loadZone() {
+    var z = st.zone;
+    Promise.all([TwinApi.get('/api/zone/' + z + '/task-stats'), TwinApi.get('/api/zone/' + z + '/running-tasks'), TwinApi.get('/api/zone/' + z + '/alarms')])
+      .then(function (r) {
+        if (st.mode !== 'ZONE' || st.zone !== z) return;
+        zstats = r[0].data || null; zrunning = (r[1].data && r[1].data.tasks) || []; zalarms = (r[2].data && r[2].data.alarms) || [];
+        renderZonePanel();
+      }).catch(function (e) { fail('区域数据加载失败：' + e.message); });
   }
+  function zp(sel) { return document.querySelector('#zonePanel ' + sel); }
+  function renderZonePanel() {
+    if (st.mode !== 'ZONE') return;
+    var z = st.zone, zn = (zones.filter(function (x) { return x.zoneId === 'Z-' + z; })[0] || {}), pool = zoneDevices(z);
+    $('#zpName').textContent = z + ' ' + (zn.name || '');
+    $('#zpMeta').textContent = (zn.deviceCount || 0) + ' 台建档 · 状态 ' + (zn.status === 'alarm' ? '异常' : zn.status === 'running' ? '运行中' : '空闲') + ' · 数据 ' + (zn.detailLevel === 'device' ? '分区明细' : '台账投影');
+
+    /* ① 设备（106 含复合机器人与卡住判定） */
+    var devSig = pool.map(function (d) { return d.deviceId + d.status; }).join('|') + robots.map(function (r) { return r.robotId + r.taskElapsedMin; }).join('|');
+    if (zpSig.dev !== devSig) {
+      zpSig.dev = devSig;
+      var bad = {}; zalarms.forEach(function (a) { if (a.status !== 'resolved' && a.deviceId) bad[a.deviceId] = 1; });
+      var rows = pool.slice().sort(function (a, b) { return (bad[b.deviceId] ? 1 : 0) - (bad[a.deviceId] ? 1 : 0); }).map(function (d) {
+        var cls = bad[d.deviceId] ? 'alarm' : d.status;
+        return '<div class="zp-row ' + cls + '" data-dev="' + d.deviceId + '" data-cad="' + (d.modelNode || '').replace('cad:', '') + '"><i class="dot"></i><span class="nm">' + d.code + '</span><span class="sub">' + escapeHtml(d.subZone) + ' · ' + ST_CN(cls) + '</span></div>';
+      }).join('');
+      if (z === '106') rows += robots.map(function (r) {
+        var stall = (r.taskElapsedMin != null && r.stallLimitMin != null && r.taskElapsedMin > r.stallLimitMin && r.action !== 'charging');
+        return '<div class="zp-row ' + (stall ? 'alarm' : 'working') + '" data-robot="' + r.robotId + '"><i class="dot"></i><span class="nm">' + r.robotId + '</span>' +
+          (stall ? '<span class="tag stall">疑似卡住</span>' : '<span class="tag">' + (r.action === 'charging' ? '充电中' : r.action === 'moving' ? '行进中' : '待机') + '</span>') +
+          '<span class="sub">' + escapeHtml(r.currentFlowName || '无在制任务') + ' · 已 ' + (r.taskElapsedMin || 0) + '/' + (r.stallLimitMin || '—') + 'min · 🔋' + Math.round(r.battery) + '%</span></div>';
+      }).join('');
+      zp('#zpDevices .zp-body').innerHTML = rows || '<div class="zp-empty">该区 V1 未建设备档案（台账投影：' + (zn.deviceCount || 0) + ' 台）。接入数采分区数据后自动出现。</div>';
+      zp('#zpDevicesN').textContent = pool.length ? pool.length + ' 台建档' + (z === '106' ? ' · ' + robots.length + ' 台机器人' : '') : '未建档';
+    }
+
+    /* ② 环境数据（与场景节点层同源：V4 节点协议快照） */
+    var env = envNodes.filter(function (n) { return String(n.roomId) === z; });
+    var envSig = env.map(function (n) { return n.id + JSON.stringify(n.values) + n.status; }).join('|');
+    if (zpSig.env !== envSig) {
+      zpSig.env = envSig;
+      zp('#zpEnv .zp-body').innerHTML = env.map(function (n) {
+        var v = n.values || {}, txt;
+        if (v.temperature != null) txt = v.temperature + '℃ · ' + v.humidity + '%RH';
+        else if (v.illuminance != null) txt = v.illuminance + ' lx';
+        else if (v.detected != null) txt = v.detected ? '已触发' : '正常';
+        else if (v.exceeded != null) txt = v.exceeded ? '超限' : '正常';
+        else if (v.activity != null) txt = v.activity ? '有人活动' : '无人';
+        else if (v.contact != null) txt = '触点' + (v.contact === 'closed' ? '闭合' : '断开');
+        else if (v.connection != null) txt = v.videoSource ? '视频在线' : '画面未接入';
+        else txt = '—';
+        return '<div class="zp-row ' + (n.status === 'normal' ? 'ready' : 'alarm') + '" data-node="' + n.id + '"><i class="dot"></i><span class="nm">' + escapeHtml(n.name) + '</span><span class="tag">' + NODE_CN(n.type) + '</span><span class="sub">' + txt + ' · ' + new Date(n.updatedAt).toLocaleTimeString('zh-CN', { hour12: false }) + '</span></div>';
+      }).join('') || '<div class="zp-empty">该区无环境监测点位（物联系统未部署）。</div>';
+      zp('#zpEnvN').textContent = env.length ? env.length + ' 个点位 · 5s 心跳' : '无点位';
+    }
+
+    /* ③ 任务统计（跟随顶部周期切换） */
+    var per = zstats && zstats.periods ? zstats.periods[st.period] : null;
+    zp('#zpStatsPeriod').textContent = ({ day: '本日', month: '本月', year: '本年' })[st.period];
+    if (per) {
+      zp('#zpStats .zp-body').innerHTML = '<div class="zp-grid">' +
+        '<div class="zp-stat"><b>' + per.total + '</b><span>任务总数</span></div>' +
+        '<div class="zp-stat"><b>' + per.done + '</b><span>已完成</span></div>' +
+        '<div class="zp-stat run"><b>' + per.running + '</b><span>执行中</span></div>' +
+        '<div class="zp-stat warn"><b>' + per.abnormal + '</b><span>异常挂起</span></div></div>' +
+        (zstats.note ? '<div class="zp-empty" style="margin-top:7px">' + escapeHtml(zstats.note) + '</div>' : '');
+    } else {
+      zp('#zpStats .zp-body').innerHTML = '<div class="zp-empty">该区无任务口径' + (zstats && zstats.note ? '：' + escapeHtml(zstats.note) : '') + '。</div>';
+    }
+
+    /* ④ 正在运行的任务（调度 + 数采两路合并，标来源） */
+    var runSig = zrunning.map(function (t) { return t.taskId + (t.percent || '') + (t.elapsedMin || ''); }).join('|');
+    if (zpSig.run !== runSig) {
+      zpSig.run = runSig;
+      zp('#zpRunning .zp-body').innerHTML = zrunning.map(function (t) {
+        var over = t.plannedMin && t.elapsedMin > t.plannedMin;
+        return '<div class="zp-run" data-dev="' + (t.deviceCode || '') + '">' +
+          '<div class="l1"><span class="tag ' + (t.kind === 'dispatch' ? 'dis' : 'daq') + '">' + (t.kind === 'dispatch' ? '调度' : '数采') + '</span><b>' + escapeHtml(t.name) + '</b>' +
+          (over ? '<span class="tag stall">超时</span>' : '') + '<span class="sub">' + (t.deviceCode || '—') + (t.robotId ? ' · ' + t.robotId : '') + '</span></div>' +
+          '<div class="l2">' + (t.sampleId ? t.sampleId + ' · ' : '') + escapeHtml(t.stage || '') + ' · ' + (t.startedAt ? '起 ' + t.startedAt + ' · ' : '') + '已 ' + (t.elapsedMin || 0) + 'min' + (t.plannedMin ? '（计划 ' + t.plannedMin + '）' : '') + (t.percent != null ? ' · ' + t.percent + '%' : '') + '</div>' +
+          (t.percent != null ? '<div class="zp-bar"><i style="width:' + t.percent + '%"></i></div>' : '') + '</div>';
+      }).join('') || '<div class="zp-empty">当前无在制任务。</div>';
+      zp('#zpRunningN').textContent = zrunning.length ? zrunning.length + ' 条在制' : '空闲';
+    }
+
+    /* ⑤ 告警（本区域，只读三态） */
+    var abSig = zalarms.map(function (a) { return a.alarmId + a.status; }).join('|');
+    if (zpSig.ab !== abSig) {
+      zpSig.ab = abSig;
+      zp('#zpAlarms .zp-body').innerHTML = zalarms.map(function (a) {
+        return '<div class="zp-row ' + (a.status === 'resolved' ? 'ready' : 'alarm') + '" data-alarm="' + a.alarmId + '"><i class="dot"></i><span class="nm">Grade ' + a.grade + ' ' + escapeHtml(a.title) + '</span><span class="sub">' + ST_AB(a.status) + ' · ' + a.occurredAt + '</span></div>' +
+          '<div class="l2" style="font-size:10px;color:var(--tw-color-textMuted);margin:-2px 0 6px 15px">派至 ' + escapeHtml(a.dispatchedTo || '—') + ' · 来源 ' + (SRC_NAME[a.source] || a.source || '—') + ' · <button data-trace="' + a.alarmId + '" style="border:0;background:none;color:var(--tw-color-brand);cursor:pointer;padding:0;font-size:10px">回溯</button></div>';
+      }).join('') || '<div class="zp-empty">近 24h 该区域无告警。</div>';
+      zp('#zpAlarmsN').textContent = zalarms.filter(function (a) { return a.status !== 'resolved'; }).length + ' 未解除 / 共 ' + zalarms.length;
+    }
+  }
+  function ST_CN(x) { return { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常' }[x] || x; }
+  function ST_AB(x) { return { active: '未解除', dispatched: '已派发', resolved: '已解除' }[x] || x; }
+  function NODE_CN(t) { return { temperature: '温湿度', smoke: '烟感', gas: '气体', water: '水浸', motion: '人体', switch: '开关量', camera: '视觉', light: '照明' }[t] || t; }
 
   /* ---------- ④ 底部条：按叙事切换内容（不再由切片控制可见性） ---------- */
   function renderStrip() {
@@ -194,7 +277,9 @@
         Object.keys(v).forEach(function (k) { if (typeof v[k] === 'number') v[k] = Math.round((v[k] + (Math.random() - 0.5) * 0.6) * 10) / 10; });
         return { id: n.id, roomId: n.roomId, name: n.name, type: n.type, position: n.position, status: 'normal', values: v, updatedAt: now };
       });
+      envNodes = nodes;   /* 面板「环境数据」与场景节点层同源，避免两处各算一套 */
       scene.contentWindow.postMessage({ channel: 'room-tour-node-v3', type: 'snapshots', nodes: nodes }, location.origin);
+      if (st.mode === 'ZONE') renderZonePanel();
     });
   }
   window.addEventListener('message', function (e) {
@@ -211,19 +296,25 @@
   function applyAll() {
     document.querySelectorAll('.mode').forEach(function (b) { b.classList.toggle('active', (st.mode === 'S1' && b.dataset.mode === 'S1') || (st.mode === 'S3' && b.dataset.mode === 'S3')); });
     if ($('#zoneSel').options.length) $('#zoneSel').value = st.zone;
-    $('#deviceBoard').hidden = !(st.mode === 'ZONE' && zoneDevices(st.zone).length);
-    $('#robotZone').hidden = st.mode === 'ZONE' && st.zone !== '106';   /* 复合机器人属 106 无人化区 */
-    /* S3 由回溯抽屉承载时间轴，底栏不再重复一份（否则被抽屉压住） */
-    $('#taskStrip').hidden = st.mode === 'S3'; $('#taskStrip').classList.toggle('collapsed', !!st.strip);
+    /* 区域视图=右侧五块面板；浮层（告警卡/机器人卡）与底栏让位，避免同一信息出现两次 */
+    $('#zonePanel').hidden = st.mode !== 'ZONE';
+    $('#andonZone').hidden = st.mode === 'ZONE';
+    $('#robotZone').hidden = st.mode === 'ZONE';
+    $('#taskStrip').hidden = st.mode !== 'S1'; $('#taskStrip').classList.toggle('collapsed', !!st.strip);
     $('#stripBtn').textContent = st.strip ? '▴ 展开底栏' : '▾ 收起底栏'; $('#stripBtn').setAttribute('aria-pressed', !!st.strip);
-    $('#andonZone').hidden = false;
+    $('#stripBtn').disabled = st.mode !== 'S1';
     $('#s3Drawer').hidden = st.mode !== 'S3'; if (st.mode === 'S3') renderS3();
     var h = document.querySelector('.s3drawer b'); if (h) h.textContent = '告警回溯 · 最近 24h（未解除 ' + alarmOpen().length + ' / 共 ' + alarms.length + '）';
     sceneCmd('view', { view: st.mode === 'S1' ? 'overall-101' : st.mode === 'S3' ? 'overall-101' : zoneView(st.zone) });
-    renderMetrics(); renderAlarms(); renderRobots(); renderBoard(); renderStrip(); pushState(); writeURL();
+    renderMetrics(); renderAlarms(); renderRobots(); renderStrip(); pushState(); writeURL();
+    if (st.mode === 'ZONE') { loadZone(); renderZonePanel(); }
 
   }
-  function setMode(m, zone) { st.mode = m; if (zone) st.zone = zone; applyAll(); flashHint(); }
+  function setMode(m, zone) {
+    st.mode = m;
+    if (zone && zone !== st.zone) { st.zone = zone; $('#detail').hidden = true; clearInterval(rtTimer); detailDev = null; }  /* 换区域即收起上一区域的详情，避免串区 */
+    applyAll(); flashHint();
+  }
   function handleKey(k) {
     if (k === 'PageDown') step(1);
     else if (k === 'PageUp') step(-1);
@@ -251,7 +342,7 @@
     document.querySelectorAll('.mode').forEach(function (b) { b.onclick = function () { setMode(b.dataset.mode); }; });
     $('#zoneSel').onchange = function () { setMode('ZONE', this.value); };
     document.querySelectorAll('.seg').forEach(function (b) { b.onclick = function () {
-      document.querySelectorAll('.seg').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.period = b.dataset.period; renderMetrics(); writeURL();
+      document.querySelectorAll('.seg').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.period = b.dataset.period; renderMetrics(); renderZonePanel(); writeURL();
     }; });
     document.querySelectorAll('.mini').forEach(function (b) { b.onclick = function () {
       document.querySelectorAll('.mini').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.alarmFilter = b.dataset.alarmfilter; renderAlarms(); writeURL();
@@ -288,13 +379,11 @@
         '<div class="row"><span>关联对象</span><b>' + escapeHtml(card.dataset.dev || '—') + '</b></div>' +
         '<p style="font-size:11px;color:var(--tw-color-textMuted)">镜头已定位到 ' + zc + '。孪生只读：处置与解除由来源系统回传，不在大屏操作。</p>');
     });
-    $('#deviceBoard').addEventListener('click', function (e) {
-      var c = e.target.closest('[data-dev]'); if (!c) return;
-      var d = devices.filter(function (x) { return x.deviceId === c.dataset.dev; })[0]; if (d) selectDevice(d, c.dataset.cad);
-    });
     $('#robotZone').addEventListener('click', function (e) {
       var c = e.target.closest('[data-robot]'); if (!c) return;
-      var r = robots.filter(function (x) { return x.robotId === c.dataset.robot; })[0]; if (!r) return;
+      var r = robots.filter(function (x) { return x.robotId === c.dataset.robot; })[0]; if (!r) return; openRobot(r);
+    });
+    function openRobot(r) {
       openDetail('<h3>' + r.robotId + ' · 复合机器人</h3><div class="sub">' + escapeHtml(r.routeBasis || '') + '</div>' +
         '<div class="row"><span>当前调度任务</span><b>' + escapeHtml(r.currentFlowName || '—') + '</b></div>' +
         '<div class="row"><span>任务号</span><b>' + (r.currentTaskId || '—') + '</b></div>' +
@@ -302,7 +391,7 @@
         '<div class="row"><span>服务设备</span><b>' + ((devices.filter(function (x) { return x.deviceId === r.servingDeviceId; })[0] || {}).code || r.servingDeviceId || '—') + '</b></div>' +
         '<div class="row"><span>电量</span><b>' + Math.round(r.battery) + '%</b></div>' +
         '<p style="font-size:11px;color:var(--tw-color-textMuted)">位置基准：' + (r.positionBasis === 'derived' ? '调度未标定，按工位图推导折线（相对轨迹）' : '调度系统实时点位') + '</p>');
-    });
+    }
     $('#taskStrip').addEventListener('click', function (e) {
       var al = e.target.closest('[data-alarm]');
       if (al) { $('#s3Drawer').hidden = false; renderS3(al.dataset.alarm); return; }
@@ -311,6 +400,18 @@
       if (match) selectDevice(match, (match.modelNode || '').replace('cad:', ''));
     });
     $('#s3Close').onclick = function () { setMode('S1'); };
+    $('#zpClose').onclick = function () { setMode('S1'); };
+    $('#zonePanel').addEventListener('click', function (e) {
+      var tr = e.target.closest('[data-trace]');
+      if (tr) { $('#s3Drawer').hidden = false; renderS3(tr.dataset.trace); return; }
+      var ab = e.target.closest('[data-alarm]');
+      if (ab) { $('#s3Drawer').hidden = false; renderS3(ab.dataset.alarm); return; }
+      var rb = e.target.closest('[data-robot]');
+      if (rb) { var r0 = robots.filter(function (x) { return x.robotId === rb.dataset.robot; })[0]; if (r0) openRobot(r0); return; }
+      var row = e.target.closest('[data-dev]'); if (!row) return;
+      var d = devices.filter(function (x) { return x.deviceId === row.dataset.dev || x.code === row.dataset.dev; })[0];
+      if (d) selectDevice(d, (d.modelNode || '').replace('cad:', ''));
+    });
   }
 
   /* 面板 → 场景 双向拾取（P0-2） */
@@ -353,7 +454,11 @@
     }, function () { var el = $('#rt'); if (el) el.innerHTML = '<div class="row"><span>关键参数</span><b>数据延迟 · 请重试</b></div>'; }); };
     pull(); rtTimer = setInterval(pull, 3000);
   }
-  function openDetail(html) { $('#detailBody').innerHTML = html; $('#detail').hidden = false; }
+  function openDetail(html) {
+    var el = $('#detail'); el.querySelector('#detailBody').innerHTML = html; el.hidden = false;
+    /* 区域视图：详情停靠到面板左侧，两块同时可用（覆盖式会把五类信息全挡住） */
+    el.classList.toggle('docked', st.mode === 'ZONE');
+  }
 
   /* ---------- S3 告警回溯（只读闭环） ---------- */
   function renderS3(onlyId) {

@@ -205,7 +205,25 @@ flowchart TD
 
 **面向开发（接口/字段）**：英文小写驼峰 + 状态枚举固定集 `{live,stale,missing,offline}`、`{active,dispatched,resolved}`、`{working,ready,standby,stopped,alarm}`；`null`=未测，`0`=实测零，两者不得混用。
 
-### 5.7 数据规范（新增/补齐字段，落到 `twin/api/seed.json` + 契约）
+### 5.7 区域视图信息模型（五类 · 产品负责人 2026-11-05 补充定义）
+
+> 原话：**「一个房间区域关注的信息分为 设备、环境数据、任务统计，以及正在运行的任务和告警。」**
+> 因此区域下钻（下拉选中 101–110）后，右侧固定出现这五块，顺序不变；**同一信息只出现一次**——告警浮卡、机器人浮卡、底部任务流在区域视图下全部让位给面板。
+
+| # | 信息类 | 内容 | 数据源 / 端点 | 空态与降级（必须诚实） | 交互 |
+|---|---|---|---|---|---|
+| ① | **设备** | 本区建档设备逐台状态（在测/就绪/待机/停止/异常，异常置顶）；106 追加复合机器人（动作、当前调度任务、**已耗时 vs 节拍上限 → 疑似卡住**、电量、相对轨迹标注） | ② 数采 + ① 调度：`GET /api/zone/{z}/devices` | 无档案：「该区 V1 未建设备档案（台账投影：N 台）」 | 点行 → 场景描边 + 详情停靠（不遮面板） |
+| ② | **环境数据** | 该区 IoT 点位：温湿度（℃/%RH）、气体、烟感/水浸、开关量、视觉、照明 + 读数时间戳 | ③ 物联：V4 节点协议 `nodes-ready → snapshots`（5s 心跳，**与场景节点层同一份快照**，不另算一套） | 无点位：「该区无环境监测点位（物联系统未部署）」；相机无流：「画面未接入」 | 点行 → 节点详情 |
+| ③ | **任务统计** | 任务总数 / 已完成 / 执行中 / 异常挂起 四格，**跟随顶部本日·本月·本年** | ② 数采（口径归口见 Q3）：`GET /api/zone/{z}/task-stats` | 非试验区（101/104/109）：「该区无任务口径：非试验区域」 | 周期切换即刷新 |
+| ④ | **正在运行的任务** | 调度任务（放料/取料/循环上下料，含任务号、设备、机器人、起时、已耗时/计划）+ 数采在制（样品号、阶段、进度%），来源分色标签，**超计划时长打「超时」** | ① 调度 + ② 数采：`GET /api/zone/{z}/running-tasks` | 「当前无在制任务」 | 点行 → 对应设备详情 |
+| ⑤ | **告警** | 本区告警：Grade、标题、三态（未解除/已派发/已解除）、派至、来源、发生时刻 + 回溯 | 判定规则/三源：`GET /api/zone/{z}/alarms` | 「近 24h 该区域无告警」 | 回溯 → S3 抽屉；只读，无写回 |
+
+- FR-6：区域视图五块**顺序与命名固定**，不随数据有无增减标题（缺数据只换空态文案），保证讲解肌肉记忆。
+- FR-7：面板内所有行使用**就地更新**（签名比对），心跳刷新不得打断点击/滚动位置。
+- FR-8：详情面板在区域视图下**停靠**到面板左侧（几何上不重叠），否则五类信息会被整块盖住点不动（实测缺陷，已修）。
+- FR-9：设备**区域归属以数据分区为准**（`zoneId` 装载时打戳）；机器人只在 106 出现，不越区显示。
+
+### 5.8 数据规范（新增/补齐字段，落到 `twin/api/seed.json` + 契约）
 
 | 对象 | 新增字段 | 类型/枚举 | 说明 |
 |---|---|---|---|
@@ -213,6 +231,8 @@ flowchart TD
 | Alarm | `dispatchedTo`, `dispatchedAt`, `resolvedAt` | string / ISO / ISO | 闭环链路 |
 | Alarm | `source` | `daq\|dispatch\|iot\|rule` | 来源系统标签（参考项目要求） |
 | LabStatus | `month{...}`, `year{...}`, `compareBasis` | 同 today 结构 | 三段口径 |
+| ZoneStats | `periods{day,month,year}{total,done,running,abnormal}`, `note` | int / string\|null | 区域任务统计；非试验区 note 说明 |
+| RunningTask | `kind`, `taskId`, `name`, `deviceCode`, `robotId`, `startedAt`, `elapsedMin`, `plannedMin`, `stage`, `percent` | `dispatch\|daq` / … | 超时=elapsedMin>plannedMin |
 | LayerState | `path/labels/walls/heatmap/monitor` | boolean | 前端↔场景同步信封 |
 | Waypoint | `id,name,position{x,z},taskId,robotId,state` | — | 路径可点 |
 | Robot | `positionBasis` | `dispatch\|derived` | 真实位置 vs 工位图推导环线（诚实降级） |
@@ -396,6 +416,8 @@ flowchart TD
 | **P2-2** | 监控点位浮层 | 复用 `iot/monitoring-data.js`、`detail-card.js` | 相机点位→视频占位 + 时间戳（不造假画面） | Q7 后 |
 | **P2-3 ✅已上线** | 低配模式（Q8） | `pbr-lab-materials.js`/Reflector | 一键关反射与材质 pass，保留状态色 | 目标机型帧时达标 |
 
+| **新增 ✅已上线** | 区域视图五类信息面板（§5.7） | `twin-scene-v2.html/.css/.js` + `twin-api-mock.js` + `seed.json` | 五块固定顺序 + 就地更新 + 详情停靠 + 三端点 + zoneStats；浮层/底栏让位 | 31 项断言全绿 |
+
 ## Appendix C · 相关文档与修订
 
 - `PRD-v1.md`（决策基准）· `docs/digital-twin-overall-design.md`（三源架构）· `docs/digital-twin-integration.md`（契约，需按 §7.2 升级为协议 v2）· `docs/digital-twin-product-design.md`（LIMS 融合，二期）· `docs/digital-twin-benchmark-*.md`（参考项目）· `数字孪生对象模型与数据字典 V1.md` · `docs/twin-design/`
@@ -403,5 +425,6 @@ flowchart TD
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| 2.2 | 2026-11-05 | 【本次更新】补 §5.7 区域视图信息模型（设备/环境数据/任务统计/正在运行的任务/告警 五块，FR-6~FR-9）：新增 /api/zone/{z}/{task-stats\|running-tasks\|alarms} 与 zoneStats 种子，区域下钻改为右侧五块面板，浮层与底栏让位，详情停靠不遮挡，环境数据与场景节点层同源；mock 加演示保活 |
 | 2.1 | 2026-11-05 | 【本次更新】按 §11 答复融合（模式 C，不覆盖原内容）：撤 5M1E、S2 改区域下拉、告警去写回只读三态、KPI 五指标三周期、106 主叙事改机器人卡住判定+设备一览、路径改直角折线、新增低配模式与遥控翻页；M1 代码已上线 |
 | 2.0-draft | 2026-11-05 | 首版：三格控制层 + KPI 口径表 + 告警闭环状态机 + 边界目录 + Agent 执行契约 + P0/P1/P2 代码锚点清单；8 个业务问题待产品负责人裁定 |

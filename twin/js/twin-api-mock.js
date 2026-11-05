@@ -4,6 +4,7 @@
  * 端点：/api/overview/{lab-status|zones|today-tasks|alarms}
  *       /api/zone/106/{devices|robots|samples|current-tasks}
  * 只读：无任何写回端点——告警处置由来源系统闭环（PRD-v1 §6 + 决策 Q2）。
+ *       /api/zone/{z}/{task-stats|running-tasks|alarms}   ← 区域视图五类信息（环境数据走 V4 节点协议）
  *       /api/alarm/{id}/trace   /api/device/{id}/detail   /api/device/{id}/realtime
  *       ws('/ws/realtime') 事件：tick / task.progress / device.status / robot.action / alarm.update
  * 真实接入：替换本文件为 fetch 实现，路由与事件名不变。
@@ -45,6 +46,12 @@
         emit('task.progress', { taskId: t.taskId, percent: t.progress.percent, stage: t.stage });
       }
     });
+    /* 演示保活：今日任务全部完成后重置一条，避免挂机投影时「当前无在制任务」空屏 */
+    if (!state.overview['today-tasks'].some(function (t) { return t.result === 'pending'; })) {
+      var rst = state.overview['today-tasks'][0];
+      rst.result = 'pending'; rst.stage = '检测中'; rst.progress.doneSteps = 1; rst.progress.percent = 20; rst.elapsedMin = 4;
+      emit('task.progress', { taskId: rst.taskId, percent: rst.progress.percent, stage: rst.stage });
+    }
     var devs = state.zone106.devices;
     var d = devs[Math.floor(Math.random() * devs.length)];
     if (d.status === 'ready' && Math.random() < 0.3) { d.status = 'working'; emit('device.status', { deviceId: d.deviceId, status: 'working' }); }
@@ -58,6 +65,30 @@
       if (!state) return reject(new Error('TwinApi 未就绪'));
       var m;
       if ((m = path.match(/^\/api\/overview\/([\w-]+)$/))) return resolve(envelope(clone(state.overview[m[1]] || null)));
+      /* 区域视图五类信息（2026-11-05 信息模型）：设备（下面通用 zone 路由）/ 任务统计 / 正在运行 / 告警。
+         必须排在通用 /api/zone/{z}/{key} 之前，否则 task-stats 等会被当分区字段返回 null。环境数据走 V4 节点协议，不在此处。 */
+      if ((m = path.match(/^\/api\/zone\/(\d{3})\/task-stats$/))) {
+        var zstat = state.zoneStats['Z-' + m[1]];
+        return resolve(envelope(zstat ? { zoneId: 'Z-' + m[1], periods: zstat, note: zstat.note || null } : { unsupported: true, zoneId: m[1], note: '该区无任务口径' }));
+      }
+      if ((m = path.match(/^\/api\/zone\/(\d{3})\/running-tasks$/))) {
+        var codes = {}; ((state['zone' + m[1]] || {}).devices || []).forEach(function (x) { codes[x.code] = 1; });
+        var out = [];
+        if (m[1] === '106') (state.zone106['dispatch-tasks'] || []).forEach(function (t) {
+          if (t.status !== 'running') return;
+          out.push({ kind: 'dispatch', taskId: t.taskId, name: t.flowName, deviceCode: t.deviceCode, robotId: t.robotId || null, startedAt: t.time, elapsedMin: t.elapsedMin || null, plannedMin: t.plannedMin || null, stage: '执行中', percent: null });
+        });
+        (state.overview['today-tasks'] || []).forEach(function (t) {
+          if (t.result === 'passed') return;
+          if (!(t.deviceChain || []).some(function (c) { return codes[c]; })) return;
+          out.push({ kind: 'daq', taskId: t.taskId, name: t.type, deviceCode: (t.deviceChain || [])[0] || null, robotId: null, startedAt: null,
+            elapsedMin: t.elapsedMin || 0, plannedMin: t.plannedMin || null, stage: t.stage, percent: t.progress ? t.progress.percent : null, result: t.result, sampleId: t.sampleId });
+        });
+        return resolve(envelope({ zoneId: 'Z-' + m[1], tasks: out }));
+      }
+      if ((m = path.match(/^\/api\/zone\/(\d{3})\/alarms$/))) {
+        return resolve(envelope({ zoneId: 'Z-' + m[1], alarms: clone((state.overview.alarms || []).filter(function (a) { return a.zoneId === 'Z-' + m[1]; })) }));
+      }
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/([\w-]+)$/))) {
         var zone = state['zone' + m[1]];
         if (!zone) return resolve(envelope({ unsupported: true, zoneId: m[1], note: '该区未建 mock 分区数据（V1 监控细分仅 106，PRD S2）' }));
