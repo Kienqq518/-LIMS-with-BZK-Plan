@@ -185,7 +185,7 @@
       <section class="flex flex-1 flex-col rounded-lg bg-white p-4 shadow-sm" data-annotate="todo-list">
         <h2 class="mb-3 flex items-center gap-2 text-base font-semibold text-slate-800">
           <span class="h-4 w-1 rounded bg-sky-500"></span>待办事项
-          <span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-normal text-red-500">57</span>
+          <span id="todoCount" class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-normal text-red-500">0</span>
         </h2>
         <div id="todoList" class="min-h-0 flex-1 space-y-3 overflow-y-auto">
           <!-- 待办列表由 JS 使用 Mock 数据渲染 -->
@@ -398,19 +398,6 @@
     // 只取状态=正常、按创建时间倒序的最新 8 条；日期按「距今天 N 天前」生成，不会放着放着变陈旧。
     var newsList = [];
 
-    // 待办事项数据（含时间轴颜色）
-    // 每条都取 js/entrust-mock.js 里真实在册的委托，事项与该委托当前流程阶段一致
-    const todoData = [
-      { code: 'SC2026/0068', desc: '检测数据待审核', time: '10:30', color: 'text-amber-500' },
-      { code: 'SC2026/0069', desc: '报告待编制', time: '10:12', color: 'text-sky-500' },
-      { code: 'SC2026/0071', desc: '报告待签发', time: '09:55', color: 'text-purple-500' },
-      { code: 'SC2026/0072', desc: '收费待审批', time: '09:40', color: 'text-emerald-500' },
-      { code: 'SC2026/0079', desc: '报告待发放', time: '09:22', color: 'text-sky-500' },
-      { code: 'SC2026/0029', desc: '样品即将超期预警', time: '09:05', color: 'text-red-500' },
-      { code: 'SC2026/0033', desc: '样品待收样', time: '08:50', color: 'text-amber-500' },
-      { code: 'SC2026/0031', desc: '委托待确认', time: '08:22', color: 'text-emerald-500' }
-    ];
-
     // ================= 渲染 Mock 数据 =================
     // 任务总览：真实委托 + 翻页（每页 6 条，与卡片高度匹配）
     var TASK_PAGE_SIZE = 6;
@@ -513,19 +500,6 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeNews();
     });
-
-    // 渲染待办事项时间轴
-    (function renderTodo() {
-      const box = document.getElementById('todoList');
-      box.innerHTML = todoData.map(function (item) {
-        return '<div class="timeline-item ' + item.color + '">' +
-          '<span class="timeline-dot bg-white"></span>' +
-          '<div class="flex items-center justify-between">' +
-          '<span class="text-sm font-medium text-slate-700">' + item.code + '</span>' +
-          '<span class="text-xs text-slate-400">' + item.time + '</span></div>' +
-          '<div class="mt-0.5 text-xs text-slate-500">' + item.desc + '</div></div>';
-      }).join('');
-    })();
 
     // ================= ECharts 图表 =================
     // 环形图：委托统计
@@ -1036,6 +1010,48 @@
 
     renderStatCards();
 
+    // ================= 待办事项 =================
+    /* 一条 = 一张还没走完报告的委托：编号拼委托单位（悬停看全文）、下面给期限（要求检测完成日期）、
+     * 右侧给当前流程节点。时间轴圆点的配色与图标直接复用上面数据概览卡片的阶段配色，不再各写一套。 */
+    var TODO_SHOW = 8;
+
+    function stageStyle(stage) {
+      for (var i = 0; i < STAT_CARDS.length; i++) {
+        if (STAT_CARDS[i].name === stage) {
+          var t = STAT_TONES[STAT_CARDS[i].tone] || STAT_TONES.sky;
+          return { icon: STAT_CARDS[i].icon, color: t[1] };
+        }
+      }
+      return { icon: 'fa-file-o', color: '#0284c7' };
+    }
+
+    (function renderTodo() {
+      var box = document.getElementById('todoList');
+      if (!box) return;
+      var open = entrustList().filter(function (r) { return !r.signed; });
+      open.sort(function (a, b) {
+        var x = a.requireDate || '9999', y = b.requireDate || '9999';
+        if (x !== y) return x < y ? -1 : 1;
+        return a.code < b.code ? -1 : 1;
+      });
+      var badge = document.getElementById('todoCount');
+      if (badge) badge.textContent = open.length;
+
+      box.innerHTML = open.slice(0, TODO_SHOW).map(function (r) {
+        var st = stageStyle(r.stage);
+        var label = r.code + ' ' + r.customer;
+        return '<div class="timeline-item" style="color:' + st.color + '">' +
+          '<span class="timeline-dot bg-white"></span>' +
+          '<div class="flex items-start justify-between gap-2">' +
+            '<a href="entrust-detail.html?code=' + encodeURIComponent(r.code) + '" title="' + escNews(label) + '" ' +
+              'class="block min-w-0 truncate text-sm font-medium text-slate-700 hover:text-sky-600">' + escNews(label) + '</a>' +
+            '<span class="flex-shrink-0 text-xs text-slate-500">' + escNews(r.stage || '/') + '</span>' +
+          '</div>' +
+          '<p class="mt-0.5 text-xs text-slate-400">期限：' + (r.requireDate || '/') + '</p>' +
+        '</div>';
+      }).join('') || '<p class="text-xs text-slate-400">当前没有待办委托</p>';
+    })();
+
     PrototypeAnnotation.init({
       annotations: [
         {
@@ -1171,16 +1187,19 @@
           id: 'todo-list',
           selector: '[data-annotate="todo-list"]',
           position: 'top-left',
-          title: '待办事项卡片高度与列表内容',
+          title: '待办事项：编号拼委托单位 + 期限 + 流程节点',
           wide: true,
-          content: '<strong>需求逻辑：</strong>待办事项是工作台最该被一眼看到的区块，但右列以前按内容自然高度排，' +
-            '卡片下面空着一截（左列卡片底边比它低约 157px），页面看着没排满、也放不下更多待办。<br>' +
-            '<strong>展示规则：</strong>待办卡片 <code>flex-1</code> 吃掉右列剩余高度，<strong>底边与左列「年度业务分析汇总表」卡片对齐</strong>；' +
-            '列表区跟着卡片一起撑满，去掉了原来 288px 的高度上限，默认展示最近 8 条（条目间距 space-y-3，刚好铺满卡片不留滚动条），条目多于可视高度时<strong>列表内部滚动</strong>而不是整页滚。' +
-            '标题右侧红标「57」是待办总数，与本页展示的条数无关。每条为「委托编号 + 事项 + 时间」，时间轴圆点按事项类型着色（审核橙 / 报告蓝 / 签发紫 / 收费绿 / 超期红）。<br>' +
-            '<strong>交互逻辑：</strong>8 条演示数据全部取 <code>js/entrust-mock.js</code> 里真实在册的委托，事项与该委托当前流程阶段一一对应' +
-            '（0068 数据审核、0069 报告编制、0071 报告签发、0072 收费审批、0079 报告发放、0029 即将超期、0033 样品收样、0031 委托确认），' +
-            '不再用系统里查不到的编号；正式实现点击应跳到对应环节的待办列表（原型未接跳转）。',
+          content: '<strong>需求逻辑：</strong>待办是要拿去派活的，只看编号不够——得同时知道是谁家的单、什么时候到期、现在卡在哪个环节。' +
+            '以前这块是 8 条手写文案（编号 +「报告待编制」+ 一个假时间点 10:30），那个时间点跟系统里任何日期都对不上。<br>' +
+            '<strong>展示规则：</strong>一条 = 一张<strong>报告还没全部签发完成</strong>的委托，与右侧「委托统计」的未完成同一口径、同一份 <code>js/entrust-mock.js</code>；' +
+            '标题右侧红标就是这个总数（当前 61，不再是写死的 57）。列表按<strong>期限升序</strong>排（最急的在前），默认展示前 8 条，其余在列表里上下滚动；' +
+            '卡片仍走 <code>flex-1</code> 撑满右列、底边与左列「年度业务分析汇总表」对齐。每条三处信息：' +
+            '① 第一行<strong>委托编号 + 委托单位</strong>拼在一起，超宽省略号截断，<strong>鼠标悬停显示完整文本</strong>（如 <code>SC2026/0168 有点东西有限公司</code>）；' +
+            '② 第二行<strong>期限：YYYY-MM-DD</strong> = 该委托的要求检测完成日期 <code>requireDate</code>，与委托详情、任务总览、及时率统计同一字段；' +
+            '③ 右侧显示<strong>当前流程节点名</strong>（委托登记 / 样品收样 / 试验检测 / 组内审核 / 报告编制…），与数据概览卡片、任务总览状态列同源。' +
+            '时间轴圆点颜色 = 该节点的配色，直接复用数据概览卡片的阶段配色表，不再另写一套。<br>' +
+            '<strong>交互逻辑：</strong>点条目（编号+单位那行就是链接）进 <code>entrust-detail.html?code=…</code>；' +
+            '条数、期限、节点全部随委托数据重算，页面上没有手写文案与假时间。',
           tag: '工作台'
         }
       ]
