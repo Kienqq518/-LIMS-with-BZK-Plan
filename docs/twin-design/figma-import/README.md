@@ -73,6 +73,14 @@ inst.layoutPositioning='AUTO'; parent.insertChild(parent.children.indexOf(src),i
 
 **未完成**：四个页面 frame 与原型连线（状态切换）。原因：Figma MCP 在 Starter 计划下每月 20 次调用额度已用尽，读写均被拒。
 
+## 5b. 线上访问（Vercel）
+
+四页已部署：入口 **https://lims-with-bzk-plan.vercel.app/proto/** （启动页含四页实时缩略图）。
+
+- `proto/index.html` 启动页 ｜ `proto/01-overview.html` ｜ `proto/02-zone-106.html` ｜ `proto/03-device-detail.html` ｜ `proto/04-alarm-review.html`
+- 画布固定 1920×1080，小屏自动等比缩放；追加 `?fit=0` 看原始尺寸（Figma 导入/导出原图用这个）。
+- 同步方式：改完 `gen_*.py` 后跑 `./build.sh`（重新生成并拷到 `proto/`），或直接改 `proto/*.html`。push 到 `main` 即触发 Vercel 构建。
+
 ## 6. 现在直接在 HTML 上改设计（交互已内建）
 
 四页已经做成**可点击的浏览器原型**，不依赖 Figma。双击 `01-overview.html` 即可，页面间跳转用相对路径，`file://` 下直接可用。
