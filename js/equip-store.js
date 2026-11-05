@@ -2,7 +2,7 @@
  * 设备台账 Mock Store（设备管理 + 样品试验「检测设备」共用）
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-equip-store-v12';
+  var STORAGE_KEY = 'lims-equip-store-v13';
 
   var DEPTS = ['材料检测组', '应敏科技1', '电气检测组', '力学检测组', '数蚕智能', '应敏科技', '未来实验室'];
   var AREAS = ['控制室', '智能力学室', '材料试验区', '智能高压室', '智能样品室', '数智化电气试验区', '无人化电缆试验区', '环境试验区', '综合试验区'];
@@ -150,6 +150,32 @@
         certNo: '',
         accuracy: '',
         info: '',
+        remark: '1 套',
+        needCalib: true,
+        lastCalib: '',
+        cycleY: 1, cycleM: 0, cycleD: 0,
+        nextCalib: '',
+        agency: '',
+        warnDays: 30,
+        maxError: '',
+        calibStatus: '正常',
+        enabled: true,
+        files: [],
+        linkedTests: [],
+        history: [],
+        maintain: []
+      },
+      {
+        /* 数字孪生 103 智能力学室·103-03 环形试验设备=工器具六工位综合力学性能试验机（2026-11-05 用户确认，销 unresolved-items 悬案）；部门截图未露出，留空待补 */
+        id: 'eq_y0102160101',
+        code: 'Y0102160101',
+        name: '工器具六工位综合力学性能试验机',
+        model: 'YLGW-6I',
+        dept: '',
+        area: '智能力学室',
+        certNo: '',
+        accuracy: '',
+        info: '01安全工器具及施工工器具类 · 02工器具力学类 · 智慧版',
         remark: '1 套',
         needCalib: true,
         lastCalib: '',
