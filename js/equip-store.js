@@ -2,9 +2,9 @@
  * 设备台账 Mock Store（设备管理 + 样品试验「检测设备」共用）
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-equip-store-v4';
+  var STORAGE_KEY = 'lims-equip-store-v5';
 
-  var DEPTS = ['材料检测组', '应敏科技1', '电气检测组', '力学检测组', '数蚕智能'];
+  var DEPTS = ['材料检测组', '应敏科技1', '电气检测组', '力学检测组', '数蚕智能', '应敏科技'];
   var AREAS = ['力学检测室1', '电气检测室', '老化试验室', '综合检测区', '无人化试验室'];
 
   function defaultSeed() {
@@ -19,6 +19,32 @@
         area: '无人化试验室',
         certNo: '',
         accuracy: '全量程优于0.1uΩ或0.1%',
+        info: '',
+        remark: '',
+        needCalib: true,
+        lastCalib: '',
+        cycleY: 1, cycleM: 0, cycleD: 0,
+        nextCalib: '',
+        agency: '',
+        warnDays: 30,
+        maxError: '',
+        calibStatus: '正常',
+        enabled: true,
+        files: [],
+        linkedTests: [],
+        history: [],
+        maintain: []
+      },
+      {
+        /* 数字孪生 106 无人化电缆试验区·红框设备（输送带末端储物位），信息按真系统设备管理弹窗录入（2026-11-05） */
+        id: 'eq_ymwrh06',
+        code: 'YM-WRH-06',
+        name: '砝码库',
+        model: 'YM-FMK',
+        dept: '应敏科技',
+        area: '无人化试验室',
+        certNo: '',
+        accuracy: '',
         info: '',
         remark: '',
         needCalib: true,

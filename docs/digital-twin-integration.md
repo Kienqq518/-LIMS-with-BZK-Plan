@@ -60,7 +60,9 @@ new LiveNodeAdapter({ loadInitial, subscribe, decode })  // iot/api-adapter.js �
 | 106 IO | switch | 复合机器人充电桩/门禁触点 | 组态物联下发任务/消费回传 |
 | 全部节点 `associatedDeviceId` | — | `equip-mgmt.html` 设备台账（校准/维护状态角标） | 台账 ID 对齐后即可挂接 |
 
-> 2026-11-05 台账首挂：107 材料试验区箭头点名设备 = 智能型数字电桥（编号 2411020108 / 型号 QJ-36 / 数蚕智能 / 无人化试验室 / 精度全量程优于 0.1uΩ或0.1%），已录入 `js/equip-store.js` 种子（存储键升 v4 强制重播）。T1 时把对应节点 `associatedDeviceId` 填 `eq_qj36`。
+> 2026-11-05 台账首挂（种子存储键已升 v5 强制重播）：
+> - 107 材料试验区箭头点名设备 = 智能型数字电桥（2411020108 / QJ-36 / 数蚕智能 / 无人化试验室 / 精度全量程优于 0.1uΩ或0.1%），T1 时对应节点 `associatedDeviceId` 填 `eq_qj36`。
+> - 106 无人化电缆试验区红框设备（输送带末端储物位）= 砝码库（YM-WRH-06 / YM-FMK / 应敏科技 / 无人化试验室），T1 时对应节点 `associatedDeviceId` 填 `eq_ymwrh06`。
 | `roomId` 101—110 | — | `venue-mgmt.html` 场地主数据 | 命名已一致，建映射表落库 |
 
 ## 4. 对接架构（建议）
