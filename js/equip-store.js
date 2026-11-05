@@ -2,7 +2,7 @@
  * 设备台账 Mock Store（设备管理 + 样品试验「检测设备」共用）
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-equip-store-v9';
+  var STORAGE_KEY = 'lims-equip-store-v10';
 
   var DEPTS = ['材料检测组', '应敏科技1', '电气检测组', '力学检测组', '数蚕智能', '应敏科技', '未来实验室'];
   var AREAS = ['控制室', '智能力学室', '材料试验区', '智能高压室', '智能样品室', '数智化电气试验区', '无人化电缆试验区', '环境试验区', '综合试验区'];
@@ -268,13 +268,13 @@
         info: '',
         remark: '004',
         needCalib: true,
-        lastCalib: '2026-01-07',
+        lastCalib: '2025-01-07',
         cycleY: 1, cycleM: 0, cycleD: 0,
-        nextCalib: '2027-01-07',
+        nextCalib: '2026-01-07',
         agency: '省计量院',
         warnDays: 15,
         maxError: '±2℃',
-        calibStatus: '正常',
+        calibStatus: '已过期',
         enabled: true,
         files: [
           { name: 'ceshi.png', type: 'img' },
@@ -292,20 +292,20 @@
         code: 'LX-05',
         name: '微机控制电子万能试验机',
         model: 'LD26504',
-        dept: '力学检测组',
+        dept: '应敏科技',
         area: '材料试验区',
         certNo: 'CERT-LX05',
         accuracy: '0.5级',
         info: '',
         remark: '',
         needCalib: true,
-        lastCalib: '2024-12-01',
+        lastCalib: '2026-07-29',
         cycleY: 1, cycleM: 0, cycleD: 0,
-        nextCalib: '2025-12-01',
+        nextCalib: '2027-07-29',
         agency: '省计量院',
         warnDays: 20,
         maxError: '1%',
-        calibStatus: '已过期',
+        calibStatus: '正常',
         enabled: true,
         files: [{ name: '万能机说明书.pdf', type: 'pdf' }],
         linkedTests: [
