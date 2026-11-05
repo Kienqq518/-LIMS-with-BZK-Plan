@@ -1,0 +1,50 @@
+# 数字孪生关键页面 · Figma 原型交付包
+
+日期：2026-11-05 ｜ 视觉基准：根目录《视觉语言提取 V1.md》 + `docs/twin-design/design-tokens.ts` ｜ 范围基准：`PRD-v1.md`（S1/S2/S3）
+
+## 1. 四张关键页面
+
+| # | 页面 | 对应场景 | 文件 |
+|---|---|---|---|
+| 01 | 实验室总览 | S1 | `01-overview.html` / `01-overview.png` |
+| 02 | 106 无人化电缆试验区重点监控 | S2 | `02-zone-106.html` / `02-zone-106.png` |
+| 03 | 设备详情弹层 | S1/S2 通用浮层 | `03-device-detail.html` / `03-device-detail.png` |
+| 04 | 告警回溯（近 24h） | S3 | `04-alarm-review.html` / `04-alarm-review.png` |
+
+`preview-4pages.png` 为四页合览图。四页均为 **1920×1080 自包含 HTML**（内联 CSS + 内联 SVG，无外部依赖、无运行时脚本），即 `html_to_figma` 的直接输入。
+`gen_*.py` 为生成器（房间/设备轮廓直接读 `twin/future-lab/cad_geometry.json` 与 `visual_106.json`），改数据或改文案后重跑即可再生成。
+
+> 说明：需求列了 3 张页面但要求「4 张关键页面」，第 4 张按 `PRD-v1.md` 的 S3「异常/告警回溯」补齐；若要换成设备列表/任务看板，改 `gen_p4.py` 重新生成即可。
+
+## 2. 与视觉语言的对应
+
+- **色彩**：品牌蓝 #2878FF、告警红 #E5484D、瓶颈橙 #F76B15、预警琥珀 #F59E0B、正常绿 #16A34A、地面引导线 #E8D77A、文字 #0F2740/#5B6B7D/#8A97A7、白卡 + `0 14px 40px rgba(15,40,80,.14)`、圆角 14–16。
+- **版式**：顶部导航（总览/设备/任务/系统/告警）+ 主画面轴测 + 右侧指标栏 + 底部任务/告警流；5M1E 胶囊在场景右上；机位与来源胶囊在场景右下。
+- **三维**：正交轴测（俯视 30°），10 个区域按真实房间轮廓与 `rotatedBBox` 设备轮廓绘制；S2 为 106 专属机位，相邻区域淡化出画。
+- **交互元素**：告警设备 2px 描边 + 8% 填充 + 贴地色块；Beats 卡（26px 数字 + 迷你波形 + 锚定引线）；Grade 胶囊 + 引线；机器人蓝色光晕 + 白底胶囊；P 目标点绿色水滴；AMR 路径浅蓝垫底 + 蓝虚线流动。
+- **诚实降级**：Beats 卡 valid / stale / missing / offline 四态；LIMS 深链为灰态「二期接入」，不伪造数据。
+
+## 3. 数据口径（全部取自仓库现有 mock，未杜撰）
+
+- 10 个房间名：`twin/mock/scene-data.js` ROOM_NAMES（101 接待大厅 … 110 数智化电气试验区）。
+- 106 设备清单：`twin/future-lab/visual_106.json` + `equipment_inventory.csv`。
+- 对象字段：《数字孪生对象模型与数据字典 V1.md》——Task.source=LIMS/WORKSTATION、deviceChain 四工位链路、DAQ-SUB 与检测设备 1:1、E9 上下料握手、Grade A→主任台+App / B→工位屏 / C→运维队列。
+
+## 4. Figma 文件当前状态
+
+文件：**未来实验室数字孪生 · 关键页面原型 V1** — https://www.figma.com/design/KTfYjgOvvFcBopH15m0UV1
+
+已完成（页面 `02 · 组件与令牌`）：
+
+- **Twin Tokens 变量集合**：31 色 + 12 间距/圆角 + 自动派生的透明度色（如 `alert/red-a10`），值全部来自 `design-tokens.ts`。
+- **13 个文字样式** + **3 个效果样式**（card / pill / modal 阴影）。
+- **组件与变体**：`Nav/Top Bar`（页面=总览/设备/任务/系统/告警）、`Nav/Tab Item`、`Nav/5M1E`（维度=Man…Environment）、`Chip`（6 变体）、`Tag/Grade`、`Tag/Grade-Ground`（A/B/C 贴地标记）、`Tag/Zone`（正常/告警/聚焦）、`Tag/Robot`、`Tag/P-Point`、`Button`（主/幽灵/危险/次级）、`Status/Device`（6 态）、`Segment/时间范围`、`Card/KPI`（↑↓—）、`Card/Beats`（valid/stale/missing/offline）、`Card/Andon`（A/B/C）、`Panel`。
+
+**未完成**：四个页面 frame 与原型连线（状态切换）。原因：Figma MCP 在 Starter 计划下每月 20 次调用额度已用尽，读写均被拒。
+
+## 5. 额度恢复后的收尾（约 6–8 次调用）
+
+1. 四份 HTML 依次 `html_to_figma` 导入到页面 `01 · 关键页面`。
+2. （可选）用已建组件替换导入产物中的等价件。
+3. 写原型连线：区域块点击 → S2；设备块/状态芯片点击 → 设备详情 OVERLAY；导航 tab → 对应页面；底部「今日任务 / 告警流」、5M1E、时间范围分段 → `CHANGE_TO` 变体切换。
+4. 截图复核 + 交付链接。
