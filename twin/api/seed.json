@@ -6,7 +6,110 @@
    "sources": {
     "daq": "live-mock",
     "dispatch": "live-mock",
-    "iot": "live-mock"
+    "iot": "live-mock",
+    "lims": "未接入（二期）"
+   },
+   "periodDefault": "day",
+   "metricMeta": {
+    "entrustTasks": {
+     "label": "委托任务数",
+     "source": "daq",
+     "refresh": "1min",
+     "unit": "个"
+    },
+    "samplesProcessed": {
+     "label": "样品支数",
+     "source": "daq",
+     "refresh": "1min",
+     "unit": "支"
+    },
+    "testItems": {
+     "label": "试验项目数",
+     "source": "daq",
+     "refresh": "1min",
+     "unit": "项"
+    },
+    "reports": {
+     "label": "报告份数",
+     "source": "lims",
+     "refresh": "5min",
+     "unit": "份",
+     "note": "LIMS 二期接入，接口未就绪"
+    },
+    "dispatchTasks": {
+     "label": "调度任务数",
+     "source": "dispatch",
+     "refresh": "1min",
+     "unit": "条"
+    }
+   },
+   "metrics": {
+    "day": {
+     "entrustTasks": {
+      "value": 14,
+      "compare": 8.2
+     },
+     "samplesProcessed": {
+      "value": 23,
+      "compare": 4.5
+     },
+     "testItems": {
+      "value": 37,
+      "compare": 6.1
+     },
+     "reports": {
+      "value": 6,
+      "compare": -2.0
+     },
+     "dispatchTasks": {
+      "value": 96,
+      "compare": 11.4
+     }
+    },
+    "month": {
+     "entrustTasks": {
+      "value": 268,
+      "compare": 12.6
+     },
+     "samplesProcessed": {
+      "value": 511,
+      "compare": 9.8
+     },
+     "testItems": {
+      "value": 842,
+      "compare": 14.2
+     },
+     "reports": {
+      "value": null,
+      "compare": null
+     },
+     "dispatchTasks": {
+      "value": 2043,
+      "compare": 18.3
+     }
+    },
+    "year": {
+     "entrustTasks": {
+      "value": 2841,
+      "compare": 21.4
+     },
+     "samplesProcessed": {
+      "value": 5390,
+      "compare": 19.1
+     },
+     "testItems": {
+      "value": 9127,
+      "compare": 23.7
+     },
+     "reports": {
+      "value": null,
+      "compare": null
+     },
+     "dispatchTasks": {
+      "value": 21760,
+      "compare": 33.2
+     }
+    }
    },
    "today": {
     "tasksTotal": 14,
@@ -29,7 +132,8 @@
     "type": "reception",
     "status": "idle",
     "deviceCount": 2,
-    "alarmState": "none"
+    "alarmState": "none",
+    "detailLevel": "summary"
    },
    {
     "zoneId": "Z-102",
@@ -37,7 +141,8 @@
     "type": "sample",
     "status": "running",
     "deviceCount": 3,
-    "alarmState": "none"
+    "alarmState": "none",
+    "detailLevel": "summary"
    },
    {
     "zoneId": "Z-103",
@@ -45,7 +150,8 @@
     "type": "mechanics",
     "status": "running",
     "deviceCount": 6,
-    "alarmState": "none"
+    "alarmState": "none",
+    "detailLevel": "summary"
    },
    {
     "zoneId": "Z-104",
@@ -53,7 +159,8 @@
     "type": "control",
     "status": "idle",
     "deviceCount": 2,
-    "alarmState": "none"
+    "alarmState": "none",
+    "detailLevel": "summary"
    },
    {
     "zoneId": "Z-105",
@@ -61,7 +168,8 @@
     "type": "highvoltage",
     "status": "running",
     "deviceCount": 8,
-    "alarmState": "none"
+    "alarmState": "none",
+    "detailLevel": "summary"
    },
    {
     "zoneId": "Z-106",
@@ -77,7 +185,8 @@
      "测量区",
      "样品缓存区",
      "AMR通道"
-    ]
+    ],
+    "detailLevel": "device"
    },
    {
     "zoneId": "Z-107",
@@ -85,7 +194,8 @@
     "type": "materials",
     "status": "running",
     "deviceCount": 6,
-    "alarmState": "none"
+    "alarmState": "none",
+    "detailLevel": "summary"
    },
    {
     "zoneId": "Z-108",
@@ -93,7 +203,8 @@
     "type": "environment",
     "status": "running",
     "deviceCount": 4,
-    "alarmState": "none"
+    "alarmState": "none",
+    "detailLevel": "summary"
    },
    {
     "zoneId": "Z-109",
@@ -101,7 +212,8 @@
     "type": "comprehensive",
     "status": "idle",
     "deviceCount": 3,
-    "alarmState": "none"
+    "alarmState": "none",
+    "detailLevel": "summary"
    },
    {
     "zoneId": "Z-110",
@@ -109,7 +221,8 @@
     "type": "electrical",
     "status": "running",
     "deviceCount": 5,
-    "alarmState": "none"
+    "alarmState": "none",
+    "detailLevel": "summary"
    }
   ],
   "today-tasks": [
@@ -205,7 +318,12 @@
     "title": "设备告警 · 校准已过期",
     "reason": "空气老化试验箱 DL-09 下次校准 2026-01-07 已过，禁止出报告",
     "occurredAt": "08:12",
-    "status": "active"
+    "status": "dispatched",
+    "source": "rule",
+    "dispatchedTo": "主任台 + 运维 App",
+    "dispatchedAt": "08:13",
+    "resolvedAt": null,
+    "resolvedBy": null
    },
    {
     "alarmId": "AL-002",
@@ -215,7 +333,12 @@
     "title": "瓶颈告警 · 制样工位积压",
     "reason": "制样区积压 3 单，超节拍 21%",
     "occurredAt": "09:04",
-    "status": "active"
+    "status": "dispatched",
+    "source": "daq",
+    "dispatchedTo": "106 工位屏",
+    "dispatchedAt": "10:41",
+    "resolvedAt": null,
+    "resolvedBy": null
    },
    {
     "alarmId": "AL-003",
@@ -225,7 +348,12 @@
     "title": "阻塞告警 · 机器人未到达",
     "reason": "复合机器人 12 分钟未到达 106-检测台2",
     "occurredAt": "09:26",
-    "status": "active"
+    "status": "active",
+    "source": "dispatch",
+    "dispatchedTo": null,
+    "dispatchedAt": null,
+    "resolvedAt": null,
+    "resolvedBy": null
    },
    {
     "alarmId": "AL-004",
@@ -235,7 +363,12 @@
     "title": "可燃气体浓度超限",
     "reason": "IOT-106-GAS-01 exceeded=true（demo-state）",
     "occurredAt": "07:58",
-    "status": "resolved"
+    "status": "resolved",
+    "source": "iot",
+    "dispatchedTo": "运维队列",
+    "dispatchedAt": "09:02",
+    "resolvedAt": "09:35",
+    "resolvedBy": "运维·李工"
    }
   ]
  },
@@ -463,7 +596,12 @@
       21.89
      ]
     ],
-    "progress": 0.25
+    "progress": 0.25,
+    "currentTaskId": "115202611051330",
+    "currentFlowName": "0115 绝缘厚度试验循环上下料",
+    "taskElapsedMin": 18,
+    "stallLimitMin": 15,
+    "positionBasis": "derived"
    },
    {
     "robotId": "RB-C-02",
@@ -505,7 +643,12 @@
       15.5
      ]
     ],
-    "progress": 0.55
+    "progress": 0.55,
+    "currentTaskId": "121202611051334",
+    "currentFlowName": "0121 双工位机械性能取料",
+    "taskElapsedMin": 6,
+    "stallLimitMin": 12,
+    "positionBasis": "derived"
    }
   ],
   "samples": [
@@ -756,7 +899,8 @@
     "status": "done",
     "robotId": "RB-C-02"
    }
-  ]
+  ],
+  "routeNote": "调度系统仅直线行走、原地掉头，渲染按曼哈顿折线（直角拐点）推导；未做现场标定前为相对轨迹"
  },
  "traces": {
   "AL-001": [

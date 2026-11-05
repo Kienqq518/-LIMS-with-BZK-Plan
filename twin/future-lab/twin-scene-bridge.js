@@ -9,11 +9,15 @@ if (new URLSearchParams(location.search).get('v2') === '1') boot();
 
 
 /* ---------- 墙体/隔断/柱子/地面分区处理（V1 视觉语言 §3：看设备运行，不看房间布局） ---------- */
-let wallMesh = null, wallBase = null, labCenter = null;
+let wallMesh = null, wallBase = null, labCenter = null, wallOpacityBase = null;
+/* 渲染层状态（决策 Q7/Q8）：图层开关 + 低配模式。图层语义=渲染可见性，与业务切片无关。 */
+const LAYERS = { path: true, labels: true, zones: true, walls: true, heatmap: false };
+let LOW = false, frames = 0, heatGroup = null, lastDeviceStatus = [];
 function findWalls() {
   visual.overview.children.forEach(c => {
     if (c.isMesh && c.material && c.material.transparent && c.material.color && c.material.color.getHex() === 0xbbcbd7) {
       wallMesh = c; wallBase = Float32Array.from(c.geometry.attributes.position.array);
+      if (wallOpacityBase == null) wallOpacityBase = c.material.opacity;
     }
   });
   if (wallMesh && !labCenter) {
@@ -23,6 +27,7 @@ function findWalls() {
     labCenter = new THREE.Vector3(mx / n, 0, mz / n);
   }
 }
+const WALL_FADE_OP = 0.12;
 function fadeFrontWalls() {
   if (!wallMesh) return;
   findWalls();
@@ -40,7 +45,14 @@ function fadeFrontWalls() {
   }
   pos.needsUpdate = true;
   wallMesh.geometry.computeBoundingSphere();
-  wallMesh.material.opacity = 0.12;
+  wallMesh.material.opacity = WALL_FADE_OP;
+}
+/* 墙体图层关闭=不剖切：还原层高与不透明度 */
+function restoreWalls() {
+  if (!wallMesh) return;
+  const pos = wallMesh.geometry.attributes.position;
+  pos.array.set(wallBase); pos.needsUpdate = true; wallMesh.geometry.computeBoundingSphere();
+  wallMesh.material.opacity = wallOpacityBase == null ? 0.12 : wallOpacityBase;
 }
 function softenGlassAndColumns() {
   const seen = new Set();
@@ -114,6 +126,7 @@ function ensureDot(devId, status) {
 }
 function pulseDots(t) {
   statusDots.forEach(dot => {
+    if (LOW) { dot.material.emissiveIntensity = dot.userData.mode === 'fast' ? 2.0 : dot.userData.mode === 'dim' ? 0.35 : 1.2; return; }
     const mode = dot.userData.mode;
     if (mode === 'pulse') dot.material.emissiveIntensity = 1.5 + Math.sin(t * 0.0035) * 0.7;
     else if (mode === 'fast') dot.material.emissiveIntensity = 2.0 + Math.sin(t * 0.010) * 1.4;
@@ -128,13 +141,13 @@ function startAnimLoop() {
   if (animStarted) return; animStarted = true;
   let last = 0;
   const loop = t => {
-    if (t - last > 66) {
-      last = t;
+    if (t - last > (LOW ? 125 : 66)) {
+      last = t; frames++;
       Object.entries(robotTargets).forEach(([id, tgt]) => {
         const g = robots[id]; if (!g || !tgt.path) return;
         ensureDot(tgt.modelRoot, tgt.action === 'charging' ? 'standby' : 'working');
         tgt.local = tgt.local == null ? tgt.progress : tgt.local + Math.max(-0.02, Math.min(0.02, tgt.progress - tgt.local)) * 0.35;
-        const pts = tgt.path.map(q => new THREE.Vector3(q[0], 0, q[2]));
+        const pts = tgt.mpts || tgt.path.map(q => new THREE.Vector3(q[0], 0, q[2]));
         const tt = Math.max(0, Math.min(1, tgt.local)) * (pts.length - 1);
         const i = Math.min(pts.length - 2, Math.floor(tt)), f = tt - i;
         const p = pts[i].clone().lerp(pts[i + 1], f);
@@ -222,8 +235,9 @@ function build(v) {
   visual = v;
   /* AMR 通道引导线（#E8D77A，planned 坐标，待现场标定） */
   const guide = new THREE.Group(); guide.name = 'twin-v2-guide';
-  const mk = (pts) => new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p[0], 0.02, p[1]))),
+  const mk = (pts) => new THREE.Line(new THREE.BufferGeometry().setFromPoints(manhattan(pts).map(p => new THREE.Vector3(p[0], 0.02, p[1]))),
     new THREE.LineBasicMaterial({ color: COLORS.guide, transparent: true, opacity: 0.9 }));
+  /* 通道引导线：工位锚点 → 直角折线（原为带弧度的手绘折线，与真实运动学不符） */
   guide.add(mk([[11.0, 25.0], [13.6, 25.6], [16.4, 24.8], [17.6, 21.0], [17.6, 15.5], [16.2, 12.4], [13.2, 11.8], [11.0, 13.2], [11.0, 20.0], [11.0, 25.0]]));
   const dash = mk([[11.2, 25.0], [17.2, 19.6]]); dash.material.color.set(0x2878ff); dash.material.opacity = 0.5; guide.add(dash);
   v.scene.add(guide); lines = guide;
@@ -238,6 +252,7 @@ function build(v) {
   /* QA 自检钩子（DOM 可被隔离世界读取） */
   const hook = document.createElement('div'); hook.id = 'twin-v2-bridge';
   hook.dataset.guide = String(guide.children.length); hook.dataset.robots = String(Object.keys(robots).length); hook.dataset.walls = wallMesh ? '1' : '0';
+  hook.dataset.layers = Object.keys(LAYERS).filter(k => LAYERS[k]).join(','); hook.dataset.quality = 'high'; hook.dataset.route = 'manhattan';
   document.body.append(hook);
   parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'bridge-ready', guide: guide.children.length, robots: Object.keys(robots).length }, location.origin);
 
@@ -245,12 +260,21 @@ function build(v) {
   addEventListener('message', async e => {
     const d = e.data; if (!d || d.channel !== CHANNEL) return;
     if (d.type === 'state') applyState(d);
+    if (d.type === 'layer') applyLayer(d.layer, !!d.enabled);
+    if (d.type === 'quality') setQuality(d.level === 'low' ? 'low' : 'high');
+  });
+
+  /* 焦点在三维场景里时，翻页笔按键交回宿主（决策 Q1：售前投影遥控翻页） */
+  addEventListener('keydown', ev => {
+    if (['PageUp', 'PageDown', 'Home', 'End', '1', '2', '3', 'Escape'].includes(ev.key)) {
+      parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'remote', key: ev.key }, location.origin);
+    }
   });
 
   /* 性能上报（debug-profiler） */
   setInterval(() => {
     const info = visual.renderer.info.render, mem = visual.renderer.info.memory;
-    parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'perf', calls: info.calls, tris: info.triangles, geometries: mem.geometries, textures: mem.textures }, location.origin);
+    parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'perf', calls: info.calls, tris: info.triangles, geometries: mem.geometries, textures: mem.textures, fps: frames * 2, layers: Object.keys(LAYERS).filter(k => LAYERS[k]).join(','), quality: LOW ? 'low' : 'high' }, location.origin); frames = 0;
   }, 5000);
 }
 
@@ -258,17 +282,21 @@ let robotPathsDrawn = false;
 function applyState(d) {
   (d.robots || []).forEach(r => {
     robotTargets[r.robotId] = Object.assign(robotTargets[r.robotId] || {}, r);
+    if (r.path) robotTargets[r.robotId].mpts = manhattan(r.path).map(q => new THREE.Vector3(q[0], 0, q[1]));
     if (!robots[r.robotId] && r.modelRoot) robots[r.robotId] = visual.modelRoots.get(r.modelRoot) || null;
   });
-  if (!robotPathsDrawn && (d.robots || []).length) {   /* 蓝色虚线按真实路径重画 */
+  if (!robotPathsDrawn && (d.robots || []).length) {   /* 蓝色虚线按真实路径重画（直角折线） */
     robotPathsDrawn = true;
     const dash = lines && lines.children[1];
-    if (dash && d.robots[0]) {
-      const pts = d.robots[0].path.map(q => new THREE.Vector3(q[0], 0.021, q[2]));
-      dash.geometry.setFromPoints(pts);
+    if (dash && d.robots[0] && d.robots[0].path) {
+      dash.geometry.setFromPoints(manhattan(d.robots[0].path).map(q => new THREE.Vector3(q[0], 0.021, q[1])));
     }
   }
-  Object.entries(d.deviceStatus || {}).forEach(([node, st]) => { tint(node, st); ensureDot(node.replace('cad:', ''), st); });
+  if (d.layers) Object.entries(d.layers).forEach(([k, v]) => applyLayer(k, !!v));
+  if (d.quality) setQuality(d.quality === 'low' ? 'low' : 'high');
+  lastDeviceStatus = Object.entries(d.deviceStatus || {}).map(([node, st]) => [node.replace('cad:', ''), st]);
+  lastDeviceStatus.forEach(([id, st]) => { tint('cad:' + id, st); ensureDot(id, st); });
+  if (LAYERS.heatmap) drawHeatmap();   /* 热力随状态刷新 */
 }
 
 function tint(node, status) {
@@ -285,4 +313,54 @@ function tint(node, status) {
   const color = status === 'alarm' ? COLORS.alarm : status === 'working' ? COLORS.working : 0x000000;
   const inten = status === 'alarm' ? 0.55 : status === 'working' ? 0.18 : 0;
   originals.forEach(([mesh, ,]) => { mesh.material.emissive.setHex(color); mesh.material.emissiveIntensity = inten; });
+}
+
+/* ---------- 路径几何：直角折线（决策 Q5） ---------- */
+function manhattan(pts) {
+  const out = [];
+  (pts || []).forEach(p => {
+    const x = p[0], z = p[p.length - 1], last = out[out.length - 1];
+    if (!last) { out.push([x, z]); return; }
+    const dx = x - last[0], dz = z - last[1];
+    if (Math.abs(dx) > 0.05 && Math.abs(dz) > 0.05) out.push(Math.abs(dx) > Math.abs(dz) ? [x, last[1]] : [last[0], z]);   /* 长边先走，再原地掉头 */
+    if (Math.abs(x - last[0]) > 1e-3 || Math.abs(z - last[1]) > 1e-3) out.push([x, z]);
+  });
+  return out;
+}
+
+/* ---------- 图层开关（决策 Q7：图层=渲染可见性，与业务切片解耦） ---------- */
+function applyLayer(name, on) {
+  if (!(name in LAYERS)) return; LAYERS[name] = on;
+  if (name === 'path' && lines) lines.visible = on;
+  if (name === 'labels') statusDots.forEach(d => { d.visible = on; });
+  if (name === 'zones') { const g = visual.scene.getObjectByName('twin-v2-zones'); if (g) g.visible = on; }
+  if (name === 'walls') { if (on) fadeFrontWalls(); else restoreWalls(); }
+  if (name === 'heatmap') { if (on) drawHeatmap(); else if (heatGroup) heatGroup.visible = false; }
+  const hook = document.getElementById('twin-v2-bridge'); if (hook) hook.dataset.layers = Object.keys(LAYERS).filter(k => LAYERS[k]).join(',');
+  visual.render();
+}
+function drawHeatmap() {
+  if (!heatGroup) { heatGroup = new THREE.Group(); heatGroup.name = 'twin-v2-heat'; visual.scene.add(heatGroup); }
+  heatGroup.visible = true; heatGroup.clear();
+  const COL = { working: 0x2878ff, ready: 0x16a34a, standby: 0x94a3b8, stopped: 0x64748b, alarm: 0xe5484d };
+  (lastDeviceStatus || []).forEach(([id, status]) => {
+    const mesh = visual.modelRoots.get(id); if (!mesh) return;
+    const box = new THREE.Box3().setFromObject(mesh), c = box.getCenter(new THREE.Vector3());
+    const r = Math.max(0.9, Math.max(box.max.x - box.min.x, box.max.z - box.min.z) * 0.85);
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 28),
+      new THREE.MeshBasicMaterial({ color: COL[status] || COL.standby, transparent: true, opacity: status === 'alarm' ? 0.3 : 0.16, depthWrite: false, toneMapped: false }));
+    disc.rotation.x = -Math.PI / 2; disc.position.set(c.x, 0.014, c.z); heatGroup.add(disc);
+  });
+}
+/* ---------- 低配模式（决策 Q8 预留） ---------- */
+let pixelRatioBase = null;
+function setQuality(level) {
+  const low = level === 'low'; if (low === LOW) return; LOW = low;
+  if (visual && visual.renderer) {
+    if (pixelRatioBase == null) pixelRatioBase = visual.renderer.getPixelRatio();
+    visual.renderer.setPixelRatio(low ? 1 : pixelRatioBase);
+    if (visual.reflector) visual.reflector.visible = !low;
+  }
+  const hook = document.getElementById('twin-v2-bridge'); if (hook) hook.dataset.quality = low ? 'low' : 'high';
+  if (visual) visual.render();
 }

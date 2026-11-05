@@ -3,39 +3,58 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>未来实验室数字孪生 · 实验室3D场景 V2</title>
+<title>未来实验室数字孪生 · 运行大屏 V2</title>
 <link rel="stylesheet" href="../../css/ui-baseline.css">
-<link rel="stylesheet" href="twin-scene-v2.css">
+<link rel="stylesheet" href="twin-scene-v2.css?v=2">
 <script src="../../js/ui-a11y.js" defer></script>
 <script src="../js/twin-api-mock.js" defer></script>
 <script src="../src/runtime-audit.js"></script>
 </head>
 <body>
+<!-- 控制三层（决策 Q1/Q7 定稿）：① 叙事=模式按钮+区域下拉 ② 渲染=图层菜单 ③ 演示动作=系统流/收起/低配。5M1E 切片已按决策 Q7 移除。 -->
 <header class="topbar">
   <div class="brand"><img src="assets/yingmin.png" alt="应敏科技"><span>应敏科技 · 未来实验室数字孪生</span></div>
-  <nav class="modes" aria-label="场景模式（PRD S1–S3）">
+
+  <nav class="modes" aria-label="叙事视图（PRD S1/S3 + 区域下钻）">
     <button class="mode active" data-mode="S1">S1 实验室总览</button>
-    <button class="mode" data-mode="S2">S2 · 106 重点监控</button>
+    <label class="zsel"><span>区域</span><select id="zoneSel" aria-label="选择区域（等同原 S2 重点监控，106 为完整视图）"></select></label>
     <button class="mode" data-mode="S3">S3 告警回溯</button>
   </nav>
-  <nav class="dims" aria-label="5M1E 维度切换">
-    <button class="pill" data-dim="man">人</button>
-    <button class="pill" data-dim="machine">机</button>
-    <button class="pill" data-dim="material">料</button>
-    <button class="pill" data-dim="method">法</button>
-    <button class="pill" data-dim="env">环</button>
-    <button class="pill flow" data-dim="flow" id="flowBtn">⇄ 系统流</button>
+
+  <nav class="acts" aria-label="渲染图层与演示控制">
+    <div class="drop">
+      <button class="pill" id="layerBtn" aria-expanded="false" aria-controls="layerMenu">≡ 图层</button>
+      <div class="menu" id="layerMenu" hidden role="group" aria-label="图层开关">
+        <label><input type="checkbox" data-layer="path" checked><span>调度路径<span class="cap" data-cap="path">·</span></span></label>
+        <label><input type="checkbox" data-layer="labels" checked><span>设备状态标签</span></label>
+        <label><input type="checkbox" data-layer="zones" checked><span>分区色块</span></label>
+        <label><input type="checkbox" data-layer="walls" checked><span>墙体剖切</span></label>
+        <label><input type="checkbox" data-layer="heatmap"><span>工位负荷热力</span></label>
+      </div>
+    </div>
+    <button class="pill flow" id="flowBtn">⇄ 系统流</button>
+    <button class="pill" id="stripBtn" aria-pressed="false">▾ 收起底栏</button>
+    <button class="pill" id="lowBtn" aria-pressed="false" title="低配模式：关反射、降材质 pass、降帧（决策 Q8 预留）">低配</button>
   </nav>
 </header>
 
 <aside class="rail" aria-label="运行指标">
-  <div class="kpi"><b id="kDone" class="up">–</b><small>今日任务完成</small></div>
-  <div class="kpi"><b id="kRun">–</b><small>在制任务</small></div>
-  <div class="kpi"><b id="kAb" class="warn">–</b><small>异常挂起</small></div>
-  <div class="kpi"><b id="kSp">–</b><small>今日样品</small></div>
-  <div class="alarm-sum"><span class="ga" id="aA">A 0</span><span class="gb" id="aB">B 0</span><span class="gc" id="aC">C 0</span></div>
+  <div class="period" role="tablist" aria-label="统计周期">
+    <button class="seg active" data-period="day" role="tab">本日</button>
+    <button class="seg" data-period="month" role="tab">本月</button>
+    <button class="seg" data-period="year" role="tab">本年</button>
+  </div>
+  <div class="metrics" id="metrics"></div>
+
+  <div class="alarm-sum" id="alarmSum" aria-live="polite">
+    <span class="open">未解除 –</span><span class="done">已解除 –</span>
+    <span class="ga">A –</span><span class="gb">B –</span><span class="gc">C –</span>
+  </div>
+  <div class="filter" role="group" aria-label="告警筛选">
+    <button class="mini active" data-alarmfilter="open">只看未解除</button><button class="mini" data-alarmfilter="all">全部</button>
+  </div>
   <div class="fresh"><span id="freshDot" class="dot live"></span><span id="freshTxt">数据源 live-mock · 2s 推送</span></div>
-  <div class="src-chips"><span>① 无人检测调度</span><span>② 检测数据采控</span><span>③ 智慧实验室物联网</span><span class="off">LIMS（二期）</span></div>
+  <div class="src-chips" id="srcChips"><span>① 无人检测调度</span><span>② 检测数据采控</span><span>③ 智慧实验室物联网</span><span class="off">LIMS（二期）</span></div>
   <div class="perf" id="perf" title="debug-profiler 实测">draw calls –</div>
   <a class="back" href="twin-style.html">风格预览</a>
 </aside>
@@ -45,8 +64,9 @@
 
   <section class="andon-zone" id="andonZone" aria-live="polite"></section>
   <section class="robot-zone" id="robotZone"></section>
+  <section class="board" id="deviceBoard" hidden aria-label="106 设备状态一览"></section>
 
-  <footer class="taskstrip" id="taskStrip" aria-label="今日任务进度"></footer>
+  <footer class="taskstrip" id="taskStrip" aria-label="流程与任务"></footer>
 
   <aside class="detail" id="detail" hidden aria-label="详情面板">
     <button class="close" id="detailClose" aria-label="关闭详情">×</button>
@@ -64,8 +84,9 @@
     <div id="s3Body"></div>
   </section>
 
-  <div class="watermark">V2 实验室3D场景 · 数据经 Mock API 层（/api/*）· 前端不直连三系统</div>
+  <p class="remote-hint" id="remoteHint" hidden aria-hidden="true">翻页提示</p>
+  <div class="watermark">运行镜像 · 数据经 Mock API 层（/api/*）· 前端不直连三系统 · 孪生只读，不下发控制｜翻页：PgUp/PgDn（方向键留给三维视角） · 1 总览 · 2 无人化区 · 3 告警 · Esc 关闭浮层</div>
 </main>
-<script src="twin-scene-v2.js" defer></script>
+<script src="twin-scene-v2.js?v=2" defer></script>
 </body>
 </html>

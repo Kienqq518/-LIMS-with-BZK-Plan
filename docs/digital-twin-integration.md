@@ -137,3 +137,25 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 **握手语义（架构分解文档原文）**：机器人调度系统先向设备发上料询问 → 设备回复可上料 → 机器人才执行动作 → 退出后通知设备「物料已放好」并同步给无人检测调度系统。因此 `放料/取料` 节点在孪生侧必须能呈现三态：**等待设备应答 / 执行中 / 已同步调度**，只有 `flowCode` 不足以判断进度。
 
 **待补**：本表只覆盖 106 出现的 9 个编码。其余区域（107/108/109/110/105）的流程配置需向调度系统方索取完整字典后再扩表，**不要按命名规律外推**。
+
+
+---
+
+## 附录 · 协议增补 v2.1（2026-11-05，随 `docs/digital-twin-product-plan-v2.md` 决策定稿）
+
+**通道**：宿主 → 场景 `channel:'twin-v2'`；宿主 → 空间引擎 `channel:'future-lab-tech-blue-spatial'`；场景 → 宿主同 spatial 通道。
+
+| 方向 | 消息 | 载荷 | 说明 |
+|---|---|---|---|
+| 宿主→场景 | `state` | `{robots[], deviceStatus{}, layers{}, quality, routeNote}` | 幂等全量推，场景侧收到即应用图层与画质（避免 ready 竞态） |
+| 宿主→场景 | `layer` | `{layer:'path\|labels\|zones\|walls\|heatmap', enabled:bool}` | 图层=渲染可见性，与业务无关；`walls` 关=还原墙体不剖切 |
+| 宿主→场景 | `quality` | `{level:'high'\|'low'}` | 低配：关 Reflector、pixelRatio→1、动画环 66→125ms、光点静态 |
+| 空间 | `equipment-highlight` | `{id:'106-06'}` | 面板→场景描边；id 为 CAD 节点号（宿主 `modelNode` 去 `cad:` 前缀） |
+| 场景→宿主 | `bridge-ready` | `{guide, robots}` | 就绪握手；宿主在此之前缓存最后一次状态并在就绪后重放 |
+| 场景→宿主 | `perf` | `{calls, tris, geometries, textures, fps, layers, quality}` | fps=layers 之间的平均帧率（5s 窗口） |
+
+**几何约束（决策 Q5）**：调度系统机器人只直线行走、原地掉头。场景侧对工位锚点做**曼哈顿折线推导**（长边先走→掉头），引导线与机器人轨迹、插值均走折线段；转向为瞬时角度切换。未做现场标定时 `positionBasis='derived'`，UI 标注「相对轨迹」，不显示绝对坐标。
+
+**只读约束（决策 Q2 + PRD-v1 §6）**：孪生前端**无任何写回端点**。原 `TwinApi.alarmAck()` 已删除；告警三态 `active/dispatched/resolved` 只能由来源系统经网关推送，屏上不出现「演示回执」类标注。
+
+**待补（下一步）**：`host:setAutoRoam`（讲解用自动巡航，默认关）、`scene:waypointClick{waypointId}`（折线拐点拾取，标记已渲染）、`requestId + ack + 3s 超时重试` 信封。

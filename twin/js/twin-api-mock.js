@@ -3,6 +3,7 @@
  * 契约：《数字孪生对象模型与数据字典 V1.md》§2；后端按同路径实现即插即用。
  * 端点：/api/overview/{lab-status|zones|today-tasks|alarms}
  *       /api/zone/106/{devices|robots|samples|current-tasks}
+ * 只读：无任何写回端点——告警处置由来源系统闭环（PRD-v1 §6 + 决策 Q2）。
  *       /api/alarm/{id}/trace   /api/device/{id}/detail   /api/device/{id}/realtime
  *       ws('/ws/realtime') 事件：tick / task.progress / device.status / robot.action / alarm.update
  * 真实接入：替换本文件为 fetch 实现，路由与事件名不变。
@@ -68,7 +69,7 @@
       }
       if ((m = path.match(/^\/api\/device\/([\w-]+)\/(detail|realtime)$/))) {
         var dev = null;
-        (state.zone106.devices || []).forEach(function (x) { if (x.deviceId === m[1] || x.code === m[1]) dev = x; });
+        Object.keys(state).filter(function (k) { return /^zone\d+$/.test(k); }).forEach(function (k) { (state[k].devices || []).forEach(function (x) { if (x.deviceId === m[1] || x.code === m[1]) dev = x; }); });   /* 跨区查找：106/103… */
         if (!dev && m[2] === 'detail' && global.EquipStore) {
           var rec = global.EquipStore.listAll().filter(function (x) { return x.id === m[1]; })[0];
           return resolve(envelope(rec ? { ledger: clone(rec), source: 'LIMS' } : null));
@@ -91,11 +92,8 @@
     ready: load,
     get: get,
     ws: function (handler) { subs.push(handler); return function () { subs = subs.filter(function (f) { return f !== handler; }); }; },
-    alarmAck: function (alarmId) {
-      var a = state.overview.alarms.filter(function (x) { return x.alarmId === alarmId; })[0];
-      if (a) { a.status = 'ack'; emit('alarm.update', { alarmId: alarmId, status: 'ack' }); return Promise.resolve(envelope({ alarmId: alarmId, status: 'ack' })); }
-      return Promise.reject(new Error('告警不存在'));
-    },
+    /* 【PRD-v1 §6 红线 · 决策 Q2（2026-11-05）】孪生只读：不提供告警写回（原 alarmAck 已删除）。
+       闭环状态（active/dispatched/resolved）只由来源系统经网关推送，前端仅显示 派至 / 解除人 / 解除时间。 */
     start: function (ms) { if (!timer) timer = setInterval(tick, ms || 2000); },
     stop: function () { clearInterval(timer); timer = null; }
   };
