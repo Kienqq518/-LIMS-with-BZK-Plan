@@ -75,6 +75,79 @@ function treatArchitecture() {
   visual.renderer.domElement.addEventListener('pointerup', fadeFrontWalls);
 }
 
+
+/* ---------- 材质 pass：浅色工业产品展示（明度阶梯：背景 #F3F5F8 > 设备白 > 地面中性浅灰） ---------- */
+function applyMaterialPass() {
+  const seen = new Set();
+  const retint = (mesh, from, to) => {
+    const m = mesh.material; if (!m || !m.color || seen.has(m.uuid)) return;
+    if (Math.abs(m.color.getHex() - from) < 0x010101) { m.color.set(to); seen.add(m.uuid); }
+  };
+  const walk = root => root.traverse(o => {
+    if (!o.isMesh || !o.material || !o.material.color) return;
+    const hex = o.material.color.getHex();
+    if (hex === 0xc2c9cd) { o.material.color.set(0xe4e9ee); o.material.opacity = Math.max(o.material.opacity, 0.9); }  /* 106 地面提亮 */
+    else if (hex === 0xaebfcb) { o.material.color.set(0xd3dbe2); seen.add(o.material.uuid); }                            /* 房间侧壁 */
+    else if (hex === 0xedf0ef) { o.material.color.set(0xf6f8f9); seen.add(o.material.uuid); }                            /* 设备主体更白 */
+    else if (hex === 0xd7dee1) { o.material.color.set(0xe8edf1); seen.add(o.material.uuid); }                            /* 设备浅色件 */
+    /* 面板深灰/近黑不动；玻璃 rail 已弱化 */
+  });
+  walk(visual.scene);
+  if (visual.reflector && visual.reflector.color) visual.reflector.color.set(0xd7dde3);  /* 反射减淡，防灰雾 */
+}
+
+/* ---------- 设备状态视觉分级：克制版 = 顶部小呼吸光点 + 既有描色 ---------- */
+const STATUS_LIGHT = { working: [0x2878ff, 'pulse'], ready: [0x16a34a, 'static'], standby: [0x94a3b8, 'dim'], stopped: [0x64748b, 'dim'], alarm: [0xe5484d, 'fast'] };
+const statusDots = new Map();
+function ensureDot(devId, status) {
+  const mesh = visual.modelRoots.get(devId); if (!mesh) return;
+  let dot = statusDots.get(devId);
+  if (!dot) {
+    const box = new THREE.Box3().setFromObject(mesh);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x101010, emissive: 0x2878ff, emissiveIntensity: 1.4, roughness: 0.4 });
+    dot = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), mat);
+    dot.position.set((box.min.x + box.max.x) / 2, box.max.y + 0.09, (box.min.z + box.max.z) / 2);
+    visual.detail.add(dot); statusDots.set(devId, dot);
+  }
+  const conf = STATUS_LIGHT[status] || STATUS_LIGHT.standby;
+  dot.material.emissive.setHex(conf[0]); dot.userData.mode = conf[1];
+}
+function pulseDots(t) {
+  statusDots.forEach(dot => {
+    const mode = dot.userData.mode;
+    if (mode === 'pulse') dot.material.emissiveIntensity = 1.5 + Math.sin(t * 0.0035) * 0.7;
+    else if (mode === 'fast') dot.material.emissiveIntensity = 2.0 + Math.sin(t * 0.010) * 1.4;
+    else if (mode === 'dim') dot.material.emissiveIntensity = 0.35;
+    else dot.material.emissiveIntensity = 1.2;
+  });
+}
+
+/* ---------- 平滑动画环：机器人插值 + 光点呼吸（15fps 足够，省电） ---------- */
+let animStarted = false, robotTargets = {};
+function startAnimLoop() {
+  if (animStarted) return; animStarted = true;
+  let last = 0;
+  const loop = t => {
+    if (t - last > 66) {
+      last = t;
+      Object.entries(robotTargets).forEach(([id, tgt]) => {
+        const g = robots[id]; if (!g || !tgt.path) return;
+        tgt.local = tgt.local == null ? tgt.progress : tgt.local + Math.max(-0.02, Math.min(0.02, tgt.progress - tgt.local)) * 0.35;
+        const pts = tgt.path.map(q => new THREE.Vector3(q[0], 0, q[2]));
+        const tt = Math.max(0, Math.min(1, tgt.local)) * (pts.length - 1);
+        const i = Math.min(pts.length - 2, Math.floor(tt)), f = tt - i;
+        const p = pts[i].clone().lerp(pts[i + 1], f);
+        g.position.set(p.x, 0, p.z);
+        const dir = pts[i + 1].clone().sub(pts[i]); g.rotation.y = Math.atan2(dir.x, dir.z);
+      });
+      pulseDots(t);
+      visual.render();
+    }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
+
 function boot() {
   const wait = setInterval(async () => {
     const v = window.visual106;
@@ -103,6 +176,8 @@ function build(v) {
   Object.values(robots).forEach(g => v.scene.add(g));
 
   treatArchitecture();
+  applyMaterialPass();
+  startAnimLoop();
   /* QA 自检钩子（DOM 可被隔离世界读取） */
   const hook = document.createElement('div'); hook.id = 'twin-v2-bridge';
   hook.dataset.guide = String(guide.children.length); hook.dataset.robots = String(Object.keys(robots).length); hook.dataset.walls = wallMesh ? '1' : '0';
@@ -137,6 +212,7 @@ function mkRobot(w, h, dp, body, arm) {
 
 function applyState(d) {
   (d.robots || []).forEach(r => {
+    robotTargets[r.robotId] = Object.assign(robotTargets[r.robotId] || {}, r);
     const g = robots[r.robotId]; if (!g || !r.path) return;
     const pts = r.path.map(p => new THREE.Vector3(p[0], 0, p[2]));
     const t = Math.max(0, Math.min(1, r.progress)) * (pts.length - 1);
@@ -147,7 +223,7 @@ function applyState(d) {
     g.userData.halo.material.color.set(r.action === 'charging' ? 0xf59e0b : 0x2878ff);
     g.userData.beacon.material.emissive.set(r.action === 'moving' ? 0x2878ff : 0x16a34a);
   });
-  Object.entries(d.deviceStatus || {}).forEach(([node, st]) => tint(node, st));
+  Object.entries(d.deviceStatus || {}).forEach(([node, st]) => { tint(node, st); ensureDot(node.replace('cad:', ''), st); });
 }
 
 function tint(node, status) {
