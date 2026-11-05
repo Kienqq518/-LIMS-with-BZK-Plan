@@ -28,6 +28,18 @@
     /* 流程图只是看图，不再叠跳转热区（位图重绘会让热区漂移）；
      * 需要点进某个环节，走上面「数据概览」的功能卡片或左侧菜单。 */
     .flow-map { position: relative; }
+    /* 委托统计图例：口径说明收进悬停气泡，不再在卡片底下铺一行文字 */
+    .st-item { position: relative; cursor: help; }
+    .st-tip {
+      position: absolute; left: 50%; bottom: calc(100% + 9px); transform: translate(-50%, 3px);
+      display: none; width: 172px; padding: 7px 10px; border-radius: 5px; z-index: 40;
+      background: rgba(30, 41, 59, .95); color: #fff; font-size: 12px; line-height: 1.55;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, .22); pointer-events: none; cursor: default;
+    }
+    .st-tip::after { content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px;
+      border: 5px solid transparent; border-top-color: rgba(30, 41, 59, .95); }
+    .st-item:hover .st-tip, .st-item:focus .st-tip, .st-item:focus-visible .st-tip {
+      display: block; transform: translate(-50%, 0); }
   </style>
 </head>
 <body class="bg-slate-50 p-4 text-slate-700">
@@ -140,16 +152,13 @@
         <div class="flex items-center">
           <!-- 左侧文字统计 -->
           <div class="flex flex-col gap-3 pr-2 text-sm">
-            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-green-500"></span><span class="text-slate-500">已完成</span><span id="statDone" class="font-semibold text-slate-800">0</span></div>
-            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span><span class="text-slate-500">未完成</span><span id="statDoing" class="font-semibold text-slate-800">0</span></div>
-            <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-red-500"></span><span class="text-slate-500">已逾期</span><span id="statLate" class="font-semibold text-slate-800">0</span></div>
+            <div class="st-item flex items-center gap-2" tabindex="0"><span class="h-2.5 w-2.5 rounded-full bg-green-500"></span><span class="text-slate-500">已完成</span><span id="statDone" class="font-semibold text-slate-800">0</span><span class="st-tip">报告全部签发完成</span></div>
+            <div class="st-item flex items-center gap-2" tabindex="0"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span><span class="text-slate-500">未完成</span><span id="statDoing" class="font-semibold text-slate-800">0</span><span class="st-tip">报告未签发完</span></div>
+            <div class="st-item flex items-center gap-2" tabindex="0"><span class="h-2.5 w-2.5 rounded-full bg-red-500"></span><span class="text-slate-500">已逾期</span><span id="statLate" class="font-semibold text-slate-800">0</span><span class="st-tip">未在要求完成时间前完成报告全部签发</span></div>
           </div>
           <!-- 右侧环形图 -->
           <div id="donutChart" class="h-40 flex-1"></div>
         </div>
-        <p class="mt-2 border-t border-slate-50 pt-2 text-xs leading-relaxed text-slate-400">
-          口径：已完成 = 已到报告发放 / 任务归档 / 任务完成；已逾期 = 过了客户要求完成日期仍未交付；未完成 = 其余在制。三片相加 = 委托总量。
-        </p>
       </section>
 
       <!-- 数值统计 -->
@@ -303,17 +312,20 @@
      * （空、待接收、未领样、已审核、已完成）按这单实际卡在哪个环节折算，
      * 保证每张阶段卡、每个统计切片都能把它们算进去，不会「哪个口径都不沾」。 */
     var STAGE_ALIAS = { '': '委托登记', '待接收': '试验检测', '未领样': '试验检测', '已审核': '试验检测', '已完成': '任务完成' };
-    var DELIVERED_STAGES = ['报告发放', '任务归档', '任务完成'];   // 报告已交付给客户 = 这单做完了
+    /* 与真系统「委托统计」一致：切分点是「报告有没有全部签发完成」，
+     * 即流程阶段是否已越过 报告签发（报告签发及之后都算签发完成）。 */
+    var SIGNED_STAGES = (window.FlowStages && FlowStages.POST_SIGN_STAGES) ||
+      ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
 
     function stageOf(m) {
       var st = (m && m.status) || '';
       if (window.FlowStages && FlowStages.FLOW_ORDER.indexOf(st) >= 0) return st;
       return STAGE_ALIAS[st] || '';
     }
-    function isDelivered(m) { return DELIVERED_STAGES.indexOf(stageOf(m)) >= 0; }
-    /* 逾期 = 过了客户要求完成日期（requireDate，与委托详情同名字段同源）却还没交付 */
+    function isSigned(m) { return SIGNED_STAGES.indexOf(stageOf(m)) >= 0; }
+    /* 已逾期 = 到了客户要求完成日期（requireDate，与委托详情同名字段同源）报告还没全部签发完 */
     function isOverdue(m) {
-      if (!m || isDelivered(m)) return false;
+      if (!m || isSigned(m)) return false;
       var d = String(m.requireDate || '');
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
       var p = d.split('-');
@@ -332,7 +344,7 @@
             code: code, customer: m.customer || '/', sample: m.sampleNames || '/',
             category: m.testCategory || '/', acceptDate: m.acceptDate || '',
             requireDate: m.requireDate || '', stage: stageOf(m),
-            delivered: isDelivered(m), overdue: isOverdue(m)
+            signed: isSigned(m), overdue: isOverdue(m)
           });
         });
       } catch (e) { /* 数据源不可用时给空表，页面其余部分照常 */ }
@@ -343,15 +355,16 @@
       return out;
     }
 
-    /** 委托统计三片 + 两个总数，三片相加 = total */
+    /** 委托统计：已完成 + 未完成 = 委托总量；已逾期是未完成里按「有没有过要求完成时间」再切的一档，
+     *  所以 已逾期 ⊂ 未完成，三个数各自独立展示（与真系统工作台一致）。 */
     function entrustStats() {
       var list = entrustList(), done = 0, late = 0, cust = {};
       list.forEach(function (r) {
         if (r.customer !== '/') cust[r.customer] = 1;
-        if (r.delivered) done++; else if (r.overdue) late++;
+        if (r.signed) done++; else if (r.overdue) late++;
       });
-      return { total: list.length, done: done, late: late, doing: list.length - done - late,
-               customers: Object.keys(cust).length };
+      return { total: list.length, done: done, late: late, doing: list.length - done,
+               notLate: list.length - done - late, customers: Object.keys(cust).length };
     }
 
     // 快讯中心数据
@@ -395,8 +408,8 @@
       if (taskPage > pages) taskPage = pages;
       var slice = list.slice((taskPage - 1) * TASK_PAGE_SIZE, taskPage * TASK_PAGE_SIZE);
       tbody.innerHTML = slice.map(function (r) {
-        var dot = r.delivered ? 'bg-green-500' : (r.overdue ? 'bg-red-500' : 'bg-sky-500');
-        var tone = r.delivered ? 'text-green-600' : (r.overdue ? 'text-red-600' : 'text-sky-600');
+        var dot = r.signed ? 'bg-green-500' : (r.overdue ? 'bg-red-500' : 'bg-sky-500');
+        var tone = r.signed ? 'text-green-600' : (r.overdue ? 'text-red-600' : 'text-sky-600');
         return '<tr class="hover:bg-slate-50">' +
           '<td class="px-3 py-2.5"><a class="text-sky-600 hover:underline" href="entrust-detail.html?code=' +
             encodeURIComponent(r.code) + '">' + r.code + '</a></td>' +
@@ -921,7 +934,7 @@
       { name: '设备校准', icon: 'fa-desktop',        tone: 'violet',  href: 'equip-mgmt.html', special: 'calib' }
     ];
 
-    /* 阶段归属与逾期口径统一在上面的 stageOf / isDelivered / isOverdue，
+    /* 阶段归属与逾期口径统一在上面的 stageOf / isSigned / isOverdue，
      * 卡片、任务总览、委托统计三处共用一份，不会出现两个口径。 */
     function statCounts() {
       var out = {};
@@ -994,7 +1007,7 @@
             '列为 委托编号 / 客户单位 / 样品名称 / 检测类别 / 登记日期 / 状态。' +
             '「检测类别」取委托的 <code>testCategory</code>（型式试验 / 例行试验 / 委托检测，与委托详情同一字段），不是原来那套「理化检测 / 水质分析」假分类；' +
             '「状态」显示<strong>流程阶段名</strong>（委托登记、样品收样、报告审核…）而不是笼统的「进行中」，' +
-            '圆点配色与右侧「委托统计」三片同一套口径：绿 = 已交付（报告发放及之后）、蓝 = 在制且未到客户要求完成日期、红 = 过了要求完成日期仍未交付。<br>' +
+            '圆点配色与右侧「委托统计」同一套口径：绿 = 报告全部签发完成（阶段已到报告签发及之后）、蓝 = 还没签发完且未到客户要求完成日期、红 = 到了要求完成日期还没签发完。<br>' +
             '<strong>交互逻辑：</strong>委托编号点进 <code>entrust-detail.html?code=…</code>；「查看更多」进<strong>委托预览</strong>（完整列表与全部筛选列）；' +
             '底部「共 N 条」与页码都是算出来的（74 条 / 每页 6 条 = 13 页），首页与末页的 ‹ › 置灰，中间页码折成 …，翻页只在前端切数组。',
           tag: '工作台'
@@ -1002,11 +1015,14 @@
         {
           id: 'entrust-stats', selector: '[data-annotate="entrust-stats"]', position: 'top-right',
           title: '委托统计与任务总数、客户总数', wide: true,
-          content: '<strong>需求逻辑：</strong>这块以前是三个写死的数（已完成 43 / 未完成 51 / 已逾期 23，中心 94），三片相加 117 既不等于 94，也和任务总数、列表页对不上。' +
-            '现在按委托数据现算，三片互斥、相加正好等于委托总量。<br>' +
-            '<strong>展示规则：</strong>已完成 = 阶段到 报告发放 / 任务归档 / 任务完成（报告已交付客户）；已逾期 = 未交付且已过「客户要求完成日期」；未完成 = 其余在制。' +
-            '当前 74 单为 已完成 10 / 未完成 7 / 已逾期 57；环形图中心数字 = 委托总量，与下方「任务总数」同一个数，「客户总数」= 委托单位去重数；卡片下方常驻一行口径说明，看图的人不用自己猜。<br>' +
-            '<strong>交互逻辑：</strong>不设筛选，数字随委托数据变化自动重算；悬停显示各片数量与占比；图例与三片颜色一一对应（绿=已完成、黄=未完成、红=已逾期）。',
+          content: '<strong>需求逻辑：</strong>这块以前是三个写死的数（已完成 43 / 未完成 51 / 已逾期 23，中心 94），互相对不上。' +
+            '现在按委托数据现算，口径与真系统工作台一致——切分点是「报告有没有全部签发完成」，逾期与否只看有没有过客户要求完成时间。<br>' +
+            '<strong>展示规则：</strong>已完成 = 报告全部签发完成（阶段到 报告签发 / 报告处理 / 收费审批 / 报告发放 / 任务归档 / 任务完成），当前 13；' +
+            '未完成 = 报告未签发完，当前 61；已逾期 = 到了客户要求完成日期报告还没全部签发完，当前 54。' +
+            '已完成 + 未完成 = 委托总量 74，已逾期是未完成里再切的一档（包含在未完成内），所以三个数各自看、不做相加。' +
+            '环形图中心数字 = 委托总量，与下方「任务总数」同一个数；「客户总数」= 委托单位去重数。<br>' +
+            '<strong>交互逻辑：</strong>卡片底下不再铺一行口径文字——三条图例各自悬停出深色气泡说明（已完成「报告全部签发完成」、未完成「报告未签发完」、已逾期「未在要求完成时间前完成报告全部签发」），' +
+            '键盘 Tab 聚焦同样能出；环形图扇区悬停显示该档数量与占比，图例与扇区颜色一一对应（绿=已完成、黄=未完成、红=已逾期）。',
           tag: '工作台'
         },
         {
