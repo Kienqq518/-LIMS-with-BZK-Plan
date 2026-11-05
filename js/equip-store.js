@@ -2,7 +2,7 @@
  * 设备台账 Mock Store（设备管理 + 样品试验「检测设备」共用）
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-equip-store-v8';
+  var STORAGE_KEY = 'lims-equip-store-v9';
 
   var DEPTS = ['材料检测组', '应敏科技1', '电气检测组', '力学检测组', '数蚕智能', '应敏科技', '未来实验室'];
   var AREAS = ['控制室', '智能力学室', '材料试验区', '智能高压室', '智能样品室', '数智化电气试验区', '无人化电缆试验区', '环境试验区', '综合试验区'];
@@ -254,82 +254,6 @@
           { id: 'm1', type: '维修', date: '2026-06-15', content: '更换升压变压器散热风扇，复测输出电压正常', by: '厂家工程师', result: '已修复', file: '维修单_20260615.pdf' },
           { id: 'm2', type: '期间核查', date: '2026-05-20', content: '水槽密封与接地电阻复测', by: '周强', result: '正常', file: '' },
           { id: 'm3', type: '日常保养', date: '2026-02-18', content: '电极清洗 / 绝缘检查', by: '周强', result: '正常', file: '' }
-        ]
-      },
-      {
-        id: 'eq_ybkc02',
-        code: 'YBKC-02',
-        name: '数显卡尺',
-        model: '(0~300)mm/0.01mm',
-        dept: '材料检测组',
-        area: '材料试验区',
-        certNo: '',
-        accuracy: '0.01mm',
-        info: '',
-        remark: '',
-        needCalib: true,
-        lastCalib: '2025-02-25',
-        cycleY: 1, cycleM: 0, cycleD: 0,
-        nextCalib: '2026-02-25',
-        agency: '市计量所',
-        warnDays: 10,
-        maxError: '0.02mm',
-        calibStatus: '正常',
-        enabled: true,
-        files: [
-          { name: '卡尺检定证书.pdf', type: 'pdf' }
-        ],
-        linkedTests: [
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-C - 尺寸检查', sample: 'PVC-C', model: 'DS实壁类', test: '尺寸检查' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-C - 环刚度', sample: 'PVC-C', model: 'DS实壁类', test: '环刚度' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-C - 压扁试验', sample: 'PVC-C', model: 'DS实壁类', test: '压扁试验' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-C - 落锤冲击', sample: 'PVC-C', model: 'DS实壁类', test: '落锤冲击' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-C - 维卡软化温度', sample: 'PVC-C', model: 'DS实壁类', test: '维卡软化温度' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-U - 尺寸检查', sample: 'PVC-U', model: 'DS实壁类', test: '尺寸检查' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-U - 环刚度', sample: 'PVC-U', model: 'DS实壁类', test: '环刚度' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-M - 尺寸检查', sample: 'PVC-M', model: 'DS实壁类', test: '尺寸检查' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-M - 压扁试验', sample: 'PVC-M', model: 'DS实壁类', test: '压扁试验' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-H - 尺寸检查', sample: 'PVC-H', model: 'DS实壁类', test: '尺寸检查' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-H - 环刚度', sample: 'PVC-H', model: 'DS实壁类', test: '环刚度' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-H - 压扁试验', sample: 'PVC-H', model: 'DS实壁类', test: '压扁试验' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-H - 落锤冲击', sample: 'PVC-H', model: 'DS实壁类', test: '落锤冲击' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-H - 维卡软化温度', sample: 'PVC-H', model: 'DS实壁类', test: '维卡软化温度' }
-        ],
-        history: [
-          { id: 'h3', event: '设备校准', date: '2025-02-25', remark: '', report: '校准报告_YBKC02_20250225.pdf' },
-          { id: 'h4', event: '设备校准', date: '2024-08-29', remark: '', report: '校准报告_YBKC02_20240829.pdf' }
-        ],
-        maintain: [
-          { id: 'm4', type: '日常保养', date: '2026-03-10', content: '量爪清洁、零位校对', by: '李强', result: '正常', file: '' }
-        ]
-      },
-      {
-        id: 'eq_ybkc03',
-        code: 'YBKC-03',
-        name: '数显卡尺',
-        model: '(0~300)mm/0.01mm',
-        dept: '材料检测组',
-        area: '材料试验区',
-        certNo: 'CERT-03',
-        accuracy: '0.01mm',
-        info: '',
-        remark: '',
-        needCalib: true,
-        lastCalib: '2025-01-10',
-        cycleY: 1, cycleM: 0, cycleD: 0,
-        nextCalib: '2026-01-10',
-        agency: '市计量所',
-        warnDays: 10,
-        maxError: '0.02mm',
-        calibStatus: '预警期',
-        enabled: true,
-        files: [],
-        linkedTests: [
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-U - 尺寸检查', sample: 'PVC-U', model: 'DS实壁类', test: '尺寸检查' },
-          { path: 'WZ电网物资 - 02电力电缆导管 - DS实壁类塑料电缆导管 - PVC-M - 尺寸检查', sample: 'PVC-M', model: 'DS实壁类', test: '尺寸检查' }
-        ],
-        history: [
-          { id: 'h5', event: '设备校准', date: '2025-01-10', remark: '', report: '校准报告_YBKC03.pdf' }
         ]
       },
       {
