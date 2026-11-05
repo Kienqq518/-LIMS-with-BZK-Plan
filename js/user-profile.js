@@ -155,12 +155,9 @@
     injectStyle();
     var doc = global.document;
     [].slice.call(doc.querySelectorAll('.pa-user-chip')).forEach(function (chip) {
-      if (bound.has(chip)) {
-        // 克隆件里可能带着外壳的展开态，重新填一遍数据即可
-        var w = chip.closest('.pa-user-wrap');
-        if (w) { var pp = w.querySelector('.pa-user-pop'); if (pp) pp.classList.remove('open'); fill(w); }
-        return;
-      }
+      // 已经绑过的直接跳过：fill() 会改 img.src / 文本，观察器会因为自己的改动反复回调，
+      // 这里再填一次就变成死循环（页面直接卡死）。克隆件是新对象，走下面的 makeChip 自己会填。
+      if (bound.has(chip)) return;
       bound.add(chip);
       makeChip(chip);
     });
