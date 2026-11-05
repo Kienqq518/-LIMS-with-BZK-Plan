@@ -132,6 +132,7 @@ function startAnimLoop() {
       last = t;
       Object.entries(robotTargets).forEach(([id, tgt]) => {
         const g = robots[id]; if (!g || !tgt.path) return;
+        ensureDot(tgt.modelRoot, tgt.action === 'charging' ? 'standby' : 'working');
         tgt.local = tgt.local == null ? tgt.progress : tgt.local + Math.max(-0.02, Math.min(0.02, tgt.progress - tgt.local)) * 0.35;
         const pts = tgt.path.map(q => new THREE.Vector3(q[0], 0, q[2]));
         const tt = Math.max(0, Math.min(1, tgt.local)) * (pts.length - 1);
@@ -168,12 +169,8 @@ function build(v) {
   const dash = mk([[11.2, 25.0], [17.2, 19.6]]); dash.material.color.set(0x2878ff); dash.material.opacity = 0.5; guide.add(dash);
   v.scene.add(guide); lines = guide;
 
-  /* 机器人：程序化低模（复合=车体+立柱臂；AMR=平板+货箱） */
-  robots = {
-    'RB-C-01': mkRobot(0.55, 0.9, 0.5, 0x2a3441, true),
-    'RB-A-01': mkRobot(0.8, 0.28, 0.6, 0x3d4a5c, false)
-  };
-  Object.values(robots).forEach(g => v.scene.add(g));
+  /* 机器人：直接驱动 CAD 真实复合机器人模型（106-09→RB-C-01，106-08→RB-C-02），不再放程序化假机器人 */
+  robots = {};
 
   treatArchitecture();
   applyMaterialPass();
@@ -197,32 +194,20 @@ function build(v) {
   }, 5000);
 }
 
-function mkRobot(w, h, dp, body, arm) {
-  const g = new THREE.Group();
-  const m = new THREE.MeshPhysicalMaterial({ color: body, roughness: 0.4, metalness: 0.2, clearcoat: 0.3 });
-  const base = new THREE.Mesh(new THREE.BoxGeometry(w, h, dp), m); base.position.y = h / 2 + 0.06; g.add(base);
-  const top = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.05, dp * 0.7), new THREE.MeshStandardMaterial({ color: 0xedf0f3, roughness: 0.5 })); top.position.y = h + 0.09; g.add(top);
-  if (arm) { const a = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.7), m); a.position.set(0, h + 0.4, 0); g.add(a); }
-  const halo = new THREE.Mesh(new THREE.CircleGeometry(0.7, 24), new THREE.MeshBasicMaterial({ color: 0x2878ff, transparent: true, opacity: 0.16 }));
-  halo.rotation.x = -Math.PI / 2; halo.position.y = 0.015; g.add(halo); g.userData.halo = halo;
-  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), new THREE.MeshStandardMaterial({ color: 0x101010, emissive: 0x2878ff, emissiveIntensity: 2.2 }));
-  beacon.position.y = h + 0.14; g.add(beacon); g.userData.beacon = beacon;
-  return g;
-}
-
+let robotPathsDrawn = false;
 function applyState(d) {
   (d.robots || []).forEach(r => {
     robotTargets[r.robotId] = Object.assign(robotTargets[r.robotId] || {}, r);
-    const g = robots[r.robotId]; if (!g || !r.path) return;
-    const pts = r.path.map(p => new THREE.Vector3(p[0], 0, p[2]));
-    const t = Math.max(0, Math.min(1, r.progress)) * (pts.length - 1);
-    const i = Math.min(pts.length - 2, Math.floor(t)), f = t - i;
-    const p = pts[i].clone().lerp(pts[i + 1], f);
-    g.position.set(p.x, 0, p.z);
-    const dir = pts[i + 1].clone().sub(pts[i]); g.rotation.y = Math.atan2(dir.x, dir.z);
-    g.userData.halo.material.color.set(r.action === 'charging' ? 0xf59e0b : 0x2878ff);
-    g.userData.beacon.material.emissive.set(r.action === 'moving' ? 0x2878ff : 0x16a34a);
+    if (!robots[r.robotId] && r.modelRoot) robots[r.robotId] = visual.modelRoots.get(r.modelRoot) || null;
   });
+  if (!robotPathsDrawn && (d.robots || []).length) {   /* 蓝色虚线按真实路径重画 */
+    robotPathsDrawn = true;
+    const dash = lines && lines.children[1];
+    if (dash && d.robots[0]) {
+      const pts = d.robots[0].path.map(q => new THREE.Vector3(q[0], 0.021, q[2]));
+      dash.geometry.setFromPoints(pts);
+    }
+  }
   Object.entries(d.deviceStatus || {}).forEach(([node, st]) => { tint(node, st); ensureDot(node.replace('cad:', ''), st); });
 }
 

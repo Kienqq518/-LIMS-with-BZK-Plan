@@ -80,7 +80,7 @@
     $('#robotZone').innerHTML = robots.map(function (r) {
       var act = r.action === 'charging' ? '充电中' : r.action === 'moving' ? '行进中' : (r.status === 'moving' ? '运输中' : '待机');
       return '<div class="robot-card ' + (r.action === 'charging' ? 'charging' : '') + '"><i></i>' + r.robotId + ' · ' + act +
-        (r.servingDeviceId ? ' · 服务 ' + r.servingDeviceId.replace(/^eq_ymwrh/, 'YM-WRH-') : '') +
+        (r.servingDeviceId ? ' · 服务 ' + ((devices.filter(function (x) { return x.deviceId === r.servingDeviceId; })[0] || {}).code || r.servingDeviceId) : '') +
         (r.carriedSampleIds && r.carriedSampleIds.length ? ' · 载 ' + r.carriedSampleIds[0] : '') +
         ' <em>🔋' + Math.round(r.battery) + '%</em></div>';
     }).join('');
