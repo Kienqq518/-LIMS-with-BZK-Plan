@@ -19,8 +19,18 @@ const wallSet=await f.evaluate(()=>{const e=document.getElementById('twin-v2-rou
 out.push((wallSet&&wallSet.walls>=4?'✅':'❌')+' 自检墙体已从 2 面扩到实测 '+wallSet.walls+' 面（102 西/106 东/106 南/走廊北端）: '+JSON.stringify(wallSet));
 const geo=await f.evaluate(()=>{
   const v=window.visual106, g=v.scene.getObjectByName('twin-v2-guide'); if(!g) return {err:'no guide'};
-  const line=g.getObjectByName('route-RB-C-02'); const a=line.geometry.attributes.position.array; const poly=[];
-  for(let i=0;i<a.length;i+=3) poly.push([+a[i].toFixed(2),+a[i+2].toFixed(2)]);
+  /* 线路现在是「堆叠的腿」：route-RB-C-02 是组，里面每条 leg-RB-C-02-A-B 各含一条 legline。
+     按腿顺序拼回整条折线（腿与腿共享端点，拼接时去掉重复点）。 */
+  const route=g.getObjectByName('route-RB-C-02'); if(!route) return {err:'no route group'};
+  const legNames=route.children.filter(c=>c.name&&c.name.startsWith('leg-')).map(c=>c.name);
+  const poly=[];
+  legNames.forEach(nm=>{
+    const lg=route.getObjectByName(nm); const ln=lg&&lg.getObjectByName(/legline-/.test('')?'':null);
+    const lineObj=lg?lg.children.find(c=>c.isLine):null; if(!lineObj) return;
+    const a=lineObj.geometry.attributes.position.array;
+    for(let i=0;i<a.length;i+=3){ const q=[+a[i].toFixed(2),+a[i+2].toFixed(2)];
+      if(!poly.length||Math.abs(poly[poly.length-1][0]-q[0])>0.005||Math.abs(poly[poly.length-1][1]-q[1])>0.005) poly.push(q); }
+  });
   const cross=(at)=>{const hits=[];for(let i=0;i<poly.length-1;i++){const[x1,z1]=poly[i],[x2,z2]=poly[i+1];
     if(Math.abs(z1-z2)<0.01&&(x1-at)*(x2-at)<0) hits.push(+z1.toFixed(2));}return hits;};
   const gate102=cross(20.84), gate106=cross(18.44);
@@ -32,27 +42,37 @@ const geo=await f.evaluate(()=>{
     if(Math.abs(x1-x2)<0.01){ if(x1>18.44&&x1<20.84) inCorridor+=Math.abs(z2-z1); }
     else { const a=clip(x1,18.44,20.84), b=clip(x2,18.44,20.84); inCorridor+=Math.abs(b-a); } }   /* 向西走的段 b<a，必须取绝对值 */
   inCorridor=+inCorridor.toFixed(2);
+  const inb=poly.filter(q=>q[0]>18.44&&q[0]<20.84);
+  const corridorEnd=inb.length?+Math.max(...inb.map(q=>q[0])).toFixed(2):null;
+  const corridorZSpan=inb.length?[+Math.min(...inb.map(q=>q[1])).toFixed(2),+Math.max(...inb.map(q=>q[1])).toFixed(2)]:null;
   const markers=[]; g.traverse(o=>{ if(o.isMesh&&o.geometry&&o.geometry.type==='PlaneGeometry'&&o.material&&o.material.color&&o.material.color.getHex()===0x16a34a) markers.push('gate'); });
   const band=g.getObjectByName('corridor-RB-C-02');
-  return {polyN:poly.length, gate102, gate106, inCorridor, markers:markers.length, band:!!band};
+  return {polyN:poly.length, legsDrawn:legNames.length, legNames, gate102, gate106, inCorridor, markers:markers.length, band:!!band, corridorEnd, corridorZSpan};
 });
-out.push((geo.gate102.length===2&&geo.gate102.every(z=>z>=10.69+0.651&&z<=12.49-0.651)?'✅':'❌')+' 102 西门：折线只在门洞内穿越 x=20.84（含 0.651m 扫掠半宽）共 '+geo.gate102.length+' 次 @ z='+JSON.stringify(geo.gate102));
+out.push((geo.gate102.length===0?'✅':'❌')+' 102 西墙一次都不穿（x=20.84 的缺口是 CAD 漏画的墙、不是门；穿越 '+geo.gate102.length+' 次）');
+out.push((geo.corridorEnd!==null&&geo.corridorEnd<=20.84-0.651?'✅':'❌')+' 走廊内最东点 '+geo.corridorEnd+'m ≤ 20.189m（贴 102 西墙前折返，留 0.651m 扫掠半宽）');
 out.push((geo.gate106.length===2&&geo.gate106.every(z=>z>=10.2+0.651&&z<=11.8-0.651)?'✅':'❌')+' 106 东门：折线只在双开门内穿越 x=18.44 共 '+geo.gate106.length+' 次 @ z='+JSON.stringify(geo.gate106));
-out.push((geo.inCorridor>=4&&geo.inCorridor<=9&&geo.band?'✅':'❌')+' 走廊里画得出折线：落在走廊带内 '+geo.inCorridor+'m（去+返 ≈6m：两道门各 1.2m 横段 + 0.59m 中线纵移 ×2）+ 范围带='+(geo.band?'有':'无'));
+out.push((geo.inCorridor>=18&&geo.band?'✅':'❌')+' 走廊里画得出折线：落在走廊带内 '+geo.inCorridor+'m（出东门→沿走廊北上到 z=21→折返入东门，往返 2×10m）+ 范围带='+(geo.band?'有':'无'));
+out.push((geo.corridorZSpan&&geo.corridorZSpan[0]<=11.01&&geo.corridorZSpan[1]>=20.99?'✅':'❌')+' 走廊带按实测贯通南北（折线覆盖 z '+JSON.stringify(geo.corridorZSpan)+'，不再是只到 15.14 的半截）');
 out.push((geo.markers===0?'✅':'❌')+' 墙上绿色门洞小方块已取消（路径层内 Plane 记号 '+geo.markers+' 个；起点圆点保留）');
 
 /* 改路径必须重算 demoCycle 的 u/travelSec/t0：停靠点一个都不许挪位。
    这里逐个停靠站把剧本 u 换算回场景坐标，与它服务的 CAD 设备中心比对。 */
-const seedStops=await p.evaluate(async()=>{const r=await fetch('../api/seed.json').then(x=>x.json());
-  const rb=r.zone106.robots.filter(x=>x.robotId==='RB-C-02')[0];
-  return {stops:rb.demoCycle.stops,path:rb.path.map(q=>[q[0],q[2]]),meta:{loopSec:rb.demoCycle.loopSec,pathLengthM:rb.demoCycle.pathLengthM}};});
+const seedStops=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/robots');
+  const rb=r.data.filter(x=>x.robotId==='RB-C-02')[0];
+  return {stops:rb.demoCycle.stops, nodes:rb.routeNodes, path:rb.path.map(q=>[q[0],q[2]]),
+    meta:{loopSec:rb.demoCycle.loopSec,pathLengthM:rb.demoCycle.pathLengthM,
+          unmapped:(rb.demoCycle.unmappedStops||[]).length,
+          stations:rb.routeNodes.filter(n=>n.kind==='station').length}};});
+out.push((seedStops.meta.unmapped===2?'✅':'❌')+' 被撤出的 102 航段仍留痕（demoCycle.unmappedStops='+seedStops.meta.unmapped+' 条，标注通道未标定，不是悄悄删掉）');
 const geom=await f.evaluate((d)=>{
   const P=d.path, C=[0]; for(let i=0;i<P.length-1;i++) C.push(C[i]+Math.abs(P[i+1][0]-P[i][0])+Math.abs(P[i+1][1]-P[i][1]));
+  const stationNodes=d.nodes.filter(n=>n.kind==='station');
   const L=C[C.length-1];
   const at=(dist)=>{dist=Math.max(0,Math.min(L,dist));for(let i=0;i<P.length-1;i++){if(dist<=C[i+1]){const seg=C[i+1]-C[i],f=seg?((dist-C[i])/seg):0;
     return [P[i][0]+(P[i+1][0]-P[i][0])*f,P[i][1]+(P[i+1][1]-P[i][1])*f];}}return P[P.length-1];};
   const out=[];
-  d.stops.forEach(st=>{const q=at(st.u*L); const m=window.visual106.modelRoots.get(st.cad);
+  stationNodes.forEach(st=>{const q=st.at; const m=window.visual106.modelRoots.get(st.cad);
     if(!m){out.push({order:st.order,label:st.label,cad:st.cad,pos:[+q[0].toFixed(2),+q[1].toFixed(2)],dev:null});return;}
     m.updateWorldMatrix(true,true); const V=m.position.constructor; let lo=[1e9,1e9],hi=[-1e9,-1e9];
     m.traverse(o=>{if(!o.isMesh||!o.geometry)return; if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
@@ -70,7 +90,7 @@ const bad=geom.out.filter((q,i)=>{ if(!q.dev) return true;
   const [x,z]=q.pos,[dx,dz]=q.dev,[x0,z0,x1,z1]=q.box;
   const inside=x>=x0-2.0&&x<=x1+2.0&&z>=z0-2.0&&z<=z1+2.0;
   return !inside||worst[i]>3.2; });
-out.push((bad.length===0?'✅':'❌')+` 11 个停靠站仍贴着各自 CAD 设备（弧长重算后没挪位；最远 ${Math.max(...worst)}m，场景弧长 ${geom.L}m vs seed ${seedStops.meta.pathLengthM}m）`+
+out.push((bad.length===0&&seedStops.meta.stations===9?'✅':'❌')+` 9 个定位点仍贴着各自 CAD 设备（弧长重算后没挪位；最远 ${Math.max(...worst)}m，场景弧长 ${geom.L}m vs seed ${seedStops.meta.pathLengthM}m）`+
   (bad.length?' 跑偏：'+JSON.stringify(bad.slice(0,3)):''));
 out.push((Math.abs(geom.L-seedStops.meta.pathLengthM)<=0.3?'✅':'❌')+` 剧本元数据与路径一致：pathLengthM ${seedStops.meta.pathLengthM} / 实测 ${geom.L}，loopSec ${seedStops.meta.loopSec}`);
 

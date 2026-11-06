@@ -191,6 +191,8 @@ function startAnimLoop() {
         const ahead = posAt(pts, Math.min(1, tgt.local + 0.004));
         const dx = ahead.x - p.x, dz = ahead.z - p.z;
         if (Math.abs(dx) + Math.abs(dz) > 1e-4) g.rotation.y = Math.atan2(dx, dz);   /* 原地掉头：方向由前进段决定，不做平滑摆动 */
+        /* 换腿就重画当前航段（腿内不重建，避免每帧改几何） */
+        if (tgt.legs && tgt.legs.length) liveLeg(tgt);
       });
       pulseDots(t);
       if (stepCam(t)) { /* 补间期间由 stepCam 决定相机输入 */ }
@@ -510,18 +512,52 @@ function drawRoutes(list, walls) {
   });
   list.forEach(r => {
     if (!r.path || r.path.length < 2) return;
-    const pts = manhattan(r.path).map(q => new THREE.Vector3(q[0], 0.022, q[1]));
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
-      new THREE.LineBasicMaterial({ color: ROUTE_COLORS[r.robotId] || 0xe8d77a, transparent: true, opacity: 0.85 }));
-    line.name = 'route-' + r.robotId; lines.add(line);
-    /* 掉头拐点（原地掉头=直角拐点） */
+    /* —— 堆叠成完整线路：一条腿（上一站→下一站）一个对象，腿里再按顶点分直角段 ——
+       这样「线路图」是可数的：11 条腿 = 11 个 leg 对象，不是原来一整条不可拆的折线。 */
+    const route = new THREE.Group(); route.name = 'route-' + r.robotId; lines.add(route);
+    const legs = r.legs || [];
+    const baseColor = ROUTE_COLORS[r.robotId] || 0xe8d77a;
+    if (legs.length) {
+      legs.forEach((lg, i) => {
+        const g = new THREE.Group(); g.name = 'leg-' + r.robotId + '-' + lg.from + '-' + lg.to; g.userData = { leg: i, from: lg.from, to: lg.to, u0: lg.u0, u1: lg.u1 };
+        const lp = (lg.pts || []).map(q => new THREE.Vector3(q[0], 0.022, q[1]));
+        if (lp.length > 1) {
+          const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(lp),
+            new THREE.LineBasicMaterial({ color: baseColor, transparent: true, opacity: 0.62 }));
+          ln.name = 'legline-' + i; g.add(ln);
+        }
+        route.add(g);
+      });
+    } else {                                  /* 没有腿数据（老 payload / 真实接入未给）也要画得出整条线 */
+      const ptsAll = manhattan(r.path).map(q => new THREE.Vector3(q[0], 0.022, q[1]));
+      const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsAll),
+        new THREE.LineBasicMaterial({ color: baseColor, transparent: true, opacity: 0.85 }));
+      ln.name = 'route-line-' + r.robotId; route.add(ln);
+    }
+    /* 定位点（station）与直角拐点（transit）分开画：定位点=任务要到达的设备前那个点，是"站"；拐点是"路" */
     const knots = new THREE.Group(); knots.name = 'knots-' + r.robotId;
-    pts.forEach((p, i) => {
-      const dot = new THREE.Mesh(new THREE.CircleGeometry(i === 0 ? 0.16 : 0.09, 16),
-        new THREE.MeshBasicMaterial({ color: i === 0 ? 0x16a34a : (ROUTE_COLORS[r.robotId] || 0xe8d77a), transparent: true, opacity: 0.9, toneMapped: false, depthWrite: false }));
-      dot.rotation.x = -Math.PI / 2; dot.position.set(p.x, 0.024, p.z); knots.add(dot);
-    });
+    const nodes = r.routeNodes || [];
+    const mkDot = (x, z, rad, color, op, ring) => {
+      const m = new THREE.Mesh(new THREE.CircleGeometry(rad, 20),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, toneMapped: false, depthWrite: false }));
+      m.rotation.x = -Math.PI / 2; m.position.set(x, 0.026, z);
+      if (ring) {
+        const rg = new THREE.Mesh(new THREE.RingGeometry(rad + 0.055, rad + 0.10, 24),
+          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op * 0.55, toneMapped: false, depthWrite: false, side: THREE.DoubleSide }));
+        rg.rotation.x = -Math.PI / 2; rg.position.set(x, 0.025, z); knots.add(rg);
+      }
+      knots.add(m);
+    };
+    if (nodes.length) {
+      nodes.forEach(n => {
+        if (n.kind === 'station') mkDot(n.at[0], n.at[1], n.order === 1 ? 0.15 : 0.115, n.order === 1 ? 0x16a34a : baseColor, 0.95, n.order !== 1);
+        else mkDot(n.at[0], n.at[1], 0.062, baseColor, 0.75, false);
+      });
+    } else {
+      manhattan(r.path).forEach((q, i) => mkDot(q[0], q[1], i === 0 ? 0.16 : 0.09, i === 0 ? 0x16a34a : baseColor, 0.9, false));
+    }
     lines.add(knots);
+    liveLeg(r);
     /* 门洞标记已按 2026-11-06 反馈取消：画在墙上的绿色小方块被认成「这里有个门」，
        而它只是我们把 gate 区间画出来的记号——门洞这件事由折线自己走位证明（只从 102 西门与 106 东门穿墙），
        不需要一个会误导的图例。审计规则照旧跑，只是不在屏上画记号。 */
@@ -535,6 +571,72 @@ function drawRoutes(list, walls) {
     }
   });
 }
+
+/* ---------- 当前航段：上一个定位点 → 下一个定位点，画成"正在走的那条路" ----------
+   样式按产品负责人给的参考图：浅蓝半透明带 + 带上等距圆点，比整线其余部分亮。
+   只给"正在走的这一段"用这个样式，其余腿保持细黄线——高亮必须有信息量，不能全画面都是霓虹。 */
+const LIVE = { band: 0x2f80ff, bandW: 0.42, glowW: 1.0, dotR: 0.062, step: 0.9, y: 0.03 };
+let liveState = {};
+function legIndexOf(r, u) {
+  /* 高亮用 displayLegs（按门洞/折返点切开的渲染分段）；业务航段 legs 仍是 9 条「上一站→下一站」 */
+  const legs = r.displayLegs || r.legs || []; if (!legs.length) return -1;
+  for (let i = 0; i < legs.length; i++) if (u >= legs[i].u0 - 1e-6 && u <= legs[i].u1 + 1e-6) return i;
+  return legs.length - 1;
+}
+function liveLeg(r) {
+  if (!lines) return;
+  const old = lines.getObjectByName('live-leg-' + r.robotId);
+  const tgt = robotTargets[r.robotId] || {};
+  const u = tgt.local != null ? tgt.local : (tgt.progress || 0);
+  const idx = legIndexOf(r, u);
+  const leg = idx >= 0 ? ((r.displayLegs || r.legs) || [])[idx] : null;
+  const sig = leg ? (idx + ':' + leg.from + '→' + leg.to + '/' + (leg.part || 1)) : 'none';
+  if (liveState[r.robotId] === sig && old) return;              /* 腿没换就不重建几何（每帧重建会抖） */
+  liveState[r.robotId] = sig;
+  if (old) old.parent.remove(old);
+  if (!leg || !leg.pts || leg.pts.length < 2) return;
+  const g = new THREE.Group(); g.name = 'live-leg-' + r.robotId;
+  const pts = leg.pts.map(q => [q[0], q[1]]);
+  const dotPlan = []; let totalDots = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x1, z1] = pts[i], [x2, z2] = pts[i + 1];
+    const len = Math.hypot(x2 - x1, z2 - z1); if (len < 1e-3) continue;
+    const ang = Math.atan2(z2 - z1, x2 - x1);
+    [[LIVE.glowW, 0.10, LIVE.y], [LIVE.bandW, 0.34, LIVE.y + 0.002]].forEach(([w, op, y]) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(len + w * 0.55, w),
+        new THREE.MeshBasicMaterial({ color: LIVE.band, transparent: true, opacity: op, toneMapped: false, depthWrite: false }));
+      m.rotation.x = -Math.PI / 2; m.rotation.z = -ang; m.position.set((x1 + x2) / 2, y, (z1 + z2) / 2);
+      g.add(m);
+    });
+    const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x1, LIVE.y + 0.004, z1), new THREE.Vector3(x2, LIVE.y + 0.004, z2)]),
+      new THREE.LineBasicMaterial({ color: 0x63a4ff, transparent: true, opacity: 0.95, toneMapped: false }));
+    g.add(ln);
+    /* 等距圆点用 InstancedMesh：整条腿一个 draw call（几十个独立 Mesh 会把大屏 draw call 吃掉一大块） */
+    const nd = Math.max(1, Math.floor(len / LIVE.step) + 1); totalDots += nd;
+    dotPlan.push({ x1, z1, x2, z2, len, nd });
+  }
+  if (totalDots) {
+    const im = new THREE.InstancedMesh(new THREE.CircleGeometry(LIVE.dotR, 18),
+      new THREE.MeshBasicMaterial({ color: 0x2f80ff, transparent: true, opacity: 0.95, toneMapped: false, depthWrite: false }), totalDots);
+    const m4 = new THREE.Matrix4(), qq = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2), sc = new THREE.Vector3(1, 1, 1), pv = new THREE.Vector3();
+    let ki = 0;
+    dotPlan.forEach(dp => {
+      for (let i = 0; i < dp.nd; i++) {
+        const t = Math.min(1, (i * LIVE.step) / dp.len);
+        pv.set(dp.x1 + (dp.x2 - dp.x1) * t, LIVE.y + 0.006, dp.z1 + (dp.z2 - dp.z1) * t);
+        m4.compose(pv, qq, sc); im.setMatrixAt(ki++, m4);
+      }
+    });
+    im.instanceMatrix.needsUpdate = true; im.name = 'live-dots'; g.add(im);
+  }
+  /* 下一站的定位点用蓝环强调：视线自然落到「要去哪儿」 */
+  const e = pts[pts.length - 1];
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.22, 28),
+    new THREE.MeshBasicMaterial({ color: 0x2f80ff, transparent: true, opacity: 0.85, toneMapped: false, depthWrite: false, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.set(e[0], LIVE.y + 0.007, e[1]); g.add(ring);
+  lines.add(g);
+}
+
 function auditRoutes(list, walls) {
   const obs = obstacleBoxes();
   const report = { checked: 0, violations: [], obstacles: obs.length, walls: (walls || []).length, at: new Date().toISOString() };

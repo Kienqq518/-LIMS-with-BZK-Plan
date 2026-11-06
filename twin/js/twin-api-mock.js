@@ -18,6 +18,7 @@
   function load() {
     return fetch('../api/seed.json').then(function (r) { return r.json(); }).then(function (seed) {
       state = seed;
+      (state.zone106.robots || []).forEach(deriveRoute);   /* 线路与时间轴由定位点推导（见 deriveRoute） */
       /* 告警等级不落两份事实源：grade 由 category + alarm-sections 推导（PRD FR-24），
          seed 里保留的 grade 只作交叉校验，不一致时以推导值为准并打标记。 */
       (function deriveGrades() {
@@ -60,6 +61,139 @@
     });
     ti.derivedFrom = 'testItemPlan（Mock；接入 LIMS「要求检测完成时间」后为真值）';
     return ls;
+  }
+
+  /* ---------- 线路推导：定位点 + 拐点 → 逐段相连 → 堆叠成完整线路 ----------
+     种子里 RB-C-02 只给「节点序列」routeNodes：
+       kind:'station' = 无人化任务要到达的设备前的定位点（带 cad/label/任务号与 dwellSec）
+       kind:'transit' = 其间的直角拐点（含门洞穿越侧的走廊拐点）
+     path、每站 u、travelSec、t0、loopSec、pathLengthM、legs、gateCrossings 全部在这里按弧长推导。
+     为什么必须推导：上一轮改了路径没重算 u，11 个站会全部停错位置——时间轴绝不允许手填。 */
+  function manhattanChain(pts) {
+    var out = [];
+    pts.forEach(function (q) {
+      var x = q[0], z = q[1], last = out[out.length - 1];
+      if (!last) { out.push([x, z]); return; }
+      var dx = x - last[0], dz = z - last[1];
+      if (Math.abs(dx) > 0.05 && Math.abs(dz) > 0.05) out.push(Math.abs(dx) > Math.abs(dz) ? [x, last[1]] : [last[0], z]);   /* 长边先走，再原地掉头 */
+      if (Math.abs(x - last[0]) > 1e-3 || Math.abs(z - last[1]) > 1e-3) out.push([x, z]);
+    });
+    return out;
+  }
+  function deriveRoute(rb) {
+    if (!rb || !rb.routeNodes || rb.routeNodes.length < 2) return;
+    var pts = manhattanChain(rb.routeNodes.map(function (n) { return [n.at[0], n.at[1]]; }));
+    var C = [0];
+    for (var i = 0; i < pts.length - 1; i++) C.push(C[i] + Math.abs(pts[i + 1][0] - pts[i][0]) + Math.abs(pts[i + 1][1] - pts[i][1]));
+    var L = C[C.length - 1];
+    var arcOf = function (q) {          /* 节点坐标 → 折线上的弧长 */
+      /* 必须用「点到线段的真实距离」而不是垂距：同一条直路上有多个定位点时（例如 106 中巷几个工位都在 x=15.49 上），
+         只比垂距会全部并列 0、取第一段，三个站就算出同一个 u（实测 u 出现 0.061,0.061,0.061）。 */
+      var best = 1e9, bd = 0;
+      for (var j = 0; j < pts.length - 1; j++) {
+        var x1 = pts[j][0], z1 = pts[j][1], x2 = pts[j + 1][0], z2 = pts[j + 1][1];
+        var seg = (x2 - x1) * (x2 - x1) + (z2 - z1) * (z2 - z1);
+        var t = seg ? Math.max(0, Math.min(1, ((q[0] - x1) * (x2 - x1) + (q[1] - z1) * (z2 - z1)) / seg)) : 0;
+        var px = x1 + (x2 - x1) * t, pz = z1 + (z2 - z1) * t;
+        var dd = Math.hypot(px - q[0], pz - q[1]);
+        if (dd < best - 1e-9) { best = dd; bd = C[j] + t * (C[j + 1] - C[j]); }
+      }
+      return bd;
+    };
+    rb.path = pts.map(function (q) { return [q[0], 0.05, q[1]]; });
+    var stations = rb.routeNodes.filter(function (n) { return n.kind === 'station'; });
+    var speed = (rb.demoCycle && rb.demoCycle.speedMs) || 0.75;
+    /* 弧长区间 → 该段折线顶点（含端点插值），场景侧据此画「上一站→下一站」这一条腿 */
+    var slice = function (a0, a1) {
+      var at = function (dist) {
+        dist = Math.max(0, Math.min(L, dist));
+        for (var j = 0; j < pts.length - 1; j++) {
+          if (dist <= C[j + 1] + 1e-9) {
+            var seg = C[j + 1] - C[j], f = seg ? (dist - C[j]) / seg : 0;
+            return [+(pts[j][0] + (pts[j + 1][0] - pts[j][0]) * f).toFixed(2), +(pts[j][1] + (pts[j + 1][1] - pts[j][1]) * f).toFixed(2)];
+          }
+        }
+        return [pts[pts.length - 1][0], pts[pts.length - 1][1]];
+      };
+      var out = [at(a0)];
+      for (var j = 0; j < pts.length; j++) { if (C[j] > a0 + 0.01 && C[j] < a1 - 0.01) out.push([pts[j][0], pts[j][1]]); }
+      out.push(at(a1));
+      return { at: at, pts: out };
+    };
+    var legs = [], prevArc = 0, prevSt = null;
+    stations.forEach(function (st, k) {
+      var a = arcOf(st.at);
+      if (prevSt) {
+        var sl = slice(prevArc, a);
+        legs.push({ from: prevSt.order, to: st.order, fromLabel: prevSt.label, toLabel: st.label,
+          u0: +(prevArc / L).toFixed(4), u1: +(a / L).toFixed(4), lengthM: +(a - prevArc).toFixed(2),
+          travelSec: +((a - prevArc) / speed).toFixed(1), cad: st.cad, flow: st.flow || null, taskNo: st.taskNo || null, pts: sl.pts });
+      }
+      prevArc = a; prevSt = st;
+    });
+    var tailArc = L - prevArc;
+    legs.push({ from: prevSt.order, to: stations[0].order, fromLabel: prevSt.label, toLabel: '回到 ' + stations[0].label,
+      u0: +(prevArc / L).toFixed(4), u1: 1, lengthM: +tailArc.toFixed(2), travelSec: +(tailArc / speed).toFixed(1), tail: true, pts: slice(prevArc, L).pts });
+    slice = null;
+    rb.legs = legs;
+    /* displayLegs：只给场景高亮用的分段——业务航段（legs）保持"上一站→下一站"不变，
+       但像「9 站→走廊巡逻→1 站」这种 30m 长腿整条高亮会把画面铺满，所以按门洞/折返点切开。 */
+    var dlegs = [];
+    legs.forEach(function (lg) {
+      var cuts = [0];
+      for (var j = 1; j < lg.pts.length - 1; j++) {
+        var p0 = lg.pts[j - 1], p1 = lg.pts[j];
+        var isDoor = (p0[0] < 18.44) !== (p1[0] < 18.44);                 /* 跨东门 */
+        var isTurn = (j + 1 < lg.pts.length) &&
+          Math.abs(lg.pts[j + 1][0] - p1[0]) > 1e-6 ? false :
+          (Math.abs(p1[1] - p0[1]) > 1e-6 && Math.abs(lg.pts[j + 1][1] - p1[1]) > 1e-6 && Math.abs(p1[0] - lg.pts[j + 1][0]) < 1e-6 && (p1[1] - p0[1]) * (lg.pts[j + 1][1] - p1[1]) < 0);  /* 折返 */
+        if (isDoor || isTurn) cuts.push(j);
+      }
+      cuts.push(lg.pts.length - 1);
+      var acc = 0;
+      for (var c = 0; c < cuts.length - 1; c++) {
+        var seg = lg.pts.slice(cuts[c], cuts[c + 1] + 1);
+        var len = 0; for (var k = 0; k < seg.length - 1; k++) len += Math.abs(seg[k + 1][0] - seg[k][0]) + Math.abs(seg[k + 1][1] - seg[k][1]);
+        var u0 = lg.u0 + (lg.u1 - lg.u0) * (acc / lg.lengthM);
+        var u1 = lg.u0 + (lg.u1 - lg.u0) * ((acc + len) / lg.lengthM);
+        dlegs.push({ from: lg.from, to: lg.to, part: c + 1, parts: cuts.length - 1, u0: +u0.toFixed(4), u1: +u1.toFixed(4),
+          lengthM: +len.toFixed(2), pts: seg, cad: c === cuts.length - 2 ? lg.cad : null, flow: c === cuts.length - 2 ? lg.flow : null, taskNo: c === cuts.length - 2 ? lg.taskNo : null });
+        acc += len;
+      }
+    });
+    rb.displayLegs = dlegs;
+    rb.pathLengthM = +L.toFixed(2);
+    /* 门洞穿越点：路径与每面带 gate 的墙的交点（审计与测试都按这个查） */
+    var gwalls = (state.zone106 && state.zone106.walls || []).filter(function (w) { return w.gate; });
+    rb.gateCrossings = gwalls.map(function (w) {
+      var hits = [];
+      for (var j = 0; j < pts.length - 1; j++) {
+        var a = pts[j], b = pts[j + 1];
+        if (w.axis === 'x' && Math.abs(a[1] - b[1]) < 0.01 && (a[0] - w.at) * (b[0] - w.at) < 0) {
+          hits.push({ wall: w.name, z: +a[1].toFixed(2), arc: +(C[j] + Math.abs(w.at - a[0])).toFixed(2), inGate: (a[1] - 0.651 >= w.gate[0] && a[1] + 0.651 <= w.gate[1]) });
+        }
+        if (w.axis === 'z' && Math.abs(a[0] - b[0]) < 0.01 && (a[1] - w.at) * (b[1] - w.at) < 0) {
+          hits.push({ wall: w.name, x: +a[0].toFixed(2), arc: +(C[j] + Math.abs(w.at - a[1])).toFixed(2), inGate: (a[0] - 0.651 >= w.gate[0] && a[0] + 0.651 <= w.gate[1]) });
+        }
+      }
+      return { wall: w.name, at: w.at, gate: w.gate, crossings: hits };
+    });
+    /* 时间轴：t0=停靠开始，travel 段在 [t0-travelSec, t0)；u 与 travelSec 都由弧长推导 */
+    if (rb.demoCycle && rb.demoCycle.stops) {
+      var stops = rb.demoCycle.stops;
+      stops.forEach(function (st, k) {
+        var sn = stations[Math.min(k, stations.length - 1)];
+        var a = arcOf(sn.at);
+        st.u = +(a / L).toFixed(4);
+        st.travelSec = k === 0 ? 0 : legs[k - 1].travelSec;
+        st.t0 = k === 0 ? 0 : +(stops[k - 1].t0 + stops[k - 1].dwellSec + legs[k - 1].travelSec).toFixed(1);
+      });
+      var last = stops[stops.length - 1];
+      rb.demoCycle.loopSec = +((last.t0 + last.dwellSec + tailArc / speed)).toFixed(1);
+      rb.demoCycle.pathLengthM = +L.toFixed(1);
+      rb.demoCycle.legs = legs;
+    }
+    rb.routeDerived = { nodes: rb.routeNodes.length, vertices: pts.length, stations: stations.length, legs: legs.length, lengthM: +L.toFixed(2), loopSec: rb.demoCycle && rb.demoCycle.loopSec };
   }
 
   function cycleNow() {
