@@ -1,7 +1,7 @@
 /* 孪生 V2 宿主：只认 TwinApi（/api/*），iframe 场景经 postMessage 驱动
  * 控制三层（决策 Q7：5M1E 切片移除；S2 不再是按钮，改为区域下拉）
  *   ① 叙事：S1 总览 / 区域下钻（106 为完整视图）/ S3 告警回溯
- *   ② 渲染：图层菜单（path/labels/zones/walls/heatmap）
+ *   ② 渲染：图层 icon（path/labels/heatmap）——剖墙不再是开关，改为场景固定渲染行为
  *   ③ 动作：系统流、底栏收起、低配模式（决策 Q8 预留）
  * 只读红线（决策 Q2）：无告警写回，闭环状态由来源系统推送，屏上不出现「演示回执」字样。
  */
@@ -14,8 +14,8 @@
   var SRC_NAME = { daq: '数采', dispatch: '调度', iot: '物联', lims: 'LIMS', rule: '判定规则' };
   var ORDER = [];  /* 遥控翻页序列 */
 
-  var LAYER_KEYS = ['path', 'labels', 'walls', 'heatmap'];   /* 分区色块已按 2026-11-06 反馈移除，不再写进 URL */
-  var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 1, walls: 1, heatmap: 0 }, alarmFilter: 'open', quality: 'high', strip: 0 };
+  var LAYER_KEYS = ['path', 'labels', 'heatmap'];   /* 分区色块、剖墙开关均已按 2026-11-06 反馈移除；墙体剖切改为场景侧固定行为 */
+  var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 1, heatmap: 0 }, alarmFilter: 'open', quality: 'high', strip: 0 };
 
   function sendScene(type, data) { if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'twin-v2', type: type }, data), location.origin); }
   var pendingView = null;

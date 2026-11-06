@@ -11,7 +11,7 @@ if (new URLSearchParams(location.search).get('v2') === '1') boot();
 /* ---------- 墙体/隔断/柱子/地面分区处理（V1 视觉语言 §3：看设备运行，不看房间布局） ---------- */
 let wallMesh = null, wallBase = null, labCenter = null, wallOpacityBase = null;
 /* 渲染层状态（决策 Q7/Q8）：图层开关 + 低配模式。图层语义=渲染可见性，与业务切片无关。 */
-const LAYERS = { path: true, labels: true, walls: true, heatmap: false };   /* 分区色块按 2026-11-06 反馈移除；墙体=前侧外墙剖切开关 */
+const LAYERS = { path: true, labels: true, heatmap: false };   /* 分区色块与剖墙开关已按 2026-11-06 反馈移除；墙体剖切=固定渲染行为（见 treatArchitecture） */
 let LOW = false, frames = 0, heatGroup = null, lastDeviceStatus = [];
 function findWalls() {
   visual.overview.children.forEach(c => {
@@ -47,13 +47,7 @@ function fadeFrontWalls() {
   wallMesh.geometry.computeBoundingSphere();
   wallMesh.material.opacity = WALL_FADE_OP;
 }
-/* 墙体图层关闭=不剖切：还原层高与不透明度 */
-function restoreWalls() {
-  if (!wallMesh) return;
-  const pos = wallMesh.geometry.attributes.position;
-  pos.array.set(wallBase); pos.needsUpdate = true; wallMesh.geometry.computeBoundingSphere();
-  wallMesh.material.opacity = wallOpacityBase == null ? 0.12 : wallOpacityBase;
-}
+/* 剖墙开关已按 2026-11-06 反馈移除：fadeFrontWalls 作为固定渲染行为常开（相机变化时重算），restoreWalls 一并删除 */
 function softenGlassAndColumns() {
   const seen = new Set();
   visual.detail.traverse(m => {
@@ -421,9 +415,8 @@ function applyLayer(name, on) {
     statusDots.forEach(d => { d.visible = on; });
     visual.host.classList.toggle('no-labels', !on);   /* 房间标签的 hidden 由 render() 每帧重算，只能走 CSS 覆盖 */
   }
-  if (name === 'walls') { if (on) fadeFrontWalls(); else restoreWalls(); }
   if (name === 'heatmap') { if (on) drawHeatmap(); else if (heatGroup) heatGroup.visible = false; }
-  if (name === 'zones') { const g = visual.scene.getObjectByName('twin-v2-zones'); if (g) g.visible = false; }   /* 兼容旧 URL 参数：分区色块恒关 */
+  if (name === 'zones' || name === 'walls') { const g = visual.scene.getObjectByName('twin-v2-zones'); if (g) g.visible = false; }   /* 旧 URL 参数兼容：分区色块恒关，剖墙不再是开关 */
   const hook = document.getElementById('twin-v2-bridge'); if (hook) hook.dataset.layers = Object.keys(LAYERS).filter(k => LAYERS[k]).join(',');
   visual.render();
 }
