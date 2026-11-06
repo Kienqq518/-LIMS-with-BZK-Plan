@@ -18,6 +18,7 @@ const only = (argv.find(a => a.startsWith('--only=')) || '').split('=')[1]
   || (argv.includes('--only') ? argv[argv.indexOf('--only') + 1] : '');
 
 const SUITES = [
+  ['topbarcheck', '顶栏去导航栏化：无底色/无边框/无毛玻璃条、标题=未来实验室数字孪生、logo 左上角、区域切换在标题左侧、icon 组在右侧、无 S1/S2/S3 前缀，且功能未被打断'],
   ['smoke', '装载链与主叙事：四张表/三分区/图层/遥控按键/区域面板 + 常驻断言「fail() 未被触发」'],
   ['zone-panel', '区域视图五类信息（设备/环境/任务统计/在制任务/告警）与浮层让位'],
   ['filtercheck', '告警三分区的筛选控件位置与互不影响（几何上必须在右侧告警流内）'],

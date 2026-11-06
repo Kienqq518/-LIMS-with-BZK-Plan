@@ -1,21 +1,35 @@
 :root{--tw-color-brand:#2878FF;--tw-color-alertRed:#E5484D;--tw-color-bottleneckOrange:#F76B15;--tw-color-warnAmber:#F59E0B;--tw-color-okGreen:#16A34A;--tw-color-textPrimary:#0F2740;--tw-color-textSecondary:#5B6B7D;--tw-color-textMuted:#8A97A7;--tw-color-cardBg:#fff;--tw-color-cardBorder:#E3E9F2;--tw-shadow-card:0 14px 40px rgba(15,40,80,.14);--tw-shadow-pill:0 4px 14px rgba(15,40,80,.06);--tw-radius-card:16px;--tw-radius-pill:999px;--tw-font-familyUI:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;--tw-motion-easeOut:cubic-bezier(.2,.8,.2,1)}
 *{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden}
 body{font-family:var(--tw-font-familyUI);color:var(--tw-color-textPrimary);background:linear-gradient(160deg,#F3F5F8,#fff 60%,#EDF2F8)}
-.topbar{position:fixed;inset:0 0 auto 0;height:56px;display:flex;align-items:center;gap:18px;padding:0 18px;background:rgba(255,255,255,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--tw-color-cardBorder);z-index:20}
-.brand{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--tw-color-textSecondary)}
-.brand img{height:22px}
-.modes{display:flex;gap:8px;margin-left:8px}
-.mode{font-size:12px;color:#415063;background:#fff;border:1px solid var(--tw-color-cardBorder);border-radius:var(--tw-radius-pill);padding:7px 14px;cursor:pointer;box-shadow:var(--tw-shadow-pill)}
-.mode.active{color:#fff;background:var(--tw-color-brand);border-color:var(--tw-color-brand)}
+.topbar{position:fixed;inset:0 0 auto 0;height:56px;display:flex;align-items:center;gap:12px;padding:0 18px;
+ /* 去掉"web 系统导航栏"的三件套：底色、下边框、毛玻璃条。只留一层极淡的顶部渐隐，保证文字压在三维画面上仍可读 */
+ background:linear-gradient(180deg,rgba(246,249,253,.66),rgba(246,249,253,0));border:0;box-shadow:none;backdrop-filter:none;z-index:14}
+.topbar::after{display:none}
+.brand{display:flex;align-items:center;gap:0}
+.brand img{height:24px}
+.brand span{display:none}                                  /* 「应敏科技 · 」不再作为文字出现，公司名只留在 logo 图与 alt/title 里 */
+.title{margin:0;font-size:14.5px;font-weight:650;letter-spacing:.3px;color:#16283C;
+ text-shadow:0 1px 0 rgba(255,255,255,.9),0 3px 12px rgba(255,255,255,.6)}
+.modes{display:flex;gap:2px;margin-left:6px}
+.mode{position:relative;font:inherit;font-size:12.5px;color:#4A5C72;background:transparent;border:0;padding:6px 10px;cursor:pointer;
+ text-shadow:0 1px 0 rgba(255,255,255,.85)}
+.mode:hover{color:#0B4FBF}
+.mode.active{color:#0B4FBF;background:transparent;border:0;box-shadow:none;font-weight:700}
+.mode.active::after{content:"";position:absolute;left:10px;right:10px;bottom:1px;height:2px;border-radius:2px;background:var(--tw-color-brand)}
+.zsel{display:flex;align-items:center;gap:5px;font-size:12px;color:#4A5C72;text-shadow:0 1px 0 rgba(255,255,255,.85)}
+.zsel select{font:inherit;font-weight:600;color:#16283C;background:transparent;border:0;padding:5px 20px 5px 4px;cursor:pointer;max-width:210px;
+ appearance:none;-webkit-appearance:none;text-shadow:0 1px 0 rgba(255,255,255,.85);
+ background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'><path d='M1 1l4 4 4-4' fill='none' stroke='%234A5C72' stroke-width='1.6' stroke-linecap='round'/></svg>");
+ background-repeat:no-repeat;background-position:right 2px center}
+.zsel select:hover{color:#0B4FBF}
+.zsel select:focus-visible{outline:2px solid var(--tw-color-brand);outline-offset:2px;border-radius:6px}
 .acts{margin-left:auto;display:flex;gap:8px;align-items:center}
-.zsel{display:flex;align-items:center;gap:6px;font-size:12px;color:#415063}
-.zsel select{font:inherit;color:#0F2740;background:#fff;border:1px solid var(--tw-color-cardBorder);border-radius:var(--tw-radius-pill);padding:6px 10px;cursor:pointer;max-width:190px}
 .menu{position:absolute;right:0;top:38px;width:196px;background:#fff;border:1px solid var(--tw-color-cardBorder);border-radius:12px;box-shadow:var(--tw-shadow-card);padding:8px;z-index:30}
 .menu label{display:flex;align-items:center;gap:8px;font-size:12px;color:#243449;padding:6px 6px;border-radius:8px;cursor:pointer}
 .menu label:hover{background:#F1F5FB}
 .menu .cap{color:var(--tw-color-textMuted);font-size:10px;margin-left:4px}
-.pill{font-size:12px;color:#415063;background:#fff;border:1px solid var(--tw-color-cardBorder);border-radius:var(--tw-radius-pill);padding:7px 13px;cursor:pointer;box-shadow:var(--tw-shadow-pill)}
-.pill.active{color:#fff;background:var(--tw-color-brand);border-color:var(--tw-color-brand)}
+.pill{font-size:12px;color:#4A5C72;background:transparent;border:0;border-radius:var(--tw-radius-pill);padding:7px 12px;cursor:pointer;text-shadow:0 1px 0 rgba(255,255,255,.85);box-shadow:var(--tw-shadow-pill)}
+.pill.active{color:#0B4FBF;background:rgba(255,255,255,.72);border:0;box-shadow:inset 0 0 0 1px rgba(40,120,255,.28)}
 .pill.flow{color:var(--tw-color-brand);border-color:#cfe0ff}
 /* 浮层几何的唯一事实源：宽度与沟槽都从这里算，改一处即可 */
 :root{--tw-rail-w:224px;--tw-stream-w:296px;--tw-panel-w:352px;--tw-float-gap:16px}
@@ -160,11 +174,11 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-color-textPrimary);backg
 .audit .zh{font-weight:700}
 
 /* ---- 图层图标组（替代原下拉；每个 icon 自带语义与说明） ---- */
-.layers{display:flex;gap:6px;align-items:center;background:rgba(255,255,255,.7);border:1px solid var(--tw-color-cardBorder);border-radius:var(--tw-radius-pill);padding:3px 5px;backdrop-filter:blur(8px)}
-.lic{display:flex;align-items:center;gap:5px;font:inherit;font-size:11px;color:#415063;background:transparent;border:0;border-radius:var(--tw-radius-pill);padding:5px 9px;cursor:pointer;transition:background .18s var(--tw-motion-easeOut),color .18s}
+.layers{display:flex;gap:2px;align-items:center;background:transparent;border:0;padding:0;backdrop-filter:blur(8px)}
+.lic{display:flex;align-items:center;gap:5px;font:inherit;font-size:11.5px;color:#4A5C72;background:transparent;border:0;border-radius:var(--tw-radius-pill);padding:5px 9px;cursor:pointer;text-shadow:0 1px 0 rgba(255,255,255,.85);transition:background .18s var(--tw-motion-easeOut),color .18s}
 .lic svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.lic:hover{background:#EEF3FA}
-.lic.on{color:#fff;background:var(--tw-color-brand)}
+.lic:hover{color:#0B4FBF;background:rgba(255,255,255,.5)}
+.lic.on{color:#0B4FBF;background:rgba(255,255,255,.72);box-shadow:inset 0 0 0 1px rgba(40,120,255,.28)}
 .lic[aria-pressed="true"]{box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
 .lic:focus-visible{outline:2px solid var(--tw-color-brand);outline-offset:2px}
 
@@ -326,8 +340,10 @@ body[data-zone-dock="1"] .dock{right:calc(var(--tw-float-gap) * 2 + var(--tw-pan
 .bar .k{white-space:nowrap}
 
 /* ---- 右上角时钟（大屏常驻，秒级走动，等宽数字不抖动） ---- */
-.clock{margin-left:10px;font-size:12px;color:var(--tw-color-textSecondary);font-variant-numeric:tabular-nums;letter-spacing:.3px;white-space:nowrap;
- padding:6px 11px;border-radius:var(--tw-radius-pill);background:rgba(255,255,255,.7);border:1px solid var(--tw-color-cardBorder);backdrop-filter:blur(8px)}
+.clock{margin-left:10px;font-size:12px;color:#4A5C72;font-variant-numeric:tabular-nums;letter-spacing:.3px;white-space:nowrap;
+ /* 顶栏去导航栏化：时钟也不再套胶囊框，只做悬浮文字 */
+ background:transparent;border:0;padding:2px 0;box-shadow:none;backdrop-filter:none;
+ text-shadow:0 1px 0 rgba(255,255,255,.85)}
 .clock b{font-weight:700;color:#0F2740;font-variant-numeric:tabular-nums}
 .clock .wd{color:var(--tw-color-textMuted);margin-left:6px}
 

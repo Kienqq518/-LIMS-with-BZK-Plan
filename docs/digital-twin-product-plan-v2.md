@@ -124,7 +124,7 @@ method: GitHub skill `chituai/prd-writer`（三视角诊断→概念版→落地
 **5M1E 切片已移除**（原「人/机/料/法/环」五胶囊 + `?v=2` 后删除），S2 不再做成按钮，改为与其余区域一致的**区域下拉框**。现在的三层：
 
 ```
-① 叙事：[S1 实验室总览] [区域 ▾ 101–110（选中即下钻，106=原 S2 完整视图）] [S3 告警回溯]
+① 叙事：[区域 ▾ 101–110（选中即下钻，106=完整视图）] [实验室总览]（S1/S2/S3 编号已从屏上撤掉，见 FR-33；S3 告警回溯按范围决定不在屏上）
 ② 渲染：图层 icon 组 = 路径 / 场地标签 / 热力（**剖墙已按 2026-11-06 反馈去掉开关**，改为场景固定渲染行为；分区色块此前已移除）
 ③ 动作：[▾ 收起底栏] [⛶ 全屏（F）]（系统流视图与低配按钮均已移除，低配能力留作 `?quality=low`）
 （演示）遥控翻页：← → 或 PgUp/PgDn 走完整序列；1 总览 · 2 无人化区 · 3 告警 · Esc 关闭浮层
@@ -295,6 +295,17 @@ method: GitHub skill `chituai/prd-writer`（三视角诊断→概念版→落地
   任务行/试验项行 → `equipment-highlight` 描边对应 CAD 工位（`body[data-last-highlight]` 可断言）；
   节点行 → 向场景发 `select-node`，节点详情卡打开（`#iot-audit.selectedId/cardVisible` 可断言）。
   未绑定工位的行不给假动作，直接瞬时提示"尚未绑定 CAD 工位（调度侧未给点位）"。
+- FR-33【2026-11-07 新增 · 顶栏去"导航栏化"】顶部不许再长得像普通 web 系统的导航条，改为**浮在三维画面上的文字与 icon**：
+  1. 去掉导航栏三件套：整条底色、下边框、毛玻璃条（`background/border-bottom/backdrop-filter` 全部归零），
+     只留一层极淡的顶部渐隐（`linear-gradient(rgba(246,249,253,.66) → 0)`）保证文字压在画面上仍可读；
+     标题/总览/区域/时钟/icon 一律带 `text-shadow` 白投影，**开启态从实心蓝底改为淡底+描边**（实心按钮块本身就是"控件感"的来源）。
+  2. 文案与顺序：`[logo 左上角] → [区域 ▾] → [实验室总览] → 未来实验室数字孪生 …… [路径][场地标签][热力] [收起底栏][全屏] [时钟]`。
+     标题去掉「应敏科技 ·」前缀（公司名只存在于 logo 图与 `alt/title`），区域切换移到标题左侧。
+  3. **屏上不再出现 S1/S2/S3 编号前缀**：编号是我们内部的范围语言，不是运维与客户的语言；
+     「S1 实验室总览」→「实验室总览」，S3 告警回溯本就按 2026-11-06 的范围决定撤出 MVP，**不借这次改版复活它**（topbarcheck 有断言守着）。
+  4. 时钟不再套胶囊框；区域下拉去掉边框与底色，只留一个自绘箭头。
+  5. 视觉改动不许打断功能：`#zoneSel / .mode[data-mode=S1] / .lic[data-layer] / #stripBtn / #fsBtn / .acts` 的类名与 id 全部保留
+     （回归靠它们定位），topbarcheck 里"悬浮化后 icon 仍可点 / 区域切换仍下钻 / 总览按钮仍回位"三条就是守这条线的。
 - FR-2b【本次更新 · 决策 Q6】：S1 不加能力叙事层（不做试验项目/精度等级/案例墙），只做运行镜像。
 
 ### 5.2 关键页面线框（建议版 · 1920×1080 基准）
@@ -534,6 +545,7 @@ flowchart TD
 | FR-24 告警三分区 | `tests/twin/alarmlvl.mjs` + `filtercheck.mjs`：标题/计数取自 `/api/overview/alarm-sections`、每区只含本级、三区筛选互不影响、屏上无 `Grade` | 自动 |
 | FR-25 光点可点 | `tests/twin/pickcheck.mjs`：用 `visual.statusDots` 算屏幕位置发真鼠标点击，断言出卡且卡内是该设备 | 自动 |
 | FR-26 节点只留点击弹窗 | 同上：`.orb-tag` 恒 0；点 `.node-marker` 后 `#iot-audit.selectedId/cardVisible` 对得上 | 自动 |
+| FR-33 顶栏悬浮化 | `tests/twin/topbarcheck.mjs`（19 项）：顶栏 computed 无底色/无边框/无阴影/无 blur、标题文案、公司名不作为文字、logo 左上角、区域在标题左侧且 icon 组在右侧、无任何 S1/S2/S3 前缀、时钟与下拉无框、四处文字都有投影、顶栏与左栏不重叠，且 icon/下拉/总览功能未被打断 | 自动 |
 | FR-30 底栏四块 | `tests/twin/dockcheck.mjs`（24 项）：块数与标题、五档之和=合计、16 条/11 种流、三态合计=16、「循环中」与剧本同流、7s 位移证明心跳不重置滚动、图4 试验项名称与四态、节点按房间排序且 4 个视觉显示「画面未接入」 | 自动 |
 | FR-31 下钻画像 | `tests/twin/zoneview.mjs`（34 项）：106 保留左栏+底栏且机器人 6s 位移 >0.3m、非 106 左栏与底栏隐藏、五档房间的块列表逐一比对、隐藏块无脏数据、浮层两两不重叠 | 自动 |
 | FR-32 底栏行落点 | `tests/twin/dockcheck.mjs`：点任务行/试验项行 → `body[data-last-highlight]` 等于该行 cad；点节点行 → `#iot-audit.selectedId` 与 `cardVisible` 对上 | 自动 |
@@ -644,6 +656,7 @@ flowchart TD
 
 | **新增 ✅已上线** | 行进范围与避让（FR-12） | `twin/api/seed.json`、`twin-scene-bridge.js`、`twin-scene-v2.{html,css,js}` | 删手绘环线；路线由 CAD 占地 A* 推导；家位挪出设备；场景内 3758 点逐段校验 + 左栏徽标 | routecheck 7 项全绿（违规 0） |
 | **新增 ✅已上线** | 透明浮层三处 + 下钻/切近补间 + 实体信息卡 + 无人化循环剧本 + 图层 icon 化 + 系统流移除（§5.9、FR-13~FR-17） | `twin-scene-v2.{html,css,js}`、`twin-scene-bridge.js`、`whiteblue-spatial-engine.js`、`twin-api-mock.js`、`seed.json` | 玻璃浮层+现算图表；`camera:begin/focus-scene/view/drill` 序列与视锥比例补间；`pan` 指令；剧本时钟 | uxcheck 38 项 + smoke 35 项 + reduced-motion 4 项全绿 |
+| **新增 ✅已上线** | 顶栏去导航栏化（FR-33） | `twin-scene-v2.{html,css}`、`tests/twin/topbarcheck.mjs` | 底色/下边框/毛玻璃条归零，只留顶部渐隐；标题去「应敏科技 ·」前缀、logo 独占左上角、区域切换移到标题左侧；S1/S2/S3 编号从屏上撤掉且不放回 S3；开启态由实心蓝底改淡底描边；时钟与下拉去框；功能类名 id 全保留 | topbarcheck 19✅ · 全量 19 套 0❌ |
 | **新增 ✅已上线** | 底栏四块 + 下钻画像 + 浮层间距（FR-30/30a/30b/31/32） | `twin-scene-v2.{html,css,js}`、`twin/api/seed.json`（dispatch-queue/entrust-testitems/viewProfile/zoneStats.testItems/samples）、`twin/js/twin-api-mock.js`（queueView 由剧本反推工位）、`tests/twin/{dockcheck,zoneview}.mjs` | 底栏从一张表改四块并排、各自滚动各自暂停；队列三分类且「循环中」实时同步；102 样品台账/101 只环境数据/非 106 检测项目数统计；浮层宽度与沟槽走 CSS 变量（旧 dock left:180 与左栏重叠 58px 已修）；隐藏块渲染收尾清空 | dockcheck 24✅ · zoneview 34✅ · 全量 18 套 0❌ |
 | **新增 ✅已上线** | 线路改为「定位点→相连→堆叠」推导 + 当前航段蓝色发光带样式（FR-29/29a）+ 按红线图撤销 102 门洞假定 | `twin/api/seed.json`（routeNodes/corridor/unmappedStops）、`twin/js/twin-api-mock.js`（deriveRoute/displayLegs/arcOf）、`twin-scene-bridge.js`（drawRoutes/liveLeg）、`tests/twin/routecheck.mjs` | 手写 path 与时间轴删除，全部按弧长推导；`arcOf` 改点到线段真实距离；高亮用 InstancedMesh 且只在换腿时重建；走廊范围扩为贯通南北；102 西墙/走廊北端改回无门洞 | routecheck 17✅ · robotcheck 16✅ · uxcheck 44✅（x/9）· 全量 16 套 0❌ |
 | **新增 ✅已上线** | 机器人编排：RB-C-01 停靠 102-05 充电位、只留 RB-C-02 跑（FR-28） | `twin/api/seed.json`、`twin/js/twin-api-mock.js`、`twin-scene-bridge.js`、`twin-scene-v2.js`、`tests/twin/robotcheck.mjs` | 单点路径 + `parked`；充电只回升不掉电；停靠位纳入自检；面板「停靠充电」标注；AL-102 改挂 RB-C-02 并改为节拍超时口径；**补回被切片删除却仍在调用的 `openRobot()`**（点/回车机器人行原本直接 ReferenceError） | robotcheck 14✅ · routecheck 8✅ · smoke 38✅ · zone-panel 32✅ |
@@ -663,6 +676,7 @@ flowchart TD
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| 2.24 | 2026-11-07 | 【本次更新】新增 **FR-33 顶栏去"导航栏化"**：去掉整条底色、下边框与毛玻璃条（只留一层极淡顶部渐隐），标题/总览/区域/时钟/icon 改为浮在三维画面上的文字并统一带白投影，开启态从实心蓝底按钮改成淡底+描边；标题去掉「应敏科技 ·」前缀（公司名只留在 logo 图与 alt/title），logo 独占左上角，区域切换移到标题左侧，动作 icon 组留在标题右侧；**屏上不再出现 S1/S2/S3 编号前缀**（"S1 实验室总览"→"实验室总览"；S3 告警回溯按 2026-11-06 的范围决定保持缺席，不借改版复活），时钟与区域下拉一并去框。功能类名与 id 全部保留（回归靠它们定位），新增 `tests/twin/topbarcheck.mjs` 19 项守住视觉与功能两侧；§5.1 控制层草图同步去掉 S 编号 |
 | 2.23 | 2026-11-07 | 【本次更新】新增 **FR-30 底栏四块**（① 设备信息统计（五档之和=合计、稼动率现算、机器人"在跑 1 / 停靠充电 1"）② 无人化调度任务队列（图3 流程配置 16 条 / 11 种流，按图1 分**进行中/未派单/已完成**三组）③ 正在检测委托单 SC2026-0422 的 5 个试验项（名称与检测设备照图4，四态含退回复测）④ 组态物联节点（16 点位按房间 101→110 排序滚动，4 个视觉诚实标「画面未接入」）)、**FR-30a 队列与剧本同源**（「循环中」由 cycleNow 现算，流号→工位由剧本反推；手填 cad 对不上会导致永远标不出「循环中」，本轮真实踩到）、**FR-30b 心跳不重建 DOM**（就地改文本，重建 innerHTML 会让无缝滚动每 2s 弹回顶部）、**FR-31 下钻画像 viewProfile**（106 保留左栏+底栏且机器人继续跑；101 只出环境数据；102 出样品台账（存量 286=分布合计，今日收样 23/还样 17/待还 9）；104 不统计；其余试验区把任务统计换成检测项目数统计；非 106 隐藏左栏与底栏；隐藏块在渲染收尾清空以免读到上一个房间的脏数据）、**FR-32 底栏行落点**（任务/试验项行描边 CAD 工位、节点行选中节点出详情卡，均留 body/#iot-audit 断言口）。间距：`--tw-float-gap:16px` 与宽度变量化，修掉 `dock{left:180}` 与左栏 238 **重叠 58px**、右侧与区域面板重叠 22px。新增 `tests/twin/dockcheck.mjs`(24) 与 `zoneview.mjs`(34)；§5.7 的五块表述限定为仅 106 |
 | 2.22 | 2026-11-06 | 【本次更新】**AGV 职责与线路按俯视图红线第三次校准（FR-18/28/29/29b）**：① 职责定为「RB-C-01 常驻 102-05 充电位；RB-C-02 先去 102 取样 → 按红线跨区送样进 106 → 再在 106 各任务间取/送/放」，三段写进 `robots[].mission` 并由 routecheck 断言；② 上一轮我误撤的 102 两站恢复（11 站、屏上 x/11），线路改为 102 西门 z=11.59 出 → 沿走廊 x=19.64 北上 → 106 北门 z=25.40 向西入 → **西绕 106-12 那张桌**（它正好挡在北入口与工位之间，自检先报 40 处重叠后才改）；③ 一面墙支持多个门洞（`w.gates`；106 东墙=南端双开门 + 北端入口），`wallHit` 逐洞试；④ 穿门统计移入场景自检 `transits`，按**顶点侧向符号变化**计数（顶点正好压墙时"两端异号"判定会整段漏计，mock 那版就漏成 0），删除 mock 里重复的 `gateCrossings`；⑤ 走廊确认为通过式通道（带内 32.4m、覆盖 z[11.59,25.4]），不再是 10m 折返盲端；⑥ FR-15 补第三分支：告警主体可以是**只有 CAD 实体号的非数采对象**（AL-204 挂 `cadEntity=106-12`，点击照样描边并提示无台账号）；routecheck 21 项全绿（92.2m/223.9s/4642 采样/违规 0/穿门 4 次） |
 | 2.21 | 2026-11-06 | 【本次更新】**产品负责人用红线图纠正了我上一轮的关键推断**：x=20.84 那 1.80m 缺口是 **CAD 漏画的墙，不是门** → 102 西墙与走廊北端一律改回「无门洞、禁止穿越」，线路对 102 西墙的穿越次数由 2 次改为 **0 次**；实测确认走廊 x 18.44–20.84 在 0.651m 扫掠半宽下 z 9.64–28.04 **全程无障碍**，走廊范围由我建模的 z≤15.14 扩为贯通南北，线路改为出东门沿走廊北上到 z=21 折返（该处仍未标定），走廊带内折线 22.4m。新增 **FR-29 线路推导模型**（routeNodes 定位点+拐点 → 曼哈顿相连 → legs/displayLegs 两层；u、travelSec、t0、loopSec、pathLengthM 全部推导且禁止手填，并修掉 `arcOf` 只比垂距导致同轴多站共用同一个 u 的坑）、**FR-29a 当前航段样式**（浅蓝发光带 + 等距圆点 InstancedMesh，只高亮正在走的那段）、102 航段撤出但留痕（unmappedStops，屏上 x/11→x/9）；§5.9 D 参数更新为 81.4m / 195.4s |
