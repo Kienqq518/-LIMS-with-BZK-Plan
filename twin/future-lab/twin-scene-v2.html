@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>未来实验室数字孪生 · 运行大屏 V2</title>
 <link rel="stylesheet" href="../../css/ui-baseline.css">
-<link rel="stylesheet" href="twin-scene-v2.css?v=4">
+<link rel="stylesheet" href="twin-scene-v2.css?v=5">
 <script src="../../js/ui-a11y.js" defer></script>
 <script src="../js/twin-api-mock.js" defer></script>
 <script src="../src/runtime-audit.js"></script>
@@ -42,17 +42,10 @@
     <button class="seg" data-period="year" role="tab">本年</button>
   </div>
   <div class="tables" id="tables"></div>
-  <div class="alarm-sum" id="alarmSum" aria-live="polite">
-    <span class="open">未解除 –</span><span class="done">已解除 –</span>
-    <span class="ga">A –</span><span class="gb">B –</span><span class="gc">C –</span>
-  </div>
   <div class="cycle" id="cycleBox" title="无人化任务循环剧本：小机器人按调度任务明细顺序在各工位间行走停靠">
     <div class="cy-top"><b id="cyNow">–</b><span id="cyLabel">无人化循环</span></div>
     <div class="cy-bar"><i id="cyBar"></i></div>
     <div class="cy-sub" id="cySub">等待剧本</div>
-  </div>
-  <div class="filter" role="group" aria-label="告警筛选">
-    <button class="mini active" data-alarmfilter="open">只看未解除</button><button class="mini" data-alarmfilter="all">全部</button>
   </div>
   <!-- 数据源胶囊 / draw calls / 风格预览 按 2026-11-06 反馈移除；来源与更新时间改为写进每张表头（诚实口径不丢） -->
   <!-- 避让校验常驻徽标已按 2026-11-06 反馈移除；自检照跑，结果写 body[data-route-audit] 供 QA，违规时才瞬时提示 -->
@@ -63,7 +56,16 @@
   <iframe id="scene" src="tour-space-v3-1.html?v2=1&native-nodes=1" title="未来实验室三维场景" allow="fullscreen"></iframe>
 
   <section class="stream" id="alarmStream" aria-live="polite" aria-label="告警流（滚动）">
-    <header><b>告警流</b><span id="streamMeta">近 24h</span></header>
+    <header>
+      <div class="sh-top"><b>告警流</b><span id="streamMeta">当前告警</span></div>
+      <div class="alarm-sum" id="alarmSum" aria-live="polite">
+        <span class="open">未解除 –</span><span class="done">已解除 –</span>
+        <span class="ga">A –</span><span class="gb">B –</span><span class="gc">C –</span>
+      </div>
+      <div class="filter" role="group" aria-label="告警筛选">
+        <button class="mini active" data-alarmfilter="open">只看未解除</button><button class="mini" data-alarmfilter="all">全部</button>
+      </div>
+    </header>
     <div class="stream-view"><div class="stream-track" id="streamTrack"></div></div>
   </section>
   <!-- 区域视图五类信息（2026-11-05 信息模型）：设备 / 环境数据 / 任务统计 / 正在运行的任务 / 告警 -->
@@ -92,6 +94,6 @@
 
   <p class="remote-hint" id="remoteHint" hidden aria-hidden="true">翻页提示</p>
 </main>
-<script src="twin-scene-v2.js?v=4" defer></script>
+<script src="twin-scene-v2.js?v=5" defer></script>
 </body>
 </html>

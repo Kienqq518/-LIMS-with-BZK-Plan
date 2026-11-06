@@ -277,14 +277,21 @@
     }
 
     /* ⑤ 告警（本区域，只读三态） */
-    var abSig = zalarms.map(function (a) { return a.alarmId + a.status; }).join('|');
+    var abSig = st.alarmFilter + '|' + zalarms.map(function (a) { return a.alarmId + a.status; }).join('|');
     if (zpSig.ab !== abSig) {
       zpSig.ab = abSig;
-      zp('#zpAlarms .zp-body').innerHTML = zalarms.map(function (a) {
+      var zopen = zalarms.filter(function (a) { return a.status !== 'resolved'; });
+      var shown = st.alarmFilter === 'open' ? zopen : zalarms;
+      var ctrl = '<div class="filter" role="group" aria-label="告警筛选">' +
+        '<button class="mini' + (st.alarmFilter === 'open' ? ' active' : '') + '" data-alarmfilter="open">只看未解除</button>' +
+        '<button class="mini' + (st.alarmFilter === 'all' ? ' active' : '') + '" data-alarmfilter="all">全部</button></div>';
+      /* 空态必须在「筛选行之外」单独判定：把筛选行和列表拼在一起再判空，空态永远不会出现（上一版就踩了） */
+      var body = shown.map(function (a) {
         return '<div class="zp-row ' + (a.status === 'resolved' ? 'ready' : 'alarm') + '" data-alarm="' + a.alarmId + '"><i class="dot"></i><span class="nm">Grade ' + a.grade + ' ' + escapeHtml(a.title) + '</span><span class="sub">' + ST_AB(a.status) + ' · ' + a.occurredAt + '</span></div>' +
-          '<div class="l2" style="font-size:10px;color:var(--tw-color-textMuted);margin:-2px 0 6px 15px">派至 ' + escapeHtml(a.dispatchedTo || '—') + ' · 来源 ' + (SRC_NAME[a.source] || a.source || '—') + ' · <button data-alarm="' + a.alarmId + '" style="border:0;background:none;color:var(--tw-color-brand);cursor:pointer;padding:0;font-size:10px">详情</button></div>';
-      }).join('') || '<div class="zp-empty">该区域当前无告警。</div>';
-      zp('#zpAlarmsN').textContent = zalarms.filter(function (a) { return a.status !== 'resolved'; }).length + ' 未解除 / 共 ' + zalarms.length;
+          '<div class="l2" style="font-size:10px;color:var(--tw-color-textMuted);margin:-2px 0 6px 15px">派至 ' + escapeHtml(a.dispatchedTo || '—') + ' · 来源 ' + (SRC_NAME[a.source] || a.source || '—') + ' · <button data-alarm="' + a.alarmId + '" style="border:0;background:#F2F7FF;color:var(--tw-color-brand);border-radius:999px;font-size:10px;padding:2px 8px;cursor:pointer;margin-left:auto">详情</button></div>';
+      }).join('');
+      zp('#zpAlarms .zp-body').innerHTML = ctrl + (body || '<div class="zp-empty">该区域当前无告警。</div>');
+      zp('#zpAlarmsN').textContent = zopen.length + ' 未解除 / 共 ' + zalarms.length;
     }
   }
   function ST_CN(x) { return { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常' }[x] || x; }
@@ -424,6 +431,13 @@
     if (st.mode === 'ZONE') { loadZone(); renderZonePanel(); }
 
   }
+  function setAlarmFilter(v) {
+    if (!v || v === st.alarmFilter) return;
+    st.alarmFilter = v;
+    document.querySelectorAll('[data-alarmfilter]').forEach(function (x) { x.classList.toggle('active', x.dataset.alarmfilter === v); });
+    renderAlarms(); renderZonePanel(); writeURL();
+  }
+
   function setMode(m, zone) {
     st.mode = m;
     if (zone && zone !== st.zone) { st.zone = zone; $('#detail').hidden = true; clearInterval(rtTimer); detailDev = null; }  /* 换区域即收起上一区域的详情，避免串区 */
@@ -474,9 +488,11 @@
     document.querySelectorAll('.seg').forEach(function (b) { b.onclick = function () {
       document.querySelectorAll('.seg').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.period = b.dataset.period; renderTables(); renderZonePanel(); writeURL();
     }; });
-    document.querySelectorAll('.mini').forEach(function (b) { b.onclick = function () {
-      document.querySelectorAll('.mini').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.alarmFilter = b.dataset.alarmfilter; renderAlarms(); writeURL();
-    }; });
+    /* 筛选控件改为事件委托：同一套按钮现在渲染在两处（右侧告警流头部、区域视图的告警块），必须统一响应 */
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-alarmfilter]'); if (!btn) return;
+      setAlarmFilter(btn.dataset.alarmfilter);
+    });
     document.querySelectorAll('.lic').forEach(function (b) { b.onclick = function () {
       var k = b.dataset.layer; st.layers[k] = st.layers[k] ? 0 : 1;
       b.classList.toggle('on', !!st.layers[k]); b.setAttribute('aria-pressed', !!st.layers[k]);
