@@ -161,6 +161,6 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 
 **只读约束（决策 Q2 + PRD-v1 §6）**：孪生前端**无任何写回端点**。原 `TwinApi.alarmAck()` 已删除；告警三态 `active/dispatched/resolved` 只能由来源系统经网关推送，屏上不出现「演示回执」类标注。
 
-**首屏与视角**：`overall-101`（V2 运行大屏首屏机位）= `yaw -1.05 / elev 0.6 / zoom 1`（2026-11-06 按产品负责人截图标定，10 个房间标签屏幕位置拟合 RMSE≈37px）；`scene-group-highlight-v3-1.js` 的 `CAMERA` 常量必须与之一致，否则分组高亮复位会覆盖机位。宿主在场景 `bridge-ready` 之前不得直接发 `view` 指令——需入队，就绪后补发，保证 `?mode=&zone=&layers=` 的首屏恢复。
+**首屏与视角**：V2 运行大屏首屏机位（`?v2=1` 条件生效，其余 tour-space-* 页面保持 `[-.18,.94]`）=`overall-101`  `yaw -1.05 / elev 0.6 / zoom 1`（2026-11-06 按产品负责人截图标定，10 个房间标签屏幕位置拟合 RMSE≈37px）；`scene-group-highlight-v3-1.js` 的 `CAMERA` 常量必须与之一致，否则分组高亮复位会覆盖机位。宿主在场景 `bridge-ready` 之前不得直接发 `view` 指令——需入队，就绪后补发，保证 `?mode=&zone=&layers=` 的首屏恢复。
 
 **待补（下一步）**：`host:setAutoRoam`（讲解用自动巡航，默认关）、`scene:waypointClick{waypointId}`（折线拐点拾取，标记已渲染）、`requestId + ack + 3s 超时重试` 信封。
