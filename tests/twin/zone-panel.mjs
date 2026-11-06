@@ -20,7 +20,8 @@ T('统计周期', await em('#zpStatsPeriod'), '本日');
 { const rn = parseInt(await em('#zpRunningN'), 10); out.push((rn >= 1 && rn <= 5 ? '✅' : '❌') + ' 在制计数在合理区间(1–5，随 mock 进度浮动): ' + rn); }
 T('告警计数（B 区瓶颈已全部收在 106）', await em('#zpAlarmsN'), '今日11·未解除8');
 T('设备行数', await p.locator('#zpDevices .zp-row').count(), 11);
-T('机器人卡住标', (await p.locator('#zpDevices').innerText()).includes('疑似卡住'), 'true');
+T('停靠机器人标注（不判卡住）', (await p.locator('#zpDevices').innerText()).includes('停靠充电'), 'true');
+T('在制任务超时标注承载卡住叙事', (await p.locator('#zpRunning').innerText()).includes('超时'), 'true');
 T('环境含读数', /℃.*%RH/.test(await p.locator('#zpEnv').innerText()), 'true');
 T('统计四格', await p.locator('#zpStats .zp-stat').count(), 4);
 T('统计数值=本日106', (await p.locator('#zpStats .zp-stat b').allInnerTexts()).join('/'), '3/2/1/0');

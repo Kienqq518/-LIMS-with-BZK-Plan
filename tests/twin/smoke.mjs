@@ -34,7 +34,8 @@ a('墙体剖切仍固定生效（前侧外墙不透明度 0.12）', await page.f
 await page.selectOption('#zoneSel','106'); await page.waitForTimeout(2500);
 a('106 区域面板显示（五类信息）', await page.locator('#zonePanel').isVisible(), true);
 a('面板设备行含机器人', await page.locator('#zpDevices .zp-row').count(), 11);
-a('面板机器人卡住判定', (await page.locator('#zpDevices').innerText()).includes('疑似卡住'), true);
+a('停靠充电的机器人不判卡住（RB-C-01 在 102-05 桩上）', (await page.locator('#zpDevices').innerText()).includes('停靠充电'), true);
+a('卡住/超时叙事仍在（在制任务超时标注）', (await page.locator('#zpRunning').innerText()).includes('超时'), true);
 a('浮层与底栏让位（信息不重复）', await page.locator('#taskStrip').isHidden(), true);
 
 // 非 106 诚实降级

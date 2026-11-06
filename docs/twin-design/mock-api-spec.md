@@ -16,7 +16,7 @@
 | 端点 | data | 源 | 频率 |
 |---|---|---|---|
 | `GET /api/zone/106/devices` | Device[]（七分法类型、modelNode=`cad:*`、status 五枚举、keyParams 1~3、daqUnitId 1:1） | ②数采+①调度 | 10s |
-| `GET /api/zone/106/robots` | RB-C-01/RB-C-02（CAD 复合机器人 106-09/106-08 本体驱动）：path、progress、battery、action、routeBasis。**原三维包无路径数据**（route/waypoint 字段 0 命中），现路线为工位图推导环线（visual_106.json sourceBBox×0.05 换算：家位/充电位1·2/AGV上料桌/检测上下料桌/7个工位），接入调度系统后由真实路径规划替换 | ①经机器人调度 | 1–5s |
+| `GET /api/zone/106/robots` | RB-C-01/RB-C-02（CAD 复合机器人 106-09/106-08 本体驱动）：path、progress、battery、action、routeBasis，另有 `parked`/`chargingBay`（2026-11-06 起 RB-C-01 停靠 102-05 充电位：`path` 单点、`allowedZones=[Z-102]`、电量只回升）。**原三维包无路径数据**（route/waypoint 字段 0 命中），现路线为工位图推导环线（visual_106.json sourceBBox×0.05 换算：家位/充电位1·2/AGV上料桌/检测上下料桌/7个工位），接入调度系统后由真实路径规划替换 | ①经机器人调度 | 1–5s |
 | `GET /api/zone/106/samples` | Sample[]：barcode、location(holder=device/shelf/robot)、transferHistory | ①调度 | 事件驱动 |
 | `GET /api/zone/106/current-tasks` | 在制 taskId 列表 | ①调度 | 10s |
 | `GET /api/zone/106/dispatch-tasks` | DispatchTask[]（真实任务号/流程配置/绑定设备/执行机器人，见对象模型 §1.5b） | ①调度 | 事件驱动 |

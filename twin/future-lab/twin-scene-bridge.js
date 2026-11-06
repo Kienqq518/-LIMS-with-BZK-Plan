@@ -168,7 +168,11 @@ function startAnimLoop() {
       last = t; frames++;
       try {
       Object.entries(robotTargets).forEach(([id, tgt]) => {
-        const g = robots[id]; if (!g || !tgt.path || tgt.path.length < 2) return;
+        const g = robots[id]; if (!g) return;
+        /* 光点先挂上：停靠的机器人也要有状态光点（暗色待机），否则「FR-25 光点是设备状态唯一入口」对停着的那台就失效了。
+           路径单点（停靠）的机器人在下面早退，不参与插值。 */
+        ensureDot(tgt.modelRoot, (tgt.parked || tgt.action === 'charging') ? 'standby' : 'working');
+        if (!tgt.path || tgt.path.length < 2) return;
         const pts = tgt.mpts && tgt.mpts.length > 1 ? tgt.mpts : (tgt.mpts = manhattan(tgt.path).map(q => new THREE.Vector3(q[0], 0, q[1])));
         if (tgt.local == null) { tgt.local = tgt.progress || 0; tgt.animFrom = tgt.local; tgt.animTo = tgt.local; tgt.animT0 = t; }
         if (tgt.demoCycle) {
@@ -187,7 +191,6 @@ function startAnimLoop() {
         const ahead = posAt(pts, Math.min(1, tgt.local + 0.004));
         const dx = ahead.x - p.x, dz = ahead.z - p.z;
         if (Math.abs(dx) + Math.abs(dz) > 1e-4) g.rotation.y = Math.atan2(dx, dz);   /* 原地掉头：方向由前进段决定，不做平滑摆动 */
-        ensureDot(tgt.modelRoot, tgt.action === 'charging' ? 'standby' : 'working');
       });
       pulseDots(t);
       if (stepCam(t)) { /* 补间期间由 stepCam 决定相机输入 */ }
@@ -270,6 +273,7 @@ function build(v) {
   startAnimLoop();
   calibPan();
   loadNames();
+  hookSetViewReset();
   wrapFrame();
   injectLayerStyle();
   /* 点击任意实体（含桌子凳子）→ 先平滑换到它所在房间，再切近 + 弹信息卡 */
@@ -488,7 +492,22 @@ function drawRoutes(list, walls) {
   if (!lines) return;
   lines.clear();
   const hook = document.getElementById('twin-v2-bridge');
-  if (hook) hook.dataset.guide = String(list.filter(r => r.path && r.path.length > 1).length);
+  if (hook) {
+    hook.dataset.guide = String(list.filter(r => r.path && r.path.length > 1).length);
+    hook.dataset.robotsMoving = list.filter(r => !r.parked && r.path && r.path.length > 1).map(r => r.robotId).join(',');
+    hook.dataset.robotsParked = list.filter(r => r.parked).map(r => r.robotId + '@' + (r.chargingBay || '')).join(',');
+  }
+  /* 停靠位也要验：停在充电位=与充电桩重叠（正常对接），但**必须落在它的允许区域内**，
+     否则会出现「说好在 102 充电，实际摆在 106 过道里」这种演示穿帮。 */
+  list.filter(r => r.parked).forEach(r => {
+    const p0 = (r.path && r.path[0]) || r.homeAnchor; if (!p0) return;
+    const half = (r.sweptEnvelope || Math.max(...(r.footprint || [0.9, 0.9]))) / 2 + (r.clearanceM || 0.2);
+    if (!covered(p0[0], p0[2], half, allowedRects(r))) {
+      const el0 = document.getElementById('twin-v2-route-audit');
+      if (el0) el0.dataset.violations = String(+el0.dataset.violations + 1);
+      console.warn('停靠位越出允许区域', r.robotId, p0);
+    }
+  });
   list.forEach(r => {
     if (!r.path || r.path.length < 2) return;
     const pts = manhattan(r.path).map(q => new THREE.Vector3(q[0], 0.022, q[1]));
@@ -503,15 +522,9 @@ function drawRoutes(list, walls) {
       dot.rotation.x = -Math.PI / 2; dot.position.set(p.x, 0.024, p.z); knots.add(dot);
     });
     lines.add(knots);
-    /* 门洞标记：画在墙上的绿色门槛（属路径图层，让「走门洞」这件事看得见） */
-    (walls || []).filter(function (w) { return w.gate; }).forEach(function (w) {
-      const len = w.gate[1] - w.gate[0];
-      const cx = w.axis === 'x' ? w.at : (w.gate[0] + w.gate[1]) / 2;
-      const cz = w.axis === 'x' ? (w.gate[0] + w.gate[1]) / 2 : w.at;
-      const g = new THREE.Mesh(new THREE.PlaneGeometry(w.axis === 'x' ? 0.14 : len, w.axis === 'x' ? len : 0.14),
-        new THREE.MeshBasicMaterial({ color: 0x16a34a, transparent: true, opacity: 0.8, toneMapped: false, depthWrite: false }));
-      g.rotation.x = -Math.PI / 2; g.position.set(cx, 0.028, cz); lines.add(g);
-    });
+    /* 门洞标记已按 2026-11-06 反馈取消：画在墙上的绿色小方块被认成「这里有个门」，
+       而它只是我们把 gate 区间画出来的记号——门洞这件事由折线自己走位证明（只从 102 西门与 106 东门穿墙），
+       不需要一个会误导的图例。审计规则照旧跑，只是不在屏上画记号。 */
     /* 行进范围带：走廊（仅运输机器人有） */
     if (r.corridor) {
       const c = r.corridor;
@@ -561,6 +574,15 @@ const REF = { x: 14, y: 0.6, z: 19 };                       // 参考世界点�
 let camSnap = null, camTween = null, myPan = [0, 0], panSens = { x: 1, y: 1 }, objectInfo = {}, cardFor = null, cardEl = null, namesMap = null, frScale = 1;
 /* 视锥补间：scene-group-highlight 的 fitFrame 每帧重算 camera.left/right/top/bottom 且不看 visual.zoom，
    所以只能在它「之后」按比例缩放视锥——这是下钻/切近能平滑的唯一正确接法。 */
+/* 视角切换必须回到「标定构图」：切近设备会把 frScale 压到 0.1~0.3，
+   而引擎的 setView 只重置 zoom、不管我方 frScale → 点「S1 总览」回来后画面仍停在特写缩放上（违反 FR-10「回到同一机位」，实测 camHH 14.2→10.5）。
+   所以任何 setView 都先把 frScale/pan 归位；随后 focusDevice/drill 再按需设自己的缩放，顺序上安全。 */
+function hookSetViewReset() {
+  if (visual.__twinViewReset) return; visual.__twinViewReset = true;
+  const orig = visual.setView.bind(visual);
+  visual.setView = v => { camTween = null; frScale = 1; setPan(0, 0); return orig(v); };
+}
+
 function wrapFrame() {
   if (visual.__twinFrameHooked) return; visual.__twinFrameHooked = true;
   /* 用 getter/setter 包住 window.roomTourFrame：scene-group-highlight 会在自己 start() 里赋值，
@@ -626,7 +648,9 @@ function camCmd(d) {
     const dx = camSnap ? camSnap.p.x - q.x : 0, dy = camSnap ? camSnap.p.y - q.y : 0;
     const pan0 = [myPan[0] + dx / panSens.x, myPan[1] + dy / panSens.y];
     frScale = s0; setPan(pan0[0], pan0[1]); visual.render();
-    tween({ yaw: visual.yaw, elev: visual.elev, scale: s0, pan: pan0 }, { yaw: visual.yaw, elev: visual.elev, scale: camSnap ? camSnap.scale : 1, pan: [0, 0] }, 760);
+    /* 终点缩放恒为 1：新视角的构图由引擎 fitFrame 自己算（下钻=自然特写、回总览=标定机位）。
+       原来收在 camSnap.scale（=切换前的缩放），于是切近设备后回 S1 会停在特写上，违反 FR-10「回到同一机位」。 */
+    tween({ yaw: visual.yaw, elev: visual.elev, scale: s0, pan: pan0 }, { yaw: visual.yaw, elev: visual.elev, scale: 1, pan: [0, 0] }, 760);
     return;
   }
   if (d.action === 'device') { focusDevice(d.deviceId, d.zoneId); return; }
@@ -671,7 +695,7 @@ function ensureCard() {
 #twin-v2-card .row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px dashed #E9EEF4;margin-top:6px}
 #twin-v2-card .row span{color:#5B6B7D}#twin-v2-card .row b{font-variant-numeric:tabular-nums;text-align:right}
 #twin-v2-card .st{display:inline-flex;align-items:center;gap:5px;font-weight:700}#twin-v2-card .st i{width:7px;height:7px;border-radius:50%;background:#94A3B8}
-#twin-v2-card .st.working i{background:#2878FF}#twin-v2-card .st.ready i{background:#16A34A}#twin-v2-card .st.alarm i{background:#E5484D}#twin-v2-card .st.na i{background:#C3CCD6}
+#twin-v2-card .st.working i{background:#2878FF}#twin-v2-card .st.ready i{background:#16A34A}#twin-v2-card .st.alarm i{background:#E5484D}#twin-v2-card .st.na i{background:#C3CCD6}#twin-v2-card .st.charging i{background:#94A3B8}
 #twin-v2-card .go{margin-top:9px;width:100%;font:inherit;font-size:11px;color:#2878FF;background:#F2F7FF;border:1px solid #D7E4FF;border-radius:999px;padding:5px 10px;cursor:pointer}
 #twin-v2-card .x{position:absolute;right:8px;top:6px;border:0;background:0;font-size:15px;color:#8A97A7;cursor:pointer;line-height:1}`;
   (visual.host.parentElement || document.body).append(st, cardEl);
@@ -685,7 +709,7 @@ function loadNames() {
   return fetch('data/equipment-names.json').then(r => r.json()).then(j => { namesMap = {}; (j.equipment || []).forEach(e => { namesMap[e.cadId] = e; }); return namesMap; });
 }
 const ROOM_CN = { '101': '接待大厅', '102': '智能样品室', '103': '智能力学室', '104': '控制室', '105': '智能高压室', '106': '无人化电缆试验区', '107': '材料试验区', '108': '环境试验区', '109': '综合试验区', '110': '数智化电气试验区' };
-const ST_CN = { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常' };
+const ST_CN = { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常', charging: '停靠充电' };
 function showCard(id, center) {
   ensureCard(); cardFor = id;
   loadNames().then(() => renderCard(id, center));

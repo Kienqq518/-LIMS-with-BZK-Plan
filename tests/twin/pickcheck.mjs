@@ -75,6 +75,45 @@ if(!devPt.err){ await closeCard(); const t2=await toTop(devPt.x,devPt.y); await 
   const c2=await card(); out.push((c2.open&&c2.txt.includes(devPt.id)?'✅':'❌')+` 点设备本体（${devPt.id}）仍出信息卡: ${JSON.stringify(c2).slice(0,110)}`); }
 else out.push('❌ 点设备本体：画面安全区内找不到设备 '+JSON.stringify(devPt));
 
+// ②b 卡里的「查看详情与实时参数」按钮：三条分支都要有落点（openDeviceByCad 此前被删却仍被调用 → 点了必崩）
+const goBtn=()=>f.evaluate(()=>{const c=document.getElementById('twin-v2-card'); if(!c||c.hidden||getComputedStyle(c).display==='none') return null;
+  const e=c.querySelector('[data-go]'); return e?e.textContent.trim():null;});
+const go=async()=>{ await f.evaluate(()=>{const c=document.getElementById('twin-v2-card'); const e=c&&!c.hidden&&c.querySelector('[data-go]'); if(e) e.click();}); await p.waitForTimeout(1300);
+  return p.evaluate(()=>({open:!document.getElementById('detail').hidden,txt:document.getElementById('detailBody').innerText.replace(/\s+/g,' ')})); };
+let g=await goBtn();
+if(g){ const r=await go(); out.push((r.open&&/数采分系统/.test(r.txt)?'✅':'❌')+` 设备卡「查看详情」打开台账详情（${devPt&&devPt.id}）: ${r.txt.slice(0,70)}`); }
+else out.push('❌ 设备卡里没有「查看详情」按钮（应有台账落点）');
+/* 机器人本体：点它应给真状态（停靠充电），不是「无实时数据」。
+   注意：106-09 属 106 模型组，在 102-close 视角里 worldVisible=false，所以只能在总览点它；
+   本体在 CAD 里被货架挡住时点不中，因此点它的**状态光点**（屏幕距离命中，专为这种小目标做的入口）。 */
+/* 用按钮而不是按键回总览：上一步刚点过场景内部，焦点还在 iframe 里，键盘 '1' 会被桥接层转发而不可靠 */
+await p.click('.mode[data-mode=S1]'); await p.waitForTimeout(3500);
+const robPt=await f.evaluate(()=>{const v=window.visual106,d=v.statusDots&&v.statusDots.get('106-09'); if(!d) return {err:'停靠的机器人没有光点'};
+  if(v.view!=='overall-101') return {err:'相机没回总览，view='+v.view};
+  const s=new(d.position.constructor)(); s.setFromMatrixPosition(d.matrixWorld); s.project(v.camera); const h=v.host.getBoundingClientRect();
+  const x=h.left+(s.x*.5+.5)*h.width, y=h.top+(-s.y*.5+.5)*h.height;
+  if(!(x>h.left+300&&x<h.right-360&&y>h.top+90&&y<h.bottom-150)) return {err:'光点不在可点区域 '+Math.round(x)+','+Math.round(y)};
+  return {x,y};});
+out.push((!robPt.err?'✅':'❌')+' 停靠的机器人也有状态光点（暗色待机，且在总览里可点）: '+JSON.stringify(robPt).slice(0,90));
+if(!robPt.err){ await closeCard(); const t4=await toTop(robPt.x,robPt.y); await p.mouse.click(t4.x,t4.y); await p.waitForTimeout(2400);
+  const c4=await card();
+  out.push((c4.open&&/RB-C-01/.test(c4.txt)&&/停靠充电/.test(c4.txt)&&!/无实时数据/.test(c4.txt)?'✅':'❌')+' 点停靠的机器人 → 卡内是机器人真状态（停靠充电，非「无实时数据」）: '+c4.txt.slice(0,100));
+  const g4=await goBtn();
+  if(g4){ const r4=await go(); out.push((r4.open&&/复合机器人 RB-C-01/.test(r4.txt)&&/停靠位置 102-05 充电位/.test(r4.txt)?'✅':'❌')+' 机器人卡「查看详情」→ 机器人详情（openRobot 分支）: '+r4.txt.slice(0,110)); }
+  else out.push('❌ 机器人卡里没有「查看详情」按钮');
+  await p.keyboard.press('Escape');
+}
+/* 未建档实体：诚实降级，不编状态（回 106 视角，台桌在那儿） */
+await p.selectOption('#zoneSel','106'); await p.waitForTimeout(3500);
+const tabPt=await f.evaluate(()=>{const v=window.visual106,m=v.modelRoots.get('106-18'); if(!m) return null;
+  const s=new(m.position.constructor)(); s.setFromMatrixPosition(m.matrixWorld); s.project(v.camera); const h=v.host.getBoundingClientRect();
+  return {x:h.left+(s.x*.5+.5)*h.width,y:h.top+(-s.y*.5+.5)*h.height};});
+if(tabPt){ await closeCard(); const t5=await toTop(tabPt.x,tabPt.y); await p.mouse.click(t5.x,t5.y); await p.waitForTimeout(2200);
+  const g5=await goBtn();
+  if(g5){ const r5=await go(); out.push((r5.open&&/未建档|非数采对象/.test(r5.txt)&&!/在测|就绪/.test(r5.txt)?'✅':'❌')+' 未建档实体「查看详情」→ 诚实降级文案: '+r5.txt.slice(0,80)); }
+  else out.push((g5===null?'✅':'❌')+' 未建档实体的卡里没有「查看详情」按钮（只有非数采对象标注，不给可点的空入口）');
+}
+
 // ③ 物联节点：身份标签下线，点标记出详情卡（用 #iot-audit 的 worldAnchors 找画面内可点的节点）
 T('身份标签（名称·类型）已下线', await f.evaluate(()=>document.querySelectorAll('.orb-tag').length), 0);
 await p.keyboard.press('1'); await p.waitForTimeout(2500);

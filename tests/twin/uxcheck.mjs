@@ -64,13 +64,26 @@ out.push(((await p.evaluate(()=>getComputedStyle(document.getElementById('stream
 // 6) 循环剧本
 const cy=await p.locator('#cycleBox').innerText();
 out.push((/\d\/11/.test(cy)&&/无人化循环/.test(cy)?'✅':'❌')+' 无人化循环指示: '+cy.replace(/\s+/g,' ').slice(0,90));
-const prog=async()=>ev(()=>{const v=window.visual106;const m=v.modelRoots.get('106-08');return m?[performance.now(),m.position.x,m.position.z]:null;});
-let last=null, moved=0, peak=0, dwellRun=0, maxDwellRun=0, speeds=[];
-for(let i=0;i<70;i++){ const q=await prog(); if(last){ const d=Math.hypot(q[1]-last[1],q[2]-last[2]), dt=(q[0]-last[0])/1000;
-  if(dt>0.05){ moved+=d; const v=d/dt; if(v>1.05) speeds.push(+v.toFixed(2)); peak=Math.max(peak,v);
-    if(d<0.02){ dwellRun++; maxDwellRun=Math.max(maxDwellRun,dwellRun); } else dwellRun=0; } } last=q; await p.waitForTimeout(400); }
+/* 剧本运动：先在场景内起 100ms 记录器（避免每 400ms 一次跨进程往返的抖动），
+   并且**对齐到下一次停靠**再开窗——盲开 28s 窗口可能整段落在 26.5s 的 102→106 长行走段里，
+   那样「出现停靠静止」就会假失败（animation-spec §16）。 */
+const live0=await p.evaluate(async()=>{const l=(await TwinApi.get('/api/zone/106/cycle')).data.live;return l&&{phase:l.phase,remainingSec:l.remainingSec};});
+if(live0&&live0.phase==='travel') await p.waitForTimeout(Math.min(28000,(live0.remainingSec+0.6)*1000));
+await ev(()=>{window.__rec=[];window.__recT=setInterval(()=>{const m=window.visual106.modelRoots.get('106-08');
+  if(m) window.__rec.push([performance.now(),m.position.x,m.position.z]);},100);});
+await p.waitForTimeout(26000);
+const rec=await ev(()=>{clearInterval(window.__recT);return window.__rec;});
+/* 速度按 0.5s 滑窗算：单帧间隔（动画环 66ms + 偶发长帧）会把 0.75m/s 的剧本速度抖成 1.0+，
+   那是采样假象不是超速；滑窗既保留真实速度又抗抖。停靠判定仍用逐帧位移（停靠时逐帧就是 0）。 */
+let moved=0, peak=0, dwellRun=0, maxDwellRun=0, speeds=[], stillMs=0, W=5;
+for(let i=1;i<rec.length;i++){ const a=rec[i-1], b=rec[i]; const dt=(b[0]-a[0])/1000; if(dt<=0.02) continue;
+  const d=Math.hypot(b[1]-a[1],b[2]-a[2]); moved+=d;
+  if(d<0.004){ dwellRun+=dt; } else { maxDwellRun=Math.max(maxDwellRun,dwellRun); dwellRun=0; }
+  if(i>=W){ const c=rec[i-W], dtw=(b[0]-c[0])/1000, dw=Math.hypot(b[1]-c[1],b[2]-c[2]);
+    if(dtw>0.3){ const v=dw/dtw; if(v>1.0) speeds.push(+v.toFixed(2)); peak=Math.max(peak,v); } } }
+maxDwellRun=Math.max(maxDwellRun,dwellRun); stillMs=maxDwellRun;
 /* 位移总量取决于采样窗口落在剧本的哪一段（含 6–12s 停靠），所以按「速度」而非「距离」判定 */
-out.push((moved>3&&peak<=1.05&&peak>=0.6&&maxDwellRun>=4&&speeds.length===0?'✅':'❌')+` 小机器人按剧本行进：速度峰值 ${peak.toFixed(2)}m/s（剧本 0.75）· 出现停靠静止 ${(maxDwellRun*0.4).toFixed(1)}s · 窗口内位移 ${moved.toFixed(2)}m · 超速样本 ${speeds.length}`);
+out.push((moved>3&&peak<=1.0&&peak>=0.6&&stillMs>=1.5&&speeds.length===0?'✅':'❌')+` 小机器人按剧本行进：0.5s 滑窗速度峰值 ${peak.toFixed(2)}m/s（剧本 0.75）· 连续停靠静止 ${stillMs.toFixed(1)}s · 窗口内位移 ${moved.toFixed(2)}m · 超速样本 ${speeds.length}（采样 ${rec.length} 点/100ms）`);
 // 停靠站与剧本一致：UI 报的站序必须等于端点 live.order
 const both=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/cycle');return {live:r.data.live, ui:document.getElementById('cycleBox').innerText.replace(/\s+/g,' ')};});
 const sa=both.live; const uiTxt=both.ui;

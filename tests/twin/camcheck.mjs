@@ -32,6 +32,18 @@ await p.waitForTimeout(13000);
 const f2=p.frames().find(x=>/tour-space-v3-1/.test(x.url()));
 const v2=await f2.evaluate(()=>window.visual106.view);
 out.push((v2==='107-close'?'✅':'❌')+' 首屏 URL 视角恢复生效（sceneCmd 排队）: 场景 view='+v2);
+/* FR-10 的真正含义是「S1 按钮回到同一机位」：切近设备会把 frScale 压到 0.1~0.3，
+   以前回总览时补间终点仍取切换前的缩放，画面停在特写上（camHH 14.2→10.5），这条断言当时是缺的。 */
+await p.click('.mode[data-mode=S1]'); await p.waitForTimeout(3000);
+const f3=p.frames().find(x=>/tour-space-v3-1/.test(x.url()));   /* 上面 goto 过一次，旧 frame 已 detach */
+const base=await f3.evaluate(()=>{const v=window.visual106;return {hh:+(((v.camera.top-v.camera.bottom)/2)).toFixed(2),view:v.view};});
+await f3.evaluate(()=>window.dispatchEvent(new CustomEvent('space-device-select',{detail:{id:'106-01',name:'x',roomId:'106'}})));
+await p.waitForTimeout(3000);
+const zoom=await f3.evaluate(()=>+((window.visual106.camera.top-window.visual106.camera.bottom)/2).toFixed(2));
+await p.click('.mode[data-mode=S1]'); await p.waitForTimeout(3500);
+const back=await f3.evaluate(()=>{const v=window.visual106;return {hh:+(((v.camera.top-v.camera.bottom)/2)).toFixed(2),view:v.view};});
+out.push((Math.abs(back.hh-base.hh)<=0.3?'✅':'❌')+` 切近设备后回 S1 回到标定构图：hh ${base.hh} → 切近 ${zoom} → 回总览 ${back.hh}（容差 0.3）`);
+out.push((zoom<base.hh-1?'✅':'❌')+` 切近确实推近了画面（${base.hh} → ${zoom}）`);
 await p.screenshot({path:'/tmp/twin-qa/cam-url-restore.png'});
 console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,6).join('\n'));
 await b.close();

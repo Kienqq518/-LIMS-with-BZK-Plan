@@ -249,10 +249,13 @@
         return '<div class="zp-row ' + cls + '" data-dev="' + d.deviceId + '" data-cad="' + (d.modelNode || '').replace('cad:', '') + '"><i class="dot"></i><span class="nm">' + d.code + '</span><span class="sub">' + escapeHtml(d.subZone) + ' · ' + ST_CN(cls) + '</span></div>';
       }).join('');
       if (z === '106') rows += robots.map(function (r) {
-        var stall = (r.taskElapsedMin != null && r.stallLimitMin != null && r.taskElapsedMin > r.stallLimitMin && r.action !== 'charging');
+        var stall = (r.taskElapsedMin != null && r.stallLimitMin != null && r.taskElapsedMin > r.stallLimitMin && r.action !== 'charging' && !r.parked);
+        /* 停靠充电位的机器人：不判卡住、不报「无在制任务」（那会让人以为它坏了），直接说清停在哪个桩 */
+        var sub = r.parked ? '停靠 ' + escapeHtml(r.chargingBay || '充电位') + ' 充电位 · 不在循环演示 · 🔋' + Math.round(r.battery) + '%（回升中）'
+                           : escapeHtml(r.currentFlowName || '无在制任务') + ' · 已 ' + (r.taskElapsedMin || 0) + '/' + (r.stallLimitMin || '—') + 'min · 🔋' + Math.round(r.battery) + '%';
         return '<div class="zp-row ' + (stall ? 'alarm' : 'working') + '" data-robot="' + r.robotId + '"><i class="dot"></i><span class="nm">' + r.robotId + '</span>' +
-          (stall ? '<span class="tag stall">疑似卡住</span>' : '<span class="tag">' + (r.action === 'charging' ? '充电中' : r.action === 'moving' ? '行进中' : '待机') + '</span>') +
-          '<span class="sub">' + escapeHtml(r.currentFlowName || '无在制任务') + ' · 已 ' + (r.taskElapsedMin || 0) + '/' + (r.stallLimitMin || '—') + 'min · 🔋' + Math.round(r.battery) + '%</span></div>';
+          (stall ? '<span class="tag stall">疑似卡住</span>' : '<span class="tag">' + (r.parked ? '停靠充电' : r.action === 'charging' ? '充电中' : r.action === 'moving' ? '行进中' : '待机') + '</span>') +
+          '<span class="sub">' + sub + '</span></div>';
       }).join('');
       zp('#zpDevices .zp-body').innerHTML = rows || '<div class="zp-empty">该区 V1 未建设备档案（台账投影：' + (zn.deviceCount || 0) + ' 台）。接入数采分区数据后自动出现。</div>';
       zp('#zpDevicesN').textContent = pool.length ? pool.length + ' 台建档' + (z === '106' ? ' · ' + robots.length + ' 台机器人' : '') : '未建档';
@@ -325,8 +328,8 @@
           (rows || '<div class="zp-empty">本区今日无' + sec.title + '</div>') + '</div>';
       }).join('');
       zp('#zpAlarmsN').textContent = '今日 ' + zalarms.length + ' · 未解除 ' + zopen.length;
-      keyable(zp('#zpAlarms'));
     }
+    keyable($('#zonePanel'));   /* 面板五块都补：设备行/机器人行/告警行都有点击语义 */
   }
   function ST_CN(x) { return { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常' }[x] || x; }
   function ST_AB(x) { return { active: '未解除', dispatched: '已派发', resolved: '已解除' }[x] || x; }
@@ -379,7 +382,16 @@
       robots: robots, routeNote: routeNote, layers: st.layers, quality: st.quality,
       deviceStatus: devices.reduce(function (m, d) { m[d.modelNode] = bad[d.deviceId] ? 'alarm' : d.status; return m; }, {}),
       walls: walls,
-      objects: devices.reduce(function (m, d) { m[(d.modelNode || '').replace('cad:', '')] = { code: d.code, name: d.name, type: d.type, subZone: d.subZone, status: bad[d.deviceId] ? 'alarm' : d.status, params: d.keyParams || [] }; return m; }, {})
+      objects: (function () {
+        var m = devices.reduce(function (mm, d) { mm[(d.modelNode || '').replace('cad:', '')] = { code: d.code, name: d.name, type: d.type, subZone: d.subZone, status: bad[d.deviceId] ? 'alarm' : d.status, params: d.keyParams || [] }; return mm; }, {});
+        /* 机器人本体（106-08/106-09）也要能在场景里点开：状态用真实 action/parked，别让它退化成「无实时数据」 */
+        robots.forEach(function (r) { if (!r.modelRoot) return;
+          m[r.modelRoot] = { code: r.robotId, name: '复合机器人 ' + r.robotId, type: '移动机器人',
+            subZone: r.parked ? '停靠 ' + (r.chargingBay || '充电位') + ' 充电位' : (r.zoneId || '106 无人化电缆试验区'),
+            status: r.parked ? 'charging' : (r.action === 'moving' ? 'working' : 'ready'),
+            params: [{ name: '电量', value: Math.round(r.battery), unit: '%' }, { name: '当前任务', value: r.currentFlowName || (r.parked ? '不在循环演示' : '—'), unit: '' }] }; });
+        return m;
+      })()
     });
   }
 
@@ -519,7 +531,7 @@
   /* ---------- 键盘可达（2026-11-06 反馈：告警行键盘点不到） ----------
      这些行是「容器 + 事件委托」，没有内联 onclick，所以 js/ui-a11y.js 的 fixClickable 抓不到它们；
      统一由 keyable() 在渲染后补 role/tabindex/aria-label，Enter 与空格触发同一入口（等价于点击）。 */
-  var KEYABLE = '[data-alarm], [data-dev], [data-robot], [data-task]';
+  var KEYABLE = '[data-alarm], [data-dev], [data-robot]';   /* 只给「点了有反应」的行；底栏 .tt-row 是纯展示，不配 role=button */
   function keyable(root) {
     (root || document).querySelectorAll(KEYABLE).forEach(function (el) {
       if (el.tagName === 'BUTTON' || el.tagName === 'A') return;
@@ -578,6 +590,37 @@
       var d = devices.filter(function (x) { return x.deviceId === row.dataset.dev || x.code === row.dataset.dev; })[0];
       if (d) selectDevice(d, (d.modelNode || '').replace('cad:', ''));
     });
+  }
+
+  /* 机器人详情（2026-11-06 补：openRobot 此前被切片式删除后仍被调用，点/回车机器人行直接 ReferenceError）
+     停靠充电位的机器人要说清「为什么没在跑」，不能报「无在制任务」让人以为它坏了。 */
+  function openRobot(r) {
+    var stall = (r.taskElapsedMin != null && r.stallLimitMin != null && r.taskElapsedMin > r.stallLimitMin && r.action !== 'charging' && !r.parked);
+    var act = r.parked ? ['停靠充电', '#94A3B8'] : r.action === 'charging' ? ['充电中', '#94A3B8'] : r.action === 'moving' ? ['行进中', '#2878FF'] : ['待机', '#64748B'];
+    openDetail('<h3>复合机器人 ' + escapeHtml(r.robotId) + '</h3><div class="sub">' + escapeHtml(r.kind || 'composite') + ' · CAD 本体 ' + escapeHtml(r.modelRoot || '—') + '</div>' +
+      '<div class="row"><span>状态</span><b class="st" style="background:' + act[1] + '">' + act[0] + (stall ? '（超节拍）' : '') + '</b></div>' +
+      '<div class="row"><span>当前调度任务</span><b>' + escapeHtml(r.currentFlowName || '—') + (r.currentTaskId ? '<br>' + escapeHtml(r.currentTaskId) : '') + '</b></div>' +
+      '<div class="row"><span>已用 / 节拍上限</span><b>' + (r.taskElapsedMin || 0) + ' / ' + (r.stallLimitMin || '—') + ' min</b></div>' +
+      '<div class="row"><span>电量</span><b>' + Math.round(r.battery) + '%' + (r.parked ? '（桩上回升中）' : '') + '</b></div>' +
+      (r.parked ? '<div class="row"><span>停靠位置</span><b>' + escapeHtml(r.chargingBay || '充电位') + ' 充电位</b></div>' : '') +
+      '<div class="row"><span>允许区域</span><b>' + escapeHtml((r.allowedZones || []).join(' · ')) + '</b></div>' +
+      '<div class="row"><span>位置基准</span><b>' + escapeHtml(r.positionBasis || '—') + '</b></div>' +
+      '<p style="font-size:11px;color:var(--tw-color-textMuted)">' + escapeHtml(r.routeBasis || '') + '</p>' +
+      '<p style="font-size:11px;color:var(--tw-color-textMuted)">演示只跑一台循环机器人（RB-C-02）；' + escapeHtml(r.robotId) + (r.parked ? ' 停在充电位待命。' : ' 为当前在跑的那台。') + ' 孪生只读，不下发控制。</p>');
+    if (r.modelRoot) sceneCmd('equipment-highlight', { id: r.modelRoot });
+  }
+
+  /* 场景信息卡 →「查看详情与实时参数」的落点（2026-11-06 补：openDeviceByCad 此前被切片删除却仍在调用，
+     点这个按钮必抛 ReferenceError）。三条分支：有台账的设备 / 机器人本体 / 未建档实体（诚实降级，不编状态）。 */
+  function openDeviceByCad(dev) {
+    var id = dev && dev.id; if (!id) return;
+    var d = devices.filter(function (x) { return (x.modelNode || '').replace('cad:', '') === id || x.deviceId === id; })[0];
+    if (d) { selectDevice(d, (d.modelNode || '').replace('cad:', '')); return; }
+    var r = robots.filter(function (x) { return x.modelRoot === id; })[0];
+    if (r) { openRobot(r); return; }
+    openDetail('<h3>' + escapeHtml(dev.name || id) + '</h3><div class="sub">' + id + ' · ' + id.slice(0, 3) + ' 区</div>' +
+      '<div class="row"><span>台账</span><b>未建档</b></div><div class="row"><span>数采</span><b>非数采对象</b></div>' +
+      '<p style="font-size:11px;color:var(--tw-color-textMuted)">该实体只存在于 CAD（无设备台账号、无数采通道），所以没有实时参数可显示——屏上不编造状态。孪生只读，不下发控制。</p>');
   }
 
   /* 面板 → 场景 双向拾取（P0-2） */

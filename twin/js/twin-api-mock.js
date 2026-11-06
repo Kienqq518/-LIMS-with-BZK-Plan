@@ -106,12 +106,19 @@
   function tick() {
     if (!state) return;
     state.zone106.robots.forEach(function (rb) {
-      if (!rb.demoCycle) {            // 无剧本的机器人（RB-C-01）保留匀速环线；有剧本的由 applyCycle 精确给 u，不能再随机推
+      /* 停靠充电位的机器人（parked）：不推进度、不掉电——它没有任务，电量只回升（演示只跑一台） */
+      if (rb.parked || rb.action === 'charging' || rb.status === 'charging') {
+        rb.progress = 0;
+        if (rb.battery < 96) { rb.battery = +(rb.battery + 0.35).toFixed(2); }
+        rb.action = 'charging'; rb.status = 'charging';
+        return;
+      }
+      if (!rb.demoCycle) {            // 无剧本且不在跑的机器人保留匀速环线；有剧本的由 applyCycle 精确给 u，不能再随机推
         rb.progress += rb.kind === 'amr' ? 0.045 : 0.012;
         if (rb.progress > 1) rb.progress = 0;
       }
       rb.battery = Math.max(12, +(rb.battery - 0.08).toFixed(2));
-      if (rb.battery <= 15 && rb.action !== 'charging' && rb.status !== 'charging') {
+      if (rb.battery <= 15) {         // 跑到低电自己回桩：状态转充电中，下一 tick 起按上面的分支回升
         rb.action = 'charging'; rb.status = 'charging';
         emit('robot.action', { robotId: rb.robotId, action: 'charging' });
       }
