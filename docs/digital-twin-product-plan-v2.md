@@ -221,6 +221,8 @@ flowchart TD
 - FR-6：区域视图五块**顺序与命名固定**，不随数据有无增减标题（缺数据只换空态文案），保证讲解肌肉记忆。
 - FR-7：面板内所有行使用**就地更新**（签名比对），心跳刷新不得打断点击/滚动位置。
 - FR-8：详情面板在区域视图下**停靠**到面板左侧（几何上不重叠），否则五类信息会被整块盖住点不动（实测缺陷，已修）。
+- FR-10【2026-11-06 新增】**首屏机位固定**：三维场景加载完成（无任何交互）时的相机=产品负责人截图标定的斜侧俯视、全实验室入画并充满画面。标定方法：以 10 个房间标签的屏幕位置为目标，对 `yaw/elev/zoom` 做参数拟合，残差 RMSE=37px（可接受，目标本身为目测）。落点：`visual-106-whiteblue.js` 视角表 `overall-101:[-1.05,.6]`（原 `[-.18,.94]`）+ `scene-group-highlight-v3-1.js` 的 `CAMERA` 同步（否则分组高亮复位会把机位拉回旧角度）。缩放保持 `zoom=1`，因此用户手动缩放/旋转仍按原有语义，且「S1 总览」按钮回到同一机位。
+- FR-11【2026-11-06 新增】首屏视角指令不得丢失：`sceneCmd('view')` 在场景 `bridge-ready` 之前入队，就绪后补发（否则 URL 恢复的 `?mode=ZONE&zone=107` 在首屏被丢弃，场景停在默认机位）。
 - FR-9：设备**区域归属以数据分区为准**（`zoneId` 装载时打戳）；机器人只在 106 出现，不越区显示。
 
 ### 5.8 数据规范（新增/补齐字段，落到 `twin/api/seed.json` + 契约）
@@ -231,7 +233,7 @@ flowchart TD
 | Alarm | `dispatchedTo`, `dispatchedAt`, `resolvedAt` | string / ISO / ISO | 闭环链路 |
 | Alarm | `source` | `daq\|dispatch\|iot\|rule` | 来源系统标签（参考项目要求） |
 | LabStatus | `month{...}`, `year{...}`, `compareBasis` | 同 today 结构 | 三段口径 |
-| ZoneStats | `periods{day,month,year}{total,done,running,abnormal}`, `note` | int / string\|null | 区域任务统计；非试验区 note 说明 |
+| ZoneStats | `periods{day,month,year}{done,running,abnormal,queued,total}`, `note` | int / string\|null | 区域任务统计四格 + 排队；`queued=total-done-running-abnormal`（不为负）；非试验区 note 说明 |
 | RunningTask | `kind`, `taskId`, `name`, `deviceCode`, `robotId`, `startedAt`, `elapsedMin`, `plannedMin`, `stage`, `percent` | `dispatch\|daq` / … | 超时=elapsedMin>plannedMin |
 | LayerState | `path/labels/walls/heatmap/monitor` | boolean | 前端↔场景同步信封 |
 | Waypoint | `id,name,position{x,z},taskId,robotId,state` | — | 路径可点 |
@@ -416,6 +418,7 @@ flowchart TD
 | **P2-2** | 监控点位浮层 | 复用 `iot/monitoring-data.js`、`detail-card.js` | 相机点位→视频占位 + 时间戳（不造假画面） | Q7 后 |
 | **P2-3 ✅已上线** | 低配模式（Q8） | `pbr-lab-materials.js`/Reflector | 一键关反射与材质 pass，保留状态色 | 目标机型帧时达标 |
 
+| **新增 ✅已上线** | 首屏机位固定 + 视角指令排队（FR-10/FR-11） | `visual-106-whiteblue.js`、`scene-group-highlight-v3-1.js`、`twin-scene-v2.js` | 视角表 overall-101 改 [-1.05,.6]；CAMERA 同步；sceneCmd view 就绪前入队 | camcheck 4 项断言（RMSE 37px、URL 恢复生效） |
 | **新增 ✅已上线** | 区域视图五类信息面板（§5.7） | `twin-scene-v2.html/.css/.js` + `twin-api-mock.js` + `seed.json` | 五块固定顺序 + 就地更新 + 详情停靠 + 三端点 + zoneStats；浮层/底栏让位 | 31 项断言全绿 |
 
 ## Appendix C · 相关文档与修订
@@ -425,6 +428,7 @@ flowchart TD
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| 2.3 | 2026-11-06 | 【本次更新】任务统计四格改为 完成/执行中/异常/排队（去「任务总数」，seed 补 queued）；新增 FR-10 首屏机位固定（按产品负责人截图拟合标定 yaw=-1.05/elev=0.6/zoom=1，RMSE 37px）与 FR-11 首屏视角指令排队；integration 同步 task-stats 载荷与 ready 前指令语义 |
 | 2.2 | 2026-11-05 | 【本次更新】补 §5.7 区域视图信息模型（设备/环境数据/任务统计/正在运行的任务/告警 五块，FR-6~FR-9）：新增 /api/zone/{z}/{task-stats\|running-tasks\|alarms} 与 zoneStats 种子，区域下钻改为右侧五块面板，浮层与底栏让位，详情停靠不遮挡，环境数据与场景节点层同源；mock 加演示保活 |
 | 2.1 | 2026-11-05 | 【本次更新】按 §11 答复融合（模式 C，不覆盖原内容）：撤 5M1E、S2 改区域下拉、告警去写回只读三态、KPI 五指标三周期、106 主叙事改机器人卡住判定+设备一览、路径改直角折线、新增低配模式与遥控翻页；M1 代码已上线 |
 | 2.0-draft | 2026-11-05 | 首版：三格控制层 + KPI 口径表 + 告警闭环状态机 + 边界目录 + Agent 执行契约 + P0/P1/P2 代码锚点清单；8 个业务问题待产品负责人裁定 |

@@ -2,7 +2,7 @@ import * as THREE from './vendor/three.module.js';
 import {SceneGroupMotion,GROUP_MOTION} from '../src/scene-group-motion-v3-1.js';
 const CHANNEL='room-tour-highlight-v2',params=new URLSearchParams(location.search),mode=params.get('motion')==='stagger'?'stagger':'sync';
 const fixed=params.get('review')==='1'&&params.has('holdAt')?Number(params.get('holdAt')):null,holdAt=Number.isFinite(fixed)&&fixed>=0&&fixed<=10000?fixed:null;
-const CAMERA={yaw:-.18,elevation:.82,zoom:1};const shadows=new Map(),textures=[];
+const CAMERA={yaw:-1.05,elevation:.6,zoom:1};   /* 与 visual-106-whiteblue 的 overall-101 首屏机位保持一致，否则分组高亮复位时会把机位拉回旧角度 */const shadows=new Map(),textures=[];
 let visual=null,motion=null,pending=null,frame=0,lastAudit=0,currentNodes=new Set(),sceneRooms=[],manualRoom=null,baseline='';
 const rooms=new Map(),surfaces=[],groups=new Map(),boundaries=new Map(),mutedCache=new Map(),ownedGeometry=[],ownedMaterials=[],history=[];
 const contains=(x,z,pts)=>{let inside=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])inside=!inside;}return inside;};

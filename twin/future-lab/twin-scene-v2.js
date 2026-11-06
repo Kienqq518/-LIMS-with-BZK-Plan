@@ -10,14 +10,18 @@
   var scene = $('#scene');
   var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '';
   var rtTimer = null, detailDev = null, bridgeReady = false, pendingState = null;
-  var zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' };
+  var zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false;
   var SRC_NAME = { daq: '数采', dispatch: '调度', iot: '物联', lims: 'LIMS', rule: '判定规则' };
   var ORDER = [];  /* 遥控翻页序列 */
 
   var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 1, zones: 1, walls: 1, heatmap: 0 }, alarmFilter: 'open', quality: 'high', strip: 0 };
 
   function sendScene(type, data) { if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'twin-v2', type: type }, data), location.origin); }
-  function sceneCmd(type, data) { if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'future-lab-tech-blue-spatial', type: type }, data), location.origin); }
+  var pendingView = null;
+  function sceneCmd(type, data) {
+    if (type === 'view' && !sceneReady) { pendingView = data; return; }   /* 场景未就绪时指令会被丢弃，先排队 */
+    if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'future-lab-tech-blue-spatial', type: type }, data), location.origin);
+  }
   function toScene(type, data) { if (bridgeReady) sendScene(type, data); else pendingState = { type: type, data: data }; }
 
   function readURL() {
@@ -186,11 +190,12 @@
     var per = zstats && zstats.periods ? zstats.periods[st.period] : null;
     zp('#zpStatsPeriod').textContent = ({ day: '本日', month: '本月', year: '本年' })[st.period];
     if (per) {
-      zp('#zpStats .zp-body').innerHTML = '<div class="zp-grid">' +
-        '<div class="zp-stat"><b>' + per.total + '</b><span>任务总数</span></div>' +
-        '<div class="zp-stat"><b>' + per.done + '</b><span>已完成</span></div>' +
+      /* 四格口径（2026-11-06 定稿）：完成 / 执行中 / 异常 / 排队，不含总数——总数只做 title 备注，避免与三源总数对不上时被质疑 */
+      zp('#zpStats .zp-body').innerHTML = '<div class="zp-grid" title="任务总数 ' + per.total + '（含排队未开始）· 口径：数采">' +
+        '<div class="zp-stat ok"><b>' + per.done + '</b><span>已完成</span></div>' +
         '<div class="zp-stat run"><b>' + per.running + '</b><span>执行中</span></div>' +
-        '<div class="zp-stat warn"><b>' + per.abnormal + '</b><span>异常挂起</span></div></div>' +
+        '<div class="zp-stat warn"><b>' + per.abnormal + '</b><span>异常挂起</span></div>' +
+        '<div class="zp-stat wait"><b>' + per.queued + '</b><span>排队</span></div></div>' +
         (zstats.note ? '<div class="zp-empty" style="margin-top:7px">' + escapeHtml(zstats.note) + '</div>' : '');
     } else {
       zp('#zpStats .zp-body').innerHTML = '<div class="zp-empty">该区无任务口径' + (zstats && zstats.note ? '：' + escapeHtml(zstats.note) : '') + '。</div>';
@@ -498,7 +503,12 @@
   window.addEventListener('message', function (e) {
     var d = e.data; if (!d || (d.channel !== 'room-tour-preview-v1' && d.channel !== 'future-lab-tech-blue-spatial')) return;
     if (d.type === 'perf') $('#perf').textContent = 'draw calls ' + d.calls + ' · tris ' + (d.tris / 1000).toFixed(0) + 'k' + (d.fps ? ' · ' + d.fps + 'fps' : '');
-    if (d.type === 'bridge-ready') { bridgeReady = true; if (pendingState) { sendScene(pendingState.type, pendingState.data); pendingState = null; } pushState(); applyLayers(); }
+    if (d.type === 'bridge-ready') {
+      bridgeReady = true; sceneReady = true;
+      if (pendingState) { sendScene(pendingState.type, pendingState.data); pendingState = null; }
+      if (pendingView) { sceneCmd('view', pendingView); pendingView = null; }   /* 首屏机位/URL 恢复的视角补发 */
+      pushState(); applyLayers();
+    }
     if (d.type === 'device') openDeviceByCad(d.device);
     if (d.type === 'remote') handleKey(d.key);
   });

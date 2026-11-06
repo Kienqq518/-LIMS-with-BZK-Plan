@@ -147,7 +147,7 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 
 | 方向 | 消息 | 载荷 | 说明 |
 |---|---|---|---|
-| 宿主→网关（REST） | `GET /api/zone/{z}/task-stats` | 区域任务统计：`{periods{day,month,year}{total,done,running,abnormal}, note}`；非试验区 note 说明「无任务口径」 |
+| 宿主→网关（REST） | `GET /api/zone/{z}/task-stats` | 区域任务统计四格：`{periods{day,month,year}{done,running,abnormal,queued,total}, note}`；屏上只显示 完成/执行中/异常/排队，`total` 仅 title 备注；非试验区 note 说明「无任务口径」 |
 | 宿主→网关（REST） | `GET /api/zone/{z}/running-tasks` | 在制任务合并流：`{tasks[{kind:'dispatch'\|'daq', taskId, name, deviceCode, robotId, startedAt, elapsedMin, plannedMin, stage, percent}]}`；`elapsedMin>plannedMin` → 前端标「超时」 |
 | 宿主→网关（REST） | `GET /api/zone/{z}/alarms` | 本区告警（只读三态 + 派至 + 来源） |
 | 宿主→场景 | `state` | `{robots[], deviceStatus{}, layers{}, quality, routeNote}` | 幂等全量推，场景侧收到即应用图层与画质（避免 ready 竞态） |
@@ -160,5 +160,7 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 **几何约束（决策 Q5）**：调度系统机器人只直线行走、原地掉头。场景侧对工位锚点做**曼哈顿折线推导**（长边先走→掉头），引导线与机器人轨迹、插值均走折线段；转向为瞬时角度切换。未做现场标定时 `positionBasis='derived'`，UI 标注「相对轨迹」，不显示绝对坐标。
 
 **只读约束（决策 Q2 + PRD-v1 §6）**：孪生前端**无任何写回端点**。原 `TwinApi.alarmAck()` 已删除；告警三态 `active/dispatched/resolved` 只能由来源系统经网关推送，屏上不出现「演示回执」类标注。
+
+**首屏与视角**：`overall-101`（V2 运行大屏首屏机位）= `yaw -1.05 / elev 0.6 / zoom 1`（2026-11-06 按产品负责人截图标定，10 个房间标签屏幕位置拟合 RMSE≈37px）；`scene-group-highlight-v3-1.js` 的 `CAMERA` 常量必须与之一致，否则分组高亮复位会覆盖机位。宿主在场景 `bridge-ready` 之前不得直接发 `view` 指令——需入队，就绪后补发，保证 `?mode=&zone=&layers=` 的首屏恢复。
 
 **待补（下一步）**：`host:setAutoRoam`（讲解用自动巡航，默认关）、`scene:waypointClick{waypointId}`（折线拐点拾取，标记已渲染）、`requestId + ack + 3s 超时重试` 信封。
