@@ -27,7 +27,7 @@ function start(){
  canvas.onpointerup=e=>{if(dragging){dragging=null;canvas.releasePointerCapture(e.pointerId);}else original.up(e);};canvas.onpointercancel=()=>{dragging=null;};canvas.oncontextmenu=e=>e.preventDefault();
  canvas.addEventListener('pointerdown',()=>parent.postMessage({channel:CHANNEL,type:'background'},location.origin));
  document.addEventListener('keydown',event=>{if(event.key==='Escape')parent.postMessage({channel:CHANNEL,type:'escape'},location.origin);});
- window.addEventListener('message',event=>{if(event.source!==parent||event.origin!==location.origin||event.data?.channel!==CHANNEL)return;if(event.data.type==='view')window.spaceNavigation.setView(event.data.view);if(event.data.type==='request-catalog')sendEquipmentCatalog();if(event.data.type==='equipment-highlight')window.roomTourEquipmentSelection?.(event.data.id);});
+ window.addEventListener('message',event=>{if(event.source!==parent||event.origin!==location.origin||event.data?.channel!==CHANNEL)return;if(event.data.type==='view')window.spaceNavigation.setView(event.data.view);if(event.data.type==='pan')pan.set(event.data.x||0,event.data.y||0);if(event.data.type==='request-catalog')sendEquipmentCatalog();if(event.data.type==='equipment-highlight')window.roomTourEquipmentSelection?.(event.data.id);});
  window.addEventListener('space-view-change',announce);
  window.addEventListener('space-device-select',event=>{window.roomTourEquipmentSelection?.(event.detail.id);parent.postMessage({channel:CHANNEL,type:'device',device:event.detail},location.origin);});
  v.render();announce();sendEquipmentCatalog();parent.postMessage({channel:CHANNEL,type:'ready'},location.origin);

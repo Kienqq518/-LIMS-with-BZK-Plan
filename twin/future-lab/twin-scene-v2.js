@@ -47,7 +47,7 @@
       TwinApi.get('/api/overview/lab-status'), TwinApi.get('/api/overview/zones'), TwinApi.get('/api/overview/today-tasks'),
       TwinApi.get('/api/overview/alarms'), TwinApi.get('/api/zone/106/devices'), TwinApi.get('/api/zone/106/robots'),
       TwinApi.get('/api/zone/106/samples'), TwinApi.get('/api/zone/106/dispatch-tasks'),
-      TwinApi.get('/api/zone/103/devices')
+      TwinApi.get('/api/zone/103/devices'), TwinApi.get('/api/zone/106/cycle')
     ]);
   }).then(function (r) {
     status = r[0].data; zones = r[1].data || []; tasks = r[2].data || []; alarms = r[3].data || [];
@@ -56,6 +56,7 @@
     routeNote = (robots[0] && robots[0].routeBasis) ? '机器人位置基准：' + robots[0].routeBasis : '';
     /* 讲解顺序（决策 Q1 售前投影）：总览 → 106 无人化区（主叙事）→ 其余区域 → 告警回溯 */
     ORDER = ['S1', 'Z106'].concat(zones.map(function (z) { return 'Z' + z.zoneId.slice(2); }).filter(function (z) { return z !== 'Z106'; })).concat(['S3']);
+    if (r[9] && r[9].data && r[9].data.live) renderCycle(Object.assign({}, r[9].data.live, { total: r[9].data.cycle.stops.length }));
     buildZoneSelect(); bindControls(); syncLayerMenu(); applyAll();
     TwinApi.ws(onEvent);
   }).catch(function (e) { fail(e.message); });
@@ -64,15 +65,39 @@
     if (ev.type === 'tick') {
       robots = (ev.payload.robots && ev.payload.robots.length ? ev.payload.robots : robots);
       devices.forEach(function (d) { var s = ev.payload.devices.filter(function (x) { return x.deviceId === d.deviceId; })[0]; if (s) d.status = s.status; });
-      renderRobots(); renderZonePanel(); pushState();
+      renderRobots(); renderZonePanel(); renderCharts(); pushState();
     } else if (ev.type === 'task.progress') {
       var t = tasks.filter(function (x) { return x.taskId === ev.payload.taskId; })[0];
       if (t) { t.progress.percent = ev.payload.percent; t.stage = ev.payload.stage; if (ev.payload.percent >= 100) t.result = 'passed'; renderStrip(); }
     } else if (ev.type === 'device.status') { renderZonePanel(); }
+    else if (ev.type === 'cycle') { renderCycle(ev.payload); }
     else if (ev.type === 'alarm.update') { renderAlarms(); pushState(); }
   }
 
   /* ---------- ① 指标：五数 × 三周期（决策 Q3） ---------- */
+  var ST_COLOR = { working: '#2878FF', ready: '#16A34A', standby: '#94A3B8', stopped: '#64748B', alarm: '#E5484D' };
+  var ST_LABEL = { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常' };
+  function renderCharts() {
+    var pool = st.mode === 'ZONE' && zoneDevices(st.zone).length ? zoneDevices(st.zone) : devices;
+    var bad = {}; alarms.forEach(function (a) { if (a.status !== 'resolved' && a.deviceId) bad[a.deviceId] = 1; });
+    var cnt = { working: 0, ready: 0, standby: 0, stopped: 0, alarm: 0 };
+    pool.forEach(function (d) { cnt[bad[d.deviceId] ? 'alarm' : d.status] = (cnt[bad[d.deviceId] ? 'alarm' : d.status] || 0) + 1; });
+    var total = pool.length || 1, max = Math.max(1, cnt.working, cnt.ready, cnt.standby, cnt.alarm, cnt.stopped);
+    $('#devBars').innerHTML = ['working', 'ready', 'alarm', 'standby'].map(function (k) {
+      return '<div class="bar"><span class="k">' + ST_LABEL[k] + '</span><i><b style="width:' + Math.round(cnt[k] / max * 100) + '%;background:' + ST_COLOR[k] + '"></b></i><em>' + cnt[k] + '</em></div>';
+    }).join('');
+    var open = alarmOpen(), gmax = Math.max(1, open.filter(function (a) { return a.grade === 'A'; }).length, open.filter(function (a) { return a.grade === 'B'; }).length, open.filter(function (a) { return a.grade === 'C'; }).length);
+    $('#gradeBars').innerHTML = ['A', 'B', 'C'].map(function (g) {
+      var n = open.filter(function (a) { return a.grade === g; }).length;
+      var col = g === 'A' ? '#E5484D' : g === 'B' ? '#F76B15' : '#F59E0B';
+      return '<div class="bar"><span class="k">Grade ' + g + '</span><i><b style="width:' + Math.round(n / gmax * 100) + '%;background:' + col + '"></b></i><em>' + n + '</em></div>';
+    }).join('');
+    var rate = Math.round((cnt.working / total) * 100);
+    $('#ringFg').style.strokeDashoffset = (188.5 * (1 - rate / 100)).toFixed(1);
+    $('#ringVal').textContent = rate + '%';
+    $('#ringSub').textContent = '在测 ' + cnt.working + '/' + total;
+  }
+
   function renderMetrics() {
     var m = status.metrics[st.period], meta = status.metricMeta;
     $('#metrics').innerHTML = Object.keys(meta).map(function (k) {
@@ -88,21 +113,21 @@
   /* ---------- ② 告警：闭环三态只读（决策 Q2） ---------- */
   function alarmOpen() { return alarms.filter(function (a) { return a.status !== 'resolved'; }); }
   function renderAlarms() {
-    var list = st.alarmFilter === 'open' ? alarmOpen() : alarms;
-    $('#alarmSum').innerHTML = '<span class="open">未解除 ' + alarmOpen().length + '</span><span class="done">已解除 ' + alarms.filter(function (a) { return a.status === 'resolved'; }).length + '</span>' +
-      ['A', 'B', 'C'].map(function (g) { return '<span class="g' + g.toLowerCase() + '">' + g + ' ' + alarmOpen().filter(function (a) { return a.grade === g; }).length + '</span>'; }).join('');
-    $('#andonZone').innerHTML = list.slice(0, 3).map(function (x, i) {
-      var ST = { active: '未解除', dispatched: '已派发', resolved: '已解除' };
-      var loop = ['<span class="st ' + x.status + '">' + (ST[x.status] || x.status) + '</span>',
-        x.dispatchedAt ? '<span>派至 ' + x.dispatchedTo + ' · ' + x.dispatchedAt + '</span>' : '<span>待派发</span>',
-        x.resolvedAt ? '<span>' + x.resolvedAt + ' ' + (x.resolvedBy || '') + ' 确认解除</span>' : '',
-        '<span>来源 ' + (SRC_NAME[x.source] || x.source || '—') + '</span>'].join('');
-      return '<div class="andon-card' + (x.status === 'resolved' ? ' is-resolved' : '') + '" data-alarm="' + x.alarmId + '" data-dev="' + (x.deviceId || '') + '" data-zone="' + x.zoneId.replace('Z-', '') + '" data-grade="' + x.grade + '" data-status="' + x.status + '" data-to="' + escapeHtml(x.dispatchedTo || '') + '" data-title="' + escapeHtml(x.title) + '" style="animation-delay:' + (i * 60) + 'ms">' +
-        '<span class="grade ' + (x.grade === 'A' ? 'ga' : x.grade === 'B' ? 'gb' : 'gc') + '">Grade ' + x.grade + ' · ' + x.zoneId.replace('Z-', '') + '</span>' +
-        '<div class="ico">' + (String(x.deviceId).indexOf('RB') === 0 ? '🤖' : x.grade === 'B' ? '📈' : '🗄') + '</div>' +
-        '<b>' + escapeHtml(x.title) + '</b><p><i></i>' + escapeHtml(x.reason) + '</p><div class="loop">' + loop + '</div>' +
-        '<button class="ghost" data-trace="' + x.alarmId + '">回溯</button></div>';
-    }).join('') + (list.length > 3 ? '<div class="degrade">另有 ' + (list.length - 3) + ' 条告警未展开（同屏脉冲 ≤3）</div>' : '');
+    var open = alarmOpen(), list = st.alarmFilter === 'open' ? open : alarms.slice();
+    list = open.concat(alarms.filter(function (a) { return a.status === 'resolved'; })).filter(function (a) { return st.alarmFilter === 'all' ? true : a.status !== 'resolved'; });
+    $('#alarmSum').innerHTML = '<span class="open">未解除 ' + open.length + '</span><span class="done">已解除 ' + alarms.filter(function (a) { return a.status === 'resolved'; }).length + '</span>' +
+      ['A', 'B', 'C'].map(function (g) { return '<span class="g' + g.toLowerCase() + '">' + g + ' ' + open.filter(function (a) { return a.grade === g; }).length + '</span>'; }).join('');
+    $('#streamMeta').textContent = '近 24h · ' + list.length + ' 条 · 悬停暂停';
+    var rows = list.map(function (x) {
+      return '<div class="st-row' + (x.status === 'resolved' ? ' is-resolved' : '') + '" data-alarm="' + x.alarmId + '" data-dev="' + (x.deviceId || '') + '" data-zone="' + x.zoneId.replace('Z-', '') + '" data-grade="' + x.grade + '" data-status="' + x.status + '" data-to="' + escapeHtml(x.dispatchedTo || '') + '" data-title="' + escapeHtml(x.title) + '">' +
+        '<div class="l1"><span class="gd ' + x.grade.toLowerCase() + '">Grade ' + x.grade + '</span><span>' + escapeHtml(x.title) + '</span><span class="tm">' + x.occurredAt + '</span></div>' +
+        '<div class="rs">' + escapeHtml(x.reason) + '</div>' +
+        '<div class="l2"><span class="st ' + x.status + '">' + ST_AB(x.status) + '</span>' +
+        '<span>' + x.zoneId.replace('Z-', '') + '</span><span>派至 ' + escapeHtml(x.dispatchedTo || '待派发') + '</span>' +
+        '<button class="tr" data-trace="' + x.alarmId + '">回溯</button></div></div>';
+    }).join('');
+    $('#streamTrack').innerHTML = rows + rows;   /* 复制一份做无缝滚动 */
+    $('#streamTrack').style.animationDuration = Math.max(18, list.length * 6) + 's';
   }
 
   /* ---------- ③ 106 主叙事：机器人卡住 / 当前调度任务 / 设备状态 / 异常（决策 Q4） ---------- */
@@ -231,32 +256,29 @@
   function ST_AB(x) { return { active: '未解除', dispatched: '已派发', resolved: '已解除' }[x] || x; }
   function NODE_CN(t) { return { temperature: '温湿度', smoke: '烟感', gas: '气体', water: '水浸', motion: '人体', switch: '开关量', camera: '视觉', light: '照明' }[t] || t; }
 
-  /* ---------- ④ 底部条：按叙事切换内容（不再由切片控制可见性） ---------- */
+  /* ---------- ④ 底栏：只展示今日任务（滚动表格，透明底） ---------- */
   function renderStrip() {
-    var el = $('#taskStrip');
-    if (st.mode === 'ZONE' && st.zone === '106') {
-      el.innerHTML = dispatchTasks.slice().sort(function (a, b) { return (b.status === 'running') - (a.status === 'running'); }).slice(0, 12).map(function (t) {
-        return '<div class="task-chip ' + (t.status === 'running' ? 'run' : 'ok') + '" data-devcode="' + t.deviceCode + '"><b>' + escapeHtml(t.flowName) + '</b><small>' + t.time + ' · ' + t.deviceCode + ' · ' + (t.robotId || '') + '</small><div class="bar"><i style="width:' + (t.status === 'running' ? 55 : 100) + '%"></i></div></div>';
-      }).join(''); return;
-    }
-    if (st.mode === 'ZONE' && zoneDevices(st.zone).length) {   /* 有建档无调度：给设备摘要，可点详情 */
-      el.innerHTML = zoneDevices(st.zone).map(function (d) {
-        return '<div class="task-chip" data-devcode="' + d.code + '"><b>' + d.code + ' · ' + escapeHtml(d.name) + '</b><small>' + escapeHtml(d.subZone) + ' · ' + (d.status === 'working' ? '在测' : d.status === 'ready' ? '就绪' : '待机') + ' · 数采 ' + (d.daqUnitId || '—') + '</small><div class="bar"><i style="width:' + (d.status === 'working' ? 62 : 100) + '%"></i></div></div>';
-      }).join(''); return;
-    }
-    if (st.mode === 'ZONE') {
-      var z = zones.filter(function (x) { return x.zoneId === 'Z-' + st.zone; })[0] || {};
-      el.innerHTML = '<div class="degrade">' + escapeHtml(z.name || st.zone) + '：该区 V1 未接入设备与调度明细（PRD S2 仅覆盖 106 无人化区）。当前可见=台账投影：' + (z.deviceCount || 0) + ' 台设备 · 状态 ' + (z.status || '—') + '。</div>'; return;
-    }
-    if (st.mode === 'S3') {
-      el.innerHTML = alarms.slice().sort(function (a, b) { return String(a.occurredAt) < String(b.occurredAt) ? 1 : -1; }).map(function (a) {
-        return '<div class="task-chip ' + (a.status === 'resolved' ? 'ok' : 'abn') + '" data-alarm="' + a.alarmId + '"><b>' + a.occurredAt + ' · Grade ' + a.grade + '</b><small>' + escapeHtml(a.title) + '</small><div class="bar"><i style="width:' + (a.status === 'resolved' ? 100 : 45) + '%"></i></div></div>';
-      }).join(''); return;
-    }
-    el.innerHTML = tasks.map(function (t) {
-      var cls = t.result === 'alarm' ? 'abn' : t.source === 'WORKSTATION' ? 'ws' : '';
-      return '<div class="task-chip ' + cls + '" data-task="' + t.taskId + '"><b>' + t.sampleId + ' · ' + escapeHtml(t.type) + '</b><small>' + (t.source === 'LIMS' ? 'LIMS 下发' : '工位手动录入') + ' · ' + t.stage + ' · ' + t.deviceChain.join('→') + '</small><div class="bar"><i style="width:' + t.progress.percent + '%"></i></div></div>';
+    var el = $('#ttTrack'), rows = tasks.map(function (t) {
+      var cls = t.result === 'alarm' ? 'abn' : t.result === 'passed' ? 'ok' : (t.stage || '').indexOf('中') > 0 ? 'run' : 'wait';
+      return '<div class="tt-row" data-task="' + t.taskId + '" data-devcode="' + (t.deviceChain[0] || '') + '">' +
+        '<span class="no">' + t.taskId + '</span>' +
+        '<span class="nm">' + t.sampleId + ' · ' + escapeHtml(t.type) + '</span>' +
+        '<span class="st ' + cls + '">' + escapeHtml(t.stage) + '</span>' +
+        '<span class="chain">' + (t.deviceChain || []).join(' → ') + (t.source === 'WORKSTATION' ? ' · 工位手动录入' : ' · LIMS 下发') + '</span>' +
+        '<span class="pg"><i><b style="width:' + t.progress.percent + '%;background:' + (t.result === 'alarm' ? 'var(--tw-color-alertRed)' : 'var(--tw-color-brand)') + '"></b>' + t.progress.percent + '%</span></div>';
     }).join('');
+    el.innerHTML = rows + rows;
+    el.style.animationDuration = Math.max(16, tasks.length * 5) + 's';
+  }
+
+  /* ---------- 无人化任务循环剧本指示 ---------- */
+  function renderCycle(c) {
+    if (!c) return;
+    $('#cyNow').textContent = c.order + '/' + c.total;
+    $('#cyLabel').textContent = '无人化循环 · ' + (c.phase === 'dwell' ? '停靠作业' : '行走中');
+    $('#cySub').textContent = c.label + (c.flow ? ' · ' + c.flow : '') + ' · 剩余 ' + c.remainingSec + 's' + (c.deviceCode ? ' · 服务 ' + c.deviceCode : '');
+    var done = (c.order - 1 + (c.phase === 'dwell' ? 0.5 : 0.2)) / c.total;
+    $('#cyBar').style.width = Math.round(Math.min(1, done) * 100) + '%';
   }
 
   /* ---------- 场景状态推送 ---------- */
@@ -265,7 +287,8 @@
     var bad = {}; alarms.forEach(function (x) { if (x.status !== 'resolved' && x.deviceId && x.deviceId.indexOf('eq_') === 0) bad[x.deviceId] = 1; });
     toScene('state', {
       robots: robots, routeNote: routeNote, layers: st.layers, quality: st.quality,
-      deviceStatus: devices.reduce(function (m, d) { m[d.modelNode] = bad[d.deviceId] ? 'alarm' : d.status; return m; }, {})
+      deviceStatus: devices.reduce(function (m, d) { m[d.modelNode] = bad[d.deviceId] ? 'alarm' : d.status; return m; }, {}),
+      objects: devices.reduce(function (m, d) { m[(d.modelNode || '').replace('cad:', '')] = { code: d.code, name: d.name, type: d.type, subZone: d.subZone, status: bad[d.deviceId] ? 'alarm' : d.status, params: d.keyParams || [] }; return m; }, {})
     });
   }
 
@@ -296,22 +319,61 @@
 
 
 
+  /* ---------- 场景上行：就绪握手、性能、拾取、遥控、避让自检 ---------- */
+  window.addEventListener('message', function (e) {
+    var d = e.data; if (!d || (d.channel !== 'room-tour-preview-v1' && d.channel !== 'future-lab-tech-blue-spatial')) return;
+    if (d.type === 'perf') $('#perf').textContent = 'draw calls ' + d.calls + ' · tris ' + (d.tris / 1000).toFixed(0) + 'k' + (d.fps ? ' · ' + d.fps + 'fps' : '');
+    if (d.type === 'bridge-ready') {
+      bridgeReady = true; sceneReady = true;
+      if (pendingState) { sendScene(pendingState.type, pendingState.data); pendingState = null; }
+      if (pendingView) { sceneCmd('view', pendingView); pendingView = null; }   /* 首屏机位/URL 恢复的视角补发 */
+      pushState(); applyLayers();
+    }
+    if (d.type === 'device') { /* 场景内已弹出实体信息卡，宿主不再重复开右侧详情 */ }
+    if (d.type === 'device-open') openDeviceByCad(d.device);
+    if (d.type === 'remote') handleKey(d.key);
+    if (d.type === 'route-audit') { routeAudit = d; renderAudit(); renderZonePanel(); }
+  });
+  function renderAudit() {
+    var el = $('#auditBadge'); if (!el || !routeAudit) return;
+    var bad = routeAudit.violations > 0;
+    el.className = 'audit' + (bad ? ' bad' : '');
+    el.innerHTML = '<span class="zh">避让校验 ' + (bad ? '未通过' : '通过') + '</span><br>' + routeAudit.checked + ' 个采样点 · ' + routeAudit.obstacles + ' 个障碍实体 · 违规 ' + routeAudit.violations +
+      (bad ? '<br>' + routeAudit.detail.slice(0, 2).map(function (x) { return x.robot + ' ' + x.type + ' @' + x.at.join(','); }).join('<br>') : '');
+  }
+  function applyLayers() { Object.keys(st.layers).forEach(function (k) { toScene('layer', { layer: k, enabled: !!st.layers[k] }); }); toScene('quality', { level: st.quality }); }
+  function openDeviceByCad(dev) {
+    var match = devices.filter(function (x) { return x.modelNode === 'cad:' + dev.id; })[0];
+    if (!match) { openDetail('<h3>' + escapeHtml(dev.name || dev.id) + '</h3><div class="sub">该实体未纳入孪生对象清单（诚实降级：无实时档案）</div>'); return; }
+    detailDev = match; openDetail(deviceHtml(match)); pollRealtime();
+  }
+
   /* ---------- 三层控制 ---------- */
   function zoneView(z) { return z === '106' ? 'close' : z + '-close'; }
+  /* 下钻动效：先让桥接层记录切换前构图，再切视角+分组抬升，最后由桥接层补间推近（不再生硬跳帧） */
+  function drillTo(view, manualRoom) {
+    toScene('camera', { action: 'begin' });
+    if (scene.contentWindow) {
+      var ids = manualRoom ? [manualRoom] : zones.map(function (z) { return z.zoneId.slice(2); });
+      scene.contentWindow.postMessage({ channel: 'room-tour-highlight-v2', type: 'focus-scene', roomIds: ids, manualRoom: manualRoom, resetView: false }, location.origin);
+    }
+    sceneCmd('view', { view: view });   /* 必须排在 focus-scene 之后：分组抬升模块在 changed 时会把视角强制拉回 overall-101 */
+    toScene('camera', { action: 'drill' });
+  }
   function applyAll() {
     document.querySelectorAll('.mode').forEach(function (b) { b.classList.toggle('active', (st.mode === 'S1' && b.dataset.mode === 'S1') || (st.mode === 'S3' && b.dataset.mode === 'S3')); });
     if ($('#zoneSel').options.length) $('#zoneSel').value = st.zone;
     /* 区域视图=右侧五块面板；浮层（告警卡/机器人卡）与底栏让位，避免同一信息出现两次 */
     $('#zonePanel').hidden = st.mode !== 'ZONE';
-    $('#andonZone').hidden = st.mode === 'ZONE';
+    $('#alarmStream').hidden = st.mode === 'ZONE';
     $('#robotZone').hidden = st.mode === 'ZONE';
     $('#taskStrip').hidden = st.mode !== 'S1'; $('#taskStrip').classList.toggle('collapsed', !!st.strip);
     $('#stripBtn').textContent = st.strip ? '▴ 展开底栏' : '▾ 收起底栏'; $('#stripBtn').setAttribute('aria-pressed', !!st.strip);
     $('#stripBtn').disabled = st.mode !== 'S1';
     $('#s3Drawer').hidden = st.mode !== 'S3'; if (st.mode === 'S3') renderS3();
     var h = document.querySelector('.s3drawer b'); if (h) h.textContent = '告警回溯 · 最近 24h（未解除 ' + alarmOpen().length + ' / 共 ' + alarms.length + '）';
-    sceneCmd('view', { view: st.mode === 'S1' ? 'overall-101' : st.mode === 'S3' ? 'overall-101' : zoneView(st.zone) });
-    renderMetrics(); renderAlarms(); renderRobots(); renderStrip(); pushState(); writeURL();
+    drillTo(st.mode === 'ZONE' ? zoneView(st.zone) : 'overall-101', st.mode === 'ZONE' ? st.zone : null);
+    renderMetrics(); renderCharts(); renderAlarms(); renderRobots(); renderStrip(); pushState(); writeURL();
     if (st.mode === 'ZONE') { loadZone(); renderZonePanel(); }
 
   }
@@ -326,7 +388,7 @@
     else if (k === 'Home' || k === '1') setMode('S1');
     else if (k === 'End' || k === '3') setMode('S3');
     else if (k === '2') setMode('ZONE', '106');
-    else if (k === 'Escape') { $('#flowView').hidden = true; $('#detail').hidden = true; clearInterval(rtTimer); $('#layerMenu').hidden = true; $('#layerBtn').setAttribute('aria-expanded', 'false'); }
+    else if (k === 'Escape') { $('#detail').hidden = true; clearInterval(rtTimer); toScene('camera', { action: 'reset' }); }
     else return false;
     flashHint(); return true;
   }
@@ -352,24 +414,22 @@
     document.querySelectorAll('.mini').forEach(function (b) { b.onclick = function () {
       document.querySelectorAll('.mini').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.alarmFilter = b.dataset.alarmfilter; renderAlarms(); writeURL();
     }; });
-    $('#layerBtn').onclick = function () { var m = $('#layerMenu'); m.hidden = !m.hidden; this.setAttribute('aria-expanded', !m.hidden); };
-    document.addEventListener('click', function (e) { if (!e.target.closest('.drop')) { var m = $('#layerMenu'); if (m) m.hidden = true; $('#layerBtn').setAttribute('aria-expanded', 'false'); } }, true);
-    $('#layerMenu').addEventListener('change', function (e) {
-      var k = e.target.dataset.layer; if (!k) return; st.layers[k] = e.target.checked ? 1 : 0;
-      toScene('layer', { layer: k, enabled: !!e.target.checked }); pushState(); writeURL();
-    });
+    document.querySelectorAll('.lic').forEach(function (b) { b.onclick = function () {
+      var k = b.dataset.layer; st.layers[k] = st.layers[k] ? 0 : 1;
+      b.classList.toggle('on', !!st.layers[k]); b.setAttribute('aria-pressed', !!st.layers[k]);
+      toScene('layer', { layer: k, enabled: !!st.layers[k] }); pushState(); writeURL();
+      flashHint(b.getAttribute('desc') + '：' + (st.layers[k] ? '开' : '关'));
+    }; });
     $('#stripBtn').onclick = function () { st.strip = st.strip ? 0 : 1; applyAll(); };
     $('#lowBtn').onclick = function () {
       st.quality = st.quality === 'low' ? 'high' : 'low'; this.classList.toggle('active', st.quality === 'low'); this.setAttribute('aria-pressed', st.quality === 'low');
       toScene('quality', { level: st.quality }); pushState(); writeURL(); flashHint('低配模式：' + (st.quality === 'low' ? '开（关反射·降材质·降帧）' : '关'));
     };
-    $('#flowBtn').onclick = function () { $('#flowView').hidden = !$('#flowView').hidden; this.classList.toggle('active'); if (!$('#flowView').hidden) buildFlow(); };
-    $('#flowClose').onclick = function () { $('#flowView').hidden = true; $('#flowBtn').classList.remove('active'); };
     $('#detailClose').onclick = function () { $('#detail').hidden = true; clearInterval(rtTimer); detailDev = null; };
     /* 遥控翻页（决策 Q1：售前投影 + 翻页笔）。只吃 PgUp/PgDn/Home/End/1·2·3/Esc；
        方向键留给场景相机，避免与三维漫游打架。焦点在 iframe 内时由桥接层转发 remote 消息。 */
     document.addEventListener('keydown', function (e) { if (handleKey(e.key)) e.preventDefault(); });
-    $('#andonZone').addEventListener('click', function (e) {
+    $('#alarmStream').addEventListener('click', function (e) {
       var tr = e.target.closest('[data-trace]'), card = e.target.closest('[data-alarm]');
       if (tr) { $('#s3Drawer').hidden = false; renderS3(tr.dataset.trace); return; }
       if (!card) return;
@@ -437,7 +497,7 @@
   }
 
   function syncLayerMenu() {
-    document.querySelectorAll('#layerMenu input').forEach(function (i) { i.checked = !!st.layers[i.dataset.layer]; });
+    document.querySelectorAll('.lic').forEach(function (b) { b.classList.toggle('on', !!st.layers[b.dataset.layer]); b.setAttribute('aria-pressed', !!st.layers[b.dataset.layer]); });
     if (st.quality === 'low') { $('#lowBtn').classList.add('active'); $('#lowBtn').setAttribute('aria-pressed', 'true'); }
     document.querySelectorAll('.seg').forEach(function (b) { b.classList.toggle('active', b.dataset.period === st.period); });
     document.querySelectorAll('.mini').forEach(function (b) { b.classList.toggle('active', b.dataset.alarmfilter === st.alarmFilter); });
@@ -486,49 +546,6 @@
             '</div></div>';
         }).join('') || '<div class="degrade">当前筛选下无告警。</div>';
       });
-  }
-
-  /* ---------- 系统流视图（保持不变） ---------- */
-  var NODES = { 'SYS.LIMS': [1, 0], 'SYS.WORKSTATION': [1, 1], 'SYS.VISUAL': [0, 2], 'SYS.DISPATCH': [2, 0], 'SYS.ROBOT_SCHED': [2, 1], 'SYS.CENTRALCTRL': [2, 2], 'SYS.DEVICE': [3, 0], 'SYS.ROBOT': [3, 1], 'SYS.DAQ_MASTER': [4, 0], 'SYS.DAQ_SUB': [4, 1], 'SYS.DB': [4, 2], 'SYS.IOT': [5, 0], 'SYS.SAFETY': [6, 0], 'SYS.CCTV': [6, 1], 'SYS.HVAC': [6, 2], 'SYS.IMAGE': [6, 3], 'SYS.SENSOR': [6, 4] };
-  var EDGES = [['E1', 'SYS.LIMS', 'SYS.DAQ_MASTER', 'command', '任务下发'], ['E2', 'SYS.DAQ_SUB', 'SYS.LIMS', 'data', '数据回传'], ['E3', 'SYS.WORKSTATION', 'SYS.DAQ_MASTER', 'command', '手动任务'], ['E4', 'SYS.DAQ_SUB', 'SYS.WORKSTATION', 'data', '报告回流'], ['E5', 'SYS.DISPATCH', 'SYS.DEVICE', 'command', '动作/编排'], ['E6', 'SYS.DEVICE', 'SYS.DISPATCH', 'sync', '状态同步'], ['E7', 'SYS.DEVICE', 'SYS.DAQ_SUB', 'query', '取任务/推数据 1:1'], ['E8', 'SYS.DISPATCH', 'SYS.DAQ_MASTER', 'query', '条码拉参数(重点)'], ['E9', 'SYS.ROBOT_SCHED', 'SYS.DEVICE', 'command', '上下料握手'], ['E10', 'SYS.DISPATCH', 'SYS.ROBOT_SCHED', 'command', '调度指令'], ['E11', 'SYS.ROBOT_SCHED', 'SYS.DISPATCH', 'sync', '完成反馈'], ['E12', 'SYS.ROBOT_SCHED', 'SYS.ROBOT', 'command', '动作指令'], ['E13', 'SYS.CENTRALCTRL', 'SYS.DEVICE', 'sync', '行为/数据同步'], ['E14', 'SYS.IOT', 'SYS.DISPATCH', 'command', '指令级操作'], ['E15', 'SYS.IOT', 'SYS.DAQ_MASTER', 'command', '下发/查询'], ['E16', 'SYS.IOT', 'SYS.SAFETY', 'data', '外部联动'], ['E17', 'SYS.IMAGE', 'SYS.DAQ_MASTER', 'data', '多端口汇聚'], ['E18', 'SYS.DAQ_MASTER', 'SYS.DB', 'data', '共用数据库']];
-  var built = false;
-  function buildFlow() {
-    if (built) return; built = true;
-    var pos = function (n) { var c = NODES[n]; return [90 + c[1] * 190, 60 + c[0] * 88]; }, svg = $('#flowSvg'), out = '';
-    Object.keys(NODES).forEach(function (n) { var p = pos(n);
-      out += '<g class="fn"><rect x="' + (p[0] - 74) + '" y="' + (p[1] - 20) + '" width="148" height="40" rx="10"/><text x="' + p[0] + '" y="' + (p[1] + 4) + '" text-anchor="middle">' + n.replace('SYS.', '') + '</text></g>'; });
-    EDGES.forEach(function (e) { var a = pos(e[1]), b = pos(e[2]), sk = KIND_STYLE[e[3]], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2 - 26;
-      out += '<path class="fe" d="M' + a[0] + ' ' + a[1] + ' Q' + mx + ' ' + my + ' ' + b[0] + ' ' + b[1] + '" stroke="' + sk[0] + '" stroke-dasharray="' + sk[1] + '" data-e="' + e[0] + '"><title>' + e[0] + ' ' + e[4] + '</title></path>'; });
-    svg.innerHTML = out;
-  }
-  var KIND_STYLE = { command: ['#2878FF', '6 0'], data: ['#16A34A', '6 0'], sync: ['#94A3B8', '5 5'], query: ['#8B5CF6', '2 5'] };
-
-  /* ---------- 场景上行 ---------- */
-  window.addEventListener('message', function (e) {
-    var d = e.data; if (!d || (d.channel !== 'room-tour-preview-v1' && d.channel !== 'future-lab-tech-blue-spatial')) return;
-    if (d.type === 'perf') $('#perf').textContent = 'draw calls ' + d.calls + ' · tris ' + (d.tris / 1000).toFixed(0) + 'k' + (d.fps ? ' · ' + d.fps + 'fps' : '');
-    if (d.type === 'bridge-ready') {
-      bridgeReady = true; sceneReady = true;
-      if (pendingState) { sendScene(pendingState.type, pendingState.data); pendingState = null; }
-      if (pendingView) { sceneCmd('view', pendingView); pendingView = null; }   /* 首屏机位/URL 恢复的视角补发 */
-      pushState(); applyLayers();
-    }
-    if (d.type === 'device') openDeviceByCad(d.device);
-    if (d.type === 'remote') handleKey(d.key);
-    if (d.type === 'route-audit') { routeAudit = d; renderAudit(); renderZonePanel(); }
-  });
-  function renderAudit() {
-    var el = $('#auditBadge'); if (!el || !routeAudit) return;
-    var bad = routeAudit.violations > 0;
-    el.className = 'audit' + (bad ? ' bad' : '');
-    el.innerHTML = '<span class="zh">避让校验 ' + (bad ? '未通过' : '通过') + '</span><br>' + routeAudit.checked + ' 个采样点 · ' + routeAudit.obstacles + ' 个障碍实体 · 违规 ' + routeAudit.violations +
-      (bad ? '<br>' + routeAudit.detail.slice(0, 2).map(function (x) { return x.robot + ' ' + x.type + ' @' + x.at.join(','); }).join('<br>') : '');
-  }
-  function applyLayers() { Object.keys(st.layers).forEach(function (k) { toScene('layer', { layer: k, enabled: !!st.layers[k] }); }); toScene('quality', { level: st.quality }); }
-  function openDeviceByCad(dev) {
-    var match = devices.filter(function (x) { return x.modelNode === 'cad:' + dev.id; })[0];
-    if (!match) { openDetail('<h3>' + escapeHtml(dev.name || dev.id) + '</h3><div class="sub">该设备未纳入 106 V1 对象清单（诚实降级：无实时档案）</div>'); return; }
-    detailDev = match; openDetail(deviceHtml(match)); pollRealtime();
   }
 
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }

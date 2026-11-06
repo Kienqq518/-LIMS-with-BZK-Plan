@@ -25,6 +25,49 @@
 
   function emit(type, payload) { subs.forEach(function (fn) { try { fn({ type: type, payload: payload, at: now() }); } catch (e) { /* 订阅者异常隔离 */ } }); }
 
+  /* ---------- 无人化任务循环剧本（2026-11-06）----------
+     时间轴来自 seed：zone106.robots[RB-C-02].demoCycle.stops[{u,travelSec,dwellSec,t0}]，按墙上时钟取模，
+     所以刷新页面、多人同时看、挂机演示都处在同一相位；接入调度后由真实任务队列替换本函数即可。 */
+  function cycleNow() {
+    var rb = (state.zone106.robots || []).filter(function (r) { return r.robotId === 'RB-C-02'; })[0];
+    var c = rb && rb.demoCycle;
+    if (!c || !c.stops || !c.stops.length) return null;
+    /* 约定：stop.t0 = 停靠（dwell）开始时刻，travel 段在 [t0-travelSec, t0) */
+    var t = (Date.now() / 1000) % c.loopSec, last = c.stops[c.stops.length - 1], cur = last, idx = c.stops.length - 1, tail = false;
+    for (var i = 0; i < c.stops.length; i++) { if (t < c.stops[i].t0 + c.stops[i].dwellSec) { cur = c.stops[i]; idx = i; break; } }
+    if (t >= last.t0 + last.dwellSec) { tail = true; idx = c.stops.length - 1; }
+    var dwellStart = cur.t0, phase = tail ? 'travel' : (t < dwellStart ? 'travel' : 'dwell');
+    var next = c.stops[(idx + 1) % c.stops.length];
+    var f = phase === 'travel' ? (cur.travelSec > 0 ? Math.min(1, Math.max(0, (t - (cur.t0 - cur.travelSec)) / cur.travelSec)) : 1) : Math.min(1, (t - dwellStart) / cur.dwellSec);
+    var prevU = idx === 0 ? 0 : c.stops[idx - 1].u, u;
+    if (tail) { var tailSec = c.loopSec - (last.t0 + last.dwellSec); u = last.u + (1 - last.u) * Math.min(1, (t - last.t0 - last.dwellSec) / (tailSec || 1)); }
+    else if (phase === 'travel') u = prevU + (cur.u - prevU) * f;
+    else u = cur.u;
+    return { cycle: c, robot: rb, index: idx, stop: cur, next: next, phase: phase, f: f, tail: tail, u: Math.max(0, Math.min(1, u)),
+      remaining: Math.max(0, Math.round(tail ? c.loopSec - t : (phase === 'dwell' ? cur.t0 + cur.dwellSec - t : dwellStart - t))) };
+  }
+  function applyCycle() {
+    var cy = cycleNow(); if (!cy) return null;
+    var rb = cy.robot, st = cy.stop, dwell = cy.phase === 'dwell';
+    rb.progress = cy.u; rb.action = dwell ? 'servicing' : 'moving';
+    rb.currentFlowName = cy.tail ? '返回 102 家位/充电' : (st.flow || rb.currentFlowName);
+    rb.currentTaskId = cy.tail ? null : (st.taskNo || rb.currentTaskId);
+    rb.taskElapsedMin = dwell ? Math.round(cy.f * st.dwellSec / 60 * 10) / 10 : 0; rb.stallLimitMin = 15;
+    var served = state.zone106.devices.filter(function (x) { return x.code === st.deviceCode; })[0];
+    rb.servingDeviceId = served ? served.deviceId : rb.servingDeviceId;
+    rb.cycle = { order: cy.tail ? cy.cycle.stops.length : st.order, total: cy.cycle.stops.length,
+      label: cy.tail ? '返回 102 家位/充电位' : st.label, phase: cy.phase, remainingSec: cy.remaining, taskNo: st.taskNo, flow: st.flow, deviceCode: st.deviceCode };
+    /* 设备运行态由剧本驱动：正在停靠的设备=在测 */
+    state.zone106.devices.forEach(function (x) {
+      if (x.code === st.deviceCode && dwell) { x.status = 'working'; x.currentTaskId = st.taskNo || x.currentTaskId; }
+      else if (x.status === 'working' && !x.currentSampleId) { x.status = 'ready'; }
+    });
+    return { order: cy.tail ? cy.cycle.stops.length : st.order, total: cy.cycle.stops.length,
+      label: cy.tail ? '返回 102 家位/充电位' : st.label, phase: cy.phase, remainingSec: cy.remaining,
+      taskNo: cy.tail ? null : st.taskNo, flow: cy.tail ? '返航' : st.flow, deviceCode: cy.tail ? null : st.deviceCode,
+      u: +cy.u.toFixed(3), loopSec: cy.cycle.loopSec };
+  }
+
   /* ---- 定时器模拟三源变化（Mock 阶段：JSON + 定时器即可） ---- */
   function tick() {
     if (!state) return;
@@ -85,6 +128,10 @@
             elapsedMin: t.elapsedMin || 0, plannedMin: t.plannedMin || null, stage: t.stage, percent: t.progress ? t.progress.percent : null, result: t.result, sampleId: t.sampleId });
         });
         return resolve(envelope({ zoneId: 'Z-' + m[1], tasks: out }));
+      }
+      if ((m = path.match(/^\/api\/zone\/(\d{3})\/cycle$/))) {
+        var rb = (state.zone106.robots || []).filter(function (x) { return x.robotId === 'RB-C-02'; })[0];
+        return resolve(envelope(rb && rb.demoCycle ? { robotId: 'RB-C-02', cycle: rb.demoCycle, live: (function () { var c = cycleNow(); return c ? { order: c.stop.order, label: c.stop.label, phase: c.phase, remainingSec: c.remaining, u: c.u, loopSec: c.cycle.loopSec } : null; })() } : { unsupported: true }));
       }
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/alarms$/))) {
         return resolve(envelope({ zoneId: 'Z-' + m[1], alarms: clone((state.overview.alarms || []).filter(function (a) { return a.zoneId === 'Z-' + m[1]; })) }));

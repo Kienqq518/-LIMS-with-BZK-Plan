@@ -56,3 +56,21 @@
 **家位**：环线起点 `homeAnchor`。CAD 原始摆放把 106-08 放在 106-03 内、106-09 放在 106-06 内（视觉上就是"机器人压在设备里"），场景装载时必须先挪到 homeAnchor。
 
 **校验（常驻）**：`auditRoutes()` 逐段 0.02m 采样（当前 3758 点）→ 违规写 `#twin-v2-route-audit` + `route-audit` 消息 + 左栏徽标。**违规 > 0 不上线**。
+
+
+## 11. 浮层动效与相机补间（2026-11-06）
+
+**下钻序列（顺序即正确性）**：`camera:begin` → `focus-scene{roomIds,manualRoom}` → `view` → `camera:drill`。
+`view` 必须排在 `focus-scene` 之后：分组高亮模块在 `changed` 时会执行 `visual.setView('overall-101')`，先发的视角指令会被覆盖。
+
+**为什么不能只改 `visual.zoom`**：`scene-group-highlight-v3-1.js` 的 `fitFrame`（挂在 `window.roomTourFrame`）每帧用房间包围盒重算 `camera.left/right/top/bottom`，完全不读 `zoom`。因此补间必须在它**之后**按比例缩放视锥；并且要用 `Object.defineProperty(window,'roomTourFrame',{get,set})` 组合，而不是启动时一次性 wrap——对方 `start()` 里的赋值会把一次性 wrap 顶掉（实测表现为下钻偶发退化成瞬移）。
+
+**pan 是像素**：`whiteblue-spatial-engine.js` 把 `pan` 换算成世界偏移（`units=(top-bottom)/h`）。新增 `pan` 指令供宿主/桥接层设置；方向不靠猜——启动时用 `calibPan()` 实测「pan+40px 时参考点移动多少」来自标定，符号永远正确。
+
+**参考点补偿**：切换前后各投影一次固定世界点 `REF(14,0.6,19)`，用它的屏幕位移与半高比例反推起始 `frScale/pan`，再补间回 1/0 → 画面「先在旧构图停住，再平滑推近」，不会跳。
+
+**时长与降级**：下钻 760ms、切近 720ms，smoothstep；`prefers-reduced-motion:reduce` 或低配模式 → 直接落位（实测滚动浮层动画同时置为 `none`）。
+
+**切近取景规则**：相机站到「房间中心→实体」连线的反方向（正对操作面），`elev=0.62`，目标画面半高 `max(2.4m, 实体最大边×1.9)`，实体放在画面 40% 宽 / 52% 高，信息卡贴其右侧并每帧重投影跟随。
+
+**循环剧本**：`stop.t0 = 停靠开始时刻`（travel 段在 `t0-travelSec .. t0`）；行走段 `u` 从上一站推进到本站，停靠段 `u` 不变；末站之后为「返回 102」收尾段，倒计时 `max(0, …)`。按墙上时钟取模，保证刷新/多人/挂机同相位。

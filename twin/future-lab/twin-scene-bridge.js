@@ -11,7 +11,7 @@ if (new URLSearchParams(location.search).get('v2') === '1') boot();
 /* ---------- 墙体/隔断/柱子/地面分区处理（V1 视觉语言 §3：看设备运行，不看房间布局） ---------- */
 let wallMesh = null, wallBase = null, labCenter = null, wallOpacityBase = null;
 /* 渲染层状态（决策 Q7/Q8）：图层开关 + 低配模式。图层语义=渲染可见性，与业务切片无关。 */
-const LAYERS = { path: true, labels: true, zones: true, walls: true, heatmap: false };
+const LAYERS = { path: true, labels: true, walls: true, heatmap: false };   /* 分区色块按 2026-11-06 反馈移除；墙体=前侧外墙剖切开关 */
 let LOW = false, frames = 0, heatGroup = null, lastDeviceStatus = [];
 function findWalls() {
   visual.overview.children.forEach(c => {
@@ -155,7 +155,9 @@ function startAnimLoop() {
         const dir = pts[i + 1].clone().sub(pts[i]); g.rotation.y = Math.atan2(dir.x, dir.z);
       });
       pulseDots(t);
+      if (stepCam(t)) { /* 补间期间由 stepCam 决定相机输入 */ }
       visual.render();
+      if (cardFor) positionCard(cardFor);
     }
     requestAnimationFrame(loop);
   };
@@ -221,6 +223,12 @@ function showPop(orb, n) {
 function closePop() { if (popEl) popEl.hidden = true; popFor = null; }
 document.addEventListener('click', e => { if (popEl && !popEl.hidden && !e.target.closest('.node-orb,.node-marker') && !e.target.closest('.orb-pop')) closePop(); });
 
+function injectLayerStyle() {
+  if (document.getElementById('twin-v2-layer-style')) return;
+  const st = document.createElement('style'); st.id = 'twin-v2-layer-style';
+  st.textContent = '.no-labels .room-label,.no-labels .orb-tag,.no-labels .node-reading,.no-labels .iot-reading{display:none!important}';
+  document.head.append(st);
+}
 function boot() {
   const wait = setInterval(async () => {
     const v = window.visual106;
@@ -244,6 +252,19 @@ function build(v) {
   treatArchitecture();
   applyMaterialPass();
   startAnimLoop();
+  calibPan();
+  loadNames();
+  wrapFrame();
+  injectLayerStyle();
+  /* 点击任意实体（含桌子凳子）→ 先平滑换到它所在房间，再切近 + 弹信息卡 */
+  addEventListener('space-device-select', ev => {
+    const id = ev.detail && ev.detail.id; if (!id) return;
+    const zone = /^(\d{3})-/.test(id) ? RegExp.$1 : null;
+    const want = zone === '106' ? 'close' : (zone ? zone + '-close' : visual.view);
+    if (want !== visual.view) { snapCam(); window.spaceNavigation && window.spaceNavigation.setView(want); camCmd({ action: 'drill' }); }
+    camCmd({ action: 'device', deviceId: id, zoneId: zone });
+  });
+  addEventListener('lab-view-change', hideCard);
   annotateNodes();
   /* QA 自检钩子（DOM 可被隔离世界读取） */
   const hook = document.createElement('div'); hook.id = 'twin-v2-bridge';
@@ -258,6 +279,8 @@ function build(v) {
     if (d.type === 'state') applyState(d);
     if (d.type === 'layer') applyLayer(d.layer, !!d.enabled);
     if (d.type === 'quality') setQuality(d.level === 'low' ? 'low' : 'high');
+    if (d.type === 'camera') camCmd(d);
+    if (d.type === 'objects') { objectInfo = d.objects || {}; if (cardFor) renderCard(cardFor); }
   });
 
   /* 焦点在三维场景里时，翻页笔按键交回宿主（决策 Q1：售前投影遥控翻页） */
@@ -290,6 +313,7 @@ function applyState(d) {
     drawRoutes(d.robots);
     auditRoutes(d.robots);
   }
+  if (d.objects) objectInfo = d.objects;
   if (d.layers) Object.entries(d.layers).forEach(([k, v]) => applyLayer(k, !!v));
   if (d.quality) setQuality(d.quality === 'low' ? 'low' : 'high');
   lastDeviceStatus = Object.entries(d.deviceStatus || {}).map(([node, st]) => [node.replace('cad:', ''), st]);
@@ -330,10 +354,13 @@ function manhattan(pts) {
 function applyLayer(name, on) {
   if (!(name in LAYERS)) return; LAYERS[name] = on;
   if (name === 'path' && lines) lines.visible = on;
-  if (name === 'labels') statusDots.forEach(d => { d.visible = on; });
-  if (name === 'zones') { const g = visual.scene.getObjectByName('twin-v2-zones'); if (g) g.visible = on; }
+  if (name === 'labels') {                                   /* 设备状态标签=顶部光点；同时联动场景内房间/节点文字标签 */
+    statusDots.forEach(d => { d.visible = on; });
+    visual.host.classList.toggle('no-labels', !on);   /* 房间标签的 hidden 由 render() 每帧重算，只能走 CSS 覆盖 */
+  }
   if (name === 'walls') { if (on) fadeFrontWalls(); else restoreWalls(); }
   if (name === 'heatmap') { if (on) drawHeatmap(); else if (heatGroup) heatGroup.visible = false; }
+  if (name === 'zones') { const g = visual.scene.getObjectByName('twin-v2-zones'); if (g) g.visible = false; }   /* 兼容旧 URL 参数：分区色块恒关 */
   const hook = document.getElementById('twin-v2-bridge'); if (hook) hook.dataset.layers = Object.keys(LAYERS).filter(k => LAYERS[k]).join(',');
   visual.render();
 }
@@ -341,12 +368,15 @@ function drawHeatmap() {
   if (!heatGroup) { heatGroup = new THREE.Group(); heatGroup.name = 'twin-v2-heat'; visual.scene.add(heatGroup); }
   heatGroup.visible = true; heatGroup.clear();
   const COL = { working: 0x2878ff, ready: 0x16a34a, standby: 0x94a3b8, stopped: 0x64748b, alarm: 0xe5484d };
+  /* 负荷口径（2026-11-06 定稿）：106 无人化区设备=高负荷；其他区域降到最低（几乎不可见，保留存在性但不抢注意力） */
   (lastDeviceStatus || []).forEach(([id, status]) => {
     const mesh = visual.modelRoots.get(id); if (!mesh) return;
     const box = new THREE.Box3().setFromObject(mesh), c = box.getCenter(new THREE.Vector3());
-    const r = Math.max(0.9, Math.max(box.max.x - box.min.x, box.max.z - box.min.z) * 0.85);
+    const unmanned = /^106-/.test(id);
+    const r = Math.max(unmanned ? 1.15 : 0.7, Math.max(box.max.x - box.min.x, box.max.z - box.min.z) * (unmanned ? 1.0 : 0.7));
+    const hot = status === 'alarm' ? 0.34 : status === 'working' ? (unmanned ? 0.30 : 0.07) : unmanned ? 0.15 : 0.045;
     const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 28),
-      new THREE.MeshBasicMaterial({ color: COL[status] || COL.standby, transparent: true, opacity: status === 'alarm' ? 0.3 : 0.16, depthWrite: false, toneMapped: false }));
+      new THREE.MeshBasicMaterial({ color: COL[status] || COL.standby, transparent: true, opacity: hot, depthWrite: false, toneMapped: false }));
     disc.rotation.x = -Math.PI / 2; disc.position.set(c.x, 0.014, c.z); heatGroup.add(disc);
   });
 }
@@ -406,6 +436,8 @@ function allowedRects(r) {
 function drawRoutes(list) {
   if (!lines) return;
   lines.clear();
+  const hook = document.getElementById('twin-v2-bridge');
+  if (hook) hook.dataset.guide = String(list.filter(r => r.path && r.path.length > 1).length);
   list.forEach(r => {
     if (!r.path || r.path.length < 2) return;
     const pts = manhattan(r.path).map(q => new THREE.Vector3(q[0], 0.022, q[1]));
@@ -458,3 +490,173 @@ function auditRoutes(list) {
   parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'route-audit', checked: report.checked, obstacles: report.obstacles, violations: report.violations.length, detail: report.violations.slice(0, 8) }, location.origin);
   return report;
 }
+
+/* ================= 相机引擎：下钻 / 切近 / 回总览（补间，不再生硬跳视角） =================
+   只用 visual 的 yaw/elev/zoom + 引擎的 pan 作为输入，因此不接管 fitCamera，不与
+   whiteblue-spatial-engine / scene-group-highlight 的相机计算打架。 */
+const REDUCED = matchMedia('(prefers-reduced-motion:reduce)').matches;
+const REF = { x: 14, y: 0.6, z: 19 };                       // 参考世界点：用它度量切换前后的画面位移与比例
+let camSnap = null, camTween = null, myPan = [0, 0], panSens = { x: 1, y: 1 }, objectInfo = {}, cardFor = null, cardEl = null, namesMap = null, frScale = 1;
+/* 视锥补间：scene-group-highlight 的 fitFrame 每帧重算 camera.left/right/top/bottom 且不看 visual.zoom，
+   所以只能在它「之后」按比例缩放视锥——这是下钻/切近能平滑的唯一正确接法。 */
+function wrapFrame() {
+  if (visual.__twinFrameHooked) return; visual.__twinFrameHooked = true;
+  /* 用 getter/setter 包住 window.roomTourFrame：scene-group-highlight 会在自己 start() 里赋值，
+     一次性 wrap 会被它覆盖掉（实测导致下钻动画偶发退化成瞬移），这样后赋值也会被组合进来。 */
+  let real = window.roomTourFrame;
+  Object.defineProperty(window, 'roomTourFrame', {
+    configurable: true,
+    get() {
+      return (c, w, h) => {
+        if (real) real(c, w, h);
+        if (c.isOrthographicCamera && frScale !== 1) {
+          const mx = (c.left + c.right) / 2, my = (c.top + c.bottom) / 2;
+          const hw = (c.right - c.left) / 2 * frScale, hhv = (c.top - c.bottom) / 2 * frScale;
+          c.left = mx - hw; c.right = mx + hw; c.top = my + hhv; c.bottom = my - hhv; c.updateProjectionMatrix();
+        }
+      };
+    },
+    set(fn) { real = fn; }
+  });
+}
+function natHH() { const c = visual.camera; return (c.top - c.bottom) / 2 / frScale; }
+function setPan(x, y) { myPan = [x, y]; if (!parent || parent === window) return; parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'pan', x: x, y: y }, location.origin); }
+function proj(wx, wy, wz) {
+  const v = new THREE.Vector3(wx, wy, wz).applyMatrix4(visual.camera.matrixWorldInverse);
+  const c = visual.camera, host = visual.host.getBoundingClientRect();
+  return { x: host.left + (v.x / (c.right - c.left) + 0.5) * host.width, y: host.top + (0.5 - v.y / (c.top - c.bottom)) * host.height };
+}
+function hh() { return Math.abs(natHH()); }
+function snapCam() { wrapFrame(); visual.render(); visual.camera.updateMatrixWorld(); camSnap = { p: proj(REF.x, REF.y, REF.z), hh: hh(), scale: frScale }; }
+function calibPan() {
+  const a = proj(REF.x, REF.y, REF.z);
+  setPan(myPan[0] + 40, myPan[1]); visual.render(); const bx = proj(REF.x, REF.y, REF.z);
+  setPan(myPan[0], myPan[1] + 40); visual.render(); const by = proj(REF.x, REF.y, REF.z);
+  panSens = { x: (bx.x - a.x) / 40 || 1, y: (by.y - a.y) / 40 || 1 };
+  setPan(myPan[0], myPan[1]); visual.render();
+}
+function ease(t) { return t * t * (3 - 2 * t); }
+function stepCam(now) {
+  if (!camTween) return false;
+  const t = Math.min(1, (now - camTween.t0) / camTween.dur), e = ease(t), f = camTween.from, g = camTween.to;
+  visual.yaw = f.yaw + (g.yaw - f.yaw) * e;
+  visual.elev = f.elev + (g.elev - f.elev) * e;
+  frScale = f.scale + (g.scale - f.scale) * e;
+  setPan(f.pan[0] + (g.pan[0] - f.pan[0]) * e, f.pan[1] + (g.pan[1] - f.pan[1]) * e);
+  if (t >= 1) { camTween = null; frScale = g.scale; }
+  return true;
+}
+function tween(from, to, dur) {
+  wrapFrame();
+  const hook = document.getElementById('twin-v2-bridge');
+  if (hook) hook.dataset.tween = JSON.stringify({ reduced: REDUCED, low: LOW, dur: dur || 820, from: +from.scale.toFixed(3), to: +to.scale.toFixed(3) });
+  if (REDUCED || LOW) { visual.yaw = to.yaw; visual.elev = to.elev; frScale = to.scale; setPan(to.pan[0], to.pan[1]); visual.render(); return; }
+  camTween = { t0: performance.now(), dur: dur || 820, from: from, to: to };
+}
+function camCmd(d) {
+  if (!visual) return;
+  if (d.action === 'begin') { snapCam(); return; }
+  if (d.action === 'drill') {                       /* 视角切换后的补位：画面先停在旧构图，再平滑推近 */
+    frScale = camSnap ? camSnap.scale : 1;
+    visual.render(); visual.camera.updateMatrixWorld();
+    const q = proj(REF.x, REF.y, REF.z), hNew = hh();
+    const s0 = camSnap ? Math.max(0.35, Math.min(4, (camSnap.hh || hNew) / hNew)) * (camSnap ? camSnap.scale : 1) : 1;
+    const dx = camSnap ? camSnap.p.x - q.x : 0, dy = camSnap ? camSnap.p.y - q.y : 0;
+    const pan0 = [myPan[0] + dx / panSens.x, myPan[1] + dy / panSens.y];
+    frScale = s0; setPan(pan0[0], pan0[1]); visual.render();
+    tween({ yaw: visual.yaw, elev: visual.elev, scale: s0, pan: pan0 }, { yaw: visual.yaw, elev: visual.elev, scale: camSnap ? camSnap.scale : 1, pan: [0, 0] }, 760);
+    return;
+  }
+  if (d.action === 'device') { focusDevice(d.deviceId, d.zoneId); return; }
+  if (d.action === 'reset') { camTween = null; frScale = 1; setPan(0, 0); hideCard(); visual.render(); return; }
+}
+function boxOf(id) { const m = visual.modelRoots.get(id); if (!m) return null; const b = new THREE.Box3().setFromObject(m); return b.isEmpty() ? null : b; }
+function focusDevice(id, zoneId) {
+  const b = boxOf(id); if (!b) return;
+  const c = b.getCenter(new THREE.Vector3());
+  const room = (visual.g.rooms || []).find(r => r.id === (zoneId || (id.slice(0, 3))));
+  let rc = null;
+  if (room) { const xs = room.points.map(q => q[0] * 0.05), zs = room.points.map(q => q[1] * 0.05); rc = new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, 0, (Math.min(...zs) + Math.max(...zs)) / 2); }
+  const dir = rc ? new THREE.Vector3(c.x - rc.x, 0, c.z - rc.z) : new THREE.Vector3(-1, 0, 0);
+  if (dir.lengthSq() < 0.04) dir.set(-1, 0, 0);
+  dir.normalize();
+  const yaw = Math.atan2(-dir.x, dir.z);                       // 相机站到「房间中心→设备」的反方向一侧，正对设备操作面
+  const size = Math.max(b.max.x - b.min.x, b.max.z - b.min.z, b.max.y);
+  const want = Math.max(2.4, size * 1.9);                      // 目标半高（米）：设备占画面约一半
+  wrapFrame();
+  const base = hh();                                   /* 当前视角的自然半高（米） */
+  const sTarget = Math.max(0.12, Math.min(3, want / base));
+  const from = { yaw: visual.yaw, elev: visual.elev, scale: frScale, pan: myPan.slice() };
+  const to = { yaw: from.yaw + ((((yaw - from.yaw) % 6.2832) + 9.42) % 6.2832) - 3.1416, elev: 0.62, scale: frScale * sTarget, pan: [0, 0] };
+  visual.yaw = to.yaw; visual.elev = to.elev; frScale = to.scale; setPan(0, 0); visual.render();
+  const p = proj(c.x, c.y, c.z), host = visual.host.getBoundingClientRect();
+  to.pan = [(p.x - (host.left + host.width * 0.40)) / panSens.x, (p.y - (host.top + host.height * 0.52)) / panSens.y];
+  visual.yaw = from.yaw; visual.elev = from.elev; frScale = from.scale; setPan(from.pan[0], from.pan[1]);
+  tween(from, to, 720);
+  showCard(id, c);
+}
+/* ---------- 实体信息卡（任何有名字的 CAD 实体，含桌子凳子） ---------- */
+function ensureCard() {
+  if (cardEl) return cardEl;
+  cardEl = document.createElement('div'); cardEl.id = 'twin-v2-card'; cardEl.hidden = true;
+  const st = document.createElement('style'); st.id = 'twin-v2-card-style';
+  st.textContent = `#twin-v2-card{position:absolute;z-index:34;min-width:216px;max-width:262px;background:rgba(255,255,255,.82);backdrop-filter:blur(12px) saturate(1.25);
+ border:1px solid rgba(255,255,255,.95);box-shadow:0 16px 44px rgba(15,40,80,.16);border-radius:14px;padding:11px 13px;font-size:12px;color:#0F2740;
+ transform:translate(14px,-50%);transition:opacity .25s var(--tw-motion-easeOut),transform .25s var(--tw-motion-easeOut)}
+#twin-v2-card.enter{opacity:0;transform:translate(2px,-50%)}
+#twin-v2-card h4{margin:0 0 2px;font-size:13px;font-weight:700}
+#twin-v2-card .cid{font-size:10px;color:#8A97A7;font-variant-numeric:tabular-nums;letter-spacing:.2px}
+#twin-v2-card .row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px dashed #E9EEF4;margin-top:6px}
+#twin-v2-card .row span{color:#5B6B7D}#twin-v2-card .row b{font-variant-numeric:tabular-nums;text-align:right}
+#twin-v2-card .st{display:inline-flex;align-items:center;gap:5px;font-weight:700}#twin-v2-card .st i{width:7px;height:7px;border-radius:50%;background:#94A3B8}
+#twin-v2-card .st.working i{background:#2878FF}#twin-v2-card .st.ready i{background:#16A34A}#twin-v2-card .st.alarm i{background:#E5484D}#twin-v2-card .st.na i{background:#C3CCD6}
+#twin-v2-card .go{margin-top:9px;width:100%;font:inherit;font-size:11px;color:#2878FF;background:#F2F7FF;border:1px solid #D7E4FF;border-radius:999px;padding:5px 10px;cursor:pointer}
+#twin-v2-card .x{position:absolute;right:8px;top:6px;border:0;background:0;font-size:15px;color:#8A97A7;cursor:pointer;line-height:1}`;
+  (visual.host.parentElement || document.body).append(st, cardEl);
+  cardEl.style.position = 'fixed';
+  cardEl.querySelector('.x')?.addEventListener('click', hideCard);
+  visual.host.addEventListener('pointerdown', e => { if (cardEl && !cardEl.contains(e.target)) hideCard(); }, true);
+  return cardEl;
+}
+function loadNames() {
+  if (namesMap) return Promise.resolve(namesMap);
+  return fetch('data/equipment-names.json').then(r => r.json()).then(j => { namesMap = {}; (j.equipment || []).forEach(e => { namesMap[e.cadId] = e; }); return namesMap; });
+}
+const ROOM_CN = { '101': '接待大厅', '102': '智能样品室', '103': '智能力学室', '104': '控制室', '105': '智能高压室', '106': '无人化电缆试验区', '107': '材料试验区', '108': '环境试验区', '109': '综合试验区', '110': '数智化电气试验区' };
+const ST_CN = { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常' };
+function showCard(id, center) {
+  ensureCard(); cardFor = id;
+  loadNames().then(() => renderCard(id, center));
+}
+function renderCard(id, center) {
+  if (!cardEl || !cardFor) return;
+  const n = (namesMap || {})[id] || {}, o = objectInfo[id] || null;
+  const status = o ? o.status : null;
+  const b = boxOf(id);
+  const fp = b ? (Math.round((b.max.x - b.min.x) * 100) / 100) + '×' + (Math.round((b.max.z - b.min.z) * 100) / 100) + ' m' : '—';
+  const room = id.slice(0, 3);
+  const params = (o && o.params || []).slice(0, 2).map(p => p.name + ' ' + p.value + (p.unit || '')).join(' · ');
+  cardEl.innerHTML = '<button class="x" aria-label="关闭">×</button><h4>' + esc(n.displayName || n.cadName || (o && o.name) || id) + '</h4>' +
+    '<div class="cid">' + id + (o && o.code ? ' · ' + o.code : '') + ' · ' + room + ' ' + (ROOM_CN[room] || '') + '</div>' +
+    '<div class="row"><span>状态</span><b class="st ' + (status || 'na') + '"><i></i>' + (status ? ST_CN[status] : '无实时数据') + '</b></div>' +
+    '<div class="row"><span>' + (o ? '类型' : '归档') + '</span><b>' + esc(o ? (o.type || '—') : (n.nameConfirmed ? 'CAD 已确认名称' : 'CAD 原始名称')) + '</b></div>' +
+    (o && o.subZone ? '<div class="row"><span>分区</span><b>' + esc(o.subZone) + '</b></div>' : '') +
+    (params ? '<div class="row"><span>关键参数</span><b>' + esc(params) + '</b></div>' : '') +
+    '<div class="row"><span>占地</span><b>' + fp + '</b></div>' +
+    (o ? '<button class="go" data-go="' + id + '">查看详情与实时参数</button>' : '<div class="row"><span>数采</span><b>非数采对象</b></div>');
+  cardEl.querySelector('.x').onclick = hideCard;
+  cardEl.querySelector('[data-go]') && (cardEl.querySelector('[data-go]').onclick = () => parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'device-open', device: { id: id, name: (namesMap[id] || {}).displayName || id } }, location.origin));
+  cardEl.hidden = false;
+  cardEl.classList.add('enter'); requestAnimationFrame(() => cardEl.classList.remove('enter'));
+  positionCard(id, center);
+}
+function positionCard(id, center) {
+  if (!cardEl || cardEl.hidden) return;
+  const b = center ? null : boxOf(id); const c = center || (b && b.getCenter(new THREE.Vector3()));
+  if (!c) return;
+  visual.camera.updateMatrixWorld();
+  const p = proj(c.x, Math.max(c.y, 0.9), c.z);
+  cardEl.style.left = p.x + 'px'; cardEl.style.top = p.y + 'px';
+}
+function hideCard() { if (cardEl) cardEl.hidden = true; cardFor = null; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }

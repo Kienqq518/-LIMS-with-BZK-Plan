@@ -165,4 +165,7 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 
 **行进约束（2026-11-06）**：机器人 `path` 为曼哈顿折线锚点（0.05m 栅格 A* 推导），并带 `homeAnchor / allowedZones / corridor / footprint / sweptEnvelope(0.902) / clearanceM(0.20) / serves / routeMethod`。场景侧 `auditRoutes()` 每次装载逐段 0.02m 采样校验「越出允许范围」与「与实体重叠/穿越」，结果经 `{type:'route-audit', checked, obstacles, violations, detail}` 回传宿主并常驻左栏显示；违规>0 视为不可上线。真实调度接入后仅替换 `path/homeAnchor`，校验规则不变。
 
+**相机与浮层（2026-11-06）**：宿主 → 场景新增 `twin-v2/camera{action:'begin'|'drill'|'device'|'reset', deviceId?, zoneId?}` 与 `future-lab-tech-blue-spatial/pan{x,y}`（像素）；场景 → 宿主新增 `route-audit{checked,obstacles,violations,detail}`。下钻指令序列与时序约束见 `docs/twin-design/animation-spec.md` §11。
+`GET /api/zone/106/cycle` → `{robotId, cycle{loopSec,speedMs,pathLengthM,stops[{order,cad,label,flowCode,flow,taskNo,deviceCode,u,travelSec,dwellSec,t0}]}, live{order,label,phase:'travel'|'dwell',remainingSec,u,loopSec}}`；`live` 由墙上时钟取模计算，前端只读不写。
+
 **待补（下一步）**：`host:setAutoRoam`（讲解用自动巡航，默认关）、`scene:waypointClick{waypointId}`（折线拐点拾取，标记已渲染）、`requestId + ack + 3s 超时重试` 信封。
