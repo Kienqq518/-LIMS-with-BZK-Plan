@@ -43,11 +43,13 @@ r=await rects();
 out.push((!noOverlap(r)?'✅':'❌')+' 106 下钻后浮层仍互不重叠: '+noOverlap(r));
 out.push(((r.dock&&r.dock!=='hidden')?'✅':'❌')+' 106 下钻后底栏仍在（任务队列继续走）: '+JSON.stringify(r.dock));
 out.push(((r.rail&&r.rail!=='hidden')?'✅':'❌')+' 106 下钻后左栏仍在（主叙事不降级）');
-const pos0=await f.evaluate(()=>{const m=window.visual106.modelRoots.get('106-08');return m?[+m.position.x.toFixed(3),+m.position.z.toFixed(3)]:null;});
-await p.waitForTimeout(6000);
-const pos1=await f.evaluate(()=>{const m=window.visual106.modelRoots.get('106-08');return m?[+m.position.x.toFixed(3),+m.position.z.toFixed(3)]:null;});
-const moved=Math.hypot(pos1[0]-pos0[0],pos1[1]-pos0[1]);
-out.push((moved>0.3?'✅':'❌')+` 106 下钻后机器人仍在行进（6s 位移 ${moved.toFixed(2)}m）`);
+/* 观察窗必须覆盖「一次停靠 + 一段行走」：剧本最长 dwell 9s，原来只看 6s，
+   整窗落进停靠段就报「机器人没走」——那是假失败（2026-11-07 全量踩到，位移 0.00m）。
+   改成轮询到出现位移即早退，最长 24s（≈ 一圈里最长的停靠 + 跨站行走）。 */
+const robPos=()=>f.evaluate(()=>{const m=window.visual106.modelRoots.get('106-08');return m?[+m.position.x.toFixed(3),+m.position.z.toFixed(3)]:null;});
+const pos0=await robPos(); let pos1=pos0, moved=0; const tEnd=Date.now()+24000;
+while (Date.now()<tEnd) { await p.waitForTimeout(2500); pos1=await robPos(); moved=Math.hypot(pos1[0]-pos0[0],pos1[1]-pos0[1]); if (moved>0.3) break; }
+out.push((moved>0.3?'✅':'❌')+` 106 下钻后机器人仍在行进（≤24s 观察窗内位移 ${moved.toFixed(2)}m，含停靠段）`);
 const live=await p.evaluate(async()=>{const x=await TwinApi.get('/api/zone/106/cycle');return x.data.live.order+'/'+x.data.live.total+' '+x.data.live.phase;});
 out.push(((live.split(' ')[1]==='travel'||live.indexOf('dwell')>0)?'✅':'❌')+' 任务也在推进: '+live);
 const blocks106=await p.evaluate(()=>[...document.querySelectorAll('#zonePanel .zp-scroll > section')].filter(e=>!e.hidden).map(e=>e.querySelector('h4').innerText.split('\n')[0].trim()));

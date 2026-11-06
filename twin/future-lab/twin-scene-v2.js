@@ -566,6 +566,7 @@
   window.addEventListener('message', function (e) {
     var d = e.data; if (!d || (d.channel !== 'room-tour-preview-v1' && d.channel !== 'future-lab-tech-blue-spatial')) return;
     if (d.type === 'perf') { var pf = $('#perf'); if (pf) pf.textContent = 'draw calls ' + d.calls; }   /* 性能读数按 2026-11-06 反馈不再常驻显示 */
+    if (d.type === 'hint') { flashHint(d.text); }   /* 场景内点不到的对象（如未建模的台账号）由场景回传说明，屏上不给假动作 */
     if (d.type === 'bridge-ready') {
       bridgeReady = true; sceneReady = true;
       if (pendingState) { sendScene(pendingState.type, pendingState.data); pendingState = null; }
