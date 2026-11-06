@@ -11,9 +11,10 @@ const f=p.frames().find(x=>/tour-space/.test(x.url()));
 const probe=()=>f.evaluate(()=>{
   const v=window.visual106;
   const room=[...v.labels].filter(l=>getComputedStyle(l.div).display!=='none').length;
-  const orb=[...document.querySelectorAll('.orb-tag')].filter(e=>getComputedStyle(e).display!=='none').length;
+  const orb=document.querySelectorAll('.orb-tag').length;                       /* 身份标签（名称·类型）已下线 */
+  const markers=document.querySelectorAll('.node-marker[data-node-id]').length;  /* 节点标记保留，点击出详情卡 */
   let dots=0,vis=0; v.detail.traverse(o=>{ if(o.isMesh&&o.geometry&&o.geometry.type==='SphereGeometry'){dots++; if(o.visible)vis++;} });
-  return {roomTotal:v.labels.length, roomVisible:room, orbTotal:orb, orbVisible:orb, dotsTotal:dots, dotsVisible:vis, cls:v.host.className};
+  return {roomTotal:v.labels.length, roomVisible:room, orbTags:orb, markers:markers, dotsTotal:dots, dotsVisible:vis, cls:v.host.className};
 });
 const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期望 ${e})`);
 T('按钮文案', (await p.locator('.lic[data-layer=labels]').innerText()).trim(), '场地标签');
@@ -21,10 +22,11 @@ out.push(((await p.locator('.acts').innerText()).includes('设备状态标签')?
 const a=await probe();
 /* 房间标签本身就有 2 个不显示（电气间/洗手间等非房间位），基线取当前可见数，不拿总数当期望 */
 const baseRoom=a.roomVisible;
-out.push((baseRoom>=10&&a.dotsVisible===a.dotsTotal&&a.orbVisible>0?'✅':'❌')+' 默认：房间标签 '+baseRoom+'/'+a.roomTotal+' 可见、光点 '+a.dotsVisible+'/'+a.dotsTotal+'、节点标签 '+a.orbVisible+' 条: '+JSON.stringify(a));
+out.push((baseRoom>=10&&a.dotsVisible===a.dotsTotal?'✅':'❌')+' 默认：房间标签 '+baseRoom+'/'+a.roomTotal+' 可见、光点常驻 '+a.dotsVisible+'/'+a.dotsTotal+': '+JSON.stringify(a));
+out.push((a.orbTags===0&&a.markers>0?'✅':'❌')+' 物联节点身份标签已下线（.orb-tag=0），节点标记仍在 '+a.markers+' 个: orbTags='+a.orbTags);
 await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(1500);
 const c=await probe();
-out.push((c.roomVisible===0&&c.dotsVisible===c.dotsTotal&&c.orbVisible>0?'✅':'❌')+' 关闭后：房间名称全隐藏、设备状态光点仍在、物联节点标签仍在: '+JSON.stringify(c));
+out.push((c.roomVisible===0&&c.dotsVisible===c.dotsTotal&&c.orbTags===0?'✅':'❌')+' 关闭后：房间名称全隐藏、设备状态光点常驻、节点标签仍为 0: '+JSON.stringify(c));
 T('图层状态写入 URL（labels 已移出）', await p.evaluate(()=>new URLSearchParams(location.search).get('layers')), 'path');
 await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(1200);
 const d=await probe();

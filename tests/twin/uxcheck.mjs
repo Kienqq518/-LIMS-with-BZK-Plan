@@ -36,7 +36,7 @@ await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(1200);
 T('关场地标签后图层', (await hook()).layers, 'path');
 T('关场地标签→设备状态光点不受影响', await ev(()=>{const v=window.visual106;let n=0,vis=0;v.detail.traverse(o=>{if(o.isMesh&&o.geometry&&o.geometry.type==='SphereGeometry'){n++;if(o.visible)vis++;}});return n&&vis===n?'dots-untouched':'visible='+vis+'/'+n;}), 'dots-untouched');
 T('关场地标签→房间名称全部隐藏', await ev(()=>{const v=window.visual106;return v.labels.filter(l=>getComputedStyle(l.div).display!=='none').length===0?'all-hidden':'some-visible';}), 'all-hidden');
-T('关场地标签→物联节点标签不受影响', await ev(()=>document.querySelectorAll('.orb-tag').length && [...document.querySelectorAll('.orb-tag')].every(e=>getComputedStyle(e).display!=='none')?'orbs-untouched':'some-orb-hidden'), 'orbs-untouched');
+T('物联节点身份标签已下线（只留点击弹窗）', await ev(()=>document.querySelectorAll('.orb-tag').length), 0);
 await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(900);
 // 2) 墙体剖切真的生效
 const wallH=()=>ev(()=>{const v=window.visual106;let m=null;v.overview.children.forEach(c=>{if(c.isMesh&&c.material&&c.material.transparent&&c.material.color&&c.material.color.getHex()===0xbbcbd7)m=c;});if(!m)return 'no-wall';const a=m.geometry.attributes.position;let hi=0;for(let s=0;s*18<a.length;s++)hi=Math.max(hi,a[s*18+7]);return {top:+hi.toFixed(2),op:+m.material.opacity.toFixed(2)};});

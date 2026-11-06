@@ -149,3 +149,14 @@
 - `.asec-body` 高度按**行高**取值：实测单行 97–114px（标题折行时更高），`max-height` 从 132px 提到 **236px**（约 2 行 + 间距 + 底部 26px 渐隐区）。132px 时每一行都被遮罩裁半，读不出原因文本——这类"容器高度 vs 内容行高"的匹配必须实测量一次，不能靠目测。
 - 空态文案 `今日无{分区标题}`，且空区**不加** `.scroll` 类（没有内容还滚动＝无意义的 transform）。
 - **测试侧约定**（alarmlvl 已按此实现）：点告警行前先 `document.querySelectorAll('.asec-track').forEach(t=>t.style.animationPlayState='paused')` 冻结滚动，再取 `.asec[data-sec=X] .st-row`；被遮罩裁掉的半行只是看不见，几何上仍可点，断言"点某行弹出对应详情"时要以 `data-alarm` 比对而不是按屏幕位置猜。
+
+
+## 18. 光点命中与键盘焦点（2026-11-06）
+
+**光点为什么不能靠射线**：状态光点是 `visual.detail` 里的 0.045m 小球，而 CAD 引擎的拾取只 `intersectObjects([...modelRoots])`——射线根本不看它，所以点光点原本**什么都不发生**（用户反馈「增加点击设备展示设备信息弹窗」的真实缺口就在这儿）。
+改成按**屏幕距离**命中：把每个光点的世界坐标投影到视口，取 `Math.hypot(dx,dy) ≤ 16px` 的最近一个。半径必须给到 16px——0.045m 的球在总览机位下只有约 8px，给 6px 实测点不中；命中后派发同一个 `space-device-select`，与点设备本体共用 `focusDevice()` + 信息卡，**不另写一套弹卡逻辑**（两套实现必然漂移）。
+去重靠 `visual.selected === id`：引擎的 `onpointerup` 是属性赋值、先于我方 `addEventListener` 执行，所以进我方处理时 `visual.selected` 已是本次拾取结果，同一台设备不重复触发补间。
+
+**物联节点标签下线**：`.orb-tag`（名称·类型）由桥接层每 800ms 轮询节点标记后追加，16 条互相压字；节点标记本身是 `<button>` 且带 `title`，点击已能出 NodeLayer 详情卡（读数/状态/更新时间/离线态），标签属于纯噪声 → 连 `showPop/closePop` 死代码一起删。`.node-reading`（实时读数胶囊）**保留**：它是数据不是身份标签，与区域视图「环境数据」同源。
+
+**键盘焦点即暂停**：分区滚动是 CSS 动画，鼠标悬停能暂停但键盘用户没有 hover。行了 `tabindex` 之后用 `.asec:focus-within .asec-track.scroll{animation-play-state:paused}` 补齐——Tab 进某一行，那一区就停住，逐条读得完；`Enter/Space` 由 document 级代理到 `el.click()`，与鼠标同一入口。

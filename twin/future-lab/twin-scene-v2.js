@@ -186,6 +186,7 @@
   function alarmRows(list, cls) {
     return list.map(function (x) {
       var attrs = ' class="' + cls + (x.status === 'resolved' ? ' is-resolved' : '') + '" data-alarm="' + x.alarmId + '" data-dev="' + (x.deviceId || '') + '"' +
+        ' tabindex="0" role="button" aria-label="' + escapeHtml(x.grade + ' 级 ' + x.title + '，' + ST_AB(x.status) + '，回车查看详情') + '"' +
         ' data-zone="' + x.zoneId.replace('Z-', '') + '" data-grade="' + x.grade + '" data-status="' + x.status + '"' +
         ' data-to="' + escapeHtml(x.dispatchedTo || '') + '" data-title="' + escapeHtml(x.title) + '"';
       return '<div' + attrs + '>' +
@@ -214,6 +215,7 @@
     var openN = alarmOpen().length;
     $('#streamMeta').textContent = '今日 ' + alarms.length + ' 条 · 未解除 ' + openN + ' · 悬停暂停';
     $('#streamTrack').innerHTML = SECTIONS.map(function (sec) { return secBlock(sec, alarms); }).join('');
+    keyable($('#streamTrack'));
   }
 
   /* ---------- ③ 106 主叙事：机器人卡住 / 当前调度任务 / 设备状态 / 异常（决策 Q4） ---------- */
@@ -323,6 +325,7 @@
           (rows || '<div class="zp-empty">本区今日无' + sec.title + '</div>') + '</div>';
       }).join('');
       zp('#zpAlarmsN').textContent = '今日 ' + zalarms.length + ' · 未解除 ' + zopen.length;
+      keyable(zp('#zpAlarms'));
     }
   }
   function ST_CN(x) { return { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常' }[x] || x; }
@@ -512,6 +515,28 @@
     }).join('');
     $('#zoneSel').value = st.zone;
   }
+
+  /* ---------- 键盘可达（2026-11-06 反馈：告警行键盘点不到） ----------
+     这些行是「容器 + 事件委托」，没有内联 onclick，所以 js/ui-a11y.js 的 fixClickable 抓不到它们；
+     统一由 keyable() 在渲染后补 role/tabindex/aria-label，Enter 与空格触发同一入口（等价于点击）。 */
+  var KEYABLE = '[data-alarm], [data-dev], [data-robot], [data-task]';
+  function keyable(root) {
+    (root || document).querySelectorAll(KEYABLE).forEach(function (el) {
+      if (el.tagName === 'BUTTON' || el.tagName === 'A') return;
+      if (el.hasAttribute('role') && el.hasAttribute('tabindex')) return;
+      var label = (el.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+      if (!label) return;
+      el.setAttribute('role', 'button'); el.tabIndex = 0;
+      if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', label + '，回车查看');
+    });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    var el = e.target && e.target.closest ? e.target.closest(KEYABLE) : null;
+    if (!el || el === document.body) return;
+    e.preventDefault(); e.stopPropagation();      /* 空格不能被遥控翻页/页面滚动抢走 */
+    el.click();
+  });
 
   function bindControls() {
     document.querySelectorAll('.mode').forEach(function (b) { b.onclick = function () { setMode(b.dataset.mode); }; });

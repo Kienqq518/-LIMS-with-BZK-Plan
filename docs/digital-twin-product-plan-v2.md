@@ -145,7 +145,7 @@ method: GitHub skill `chituai/prd-writer`（三视角诊断→概念版→落地
 - FR-13【2026-11-06 新增 · 作用范围由 FR-13b 收窄】图层以 icon 呈现且**必须真的生效**：文字标签的 `hidden` 由场景 `render()` 每帧重算，图层开关只能用 CSS 类覆盖，不能用 `visible=false`。
 - FR-13b【2026-11-06 修订 · 产品负责人反馈】**「标签」改名「场地标签」，并且只控制各房间名称标签**：
   1. 起因：原实现把「标签」同时当成设备状态光点 + 物联节点名称/类型标签的开关——反馈原话「点击右上角的『标签』控制展示的状态标签是物联节点的名称和物联节点类型，这是不对的」。按钮名和实际作用域不一致，运维会以为关掉标签就没有设备状态。
-  2. 现在 `applyLayer('labels')` 只在 `visual.host` 上切 `.no-site-labels`，CSS 只命中 `.room-label`；**设备状态光点（`statusDots`）与物联节点标签（`.orb-tag` / `.node-reading`）不受本开关影响**——前者是告警/状态呈现（FR-3），后者是 IoT 节点层，各自由数据驱动。
+  2. 现在 `applyLayer('labels')` 只在 `visual.host` 上切 `.no-site-labels`，CSS 只命中 `.room-label`；**设备状态光点（`statusDots`）不受本开关影响**（它是告警/状态呈现的一部分，FR-3 + FR-25，常显无开关）；物联节点的身份标签已整体下线（FR-26），所以这里也没有它的事了。
   3. 兼容性：图层 key 仍是 `labels`，旧 URL（`layers=path,labels`）与外部链接不变；icon 文案与 `title` 明确「不影响设备状态光点与物联节点标签」。
 - FR-13a【2026-11-06 修订】**剖墙不再是图层开关，icon 从 4 个减到 3 个（路径/标签/热力）**。
   墙体剖切（靠近镜头一侧外墙压成 10cm 地脚带 + 玻璃隔断弱化）改为**固定渲染行为**：不剖的话总览会被高墙挡住设备，画面不可读，所以这个"开关"本身没有存在价值——要么常开（有用）要么常关（不可用），没有中间态。
@@ -184,7 +184,24 @@ method: GitHub skill `chituai/prd-writer`（三视角诊断→概念版→落地
   3. **每区自带计数**：区头 `今日 N · 未解除 M`；流头部保留全局汇总 `今日 13 条 · 未解除 9 · 悬停暂停`。
   4. **分区定义落数据**：`seed.overview['alarm-sections']` → `GET /api/overview/alarm-sections`，装载时由 `setSections()` 注入（缺数据或字段不合规才退回内置三条兜底）；URL 的 `alarmFilter` 顺序、面板重绘签名都取自 `secIds()`，不再出现字面量 `['A','B','C']`（同 FR-5「配置项不写死在 JS」原则）。
   5. 区域视图时告警流整体让位（同一信息只出现一次），三块分区改渲染进区域面板的「告警」块（106：A 今日5/未解除3、B 3/3、C 2/2）。
+  7. **B 区瓶颈叙事全部落在 106**（2026-11-06 反馈：「无人化区看本区」要更聚焦）：原 `AL-204 智能样品室储位紧张`（Z-102）改写为 `106 上料口排队 · AGV 上料试验桌`（Z-106，`deviceId=null`——该桌是 CAD 实体、无台账号，卡里不编造设备状态），原因文本保留 102 侧待上料 4 支的事实。总览 B 区计数不变（今日 4 · 未解除 3），106 面板从「今日 10 · 未解除 8」变「今日 11 · 未解除 8」，B 区 3→4。A/C 区不受影响（校准告警天然跟着设备所在房间走，108/103 各留一条）。
   6. **每区自滚、外层不滚**：动画挂在 `.asec-track` 上，外层 `.stream-board` 只排版。此前整块平移导致分区表头飘出画面、区头筛选按钮被滚走点不到；`.asec-body` 高度按实测行高取 236px（单行 97–114px，132px 时每行都被遮罩裁半）。滚动暂停规则：鼠标悬停或区内筛选按钮获得键盘焦点（`.asec:focus-within`）都停，遥控讲解时读得完。教训见 `docs/twin-design/animation-spec.md` §17。
+- FR-25【2026-11-06 新增 · 光点常驻且可点】设备状态光点是**唯一常驻的设备状态入口**，并且必须点得中：
+  1. 无开关：FR-13b 之后它不属任何图层按钮，常显（低配模式下降为静态色，仍在）。
+  2. 原本点光点什么都不发生：光点是 `visual.detail` 里的 0.045m 小球，**不在 CAD 拾取集合 `modelRoots` 里**，引擎的射线根本不看它。
+  3. 现在桥接层 `dotHitId()` 按**屏幕距离**命中（半径 16px）：0.045m 的球在总览机位下只有约 8px，纯射线检测等于点不中；命中后派发同一个 `space-device-select`，与点设备本体共用一条入口（信息卡 + `focusDevice` 切近），不另写一套。
+  4. 去重：引擎若已选中同一台（`visual.selected === id`）就不再触发，避免同一次点击重启动画。
+  5. QA 钩子 `visual.statusDots`（设备 → 光点映射），`tests/twin/pickcheck.mjs` 用它算屏幕位置做真鼠标点击。
+- FR-26【2026-11-06 新增 · 物联节点只留点击弹窗】**节点身份标签（名称 · 类型）整体下线**，信息改为"要看就点一下"：
+  1. 删除桥接层 `annotateNodes()`（往每个节点标记上贴 `.orb-tag`）与从未被调用的 `showPop/closePop` 死代码；`.orb-tag` 的 CSS 一并删掉。
+  2. 保留：`.node-marker`（`<button>`，带 `title`，键盘可 Tab 到）与实时读数胶囊 `.node-reading`（那是**数据**不是身份标签，属区域视图"环境数据"同源）；点击 → NodeLayer 自带详情卡（读数、状态、离线态、更新时间、规划位置警示）。
+  3. 判据：大屏上"每个节点都挂一条名字"是噪声（16 条互相压字），而参观与运维都需要的是"点某个节点看它现在怎么样"；与决策 Q6「只做运行镜像、不加叙事层」一致。
+  4. 断言：`.orb-tag` 数量恒为 0；点节点后 `#iot-audit` 的 `selectedId` 与 `cardVisible` 必须对得上（`tests/twin/pickcheck.mjs`）。
+- FR-27【2026-11-06 新增 · 委托点击的行必须键盘可达】告警行原本键盘完全点不到：
+  1. 根因：这些行是「容器 + 事件委托」，没有内联 `onclick`，所以 `js/ui-a11y.js` 的 `fixClickable`（只认 `div[onclick]`）抓不到它们。
+  2. 宿主加 `keyable()`：渲染后给 `[data-alarm] / [data-dev] / [data-robot] / [data-task]` 补 `role=button`、`tabindex=0`、`aria-label`（告警行在 `alarmRows()` 里直接带等级/标题/闭环状态，读屏有意义），document 级 Enter/Space 代理到 `el.click()`，与鼠标同一入口。
+  3. 焦点可见：`.st-row/.zp-row/.zp-run/.tt-row:focus-visible` 描品牌色焦点环（投影上要看得出停在哪儿）；焦点落在分区内即暂停该区滚动（`.asec:focus-within`），翻页笔/键盘逐条读告警不会飘。
+  4. 空格键 `stopPropagation`，不让它被页面滚动或遥控语义抢走。
 - FR-12【2026-11-06 新增 · 行进范围与避让】
   1. **范围**：`RB-C-02`（运输/制样用小机器人）只在 **102 智能样品室 ↔ 106 无人化电缆试验区 + 两区之间走廊**（走廊实测 x 18.44–20.84 / z 9.64–15.14，宽 2.40m）内行进；`RB-C-01`（检测环线）全程留在 106 内。越出范围=违规。
   2. **避让**：路径不得与任何实体重叠，也不得从实体下方穿过——障碍集合含全部试验设备、`106-12 AGV 上料试验桌（双承载位）`、`106-13 检测上下料试验桌`、货架、台桌、座椅、结构柱（场景内实测 73 个实体参与校验）。
@@ -425,6 +442,9 @@ flowchart TD
 | 错误零 | `#req013-runtime-errors` 为空 | 自动 |
 | FR-13b 场地标签作用域 | `tests/twin/sitelabel.mjs`：关标签后断言房间名 0 可见、状态光点与物联节点标签**数量不变** | 自动 |
 | FR-24 告警三分区 | `tests/twin/alarmlvl.mjs` + `filtercheck.mjs`：标题/计数取自 `/api/overview/alarm-sections`、每区只含本级、三区筛选互不影响、屏上无 `Grade` | 自动 |
+| FR-25 光点可点 | `tests/twin/pickcheck.mjs`：用 `visual.statusDots` 算屏幕位置发真鼠标点击，断言出卡且卡内是该设备 | 自动 |
+| FR-26 节点只留点击弹窗 | 同上：`.orb-tag` 恒 0；点 `.node-marker` 后 `#iot-audit.selectedId/cardVisible` 对得上 | 自动 |
+| FR-27 键盘可达 | 同上：行有 `role=button`+`tabindex=0`，Enter 打开详情，焦点落在区内 `.asec-track` 计算态为 `paused` | 自动 |
 
 ### 8.4 Stop and Escalate
 
@@ -529,6 +549,7 @@ flowchart TD
 
 | **新增 ✅已上线** | 行进范围与避让（FR-12） | `twin/api/seed.json`、`twin-scene-bridge.js`、`twin-scene-v2.{html,css,js}` | 删手绘环线；路线由 CAD 占地 A* 推导；家位挪出设备；场景内 3758 点逐段校验 + 左栏徽标 | routecheck 7 项全绿（违规 0） |
 | **新增 ✅已上线** | 透明浮层三处 + 下钻/切近补间 + 实体信息卡 + 无人化循环剧本 + 图层 icon 化 + 系统流移除（§5.9、FR-13~FR-17） | `twin-scene-v2.{html,css,js}`、`twin-scene-bridge.js`、`whiteblue-spatial-engine.js`、`twin-api-mock.js`、`seed.json` | 玻璃浮层+现算图表；`camera:begin/focus-scene/view/drill` 序列与视锥比例补间；`pan` 指令；剧本时钟 | uxcheck 38 项 + smoke 35 项 + reduced-motion 4 项全绿 |
+| **新增 ✅已上线** | 光点常驻且可点（FR-25）+ 物联节点身份标签下线（FR-26）+ 委托行键盘可达（FR-27）+ B 区瓶颈归 106（FR-24 第 7 条） | `twin-scene-bridge.js`、`twin-scene-v2.{js,css}`、`twin/api/seed.json`、`tests/twin/pickcheck.mjs` | `dotHitId()` 屏幕半径 16px 命中后复用 `space-device-select`；删 `annotateNodes()`/`.orb-tag`/`showPop` 死代码；`keyable()` 补 role/tabindex/aria + Enter/Space 代理 + `:focus-visible` 焦点环；AL-204 改写为 106 上料口排队 | pickcheck 16✅ · sitelabel 8✅ · uxcheck 44✅ · zone-panel 31✅（106 告警今日 11）· 全量 15 套 0❌ |
 | **新增 ✅已上线** | 告警流三分区（FR-24）+「标签」改名「场地标签」并只控房间名（FR-13b） | `twin-scene-v2.{html,css,js}`、`twin-scene-bridge.js`、`twin/api/seed.json` | 13 条告警带 `category`，grade 由 category 推导；每区独立筛选（`{A,B,C}` + URL `alarmFilter=open,all,open`）与今日计数；分区定义落 `seed.overview['alarm-sections']`；滚动下沉到 `.asec-track`、外层不滚、`.asec-body` 236px；筛选改事件委托；`labels` 层只切 `.room-label`，状态光点与物联节点标签解耦 | alarmlvl 14✅ · filtercheck 6✅ · sitelabel 7✅ · uxcheck 43✅（含 4 项场地标签解耦断言）· zone-panel 31✅ · smoke 37✅ |
 | **新增 ✅已上线** | 全屏按钮（含 F 快捷键）替代低配按钮；低配能力保留为 `?quality=low` | `twin-scene-v2.{html,css,js}` | `requestFullscreen` + webkit 回退 + `fullscreenchange` 同步；URL 参数路径不变 | fscheck 14✅（进入/退出/文案/aria/data-full/浮层贴边/F 键/?quality=low 生效） |
 | **新增 ✅已上线** | 逾期/临期改为 LIMS 口径 + 由在办清单推导（FR-21）；「收起底栏」连带机器人状态条与说明条（FR-19a） | `seed.json`(testItemPlan)、`twin-api-mock.js`、`twin-scene-v2.{html,js}` | 37 条在办清单 dueInHours 推导；行内 LIMS 角标 + hover 明细；URL 图层参数去掉已删的 zones | plancheck 7✅ · collapsec 7✅ · kpicheck 16✅ · smoke 35✅ · uxcheck 39✅ · zone-panel 30✅ |
@@ -543,6 +564,7 @@ flowchart TD
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| 2.17 | 2026-11-06 | 【本次更新】新增 **FR-25 光点常驻且可点**（点光点原本什么都不发生：光点不在 `modelRoots` 拾取集合里，现按屏幕 16px 命中并复用 `space-device-select`）、**FR-26 物联节点身份标签整体下线**（删 `annotateNodes()` 与 `.orb-tag`/`showPop` 死代码，节点标记与实时读数胶囊保留，点击出 NodeLayer 详情卡）、**FR-27 委托点击行的键盘可达**（`keyable()` + Enter/Space 代理 + `:focus-visible` 焦点环 + 焦点落在分区内暂停该区滚动）；FR-24 加第 7 条 **B 区瓶颈叙事全部落在 106**（AL-204 由 Z-102 改写为 106 上料口排队，`deviceId=null` 不编造设备状态；106 面板告警今日 10→11）；FR-13b 第 2 条同步更正；新增 `tests/twin/pickcheck.mjs`（16 项），全量回归 15 套 0❌ |
 | 2.16 | 2026-11-06 | 【本次更新】**告警流改三分区（FR-24）**：A 异常 / B 阻塞·瓶颈 / C 校准期限，等级由数据 `category` 推导、屏上去掉 `Grade` 英文，每区各自「只看未解除/全部」与「今日 N · 未解除 M」计数（分区定义落 `seed.overview['alarm-sections']`）；滚动下沉到每区 `.asec-track`，外层 `.stream-board` 不再整体平移（修掉区头飘走、筛选点不到），`.asec-body` 236px 按实测行高定；筛选控件走事件委托（告警流与区域面板两处同步）。**「标签」改名「场地标签」（FR-13b）**：只开关各房间名称标签，不再联动设备状态光点与物联节点标签（产品负责人反馈原话已记录），图层 key 与旧 URL 保持兼容 |；**QA 套件版本化**：14 套 Playwright 断言从临时目录收进 `tests/twin/`（`run-all.mjs` 一次跑完并汇总退出码，`_env.mjs` 统一 `TWIN_BASE`/截图目录），并修掉 uxcheck 里指向已删除 `.alarm-sum` 的失效断言
 | 2.15 | 2026-11-06 | 【本次更新】告警汇总（未解除/已解除 + A/B/C）与筛选（只看未解除/全部）从左栏**移入右侧告警流头部**；区域视图时同样渲染在区域面板「告警」块内，控件不随表面切换而消失；筛选改事件委托（两处按钮同步高亮与生效）、筛选态计入面板重绘签名并保留在 URL；修掉「筛选行与列表拼接后空态永不出现」的判定错误 |
 | 2.14 | 2026-11-06 | 【本次更新】**S3 告警回溯整体移出 MVP**（PRD-v1 §3/§6 同步收窄）：删除回溯屏/抽屉/`回溯` 入口/按键 3 与 End 的回溯映射/翻页序列里的回溯屏；告警改为「当前状态 + 点行就地详情 + 镜头飞到所属区域」；顺带合并两处重复的告警详情实现、修复详情面板切换视图后不重新停靠而遮挡区域面板的问题；`/api/alarm/{id}/trace` 保留不调用 |

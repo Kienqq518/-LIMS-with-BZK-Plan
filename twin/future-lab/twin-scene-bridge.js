@@ -204,68 +204,44 @@ function startAnimLoop() {
 }
 
 
-/* ---------- IoT 节点标注：身份标签 + 点击详情卡（V2 门禁内） ---------- */
-const NODE_TYPE_CN = { temperature: '温湿度', light: '光照', smoke: '烟感', water: '水浸', gas: '可燃气体', motion: '人体活动', switch: '开关量', camera: '视觉' };
-let nodeMeta = null, popEl = null, popFor = null;
-function injectNodeStyle() {
-  if (document.getElementById('twin-v2-node-style')) return;
-  const st = document.createElement('style'); st.id = 'twin-v2-node-style';
-  st.textContent = `.orb-tag{position:absolute;right:calc(100% + 6px);top:50%;transform:translateY(-50%);white-space:nowrap;font-size:10px;line-height:1;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,.92);border:1px solid #E3E9F2;color:#415063;box-shadow:0 4px 14px rgba(15,40,80,.08);pointer-events:none;font-family:"PingFang SC",system-ui,sans-serif}
-  .orb-tag b{color:#0F2740;font-weight:600}
-  .orb-pop{position:absolute;z-index:30;width:216px;background:#fff;border-radius:14px;box-shadow:0 14px 40px rgba(15,40,80,.14);padding:12px 14px;font-family:"PingFang SC",system-ui,sans-serif}
-  .orb-pop h4{margin:0 0 2px;font-size:13px;color:#0F2740}
-  .orb-pop .id{font-size:10px;color:#8A97A7;font-family:"Fira Code",monospace;margin-bottom:8px}
-  .orb-pop .row{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px dashed #EDF1F7;color:#5B6B7D}
-  .orb-pop .row b{color:#0F2740;font-weight:500}
-  .orb-pop .close{position:absolute;right:8px;top:8px;border:0;background:0;font-size:15px;color:#8A97A7;cursor:pointer}
-  .orb-pop .honest{font-size:10px;color:#F59E0B;margin-top:6px}`;
-  document.head.append(st);
+/* ---------- 设备状态光点：常驻 + 可点（2026-11-06 反馈） ----------
+   光点是设备状态的唯一 3D 入口，但它不在 CAD 拾取集合（modelRoots）里，
+   所以点光点原本什么都不发生。这里按屏幕距离做命中检测：点光点 = 点它对应的那台设备。
+   半径 16px：光点本身只有 0.045m，在总览机位下约 8px，纯射线检测基本点不中。 */
+const DOT_PICK_PX = 16;
+function dotHitId(ev) {
+  const host = visual.host.getBoundingClientRect();
+  const px = ev.clientX - host.left, py = ev.clientY - host.top;
+  let best = null, bestD = DOT_PICK_PX;
+  statusDots.forEach((dot, devId) => {
+    if (!dot.visible) return;
+    const v = new THREE.Vector3(); v.setFromMatrixPosition(dot.matrixWorld); v.project(visual.camera);
+    if (v.z > 1) return;                                     /* 相机背后 */
+    const sx = (v.x * 0.5 + 0.5) * host.width, sy = (-v.y * 0.5 + 0.5) * host.height;
+    const d = Math.hypot(sx - px, sy - py);
+    if (d <= bestD) { bestD = d; best = devId; }
+  });
+  return best;
 }
-function annotateNodes() {
-  injectNodeStyle();
-  const timer = setInterval(() => {
-    const orbs = document.querySelectorAll('.node-marker[data-node-id], .node-orb[data-node-id]');
-    if (!orbs.length) return;
-    clearInterval(timer);
-    if (!nodeMeta) fetch('./data/iot-nodes.json').then(r => r.json()).then(meta => { nodeMeta = meta; paint(); });
-    function paint() {
-      orbs.forEach(orb => {
-        if (orb.querySelector('.orb-tag')) return;
-        const n = nodeMeta && nodeMeta.nodes.find(x => x.id === orb.dataset.nodeId);
-        const tag = document.createElement('span'); tag.className = 'orb-tag';
-        tag.innerHTML = n ? '<b>' + n.name + '</b> · ' + (NODE_TYPE_CN[n.type] || n.type) : orb.dataset.nodeId;
-        orb.style.position = orb.style.position || 'absolute';
-        orb.append(tag);
-        /* 点击详情交给 NodeLayer 自带 NodeDetail 卡（实时读数/离线态/时间戳），此处不重复挂卡避免双卡 */
-      });
-    }
-    if (nodeMeta) paint();
-  }, 800);
+function bindDotPick() {
+  const c = visual.renderer.domElement;
+  let down = null;   /* 拖视角后松手不能算点击：与引擎自己的 moved>4px 判定同一阈值 */
+  c.addEventListener('pointerdown', ev => { down = { x: ev.clientX, y: ev.clientY }; });
+  c.addEventListener('pointerup', ev => {
+    if (ev.button !== 0 || !down) return;
+    const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y); down = null;
+    if (moved > 4) return;
+    const id = dotHitId(ev); if (!id) return;
+    if (visual.selected === id) return;                      /* CAD 拾取已经选中同一台，别重复触发补间 */
+    visual.selected = id;
+    window.dispatchEvent(new CustomEvent('space-device-select', { detail: { id, name: id, roomId: id.slice(0, 3) } }));
+  });
 }
-function showPop(orb, n) {
-  if (!popEl) { popEl = document.createElement('div'); popEl.className = 'orb-pop'; document.body.append(popEl); }
-  if (popFor === orb.dataset.nodeId && !popEl.hidden) { closePop(); return; }
-  popFor = orb.dataset.nodeId;
-  const r = orb.getBoundingClientRect();
-  popEl.innerHTML = '<button class="close" aria-label="关闭">×</button><h4>' + (n ? n.name : orb.dataset.nodeId) + '</h4><div class="id">' + orb.dataset.nodeId + '</div>' +
-    (n ? '<div class="row"><span>类型</span><b>' + (NODE_TYPE_CN[n.type] || n.type) + '</b></div>' +
-         '<div class="row"><span>房间</span><b>' + n.roomId + '</b></div>' +
-         '<div class="row"><span>数据来源</span><b>' + (n.dataSource === 'mock' ? 'mock（待接三源）' : n.dataSource) + '</b></div>' +
-         (n.associatedDeviceId ? '<div class="row"><span>关联设备</span><b>' + n.associatedDeviceId + '</b></div>' : '') +
-         (n.placement === 'planned' ? '<div class="honest">⚠ 位置为规划示意（' + (n.placementNote || '候选位置') + '），非施工坐标</div>' : '') : '') +
-    '<div class="row"><span>状态</span><b>' + (orb.getAttribute('aria-label') || '').split('，').pop() + '</b></div>';
-  popEl.style.left = Math.min(innerWidth - 230, r.right + 10) + 'px';
-  popEl.style.top = Math.max(66, r.top - 40) + 'px';
-  popEl.hidden = false;
-  popEl.querySelector('.close').onclick = closePop;
-}
-function closePop() { if (popEl) popEl.hidden = true; popFor = null; }
-document.addEventListener('click', e => { if (popEl && !popEl.hidden && !e.target.closest('.node-orb,.node-marker') && !e.target.closest('.orb-pop')) closePop(); });
 
 function injectLayerStyle() {
   if (document.getElementById('twin-v2-layer-style')) return;
   const st = document.createElement('style'); st.id = 'twin-v2-layer-style';
-  /* 场地标签只控制房间名称；设备状态光点与物联节点标签不受此开关影响（2026-11-06 反馈） */
+  /* 场地标签只控制房间名称。设备状态光点常驻（无开关）；物联节点身份标签已下线，节点信息只在点击后的详情卡里给（2026-11-06 反馈） */
   st.textContent = '.no-site-labels .room-label{display:none!important}';
   document.head.append(st);
 }
@@ -305,8 +281,9 @@ function build(v) {
     camCmd({ action: 'device', deviceId: id, zoneId: zone });
   });
   addEventListener('lab-view-change', hideCard);
-  annotateNodes();
+  bindDotPick();
   /* QA 自检钩子（DOM 可被隔离世界读取） */
+  visual.statusDots = statusDots;   /* QA/宿主可读：设备 → 光点映射（光点常驻，无开关） */
   const hook = document.createElement('div'); hook.id = 'twin-v2-bridge';
   hook.dataset.guide = String(guide.children.length); hook.dataset.robots = String(Object.keys(robots).length); hook.dataset.walls = wallMesh ? '1' : '0';
   hook.dataset.layers = Object.keys(LAYERS).filter(k => LAYERS[k]).join(','); hook.dataset.quality = 'high'; hook.dataset.route = 'manhattan';
@@ -414,7 +391,7 @@ function applyLayer(name, on) {
   if (name === 'path' && lines) lines.visible = on;
   if (name === 'labels') {
     /* 「场地标签」= 只开关房间名称标签。房间标签的 hidden 由 render() 每帧重算，所以只能走 CSS 覆盖。
-       设备状态光点（statusDots）与物联节点标签（.orb-tag/.node-reading）不属于本开关。 */
+       设备状态光点（statusDots）常驻，不随本开关变化。 */
     visual.host.classList.toggle('no-site-labels', !on);
   }
   if (name === 'heatmap') { if (on) drawHeatmap(); else if (heatGroup) heatGroup.visible = false; }

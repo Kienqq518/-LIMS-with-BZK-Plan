@@ -9,7 +9,7 @@
 ```bash
 cd tests/twin
 npm i                 # 只装 playwright（用系统 Chrome，不需要下载 Chromium）
-node run-all.mjs                       # 全量：自动起本地静态服务，跑完自动关
+node run-all.mjs                       # 全量 15 套：自动起本地静态服务，跑完自动关
 node run-all.mjs --only smoke,alarmlvl # 只跑关心的套件
 TWIN_BASE=https://<部署域名> node run-all.mjs --no-serve   # 打线上（只能验已 push 的 commit）
 ```
@@ -25,6 +25,7 @@ TWIN_BASE=https://<部署域名> node run-all.mjs --no-serve   # 打线上（只
 | `zone-panel` | 区域视图五类信息（设备/环境数据/任务统计/在制任务/告警）与浮层、底栏让位 |
 | `filtercheck` | 三分区筛选控件的**几何位置**（必须在右侧告警流内、不在左栏）与互不影响 |
 | `alarmlvl` | A/B/C 分区标题与计数来自 `/api/overview/alarm-sections`、每区只含本级告警、URL 三区态、屏上无 `Grade` 英文 |
+| `pickcheck` | 点击与键盘入口：点光点/点设备本体都出信息卡；物联节点身份标签已下线但点击出详情卡；告警行 `role=button`+`tabindex`+Enter 打开详情、焦点落在区内即暂停滚动；B 区瓶颈告警区域归属全为 106 |
 | `sitelabel` | 「场地标签」只控房间名：关后设备状态光点与物联节点标签**不受影响** |
 | `kpicheck` | 四张表数字自洽（委托分类占比、样品三态、试验项目含逾期/临期、阻塞已解决/未解决） |
 | `plancheck` | 逾期/临期由在办清单推导：接口值 == 独立重算值 |
