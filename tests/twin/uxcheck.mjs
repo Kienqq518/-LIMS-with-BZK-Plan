@@ -55,7 +55,11 @@ await p.click('.lic[data-layer=heatmap]'); await p.waitForTimeout(600);
 T('底栏块数', await p.locator('.dock .dk').count(), 4);
 T('底栏滚动轨道数（块1 是统计格不滚）', await p.locator('.dk-track').count(), 3);
 out.push(((await p.evaluate(()=>getComputedStyle(document.getElementById('dkQueueTrack')).animationName))==='dkUp'?'✅':'❌')+' 队列块滚动动画: '+await p.evaluate(()=>getComputedStyle(document.getElementById('dkQueueTrack')).animationName));
-out.push(((await p.evaluate(()=>getComputedStyle(document.querySelector('.dk')).backgroundColor)).includes('255, 255, 255, 0.42')?'✅':'❌')+' 底栏块透明底');
+
+// 不钉死具体 alpha（玻璃透明度是 token，改一档就假失败）：验语义——半透明白 + 真模糊
+const dkGlass=await p.evaluate(()=>{const e=getComputedStyle(document.querySelector('.dk'));return {bg:e.backgroundColor,blur:e.backdropFilter};});
+const dkAlpha=(dkGlass.bg.match(/rgba\(255, 255, 255, ([0-9.]+)\)/)||[])[1];
+out.push((+dkAlpha>=.3&&+dkAlpha<=.7&&/blur\(\d+px\)/.test(dkGlass.blur)?'✅':'❌')+` 底栏块=半透明玻璃底（alpha ${dkAlpha} + ${dkGlass.blur}）`);
 // 5) 右侧告警流滚动
 T('告警流行数(三区各 3×2)', await p.locator('.st-row').count(), 18);
 const asecAnim=await p.evaluate(()=>[...document.querySelectorAll('.asec-track')].map(t=>getComputedStyle(t).animationName));

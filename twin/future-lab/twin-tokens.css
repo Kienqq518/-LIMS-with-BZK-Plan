@@ -1,0 +1,171 @@
+/* =============================================================================
+ * 数字孪生运行大屏 · 视觉事实源（twin-tokens.css）
+ *
+ * 宿主页 twin-scene-v2.html 与三维场景页 tour-space-v3-1.html **都加载本文件**——
+ * 跨 iframe 不继承 CSS 变量，场景内注入的信息气泡只有在这里定义才吃得到同一套 token。
+ * 组件里不许再写裸 hex / 裸 blur / 裸半径 / 裸时长：要改效果，只改这里。
+ *
+ * 依据（ui-ux-pro-max 设计库）：
+ *   · glassmorphism —— backdrop blur 10–20px、1px 浅描边、层级深度、文字对比 4.5:1
+ *   · data-dense-dashboard —— 小字 12px 档、卡片 padding 12px、行高 36px、hover 行高亮
+ *   · accessible-and-ethical —— 焦点环 2–4px、prefers-reduced-motion、可点元素 cursor:pointer
+ *   · 实时流图型口径 —— 「不许只靠颜色表达状态」：色 + 形状/文字双通道
+ * 有意偏离库的地方（写清楚，免得下轮被"纠正"回去）：
+ *   1. 不采用库给的深色 + Orbitron/Exo2：本屏是白底 CAD 运行镜像、界面是中文（这两个字体无中文字形），
+ *      且 PRD 决策基准已定。风格落在库同时命中的 Minimalism/Swiss（Light 支持）上。
+ *   2. 玻璃透明度取 .46/.72/.82 而不是库的 .10–.30：三维画面本身接近纯白，
+ *      低不透明度下 10–12px 小字对比掉到 4.5:1 以下。
+ * ============================================================================= */
+:root{
+  /* —— 1 品牌与中性色 —— */
+  --tw-color-brand:#2878FF; --tw-color-brand-strong:#0B4FBF; --tw-color-brand-glow:#63A4FF; --tw-color-brand-soft:#EAF1FF; --tw-color-brand-line:#D7E4FF;
+  --tw-color-textPrimary:#0F2740; --tw-color-textSecondary:#5B6B7D; --tw-color-textMuted:#8A97A7;
+  --tw-color-cardBg:#fff; --tw-color-cardBorder:#E3E9F2;
+  --tw-ink-1:#0F2740; --tw-ink-2:#3C4D61; --tw-ink-3:#5B6B7D; --tw-ink-4:#8A97A7;   /* 文字四档（原来 9 个灰蓝并成 4 档） */
+
+  /* —— 2 状态语义色：一个语义一个色，屏上任何角落不许漂移 —— */
+  --tw-st-working:var(--tw-color-brand);   /* 在测 / 执行中 */
+  --tw-st-ready:var(--tw-color-okGreen);   /* 就绪 / 已完成 */
+  --tw-st-alarm:var(--tw-color-alertRed);  /* 异常 / 阻塞 */
+  --tw-st-warn:var(--tw-color-warnAmber);  /* 待办 / 临期 / 未派单 */
+  --tw-st-bottleneck:var(--tw-color-bottleneckOrange);
+  --tw-st-idle:#94A3B8;                    /* 待机 / 停靠充电 / 未接入 */
+  --tw-st-done:#7E8C9B;                    /* 已解除 / 已闭环（与"待机"分开：一个是历史态一个是当前态） */
+  --tw-st-na:#C3CCD6;                      /* 无数采 / 无数据 */
+  --tw-st-cat:#7C6CF0;                     /* 分类标记（派发/统计类小标签） */
+  --tw-st-route:#E8D77A;                     /* 无人化行进路线（3D 折线/定位点，与状态色分开的一套） */
+  --tw-color-okGreen:#16A34A; --tw-color-alertRed:#E5484D; --tw-color-warnAmber:#F59E0B; --tw-color-bottleneckOrange:#F76B15;
+
+  /* —— 3 玻璃四档（唯一配方）—— */
+  --tw-blur:blur(14px); --tw-sat:saturate(1.25);   /* 写成完整函数：backdrop-filter 只吃 <filter-list>，裸 14px 会让整条声明失效变 none（本轮真实踩过） */
+  --tw-glass-panel:rgba(255,255,255,.46);  /* A 悬浮在三维画面上的大面板主体：左栏/告警流/区面板/底栏四块 */
+  --tw-glass-inner:rgba(255,255,255,.72);  /* B 面板内的次级块：分区卡/单元格/告警行/统计格 */
+  --tw-glass-float:rgba(255,255,255,.82);  /* C 文字密集的独立浮层：实体信息气泡、右侧详情 */
+  --tw-glass-head:rgba(244,248,253,.5);    /* D 表头与分组条 */
+  --tw-glass-chip:rgba(255,255,255,.9);    /* E 顶栏小片/按钮底（要压住画面读得清） */
+  --tw-glass-border:rgba(255,255,255,.88);
+  --tw-glass-on:rgba(255,255,255,.78);      /* 开启态小片（顶栏 icon / 收起底栏 / 全屏） */
+  --tw-glass-hover:rgba(255,255,255,.55);   /* 悬停态小片 */
+  --tw-track:#EDF1F7; --tw-track-soft:#E4EAF1;   /* 进度条/分段控件的轨道底 */
+  --tw-hairline:#EDF1F7; --tw-hairline-soft:#F2F5FA; --tw-hairline-strong:#E6EDF6;
+
+  /* —— 4 圆角四档 + 阴影两档 —— */
+  --tw-radius-bar:3px; --tw-radius-badge:6px; --tw-radius-chip:8px; --tw-radius-card:14px; --tw-radius-pill:999px;
+  --tw-shadow-card:0 16px 44px rgba(15,40,80,.13); --tw-shadow-pill:0 4px 14px rgba(15,40,80,.06);
+  --tw-shadow-row:0 6px 18px rgba(40,120,255,.10); --tw-press-ring:inset 0 0 0 1px rgba(40,120,255,.28);
+  --tw-text-plate:0 1px 0 rgba(255,255,255,.85),0 3px 12px rgba(255,255,255,.55);  /* 悬浮文字垫底（顶栏/标题/时钟/图标） */
+
+  /* —— 5 字号七档：floor 10.5px，8/9/9.5 三档全部并掉 —— */
+  --tw-fs-micro:10.5px; --tw-fs-label:11.5px; --tw-fs-body:12.5px; --tw-fs-strong:13.5px;
+  --tw-fs-num:17px; --tw-fs-kpi:22px; --tw-fs-hero:26px;
+  --tw-font-familyUI:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --tw-lh-tight:1.15; --tw-lh-body:1.5;
+
+  /* —— 6 动效三档（微反馈 / 状态切换 / 面板进出）—— */
+  --tw-dur-1:.16s; --tw-dur-2:.24s; --tw-dur-3:.42s; --tw-dur-4:.6s;   /* 微反馈 / 状态切换 / 面板进出 / 数据条生长 */
+  --tw-motion-easeOut:cubic-bezier(.2,.8,.2,1);
+
+  /* —— 7 层级阶梯（原来 7/8/9/12/14/15/24/30 八档散值）—— */
+  --tw-z-dock:9; --tw-z-panel:12; --tw-z-card:16; --tw-z-detail:24; --tw-z-top:30;
+
+  /* —— 8 浮层几何（沿用，间距唯一事实源）—— */
+  --tw-rail-w:224px; --tw-stream-w:296px; --tw-panel-w:352px; --tw-float-gap:16px;
+
+  /* —— 8b 状态浅底族（同一语义：深字 + 浅底 + 描边，屏上只此一套）—— */
+  --tw-on-color:#fff;                       /* 彩色底上的白字 */
+  --tw-tint-run-fg:var(--tw-color-brand-strong); --tw-tint-run-bg:#E3EFFF;
+  --tw-tint-ok-fg:#0B6B33;  --tw-tint-ok-bg:#E4F6EA;
+  --tw-tint-warn-fg:#8A5A0B; --tw-tint-warn-bg:#FBF0DC;
+  --tw-tint-abn-fg:#8B2A2E; --tw-tint-abn-bg:#FDECEC; --tw-tint-abn-line:#F3C6C8;
+  --tw-tint-cat-fg:var(--tw-st-cat); --tw-tint-cat-bg:#F0EDFE; --tw-tint-cat-line:#E0DAFB;
+  --tw-tint-alarm-line:#C7DBFF; --tw-tint-brand-line:#CFE0FF;
+  --tw-surface-neutral:#EEF2F6; --tw-surface-line:#C6D2E0; --tw-track-line:#E6ECF3;
+  --tw-plate-inverse:rgba(15,39,64,.86);    /* 反色提示条（顶部瞬时说明） */
+  --tw-scene-bg-a:#F3F5F8; --tw-scene-bg-b:#EDF2F8;   /* 页面底：只在这里定义一次 */
+
+  /* —— 9 焦点环 —— */
+  --tw-focus-ring:2px solid var(--tw-color-brand);
+}
+
+/* 玻璃配方原子类：新面板直接挂 class，别再抄一遍 backdrop-filter */
+.tw-glass{backdrop-filter:var(--tw-blur) var(--tw-sat);-webkit-backdrop-filter:var(--tw-blur) var(--tw-sat);
+  border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);box-shadow:var(--tw-shadow-card)}
+.tw-glass--panel{background:var(--tw-glass-panel)}
+.tw-glass--inner{background:var(--tw-glass-inner);border-radius:var(--tw-radius-chip)}
+.tw-glass--float{background:var(--tw-glass-float)}
+
+/* 表单控件默认不继承字体：屏上 .mini/.seg 这类小按钮原来全在 Arial 里渲染，
+   和大屏其余文字（PingFang SC）不是一个字形系统——数字宽窄、中文 fallback 都会露馅。 */
+button,select,input,textarea{font-family:var(--tw-font-familyUI)}
+
+/* 数字一律等宽，滚动/刷新时不跳字（运行大屏的读数是给远端投影看的） */
+.tw-num,.dq-row .tm,.ti-row .dv,.nd-row .rd,.zp-stat b,.dk-cell b,.st-row .tm{font-variant-numeric:tabular-nums}
+
+/* 交互态统一：可点的东西必须有 hover / active / focus-visible / cursor，且都吃同一时长与缓动。
+   库口径：hover 反馈 150–300ms；按下给 1px 位移；键盘焦点环 2px 且不许被浮层遮住。 */
+:where(button,a,.mode,.pill,.lic,.seg,.mini,.zp-row,.zp-run,.st-row,.dq-row,.ti-row,.nd-row)[tabindex],
+:where(button,a,.mode,.pill,.lic,.seg,.mini,.zp-row,.zp-run,.st-row,.dq-row,.ti-row,.nd-row){cursor:pointer;
+  transition:background var(--tw-dur-1) var(--tw-motion-easeOut),color var(--tw-dur-1) var(--tw-motion-easeOut),
+             border-color var(--tw-dur-1) var(--tw-motion-easeOut),box-shadow var(--tw-dur-1) var(--tw-motion-easeOut)}
+
+/* 按下反馈用独立 translate 属性，不写 transform：
+   .node-marker 这类绝对定位元素靠 transform:translate(-50%,-50%) 找中心，
+   写 transform:translateY(1px) 会把定位整条顶掉——标记跳开半个身位，点击全部落空（pickcheck 实测踩到）。 */
+:where(button:not(:disabled),.mode,.pill,.lic,.seg,.mini,.zp-row,.zp-run,.st-row,.dq-row,.ti-row,.nd-row):active{translate:0 1px}
+:where(button,.mode,.pill,.lic,.seg,.mini,.zp-row,.zp-run,.st-row,.dq-row,.ti-row,.nd-row,.mini):focus-visible{
+  outline:var(--tw-focus-ring);outline-offset:2px;border-radius:var(--tw-radius-chip)}
+:where(.zp-row,.zp-run,.st-row,.dq-row,.ti-row,.nd-row):focus-visible{outline-offset:-2px}
+
+/* 面板进出共用一条曲线：出现 420ms（进得稳），收起 240ms（出得快）——库口径 exit faster than enter */
+@keyframes twPanelIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.tw-panel-in{animation:twPanelIn var(--tw-dur-3) var(--tw-motion-easeOut) both}
+
+/* 滚动/呼吸的节奏（26s/22s/1.2s/1.6s）是内容时间常数，不属于交互时长档，改它们要连同剧本一起评估 */
+
+/* 全局尊重系统的"减少动态效果"：宿主页与场景页共用本文件，两侧一起生效 */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  .asec-track.scroll,.dk-track,.tt-track,.dot.live,.task-chip.run b::after{animation:none!important}
+
+}
+
+/* =============================================================================
+ * 场景内 DOM 的统一（只在 V2 宿主里生效：:root[data-v2] 由场景页按 ?v2=1 打上的标记）
+ * 底座自带样式用的是另一族蓝（#096bff / #519dff / #1b72eb / #075fce）与另一套半径阴影
+ * （5px / 12px / 20px、#rrggbbaa 硬写），和宿主大屏的 #2878FF 玻璃体系明显是两个产品。
+ * 这里不改正经底座文件（tour-lab 系列还在用），只在 V2 下把它们并回同一套 token。
+ * 底座这些规则带 !important，所以对应位置也必须带 !important。
+ * ========================================================================== */
+:root[data-v2] .room-label{background:var(--tw-glass-chip)!important;color:var(--tw-ink-1)!important;
+  border:1px solid var(--tw-glass-border)!important;border-radius:var(--tw-radius-chip)!important;
+  box-shadow:var(--tw-shadow-pill)!important;padding:7px 11px!important;
+  font:600 var(--tw-fs-body)/1.35 var(--tw-font-familyUI)!important;text-shadow:none!important}
+:root[data-v2] .room-label.tour-muted-room{background:var(--tw-glass-inner)!important;color:var(--tw-ink-4)!important;
+  border-color:var(--tw-hairline-strong)!important;opacity:.7;box-shadow:none!important}
+:root[data-v2] .room-label.tour-active-room{background:var(--tw-glass-float)!important;color:var(--tw-color-brand-strong)!important;
+  border:1px solid var(--tw-color-brand-line)!important;box-shadow:var(--tw-shadow-card)!important;
+  font-size:var(--tw-fs-num)!important;animation:none!important}
+:root[data-v2] #tour-device-labels circle{fill:var(--tw-color-brand);stroke:var(--tw-on-color)}
+:root[data-v2] #tour-device-labels line{stroke:var(--tw-color-brand-line)}
+:root[data-v2] .tour-device-caption{background:var(--tw-glass-float);color:var(--tw-ink-2);
+  border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip);box-shadow:var(--tw-shadow-card);
+  font:500 var(--tw-fs-label)/var(--tw-lh-body) var(--tw-font-familyUI)}
+
+/* 物联节点标记：一个语义一个色，且色 + 描边 + 形状双通道（库口径：不许只靠颜色表达状态） */
+:root[data-v2] .node-marker{background:var(--tw-glass-chip);color:var(--tw-color-brand);
+  border:1px solid var(--tw-color-brand-line);box-shadow:var(--tw-shadow-pill);
+  transition:background var(--tw-dur-1) var(--tw-motion-easeOut),box-shadow var(--tw-dur-1) var(--tw-motion-easeOut),border-color var(--tw-dur-1) var(--tw-motion-easeOut)}
+:root[data-v2] .node-marker:after{border-top-color:var(--tw-color-brand-line)}
+:root[data-v2] .node-marker:hover,:root[data-v2] .node-marker:focus-visible{background:var(--tw-color-brand-soft);
+  box-shadow:var(--tw-shadow-row);border-color:var(--tw-color-brand);outline:none}
+:root[data-v2] .node-marker:focus-visible{outline:var(--tw-focus-ring);outline-offset:2px}
+:root[data-v2] .node-marker.selected{background:var(--tw-color-brand);color:var(--tw-on-color);
+  border-color:var(--tw-color-brand-strong);box-shadow:var(--tw-shadow-card)}
+:root[data-v2] .node-marker[data-status="alarm"]{background:var(--tw-tint-abn-bg);color:var(--tw-tint-abn-fg);border-color:var(--tw-tint-abn-line)}
+:root[data-v2] .node-marker[data-status="offline"]{background:var(--tw-surface-neutral);color:var(--tw-ink-2);border-color:var(--tw-surface-line)}
+:root[data-v2] .node-marker[data-data-state="stale"],:root[data-v2] .node-marker[data-data-state="missing"]{
+  background:var(--tw-tint-warn-bg);color:var(--tw-tint-warn-fg);border-color:var(--tw-st-warn)}
+
+/* 节点详情卡（物联读数）：与实体气泡同一档玻璃 */
+:root[data-v2] .node-card{background:var(--tw-glass-float);border:1px solid var(--tw-glass-border);
+  border-radius:var(--tw-radius-card);box-shadow:var(--tw-shadow-card)}

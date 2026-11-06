@@ -102,15 +102,29 @@ function applyMaterialPass() {
   if (visual.reflector && visual.reflector.color) visual.reflector.color.set(0xd7dde3);  /* 反射减淡，防灰雾 */
 }
 
+/* ---------- 视觉 token 的唯一事实源：twin-tokens.css ----------
+   3D 侧（光点/描色/热力/线路）与 DOM 侧（信息气泡）过去各写各的十六进制，
+   同一语义出现两个值（待机 0x94a3b8 vs 停止 0x64748b；描色 0x2878ff vs 品牌 #2878FF）。
+   Chrome 会把自定义属性里的 var() 链解析成最终值，所以直接读 CSS 变量即可（实测 --tw-st-working → "#2878FF"）。 */
+const TWIN_TOKEN = (() => {
+  const cs = getComputedStyle(document.documentElement), g = n => (cs.getPropertyValue(n) || '').trim();
+  const hex = (n, fb) => { const v = g(n); return /^#[0-9a-f]{6}$/i.test(v) ? parseInt(v.slice(1), 16) : fb; };
+  return { working: hex('--tw-st-working', 0x2878ff), ready: hex('--tw-st-ready', 0x16a34a), alarm: hex('--tw-st-alarm', 0xe5484d),
+    warn: hex('--tw-st-warn', 0xf59e0b), idle: hex('--tw-st-idle', 0x94a3b8), done: hex('--tw-st-done', 0x7e8c9b),
+    na: hex('--tw-st-na', 0xc3ccd6), brand: hex('--tw-color-brand', 0x2878ff), route: hex('--tw-st-route', 0xe8d77a),
+    glow: hex('--tw-color-brand-glow', 0x63a4ff) };
+})();
+window.__twinTokensForQA = TWIN_TOKEN;   /* QA：3D 侧实际吃到的值必须等于 CSS token */
+
 /* ---------- 设备状态视觉分级：克制版 = 顶部小呼吸光点 + 既有描色 ---------- */
-const STATUS_LIGHT = { working: [0x2878ff, 'pulse'], ready: [0x16a34a, 'static'], standby: [0x94a3b8, 'dim'], stopped: [0x64748b, 'dim'], alarm: [0xe5484d, 'fast'] };
+const STATUS_LIGHT = { working: [TWIN_TOKEN.working, 'pulse'], ready: [TWIN_TOKEN.ready, 'static'], standby: [TWIN_TOKEN.idle, 'dim'], stopped: [TWIN_TOKEN.done, 'dim'], alarm: [TWIN_TOKEN.alarm, 'fast'] };
 const statusDots = new Map();
 function ensureDot(devId, status) {
   const mesh = visual.modelRoots.get(devId); if (!mesh) return;
   let dot = statusDots.get(devId);
   if (!dot) {
     const box = new THREE.Box3().setFromObject(mesh);
-    const mat = new THREE.MeshStandardMaterial({ color: 0x101010, emissive: 0x2878ff, emissiveIntensity: 1.4, roughness: 0.4 });
+    const mat = new THREE.MeshStandardMaterial({ color: 0x101010, emissive: TWIN_TOKEN.brand, emissiveIntensity: 1.4, roughness: 0.4 });
     dot = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), mat);
     dot.position.set((box.min.x + box.max.x) / 2, box.max.y + 0.09, (box.min.z + box.max.z) / 2);
     visual.detail.add(dot); statusDots.set(devId, dot);
@@ -309,7 +323,7 @@ function boot() {
 }
 
 let visual, robots = {}, lines = null, tinted = new Map();
-const COLORS = { alarm: 0xe5484d, working: 0x2878ff, ready: 0x16a34a, standby: 0x94a3b8, guide: 0xe8d77a };
+const COLORS = { alarm: TWIN_TOKEN.alarm, working: TWIN_TOKEN.working, ready: TWIN_TOKEN.ready, standby: TWIN_TOKEN.idle, guide: TWIN_TOKEN.route };
 
 function build(v) {
   visual = v;
@@ -466,7 +480,7 @@ function applyLayer(name, on) {
 function drawHeatmap() {
   if (!heatGroup) { heatGroup = new THREE.Group(); heatGroup.name = 'twin-v2-heat'; visual.scene.add(heatGroup); }
   heatGroup.visible = true; heatGroup.clear();
-  const COL = { working: 0x2878ff, ready: 0x16a34a, standby: 0x94a3b8, stopped: 0x64748b, alarm: 0xe5484d };
+  const COL = { working: TWIN_TOKEN.working, ready: TWIN_TOKEN.ready, standby: TWIN_TOKEN.idle, stopped: TWIN_TOKEN.done, alarm: TWIN_TOKEN.alarm };
   /* 负荷口径（2026-11-06 定稿）：106 无人化区设备=高负荷；其他区域降到最低（几乎不可见，保留存在性但不抢注意力） */
   (lastDeviceStatus || []).forEach(([id, status]) => {
     const mesh = visual.modelRoots.get(id); if (!mesh) return;
@@ -493,7 +507,7 @@ function setQuality(level) {
 }
 
 /* ---------- 行进路线层与避让校验（决策 2026-11-06：小机器人限 102↔106 及区间走廊，不得重叠或穿越他物） ---------- */
-const ROUTE_COLORS = { 'RB-C-02': 0xe8d77a, 'RB-C-01': 0x2878ff };
+const ROUTE_COLORS = { 'RB-C-02': TWIN_TOKEN.route, 'RB-C-01': TWIN_TOKEN.brand };
 function obstacleBoxes() {
   const skip = new Set(['106-08', '106-09']);                     // 两台机器人自身
   const out = [];
@@ -582,7 +596,7 @@ function drawRoutes(list, walls) {
        这样「线路图」是可数的：11 条腿 = 11 个 leg 对象，不是原来一整条不可拆的折线。 */
     const route = new THREE.Group(); route.name = 'route-' + r.robotId; lines.add(route);
     const legs = r.legs || [];
-    const baseColor = ROUTE_COLORS[r.robotId] || 0xe8d77a;
+    const baseColor = ROUTE_COLORS[r.robotId] || TWIN_TOKEN.route;
     if (legs.length) {
       legs.forEach((lg, i) => {
         const g = new THREE.Group(); g.name = 'leg-' + r.robotId + '-' + lg.from + '-' + lg.to; g.userData = { leg: i, from: lg.from, to: lg.to, u0: lg.u0, u1: lg.u1 };
@@ -616,11 +630,11 @@ function drawRoutes(list, walls) {
     };
     if (nodes.length) {
       nodes.forEach(n => {
-        if (n.kind === 'station') mkDot(n.at[0], n.at[1], n.order === 1 ? 0.15 : 0.115, n.order === 1 ? 0x16a34a : baseColor, 0.95, n.order !== 1);
+        if (n.kind === 'station') mkDot(n.at[0], n.at[1], n.order === 1 ? 0.15 : 0.115, n.order === 1 ? TWIN_TOKEN.ready : baseColor, 0.95, n.order !== 1);
         else mkDot(n.at[0], n.at[1], 0.062, baseColor, 0.75, false);
       });
     } else {
-      manhattan(r.path).forEach((q, i) => mkDot(q[0], q[1], i === 0 ? 0.16 : 0.09, i === 0 ? 0x16a34a : baseColor, 0.9, false));
+      manhattan(r.path).forEach((q, i) => mkDot(q[0], q[1], i === 0 ? 0.16 : 0.09, i === 0 ? TWIN_TOKEN.ready : baseColor, 0.9, false));
     }
     lines.add(knots);
     liveLeg(r);
@@ -631,7 +645,7 @@ function drawRoutes(list, walls) {
     if (r.corridor) {
       const c = r.corridor;
       const band = new THREE.Mesh(new THREE.PlaneGeometry(c.x[1] - c.x[0], c.z[1] - c.z[0]),
-        new THREE.MeshBasicMaterial({ color: 0xe8d77a, transparent: true, opacity: 0.10, depthWrite: false, toneMapped: false }));
+        new THREE.MeshBasicMaterial({ color: TWIN_TOKEN.route, transparent: true, opacity: 0.10, depthWrite: false, toneMapped: false }));
       band.rotation.x = -Math.PI / 2; band.position.set((c.x[0] + c.x[1]) / 2, 0.012, (c.z[0] + c.z[1]) / 2); band.name = 'corridor-' + r.robotId;
       lines.add(band);
     }
@@ -641,7 +655,7 @@ function drawRoutes(list, walls) {
 /* ---------- 当前航段：上一个定位点 → 下一个定位点，画成"正在走的那条路" ----------
    样式按产品负责人给的参考图：浅蓝半透明带 + 带上等距圆点，比整线其余部分亮。
    只给"正在走的这一段"用这个样式，其余腿保持细黄线——高亮必须有信息量，不能全画面都是霓虹。 */
-const LIVE = { band: 0x2f80ff, bandW: 0.42, glowW: 1.0, dotR: 0.062, step: 0.9, y: 0.03 };
+const LIVE = { band: TWIN_TOKEN.brand, bandW: 0.42, glowW: 1.0, dotR: 0.062, step: 0.9, y: 0.03 };
 let liveState = {};
 function legIndexOf(r, u) {
   /* 高亮用 displayLegs（按门洞/折返点切开的渲染分段）；业务航段 legs 仍是 9 条「上一站→下一站」 */
@@ -675,7 +689,7 @@ function liveLeg(r) {
       g.add(m);
     });
     const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x1, LIVE.y + 0.004, z1), new THREE.Vector3(x2, LIVE.y + 0.004, z2)]),
-      new THREE.LineBasicMaterial({ color: 0x63a4ff, transparent: true, opacity: 0.95, toneMapped: false }));
+      new THREE.LineBasicMaterial({ color: TWIN_TOKEN.glow, transparent: true, opacity: 0.95, toneMapped: false }));
     g.add(ln);
     /* 等距圆点用 InstancedMesh：整条腿一个 draw call（几十个独立 Mesh 会把大屏 draw call 吃掉一大块） */
     const nd = Math.max(1, Math.floor(len / LIVE.step) + 1); totalDots += nd;
@@ -683,7 +697,7 @@ function liveLeg(r) {
   }
   if (totalDots) {
     const im = new THREE.InstancedMesh(new THREE.CircleGeometry(LIVE.dotR, 18),
-      new THREE.MeshBasicMaterial({ color: 0x2f80ff, transparent: true, opacity: 0.95, toneMapped: false, depthWrite: false }), totalDots);
+      new THREE.MeshBasicMaterial({ color: TWIN_TOKEN.brand, transparent: true, opacity: 0.95, toneMapped: false, depthWrite: false }), totalDots);
     const m4 = new THREE.Matrix4(), qq = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2), sc = new THREE.Vector3(1, 1, 1), pv = new THREE.Vector3();
     let ki = 0;
     dotPlan.forEach(dp => {
@@ -698,7 +712,7 @@ function liveLeg(r) {
   /* 下一站的定位点用蓝环强调：视线自然落到「要去哪儿」 */
   const e = pts[pts.length - 1];
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.22, 28),
-    new THREE.MeshBasicMaterial({ color: 0x2f80ff, transparent: true, opacity: 0.85, toneMapped: false, depthWrite: false, side: THREE.DoubleSide }));
+    new THREE.MeshBasicMaterial({ color: TWIN_TOKEN.brand, transparent: true, opacity: 0.85, toneMapped: false, depthWrite: false, side: THREE.DoubleSide }));
   ring.rotation.x = -Math.PI / 2; ring.position.set(e[0], LIVE.y + 0.007, e[1]); g.add(ring);
   lines.add(g);
 }
@@ -991,18 +1005,22 @@ function ensureCard() {
   if (cardEl) return cardEl;
   cardEl = document.createElement('div'); cardEl.id = 'twin-v2-card'; cardEl.hidden = true;
   const st = document.createElement('style'); st.id = 'twin-v2-card-style';
-  st.textContent = `#twin-v2-card{position:absolute;z-index:34;min-width:216px;max-width:262px;background:rgba(255,255,255,.82);backdrop-filter:blur(12px) saturate(1.25);
- border:1px solid rgba(255,255,255,.95);box-shadow:0 16px 44px rgba(15,40,80,.16);border-radius:14px;padding:11px 13px;font-size:12px;color:#0F2740;
- transform:translate(14px,-50%);transition:opacity .25s var(--tw-motion-easeOut),transform .25s var(--tw-motion-easeOut)}
+  st.textContent = `#twin-v2-card{position:absolute;z-index:var(--tw-z-card);min-width:216px;max-width:262px;
+ background:var(--tw-glass-float);backdrop-filter:var(--tw-blur) var(--tw-sat);-webkit-backdrop-filter:var(--tw-blur) var(--tw-sat);
+ border:1px solid var(--tw-glass-border);box-shadow:var(--tw-shadow-card);border-radius:var(--tw-radius-card);
+ padding:11px 13px;font-size:var(--tw-fs-body);line-height:var(--tw-lh-body);color:var(--tw-ink-1);font-family:var(--tw-font-familyUI);
+ transform:translate(14px,-50%);transition:opacity var(--tw-dur-2) var(--tw-motion-easeOut),transform var(--tw-dur-2) var(--tw-motion-easeOut)}
 #twin-v2-card.enter{opacity:0;transform:translate(2px,-50%)}
-#twin-v2-card h4{margin:0 0 2px;font-size:13px;font-weight:700}
-#twin-v2-card .cid{font-size:10px;color:#8A97A7;font-variant-numeric:tabular-nums;letter-spacing:.2px}
-#twin-v2-card .row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px dashed #E9EEF4;margin-top:6px}
-#twin-v2-card .row span{color:#5B6B7D}#twin-v2-card .row b{font-variant-numeric:tabular-nums;text-align:right}
-#twin-v2-card .st{display:inline-flex;align-items:center;gap:5px;font-weight:700}#twin-v2-card .st i{width:7px;height:7px;border-radius:50%;background:#94A3B8}
-#twin-v2-card .st.working i{background:#2878FF}#twin-v2-card .st.ready i{background:#16A34A}#twin-v2-card .st.alarm i{background:#E5484D}#twin-v2-card .st.na i{background:#C3CCD6}#twin-v2-card .st.charging i{background:#94A3B8}
-#twin-v2-card .go{margin-top:9px;width:100%;font:inherit;font-size:11px;color:#2878FF;background:#F2F7FF;border:1px solid #D7E4FF;border-radius:999px;padding:5px 10px;cursor:pointer}
-#twin-v2-card .x{position:absolute;right:8px;top:6px;border:0;background:0;font-size:15px;color:#8A97A7;cursor:pointer;line-height:1}`;
+#twin-v2-card h4{margin:0 0 2px;font-size:var(--tw-fs-strong);font-weight:700}
+#twin-v2-card .cid{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;letter-spacing:.2px}
+#twin-v2-card .row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px dashed var(--tw-hairline);margin-top:6px}
+#twin-v2-card .row span{color:var(--tw-ink-3)}#twin-v2-card .row b{font-variant-numeric:tabular-nums;text-align:right}
+#twin-v2-card .st{display:inline-flex;align-items:center;gap:5px;font-weight:700}#twin-v2-card .st i{width:7px;height:7px;border-radius:50%;background:var(--tw-st-na)}
+#twin-v2-card .st.working i{background:var(--tw-st-working)}#twin-v2-card .st.ready i{background:var(--tw-st-ready)}#twin-v2-card .st.alarm i{background:var(--tw-st-alarm)}#twin-v2-card .st.na i{background:var(--tw-st-na)}#twin-v2-card .st.charging i{background:var(--tw-st-idle)}
+#twin-v2-card .go{margin-top:9px;width:100%;font:inherit;font-size:var(--tw-fs-label);color:var(--tw-color-brand-strong);background:var(--tw-color-brand-soft);border:1px solid var(--tw-color-brand-line);border-radius:var(--tw-radius-pill);padding:5px 10px;cursor:pointer;transition:background var(--tw-dur-1) var(--tw-motion-easeOut)}
+#twin-v2-card .go:hover{background:var(--tw-tint-run-bg)}
+#twin-v2-card .x{position:absolute;right:8px;top:6px;border:0;background:0;font-size:var(--tw-fs-num);color:var(--tw-ink-4);cursor:pointer;line-height:1}
+#twin-v2-card .x:hover{color:var(--tw-ink-1)}`;
   (visual.host.parentElement || document.body).append(st, cardEl);
   cardEl.style.position = 'fixed';
   cardEl.querySelector('.x')?.addEventListener('click', hideCard);
@@ -1013,6 +1031,9 @@ function loadNames() {
   if (namesMap) return Promise.resolve(namesMap);
   return fetch('data/equipment-names.json').then(r => r.json()).then(j => { namesMap = {}; (j.equipment || []).forEach(e => { namesMap[e.cadId] = e; }); return namesMap; });
 }
+/* 屏上只出现运维与客户的语言，不出现我们内部的英文枚举（与撤掉 S1/S2/S3 前缀同一条口径） */
+const TYPE_CN = { detect: '检测', unmanned: '无人化', sample: '制样', reception: '接待', mechanics: '力学', measure: '测量',
+  materials: '材料', highvoltage: '高压', environment: '环境', electrical: '电气', control: '控制', comprehensive: '综合' };
 const ROOM_CN = { '101': '接待大厅', '102': '智能样品室', '103': '智能力学室', '104': '控制室', '105': '智能高压室', '106': '无人化电缆试验区', '107': '材料试验区', '108': '环境试验区', '109': '综合试验区', '110': '数智化电气试验区' };
 const ST_CN = { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常', charging: '停靠充电' };
 function showCard(id, center) {
@@ -1030,7 +1051,7 @@ function renderCard(id, center) {
   cardEl.innerHTML = '<button class="x" aria-label="关闭">×</button><h4>' + esc(n.displayName || n.cadName || (o && o.name) || id) + '</h4>' +
     '<div class="cid">' + id + (o && o.code ? ' · ' + o.code : '') + ' · ' + room + ' ' + (ROOM_CN[room] || '') + '</div>' +
     '<div class="row"><span>状态</span><b class="st ' + (status || 'na') + '"><i></i>' + (status ? ST_CN[status] : '无实时数据') + '</b></div>' +
-    '<div class="row"><span>' + (o ? '类型' : '归档') + '</span><b>' + esc(o ? (o.type || '—') : (n.nameConfirmed ? 'CAD 已确认名称' : 'CAD 原始名称')) + '</b></div>' +
+    '<div class="row"><span>' + (o ? '类型' : '归档') + '</span><b>' + esc(o ? (TYPE_CN[o.type] || o.type || '—') : (n.nameConfirmed ? 'CAD 已确认名称' : 'CAD 原始名称')) + '</b></div>' +
     (o && o.subZone ? '<div class="row"><span>分区</span><b>' + esc(o.subZone) + '</b></div>' : '') +
     (params ? '<div class="row"><span>关键参数</span><b>' + esc(params) + '</b></div>' : '') +
     '<div class="row"><span>占地</span><b>' + fp + '</b></div>' +

@@ -9,7 +9,7 @@
 ```bash
 cd tests/twin
 npm i                 # 只装 playwright（用系统 Chrome，不需要下载 Chromium）
-node run-all.mjs                       # 全量 20 套（含 focuscheck 约 4 分钟）：自动起本地静态服务，跑完自动关
+node run-all.mjs                       # 全量 21 套（含 focuscheck 约 4 分钟）：自动起本地静态服务，跑完自动关
 node run-all.mjs --only smoke,alarmlvl # 只跑关心的套件
 TWIN_BASE=https://<部署域名> node run-all.mjs --no-serve   # 打线上（只能验已 push 的 commit）
 ```
@@ -41,6 +41,7 @@ TWIN_BASE=https://<部署域名> node run-all.mjs --no-serve   # 打线上（只
 | `s3check` | S3 告警回溯已移出 MVP：抽屉/按钮/按键映射都不存在 |
 | `uxcheck` | 透明浮层三处、下钻与切近补间、实体信息卡、循环剧本、避让自检（44 项） |
 | `focuscheck` | **逐个**验 89 个三维实体（FR-34，不抽样）：三级点击入口（实体本体→状态光点→事件兜底）、`selected` 与卡内编号一致、切近落点偏差 <14px、气泡完整落在「浮层避让可用区」内、画面占比 4%~120% 且 ≥34px、滚轮放大缩小双向且缩放后仍钉住、未建模的 11 个只出 `flashHint` 说明且相机/气泡都不许动。单跑 `node focuscheck.mjs 106` 可只验一个房间 |
+| `uiconcheck` | 视觉一致性守卫（FR-35）：`.rail/.stream/.zonepanel/.dk` 的 bg+blur+描边+圆角+阴影五项必须完全相同；屏上不许出现 <10.4px 文字；`twin-scene-v2.css` 里零裸值（hex/blur(Npx)/font-size:Npx/z-index:N/border-radius:Npx）；3D 侧 `__twinTokensForQA` 与 CSS token 同值；可点元素 cursor:pointer + 存在 focus-visible 规则；场景内房间标签与节点标记已并回宿主 token；读数 tabular-nums |
 
 ## 写/改断言时的四条硬约定
 

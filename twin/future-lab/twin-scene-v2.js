@@ -454,7 +454,7 @@
       [['working', '在测'], ['ready', '就绪'], ['alarm', '异常'], ['standby', '待机'], ['stopped', '停止'], ['total', '合计']]
         .map(function (x) { return '<div class="dk-cell ' + x[0] + '"><b>' + (x[0] === 'total' ? total : (cnt[x[0]] || 0)) + '</b><span>' + x[1] + '</span></div>'; }).join('') +
       '</div><div class="dk-rate">稼动率 <b style="font-variant-numeric:tabular-nums">' + rate + '%</b><i><b style="width:' + rate + '%"></b></i></div>' +
-      '<div class="dk-rate" style="margin-top:5px;font-size:9.5px;color:var(--tw-color-textMuted)">机器人 ' + robots.length + ' 台 · 在跑 ' + robots.filter(function (r) { return !r.parked; }).length + ' · 停靠充电 ' + robots.filter(function (r) { return r.parked; }).length + '</div>';
+      '<div class="dk-rate" style="margin-top:5px">机器人 ' + robots.length + ' 台 · 在跑 ' + robots.filter(function (r) { return !r.parked; }).length + ' · 停靠充电 ' + robots.filter(function (r) { return r.parked; }).length + '</div>';
   }
   function renderDock() {
     /* ① 设备信息统计：状态分布 + 稼动率（在测/建档，现算不写死） */
@@ -483,7 +483,7 @@
       var st = t.state;
       return '<div class="ti-row ' + st + '" data-cad="' + (t.cad || '') + '" tabindex="0" role="button" aria-label="' + escapeHtml(t.name + '，' + (lbl[st] || st) + '，回车定位检测设备') + '">' +
         '<i class="ti-dot"></i><span class="nm">' + escapeHtml(t.name) + '</span>' +
-        '<span class="dv">' + escapeHtml(t.device) + '</span><span class="tm" style="font-size:9.5px;color:var(--tw-color-textMuted);white-space:nowrap">' + (lbl[st] || st) + '</span></div>';
+        '<span class="dv">' + escapeHtml(t.device) + '</span><span class="tm" style="color:var(--tw-color-textMuted);white-space:nowrap">' + (lbl[st] || st) + '</span></div>';
     }).join('');
     dkTrack('#dkItemsTrack', ihtml, its.length);
 
