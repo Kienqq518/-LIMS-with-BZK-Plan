@@ -221,6 +221,32 @@
       u: +cy.u.toFixed(3), loopSec: cy.cycle.loopSec };
   }
 
+  /* ---------- 底栏块2：调度任务队列的状态现算 ----------
+     队列本身是种子数据（流程配置，图3 的 16 条 + 图1 的三分类），但「进行中」必须跟着循环剧本实时变：
+     机器人正在服务哪个工位、跑的是哪条流，那条就标进行中——这样"无人化循环=循环这些任务"在屏上是可验证的，
+     而不是底栏一套、三维一套各说各话。 */
+  function queueView(q) {
+    if (!q || !q.tasks) return q;
+    var cy = cycleNow();
+    var live = cy && cy.stop ? { flow: cy.stop.flowCode, cad: cy.stop.cad || null, order: cy.stop.order } : null;
+    /* 流号 → 工位：由循环剧本反推，不在队列里手填（手填过一次对不上，「循环中」就永远标不出来） */
+    var cadOf = {};
+    if (cy && cy.cycle && cy.cycle.stops) cy.cycle.stops.forEach(function (st) { if (st.flowCode && st.cad) cadOf[st.flowCode] = st.cad; });
+    var taken = {};
+    q.tasks.forEach(function (t) {
+      if (cadOf[t.flowCode]) t.cad = cadOf[t.flowCode];
+      t.live = false;
+      if (live && t.flowCode === live.flow && !taken[t.flowCode]) { t.live = true; taken[t.flowCode] = 1; }
+      t.shown = t.live ? 'running' : t.state;
+    });
+    q.counts = { running: q.tasks.filter(function (t) { return t.shown === 'running'; }).length,
+                 unassigned: q.tasks.filter(function (t) { return t.shown === 'unassigned'; }).length,
+                 done: q.tasks.filter(function (t) { return t.shown === 'done'; }).length };
+    q.liveFlow = live ? live.flow : null;
+    q.liveOrder = live ? live.order : null;   /* 顺带给出剧本站序，测试可核对「循环中」确实对应机器人当前所在站 */
+    return q;
+  }
+
   /* ---- 定时器模拟三源变化（Mock 阶段：JSON + 定时器即可） ---- */
   function tick() {
     if (!state) return;
@@ -285,11 +311,24 @@
          必须排在通用 /api/zone/{z}/{key} 之前，否则 task-stats 等会被当分区字段返回 null。环境数据走 V4 节点协议，不在此处。 */
       if ((m = path.match(/^\/api\/overview\/([\w-]+)$/))) {
         if (m[1] === 'lab-status') return resolve(envelope(withPlanDerive(clone(state.overview['lab-status']))));
+        if (m[1] === 'dispatch-queue') return resolve(envelope(queueView(clone(state.overview['dispatch-queue']))));
         return resolve(envelope(clone(state.overview[m[1]] || null)));
       }
+      /* 区域统计端点：一个请求把「该房间该显示哪种统计」也带出来（口径来自 seed 的 viewProfile，不在 JS 里写死）
+         - 106：任务四格（完成/执行中/异常/排队）
+         - 其他试验区：检测项目数四格（检测中/待检测/已完成/逾期）
+         - 102：样品台账（存量/今日收样/今日还样/按名称分布）
+         - 101、104：不统计任务与检测项目 */
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/task-stats$/))) {
-        var zstat = state.zoneStats['Z-' + m[1]];
-        return resolve(envelope(zstat ? { zoneId: 'Z-' + m[1], periods: zstat, note: zstat.note || null } : { unsupported: true, zoneId: m[1], note: '该区无任务口径' }));
+        var zk = 'Z-' + m[1], zstat = state.zoneStats[zk];
+        var zone = (state.overview.zones || []).filter(function (z) { return z.zoneId === zk; })[0] || {};
+        var prof = zone.viewProfile || { rail: false, dock: false, blocks: ['devices', 'env', 'alarms'], statsKind: 'none' };
+        if (!zstat) return resolve(envelope({ unsupported: true, zoneId: m[1], viewProfile: prof, note: '该区无统计口径' }));
+        return resolve(envelope({
+          zoneId: zk, viewProfile: prof, statsKind: prof.statsKind,
+          periods: zstat, note: zstat.note || null,
+          testItems: zstat.testItems || null, samples: zstat.samples || null
+        }));
       }
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/running-tasks$/))) {
         var codes = {}; ((state['zone' + m[1]] || {}).devices || []).forEach(function (x) { codes[x.code] = 1; });

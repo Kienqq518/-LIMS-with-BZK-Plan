@@ -65,18 +65,42 @@
   <!-- 区域视图五类信息（2026-11-05 信息模型）：设备 / 环境数据 / 任务统计 / 正在运行的任务 / 告警 -->
   <aside class="zonepanel" id="zonePanel" hidden aria-label="区域运行面板">
     <header><b id="zpName">–</b><span id="zpMeta">–</span><button class="close" id="zpClose" aria-label="返回总览">×</button></header>
+    <!-- 左栏在非 106 房间隐藏后，周期切换器必须跟着进面板：检测项目数统计就是按周期变的 -->
+    <div class="zp-period" id="zpPeriod" role="group" aria-label="统计周期" hidden>
+      <span class="lb">统计周期</span>
+      <button class="mini seg" data-period="day">本日</button>
+      <button class="mini seg" data-period="month">本月</button>
+      <button class="mini seg" data-period="year">本年</button>
+    </div>
     <div class="zp-scroll">
       <section id="zpDevices"><h4><i class="k dev"></i>设备<em id="zpDevicesN"></em></h4><div class="zp-body"></div></section>
       <section id="zpEnv"><h4><i class="k env"></i>环境数据<em id="zpEnvN"></em></h4><div class="zp-body"></div></section>
       <section id="zpStats"><h4><i class="k stat"></i>任务统计<em id="zpStatsPeriod"></em></h4><div class="zp-body"></div></section>
+      <section id="zpTestItems" hidden><h4><i class="k stat"></i>检测项目数统计<em id="zpTestItemsPeriod"></em></h4><div class="zp-body"></div></section>
+      <section id="zpSamples" hidden><h4><i class="k dev"></i>样品台账<em id="zpSamplesN"></em></h4><div class="zp-body"></div></section>
       <section id="zpRunning"><h4><i class="k run"></i>正在运行的任务<em id="zpRunningN"></em></h4><div class="zp-body"></div></section>
       <section id="zpAlarms"><h4><i class="k ab"></i>告警<em id="zpAlarmsN"></em></h4><div class="zp-body"></div></section>
     </div>
   </aside>
 
-  <footer class="tasktable" id="taskStrip" aria-label="今日任务（滚动表格）">
-    <div class="tt-head"><span>委托单号</span><span>样品 / 试验项目</span><span>状态</span><span>设备链</span><span>进度</span></div>
-    <div class="tt-view"><div class="tt-track" id="ttTrack"></div></div>
+  <!-- 底栏四块（2026-11-06 产品负责人方案）：① 设备信息统计 ② 无人化调度任务队列 ③ 委托单试验项完成情况 ④ 组态物联节点 -->
+  <footer class="dock" id="taskStrip" aria-label="底部运行信息四块（滚动）">
+    <section class="dk" id="dkDevices" aria-label="设备信息统计">
+      <header><b>设备信息统计</b><span class="src" id="dkDevSrc">数采</span></header>
+      <div class="dk-body" id="dkDevBody"></div>
+    </section>
+    <section class="dk" id="dkQueue" aria-label="无人化调度任务队列">
+      <header><b>无人化调度任务</b><span class="src" id="dkQueueCnt">流程配置</span></header>
+      <div class="dk-view"><div class="dk-track" id="dkQueueTrack"></div></div>
+    </section>
+    <section class="dk" id="dkItems" aria-label="委托单试验项完成情况">
+      <header><b>试验项完成情况</b><span class="src" id="dkItemsHead">—</span></header>
+      <div class="dk-view"><div class="dk-track" id="dkItemsTrack"></div></div>
+    </section>
+    <section class="dk" id="dkNodes" aria-label="组态物联节点">
+      <header><b>组态物联节点</b><span class="src" id="dkNodesCnt">—</span></header>
+      <div class="dk-view"><div class="dk-track" id="dkNodesTrack"></div></div>
+    </section>
   </footer>
 
   <aside class="detail" id="detail" hidden aria-label="详情面板">

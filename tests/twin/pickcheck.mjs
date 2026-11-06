@@ -9,7 +9,7 @@
 import { chromium } from 'playwright';
 import { BASE } from './_env.mjs';
 /* 在画面安全区里找可点目标：左栏 x<300、右侧浮层 x>innerWidth-360、底栏 y>innerHeight-150 都不能点 */
-const SAFE = `(x,y)=>x>300&&x<innerWidth-360&&y>90&&y<innerHeight-150`;
+const SAFE = `(x,y)=>x>300&&x<innerWidth-360&&y>90&&y<innerHeight-200`;
 const out=[],err=[];
 const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期望 ${e})`);
 const b=await chromium.launch({channel:'chrome'});
@@ -92,7 +92,7 @@ const robPt=await f.evaluate(()=>{const v=window.visual106,d=v.statusDots&&v.sta
   if(v.view!=='overall-101') return {err:'相机没回总览，view='+v.view};
   const s=new(d.position.constructor)(); s.setFromMatrixPosition(d.matrixWorld); s.project(v.camera); const h=v.host.getBoundingClientRect();
   const x=h.left+(s.x*.5+.5)*h.width, y=h.top+(-s.y*.5+.5)*h.height;
-  if(!(x>h.left+300&&x<h.right-360&&y>h.top+90&&y<h.bottom-150)) return {err:'光点不在可点区域 '+Math.round(x)+','+Math.round(y)};
+  if(!(x>h.left+300&&x<h.right-360&&y>h.top+90&&y<h.bottom-200)) return {err:'光点不在可点区域 '+Math.round(x)+','+Math.round(y)};
   return {x,y};});
 out.push((!robPt.err?'✅':'❌')+' 停靠的机器人也有状态光点（暗色待机，且在总览里可点）: '+JSON.stringify(robPt).slice(0,90));
 if(!robPt.err){ await closeCard(); const t4=await toTop(robPt.x,robPt.y); await p.mouse.click(t4.x,t4.y); await p.waitForTimeout(2400);

@@ -8,7 +8,7 @@
 (function () {
   var $ = function (s) { return document.querySelector(s); };
   var scene = $('#scene');
-  var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [], planItems = [];
+  var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [], planItems = [], queueData = null, entrust = null;
   var rtTimer = null, detailDev = null, bridgeReady = false, pendingState = null;
   var zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false, routeAudit = null, cycleDef = null, cycTimer = null;
   var SRC_NAME = { daq: '数采', dispatch: '调度', iot: '物联', lims: 'LIMS', rule: '判定规则' };
@@ -59,7 +59,8 @@
       TwinApi.get('/api/overview/alarms'), TwinApi.get('/api/zone/106/devices'), TwinApi.get('/api/zone/106/robots'),
       TwinApi.get('/api/zone/106/samples'), TwinApi.get('/api/zone/106/dispatch-tasks'),
       TwinApi.get('/api/zone/103/devices'), TwinApi.get('/api/zone/106/cycle'), TwinApi.get('/api/zone/106/walls'),
-      TwinApi.get('/api/overview/test-item-plan'), TwinApi.get('/api/overview/alarm-sections')
+      TwinApi.get('/api/overview/test-item-plan'), TwinApi.get('/api/overview/alarm-sections'),
+      TwinApi.get('/api/overview/dispatch-queue'), TwinApi.get('/api/overview/entrust-testitems')
     ]);
   }).then(function (r) {
     status = r[0].data; zones = r[1].data || []; tasks = r[2].data || []; alarms = r[3].data || [];
@@ -69,6 +70,7 @@
     walls = (r[10] && r[10].data) || [];
     planItems = (r[11] && r[11].data && r[11].data.items) || [];
     setSections(r[12] && r[12].data);   /* A/B/C 分区口径来自数据，不在 JS 里写死（FR-24 第 4 条） */
+    queueData = r[13] && r[13].data || null; entrust = r[14] && r[14].data || null;   /* 底栏块2/块3 */
     /* 讲解顺序（决策 Q1 售前投影）：总览 → 106 无人化区（主叙事）→ 其余区域 */
     ORDER = ['S1', 'Z106'].concat(zones.map(function (z) { return 'Z' + z.zoneId.slice(2); }).filter(function (z) { return z !== 'Z106'; }));   /* 讲解序列不再包含告警回溯屏 */
     if (r[9] && r[9].data && r[9].data.cycle) { cycleDef = r[9].data.cycle; if (!cycTimer) cycTimer = setInterval(tickCycle, 1000); tickCycle(); }
@@ -81,9 +83,12 @@
       robots = (ev.payload.robots && ev.payload.robots.length ? ev.payload.robots : robots);
       devices.forEach(function (d) { var s = ev.payload.devices.filter(function (x) { return x.deviceId === d.deviceId; })[0]; if (s) d.status = s.status; });
       renderZonePanel(); renderTables(); pushState();
+      /* 底栏：块1 统计与块2 的"循环中"要跟着心跳走，但只就地改文本（见 refreshDock） */
+      renderDockStats();
+      TwinApi.get('/api/overview/dispatch-queue').then(function (r) { queueData = r.data; refreshDock(); }).catch(function () { });
     } else if (ev.type === 'task.progress') {
       var t = tasks.filter(function (x) { return x.taskId === ev.payload.taskId; })[0];
-      if (t) { t.progress.percent = ev.payload.percent; t.stage = ev.payload.stage; if (ev.payload.percent >= 100) t.result = 'passed'; renderStrip(); }
+      if (t) { t.progress.percent = ev.payload.percent; t.stage = ev.payload.stage; if (ev.payload.percent >= 100) t.result = 'passed'; renderDock(); }
     } else if (ev.type === 'device.status') { renderZonePanel(); }
     else if (ev.type === 'cycle') { renderCycle(ev.payload); }
     else if (ev.type === 'alarm.update') { renderAlarms(); pushState(); }
@@ -246,7 +251,8 @@
   function zp(sel) { return document.querySelector('#zonePanel ' + sel); }
   function renderZonePanel() {
     if (st.mode !== 'ZONE') return;
-    var z = st.zone, zn = (zones.filter(function (x) { return x.zoneId === 'Z-' + z; })[0] || {}), pool = zoneDevices(z);
+    var z = st.zone, zoneObj = (zones.filter(function (x) { return x.zoneId === 'Z-' + z; })[0] || {}), zn = zoneObj, pool = zoneDevices(z);
+    var prof = zoneObj.viewProfile || { rail: false, dock: false, blocks: ['devices', 'env', 'alarms'], statsKind: 'none' };
     $('#zpName').textContent = z + ' ' + (zn.name || '');
     $('#zpMeta').textContent = (zn.deviceCount || 0) + ' 台建档 · 状态 ' + (zn.status === 'alarm' ? '异常' : zn.status === 'running' ? '运行中' : '空闲') + ' · 数据 ' + (zn.detailLevel === 'device' ? '分区明细' : '台账投影');
 
@@ -278,24 +284,24 @@
     if (zpSig.env !== envSig) {
       zpSig.env = envSig;
       zp('#zpEnv .zp-body').innerHTML = env.map(function (n) {
-        var v = n.values || {}, txt;
-        if (v.temperature != null) txt = v.temperature + '℃ · ' + v.humidity + '%RH';
-        else if (v.illuminance != null) txt = v.illuminance + ' lx';
-        else if (v.detected != null) txt = v.detected ? '已触发' : '正常';
-        else if (v.exceeded != null) txt = v.exceeded ? '超限' : '正常';
-        else if (v.activity != null) txt = v.activity ? '有人活动' : '无人';
-        else if (v.contact != null) txt = '触点' + (v.contact === 'closed' ? '闭合' : '断开');
-        else if (v.connection != null) txt = v.videoSource ? '视频在线' : '画面未接入';
-        else txt = '—';
+        var txt = nodeReading(n);
         return '<div class="zp-row ' + (n.status === 'normal' ? 'ready' : 'alarm') + '" data-node="' + n.id + '"><i class="dot"></i><span class="nm">' + escapeHtml(n.name) + '</span><span class="tag">' + NODE_CN(n.type) + '</span><span class="sub">' + txt + ' · ' + new Date(n.updatedAt).toLocaleTimeString('zh-CN', { hour12: false }) + '</span></div>';
       }).join('') || '<div class="zp-empty">该区无环境监测点位（物联系统未部署）。</div>';
       zp('#zpEnvN').textContent = env.length ? env.length + ' 个点位 · 5s 心跳' : '无点位';
     }
 
-    /* ③ 任务统计（跟随顶部周期切换） */
+    /* 块显隐：完全按该房间的 viewProfile 出块（101 只出环境数据；102 出样品台账；非 106 试验区出检测项目数统计） */
+    var BLOCK_IDS = { devices: '#zpDevices', env: '#zpEnv', 'task-stats': '#zpStats', 'test-items': '#zpTestItems', samples: '#zpSamples', running: '#zpRunning', alarms: '#zpAlarms' };
+    Object.keys(BLOCK_IDS).forEach(function (k) {
+      var el = document.querySelector(BLOCK_IDS[k]); if (!el) return;
+      var on = (prof.blocks || []).indexOf(k) >= 0;
+      el.hidden = !on;
+    });
+
+    /* ③ 任务统计（跟随顶部周期） */
     var per = zstats && zstats.periods ? zstats.periods[st.period] : null;
     zp('#zpStatsPeriod').textContent = ({ day: '本日', month: '本月', year: '本年' })[st.period];
-    if (per) {
+    if (per && (prof.blocks || []).indexOf('task-stats') >= 0) {
       /* 四格口径（2026-11-06 定稿）：完成 / 执行中 / 异常 / 排队，不含总数——总数只做 title 备注，避免与三源总数对不上时被质疑 */
       zp('#zpStats .zp-body').innerHTML = '<div class="zp-grid" title="任务总数 ' + per.total + '（含排队未开始）· 口径：数采">' +
         '<div class="zp-stat ok"><b>' + per.done + '</b><span>已完成</span></div>' +
@@ -305,6 +311,35 @@
         (zstats.note ? '<div class="zp-empty" style="margin-top:7px">' + escapeHtml(zstats.note) + '</div>' : '');
     } else {
       zp('#zpStats .zp-body').innerHTML = '<div class="zp-empty">该区无任务口径' + (zstats && zstats.note ? '：' + escapeHtml(zstats.note) : '') + '。</div>';
+    }
+
+    /* ③b 检测项目数统计：除 106 外的试验区用它替代任务统计（口径=数采/LIMS 试验项目） */
+    var ti = zstats && zstats.testItems ? zstats.testItems[st.period] : null;
+    zp('#zpTestItemsPeriod').textContent = ({ day: '本日', month: '本月', year: '本年' })[st.period];
+    if (ti && (prof.blocks || []).indexOf('test-items') >= 0) {
+      zp('#zpTestItems .zp-body').innerHTML = '<div class="zp-grid" title="检测项目合计 ' + (ti.testing + ti.pending + ti.done) + ' · 口径：数采/LIMS">' +
+        '<div class="zp-stat run"><b>' + ti.testing + '</b><span>检测中</span></div>' +
+        '<div class="zp-stat wait"><b>' + ti.pending + '</b><span>待检测</span></div>' +
+        '<div class="zp-stat ok"><b>' + ti.done + '</b><span>已完成</span></div>' +
+        '<div class="zp-stat warn"><b>' + ti.overdue + '</b><span>逾期未出</span></div></div>';
+    }
+
+    /* ③c 样品台账：102 智能样品室专属（存量 / 今日收样 / 今日还样 / 按样品名称分布） */
+    var sp = zstats && zstats.samples;
+    if (sp && (prof.blocks || []).indexOf('samples') >= 0) {
+      var sum = (sp.byName || []).reduce(function (a, x) { return a + x.count; }, 0);
+      zp('#zpSamplesN').textContent = '存量 ' + sp.stored + ' 支';
+      zp('#zpSamples .zp-body').innerHTML = '<div class="zp-grid">' +
+        '<div class="zp-stat ok"><b>' + sp.stored + '</b><span>在库存量(支)</span></div>' +
+        '<div class="zp-stat run"><b>' + sp.receivedToday + '</b><span>今日收样</span></div>' +
+        '<div class="zp-stat wait"><b>' + sp.returnedToday + '</b><span>今日还样</span></div>' +
+        '<div class="zp-stat warn"><b>' + (sp.pendingReturn || 0) + '</b><span>待还样</span></div></div>' +
+        '<div class="sp-names">' + (sp.byName || []).map(function (x) {
+          var w = sp.stored ? Math.round(x.count / sp.stored * 100) : 0;
+          return '<div class="sp-nm" title="' + escapeHtml(x.name) + ' ' + x.count + ' 支（占 ' + w + '%）"><span>' + escapeHtml(x.name) + '</span>' +
+            '<i><b style="width:' + w + '%"></b></i><em>' + x.count + ' 支</em></div>';
+        }).join('') + '</div>' +
+        (sum === sp.stored ? '' : '<div class="zp-empty">分布合计 ' + sum + ' 与存量 ' + sp.stored + ' 不一致，以台账为准。</div>');
     }
 
     /* ④ 正在运行的任务（调度 + 数采两路合并，标来源） */
@@ -341,25 +376,29 @@
       zp('#zpAlarmsN').textContent = '今日 ' + zalarms.length + ' · 未解除 ' + zopen.length;
     }
     keyable($('#zonePanel'));   /* 面板五块都补：设备行/机器人行/告警行都有点击语义 */
+    /* 收尾：本房间不展示的块，内容必须清掉——各块自己的写入发生在上一步的显隐之后，
+       不在这里再清一次，读屏与自动化就会读到上一个房间的脏数据（实测 101 里能看到 102 的样品台账） */
+    Object.keys(BLOCK_IDS).forEach(function (k) {
+      var el = document.querySelector(BLOCK_IDS[k]);
+      if (el && el.hidden) { var body = el.querySelector('.zp-body'); if (body) body.innerHTML = ''; }
+    });
   }
+  /* 节点读数文案（物联节点唯一口径：区域面板「环境数据」与底栏块4 共用） */
+  function nodeReading(n) {
+    var v = (n && n.values) || {};
+    if (v.temperature != null) return v.temperature + '℃ · ' + v.humidity + '%RH';
+    if (v.illuminance != null) return v.illuminance + ' lx';
+    if (v.detected != null) return v.detected ? '已触发' : '正常';
+    if (v.exceeded != null) return v.exceeded ? '超限' : '正常';
+    if (v.activity != null) return v.activity ? '有人活动' : '无人';
+    if (v.contact != null) return '触点' + (v.contact === 'closed' ? '闭合' : '断开');
+    if (v.connection != null) return v.videoSource ? '视频在线' : '画面未接入';
+    return '—';
+  }
+
   function ST_CN(x) { return { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常' }[x] || x; }
   function ST_AB(x) { return { active: '未解除', dispatched: '已派发', resolved: '已解除' }[x] || x; }
   function NODE_CN(t) { return { temperature: '温湿度', smoke: '烟感', gas: '气体', water: '水浸', motion: '人体', switch: '开关量', camera: '视觉', light: '照明' }[t] || t; }
-
-  /* ---------- ④ 底栏：只展示今日任务（滚动表格，透明底） ---------- */
-  function renderStrip() {
-    var el = $('#ttTrack'), rows = tasks.map(function (t) {
-      var cls = t.result === 'alarm' ? 'abn' : t.result === 'passed' ? 'ok' : (t.stage || '').indexOf('中') > 0 ? 'run' : 'wait';
-      return '<div class="tt-row" data-task="' + t.taskId + '" data-devcode="' + (t.deviceChain[0] || '') + '">' +
-        '<span class="no">' + t.taskId + '</span>' +
-        '<span class="nm">' + t.sampleId + ' · ' + escapeHtml(t.type) + '</span>' +
-        '<span class="st ' + cls + '">' + escapeHtml(t.stage) + '</span>' +
-        '<span class="chain">' + (t.deviceChain || []).join(' → ') + (t.source === 'WORKSTATION' ? ' · 工位手动录入' : ' · LIMS 下发') + '</span>' +
-        '<span class="pg"><i><b style="width:' + t.progress.percent + '%;background:' + (t.result === 'alarm' ? 'var(--tw-color-alertRed)' : 'var(--tw-color-brand)') + '"></b>' + t.progress.percent + '%</span></div>';
-    }).join('');
-    el.innerHTML = rows + rows;
-    el.style.animationDuration = Math.max(16, tasks.length * 5) + 's';
-  }
 
   /* 与 mock/场景同一套时间轴公式：t0=停靠开始，travel 在其之前；按墙上时钟取模 */
   function cycleAt(t) {
@@ -375,7 +414,97 @@
   }
   function tickCycle() { renderCycle(cycleAt(Date.now() / 1000)); }
 
-  /* ---------- 无人化任务循环剧本指示 ---------- */
+
+  /* ---------- 底栏四块（2026-11-06 产品负责人方案，见 PRD §5.2A） ----------
+     ① 设备信息统计  ② 无人化调度任务队列（图3 流程配置 + 图1 三分类）
+     ③ 正在检测委托单下的试验项完成情况（图4 名称与检测设备）  ④ 组态物联节点滚动 */
+  function dkTrack(id, html, per) {
+    var el = $(id); if (!el) return;
+    el.innerHTML = html + html;                                  /* 复制一份做无缝滚动 */
+    el.style.animation = per > 1 ? ('dkUp ' + Math.max(18, Math.round(per * 4.6)) + 's linear infinite') : 'none';
+  }
+  /* 心跳刷新：只就地改类名与文本。
+     重建 innerHTML 会把 CSS 无缝滚动动画重置，底栏每 2s 弹回顶部——那比数据不更新更糟。 */
+  function refreshDock() {
+    var qt = (queueData && queueData.tasks) || [];
+    qt.forEach(function (t) {
+      document.querySelectorAll('#dkQueueTrack .dq-row[data-seq="' + t.seq + '"]').forEach(function (el) {
+        el.classList.remove('running', 'unassigned', 'done'); el.classList.add(t.shown);
+        var st = el.querySelector('.st'), tm = el.querySelector('.tm');
+        if (st) st.textContent = t.live ? '循环中' : ((queueData.stateLabels || {})[t.shown] || t.shown);
+        if (tm) tm.textContent = (t.shown === 'running' && t.elapsedMin) ? ('已 ' + t.elapsedMin + '/' + t.plannedMin + 'min') : (t.time || '—');
+      });
+    });
+    var cnt = $('#dkQueueCnt'); if (cnt) cnt.textContent = '流程配置 ' + qt.length + ' 条 · 循环同步' + (queueData && queueData.liveFlow ? '：' + queueData.liveFlow : '');
+    (envNodes || []).forEach(function (n) {
+      document.querySelectorAll('#dkNodesTrack .nd-row[data-node="' + n.id + '"]').forEach(function (el) {
+        var rd = el.querySelector('.rd'), ti = el.querySelectorAll('.ti')[1];
+        if (rd) rd.textContent = nodeReading(n);
+        if (ti) ti.textContent = new Date(n.updatedAt).toLocaleTimeString('zh-CN', { hour12: false });
+      });
+    });
+  }
+  function renderDockStats() {
+    var cnt = { working: 0, ready: 0, standby: 0, stopped: 0, alarm: 0 };
+    devices.forEach(function (d) { cnt[d.status] = (cnt[d.status] || 0) + 1; });
+    var total = devices.length, rate = total ? Math.round(cnt.working / total * 100) : 0;
+    var el = $('#dkDevSrc'); if (el) el.textContent = '数采 · ' + devices.length + ' 台建档';
+    var body = $('#dkDevBody'); if (!body) return;
+    body.innerHTML = '<div class="dk-grid">' +
+      [['working', '在测'], ['ready', '就绪'], ['alarm', '异常'], ['standby', '待机'], ['stopped', '停止'], ['total', '合计']]
+        .map(function (x) { return '<div class="dk-cell ' + x[0] + '"><b>' + (x[0] === 'total' ? total : (cnt[x[0]] || 0)) + '</b><span>' + x[1] + '</span></div>'; }).join('') +
+      '</div><div class="dk-rate">稼动率 <b style="font-variant-numeric:tabular-nums">' + rate + '%</b><i><b style="width:' + rate + '%"></b></i></div>' +
+      '<div class="dk-rate" style="margin-top:5px;font-size:9.5px;color:var(--tw-color-textMuted)">机器人 ' + robots.length + ' 台 · 在跑 ' + robots.filter(function (r) { return !r.parked; }).length + ' · 停靠充电 ' + robots.filter(function (r) { return r.parked; }).length + '</div>';
+  }
+  function renderDock() {
+    /* ① 设备信息统计：状态分布 + 稼动率（在测/建档，现算不写死） */
+
+    /* ② 调度任务队列：按 进行中 / 未派单 / 已完成 分组（图1），状态跟随循环剧本实时变 */
+    var qt = (queueData && queueData.tasks) || [];
+    var groups = [['running', '进行中'], ['unassigned', '未派单'], ['done', '已完成']];
+    var qhtml = groups.map(function (g) {
+      var rows = qt.filter(function (t) { return t.shown === g[0]; });
+      if (!rows.length) return '';
+      return '<div class="dq-grp">' + g[1] + ' · ' + rows.length + '</div>' + rows.map(function (t) {
+        return '<div class="dq-row ' + g[0] + '" data-seq="' + t.seq + '" data-cad="' + (t.cad || '') + '" data-flow="' + t.flowCode + '" tabindex="0" role="button" aria-label="' + escapeHtml(t.flowCode + ' ' + t.flowName + '，' + g[1] + '，回车定位工位') + '">' +
+          '<i class="dq-dot"></i><span class="nm">' + escapeHtml(t.flowCode + ' ' + t.flowName) + '</span>' +
+          '<span class="st">' + (t.live ? '循环中' : g[1]) + '</span>' +
+          '<span class="tm">' + (g[0] === 'running' && t.elapsedMin ? '已 ' + t.elapsedMin + '/' + t.plannedMin + 'min' : (t.time || '—')) + '</span></div>';
+      }).join('');
+    }).join('');
+    $('#dkQueueCnt').textContent = '流程配置 ' + qt.length + ' 条 · 循环同步' + (queueData && queueData.liveFlow ? '：' + queueData.liveFlow : '');
+    dkTrack('#dkQueueTrack', qhtml, qt.length);
+
+    /* ③ 正在检测的委托单 → 试验项完成情况（图4 的名称与检测设备） */
+    var its = (entrust && entrust.items) || [];
+    var lbl = (entrust && entrust.stateLabels) || {};
+    $('#dkItemsHead').textContent = entrust ? (entrust.entrustNo + ' · 样品 ' + entrust.sampleCount + ' 件 · 时效 ' + entrust.dueDate) : '—';
+    var ihtml = its.map(function (t) {
+      var st = t.state;
+      return '<div class="ti-row ' + st + '" data-cad="' + (t.cad || '') + '" tabindex="0" role="button" aria-label="' + escapeHtml(t.name + '，' + (lbl[st] || st) + '，回车定位检测设备') + '">' +
+        '<i class="ti-dot"></i><span class="nm">' + escapeHtml(t.name) + '</span>' +
+        '<span class="dv">' + escapeHtml(t.device) + '</span><span class="tm" style="font-size:9.5px;color:var(--tw-color-textMuted);white-space:nowrap">' + (lbl[st] || st) + '</span></div>';
+    }).join('');
+    dkTrack('#dkItemsTrack', ihtml, its.length);
+
+    /* ④ 组态物联节点：按房间排序滚动（101→110），读数用 nodeReading 唯一口径 */
+    var ns = (envNodes || []).slice().sort(function (a, b) {
+      return String(a.roomId).localeCompare(String(b.roomId)) || String(a.name).localeCompare(String(b.name), 'zh');
+    });
+    var zn = {}; (zones || []).forEach(function (z) { zn[z.zoneId.slice(2)] = z.name; });
+    var nhtml = ns.map(function (n) {
+      var cam = n.type === 'camera';
+      return '<div class="nd-row ' + (cam ? 'cam' : '') + '" data-node="' + n.id + '" tabindex="0" role="button" aria-label="' + escapeHtml(n.name + '，' + n.roomId + ' ' + (zn[n.roomId] || '') + '，回车查看节点详情') + '">' +
+        '<i class="nd-dot"></i><span class="rm">' + n.roomId + '</span><span class="nm">' + escapeHtml(n.name) + '</span>' +
+        '<span class="ti">' + NODE_CN(n.type) + '</span><span class="rd">' + nodeReading(n) + '</span>' +
+        '<span class="ti">' + new Date(n.updatedAt).toLocaleTimeString('zh-CN', { hour12: false }) + '</span></div>';
+    }).join('');
+    $('#dkNodesCnt').textContent = ns.length + ' 个点位 · 按房间排序 · 5s 心跳';
+    dkTrack('#dkNodesTrack', nhtml, ns.length);
+    /* 底栏可见性由 applyAll 里的 viewProfile 决定；这里只保证「未收起时」渲染完不会被隐藏状态卡住 */
+    if (!st.strip && (st.mode === 'S1' || document.body.dataset.zoneDock === '1')) $('#taskStrip').hidden = false;
+  }
+
   function renderCycle(c) {
     if (!c) return;
     $('#cyNow').textContent = c.order + '/' + c.total;
@@ -475,16 +604,30 @@
     if ($('#zoneSel').options.length) $('#zoneSel').value = st.zone;
     /* 区域视图=右侧五块面板；浮层（告警卡/机器人卡）与底栏让位，避免同一信息出现两次 */
     $('#zonePanel').hidden = st.mode !== 'ZONE';
+    /* 下钻画像（seed.overview.zones[].viewProfile）决定左栏/底栏留不留：
+       106 是主叙事（机器人还在跑，底栏任务队列必须跟着走）；其他房间只留右侧面板，别把小房间的画面挤没 */
+    var vp = st.mode === 'ZONE' ? ((zones.filter(function (x) { return x.zoneId === 'Z-' + st.zone; })[0] || {}).viewProfile || {}) : { rail: true, dock: true, blocks: [] };
+    document.body.dataset.zoneRail = vp.rail === true ? '1' : '0';
+    document.body.dataset.zoneDock = (st.mode === 'ZONE' && vp.dock === true) ? '1' : '0';   /* S1 右侧是 296 告警流，不需要按 352 让位 */
+    $('.rail').hidden = vp.rail !== true;
+    /* 周期切换器随左栏一起交接：左栏在→用左栏那组；左栏隐藏但房间有按周期变的统计块→用面板这组 */
+    var pp = document.getElementById('zpPeriod');
+    if (pp) {
+      var needs = (vp.blocks || []).some(function (k) { return k === 'task-stats' || k === 'test-items'; });
+      pp.hidden = !(vp.rail !== true && needs);
+      document.querySelectorAll('#zpPeriod .seg').forEach(function (b) { b.classList.toggle('active', b.dataset.period === st.period); });
+    }
+    $('#taskStrip').hidden = (vp.dock !== true) || !!st.strip;
     $('#alarmStream').hidden = st.mode === 'ZONE';   /* 区域视图时让位给右侧面板（面板内的告警块已按 A/B/C 三分区呈现，控件不丢） */
-    /* 机器人状态条与底部说明条已整体删除（2026-11-06）；「收起底栏」只作用于今日任务表 */
-    $('#taskStrip').hidden = st.mode !== 'S1' || !!st.strip;
+    /* 机器人状态条与底部说明条已整体删除（2026-11-06）。
+       底栏显隐由上面的 viewProfile 决定（106 保留、其他房间隐藏），这里只处理「收起底栏」按钮本身的状态 */
     /* 详情面板随视图重新停靠：总览时覆盖右侧，区域视图时让位到面板左边，否则会挡住五类信息（实测缺陷） */
     var dEl = $('#detail'); if (dEl && !dEl.hidden) dEl.classList.toggle('docked', st.mode === 'ZONE');
 
     $('#stripBtn').textContent = st.strip ? '▴ 展开底栏' : '▾ 收起底栏'; $('#stripBtn').setAttribute('aria-pressed', !!st.strip);
     $('#stripBtn').disabled = st.mode !== 'S1';
     drillTo(st.mode === 'ZONE' ? zoneView(st.zone) : 'overall-101');
-    renderTables(); renderAlarms(); renderStrip(); pushState(); writeURL();
+    renderTables(); renderAlarms(); renderDock(); pushState(); writeURL();
     if (st.mode === 'ZONE') { loadZone(); renderZonePanel(); }
 
   }
@@ -542,7 +685,7 @@
   /* ---------- 键盘可达（2026-11-06 反馈：告警行键盘点不到） ----------
      这些行是「容器 + 事件委托」，没有内联 onclick，所以 js/ui-a11y.js 的 fixClickable 抓不到它们；
      统一由 keyable() 在渲染后补 role/tabindex/aria-label，Enter 与空格触发同一入口（等价于点击）。 */
-  var KEYABLE = '[data-alarm], [data-dev], [data-robot]';   /* 只给「点了有反应」的行；底栏 .tt-row 是纯展示，不配 role=button */
+  var KEYABLE = '[data-alarm], [data-dev], [data-robot], [data-cad], [data-node]';   /* 底栏四块里可点的行：任务/试验项带 data-cad，节点行带 data-node */
   function keyable(root) {
     (root || document).querySelectorAll(KEYABLE).forEach(function (el) {
       if (el.tagName === 'BUTTON' || el.tagName === 'A') return;
@@ -587,6 +730,16 @@
     /* 遥控翻页（决策 Q1：售前投影 + 翻页笔）。只吃 PgUp/PgDn/Home/End/1·2·3/Esc；
        方向键留给场景相机，避免与三维漫游打架。焦点在 iframe 内时由桥接层转发 remote 消息。 */
     document.addEventListener('keydown', function (e) { if (handleKey(e.key)) e.preventDefault(); });
+    /* 底栏四块的点击/键盘落点（FR-30）：任务行与试验项行定位工位，节点行选中物联节点 */
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var q = e.target.closest('#dkQueueTrack .dq-row');
+      if (q) { dockLocate(q.dataset.cad, q.querySelector('.nm').textContent); return; }
+      var ti = e.target.closest('#dkItemsTrack .ti-row');
+      if (ti) { dockLocate(ti.dataset.cad, ti.querySelector('.nm').textContent); return; }
+      var nd = e.target.closest('#dkNodesTrack .nd-row');
+      if (nd) { dockSelectNode(nd.dataset.node); }
+    });
     $('#alarmStream').addEventListener('click', function (e) {
       var card = e.target.closest('[data-alarm]'); if (!card) return;
       var a0 = alarms.filter(function (x) { return x.alarmId === card.dataset.alarm; })[0];
@@ -632,6 +785,21 @@
     openDetail('<h3>' + escapeHtml(dev.name || id) + '</h3><div class="sub">' + id + ' · ' + id.slice(0, 3) + ' 区</div>' +
       '<div class="row"><span>台账</span><b>未建档</b></div><div class="row"><span>数采</span><b>非数采对象</b></div>' +
       '<p style="font-size:11px;color:var(--tw-color-textMuted)">该实体只存在于 CAD（无设备台账号、无数采通道），所以没有实时参数可显示——屏上不编造状态。孪生只读，不下发控制。</p>');
+  }
+
+  /* 底栏行 → 场景：定位工位 / 选中节点（都留 body[data-*] 供 QA 断言） */
+  function dockLocate(cad, label) {
+    if (!cad) { flashHint((label || '该行') + '：尚未绑定 CAD 工位（调度侧未给点位）'); return; }
+    sceneCmd('equipment-highlight', { id: cad });
+    document.body.dataset.lastHighlight = cad;
+    flashHint('已定位 ' + cad + ' · ' + (label || ''));
+  }
+  function dockSelectNode(id) {
+    if (!id) return;
+    var n = (envNodes || []).filter(function (x) { return x.id === id; })[0];
+    scene.contentWindow.postMessage({ channel: 'room-tour-node-v3', type: 'select-node', id: id }, location.origin);
+    document.body.dataset.lastNode = id;
+    flashHint('已选中物联节点 ' + (n ? n.name + '（' + n.roomId + ' · ' + nodeReading(n) + '）' : id));
   }
 
   /* 面板 → 场景 双向拾取（P0-2） */

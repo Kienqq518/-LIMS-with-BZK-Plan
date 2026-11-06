@@ -14,7 +14,7 @@ const ev=(fn,...a)=>f.evaluate(fn,...a);
 // 0) 透明浮层与图表
 out.push(((await p.evaluate(()=>getComputedStyle(document.querySelector('.rail')).backdropFilter.includes('blur')))?'✅':'❌')+' 左栏=透明玻璃浮层（backdrop-filter blur）');
 out.push(((await p.evaluate(()=>getComputedStyle(document.querySelector('.stream')).backdropFilter.includes('blur')))?'✅':'❌')+' 右侧=透明玻璃浮层');
-out.push(((await p.evaluate(()=>getComputedStyle(document.querySelector('.tasktable')).backdropFilter.includes('blur')))?'✅':'❌')+' 底栏=透明玻璃浮层');
+out.push(((await p.evaluate(()=>getComputedStyle(document.querySelector('.dk')).backdropFilter.includes('blur')))?'✅':'❌')+' 底栏四块=透明玻璃浮层');
 out.push(((await p.evaluate(()=>{const r=document.getElementById('scene').getBoundingClientRect();const l=document.querySelector('.rail').getBoundingClientRect();return l.x>r.x&&l.y>r.y;}))?'✅':'❌')+' 浮层确实悬浮在三维画面之上（非分栏布局）');
 T('四张数据表', await p.locator('.dtable').count(), 4);
 out.push(((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x)).length>=6?'✅':'❌')+' 表内占比列（替代原环形/条形图）: '+((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x))).join(','));
@@ -51,11 +51,11 @@ const heat=heatR.items; out.push((heatR.exists&&heatR.n>0?'✅':'❌')+` 热力�
 const in106=heat.filter(h=>h.x>=9&&h.x<=18.5&&h.z>=9.6&&h.z<=28.1), other=heat.filter(h=>!(h.x>=9&&h.x<=18.5&&h.z>=9.6&&h.z<=28.1));
 out.push(((in106.length&&Math.max(...in106.map(h=>h.o))>=0.15&&(!other.length||Math.max(...other.map(h=>h.o))<=0.08))?'✅':'❌')+` 热力分级：106 ${in106.length}块 max=${in106.length?Math.max(...in106.map(h=>h.o)):'-'} / 其他 ${other.length}块 max=${other.length?Math.max(...other.map(h=>h.o)):'-'}`);
 await p.click('.lic[data-layer=heatmap]'); await p.waitForTimeout(600);
-// 4) 底栏=今日任务滚动表格
-T('底栏表头列数', await p.locator('.tt-head span').count(), 5);
-T('底栏行数(2×任务数做无缝滚动)', await p.locator('.tt-row').count(), 10);
-out.push(((await p.evaluate(()=>getComputedStyle(document.getElementById('ttTrack')).animationName))==='ttUp'?'✅':'❌')+' 底栏滚动动画: '+await p.evaluate(()=>getComputedStyle(document.getElementById('ttTrack')).animationName));
-out.push(((await p.evaluate(()=>getComputedStyle(document.querySelector('.tasktable')).backgroundColor)).includes('255, 255, 255, 0.42')?'✅':'❌')+' 底栏透明底');
+// 4) 底栏=四块（设备统计 / 调度任务队列 / 委托单试验项 / 组态物联节点），除统计块外各自滚动
+T('底栏块数', await p.locator('.dock .dk').count(), 4);
+T('底栏滚动轨道数（块1 是统计格不滚）', await p.locator('.dk-track').count(), 3);
+out.push(((await p.evaluate(()=>getComputedStyle(document.getElementById('dkQueueTrack')).animationName))==='dkUp'?'✅':'❌')+' 队列块滚动动画: '+await p.evaluate(()=>getComputedStyle(document.getElementById('dkQueueTrack')).animationName));
+out.push(((await p.evaluate(()=>getComputedStyle(document.querySelector('.dk')).backgroundColor)).includes('255, 255, 255, 0.42')?'✅':'❌')+' 底栏块透明底');
 // 5) 右侧告警流滚动
 T('告警流行数(三区各 3×2)', await p.locator('.st-row').count(), 18);
 const asecAnim=await p.evaluate(()=>[...document.querySelectorAll('.asec-track')].map(t=>getComputedStyle(t).animationName));

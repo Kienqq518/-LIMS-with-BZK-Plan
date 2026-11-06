@@ -36,7 +36,8 @@ a('106 区域面板显示（五类信息）', await page.locator('#zonePanel').i
 a('面板设备行含机器人', await page.locator('#zpDevices .zp-row').count(), 11);
 a('停靠充电的机器人不判卡住（RB-C-01 在 102-05 桩上）', (await page.locator('#zpDevices').innerText()).includes('停靠充电'), true);
 a('卡住/超时叙事仍在（在制任务超时标注）', (await page.locator('#zpRunning').innerText()).includes('超时'), true);
-a('浮层与底栏让位（信息不重复）', await page.locator('#taskStrip').isHidden(), true);
+a('106 下钻后底栏保留（机器人与任务继续走）', await page.locator('#taskStrip').isVisible(), true);
+  a('106 下钻后告警流让位给区域面板（信息不重复）', await page.locator('#alarmStream').isHidden(), true);
 
 // 非 106 诚实降级
 await page.selectOption('#zoneSel','107'); await page.waitForTimeout(1800);
@@ -44,7 +45,8 @@ a('非106 面板诚实降级', (await page.locator('#zpDevices .zp-body').innerT
 a('非106 机器人不越区', (await page.locator('#zpDevices').innerText()).includes('RB-C-01'), false);
 
 // 周期切换：月→报告份数置灰
-await page.click('[data-period=month]'); await page.waitForTimeout(400);
+/* 左栏隐藏时周期按钮在区域面板里，两处都可能有：点当前可见的那一个 */
+await page.locator('[data-period=month]:visible').first().click(); await page.waitForTimeout(400);
 a('本月四表联动', await page.evaluate(()=>document.querySelectorAll('.dtable').length===4 && document.querySelector('.dtable tbody tr .v').textContent==='268'), true);
 a('本月委托总数', (await page.evaluate(()=>document.querySelector('.dtable tbody tr .v').textContent)),'268');
 
@@ -76,8 +78,12 @@ a('告警行点击出闭环详情', await (async()=>{ await page.evaluate(()=>{d
 
 
 // 面板→场景高亮（发得出消息）
-await page.keyboard.press('2'); await page.waitForTimeout(1500);
-await page.locator('#zpDevices .zp-row').first().click({timeout:8000}); await page.waitForTimeout(1200);
+/* 用下拉而不是按键 2：上一步刚在场景里点过，焦点在 iframe 内，按键要靠桥接层转发；
+   这里要验的是面板行的点击链路，不该被焦点归属影响（实测这样会因面板尚未出现而行不可点导致超时） */
+await page.selectOption('#zoneSel','106'); await page.waitForTimeout(3000);
+const devRow=await page.evaluate(()=>{const el=document.querySelector('#zpDevices:not([hidden]) .zp-row'); if(!el) return null; el.click(); return el.dataset.dev||el.dataset.robot||'row';});
+out.push((devRow?'✅':'❌')+' 面板设备行存在且可点（106 画像保留设备块）: '+devRow);
+await page.waitForTimeout(1200);
 a('详情面板弹出', await page.locator('#detail').isVisible(), true);
 a('详情停靠不遮面板', await page.locator('#detail.docked').count(), 1);
 a('详情含只读说明', (await page.locator('#detailBody').innerText()).includes('不下发控制'), true);
