@@ -16,7 +16,7 @@
 - 领域锁定**电网物资与安全工器具检测**，本计划不得改动该决策。
 - 画板配色固定 Avocado Press：`#FFFFFF` / `#0055A4` / `#DCF4A2`；**不新增画板**，只重渲染 3.3 时间轴。
 - 附录 A 代码块与 2.2 画板**不动**。
-- 数字口径固定：**44 = 台账当前存量**，**≥50 = M1 出口目标**；任何提及必须带其中一个限定词。
+- 数字口径固定：**45 = 台账当前存量**，**≥50 = M1 出口目标**；任何提及必须带其中一个限定词。
 - M1 目标唯一权威定义在 **3.1**；时间轴「M1 出口」四项数字必须与 3.1 **逐字一致**；4.2 的「M1 阶段目标」降级为一句引用。
 - 负责人只写**角色**（产品 / 后端 / 领域顾问），不写人名；评审状态取值 `草稿｜评审中｜已批准`，本次初始 **评审中**。
 - **Block ID 生命周期**：`block_replace` / `block_delete` 后受影响 ID 立即失效；后续定位一律重新 `docs +fetch --scope keyword --detail with-ids`，禁止复用旧 ID。
@@ -35,7 +35,7 @@ git fetch && git rebase origin/main && git push origin HEAD:main
 2. **M1 数字三处漂移**——3.1、时间轴、4.2 各写一套。期望：时间轴与 3.1 逐字一致，4.2 无数字。
 3. **表格幻影列**——合并单元格续行多写一格，列数超过表头。期望：结构校验 0 张异常表。
 4. **单元格双重转义**——`&amp;gt;` 渲染成字面文本。期望：结构校验 0 命中。
-5. **台账与正文口径打架**——Base 记录数 ≠ 44，或正文写"已 50 条"。期望：`record-list` 计数 44 且正文含"44 条"限定词。
+5. **台账与正文口径打架**——Base 记录数 ≠ 45，或正文写"已 50 条"。期望：`record-list` 计数 45 且正文含"45 条"限定词。
 
 ---
 
@@ -281,7 +281,7 @@ Expected: exit 0
 ## Task 9: 规则台账 Base 与附录 B 引用
 
 **Files:**
-- Create: `docs/feishu/lims-ai-review/ledger_seed.json`（44 条）
+- Create: `docs/feishu/lims-ai-review/ledger_seed.json`（45 条）
 - Modify: 附录 A 之前插入 `附录 B` 标题 + 引用卡片
 - Modify: `checks.tsv`
 
@@ -297,11 +297,11 @@ Expected: 拿到 select / multi-select 字段的合法 JSON 形状（禁止臆�
 
 `lark-cli base +base-create --name "LIMS-AI Review 规则台账" --time-zone Asia/Shanghai --table-name "审核规则" --fields '[…12 字段…]'`，字段按 spec 的 schema 表：`规则ID(text) 规则组(select A01…C02) 类别(select A/B/C) 判定式(text) 所需字段(multi-select，取值与 T6 的 3.7 字段名同名) 标准依据(text) 严重度(select 严重/一般/轻微/提示) 适用领域(multi-select 电网物资/安全工器具/通用) 状态(select 待审核员确认/已确认/已上线/停用) 版本(text) 负责人(text) 备注(text)`。
 
-- [ ] **Step 3: 生成 44 条种子并批量写入**
+- [ ] **Step 3: 生成 45 条种子并批量写入**
 
-`ledger_seed.json` 按 3.2.1 逐条拆：A01 6 + A02 5 + A03 6 = 17；B01 5 + B02 8 + B03 4 = 17；C01 5 + C02 5 = 10。`状态` 全部 `待审核员确认`，`版本` `v0.1`。
+`ledger_seed.json` 按 3.2.1 逐条拆：A01 6 + A02 5 + A03 6 = 17；B01 5 + B02 9 + B03 4 = 18；C01 5 + C02 5 = 10，合计 45。`状态` 全部 `待审核员确认`，`版本` `v0.1`。
 Run: `lark-cli base +record-batch-create …`
-Expected: `+record-list` 计数 **44**
+Expected: `+record-list` 计数 **45**
 
 - [ ] **Step 4: 建筛选视图**
 
@@ -309,7 +309,7 @@ Expected: `+record-list` 计数 **44**
 
 - [ ] **Step 5: 文档插附录 B**
 
-`附录 B. 规则台账（44 条，持续补齐至 ≥50 条出口目标）` + 一句说明 + `<bookmark name="AI 审核规则台账" href="<BASE_URL>">`。正文写明 44 为存量、≥50 为出口目标、差额 6 条 Week 1 补齐。
+`附录 B. 规则台账（45 条，持续补齐至 ≥50 条出口目标）` + 一句说明 + `<bookmark name="AI 审核规则台账" href="<BASE_URL>">`。正文写明 45 为存量、≥50 为出口目标、差额 5 条 Week 1 补齐。
 
 - [ ] **Step 6: 跑本任务断言转绿**
 

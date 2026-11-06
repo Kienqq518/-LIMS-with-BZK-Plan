@@ -19,6 +19,9 @@ def fetch(doc):
 def normalize(xml):
     t = re.sub(r"<whiteboard[^>]*>.*?</whiteboard>", "[画板]", xml, flags=re.S)
     t = re.sub(r"<whiteboard[^>]*/>", "[画板]", t)
+    # 资源块的标题在属性里，保留可见文字，否则断言读不到
+    t = re.sub(r'<bookmark\b[^>]*?\bname="([^"]*)"[^>]*>', r" \1 ", t)
+    t = re.sub(r'<img\b[^>]*?\bcaption="([^"]*)"[^>]*>', r" \1 ", t)
     t = re.sub(r"<pre[^>]*>.*?</pre>", "[代码块]", t, flags=re.S)
     t = re.sub(r"<[^>]+>", " ", t)
     t = html.unescape(t)
