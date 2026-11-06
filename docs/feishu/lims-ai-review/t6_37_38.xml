@@ -1,0 +1,35 @@
+<h2>3.7 M1 数据前置条件（字段依赖清单）</h2>
+<p>M1 的规则能不能跑，取决于 LIMS 里有没有对应字段——而不是代码写没写。下表把 3.2.1 各规则组的必需字段列全，<b>「LIMS 现状」一列由 Week 1 Day 1–2 调研与 Day 10 数据接口开发时逐项回填</b>，回填完成前不得对外承诺规则条数。</p>
+<table><colgroup><col width="130"/><col width="230"/><col width="120"/><col width="240"/></colgroup>
+<thead><tr><th>规则组</th><th>必需字段</th><th>LIMS 现状</th><th>缺字段兜底</th></tr></thead>
+<tbody>
+<tr><td>A01 样品 / 试件信息</td><td>抽样单号、炉（批）号、规格型号、封样状态</td><td>待 Week 1 调研确认</td><td>抽样单以附件上传时，本组降级为「提示」级</td></tr>
+<tr><td>A02 检测数据</td><td>试验设备编号与量程、环境温湿度、检测人员</td><td>待 Week 1 调研确认</td><td>设备编号缺失按设备台账反查；温湿度未记录不参与判定</td></tr>
+<tr><td>A03 质控数据</td><td>8 套平行测定值（扭矩系数）、拉伸试样根数、CRM / 标准块核查记录</td><td>待 Week 1 调研确认</td><td>只有平均值而无平行值时，平行性规则跳过并在报告标注「数据不足」</td></tr>
+<tr><td>B01 时间与周期</td><td>设备校准有效期、<b>上次预防性试验日期</b>、复检 / 仲裁时效</td><td>待 Week 1 调研确认</td><td>安全工器具台账未接入则本组停用，改由人工检查项覆盖</td></tr>
+<tr><td>B02 数值逻辑</td><td>各参数实测值 + 标准限值 + 单位；屈服强度与抗拉强度双指标</td><td>待 Week 1 调研确认</td><td>知识库缺限值时判定不输出，<b>不得默认合格</b></td></tr>
+<tr><td>B03 引用一致性</td><td>资质认定范围表（CMA 附表）、检测方法字段</td><td>待 Week 1 调研确认</td><td>范围表未电子化则本组延至 M2</td></tr>
+<tr><td>C01 / C02 格式规范</td><td>报告模板版本、标准号年号、签名位完整性</td><td>待 Week 1 调研确认</td><td>模板差异大的品类先只跑通用检查项</td></tr>
+</tbody></table>
+<p>约束：任一必需字段缺失，对应规则组在 M1 只能以「提示」级上线，<b>不得判「严重」或阻断签发</b>——与 1.4 的合规红线一致。回填动作已排在 3.3 时间轴的 Week 1 Day 1–2（调研）与 Day 10（数据接口）。</p>
+<h2>3.8 规则台账与变更控制（M1 最小版）</h2>
+<p>1.4 写明「算法变更须走变更控制流程」。M1 不做完整审批系统，但必须留下最小可追溯链，否则 M4 接入 ML / LLM 之后无法回答审计提问：<i>这份报告当时是按哪一版规则判的？</i></p>
+<p><b>需要补的字段</b>（在 3.4 的 <code>ai_review_rules</code> 上追加）：</p>
+<table><colgroup><col width="170"/><col width="170"/><col width="330"/></colgroup>
+<thead><tr><th>字段</th><th>类型</th><th>作用</th></tr></thead>
+<tbody>
+<tr><td>version</td><td>TEXT</td><td>规则版本号，如 v0.1 → v0.2</td></tr>
+<tr><td>effective_from</td><td>TIMESTAMP</td><td>生效起点</td></tr>
+<tr><td>effective_to</td><td>TIMESTAMP</td><td>失效时间（回滚时置值，不删记录）</td></tr>
+<tr><td>approved_by</td><td>VARCHAR(50)</td><td>批准人（角色）</td></tr>
+<tr><td>change_ticket</td><td>VARCHAR(50)</td><td>变更单号，关联评审记录</td></tr>
+</tbody></table>
+<p><b>变更流程五步</b>：</p>
+<ol>
+<li seq="auto">编辑：只在规则台账（附录 B）改，文档与代码不各自维护副本</li>
+<li seq="auto">评审：领域顾问确认判定式与标准依据，置 approved_by 与 change_ticket</li>
+<li seq="auto">灰度：按领域或抽样 10% 报告生效，观察误报</li>
+<li seq="auto">全量：置 effective_from，版本 +1</li>
+<li seq="auto">回滚：置 effective_to 并恢复上一 version，历史结果不受影响</li>
+</ol>
+<p><b>审计要求</b>：每条审核结果除 <code>engine_version</code> 外，需同时落<b>当次生效的规则版本清单</b>，保证任一历史报告可复现当时的判定。这也是 4.2「规则精确率」在跨版本对比时不失真的前提。</p>
