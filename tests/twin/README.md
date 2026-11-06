@@ -1,0 +1,46 @@
+# 数字孪生运行大屏 · 自动化回归（twin-scene-v2）
+
+被测页：`twin/future-lab/twin-scene-v2.html`（V2 运行大屏宿主，三维场景在 iframe 内）。
+口径来源：`docs/digital-twin-product-plan-v2.md`（FR-13b 场地标签、FR-24 告警三分区、§5.7 区域五类信息、§5.9 浮层与动效）、
+`docs/twin-design/animation-spec.md`（§10–§17）、`docs/digital-twin-integration.md`（协议与端点）。
+
+## 怎么跑
+
+```bash
+cd tests/twin
+npm i                 # 只装 playwright（用系统 Chrome，不需要下载 Chromium）
+node run-all.mjs                       # 全量：自动起本地静态服务，跑完自动关
+node run-all.mjs --only smoke,alarmlvl # 只跑关心的套件
+TWIN_BASE=https://<部署域名> node run-all.mjs --no-serve   # 打线上（只能验已 push 的 commit）
+```
+
+`run-all.mjs` 逐套件打印 `✅/❌` 数量与耗时，任一 ❌ 或进程非 0 退出 → 整体退出码 1（可直接挂 CI）。
+断言里的期望值是**当前 mock 种子**的口径（13 条告警 = A 5/3、B 4/3、C 4/3；37 条在办试验项目等）。改种子必须同步改期望，否则等于没断言。
+
+## 套件清单
+
+| 套件 | 守的是什么 |
+|---|---|
+| `smoke` | 装载链完整性（含常驻断言 **`fail() 未被触发（#freshTxt 为空）`**）、四张数据表、告警三分区、图层、遥控按键、区域面板 |
+| `zone-panel` | 区域视图五类信息（设备/环境数据/任务统计/在制任务/告警）与浮层、底栏让位 |
+| `filtercheck` | 三分区筛选控件的**几何位置**（必须在右侧告警流内、不在左栏）与互不影响 |
+| `alarmlvl` | A/B/C 分区标题与计数来自 `/api/overview/alarm-sections`、每区只含本级告警、URL 三区态、屏上无 `Grade` 英文 |
+| `sitelabel` | 「场地标签」只控房间名：关后设备状态光点与物联节点标签**不受影响** |
+| `kpicheck` | 四张表数字自洽（委托分类占比、样品三态、试验项目含逾期/临期、阻塞已解决/未解决） |
+| `plancheck` | 逾期/临期由在办清单推导：接口值 == 独立重算值 |
+| `routecheck` | 机器人行进范围与避让（CAD 占地 A*、逐段采样校验，违规必须为 0） |
+| `camcheck` | 首屏机位固定、视角指令排队、URL 恢复 |
+| `fscheck` | 全屏进入/退出/文案/`aria-pressed`/`data-full`/浮层贴边/F 键，以及 `?quality=low` 交付参数 |
+| `bluecheck` | 下钻不再画满屏蓝框（分组轮廓已回退为纯相机补间） |
+| `collapsec` | 「收起底栏」只作用今日任务表；机器人状态条与底部说明条已整体删除 |
+| `s3check` | S3 告警回溯已移出 MVP：抽屉/按钮/按键映射都不存在 |
+| `uxcheck` | 透明浮层三处、下钻与切近补间、实体信息卡、循环剧本、避让自检（44 项） |
+
+## 写/改断言时的四条硬约定
+
+1. **顺序跑，别并发**：循环剧本按墙上时钟对齐（一圈 202.3s），并发跑会抢 CPU，机器人速度与停靠断言出现假失败。
+2. **观察窗 ≥ 一圈**：验证周期性事件（如机器人进出 106 的门洞穿越，去/返相隔约 122s）短窗口会整段错过——已踩过两次假阴性。
+3. **点告警行前先冻结滚动**：`document.querySelectorAll('.asec-track').forEach(t => t.style.animationPlayState = 'paused')`。无缝滚动把行集合复制了一份，被遮罩裁掉的半行几何上仍可点，直接点会命中相邻区头或复制行。
+4. **装载链必须有常驻断言**：`fail() 未被触发` + `区域下拉已填充 10 项` + `告警流行数 > 0`。"从 A 函数删到 B 函数"式切片删除已三次打断装载链（`#alarmSum`、`stamp()`、`applyLayers()`），而 `node --check` 全都查不出来。
+
+截图产物统一落 `/tmp/twin-qa/`（由 `_env.mjs` 建目录），不进仓库。

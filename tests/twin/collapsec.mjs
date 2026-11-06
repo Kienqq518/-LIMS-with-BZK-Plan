@@ -1,0 +1,34 @@
+import { chromium } from 'playwright';
+import { BASE } from './_env.mjs';
+const out=[],err=[];
+const b=await chromium.launch({channel:'chrome'});
+const p=await b.newPage({viewport:{width:1920,height:1080}});
+p.on('pageerror',e=>err.push('pageerror: '+e.message));
+p.on('console',m=>{if(m.type()==='error'&&!/favicon/.test(m.text()))err.push('console: '+m.text().slice(0,150));});
+await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
+await p.waitForTimeout(14000);
+const vis=async sel=>{ try{ return await p.locator(sel).isVisible(); }catch(e){ return 'ERR'; } };
+const cnt=async sel=>p.locator(sel).count();
+const snap=async()=>({table:await vis('.tasktable'),robots:await vis('#robotZone'),wm:await vis('#watermark')});
+const a=await snap();
+out.push(((await cnt('#robotZone'))===0&&(await cnt('.watermark'))===0?'✅':'❌')+` 机器人状态条与底部说明条已整体删除：#robotZone=${await cnt('#robotZone')} .watermark=${await cnt('.watermark')}`);
+out.push((a.table?'✅':'❌')+' 默认（总览）今日任务表在位: '+JSON.stringify(a));
+await p.click('#stripBtn'); await p.waitForTimeout(1200);
+const c=await snap();
+out.push((!c.table?'✅':'❌')+' 点「收起底栏」只收今日任务表: '+JSON.stringify(c));
+out.push(((await p.locator('#stripBtn').innerText()).includes('展开')?'✅':'❌')+' 按钮文案切换: '+await p.locator('#stripBtn').innerText());
+out.push(((await p.evaluate(()=>location.search.includes('strip=1')))?'✅':'❌')+' 状态进 URL: '+await p.evaluate(()=>location.search));
+// 刷新后仍保持收起
+await p.reload({waitUntil:'load'}); await p.waitForTimeout(13000);
+const d=await snap();
+out.push((!d.table?'✅':'❌')+' 刷新后仍是收起态（URL 恢复）: '+JSON.stringify(d));
+await p.click('#stripBtn'); await p.waitForTimeout(1200);
+const e2=await snap();
+out.push((e2.table?'✅':'❌')+' 再点恢复: '+JSON.stringify(e2));
+// 区域视图下机器人条本就归面板管
+await p.selectOption('#zoneSel','106'); await p.waitForTimeout(2000);
+const f=await snap();
+out.push(((await p.locator('#zonePanel [data-robot]').count())>=2?'✅':'❌')+' 区域视图机器人信息在面板「设备」块内: '+JSON.stringify(f));
+await p.screenshot({path:'/tmp/twin-qa/collapse.png'});
+console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,5).join('\n'));
+await b.close();

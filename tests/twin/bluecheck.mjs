@@ -1,0 +1,28 @@
+import { chromium } from 'playwright';
+import { BASE } from './_env.mjs';
+const out=[],err=[];
+const b=await chromium.launch({channel:'chrome'});
+const p=await b.newPage({viewport:{width:1920,height:1080},reducedMotion:'no-preference'});
+p.on('pageerror',e=>err.push(e.message));
+await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
+await p.waitForTimeout(15000);
+const f=p.frames().find(x=>/tour-space/.test(x.url()));
+const blue=()=>f.evaluate(()=>{let n=0,vis=0;const seen=[];
+  window.visual106.scene.traverse(o=>{ if(o.isMesh&&o.material&&o.material.color&&o.material.color.getHex()===0x098bff){n++;
+    let v=o.visible,pp=o.parent; while(v&&pp){v=pp.visible;pp=pp.parent;} if(v)vis++; }});
+  return {n,vis};});
+const a=await blue();
+out.push((a.vis===0?'✅':'❌')+` 总览：蓝色房间轮廓可见 ${a.vis} / 共 ${a.n} 个构件`);
+await p.selectOption('#zoneSel','106'); await p.waitForTimeout(3000);
+const c=await blue();
+out.push((c.vis===0?'✅':'❌')+` 下钻到 106 后：蓝色轮廓可见 ${c.vis}`);
+const cam=()=>f.evaluate(()=>{const cc=window.visual106.camera;return +((cc.top-cc.bottom)/2).toFixed(2);});
+await p.keyboard.press('1'); await p.waitForTimeout(2500);
+const c0=await cam(); const seq=[];
+await p.selectOption('#zoneSel','106');
+for(let i=0;i<7;i++){ await p.waitForTimeout(120); seq.push(await cam()); }
+out.push((new Set(seq).size>=4?'✅':'❌')+` 下钻仍是补间（画面半高 ${c0} → ${seq.join(' → ')}）`);
+await p.keyboard.press('1'); await p.waitForTimeout(2500);
+await p.screenshot({path:'/tmp/twin-qa/noblue-s1.png'});
+console.log(out.join('\n')); console.log('errors('+err.length+') '+err.slice(0,3).join('|'));
+await b.close();
