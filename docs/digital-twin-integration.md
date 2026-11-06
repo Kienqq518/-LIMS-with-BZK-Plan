@@ -180,4 +180,6 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 
 **画质指令**：`twin-v2/quality{level:'high'|'low'}` 的事实源是宿主状态推送（每 2s 随 `state` 覆盖），入口不再是界面按钮而是交付参数 `?quality=low`；不要用单独一条 `quality` 指令做验证（会被下一次 state 覆盖）。
 
+**S3 告警回溯移出 MVP（2026-11-06）**：`GET /api/alarm/{id}/trace` 与 `window:24h` 事件序列契约**保留但前端不再调用**；大屏只呈现当前告警与闭环状态（`status/dispatchedTo/dispatchedAt/resolvedAt/resolvedBy/source`）。二期恢复回溯时契约不变、后端无需改动。
+
 **待补（下一步）**：`host:setAutoRoam`（讲解用自动巡航，默认关）、`scene:waypointClick{waypointId}`（折线拐点拾取，标记已渲染）、`requestId + ack + 3s 超时重试` 信封。

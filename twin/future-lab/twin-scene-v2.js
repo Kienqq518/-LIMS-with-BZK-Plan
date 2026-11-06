@@ -1,6 +1,6 @@
 /* 孪生 V2 宿主：只认 TwinApi（/api/*），iframe 场景经 postMessage 驱动
  * 控制三层（决策 Q7：5M1E 切片移除；S2 不再是按钮，改为区域下拉）
- *   ① 叙事：S1 总览 / 区域下钻（106 为完整视图）/ S3 告警回溯
+ *   ① 叙事：S1 总览 / 区域下钻（106 为完整视图）——S3 告警回溯已按 MVP 范围决定移除（二期再评估）
  *   ② 渲染：图层 icon（path/labels/heatmap）——剖墙不再是开关，改为场景固定渲染行为
  *   ③ 动作：系统流、底栏收起、低配模式（决策 Q8 预留）
  * 只读红线（决策 Q2）：无告警写回，闭环状态由来源系统推送，屏上不出现「演示回执」字样。
@@ -63,8 +63,8 @@
     routeNote = (robots[0] && robots[0].routeBasis) ? '机器人位置基准：' + robots[0].routeBasis : '';
     walls = (r[10] && r[10].data) || [];
     planItems = (r[11] && r[11].data && r[11].data.items) || [];
-    /* 讲解顺序（决策 Q1 售前投影）：总览 → 106 无人化区（主叙事）→ 其余区域 → 告警回溯 */
-    ORDER = ['S1', 'Z106'].concat(zones.map(function (z) { return 'Z' + z.zoneId.slice(2); }).filter(function (z) { return z !== 'Z106'; })).concat(['S3']);
+    /* 讲解顺序（决策 Q1 售前投影）：总览 → 106 无人化区（主叙事）→ 其余区域 */
+    ORDER = ['S1', 'Z106'].concat(zones.map(function (z) { return 'Z' + z.zoneId.slice(2); }).filter(function (z) { return z !== 'Z106'; }));   /* 讲解序列不再包含告警回溯屏 */
     if (r[9] && r[9].data && r[9].data.cycle) { cycleDef = r[9].data.cycle; if (!cycTimer) cycTimer = setInterval(tickCycle, 1000); tickCycle(); }
     buildZoneSelect(); bindControls(); syncLayerMenu(); applyAll();
     TwinApi.ws(onEvent);
@@ -150,19 +150,37 @@
 
   /* ---------- ② 告警：闭环三态只读（决策 Q2） ---------- */
   function alarmOpen() { return alarms.filter(function (a) { return a.status !== 'resolved'; }); }
+  function openAlarm(a) {
+    openDetail('<h3>' + escapeHtml(a.title) + '</h3><div class="sub">' + a.zoneId.replace('Z-', '') + ' 区 · Grade ' + a.grade + ' · ' + a.occurredAt + '</div>' +
+      '<div class="row"><span>原因</span><b style="max-width:200px;text-align:right">' + escapeHtml(a.reason) + '</b></div>' +
+      '<div class="row"><span>闭环状态</span><b>' + ST_AB(a.status) + '</b></div>' +
+      '<div class="row"><span>派至</span><b>' + escapeHtml(a.dispatchedTo || '待派发') + (a.dispatchedAt ? ' · ' + a.dispatchedAt : '') + '</b></div>' +
+      (a.resolvedAt ? '<div class="row"><span>解除</span><b>' + a.resolvedAt + ' ' + escapeHtml(a.resolvedBy || '') + '</b></div>' : '') +
+      '<div class="row"><span>来源系统</span><b>' + (SRC_NAME[a.source] || a.source || '—') + '</b></div>' +
+      '<p style="font-size:11px;color:var(--tw-color-textMuted)">MVP 只呈现当前告警与闭环状态；事件序列回溯（原 S3）已移出本期范围。孪生只读，处置与解除由来源系统回传。</p>');
+    var z = (a.zoneId || '').replace('Z-', '');
+    if (z) sceneCmd('view', { view: z === '106' ? 'close' : z + '-close' });   /* 30 秒定位：镜头飞到告警所在区域 */
+    if (a.deviceId) { var d = devices.filter(function (x) { return x.deviceId === a.deviceId; })[0]; if (d) { detailDev = d; pollRealtime(); if (d.modelNode) sceneCmd('equipment-highlight', { id: d.modelNode.replace('cad:', '') }); } }
+    else if (String(a.deviceId).indexOf('RB') === 0) { var r0 = robots.filter(function (x) { return x.robotId === a.deviceId; })[0]; if (r0) flashHint('关联机器人 ' + r0.robotId + ' · ' + (r0.currentFlowName || '无在制任务')); }
+  }
+
   function renderAlarms() {
     var open = alarmOpen(), list = st.alarmFilter === 'open' ? open : alarms.slice();
     list = open.concat(alarms.filter(function (a) { return a.status === 'resolved'; })).filter(function (a) { return st.alarmFilter === 'all' ? true : a.status !== 'resolved'; });
     $('#alarmSum').innerHTML = '<span class="open">未解除 ' + open.length + '</span><span class="done">已解除 ' + alarms.filter(function (a) { return a.status === 'resolved'; }).length + '</span>' +
       ['A', 'B', 'C'].map(function (g) { return '<span class="g' + g.toLowerCase() + '">' + g + ' ' + open.filter(function (a) { return a.grade === g; }).length + '</span>'; }).join('');
-    $('#streamMeta').textContent = '近 24h · ' + list.length + ' 条 · 悬停暂停';
+    $('#streamMeta').textContent = '当前告警 · ' + list.length + ' 条 · 悬停暂停';
     var rows = list.map(function (x) {
-      return '<div class="st-row' + (x.status === 'resolved' ? ' is-resolved' : '') + '" data-alarm="' + x.alarmId + '" data-dev="' + (x.deviceId || '') + '" data-zone="' + x.zoneId.replace('Z-', '') + '" data-grade="' + x.grade + '" data-status="' + x.status + '" data-to="' + escapeHtml(x.dispatchedTo || '') + '" data-title="' + escapeHtml(x.title) + '">' +
+      var attrs = ' class="st-row' + (x.status === 'resolved' ? ' is-resolved' : '') + '"'
+        + ' data-alarm="' + x.alarmId + '" data-dev="' + (x.deviceId || '') + '"'
+        + ' data-zone="' + x.zoneId.replace('Z-', '') + '" data-grade="' + x.grade + '"'
+        + ' data-status="' + x.status + '" data-to="' + escapeHtml(x.dispatchedTo || '') + '"'
+        + ' data-title="' + escapeHtml(x.title) + '"';
+      return '<div' + attrs + '>' +
         '<div class="l1"><span class="gd ' + x.grade.toLowerCase() + '">Grade ' + x.grade + '</span><span>' + escapeHtml(x.title) + '</span><span class="tm">' + x.occurredAt + '</span></div>' +
         '<div class="rs">' + escapeHtml(x.reason) + '</div>' +
-        '<div class="l2"><span class="st ' + x.status + '">' + ST_AB(x.status) + '</span>' +
-        '<span>' + x.zoneId.replace('Z-', '') + '</span><span>派至 ' + escapeHtml(x.dispatchedTo || '待派发') + '</span>' +
-        '<button class="tr" data-trace="' + x.alarmId + '">回溯</button></div></div>';
+        '<div class="l2"><span class="st ' + x.status + '">' + ST_AB(x.status) + '</span><span>' + x.zoneId.replace('Z-', '') + '</span>' +
+        '<span>派至 ' + escapeHtml(x.dispatchedTo || '待派发') + '</span><span class="tr">详情</span></div></div>';
     }).join('');
     $('#streamTrack').innerHTML = rows + rows;   /* 复制一份做无缝滚动 */
     $('#streamTrack').style.animationDuration = Math.max(18, list.length * 6) + 's';
@@ -264,8 +282,8 @@
       zpSig.ab = abSig;
       zp('#zpAlarms .zp-body').innerHTML = zalarms.map(function (a) {
         return '<div class="zp-row ' + (a.status === 'resolved' ? 'ready' : 'alarm') + '" data-alarm="' + a.alarmId + '"><i class="dot"></i><span class="nm">Grade ' + a.grade + ' ' + escapeHtml(a.title) + '</span><span class="sub">' + ST_AB(a.status) + ' · ' + a.occurredAt + '</span></div>' +
-          '<div class="l2" style="font-size:10px;color:var(--tw-color-textMuted);margin:-2px 0 6px 15px">派至 ' + escapeHtml(a.dispatchedTo || '—') + ' · 来源 ' + (SRC_NAME[a.source] || a.source || '—') + ' · <button data-trace="' + a.alarmId + '" style="border:0;background:none;color:var(--tw-color-brand);cursor:pointer;padding:0;font-size:10px">回溯</button></div>';
-      }).join('') || '<div class="zp-empty">近 24h 该区域无告警。</div>';
+          '<div class="l2" style="font-size:10px;color:var(--tw-color-textMuted);margin:-2px 0 6px 15px">派至 ' + escapeHtml(a.dispatchedTo || '—') + ' · 来源 ' + (SRC_NAME[a.source] || a.source || '—') + ' · <button data-alarm="' + a.alarmId + '" style="border:0;background:none;color:var(--tw-color-brand);cursor:pointer;padding:0;font-size:10px">详情</button></div>';
+      }).join('') || '<div class="zp-empty">该区域当前无告警。</div>';
       zp('#zpAlarmsN').textContent = zalarms.filter(function (a) { return a.status !== 'resolved'; }).length + ' 未解除 / 共 ' + zalarms.length;
     }
   }
@@ -393,14 +411,14 @@
     if ($('#zoneSel').options.length) $('#zoneSel').value = st.zone;
     /* 区域视图=右侧五块面板；浮层（告警卡/机器人卡）与底栏让位，避免同一信息出现两次 */
     $('#zonePanel').hidden = st.mode !== 'ZONE';
-    $('#alarmStream').hidden = st.mode === 'ZONE';
+    $('#alarmStream').hidden = false;   /* 告警流常驻：总览看全局、区域看本区（区域面板里也有本区告警块） */
     /* 机器人状态条与底部说明条已整体删除（2026-11-06）；「收起底栏」只作用于今日任务表 */
     $('#taskStrip').hidden = st.mode !== 'S1' || !!st.strip;
+    /* 详情面板随视图重新停靠：总览时覆盖右侧，区域视图时让位到面板左边，否则会挡住五类信息（实测缺陷） */
+    var dEl = $('#detail'); if (dEl && !dEl.hidden) dEl.classList.toggle('docked', st.mode === 'ZONE');
 
     $('#stripBtn').textContent = st.strip ? '▴ 展开底栏' : '▾ 收起底栏'; $('#stripBtn').setAttribute('aria-pressed', !!st.strip);
     $('#stripBtn').disabled = st.mode !== 'S1';
-    $('#s3Drawer').hidden = st.mode !== 'S3'; if (st.mode === 'S3') renderS3();
-    var h = document.querySelector('.s3drawer b'); if (h) h.textContent = '告警回溯 · 最近 24h（未解除 ' + alarmOpen().length + ' / 共 ' + alarms.length + '）';
     drillTo(st.mode === 'ZONE' ? zoneView(st.zone) : 'overall-101');
     renderTables(); renderAlarms(); renderStrip(); pushState(); writeURL();
     if (st.mode === 'ZONE') { loadZone(); renderZonePanel(); }
@@ -430,7 +448,7 @@
     if (k === 'PageDown') step(1);
     else if (k === 'PageUp') step(-1);
     else if (k === 'Home' || k === '1') setMode('S1');
-    else if (k === 'End' || k === '3') setMode('S3');
+    else if (k === 'End') setMode('ZONE', zones.length ? zones[zones.length - 1].zoneId.slice(2) : '106');
     else if (k === '2') setMode('ZONE', '106');
     else if (k === 'f' || k === 'F') toggleFullscreen();
     else if (k === 'Escape') { $('#detail').hidden = true; clearInterval(rtTimer); toScene('camera', { action: 'reset' }); }
@@ -475,25 +493,13 @@
        方向键留给场景相机，避免与三维漫游打架。焦点在 iframe 内时由桥接层转发 remote 消息。 */
     document.addEventListener('keydown', function (e) { if (handleKey(e.key)) e.preventDefault(); });
     $('#alarmStream').addEventListener('click', function (e) {
-      var tr = e.target.closest('[data-trace]'), card = e.target.closest('[data-alarm]');
-      if (tr) { $('#s3Drawer').hidden = false; renderS3(tr.dataset.trace); return; }
-      if (!card) return;
-      var d = devices.filter(function (x) { return x.deviceId === card.dataset.dev; })[0];
-      if (d) { selectDevice(d, (d.modelNode || '').replace('cad:', '')); return; }
-      /* 非 106 设备/机器人：镜头飞到该区域 + 只读说明（决策 Q4：30 秒定位） */
-      var zc = card.dataset.zone;
-      sceneCmd('view', { view: zc === '106' ? 'close' : zc + '-close' });
-      openDetail('<h3>' + escapeHtml(card.dataset.title || '告警') + '</h3><div class="sub">' + zc + ' 区 · Grade ' + card.dataset.grade + '</div>' +
-        '<div class="row"><span>闭环状态</span><b>' + ({ active: '未解除', dispatched: '已派发', resolved: '已解除' }[card.dataset.status]) + '</b></div>' +
-        '<div class="row"><span>派至</span><b>' + escapeHtml(card.dataset.to || '—') + '</b></div>' +
-        '<div class="row"><span>关联对象</span><b>' + escapeHtml(card.dataset.dev || '—') + '</b></div>' +
-        '<p style="font-size:11px;color:var(--tw-color-textMuted)">镜头已定位到 ' + zc + '。孪生只读：处置与解除由来源系统回传，不在大屏操作。</p>');
+      var card = e.target.closest('[data-alarm]'); if (!card) return;
+      var a0 = alarms.filter(function (x) { return x.alarmId === card.dataset.alarm; })[0];
+      if (a0) openAlarm(a0);   /* 单一入口：告警流与区域面板告警行共用同一套详情，不再两处各写一份 */
     });
     $('#zonePanel').addEventListener('click', function (e) {
-      var tr = e.target.closest('[data-trace]');
-      if (tr) { $('#s3Drawer').hidden = false; renderS3(tr.dataset.trace); return; }
       var ab = e.target.closest('[data-alarm]');
-      if (ab) { $('#s3Drawer').hidden = false; renderS3(ab.dataset.alarm); return; }
+      if (ab) { var a0 = alarms.filter(function (x) { return x.alarmId === ab.dataset.alarm; })[0]; if (a0) openAlarm(a0); return; }
       var rb = e.target.closest('[data-robot]');
       if (rb) { var r0 = robots.filter(function (x) { return x.robotId === rb.dataset.robot; })[0]; if (r0) openRobot(r0); return; }
       var row = e.target.closest('[data-dev]'); if (!row) return;
@@ -511,9 +517,8 @@
   var hintTimer = null;
   function flashHint(txt) {
     var el = $('#remoteHint'); if (!el) return;
-    var where = st.mode === 'S1' ? 'S1 实验室总览' : st.mode === 'S3' ? 'S3 告警回溯'
-      : '区域下钻 · ' + st.zone + ' ' + ((zones.filter(function (z) { return z.zoneId === 'Z-' + st.zone; })[0] || {}).name || '');
-    el.textContent = txt || ('翻页 PgUp/PgDn · 1 总览 · 2 无人化区 · 3 告警 · F 全屏 · Esc 关闭   ｜   ' + where);
+    var where = st.mode === 'S1' ? 'S1 实验室总览' : '区域下钻 · ' + st.zone + ' ' + ((zones.filter(function (z) { return z.zoneId === 'Z-' + st.zone; })[0] || {}).name || '');
+    el.textContent = txt || ('翻页 PgUp/PgDn · 1 总览 · 2 无人化区 · F 全屏 · Esc 关闭   ｜   ' + where);
     el.hidden = false; clearTimeout(hintTimer); hintTimer = setTimeout(function () { el.hidden = true; }, 1400);
   }
 
@@ -550,24 +555,6 @@
     el.classList.toggle('docked', st.mode === 'ZONE');
   }
 
-  /* ---------- S3 告警回溯（只读闭环） ---------- */
-  function renderS3(onlyId) {
-    var base = st.alarmFilter === 'open' ? alarmOpen() : alarms;
-    Promise.all(base.filter(function (a) { return !onlyId || a.alarmId === onlyId; }).map(function (a) { return TwinApi.get('/api/alarm/' + a.alarmId + '/trace'); }))
-      .then(function (rs) {
-        $('#s3Body').innerHTML = rs.map(function (r) {
-          var d = r.data; if (!d) return '';
-          var ev = (d.events || []);
-          return '<div class="s3-row"><span class="t">' + d.alarm.occurredAt + '</span>' +
-            '<span class="grade ' + (d.alarm.grade === 'A' ? 'ga' : d.alarm.grade === 'B' ? 'gb' : 'gc') + '" style="color:#fff;border-radius:999px;padding:2px 8px;font-size:11px">Grade ' + d.alarm.grade + '</span>' +
-            '<span class="grade ' + d.alarm.status + '" style="color:#fff;border-radius:999px;padding:2px 8px;font-size:11px;background:' + (d.alarm.status === 'resolved' ? '#7E8C9B' : d.alarm.status === 'dispatched' ? '#F59E0B' : '#E5484D') + '">' + ({ active: '未解除', dispatched: '已派发', resolved: '已解除' }[d.alarm.status]) + '</span>' +
-            '<div class="trace"><b style="font-size:13px">' + escapeHtml(d.alarm.title) + '</b>' +
-            '<div style="font-size:11px;color:var(--tw-color-textMuted);margin:3px 0">派至 ' + (d.alarm.dispatchedTo || '—') + (d.alarm.resolvedAt ? ' · ' + d.alarm.resolvedAt + ' ' + (d.alarm.resolvedBy || '') + ' 解除' : '') + '</div>' +
-            (ev.length ? '<ol>' + ev.map(function (x) { return '<li>' + x.at + ' · <em>' + escapeHtml(x.system) + '</em>：' + escapeHtml(x.text) + '</li>'; }).join('') + '</ol>' : '<p style="font-size:12px;color:var(--tw-color-textMuted);margin:4px 0">未留存事件序列</p>') +
-            '</div></div>';
-        }).join('') || '<div class="degrade">当前筛选下无告警。</div>';
-      });
-  }
 
   tickClock(); setInterval(tickClock, 1000);   /* 时钟不依赖数据；放在末尾启动，避免 var 提升期调用拿到 undefined */
 

@@ -180,6 +180,7 @@
         if (!zone) return resolve(envelope({ unsupported: true, zoneId: m[1], note: '该区未建 mock 分区数据（V1 监控细分仅 106，PRD S2）' }));
         return resolve(envelope(clone(zone[m[2]] || null)));
       }
+      /* 事件序列回溯（原 S3）已移出 MVP 范围：端点保留、前端不再调用，二期恢复时可直接用 */
       if ((m = path.match(/^\/api\/alarm\/([\w-]+)\/trace$/))) {
         var alarm = state.overview.alarms.filter(function (a) { return a.alarmId === m[1]; })[0];
         return resolve(envelope(alarm ? { alarm: clone(alarm), window: '24h', events: clone(state.traces[m[1]] || []) } : null));
