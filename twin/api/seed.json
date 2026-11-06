@@ -83,7 +83,7 @@
       "overdue",
       "dueSoon"
      ],
-     "note": "逾期/临期(3天内) 均计入未完成",
+     "note": "逾期 / 临期(3天内) 均计入未完成；口径来自 LIMS「要求检测完成时间」，当前为 Mock，二期接口接入后自动变真值",
      "periods": {
       "day": {
        "testing": 12,
@@ -91,7 +91,9 @@
        "done": 16,
        "overdue": 2,
        "dueSoon": 3,
-       "compare": 6.1
+       "compare": 6.1,
+       "overdueSource": "lims",
+       "dueSoonSource": "lims"
       },
       "month": {
        "testing": 41,
@@ -99,7 +101,9 @@
        "done": 739,
        "overdue": 6,
        "dueSoon": 9,
-       "compare": 14.2
+       "compare": 14.2,
+       "overdueSource": "lims",
+       "dueSoonSource": "lims"
       },
       "year": {
        "testing": 96,
@@ -107,9 +111,12 @@
        "done": 8890,
        "overdue": 11,
        "dueSoon": 18,
-       "compare": 23.7
+       "compare": 23.7,
+       "overdueSource": "lims",
+       "dueSoonSource": "lims"
       }
-     }
+     },
+     "source2": "lims"
     },
     "dispatch": {
      "title": "调度任务",
@@ -1687,5 +1694,287 @@
     "total": 406
    }
   }
+ },
+ "testItemPlan": {
+  "note": "试验项目在办清单（Mock）：dueInHours=距 LIMS「要求检测完成时间」的小时数（负数=已逾期）。接入后该字段由 LIMS 提供，前端只读、不自行推算。",
+  "overdueRule": "status!=done 且 dueInHours<0",
+  "dueSoonRule": "status!=done 且 0<=dueInHours<=72（3天内）",
+  "items": [
+   {
+    "sampleId": "SPL-26110207",
+    "item": "电力电缆 阻燃C类 单根垂直燃烧",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": -30
+   },
+   {
+    "sampleId": "SPL-26110208",
+    "item": "电缆热延伸",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": -6
+   },
+   {
+    "sampleId": "SPL-26110209",
+    "item": "导体直流电阻",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": 18
+   },
+   {
+    "sampleId": "SPL-26110210",
+    "item": "护套热收缩",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": 40
+   },
+   {
+    "sampleId": "SPL-26110211",
+    "item": "绝缘厚度",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": 120
+   },
+   {
+    "sampleId": "SPL-26110212",
+    "item": "绝缘线芯挤出",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": 150
+   },
+   {
+    "sampleId": "SPL-26110213",
+    "item": "径向挤压",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": 180
+   },
+   {
+    "sampleId": "SPL-26110214",
+    "item": "热收缩试验",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": 210
+   },
+   {
+    "sampleId": "SPL-26110215",
+    "item": "哑铃拉伸",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": 240
+   },
+   {
+    "sampleId": "SPL-26110216",
+    "item": "屏蔽直流电阻",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": 260
+   },
+   {
+    "sampleId": "SPL-26110217",
+    "item": "局放试验",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": 300
+   },
+   {
+    "sampleId": "SPL-26110218",
+    "item": "工频耐压",
+    "zone": "Z-106",
+    "status": "testing",
+    "dueInHours": 340
+   },
+   {
+    "sampleId": "SPL-26110219",
+    "item": "绝缘电阻",
+    "zone": "Z-106",
+    "status": "pending",
+    "dueInHours": 66
+   },
+   {
+    "sampleId": "SPL-26110220",
+    "item": "弯曲试验",
+    "zone": "Z-103",
+    "status": "pending",
+    "dueInHours": 96
+   },
+   {
+    "sampleId": "SPL-26110221",
+    "item": "冲击热收缩",
+    "zone": "Z-105",
+    "status": "pending",
+    "dueInHours": 120
+   },
+   {
+    "sampleId": "SPL-26110222",
+    "item": "老化试验",
+    "zone": "Z-107",
+    "status": "pending",
+    "dueInHours": 168
+   },
+   {
+    "sampleId": "SPL-26110223",
+    "item": "交流耐压",
+    "zone": "Z-108",
+    "status": "pending",
+    "dueInHours": 200
+   },
+   {
+    "sampleId": "SPL-26110224",
+    "item": "坦拉试验",
+    "zone": "Z-106",
+    "status": "pending",
+    "dueInHours": 240
+   },
+   {
+    "sampleId": "SPL-26110225",
+    "item": "电力电缆 阻燃C类 单根垂直燃烧",
+    "zone": "Z-106",
+    "status": "pending",
+    "dueInHours": 288
+   },
+   {
+    "sampleId": "SPL-26110226",
+    "item": "电缆热延伸",
+    "zone": "Z-106",
+    "status": "pending",
+    "dueInHours": 320
+   },
+   {
+    "sampleId": "SPL-26110227",
+    "item": "导体直流电阻",
+    "zone": "Z-106",
+    "status": "pending",
+    "dueInHours": 360
+   },
+   {
+    "sampleId": "SPL-26110240",
+    "item": "绝缘线芯挤出",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 48,
+    "finishedInHours": -1
+   },
+   {
+    "sampleId": "SPL-26110241",
+    "item": "径向挤压",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 54,
+    "finishedInHours": -2
+   },
+   {
+    "sampleId": "SPL-26110242",
+    "item": "热收缩试验",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 60,
+    "finishedInHours": -3
+   },
+   {
+    "sampleId": "SPL-26110243",
+    "item": "哑铃拉伸",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 66,
+    "finishedInHours": -4
+   },
+   {
+    "sampleId": "SPL-26110244",
+    "item": "屏蔽直流电阻",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 72,
+    "finishedInHours": -5
+   },
+   {
+    "sampleId": "SPL-26110245",
+    "item": "局放试验",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 78,
+    "finishedInHours": -6
+   },
+   {
+    "sampleId": "SPL-26110246",
+    "item": "工频耐压",
+    "zone": "Z-103",
+    "status": "done",
+    "dueInHours": 84,
+    "finishedInHours": -7
+   },
+   {
+    "sampleId": "SPL-26110247",
+    "item": "绝缘电阻",
+    "zone": "Z-105",
+    "status": "done",
+    "dueInHours": 90,
+    "finishedInHours": -8
+   },
+   {
+    "sampleId": "SPL-26110248",
+    "item": "弯曲试验",
+    "zone": "Z-107",
+    "status": "done",
+    "dueInHours": 96,
+    "finishedInHours": -9
+   },
+   {
+    "sampleId": "SPL-26110249",
+    "item": "冲击热收缩",
+    "zone": "Z-108",
+    "status": "done",
+    "dueInHours": 102,
+    "finishedInHours": -1
+   },
+   {
+    "sampleId": "SPL-26110250",
+    "item": "老化试验",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 108,
+    "finishedInHours": -2
+   },
+   {
+    "sampleId": "SPL-26110251",
+    "item": "交流耐压",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 114,
+    "finishedInHours": -3
+   },
+   {
+    "sampleId": "SPL-26110252",
+    "item": "坦拉试验",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 120,
+    "finishedInHours": -4
+   },
+   {
+    "sampleId": "SPL-26110253",
+    "item": "电力电缆 阻燃C类 单根垂直燃烧",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 126,
+    "finishedInHours": -5
+   },
+   {
+    "sampleId": "SPL-26110254",
+    "item": "电缆热延伸",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 132,
+    "finishedInHours": -6
+   },
+   {
+    "sampleId": "SPL-26110255",
+    "item": "导体直流电阻",
+    "zone": "Z-106",
+    "status": "done",
+    "dueInHours": 138,
+    "finishedInHours": -7
+   }
+  ]
  }
 }

@@ -173,4 +173,9 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 **左栏四表契约（2026-11-06）**：`GET /api/overview/lab-status` → `panels{entrust,samples,testItems,dispatch}`，每个面板 `{title,source:'daq'|'dispatch',unit,note,periods{day,month,year}{<指标键>,compare}}`；指标键：entrust `total/power/safety`、samples `received/testing/done`、testItems `testing/pending/done/overdue/dueSoon`、dispatch `done/blocked/blockedResolved/blockedUnresolved`。
 **自洽硬约束**（后端实现必须满足，前端有自动化断言）：`power+safety=total`；`testing+pending+done=合计`；`blockedResolved+blockedUnresolved=blocked`；`done+blocked=调度总量`；`testing+done ≤ received`。报告份数（LIMS）已从大屏下线，接口无需提供。
 
+**逾期/临期口径（2026-11-06）**：字段来自 **LIMS 的「要求检测完成时间」**（二期接入，现阶段 Mock）。新增 `GET /api/overview/test-item-plan` →
+`{note, overdueRule, dueSoonRule, items[{sampleId, item, zone, status:'testing'|'pending'|'done', dueInHours, requiredAt, overdue, dueSoon}]}`；
+`GET /api/overview/lab-status` 的 `panels.testItems` 中 **本日** 的 `testing/pending/done` 与 **全部周期** 的 `overdue/dueSoon` 均由该清单现算（`overdue = 未完成 && dueInHours<0`，`dueSoon = 未完成 && 0≤dueInHours≤72`），逾期/临期为现在时指标、不随周期变化。
+**路由顺序坑（第二次踩）**：具名端点必须排在通用 `/api/overview/([\w-]+)` 之前，否则 `test-item-plan` 会被当成分区字段返回 null。
+
 **待补（下一步）**：`host:setAutoRoam`（讲解用自动巡航，默认关）、`scene:waypointClick{waypointId}`（折线拐点拾取，标记已渲染）、`requestId + ack + 3s 超时重试` 信封。

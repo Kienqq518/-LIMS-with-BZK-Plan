@@ -28,6 +28,28 @@
   /* ---------- 无人化任务循环剧本（2026-11-06）----------
      时间轴来自 seed：zone106.robots[RB-C-02].demoCycle.stops[{u,travelSec,dwellSec,t0}]，按墙上时钟取模，
      所以刷新页面、多人同时看、挂机演示都处在同一相位；接入调度后由真实任务队列替换本函数即可。 */
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  /* 逾期/临期是「现在时」指标：由在办清单 + LIMS 要求完成时间推导，不随周期变化 */
+  function planCounts() {
+    var it = (state.testItemPlan || {}).items || [];
+    var f = function (st) { return it.filter(function (x) { return x.status === st; }).length; };
+    var un = it.filter(function (x) { return x.status !== 'done'; });
+    return { testing: f('testing'), pending: f('pending'), done: f('done'),
+      overdue: un.filter(function (x) { return x.dueInHours < 0; }).length,
+      dueSoon: un.filter(function (x) { return x.dueInHours >= 0 && x.dueInHours <= 72; }).length };
+  }
+  function withPlanDerive(ls) {
+    if (!ls || !ls.panels || !ls.panels.testItems) return ls;
+    var c = planCounts(), ti = ls.panels.testItems;
+    ti.periods.day.testing = c.testing; ti.periods.day.pending = c.pending; ti.periods.day.done = c.done;
+    ['day', 'month', 'year'].forEach(function (pk) {
+      ti.periods[pk].overdue = c.overdue; ti.periods[pk].dueSoon = c.dueSoon;
+      ti.periods[pk].overdueSource = 'lims'; ti.periods[pk].dueSoonSource = 'lims';
+    });
+    ti.derivedFrom = 'testItemPlan（Mock；接入 LIMS「要求检测完成时间」后为真值）';
+    return ls;
+  }
+
   function cycleNow() {
     var rb = (state.zone106.robots || []).filter(function (r) { return r.robotId === 'RB-C-02'; })[0];
     var c = rb && rb.demoCycle;
@@ -111,9 +133,22 @@
     return new Promise(function (resolve, reject) {
       if (!state) return reject(new Error('TwinApi 未就绪'));
       var m;
-      if ((m = path.match(/^\/api\/overview\/([\w-]+)$/))) return resolve(envelope(clone(state.overview[m[1]] || null)));
+      if (path === '/api/overview/test-item-plan') {
+        var pl = (state.testItemPlan || {}).items || [];
+        return resolve(envelope({ note: state.testItemPlan.note, overdueRule: state.testItemPlan.overdueRule, dueSoonRule: state.testItemPlan.dueSoonRule,
+          items: pl.map(function (x) {
+            var req = new Date(Date.now() + x.dueInHours * 3600000);
+            return { sampleId: x.sampleId, item: x.item, zone: x.zone, status: x.status, dueInHours: x.dueInHours,
+              requiredAt: req.getFullYear() + '-' + pad(req.getMonth() + 1) + '-' + pad(req.getDate()) + ' ' + pad(req.getHours()) + ':' + pad(req.getMinutes()),
+              overdue: x.status !== 'done' && x.dueInHours < 0, dueSoon: x.status !== 'done' && x.dueInHours >= 0 && x.dueInHours <= 72 };
+          }) }));
+      }
       /* 区域视图五类信息（2026-11-05 信息模型）：设备（下面通用 zone 路由）/ 任务统计 / 正在运行 / 告警。
          必须排在通用 /api/zone/{z}/{key} 之前，否则 task-stats 等会被当分区字段返回 null。环境数据走 V4 节点协议，不在此处。 */
+      if ((m = path.match(/^\/api\/overview\/([\w-]+)$/))) {
+        if (m[1] === 'lab-status') return resolve(envelope(withPlanDerive(clone(state.overview['lab-status']))));
+        return resolve(envelope(clone(state.overview[m[1]] || null)));
+      }
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/task-stats$/))) {
         var zstat = state.zoneStats['Z-' + m[1]];
         return resolve(envelope(zstat ? { zoneId: 'Z-' + m[1], periods: zstat, note: zstat.note || null } : { unsupported: true, zoneId: m[1], note: '该区无任务口径' }));

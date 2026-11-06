@@ -8,13 +8,14 @@
 (function () {
   var $ = function (s) { return document.querySelector(s); };
   var scene = $('#scene');
-  var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [];
+  var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [], planItems = [];
   var rtTimer = null, detailDev = null, bridgeReady = false, pendingState = null;
   var zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false, routeAudit = null, cycleDef = null, cycTimer = null;
   var SRC_NAME = { daq: '数采', dispatch: '调度', iot: '物联', lims: 'LIMS', rule: '判定规则' };
   var ORDER = [];  /* 遥控翻页序列 */
 
-  var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 1, zones: 1, walls: 1, heatmap: 0 }, alarmFilter: 'open', quality: 'high', strip: 0 };
+  var LAYER_KEYS = ['path', 'labels', 'walls', 'heatmap'];   /* 分区色块已按 2026-11-06 反馈移除，不再写进 URL */
+  var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 1, walls: 1, heatmap: 0 }, alarmFilter: 'open', quality: 'high', strip: 0 };
 
   function sendScene(type, data) { if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'twin-v2', type: type }, data), location.origin); }
   var pendingView = null;
@@ -28,13 +29,13 @@
     var p = new URLSearchParams(location.search); if (!p.get('mode')) return null;
     var lay = {}; (p.get('layers') || '').split(',').forEach(function (k) { if (k) lay[k] = 1; });
     return { mode: p.get('mode'), zone: p.get('zone') || '106', period: p.get('period') || 'day',
-      layers: { path: lay.path == null ? 1 : lay.path, labels: lay.labels == null ? 1 : lay.labels, zones: lay.zones == null ? 1 : lay.zones, walls: lay.walls == null ? 1 : lay.walls, heatmap: lay.heatmap ? 1 : 0 },
+      layers: { path: lay.path == null ? 1 : lay.path, labels: lay.labels == null ? 1 : lay.labels, walls: lay.walls == null ? 1 : lay.walls, heatmap: lay.heatmap ? 1 : 0 },
       alarmFilter: p.get('alarmFilter') || 'open', quality: p.get('quality') || 'high', strip: p.get('strip') ? 1 : 0 };
   }
   function writeURL() {
     var p = new URLSearchParams(); p.set('mode', st.mode); if (st.mode === 'ZONE') p.set('zone', st.zone);
     p.set('period', st.period); p.set('alarmFilter', st.alarmFilter); if (st.quality === 'low') p.set('quality', 'low'); if (st.strip) p.set('strip', '1');
-    p.set('layers', Object.keys(st.layers).filter(function (k) { return st.layers[k]; }).join(','));
+    p.set('layers', LAYER_KEYS.filter(function (k) { return st.layers[k]; }).join(','));
     history.replaceState(null, '', location.pathname + '?' + p.toString() + '#v2=1&native-nodes=1');
   }
 
@@ -52,7 +53,8 @@
       TwinApi.get('/api/overview/lab-status'), TwinApi.get('/api/overview/zones'), TwinApi.get('/api/overview/today-tasks'),
       TwinApi.get('/api/overview/alarms'), TwinApi.get('/api/zone/106/devices'), TwinApi.get('/api/zone/106/robots'),
       TwinApi.get('/api/zone/106/samples'), TwinApi.get('/api/zone/106/dispatch-tasks'),
-      TwinApi.get('/api/zone/103/devices'), TwinApi.get('/api/zone/106/cycle'), TwinApi.get('/api/zone/106/walls')
+      TwinApi.get('/api/zone/103/devices'), TwinApi.get('/api/zone/106/cycle'), TwinApi.get('/api/zone/106/walls'),
+      TwinApi.get('/api/overview/test-item-plan')
     ]);
   }).then(function (r) {
     status = r[0].data; zones = r[1].data || []; tasks = r[2].data || []; alarms = r[3].data || [];
@@ -60,6 +62,7 @@
     robots = r[5].data || []; samples = r[6].data || []; dispatchTasks = r[7].data || [];
     routeNote = (robots[0] && robots[0].routeBasis) ? '机器人位置基准：' + robots[0].routeBasis : '';
     walls = (r[10] && r[10].data) || [];
+    planItems = (r[11] && r[11].data && r[11].data.items) || [];
     /* 讲解顺序（决策 Q1 售前投影）：总览 → 106 无人化区（主叙事）→ 其余区域 → 告警回溯 */
     ORDER = ['S1', 'Z106'].concat(zones.map(function (z) { return 'Z' + z.zoneId.slice(2); }).filter(function (z) { return z !== 'Z106'; })).concat(['S3']);
     if (r[9] && r[9].data && r[9].data.cycle) { cycleDef = r[9].data.cycle; if (!cycTimer) cycTimer = setInterval(tickCycle, 1000); tickCycle(); }
@@ -99,8 +102,8 @@
       { k: 'testing', label: '正在检测', of: 'all' },
       { k: 'pending', label: '待检测', of: 'all' },
       { k: 'done', label: '已完成检测', cls: 'ok', of: 'all' },
-      { k: 'overdue', label: '未完成中·逾期', cls: 'warn', noPct: true },
-      { k: 'dueSoon', label: '未完成中·临期(3天内)', cls: 'due', noPct: true }
+      { k: 'overdue', label: '未完成中·逾期', cls: 'warn', noPct: true, lims: true, pick: 'overdue' },
+      { k: 'dueSoon', label: '未完成中·临期(3天内)', cls: 'due', noPct: true, lims: true, pick: 'dueSoon' }
     ],
     dispatch: [
       { k: 'done', label: '调度任务已完成', head: true, cls: 'ok' },
@@ -119,7 +122,13 @@
         if (val == null) return '<tr><td>' + r.label + '</td><td class="v na">—</td><td class="pct"></td></tr>';
         var base = r.of ? (r.computed ? r.computed(v) : v[r.of]) : null;
         var pct = (!r.noPct && base) ? Math.round(val / base * 100) + '%' : '';
-        return '<tr class="' + (r.head ? 'head ' : 'sub ') + (r.cls || '') + '"><td>' + r.label + '</td><td class="v">' + val + '</td><td class="pct">' + pct + '</td></tr>';
+        var tag = r.lims ? '<span class="limstag" title="口径来自 LIMS「要求检测完成时间」，当前为 Mock 数据">LIMS</span>' : '';
+        var tip = '';
+        if (r.pick) {
+          var list = planItems.filter(function (x) { return x[r.pick]; });
+          tip = ' title="' + escapeHtml(list.map(function (x) { return x.sampleId + ' ' + x.item + ' · 要求 ' + x.requiredAt; }).join('\n') || '无') + '"';
+        }
+        return '<tr class="' + (r.head ? 'head ' : 'sub ') + (r.cls || '') + '"' + tip + '><td>' + r.label + tag + '</td><td class="v">' + val + '</td><td class="pct">' + pct + '</td></tr>';
       }).join('');
       var c = v.compare;
       var foot = c == null ? '' : '<span class="d ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</span><span>' + ({ day: '较上日', month: '较上月', year: '较去年' })[st.period] + '</span>';
@@ -409,8 +418,11 @@
     /* 区域视图=右侧五块面板；浮层（告警卡/机器人卡）与底栏让位，避免同一信息出现两次 */
     $('#zonePanel').hidden = st.mode !== 'ZONE';
     $('#alarmStream').hidden = st.mode === 'ZONE';
-    $('#robotZone').hidden = st.mode === 'ZONE';
-    $('#taskStrip').hidden = st.mode !== 'S1'; $('#taskStrip').classList.toggle('collapsed', !!st.strip);
+    /* 收起底栏＝底部整片让位：今日任务表 + 机器人状态条 + 底部说明条一起消失（2026-11-06 反馈：只收表格、机器人条还留着不对） */
+    $('#robotZone').hidden = st.mode === 'ZONE' || !!st.strip;
+    $('#taskStrip').hidden = st.mode !== 'S1' || !!st.strip;
+    var wm = $('#watermark'); if (wm) wm.hidden = !!st.strip;
+
     $('#stripBtn').textContent = st.strip ? '▴ 展开底栏' : '▾ 收起底栏'; $('#stripBtn').setAttribute('aria-pressed', !!st.strip);
     $('#stripBtn').disabled = st.mode !== 'S1';
     $('#s3Drawer').hidden = st.mode !== 'S3'; if (st.mode === 'S3') renderS3();
