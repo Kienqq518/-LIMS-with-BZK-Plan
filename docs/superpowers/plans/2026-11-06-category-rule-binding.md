@@ -13,11 +13,11 @@
 ## Global Constraints
 
 - 文档 token `NmYVdjPO9oswaoxyHsDcQNu2nKh`；台账 Base `B2WHb25XVaCPinskfxKcr0J0npt`；`审核规则` 表 `tblwz7D6MQVvm3Da`。一律 `--as user`。
-- **计数固定：通用集 30 ｜ 品类专属 15 ｜ 本体 45**。任何位置出现这三个数必须与此一致；新增品类专属规则只计入 15 一侧。
+- **计数固定：通用集 28 ｜ 品类专属 17 ｜ 本体 45**。任何位置出现这三个数必须与此一致；新增品类专属规则只计入 17 一侧。
 - **A03-4 属品类专属**，其可追溯载体由 `traceability_field: enum(heat_no | reel_no | batch_no | segment_no)` 按品类指定。
 - 本体判据内**不得出现裸品类数值**；具体取值只允许出现在 3.9 绑定矩阵，或 3.2.1 中标注「示例」的位置。
 - `CAT-UNCAT-01` 是引擎内置提示，不占规则编号，不计入 45 / ≥50。
-- 绑定表**不得引用本体不存在的 rule_id**；每个已配置品类必须对全部 15 条专属规则各写一行（`enabled` 显式 true/false），通用 30 条不写绑定。
+- 绑定表**不得引用本体不存在的 rule_id**；每个已配置品类必须对全部 17 条专属规则各写一行（`enabled` 显式 true/false），通用 28 条不写绑定。
 - Base 绑定表用 **text 字段**存 `category_code` 与 `rule_id`，不用 `link` 类型（避免双向关联维护成本；权威外键关系在 3.4 的 DB schema 里）。
 - 所有新增参数值 `状态=待审核员确认`。
 - 沿用既有文档铁律：rowspan 续行省略被合并格；单元格实体只转义一次；新增画板用 `<whiteboard type="svg" path="@x.svg">` 一步建；`block_replace` 后旧 block ID 失效需重新 fetch。
@@ -59,7 +59,7 @@ git fetch && git rebase origin/main && git push origin HEAD:main
 a03-8sets-labeled	labeled	8 套	示例	3.2.1
 b01-6month-labeled	labeled	6 个月	示例	3.2.1
 s39-exists	require	3\.9 品类规则绑定
-count-bindings	countcheck	品类规则绑定	45
+count-bindings	countcheck	品类规则绑定	51
 ```
 
 - [ ] **Step 3: 跑断言确认红灯来自预期原因**
@@ -78,7 +78,7 @@ Expected: FAIL，且报错指出"8 套"出现在未标注处（不是脚本异�
 
 **Interfaces:**
 - Produces: `CAT_TABLE_ID`、`BIND_TABLE_ID`，写入 `base.md`；T10 Step 3 的绑定完整性校验读取。
-- Produces: 品类 6 行、绑定 **45 行**（3 品类 × 15 专属规则）。
+- Produces: 品类 6 行、绑定 **51 行**（3 品类 × 17 专属规则）。
 
 - [ ] **Step 1: 读字段规范**
 
@@ -93,13 +93,13 @@ Expected: 拿到 select / number 字段合法 JSON 形状
 - [ ] **Step 3: 建「品类规则绑定」表（45 行）**
 
 字段：`category_code(text)`、`rule_id(text)`、`启用(select: 是|否)`、`参数覆盖(text)`、`严重度覆盖(select: 严重|一般|轻微|提示|不覆盖)`、`标准依据(text)`、`状态(select，默认 待审核员确认)`、`版本(text)`。
-生成规则：对 3 个已配置品类，各为 15 条专属规则（A03-2/3/4/5/6、B01-3、B02-1…9）生成一行，`启用` 按 spec 的绑定矩阵取值，未覆盖处填 `否` + 依据留空。
-Run: `+record-batch-create` → `+record-list` 计数 **45**
+生成规则：对 3 个已配置品类，各为 17 条专属规则（A02-5、A03-2/3/4/5/6、B01-3、B02-1…9、C01-2）生成一行，`启用` 按 spec 的绑定矩阵取值，未覆盖处填 `否` + 依据留空。
+Run: `+record-batch-create` → `+record-list` 计数 **51**
 
 - [ ] **Step 4: 规则表加两列**
 
 `+field-create` 到 `tblwz7D6MQVvm3Da`：`param_schema(text)`、`是否通用(select: 通用|品类专属)`。
-`+record-batch-update` 回填：30 条标 `通用`，15 条标 `品类专属`（含 A03-4）。
+`+record-batch-update` 回填：28 条标 `通用`，17 条标 `品类专属`（含 A02-5、A03-4、C01-2）。
 
 - [ ] **Step 5: 建视图**
 
@@ -118,11 +118,11 @@ Run: `+record-batch-create` → `+record-list` 计数 **45**
 
 - [ ] **Step 1: 写 3.9**
 
-按 spec 落六段：① 为什么绑定（A03 那格的实例）；② 三张表数据模型（含 `param_schema`、`is_universal`、`traceability_field`）；③ 通用 30 / 专属 15 划分清单；④ 运行时解析四步 + `CAT-UNCAT-01`；⑤ 首批 3 品类绑定矩阵（数值集中在此）；⑥ 未配置品类的默认策略与残余风险。
+按 spec 落六段：① 为什么绑定（A03 那格的实例）；② 三张表数据模型（含 `param_schema`、`is_universal`、`traceability_field`）；③ 通用 28 / 专属 17 划分清单；④ 运行时解析四步 + `CAT-UNCAT-01`；⑤ 首批 3 品类绑定矩阵（数值集中在此）；⑥ 未配置品类的默认策略与残余风险。
 
 - [ ] **Step 2: 加断言**
 
-`require 通用集 30`、`require 品类专属 15`、`require CAT-UNCAT-01`、`require traceability_field`
+`require 通用集 28`、`require 品类专属 17`、`require CAT-UNCAT-01`、`require traceability_field`
 
 - [ ] **Step 3: outline 校验层级不跳级 + Commit**
 
@@ -138,10 +138,12 @@ A03-2 → `平行试样 / 重复测定组数满足该品类标准规定（取值
 A03-4 → `可追溯编号与取样部位记录完整，载体按品类为炉（批）号 / 盘号 / 制造批号 / 段号（见 3.9）`
 B01-3 → `安全工器具上次预防性试验未超期，周期按品类取（示例：绝缘手套 6 个月；取值见 3.9）`
 B02-3 → `扭矩系数平均值与标准偏差满足所引标准（示例：GB/T 1231 的 0.110–0.150 与 ≤ 0.0074）`
+A02-5 → `对温湿度敏感的试验项目须记录环境温湿度，敏感项目清单按品类取（示例：拉伸、扭矩系数、工频耐压；取值见 3.9）`
+C01-2 → `数值修约间隔与所引标准一致（示例：抗拉强度 1 MPa、扭矩系数 3 位小数；取值见 3.9）`
 
 - [ ] **Step 2: 导语段补划分**
 
-加一句：`45 条中 30 条为通用集（任何品类都跑），15 条为品类专属（须由 3.9 绑定启用；未启用不参与判定）。`
+加一句：`45 条中 28 条为通用集（任何品类都跑），17 条为品类专属（须由 3.9 绑定启用；未启用不参与判定）。`
 
 - [ ] **Step 3: labeled 断言转绿**
 
@@ -238,7 +240,7 @@ Expected: 正常输出 summary，且未配置品类场景打印 CAT-UNCAT-01 提
 
 - [ ] **Step 3: 附录 B 更新**
 
-存量表述改为 `45 条（通用 30 / 品类专属 15）`；补一句"另有品类、品类规则绑定两张表"；差额来源写实：`≥50 的缺口由品类专属规则（电缆局部放电、保护管环刚度、金具握着力、安全带静态负荷等）补齐，预计 5–8 条`
+存量表述改为 `45 条（通用 28 / 品类专属 17）`；补一句"另有品类、品类规则绑定两张表"；差额来源写实：`≥50 的缺口由品类专属规则（电缆局部放电、保护管环刚度、金具握着力、安全带静态负荷等）补齐，预计 5–8 条`
 
 - [ ] **Step 4: require 断言 + Commit**
 
@@ -272,12 +274,12 @@ Expected: exit 0（含 Review Focus 1、2）
 
 - [ ] **Step 2: 计数一致性专项**
 
-校验四处 30 / 15 / 45 一致：3.2.1 导语、3.9 划分清单、附录 B、Base `是否通用` 分组计数（30 + 15）。
-Expected: 四处一致，Base 分组计数 30 / 15
+校验四处 28 / 17 / 45 一致：3.2.1 导语、3.9 划分清单、附录 B、Base `是否通用` 分组计数（28 + 17）。
+Expected: 四处一致，Base 分组计数 28 / 17
 
 - [ ] **Step 3: 绑定完整性**
 
-校验 3 个品类各 15 行、`rule_id` 全部存在于本体、无重复 `(category_code, rule_id)`。
+校验 3 个品类各 17 行、`rule_id` 全部存在于本体、无重复 `(category_code, rule_id)`。
 Expected: 45 行、幽灵 rule_id 0、重复 0
 
 - [ ] **Step 4: outline / 画板 / 表格结构**
@@ -303,5 +305,5 @@ git fetch && git rebase origin/main && git push origin HEAD:main
 | 类型 | 位置 |
 | --- | --- |
 | 文档 | `NmYVdjPO9oswaoxyHsDcQNu2nKh`：新增 3.9，改动 3.2.1 / 3.3 / 3.4 / 3.6 / 3.7 / 4.2 / 2.2 / 2.3 / 附录 A / 附录 B |
-| Base | 新增「品类」（6 行）、「品类规则绑定」（45 行）两张表 + 规则表两列 + 两个视图 |
+| Base | 新增「品类」（6 行）、「品类规则绑定」（51 行）两张表 + 规则表两列 + 两个视图 |
 | 脚本 | `check_doc.py`（新增 labeled / countcheck）、`make_category_tables.py`、`binding_seed.json`、`engine_v2.py`、`make_timeline.py` |
