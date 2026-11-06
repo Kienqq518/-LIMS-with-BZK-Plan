@@ -1,0 +1,220 @@
+<pre lang="python" caption="审核规则引擎 · 引擎、默认规则注册与三组对照示例（3 / 3，品类绑定版 v0.2）"><code># ------ 审核引擎 ------
+
+class ReviewEngine:
+    &quot;&quot;&quot;审核规则引擎&quot;&quot;&quot;
+
+    def __init__(self):
+        self.rules: List[BaseRule] = []
+        self.version = &quot;1.0.0&quot;
+
+    def register_rule(self, rule: BaseRule):
+        &quot;&quot;&quot;注册审核规则&quot;&quot;&quot;
+        self.rules.append(rule)
+        # 按优先级排序: CRITICAL &gt; MAJOR &gt; MINOR &gt; INFO
+        priority = {Severity.CRITICAL: 0, Severity.MAJOR: 1,
+                    Severity.MINOR: 2, Severity.INFO: 3}
+        self.rules.sort(key=lambda r: priority.get(r.severity, 99))
+
+    def register_rules(self, rules: List[BaseRule]):
+        for rule in rules:
+            self.register_rule(rule)
+
+    def execute_review(self, report_data: Dict, context: Dict = None) -&gt; ReviewResult:
+        &quot;&quot;&quot;执行完整的审核流程&quot;&quot;&quot;
+        import time
+        start_time = time.time()
+        
+        context = context or {}
+        issues: List[ReviewIssue] = []
+
+        # 品类解析：绑定表决定启用与参数；未配置品类只跑通用集并给出可见提示
+        category = (report_data.get(&quot;sample_info&quot;) or {}).get(&quot;category_code&quot;, &quot;&quot;)
+        context[&quot;category&quot;] = category
+        context.setdefault(&quot;bindings&quot;, {})
+        if category and not context[&quot;bindings&quot;]:
+            issues.append(ReviewIssue(
+                rule_id=&quot;CAT-UNCAT-01&quot;, rule_name=&quot;品类未配置规则绑定&quot;,
+                category=RuleCategory.DATA_COMPLETENESS, severity=Severity.INFO,
+                status=ReviewStatus.WARNING,
+                message=f&quot;品类 {category} 未配置专属规则，本次仅执行通用集 28 条&quot;,
+                location=&quot;品类绑定&quot;,
+                suggestion=&quot;在规则台账为该品类补 17 行品类专属绑定&quot;))
+            context[&quot;universal_only&quot;] = True
+        else:
+            context[&quot;overrides&quot;] = {rid: b.get(&quot;overrides&quot;, {})
+                                    for rid, b in context[&quot;bindings&quot;].items()}
+        passed = 0
+        failed = 0
+        warnings = 0
+        skipped = 0
+
+        for rule in self.rules:
+            # 检查规则是否适用
+            if not rule.is_applicable(context):
+                skipped += 1
+                continue
+
+            try:
+                issue = rule.execute(report_data, context)
+                issues.append(issue)
+
+                if issue.status == ReviewStatus.PASS:
+                    passed += 1
+                elif issue.status == ReviewStatus.FAIL:
+                    failed += 1
+                elif issue.status == ReviewStatus.WARNING:
+                    warnings += 1
+                elif issue.status == ReviewStatus.SKIP:
+                    skipped += 1
+
+            except Exception as e:
+                # 规则执行异常,记录但不阻断
+                issues.append(ReviewIssue(
+                    rule_id=rule.rule_id,
+                    rule_name=rule.rule_name,
+                    category=rule.category,
+                    severity=Severity.INFO,
+                    status=ReviewStatus.WARNING,
+                    message=f&quot;规则执行异常: {str(e)}&quot;,
+                    location=&quot;系统&quot;,
+                    suggestion=&quot;请联系系统管理员&quot;
+                ))
+                warnings += 1
+
+        # 计算总体结果
+        executed = passed + failed + warnings
+        critical_count = sum(1 for i in issues
+                           if i.status == ReviewStatus.FAIL
+                           and i.severity == Severity.CRITICAL)
+        major_count = sum(1 for i in issues
+                         if i.status == ReviewStatus.FAIL
+                         and i.severity == Severity.MAJOR)
+        minor_count = sum(1 for i in issues
+                         if i.status == ReviewStatus.FAIL
+                         and i.severity == Severity.MINOR)
+
+        # 总体状态判定
+        if critical_count &gt; 0:
+            overall_status = ReviewStatus.FAIL
+        elif major_count &gt; 0 or warnings &gt; 0:
+            overall_status = ReviewStatus.WARNING
+        else:
+            overall_status = ReviewStatus.PASS
+
+        # 评分计算 (100分制)
+        score = 100.0
+        score -= critical_count * 20  # 每个严重问题扣20分
+        score -= major_count * 10     # 每个一般问题扣10分
+        score -= minor_count * 3      # 每个轻微问题扣3分
+        score = max(0, score)
+
+        elapsed_ms = int((time.time() - start_time) * 1000)
+
+        return ReviewResult(
+            report_id=report_data.get(&quot;report_id&quot;, &quot;unknown&quot;),
+            review_time=datetime.now(),
+            total_rules_executed=executed,
+            total_rules_passed=passed,
+            total_rules_failed=failed,
+            total_rules_warning=warnings,
+            overall_status=overall_status,
+            overall_score=score,
+            issues=[i for i in issues if i.status != ReviewStatus.PASS],  # 只返回有问题的
+            critical_count=critical_count,
+            major_count=major_count,
+            minor_count=minor_count,
+            review_duration_ms=elapsed_ms,
+            engine_version=self.version
+        )
+
+
+# ------ 引擎初始化与使用示例 ------
+
+def create_default_engine() -&gt; ReviewEngine:
+    &quot;&quot;&quot;创建默认规则引擎(含所有标准规则)&quot;&quot;&quot;
+    engine = ReviewEngine()
+    engine.register_rules([
+        SampleInfoCompletenessRule(),
+        DateLogicRule(),
+        ParallelSampleDeviationRule(universal=False),   # A03-2 属品类专属，见 3.9
+        SignificantFiguresRule(),
+        StandardLimitCheckRule(),
+        # ... 更多规则
+    ])
+    return engine
+
+
+# 使用示例（示例领域：电网物资——高强度螺栓连接副抽检）
+if __name__ == &quot;__main__&quot;:
+    engine = create_default_engine()
+
+    # 模拟报告数据：输电线路铁塔用钢结构高强度螺栓连接副 10.9级 M20
+    report_data = {
+        &quot;report_id&quot;: &quot;DQ-2026-00871&quot;,
+        &quot;sample_info&quot;: {
+            &quot;sample_id&quot;: &quot;S-2026-00871&quot;,
+            &quot;sample_name&quot;: &quot;钢结构用高强度大六角头螺栓连接副 10.9级 M20&quot;,
+            &quot;client_name&quot;: &quot;XX电力物资有限公司&quot;,
+            &quot;receive_date&quot;: &quot;2026-10-28&quot;,
+            &quot;sampling_date&quot;: &quot;2026-10-27&quot;,
+            &quot;test_date&quot;: &quot;2026-10-30&quot;,
+            &quot;report_date&quot;: &quot;2026-11-02&quot;,
+            &quot;sample_status&quot;: &quot;正常，封样完好&quot;,
+            &quot;category_code&quot;: &quot;CAT-BOLT&quot;,
+            &quot;test_standard&quot;: &quot;GB/T 1231-2010&quot;,
+        },
+        &quot;test_results&quot;: [
+            {&quot;parameter&quot;: &quot;抗拉强度&quot;, &quot;value&quot;: 1043.6, &quot;unit&quot;: &quot;MPa&quot;,
+             &quot;judgment&quot;: &quot;合格&quot;, &quot;significant_figures&quot;: 4},
+            {&quot;parameter&quot;: &quot;扭矩系数&quot;, &quot;value&quot;: 0.131,
+             &quot;judgment&quot;: &quot;合格&quot;, &quot;significant_figures&quot;: 3},
+            {&quot;parameter&quot;: &quot;硬度&quot;, &quot;value&quot;: 35.2, &quot;unit&quot;: &quot;HRC&quot;,
+             &quot;judgment&quot;: &quot;合格&quot;, &quot;significant_figures&quot;: 3},
+        ],
+        &quot;qc_data&quot;: {
+            &quot;parallel_samples&quot;: [
+                # 同一批连接副取两组做扭矩系数平行测定
+                {&quot;parameter&quot;: &quot;扭矩系数&quot;, &quot;value1&quot;: 0.102, &quot;value2&quot;: 0.152,
+                 &quot;max_deviation&quot;: 10},
+            ]
+        }
+    }
+
+    context = {
+        &quot;domain&quot;: &quot;grid_material&quot;,
+        &quot;standard_limits&quot;: {
+            # 10.9 级：GB/T 3098.1 规定 Rm &gt;= 1000 MPa，硬度 HRC 32~39
+            &quot;抗拉强度&quot;: {&quot;type&quot;: &quot;min&quot;, &quot;min_value&quot;: 1000},
+            &quot;硬度&quot;: {&quot;type&quot;: &quot;range&quot;, &quot;min_value&quot;: 32.0, &quot;max_value&quot;: 39.0},
+            # GB/T 1231 规定扭矩系数平均值 0.110~0.150
+            &quot;扭矩系数&quot;: {&quot;type&quot;: &quot;range&quot;, &quot;min_value&quot;: 0.110, &quot;max_value&quot;: 0.150},
+        },
+        &quot;requires_parallel&quot;: True,
+        # 品类绑定（来自 ai_review_category_bindings，见 3.9）
+        &quot;bindings&quot;: {
+            &quot;A03-2&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {&quot;parallel_count&quot;: 8, &quot;max_deviation&quot;: 10}},
+            &quot;A01&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {}},
+            &quot;B01&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {}},
+            &quot;C01-1&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {}},
+            &quot;D01&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {}},
+        },
+    }
+
+    result = engine.execute_review(report_data, context)
+    print(result.summary)
+    for issue in result.issues:
+        print(f&quot;  [{issue.severity.value}] {issue.rule_name}: {issue.message}&quot;)
+    # 对照一：未配置绑定的品类（如电缆保护管）只跑通用集，并给出可见提示
+    ctx_unbound = dict(context); ctx_unbound[&quot;bindings&quot;] = {}
+    r2 = engine.execute_review(report_data, ctx_unbound)
+    print(&quot;\n[未配置品类对照] &quot; + r2.summary)
+    for issue in r2.issues:
+        print(f&quot;  [{issue.severity.value}] {issue.rule_name}: {issue.message}&quot;)
+
+    # 对照二：绝缘手套逐只试验，A03-2 由绑定显式停用
+    ctx_glove = dict(context)
+    ctx_glove[&quot;bindings&quot;] = {&quot;A03-2&quot;: {&quot;enabled&quot;: False},
+                             &quot;B01-3&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {&quot;cycle_months&quot;: 6}}}
+    r3 = engine.execute_review(report_data, ctx_glove)
+    print(&quot;\n[绝缘手套对照] &quot; + r3.summary + &quot;  # A03-2 被绑定停用，故只执行 4 条&quot;)
+</code></pre>

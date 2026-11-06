@@ -1,0 +1,172 @@
+<pre lang="python" caption="审核规则引擎 · 基础数据模型与规则基类（1 / 3，品类绑定版 v0.2）"><code># ============================================================
+# 审核规则引擎 - 核心架构设计
+# ============================================================
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import List, Dict, Optional, Any, Callable
+from datetime import datetime
+import json
+
+# ------ 基础数据模型 ------
+
+class Severity(Enum):
+    &quot;&quot;&quot;问题严重程度&quot;&quot;&quot;
+    CRITICAL = &quot;critical&quot;      # 严重：必须修改，阻止报告发出
+    MAJOR = &quot;major&quot;            # 一般：需要修改，但不阻止流程
+    MINOR = &quot;minor&quot;            # 轻微：建议修改
+    INFO = &quot;info&quot;              # 提示：供参考
+
+class ReviewStatus(Enum):
+    &quot;&quot;&quot;审核状态&quot;&quot;&quot;
+    PASS = &quot;pass&quot;              # 通过
+    FAIL = &quot;fail&quot;              # 不通过
+    WARNING = &quot;warning&quot;        # 警告(需人工确认)
+    SKIP = &quot;skip&quot;              # 跳过(规则不适用)
+
+class RuleCategory(Enum):
+    &quot;&quot;&quot;规则类别&quot;&quot;&quot;
+    DATA_COMPLETENESS = &quot;data_completeness&quot;      # 数据完整性
+    LOGIC_CONSISTENCY = &quot;logic_consistency&quot;       # 逻辑一致性
+    FORMAT_COMPLIANCE = &quot;format_compliance&quot;       # 格式规范性
+    STANDARD_LIMIT = &quot;standard_limit&quot;            # 标准限值
+    QC_CHECK = &quot;qc_check&quot;                        # 质控检查
+
+
+@dataclass
+class ReviewIssue:
+    &quot;&quot;&quot;单个审核问题&quot;&quot;&quot;
+    rule_id: str                    # 规则ID
+    rule_name: str                  # 规则名称
+    category: RuleCategory          # 规则类别
+    severity: Severity              # 严重程度
+    status: ReviewStatus            # 审核状态
+    message: str                    # 问题描述
+    location: str                   # 问题定位(如&quot;样品信息-采样日期&quot;)
+    expected_value: Optional[str] = None    # 期望值
+    actual_value: Optional[str] = None      # 实际值
+    suggestion: Optional[str] = None        # 修改建议
+    confidence: float = 1.0                 # 置信度(规则引擎默认1.0)
+    metadata: Dict = field(default_factory=dict)
+
+
+@dataclass
+class ReviewResult:
+    &quot;&quot;&quot;审核结果汇总&quot;&quot;&quot;
+    report_id: str                          # 报告ID
+    review_time: datetime                   # 审核时间
+    total_rules_executed: int               # 执行的规则总数
+    total_rules_passed: int                 # 通过的规则数
+    total_rules_failed: int                 # 不通过的规则数
+    total_rules_warning: int                # 警告的规则数
+    overall_status: ReviewStatus            # 总体审核状态
+    overall_score: float                    # 总体评分(0-100)
+    issues: List[ReviewIssue]               # 问题列表
+    critical_count: int = 0
+    major_count: int = 0
+    minor_count: int = 0
+    review_duration_ms: int = 0             # 审核耗时(毫秒)
+    engine_version: str = &quot;1.0.0&quot;
+
+    @property
+    def summary(self) -&gt; str:
+        return (f&quot;审核完成: 执行{self.total_rules_executed}条规则, &quot;
+                f&quot;通过{self.total_rules_passed}, &quot;
+                f&quot;不通过{self.total_rules_failed}, &quot;
+                f&quot;警告{self.total_rules_warning}, &quot;
+                f&quot;评分{self.overall_score:.1f}&quot;)
+
+
+# ------ 规则基类 ------
+
+class BaseRule(ABC):
+    &quot;&quot;&quot;审核规则基类&quot;&quot;&quot;
+
+    def __init__(self, rule_id: str, rule_name: str,
+                 category: RuleCategory, severity: Severity,
+                 description: str = &quot;&quot;,
+                 applicable_domains: List[str] = None,
+                 applicable_categories: List[str] = None,
+                 universal: bool = True,
+                 enabled: bool = True):
+        self.rule_id = rule_id
+        self.rule_name = rule_name
+        self.category = category
+        self.severity = severity
+        self.description = description
+        self.applicable_domains = applicable_domains or [&quot;ALL&quot;]
+        # 品类绑定：空列表表示该规则属通用集，任何品类都跑
+        self.applicable_categories = applicable_categories or []
+        # universal=False 即「品类专属」：未配置绑定的品类不跑
+        self.universal = universal
+        self.enabled = enabled
+
+    def param(self, context: Dict, key: str, default=None):
+        &quot;&quot;&quot;取当前品类的参数覆盖（绑定表 overrides），缺省回落到规则默认值&quot;&quot;&quot;
+        return (context.get(&quot;overrides&quot;) or {}).get(self.rule_id, {}).get(key, default)
+
+    def is_applicable(self, context: Dict) -&gt; bool:
+        &quot;&quot;&quot;判断规则是否适用于当前报告：品类优先、领域兜底&quot;&quot;&quot;
+        if not self.enabled:
+            return False
+        bindings = context.get(&quot;bindings&quot;) or {}
+        if self.rule_id in bindings:          # 绑定表显式决定跑不跑
+            return bool(bindings[self.rule_id].get(&quot;enabled&quot;, True))
+        if context.get(&quot;universal_only&quot;) and not self.universal:
+            return False                      # 未配置品类：品类专属一律不跑
+        if self.applicable_categories:        # 品类专属规则
+            cat = context.get(&quot;category&quot;, &quot;&quot;)
+            if cat and cat not in self.applicable_categories:
+                return False
+        if &quot;ALL&quot; in self.applicable_domains:
+            return True
+        return context.get(&quot;domain&quot;, &quot;&quot;) in self.applicable_domains
+
+    @abstractmethod
+    def execute(self, report_data: Dict, context: Dict) -&gt; ReviewIssue:
+        &quot;&quot;&quot;执行审核规则&quot;&quot;&quot;
+        pass
+
+    def _pass(self, message: str = &quot;检查通过&quot;) -&gt; ReviewIssue:
+        return ReviewIssue(
+            rule_id=self.rule_id,
+            rule_name=self.rule_name,
+            category=self.category,
+            severity=self.severity,
+            status=ReviewStatus.PASS,
+            message=message,
+            location=&quot;&quot;
+        )
+
+    def _fail(self, message: str, location: str = &quot;&quot;,
+              expected: str = None, actual: str = None,
+              suggestion: str = None) -&gt; ReviewIssue:
+        return ReviewIssue(
+            rule_id=self.rule_id,
+            rule_name=self.rule_name,
+            category=self.category,
+            severity=self.severity,
+            status=ReviewStatus.FAIL,
+            message=message,
+            location=location,
+            expected_value=expected,
+            actual_value=actual,
+            suggestion=suggestion
+        )
+
+    def _warning(self, message: str, location: str = &quot;&quot;,
+                 suggestion: str = None) -&gt; ReviewIssue:
+        return ReviewIssue(
+            rule_id=self.rule_id,
+            rule_name=self.rule_name,
+            category=self.category,
+            severity=self.severity,
+            status=ReviewStatus.WARNING,
+            message=message,
+            location=location,
+            suggestion=suggestion
+        )
+
+
+</code></pre>

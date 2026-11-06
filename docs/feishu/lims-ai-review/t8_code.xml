@@ -1,0 +1,689 @@
+<pre lang="python" caption="审核规则引擎 · 基础数据模型与规则基类（1 / 3，品类绑定版 v0.2）"><code># ============================================================
+# 审核规则引擎 - 核心架构设计
+# ============================================================
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import List, Dict, Optional, Any, Callable
+from datetime import datetime
+import json
+
+# ------ 基础数据模型 ------
+
+class Severity(Enum):
+    &quot;&quot;&quot;问题严重程度&quot;&quot;&quot;
+    CRITICAL = &quot;critical&quot;      # 严重：必须修改，阻止报告发出
+    MAJOR = &quot;major&quot;            # 一般：需要修改，但不阻止流程
+    MINOR = &quot;minor&quot;            # 轻微：建议修改
+    INFO = &quot;info&quot;              # 提示：供参考
+
+class ReviewStatus(Enum):
+    &quot;&quot;&quot;审核状态&quot;&quot;&quot;
+    PASS = &quot;pass&quot;              # 通过
+    FAIL = &quot;fail&quot;              # 不通过
+    WARNING = &quot;warning&quot;        # 警告(需人工确认)
+    SKIP = &quot;skip&quot;              # 跳过(规则不适用)
+
+class RuleCategory(Enum):
+    &quot;&quot;&quot;规则类别&quot;&quot;&quot;
+    DATA_COMPLETENESS = &quot;data_completeness&quot;      # 数据完整性
+    LOGIC_CONSISTENCY = &quot;logic_consistency&quot;       # 逻辑一致性
+    FORMAT_COMPLIANCE = &quot;format_compliance&quot;       # 格式规范性
+    STANDARD_LIMIT = &quot;standard_limit&quot;            # 标准限值
+    QC_CHECK = &quot;qc_check&quot;                        # 质控检查
+
+
+@dataclass
+class ReviewIssue:
+    &quot;&quot;&quot;单个审核问题&quot;&quot;&quot;
+    rule_id: str                    # 规则ID
+    rule_name: str                  # 规则名称
+    category: RuleCategory          # 规则类别
+    severity: Severity              # 严重程度
+    status: ReviewStatus            # 审核状态
+    message: str                    # 问题描述
+    location: str                   # 问题定位(如&quot;样品信息-采样日期&quot;)
+    expected_value: Optional[str] = None    # 期望值
+    actual_value: Optional[str] = None      # 实际值
+    suggestion: Optional[str] = None        # 修改建议
+    confidence: float = 1.0                 # 置信度(规则引擎默认1.0)
+    metadata: Dict = field(default_factory=dict)
+
+
+@dataclass
+class ReviewResult:
+    &quot;&quot;&quot;审核结果汇总&quot;&quot;&quot;
+    report_id: str                          # 报告ID
+    review_time: datetime                   # 审核时间
+    total_rules_executed: int               # 执行的规则总数
+    total_rules_passed: int                 # 通过的规则数
+    total_rules_failed: int                 # 不通过的规则数
+    total_rules_warning: int                # 警告的规则数
+    overall_status: ReviewStatus            # 总体审核状态
+    overall_score: float                    # 总体评分(0-100)
+    issues: List[ReviewIssue]               # 问题列表
+    critical_count: int = 0
+    major_count: int = 0
+    minor_count: int = 0
+    review_duration_ms: int = 0             # 审核耗时(毫秒)
+    engine_version: str = &quot;1.0.0&quot;
+
+    @property
+    def summary(self) -&gt; str:
+        return (f&quot;审核完成: 执行{self.total_rules_executed}条规则, &quot;
+                f&quot;通过{self.total_rules_passed}, &quot;
+                f&quot;不通过{self.total_rules_failed}, &quot;
+                f&quot;警告{self.total_rules_warning}, &quot;
+                f&quot;评分{self.overall_score:.1f}&quot;)
+
+
+# ------ 规则基类 ------
+
+class BaseRule(ABC):
+    &quot;&quot;&quot;审核规则基类&quot;&quot;&quot;
+
+    def __init__(self, rule_id: str, rule_name: str,
+                 category: RuleCategory, severity: Severity,
+                 description: str = &quot;&quot;,
+                 applicable_domains: List[str] = None,
+                 applicable_categories: List[str] = None,
+                 universal: bool = True,
+                 enabled: bool = True):
+        self.rule_id = rule_id
+        self.rule_name = rule_name
+        self.category = category
+        self.severity = severity
+        self.description = description
+        self.applicable_domains = applicable_domains or [&quot;ALL&quot;]
+        # 品类绑定：空列表表示该规则属通用集，任何品类都跑
+        self.applicable_categories = applicable_categories or []
+        # universal=False 即「品类专属」：未配置绑定的品类不跑
+        self.universal = universal
+        self.enabled = enabled
+
+    def param(self, context: Dict, key: str, default=None):
+        &quot;&quot;&quot;取当前品类的参数覆盖（绑定表 overrides），缺省回落到规则默认值&quot;&quot;&quot;
+        return (context.get(&quot;overrides&quot;) or {}).get(self.rule_id, {}).get(key, default)
+
+    def is_applicable(self, context: Dict) -&gt; bool:
+        &quot;&quot;&quot;判断规则是否适用于当前报告：品类优先、领域兜底&quot;&quot;&quot;
+        if not self.enabled:
+            return False
+        bindings = context.get(&quot;bindings&quot;) or {}
+        if self.rule_id in bindings:          # 绑定表显式决定跑不跑
+            return bool(bindings[self.rule_id].get(&quot;enabled&quot;, True))
+        if context.get(&quot;universal_only&quot;) and not self.universal:
+            return False                      # 未配置品类：品类专属一律不跑
+        if self.applicable_categories:        # 品类专属规则
+            cat = context.get(&quot;category&quot;, &quot;&quot;)
+            if cat and cat not in self.applicable_categories:
+                return False
+        if &quot;ALL&quot; in self.applicable_domains:
+            return True
+        return context.get(&quot;domain&quot;, &quot;&quot;) in self.applicable_domains
+
+    @abstractmethod
+    def execute(self, report_data: Dict, context: Dict) -&gt; ReviewIssue:
+        &quot;&quot;&quot;执行审核规则&quot;&quot;&quot;
+        pass
+
+    def _pass(self, message: str = &quot;检查通过&quot;) -&gt; ReviewIssue:
+        return ReviewIssue(
+            rule_id=self.rule_id,
+            rule_name=self.rule_name,
+            category=self.category,
+            severity=self.severity,
+            status=ReviewStatus.PASS,
+            message=message,
+            location=&quot;&quot;
+        )
+
+    def _fail(self, message: str, location: str = &quot;&quot;,
+              expected: str = None, actual: str = None,
+              suggestion: str = None) -&gt; ReviewIssue:
+        return ReviewIssue(
+            rule_id=self.rule_id,
+            rule_name=self.rule_name,
+            category=self.category,
+            severity=self.severity,
+            status=ReviewStatus.FAIL,
+            message=message,
+            location=location,
+            expected_value=expected,
+            actual_value=actual,
+            suggestion=suggestion
+        )
+
+    def _warning(self, message: str, location: str = &quot;&quot;,
+                 suggestion: str = None) -&gt; ReviewIssue:
+        return ReviewIssue(
+            rule_id=self.rule_id,
+            rule_name=self.rule_name,
+            category=self.category,
+            severity=self.severity,
+            status=ReviewStatus.WARNING,
+            message=message,
+            location=location,
+            suggestion=suggestion
+        )
+
+
+</code></pre>
+<pre lang="python" caption="审核规则引擎 · 具体规则实现示例（2 / 3，品类绑定版 v0.2）"><code># ------ 具体规则实现示例 ------
+
+class SampleInfoCompletenessRule(BaseRule):
+    &quot;&quot;&quot;A01: 样品信息完整性检查&quot;&quot;&quot;
+
+    REQUIRED_FIELDS = [
+        (&quot;sample_id&quot;, &quot;样品编号&quot;),
+        (&quot;sample_name&quot;, &quot;样品名称&quot;),
+        (&quot;client_name&quot;, &quot;委托单位&quot;),
+        (&quot;receive_date&quot;, &quot;收样日期&quot;),
+        (&quot;sample_status&quot;, &quot;样品状态&quot;),
+        (&quot;test_standard&quot;, &quot;检测依据&quot;),
+    ]
+
+    def __init__(self):
+        super().__init__(
+            rule_id=&quot;A01&quot;,
+            rule_name=&quot;样品信息完整性检查&quot;,
+            category=RuleCategory.DATA_COMPLETENESS,
+            severity=Severity.CRITICAL,
+            description=&quot;检查样品基本信息是否完整填写&quot;
+        )
+
+    def execute(self, report_data: Dict, context: Dict) -&gt; ReviewIssue:
+        sample_info = report_data.get(&quot;sample_info&quot;, {})
+        missing_fields = []
+
+        for field_key, field_name in self.REQUIRED_FIELDS:
+            value = sample_info.get(field_key)
+            if value is None or (isinstance(value, str) and value.strip() == &quot;&quot;):
+                missing_fields.append(field_name)
+
+        if missing_fields:
+            return self._fail(
+                message=f&quot;样品信息缺少以下必填项: {&#x27;, &#x27;.join(missing_fields)}&quot;,
+                location=&quot;样品信息&quot;,
+                expected=&quot;所有必填字段均已填写&quot;,
+                actual=f&quot;缺少 {len(missing_fields)} 个必填字段&quot;,
+                suggestion=f&quot;请补充填写: {&#x27;, &#x27;.join(missing_fields)}&quot;
+            )
+        return self._pass(&quot;样品信息完整性检查通过&quot;)
+
+
+class DateLogicRule(BaseRule):
+    &quot;&quot;&quot;B01: 时间逻辑检查&quot;&quot;&quot;
+
+    def __init__(self):
+        super().__init__(
+            rule_id=&quot;B01&quot;,
+            rule_name=&quot;时间逻辑一致性检查&quot;,
+            category=RuleCategory.LOGIC_CONSISTENCY,
+            severity=Severity.CRITICAL,
+            description=&quot;检查各时间节点的逻辑顺序是否正确&quot;
+        )
+
+    def execute(self, report_data: Dict, context: Dict) -&gt; ReviewIssue:
+        sample_info = report_data.get(&quot;sample_info&quot;, {})
+        issues = []
+
+        sampling_date = sample_info.get(&quot;sampling_date&quot;)
+        receive_date = sample_info.get(&quot;receive_date&quot;)
+        test_date = sample_info.get(&quot;test_date&quot;)
+        report_date = sample_info.get(&quot;report_date&quot;)
+
+        # 解析日期
+        def parse_date(date_str):
+            if isinstance(date_str, datetime):
+                return date_str
+            if isinstance(date_str, str):
+                try:
+                    return datetime.strptime(date_str, &quot;%Y-%m-%d&quot;)
+                except ValueError:
+                    return None
+            return None
+
+        dates = {
+            &quot;采样日期&quot;: parse_date(sampling_date),
+            &quot;收样日期&quot;: parse_date(receive_date),
+            &quot;检测日期&quot;: parse_date(test_date),
+            &quot;报告日期&quot;: parse_date(report_date),
+        }
+
+        # 检查时间顺序
+        if dates[&quot;采样日期&quot;] and dates[&quot;收样日期&quot;]:
+            if dates[&quot;采样日期&quot;] &gt; dates[&quot;收样日期&quot;]:
+                issues.append(&quot;采样日期晚于收样日期&quot;)
+
+        if dates[&quot;收样日期&quot;] and dates[&quot;检测日期&quot;]:
+            if dates[&quot;收样日期&quot;] &gt; dates[&quot;检测日期&quot;]:
+                issues.append(&quot;收样日期晚于检测日期&quot;)
+
+        if dates[&quot;检测日期&quot;] and dates[&quot;报告日期&quot;]:
+            if dates[&quot;检测日期&quot;] &gt; dates[&quot;报告日期&quot;]:
+                issues.append(&quot;检测日期晚于报告日期&quot;)
+
+        # 检查日期合理性(不能是未来日期)
+        now = datetime.now()
+        for name, d in dates.items():
+            if d and d &gt; now:
+                issues.append(f&quot;{name}为未来日期({d.strftime(&#x27;%Y-%m-%d&#x27;)})&quot;)
+
+        if issues:
+            return self._fail(
+                message=f&quot;时间逻辑异常: {&#x27;; &#x27;.join(issues)}&quot;,
+                location=&quot;日期信息&quot;,
+                suggestion=&quot;请检查并修正日期信息&quot;
+            )
+        return self._pass(&quot;时间逻辑检查通过&quot;)
+
+
+class ParallelSampleDeviationRule(BaseRule):
+    &quot;&quot;&quot;A03-2: 平行试样组数与相对偏差检查（品类参数化）&quot;&quot;&quot;
+
+    def __init__(self, max_deviation: float = 20.0, universal: bool = False):
+        super().__init__(
+            universal=universal,
+            rule_id=&quot;A03-2&quot;,
+            rule_name=&quot;平行样相对偏差检查&quot;,
+            category=RuleCategory.QC_CHECK,
+            severity=Severity.MAJOR,
+            description=&quot;检查平行样测定结果的相对偏差是否在允许范围内&quot;
+        )
+        self.max_deviation = max_deviation
+
+    def execute(self, report_data: Dict, context: Dict) -&gt; ReviewIssue:
+        qc_data = report_data.get(&quot;qc_data&quot;, {})
+        parallel_samples = qc_data.get(&quot;parallel_samples&quot;, [])
+
+        required = self.param(context, &quot;parallel_count&quot;)   # 品类参数：如螺栓 8 套
+        if required and 0 &lt; len(parallel_samples) &lt; required:
+            return self._fail(
+                message=f&quot;平行测定组数 {len(parallel_samples)} 少于该品类要求 {required}&quot;,
+                location=&quot;质控数据-平行样&quot;,
+                expected=f&quot;不少于 {required} 组&quot;, actual=f&quot;{len(parallel_samples)} 组&quot;,
+                suggestion=&quot;按所引标准补足试样后重新判定&quot;)
+
+        if not parallel_samples:
+            # 检查是否需要做平行样
+            if context.get(&quot;requires_parallel&quot;, False):
+                return self._fail(
+                    message=&quot;需要平行样数据但未找到&quot;,
+                    location=&quot;质控数据-平行样&quot;,
+                    suggestion=&quot;请补充平行样检测数据&quot;
+                )
+            return ReviewIssue(
+                rule_id=self.rule_id, rule_name=self.rule_name,
+                category=self.category, severity=self.severity,
+                status=ReviewStatus.SKIP,
+                message=&quot;无平行样数据,规则跳过&quot;,
+                location=&quot;质控数据&quot;
+            )
+
+        failed_items = []
+        for ps in parallel_samples:
+            param_name = ps.get(&quot;parameter&quot;, &quot;未知参数&quot;)
+            val1 = ps.get(&quot;value1&quot;)
+            val2 = ps.get(&quot;value2&quot;)
+
+            if val1 is not None and val2 is not None:
+                avg = (val1 + val2) / 2
+                if avg != 0:
+                    deviation = abs(val1 - val2) / avg * 100
+                    max_dev = ps.get(&quot;max_deviation&quot;,
+                                    self.param(context, &quot;max_deviation&quot;, self.max_deviation))
+                    if deviation &gt; max_dev:
+                        failed_items.append(
+                            f&quot;{param_name}: 偏差{deviation:.1f}% &gt; {max_dev}%&quot;
+                        )
+
+        if failed_items:
+            return self._fail(
+                message=f&quot;平行样偏差超限: {&#x27;; &#x27;.join(failed_items)}&quot;,
+                location=&quot;质控数据-平行样&quot;,
+                expected=f&quot;相对偏差 ≤ {self.max_deviation}%&quot;,
+                actual=&#x27;; &#x27;.join(failed_items),
+                suggestion=&quot;请检查平行样数据,必要时重新检测&quot;
+            )
+        return self._pass(&quot;平行样偏差检查通过&quot;)
+
+
+class SignificantFiguresRule(BaseRule):
+    &quot;&quot;&quot;C01-1: 有效数字位数检查&quot;&quot;&quot;
+
+    def __init__(self):
+        super().__init__(
+            rule_id=&quot;C01-1&quot;,
+            rule_name=&quot;有效数字位数检查&quot;,
+            category=RuleCategory.FORMAT_COMPLIANCE,
+            severity=Severity.MINOR,
+            description=&quot;检查检测结果的有效数字位数是否符合标准要求&quot;
+        )
+
+    def execute(self, report_data: Dict, context: Dict) -&gt; ReviewIssue:
+        test_results = report_data.get(&quot;test_results&quot;, [])
+        issues = []
+
+        for result in test_results:
+            param_name = result.get(&quot;parameter&quot;, &quot;&quot;)
+            value = result.get(&quot;value&quot;)
+            required_sf = result.get(&quot;significant_figures&quot;)  # 标准要求的有效数字位数
+
+            if value is not None and required_sf is not None:
+                actual_sf = self._count_significant_figures(str(value))
+                if actual_sf != required_sf:
+                    issues.append(
+                        f&quot;{param_name}: 实际{actual_sf}位, 要求{required_sf}位&quot;
+                    )
+
+        if issues:
+            return self._fail(
+                message=f&quot;有效数字位数不符: {&#x27;; &#x27;.join(issues[:5])}&quot;,
+                location=&quot;检测结果&quot;,
+                suggestion=&quot;请按标准要求修正有效数字位数&quot;
+            )
+        return self._pass(&quot;有效数字位数检查通过&quot;)
+
+    @staticmethod
+    def _count_significant_figures(value_str: str) -&gt; int:
+        &quot;&quot;&quot;计算有效数字位数&quot;&quot;&quot;
+        value_str = value_str.strip()
+        if &#x27;e&#x27; in value_str.lower():
+            mantissa = value_str.lower().split(&#x27;e&#x27;)[0]
+            return len(mantissa.replace(&#x27;.&#x27;, &#x27;&#x27;).replace(&#x27;-&#x27;, &#x27;&#x27;).lstrip(&#x27;0&#x27;))
+
+        value_str = value_str.replace(&#x27;-&#x27;, &#x27;&#x27;)
+        if &#x27;.&#x27; in value_str:
+            integer_part, decimal_part = value_str.split(&#x27;.&#x27;)
+            if integer_part.lstrip(&#x27;0&#x27;) == &#x27;&#x27; or integer_part == &#x27;0&#x27;:
+                return len(decimal_part.lstrip(&#x27;0&#x27;))
+            else:
+                return len(integer_part.lstrip(&#x27;0&#x27;)) + len(decimal_part)
+        else:
+            return len(value_str.strip(&#x27;0&#x27;)) if value_str != &#x27;0&#x27; else 1
+
+
+class StandardLimitCheckRule(BaseRule):
+    &quot;&quot;&quot;D01: 标准限值自动判定（属 M2 的 D 类，不在 M1 台账 45 条内）&quot;&quot;&quot;
+
+    def __init__(self):
+        super().__init__(
+            rule_id=&quot;D01&quot;,
+            rule_name=&quot;标准限值合格判定&quot;,
+            category=RuleCategory.STANDARD_LIMIT,
+            severity=Severity.CRITICAL,
+            description=&quot;将检测结果与标准限值进行比对,自动判定合格/不合格&quot;
+        )
+
+    def execute(self, report_data: Dict, context: Dict) -&gt; ReviewIssue:
+        test_results = report_data.get(&quot;test_results&quot;, [])
+        standard_limits = context.get(&quot;standard_limits&quot;, {})
+        misjudgments = []
+
+        for result in test_results:
+            param = result.get(&quot;parameter&quot;, &quot;&quot;)
+            value = result.get(&quot;value&quot;)
+            reported_judgment = result.get(&quot;judgment&quot;, &quot;&quot;)  # 报告中的判定
+            
+            limit_info = standard_limits.get(param)
+            if not limit_info or value is None:
+                continue
+
+            # 计算应有的判定结果
+            correct_judgment = self._judge(value, limit_info)
+            
+            if reported_judgment and reported_judgment != correct_judgment:
+                misjudgments.append(
+                    f&quot;{param}: 检测值{value}, 限值{limit_info}, &quot;
+                    f&quot;报告判定&#x27;{reported_judgment}&#x27;, 应为&#x27;{correct_judgment}&#x27;&quot;
+                )
+
+        if misjudgments:
+            return self._fail(
+                message=f&quot;合格判定可能有误: {&#x27;; &#x27;.join(misjudgments)}&quot;,
+                location=&quot;检测结果-合格判定&quot;,
+                suggestion=&quot;请核实检测结果与标准限值的比对判定&quot;
+            )
+        return self._pass(&quot;标准限值判定检查通过&quot;)
+
+    @staticmethod
+    def _judge(value: float, limit_info: Dict) -&gt; str:
+        &quot;&quot;&quot;根据限值信息判定合格/不合格&quot;&quot;&quot;
+        limit_type = limit_info.get(&quot;type&quot;, &quot;max&quot;)  # max/min/range
+        
+        if limit_type == &quot;max&quot;:
+            limit_val = limit_info.get(&quot;max_value&quot;)
+            return &quot;合格&quot; if value &lt;= limit_val else &quot;不合格&quot;
+        elif limit_type == &quot;min&quot;:
+            limit_val = limit_info.get(&quot;min_value&quot;)
+            return &quot;合格&quot; if value &gt;= limit_val else &quot;不合格&quot;
+        elif limit_type == &quot;range&quot;:
+            min_val = limit_info.get(&quot;min_value&quot;)
+            max_val = limit_info.get(&quot;max_value&quot;)
+            return &quot;合格&quot; if min_val &lt;= value &lt;= max_val else &quot;不合格&quot;
+        return &quot;无法判定&quot;
+
+
+</code></pre>
+<pre lang="python" caption="审核规则引擎 · 引擎、默认规则注册与三组对照示例（3 / 3，品类绑定版 v0.2）"><code># ------ 审核引擎 ------
+
+class ReviewEngine:
+    &quot;&quot;&quot;审核规则引擎&quot;&quot;&quot;
+
+    def __init__(self):
+        self.rules: List[BaseRule] = []
+        self.version = &quot;1.0.0&quot;
+
+    def register_rule(self, rule: BaseRule):
+        &quot;&quot;&quot;注册审核规则&quot;&quot;&quot;
+        self.rules.append(rule)
+        # 按优先级排序: CRITICAL &gt; MAJOR &gt; MINOR &gt; INFO
+        priority = {Severity.CRITICAL: 0, Severity.MAJOR: 1,
+                    Severity.MINOR: 2, Severity.INFO: 3}
+        self.rules.sort(key=lambda r: priority.get(r.severity, 99))
+
+    def register_rules(self, rules: List[BaseRule]):
+        for rule in rules:
+            self.register_rule(rule)
+
+    def execute_review(self, report_data: Dict, context: Dict = None) -&gt; ReviewResult:
+        &quot;&quot;&quot;执行完整的审核流程&quot;&quot;&quot;
+        import time
+        start_time = time.time()
+        
+        context = context or {}
+        issues: List[ReviewIssue] = []
+
+        # 品类解析：绑定表决定启用与参数；未配置品类只跑通用集并给出可见提示
+        category = (report_data.get(&quot;sample_info&quot;) or {}).get(&quot;category_code&quot;, &quot;&quot;)
+        context[&quot;category&quot;] = category
+        context.setdefault(&quot;bindings&quot;, {})
+        if category and not context[&quot;bindings&quot;]:
+            issues.append(ReviewIssue(
+                rule_id=&quot;CAT-UNCAT-01&quot;, rule_name=&quot;品类未配置规则绑定&quot;,
+                category=RuleCategory.DATA_COMPLETENESS, severity=Severity.INFO,
+                status=ReviewStatus.WARNING,
+                message=f&quot;品类 {category} 未配置专属规则，本次仅执行通用集 28 条&quot;,
+                location=&quot;品类绑定&quot;,
+                suggestion=&quot;在规则台账为该品类补 17 行品类专属绑定&quot;))
+            context[&quot;universal_only&quot;] = True
+        else:
+            context[&quot;overrides&quot;] = {rid: b.get(&quot;overrides&quot;, {})
+                                    for rid, b in context[&quot;bindings&quot;].items()}
+        passed = 0
+        failed = 0
+        warnings = 0
+        skipped = 0
+
+        for rule in self.rules:
+            # 检查规则是否适用
+            if not rule.is_applicable(context):
+                skipped += 1
+                continue
+
+            try:
+                issue = rule.execute(report_data, context)
+                issues.append(issue)
+
+                if issue.status == ReviewStatus.PASS:
+                    passed += 1
+                elif issue.status == ReviewStatus.FAIL:
+                    failed += 1
+                elif issue.status == ReviewStatus.WARNING:
+                    warnings += 1
+                elif issue.status == ReviewStatus.SKIP:
+                    skipped += 1
+
+            except Exception as e:
+                # 规则执行异常,记录但不阻断
+                issues.append(ReviewIssue(
+                    rule_id=rule.rule_id,
+                    rule_name=rule.rule_name,
+                    category=rule.category,
+                    severity=Severity.INFO,
+                    status=ReviewStatus.WARNING,
+                    message=f&quot;规则执行异常: {str(e)}&quot;,
+                    location=&quot;系统&quot;,
+                    suggestion=&quot;请联系系统管理员&quot;
+                ))
+                warnings += 1
+
+        # 计算总体结果
+        executed = passed + failed + warnings
+        critical_count = sum(1 for i in issues
+                           if i.status == ReviewStatus.FAIL
+                           and i.severity == Severity.CRITICAL)
+        major_count = sum(1 for i in issues
+                         if i.status == ReviewStatus.FAIL
+                         and i.severity == Severity.MAJOR)
+        minor_count = sum(1 for i in issues
+                         if i.status == ReviewStatus.FAIL
+                         and i.severity == Severity.MINOR)
+
+        # 总体状态判定
+        if critical_count &gt; 0:
+            overall_status = ReviewStatus.FAIL
+        elif major_count &gt; 0 or warnings &gt; 0:
+            overall_status = ReviewStatus.WARNING
+        else:
+            overall_status = ReviewStatus.PASS
+
+        # 评分计算 (100分制)
+        score = 100.0
+        score -= critical_count * 20  # 每个严重问题扣20分
+        score -= major_count * 10     # 每个一般问题扣10分
+        score -= minor_count * 3      # 每个轻微问题扣3分
+        score = max(0, score)
+
+        elapsed_ms = int((time.time() - start_time) * 1000)
+
+        return ReviewResult(
+            report_id=report_data.get(&quot;report_id&quot;, &quot;unknown&quot;),
+            review_time=datetime.now(),
+            total_rules_executed=executed,
+            total_rules_passed=passed,
+            total_rules_failed=failed,
+            total_rules_warning=warnings,
+            overall_status=overall_status,
+            overall_score=score,
+            issues=[i for i in issues if i.status != ReviewStatus.PASS],  # 只返回有问题的
+            critical_count=critical_count,
+            major_count=major_count,
+            minor_count=minor_count,
+            review_duration_ms=elapsed_ms,
+            engine_version=self.version
+        )
+
+
+# ------ 引擎初始化与使用示例 ------
+
+def create_default_engine() -&gt; ReviewEngine:
+    &quot;&quot;&quot;创建默认规则引擎(含所有标准规则)&quot;&quot;&quot;
+    engine = ReviewEngine()
+    engine.register_rules([
+        SampleInfoCompletenessRule(),
+        DateLogicRule(),
+        ParallelSampleDeviationRule(universal=False),   # A03-2 属品类专属，见 3.9
+        SignificantFiguresRule(),
+        StandardLimitCheckRule(),
+        # ... 更多规则
+    ])
+    return engine
+
+
+# 使用示例（示例领域：电网物资——高强度螺栓连接副抽检）
+if __name__ == &quot;__main__&quot;:
+    engine = create_default_engine()
+
+    # 模拟报告数据：输电线路铁塔用钢结构高强度螺栓连接副 10.9级 M20
+    report_data = {
+        &quot;report_id&quot;: &quot;DQ-2026-00871&quot;,
+        &quot;sample_info&quot;: {
+            &quot;sample_id&quot;: &quot;S-2026-00871&quot;,
+            &quot;sample_name&quot;: &quot;钢结构用高强度大六角头螺栓连接副 10.9级 M20&quot;,
+            &quot;client_name&quot;: &quot;XX电力物资有限公司&quot;,
+            &quot;receive_date&quot;: &quot;2026-10-28&quot;,
+            &quot;sampling_date&quot;: &quot;2026-10-27&quot;,
+            &quot;test_date&quot;: &quot;2026-10-30&quot;,
+            &quot;report_date&quot;: &quot;2026-11-02&quot;,
+            &quot;sample_status&quot;: &quot;正常，封样完好&quot;,
+            &quot;category_code&quot;: &quot;CAT-BOLT&quot;,
+            &quot;test_standard&quot;: &quot;GB/T 1231-2010&quot;,
+        },
+        &quot;test_results&quot;: [
+            {&quot;parameter&quot;: &quot;抗拉强度&quot;, &quot;value&quot;: 1043.6, &quot;unit&quot;: &quot;MPa&quot;,
+             &quot;judgment&quot;: &quot;合格&quot;, &quot;significant_figures&quot;: 4},
+            {&quot;parameter&quot;: &quot;扭矩系数&quot;, &quot;value&quot;: 0.131,
+             &quot;judgment&quot;: &quot;合格&quot;, &quot;significant_figures&quot;: 3},
+            {&quot;parameter&quot;: &quot;硬度&quot;, &quot;value&quot;: 35.2, &quot;unit&quot;: &quot;HRC&quot;,
+             &quot;judgment&quot;: &quot;合格&quot;, &quot;significant_figures&quot;: 3},
+        ],
+        &quot;qc_data&quot;: {
+            &quot;parallel_samples&quot;: [
+                # 同一批连接副取两组做扭矩系数平行测定
+                {&quot;parameter&quot;: &quot;扭矩系数&quot;, &quot;value1&quot;: 0.102, &quot;value2&quot;: 0.152,
+                 &quot;max_deviation&quot;: 10},
+            ]
+        }
+    }
+
+    context = {
+        &quot;domain&quot;: &quot;grid_material&quot;,
+        &quot;standard_limits&quot;: {
+            # 10.9 级：GB/T 3098.1 规定 Rm &gt;= 1000 MPa，硬度 HRC 32~39
+            &quot;抗拉强度&quot;: {&quot;type&quot;: &quot;min&quot;, &quot;min_value&quot;: 1000},
+            &quot;硬度&quot;: {&quot;type&quot;: &quot;range&quot;, &quot;min_value&quot;: 32.0, &quot;max_value&quot;: 39.0},
+            # GB/T 1231 规定扭矩系数平均值 0.110~0.150
+            &quot;扭矩系数&quot;: {&quot;type&quot;: &quot;range&quot;, &quot;min_value&quot;: 0.110, &quot;max_value&quot;: 0.150},
+        },
+        &quot;requires_parallel&quot;: True,
+        # 品类绑定（来自 ai_review_category_bindings，见 3.9）
+        &quot;bindings&quot;: {
+            &quot;A03-2&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {&quot;parallel_count&quot;: 8, &quot;max_deviation&quot;: 10}},
+            &quot;A01&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {}},
+            &quot;B01&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {}},
+            &quot;C01-1&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {}},
+            &quot;D01&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {}},
+        },
+    }
+
+    result = engine.execute_review(report_data, context)
+    print(result.summary)
+    for issue in result.issues:
+        print(f&quot;  [{issue.severity.value}] {issue.rule_name}: {issue.message}&quot;)
+    # 对照一：未配置绑定的品类（如电缆保护管）只跑通用集，并给出可见提示
+    ctx_unbound = dict(context); ctx_unbound[&quot;bindings&quot;] = {}
+    r2 = engine.execute_review(report_data, ctx_unbound)
+    print(&quot;\n[未配置品类对照] &quot; + r2.summary)
+    for issue in r2.issues:
+        print(f&quot;  [{issue.severity.value}] {issue.rule_name}: {issue.message}&quot;)
+
+    # 对照二：绝缘手套逐只试验，A03-2 由绑定显式停用
+    ctx_glove = dict(context)
+    ctx_glove[&quot;bindings&quot;] = {&quot;A03-2&quot;: {&quot;enabled&quot;: False},
+                             &quot;B01-3&quot;: {&quot;enabled&quot;: True, &quot;overrides&quot;: {&quot;cycle_months&quot;: 6}}}
+    r3 = engine.execute_review(report_data, ctx_glove)
+    print(&quot;\n[绝缘手套对照] &quot; + r3.summary + &quot;  # A03-2 被绑定停用，故只执行 4 条&quot;)
+</code></pre>
