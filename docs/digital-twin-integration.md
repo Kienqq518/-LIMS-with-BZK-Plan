@@ -178,4 +178,6 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 `GET /api/overview/lab-status` 的 `panels.testItems` 中 **本日** 的 `testing/pending/done` 与 **全部周期** 的 `overdue/dueSoon` 均由该清单现算（`overdue = 未完成 && dueInHours<0`，`dueSoon = 未完成 && 0≤dueInHours≤72`），逾期/临期为现在时指标、不随周期变化。
 **路由顺序坑（第二次踩）**：具名端点必须排在通用 `/api/overview/([\w-]+)` 之前，否则 `test-item-plan` 会被当成分区字段返回 null。
 
+**画质指令**：`twin-v2/quality{level:'high'|'low'}` 的事实源是宿主状态推送（每 2s 随 `state` 覆盖），入口不再是界面按钮而是交付参数 `?quality=low`；不要用单独一条 `quality` 指令做验证（会被下一次 state 覆盖）。
+
 **待补（下一步）**：`host:setAutoRoam`（讲解用自动巡航，默认关）、`scene:waypointClick{waypointId}`（折线拐点拾取，标记已渲染）、`requestId + ack + 3s 超时重试` 信封。

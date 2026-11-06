@@ -147,6 +147,10 @@ method: GitHub skill `chituai/prd-writer`（三视角诊断→概念版→落地
   （begin → view → drill），实测画面半高 14.2 → 8.2 连续 7 帧、蓝色轮廓可见构件 **0/40**，动效没有损失。
 - FR-19a【2026-11-06 新增】**「收起底栏」= 底部整片让位**：今日任务表 + 机器人状态条 + 底部说明条一起消失（原来只收表格、机器人条还留着，被指出不对）；状态进 URL（`strip=1`），刷新/分享后保持。
 - FR-19【2026-11-06 新增】右上角常驻时钟：`YYYY-MM-DD HH:MM:SS 周X`，每秒走字，等宽数字不抖动；不依赖数据加载（数据挂了时钟也要对）。
+- FR-22【2026-11-06 新增】**全屏演示**：顶栏动作组以「全屏」图标按钮替代原「低配」按钮；点击进入/退出全屏（含 webkit 前缀回退），文案在 `全屏 ↔ 退出全屏` 间切换、`aria-pressed` 与 `body[data-full]` 同步，快捷键 `F` 同样可切换；全屏后浮层仍贴边（实测 rail x=14、stream 右边距 16）。
+- FR-20a【2026-11-06 补充】**低配按钮从大屏移除**（产品负责人反馈），但**能力保留**为交付参数 `?quality=low`（场景侧 `setQuality`：关 Reflector、pixelRatio→1、动画环降帧、光点静态）。
+  这仍满足决策 Q8「要预留低配模式」——预留方式由界面按钮改为部署/链接参数，现场降配不影响演示界面的整洁。
+  注意：`quality` 的事实源是宿主状态推送（每 2s 覆盖），不要用瞬态指令验证该能力。
 - FR-21【2026-11-06 新增】Mock 数据必须**由清单推导**：`/api/overview/test-item-plan` 提供 37 条在办试验项目（`status` + `dueInHours`＝距 LIMS 要求完成时间的小时数，负数=逾期），
   `lab-status.panels.testItems` 的本日在测/待检/已完成与全部周期的逾期/临期都由它现算；自动化断言「接口值 == 独立重算的清单值」。
 - FR-20【2026-11-06 新增】**移除左栏底部的数据源胶囊、draw calls/tris/fps 读数、风格预览入口**（产品负责人反馈）。诚实口径不丢：来源与更新时间改为写进每张表的表头；性能读数改为只在调试需要时看（不再常驻占位）。避让校验徽标保留（它是红线证据）。
@@ -493,6 +497,7 @@ flowchart TD
 
 | **新增 ✅已上线** | 行进范围与避让（FR-12） | `twin/api/seed.json`、`twin-scene-bridge.js`、`twin-scene-v2.{html,css,js}` | 删手绘环线；路线由 CAD 占地 A* 推导；家位挪出设备；场景内 3758 点逐段校验 + 左栏徽标 | routecheck 7 项全绿（违规 0） |
 | **新增 ✅已上线** | 透明浮层三处 + 下钻/切近补间 + 实体信息卡 + 无人化循环剧本 + 图层 icon 化 + 系统流移除（§5.9、FR-13~FR-17） | `twin-scene-v2.{html,css,js}`、`twin-scene-bridge.js`、`whiteblue-spatial-engine.js`、`twin-api-mock.js`、`seed.json` | 玻璃浮层+现算图表；`camera:begin/focus-scene/view/drill` 序列与视锥比例补间；`pan` 指令；剧本时钟 | uxcheck 38 项 + smoke 35 项 + reduced-motion 4 项全绿 |
+| **新增 ✅已上线** | 全屏按钮（含 F 快捷键）替代低配按钮；低配能力保留为 `?quality=low` | `twin-scene-v2.{html,css,js}` | `requestFullscreen` + webkit 回退 + `fullscreenchange` 同步；URL 参数路径不变 | fscheck 14✅（进入/退出/文案/aria/data-full/浮层贴边/F 键/?quality=low 生效） |
 | **新增 ✅已上线** | 逾期/临期改为 LIMS 口径 + 由在办清单推导（FR-21）；「收起底栏」连带机器人状态条与说明条（FR-19a） | `seed.json`(testItemPlan)、`twin-api-mock.js`、`twin-scene-v2.{html,js}` | 37 条在办清单 dueInHours 推导；行内 LIMS 角标 + hover 明细；URL 图层参数去掉已删的 zones | plancheck 7✅ · collapsec 7✅ · kpicheck 16✅ · smoke 35✅ · uxcheck 39✅ · zone-panel 30✅ |
 | **新增 ✅已上线** | 左栏四张数据表 + 右上角时钟 + 移除数据源/性能/风格预览块（§2.2、FR-19/FR-20） | `twin-scene-v2.{html,css,js}`、`twin/api/seed.json` | panels 四表（含分类占比、逾期/临期、阻塞拆分）；时钟秒级；来源+更新时间进表头 | kpicheck 16 项全绿（含数字自洽断言） |
 | **新增 ✅已上线** | 首屏机位固定 + 视角指令排队（FR-10/FR-11） | `visual-106-whiteblue.js`、`scene-group-highlight-v3-1.js`、`twin-scene-v2.js` | 视角表 overall-101 改 [-1.05,.6]；CAMERA 同步；sceneCmd view 就绪前入队 | camcheck 4 项断言（RMSE 37px、URL 恢复生效） |
@@ -505,6 +510,7 @@ flowchart TD
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| 2.10 | 2026-11-06 | 【本次更新】FR-22 全屏图标按钮与功能（F 快捷键、状态同步、全屏下浮层贴边）；FR-20a 低配按钮从界面移除、能力保留为交付参数 `?quality=low`（Q8 决策的预留方式相应说明） |
 | 2.9 | 2026-11-06 | 【本次更新】逾期/临期(3天内) 口径落到 LIMS「要求检测完成时间」（当前 Mock）：新增 `testItemPlan` 37 条在办清单 + `/api/overview/test-item-plan`，屏上数值由清单推导且为现在时口径（不随周期变化），行内 LIMS 角标 + hover 明细；「收起底栏」连带机器人状态条与底部说明条一起隐藏；URL 去掉已删的 zones 图层 |
 | 2.8 | 2026-11-06 | 【本次更新】§2.2 重写为四张数据表（委托含分类占比、样品/试验项目改多维度并标注逾期与临期3天内、调度拆阻塞已解决/未解决、报告份数下线）；新增 FR-19 右上角时钟、FR-20 移除数据源胶囊/draw calls/风格预览（来源与更新时间进表头）；修复 tickClock 在 var 提升期调用导致整页初始化中断、以及切片误删 #alarmSum 两处问题 |
 | 2.7 | 2026-11-06 | 【本次更新】回退分组抬升（focus-scene）：它给每个房间描蓝框，满屏轮廓不是产品想要的效果；下钻改为纯相机补间（实测半高 14.2→8.2 连续、蓝框可见构件 0/40）。循环剧本指示改宿主按秒自算，消除 UI 滞后一拍 |

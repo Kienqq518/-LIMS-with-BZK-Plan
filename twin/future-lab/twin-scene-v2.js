@@ -437,12 +437,28 @@
     if (zone && zone !== st.zone) { st.zone = zone; $('#detail').hidden = true; clearInterval(rtTimer); detailDev = null; }  /* 换区域即收起上一区域的详情，避免串区 */
     applyAll(); flashHint();
   }
+  var FS = ['requestFullscreen', 'webkitRequestFullscreen', 'webkitEnterFullscreen'];
+  function isFull() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function toggleFullscreen() {
+    var el = document.documentElement;
+    if (isFull()) { var x = document.exitFullscreen || document.webkitExitFullscreen; if (x) x.call(document); }
+    else { for (var i = 0; i < FS.length; i++) { if (typeof el[FS[i]] === 'function') { var q = el[FS[i]](); if (q && q.catch) q.catch(function () { flashHint('浏览器拒绝了全屏请求'); }); break; } } }
+  }
+  function syncFs() {
+    var b = $('#fsBtn'); if (!b) return;
+    var on = isFull();
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.classList.toggle('active', on);
+    var t = b.querySelector('.fs-t'); if (t) t.textContent = on ? '退出全屏' : '全屏';
+    document.body.dataset.full = on ? '1' : '0';
+  }
   function handleKey(k) {
     if (k === 'PageDown') step(1);
     else if (k === 'PageUp') step(-1);
     else if (k === 'Home' || k === '1') setMode('S1');
     else if (k === 'End' || k === '3') setMode('S3');
     else if (k === '2') setMode('ZONE', '106');
+    else if (k === 'f' || k === 'F') toggleFullscreen();
     else if (k === 'Escape') { $('#detail').hidden = true; clearInterval(rtTimer); toScene('camera', { action: 'reset' }); }
     else return false;
     flashHint(); return true;
@@ -476,10 +492,10 @@
       flashHint(b.getAttribute('desc') + '：' + (st.layers[k] ? '开' : '关'));
     }; });
     $('#stripBtn').onclick = function () { st.strip = st.strip ? 0 : 1; applyAll(); };
-    $('#lowBtn').onclick = function () {
-      st.quality = st.quality === 'low' ? 'high' : 'low'; this.classList.toggle('active', st.quality === 'low'); this.setAttribute('aria-pressed', st.quality === 'low');
-      toScene('quality', { level: st.quality }); pushState(); writeURL(); flashHint('低配模式：' + (st.quality === 'low' ? '开（关反射·降材质·降帧）' : '关'));
-    };
+    /* 低配按钮按 2026-11-06 反馈从大屏移除；能力保留为交付参数 ?quality=low（场景侧 setQuality 仍生效），
+       现场要降配时用链接或部署配置，不占演示界面。 */
+    $('#fsBtn').onclick = toggleFullscreen;
+    document.addEventListener('fullscreenchange', syncFs);
     $('#detailClose').onclick = function () { $('#detail').hidden = true; clearInterval(rtTimer); detailDev = null; };
     /* 遥控翻页（决策 Q1：售前投影 + 翻页笔）。只吃 PgUp/PgDn/Home/End/1·2·3/Esc；
        方向键留给场景相机，避免与三维漫游打架。焦点在 iframe 内时由桥接层转发 remote 消息。 */
@@ -554,7 +570,7 @@
 
   function syncLayerMenu() {
     document.querySelectorAll('.lic').forEach(function (b) { b.classList.toggle('on', !!st.layers[b.dataset.layer]); b.setAttribute('aria-pressed', !!st.layers[b.dataset.layer]); });
-    if (st.quality === 'low') { $('#lowBtn').classList.add('active'); $('#lowBtn').setAttribute('aria-pressed', 'true'); }
+    syncFs();
     document.querySelectorAll('.seg').forEach(function (b) { b.classList.toggle('active', b.dataset.period === st.period); });
     document.querySelectorAll('.mini').forEach(function (b) { b.classList.toggle('active', b.dataset.alarmfilter === st.alarmFilter); });
   }
