@@ -1,0 +1,35 @@
+<h2>3.9 品类规则绑定（规则 × 品类）</h2>
+<p>动因来自 3.2.1 的 A03：同一条「质控数据完整性」在不同样品上取值完全不同——高强度螺栓连接副的扭矩系数每批 <b>8 套</b>、拉伸试验每批 <b>2 根</b>、绝缘手套<b>逐只</b>试验（没有平行组数概念）、金具握着力 <b>3 件</b>。把 45 条规则当成全局生效，要么误报，要么漏判。因此把<b>规则本体</b>与<b>品类绑定</b>分开：本体只写判据，品类差异全部落在绑定表。</p>
+<p><b>数据模型</b>（三张表，字段明细见 3.4）：</p>
+<table><colgroup><col width="180"/><col width="240"/><col width="240"/></colgroup>
+<thead><tr><th>表</th><th>作用</th><th>要点</th></tr></thead>
+<tbody>
+<tr><td>ai_review_rules</td><td>规则本体，唯一可维护判据之处</td><td>新增 <code>param_schema</code>（声明可覆盖参数）与 <code>is_universal</code>；判定式内不得出现品类数值</td></tr>
+<tr><td>ai_review_categories</td><td>LIMS 物料 / 样品分类的<b>镜像</b></td><td>存 <code>category_code</code>、快照名、<code>lims_parent_code</code>（支持前缀匹配）、同步时间。镜像而非直连：LIMS 改名或并码时绑定不崩</td></tr>
+<tr><td>ai_review_category_bindings</td><td>品类 × 规则的启用与参数</td><td><code>enabled</code> / <code>overrides</code> / <code>severity_override</code> / <code>standard_ref</code> + 3.8 的五个版本字段；唯一约束 <code>(category_code, rule_id, version)</code></td></tr>
+</tbody></table>
+<p><b>通用集与品类专属的划分</b>：</p>
+<table><colgroup><col width="120"/><col width="60"/><col width="300"/><col width="180"/></colgroup>
+<thead><tr><th>归属</th><th>条数</th><th>规则清单</th><th>行为</th></tr></thead>
+<tbody>
+<tr><td>通用集</td><td>28</td><td>A01-1…6、A02-1…4、A03-1、B01-1/2/4/5、B03-1…4、C01-1/3/4/5、C02-1…5</td><td>任何品类都跑</td></tr>
+<tr><td>品类专属</td><td>17</td><td>A02-5、A03-2/3/4/5/6、B01-3、B02-1…9、C01-2</td><td>须由绑定启用；未启用不参与判定</td></tr>
+</tbody></table>
+<p>两点划分理由：<b>A03-4</b> 的「炉（批）号」是钢材 / 金具概念，电力电缆的可追溯载体是盘号，故其判据本身参数化为 <code>traceability_field: enum(heat_no | reel_no | batch_no | segment_no)</code>；<b>A02-5 温湿度</b>与 <b>C01-2 修约间隔</b>按品类差异大（外观尺寸类不要求温湿度；抗拉强度修约到 1 MPa 而扭矩系数保留 3 位小数），未配置就判会误报，因此也归专属侧。注意<b>通用 ≠ 无参数</b>：C01-1 有效数字位数、C01-4 单位集合、B03-4 限值版本都是通用规则但同样可被绑定覆盖。</p>
+<p><b>运行时解析</b>（输入 <code>report_data.sample_info.category_code</code>）：</p>
+<ol>
+<li seq="auto">查品类镜像表：精确编码 → <code>lims_parent_code</code> 前缀匹配 → 未登记</li>
+<li seq="auto">命中且有绑定：取 <code>enabled=true</code> 行，把 <code>overrides</code> 合并进 <code>context</code>，<code>severity_override</code> 覆盖默认严重度</li>
+<li seq="auto">命中但无绑定 / 未登记品类：<b>只取通用集 28 条</b>，并生成提示 <code>CAT-UNCAT-01</code>「该品类未配置专属规则，仅执行通用检查」。该提示不占规则编号、不计入 45 / ≥50，严重度为提示、不阻断签发</li>
+<li seq="auto"><code>is_applicable()</code> 由领域匹配改为<b>品类优先、领域兜底</b>，参数从 <code>context["overrides"]</code> 取</li>
+</ol>
+<p><b>首批绑定矩阵</b>（M1 配 3 个品类，共 51 行绑定；其余 3 个品类走默认策略，M2 前两周补齐。全部数值 <code>状态=待审核员确认</code>）：</p>
+<table><colgroup><col width="130"/><col width="250"/><col width="180"/><col width="200"/></colgroup>
+<thead><tr><th>品类</th><th>启用（关键参数覆盖）</th><th>停用及理由</th><th>主要依据</th></tr></thead>
+<tbody>
+<tr><td>高强度螺栓连接副</td><td>A03-2 <code>parallel_count=8, std_max=0.0074</code>；A03-3 <code>tensile_specimens=2</code>；A03-4 <code>heat_no</code>；A03-5 硬度块 / 扭矩标准件；A03-6 双倍复检；B02-1 / 3 / 4 / 5 / 7 / 8 / 9；A02-5 拉伸与扭矩；C01-2 抗拉 1 MPa、扭矩 3 位</td><td>B01-3（非工器具）；B02-2 伸长率匹配；B02-6 耐压</td><td>GB/T 1231-2010、GB/T 3098.1（10.9 级 HRC 32–39）、GB/T 228.1-2021、GB/T 8170</td></tr>
+<tr><td>绝缘手套</td><td>B01-3 <code>cycle_months=6</code>（严重）；B02-6 <code>hold_min=60</code>、泄漏电流按类型限值；A03-4 <code>batch_no</code>；A02-5 耐压湿度；C01-2 kV 1 位 / mA 整数</td><td>A03-2（<b>逐只试验，无平行组数</b>）；A03-3；A03-5；A03-6 改为直接停用不复检；B02-1 / 2 / 3 / 4 / 5 / 7 / 8 / 9（力学判据不适用）</td><td>DL/T 976-2017、GB/T 17622</td></tr>
+<tr><td>电力电缆</td><td>A03-2 每批盘数 / 试样长度；A03-4 <code>reel_no</code>；A03-6 双倍复检；B02-6 含<b>局部放电量</b>限值；B02-7 绝缘 / 护套厚度多点取最小值；B02-9 <b>导体电阻换算 20 ℃</b>；A02-5 电阻测温；C01-2 电阻 0.01 Ω、厚度 0.1 mm</td><td>B01-3；A03-3 拉伸根数；B02-1 / 3 / 4 / 5；B02-8</td><td>GB/T 12706、GB/T 3956、GB/T 3048.4、GB/T 3048.12</td></tr>
+</tbody></table>
+<p><b>品类专属规则进本体</b>：绑定表不能凭空造规则。电缆局部放电、保护管环刚度与冲击、金具握着力、安全带整体静态负荷等，作为新的品类专属规则加入本体，预计 <b>5–8 条</b>（只计入 17 那一侧，通用集恒为 28），使存量从 45 达到 3.1 的 <code>≥ 50 条</code> 出口目标。</p>
+<p><b>残余风险</b>：新品类接入仍需人工配 17 行绑定；未配置品类只跑 28 条会降低检出率。两者都由 4.2 的<b>品类覆盖度</b>指标显性跟踪，不允许静默通过。</p>

@@ -82,7 +82,7 @@ def countcheck(name, expected):
     if not tid:
         return [f"找不到表 {name}"]
     p2 = subprocess.run(["lark-cli","base","+record-list","--base-token",base,"--table-id",tid,
-                         "--page-size","200","--as","user"], capture_output=True, text=True, env=env)
+                         "--page-size","200","--format","json","--as","user"], capture_output=True, text=True, env=env)
     rows = json.loads(p2.stdout).get("data", {}).get("data", [])
     return [] if len(rows) == int(expected) else [f"{name} 实际 {len(rows)} 行，期望 {expected}"]
 
