@@ -74,7 +74,7 @@
     if (ev.type === 'tick') {
       robots = (ev.payload.robots && ev.payload.robots.length ? ev.payload.robots : robots);
       devices.forEach(function (d) { var s = ev.payload.devices.filter(function (x) { return x.deviceId === d.deviceId; })[0]; if (s) d.status = s.status; });
-      renderRobots(); renderZonePanel(); renderTables(); pushState();
+      renderZonePanel(); renderTables(); pushState();
     } else if (ev.type === 'task.progress') {
       var t = tasks.filter(function (x) { return x.taskId === ev.payload.taskId; })[0];
       if (t) { t.progress.percent = ev.payload.percent; t.stage = ev.payload.stage; if (ev.payload.percent >= 100) t.result = 'passed'; renderStrip(); }
@@ -169,28 +169,7 @@
   }
 
   /* ---------- ③ 106 主叙事：机器人卡住 / 当前调度任务 / 设备状态 / 异常（决策 Q4） ---------- */
-  function renderRobots() {
-    var el = $('#robotZone');
-    if (el.dataset.sig !== robots.map(function (r) { return r.robotId; }).join('|')) {
-      el.dataset.sig = robots.map(function (r) { return r.robotId; }).join('|');
-      el.innerHTML = robots.map(function (r) { return '<div class="robot-card" data-robot="' + r.robotId + '"><span class="rbt"></span></div>'; }).join('');
-    }
-    robots.forEach(function (r, i) {
-      var card = el.children[i]; if (!card || card.dataset.robot !== r.robotId) return;
-      var stall = (r.taskElapsedMin != null && r.stallLimitMin != null && r.taskElapsedMin > r.stallLimitMin && r.action !== 'charging');
-      card.className = 'robot-card' + (stall ? ' is-stall' : '') + (r.action === 'charging' ? ' charging' : '');
-      var act = r.action === 'charging' ? '充电中' : stall ? '疑似卡住' : r.action === 'moving' ? '行进中' : '待机';
-      var dev = devices.filter(function (x) { return x.deviceId === r.servingDeviceId; })[0];
-      card.firstChild.innerHTML = '<i></i>' + r.robotId + ' · ' + act +
-        '<span class="tk">｜' + escapeHtml(r.currentFlowName || '无在制任务') + ' ' + (r.currentTaskId || '') + (r.taskElapsedMin != null ? ' · 已 ' + r.taskElapsedMin + 'min（限 ' + r.stallLimitMin + '）' : '') + '</span>' +
-        (dev ? ' <span class="tk">服务 ' + dev.code + '</span>' : '') +
-        (r.carriedSampleIds && r.carriedSampleIds.length ? ' · 载 ' + r.carriedSampleIds[0] : '') +
-        (r.routeBasis ? ' <span class="tk" title="' + escapeHtml(r.routeBasis) + '">相对轨迹</span>' : '') +
-        ' <em>🔋' + Math.round(r.battery) + '%</em>' + (stall ? '<span class="stall">卡住判定</span>' : '');
-    });
-  }
-  function stamp(z) { return function (d) { d.zoneId = d.zoneId || 'Z-' + z; return d; }; }
-  /* 区域归属以数据分区为准（部分设备的 CAD 模型号在邻区，如 2411020108 借 107-01 建模却属 106 分区） */
+  function stamp(z) { return function (d) { d.zoneId = d.zoneId || 'Z-' + z; return d; }; }   /* 区域归属=数据来源分区（删机器人浮条时曾被连带删掉，导致整条装载链中断） */
   function zoneDevices(z) { return devices.filter(function (d) { return (d.zoneId || '').slice(2) === z; }); }
 
   /* ---------- 区域视图五类信息：设备 / 环境数据 / 任务统计 / 正在运行的任务 / 告警 ---------- */
@@ -418,17 +397,15 @@
     /* 区域视图=右侧五块面板；浮层（告警卡/机器人卡）与底栏让位，避免同一信息出现两次 */
     $('#zonePanel').hidden = st.mode !== 'ZONE';
     $('#alarmStream').hidden = st.mode === 'ZONE';
-    /* 收起底栏＝底部整片让位：今日任务表 + 机器人状态条 + 底部说明条一起消失（2026-11-06 反馈：只收表格、机器人条还留着不对） */
-    $('#robotZone').hidden = st.mode === 'ZONE' || !!st.strip;
+    /* 机器人状态条与底部说明条已整体删除（2026-11-06）；「收起底栏」只作用于今日任务表 */
     $('#taskStrip').hidden = st.mode !== 'S1' || !!st.strip;
-    var wm = $('#watermark'); if (wm) wm.hidden = !!st.strip;
 
     $('#stripBtn').textContent = st.strip ? '▴ 展开底栏' : '▾ 收起底栏'; $('#stripBtn').setAttribute('aria-pressed', !!st.strip);
     $('#stripBtn').disabled = st.mode !== 'S1';
     $('#s3Drawer').hidden = st.mode !== 'S3'; if (st.mode === 'S3') renderS3();
     var h = document.querySelector('.s3drawer b'); if (h) h.textContent = '告警回溯 · 最近 24h（未解除 ' + alarmOpen().length + ' / 共 ' + alarms.length + '）';
     drillTo(st.mode === 'ZONE' ? zoneView(st.zone) : 'overall-101');
-    renderTables(); renderAlarms(); renderRobots(); renderStrip(); pushState(); writeURL();
+    renderTables(); renderAlarms(); renderStrip(); pushState(); writeURL();
     if (st.mode === 'ZONE') { loadZone(); renderZonePanel(); }
 
   }
@@ -515,33 +492,6 @@
         '<div class="row"><span>关联对象</span><b>' + escapeHtml(card.dataset.dev || '—') + '</b></div>' +
         '<p style="font-size:11px;color:var(--tw-color-textMuted)">镜头已定位到 ' + zc + '。孪生只读：处置与解除由来源系统回传，不在大屏操作。</p>');
     });
-    $('#robotZone').addEventListener('click', function (e) {
-      var c = e.target.closest('[data-robot]'); if (!c) return;
-      var r = robots.filter(function (x) { return x.robotId === c.dataset.robot; })[0]; if (!r) return; openRobot(r);
-    });
-    function openRobot(r) {
-      openDetail('<h3>' + r.robotId + ' · 复合机器人</h3><div class="sub">' + escapeHtml(r.routeBasis || '') + '</div>' +
-        '<div class="row"><span>当前调度任务</span><b>' + escapeHtml(r.currentFlowName || '—') + '</b></div>' +
-        '<div class="row"><span>任务号</span><b>' + (r.currentTaskId || '—') + '</b></div>' +
-        '<div class="row"><span>已耗时 / 上限</span><b>' + (r.taskElapsedMin || 0) + ' / ' + (r.stallLimitMin || '—') + ' min</b></div>' +
-        '<div class="row"><span>服务设备</span><b>' + ((devices.filter(function (x) { return x.deviceId === r.servingDeviceId; })[0] || {}).code || r.servingDeviceId || '—') + '</b></div>' +
-        '<div class="row"><span>电量</span><b>' + Math.round(r.battery) + '%</b></div>' +
-        '<div class="row"><span>行进范围</span><b>' + (r.allowedZones || ['Z-106']).join(' ↔ ').replace(/Z-/g, '') + '</b></div>' +
-        '<div class="row"><span>净空要求</span><b>≥' + (r.clearanceM || 0.2) + 'm（包络 ' + (r.sweptEnvelope || 0.9) + 'm 含原地掉头）</b></div>' +
-        '<div class="row"><span>门洞</span><b>' + ((r.serves || []).filter(function (x) { return x.indexOf('门洞') >= 0; })[0] || '区内环线，不穿墙') + '</b></div>' +
-        '<div class="row"><span>避让校验</span><b>' + (routeAudit ? (routeAudit.violations ? routeAudit.violations + ' 处违规' : '0 重叠 / ' + routeAudit.checked + ' 采样点') : '待场景就绪') + '</b></div>' +
-        '<div style="font-size:11px;color:var(--tw-color-textSecondary);margin-top:8px">途经：' + (r.serves || []).map(escapeHtml).join(' → ') + '</div>' +
-        '<p style="font-size:11px;color:var(--tw-color-textMuted)">位置基准：' + (r.positionBasis === 'derived' ? '调度未标定，按 CAD 占地推导折线（相对轨迹）' : '调度系统实时点位') + ' · ' + escapeHtml(r.routeMethod || '') + '</p>');
-    }
-    $('#taskStrip').addEventListener('click', function (e) {
-      var al = e.target.closest('[data-alarm]');
-      if (al) { $('#s3Drawer').hidden = false; renderS3(al.dataset.alarm); return; }
-      var chip = e.target.closest('[data-devcode]'); if (!chip) return;
-      var match = devices.filter(function (x) { return x.code === chip.dataset.devcode; })[0];
-      if (match) selectDevice(match, (match.modelNode || '').replace('cad:', ''));
-    });
-    $('#s3Close').onclick = function () { setMode('S1'); };
-    $('#zpClose').onclick = function () { setMode('S1'); };
     $('#zonePanel').addEventListener('click', function (e) {
       var tr = e.target.closest('[data-trace]');
       if (tr) { $('#s3Drawer').hidden = false; renderS3(tr.dataset.trace); return; }
@@ -564,7 +514,9 @@
   var hintTimer = null;
   function flashHint(txt) {
     var el = $('#remoteHint'); if (!el) return;
-    el.textContent = txt || (st.mode === 'S1' ? 'S1 实验室总览' : st.mode === 'S3' ? 'S3 告警回溯' : '区域下钻 · ' + st.zone + ' ' + ((zones.filter(function (z) { return z.zoneId === 'Z-' + st.zone; })[0] || {}).name || ''));
+    var where = st.mode === 'S1' ? 'S1 实验室总览' : st.mode === 'S3' ? 'S3 告警回溯'
+      : '区域下钻 · ' + st.zone + ' ' + ((zones.filter(function (z) { return z.zoneId === 'Z-' + st.zone; })[0] || {}).name || '');
+    el.textContent = txt || ('翻页 PgUp/PgDn · 1 总览 · 2 无人化区 · 3 告警 · F 全屏 · Esc 关闭   ｜   ' + where);
     el.hidden = false; clearTimeout(hintTimer); hintTimer = setTimeout(function () { el.hidden = true; }, 1400);
   }
 
