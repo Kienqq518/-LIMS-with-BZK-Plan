@@ -72,8 +72,10 @@
   function tick() {
     if (!state) return;
     state.zone106.robots.forEach(function (rb) {
-      rb.progress += rb.kind === 'amr' ? 0.045 : 0.03;
-      if (rb.progress > 1) rb.progress = 0;
+      if (!rb.demoCycle) {            // 无剧本的机器人（RB-C-01）保留匀速环线；有剧本的由 applyCycle 精确给 u，不能再随机推
+        rb.progress += rb.kind === 'amr' ? 0.045 : 0.012;
+        if (rb.progress > 1) rb.progress = 0;
+      }
       rb.battery = Math.max(12, +(rb.battery - 0.08).toFixed(2));
       if (rb.battery <= 15 && rb.action !== 'charging' && rb.status !== 'charging') {
         rb.action = 'charging'; rb.status = 'charging';
@@ -100,7 +102,9 @@
     if (d.status === 'ready' && Math.random() < 0.3) { d.status = 'working'; emit('device.status', { deviceId: d.deviceId, status: 'working' }); }
     else if (d.status === 'working' && !d.currentTaskId && Math.random() < 0.2) { d.status = 'standby'; emit('device.status', { deviceId: d.deviceId, status: 'standby' }); }
     state.overview['lab-status'].updatedAt = now();
-    emit('tick', { robots: clone(state.zone106.robots), devices: devs.map(function (x) { return { deviceId: x.deviceId, status: x.status }; }) });
+    var cyc = applyCycle();
+    emit('tick', { robots: clone(state.zone106.robots), devices: devs.map(function (x) { return { deviceId: x.deviceId, status: x.status }; }), cycle: cyc });
+    if (cyc) emit('cycle', cyc);
   }
 
   function get(path) {

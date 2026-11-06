@@ -135,6 +135,35 @@ function pulseDots(t) {
   });
 }
 
+/* ---------- 剧本时钟：位置直接由 demoCycle + 墙上时钟算出 ----------
+   之前靠宿主每 2s 推送的 progress 做插值：推送节奏一抖（setInterval 漂移、主线程忙）就会出现
+   「走完再等一下」的微停顿，实测峰值只有 0.57m/s。改成场景内自算，速度恒等于剧本速度。 */
+/* u 是「弧长比例」，必须按累计长度取位；此前按点序号比例取位（local*(n-1)）会让速度忽快忽慢、停靠点偏移 */
+function posAt(pts, u) {
+  if (!pts || !pts.length) return new THREE.Vector3();
+  if (pts.length < 2) return pts[0].clone();
+  if (!pts.__cum || pts.__rev !== pts.length) {
+    const cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + pts[i].distanceTo(pts[i - 1]));
+    pts.__cum = cum; pts.__rev = pts.length;
+  }
+  const target = Math.max(0, Math.min(1, u)) * pts.__cum[pts.__cum.length - 1];
+  let i = 1; while (i < pts.__cum.length - 1 && pts.__cum[i] < target) i++;
+  const seg = pts.__cum[i] - pts.__cum[i - 1];
+  const f = seg > 0 ? (target - pts.__cum[i - 1]) / seg : 0;
+  return pts[i - 1].clone().lerp(pts[i], f);
+}
+function uFromCycle(c) {
+  if (!c || !c.stops || !c.stops.length) return null;
+  const S = c.stops, L = c.loopSec, t = (Date.now() / 1000) % L, last = S[S.length - 1];
+  let cur = last, idx = S.length - 1, tail = false;
+  for (let i = 0; i < S.length; i++) { if (t < S[i].t0 + S[i].dwellSec) { cur = S[i]; idx = i; break; } }
+  if (t >= last.t0 + last.dwellSec) { tail = true; idx = S.length - 1; }
+  if (tail) { const ts = L - (last.t0 + last.dwellSec); return last.u + (1 - last.u) * Math.min(1, (t - last.t0 - last.dwellSec) / (ts || 1)); }
+  if (t < cur.t0) { const prevU = idx === 0 ? 0 : S[idx - 1].u; const f = cur.travelSec > 0 ? Math.max(0, Math.min(1, (t - (cur.t0 - cur.travelSec)) / cur.travelSec)) : 1; return prevU + (cur.u - prevU) * f; }
+  return cur.u;
+}
+
 /* ---------- 平滑动画环：机器人插值 + 光点呼吸（15fps 足够，省电） ---------- */
 let animStarted = false, robotTargets = {};
 function startAnimLoop() {
@@ -143,21 +172,37 @@ function startAnimLoop() {
   const loop = t => {
     if (t - last > (LOW ? 125 : 66)) {
       last = t; frames++;
+      try {
       Object.entries(robotTargets).forEach(([id, tgt]) => {
-        const g = robots[id]; if (!g || !tgt.path) return;
-        ensureDot(tgt.modelRoot, tgt.action === 'charging' ? 'standby' : 'working');
-        tgt.local = tgt.local == null ? tgt.progress : tgt.local + Math.max(-0.02, Math.min(0.02, tgt.progress - tgt.local)) * 0.35;
-        const pts = tgt.mpts || tgt.path.map(q => new THREE.Vector3(q[0], 0, q[2]));
-        const tt = Math.max(0, Math.min(1, tgt.local)) * (pts.length - 1);
-        const i = Math.min(pts.length - 2, Math.floor(tt)), f = tt - i;
-        const p = pts[i].clone().lerp(pts[i + 1], f);
+        const g = robots[id]; if (!g || !tgt.path || tgt.path.length < 2) return;
+        const pts = tgt.mpts && tgt.mpts.length > 1 ? tgt.mpts : (tgt.mpts = manhattan(tgt.path).map(q => new THREE.Vector3(q[0], 0, q[1])));
+        if (tgt.local == null) { tgt.local = tgt.progress || 0; tgt.animFrom = tgt.local; tgt.animTo = tgt.local; tgt.animT0 = t; }
+        if (tgt.demoCycle) {
+          const cu = uFromCycle(tgt.demoCycle);          // 剧本机器人：u 由场景内时钟直接给出，不做插值（插值会因推送节奏抖动产生微停顿，也会与弧长参数化打架）
+          if (cu != null) tgt.local = cu;
+        } else {
+          const af = Math.max(300, tgt.animDur || 2000);
+          const kk = Math.max(0, Math.min(1, (t - tgt.animT0) / af));
+          const want = (tgt.animFrom == null ? tgt.local : tgt.animFrom) + ((tgt.animTo == null ? tgt.local : tgt.animTo) - (tgt.animFrom == null ? tgt.local : tgt.animFrom)) * kk;
+          if (tgt.wrap && kk >= 1) { tgt.local = 0; tgt.animFrom = 0; tgt.animTo = tgt.progress; tgt.animT0 = t; tgt.wrap = false; }
+          else if (Math.abs((tgt.progress == null ? want : tgt.progress) - want) > 0.12) { tgt.local = tgt.progress; tgt.animFrom = tgt.progress; tgt.animTo = tgt.progress; tgt.animT0 = t; }
+          else tgt.local = want;
+        }
+        const p = posAt(pts, tgt.local);
         g.position.set(p.x, 0, p.z);
-        const dir = pts[i + 1].clone().sub(pts[i]); g.rotation.y = Math.atan2(dir.x, dir.z);
+        const ahead = posAt(pts, Math.min(1, tgt.local + 0.004));
+        const dx = ahead.x - p.x, dz = ahead.z - p.z;
+        if (Math.abs(dx) + Math.abs(dz) > 1e-4) g.rotation.y = Math.atan2(dx, dz);   /* 原地掉头：方向由前进段决定，不做平滑摆动 */
+        ensureDot(tgt.modelRoot, tgt.action === 'charging' ? 'standby' : 'working');
       });
       pulseDots(t);
       if (stepCam(t)) { /* 补间期间由 stepCam 决定相机输入 */ }
       visual.render();
       if (cardFor) positionCard(cardFor);
+      } catch (err) {                       // 兜底：动画环一旦抛错就会静默停摆（实测冻住过机器人与相机补间），记录后继续跑
+        if (!window.__twinLoopErr) { window.__twinLoopErr = String(err && err.message || err);
+          const el = document.createElement('div'); el.id = 'twin-v2-loop-error'; el.hidden = true; el.textContent = window.__twinLoopErr; document.body.append(el); }
+      }
     }
     requestAnimationFrame(loop);
   };
@@ -300,7 +345,22 @@ function build(v) {
 let robotPathsDrawn = false;
 function applyState(d) {
   (d.robots || []).forEach(r => {
-    robotTargets[r.robotId] = Object.assign(robotTargets[r.robotId] || {}, r);
+    const tn = performance.now(), slot = robotTargets[r.robotId];
+    /* 必须先把旧值取出来：Object.assign 就地改写同一个对象，之后再读 prevTgt.progress 已经等于新值（实测回绕判定恒 false → 循环收尾直接窜 20m） */
+    const prevProgress = slot && slot.progress, prevPush = slot && slot.lastPush;
+    robotTargets[r.robotId] = Object.assign(slot || {}, r);
+    const tgt = robotTargets[r.robotId];
+    if (tgt.progress != null && tgt.local == null) { tgt.local = tgt.progress; tgt.animFrom = tgt.progress; tgt.animTo = tgt.progress; tgt.animT0 = tn; }
+    if (prevProgress != null && tgt.progress != null) {
+      if (tgt.progress + 0.5 < prevProgress) {                       // 一圈走完回绕：先把最后一段跑到终点，再从 u=0 起步
+        tgt.animFrom = tgt.local; tgt.animTo = 1; tgt.animT0 = tn; tgt.wrap = true;
+      } else if (!tgt.wrap && tgt.progress !== prevProgress) {        // 正常推进：以本次推送的目标匀速插值
+        tgt.animFrom = tgt.local; tgt.animTo = tgt.progress; tgt.animT0 = tn;
+      }
+    }
+    tgt.animDur = prevPush ? Math.max(600, Math.min(4000, tn - prevPush)) : 2000;
+    if (r.demoCycle) tgt.demoCycle = r.demoCycle;
+    robotTargets[r.robotId].lastPush = tn;
     if (r.path) robotTargets[r.robotId].mpts = manhattan(r.path).map(q => new THREE.Vector3(q[0], 0, q[1]));
     const root = robots[r.robotId] || (r.modelRoot ? (robots[r.robotId] = visual.modelRoots.get(r.modelRoot) || null) : null);
     if (root && r.homeAnchor && root.userData.homeParked !== true) {   /* 家位=环线起点，避免开机时停在设备里 */
