@@ -7,3 +7,4 @@
 - 视图: 表格（默认）· 按状态（group 状态）· 待确认（filter 状态=待审核员确认）
 - 种子生成: `make_base.py` + `make_records.py`（可重跑，重跑会新增记录，勿重复执行）
 - 3.3 时间轴画板 token（T10 重渲染后）: `MyxDwabVGhVXi0byjurcaDf5nvh`，源文件 `timeline.svg` / 生成器 `make_timeline.py`
+- 品类表 table_id: `tblv1BS7q0eMrAYu`（6 行）；绑定表 table_id: `tbldbfHOuYsh9dLn`（51 行 = 3 品类 × 17 专属规则）
