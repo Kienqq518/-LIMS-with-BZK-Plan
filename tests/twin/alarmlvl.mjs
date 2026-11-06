@@ -30,6 +30,26 @@ const row=p.locator('.asec[data-sec=A] .st-row').first();
 await row.click(); await p.waitForTimeout(1200);
 const dt=(await p.locator('#detailBody').innerText()).replace(/\s+/g,' ');
 out.push((/A 级/.test(dt)&&!/Grade/.test(dt)?'✅':'❌')+' 告警详情用「A 级」中文表述: '+dt.slice(0,70));
+/* B 区那条没有台账号的告警（AL-204）必须仍能把镜头与描边落到 106-12 那张桌上。
+   注意：AL-204 是已解除状态，默认「只看未解除」下不渲染；切到全部后它排在 236px 可视窗口之外——
+   这里验的是 openAlarm 的分支逻辑，不是鼠标可见性，所以用 DOM click 走同一个委托入口。 */
+/* 上一步点开告警留下的 #detail 会盖住右侧告警流（S1 模式下它是覆盖式面板），先 Esc 关掉再点筛选 */
+await p.keyboard.press('Escape'); await p.waitForTimeout(700);
+out.push(((await p.evaluate(()=>document.getElementById('detail').hidden))?'✅':'❌')+' 告警详情可用 Esc 关闭（否则它会挡住告警流的筛选控件）');
+await p.click('.asec[data-sec=B] [data-alarmfilter=all]'); await p.waitForTimeout(900);
+const clicked=await p.evaluate(()=>{
+  const el=document.querySelector('.asec[data-sec=B] [data-alarm="AL-204"]');
+  if(!el) return {ok:false, why:'AL-204 未渲染（B 区归属或筛选态变了）'};
+  el.click(); return {ok:true, zone:el.dataset.zone, dev:el.dataset.dev||'(空)'};
+});
+await p.waitForTimeout(2000);
+out.push((clicked.ok?'✅':'❌')+' AL-204 在 B 区且可点（zone='+clicked.zone+'，data-dev="'+clicked.dev+'"）'+(clicked.ok?'':clicked.why));
+const hl=await p.evaluate(()=>document.body.dataset.lastHighlight||'');
+out.push((hl==='106-12'?'✅':'❌')+' 点击后描边落到 CAD 实体 106-12（非数采桌无台账号）: lastHighlight='+hl);
+const dtxt=(await p.locator('#detailBody').innerText()).replace(/\s+/g,' ');
+out.push((/闭环状态|原因/.test(dtxt)&&!/复合机器人 RB/.test(dtxt)?'✅':'❌')+' 详情仍是告警内容（没被机器人卡覆盖）: '+dtxt.slice(0,64));
+await p.keyboard.press('Escape'); await p.click('.asec[data-sec=B] [data-alarmfilter=open]'); await p.waitForTimeout(700);
+
 // 区域视图：面板内同样三分区
 await p.selectOption('#zoneSel','106'); await p.waitForTimeout(2500);
 T('区域面板三分区', await p.locator('#zpAlarms .zsec').count(), 3);

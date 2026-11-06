@@ -163,21 +163,6 @@
     });
     rb.displayLegs = dlegs;
     rb.pathLengthM = +L.toFixed(2);
-    /* 门洞穿越点：路径与每面带 gate 的墙的交点（审计与测试都按这个查） */
-    var gwalls = (state.zone106 && state.zone106.walls || []).filter(function (w) { return w.gate; });
-    rb.gateCrossings = gwalls.map(function (w) {
-      var hits = [];
-      for (var j = 0; j < pts.length - 1; j++) {
-        var a = pts[j], b = pts[j + 1];
-        if (w.axis === 'x' && Math.abs(a[1] - b[1]) < 0.01 && (a[0] - w.at) * (b[0] - w.at) < 0) {
-          hits.push({ wall: w.name, z: +a[1].toFixed(2), arc: +(C[j] + Math.abs(w.at - a[0])).toFixed(2), inGate: (a[1] - 0.651 >= w.gate[0] && a[1] + 0.651 <= w.gate[1]) });
-        }
-        if (w.axis === 'z' && Math.abs(a[0] - b[0]) < 0.01 && (a[1] - w.at) * (b[1] - w.at) < 0) {
-          hits.push({ wall: w.name, x: +a[0].toFixed(2), arc: +(C[j] + Math.abs(w.at - a[1])).toFixed(2), inGate: (a[0] - 0.651 >= w.gate[0] && a[0] + 0.651 <= w.gate[1]) });
-        }
-      }
-      return { wall: w.name, at: w.at, gate: w.gate, crossings: hits };
-    });
     /* 时间轴：t0=停靠开始，travel 段在 [t0-travelSec, t0)；u 与 travelSec 都由弧长推导 */
     if (rb.demoCycle && rb.demoCycle.stops) {
       var stops = rb.demoCycle.stops;

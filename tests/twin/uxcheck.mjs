@@ -63,7 +63,7 @@ out.push((asecAnim.length===3&&asecAnim.every(x=>x==='asecUp')?'✅':'❌')+' �
 out.push(((await p.evaluate(()=>getComputedStyle(document.getElementById('streamTrack')).animationName))==='none'?'✅':'❌')+' 外层 .stream-board 不再整体滚动（分区表头不飘）');
 // 6) 循环剧本
 const cy=await p.locator('#cycleBox').innerText();
-out.push((/\d\/9/.test(cy)&&/无人化循环/.test(cy)?'✅':'❌')+' 无人化循环指示（9 站：102 两段航程因通道未标定已撤出本圈）: '+cy.replace(/\s+/g,' ').slice(0,90));
+out.push((/\d\/11/.test(cy)&&/无人化循环/.test(cy)?'✅':'❌')+' 无人化循环指示（11 站：含 102 取样与跨区送样两段航程）: '+cy.replace(/\s+/g,' ').slice(0,90));
 /* 剧本运动：先在场景内起 100ms 记录器（避免每 400ms 一次跨进程往返的抖动），
    并且**对齐到下一次停靠**再开窗——盲开 28s 窗口可能整段落在 26.5s 的 102→106 长行走段里，
    那样「出现停靠静止」就会假失败（animation-spec §16）。 */
@@ -87,7 +87,7 @@ out.push((moved>3&&peak<=1.0&&peak>=0.6&&stillMs>=1.5&&speeds.length===0?'✅':'
 // 停靠站与剧本一致：UI 报的站序必须等于端点 live.order
 const both=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/cycle');return {live:r.data.live, ui:document.getElementById('cycleBox').innerText.replace(/\s+/g,' ')};});
 const sa=both.live; const uiTxt=both.ui;
-out.push((uiTxt.includes(sa.order+'/9')?'✅':'❌')+` 停靠站与剧本一致：UI「${uiTxt.slice(0,42)}」↔ 端点 order=${sa.order}(${sa.label})`);
+out.push((uiTxt.includes(sa.order+'/11')?'✅':'❌')+` 停靠站与剧本一致：UI「${uiTxt.slice(0,42)}」↔ 端点 order=${sa.order}(${sa.label})`);
 // 7) 下钻动画（采样相机，应连续变化而非一次跳变）
 await p.keyboard.press('1'); await p.waitForTimeout(2500);
 const cam=()=>ev(()=>{const c=window.visual106.camera;return [+c.position.x.toFixed(2),+c.position.y.toFixed(2),+c.position.z.toFixed(2),+((c.top-c.bottom)/2).toFixed(2)];});

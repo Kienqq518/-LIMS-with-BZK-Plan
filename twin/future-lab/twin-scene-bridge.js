@@ -461,15 +461,23 @@ function covered(x, z, half, rects) {
 }
 let lastWalls = [];
 /* 玻璃墙=硬约束：扫掠方块与墙面相交时必须整块落在门洞跨度内；无门洞的墙一律禁止穿越 */
+/* 一面墙可以有多个门洞（106 东墙：南端双开门 + 北端走廊西进口）。
+   兼容旧数据：w.gates 优先，没有就退回单门洞 w.gate。 */
+function wallGates(w) { return (w.gates && w.gates.length) ? w.gates : (w.gate ? [w.gate] : []); }
+function inAnyGate(w, c, half) {
+  const gs = wallGates(w);
+  if (!gs.length) return false;
+  return gs.some(g => c - half >= g[0] && c + half <= g[1]);
+}
 function wallHit(x, z, half, walls) {
   for (const w of walls || []) {
     if (w.axis === 'x') {
       if (z + half > w.a && z - half < w.b && x + half > w.at && x - half < w.at) {
-        if (!w.gate || !(z - half >= w.gate[0] && z + half <= w.gate[1])) return w.name;
+        if (!inAnyGate(w, z, half)) return w.name;
       }
     } else {
       if (x + half > w.a && x - half < w.b && z + half > w.at && z - half < w.at) {
-        if (!w.gate || !(x - half >= w.gate[0] && x + half <= w.gate[1])) return w.name;
+        if (!inAnyGate(w, x, half)) return w.name;
       }
     }
   }
@@ -639,7 +647,7 @@ function liveLeg(r) {
 
 function auditRoutes(list, walls) {
   const obs = obstacleBoxes();
-  const report = { checked: 0, violations: [], obstacles: obs.length, walls: (walls || []).length, at: new Date().toISOString() };
+  const report = { checked: 0, violations: [], transits: [], obstacles: obs.length, walls: (walls || []).length, at: new Date().toISOString() };
   list.forEach(r => {
     const half = (r.sweptEnvelope || Math.max(...(r.footprint || [0.9, 0.9]))) / 2 + (r.clearanceM || 0.2);
     const rects = allowedRects(r);
@@ -658,13 +666,38 @@ function auditRoutes(list, walls) {
       }
     }
   });
+  /* 合法穿门统计：按顶点在墙面两侧的**符号变化**判定。
+     顶点正好压在墙面上（我们的路径会在门洞处显式落一个顶点）时不能重复计数——
+     所以遇到 0 保持上一条的侧向，等下一个非零侧向再判定穿越。 */
+  list.forEach(r => {
+    const half = (r.sweptEnvelope || Math.max(...(r.footprint || [0.9, 0.9]))) / 2 + (r.clearanceM || 0.2);
+    const pts = r.path || [];
+    (walls || []).forEach(w => {
+      const coord = w.axis === 'x' ? 0 : 2;                 // 穿越 x=at 的墙看 x 侧向；穿越 z=at 的墙看 z 侧向
+      let side = 0, segIdx = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const d = pts[i][coord] - w.at, s2 = d > 1e-6 ? 1 : (d < -1e-6 ? -1 : 0);
+        if (s2 === 0) continue;
+        if (side !== 0 && s2 !== side) {
+          const c = pts[i][coord === 0 ? 2 : 0];               // 穿越点横向坐标（穿 x 墙看 z，穿 z 墙看 x；顶点是 [x,y,z]）
+          if (inAnyGate(w, c, half)) {
+            const crossSeg = (i > 0 && Math.abs(pts[i - 1][coord] - w.at) < 1e-6) ? i - 1 : i;
+            report.transits.push({ robot: r.robotId, wall: w.name, at: w.at, [w.axis === 'x' ? 'z' : 'x']: +c.toFixed(2), seg: crossSeg, dir: s2 > side ? 1 : -1 });
+          }
+        }
+        side = s2;
+      }
+    });
+  });
+  report.transitCount = report.transits.length;
   report.violations = report.violations.slice(0, 40);
   let el = document.getElementById('twin-v2-route-audit');
   if (!el) { el = document.createElement('div'); el.id = 'twin-v2-route-audit'; el.hidden = true; document.body.append(el); }
   el.dataset.checked = String(report.checked); el.dataset.obstacles = String(report.obstacles); el.dataset.walls = String(report.walls);
   el.dataset.violations = String(report.violations.length);
   el.dataset.detail = JSON.stringify(report.violations.slice(0, 6));
-  parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'route-audit', checked: report.checked, obstacles: report.obstacles, walls: report.walls, violations: report.violations.length, detail: report.violations.slice(0, 8) }, location.origin);
+  el.dataset.transits = JSON.stringify(report.transits);   /* 合法穿门清单：门名 + 穿越坐标 + 方向（去/返） */
+  parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'route-audit', checked: report.checked, obstacles: report.obstacles, walls: report.walls, violations: report.violations.length, transits: report.transits, transitCount: report.transitCount, detail: report.violations.slice(0, 8) }, location.origin);
   return report;
 }
 

@@ -24,6 +24,7 @@
   function sendScene(type, data) { if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'twin-v2', type: type }, data), location.origin); }
   var pendingView = null;
   function sceneCmd(type, data) {
+    if (type === 'equipment-highlight') document.body.dataset.lastHighlight = String((data && data.id) || '');   /* QA 可断言：告警主体到底描边了哪个 CAD 实体 */
     if (type === 'view' && !sceneReady) { pendingView = data; return; }   /* 场景未就绪时指令会被丢弃，先排队 */
     if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'future-lab-tech-blue-spatial', type: type }, data), location.origin);
   }
@@ -165,8 +166,18 @@
       '<p style="font-size:11px;color:var(--tw-color-textMuted)">MVP 只呈现当前告警与闭环状态；事件序列回溯（原 S3）已移出本期范围。孪生只读，处置与解除由来源系统回传。</p>');
     var z = (a.zoneId || '').replace('Z-', '');
     if (z) sceneCmd('view', { view: z === '106' ? 'close' : z + '-close' });   /* 30 秒定位：镜头飞到告警所在区域 */
-    if (a.deviceId) { var d = devices.filter(function (x) { return x.deviceId === a.deviceId; })[0]; if (d) { detailDev = d; pollRealtime(); if (d.modelNode) sceneCmd('equipment-highlight', { id: d.modelNode.replace('cad:', '') }); } }
-    else if (String(a.deviceId).indexOf('RB') === 0) { var r0 = robots.filter(function (x) { return x.robotId === a.deviceId; })[0]; if (r0) flashHint('关联机器人 ' + r0.robotId + ' · ' + (r0.currentFlowName || '无在制任务')); }
+    /* 告警主体解析顺序：台账设备 → 机器人 → 只有 CAD 实体号的对象（如 106-12 AGV 上料试验桌，非数采、无台账号） */
+    var d0 = a.deviceId ? devices.filter(function (x) { return x.deviceId === a.deviceId; })[0] : null;
+    if (d0) { detailDev = d0; pollRealtime(); if (d0.modelNode) sceneCmd('equipment-highlight', { id: d0.modelNode.replace('cad:', '') }); }
+    else if (a.deviceId && String(a.deviceId).indexOf('RB') === 0) {
+      /* 机器人主体：告警详情必须留在屏上（原因/闭环状态/派至才是要点），只额外描边 + 提示，绝不覆盖成机器人详情 */
+      var r0 = robots.filter(function (x) { return x.robotId === a.deviceId; })[0];
+      if (r0) { sceneCmd('equipment-highlight', { id: r0.modelRoot }); flashHint('关联机器人 ' + r0.robotId + ' · ' + (r0.currentFlowName || '无在制任务')); }
+    }
+    else if (a.cadEntity) {
+      sceneCmd('equipment-highlight', { id: a.cadEntity });   /* 描边照做——CAD 实体号是事实，不需要台账号 */
+      flashHint('已描边 ' + a.cadEntity + '（非数采实体，无台账号与实时参数）');
+    }
   }
 
   /* 告警分区口径以数据为准（seed.overview['alarm-sections'] → /api/overview/alarm-sections）。
