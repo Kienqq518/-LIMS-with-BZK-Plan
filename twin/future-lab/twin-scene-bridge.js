@@ -265,7 +265,8 @@ document.addEventListener('click', e => { if (popEl && !popEl.hidden && !e.targe
 function injectLayerStyle() {
   if (document.getElementById('twin-v2-layer-style')) return;
   const st = document.createElement('style'); st.id = 'twin-v2-layer-style';
-  st.textContent = '.no-labels .room-label,.no-labels .orb-tag,.no-labels .node-reading,.no-labels .iot-reading{display:none!important}';
+  /* 场地标签只控制房间名称；设备状态光点与物联节点标签不受此开关影响（2026-11-06 反馈） */
+  st.textContent = '.no-site-labels .room-label{display:none!important}';
   document.head.append(st);
 }
 function boot() {
@@ -411,9 +412,10 @@ function manhattan(pts) {
 function applyLayer(name, on) {
   if (!(name in LAYERS)) return; LAYERS[name] = on;
   if (name === 'path' && lines) lines.visible = on;
-  if (name === 'labels') {                                   /* 设备状态标签=顶部光点；同时联动场景内房间/节点文字标签 */
-    statusDots.forEach(d => { d.visible = on; });
-    visual.host.classList.toggle('no-labels', !on);   /* 房间标签的 hidden 由 render() 每帧重算，只能走 CSS 覆盖 */
+  if (name === 'labels') {
+    /* 「场地标签」= 只开关房间名称标签。房间标签的 hidden 由 render() 每帧重算，所以只能走 CSS 覆盖。
+       设备状态光点（statusDots）与物联节点标签（.orb-tag/.node-reading）不属于本开关。 */
+    visual.host.classList.toggle('no-site-labels', !on);
   }
   if (name === 'heatmap') { if (on) drawHeatmap(); else if (heatGroup) heatGroup.visible = false; }
   if (name === 'zones' || name === 'walls') { const g = visual.scene.getObjectByName('twin-v2-zones'); if (g) g.visible = false; }   /* 旧 URL 参数兼容：分区色块恒关，剖墙不再是开关 */

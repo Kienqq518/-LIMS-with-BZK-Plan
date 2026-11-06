@@ -15,7 +15,11 @@
   var ORDER = [];  /* 遥控翻页序列 */
 
   var LAYER_KEYS = ['path', 'labels', 'heatmap'];   /* 分区色块、剖墙开关均已按 2026-11-06 反馈移除；墙体剖切改为场景侧固定行为 */
-  var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 1, heatmap: 0 }, alarmFilter: 'open', quality: 'high', strip: 0 };
+  /* 分区 id 由数据（/api/overview/alarm-sections）给出；URL 与面板签名都用它，不再写死 A/B/C。
+     readURL 在 SECTIONS 赋值之前执行，所以 secIds 兜底到内置三区的顺序。 */
+  function secIds() { return (Array.isArray(SECTIONS) && SECTIONS.length ? SECTIONS : [{ id: 'A' }, { id: 'B' }, { id: 'C' }]).map(function (x) { return x.id; }); }
+  function readFilter(v) { var a = (v || '').split(','); var o = {}; secIds().forEach(function (k, i) { o[k] = a[i] === 'all' ? 'all' : 'open'; }); return o; }
+  var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 1, heatmap: 0 }, alarmFilter: { A: 'open', B: 'open', C: 'open' }, quality: 'high', strip: 0 };
 
   function sendScene(type, data) { if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'twin-v2', type: type }, data), location.origin); }
   var pendingView = null;
@@ -29,12 +33,12 @@
     var p = new URLSearchParams(location.search); if (!p.get('mode')) return null;
     var lay = {}; (p.get('layers') || '').split(',').forEach(function (k) { if (k) lay[k] = 1; });
     return { mode: p.get('mode'), zone: p.get('zone') || '106', period: p.get('period') || 'day',
-      layers: { path: lay.path == null ? 1 : lay.path, labels: lay.labels == null ? 1 : lay.labels, walls: lay.walls == null ? 1 : lay.walls, heatmap: lay.heatmap ? 1 : 0 },
-      alarmFilter: p.get('alarmFilter') || 'open', quality: p.get('quality') || 'high', strip: p.get('strip') ? 1 : 0 };
+      layers: { path: lay.path == null ? 1 : lay.path, labels: lay.labels == null ? 1 : lay.labels, heatmap: lay.heatmap ? 1 : 0 },
+      alarmFilter: readFilter(p.get('alarmFilter')), quality: p.get('quality') || 'high', strip: p.get('strip') ? 1 : 0 };
   }
   function writeURL() {
     var p = new URLSearchParams(); p.set('mode', st.mode); if (st.mode === 'ZONE') p.set('zone', st.zone);
-    p.set('period', st.period); p.set('alarmFilter', st.alarmFilter); if (st.quality === 'low') p.set('quality', 'low'); if (st.strip) p.set('strip', '1');
+    p.set('period', st.period); p.set('alarmFilter', secIds().map(function (k) { return st.alarmFilter[k] || 'open'; }).join(',')); if (st.quality === 'low') p.set('quality', 'low'); if (st.strip) p.set('strip', '1');
     p.set('layers', LAYER_KEYS.filter(function (k) { return st.layers[k]; }).join(','));
     history.replaceState(null, '', location.pathname + '?' + p.toString() + '#v2=1&native-nodes=1');
   }
@@ -54,7 +58,7 @@
       TwinApi.get('/api/overview/alarms'), TwinApi.get('/api/zone/106/devices'), TwinApi.get('/api/zone/106/robots'),
       TwinApi.get('/api/zone/106/samples'), TwinApi.get('/api/zone/106/dispatch-tasks'),
       TwinApi.get('/api/zone/103/devices'), TwinApi.get('/api/zone/106/cycle'), TwinApi.get('/api/zone/106/walls'),
-      TwinApi.get('/api/overview/test-item-plan')
+      TwinApi.get('/api/overview/test-item-plan'), TwinApi.get('/api/overview/alarm-sections')
     ]);
   }).then(function (r) {
     status = r[0].data; zones = r[1].data || []; tasks = r[2].data || []; alarms = r[3].data || [];
@@ -63,6 +67,7 @@
     routeNote = (robots[0] && robots[0].routeBasis) ? '机器人位置基准：' + robots[0].routeBasis : '';
     walls = (r[10] && r[10].data) || [];
     planItems = (r[11] && r[11].data && r[11].data.items) || [];
+    setSections(r[12] && r[12].data);   /* A/B/C 分区口径来自数据，不在 JS 里写死（FR-24 第 4 条） */
     /* 讲解顺序（决策 Q1 售前投影）：总览 → 106 无人化区（主叙事）→ 其余区域 */
     ORDER = ['S1', 'Z106'].concat(zones.map(function (z) { return 'Z' + z.zoneId.slice(2); }).filter(function (z) { return z !== 'Z106'; }));   /* 讲解序列不再包含告警回溯屏 */
     if (r[9] && r[9].data && r[9].data.cycle) { cycleDef = r[9].data.cycle; if (!cycTimer) cycTimer = setInterval(tickCycle, 1000); tickCycle(); }
@@ -151,7 +156,7 @@
   /* ---------- ② 告警：闭环三态只读（决策 Q2） ---------- */
   function alarmOpen() { return alarms.filter(function (a) { return a.status !== 'resolved'; }); }
   function openAlarm(a) {
-    openDetail('<h3>' + escapeHtml(a.title) + '</h3><div class="sub">' + a.zoneId.replace('Z-', '') + ' 区 · Grade ' + a.grade + ' · ' + a.occurredAt + '</div>' +
+    openDetail('<h3>' + escapeHtml(a.title) + '</h3><div class="sub">' + a.zoneId.replace('Z-', '') + ' 区 · ' + a.grade + ' 级 · ' + a.occurredAt + '</div>' +
       '<div class="row"><span>原因</span><b style="max-width:200px;text-align:right">' + escapeHtml(a.reason) + '</b></div>' +
       '<div class="row"><span>闭环状态</span><b>' + ST_AB(a.status) + '</b></div>' +
       '<div class="row"><span>派至</span><b>' + escapeHtml(a.dispatchedTo || '待派发') + (a.dispatchedAt ? ' · ' + a.dispatchedAt : '') + '</b></div>' +
@@ -164,26 +169,51 @@
     else if (String(a.deviceId).indexOf('RB') === 0) { var r0 = robots.filter(function (x) { return x.robotId === a.deviceId; })[0]; if (r0) flashHint('关联机器人 ' + r0.robotId + ' · ' + (r0.currentFlowName || '无在制任务')); }
   }
 
-  function renderAlarms() {
-    var open = alarmOpen(), list = st.alarmFilter === 'open' ? open : alarms.slice();
-    list = open.concat(alarms.filter(function (a) { return a.status === 'resolved'; })).filter(function (a) { return st.alarmFilter === 'all' ? true : a.status !== 'resolved'; });
-    $('#alarmSum').innerHTML = '<span class="open">未解除 ' + open.length + '</span><span class="done">已解除 ' + alarms.filter(function (a) { return a.status === 'resolved'; }).length + '</span>' +
-      ['A', 'B', 'C'].map(function (g) { return '<span class="g' + g.toLowerCase() + '">' + g + ' ' + open.filter(function (a) { return a.grade === g; }).length + '</span>'; }).join('');
-    $('#streamMeta').textContent = '当前告警 · ' + list.length + ' 条 · 悬停暂停';
-    var rows = list.map(function (x) {
-      var attrs = ' class="st-row' + (x.status === 'resolved' ? ' is-resolved' : '') + '"'
-        + ' data-alarm="' + x.alarmId + '" data-dev="' + (x.deviceId || '') + '"'
-        + ' data-zone="' + x.zoneId.replace('Z-', '') + '" data-grade="' + x.grade + '"'
-        + ' data-status="' + x.status + '" data-to="' + escapeHtml(x.dispatchedTo || '') + '"'
-        + ' data-title="' + escapeHtml(x.title) + '"';
+  /* 告警分区口径以数据为准（seed.overview['alarm-sections'] → /api/overview/alarm-sections）。
+     下面三条只是接口缺数据时的兜底，避免装载失败后右栏整块空掉。 */
+  var SECTIONS = [
+    { id: 'A', key: 'anomaly', title: '异常告警', desc: '调度任务卡住 / 机器人未到位 / 设备工作状态异常 / 环境越限' },
+    { id: 'B', key: 'blockage', title: '阻塞 · 瓶颈告警', desc: '工位积压 / 储位紧张 / 节拍与等待超阈' },
+    { id: 'C', key: 'calibration', title: '校准期限告警', desc: '校准已过期 / 3 天内到期预警 / 维护到期' }
+  ];
+  function setSections(list) {
+    if (!Array.isArray(list) || !list.length) return;
+    if (!list.every(function (x) { return x && x.id && x.title && x.key; })) return;   /* 数据不合规→保持兜底，界面不能空 */
+    SECTIONS = list.slice();
+    renderAlarms();
+    if (st.mode === 'ZONE') renderZonePanel();
+  }
+  function alarmRows(list, cls) {
+    return list.map(function (x) {
+      var attrs = ' class="' + cls + (x.status === 'resolved' ? ' is-resolved' : '') + '" data-alarm="' + x.alarmId + '" data-dev="' + (x.deviceId || '') + '"' +
+        ' data-zone="' + x.zoneId.replace('Z-', '') + '" data-grade="' + x.grade + '" data-status="' + x.status + '"' +
+        ' data-to="' + escapeHtml(x.dispatchedTo || '') + '" data-title="' + escapeHtml(x.title) + '"';
       return '<div' + attrs + '>' +
-        '<div class="l1"><span class="gd ' + x.grade.toLowerCase() + '">Grade ' + x.grade + '</span><span>' + escapeHtml(x.title) + '</span><span class="tm">' + x.occurredAt + '</span></div>' +
+        '<div class="l1"><span>' + escapeHtml(x.title) + '</span><span class="tm">' + x.occurredAt + '</span></div>' +
         '<div class="rs">' + escapeHtml(x.reason) + '</div>' +
-        '<div class="l2"><span class="st ' + x.status + '">' + ST_AB(x.status) + '</span><span>' + x.zoneId.replace('Z-', '') + '</span>' +
-        '<span>派至 ' + escapeHtml(x.dispatchedTo || '待派发') + '</span><span class="tr">详情</span></div></div>';
+        '<div class="l2"><span class="st ' + x.status + '">' + ST_AB(x.status) + '</span><span class="zn">' + x.zoneId.replace('Z-', '') + ' 区</span>' +
+        '<span class="to" title="派至 ' + escapeHtml(x.dispatchedTo || '待派发') + '">派至 ' + escapeHtml(x.dispatchedTo || '待派发') + '</span>' + (cls === 'st-row' ? '<span class="tr">详情</span>' : '') + '</div></div>';
     }).join('');
-    $('#streamTrack').innerHTML = rows + rows;   /* 复制一份做无缝滚动 */
-    $('#streamTrack').style.animationDuration = Math.max(18, list.length * 6) + 's';
+  }
+  function secBlock(sec, pool) {
+    var all = pool.filter(function (x) { return x.grade === sec.id; });
+    var open = all.filter(function (x) { return x.status !== 'resolved'; });
+    var mode = st.alarmFilter[sec.id] || 'open';
+    var shown = mode === 'all' ? all : open;
+    var rows = alarmRows(shown, 'st-row');
+    return '<section class="asec" data-sec="' + sec.id + '">' +
+      '<header><span class="gd ' + sec.id.toLowerCase() + '">' + sec.id + '</span><b>' + sec.title + '</b>' +
+      '<span class="cnt">今日 ' + all.length + ' · 未解除 ' + open.length + '</span>' +
+      '<span class="toggle" role="group" aria-label="' + sec.title + '筛选">' +
+      '<button class="mini' + (mode === 'open' ? ' active' : '') + '" data-alarmfilter="open" data-sec="' + sec.id + '">只看未解除</button>' +
+      '<button class="mini' + (mode === 'all' ? ' active' : '') + '" data-alarmfilter="all" data-sec="' + sec.id + '">全部</button></span></header>' +
+      '<div class="asec-body"><div class="asec-track' + (rows ? ' scroll' : '') + '">' + (rows || '<div class="zp-empty">今日无' + sec.title + '</div>') + (rows ? rows : '') + '</div></div>' +
+      '</section>';
+  }
+  function renderAlarms() {
+    var openN = alarmOpen().length;
+    $('#streamMeta').textContent = '今日 ' + alarms.length + ' 条 · 未解除 ' + openN + ' · 悬停暂停';
+    $('#streamTrack').innerHTML = SECTIONS.map(function (sec) { return secBlock(sec, alarms); }).join('');
   }
 
   /* ---------- ③ 106 主叙事：机器人卡住 / 当前调度任务 / 设备状态 / 异常（决策 Q4） ---------- */
@@ -277,21 +307,22 @@
     }
 
     /* ⑤ 告警（本区域，只读三态） */
-    var abSig = st.alarmFilter + '|' + zalarms.map(function (a) { return a.alarmId + a.status; }).join('|');
+    var abSig = secIds().map(function (k) { return k + ':' + (st.alarmFilter[k] || 'open'); }).join(',') + '|' + zalarms.map(function (a) { return a.alarmId + a.status; }).join('|');
     if (zpSig.ab !== abSig) {
       zpSig.ab = abSig;
       var zopen = zalarms.filter(function (a) { return a.status !== 'resolved'; });
-      var shown = st.alarmFilter === 'open' ? zopen : zalarms;
-      var ctrl = '<div class="filter" role="group" aria-label="告警筛选">' +
-        '<button class="mini' + (st.alarmFilter === 'open' ? ' active' : '') + '" data-alarmfilter="open">只看未解除</button>' +
-        '<button class="mini' + (st.alarmFilter === 'all' ? ' active' : '') + '" data-alarmfilter="all">全部</button></div>';
-      /* 空态必须在「筛选行之外」单独判定：把筛选行和列表拼在一起再判空，空态永远不会出现（上一版就踩了） */
-      var body = shown.map(function (a) {
-        return '<div class="zp-row ' + (a.status === 'resolved' ? 'ready' : 'alarm') + '" data-alarm="' + a.alarmId + '"><i class="dot"></i><span class="nm">Grade ' + a.grade + ' ' + escapeHtml(a.title) + '</span><span class="sub">' + ST_AB(a.status) + ' · ' + a.occurredAt + '</span></div>' +
-          '<div class="l2" style="font-size:10px;color:var(--tw-color-textMuted);margin:-2px 0 6px 15px">派至 ' + escapeHtml(a.dispatchedTo || '—') + ' · 来源 ' + (SRC_NAME[a.source] || a.source || '—') + ' · <button data-alarm="' + a.alarmId + '" style="border:0;background:#F2F7FF;color:var(--tw-color-brand);border-radius:999px;font-size:10px;padding:2px 8px;cursor:pointer;margin-left:auto">详情</button></div>';
+      zp('#zpAlarms .zp-body').innerHTML = SECTIONS.map(function (sec) {
+        var all = zalarms.filter(function (a) { return a.grade === sec.id; });
+        var op = all.filter(function (a) { return a.status !== 'resolved'; });
+        var shown = st.alarmFilter[sec.id] === 'all' ? all : op;
+        var rows = alarmRows(shown, 'zp-row');
+        return '<div class="zsec" data-sec="' + sec.id + '"><div class="zsec-hd"><span class="gd ' + sec.id.toLowerCase() + '">' + sec.id + '</span>' +
+          '<b>' + sec.title + '</b><span class="cnt">今日 ' + all.length + ' · 未解除 ' + op.length + '</span>' +
+          '<span class="toggle"><button class="mini' + (st.alarmFilter[sec.id] !== 'all' ? ' active' : '') + '" data-alarmfilter="open" data-sec="' + sec.id + '">只看未解除</button>' +
+          '<button class="mini' + (st.alarmFilter[sec.id] === 'all' ? ' active' : '') + '" data-alarmfilter="all" data-sec="' + sec.id + '">全部</button></span></div>' +
+          (rows || '<div class="zp-empty">本区今日无' + sec.title + '</div>') + '</div>';
       }).join('');
-      zp('#zpAlarms .zp-body').innerHTML = ctrl + (body || '<div class="zp-empty">该区域当前无告警。</div>');
-      zp('#zpAlarmsN').textContent = zopen.length + ' 未解除 / 共 ' + zalarms.length;
+      zp('#zpAlarmsN').textContent = '今日 ' + zalarms.length + ' · 未解除 ' + zopen.length;
     }
   }
   function ST_CN(x) { return { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常' }[x] || x; }
@@ -418,7 +449,7 @@
     if ($('#zoneSel').options.length) $('#zoneSel').value = st.zone;
     /* 区域视图=右侧五块面板；浮层（告警卡/机器人卡）与底栏让位，避免同一信息出现两次 */
     $('#zonePanel').hidden = st.mode !== 'ZONE';
-    $('#alarmStream').hidden = false;   /* 告警流常驻：总览看全局、区域看本区（区域面板里也有本区告警块） */
+    $('#alarmStream').hidden = st.mode === 'ZONE';   /* 区域视图时让位给右侧面板（面板内的告警块已按 A/B/C 三分区呈现，控件不丢） */
     /* 机器人状态条与底部说明条已整体删除（2026-11-06）；「收起底栏」只作用于今日任务表 */
     $('#taskStrip').hidden = st.mode !== 'S1' || !!st.strip;
     /* 详情面板随视图重新停靠：总览时覆盖右侧，区域视图时让位到面板左边，否则会挡住五类信息（实测缺陷） */
@@ -431,10 +462,10 @@
     if (st.mode === 'ZONE') { loadZone(); renderZonePanel(); }
 
   }
-  function setAlarmFilter(v) {
-    if (!v || v === st.alarmFilter) return;
-    st.alarmFilter = v;
-    document.querySelectorAll('[data-alarmfilter]').forEach(function (x) { x.classList.toggle('active', x.dataset.alarmfilter === v); });
+  function setAlarmFilter(sec, v) {
+    if (!sec || !v || st.alarmFilter[sec] === v) return;
+    st.alarmFilter[sec] = v;                       /* 三个分区各自独立筛选，互不影响 */
+    document.querySelectorAll('[data-sec="' + sec + '"][data-alarmfilter]').forEach(function (x) { x.classList.toggle('active', x.dataset.alarmfilter === v); });
     renderAlarms(); renderZonePanel(); writeURL();
   }
 
@@ -491,7 +522,7 @@
     /* 筛选控件改为事件委托：同一套按钮现在渲染在两处（右侧告警流头部、区域视图的告警块），必须统一响应 */
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-alarmfilter]'); if (!btn) return;
-      setAlarmFilter(btn.dataset.alarmfilter);
+      setAlarmFilter((btn.closest('[data-sec]') || { dataset: {} }).dataset.sec || btn.dataset.sec, btn.dataset.alarmfilter);
     });
     document.querySelectorAll('.lic').forEach(function (b) { b.onclick = function () {
       var k = b.dataset.layer; st.layers[k] = st.layers[k] ? 0 : 1;
@@ -542,7 +573,7 @@
     document.querySelectorAll('.lic').forEach(function (b) { b.classList.toggle('on', !!st.layers[b.dataset.layer]); b.setAttribute('aria-pressed', !!st.layers[b.dataset.layer]); });
     syncFs();
     document.querySelectorAll('.seg').forEach(function (b) { b.classList.toggle('active', b.dataset.period === st.period); });
-    document.querySelectorAll('.mini').forEach(function (b) { b.classList.toggle('active', b.dataset.alarmfilter === st.alarmFilter); });
+    document.querySelectorAll('[data-alarmfilter]').forEach(function (b) { var sec = b.dataset.sec; if (sec) b.classList.toggle('active', st.alarmFilter[sec] === b.dataset.alarmfilter); });
   }
 
   /* ---------- 详情与实时 ---------- */

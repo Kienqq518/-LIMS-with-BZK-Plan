@@ -168,14 +168,33 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-color-textPrimary);backg
 .stream>header .sh-top{display:flex;align-items:baseline;gap:8px}
 .stream>header b{font-size:13px}
 .stream>header .sh-top span{font-size:10px;color:var(--tw-color-textMuted);margin-left:auto;font-variant-numeric:tabular-nums}
-.stream>header .alarm-sum{gap:5px}
-.stream>header .alarm-sum span{font-size:10.5px;padding:3px 8px}
-.stream>header .filter{gap:5px}
-.zonepanel .filter{margin:0 0 7px}
-.stream-view{flex:1;overflow:hidden;position:relative;-webkit-mask-image:linear-gradient(180deg,transparent,#000 22px,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(180deg,transparent,#000 22px,#000 calc(100% - 26px),transparent)}
-.stream-track{display:flex;flex-direction:column;gap:8px;padding:10px 12px;animation:streamUp 34s linear infinite;will-change:transform}
-.stream:hover .stream-track,.stream:focus-within .stream-track{animation-play-state:paused}
-@keyframes streamUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+.stream>header .sh-legend{display:flex;gap:6px;font-size:9.5px;color:var(--tw-color-textMuted)}
+.stream>header .sh-legend span{border:1px solid #E6EDF6;border-radius:999px;padding:2px 8px;background:rgba(255,255,255,.6)}
+/* ---- 告警三分区（A 异常 / B 阻塞瓶颈 / C 校准期限）：各自计数与独立筛选 ---- */
+.asec{border:1px solid rgba(233,238,244,.9);border-radius:12px;background:rgba(255,255,255,.5);margin-bottom:9px;overflow:hidden}
+.asec>header{display:flex;align-items:center;gap:7px;padding:7px 9px;background:rgba(244,248,253,.72);border-bottom:1px solid rgba(233,238,244,.9);flex-wrap:wrap}
+.asec>header .gd{font-size:10px;font-weight:800;color:#fff;border-radius:6px;padding:2px 7px}
+.asec>header .gd.a{background:var(--tw-color-alertRed)}.asec>header .gd.b{background:var(--tw-color-bottleneckOrange)}.asec>header .gd.c{background:var(--tw-color-warnAmber)}
+.asec>header b{font-size:11.5px;color:#0F2740}
+.asec>header .cnt{font-size:9.5px;color:var(--tw-color-textMuted);font-variant-numeric:tabular-nums;margin-left:auto}
+.asec>header .toggle{display:flex;gap:4px;flex:1 1 100%;justify-content:flex-end}
+.asec-body{max-height:236px;overflow:hidden;position:relative;-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 26px),transparent)}
+.asec-track{display:flex;flex-direction:column;gap:7px;padding:7px 9px}
+.asec-track.scroll{animation:asecUp 26s linear infinite;will-change:transform}
+.asec:hover .asec-track.scroll,.asec:focus-within .asec-track.scroll{animation-play-state:paused}   /* 悬停与键盘焦点都暂停（遥控翻页时用 Tab 停在某行也能读全） */
+@keyframes asecUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+@media (prefers-reduced-motion:reduce){.asec-track.scroll{animation:none!important}}
+.zsec{margin-bottom:9px}
+.zsec-hd{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px}
+.zsec-hd .gd{font-size:10px;font-weight:800;color:#fff;border-radius:6px;padding:2px 7px}
+.zsec-hd .gd.a{background:var(--tw-color-alertRed)}.zsec-hd .gd.b{background:var(--tw-color-bottleneckOrange)}.zsec-hd .gd.c{background:var(--tw-color-warnAmber)}
+.zsec-hd b{font-size:11px}
+.zsec-hd .cnt{font-size:9.5px;color:var(--tw-color-textMuted);font-variant-numeric:tabular-nums;margin-left:auto}
+.zsec-hd .toggle{display:flex;gap:4px;flex:1 1 100%;justify-content:flex-end}
+.st-row .l1 .tm{margin-left:auto;font-size:10px;color:var(--tw-color-textMuted);font-variant-numeric:tabular-nums}
+/* 外层不再整体滚动：三个分区各自滚动，否则分区表头也跟着飘（自动化里表现为"永远不稳定"） */
+.stream-view{flex:1;overflow:auto;position:relative}
+.stream-board{display:flex;flex-direction:column;padding:10px 12px}
 .st-row{background:rgba(255,255,255,.86);border:1px solid #E9EEF4;border-radius:12px;padding:9px 11px;cursor:pointer;transition:border-color .18s,box-shadow .18s}
 .st-row:hover{border-color:#C7DBFF;box-shadow:0 6px 18px rgba(40,120,255,.10)}
 .st-row .l1{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600}
@@ -183,7 +202,10 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-color-textPrimary);backg
 .st-row .gd.a{background:var(--tw-color-alertRed)}.st-row .gd.b{background:var(--tw-color-bottleneckOrange)}.st-row .gd.c{background:var(--tw-color-warnAmber)}
 .st-row .tm{margin-left:auto;font-size:10px;color:var(--tw-color-textMuted);font-variant-numeric:tabular-nums}
 .st-row .rs{font-size:11px;color:var(--tw-color-textSecondary);margin-top:3px;line-height:1.5}
-.st-row .l2{display:flex;gap:6px;align-items:center;margin-top:6px;font-size:10px;color:var(--tw-color-textMuted)}
+.st-row .l2{display:flex;gap:6px;align-items:center;margin-top:6px;font-size:10px;color:var(--tw-color-textMuted);flex-wrap:wrap}
+/* 三态徽章与「详情」是词，不能被折行拆成两截（投影上很难看）；派至过长就省略号，完整内容在 title 里 */
+.st-row .l2 .st,.st-row .l2 .zn,.st-row .l2 .tr{white-space:nowrap}
+.st-row .l2 .to{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:132px;flex:0 1 auto}
 .st-row .st{font-weight:700;color:#fff;border-radius:999px;padding:1px 7px;font-size:9px}
 .st-row .st.active{background:var(--tw-color-alertRed)}.st-row .st.dispatched{background:var(--tw-color-warnAmber)}.st-row .st.resolved{background:#7E8C9B}
 .st-row.is-resolved{opacity:.7}

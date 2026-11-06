@@ -1,7 +1,7 @@
 /**
  * 数字孪生 Mock API 层 V1 —— 前端唯一数据入口（不直连三个异构系统）
  * 契约：《数字孪生对象模型与数据字典 V1.md》§2；后端按同路径实现即插即用。
- * 端点：/api/overview/{lab-status|zones|today-tasks|alarms}
+ * 端点：/api/overview/{lab-status|zones|today-tasks|alarms|test-item-plan|alarm-sections}
  *       /api/zone/106/{devices|robots|samples|current-tasks}
  * 只读：无任何写回端点——告警处置由来源系统闭环（PRD-v1 §6 + 决策 Q2）。
  *       /api/zone/{z}/{task-stats|running-tasks|alarms}   ← 区域视图五类信息（环境数据走 V4 节点协议）
@@ -18,6 +18,18 @@
   function load() {
     return fetch('../api/seed.json').then(function (r) { return r.json(); }).then(function (seed) {
       state = seed;
+      /* 告警等级不落两份事实源：grade 由 category + alarm-sections 推导（PRD FR-24），
+         seed 里保留的 grade 只作交叉校验，不一致时以推导值为准并打标记。 */
+      (function deriveGrades() {
+        var map = {};
+        (state.overview['alarm-sections'] || []).forEach(function (sec) { map[sec.key] = sec.id; });
+        (state.overview.alarms || []).forEach(function (a) {
+          var g = map[a.category];
+          if (!g) { a.gradeError = 'category 不在分区定义内：' + a.category; return; }
+          if (a.grade && a.grade !== g) a.gradeError = 'seed 写的 ' + a.grade + ' 与推导 ' + g + ' 不一致';
+          a.grade = g;
+        });
+      })();
       state.overview['lab-status'].updatedAt = now();
       return true;
     });

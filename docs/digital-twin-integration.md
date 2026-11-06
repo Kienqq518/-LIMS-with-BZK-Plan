@@ -149,9 +149,10 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 |---|---|---|---|
 | 宿主→网关（REST） | `GET /api/zone/{z}/task-stats` | 区域任务统计四格：`{periods{day,month,year}{done,running,abnormal,queued,total}, note}`；屏上只显示 完成/执行中/异常/排队，`total` 仅 title 备注；非试验区 note 说明「无任务口径」 |
 | 宿主→网关（REST） | `GET /api/zone/{z}/running-tasks` | 在制任务合并流：`{tasks[{kind:'dispatch'\|'daq', taskId, name, deviceCode, robotId, startedAt, elapsedMin, plannedMin, stage, percent}]}`；`elapsedMin>plannedMin` → 前端标「超时」 |
-| 宿主→网关（REST） | `GET /api/zone/{z}/alarms` | 本区告警（只读三态 + 派至 + 来源） |
+| 宿主→网关（REST） | `GET /api/overview/alarm-sections` | 告警分区口径（A 异常 / B 阻塞·瓶颈 / C 校准期限）：`[{id,key,title,desc}]`。前端按此渲染三区并让 `grade` 由 `category` 推导，接口缺数据时退回内置三条兜底（FR-24） |
+| 宿主→网关（REST） | `GET /api/zone/{z}/alarms` | 本区告警（只读三态 + 派至 + 来源 + `category`）；前端按 `category`（anomaly/blockage/calibration）分 A/B/C 三区呈现，`grade` 由 category 推导，两侧口径一致 |
 | 宿主→场景 | `state` | `{robots[], deviceStatus{}, layers{}, quality, routeNote}` | 幂等全量推，场景侧收到即应用图层与画质（避免 ready 竞态） |
-| 宿主→场景 | `layer` | `{layer:'path\|labels\|zones\|walls\|heatmap', enabled:bool}` | 图层=渲染可见性，与业务无关；`walls` 关=还原墙体不剖切 |
+| 宿主→场景 | `layer` | `{layer:'path\|labels\|heatmap', enabled:bool}` | 图层=渲染可见性，与业务无关。**`labels` 自 2026-11-06 起语义收窄为「场地标签」＝只开关各房间名称标签**，不再联动设备状态光点与物联节点标签（`.orb-tag`/`.node-reading`）；`zones`/`walls` 已下线，旧 URL 参数被忽略且不报错（墙体剖切为固定渲染行为） |
 | 宿主→场景 | `quality` | `{level:'high'\|'low'}` | 低配：关 Reflector、pixelRatio→1、动画环 66→125ms、光点静态 |
 | 空间 | `equipment-highlight` | `{id:'106-06'}` | 面板→场景描边；id 为 CAD 节点号（宿主 `modelNode` 去 `cad:` 前缀） |
 | 场景→宿主 | `bridge-ready` | `{guide, robots}` | 就绪握手；宿主在此之前缓存最后一次状态并在就绪后重放 |
