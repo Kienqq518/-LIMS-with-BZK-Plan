@@ -163,4 +163,6 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 
 **首屏与视角**：V2 运行大屏首屏机位（`?v2=1` 条件生效，其余 tour-space-* 页面保持 `[-.18,.94]`）=`overall-101`  `yaw -1.05 / elev 0.6 / zoom 1`（2026-11-06 按产品负责人截图标定，10 个房间标签屏幕位置拟合 RMSE≈37px）；`scene-group-highlight-v3-1.js` 的 `CAMERA` 常量必须与之一致，否则分组高亮复位会覆盖机位。宿主在场景 `bridge-ready` 之前不得直接发 `view` 指令——需入队，就绪后补发，保证 `?mode=&zone=&layers=` 的首屏恢复。
 
+**行进约束（2026-11-06）**：机器人 `path` 为曼哈顿折线锚点（0.05m 栅格 A* 推导），并带 `homeAnchor / allowedZones / corridor / footprint / sweptEnvelope(0.902) / clearanceM(0.20) / serves / routeMethod`。场景侧 `auditRoutes()` 每次装载逐段 0.02m 采样校验「越出允许范围」与「与实体重叠/穿越」，结果经 `{type:'route-audit', checked, obstacles, violations, detail}` 回传宿主并常驻左栏显示；违规>0 视为不可上线。真实调度接入后仅替换 `path/homeAnchor`，校验规则不变。
+
 **待补（下一步）**：`host:setAutoRoam`（讲解用自动巡航，默认关）、`scene:waypointClick{waypointId}`（折线拐点拾取，标记已渲染）、`requestId + ack + 3s 超时重试` 信封。

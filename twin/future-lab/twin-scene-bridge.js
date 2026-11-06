@@ -233,13 +233,9 @@ const COLORS = { alarm: 0xe5484d, working: 0x2878ff, ready: 0x16a34a, standby: 0
 
 function build(v) {
   visual = v;
-  /* AMR 通道引导线（#E8D77A，planned 坐标，待现场标定） */
+  /* 行进路线层：只画数据给的锚点（CAD 占地推导的曼哈顿折线），不再手绘——
+     旧版硬编码的黄色环线/虚线没有任何数据依据，实测会压在试验桌与设备上（违反避让规则）。 */
   const guide = new THREE.Group(); guide.name = 'twin-v2-guide';
-  const mk = (pts) => new THREE.Line(new THREE.BufferGeometry().setFromPoints(manhattan(pts).map(p => new THREE.Vector3(p[0], 0.02, p[1]))),
-    new THREE.LineBasicMaterial({ color: COLORS.guide, transparent: true, opacity: 0.9 }));
-  /* 通道引导线：工位锚点 → 直角折线（原为带弧度的手绘折线，与真实运动学不符） */
-  guide.add(mk([[11.0, 25.0], [13.6, 25.6], [16.4, 24.8], [17.6, 21.0], [17.6, 15.5], [16.2, 12.4], [13.2, 11.8], [11.0, 13.2], [11.0, 20.0], [11.0, 25.0]]));
-  const dash = mk([[11.2, 25.0], [17.2, 19.6]]); dash.material.color.set(0x2878ff); dash.material.opacity = 0.5; guide.add(dash);
   v.scene.add(guide); lines = guide;
 
   /* 机器人：直接驱动 CAD 真实复合机器人模型（106-09→RB-C-01，106-08→RB-C-02），不再放程序化假机器人 */
@@ -283,14 +279,16 @@ function applyState(d) {
   (d.robots || []).forEach(r => {
     robotTargets[r.robotId] = Object.assign(robotTargets[r.robotId] || {}, r);
     if (r.path) robotTargets[r.robotId].mpts = manhattan(r.path).map(q => new THREE.Vector3(q[0], 0, q[1]));
+    const root = robots[r.robotId] || (r.modelRoot ? (robots[r.robotId] = visual.modelRoots.get(r.modelRoot) || null) : null);
+    if (root && r.homeAnchor && root.userData.homeParked !== true) {   /* 家位=环线起点，避免开机时停在设备里 */
+      root.position.set(r.homeAnchor[0], 0, r.homeAnchor[2]); root.userData.homeParked = true;
+    }
     if (!robots[r.robotId] && r.modelRoot) robots[r.robotId] = visual.modelRoots.get(r.modelRoot) || null;
   });
-  if (!robotPathsDrawn && (d.robots || []).length) {   /* 蓝色虚线按真实路径重画（直角折线） */
+  if (!robotPathsDrawn && (d.robots || []).length) {
     robotPathsDrawn = true;
-    const dash = lines && lines.children[1];
-    if (dash && d.robots[0] && d.robots[0].path) {
-      dash.geometry.setFromPoints(manhattan(d.robots[0].path).map(q => new THREE.Vector3(q[0], 0.021, q[1])));
-    }
+    drawRoutes(d.robots);
+    auditRoutes(d.robots);
   }
   if (d.layers) Object.entries(d.layers).forEach(([k, v]) => applyLayer(k, !!v));
   if (d.quality) setQuality(d.quality === 'low' ? 'low' : 'high');
@@ -363,4 +361,100 @@ function setQuality(level) {
   }
   const hook = document.getElementById('twin-v2-bridge'); if (hook) hook.dataset.quality = low ? 'low' : 'high';
   if (visual) visual.render();
+}
+
+/* ---------- 行进路线层与避让校验（决策 2026-11-06：小机器人限 102↔106 及区间走廊，不得重叠或穿越他物） ---------- */
+const ROUTE_COLORS = { 'RB-C-02': 0xe8d77a, 'RB-C-01': 0x2878ff };
+function obstacleBoxes() {
+  const skip = new Set(['106-08', '106-09']);                     // 两台机器人自身
+  const out = [];
+  visual.modelRoots.forEach((mesh, id) => {
+    if (skip.has(id)) return;
+    const b = new THREE.Box3().setFromObject(mesh);
+    if (!isFinite(b.min.x) || b.max.y < 0.05) return;             // 贴地零高物体（地面/标线）不算障碍
+    out.push({ id, x0: b.min.x, x1: b.max.x, z0: b.min.z, z1: b.max.z, h: +(b.max.y).toFixed(2) });
+  });
+  return out;
+}
+/* 扫掠正方形是否被「允许区并集」精确覆盖：坐标压缩后逐小格判定（单矩形判定会在 102↔走廊门口误判） */
+function covered(x, z, half, rects) {
+  const sx0 = x - half, sx1 = x + half, sz0 = z - half, sz1 = z + half;
+  const xs = new Set([sx0, sx1]), zs = new Set([sz0, sz1]);
+  rects.forEach(q => { [q.x0, q.x1].forEach(v => { if (v > sx0 && v < sx1) xs.add(v); }); [q.z0, q.z1].forEach(v => { if (v > sz0 && v < sz1) zs.add(v); }); });
+  const X = [...xs].sort((a, b) => a - b), Z = [...zs].sort((a, b) => a - b);
+  const inAny = (px, pz) => rects.some(q => px >= q.x0 && px <= q.x1 && pz >= q.z0 && pz <= q.z1);
+  for (let i = 0; i < X.length - 1; i++) for (let j = 0; j < Z.length - 1; j++) {
+    if (!inAny((X[i] + X[i + 1]) / 2, (Z[j] + Z[j + 1]) / 2)) return false;
+  }
+  return true;
+}
+function allowedRects(r) {
+  const rects = [];
+  const roomRect = id => {
+    const room = (visual.g.rooms || []).find(x => x.id === id); if (!room) return null;
+    const xs = room.points.map(q => q[0] * 0.05), zs = room.points.map(q => q[1] * 0.05);
+    return { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs), id };
+  };
+  (r.allowedZones || []).forEach(z => {
+    const m = /Z-(\d{3})/.exec(z); if (!m) return;
+    const q = roomRect(m[1]); if (q) rects.push(q);
+  });
+  if (r.corridor) rects.push({ x0: r.corridor.x[0], x1: r.corridor.x[1], z0: r.corridor.z[0], z1: r.corridor.z[1], id: 'corridor' });
+  if (!rects.length) { const q = roomRect('106'); if (q) rects.push(q); }
+  return rects;
+}
+function drawRoutes(list) {
+  if (!lines) return;
+  lines.clear();
+  list.forEach(r => {
+    if (!r.path || r.path.length < 2) return;
+    const pts = manhattan(r.path).map(q => new THREE.Vector3(q[0], 0.022, q[1]));
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color: ROUTE_COLORS[r.robotId] || 0xe8d77a, transparent: true, opacity: 0.85 }));
+    line.name = 'route-' + r.robotId; lines.add(line);
+    /* 掉头拐点（原地掉头=直角拐点） */
+    const knots = new THREE.Group(); knots.name = 'knots-' + r.robotId;
+    pts.forEach((p, i) => {
+      const dot = new THREE.Mesh(new THREE.CircleGeometry(i === 0 ? 0.16 : 0.09, 16),
+        new THREE.MeshBasicMaterial({ color: i === 0 ? 0x16a34a : (ROUTE_COLORS[r.robotId] || 0xe8d77a), transparent: true, opacity: 0.9, toneMapped: false, depthWrite: false }));
+      dot.rotation.x = -Math.PI / 2; dot.position.set(p.x, 0.024, p.z); knots.add(dot);
+    });
+    lines.add(knots);
+    /* 行进范围带：走廊（仅运输机器人有） */
+    if (r.corridor) {
+      const c = r.corridor;
+      const band = new THREE.Mesh(new THREE.PlaneGeometry(c.x[1] - c.x[0], c.z[1] - c.z[0]),
+        new THREE.MeshBasicMaterial({ color: 0xe8d77a, transparent: true, opacity: 0.10, depthWrite: false, toneMapped: false }));
+      band.rotation.x = -Math.PI / 2; band.position.set((c.x[0] + c.x[1]) / 2, 0.012, (c.z[0] + c.z[1]) / 2); band.name = 'corridor-' + r.robotId;
+      lines.add(band);
+    }
+  });
+}
+function auditRoutes(list) {
+  const obs = obstacleBoxes();
+  const report = { checked: 0, violations: [], obstacles: obs.length, at: new Date().toISOString() };
+  list.forEach(r => {
+    const half = (r.sweptEnvelope || Math.max(...(r.footprint || [0.9, 0.9]))) / 2 + (r.clearanceM || 0.2);
+    const rects = allowedRects(r);
+    const pts = r.path || [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const n = Math.max(1, Math.round(Math.max(Math.abs(b[0] - a[0]), Math.abs(b[2] - a[2])) / 0.02));
+      for (let k = 0; k <= n; k++) {
+        const t = k / n, x = a[0] + (b[0] - a[0]) * t, z = a[2] + (b[2] - a[2]) * t;
+        report.checked++;
+        if (!covered(x, z, half, rects)) { report.violations.push({ robot: r.robotId, seg: i, at: [+x.toFixed(2), +z.toFixed(2)], type: '越出允许范围', rect: rects.map(q => q.id).join('/') }); continue; }
+        const o = obs.find(q => x + half > q.x0 && x - half < q.x1 && z + half > q.z0 && z - half < q.z1);
+        if (o) report.violations.push({ robot: r.robotId, seg: i, at: [+x.toFixed(2), +z.toFixed(2)], type: '与实体重叠/穿越', obj: o.id, h: o.h });
+      }
+    }
+  });
+  report.violations = report.violations.slice(0, 40);
+  let el = document.getElementById('twin-v2-route-audit');
+  if (!el) { el = document.createElement('div'); el.id = 'twin-v2-route-audit'; el.hidden = true; document.body.append(el); }
+  el.dataset.checked = String(report.checked); el.dataset.obstacles = String(report.obstacles);
+  el.dataset.violations = String(report.violations.length);
+  el.dataset.detail = JSON.stringify(report.violations.slice(0, 6));
+  parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'route-audit', checked: report.checked, obstacles: report.obstacles, violations: report.violations.length, detail: report.violations.slice(0, 8) }, location.origin);
+  return report;
 }
