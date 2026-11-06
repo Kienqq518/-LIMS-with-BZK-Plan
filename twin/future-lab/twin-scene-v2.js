@@ -10,7 +10,7 @@
   var scene = $('#scene');
   var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [];
   var rtTimer = null, detailDev = null, bridgeReady = false, pendingState = null;
-  var zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false, routeAudit = null;
+  var zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false, routeAudit = null, cycleDef = null, cycTimer = null;
   var SRC_NAME = { daq: '数采', dispatch: '调度', iot: '物联', lims: 'LIMS', rule: '判定规则' };
   var ORDER = [];  /* 遥控翻页序列 */
 
@@ -57,7 +57,7 @@
     walls = (r[10] && r[10].data) || [];
     /* 讲解顺序（决策 Q1 售前投影）：总览 → 106 无人化区（主叙事）→ 其余区域 → 告警回溯 */
     ORDER = ['S1', 'Z106'].concat(zones.map(function (z) { return 'Z' + z.zoneId.slice(2); }).filter(function (z) { return z !== 'Z106'; })).concat(['S3']);
-    if (r[9] && r[9].data && r[9].data.live) renderCycle(Object.assign({}, r[9].data.live, { total: r[9].data.cycle.stops.length }));
+    if (r[9] && r[9].data && r[9].data.cycle) { cycleDef = r[9].data.cycle; if (!cycTimer) cycTimer = setInterval(tickCycle, 1000); tickCycle(); }
     buildZoneSelect(); bindControls(); syncLayerMenu(); applyAll();
     TwinApi.ws(onEvent);
   }).catch(function (e) { fail(e.message); });
@@ -272,6 +272,20 @@
     el.style.animationDuration = Math.max(16, tasks.length * 5) + 's';
   }
 
+  /* 与 mock/场景同一套时间轴公式：t0=停靠开始，travel 在其之前；按墙上时钟取模 */
+  function cycleAt(t) {
+    if (!cycleDef || !cycleDef.stops) return null;
+    var S = cycleDef.stops, L = cycleDef.loopSec; t = (t % L);
+    var cur = S[S.length - 1], idx = S.length - 1, tail = false;
+    for (var i = 0; i < S.length; i++) { if (t < S[i].t0 + S[i].dwellSec) { cur = S[i]; idx = i; break; } }
+    if (t >= S[S.length - 1].t0 + S[S.length - 1].dwellSec) tail = true;
+    if (tail) return { order: S.length, label: '返回 102 家位/充电位', flow: '返航', phase: 'travel', remainingSec: Math.max(0, Math.round(L - t)), taskNo: null, deviceCode: null, total: S.length };
+    var dwell = t >= cur.t0;
+    return { order: cur.order, label: cur.label, flow: cur.flow, taskNo: cur.taskNo, deviceCode: cur.deviceCode, total: S.length,
+      phase: dwell ? 'dwell' : 'travel', remainingSec: Math.max(0, Math.round(dwell ? cur.t0 + cur.dwellSec - t : cur.t0 - t)) };
+  }
+  function tickCycle() { renderCycle(cycleAt(Date.now() / 1000)); }
+
   /* ---------- 无人化任务循环剧本指示 ---------- */
   function renderCycle(c) {
     if (!c) return;
@@ -353,13 +367,12 @@
   /* ---------- 三层控制 ---------- */
   function zoneView(z) { return z === '106' ? 'close' : z + '-close'; }
   /* 下钻动效：先让桥接层记录切换前构图，再切视角+分组抬升，最后由桥接层补间推近（不再生硬跳帧） */
-  function drillTo(view, manualRoom) {
+  /* 下钻＝纯相机补间：begin 记录旧构图 → 切视角 → drill 平滑回落。
+     不再发 focus-scene（分组抬升）：它会给 roomIds 里的每个房间描一圈蓝色轮廓，
+     总览传全部房间＝满屏蓝框（2026-11-06 产品负责人反馈，已回退）。 */
+  function drillTo(view) {
     toScene('camera', { action: 'begin' });
-    if (scene.contentWindow) {
-      var ids = manualRoom ? [manualRoom] : zones.map(function (z) { return z.zoneId.slice(2); });
-      scene.contentWindow.postMessage({ channel: 'room-tour-highlight-v2', type: 'focus-scene', roomIds: ids, manualRoom: manualRoom, resetView: false }, location.origin);
-    }
-    sceneCmd('view', { view: view });   /* 必须排在 focus-scene 之后：分组抬升模块在 changed 时会把视角强制拉回 overall-101 */
+    sceneCmd('view', { view: view });
     toScene('camera', { action: 'drill' });
   }
   function applyAll() {
@@ -374,7 +387,7 @@
     $('#stripBtn').disabled = st.mode !== 'S1';
     $('#s3Drawer').hidden = st.mode !== 'S3'; if (st.mode === 'S3') renderS3();
     var h = document.querySelector('.s3drawer b'); if (h) h.textContent = '告警回溯 · 最近 24h（未解除 ' + alarmOpen().length + ' / 共 ' + alarms.length + '）';
-    drillTo(st.mode === 'ZONE' ? zoneView(st.zone) : 'overall-101', st.mode === 'ZONE' ? st.zone : null);
+    drillTo(st.mode === 'ZONE' ? zoneView(st.zone) : 'overall-101');
     renderMetrics(); renderCharts(); renderAlarms(); renderRobots(); renderStrip(); pushState(); writeURL();
     if (st.mode === 'ZONE') { loadZone(); renderZonePanel(); }
 
