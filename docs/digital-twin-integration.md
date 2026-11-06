@@ -168,4 +168,6 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 **相机与浮层（2026-11-06）**：宿主 → 场景新增 `twin-v2/camera{action:'begin'|'drill'|'device'|'reset', deviceId?, zoneId?}` 与 `future-lab-tech-blue-spatial/pan{x,y}`（像素）；场景 → 宿主新增 `route-audit{checked,obstacles,violations,detail}`。下钻指令序列与时序约束见 `docs/twin-design/animation-spec.md` §11。
 `GET /api/zone/106/cycle` → `{robotId, cycle{loopSec,speedMs,pathLengthM,stops[{order,cad,label,flowCode,flow,taskNo,deviceCode,u,travelSec,dwellSec,t0}]}, live{order,label,phase:'travel'|'dwell',remainingSec,u,loopSec}}`；`live` 由墙上时钟取模计算，前端只读不写。
 
+**墙体与门洞（2026-11-06）**：新增 `GET /api/zone/{z}/walls` → `[{name,axis:'x'|'z',at,a,b,gate:[lo,hi]|null}]`（实测：106 东玻璃墙 x=18.49 门洞 z[10.2,11.8]，中心 11.0；106 南墙 z=9.59 无门洞）。宿主把 `walls` 随 `state` 推给场景，场景侧 `auditRoutes()` 按「扫掠方块与墙面相交则必须整块落入 gate」判定 `穿墙未走门洞`；**自检随 path/walls 签名变化重算**（只跑首帧等于没校验）。真实接入后若调度系统给出门洞通行事件，应以事件为准复核本规则。
+
 **待补（下一步）**：`host:setAutoRoam`（讲解用自动巡航，默认关）、`scene:waypointClick{waypointId}`（折线拐点拾取，标记已渲染）、`requestId + ack + 3s 超时重试` 信封。

@@ -342,7 +342,7 @@ function build(v) {
   }, 5000);
 }
 
-let robotPathsDrawn = false;
+let robotPathsDrawn = false, routeSig = null;
 function applyState(d) {
   (d.robots || []).forEach(r => {
     const tn = performance.now(), slot = robotTargets[r.robotId];
@@ -368,10 +368,13 @@ function applyState(d) {
     }
     if (!robots[r.robotId] && r.modelRoot) robots[r.robotId] = visual.modelRoots.get(r.modelRoot) || null;
   });
-  if (!robotPathsDrawn && (d.robots || []).length) {
-    robotPathsDrawn = true;
-    drawRoutes(d.robots);
-    auditRoutes(d.robots);
+  /* 自检必须跟着数据走：路线或墙体一变就重画+重算（接入真实调度后路径会换，只跑首帧等于没校验） */
+  if (d.walls) lastWalls = d.walls;
+  const sig = JSON.stringify([(d.robots || []).map(r => [r.robotId, r.path]), lastWalls]);
+  if (sig !== routeSig) {
+    routeSig = sig; robotPathsDrawn = true;
+    drawRoutes(d.robots || [], lastWalls);
+    auditRoutes(d.robots || [], lastWalls);
   }
   if (d.objects) objectInfo = d.objects;
   if (d.layers) Object.entries(d.layers).forEach(([k, v]) => applyLayer(k, !!v));
@@ -478,6 +481,22 @@ function covered(x, z, half, rects) {
   }
   return true;
 }
+let lastWalls = [];
+/* 玻璃墙=硬约束：扫掠方块与墙面相交时必须整块落在门洞跨度内；无门洞的墙一律禁止穿越 */
+function wallHit(x, z, half, walls) {
+  for (const w of walls || []) {
+    if (w.axis === 'x') {
+      if (z + half > w.a && z - half < w.b && x + half > w.at && x - half < w.at) {
+        if (!w.gate || !(z - half >= w.gate[0] && z + half <= w.gate[1])) return w.name;
+      }
+    } else {
+      if (x + half > w.a && x - half < w.b && z + half > w.at && z - half < w.at) {
+        if (!w.gate || !(x - half >= w.gate[0] && x + half <= w.gate[1])) return w.name;
+      }
+    }
+  }
+  return null;
+}
 function allowedRects(r) {
   const rects = [];
   const roomRect = id => {
@@ -493,7 +512,7 @@ function allowedRects(r) {
   if (!rects.length) { const q = roomRect('106'); if (q) rects.push(q); }
   return rects;
 }
-function drawRoutes(list) {
+function drawRoutes(list, walls) {
   if (!lines) return;
   lines.clear();
   const hook = document.getElementById('twin-v2-bridge');
@@ -512,6 +531,15 @@ function drawRoutes(list) {
       dot.rotation.x = -Math.PI / 2; dot.position.set(p.x, 0.024, p.z); knots.add(dot);
     });
     lines.add(knots);
+    /* 门洞标记：画在墙上的绿色门槛（属路径图层，让「走门洞」这件事看得见） */
+    (walls || []).filter(function (w) { return w.gate; }).forEach(function (w) {
+      const len = w.gate[1] - w.gate[0];
+      const cx = w.axis === 'x' ? w.at : (w.gate[0] + w.gate[1]) / 2;
+      const cz = w.axis === 'x' ? (w.gate[0] + w.gate[1]) / 2 : w.at;
+      const g = new THREE.Mesh(new THREE.PlaneGeometry(w.axis === 'x' ? 0.14 : len, w.axis === 'x' ? len : 0.14),
+        new THREE.MeshBasicMaterial({ color: 0x16a34a, transparent: true, opacity: 0.8, toneMapped: false, depthWrite: false }));
+      g.rotation.x = -Math.PI / 2; g.position.set(cx, 0.028, cz); lines.add(g);
+    });
     /* 行进范围带：走廊（仅运输机器人有） */
     if (r.corridor) {
       const c = r.corridor;
@@ -522,9 +550,9 @@ function drawRoutes(list) {
     }
   });
 }
-function auditRoutes(list) {
+function auditRoutes(list, walls) {
   const obs = obstacleBoxes();
-  const report = { checked: 0, violations: [], obstacles: obs.length, at: new Date().toISOString() };
+  const report = { checked: 0, violations: [], obstacles: obs.length, walls: (walls || []).length, at: new Date().toISOString() };
   list.forEach(r => {
     const half = (r.sweptEnvelope || Math.max(...(r.footprint || [0.9, 0.9]))) / 2 + (r.clearanceM || 0.2);
     const rects = allowedRects(r);
@@ -536,6 +564,8 @@ function auditRoutes(list) {
         const t = k / n, x = a[0] + (b[0] - a[0]) * t, z = a[2] + (b[2] - a[2]) * t;
         report.checked++;
         if (!covered(x, z, half, rects)) { report.violations.push({ robot: r.robotId, seg: i, at: [+x.toFixed(2), +z.toFixed(2)], type: '越出允许范围', rect: rects.map(q => q.id).join('/') }); continue; }
+        const wl = wallHit(x, z, half, walls);
+        if (wl) { report.violations.push({ robot: r.robotId, seg: i, at: [+x.toFixed(2), +z.toFixed(2)], type: '穿墙未走门洞', obj: wl }); continue; }
         const o = obs.find(q => x + half > q.x0 && x - half < q.x1 && z + half > q.z0 && z - half < q.z1);
         if (o) report.violations.push({ robot: r.robotId, seg: i, at: [+x.toFixed(2), +z.toFixed(2)], type: '与实体重叠/穿越', obj: o.id, h: o.h });
       }
@@ -544,10 +574,10 @@ function auditRoutes(list) {
   report.violations = report.violations.slice(0, 40);
   let el = document.getElementById('twin-v2-route-audit');
   if (!el) { el = document.createElement('div'); el.id = 'twin-v2-route-audit'; el.hidden = true; document.body.append(el); }
-  el.dataset.checked = String(report.checked); el.dataset.obstacles = String(report.obstacles);
+  el.dataset.checked = String(report.checked); el.dataset.obstacles = String(report.obstacles); el.dataset.walls = String(report.walls);
   el.dataset.violations = String(report.violations.length);
   el.dataset.detail = JSON.stringify(report.violations.slice(0, 6));
-  parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'route-audit', checked: report.checked, obstacles: report.obstacles, violations: report.violations.length, detail: report.violations.slice(0, 8) }, location.origin);
+  parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'route-audit', checked: report.checked, obstacles: report.obstacles, walls: report.walls, violations: report.violations.length, detail: report.violations.slice(0, 8) }, location.origin);
   return report;
 }
 

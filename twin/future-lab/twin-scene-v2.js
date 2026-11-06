@@ -8,7 +8,7 @@
 (function () {
   var $ = function (s) { return document.querySelector(s); };
   var scene = $('#scene');
-  var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '';
+  var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [];
   var rtTimer = null, detailDev = null, bridgeReady = false, pendingState = null;
   var zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false, routeAudit = null;
   var SRC_NAME = { daq: '数采', dispatch: '调度', iot: '物联', lims: 'LIMS', rule: '判定规则' };
@@ -47,13 +47,14 @@
       TwinApi.get('/api/overview/lab-status'), TwinApi.get('/api/overview/zones'), TwinApi.get('/api/overview/today-tasks'),
       TwinApi.get('/api/overview/alarms'), TwinApi.get('/api/zone/106/devices'), TwinApi.get('/api/zone/106/robots'),
       TwinApi.get('/api/zone/106/samples'), TwinApi.get('/api/zone/106/dispatch-tasks'),
-      TwinApi.get('/api/zone/103/devices'), TwinApi.get('/api/zone/106/cycle')
+      TwinApi.get('/api/zone/103/devices'), TwinApi.get('/api/zone/106/cycle'), TwinApi.get('/api/zone/106/walls')
     ]);
   }).then(function (r) {
     status = r[0].data; zones = r[1].data || []; tasks = r[2].data || []; alarms = r[3].data || [];
     devices = (r[4].data || []).map(stamp('106')).concat((r[8].data || []).map(stamp('103')));   /* 106 全量 + 103 已建档；归属=数据来源分区 */
     robots = r[5].data || []; samples = r[6].data || []; dispatchTasks = r[7].data || [];
     routeNote = (robots[0] && robots[0].routeBasis) ? '机器人位置基准：' + robots[0].routeBasis : '';
+    walls = (r[10] && r[10].data) || [];
     /* 讲解顺序（决策 Q1 售前投影）：总览 → 106 无人化区（主叙事）→ 其余区域 → 告警回溯 */
     ORDER = ['S1', 'Z106'].concat(zones.map(function (z) { return 'Z' + z.zoneId.slice(2); }).filter(function (z) { return z !== 'Z106'; })).concat(['S3']);
     if (r[9] && r[9].data && r[9].data.live) renderCycle(Object.assign({}, r[9].data.live, { total: r[9].data.cycle.stops.length }));
@@ -288,6 +289,7 @@
     toScene('state', {
       robots: robots, routeNote: routeNote, layers: st.layers, quality: st.quality,
       deviceStatus: devices.reduce(function (m, d) { m[d.modelNode] = bad[d.deviceId] ? 'alarm' : d.status; return m; }, {}),
+      walls: walls,
       objects: devices.reduce(function (m, d) { m[(d.modelNode || '').replace('cad:', '')] = { code: d.code, name: d.name, type: d.type, subZone: d.subZone, status: bad[d.deviceId] ? 'alarm' : d.status, params: d.keyParams || [] }; return m; }, {})
     });
   }
@@ -457,6 +459,7 @@
         '<div class="row"><span>电量</span><b>' + Math.round(r.battery) + '%</b></div>' +
         '<div class="row"><span>行进范围</span><b>' + (r.allowedZones || ['Z-106']).join(' ↔ ').replace(/Z-/g, '') + '</b></div>' +
         '<div class="row"><span>净空要求</span><b>≥' + (r.clearanceM || 0.2) + 'm（包络 ' + (r.sweptEnvelope || 0.9) + 'm 含原地掉头）</b></div>' +
+        '<div class="row"><span>门洞</span><b>' + ((r.serves || []).filter(function (x) { return x.indexOf('门洞') >= 0; })[0] || '区内环线，不穿墙') + '</b></div>' +
         '<div class="row"><span>避让校验</span><b>' + (routeAudit ? (routeAudit.violations ? routeAudit.violations + ' 处违规' : '0 重叠 / ' + routeAudit.checked + ' 采样点') : '待场景就绪') + '</b></div>' +
         '<div style="font-size:11px;color:var(--tw-color-textSecondary);margin-top:8px">途经：' + (r.serves || []).map(escapeHtml).join(' → ') + '</div>' +
         '<p style="font-size:11px;color:var(--tw-color-textMuted)">位置基准：' + (r.positionBasis === 'derived' ? '调度未标定，按 CAD 占地推导折线（相对轨迹）' : '调度系统实时点位') + ' · ' + escapeHtml(r.routeMethod || '') + '</p>');
