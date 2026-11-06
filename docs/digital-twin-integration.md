@@ -170,4 +170,7 @@ LIMS 事件（流程节点/台账/资质）─┤→ 孪生只读网关（新建
 
 **墙体与门洞（2026-11-06）**：新增 `GET /api/zone/{z}/walls` → `[{name,axis:'x'|'z',at,a,b,gate:[lo,hi]|null}]`（实测：106 东玻璃墙 x=18.49 门洞 z[10.2,11.8]，中心 11.0；106 南墙 z=9.59 无门洞）。宿主把 `walls` 随 `state` 推给场景，场景侧 `auditRoutes()` 按「扫掠方块与墙面相交则必须整块落入 gate」判定 `穿墙未走门洞`；**自检随 path/walls 签名变化重算**（只跑首帧等于没校验）。真实接入后若调度系统给出门洞通行事件，应以事件为准复核本规则。
 
+**左栏四表契约（2026-11-06）**：`GET /api/overview/lab-status` → `panels{entrust,samples,testItems,dispatch}`，每个面板 `{title,source:'daq'|'dispatch',unit,note,periods{day,month,year}{<指标键>,compare}}`；指标键：entrust `total/power/safety`、samples `received/testing/done`、testItems `testing/pending/done/overdue/dueSoon`、dispatch `done/blocked/blockedResolved/blockedUnresolved`。
+**自洽硬约束**（后端实现必须满足，前端有自动化断言）：`power+safety=total`；`testing+pending+done=合计`；`blockedResolved+blockedUnresolved=blocked`；`done+blocked=调度总量`；`testing+done ≤ received`。报告份数（LIMS）已从大屏下线，接口无需提供。
+
 **待补（下一步）**：`host:setAutoRoam`（讲解用自动巡航，默认关）、`scene:waypointClick{waypointId}`（折线拐点拾取，标记已渲染）、`requestId + ack + 3s 超时重试` 信封。

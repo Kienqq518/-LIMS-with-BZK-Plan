@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>未来实验室数字孪生 · 运行大屏 V2</title>
 <link rel="stylesheet" href="../../css/ui-baseline.css">
-<link rel="stylesheet" href="twin-scene-v2.css?v=2">
+<link rel="stylesheet" href="twin-scene-v2.css?v=3">
 <script src="../../js/ui-a11y.js" defer></script>
 <script src="../js/twin-api-mock.js" defer></script>
 <script src="../src/runtime-audit.js"></script>
@@ -34,6 +34,7 @@
     </div>
     <button class="pill" id="stripBtn" aria-pressed="false">▾ 收起底栏</button>
     <button class="pill" id="lowBtn" aria-pressed="false" title="低配模式：关反射、降材质 pass、降帧（决策 Q8 预留）">低配</button>
+    <time class="clock" id="clock" datetime="" aria-label="当前时间">–</time>
 </header>
 
 <aside class="rail" aria-label="运行指标">
@@ -42,20 +43,7 @@
     <button class="seg" data-period="month" role="tab">本月</button>
     <button class="seg" data-period="year" role="tab">本年</button>
   </div>
-  <div class="metrics" id="metrics"></div>
-  <div class="charts">
-    <div class="chart" id="chartLoad" title="稼动率=在测设备/已建档设备（当前视图范围）">
-      <svg viewBox="0 0 76 76" aria-hidden="true"><circle class="bg" cx="38" cy="38" r="30"></circle><circle class="fg" id="ringFg" cx="38" cy="38" r="30"></circle></svg>
-      <b id="ringVal">–</b><span id="ringSub">稼动率</span>
-    </div>
-    <div class="chart-col">
-      <div class="mini-title">设备状态分布</div>
-      <div class="bars" id="devBars"></div>
-      <div class="mini-title" style="margin-top:8px">告警分级（未解除）</div>
-      <div class="bars" id="gradeBars"></div>
-    </div>
-  </div>
-
+  <div class="tables" id="tables"></div>
   <div class="alarm-sum" id="alarmSum" aria-live="polite">
     <span class="open">未解除 –</span><span class="done">已解除 –</span>
     <span class="ga">A –</span><span class="gb">B –</span><span class="gc">C –</span>
@@ -68,11 +56,9 @@
   <div class="filter" role="group" aria-label="告警筛选">
     <button class="mini active" data-alarmfilter="open">只看未解除</button><button class="mini" data-alarmfilter="all">全部</button>
   </div>
-  <div class="fresh"><span id="freshDot" class="dot live"></span><span id="freshTxt">数据源 live-mock · 2s 推送</span></div>
-  <div class="src-chips" id="srcChips"><span>① 无人检测调度</span><span>② 检测数据采控</span><span>③ 智慧实验室物联网</span><span class="off">LIMS（二期）</span></div>
-  <div class="perf" id="perf" title="debug-profiler 实测">draw calls –</div>
-  <div class="audit" id="auditBadge" title="行进路线避让校验：逐段扫掠机器人包络 against CAD 占地">避让校验 待场景就绪</div>
-  <a class="back" href="twin-style.html">风格预览</a>
+  <!-- 数据源胶囊 / draw calls / 风格预览 按 2026-11-06 反馈移除；来源与更新时间改为写进每张表头（诚实口径不丢） -->
+  <div class="rail-foot"><span id="freshDot" class="dot live" hidden></span><span id="freshTxt" hidden></span>
+    <div class="audit" id="auditBadge" title="行进路线避让自检：逐段扫掠机器人包络 against CAD 占地与玻璃墙门洞">避让校验 待场景就绪</div></div>
 </aside>
 
 <main class="stage">
@@ -114,6 +100,6 @@
   <p class="remote-hint" id="remoteHint" hidden aria-hidden="true">翻页提示</p>
   <div class="watermark">运行镜像 · 数据经 Mock API 层（/api/*）· 前端不直连三系统 · 孪生只读，不下发控制｜翻页：PgUp/PgDn（方向键留给三维视角） · 1 总览 · 2 无人化区 · 3 告警 · Esc 关闭浮层</div>
 </main>
-<script src="twin-scene-v2.js?v=2" defer></script>
+<script src="twin-scene-v2.js?v=3" defer></script>
 </body>
 </html>

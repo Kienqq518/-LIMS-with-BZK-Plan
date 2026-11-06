@@ -38,7 +38,12 @@
     history.replaceState(null, '', location.pathname + '?' + p.toString() + '#v2=1&native-nodes=1');
   }
 
-  function fail(msg) { $('#freshDot').className = 'dot stale'; $('#freshTxt').textContent = '数据源异常：' + msg; }
+  var dataError = null;
+  function fail(msg) { dataError = msg;
+    var fd = $('#freshDot'), ft = $('#freshTxt');
+    if (fd) fd.className = 'dot stale'; if (ft) ft.textContent = '数据源异常：' + msg;
+    renderTables();
+  }
 
   /* ---------- 装载 ---------- */
   TwinApi.ready().then(function () {
@@ -66,7 +71,7 @@
     if (ev.type === 'tick') {
       robots = (ev.payload.robots && ev.payload.robots.length ? ev.payload.robots : robots);
       devices.forEach(function (d) { var s = ev.payload.devices.filter(function (x) { return x.deviceId === d.deviceId; })[0]; if (s) d.status = s.status; });
-      renderRobots(); renderZonePanel(); renderCharts(); pushState();
+      renderRobots(); renderZonePanel(); renderTables(); pushState();
     } else if (ev.type === 'task.progress') {
       var t = tasks.filter(function (x) { return x.taskId === ev.payload.taskId; })[0];
       if (t) { t.progress.percent = ev.payload.percent; t.stage = ev.payload.stage; if (ev.payload.percent >= 100) t.result = 'passed'; renderStrip(); }
@@ -76,39 +81,62 @@
   }
 
   /* ---------- ① 指标：五数 × 三周期（决策 Q3） ---------- */
-  var ST_COLOR = { working: '#2878FF', ready: '#16A34A', standby: '#94A3B8', stopped: '#64748B', alarm: '#E5484D' };
-  var ST_LABEL = { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常' };
-  function renderCharts() {
-    var pool = st.mode === 'ZONE' && zoneDevices(st.zone).length ? zoneDevices(st.zone) : devices;
-    var bad = {}; alarms.forEach(function (a) { if (a.status !== 'resolved' && a.deviceId) bad[a.deviceId] = 1; });
-    var cnt = { working: 0, ready: 0, standby: 0, stopped: 0, alarm: 0 };
-    pool.forEach(function (d) { cnt[bad[d.deviceId] ? 'alarm' : d.status] = (cnt[bad[d.deviceId] ? 'alarm' : d.status] || 0) + 1; });
-    var total = pool.length || 1, max = Math.max(1, cnt.working, cnt.ready, cnt.standby, cnt.alarm, cnt.stopped);
-    $('#devBars').innerHTML = ['working', 'ready', 'alarm', 'standby'].map(function (k) {
-      return '<div class="bar"><span class="k">' + ST_LABEL[k] + '</span><i><b style="width:' + Math.round(cnt[k] / max * 100) + '%;background:' + ST_COLOR[k] + '"></b></i><em>' + cnt[k] + '</em></div>';
+  /* ---------- ① 四张数据表（2026-11-06 定稿：委托/样品/试验项目/调度，报告份数不再展示） ---------- */
+  var SRC_NAME2 = { daq: '数采', dispatch: '调度', iot: '物联', rule: '判定规则' };
+  var ROWS = {
+    entrust: [
+      { k: 'total', label: '委托任务总数', head: true },
+      { k: 'power', label: '电力电缆类', sub: true, of: 'total' },
+      { k: 'safety', label: '安全工器具类', sub: true, of: 'total' }
+    ],
+    samples: [
+      { k: 'received', label: '已收样', head: true },
+      { k: 'testing', label: '正在检测', of: 'received' },
+      { k: 'done', label: '已完成', cls: 'ok', of: 'received' }
+    ],
+    testItems: [
+      { k: 'all', label: '试验项目合计', head: true, computed: function (v) { return v.testing + v.pending + v.done; } },
+      { k: 'testing', label: '正在检测', of: 'all' },
+      { k: 'pending', label: '待检测', of: 'all' },
+      { k: 'done', label: '已完成检测', cls: 'ok', of: 'all' },
+      { k: 'overdue', label: '未完成中·逾期', cls: 'warn', noPct: true },
+      { k: 'dueSoon', label: '未完成中·临期(3天内)', cls: 'due', noPct: true }
+    ],
+    dispatch: [
+      { k: 'done', label: '调度任务已完成', head: true, cls: 'ok' },
+      { k: 'blocked', label: '阻塞', cls: 'warn' },
+      { k: 'blockedResolved', label: '其中已解决', sub: true, of: 'blocked', cls: 'ok' },
+      { k: 'blockedUnresolved', label: '其中未解决', sub: true, of: 'blocked', cls: 'warn' }
+    ]
+  };
+  function renderTables() {
+    if (!status || !status.panels) return;
+    var per = status.panels, stamp = new Date(status.updatedAt || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
+    $('#tables').innerHTML = Object.keys(per).map(function (key) {
+      var p = per[key], v = p.periods[st.period], rows = ROWS[key] || [];
+      var body = rows.map(function (r) {
+        var val = r.computed ? r.computed(v) : v[r.k];
+        if (val == null) return '<tr><td>' + r.label + '</td><td class="v na">—</td><td class="pct"></td></tr>';
+        var base = r.of ? (r.computed ? r.computed(v) : v[r.of]) : null;
+        var pct = (!r.noPct && base) ? Math.round(val / base * 100) + '%' : '';
+        return '<tr class="' + (r.head ? 'head ' : 'sub ') + (r.cls || '') + '"><td>' + r.label + '</td><td class="v">' + val + '</td><td class="pct">' + pct + '</td></tr>';
+      }).join('');
+      var c = v.compare;
+      var foot = c == null ? '' : '<span class="d ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</span><span>' + ({ day: '较上日', month: '较上月', year: '较去年' })[st.period] + '</span>';
+      return '<section class="dtable"><header><b>' + p.title + '</b><span class="src' + (dataError ? ' err' : '') + '">' +
+        (dataError ? '数据延迟' : (SRC_NAME2[p.source] || p.source) + ' · ' + stamp) + '</span></header>' +
+        '<table><tbody>' + body + '</tbody></table>' + (foot ? '<footer>' + foot + '</footer>' : '') +
+        (p.note ? '<footer>' + p.note + '</footer>' : '') + '</section>';
     }).join('');
-    var open = alarmOpen(), gmax = Math.max(1, open.filter(function (a) { return a.grade === 'A'; }).length, open.filter(function (a) { return a.grade === 'B'; }).length, open.filter(function (a) { return a.grade === 'C'; }).length);
-    $('#gradeBars').innerHTML = ['A', 'B', 'C'].map(function (g) {
-      var n = open.filter(function (a) { return a.grade === g; }).length;
-      var col = g === 'A' ? '#E5484D' : g === 'B' ? '#F76B15' : '#F59E0B';
-      return '<div class="bar"><span class="k">Grade ' + g + '</span><i><b style="width:' + Math.round(n / gmax * 100) + '%;background:' + col + '"></b></i><em>' + n + '</em></div>';
-    }).join('');
-    var rate = Math.round((cnt.working / total) * 100);
-    $('#ringFg').style.strokeDashoffset = (188.5 * (1 - rate / 100)).toFixed(1);
-    $('#ringVal').textContent = rate + '%';
-    $('#ringSub').textContent = '在测 ' + cnt.working + '/' + total;
   }
-
-  function renderMetrics() {
-    var m = status.metrics[st.period], meta = status.metricMeta;
-    $('#metrics').innerHTML = Object.keys(meta).map(function (k) {
-      var v = m[k].value, src = SRC_NAME[meta[k].source] || meta[k].source, c = m[k].compare;
-      var tip = '来源：' + src + (meta[k].note ? ' · ' + meta[k].note : '') + ' · 刷新 ' + meta[k].refresh;
-      if (v == null) return '<div class="metric na" title="' + tip + '"><b>—</b><span class="lab">' + meta[k].label + '<small>（' + meta[k].unit + '）</small></span><span class="src">' + src + ' 未接入</span></div>';
-      var delta = c == null ? '' : '<span class="delta ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</span>';
-      return '<div class="metric" title="' + tip + '"><b>' + v + '</b><span class="lab">' + meta[k].label + '<small>（' + meta[k].unit + '）</small></span>' + delta + '<span class="src">' + src + '</span></div>';
-    }).join('');
-    $('#freshTxt').textContent = '数据源 live-mock · 最近更新 ' + new Date(status.updatedAt || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
+  /* 时钟：大屏右上角常驻，秒级走动 */
+  function tickClock() {
+    var el = $('#clock'); if (!el) return;
+    var WD = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      var n = new Date(), z = function (x) { return (x < 10 ? '0' : '') + x; };
+    var ds = n.getFullYear() + '-' + z(n.getMonth() + 1) + '-' + z(n.getDate());
+    el.setAttribute('datetime', n.toISOString());
+    el.innerHTML = ds + ' <b>' + z(n.getHours()) + ':' + z(n.getMinutes()) + ':' + z(n.getSeconds()) + '</b><span class="wd">' + WD[n.getDay()] + '</span>';
   }
 
   /* ---------- ② 告警：闭环三态只读（决策 Q2） ---------- */
@@ -338,7 +366,7 @@
   /* ---------- 场景上行：就绪握手、性能、拾取、遥控、避让自检 ---------- */
   window.addEventListener('message', function (e) {
     var d = e.data; if (!d || (d.channel !== 'room-tour-preview-v1' && d.channel !== 'future-lab-tech-blue-spatial')) return;
-    if (d.type === 'perf') $('#perf').textContent = 'draw calls ' + d.calls + ' · tris ' + (d.tris / 1000).toFixed(0) + 'k' + (d.fps ? ' · ' + d.fps + 'fps' : '');
+    if (d.type === 'perf') { var pf = $('#perf'); if (pf) pf.textContent = 'draw calls ' + d.calls; }   /* 性能读数按 2026-11-06 反馈不再常驻显示 */
     if (d.type === 'bridge-ready') {
       bridgeReady = true; sceneReady = true;
       if (pendingState) { sendScene(pendingState.type, pendingState.data); pendingState = null; }
@@ -388,7 +416,7 @@
     $('#s3Drawer').hidden = st.mode !== 'S3'; if (st.mode === 'S3') renderS3();
     var h = document.querySelector('.s3drawer b'); if (h) h.textContent = '告警回溯 · 最近 24h（未解除 ' + alarmOpen().length + ' / 共 ' + alarms.length + '）';
     drillTo(st.mode === 'ZONE' ? zoneView(st.zone) : 'overall-101');
-    renderMetrics(); renderCharts(); renderAlarms(); renderRobots(); renderStrip(); pushState(); writeURL();
+    renderTables(); renderAlarms(); renderRobots(); renderStrip(); pushState(); writeURL();
     if (st.mode === 'ZONE') { loadZone(); renderZonePanel(); }
 
   }
@@ -424,7 +452,7 @@
     document.querySelectorAll('.mode').forEach(function (b) { b.onclick = function () { setMode(b.dataset.mode); }; });
     $('#zoneSel').onchange = function () { setMode('ZONE', this.value); };
     document.querySelectorAll('.seg').forEach(function (b) { b.onclick = function () {
-      document.querySelectorAll('.seg').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.period = b.dataset.period; renderMetrics(); renderZonePanel(); writeURL();
+      document.querySelectorAll('.seg').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.period = b.dataset.period; renderTables(); renderZonePanel(); writeURL();
     }; });
     document.querySelectorAll('.mini').forEach(function (b) { b.onclick = function () {
       document.querySelectorAll('.mini').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.alarmFilter = b.dataset.alarmfilter; renderAlarms(); writeURL();
@@ -563,6 +591,8 @@
         }).join('') || '<div class="degrade">当前筛选下无告警。</div>';
       });
   }
+
+  tickClock(); setInterval(tickClock, 1000);   /* 时钟不依赖数据；放在末尾启动，避免 var 提升期调用拿到 undefined */
 
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 })();
