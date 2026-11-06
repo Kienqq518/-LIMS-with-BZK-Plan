@@ -366,19 +366,16 @@
     if (d.type === 'remote') handleKey(d.key);
     if (d.type === 'route-audit') { routeAudit = d; renderAudit(); renderZonePanel(); }
   });
+  /* 自检结果不再常驻显示（2026-11-06 反馈）：
+     · 通过 → 界面上什么都不出现
+     · 未通过 → 瞬时提示条报出来 + body[data-route-audit] 留痕，QA/交付可断言，红线「违规>0 不上线」仍然成立 */
   function renderAudit() {
-    var el = $('#auditBadge'); if (!el || !routeAudit) return;
-    var bad = routeAudit.violations > 0;
-    el.className = 'audit' + (bad ? ' bad' : '');
-    el.innerHTML = '<span class="zh">避让校验 ' + (bad ? '未通过' : '通过') + '</span><br>' + routeAudit.checked + ' 个采样点 · ' + routeAudit.obstacles + ' 个障碍实体 · 违规 ' + routeAudit.violations +
-      (bad ? '<br>' + routeAudit.detail.slice(0, 2).map(function (x) { return x.robot + ' ' + x.type + ' @' + x.at.join(','); }).join('<br>') : '');
+    if (!routeAudit) return;
+    document.body.dataset.routeAudit = routeAudit.violations + '/' + routeAudit.checked + '/' + (routeAudit.obstacles || 0) + '/' + (routeAudit.walls || 0);
+    if (routeAudit.violations > 0) flashHint('避让校验未通过：' + routeAudit.violations + ' 处（' +
+      (routeAudit.detail || []).slice(0, 2).map(function (x) { return x.robot + ' ' + x.type; }).join('、') + '）');
   }
   function applyLayers() { Object.keys(st.layers).forEach(function (k) { toScene('layer', { layer: k, enabled: !!st.layers[k] }); }); toScene('quality', { level: st.quality }); }
-  function openDeviceByCad(dev) {
-    var match = devices.filter(function (x) { return x.modelNode === 'cad:' + dev.id; })[0];
-    if (!match) { openDetail('<h3>' + escapeHtml(dev.name || dev.id) + '</h3><div class="sub">该实体未纳入孪生对象清单（诚实降级：无实时档案）</div>'); return; }
-    detailDev = match; openDetail(deviceHtml(match)); pollRealtime();
-  }
 
   /* ---------- 三层控制 ---------- */
   function zoneView(z) { return z === '106' ? 'close' : z + '-close'; }
