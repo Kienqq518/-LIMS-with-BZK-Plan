@@ -6,3 +6,4 @@
 - 记录数: 45（A 17 / B 18 / C 10），状态全部「待审核员确认」，版本 v0.1
 - 视图: 表格（默认）· 按状态（group 状态）· 待确认（filter 状态=待审核员确认）
 - 种子生成: `make_base.py` + `make_records.py`（可重跑，重跑会新增记录，勿重复执行）
+- 3.3 时间轴画板 token（T10 重渲染后）: `MyxDwabVGhVXi0byjurcaDf5nvh`，源文件 `timeline.svg` / 生成器 `make_timeline.py`
