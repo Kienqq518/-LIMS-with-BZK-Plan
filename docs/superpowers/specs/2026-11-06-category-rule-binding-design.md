@@ -34,7 +34,7 @@
 `binding_id` PK｜`category_code` FK｜`rule_id` FK｜`enabled BOOLEAN`｜`overrides JSONB`｜`severity_override VARCHAR(20) NULL`｜`standard_ref VARCHAR(200)`｜`version`｜`effective_from`｜`effective_to`｜`approved_by`｜`change_ticket`
 唯一约束 `(category_code, rule_id, version)`；索引 `(category_code, enabled)`。变更控制复用 3.8 同一套字段与流程。
 
-## 通用集定义（31 条）
+## 通用集定义（30 条）与品类专属（15 条）
 
 与品类无关、任何报告都跑：A01-1…6（6）、A02-1…5（5）、A03-1 校准证书（1）、B01-1/2/4/5（4）、B03-1…4（4）、C01-1…5（5）、C02-1…5（5）= **30**。
 
@@ -102,7 +102,7 @@
 | 项 | 处理 |
 | --- | --- |
 | LIMS 分类粒度可能粗于检测品类（只有"金具"没有"10.9 级 M20 连接副"） | 镜像表支持 `lims_parent_code` 前缀匹配；仍不够则补一层映射表（退化为 ④ 方案） |
-| 未配置品类只跑 31 条 → 检出率下降 | 用 CAT-UNCAT-01 提示显性化，并以"品类覆盖度"指标跟踪；M2 前两周补齐 3 个品类 |
+| 未配置品类只跑 30 条 → 检出率下降 | 用 CAT-UNCAT-01 提示显性化，并以"品类覆盖度"指标跟踪；M2 前两周补齐 3 个品类 |
 | 绑定表规模（6 品类 × ~15 条 ≈ 90 行） | M1 只填 3 品类 ≈ 45 行；其余留空并计入覆盖度 |
 | 参数数值未经确认 | 全部 `待审核员确认`，Week 1 Day 3–4 校准 |
 | 品类专属规则条数（5–8）未定 | Week 1 定；影响存量能否达到 ≥50 出口目标 |
