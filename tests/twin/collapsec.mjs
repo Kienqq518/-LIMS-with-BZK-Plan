@@ -15,7 +15,10 @@ out.push(((await cnt('#robotZone'))===0&&(await cnt('.watermark'))===0?'✅':'�
 out.push((a.table?'✅':'❌')+' 默认（总览）今日任务表在位: '+JSON.stringify(a));
 await p.click('#stripBtn'); await p.waitForTimeout(1200);
 const c=await snap();
-out.push((!c.table?'✅':'❌')+' 点「收起底栏」只收底栏四块: '+JSON.stringify(c));
+out.push((!c.table?'✅':'❌')+' 点「收起底栏」只收底栏（FR-42 之后是两块：AGV+任务三列、试验项）: '+JSON.stringify(c));
+/* FR-42 的连带后果，按实记录：AGV 任务行搬进了底栏，所以收起底栏会把它一起收掉。
+   讲的人要"画面干净"就收，要盯 AGV 就别收——一个开关一件事，不再另设第二套状态。 */
+out.push(((await p.evaluate(()=>{const e=document.getElementById('cycleBox');return !e||e.closest('.dock')!==null;}))?'✅':'❌')+' AGV 任务行确实在底栏内（收起时一起收，符合 FR-42 重排）');
 out.push(((await p.locator('#stripBtn').innerText()).includes('展开')?'✅':'❌')+' 按钮文案切换: '+await p.locator('#stripBtn').innerText());
 out.push(((await p.evaluate(()=>location.search.includes('strip=1')))?'✅':'❌')+' 状态进 URL: '+await p.evaluate(()=>location.search));
 // 刷新后仍保持收起

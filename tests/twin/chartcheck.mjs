@@ -34,7 +34,7 @@ const paint=await p.evaluate(()=>[...document.querySelectorAll('canvas')].map(c=
   try{const d=x.getImageData(0,0,c.width,c.height).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>10)n++;
     return {w:c.width,h:c.height,n};}catch(e){return {w:c.width,h:c.height,n:-2};}}));
 ok(paint.length===2,`S1 出图数量 =2（设备运行状态圆环 + 平均温湿度折线带）：实得 ${paint.length}`);
-ok(await p.evaluate(()=>document.querySelectorAll('.rail .tw-chart').length)===0,'左栏不再挂图（2026-11-07：图表去掉、左栏加宽缩短、不出滚动条）');
+ok(await p.evaluate(()=>[...document.querySelectorAll('.rail .tw-chart')].map(e=>e.id).join(','))==='chartDevices','左栏只挂一张图=设备运行状态圆环（FR-42 把这块从底栏挪上来；四组读数仍只有数字，不再画图）');
 ok(await p.evaluate(()=>document.querySelectorAll('.stream .tw-chart').length)===0,'告警流也不再挂图（分级柱已撤，省出的高度给列表）');
 ok(paint.every(c=>c.n>200),`每张图都画出内容（非透明像素 >200）：${paint.map(c=>c.n).join(',')}`);
 /* 出图之后必须"留在屏上"：同一个容器/同一个图名被两处交替拥有时，每次心跳都会

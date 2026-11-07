@@ -791,7 +791,10 @@ let camSnap = null, camTween = null, myPan = [0, 0], objectInfo = {}, cardFor = 
    frScale>1 = 画面范围变大（模型缩小）；pan 的单位就是屏幕像素，pan[1] 为负 = 模型往上走。
    它必须同时是「回总览」的标定构图：只写在一处、drill 补间终点与 reset 都取它，
    否则第一次回 S1 就把 HOME 冲回 1/0（camcheck 的 FR-10 断言正是守这条）。 */
-const HOME = { fr: 1.16, pan: [0, -78] };
+/* 2026-11-07 参考图一再缩小一号：fr 1.16→1.32（画面范围变大=模型缩小约 14%），
+   上移量跟着收到 -64（模型小了就不需要那么高的偏移，否则下方留白过大）。
+   这张标定值同时是「回总览」的构图基准，camcheck 的房间标签中心就是按它重标定的。 */
+const HOME = { fr: 1.32, pan: [0, -64] };
 function homeFraming(view) { return /^overall/.test(view || visual.view) ? { fr: HOME.fr, pan: HOME.pan.slice() } : { fr: 1, pan: [0, 0] }; }
 function applyHome(view) { const hm = homeFraming(view); frScale = hm.fr; setPan(hm.pan[0], hm.pan[1]); return hm; }
 /* 视锥补间：scene-group-highlight 的 fitFrame 每帧重算 camera.left/right/top/bottom 且不看 visual.zoom，

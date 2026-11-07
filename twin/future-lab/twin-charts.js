@@ -45,7 +45,7 @@
       working: tv('--tw-st-working') || '#2878FF', ready: tv('--tw-st-ready') || '#16A34A',
       alarm: tv('--tw-st-alarm') || '#E5484D', warn: tv('--tw-st-warn') || '#F59E0B',
       idle: tv('--tw-st-idle') || '#94A3B8', done: tv('--tw-st-done') || '#7E8C9B', na: tv('--tw-st-na') || '#C3CCD6',
-      ink1: tv('--tw-ink-1') || '#0F2740', ink3: tv('--tw-ink-3') || '#5B6B7D',
+      ink1: tv('--tw-ink-1') || '#0F2740', ink3: tv('--tw-ink-3') || '#5B6B7D', ink4: tv('--tw-ink-4') || '#8D9AAB',
       fsLabel: parseFloat(tv('--tw-fs-label')) || 11.5, fsBody: parseFloat(tv('--tw-fs-body')) || 12.5
     };
   }
@@ -228,18 +228,21 @@
       });
     },
     /** 3D 折线带：时序趋势（温湿度这类双量纲序列，各自归一、绝对值进端点标签） */
+    /** 时序折线（FR-43，2026-11-07 参考图一改版）：细细的平滑线 + 末端一个小圆点 + 端点绝对值。
+        原来那条等轴挤出的厚带被否掉——两条带子交叉时糊成一团，读不出趋势，也压掉了图内的标题。
+        纪律不变：两条序列各自归一，只比趋势；绝对值一律写进端点标签，不靠轴读数。 */
     ribbon(el, name, series, o) {
       o = o || {}; const p = palette();
       return draw(el, name, 'ribbon', JSON.stringify(series), () => {
         const h = o.height || 76, kids = [], ends = [];
+        /* 一条极淡的基线：没有底板之后，两条细线需要一条参照，否则像飘在空中的两根头发 */
+        kids.push({ type: 'line', data: [{ x: 0, y: .06 }, { x: 1, y: .06 }], encode: { x: 'x', y: 'y' }, style: { stroke: p.ink4, lineWidth: 1, lineDash: [3, 3], strokeOpacity: .5 } });
         series.forEach((s, i) => {
           const c = s.c || (i ? p.ready : p.working), r = ribbonFaces(s.values, c);
-          kids.push({ type: 'polygon', data: r.poly, encode: { x: d => d.pts.map(q => q[0]), y: d => d.pts.map(q => q[1]) }, style: { fill: d => d.c, inset: 0 } });
-          /* 曲线本身：一条 1.6px 的连续线压在带顶边上，不再有点标记 */
-          kids.push({ type: 'line', data: r.pts, encode: { x: 'x', y: 'y' }, style: { stroke: c, lineWidth: 1.6, lineAppendWidth: 2 } });
+          kids.push({ type: 'line', data: r.pts, encode: { x: 'x', y: 'y' }, style: { stroke: c, lineWidth: 1.5, lineAppendWidth: 3, strokeOpacity: .95 } });
           const last = r.pts[r.pts.length - 1];
+          if (last) kids.push({ type: 'point', data: [last], encode: { x: 'x', y: 'y' }, style: { fill: c, r: 2.6, stroke: '#fff', lineWidth: .8 } });
           ends.push({ x: 1.03, y: last ? last.y : .5, t: s.name + ' ' + s.values[s.values.length - 1] + (s.unit || ''), c });
-
         });
         /* 端点标签按 y 排序后强制最小间距：两条序列的最后一点常常落在同一高度，直接叠成一行糊字（实测「温度46.9%RH」） */
         ends.sort((a, b) => a.y - b.y);

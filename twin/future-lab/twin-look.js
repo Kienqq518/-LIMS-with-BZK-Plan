@@ -149,7 +149,9 @@ function lighting(v, LOW) {
 
 /* ---------- 纵深：线性雾按相机距离给 near/far ---------- */
 function depth(v) {
-  const f = new THREE.Fog('#eef2f7', 55, 200);          /* 颜色贴宿主背景渐变，远处是"融进页面"而不是"变灰" */
+  /* 雾色必须跟着页面底色走（FR-42 底色改浅灰）：原来写死 #eef2f7，页面一改底，远处就是"变灰"而不是"融进页面" */
+  const fogHex = (getComputedStyle(document.documentElement).getPropertyValue('--tw-canvas') || '#eef2f7').trim() || '#eef2f7';
+  const f = new THREE.Fog(fogHex, 55, 200);
   v.scene.fog = f;
   return f;
 }

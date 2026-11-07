@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { BASE } from './_env.mjs';
-const T={'110':[924,269],'109':[678,348],'108':[454,483],'107':[566,593],'105':[618,686],'104':[842,709],'103':[1046,643],'102':[1317,555],'101':[1488,467],'106':[958,466]};   /* 2026-11-07 重标：首屏改走 HOME 机位（frScale 1.16、上移 78px）后实测的标签中心 */
+const T={'110':[929,303],'109':[712,373],'108':[515,491],'107':[614,588],'105':[660,669],'104':[856,690],'103':[1036,632],'102':[1274,554],'101':[1424,477],'106':[958,476]};   /* 2026-11-07 再次重标：HOME 缩到 frScale 1.32、上移 64px（产品负责人参考图一再缩小一号）后实测的标签中心 */
 const out=[],err=[];
 const b=await chromium.launch({channel:'chrome'});
 const p=await b.newPage({viewport:{width:1920,height:1080}});
@@ -8,6 +8,9 @@ p.on('pageerror',e=>err.push('pageerror: '+e.message));
 p.on('console',m=>{if(m.type()==='error'&&!/favicon/.test(m.text()))err.push('console: '+m.text().slice(0,150));});
 await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
 await p.waitForTimeout(13000);   // 首屏：无任何交互
+/* 场地标签默认不开启（2026-11-07），量标签基准前必须先把它打开——这同时验了开关真的能开 */
+await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(2200);
+out.push(((await p.evaluate(()=>[...document.getElementById('scene').contentWindow.visual106.labels].filter(l=>getComputedStyle(l.div).display!=='none').length))===10?'✅':'❌')+' 场地标签开关打开后十个房间名全回来');
 const f=p.frames().find(x=>/tour-space-v3-1/.test(x.url()));
 const cam=await f.evaluate(()=>{const v=window.visual106;const host=document.getElementById('visual-render').getBoundingClientRect();
  const o={};for(const l of v.labels){const r=l.div.getBoundingClientRect();o[l.r.id]=[Math.round(r.left+r.width/2-host.left),Math.round(r.top+r.height/2-host.top)];}

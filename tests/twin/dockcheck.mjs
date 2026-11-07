@@ -16,8 +16,9 @@ await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
 await p.waitForTimeout(16000);
 
 // 结构
-T('底栏块数（④ 组态物联已挪到右列告警流下方）', await p.locator('.dock .dk').count(), 3);
-T('块标题', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '设备运行状态|无人化调度任务|试验项完成情况');
+T('底栏块数（FR-42：设备状态挪进左栏，底栏只剩两块）', await p.locator('.dock .dk').count(), 2);
+T('块标题', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '无人化调度任务|试验项完成情况');
+T('设备运行状态在左栏（FR-42 重排）', await p.evaluate(()=>{const e=document.querySelector('.rail .raildev');return !!e&&e.offsetParent!==null;}), 'true');
 
 // ① 设备运行状态：四档圆环 + 四行图例 + 机器人分工
 /* 块1 结构（2026-11-07 参考图一改版）：柱图→圆环，五档→四档（运行中/待机/停机/异常），
@@ -44,13 +45,16 @@ const rb=await p.evaluate(()=>document.getElementById('dkRobots').innerText.repl
 out.push((/在跑 1 · 停靠充电 1/.test(rb)?'✅':'❌')+' 块1 机器人分工（一台跑 / 一台常驻充电位）: '+rb);
 
 // ② 任务队列：三分类分组 + 与流程配置一致
-const grp=await p.evaluate(()=>[...document.querySelectorAll('#dkQueueTrack .dq-grp')].slice(0,3).map(e=>e.innerText.replace(/\s+/g,' ')));
-out.push((grp.length>=3&&/进行中/.test(grp[0])&&/未派单/.test(grp[1])&&/已完成/.test(grp[2])?'✅':'❌')+' 块2 三分类分组表头（图1）: '+JSON.stringify(grp));
+/* FR-42：三分类从「一张长列表的三个分组」改成三列并排，状态=列，行内不再重复状态字 */
+const grp=await p.evaluate(()=>[...document.querySelectorAll('.dq3 .dq-col')].map(e=>({h:e.querySelector('h4').innerText.replace(/\s+/g,' ').trim(),
+  n:e.querySelectorAll('.dq-row').length, st:e.dataset.state})));
+out.push((grp.length===3&&grp[0].st==='running'&&/进行中/.test(grp[0].h)&&/未派单/.test(grp[1].h)&&/已完成/.test(grp[2].h)?'✅':'❌')+' 底栏任务三列（进行中/未派单/已完成）: '+JSON.stringify(grp));
+out.push((grp.every(x=>+x.h.split(/\s+/)[1]===x.n)?'✅':'❌')+' 每列标题的计数 == 该列真实行数（列头不许虚报）: '+grp.map(x=>x.h+'→'+x.n).join(' / '));
 const q=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/dispatch-queue');
   return {n:r.data.tasks.length, flows:[...new Set(r.data.tasks.map(t=>t.flowCode))].sort(), counts:r.data.counts};});
 out.push((q.n===16&&q.flows.length===11?'✅':'❌')+` 块2 数据=图3 流程配置 16 条 / 11 种流（含图1 的热延伸取放 0161/0162）：${q.flows.join(',')}`);
 out.push((q.counts.running+q.counts.unassigned+q.counts.done===16?'✅':'❌')+' 块2 三态合计=16: '+JSON.stringify(q.counts));
-const names=await p.evaluate(()=>[...new Set([...document.querySelectorAll('#dkQueueTrack .dq-row .nm')].map(e=>e.innerText.trim()))].length);
+const names=await p.evaluate(()=>[...new Set([...document.querySelectorAll('.dq3 .dq-row .nm')].map(e=>e.innerText.trim()))].length);
 out.push((names>=11?'✅':'❌')+' 块2 渲染出的任务名（流号+流名）覆盖全部 11 种流: '+names);
 
 // ②b 队列状态跟着循环剧本走（进行中那一行 = 机器人当前停靠/正在前往的站）
@@ -78,11 +82,16 @@ out.push((sync.liveFlow&&sync.runFlows.indexOf(sync.liveFlow)>=0&&sync.liveCount
 out.push((seenFlows.size>=2?'✅':'❌')+' 随剧本推进换过 '+seenFlows.size+' 条流: '+[...seenFlows].join(' → '));
 out.push((sync.liveCad&&/^\d{3}-\d{2}$/.test(sync.liveCad)?'✅':'❌')+' 「循环中」那行的工位由剧本反推: '+sync.liveCad);
 
-const before=await p.evaluate(()=>({dur:getComputedStyle(document.getElementById('dkQueueTrack')).transform,pos:document.getElementById('dkQueueTrack').getBoundingClientRect().y}));
+const before=await p.evaluate(()=>({dur:getComputedStyle(document.getElementById('dqTrackDone')).transform,pos:document.getElementById('dqTrackDone').getBoundingClientRect().y}));
 await p.waitForTimeout(7000);
-const after=await p.evaluate(()=>({dur:getComputedStyle(document.getElementById('dkQueueTrack')).transform,pos:document.getElementById('dkQueueTrack').getBoundingClientRect().y,
+const after=await p.evaluate(()=>({dur:getComputedStyle(document.getElementById('dqTrackDone')).transform,pos:document.getElementById('dqTrackDone').getBoundingClientRect().y,
   cnt:document.getElementById('dkQueueCnt').innerText}));
-out.push((Math.abs(after.pos-before.pos)>0.5?'✅':'❌')+` 心跳刷新不重置无缝滚动（7s 内位移 ${(after.pos-before.pos).toFixed(1)}px；重建 innerHTML 会跳回原点）`);
+/* FR-42 三列之后，「行换列」必须重建轨道（CSS 无缝滚动会跳回原点）——这是有意代价，
+   一圈里只发生几次而不是每 2s 一次。所以断言改成二选一：要么滚动连续，要么这一窗内确实有任务换了列。 */
+const cols0=await p.evaluate(()=>[...document.querySelectorAll('.dq3 .dq-col>h4 b')].map(e=>e.textContent).join('/'));
+const moved=Math.abs(after.pos-before.pos);
+const cols1=await p.evaluate(()=>[...document.querySelectorAll('.dq3 .dq-col>h4 b')].map(e=>e.textContent).join('/'));
+out.push((moved>0.5||cols0!==cols1?'✅':'❌')+` 心跳刷新不无谓重置滚动（7s 位移 ${moved.toFixed(1)}px；列分布 ${cols0}→${cols1}，只有换列才允许重建）`);
 out.push((/循环同步/.test(after.cnt)?'✅':'❌')+' 块2 头部显示与剧本同步: '+after.cnt.replace(/\s+/g,' '));
 
 // ③ 试验项（图4 的名称与检测设备）
@@ -110,11 +119,11 @@ const land=await p.evaluate(()=>{
   document.querySelectorAll('.dk-track').forEach(t=>t.style.animation='none');
   const pick=(sel)=>{const tr=document.querySelector(sel); const box=tr.closest('.dk-view')||tr.closest('.np-view'); if(!box) return null; const v=box.getBoundingClientRect();
     return [...tr.children].filter(e=>e.dataset.cad||e.dataset.node).map(e=>({e,r:e.getBoundingClientRect()})).filter(x=>x.r.top>=v.top-1&&x.r.bottom<=v.bottom+1)[0];};
-  const q=pick('#dkQueueTrack'), ti=pick('#dkItemsTrack'), nd=pick('#dkNodesTrack');
+  const q=pick('#dqTrackRunning')||pick('#dqTrackUnassigned')||pick('#dqTrackDone'), ti=pick('#dkItemsTrack'), nd=pick('#dkNodesTrack');
   return {qCad:q&&q.e.dataset.cad, qRole:q&&q.e.getAttribute('role'), tiCad:ti&&ti.e.dataset.cad, ndNode:nd&&nd.e.dataset.node, ndTab:nd&&nd.e.getAttribute('tabindex')};
 });
 out.push((land.qCad&&land.qRole==='button'?'✅':'❌')+' 块2 任务行可点/可聚焦（role=button + data-cad）: '+land.qCad);
-if(land.qCad){ await p.evaluate((cad)=>document.querySelector('#dkQueueTrack .dq-row[data-cad="'+cad+'"]').click(), land.qCad); await p.waitForTimeout(900);
+if(land.qCad){ await p.evaluate((cad)=>document.querySelector('.dq3 .dq-row[data-cad="'+cad+'"]').click(), land.qCad); await p.waitForTimeout(900);
   out.push((await p.evaluate(()=>document.body.dataset.lastHighlight)===land.qCad?'✅':'❌')+' 点任务行 → 场景描边对应工位: '+await p.evaluate(()=>document.body.dataset.lastHighlight)); }
 if(land.tiCad){ await p.evaluate((cad)=>document.querySelector('#dkItemsTrack .ti-row[data-cad="'+cad+'"]').click(), land.tiCad); await p.waitForTimeout(900);
   out.push((await p.evaluate(()=>document.body.dataset.lastHighlight)===land.tiCad?'✅':'❌')+' 点试验项行 → 描边其检测设备: '+await p.evaluate(()=>document.body.dataset.lastHighlight)); }

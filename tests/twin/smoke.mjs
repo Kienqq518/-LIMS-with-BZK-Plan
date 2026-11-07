@@ -26,7 +26,7 @@ a('安灯写回按钮已删', await page.locator('[data-ack]').count(), 0);
 a('回溯按钮已随 S3 移除', await page.locator('[data-trace]').count(), 0);
 a('S3 按钮已移除', await page.locator('[data-mode=S3]').count(), 0);
 a('桥接层就绪', !!(await hooks()), true);
-a('图层默认（剖墙已不是图层）', (await hooks())?.layers, 'path,labels');
+a('图层默认：路径开、场地标签关（2026-11-07）、热力关', (await hooks())?.layers, 'path');
 a('剖墙 icon 已移除', await page.locator('.lic[data-layer=walls]').count(), 0);
 a('墙体剖切仍固定生效（前侧外墙不透明度 0.12）', await page.frames().find(f=>/tour-space/.test(f.url())).evaluate(()=>{let m=null;window.visual106.overview.children.forEach(c=>{if(c.isMesh&&c.material&&c.material.transparent&&c.material.color&&c.material.color.getHex()===0xbbcbd7)m=c;});return m?+m.material.opacity.toFixed(2):'no-wall';}), 0.12);
 
@@ -52,9 +52,9 @@ a('本月委托总数', (await page.evaluate(()=>document.querySelector('.dtable
 
 // 图层：关路径
 await page.click('.lic[data-layer=path]'); await page.waitForTimeout(1500);
-a('关路径后图层状态', (await hooks())?.layers, 'labels');
+a('关路径后图层状态（标签本来就默认关）', (await hooks())?.layers, '');
 await page.click('.lic[data-layer=heatmap]'); await page.waitForTimeout(1500);
-a('开热力后图层', (await hooks())?.layers, 'labels,heatmap');
+a('开热力后图层', (await hooks())?.layers, 'heatmap');
 await page.click('.lic[data-layer=heatmap]'); await page.click('.lic[data-layer=path]'); await page.waitForTimeout(1200);
 
 // 低配：按钮已按 2026-11-06 反馈移除，能力保留为交付参数 ?quality=low（由 fscheck 端到端验证）。

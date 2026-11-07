@@ -407,3 +407,56 @@ body[data-zone-metrics="0"] .rail>.period,body[data-zone-metrics="0"] .railpanel
 /* 周期指示改贴底：底栏高 172 + 下边距 14 + 沟槽 16，浮在底栏正上方，不再占住左上大片画面 */
 body[data-zone-metrics="0"] .rail{top:auto;bottom:202px;max-height:none;overflow:visible}
 body[data-zone-metrics="0"] .rail .cycle{margin:0}
+
+/* ================= FR-42（2026-11-07）版式重排 + 全站无底板 + 浅灰底 =================
+   这一段是覆盖块：同选择器写在后面对同特异度规则生效，逐条注明它覆盖的是前文哪一条，
+   免得留下"改了没反应"的坑。产品负责人三条决定：
+   ① 全站一律无底板（底栏、区域面板也撤），行卡垫底加重到 F 档；
+   ② 设备运行状态从底栏挪进左栏，AGV 与无人化调度任务合并放底栏（上=AGV，下=三列状态）；
+   ③ 底层由纯白改冷浅灰（CAD 墙面本来就近白，页面再白就没有层次，悬浮内容也分不出来）。 */
+
+/* 覆盖前文 body 渐变（原来中间是 #fff，所以整屏读起来是白的） */
+body{background:linear-gradient(158deg,var(--tw-scene-bg-a),var(--tw-scene-bg-m) 52%,var(--tw-scene-bg-b))}
+body[data-v2-canvas=white]{background:#fff}   /* ?bg=white 一键回看旧底，取证用 */
+
+/* ① 底栏：三块→两块；块内不再有底板 */
+footer.dock{grid-template-columns:minmax(0,1.62fr) minmax(0,1fr)}
+.dk{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;border:0;border-radius:0;box-shadow:none;text-shadow:var(--tw-text-plate)}
+.dk>header{padding:0 2px 6px;border-bottom:0;background:transparent}
+/* 区域面板同样撤底板；面板头那条分隔线也去掉（留着等于换了一层薄底） */
+.zonepanel{background:transparent;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;text-shadow:var(--tw-text-plate)}
+.zonepanel>header{padding:0 2px 8px;border-bottom:0}
+.zonepanel>header .close{background:var(--tw-glass-plate)}
+/* 行卡垫底加重：面板透明后，行是"要读的东西"，必须自带底（F 档 .86，仍留 14% 透景） */
+.st-row{background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);text-shadow:none}
+.dq-row,.ti-row,.nd-row,.zp-row,.dq-grp{background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip);text-shadow:none;padding-left:8px;padding-right:8px}
+.dq-grp{display:none}   /* 三列之后不再需要分组标题行 */
+.dq-row,.ti-row{border-bottom:0;margin:0 0 3px}
+.nd-row{border-bottom:0}
+.nodepanel .nd-row{margin:0 8px 3px}
+.dq-row .tm,.ti-row .tm{background:transparent}
+
+/* ② 左栏新增「设备运行状态」：左环右图例 + 机器人一行 */
+.raildev{display:flex;flex-direction:column;gap:2px}
+.raildev>header{display:flex;align-items:baseline;gap:8px;padding:0 0 4px;border-bottom:0}
+.raildev>header b{font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-2);flex:1 1 auto}
+.raildev>header .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rd-wrap{display:grid;grid-template-columns:132px minmax(0,1fr);gap:8px;align-items:start}
+#railDev #chartDevices{height:78px;margin:0}
+#railDev .dk-body{padding:0;overflow:visible;min-width:0}
+#railDev .dk-rate{margin-top:4px}
+/* 106 下钻：左栏整块交给底栏与右侧面板（设备状态在区域面板里已经有），不再留空壳 */
+body[data-zone-metrics="0"] .rail,body[data-zone-metrics="0"] .raildev{display:none}
+
+/* ② AGV 行进底栏 + 任务三列：状态=列，行内不再重复状态字 */
+.cycle{padding:0 2px 6px}
+.dq3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;flex:1;min-height:0}
+.dq-col{display:flex;flex-direction:column;min-width:0;border-left:1px solid var(--tw-hairline);padding-left:9px}
+.dq-col>h4{display:flex;align-items:baseline;gap:5px;margin:0 0 4px;font-size:var(--tw-fs-micro);font-weight:700;color:var(--tw-ink-3)}
+.dq-col>h4 b{font-size:var(--tw-fs-label);font-weight:800;color:var(--tw-ink-1);font-variant-numeric:tabular-nums}
+.dq-col[data-state=running]>h4{color:var(--tw-color-brand-strong)}
+.dq-col[data-state=unassigned]>h4{color:var(--tw-tint-warn-fg)}
+.dq-col[data-state=done]>h4{color:var(--tw-tint-ok-fg)}
+.dq-col .dk-view{flex:1;min-height:0}
+.dq-row .st{display:none}
+.dq-row.running .st{display:inline}

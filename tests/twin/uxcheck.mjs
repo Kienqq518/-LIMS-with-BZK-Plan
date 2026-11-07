@@ -20,7 +20,8 @@ out.push(((railSheet.bg==='rgba(0, 0, 0, 0)'||railSheet.bg==='transparent')&&rai
 const streamSheet=await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.stream'));
   return {bg:c.backgroundColor,blur:c.backdropFilter,border:c.borderTopWidth,shadow:c.boxShadow==='none',plate:c.textShadow!=='none'};});
 out.push(((streamSheet.bg==='rgba(0, 0, 0, 0)'||streamSheet.bg==='transparent')&&streamSheet.blur==='none'&&streamSheet.border==='0px'&&streamSheet.shadow&&streamSheet.plate?'✅':'❌')+' 告警流无底板层（行卡自己浮着，背后不再有整块白）: '+JSON.stringify(streamSheet));
-out.push(((await p.evaluate(()=>getComputedStyle(document.querySelector('.dk')).backdropFilter.includes('blur')))?'✅':'❌')+' 底栏四块=透明玻璃浮层');
+/* FR-42 全站一律无底板：底栏块不再有玻璃（反向断言），行卡自己带 F 档垫底 */
+out.push(((await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.dk'));return c.backgroundColor==='rgba(0, 0, 0, 0)'&&c.backdropFilter==='none'&&c.borderTopWidth==='0px';}))?'✅':'❌')+' 底栏两块也无底板（全站一律）');
 out.push(((await p.evaluate(()=>{const r=document.getElementById('scene').getBoundingClientRect();const l=document.querySelector('.rail').getBoundingClientRect();return l.x>r.x&&l.y>r.y;}))?'✅':'❌')+' 浮层确实悬浮在三维画面之上（非分栏布局）');
 T('四张数据表', await p.locator('.dtable').count(), 4);
 out.push(((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x)).length>=6?'✅':'❌')+' 表内占比列（替代原环形/条形图）: '+((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x))).join(','));
@@ -48,13 +49,15 @@ T('分区色块已移除', await p.locator('.lic[data-layer=zones]').count(), 0)
 T('系统流按钮已删', await p.locator('#flowBtn').count(), 0);
 T('系统流视图已删', await p.locator('#flowView').count(), 0);
 const hook=()=>ev(()=>document.getElementById('twin-v2-bridge')?.dataset||{});
-T('默认图层', (await hook()).layers, 'path,labels');
+T('默认图层（场地标签默认关，2026-11-07）', (await hook()).layers, 'path');
+T('默认时房间名称确实不飘在三维里', await ev(()=>{const v=window.visual106;return v.labels.filter(l=>getComputedStyle(l.div).display!=='none').length===0?'all-hidden':'some-visible';}), 'all-hidden');
 await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(1200);
-T('关场地标签后图层', (await hook()).layers, 'path');
-T('关场地标签→设备状态光点不受影响', await ev(()=>{const v=window.visual106;let n=0,vis=0;v.detail.traverse(o=>{if(o.isMesh&&o.geometry&&o.geometry.type==='SphereGeometry'){n++;if(o.visible)vis++;}});return n&&vis===n?'dots-untouched':'visible='+vis+'/'+n;}), 'dots-untouched');
-T('关场地标签→房间名称全部隐藏', await ev(()=>{const v=window.visual106;return v.labels.filter(l=>getComputedStyle(l.div).display!=='none').length===0?'all-hidden':'some-visible';}), 'all-hidden');
+T('开场地标签后图层', (await hook()).layers, 'path,labels');
+T('开场地标签→房间名称回来', await ev(()=>{const v=window.visual106;return v.labels.filter(l=>getComputedStyle(l.div).display!=='none').length>=10?'shown':'hidden';}), 'shown');
+T('场地标签开关不影响设备状态光点', await ev(()=>{const v=window.visual106;let n=0,vis=0;v.detail.traverse(o=>{if(o.isMesh&&o.geometry&&o.geometry.type==='SphereGeometry'){n++;if(o.visible)vis++;}});return n&&vis===n?'dots-untouched':'visible='+vis+'/'+n;}), 'dots-untouched');
+await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(1100);
+T('再点收回（回到默认关）', await ev(()=>{const v=window.visual106;return v.labels.filter(l=>getComputedStyle(l.div).display!=='none').length===0?'all-hidden':'some-visible';}), 'all-hidden');
 T('物联节点身份标签已下线（只留点击弹窗）', await ev(()=>document.querySelectorAll('.orb-tag').length), 0);
-await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(900);
 // 2) 墙体剖切真的生效
 const wallH=()=>ev(()=>{const v=window.visual106;let m=null;v.overview.children.forEach(c=>{if(c.isMesh&&c.material&&c.material.transparent&&c.material.color&&c.material.color.getHex()===0xbbcbd7)m=c;});if(!m)return 'no-wall';const a=m.geometry.attributes.position;let hi=0;for(let s=0;s*18<a.length;s++)hi=Math.max(hi,a[s*18+7]);return {top:+hi.toFixed(2),op:+m.material.opacity.toFixed(2)};});
 const wOn=await wallH();
@@ -62,21 +65,23 @@ const wOff=await wallH();
 out.push((wOn.op<=0.13?'✅':'❌')+` 墙体剖切为固定渲染行为（外墙不透明度恒 ${JSON.stringify(wOn)}，无开关）`);
 // 3) 热力：106 高、其他最低
 await p.click('.lic[data-layer=heatmap]'); await p.waitForTimeout(1500);
-T('热力图层', (await hook()).layers, 'path,labels,heatmap');
+T('热力图层', (await hook()).layers, 'path,heatmap');
 const heatR=await ev(()=>{const g=window.visual106.scene.getObjectByName('twin-v2-heat');return {exists:!!g,layers:document.getElementById('twin-v2-bridge')?.dataset.layers,n:g?g.children.length:0,items:g?g.children.map(c=>({x:+c.position.x.toFixed(1),z:+c.position.z.toFixed(1),o:+c.material.opacity.toFixed(3)})):[]};});
 const heat=heatR.items; out.push((heatR.exists&&heatR.n>0?'✅':'❌')+` 热力图斑存在: ${heatR.n} 块（layers=${heatR.layers}）`);
 const in106=heat.filter(h=>h.x>=9&&h.x<=18.5&&h.z>=9.6&&h.z<=28.1), other=heat.filter(h=>!(h.x>=9&&h.x<=18.5&&h.z>=9.6&&h.z<=28.1));
 out.push(((in106.length&&Math.max(...in106.map(h=>h.o))>=0.15&&(!other.length||Math.max(...other.map(h=>h.o))<=0.08))?'✅':'❌')+` 热力分级：106 ${in106.length}块 max=${in106.length?Math.max(...in106.map(h=>h.o)):'-'} / 其他 ${other.length}块 max=${other.length?Math.max(...other.map(h=>h.o)):'-'}`);
 await p.click('.lic[data-layer=heatmap]'); await p.waitForTimeout(600);
 // 4) 底栏=四块（设备统计 / 调度任务队列 / 委托单试验项 / 组态物联节点），除统计块外各自滚动
-T('底栏块数（组态物联已挪到右列）', await p.locator('.dock .dk').count(), 3);
-T('底栏滚动轨道数（块1 是统计格不滚）', await p.locator('.dk-track').count(), 3);
-out.push(((await p.evaluate(()=>getComputedStyle(document.getElementById('dkQueueTrack')).animationName))==='dkUp'?'✅':'❌')+' 队列块滚动动画: '+await p.evaluate(()=>getComputedStyle(document.getElementById('dkQueueTrack')).animationName));
+T('底栏块数（FR-42：设备状态进左栏，AGV+任务合成一块）', await p.locator('.dock .dk').count(), 2);
+T('滚动轨道数（任务三列 + 试验项 + 右列物联）', await p.locator('.dk-track').count(), 5);
+out.push(((await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')))==='dkUp/dkUp/dkUp'?'✅':'❌')+' 三列各自滚动: '+await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')));
 
-// 不钉死具体 alpha（玻璃透明度是 token，改一档就假失败）：验语义——半透明白 + 真模糊
-const dkGlass=await p.evaluate(()=>{const e=getComputedStyle(document.querySelector('.dk'));return {bg:e.backgroundColor,blur:e.backdropFilter};});
-const dkAlpha=(dkGlass.bg.match(/rgba\(255, 255, 255, ([0-9.]+)\)/)||[])[1];
-out.push((+dkAlpha>=.3&&+dkAlpha<=.7&&/blur\(\d+px\)/.test(dkGlass.blur)?'✅':'❌')+` 底栏块=半透明玻璃底（alpha ${dkAlpha} + ${dkGlass.blur}）`);
+/* FR-42 全站一律无底板：底栏块不再有玻璃，行卡自己带 F 档垫底（更重的白） */
+const dkSheet=await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.dk'));const row=getComputedStyle(document.querySelector('.dq-row'));
+  return {bg:c.backgroundColor,blur:c.backdropFilter,border:c.borderTopWidth,plate:row.backgroundColor,plateB:row.borderTopWidth};});
+const plateAlpha=+((dkSheet.plate.match(/rgba\(255, 255, 255, ([0-9.]+)\)/)||[0,.86])[1]);
+out.push(((dkSheet.bg==='rgba(0, 0, 0, 0)'||dkSheet.bg==='transparent')&&dkSheet.blur==='none'&&dkSheet.border==='0px'&&plateAlpha>=.8&&+dkSheet.plateB.replace('px','')>=1?'✅':'❌')
+  +` 底栏无底板 + 行卡垫底加重到 F 档（alpha ${plateAlpha}、描边 ${dkSheet.plateB}）: ${JSON.stringify(dkSheet)}`);
 // 5) 右侧告警流滚动
 T('告警流行数(13 条 ×2 无缝复制)', await p.locator('#streamTrack .st-row').count(), 26);
 const boardAnim=await p.evaluate(()=>{const t=document.getElementById('streamTrack');return {name:getComputedStyle(t).animationName,cls:t.className};});

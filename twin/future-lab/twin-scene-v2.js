@@ -11,7 +11,7 @@
   var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [], planItems = [], queueData = null, entrust = null;
   var rtTimer = null, detailDev = null, bridgeReady = false, pendingState = null;
   var thSeries = null, thLoading = false, chartsBooted = false;
-  var zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false, routeAudit = null, cycleDef = null, cycTimer = null;
+  var dqSig = '', zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false, routeAudit = null, cycleDef = null, cycTimer = null;
   var SRC_NAME = { daq: '数采', dispatch: '调度', iot: '物联', lims: 'LIMS', rule: '判定规则' };
   var ORDER = [];  /* 遥控翻页序列 */
 
@@ -19,7 +19,9 @@
   /* 分区 id 由数据（/api/overview/alarm-sections）给出；URL 与面板签名都用它，不再写死 A/B/C。
      readURL 在 SECTIONS 赋值之前执行，所以 secIds 兜底到内置三区的顺序。 */
   function secIds() { return (Array.isArray(SECTIONS) && SECTIONS.length ? SECTIONS : [{ id: 'A' }, { id: 'B' }, { id: 'C' }]).map(function (x) { return x.id; }); }   /* 仍供分级柱的轴标签用：等级标题来自 /api/overview/alarm-sections */
-  var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 1, heatmap: 0 }, streamFilter: 'all', quality: 'high', strip: 0 };
+  /* 图层默认：路径开、场地标签关、热力关（产品负责人 2026-11-07：初始化时场地标签默认不开启）。
+     房间名在区域面板与顶栏「区域」下拉里都有，三维里飘十个标签反而压住设备；要看得点顶栏「场地标签」。 */
+  var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 0, heatmap: 0 }, streamFilter: 'all', quality: 'high', strip: 0 };
 
   function sendScene(type, data) { if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'twin-v2', type: type }, data), location.origin); }
   var pendingView = null;
@@ -34,7 +36,7 @@
     var p = new URLSearchParams(location.search); if (!p.get('mode')) return null;
     var lay = {}; (p.get('layers') || '').split(',').forEach(function (k) { if (k) lay[k] = 1; });
     return { mode: p.get('mode'), zone: p.get('zone') || '106', period: p.get('period') || 'day',
-      layers: { path: lay.path == null ? 1 : lay.path, labels: lay.labels == null ? 1 : lay.labels, heatmap: lay.heatmap ? 1 : 0 },
+      layers: { path: lay.path == null ? 1 : lay.path, labels: lay.labels == null ? 0 : lay.labels, heatmap: lay.heatmap ? 1 : 0 },
       streamFilter: p.get('sf') === 'open' ? 'open' : 'all', quality: p.get('quality') || 'high', strip: p.get('strip') ? 1 : 0 };
   }
   function writeURL() {
@@ -501,8 +503,13 @@
      重建 innerHTML 会把 CSS 无缝滚动动画重置，底栏每 2s 弹回顶部——那比数据不更新更糟。 */
   function refreshDock() {
     var qt = (queueData && queueData.tasks) || [];
+    /* 三列布局下，任务换状态=换列，就地改字改不了位置。重建会把 CSS 无缝滚动弹回顶部
+       （FR-30b 那条教训），所以只在「列归属真的变了」时重建一次——一圈里这只会发生几次
+       （AGV 每办完一道，那条任务从 进行中 挪进 已完成），而不是每 2s 一次。 */
+    var sig = qt.map(function (t) { return t.seq + ':' + t.shown; }).join(',');
+    if (dqSig && sig !== dqSig) { renderDock(); return; }
     qt.forEach(function (t) {
-      document.querySelectorAll('#dkQueueTrack .dq-row[data-seq="' + t.seq + '"]').forEach(function (el) {
+      document.querySelectorAll('.dq3 .dq-row[data-seq="' + t.seq + '"]').forEach(function (el) {
         el.classList.remove('running', 'unassigned', 'done'); el.classList.add(t.shown);
         var st = el.querySelector('.st'), tm = el.querySelector('.tm');
         if (st) st.textContent = t.live ? '循环中' : ((queueData.stateLabels || {})[t.shown] || t.shown);
@@ -558,21 +565,23 @@
   function renderDock() {
     /* ① 设备信息统计：状态分布 + 稼动率（在测/建档，现算不写死） */
 
-    /* ② 调度任务队列：按 进行中 / 未派单 / 已完成 分组（图1），状态跟随循环剧本实时变 */
+    /* ② 调度任务队列（FR-42）：进行中 / 未派单 / 已完成 改成三列并排。
+       状态已经是「列」，所以行内不再重复写状态字（只有 AGV 正在办的那道标「循环中」）。 */
     var qt = (queueData && queueData.tasks) || [];
     var groups = [['running', '进行中'], ['unassigned', '未派单'], ['done', '已完成']];
-    var qhtml = groups.map(function (g) {
+    groups.forEach(function (g) {
       var rows = qt.filter(function (t) { return t.shown === g[0]; });
-      if (!rows.length) return '';
-      return '<div class="dq-grp">' + g[1] + ' · ' + rows.length + '</div>' + rows.map(function (t) {
+      var n = document.getElementById('dqN' + g[0].charAt(0).toUpperCase() + g[0].slice(1));
+      if (n) n.textContent = rows.length;
+      dkTrack('#dqTrack' + g[0].charAt(0).toUpperCase() + g[0].slice(1), rows.map(function (t) {
         return '<div class="dq-row ' + g[0] + '" data-seq="' + t.seq + '" data-cad="' + (t.cad || '') + '" data-flow="' + t.flowCode + '" tabindex="0" role="button" aria-label="' + escapeHtml(t.flowCode + ' ' + t.flowName + '，' + g[1] + '，回车定位工位') + '">' +
           '<i class="dq-dot"></i><span class="nm">' + escapeHtml(t.flowCode + ' ' + t.flowName) + '</span>' +
-          '<span class="st">' + (t.live ? '循环中' : g[1]) + '</span>' +
+          '<span class="st">' + (t.live ? '循环中' : '') + '</span>' +
           '<span class="tm">' + (g[0] === 'running' && t.elapsedMin ? '已 ' + t.elapsedMin + '/' + t.plannedMin + 'min' : (t.time || '—')) + '</span></div>';
-      }).join('');
-    }).join('');
+      }).join(''), rows.length);
+    });
     $('#dkQueueCnt').textContent = '流程配置 ' + qt.length + ' 条 · 循环同步' + (queueData && queueData.liveStep && queueData.liveStep.flowCode ? '：' + queueData.liveStep.flowCode : (queueData && queueData.liveStep && queueData.liveStep.kind === 'pickup' ? '：样品室取样' : ''));
-    dkTrack('#dkQueueTrack', qhtml, qt.length);
+    dqSig = qt.map(function (t) { return t.seq + ':' + t.shown; }).join(',');   /* 列归属指纹：只有换列才重建 */
 
     /* ③ 正在检测的委托单 → 试验项完成情况（图4 的名称与检测设备） */
     var its = (entrust && entrust.items) || [];

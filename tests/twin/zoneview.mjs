@@ -42,11 +42,13 @@ await p.selectOption('#zoneSel','106'); await p.waitForTimeout(3200);
 r=await rects();
 out.push((!noOverlap(r)?'✅':'❌')+' 106 下钻后浮层仍互不重叠: '+noOverlap(r));
 out.push(((r.dock&&r.dock!=='hidden')?'✅':'❌')+' 106 下钻后底栏仍在（任务队列继续走）: '+JSON.stringify(r.dock));
-out.push(((r.rail&&r.rail!=='hidden')?'✅':'❌')+' 106 下钻后左栏容器仍在（周期指示不丢）: '+JSON.stringify(r.rail));
+/* FR-42 重排后 106 的左栏整块不再出现：AGV 与任务在底栏（dock:true），
+   设备状态在区域面板里已有，左栏留着就是空壳。周期切换器搬进面板头部。 */
+out.push(((r.rail==='hidden')?'✅':'❌')+' 106 下钻后左栏整块隐藏（不再留空壳；AGV 与任务在底栏）: '+JSON.stringify(r.rail));
 const m106=await p.evaluate(()=>{const rp=document.querySelector('.railpanel'),cy=document.getElementById('cycleBox'),pp=document.getElementById('zpPeriod');
   const vis=e=>!!e&&e.offsetParent!==null&&getComputedStyle(e).display!=='none';
   return {panel:vis(rp),cycle:vis(cy),zpPeriod:vis(pp),flag:document.body.dataset.zoneMetrics};});
-out.push((m106.panel===false&&m106.cycle===true&&m106.flag==='0'?'✅':'❌')+' 106 撤掉左侧运行指标面板、保留周期指示（与右侧面板不再重复）: '+JSON.stringify(m106));
+out.push((m106.panel===false&&m106.cycle===true&&m106.flag==='0'?'✅':'❌')+' 106 撤掉左侧指标面板、AGV 任务行仍在底栏（与右侧面板不重复）: '+JSON.stringify(m106));
 out.push((m106.zpPeriod===true?'✅':'❌')+' 周期切换器随指标面板搬进区域面板（否则 106 的本日/本月/本年没人能点）');
 /* 观察窗必须覆盖「一次停靠 + 一段行走」：剧本最长 dwell 9s，原来只看 6s，
    整窗落进停靠段就报「机器人没走」——那是假失败（2026-11-07 全量踩到，位移 0.00m）。

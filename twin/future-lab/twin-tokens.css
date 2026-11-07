@@ -43,6 +43,8 @@
   --tw-glass-float:rgba(255,255,255,.82);  /* C 文字密集的独立浮层：实体信息气泡、右侧详情 */
   --tw-glass-head:rgba(244,248,253,.5);    /* D 表头与分组条 */
   --tw-glass-chip:rgba(255,255,255,.9);    /* E 顶栏小片/按钮底（要压住画面读得清） */
+  --tw-glass-plate:rgba(255,255,255,.86);  /* F 行卡垫底（FR-42）：面板底板撤了以后，行必须自带更重的底，
+                                              否则数字直接糊在 CAD 近白的墙面上。比 B 档重 .14，仍留 14% 透景。 */
   --tw-glass-border:rgba(255,255,255,.88);
   --tw-glass-on:rgba(255,255,255,.78);      /* 开启态小片（顶栏 icon / 收起底栏 / 全屏） */
   --tw-glass-hover:rgba(255,255,255,.55);   /* 悬停态小片 */
@@ -189,3 +191,18 @@ button,select,input,textarea{font-family:var(--tw-font-familyUI)}
 /* 节点详情卡（物联读数）：与实体气泡同一档玻璃 */
 :root[data-v2] .node-card{background:var(--tw-glass-float);border:1px solid var(--tw-glass-border);
   border-radius:var(--tw-radius-card);box-shadow:var(--tw-shadow-card)}
+
+/* ============ FR-42（2026-11-07）浅灰底 + 行卡垫底 ============ */
+:root{
+  /* 底层不再是纯白：CAD 的墙和地面本来就近白，页面底再白就没有层次，
+     悬浮的行卡也分不出来。冷浅灰三档：中间调 + 两端略深。 */
+  --tw-scene-bg-a:#E9EFF6; --tw-scene-bg-m:#E3E9F2; --tw-scene-bg-b:#DAE2EC;
+  --tw-canvas:#E3E9F2;      /* 场景 iframe 自己的底（V2 下覆盖底座的 #dce8f1） */
+  --tw-canvas-top:rgba(233,239,246,.78);   /* 顶栏那条淡出带跟着底色走，不再写死近白 */
+  --tw-glass-plate:rgba(255,255,255,.86);  /* F 档行卡垫底（面板透明后行必须自带底） */
+}
+
+/* 场景帧自己的底：底座写死 #dce8f1（tech-blue-space.css），V2 下换成浅灰档；
+   只作用于 data-v2 的 tour-space，tour-lab 底座不受影响。?bg=white 由宿主转发给场景帧。 */
+:root[data-v2]{background:var(--tw-canvas)}
+:root[data-v2-bg=white]{background:#fff}
