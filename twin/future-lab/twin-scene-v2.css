@@ -44,9 +44,13 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 .pill.flow{color:var(--tw-color-brand);border-color:var(--tw-tint-brand-line)}
 /* 浮层几何的唯一事实源：宽度与沟槽都从这里算，改一处即可 */
 :root{--tw-rail-w:300px;--tw-rail-gap:12px;--tw-stream-h:560px;--tw-stream-w:296px;--tw-panel-w:352px;--tw-float-gap:16px}
+/* 侧栏底板层整体撤除（2026-11-07 产品负责人圈图：连面板底下那层白/玻璃底板也不要）。
+   左栏、告警流、组态物联、AGV 任务块都只剩内容浮在三维画面上：无底、无描边、无圆角、无阴影、无毛玻璃。
+   可读性改由 --tw-text-plate 白垫底承担（CAD 画面近白，深色字 + 白垫底对比度仍 >7:1）。
+   底栏与区域面板这次没被圈到，维持同一档玻璃配方（uiconcheck 仍守那条一致性）。 */
 .rail{position:fixed;left:14px;top:70px;width:var(--tw-rail-w);display:flex;flex-direction:column;gap:var(--tw-rail-gap);z-index:var(--tw-z-panel);
- background:var(--tw-glass-panel);backdrop-filter:var(--tw-blur) var(--tw-sat);border:1px solid var(--tw-glass-border);
- border-radius:var(--tw-radius-card);box-shadow:var(--tw-shadow-card);padding:12px 12px 10px;max-height:calc(100vh - 92px);overflow:auto}
+ background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;border:0;
+ border-radius:0;box-shadow:none;padding:0;max-height:calc(100vh - 92px);overflow:auto;text-shadow:var(--tw-text-plate)}
 .ga{background:var(--tw-color-alertRed)}.gb{background:var(--tw-color-bottleneckOrange)}.gc{background:var(--tw-color-warnAmber)}
 .dot{width:7px;height:7px;border-radius:50%}.dot.live{background:var(--tw-color-okGreen);animation:pulse 1.6s infinite}
 .dot.stale{background:var(--tw-color-warnAmber)}
@@ -66,7 +70,7 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 /* 机器人状态条与底部说明条已整体删除（2026-11-06）：信息分别落在区域面板「设备」块、告警流与各表表头的来源+更新时间 */
 /* ---- V2 · 三格控制层与运行看板新增（决策 Q1/Q3/Q4/Q7/Q8） ---- */
 [hidden]{display:none!important}
-.period{display:flex;gap:4px;background:var(--tw-track);border-radius:var(--tw-radius-pill);padding:3px}
+.period{display:flex;gap:4px;background:transparent;border-radius:var(--tw-radius-pill);padding:0}   /* 2026-11-07：白底轨道撤掉，选中态自己带底，控件直接浮在画面上 */
 .seg{flex:1;font-size:var(--tw-fs-label);color:var(--tw-ink-2);background:transparent;border:0;border-radius:var(--tw-radius-pill);padding:5px 6px;cursor:pointer}
 .seg.active{color:var(--tw-on-color);background:var(--tw-color-brand);font-weight:700}
 .filter{display:flex;gap:5px}
@@ -100,7 +104,7 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 .zonepanel h4 .k.dev{background:var(--tw-color-brand)}.zonepanel h4 .k.env{background:var(--tw-color-okGreen)}.zonepanel h4 .k.stat{background:var(--tw-st-cat)}.zonepanel h4 .k.run{background:var(--tw-color-warnAmber)}.zonepanel h4 .k.ab{background:var(--tw-color-alertRed)}
 .zp-empty{font-size:var(--tw-fs-label);color:var(--tw-ink-4);background:var(--tw-glass-inner);border:1px dashed var(--tw-hairline-strong);border-radius:var(--tw-radius-chip);padding:7px 9px}
 .zp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.zp-stat{display:flex;flex-direction:column;gap:1px;background:var(--tw-glass-inner);border:1px solid var(--tw-hairline-strong);border-radius:var(--tw-radius-chip);padding:7px 9px}
+.zp-stat{display:flex;flex-direction:column;gap:1px;background:transparent;border:0;border-radius:var(--tw-radius-chip);padding:6px 2px}
 .zp-stat b{font-size:var(--tw-fs-kpi);font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
 .zp-stat span{font-size:var(--tw-fs-micro);color:var(--tw-ink-4)}
 .zp-stat.warn b{color:var(--tw-color-alertRed)}.zp-stat.run b{color:var(--tw-color-brand)}
@@ -144,12 +148,12 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 /* 右列：top:14 起（原来 top:70 落在 .stage 内 = 页面 126px，上面白空 112px）。
    告警流高度固定（不随条数伸缩），组态物联吃剩余高度——两块共用同一档玻璃配方。 */
 .rcol{position:absolute;right:16px;top:14px;bottom:16px;width:var(--tw-stream-w);display:flex;flex-direction:column;gap:var(--tw-float-gap);z-index:var(--tw-z-panel)}
-.stream,.nodepanel{position:relative;display:flex;flex-direction:column;background:var(--tw-glass-panel);
- backdrop-filter:var(--tw-blur) var(--tw-sat);-webkit-backdrop-filter:var(--tw-blur) var(--tw-sat);
- border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);box-shadow:var(--tw-shadow-card);overflow:hidden}
+.stream,.nodepanel{position:relative;display:flex;flex-direction:column;background:transparent;
+ backdrop-filter:none;-webkit-backdrop-filter:none;
+ border:0;border-radius:0;box-shadow:none;overflow:hidden;text-shadow:var(--tw-text-plate)}
 .stream{flex:none;height:var(--tw-stream-h)}
 .nodepanel{flex:1;min-height:0}
-.stream>header{display:flex;flex-direction:column;gap:7px;padding:11px 13px 10px;border-bottom:1px solid var(--tw-hairline);background:var(--tw-glass-head)}
+.stream>header{display:flex;flex-direction:column;gap:7px;padding:0 12px 8px;border-bottom:0;background:transparent}
 .stream>header .sh-top{display:flex;align-items:baseline;gap:8px}
 .stream>header b{font-size:var(--tw-fs-strong)}
 .stream>header .sh-top span{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums}
@@ -193,7 +197,7 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 /* ---------- 底栏四块（2026-11-06）：每块独立玻璃卡，各自滚动、各自暂停 ---------- */
 /* 浮层间距：所有悬浮区块之间统一 16px 沟槽（产品负责人：不能全部粘在一起）。
    左栏占 [14,238]、右侧占 [1552,1904]，所以底栏必须从 254 起、到 1536 止——原来写死 left:180 与左栏重叠 58px */
-.dock{position:absolute;left:calc(var(--tw-float-gap) * 2 + var(--tw-rail-w));right:calc(var(--tw-float-gap) * 2 + var(--tw-stream-w));bottom:14px;height:172px;display:grid;grid-template-columns:236px minmax(0,1.25fr) minmax(0,1.15fr);gap:var(--tw-float-gap);z-index:var(--tw-z-dock)}
+.dock{position:absolute;left:calc(var(--tw-float-gap) * 2 + var(--tw-rail-w));right:calc(var(--tw-float-gap) * 2 + var(--tw-stream-w));bottom:14px;height:172px;display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.3fr) minmax(0,1.12fr);gap:var(--tw-float-gap);z-index:var(--tw-z-dock)}
 .dk{display:flex;flex-direction:column;background:var(--tw-glass-panel);backdrop-filter:var(--tw-blur) var(--tw-sat);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);box-shadow:var(--tw-shadow-card);overflow:hidden}
 .dk>header{display:flex;align-items:baseline;gap:8px;padding:7px 11px;border-bottom:1px solid var(--tw-hairline);background:var(--tw-glass-head)}
 .dk>header b{font-size:var(--tw-fs-label);color:var(--tw-ink-1);white-space:nowrap}
@@ -208,13 +212,24 @@ body[data-zone-dock="1"] .dock{right:calc(var(--tw-float-gap) * 2 + var(--tw-pan
 .dk-body{flex:1;padding:8px 10px;overflow:hidden}
 /* 块1：设备状态统计（六格 + 稼动率） */
 .dk-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
-.dk-cell{background:var(--tw-glass-inner);border:1px solid var(--tw-hairline);border-radius:var(--tw-radius-chip);padding:5px 7px}
+.dk-cell{background:transparent;border:0;border-radius:var(--tw-radius-chip);padding:4px 2px}
 .dk-cell b{display:block;font-size:var(--tw-fs-num);line-height:1.15;font-variant-numeric:tabular-nums;color:var(--tw-ink-1)}
 .dk-cell span{font-size:var(--tw-fs-micro);color:var(--tw-ink-4)}
 .dk-cell.working b{color:var(--tw-st-working)}.dk-cell.ready b{color:var(--tw-st-ready)}.dk-cell.alarm b{color:var(--tw-st-alarm)}.dk-cell.standby b{color:var(--tw-st-idle)}
-.dk-rate{margin-top:7px;font-size:var(--tw-fs-micro);color:var(--tw-ink-3);display:flex;align-items:center;gap:6px}
+.dk-rate{margin-top:5px;font-size:var(--tw-fs-micro);color:var(--tw-ink-3);display:flex;align-items:center;gap:6px}
 .dk-rate i{flex:1;height:4px;border-radius:var(--tw-radius-pill);background:var(--tw-track-soft);overflow:hidden}
 .dk-rate i b{display:block;height:100%;background:var(--tw-color-brand)}
+/* 块1「设备运行状态」图例：圆环只负责比例，精确数走这四行（每行 = 色点 + 档位 + 台数 + 占比）。
+   0 台的档保留并弱化（.zero），不能删行——"异常 0 台"本身就是要看的信息。 */
+.dk-legend{display:flex;flex-direction:column;gap:1px;margin-top:1px}
+.dk-lg{display:grid;grid-template-columns:9px 1fr auto 38px;align-items:center;gap:6px;
+ font-size:var(--tw-fs-micro);line-height:17px;color:var(--tw-ink-3)}
+.dk-lg i{width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.06)}
+.dk-lg .nm{color:var(--tw-ink-2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-lg .vv{font-variant-numeric:tabular-nums;font-weight:800;color:var(--tw-ink-1);text-align:right}
+.dk-lg .pc{font-variant-numeric:tabular-nums;color:var(--tw-ink-4);text-align:right}
+.dk-lg.zero{opacity:.48}
+.dk-lg.zero .vv{color:var(--tw-ink-3);font-weight:700}
 /* 块2：任务队列（图1 三分类分组表头） */
 .dq-grp{padding:4px 10px;font-size:var(--tw-fs-micro);font-weight:700;color:var(--tw-ink-3);background:var(--tw-glass-head);border-bottom:1px solid var(--tw-hairline)}
 .dq-row{display:flex;align-items:center;gap:7px;padding:5px 10px;font-size:var(--tw-fs-label);border-bottom:1px solid var(--tw-hairline-soft)}
@@ -267,11 +282,14 @@ body[data-zone-dock="1"] .dock{right:calc(var(--tw-float-gap) * 2 + var(--tw-pan
 .tt-row .pg i b{display:block;height:100%;background:var(--tw-color-brand)}
 .tasktable.collapsed{display:none}
 
-/* ---- 左栏：无人化循环剧本指示 ---- */
-.cycle{background:var(--tw-glass-on);border:1px solid var(--tw-hairline-strong);border-radius:var(--tw-radius-chip);padding:8px 10px}
+/* ---- 左栏：AGV 当前进行中的无人化任务 ---- */
+.cycle{background:transparent;border:0;border-radius:0;box-shadow:none;padding:2px 2px 0}
 .cy-top{display:flex;align-items:baseline;gap:7px}
-.cy-top b{font-size:var(--tw-fs-num);font-weight:800;font-variant-numeric:tabular-nums;color:var(--tw-color-brand)}
-.cy-top span{font-size:var(--tw-fs-micro);color:var(--tw-ink-3);line-height:1.3}
+/* 「n/17」撤掉后这一行放的是任务名（如 0172 径向放料）：不是大数字，字号要降回文本档，
+   且必须能截断——道次名称最长 14 字，撑破面板比截字更糟。状态标签固定在右，不参与挤压。 */
+#cyNow{flex:1 1 auto;min-width:0;font-size:var(--tw-fs-label);font-weight:800;color:var(--tw-color-brand);
+ font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cy-top span{flex:none;font-size:var(--tw-fs-micro);color:var(--tw-ink-3);line-height:1.3}
 .cy-bar{height:3px;border-radius:var(--tw-radius-bar);background:var(--tw-track-line);overflow:hidden;margin:6px 0 5px}
 .cy-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--tw-color-brand),var(--tw-tint-alarm-line));transition:width var(--tw-dur-4) linear}
 .cy-sub{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;line-height:1.45}
@@ -297,7 +315,29 @@ body[data-zone-dock="1"] .dock{right:calc(var(--tw-float-gap) * 2 + var(--tw-pan
 
 /* ---- 左栏四张数据表（透明克制，替代原 KPI 五行） ---- */
 .tables{display:flex;flex-direction:column;gap:9px}
-.dtable{background:rgba(255,255,255,.66);border:1px solid rgba(255,255,255,.92);border-radius:var(--tw-radius-chip);padding:7px 10px 6px;box-shadow:0 6px 18px rgba(15,40,80,.06)}
+.railpanel{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;
+ border:0;border-radius:0;box-shadow:none;padding:0 2px 0 0}
+.rp-head{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+.rp-head b{font-size:var(--tw-fs-strong);font-weight:800;letter-spacing:.4px;color:var(--tw-ink-1)}
+.rp-head .rp-src{margin-left:auto;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* KPI 胶囊（图一顶部那种）：图标 + 名称 + 大数字 + 环比，四格 2×2 */
+.rp-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+/* 两行排法（图一那种）：120px 宽的单行放不下「图标+名称+大数字+环比」，
+   硬放就把名称截成"委…"——名称是这格的身份，宁可占一行也不能截。 */
+.rp-kpi{display:flex;flex-direction:column;gap:3px;padding:6px 8px 7px;border-radius:var(--tw-radius-chip);
+ border:1px solid var(--tw-hairline-strong);background:var(--tw-glass-inner);min-width:0}
+.rp-kpi .t{display:flex;align-items:center;gap:5px;min-width:0}
+.rp-kpi svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.rp-kpi .nm{font-size:var(--tw-fs-micro);color:var(--tw-ink-3);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-kpi .b{display:flex;align-items:baseline;gap:6px}
+.rp-kpi .vv{font-size:var(--tw-fs-kpi);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--tw-ink-1);flex:none}
+.rp-kpi .dl{font-size:var(--tw-fs-micro);font-variant-numeric:tabular-nums;white-space:nowrap;flex:none}
+.rp-kpi .dl.up{color:var(--tw-st-ready)}.rp-kpi .dl.down{color:var(--tw-st-alarm)}
+.rp-kpi svg.i-entrust{color:var(--tw-st-working)}.rp-kpi svg.i-samples{color:var(--tw-st-cat)}
+.rp-kpi svg.i-testItems{color:var(--tw-st-warn)}.rp-kpi svg.i-dispatch{color:var(--tw-st-ready)}
+/* 组=面板里的分隔行，不再是独立卡片 */
+.dtable{background:transparent;border:0;border-radius:0;padding:0;box-shadow:none}
+.dtable+.dtable{margin-top:9px;padding-top:8px;border-top:1px solid var(--tw-hairline)}
 .dtable>header{display:flex;align-items:baseline;gap:6px;margin-bottom:5px}
 .dtable>header b{font-size:var(--tw-fs-label);color:var(--tw-ink-1)}
 .dtable>header .src{margin-left:auto;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -343,22 +383,36 @@ body[data-full="1"] .rail,body[data-full="1"] .stream,body[data-full="1"] .zonep
 /* ---- 3D 图表容器（G2 画在 canvas 里，容器只负责给宽与高；高度必须与 JS 传的 height 一致，
        否则 sizeOf 判定"太矮"就跳过绘制，图上什么都不留）---- */
 .tw-chart{position:relative;width:100%;min-height:20px}
-.stream .tw-chart{height:104px;padding:8px 12px 2px;border-bottom:1px solid var(--tw-hairline)}
 .dk .tw-chart{height:88px;margin:0 0 4px}
-#dkDevices{padding:8px 10px 6px}
-.nodepanel>header{display:flex;align-items:baseline;gap:8px;padding:7px 11px;border-bottom:1px solid var(--tw-hairline);background:var(--tw-glass-head)}
+/* 块1「设备运行状态」= 左环右图例两列（2026-11-07）。
+   圆环原来吃满 330px 宽：等轴挤出下横向半径被拉成 ~100px、纵向只有 ~14px，
+   环带直接压在中心数字上（截图实测糊成一团）。给环一块近正方形的画布（132×96），
+   比例才回到"看得出一个环"，数字落在洞里。 */
+/* 块1「设备运行状态」= 左环右图例（2026-11-07）。
+   底栏整条只有 172px 高：环吃满 236px 宽时等轴挤出会把纵向半径压到 ~14px，
+   环带直接盖住中心数字；改成给环一块 148×78 的近正方形画布，数字落在洞里，
+   四档图例走右列（17px/行 × 4 + 机器人一行 = 89px，装得下且不裁字）。 */
+#dkDevices{padding:8px 10px 6px;display:grid;grid-template-columns:148px minmax(0,1fr);column-gap:8px;align-content:start}
+#dkDevices>header{grid-column:1/-1}
+#dkDevices #chartDevices{grid-column:1;height:96px;margin:0}
+#dkRobots{grid-column:1/-1;margin-top:3px}   /* 跨两列才排得下「机器人 2 台 · 在跑 1 · 停靠充电 1」一行 */
+#dkDevices .dk-body{grid-column:2;padding:6px 0 0;min-width:0;overflow:visible}
+.nodepanel>header{display:flex;align-items:baseline;gap:8px;padding:6px 11px 6px;border-bottom:0;background:transparent}
 .nodepanel>header b{font-size:var(--tw-fs-label);color:var(--tw-ink-1);white-space:nowrap}
 .nodepanel>header .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nodepanel .th-wrap{padding:8px 10px 2px}
-.nodepanel .tw-chart{height:74px}
+.nodepanel .th-wrap{padding:8px 10px 4px}
+.nodepanel .tw-chart{height:78px}
 .np-view{flex:1;min-height:0;overflow:hidden;position:relative;padding:2px 0;
  -webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent)}
 .zonepanel .tw-chart{height:92px;margin:0 0 8px}
 #chartZoneSamples{height:132px;margin:0 0 6px}
 .dk-total-only{grid-template-columns:1fr 1fr}
-.th-wrap{padding:6px 10px 2px;border-bottom:1px solid var(--tw-hairline)}
-.th-cap{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* 折线带画的是"哪一个节点"：选中态必须看得见，否则切了节点屏上没反馈 */
-.nd-row.th-active{background:var(--tw-glass-on);box-shadow:inset 0 0 0 1px var(--tw-color-brand-line)}
-.nd-row.th-active .nm{color:var(--tw-color-brand-strong)}
+.th-wrap{padding:6px 10px 2px;border-bottom:0}
+/* 折线带改「未来实验室平均温湿度」后，不再存在"当前序列对应哪个节点"，th-cap 与 th-active 两套选中态一并撤除（2026-11-07） */
 @media (prefers-reduced-motion:reduce){.tw-chart canvas{animation:none!important}}
+
+/* ---- 106 视图：左栏撤掉运行指标，只留无人化任务周期指示（FR-31 的 viewProfile.metrics） ---- */
+body[data-zone-metrics="0"] .rail>.period,body[data-zone-metrics="0"] .railpanel{display:none}
+/* 周期指示改贴底：底栏高 172 + 下边距 14 + 沟槽 16，浮在底栏正上方，不再占住左上大片画面 */
+body[data-zone-metrics="0"] .rail{top:auto;bottom:202px;max-height:none;overflow:visible}
+body[data-zone-metrics="0"] .rail .cycle{margin:0}

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
+<head><link rel="icon" href="data:,">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>未来实验室数字孪生 · 运行大屏 V2</title>
@@ -46,11 +46,16 @@
     <button class="seg" data-period="month" role="tab">本月</button>
     <button class="seg" data-period="year" role="tab">本年</button>
   </div>
-  <div class="tables" id="tables"></div>
-<span class="rc-cap">调度任务</span></div>
-  </div>
+  <!-- 运行指标：四张表合并成一块面板（2026-11-07 参考图一）——
+       顶部四个 KPI 胶囊给"一眼看清"，下面每个值占一行给"逐条可查"，
+       来源与更新时间只在面板头出现一次（原来四张卡各重复一遍时间戳）。 -->
+  <section class="railpanel" id="railPanel" aria-label="运行指标（合并面板）">
+    <header class="rp-head"><b>运行指标</b><span class="rp-src" id="rpSrc">数采 · 调度</span></header>
+    <div class="rp-kpis" id="rpKpis"></div>
+    <div class="tables" id="tables"></div>
+  </section>
   <div class="cycle" id="cycleBox">
-    <div class="cy-top"><b id="cyNow">–</b><span id="cyLabel">无人化循环</span></div>
+    <div class="cy-top"><b id="cyNow">–</b><span id="cyLabel">AGV 任务</span></div>
     <div class="cy-bar"><i id="cyBar"></i></div>
     <div class="cy-sub" id="cySub">等待剧本</div>
   </div>
@@ -73,12 +78,11 @@
           <button class="mini active" data-sfilter="all">全部</button>
         </div>
       </header>
-      <div class="tw-chart" id="chartAlarms" role="img" aria-label="告警分级 3D 柱状图：A/B/C 三级的今日条数与未解除条数"></div>
       <div class="stream-view"><div class="stream-board" id="streamTrack"></div></div>
     </section>
     <section class="nodepanel" id="iotPanel" aria-label="组态物联节点">
       <header><b>组态物联节点</b><span class="src" id="dkNodesCnt">—</span></header>
-      <div class="th-wrap"><div class="tw-chart th" id="chartTH" role="img" aria-label="温湿度节点近 16 点 3D 折线带：温度与湿度两条序列"></div><div class="th-cap" id="chartTHCap">温湿度时序</div></div>
+      <div class="th-wrap"><div class="tw-chart th" id="chartTH" role="img" aria-label="未来实验室平均温湿度 3D 平滑折线带：温度与湿度两条序列，取全部温湿度点位当前均值"></div></div>
       <div class="np-view"><div class="dk-track" id="dkNodesTrack"></div></div>
     </section>
   </div>
@@ -103,12 +107,13 @@
     </div>
   </aside>
 
-  <!-- 底栏三块（2026-11-07：④ 组态物联节点挪到右列告警流下方）：① 设备信息统计 ② 无人化调度任务队列 ③ 委托单试验项完成情况 -->
+  <!-- 底栏三块（2026-11-07：④ 组态物联节点挪到右列告警流下方）：① 设备运行状态（四档圆环）② 无人化调度任务队列 ③ 委托单试验项完成情况 -->
   <footer class="dock" id="taskStrip" aria-label="底部运行信息三块（滚动）">
-    <section class="dk" id="dkDevices" aria-label="设备信息统计">
-      <header><b>设备信息统计</b><span class="src" id="dkDevSrc">数采</span></header>
-      <div class="tw-chart" id="chartDevices" role="img" aria-label="设备状态 3D 柱状图：在测/就绪/异常/待机/停止 五档台数"></div>
+    <section class="dk" id="dkDevices" aria-label="设备运行状态">
+      <header><b>设备运行状态</b><span class="src" id="dkDevSrc">数采</span></header>
+      <div class="tw-chart" id="chartDevices" role="img" aria-label="设备运行状态 3D 圆环图：运行中/待机/停机/异常 四档数量与占比，中心为设备总数"></div>
       <div class="dk-body" id="dkDevBody"></div>
+      <div class="dk-rate" id="dkRobots">机器人 —</div>
     </section>
     <section class="dk" id="dkQueue" aria-label="无人化调度任务队列">
       <header><b>无人化调度任务</b><span class="src" id="dkQueueCnt">流程配置</span></header>

@@ -1,6 +1,6 @@
 /**
  * 底栏四块（2026-11-06 产品负责人方案）
- *  ① 设备信息统计   ② 无人化调度任务队列（图3 流程配置 + 图1 三分类）
+ *  ① 设备运行状态（四档圆环 + 图例） ② 无人化调度任务队列（图3 流程配置 + 图1 三分类）
  *  ③ 正在检测委托单下的试验项（图4 名称与检测设备）  ④ 组态物联节点（按房间排序）
  * 另验：队列状态跟着循环剧本实时变；心跳刷新不能把无缝滚动重置；行的点击/键盘有落点。
  */
@@ -17,19 +17,30 @@ await p.waitForTimeout(16000);
 
 // 结构
 T('底栏块数（④ 组态物联已挪到右列告警流下方）', await p.locator('.dock .dk').count(), 3);
-T('块标题', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '设备信息统计|无人化调度任务|试验项完成情况');
+T('块标题', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '设备运行状态|无人化调度任务|试验项完成情况');
 
-// ① 设备信息统计：六格 + 稼动率 + 机器人分工
-/* 块1 结构（2026-11-07 FR-36）：五档状态改 3D 柱（数字进柱顶标签），只剩「合计建档 / 稼动中」两格数字。
-   自洽检查不许因为换了图型就丢掉——五档的值改从图表签名取，与合计仍然必须相等（同源同一条口径）。 */
-const cells=await p.evaluate(()=>[...document.querySelectorAll('#dkDevBody .dk-cell')].map(e=>e.innerText.replace(/\s+/g,'')));
-out.push((cells.length===2&&/^\d+合计建档$/.test(cells[0])?'✅':'❌')+' 块1=五档柱 + 合计/稼动中两格: '+cells.join(' '));
+// ① 设备运行状态：四档圆环 + 四行图例 + 机器人分工
+/* 块1 结构（2026-11-07 参考图一改版）：柱图→圆环，五档→四档（运行中/待机/停机/异常），
+   「停止」按现场叫法改「停机」，「就绪」折进「待机」——四档相加必须等于建档合计，否则圆环是假图。
+   稼动率不再单独一行：它就是「运行中」那档的台数与占比，屏上直接读得到。 */
+const lg=await p.evaluate(()=>[...document.querySelectorAll('#dkDevBody .dk-lg')].map(e=>({nm:e.querySelector('.nm').innerText.trim(),
+  v:+e.querySelector('.vv').innerText,pc:+e.querySelector('.pc').innerText.replace('%',''),zero:e.classList.contains('zero')})));
+out.push((lg.length===4&&lg.map(x=>x.nm).join('/')==='运行中/待机/停机/异常'?'✅':'❌')+' 块1 四档圆环 + 四行图例: '+lg.map(x=>x.nm+' '+x.v+' '+x.pc+'%').join(' / '));
 const dev=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='devices');return r?JSON.parse(r.sig):null;});
-const total=cells.length?parseInt(cells[0],10):null;
-out.push(dev&&dev.length===5&&dev.reduce((a,x)=>a+x.v,0)===total?'✅':'❌'+` 块1 自洽：柱上五档之和 ${dev&&dev.map(x=>x.v).join('+')} = ${dev&&dev.reduce((a,x)=>a+x.v,0)} == 合计 ${total}`);
-const rate=await p.evaluate(()=>document.querySelector('#dkDevBody .dk-rate').innerText.replace(/\s+/g,' '));
-out.push((/稼动率 \d+%"?/.test(rate.replace(/"/g,''))?'✅':'❌')+' 块1 稼动率现算: '+rate);
-const rb=await p.evaluate(()=>document.querySelectorAll('#dkDevBody .dk-rate')[1].innerText.replace(/\s+/g,' '));
+const srcTxt=await p.evaluate(()=>document.querySelector('#dkDevBody').closest('.dk').querySelector('.src').innerText.replace(/\s+/g,' '));
+const total=+(srcTxt.match(/(\d+) 台建档/)||[])[1];
+/* 圆环只画非零档（0 台的弧线画不出来），四档之和这条纪律改由图例承担：
+   非零档相加 == 图例四档相加 == 建档合计，三者必须同源。 */
+const sumOk=!!dev&&dev.every(x=>x.v>0)&&dev.reduce((a,x)=>a+x.v,0)===total&&lg.reduce((a,x)=>a+x.v,0)===total;
+out.push((sumOk?'✅':'❌')+` 块1 自洽：环 ${dev&&dev.map(x=>x.k+':'+x.v).join(' + ')} 与图例 ${lg.map(x=>x.v).join('+')} 都 == 建档合计 ${total}（src="${srcTxt}"）`);
+out.push((lg.every(x=>Math.abs(Math.round(x.v/total*100)-x.pc)<=1)?'✅':'❌')+' 块1 占比现算（台数/合计，不写死）: '+lg.map(x=>x.nm+' '+x.pc+'%').join(' / '));
+const working=await p.evaluate(async()=>{const a=await TwinApi.get('/api/zone/106/devices'),b=await TwinApi.get('/api/zone/103/devices');
+  return [...(a.data||[]),...(b.data||[])].filter(d=>d.status==='working').length;});
+const readyN=await p.evaluate(async()=>{const a=await TwinApi.get('/api/zone/106/devices'),b=await TwinApi.get('/api/zone/103/devices');
+  return [...(a.data||[]),...(b.data||[])].filter(d=>d.status==='ready'||d.status==='standby').length;});
+out.push((lg[0].v===working?'✅':'❌')+` 运行中档 == 接口 working 台数（屏上 ${lg[0].v} vs 接口 ${working}）`);
+out.push((lg[1].v===readyN?'✅':'❌')+` 待机档 == 接口 待机+就绪 台数（就绪折进本档，屏上 ${lg[1].v} vs 接口 ${readyN}）`);
+const rb=await p.evaluate(()=>document.getElementById('dkRobots').innerText.replace(/\s+/g,' '));   /* 机器人行改成块1 的跨列说明节点（挤在图例列里会折两行） */
 out.push((/在跑 1 · 停靠充电 1/.test(rb)?'✅':'❌')+' 块1 机器人分工（一台跑 / 一台常驻充电位）: '+rb);
 
 // ② 任务队列：三分类分组 + 与流程配置一致
@@ -47,7 +58,10 @@ out.push((names>=11?'✅':'❌')+' 块2 渲染出的任务名（流号+流名）
    分两次调用（cycle 与 dispatch-queue）之间剧本会推进，跨响应比较必然出现"两个答案都对但不一致"。
    停在 102 家位/返航段时本来就没有流号（liveFlow=null 是对的），所以要重试到拿到一条流为止。 */
 let sync=null, seenFlows=new Set();
-for(let k=0;k<10;k++){
+/* 观察窗必须 ≥ 最长航段 + 一段停靠：17 道改版后「行进段归给下一道」，
+   102→106 走廊那一段约 47s，期间屏上一直是同一道同一流号——10×4s 的窗只够看到 1 条流（实测假失败）。
+   18×4s=72s，换到 2 条流就提前 break，正常情况不会真跑满。 */
+for(let k=0;k<18;k++){
   sync=await p.evaluate(async()=>{
     const q2=await TwinApi.get('/api/overview/dispatch-queue');
     const run=q2.data.tasks.filter(t=>t.shown==='running');
@@ -86,8 +100,10 @@ const nd=await p.evaluate(()=>[...document.querySelectorAll('#dkNodesTrack .nd-r
 out.push((nd.length>=16&&nd.every((x,i)=>i===0||x.rm>=nd[i-1].rm)?'✅':'❌')+' 块4 按房间 101→110 排序滚动: '+nd.slice(0,6).map(x=>x.rm+x.nm).join(' '));
 out.push((nd.filter(x=>/画面未接入/.test(x.rd)).length===4?'✅':'❌')+' 块4 视觉点位诚实标注「画面未接入」（4 个摄像头）: '+nd.filter(x=>/画面未接入/.test(x.rd)).length);
 out.push((nd.filter(x=>/℃|lx|正常|无人|有人|触点|已触发|超限/.test(x.rd)).length>=12?'✅':'❌')+' 块4 其余点位显示实时读数（与场景节点层同源）');
-const cnt=await p.evaluate(()=>document.getElementById('dkNodesCnt').innerText);   /* 组态物联现在在右列 .nodepanel 里，id 不变 */
-out.push((/16 个点位 · 按房间排序/.test(cnt)?'✅':'❌')+' 块4 头部计数: '+cnt);
+/* 组态物联现在在右列 .nodepanel 里（id 不变）。头部那行「16 个点位 · 按房间排序 · 5s 心跳」
+   按 2026-11-07 反馈撤除：面板头已经说明自己是什么，这行只是重复；点位数以行渲染断言为准。 */
+const cnt=await p.evaluate(()=>document.getElementById('dkNodesCnt').innerText.trim());
+out.push((cnt===''&&nd.length>=16?'✅':'❌')+` 块4 头部计数文本已撤除（屏上不重复自述），行数仍 == 接口点位：cnt="${cnt}" 屏上 ${nd.length} 行`);
 
 // 点击与键盘落点（冻结滚动后挑窗口内的行）
 const land=await p.evaluate(()=>{

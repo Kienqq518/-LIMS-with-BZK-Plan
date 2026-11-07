@@ -29,9 +29,18 @@ await p.selectOption('#zoneSel','106'); await p.waitForTimeout(2600);
 const glass2=await p.evaluate(()=>{const g=s=>{const e=document.querySelector(s);if(!e)return null;const c=getComputedStyle(e);
   return [c.backgroundColor,c.backdropFilter,c.borderTopWidth+' '+c.borderTopColor,c.borderTopLeftRadius,c.boxShadow!=='none'].join('|');};
   return {rail:g('.rail'),stream:g('.stream'),zone:g('.zonepanel'),dk:g('.dk')};});
-const sig=[glass2.rail,glass2.stream,glass2.zone,glass2.dk].filter(Boolean);
-ok(new Set(sig).size===1&&sig.length===4,`四块悬浮面板同一玻璃配方（bg/blur/描边/圆角/阴影）：${[...new Set(sig)].map(x=>x.slice(0,46)).join('  ||  ')}`);
-ok(/blur\(14px\)/.test(glass2.rail||''),'blur 真的生效（不是 none——裸 14px 会让整条 backdrop-filter 失效）');
+/* 2026-11-07 圈图后分两类，两类各自必须内部一致：
+   · 侧栏（左栏 + 右列告警流）= 无底板层：bg transparent / blur none / 0 描边 / 无阴影
+   · 底栏 + 区域面板 = 同一档玻璃配方（bg / blur / 描边 / 圆角 / 阴影五项逐位相同）
+   曾经四块共用一档玻璃；侧栏撤底板后如果还按"四块一致"断言，就会把新口径判成回归。 */
+const noSheet=s=>{const [bg,blur,border,radius,shadow]=String(s||'').split('|');
+  return (bg==='rgba(0, 0, 0, 0)'||bg==='transparent')&&blur==='none'&&/^0px/.test(border)&&shadow==='false';};
+ok(noSheet(glass2.rail)&&noSheet(glass2.stream),`侧栏无底板层（左栏 + 告警流：透明/无 blur/无描边/无阴影）: rail=${String(glass2.rail).slice(0,40)} stream=${String(glass2.stream).slice(0,40)}`);
+ok(new Set([glass2.zone,glass2.dk].filter(Boolean)).size===1,`底栏与区域面板仍同一档玻璃配方：${[...new Set([glass2.zone,glass2.dk])].map(x=>x.slice(0,46)).join('  ||  ')}`);
+ok(/blur\(14px\)/.test(glass2.dk||''),'玻璃那档 blur 真的生效（不是 none——裸 14px 会让整条 backdrop-filter 失效）');
+const plate=await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.rail'));
+  return {ts:c.textShadow,token:getComputedStyle(document.documentElement).getPropertyValue('--tw-text-plate').trim()};});
+ok(plate.ts!=='none'&&plate.ts.replace(/\s+/g,' ').includes('255, 255, 255'),`无底板后文字带白垫底（--tw-text-plate）: ${plate.ts.slice(0,64)}`);
 
 // ② 字号地板
 const tiny=await p.evaluate(()=>{const bad=[];const walk=document.createTreeWalker(document.body,NodeFilter.SHOW_ELEMENT);
@@ -70,13 +79,15 @@ const scene=await f.evaluate(()=>{const rl=document.querySelector('.room-label')
   const a=rl&&getComputedStyle(rl),c=nm&&getComputedStyle(nm);
   return {v2:document.documentElement.dataset.v2||'-',
     label:a?[a.backgroundColor,a.borderTopLeftRadius,a.fontSize].join('|'):null,
-    marker:c?[c.backgroundColor,c.color,c.borderTopColor].join('|'):null};});
+    marker:c?[c.backgroundColor,c.color,c.borderTopColor].join('|'):null,
+    size:c?[c.width,c.height].join('|'):null};});
 ok(scene.v2==='1','场景页在 V2 宿主下打了 data-v2 标记: '+scene.v2);
 ok(scene.label==='rgba(255, 255, 255, 0.9)|8px|12.5px','房间标签=宿主同一档玻璃/chip 圆角/body 字号: '+scene.label);
 ok(/rgb\(40, 120, 255\)/.test(scene.marker||''),'节点标记用宿主品牌蓝（不再是底座那族 #096bff）: '+scene.marker);
+ok((scene.size||'').split('|')[0]==='26px','V2 大屏节点标记收到 26px（底座 40px 只留给笔记本鼠标）: '+scene.size);
 
 // ⑦ 数字等宽
-const nums=await p.evaluate(()=>['.dk-cell b','.zp-stat b','.dq-row .tm'].map(s=>{const e=document.querySelector(s);return e?getComputedStyle(e).fontVariantNumeric:'missing';}));
+const nums=await p.evaluate(()=>['.dk-lg .vv','.zp-stat b','.dq-row .tm'].map(s=>{const e=document.querySelector(s);return e?getComputedStyle(e).fontVariantNumeric:'missing';}));
 ok(nums.every(x=>x==='tabular-nums'),'读数等宽（滚动不跳字）: '+JSON.stringify(nums));
 
 ok(err.length===0,'无 pageerror/console error: '+err.slice(0,3).join(' | '));

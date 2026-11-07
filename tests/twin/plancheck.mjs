@@ -22,7 +22,7 @@ out.push(((/逾期(?:LIMS)? 2/.test(ui.txt)&&/临期\(3天内\)(?:LIMS)? 3/.test
 out.push((ui.tags===2?'✅':'❌')+` LIMS 角标数量=${ui.tags}（逾期/临期两行各一个）`);
 out.push((ui.tips.length===2&&/SPL-2611/.test(ui.tips[0])&&/要求 /.test(ui.tips[0])?'✅':'❌')+' 明细 title 可追到具体项目: '+String(ui.tips[0]).slice(0,70));
 // 周期切换：逾期/临期保持现在时口径
-await p.click('[data-period=year]'); await p.waitForTimeout(700);
+await p.locator('[data-period=year]:visible').first().click();  /* 周期按钮同屏可能有左右两组，只点可见那份 */ await p.waitForTimeout(700);
 const y=await p.evaluate(()=>[...document.querySelectorAll('.dtable')][2].innerText.replace(/\s+/g,' '));
 out.push(((/逾期(?:LIMS)? 2/.test(y)&&/临期\(3天内\)(?:LIMS)? 3/.test(y)&&/8890/.test(y))?'✅':'❌')+' 切本年：合计随周期(8890)、逾期/临期保持现在时: '+y.slice(0,80));
 // 自洽：在测+待检+完成=合计

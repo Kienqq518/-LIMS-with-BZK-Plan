@@ -42,7 +42,12 @@ await p.selectOption('#zoneSel','106'); await p.waitForTimeout(3200);
 r=await rects();
 out.push((!noOverlap(r)?'✅':'❌')+' 106 下钻后浮层仍互不重叠: '+noOverlap(r));
 out.push(((r.dock&&r.dock!=='hidden')?'✅':'❌')+' 106 下钻后底栏仍在（任务队列继续走）: '+JSON.stringify(r.dock));
-out.push(((r.rail&&r.rail!=='hidden')?'✅':'❌')+' 106 下钻后左栏仍在（主叙事不降级）');
+out.push(((r.rail&&r.rail!=='hidden')?'✅':'❌')+' 106 下钻后左栏容器仍在（周期指示不丢）: '+JSON.stringify(r.rail));
+const m106=await p.evaluate(()=>{const rp=document.querySelector('.railpanel'),cy=document.getElementById('cycleBox'),pp=document.getElementById('zpPeriod');
+  const vis=e=>!!e&&e.offsetParent!==null&&getComputedStyle(e).display!=='none';
+  return {panel:vis(rp),cycle:vis(cy),zpPeriod:vis(pp),flag:document.body.dataset.zoneMetrics};});
+out.push((m106.panel===false&&m106.cycle===true&&m106.flag==='0'?'✅':'❌')+' 106 撤掉左侧运行指标面板、保留周期指示（与右侧面板不再重复）: '+JSON.stringify(m106));
+out.push((m106.zpPeriod===true?'✅':'❌')+' 周期切换器随指标面板搬进区域面板（否则 106 的本日/本月/本年没人能点）');
 /* 观察窗必须覆盖「一次停靠 + 一段行走」：剧本最长 dwell 9s，原来只看 6s，
    整窗落进停靠段就报「机器人没走」——那是假失败（2026-11-07 全量踩到，位移 0.00m）。
    改成轮询到出现位移即早退，最长 24s（≈ 一圈里最长的停靠 + 跨站行走）。 */
@@ -91,7 +96,18 @@ for(const z of Object.keys(CASES)){
 }
 // ⑤ 周期切换器必须随左栏交接：左栏在→用左栏那组；左栏隐藏但该房间有按周期变的统计→面板这组顶上
 await p.selectOption('#zoneSel','106'); await p.waitForTimeout(2800);
-out.push(((await p.evaluate(()=>document.getElementById('zpPeriod').hidden))?'✅':'❌')+' 106（左栏在）面板内不重复放周期切换器');
+/* 106 的左栏在，但「运行指标」面板已按 2026-11-07 反馈撤掉（与右侧区域面板同源重复）——
+   `.rail>.period` 只是 display:none，仍在 DOM 里。周期切换器必须搬进面板，
+   否则 106 的任务统计（按本日/本月/本年变）就没有任何入口能切。 */
+const pp106 = await p.evaluate(() => ({panelHidden: document.getElementById('zpPeriod').hidden,
+  railVisible: (() => { const e = document.querySelector('.rail>.period'); const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; })()}));
+out.push((!pp106.panelHidden ? '✅' : '❌') + ` 106 撤左栏指标后周期切换器搬进面板（否则任务统计没人能切）: panel.hidden=${pp106.panelHidden}`);
+out.push((!pp106.railVisible ? '✅' : '❌') + ' 同屏只留一份可见（左栏那组在 106 已收起）: rail>.period 可见=' + pp106.railVisible);
+const stDay = await p.evaluate(() => document.querySelector('#zpStats .zp-grid').innerText.replace(/\s+/g, ' ').trim());
+await p.locator('[data-period=month]:visible').first().click(); await p.waitForTimeout(1800);
+const stMon = await p.evaluate(() => document.querySelector('#zpStats .zp-grid').innerText.replace(/\s+/g, ' ').trim());
+await p.locator('[data-period=day]:visible').first().click(); await p.waitForTimeout(1200);
+out.push((stDay !== stMon ? '✅' : '❌') + ` 面板这组切换器真能驱动 106 任务统计: 本日「${stDay.slice(0, 34)}」→ 本月「${stMon.slice(0, 34)}」`);
 await p.selectOption('#zoneSel','107'); await p.waitForTimeout(2800);
 const pp=await p.evaluate(()=>{const e=document.getElementById('zpPeriod');
   return {hidden:e.hidden, btns:e.querySelectorAll('.seg').length, active:(e.querySelector('.seg.active')||{}).dataset};});

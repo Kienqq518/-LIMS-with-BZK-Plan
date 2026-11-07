@@ -28,7 +28,7 @@ out.push((pos&&Math.abs(pos.x-26.44)<0.06&&Math.abs(pos.z-13.48)<0.06?'✅':'❌
 const hook=await ev(()=>document.getElementById('twin-v2-bridge')?.dataset||{});
 T('桥接层在跑/停靠划分', [hook.robotsMoving,hook.robotsParked].join(' | '), 'RB-C-02 | RB-C-01@102-05');
 
-/* ③ 30 秒窗（> 一站停靠 6–12s + 站间行走）：停靠的不动、在跑的既推进剧本也真的走路。
+/* ③ 事件驱动的采样窗（≤40s，两种相位都见到就收）：停靠的不动、在跑的既推进剧本也真的走路。
    窗口太短会整段落在 dwell 里 → 位移接近 0，那是剧本相位不是 bug（animation-spec §16 的老坑）。 */
 const sample=async()=>ev(()=>{const v=window.visual106,a=v.modelRoots.get('106-09'),c=v.modelRoots.get('106-08');
   return [a.position.x,a.position.z,c.position.x,c.position.z];});
@@ -37,14 +37,18 @@ const s0=await sample(), c0=await cyc();
 /* 先对齐到「下一次停靠」再采样：盲开 30s 窗口可能整段落在 26.5s 的 102→106 长行走段里，
    那样位移/停靠断言就会假失败（animation-spec §16：观察窗要么 ≥ 一圈，要么对齐到目标事件） */
 if(c0&&c0.phase==='travel'&&c0.remainingSec) await p.waitForTimeout(Math.min(28000,(c0.remainingSec+0.6)*1000));
+/* 采样窗按「事件」收，不按固定 26 次收：连跑多套时主线程变慢，对齐等待落点会漂，
+   固定窗可能整段卡在长航段里看不到停靠（实测全量跑就是这样假失败一次，单跑必绿）。
+   上限 40 次（≈60s）兜底，两种相位都见到就提前收工。 */
 let movedParked=0, movedRun=0, phaseSeen=new Set();
-for(let i=0;i<26;i++){ await p.waitForTimeout(1000); const q=await sample();
+for(let i=0;i<40;i++){ await p.waitForTimeout(1000); const q=await sample();
   movedParked=Math.max(movedParked,Math.hypot(q[0]-s0[0],q[1]-s0[1]));
   movedRun=Math.max(movedRun,Math.hypot(q[2]-s0[2],q[3]-s0[3]));
-  const cc=await cyc(); if(cc) phaseSeen.add(cc.phase); }
+  const cc=await cyc(); if(cc) phaseSeen.add(cc.phase);
+  if(phaseSeen.has('dwell')&&phaseSeen.has('travel')&&movedRun>0.5) break; }
 const c1=await cyc();
-out.push((movedParked<0.02?'✅':'❌')+` 停靠的 RB-C-01 全程没动（30s 最大位移 ${movedParked.toFixed(3)}m）`);
-out.push((movedRun>0.5?'✅':'❌')+` 在跑的 RB-C-02 真的在走路（对齐后 ~26s 窗口最大位移 ${movedRun.toFixed(2)}m）`);
+out.push((movedParked<0.02?'✅':'❌')+` 停靠的 RB-C-01 全程没动（窗内最大位移 ${movedParked.toFixed(3)}m）`);
+out.push((movedRun>0.5?'✅':'❌')+` 在跑的 RB-C-02 真的在走路（对齐停靠后按事件收窗，最大位移 ${movedRun.toFixed(2)}m）`);
 out.push(((c1&&(c1.order!==c0.order||c1.u>c0.u))?'✅':'❌')+` 循环剧本相位推进：${JSON.stringify(c0)} → ${JSON.stringify(c1)}`);
 out.push((phaseSeen.has('dwell')?'✅':'❌')+' 窗口内至少覆盖一次停靠相位: '+[...phaseSeen].join(','));
 

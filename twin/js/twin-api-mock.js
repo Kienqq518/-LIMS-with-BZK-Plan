@@ -366,8 +366,8 @@
          如果不是同一个数，客户一眼就看穿是两套假数据。所以这里用「日周期曲线 + 节点指纹抖动」造历史，
          再把最后一个点强制写成请求带进来的实时值（temp/hum 由调用方从节点层原样传入，不在这重新算一套）。
          真接 DAQ/组态历史库后，把 body 换成查询结果即可，前端与断言口径不变。 */
-      if ((m = path.match(/^\/api\/iot\/temp-hum-series\?node=([\w-]+)&temp=([-\d.]+)&hum=([-\d.]+)(?:&points=(\d+))?$/))) {
-        var nid = m[1], curT = +m[2], curH = +m[3], N = +(m[4] || 16);
+      if ((m = path.match(/^\/api\/iot\/temp-hum-series\?node=([\w-]+)&temp=([-\d.]+)&hum=([-\d.]+)(?:&points=(\d+))?(?:&from=([\w,-]+))?$/))) {
+        var nid = m[1], curT = +m[2], curH = +m[3], N = +(m[4] || 16), fromIds = (m[5] || '').split(',').filter(Boolean);
         var seed = 0; for (var ci = 0; ci < nid.length; ci++) seed = (seed * 31 + nid.charCodeAt(ci)) % 9973;
         var hr = new Date().getHours(), hist = [];
         for (var i = 0; i < N; i++) {
@@ -379,7 +379,13 @@
           var hu = k === 0 ? curH : +(curH - diurnal * 5.2 - wob * 3.4).toFixed(1);
           hist.push({ offsetH: -k, hour: h, temperature: t, humidity: Math.max(25, Math.min(80, hu)) });
         }
-        return resolve(envelope({ nodeId: nid, windowPoints: N, note: 'Mock 时序：日周期曲线 + 节点指纹抖动，末点钉住当前实时读数',
+        var avg = nid === 'lab-avg';
+        return resolve(envelope({ nodeId: nid, scope: avg ? 'lab-average' : 'node',
+          scopeLabel: avg ? '未来实验室平均温湿度' : null,
+          /* 参与均值的点位由调用方传入：谁是数据源由节点层说了算，mock 不自己维护一份点位表（那会有第二套真相） */
+          aggregatedFrom: avg ? fromIds : null,
+          /* 点位数现读自 from 参数：写死"四个"的话，将来加第五个温湿度点位这条 note 就成了假话 */
+          windowPoints: N, note: 'Mock 时序：日周期曲线 + 指纹抖动，末点钉住当前实时读数' + (avg ? '（' + fromIds.length + ' 个温湿度点位的均值）' : ''),
           pinned: { temperature: curT, humidity: curH }, series: hist }));
       }
       if (path === '/api/overview/test-item-plan') {

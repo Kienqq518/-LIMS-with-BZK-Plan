@@ -10,7 +10,7 @@
   var scene = $('#scene');
   var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [], planItems = [], queueData = null, entrust = null;
   var rtTimer = null, detailDev = null, bridgeReady = false, pendingState = null;
-  var thNode = 'IOT-106-TH-02', thSeries = null, thLoading = false, chartsBooted = false;
+  var thSeries = null, thLoading = false, chartsBooted = false;
   var zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false, routeAudit = null, cycleDef = null, cycTimer = null;
   var SRC_NAME = { daq: '数采', dispatch: '调度', iot: '物联', lims: 'LIMS', rule: '判定规则' };
   var ORDER = [];  /* 遥控翻页序列 */
@@ -131,6 +131,13 @@
      环形 = 少数类别的「构成占比」，各类相加必须等于总数；
      柱状 = 同一口径下的「量级比较」，类别之间可以不相加（88 vs 8 用环形会把 8 挤没，那是骗人）；
      折线带 = 时序趋势。逾期/临期不进环形：它们是「未完成」的子集，塞进同一个环会重复计数。 */
+  /* KPI 胶囊的图标：SVG 描线，语义各自明确（技能口径：不许用 emoji 当图标） */
+  var KPI_ICON = {
+    entrust: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h8v11H4z"/><path d="M6 5.5h4M6 8h4M6 10.5h2.5"/></svg>',
+    samples: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 2h3"/><path d="M7 2v4L4.4 12a1.4 1.4 0 0 0 1.3 2h4.6a1.4 1.4 0 0 0 1.3-2L9 6V2"/></svg>',
+    testItems: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 12.5a5.5 5.5 0 1 1 11 0"/><path d="M8 12.5 10.4 7"/></svg>',
+    dispatch: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="6" r="3"/><path d="M4 13.5h8M8 9v4.5"/></svg>'
+  };
   function renderTables() {
     if (!status || !status.panels) return;
     var per = status.panels, stamp = new Date(status.updatedAt || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
@@ -142,10 +149,12 @@
         return '<section class="dtable" data-key="' + key + '">' +
           '<header><b>' + escapeHtml(per[key].title) + '</b><span class="src"></span></header>' +
           '<table><tbody></tbody></table>' +
-          (CHART_KIND[key] ? '<div class="tw-chart" id="chart-' + key + '" role="img" aria-label="' + escapeHtml(per[key].title + ' ' + CHART_KIND[key]) + '"></div>' : '') +
           '<footer class="f-cmp"></footer></section>';
       }).join('');
     }
+    /* 面板头：来源与更新时间只在这里出现一次（原来四张卡各写一遍同样的时间戳） */
+    var srcs = []; keys.forEach(function (k) { var n = SRC_NAME2[per[k].source] || per[k].source; if (n && srcs.indexOf(n) < 0) srcs.push(n); });
+    $('#rpSrc').textContent = srcs.join(' · ') + ' · ' + stamp + (dataError ? ' · 数据延迟' : '');
     keys.forEach(function (key) {
       var p = per[key], v = p.periods[st.period], rows = ROWS[key] || [];
       var sec = host.querySelector('.dtable[data-key="' + key + '"]'); if (!sec) return;
@@ -154,7 +163,7 @@
         if (val == null) return '<tr><td>' + r.label + '</td><td class="v na">—</td><td class="pct"></td></tr>';
         var base = r.of ? (r.computed ? r.computed(v) : v[r.of]) : null;
         var pct = (!r.noPct && base) ? Math.round(val / base * 100) + '%' : '';
-        /* 长注释段落从屏上撤掉（左栏要短、不要滚动条），但口径不许丢：整句并进 LIMS 角标的 title */
+        /* 长注释不上屏（左栏要短、不出滚动条），口径整句并进 LIMS 角标的 title */
         var tag = r.lims ? '<span class="limstag" title="' + escapeHtml('口径来自 LIMS「要求检测完成时间」，当前为 Mock 数据，二期接口接入后自动变真值' + (p.note ? '。' + p.note : '')) + '">LIMS</span>' : '';
         var tip = '';
         if (r.pick) {
@@ -164,15 +173,29 @@
         return '<tr class="' + (r.head ? 'head ' : 'sub ') + (r.cls || '') + '"' + tip + '><td>' + r.label + tag + '</td><td class="v">' + val + '</td><td class="pct">' + pct + '</td></tr>';
       }).join('');
       sec.querySelector('tbody').innerHTML = body;
-      var src = sec.querySelector('.src');
-      src.textContent = dataError ? '数据延迟' : (SRC_NAME2[p.source] || p.source) + ' · ' + stamp;
-      src.classList.toggle('err', !!dataError);
+      sec.querySelector('.src').textContent = SRC_NAME2[p.source] || p.source || '';   /* 组里只留来源词，时间戳在面板头 */
       var c = v.compare;
       sec.querySelector('.f-cmp').innerHTML = c == null ? '' :
         '<span class="d ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</span><span>' + ({ day: '较上日', month: '较上月', year: '较去年' })[st.period] + '</span>';
       sec.querySelector('.f-cmp').hidden = c == null;
-      /* 长注释段落不再上屏（左栏要短、不要滚动条）；口径没丢，整句挪进该表 LIMS 角标的 title 里 */
     });
+    /* KPI 胶囊：四组的头一个数 + 环比，一眼看清；下面逐行仍可查（参考图一顶部两个胶囊的排法） */
+    var KPI = [
+      { key: 'entrust', name: '委托任务', pick: 'total' },
+      { key: 'samples', name: '已收样', pick: 'received' },
+      { key: 'testItems', name: '试验项目', pick: null, computed: function (v) { return v.testing + v.pending + v.done; } },
+      { key: 'dispatch', name: '调度完成', pick: 'done' }
+    ];
+    $('#rpKpis').innerHTML = KPI.map(function (k) {
+      var p = per[k.key]; if (!p) return '';
+      var v = p.periods[st.period];
+      var val = k.computed ? k.computed(v) : v[k.pick];
+      var c = v.compare;
+      return '<div class="rp-kpi i-' + k.key + '" title="' + escapeHtml(p.title + ' · ' + (SRC_NAME2[p.source] || p.source) + ' 口径') + '">' +
+        '<div class="t">' + KPI_ICON[k.key] + '<span class="nm">' + k.name + '</span></div>' +
+        '<div class="b"><b class="vv">' + (val == null ? '—' : val) + '</b>' +
+        (c == null ? '' : '<span class="dl ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</span>') + '</div></div>';
+    }).join('');
   }
   /* 时钟：大屏右上角常驻，秒级走动 */
   function tickClock() {
@@ -453,7 +476,7 @@
 
 
   /* ---------- 底栏四块（2026-11-06 产品负责人方案，见 PRD §5.2A） ----------
-     ① 设备信息统计  ② 无人化调度任务队列（图3 流程配置 + 图1 三分类）
+     ① 设备运行状态（四档圆环）  ② 无人化调度任务队列（图3 流程配置 + 图1 三分类）
      ③ 正在检测委托单下的试验项完成情况（图4 名称与检测设备）  ④ 组态物联节点滚动 */
   function dkTrack(id, html, per) {
     var el = $(id); if (!el) return;
@@ -481,17 +504,42 @@
       });
     });
   }
+  /* 读一个 CSS 变量的计算值（图表与图例共用，避免在 JS 里再抄一遍色板） */
+  function TOK(name) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || '#2878FF';
+  }
   function renderDockStats() {
     var cnt = { working: 0, ready: 0, standby: 0, stopped: 0, alarm: 0 };
     devices.forEach(function (d) { cnt[d.status] = (cnt[d.status] || 0) + 1; });
-    var total = devices.length, rate = total ? Math.round(cnt.working / total * 100) : 0;
+    var total = devices.length;   /* 稼动率不再单列一行：它就是「运行中」那档的台数与占比 */
     var el = $('#dkDevSrc'); if (el) el.textContent = '数采 · ' + devices.length + ' 台建档';
     var body = $('#dkDevBody'); if (!body) return;
-    /* 五档状态是「同类量级比较」→ 3D 柱；数字直接进柱顶标签，合计与口径不丢（表头已有「N 台建档」） */
-    body.innerHTML = '<div class="dk-grid dk-total-only"><div class="dk-cell total"><b>' + total + '</b><span>合计建档</span></div>' +
-      '<div class="dk-cell working"><b>' + cnt.working + '</b><span>稼动中</span></div></div>' +
-      '<div class="dk-rate">稼动率 <b style="font-variant-numeric:tabular-nums">' + rate + '%</b><i><b style="width:' + rate + '%"></b></i></div>' +
-      '<div class="dk-rate" style="margin-top:5px">机器人 ' + robots.length + ' 台 · 在跑 ' + robots.filter(function (r) { return !r.parked; }).length + ' · 停靠充电 ' + robots.filter(function (r) { return r.parked; }).length + '</div>';
+    /* 块1 改「设备运行状态」圆环（2026-11-07 参考图一）：四档 = 运行中/待机/停机/异常。
+       产品要求去掉「就绪」，但就绪的台数必须有家——否则四档相加 != 设备总数，圆环就是假图。
+       所以把「就绪」折进语义最近的「待机」，折了几台写在该行 title 里，不藏口径。
+       「停止」按现场叫法改成「停机」。 */
+    /* 颜色一律读状态 token（FR-35：一个语义一个色，屏上任何角落不许漂移）——
+       圆环、图例色点、三维状态光点、台账状态标签因此是同一族值，不是四份抄来的 hex。 */
+    var buckets = [
+      { k: '运行中', v: cnt.working, c: TOK('--tw-st-working'), note: '在测设备台数' },
+      { k: '待机', v: cnt.standby + cnt.ready, c: TOK('--tw-st-idle'), note: '待机 + 就绪（就绪 ' + cnt.ready + ' 台折进本档，保证四档相加=总数）' },
+      { k: '停机', v: cnt.stopped, c: TOK('--tw-st-done'), note: '停机（原口径名「停止」）' },
+      { k: '异常', v: cnt.alarm, c: TOK('--tw-st-alarm'), note: '异常告警中的设备' }
+    ];
+    body.innerHTML = '<div class="dk-legend">' + buckets.map(function (x) {
+      var pc = total ? Math.round(x.v / total * 100) : 0;
+      return '<div class="dk-lg' + (x.v ? '' : ' zero') + '" title="' + escapeHtml(x.k + ' ' + x.v + ' 台（' + pc + '%）· ' + x.note) + '">' +
+        '<i style="background:' + x.c + '"></i><span class="nm">' + x.k + '</span>' +
+        '<b class="vv">' + x.v + '</b><span class="pc">' + pc + '%</span></div>';
+    }).join('') + '</div>';
+    /* 机器人分工写进稳定节点：它属于整块，不属于图例列（挤在右列里会折成两行） */
+    var rbEl = $('#dkRobots');
+    if (rbEl) rbEl.textContent = '机器人 ' + robots.length + ' 台 · 在跑 ' + robots.filter(function (r) { return !r.parked; }).length + ' · 停靠充电 ' + robots.filter(function (r) { return r.parked; }).length;
+    /* 圆环只画非零档，中心数字是建档合计；精确数与占比走上面的 HTML 图例
+       （字更清晰、可选中、可读屏，而且等轴挤出的扁洞里放不下两行字） */
+    TwinCharts.donut($('#chartDevices'), 'devices', buckets.map(function (x) { return { k: x.k, v: x.v, c: x.c }; }),
+      { height: 96, legend: false, cx: .5, cy: .5, rx: .32, flat: .9, inner: .6 });
   }
   function renderDock() {
     /* ① 设备信息统计：状态分布 + 稼动率（在测/建档，现算不写死） */
@@ -531,13 +579,12 @@
     var zn = {}; (zones || []).forEach(function (z) { zn[z.zoneId.slice(2)] = z.name; });
     var nhtml = ns.map(function (n) {
       var cam = n.type === 'camera';
-      var thOn = n.id === thNode;
-      return '<div class="nd-row ' + (cam ? 'cam' : '') + (thOn ? ' th-active' : '') + '" data-node="' + n.id + '" tabindex="0" role="button" aria-label="' + escapeHtml(n.name + '，' + n.roomId + ' ' + (zn[n.roomId] || '') + '，回车查看节点详情' + (thOn ? '（当前折线带序列）' : '')) + '">' +
+      return '<div class="nd-row ' + (cam ? 'cam' : '') + '" data-node="' + n.id + '" tabindex="0" role="button" aria-label="' + escapeHtml(n.name + '，' + n.roomId + ' ' + (zn[n.roomId] || '') + '，回车查看节点详情') + '">' +
         '<i class="nd-dot"></i><span class="rm">' + n.roomId + '</span><span class="nm">' + escapeHtml(n.name) + '</span>' +
         '<span class="ti">' + NODE_CN(n.type) + '</span><span class="rd">' + nodeReading(n) + '</span>' +
         '<span class="ti">' + new Date(n.updatedAt).toLocaleTimeString('zh-CN', { hour12: false }) + '</span></div>';
     }).join('');
-    $('#dkNodesCnt').textContent = ns.length + ' 个点位 · 按房间排序 · 5s 心跳';
+    $('#dkNodesCnt').textContent = '';   /* 「16 个点位 · 按房间排序 · 5s 心跳」按 2026-11-07 反馈撤掉：面板已经说明了自己是什么，这行只是重复 */
     dkTrack('#dkNodesTrack', nhtml, ns.length);
     /* 底栏可见性由 applyAll 里的 viewProfile 决定；这里只保证「未收起时」渲染完不会被隐藏状态卡住 */
     if (!st.strip && (st.mode === 'S1' || document.body.dataset.zoneDock === '1')) $('#taskStrip').hidden = false;
@@ -545,12 +592,19 @@
 
   function renderCycle(c) {
     if (!c) return;
-    /* 「无人化循环」→「无人化任务」（2026-11-07）；计数走任务道（17 道 = 16 条调度任务 + 样品室取样 1 道），
-       括号里保留站点数，避免有人把"第 9 道"误读成"第 9 个工位"。 */
-    $('#cyNow').textContent = c.order + '/' + c.total;
-    $('#cyLabel').textContent = '无人化任务 · ' + (c.phase === 'dwell' ? '作业中' : '行进中');
-    $('#cySub').textContent = (c.flow || c.label) + ' @ ' + c.label + ' · 剩余 ' + c.remainingSec + 's' +
-      (c.deviceCode ? ' · 服务 ' + c.deviceCode : '') + (c.visits ? '（第 ' + c.visit + '/' + c.visits + ' 站）' : '');
+    /* 2026-11-07 反馈：这块展示「AGV 小机器人正处于的进行中任务」，不再显示 n/17。
+       道次也不给 hover（产品负责人 2026-11-07 明确「连 hover 都不想要」）：
+       大屏投影上没人悬停，浮层提示只会挡画面。口径没丢——写进 aria-label，读屏与 QA 仍拿得到。 */
+    /* 名称一律取自剧本（返航段就用剧本自己写的「返航」），不在宿主里另造一句业务文案 */
+    var name = c.flow || c.label || '—';
+    var phaseTxt = c.phase === 'dwell' ? '作业中' : '行进中';
+    var el = $('#cyNow');
+    el.textContent = name;
+    el.setAttribute('aria-label', 'AGV 正在执行 ' + name + '，' + phaseTxt + '，第 ' + c.order + '/' + c.total + ' 道，' + c.label);
+    el.removeAttribute('title');                    /* 撤干净：不留任何悬停文案 */
+    $('#cyLabel').textContent = 'AGV 任务 · ' + phaseTxt;
+    $('#cySub').textContent = '@ ' + c.label + ' · 剩余 ' + c.remainingSec + 's' +
+      (c.deviceCode ? ' · 服务 ' + c.deviceCode : '') + (c.visits ? ' · 第 ' + c.visit + '/' + c.visits + ' 站' : '');
     var done = (c.order - 1 + (c.phase === 'dwell' ? 0.5 : 0.2)) / c.total;
     $('#cyBar').style.width = Math.round(Math.min(1, done) * 100) + '%';
   }
@@ -658,28 +712,17 @@
     /* 左栏只有 176px 净宽：环形在这里放不下「环 + 指认标签」，实测百分比被裁。
        改用柱状（类别名落在柱底，宽度够用），构成关系靠柱高与表格里已有的百分比读。 */
     /* 左栏四张表：只出数字表，不出图（见上方 CHART_KIND 注释） */
-    /* 告警分级：A/B/C × 今日/未解除（分组柱，两个口径并排才看得出「积压比例」） */
-    var SECS = [['A', '异常'], ['B', '阻塞'], ['C', '校准']];
-    if (st.mode === 'S1' && alarms.length) {
-      TwinCharts.group($('#chartAlarms'), 'alarms', SECS.map(function (g) {
-        var all = alarms.filter(function (x) { return x.grade === g[0]; });
-        var open = all.filter(function (x) { return x.status !== 'resolved'; });
-        return { k: g[0] + ' ' + g[1], s: [{ v: all.length }, { v: open.length, c: '#E5484D' }] };
-      }), { height: 104 });
-    }
+    /* 告警流的分级柱已撤掉（2026-11-07 产品负责人：告警流只要列表）。
+       等级信息不丢：每行行首的 A/B/C 徽标 + 头部「今日 N · 未解除 M」仍在。
+       省出来的 104px 直接给列表多显示两行——告警是拿来读的，不是拿来比的。 */
     /* 底栏块2 不出图（2026-11-07 决定）：这块的主体是 16 条队列的滚动明细，
        三态计数已经在分组表头（进行中 · 3 / 未派单 · 4 / 已完成 · 9）。
        实测在 172px 高的块里塞 96px 环形会把列表压到只剩 40px，dockcheck 当场报"任务行找不到"——
        清单不该为图让位。环形改放到 102 的样品分布（各类相加=在库存量，且面板有纵向空间）。 */
-    /* 底栏块1：设备状态五档（六宫格里的五个数字换成柱，合计仍走表头「数采 · N 台建档」） */
-    if (devices.length) {
-      var cnt = { working: 0, ready: 0, standby: 0, stopped: 0, alarm: 0 };
-      devices.forEach(function (d) { cnt[d.status] = (cnt[d.status] || 0) + 1; });
-      TwinCharts.bar($('#chartDevices'), 'devices', [
-        { k: '在测', v: cnt.working, c: '#2878FF' }, { k: '就绪', v: cnt.ready, c: '#16A34A' },
-        { k: '异常', v: cnt.alarm, c: '#E5484D' }, { k: '待机', v: cnt.standby, c: '#94A3B8' },
-        { k: '停止', v: cnt.stopped, c: '#7E8C9B' }], { height: 88 });
-    }
+    /* 底栏块1 的图归 renderDockStats 所有（2026-11-07 改「设备运行状态」四档圆环）。
+       这里原来还留着一句旧的「五档柱 + 就绪/停止」——同一个容器、同一个图表名，
+       两个主人每拍交替就把它 destroy+重建：画布先清空再画，屏上就是每 2s 闪一下白，
+       而且交替的那一瞬间画的还是已被否掉的五档口径。删函数要 grep 调用点，改图型同理。 */
     /* 区面板任务统计 / 检测项目数统计：四格换柱（数字进标签，口径进 title）。
        出不出图跟着 viewProfile.blocks 走——与面板出不出这块同一判据；
        别用 statsKind 字符串硬比（种子里是 'task' / 'testItems'，写成 'tasks' / 'test-items' 就永远不出图，本轮真实踩过）。 */
@@ -714,28 +757,32 @@
     }
     drawTH();
   }
-  /* 温湿度 3D 折线带：末点必须等于列表里的当前读数（数据源见 /api/iot/temp-hum-series 的钉住约定） */
+  /* 温湿度折线带 = 未来实验室平均温湿度（2026-11-07）：
+     取全部温湿度点位的当前均值送进 /api/iot/temp-hum-series?node=lab-avg，
+     参与均值的点位 id 一并传过去（数据源由节点层决定，mock 不自己维护第二套点位表）。
+     标题画在图内左上角，不再在图下多加一行说明文本。 */
   function drawTH() {
-    var n = (envNodes || []).filter(function (x) { return x.id === thNode; })[0];
-    if (!n || !n.values || n.values.temperature == null) { if (envNodes && envNodes.length) { var alt = envNodes.filter(function (x) { return x.type === 'temperature'; })[0]; if (alt) { thNode = alt.id; } } return; }
-    var cap = $('#chartTHCap');
-    if (cap) cap.textContent = n.name + '（' + n.roomId + ' 区）· 近 ' + (thSeries ? thSeries.series.length : 16) + ' 点 · Mock 时序';
-    if (!thSeries || thSeries.nodeId !== thNode) {
+    var th = (envNodes || []).filter(function (x) { return x.values && x.values.temperature != null && x.values.humidity != null; });
+    if (!th.length) return;
+    var sumT = 0, sumH = 0, ids = [];
+    th.forEach(function (n) { sumT += n.values.temperature; sumH += n.values.humidity; ids.push(n.id); });
+    var avgT = Math.round(sumT / th.length * 10) / 10, avgH = Math.round(sumH / th.length * 10) / 10;
+    if (!thSeries || thSeries.nodeId !== 'lab-avg') {
       if (!thLoading) {
         thLoading = true;
-        TwinApi.get('/api/iot/temp-hum-series?node=' + thNode + '&temp=' + n.values.temperature + '&hum=' + n.values.humidity + '&points=16')
-          .then(function (r) { thSeries = r && r.data ? r.data : null; thLoading = false; if (thSeries) drawTH(); })
+        TwinApi.get('/api/iot/temp-hum-series?node=lab-avg&temp=' + avgT + '&hum=' + avgH + '&points=16&from=' + ids.join(','))
+          .then(function (r) { thSeries = r && r.data ? r.data : null; thLoading = false; drawTH(); })
           .catch(function () { thLoading = false; });
       }
       return;
     }
-    var t = thSeries.series.map(function (x) { return x.temperature; }), h = thSeries.series.map(function (x) { return x.humidity; });
-    /* 末点钉住当前读数：图与列表不一致会被一眼看穿 */
-    t[t.length - 1] = n.values.temperature; h[h.length - 1] = n.values.humidity;
+    var a = thSeries.series.map(function (x) { return x.temperature; }), h = thSeries.series.map(function (x) { return x.humidity; });
+    /* 末点钉住当前均值：图上最后一点和右列列表、区域面板的读数不许是两套数 */
+    a[a.length - 1] = avgT; h[h.length - 1] = avgH;
     TwinCharts.ribbon($('#chartTH'), 'temp-hum', [
-      { name: '温度', unit: '℃', values: t, c: '#2878FF' },
+      { name: '温度', unit: '℃', values: a, c: '#2878FF' },
       { name: '湿度', unit: '%RH', values: h, c: '#16A34A' }
-    ], { height: 74, xLabels: ['-15h', '-8h', '现在'] });
+    ], { height: 78, xLabels: ['-15h', '-8h', '现在'], title: '未来实验室平均温湿度（' + th.length + ' 个点位均值 · 近 16 点）' });
   }
 
   function applyAll() {
@@ -747,13 +794,19 @@
        106 是主叙事（机器人还在跑，底栏任务队列必须跟着走）；其他房间只留右侧面板，别把小房间的画面挤没 */
     var vp = st.mode === 'ZONE' ? ((zones.filter(function (x) { return x.zoneId === 'Z-' + st.zone; })[0] || {}).viewProfile || {}) : { rail: true, dock: true, blocks: [] };
     document.body.dataset.zoneRail = vp.rail === true ? '1' : '0';
+    /* 106 视图撤掉左侧「运行指标」面板（2026-11-07）：那四组数与右侧区域面板同源重复，
+       而 106 的主叙事是三维里的 AGV 与工位，左栏只留「无人化任务」周期指示。
+       判据走 viewProfile.metrics，不在 JS 里写死房间号。 */
+    document.body.dataset.zoneMetrics = (vp.metrics === false) ? '0' : '1';
     document.body.dataset.zoneDock = (st.mode === 'ZONE' && vp.dock === true) ? '1' : '0';   /* S1 右侧是 296 告警流，不需要按 352 让位 */
     $('.rail').hidden = vp.rail !== true;
     /* 周期切换器随左栏一起交接：左栏在→用左栏那组；左栏隐藏但房间有按周期变的统计块→用面板这组 */
     var pp = document.getElementById('zpPeriod');
     if (pp) {
       var needs = (vp.blocks || []).some(function (k) { return k === 'task-stats' || k === 'test-items'; });
-      pp.hidden = !(vp.rail !== true && needs);
+      /* 周期切换器跟着「指标面板实际在哪」走：左栏指标被 metrics:false 撤掉时，它必须搬到面板里，
+         否则 106 的任务统计就没人能切本日/本月/本年（判据只认 vp.rail 会漏掉这种情况）。 */
+      pp.hidden = !(((vp.rail !== true) || (vp.metrics === false)) && needs);
       document.querySelectorAll('#zpPeriod .seg').forEach(function (b) { b.classList.toggle('active', b.dataset.period === st.period); });
     }
     $('#taskStrip').hidden = (vp.dock !== true) || !!st.strip;
@@ -874,10 +927,8 @@
       var ndTh = e.target.closest('#dkNodesTrack .nd-row');
       if (ndTh) {
         var ndv = (envNodes || []).filter(function (x) { return x.id === ndTh.dataset.node; })[0];
-        if (ndv && ndv.values && ndv.values.temperature != null && thNode !== ndv.id) {
-          thNode = ndv.id; thSeries = null; document.querySelectorAll('#dkNodesTrack .nd-row').forEach(function (r) { r.classList.toggle('th-active', r.dataset.node === thNode); });
-          drawTH(); flashHint('温湿度时序已切到 ' + ndv.name + '（' + ndv.roomId + ' 区）');
-        }
+        /* 折线带现在是全实验室均值，不再跟随单个节点切换（标题写着"平均"，图却跟着点击换点位，那就是撒谎）；
+         点行仍然打开该节点的详情卡，读数在卡里看。 */
       }
       var nd = e.target.closest('#dkNodesTrack .nd-row');
       if (nd) { dockSelectNode(nd.dataset.node); }

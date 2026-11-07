@@ -12,13 +12,24 @@ const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期�
 const ev=(fn,...a)=>f.evaluate(fn,...a);
 
 // 0) 透明浮层与图表
-out.push(((await p.evaluate(()=>getComputedStyle(document.querySelector('.rail')).backdropFilter.includes('blur')))?'✅':'❌')+' 左栏=透明玻璃浮层（backdrop-filter blur）');
-out.push(((await p.evaluate(()=>getComputedStyle(document.querySelector('.stream')).backdropFilter.includes('blur')))?'✅':'❌')+' 右侧=透明玻璃浮层');
+/* 2026-11-07 圈图：左栏/告警流底下那层白/玻璃底板也不要了——反向断言"没有底板"，
+   同时守住可读性替代方案：文字必须带 --tw-text-plate 白垫底。 */
+const railSheet=await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.rail'));
+  return {bg:c.backgroundColor,blur:c.backdropFilter,border:c.borderTopWidth,shadow:c.boxShadow==='none',plate:c.textShadow!=='none'};});
+out.push(((railSheet.bg==='rgba(0, 0, 0, 0)'||railSheet.bg==='transparent')&&railSheet.blur==='none'&&railSheet.border==='0px'&&railSheet.shadow&&railSheet.plate?'✅':'❌')+' 左栏无底板层（内容直接浮在三维上，文字带白垫底）: '+JSON.stringify(railSheet));
+const streamSheet=await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.stream'));
+  return {bg:c.backgroundColor,blur:c.backdropFilter,border:c.borderTopWidth,shadow:c.boxShadow==='none',plate:c.textShadow!=='none'};});
+out.push(((streamSheet.bg==='rgba(0, 0, 0, 0)'||streamSheet.bg==='transparent')&&streamSheet.blur==='none'&&streamSheet.border==='0px'&&streamSheet.shadow&&streamSheet.plate?'✅':'❌')+' 告警流无底板层（行卡自己浮着，背后不再有整块白）: '+JSON.stringify(streamSheet));
 out.push(((await p.evaluate(()=>getComputedStyle(document.querySelector('.dk')).backdropFilter.includes('blur')))?'✅':'❌')+' 底栏四块=透明玻璃浮层');
 out.push(((await p.evaluate(()=>{const r=document.getElementById('scene').getBoundingClientRect();const l=document.querySelector('.rail').getBoundingClientRect();return l.x>r.x&&l.y>r.y;}))?'✅':'❌')+' 浮层确实悬浮在三维画面之上（非分栏布局）');
 T('四张数据表', await p.locator('.dtable').count(), 4);
 out.push(((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x)).length>=6?'✅':'❌')+' 表内占比列（替代原环形/条形图）: '+((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x))).join(','));
-out.push(((await p.locator('.dtable>header .src').allInnerTexts()).every(x=>/数采|调度/.test(x)&&/\d{2}:\d{2}:\d{2}/.test(x))?'✅':'❌')+' 每表表头带来源+更新时间');
+/* 合并面板口径（2026-11-07）：来源词每表仍要标，但时间戳只在面板头出现一次——
+   四张表各盖一遍同一个更新时间，是"四块独立卡片"时代的遗产。 */
+const srcs=await p.locator('.dtable>header .src').allInnerTexts();
+out.push(((srcs.length===4&&srcs.every(x=>/数采|调度|LIMS/.test(x)&&!/\d{2}:\d{2}:\d{2}/.test(x)))?'✅':'❌')+' 每表只标来源词（时间戳不重复四处盖）: '+srcs.join('|'));
+const rpSrc=await p.locator('#rpSrc').innerText();
+out.push(((/数采|调度/.test(rpSrc)&&/\d{2}:\d{2}:\d{2}/.test(rpSrc))?'✅':'❌')+' 面板头带来源+更新时间（只此一处）: '+rpSrc);
 out.push(((await p.locator('#streamMeta').innerText()).includes('未解除')?'✅':'❌')+' 告警流头部汇总（今日/未解除）: '+(await p.locator('#streamMeta').innerText()).replace(/\s+/g,' '));
 const smeta=(await p.locator('#streamMeta').innerText()).replace(/\s+/g,' ');
 out.push((/今日 13 条 · 未解除 9 · 最新在前/.test(smeta)?'✅':'❌')+' 告警流头部汇总（平铺后一个总数口径）: '+smeta);
@@ -67,7 +78,8 @@ const boardAnim=await p.evaluate(()=>{const t=document.getElementById('streamTra
 out.push((boardAnim.name==='asecUp'&&/scroll/.test(boardAnim.cls)?'✅':'❌')+' 平铺列表整条滚动（分区撤掉后滚动回到轨道本身）: '+JSON.stringify(boardAnim));
 // 6) 循环剧本
 const cy=await p.locator('#cycleBox').innerText();
-out.push(((/\d\/17/.test(cy)&&/无人化任务/.test(cy)&&!/无人化循环/.test(cy))?'✅':'❌')+' 无人化任务指示（17 道 = 16 条调度任务 + 样品室取样 1 道）: '+cy.replace(/\s+/g,' ').slice(0,96));
+/* 2026-11-07：这块首行改成「AGV 正在办的任务名」，屏面上不许再出现 n/17 计数 */
+out.push(((/AGV 任务/.test(cy)&&!/\d\/17/.test(cy)&&!/无人化循环/.test(cy))?'✅':'❌')+' 无人化任务指示=进行中任务名（屏上无 n/17、无旧称、无 hover）: '+cy.replace(/\s+/g,' ').slice(0,96));
 /* 剧本运动：先在场景内起 100ms 记录器（避免每 400ms 一次跨进程往返的抖动），
    并且**对齐到下一次停靠**再开窗——盲开 28s 窗口可能整段落在 26.5s 的 102→106 长行走段里，
    那样「出现停靠静止」就会假失败（animation-spec §16）。 */
@@ -86,22 +98,28 @@ await p.waitForTimeout(26000);
 const rec=await ev(()=>{clearInterval(window.__recT);return window.__rec;});
 /* 速度按 0.5s 滑窗算：单帧间隔（动画环 66ms + 偶发长帧）会把 0.75m/s 的剧本速度抖成 1.0+，
    那是采样假象不是超速；滑窗既保留真实速度又抗抖。停靠判定仍用逐帧位移（停靠时逐帧就是 0）。 */
-let moved=0, peak=0, dwellRun=0, maxDwellRun=0, speeds=[], stillMs=0, W=5;
+let moved=0, peak=0, dwellRun=0, maxDwellRun=0, speeds=[], stillMs=0, W=5, travelSec=0;
 for(let i=1;i<rec.length;i++){ const a=rec[i-1], b=rec[i]; const dt=(b[0]-a[0])/1000; if(dt<=0.02) continue;
   const d=Math.hypot(b[1]-a[1],b[2]-a[2]); moved+=d;
-  if(d<0.004){ dwellRun+=dt; } else { maxDwellRun=Math.max(maxDwellRun,dwellRun); dwellRun=0; }
+  if(d<0.004){ dwellRun+=dt; } else { maxDwellRun=Math.max(maxDwellRun,dwellRun); dwellRun=0; travelSec+=dt; }
   if(i>=W){ const c=rec[i-W], dtw=(b[0]-c[0])/1000, dw=Math.hypot(b[1]-c[1],b[2]-c[2]);
     if(dtw>0.3){ const v=dw/dtw; if(v>1.0) speeds.push(+v.toFixed(2)); peak=Math.max(peak,v); } } }
 maxDwellRun=Math.max(maxDwellRun,dwellRun); stillMs=maxDwellRun;
-/* 位移总量取决于采样窗口落在剧本的哪一段（含 6–12s 停靠），所以按「速度」而非「距离」判定 */
-out.push((moved>3&&peak<=1.0&&peak>=0.6&&stillMs>=1.5&&speeds.length===0?'✅':'❌')+` 小机器人按剧本行进：0.5s 滑窗速度峰值 ${peak.toFixed(2)}m/s（剧本 0.75）· 连续停靠静止 ${stillMs.toFixed(1)}s · 窗口内位移 ${moved.toFixed(2)}m · 超速样本 ${speeds.length}（采样 ${rec.length} 点/100ms）`);
+/* 判定按「速度 × 行进时长」而不是「窗口总位移 > 3m」：
+   17 道改版后一个站点连着办 3 道就是 18s 停靠，26s 的窗可以合法地只剩 ~4s 行进（实测位移 2.79m），
+   那是剧本相位不是缺陷（animation-spec §16）。改成一致性校验：行进的那段时间里，
+   走过的距离必须对得上剧本速度（≥0.6 倍），峰值速度仍要落在 0.6~1.0m/s，且不许有超速样本。 */
+const nominal=0.75, minMoved=travelSec*nominal*0.6;
+out.push((travelSec>=2&&moved>=minMoved&&peak<=1.0&&peak>=0.6&&stillMs>=1.5&&speeds.length===0?'✅':'❌')
+  +` 小机器人按剧本行进：0.5s 滑窗速度峰值 ${peak.toFixed(2)}m/s（剧本 ${nominal}）· 连续停靠静止 ${stillMs.toFixed(1)}s · 行进 ${travelSec.toFixed(1)}s 走 ${moved.toFixed(2)}m（下限 ${minMoved.toFixed(2)}m）· 超速样本 ${speeds.length}（采样 ${rec.length} 点/100ms）`);
 // 停靠站与剧本一致：UI 报的站序必须等于端点 live.order
 /* UI 每 1s 刷一次、端点按墙上时钟现算，两道之间只有 6s——正好卡在边界上就会"两个都对但不一致"。
    所以同一次读取里比对 + 最多重试三次（DOM 下一秒就会追上），而不是把时序抖动当成缺陷。 */
 let sa=null, uiTxt='', agree=false;
 for(let k=0;k<4;k++){
-  const both=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/cycle');return {live:r.data.live, ui:document.getElementById('cycleBox').innerText.replace(/\s+/g,' ')};});
-  sa=both.live; uiTxt=both.ui; if(uiTxt.includes(sa.order+'/17')){agree=true;break;}
+  const both=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/cycle');
+    return {live:r.data.live, ui:(document.getElementById('cycleBox').innerText+' | '+document.getElementById('cyNow').getAttribute('aria-label')).replace(/\s+/g,' ')};});
+  sa=both.live; uiTxt=both.ui; if(uiTxt.includes('第 '+sa.order+'/17 道')){agree=true;break;}
   await p.waitForTimeout(1200);
 }
 out.push((agree?'✅':'❌')+` 停靠道与剧本一致：UI「${uiTxt.slice(0,52)}」↔ 端点 live.order=${sa.order}(${sa.label})`);
@@ -117,11 +135,12 @@ out.push(((samples[6][3]<c0[3]-1)?'✅':'❌')+` 下钻是推近（画面半高 
 const z=await ev(()=>window.visual106.view);
 T('下钻后视角', z, 'close');
 T('下拉框同步', await p.inputValue('#zoneSel'), '106');
-// 8) 点击实体 → 切近补间 + 信息卡（含非数采的桌子）
+// 8) 点击实体 → 机位一动不动 + 信息卡（2026-11-07：「切近 + 视觉跟随」整体撤除）
+await p.waitForTimeout(1600);                              /* 先等下钻补间收住，否则把补间的位移算到点击头上 */
 const camBefore=await cam();
 await ev(()=>{window.dispatchEvent(new CustomEvent('space-device-select',{detail:{id:'106-12'}}));});
-const seq=[]; for(let i=0;i<7;i++){ await p.waitForTimeout(110); seq.push((await cam())[3]); }
-out.push((new Set(seq).size>=3?'✅':'❌')+` 切近为补间动画（${camBefore[3]} → 序列 ${seq.join(' → ')}）`);
+const seq=[]; for(let i=0;i<7;i++){ await p.waitForTimeout(110); seq.push((await cam()).join(',')); }
+out.push((new Set(seq).size===1 && seq[0]===camBefore.join(',')?'✅':'❌')+` 点击不改机位（7 次采样全部等于点击前构图，序列去重 ${new Set(seq).size} 个）`);
 await p.waitForTimeout(900);
 T('信息卡出现', await f.locator('#twin-v2-card').isVisible(), 'true');
 const card=(await f.locator('#twin-v2-card').innerText()).replace(/\s+/g,' ');

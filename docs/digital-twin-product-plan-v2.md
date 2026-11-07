@@ -429,6 +429,72 @@ method: GitHub skill `chituai/prd-writer`（三视角诊断→概念版→落地
      并且**同时是「回总览」的标定构图**——`setView`/`drill` 补间终点/`reset` 都取它，
      否则第一次回 S1 就把 HOME 冲回 1/0（FR-10 那条断言正是守这个）。
   7. 文案：「无人化循环」→「无人化任务」；`cycleBox` 的 hover 说明文本去除（信息已在行内，浮层提示反而挡画面）。
+- FR-39【2026-11-07 新增 · 底栏圆环化、标记尺寸、均值温湿度、AGV 任务行、撤点击跟随】
+  1. **底栏块1「设备信息统计」→「设备运行状态」四档圆环**：柱图改环形，五档改
+     运行中 / 待机 / 停机 / 异常（「停止」按现场叫法改「停机」）。产品要求去掉「就绪」这一档，
+     但就绪的台数必须有家——四档相加不等于建档合计，圆环就是假图（FR-36 那条纪律）。
+     所以**把就绪折进语义最近的待机**，折了几台写在该行 `title` 里，口径不藏。
+     精确数走环下方四行 HTML 图例（色点 + 档位 + 台数 + 占比，占比现算不写死），
+     环中心只显示设备总数；0 台的档保留并弱化（`.dk-lg.zero`）——「异常 0 台」本身就是要看的信息。
+     圆环只画非零档（0 的弧线画不出来），所以断言改成「非零档之和 == 图例四档之和 == 建档合计」。
+  2. **三维里的两个尺寸**：物联节点标记 40→26px（底座那档尺寸是给笔记本鼠标点的，
+     大屏投影上会压过设备本体；引线 `:after` 起点跟着半径走，否则线头浮在半空），
+     设备状态光点 0.045→0.10m、离顶 0.09→0.18m、各模式亮度整体抬约 ×1.6、拾取热区 16→20px。
+     只改 `:root[data-v2]` 这一段，不动底座共享 CSS（`tour-lab` 仍按原尺寸）。
+  3. **温湿度折线带 = 未来实验室平均温湿度**：原来图上挂「平均」标题、点节点行却把序列换成单个点位，
+     那是撒谎。改成宿主取全部温湿度点位的当前均值，送 `/api/iot/temp-hum-series?node=lab-avg&from=<ids>`
+     （**参与均值的点位由节点层传入，mock 不再自建第二套点位表**）；末点仍钉住当前均值，
+     与右列列表、区域面板读数同源。图形从「线点图」改连续平滑线（Catmull-Rom 每段 6 采样，
+     带面与线共用同一组平滑点），标题写进图内左上角，图下那行说明文本与 `.nd-row.th-active` 选中态一并撤除。
+  4. **AGV 任务行**：首行不再是 `8/17`，写「机器人正在办的任务」（如 `0172 径向放料` / 样品室取样 / 返航），
+     副行给工位·剩余秒·第几站·服务设备。道次（第 n/17 道）**既不上屏、也不给 hover**
+     ——产品负责人 2026-11-07 明确「连 hover 都不想要」：大屏投影没人悬停，浮层提示只会挡画面。
+     口径没丢，改走 `aria-label`（读屏拿得到、`cyclecheck` 也仍能从 DOM 复核道↔站↔AGV 一致）。
+     这一行的字号从大数字档（`--tw-fs-num`）降到文本档并允许截断——任务名最长 14 字，撑破面板比截字更糟。
+     返航段（一圈 17 道办完回 102 家位/充电位）不属于任何一条调度任务，首行写剧本自己的「返航」，
+     此时端点 `liveStep=null`——硬凑一个任务名就是假话。
+  5. **撤除「点击切近 + 视觉跟随」（FR-34 的后半段）**：售前投影里讲的人不希望画面被点击牵着跑，
+     要看细节自己滚轮。点击现在只做两件事：选中实体 + 在鼠标旁弹信息气泡；
+     `focusDevice/reanchor/trackFollow/releaseFollow/anchorPoint` 与 `dataset.cam.anchor` 发布口整体删除，
+     `publishCam` 只发 free 机位。气泡仍靠实体自身投影定位（`positionCard`），所以缩放/平移都不会脱开，
+     滚轮双向（放大与缩小）继续走单一事实源 `frScale`。
+     **踩到的坑（写成常驻断言）**：删函数只删定义不 grep 调用点——`bindWheel()` 里残留的 `follow.want = null`
+     让每一次滚轮都抛 ReferenceError（画面不动、控制台一片红），QA 才发现。
+  6. **左栏合并面板收尾**：面板头 `#rpSrc` 出现一次「来源 + 更新时间」，四张表的表头只留来源词
+     （原来四张卡各盖一遍同一个时间戳）；块4 头部那行「16 个点位 · 按房间排序 · 5s 心跳」撤除
+     （面板头已经说明自己是什么）；清掉上一轮删「调度任务」小节时留在 HTML 里的两个孤儿 `</div>`
+     与游离标题（解析器会忽略孤儿闭合标签，但那行文字仍然渲染出来）。
+  7. **QA 口径跟着搬**：`focuscheck` 从「落点偏差<14px + 滚轮后钉住」重写为
+     「点击前后 `dataset.cam` 逐位相等 + 气泡贴住点击位（纵向 ≤90px、横向右侧 0~240px）+ 缩放后气泡仍跟实体投影」，
+     89 个实体一个不漏；`cyclecheck` 的道次改从 `title` 读；`camcheck/pickcheck/uxcheck` 三条切近断言
+     改成「点击不改机位」；`dockcheck/chartcheck` 换圆环与均值口径。
+     **另一条常驻教训**：周期切换器同屏可能有两份（`.rail>.period` 与 `#zpPeriod`），106 撤指标后前者只是
+     `display:none` 仍在 DOM 里——按 `rail.hidden` 判断会点到隐藏元素重试到 30s 超时，一律改成只点 `:visible` 那份。
+  8. **一个（容器，图名）只能有一个主人**（本轮真实踩到，全量跑第 22 套才暴露）：块1 换圆环时，
+     `renderCharts()` 里那句旧的「五档柱」调用没删——它和新圆环用同一个 `#chartDevices`、同一个图名 `devices`，
+     于是每拍两个主人交替 `destroy`+重建：画布先清空再画，两次 200ms 采样之间就是 0 像素（屏上每 2s 闪一下白），
+     而且**交替的那一瞬间画的是已被产品否掉的五档口径**（就绪/停止又回来了）。
+     守卫写进 `chartcheck`：连采 6s×200ms，要求「新建 Chart 次数增量 = 0 且无空帧」。
+     同一条教训也用于观察窗：`uxcheck` 的行进判定从「窗口总位移 > 3m」改成「行进时长 × 剧本速度的一致性」
+     （一站连办 3 道就是 18s 停靠，26s 的窗可以合法地只走 2.79m），`robotcheck` 的采样窗改按事件收
+     （两种相位都见到就提前 break）——固定窗在全量连跑主线程变慢时会假失败（单跑必绿、全量偶发红，本轮就是这么撞上的）。
+- FR-40【2026-11-07 新增 · 侧栏底板层撤除（左栏 + 右列直接浮在三维画面上）】
+  1. **产品负责人圈图**：左栏整块（本日/本月/本年 + 四组读数 + AGV 任务行）与告警流整块，
+     背后那层白/玻璃底板也不要。这不是"再透明一点"，是**底板层这一层不存在**：
+     `background:transparent`、`backdrop-filter:none`、`border:0`、`border-radius:0`、`box-shadow:none`。
+  2. **范围**：`.rail`、`.railpanel`、`.cycle`（左栏）+ `.stream`、`.nodepanel` 及其 `>header`（右列）。
+     `.stream>header` 与 `.nodepanel>header` 的 `--tw-glass-head` 表头条和分隔线一起撤——留着就等于换了一层薄底板。
+  3. **可读性替代方案**（撤底板不等于牺牲对比度）：容器统一带 `text-shadow:var(--tw-text-plate)`
+     （白垫底两档：`0 1px 0 rgba(255,255,255,.85)` + `0 3px 12px rgba(255,255,255,.55)`），
+     与顶栏（FR-33）同一条做法；**内容级**的块仍保留 B 档玻璃——告警行卡 `.st-row`、KPI 胶囊 `.rp-kpi`
+     是"要读的东西"，不是"承托的板"，所以它们浮在画面上而不再是"板上的行"。
+  4. **本轮没被圈到的不动**：底栏三块与区域面板仍是 A 档玻璃（`--tw-glass-panel` + blur 14px）。
+     因此"四块悬浮面板同一配方"这条旧纪律要改写，否则新口径会被自己的守卫判成回归。
+  5. **QA 分两类各守一致性**：`uiconcheck` ① 改成
+     「侧栏（`.rail`/`.stream`）无底板层：bg transparent + blur none + 0 描边 + 无阴影」
+     + 「底栏 `.dk` 与区域面板 `.zonepanel` 仍逐位同一档玻璃配方」
+     + 「无底板后文字必须带白垫底」；`uxcheck` 的左栏/右侧两条正向玻璃断言翻成反向"没有底板"。
+     `zoneview` 顺带守：撤掉 `.rail` 的 12px padding 后左栏仍不出滚动条。
 - FR-2b【本次更新 · 决策 Q6】：S1 不加能力叙事层（不做试验项目/精度等级/案例墙），只做运行镜像。
 
 ### 5.2 关键页面线框（建议版 · 1920×1080 基准）
@@ -678,7 +744,7 @@ flowchart TD
 | FR-29 线路推导与当前航段 | `tests/twin/routecheck.mjs`：11 个定位点仍贴各自设备、`pathLengthM` 与场景弧长一致（92.2 vs 92.22）、走廊带内折线 32.4m 覆盖 z[11.59,25.4]、102 西门与 106 北门各穿越 2 次且落在门洞内、自检 `transits` 恰 4 次且无第三处穿墙、前两站 cad=102-05/102-01、`mission` 三段 | 自动 |
 | FR-37 光影材质精修 | `tests/twin/lookcheck.mjs`（14 项）：材质角色 kit 命中 ≥5 类与共享材质数、灯光数值压过引擎预设（exposure ≤1.05 / shadowType=2）、雾窗口按机位、投影灯 ≤2 与贴图预算、后处理在场 ≥50fps、**画布空白处 alpha<24**（写 alpha=1 会整屏压黑）、`?look=flat` 与 `?quality=low` 真生效 | 自动 |
 | FR-28 一台停靠一台跑 | `tests/twin/robotcheck.mjs`：本体停在桩中心 (26.44,13.48)、8s 内位移 0、路线层只剩一条折线、电量回升、不判卡住、Enter 出详情、无告警挂在停靠机器人上 | 自动 |
-| FR-38 版式与循环口径 | `tests/twin/cyclecheck.mjs`（14 项，观察窗覆盖一整圈）：17 道=16 任务+取样、道↔站↔AGV 三方一致（停靠误差 <0.25m）、窗口按序不重叠、队列「循环中」按 seq 同源、文案与 hover；`alarmlvl`/`filtercheck` 改验平铺后等级与单一筛选；`chartcheck` 反向断言左栏无图且表格数字仍等于接口；`zoneview` 断言左栏无滚动条；`camcheck` 首屏标签基准重标到 HOME 机位 | 自动 |
+| FR-38 版式与循环口径 | `tests/twin/cyclecheck.mjs`（16 项，观察窗覆盖一整圈）：17 道=16 任务+取样、道↔站↔AGV 三方一致（停靠误差 <0.25m）、窗口按序不重叠、队列「循环中」按 seq 同源、文案与 hover；`alarmlvl`/`filtercheck` 改验平铺后等级与单一筛选；`chartcheck` 反向断言左栏无图且表格数字仍等于接口；`zoneview` 断言左栏无滚动条；`camcheck` 首屏标签基准重标到 HOME 机位 | 自动 |
 | FR-27 键盘可达 | 同上：行有 `role=button`+`tabindex=0`，Enter 打开详情，焦点落在区内 `.asec-track` 计算态为 `paused` | 自动 |
 
 ### 8.4 Stop and Escalate
@@ -788,6 +854,8 @@ flowchart TD
 | **新增 ✅已上线** | 三维光影材质精修（FR-37） | `twin/future-lab/twin-look.js`（新）、`twin-scene-bridge.js`、`whiteblue-spatial-engine.js`、`render-lab-realistic.js`、`twin-scene-v2.js`（writeURL 保留外来参数）、`tests/twin/lookcheck.mjs`（新）、`docs/twin-design/look-dev.md`（新） | 灯光 key/fill/rim 分工 + IBL .68 + 曝光回收；六类材质角色（roughness/metalness 区分，共享噪声图）；按机位刷新的线性雾纵深；饱和度门控的选择性 bloom（自实现 4-pass 链，MSAA 保住）；合成透传 alpha；PCFSoft 2048 单主光投影；`?look=flat` / `?quality=low` 两档开关 | lookcheck 14✅ · 60fps 保持 · 全量 23 套 0❌ |
 | **新增 ✅已上线** | 3D 图表与选型口径（FR-36） | `twin/future-lab/twin-charts.js`（新）、`twin/future-lab/vendor/g2.min.js`（新，1.08MB）、`twin-scene-v2.{html,css,js}`、`twin/js/twin-api-mock.js`（`/api/iot/temp-hum-series`）、`tests/twin/chartcheck.mjs`（新）、`docs/twin-design/chart-3d.md`（新） | 左栏 4 柱 + 右侧分组柱 + 底栏设备柱 + 区面板柱与 102 环形 + 温湿度双序列折线带；等轴挤出（polygon 三面）不用透视；表格骨架只建一次不再每拍重建；增量更新不 destroy 重建；末点钉住当前读数 | chartcheck 23✅ · 全量 22 套 0❌ |
 | **新增 ✅已上线** | 大屏版式四处改版（FR-38） | `twin-scene-v2.{html,css,js}`、`twin-tokens.css`、`twin-scene-bridge.js`、`twin/js/twin-api-mock.js`、`tests/twin/{cyclecheck,alarmlvl,filtercheck,chartcheck,uxcheck,dockcheck,camcheck,s3check,pickcheck,lookcheck}.mjs` | 标题居中 23px 立体字；左栏撤图 + 300px + 收紧 + 长注释进 LIMS 角标；右列上移填满（top:14）+ 告警流固定 560px + 组态物联挪到下方（底栏 4→3 块）；告警取消 A/B/C 分区改时间平铺（右列与区域面板一起收平，三区筛选收敛成一个）；循环改 17 道道口径并与 AGV 路线严格对齐；首屏 HOME 机位 | 全量 24 套 0❌ |
+| **新增 ✅已上线** | 底栏圆环化 + 标记尺寸 + 均值温湿度 + AGV 任务行 + 撤点击跟随（FR-39） | `twin-scene-v2.{html,css,js}`、`twin-tokens.css`、`twin-charts.js`、`twin-scene-bridge.js`、`twin/js/twin-api-mock.js`、`twin/api/seed.json`、`tests/twin/{focuscheck,cyclecheck,uxcheck,camcheck,pickcheck,dockcheck,chartcheck,uiconcheck,zoneview,kpicheck,plancheck,zone-panel}.mjs` | 块1「设备运行状态」四档圆环（就绪折进待机、停止→停机、0 台档弱化保留、中心=建档合计）+ 四行 HTML 图例；底栏块1 列宽改比例并给环一块 148×96 的近正方形画布（原来吃满宽 → 环带压住中心数字）；物联节点标记 40→26px、设备状态光点 0.045→0.10m 且亮度 ×1.6、拾取热区 16→20px；折线带改「未来实验室平均温湿度」连续平滑线（`?node=lab-avg&from=<ids>`，撤图下说明与 th-active 选中态、撤"点行换序列"）；AGV 任务行首行改进行中任务名（n/17 既不上屏也不给 hover，只留 aria-label）；**点击切近 + 视觉跟随整体撤除**（只弹气泡，机位逐位不动），删 focusDevice/reanchor/trackFollow/releaseFollow/anchorPoint 与 `dataset.cam.anchor`；左栏合并面板收尾（面板头一次盖来源+时间戳、块4 头部计数撤除、清 HTML 孤儿闭合标签）；补 `<link rel="icon">` 消掉展厅里偶发的 favicon 404 控制台噪声 | 全量 24 套 0❌（558 项，含 focuscheck 89 实体逐个验） |
+| **新增 ✅已上线** | 侧栏底板层撤除（FR-40） | `twin-scene-v2.css`、`tests/twin/{uiconcheck,uxcheck}.mjs`、`docs/twin-design/ui-tokens.md` | `.rail/.railpanel/.cycle` 与 `.stream/.nodepanel`（含两块面板头）全部去底、去描边、去圆角、去阴影、去毛玻璃；容器带 `--tw-text-plate` 白垫底保对比度；行卡 `.st-row` 与 KPI 胶囊 `.rp-kpi` 保留 B 档玻璃（内容级，不是承托级）；底栏与区域面板本轮未圈到，维持 A 档玻璃 | uiconcheck 15✅ · uxcheck 44✅（侧栏反向断言"无底板"） |
 | **修复 ✅已上线** | 光影精修改为显式档（FR-37 回退） | `twin-look.js`、`render-lab-realistic.js`、`tests/twin/lookcheck.mjs` | 默认不加载精修（产品负责人要回图1 那版光影），`?look=pro` 才开；render-lab-realistic 的阴影类型退回原 PCF 档；守卫改成默认档逐项等于原值 + 与 pro 档确实不同，不再比对会过期的基准截图 | lookcheck 14✅ |
 | **修复 ✅已上线** | 点击跟随 / 滚轮缩小 / 信息气泡（FR-34） | `twin-scene-bridge.js`、`twin-scene-v2.js`、`tests/twin/focuscheck.mjs` | pan 从「postMessage 给宿主（没人转发）」改为视锥按像素平移；`proj()` 改走 `camera.project()`（少算视锥中心是落点越修越偏的真因）；倍率基准改为切近目标构图的自然半高，小件下限 0.9m；开环解算之外再加闭环跟随（钉位置 + 收尺寸）；滚轮顶掉引擎 `onwheel` 并绑到 document，边界相对本视角；气泡夹进可用区；光点拾取降为兜底；未建模实体给诚实说明 | focuscheck 89 实体逐个 · 全量套件 0❌ |
 | **新增 ✅已上线** | 顶栏去导航栏化（FR-33） | `twin-scene-v2.{html,css}`、`tests/twin/topbarcheck.mjs` | 底色/下边框/毛玻璃条归零，只留顶部渐隐；标题去「应敏科技 ·」前缀、logo 独占左上角、区域切换移到标题左侧；S1/S2/S3 编号从屏上撤掉且不放回 S3；开启态由实心蓝底改淡底描边；时钟与下拉去框；功能类名 id 全保留 | topbarcheck 19✅ · 全量 19 套 0❌ |
@@ -810,9 +878,11 @@ flowchart TD
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
-| 2.29 | 2026-11-07 | 【本次更新】**FR-37 光影精修改为显式档**：产品负责人要看回图1 那版（偏暗偏蓝的立体感不如原来的干净），默认不再加载 `twin-look.js`（`?look=pro`/`?look=on` 才开），并把精修顺带改到的全局设置一起退回——`render-lab-realistic` 的阴影类型回到 PCF。`lookcheck` 的断言方式也跟着改：原来比对一张 FR-37 之前存的 PNG，首屏机位与左栏一改就必然假失败；现在同一会话内比对「默认档 vs pro 档」两张实时截图，既证明开关是活的，也不再依赖会过期的基准文件。|
-| 2.30 | 2026-11-07 | 【本次更新】新增 **FR-38 大屏版式与循环口径四处改版**：① 标题居中、23px、立体字（渐变面 + `::before` 厚度层 + 缓慢光泽，reduced-motion 停动画；取值进 token），并记一条踩坑：替换跨行 CSS 规则只匹配了第一行，残留的孤儿声明让解析器吞掉后面整段——`.modes` 退回 block、「实验室总览」掉到第二行；② 左栏撤掉四张图、224→300px、内部沟槽 12px、行距收紧，「逾期/临期均计入未完成…」长注释从屏上撤掉（整句并进 LIMS 角标 title，口径不丢），`chartcheck` 反向断言左栏没有图且表格数字仍等于接口；③ 右列 `.stream` 原来 top:70 落在已 inset:56 的 .stage 里 = 页面 126px，白空 112px，改为 `.rcol{top:14}` 填满，告警流固定 560px、组态物联挪到其下方（底栏四块→三块，两块共用同一档玻璃）；④ 告警不再切 A/B/C 三区，按发生时间倒序平铺、等级进每行行首徽标、分级计数交给 3D 分组柱，区域面板的告警块一起收平（两套分区模型并存会让筛选态/计数/键盘焦点各写一遍），三区筛选收敛成一个开关 + URL `sf`；⑤ 无人化循环改「任务道」口径：17 道 = 16 条调度任务 + 样品室取样 1 道（不是 11 个站点），任务按 seed 的 cad 归站、站内按 seq 升序连着办、`dwellSec=max(原值, 任务数×6s)`、每道占均分窗口，行进段归给下一道——屏上第 n 道时 AGV 一定在第 n 道的线路上，窗口结束才下一道；「循环中」改按 seq 精确指认；文案「无人化循环」→「无人化任务」、cycleBox 的 hover 说明去除；⑥ 首屏机位新增 HOME（frScale 1.16 + 上移 78px）并作为「回总览」的标定构图（setView/drill 终点/reset 都取它），否则第一次回 S1 就被冲回 1/0。新增 `tests/twin/cyclecheck.mjs`（14 项，观察窗覆盖一整圈），同步重写 alarmlvl/filtercheck/chartcheck/uxcheck/dockcheck/camcheck/s3check/pickcheck 的旧口径断言。全量 24 套 0❌。|
-| 2.28 | 2026-11-07 | 【本次更新】新增 **FR-37 三维场景光影与材质精修**（`twin-look.js`，只在 V2 大屏 `?v2=1` 生效、不动底座 tour-lab）：参考图的质感成因拆成四条落地——灯光分工（hemi .63→.42、key→2.55、fill→.34 并移到反向、**新增轮廓光 1.15**、IBL→.68、曝光 1.12→1.02）、材质按角色分（六类 112 个共享材质，靠 roughness/metalness 区分而非色相，程序化噪声粗糙度图共享一张不新建贴图池）、按机位刷新的线性雾纵深（颜色贴宿主背景，远处融进页面而不是变灰）、**选择性 bloom**（bright-pass 乘饱和度门，白机身 sat≈0 被排除，只有航段带/光点/线路/屏幕发光；链自实现不引 addon，保住 MSAA 与导出截图）。两条本轮真实踩到的坑写成常驻断言：合成写 `alpha=1` 会让画布空白处变成不透明黑、四块玻璃浮层瞬间压暗（`gl.readPixels` 断言空白 alpha<24）；灯光数值被 `whiteblue-spatial-engine` 预设覆盖的顺序竞态（改为引擎广播 `twin-lighting-preset`、look 收到再压）。顺带修掉 `writeURL()` 从零重建 query 吃掉外来参数的问题（`?look=flat` 一写 URL 就没了）。阴影统一 PCFSoft + 2048 + 单一主光投影。开关：`?look=flat` 对比取证、`?quality=low` 交付档关后处理（只改数值不重复打补丁）。1920×1080 含 8~9 张图表仍 60fps；十类 scorecard 平均 2.0→2.4；draw calls ~2751 超技能预算一事按实记录（CAD 逐构件导出，合批留作独立一轮）。新增 `tests/twin/lookcheck.mjs`（14 项）与 `docs/twin-design/look-dev.md`。|
+| 2.29 | 2026-11-07 | **FR-37 光影精修改为显式档**：产品负责人要看回图1 那版（偏暗偏蓝的立体感不如原来的干净），默认不再加载 `twin-look.js`（`?look=pro`/`?look=on` 才开），并把精修顺带改到的全局设置一起退回——`render-lab-realistic` 的阴影类型回到 PCF。`lookcheck` 的断言方式也跟着改：原来比对一张 FR-37 之前存的 PNG，首屏机位与左栏一改就必然假失败；现在同一会话内比对「默认档 vs pro 档」两张实时截图，既证明开关是活的，也不再依赖会过期的基准文件。|
+| 2.32 | 2026-11-07 | 【本次更新】新增 **FR-40 侧栏底板层撤除**：产品负责人圈图指出左栏整块与告警流整块背后那层白/玻璃底板也不要——不是再透明一点，而是**这一层不存在**（bg transparent / blur none / 0 描边 / 无圆角 / 无阴影），`.rail`、`.railpanel`、`.cycle`、`.stream`、`.nodepanel` 连同两块面板头的 `--tw-glass-head` 表头条与分隔线一起撤（留着等于换了一层薄底板）。可读性走顶栏（FR-33）同一条做法：容器带 `--tw-text-plate` 白垫底，**内容级**的告警行卡 `.st-row` 与 KPI 胶囊 `.rp-kpi` 保留 B 档玻璃——它们是"要读的东西"，不是"承托的板"。本轮没被圈到的底栏三块与区域面板维持 A 档玻璃，于是"四块悬浮面板同一玻璃配方"这条旧纪律**改写为两类各守一致性**（侧栏=无底板；底栏+区域面板=同一档配方），否则新口径会被自己的守卫判成回归：`uiconcheck` ① 与 `uxcheck` 的左栏/右侧两条正向断言都翻成反向。顺带把道次的 hover 也撤干净（产品负责人「连 hover 都不想要」）：`#cyNow` 不再有任何 `title`，道次只留 `aria-label`，`cyclecheck` 改读 aria 并反向断言 title=null。|
+| 2.31 | 2026-11-07 | 新增 **FR-39 底栏圆环化、标记尺寸、均值温湿度、AGV 任务行、撤点击跟随**：① 底栏块1 改「设备运行状态」四档圆环（运行中/待机/停机/异常，「停止」按现场叫法改「停机」）——产品要求去掉「就绪」，但就绪台数必须有家，否则四档相加≠建档合计、圆环就是假图，所以**把就绪折进语义最近的待机**并把折了几台写进该行 title；精确数走环旁四行 HTML 图例（占比现算），0 台档保留并弱化（「异常 0 台」本身就是要看的信息），圆环只画非零档 → 断言改「非零档之和 == 图例之和 == 接口建档台数」；② 三维两个尺寸：物联节点标记 40→26px（只改 `:root[data-v2]`，底座 tour-lab 不动；引线 `:after` 起点跟半径走），设备状态光点 0.045→0.10m、离顶 0.09→0.18m、亮度整体 ×1.6、拾取热区 16→20px；③ 折线带改**未来实验室平均温湿度**：标题写"平均"却跟着点击换成单点位序列就是撒谎，改宿主取全部温湿度点位均值送 `?node=lab-avg&from=<ids>`（参与均值的点位表只有一份真相，mock 不建第二套），末点钉住均值与右列同源，图形改 Catmull-Rom 连续平滑线（撤点标记），图下说明文本与 `.nd-row.th-active` 两套选中态一并撤除；④ AGV 任务行首行不再显示 `8/17`，改写机器人正在办的任务名；道次按产品负责人「连 hover 都不想要」既不上屏也不给悬停、只留 aria-label（读屏与 QA 仍复核得到），字号从大数字档降回文本档并允许截断，返航段写剧本自己的「返航」（此时端点 liveStep=null，硬凑任务名就是假话）；⑤ **撤除「点击切近 + 视觉跟随」**（FR-34 后半段）：售前投影里讲的人不希望画面被点击牵着跑，点击只做"选中 + 鼠标旁弹气泡"，`focusDevice/reanchor/trackFollow/releaseFollow/anchorPoint` 与 `dataset.cam.anchor` 整体删除，气泡仍靠实体自身投影定位所以缩放平移都不脱开；踩到两条坑写成常驻断言——**删函数只删定义不 grep 调用点**（`bindWheel` 残留 `follow.want=null` 让每次滚轮抛 ReferenceError）、**底栏块1 的环吃满 236px 宽时等轴挤出把纵向半径压到 14px、环带盖住中心数字**（改给环 148×96 近正方形画布 + 图例右列 + 机器人行跨列）；⑥ 左栏合并面板收尾：来源+更新时间只在面板头出现一次、块4 头部自述计数撤除、清掉上一轮删「调度任务」小节留下的两个孤儿 `</div>` 与游离文字、补 `<link rel="icon">` 消掉偶发 favicon 404 噪声；⑦ QA 口径跟着搬：`focuscheck` 从「落点偏差<14px + 滚轮钉住」重写为「点击前后 `dataset.cam` 逐位相等 + 气泡锚点复算 == `positionCard` 算法（含夹进可用区两种情况）+ 滚轮取样点必须先验没被宿主浮层压住（压在可滚动浮层上滚轮按设计让给浮层，106-20/109-04 就是这样假失败）」，89 实体逐个验 109✅；`cyclecheck` 道次改读 title 并修掉 Playwright 把 Set 序列化回主进程变空对象的取样 bug；`camcheck/pickcheck/uxcheck` 三条切近断言改「点击不改机位」；`dockcheck/chartcheck/uiconcheck/zoneview` 换圆环、均值、26px、面板头计数口径；周期切换器一律只点 `:visible` 那份（106 撤指标后 `.rail>.period` 只是 display:none 仍在 DOM 里，按 `rail.hidden` 判断会点到隐藏元素重试到 30s 超时）。`docs/twin-design/chart-3d.md` 补「环形只画非零档 / 折线带连续平滑 / lab-avg 均值口径 / 一个（容器，图名）只能有一个主人」四节；本轮真实踩到块1 换圆环时旧那句「五档柱」调用没删，两处交替拥有同一容器同一图名 → 每拍 destroy+重建（画布两次采样之间 0 像素=每 2s 闪一下白，且交替瞬间画的正是已被否掉的五档口径），`chartcheck` 加「6s×200ms 连采：新建 Chart 增量 0 且无空帧」常驻守卫；观察窗口径同步改成按事件/按速度一致性（一站连办 3 道=18s 停靠，26s 窗可以合法只走 2.79m；全量连跑主线程变慢时固定窗会假失败，单跑必绿）。本轮收尾全量 24 套 558✅ / 0❌。|
+| 2.30 | 2026-11-07 | 新增 **FR-38 大屏版式与循环口径四处改版**：① 标题居中、23px、立体字（渐变面 + `::before` 厚度层 + 缓慢光泽，reduced-motion 停动画；取值进 token），并记一条踩坑：替换跨行 CSS 规则只匹配了第一行，残留的孤儿声明让解析器吞掉后面整段——`.modes` 退回 block、「实验室总览」掉到第二行；② 左栏撤掉四张图、224→300px、内部沟槽 12px、行距收紧，「逾期/临期均计入未完成…」长注释从屏上撤掉（整句并进 LIMS 角标 title，口径不丢），`chartcheck` 反向断言左栏没有图且表格数字仍等于接口；③ 右列 `.stream` 原来 top:70 落在已 inset:56 的 .stage 里 = 页面 126px，白空 112px，改为 `.rcol{top:14}` 填满，告警流固定 560px、组态物联挪到其下方（底栏四块→三块，两块共用同一档玻璃）；④ 告警不再切 A/B/C 三区，按发生时间倒序平铺、等级进每行行首徽标、分级计数交给 3D 分组柱，区域面板的告警块一起收平（两套分区模型并存会让筛选态/计数/键盘焦点各写一遍），三区筛选收敛成一个开关 + URL `sf`；⑤ 无人化循环改「任务道」口径：17 道 = 16 条调度任务 + 样品室取样 1 道（不是 11 个站点），任务按 seed 的 cad 归站、站内按 seq 升序连着办、`dwellSec=max(原值, 任务数×6s)`、每道占均分窗口，行进段归给下一道——屏上第 n 道时 AGV 一定在第 n 道的线路上，窗口结束才下一道；「循环中」改按 seq 精确指认；文案「无人化循环」→「无人化任务」、cycleBox 的 hover 说明去除；⑥ 首屏机位新增 HOME（frScale 1.16 + 上移 78px）并作为「回总览」的标定构图（setView/drill 终点/reset 都取它），否则第一次回 S1 就被冲回 1/0。新增 `tests/twin/cyclecheck.mjs`（14 项，观察窗覆盖一整圈），同步重写 alarmlvl/filtercheck/chartcheck/uxcheck/dockcheck/camcheck/s3check/pickcheck 的旧口径断言。全量 24 套 0❌。|
+| 2.28 | 2026-11-07 | 新增 **FR-37 三维场景光影与材质精修**（`twin-look.js`，只在 V2 大屏 `?v2=1` 生效、不动底座 tour-lab）：参考图的质感成因拆成四条落地——灯光分工（hemi .63→.42、key→2.55、fill→.34 并移到反向、**新增轮廓光 1.15**、IBL→.68、曝光 1.12→1.02）、材质按角色分（六类 112 个共享材质，靠 roughness/metalness 区分而非色相，程序化噪声粗糙度图共享一张不新建贴图池）、按机位刷新的线性雾纵深（颜色贴宿主背景，远处融进页面而不是变灰）、**选择性 bloom**（bright-pass 乘饱和度门，白机身 sat≈0 被排除，只有航段带/光点/线路/屏幕发光；链自实现不引 addon，保住 MSAA 与导出截图）。两条本轮真实踩到的坑写成常驻断言：合成写 `alpha=1` 会让画布空白处变成不透明黑、四块玻璃浮层瞬间压暗（`gl.readPixels` 断言空白 alpha<24）；灯光数值被 `whiteblue-spatial-engine` 预设覆盖的顺序竞态（改为引擎广播 `twin-lighting-preset`、look 收到再压）。顺带修掉 `writeURL()` 从零重建 query 吃掉外来参数的问题（`?look=flat` 一写 URL 就没了）。阴影统一 PCFSoft + 2048 + 单一主光投影。开关：`?look=flat` 对比取证、`?quality=low` 交付档关后处理（只改数值不重复打补丁）。1920×1080 含 8~9 张图表仍 60fps；十类 scorecard 平均 2.0→2.4；draw calls ~2751 超技能预算一事按实记录（CAD 逐构件导出，合批留作独立一轮）。新增 `tests/twin/lookcheck.mjs`（14 项）与 `docs/twin-design/look-dev.md`。|
 | 2.27 | 2026-11-07 | 【本次更新】新增 **FR-36 3D 图表与选型口径**：左右两侧与下方读数按「能不能相加」决定图型（相加=总数才用环形；只比量级用柱；时序用折线带），逾期/临期作为子集绝不进环形；立体效果用**等轴挤出**（数据面保持正交、扇区角度严格按数值、深度写成 yMax 的固定比例），不用透视——透视会让近处的柱子天然比远处高，投影与读屏两种场景都是错的。新增 `twin-charts.js`（G2 v5 Spec Mode + polygon 三面 + style.fill 回调）与 `/api/iot/temp-hum-series`（**末点钉住当前读数**，历史用日周期曲线+节点指纹抖动）；温湿度折线带支持点节点行切换序列；G2 走本地 vendor 零 CDN（展厅断网可开），失败时表格照常显示。三条实测坑写进 `docs/twin-design/chart-3d.md`：`style.radius` 数组让 interval 整条不渲染且不报错；hex 塞进数据当 `encode.color` 会被序数色板重染；**图表容器挂在每拍重建 innerHTML 的表格里，8 张图两轮心跳后只剩 2 张**（同 FR-30b 教训，改为表格骨架只建一次 + 图表容器一律稳定兄弟节点 + 数据变化走增量更新，避免每 2s 闪白）。8~10 张图与 three.js 同屏实测 60fps。新增 `tests/twin/chartcheck.mjs`（23 项）。|
 | 2.26 | 2026-11-07 | 【本次更新】新增 **FR-35 界面效果统一（视觉 token 层）**：按 ui-ux-pro-max 设计库（glassmorphism / data-dense-dashboard / accessible-and-ethical / 实时流图型口径）把整屏效果收进唯一事实源 `twin-tokens.css`——玻璃四档（.46 面板 / .72 次级块 / .82 文字浮层 / .5 表头，blur 全站 14px）、字号七档且地板 10.5px（原 20 档含 8/9/9.5px）、圆角五档、时长四档（面板进 420 出 240）、z 阶梯五档、状态色一族；**3D 侧与 DOM 侧同源**（开机把 CSS 变量读进 TWIN_TOKEN，光点/描色/热力/线路不再各写各的 hex），底座那族蓝（#096bff/#519dff/#1b72eb）只在 V2 下用 `:root[data-v2]` 并回品牌蓝、不动 tour-lab 本体；补齐可点元素三态与数据行 hover、区域面板 0ms 瞬现改 420ms 入场、小按钮从 Arial 回到 UI 字体；删掉宿主样式里 72 条已下线选择器（382→318 行）。两条**有意偏离**库的地方写进文档以免下轮被纠正回去：不用库推荐的深色 + Orbitron/Exo2（本屏是白底 CAD 运行镜像、中文界面无中文字形），玻璃透明度高于库的 .10–.30（画面接近纯白，低透明度下 10–12px 小字对比掉破 4.5:1）。新增 `tests/twin/uiconcheck.mjs`（12 项）把纪律变成回归；并把 uxcheck 里钉死 alpha=0.42 的断言改为验语义（**断言钉口径不钉数值**）。本轮真实踩到的新坑：`:active{transform:translateY(1px)}` 会顶掉 `.node-marker` 靠 `transform:translate(-50%,-50%)` 的定位，标记跳开半个身位、点击全部落空（pickcheck 当场抓到）——按下反馈改用独立 `translate` 属性。|
 | 2.25 | 2026-11-07 | 【本次更新】新增 **FR-34 点击实体的视觉跟随 / 滚轮缩放 / 信息气泡**——用户三条反馈同一个根：`setPan()` 把平移 postMessage 给宿主而宿主不转发，pan 恒 0，落点永远在构图中心（dx 恒 +189px）；`proj()` 按 `(X-left)/(right-left)` 少算视锥中心，解算器量不到自己推出去的位移，越修越偏（实测把实体推出画面 2169px，气泡跟着一起跑出可视范围 = 「点了没弹窗」）。修法：平移改在我方视锥钩子里按**屏幕像素**直接做（`panSens/calibPan` 退役）、投影统一走 `camera.project()`、倍率基准取切近目标构图的自然半高（小件下限 0.9m，原来 0.1m 级小件切近后只占画面 1.7%）、开环解算之外加**闭环跟随**（每帧把残差 glide 回锚点并收敛构图，房间抬升动画在补间后仍在改视锥）、滚轮**顶掉引擎 onwheel**（两套缩放并存时缩小方向被 zoom 下限 .55 卡死）并绑到 document（画面上层 DOM 会吃掉滚轮）、缩放后重新钉住、气泡夹进「浮层避让可用区」、光点拾取降为兜底（同像素有实体时实体赢，修掉点 103-02 出 103-01 的卡）、未建模台账号只给 `flashHint` 说明不动相机。新增 `tests/twin/focuscheck.mjs`：**89 个设备与物品逐个验证**（不抽样） |

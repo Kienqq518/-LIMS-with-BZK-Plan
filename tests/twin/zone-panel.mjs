@@ -31,7 +31,7 @@ T('区域视图时告警流让位给面板', await p.locator('#alarmStream').isV
 T('机器人浮条已整体删除', await p.locator('#robotZone').count(), 0);
 T('106 底栏保留（任务队列继续走）', await p.locator('#taskStrip').isVisible(), 'true');
 // 周期联动
-await p.click('[data-period=month]'); await p.waitForTimeout(600);
+await p.locator('[data-period=month]:visible').first().click();  /* 周期按钮同屏可能有左右两组，只点可见那份 */ await p.waitForTimeout(600);
 T('统计随周期', (await p.locator('#zpStats .zp-stat b').allInnerTexts()).join('/'), '60/2/1/32');
 // 点击设备行 → 详情停靠（不遮挡面板），面板其余块仍可点
 await p.locator('#zpDevices .zp-row').first().click(); await p.waitForTimeout(1500);

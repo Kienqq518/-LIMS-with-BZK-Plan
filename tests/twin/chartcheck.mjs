@@ -3,8 +3,9 @@
  *  ① 引擎来自本地 vendor，不依赖 CDN（展厅断网也要能开）
  *  ② 每张图真的画出了像素（canvas 全量扫描，不是抽样）
  *  ③ 图与表同源：图表输入数字必须等于同一拍表格/分组表头的数字（不一致=两套假数据）
- *  ④ 温湿度折线：末点必须钉住节点当前读数（图上数与列表数不许打架）
- *  ⑤ 点温湿度节点行 → 折线带换序列（滚动行要先冻结动画再点，同 FR-27 一条教训）
+ *  ④ 温湿度折线带 = 未来实验室平均温湿度：末点必须钉住右列全部温湿度点位读数的均值（点位数现读，不写死）
+ *     （图上的数与列表里的数不许是两套；2026-11-07 改版，标题写"平均"就必须真是平均）
+ *  ⑤ 点温湿度节点行只开节点详情卡，不再切换折线带序列（序列是全场均值，跟着点击换点位=撒谎）
  *  ⑥ 周期切换（本日→本月）图表跟着变
  *  ⑦ 下钻出图：106 出任务四档柱，103 出检测项目四档柱
  *  ⑧ 无障碍：每张图 role=img + aria-label；reduced-motion 下仍然出图
@@ -32,9 +33,29 @@ const paint=await p.evaluate(()=>[...document.querySelectorAll('canvas')].map(c=
   const x=c.getContext('2d'); if(!x) return {w:c.width,h:c.height,n:-1};
   try{const d=x.getImageData(0,0,c.width,c.height).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>10)n++;
     return {w:c.width,h:c.height,n};}catch(e){return {w:c.width,h:c.height,n:-2};}}));
-ok(paint.length===3,`S1 出图数量 =3（告警分组柱 + 设备柱 + 温湿度折线带）：实得 ${paint.length}`);
+ok(paint.length===2,`S1 出图数量 =2（设备运行状态圆环 + 平均温湿度折线带）：实得 ${paint.length}`);
 ok(await p.evaluate(()=>document.querySelectorAll('.rail .tw-chart').length)===0,'左栏不再挂图（2026-11-07：图表去掉、左栏加宽缩短、不出滚动条）');
+ok(await p.evaluate(()=>document.querySelectorAll('.stream .tw-chart').length)===0,'告警流也不再挂图（分级柱已撤，省出的高度给列表）');
 ok(paint.every(c=>c.n>200),`每张图都画出内容（非透明像素 >200）：${paint.map(c=>c.n).join(',')}`);
+/* 出图之后必须"留在屏上"：同一个容器/同一个图名被两处交替拥有时，每次心跳都会
+   destroy+重建（先清空再画），画布在两次采样之间就是 0 像素——屏上表现为每 2s 闪一下白，
+   而且重建那一瞬画的可能是已被否掉的旧口径。本轮真实踩过（底栏块1 圆环 vs 旧五档柱）。
+   所以这里连采 6s：任何一张图都不许出现空帧，Chart 构造次数增量必须为 0。 */
+const churn=await p.evaluate(async()=>{
+  const G=window.G2, Orig=G.Chart; let builds=0;
+  G.Chart=function(o){ builds++; return new Orig(o); }; G.Chart.prototype=Orig.prototype;
+  const blanks=[];
+  for(let k=0;k<30;k++){
+    const one=[];
+    document.querySelectorAll('.tw-chart canvas').forEach(c=>{const x=c.getContext('2d');let n=0;
+      try{const d=x.getImageData(0,0,c.width,c.height).data;for(let i=3;i<d.length;i+=4)if(d[i]>10)n++;}catch(e){n=-1;}});
+    if(one.some(v=>v<=200)) blanks.push(k+':'+one.join('/'));
+    await new Promise(r=>setTimeout(r,200));
+  }
+  G.Chart=Orig;
+  return {builds, blanks};});
+ok(churn.builds===0&&churn.blanks.length===0,
+  `6s × 200ms 连采：不重建、不空帧（新建 Chart ${churn.builds} 次，空帧 ${churn.blanks.length} 帧${churn.blanks.length?'：'+churn.blanks.slice(0,3).join(' '):''}）`);
 const errs=await p.evaluate(()=>window.__twinCharts.state.errors);
 ok(errs.length===0,'图表层无渲染错误: '+JSON.stringify(errs).slice(0,160));
 
@@ -53,37 +74,77 @@ const tblOk=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/
     testItems:g('testItems').slice(0,4).join(',')===`${P.testItems.periods.day.testing+P.testItems.periods.day.pending+P.testItems.periods.day.done},${P.testItems.periods.day.testing},${P.testItems.periods.day.pending},${P.testItems.periods.day.done}`};});
 ok(tblOk.entrust&&tblOk.samples&&tblOk.testItems,`左栏表格数字仍等于接口（撤图不许动口径）: ${JSON.stringify(tblOk)}`);
 
-/* 底栏块2 不出图（172px 里塞 96px 环形会把滚动明细压到 40px，dockcheck 实测报"任务行找不到"）：
-   改查设备柱五档相加 == 建档合计，并断言队列图确实没被塞回来 */
+/* 底栏块1 改「设备运行状态」四档圆环（2026-11-07）：圆环的纪律是"各档相加必须等于合计"，
+   所以「就绪」折进「待机」（否则四档之和与建档台数对不上，圆环就是假图）。
+   合计取接口建档台数，图例数字与环形输入必须同时等于它。 */
 const dv=sig('devices');
-const dkTotal=await p.evaluate(()=>{const c=document.querySelector('#dkDevBody .dk-cell.total');return c?+c.innerText.replace(/\D/g,''):0;});
-ok(dv && dv.length===5 && dv.reduce((s,d)=>s+d.v,0)===dkTotal,`设备柱五档相加 == 建档合计（${dv&&dv.map(x=>x.v).join('+')} = ${dv&&dv.reduce((s,d)=>s+d.v,0)} vs ${dkTotal}）`);
+const dkNum=await p.evaluate(()=>{const lg=[...document.querySelectorAll('#dkDevBody .dk-lg')].map(e=>({nm:e.querySelector('.nm').innerText.trim(),
+    v:+e.querySelector('.vv').innerText,pc:+e.querySelector('.pc').innerText.replace('%','')}));
+  return {lg,sum:lg.reduce((a,x)=>a+x.v,0)};});
+/* 建档口径与宿主同源：devices = 106 全量 + 103 已建档（宿主就是这么拼的），没有单独的总表接口 */
+const devicesApi=await p.evaluate(async()=>{const a=await TwinApi.get('/api/zone/106/devices');const b=await TwinApi.get('/api/zone/103/devices');
+  return (a.data||[]).length+(b.data||[]).length;});
+/* 圆环只画非零档（0 台的弧线画不出来，硬塞会变成"图上有一片没有内容"），
+   但四档之和这条纪律不许丢：非零档相加必须等于图例四档相加，也等于建档合计。 */
+ok(dv&&dv.length>=1&&dv.filter(x=>x.v<=0).length===0&&dv.reduce((s,d)=>s+d.v,0)===dkNum.sum,
+  `圆环各档相加 == 图例四档相加（环 ${dv&&dv.map(x=>x.k+':'+x.v).join(' + ')}=${dv&&dv.reduce((s,d)=>s+d.v,0)} vs 图例 ${dkNum.lg.map(x=>x.v).join('+')}=${dkNum.sum}；0 台档只进图例不进环）`);
+ok(dkNum.lg.map(x=>x.nm).join('/')==='运行中/待机/停机/异常',`四档名与顺序（「停止」已改「停机」、就绪折进待机）: ${dkNum.lg.map(x=>x.nm).join('/')}`);
+ok(dv&&dv.reduce((s,d)=>s+d.v,0)===devicesApi,`四档相加 == 接口建档台数 ${devicesApi}（圆环不是假图）`);
+ok(dkNum.lg.every(x=>Math.abs(Math.round(x.v/devicesApi*100)-x.pc)<=1),
+  `图例百分比 = 台数/合计（现算不写死）: ${dkNum.lg.map(x=>x.nm+' '+x.v+' '+x.pc+'%').join(' / ')}`);
+const donut=await p.evaluate(()=>({cnt:document.querySelectorAll('#dkDevBody .dk-lg').length,
+  zero:[...document.querySelectorAll('#dkDevBody .dk-lg.zero')].map(e=>e.querySelector('.nm').innerText.trim())}));
+ok(donut.cnt===4&&donut.zero.join(',')==='停机,异常',`0 台档位保留并弱化（不删行，"异常 0 台"本身就是要看的信息）: ${JSON.stringify(donut)}`);
 ok(!list.some(x=>x.name==='queue'),'底栏队列块不再塞图，清单保持完整');
 const al=sig('alarms');
+ok(al===null,'告警分组柱已从图表层摘除（不是画了个空的）');
 const cnt=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/alarms');const A=r.data.alarms||r.data;
   return ['A','B','C'].map(g=>{const l=A.filter(x=>x.grade===g);return [l.length,l.filter(x=>x.status!=='resolved').length];});});
-ok(al && al.every((g,i)=>g.s[0].v===cnt[i][0]&&g.s[1].v===cnt[i][1]),`告警分组柱 == 接口分级计数（分区撤了，柱图仍要等于数据：${al&&al.map(g=>g.s.map(x=>x.v).join('/')).join(' ')} vs ${cnt.map(c=>c.join('/')).join(' ')}）`);
+/* 柱图撤了，但分级计数这条口径不能跟着丢：改验「行内徽标的分布 == 接口分布」+ 头部汇总 == 接口总数 */
+const badgeDist=await p.evaluate(()=>{const r=[...document.querySelectorAll('#streamTrack .st-row')].slice(0,13);
+  return ['A','B','C'].map(g=>r.filter(x=>x.querySelector('.gd')&&x.querySelector('.gd').innerText===g).length);});
+ok(badgeDist.join('/')===cnt.map(c=>c[0]).join('/'),`行内等级徽标分布 == 接口分级计数（柱图撤了口径不许丢）: 屏上 ${badgeDist.join('/')} vs 接口 ${cnt.map(c=>c[0]).join('/')}`);
+const meta=await p.evaluate(()=>document.getElementById('streamMeta').innerText.replace(/\s+/g,' '));
+const total=cnt.reduce((a,c)=>a+c[0],0), open=cnt.reduce((a,c)=>a+c[1],0);
+ok(meta.includes(String(total))&&meta.includes(String(open)),`头部汇总仍等于接口（今日 ${total} / 未解除 ${open}）: "${meta}"`);
 
-// ④ 温湿度末点钉住当前读数
+// ④ 折线带 = 未来实验室平均温湿度：末点必须等于右列温湿度点位读数的均值
 const th=await p.evaluate(async()=>{
-  const r=await TwinApi.get('/api/iot/temp-hum-series?node=IOT-106-TH-02&temp=24.1&hum=49.2&points=16');
-  const d=r.data||r; const last=d.series[d.series.length-1];
-  return {n:d.series.length,pinned:d.pinned,last:{t:last.temperature,h:last.humidity},note:d.note};});
-ok(th.n===16 && th.last.t===th.pinned.temperature && th.last.h===th.pinned.humidity,
-  `时序 ${th.n} 点且末点钉住当前读数：last=${JSON.stringify(th.last)} pinned=${JSON.stringify(th.pinned)}`);
+  const seen=[],vals=[];
+  [...document.querySelectorAll('#dkNodesTrack .nd-row')].forEach(r=>{
+    const id=r.dataset.node; if(seen.includes(id)) return;
+    const m=(r.querySelector('.rd')?r.querySelector('.rd').innerText.trim():'').match(/^(-?[\d.]+)℃ · ([\d.]+)%RH$/);
+    if(!m) return; seen.push(id); vals.push({id,t:+m[1],h:+m[2]});});
+  const avgT=Math.round(vals.reduce((a,x)=>a+x.t,0)/vals.length*10)/10;
+  const avgH=Math.round(vals.reduce((a,x)=>a+x.h,0)/vals.length*10)/10;
+  return {n:vals.length,ids:seen,avgT,avgH};});
 const rb=sig('temp-hum');
-ok(rb && rb[0].values[rb[0].values.length-1]===rb[0].values[rb[0].values.length-1] && rb.length===2,
-  `折线带两条序列（温度/湿度），端点值 ${rb&&rb.map(s=>s.values[s.values.length-1]).join(' / ')}`);
+const lastT=rb&&rb[0].values[rb[0].values.length-1], lastH=rb&&rb[1].values[rb[1].values.length-1];
+ok(th.n>=2&&rb&&rb.length===2&&rb[0].values.length===16&&Math.abs(lastT-th.avgT)<=0.05&&Math.abs(lastH-th.avgH)<=0.05,
+  `折线带两条序列各 16 点，末点 == 右列 ${th.n} 个温湿度点位读数均值（图与列表同一套数）：图上 ${lastT}℃/${lastH}%RH vs 均值 ${th.avgT}℃/${th.avgH}%RH`);
+ok(await p.evaluate(()=>{const c=document.querySelector('#chartTH canvas');return !!c&&c.width>0;}),'均值折线带真有像素');
 
-// ⑤ 点节点行切换序列（先冻结滚动动画，滚动中的行点不准）
-const switched=await p.evaluate(async()=>{
+// ⑤ 点节点行 = 只开详情卡，折线带序列不许被换掉（序列口径是全场均值，跟着点击换点位就成了假标题）
+const froze=await p.evaluate(()=>{
   const tr=document.getElementById('dkNodesTrack'); if(tr) tr.style.animation='none';
-  const row=document.querySelector('#dkNodesTrack .nd-row[data-node="IOT-102-TH-01"]'); if(!row) return 'no-row';
+  const row=document.querySelector('#dkNodesTrack .nd-row[data-node="IOT-102-TH-01"]'); if(!row) return null;
   row.scrollIntoView({block:'center'});
   const r=row.getBoundingClientRect(); return {x:r.x+30,y:r.y+6};});
-if(switched&&switched.x){ await p.mouse.click(switched.x,switched.y); await p.waitForTimeout(2200); }
-const after=await p.evaluate(()=>({cap:(document.getElementById('chartTHCap')||{}).textContent,act:[...document.querySelectorAll('.nd-row.th-active')].map(x=>x.dataset.node)}));
-ok(/温湿度01/.test(after.cap||'')&&new Set(after.act).size===1 && after.act[0]==='IOT-102-TH-01',`点温湿度节点行 → 折线带换到该节点：cap="${after.cap}" active=${[...new Set(after.act)].join(',')}`);
+if(froze){ await p.mouse.click(froze.x,froze.y); await p.waitForTimeout(2400); }
+/* 心跳会让末点跟着新读数走，所以"序列不许变"不能比对整串 sig：
+   要比对的是口径——末点仍等于当下右列温湿度读数的均值（点位级序列绝不会被点出来）。 */
+const after=await p.evaluate(()=>({rb:JSON.parse(window.__twinCharts.list().find(x=>x.name==='temp-hum').sig),
+  mean:(()=>{const seen=[],vals=[];
+    [...document.querySelectorAll('#dkNodesTrack .nd-row')].forEach(r=>{const id=r.dataset.node;if(seen.includes(id))return;
+      const m=(r.querySelector('.rd')?r.querySelector('.rd').innerText.trim():'').match(/^(-?[\d.]+)℃ · ([\d.]+)%RH$/);
+      if(!m)return;seen.push(id);vals.push({t:+m[1],h:+m[2]});});
+    return {n:vals.length,t:Math.round(vals.reduce((a,x)=>a+x.t,0)/vals.length*10)/10,h:Math.round(vals.reduce((a,x)=>a+x.h,0)/vals.length*10)/10};})(),
+  act:document.querySelectorAll('.nd-row.th-active').length, cap:document.getElementById('chartTHCap'),
+  card:(()=>{const c=document.querySelector('#iotPanel .node-card, .node-card');return c?c.innerText.replace(/\s+/g,' '):null;})()}));
+const lt=after.rb[0].values[after.rb[0].values.length-1], lh=after.rb[1].values[after.rb[1].values.length-1];
+ok(Math.abs(lt-after.mean.t)<=0.05&&Math.abs(lh-after.mean.h)<=0.05&&after.rb.length===2,
+  `点节点行后折线带仍是全场均值（末点 ${lt}/${lh} == 均值 ${after.mean.t}/${after.mean.h}，${after.mean.n} 个点位）——没被换成单点位序列`);
+ok(after.act===0&&after.cap===null,`th-active 选中态与图下说明文本都已撤除（active=${after.act}，chartTHCap 元素不存在=${after.cap===null}）`);
 
 
 // ⑦ 下钻出图
@@ -96,13 +157,9 @@ const z103=await p.evaluate(()=>({names:window.__twinCharts.list().map(x=>x.name
 const per0=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='zstats');return r?JSON.parse(r.sig):null;});
 /* 周期切换器存在于两处：左栏可见时是 .rail .seg，下钻到非 106 时是 #zpPeriod .seg。
    必须按当前视图挑可见的那个——点隐藏的那个 Playwright 会重试到 30s 超时（本轮踩过）。 */
-const segOf=async(v)=>{
-  const sel=await p.evaluate((val)=>{
-    const rail=document.querySelector('.rail');
-    return ((rail && !rail.hidden) ? '.rail ' : '#zpPeriod ') + '[data-period="' + val + '"]';
-  }, v);
-  await p.click(sel); await p.waitForTimeout(2600);
-};
+/* 只点"可见的那一份"周期按钮：106 撤指标后 .rail>.period 仍留在 DOM 里（display:none），
+   按 rail.hidden 判断会选中它，Playwright 对隐藏元素重试到 30s 超时（本轮踩过）。 */
+const segOf=async(v)=>{ await p.locator('[data-period="'+v+'"]:visible').first().click(); await p.waitForTimeout(2600); };
 await segOf('month');
 const per1=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='zstats');return r?JSON.parse(r.sig):null;});
 ok(per0&&per1&&JSON.stringify(per0)!==JSON.stringify(per1)&&per1[0].v>per0[0].v,
@@ -120,7 +177,7 @@ ok(a11y.noLabel===0,`每张图都有 role=img + aria-label（${a11y.total-a11y.n
 const p2=await b.newPage({viewport:{width:1920,height:1080},reducedMotion:'reduce'});
 await p2.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});await p2.waitForTimeout(15000);
 const rm=await p2.evaluate(()=>({n:document.querySelectorAll('canvas').length,errs:window.__twinCharts.state.errors.length}));
-ok(rm.n===3&&rm.errs===0,`prefers-reduced-motion 下照样出图（${rm.n} 张，错误 ${rm.errs}）——图表不靠动画表意`);
+ok(rm.n===2&&rm.errs===0,`prefers-reduced-motion 下照样出图（S1 =${rm.n} 张：设备圆环 + 均值折线带，错误 ${rm.errs}）——图表不靠动画表意`);
 await p2.close();
 
 // ⑨ 纪律：不许把 hex 塞进数据当 encode.color

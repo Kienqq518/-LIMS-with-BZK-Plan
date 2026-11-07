@@ -171,6 +171,21 @@ button,select,input,textarea{font-family:var(--tw-font-familyUI)}
 :root[data-v2] .node-marker[data-data-state="stale"],:root[data-v2] .node-marker[data-data-state="missing"]{
   background:var(--tw-tint-warn-bg);color:var(--tw-tint-warn-fg);border-color:var(--tw-st-warn)}
 
+/* 物联节点的读数浮标（23.4℃ · 51%RH 那四个）在 V2 大屏撤掉：
+   它们会压在设备与航段线上，且数值在右列「组态物联节点」列表、区域面板环境块、节点详情卡里都还在——
+   三维里只留节点图标本身作为可点入口。底座（tour-lab）不受影响。 */
+:root[data-v2] .node-marker .node-reading{display:none!important}
+
+/* 节点标记尺寸（2026-11-07 反馈「icon 太大」）：底座 40px 是给笔记本鼠标点击用的，
+   大屏投影上它会压过设备本体。V2 收到 26px —— 仍是可点入口，但不再抢画面。
+   :after 是节点到地面的引线，起点必须跟着半径走，否则线头浮在半空；
+   图标 svg 只压第一个子元素（.disconnect 里那颗故障角标自己的 10px 不动）。 */
+:root[data-v2] .node-marker{width:26px;height:26px;border-width:1.2px}
+:root[data-v2] .node-marker>svg{width:13px;height:13px}
+:root[data-v2] .node-marker:after{top:25px;height:6px}
+:root[data-v2] .node-marker .disconnect{width:11px;height:11px;right:-4px;bottom:-2px}
+:root[data-v2] .node-marker .disconnect svg{width:8px;height:8px}
+
 /* 节点详情卡（物联读数）：与实体气泡同一档玻璃 */
 :root[data-v2] .node-card{background:var(--tw-glass-float);border:1px solid var(--tw-glass-border);
   border-radius:var(--tw-radius-card);box-shadow:var(--tw-shadow-card)}

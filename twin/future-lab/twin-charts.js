@@ -103,19 +103,39 @@
     });
     return { poly, total, dep, rx };
   }
+  /* 折线带：连续平滑曲线，不画点（2026-11-07 反馈：点状折线太碎、不好看）。
+     Catmull-Rom 每段再采 6 个点，环带的上下两条边都用同一组平滑点，
+     所以挤出厚度与曲线本身严格贴合——用 G2 的 smooth shape 就没法让侧面跟着弯。 */
+  function smooth(pts) {
+    if (pts.length < 3) return pts.slice();
+    var out = [];
+    for (var i = 0; i < pts.length - 1; i++) {
+      var p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      for (var j = 0; j < 6; j++) {
+        var t = j / 6, t2 = t * t, t3 = t2 * t;
+        out.push([
+          0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3),
+          0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)
+        ]);
+      }
+    }
+    out.push(pts[pts.length - 1].slice());
+    return out;
+  }
   function ribbonFaces(values, color) {
-    const n = values.length; if (n < 2) return { poly: [], pts: [], color };
-    const lo = Math.min.apply(null, values), hi = Math.max.apply(null, values), span = (hi - lo) || 1;
+    var n = values.length; if (n < 2) return { poly: [], pts: [], color: color };
+    var lo = Math.min.apply(null, values), hi = Math.max.apply(null, values), span = (hi - lo) || 1;
     /* 每条序列各自归一到 [0.12,0.88]：温度(℃)与湿度(%RH)量纲不同，同图里只能比趋势；
        绝对值一律写进端点标签，不靠轴读数——这是诚实口径，不是省事。 */
-    const y = v => .12 + (v - lo) / span * .76, dx = .012, dy = .05, th = .035, poly = [], pts = [];
-    for (let i = 0; i < n; i++) pts.push({ x: i / (n - 1), y: y(values[i]), v: values[i] });
-    for (let i = 0; i < n - 1; i++) {
-      const a = pts[i], b = pts[i + 1], f = faces(color);
-      poly.push({ pts: [[a.x, a.y], [b.x, b.y], [b.x, b.y - th], [a.x, a.y - th]], c: f.front });
-      poly.push({ pts: [[a.x, a.y], [b.x, b.y], [b.x + dx, b.y + dy], [a.x + dx, a.y + dy]], c: f.top });
+    var raw = [], dx = .012, dy = .05, th = .035, poly = [];
+    for (var i = 0; i < n; i++) raw.push([i / (n - 1), .12 + (values[i] - lo) / span * .76]);
+    var pts = smooth(raw).map(function (q) { return { x: q[0], y: q[1] }; });
+    for (var k = 0; k < pts.length - 1; k++) {
+      var a = pts[k], c = pts[k + 1], fc = faces(color);
+      poly.push({ pts: [[a.x, a.y], [c.x, c.y], [c.x, c.y - th], [a.x, a.y - th]], c: fc.front });
+      poly.push({ pts: [[a.x, a.y], [c.x, c.y], [c.x + dx, c.y + dy], [a.x + dx, a.y + dy]], c: fc.top });
     }
-    return { poly, pts, color };
+    return { poly: poly, pts: pts, color: color };
   }
 
   /* ---------- 渲染底座 ---------- */
@@ -183,7 +203,9 @@
         };
       });
     },
-    /** 3D 环形：构成占比（类别少才用；类别多请回表格） */
+    /** 3D 环形：构成占比（类别少才用；类别多请回表格）。
+        o.legend===false 时图例交回宿主 HTML（底栏块1 用四行图例带占比，比图上小字更可读）；
+        中心恒为合计——不提供 centerTop 副标题：洞是扁的（等轴挤出），两行字必然压到环带上。 */
     donut(el, name, items, o) {
       o = o || {}; const p = palette();
       const data = items.filter(d => d.v > 0).map((d, i) => ({ k: d.k, v: d.v, c: d.c || [p.working, p.ready, p.warn, p.idle][i % 4] }));
@@ -193,7 +215,7 @@
         /* 图例放环下方，按列数折行：一行排 5 项在 352px 里必然互相叠字（实测「118·4控制电缆样品」糊成一串），
            类别多于 2 个就按 cols 换行；环也往上抬，给图例让出真实高度。 */
         const cols = o.cols || (o.wide ? 3 : 2), lw = o.lw || .48;
-        const legend = data.map((d, i) => ({ x: .02 + (i % cols) * lw, y: (o.ly == null ? .78 : o.ly) + Math.floor(i / cols) * .13,
+        const legend = o.legend === false ? [] : data.map((d, i) => ({ x: .02 + (i % cols) * lw, y: (o.ly == null ? .78 : o.ly) + Math.floor(i / cols) * .13,
           t: d.k + ' ' + d.v + '·' + Math.round(d.v / g.total * 100) + '%', c: d.c }));
         return {
           __h: h, type: 'view', children: [
@@ -213,7 +235,8 @@
         series.forEach((s, i) => {
           const c = s.c || (i ? p.ready : p.working), r = ribbonFaces(s.values, c);
           kids.push({ type: 'polygon', data: r.poly, encode: { x: d => d.pts.map(q => q[0]), y: d => d.pts.map(q => q[1]) }, style: { fill: d => d.c, inset: 0 } });
-          kids.push({ type: 'point', data: r.pts, encode: { x: 'x', y: 'y' }, style: { fill: c, size: 2.4 } });
+          /* 曲线本身：一条 1.6px 的连续线压在带顶边上，不再有点标记 */
+          kids.push({ type: 'line', data: r.pts, encode: { x: 'x', y: 'y' }, style: { stroke: c, lineWidth: 1.6, lineAppendWidth: 2 } });
           const last = r.pts[r.pts.length - 1];
           ends.push({ x: 1.03, y: last ? last.y : .5, t: s.name + ' ' + s.values[s.values.length - 1] + (s.unit || ''), c });
 
@@ -227,6 +250,8 @@
         ends.forEach(d => { d.y = Math.max(-.10, Math.min(1.00, d.y)); });
         kids.push({ type: 'text', data: ends, encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsLabel, fontWeight: 700, fill: d => d.c, textAlign: 'start' } });
         if (o.xLabels) kids.push({ type: 'text', data: o.xLabels.map((t, i) => ({ x: i / (o.xLabels.length - 1), y: -.09, t })), encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsLabel, fill: p.ink3, textAlign: 'center' } });
+        /* 标题画在图内左上角：产品要求撤掉图下方那行说明文本，但"这是谁的、什么的时序"必须还能读出来 */
+        if (o.title) kids.push({ type: 'text', data: [{ x: .005, y: 1.0, t: o.title }], encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsLabel, fontWeight: 700, fill: p.ink3, textAlign: 'start' } });
         return {
           __h: h, type: 'view', children: kids, animate: false,
           scale: { x: { type: 'linear', domain: [-.02, 1.42], nice: false }, y: { type: 'linear', domain: [-.16, 1.02], nice: false } }

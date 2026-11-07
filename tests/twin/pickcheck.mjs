@@ -42,11 +42,13 @@ const dotPt=await f.evaluate(()=>{
 out.push((!dotPt.err?'✅':'❌')+' 光点位置可取（statusDots 钩子 + 画面内可点）: '+JSON.stringify(dotPt).slice(0,110));
 if(!dotPt.err){
   await closeCard();
+  const hh0=await f.evaluate(()=>{const v=window.visual106;return +( (v.camera.top-v.camera.bottom)/2 ).toFixed(2);});
   const t=await toTop(dotPt.x,dotPt.y);
-  await p.mouse.click(t.x,t.y); await p.waitForTimeout(2200);
+  await p.mouse.click(t.x,t.y); await p.waitForTimeout(1600);
   const c=await card();
   out.push((c.open&&c.txt.includes(dotPt.id)?'✅':'❌')+` 点光点 → 弹出 ${dotPt.id} 的设备信息卡: ${JSON.stringify(c).slice(0,120)}`);
-  T('点光点后相机切近（画面半高变小）', await f.evaluate(()=>{const v=window.visual106;return +( (v.camera.top-v.camera.bottom)/2 ).toFixed(2);}) < 12, 'true');
+  /* 2026-11-07：点光点只出卡，不再切近（原断言「画面半高变小」测的正是被撤除的这条行为） */
+  T('点光点后相机一动不动（画面半高不变）', await f.evaluate(()=>{const v=window.visual106;return +( (v.camera.top-v.camera.bottom)/2 ).toFixed(2);}), hh0);
 }
 
 // ①b 拖视角后松手落在光点上，不能误开弹窗（与引擎同一 4px 阈值）

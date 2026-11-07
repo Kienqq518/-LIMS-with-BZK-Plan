@@ -31,12 +31,14 @@ out.push((/正在检测\s*12/.test(t3)&&/待检测\s*9/.test(t3)&&/已完成检�
 const t4=(await p.locator('.dtable').nth(3).innerText()).replace(/\s+/g,' ');
 out.push((/已完成\s*88/.test(t4)&&/阻塞\s*8/.test(t4)&&/其中已解决\s*5/.test(t4)&&/其中未解决\s*3/.test(t4)?'✅':'❌')+' 调度表含阻塞拆分: '+t4);
 // 每表都有来源与更新时间
-out.push(((await p.locator('.dtable>header .src').allInnerTexts()).every(x=>/数采|调度/.test(x)&&/\d{2}:\d{2}:\d{2}/.test(x))?'✅':'❌')+' 每表表头保留来源+更新时间（诚实口径）: '+(await p.locator('.dtable>header .src').allInnerTexts()).join(' / '));
+const gsrc=(await p.locator('.dtable>header .src').allInnerTexts()).filter(Boolean);
+const psrc=(await p.locator('#rpSrc').innerText()).replace(/\s+/g,' ');
+out.push((gsrc.length===4&&gsrc.every(x=>/数采|调度/.test(x))&&/\d{2}:\d{2}:\d{2}/.test(psrc)?'✅':'❌')+' 来源在每组、更新时间在面板头（合并面板后时间戳不再重复四遍，诚实口径不丢）: 组='+gsrc.join('/')+' 头='+psrc);
 // 周期切换联动四表
-await p.click('[data-period=month]'); await p.waitForTimeout(800);
+await p.locator('[data-period=month]:visible').first().click();  /* 周期按钮同屏可能有左右两组，只点可见那份 */ await p.waitForTimeout(800);
 const m=(await p.locator('#tables').innerText()).replace(/\s+/g,' ');
 out.push((/委托任务总数\s*268/.test(m)&&/电力电缆类\s*171/.test(m)&&/已收样\s*511/.test(m)&&/试验项目合计\s*842/.test(m)&&/调度任务已完成\s*2011/.test(m)?'✅':'❌')+' 本月切换四表联动: '+m.slice(0,60));
-await p.click('[data-period=day]'); await p.waitForTimeout(600);
+await p.locator('[data-period=day]:visible').first().click();  /* 周期按钮同屏可能有左右两组，只点可见那份 */ await p.waitForTimeout(600);
 // 自洽：分类相加=总数、检测+完成≤收样、检测+待检+完成=合计
 const calc=await p.evaluate(()=>{const t=document.querySelectorAll('.dtable');
  const g=(el,i)=>+t[el].querySelectorAll('tbody tr')[i].querySelector('.v').textContent;

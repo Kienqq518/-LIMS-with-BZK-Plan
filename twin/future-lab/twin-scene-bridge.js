@@ -124,9 +124,9 @@ function ensureDot(devId, status) {
   let dot = statusDots.get(devId);
   if (!dot) {
     const box = new THREE.Box3().setFromObject(mesh);
-    const mat = new THREE.MeshStandardMaterial({ color: 0x101010, emissive: TWIN_TOKEN.brand, emissiveIntensity: 1.4, roughness: 0.4 });
-    dot = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), mat);
-    dot.position.set((box.min.x + box.max.x) / 2, box.max.y + 0.09, (box.min.z + box.max.z) / 2);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x101010, emissive: TWIN_TOKEN.brand, emissiveIntensity: 2.2, roughness: 0.4 });
+    dot = new THREE.Mesh(new THREE.SphereGeometry(0.10, 14, 12), mat);
+    dot.position.set((box.min.x + box.max.x) / 2, box.max.y + 0.18, (box.min.z + box.max.z) / 2);
     visual.detail.add(dot); statusDots.set(devId, dot);
   }
   const conf = STATUS_LIGHT[status] || STATUS_LIGHT.standby;
@@ -134,12 +134,12 @@ function ensureDot(devId, status) {
 }
 function pulseDots(t) {
   statusDots.forEach(dot => {
-    if (LOW) { dot.material.emissiveIntensity = dot.userData.mode === 'fast' ? 2.0 : dot.userData.mode === 'dim' ? 0.35 : 1.2; return; }
+    if (LOW) { dot.material.emissiveIntensity = dot.userData.mode === 'fast' ? 3.2 : dot.userData.mode === 'dim' ? 0.7 : 2.2; return; }
     const mode = dot.userData.mode;
-    if (mode === 'pulse') dot.material.emissiveIntensity = 1.5 + Math.sin(t * 0.0035) * 0.7;
-    else if (mode === 'fast') dot.material.emissiveIntensity = 2.0 + Math.sin(t * 0.010) * 1.4;
-    else if (mode === 'dim') dot.material.emissiveIntensity = 0.35;
-    else dot.material.emissiveIntensity = 1.2;
+    if (mode === 'pulse') dot.material.emissiveIntensity = 2.4 + Math.sin(t * 0.0035) * 1.1;
+    else if (mode === 'fast') dot.material.emissiveIntensity = 3.2 + Math.sin(t * 0.010) * 1.8;
+    else if (mode === 'dim') dot.material.emissiveIntensity = 0.7;
+    else dot.material.emissiveIntensity = 2.2;
   });
 }
 
@@ -212,7 +212,6 @@ function startAnimLoop() {
       });
       pulseDots(t);
       if (stepCam(t)) { /* 补间期间由 stepCam 决定相机输入 */ }
-      trackFollow(t);                                   /* 补间结束后仍把选中的实体钉在锚点上（房间分离动画还会继续挪视锥） */
       visual.render();
       if (cardFor) positionCard(cardFor);
       publishCam();
@@ -230,8 +229,9 @@ function startAnimLoop() {
 /* ---------- 设备状态光点：常驻 + 可点（2026-11-06 反馈） ----------
    光点是设备状态的唯一 3D 入口，但它不在 CAD 拾取集合（modelRoots）里，
    所以点光点原本什么都不发生。这里按屏幕距离做命中检测：点光点 = 点它对应的那台设备。
-   半径 16px：光点本身只有 0.045m，在总览机位下约 8px，纯射线检测基本点不中。 */
-const DOT_PICK_PX = 16;
+   半径 20px：光点按 2026-11-07 反馈放大到半径 0.10m（总览机位下直径也就十几像素），
+  比可点中的热区还小，纯射线检测容易点偏，必须留像素热区。 */
+const DOT_PICK_PX = 20;
 /* 该像素上引擎会拾到的 CAD 实体（与 visual-106.bind() 的 pointerup 同一套射线，避免两套判定打架） */
 function rayHitId(ev) {
   const r = visual.renderer.domElement.getBoundingClientRect();
@@ -254,10 +254,11 @@ function dotHitId(ev) {
   });
   return best;
 }
-/* 滚轮缩放必须整套接管：引擎自己的 onwheel 改的是 visual.zoom，而 V2 的切近构图由我方 frScale 决定，
-   两套缩放并存时「缩小」方向会被 visual.zoom 的下限 .55 卡死（实测切近后只能放大不能缩小）。
-   这里直接顶掉 onwheel（不是 addEventListener，避免两个处理器叠加），单一事实源 = frScale，双向都能动，
-   缩放后立刻把选中的实体重新钉回锚点（否则缩放围绕视锥中心，实体会随倍率漂走）。 */
+/* 滚轮缩放必须整套接管：引擎自己的 onwheel 改的是 visual.zoom，而 V2 的画面范围由我方 frScale 决定，
+   两套缩放并存时「缩小」方向会被 visual.zoom 的下限 .55 卡死（实测推近后只能放大不能缩小）。
+   这里直接顶掉 onwheel（不是 addEventListener，避免两个处理器叠加），单一事实源 = frScale，双向都能动。
+   「点击切近 + 视觉跟随」撤除后（2026-11-07）缩放不再钉回锚点：机位只由用户自己决定，
+   信息气泡靠实体自身投影跟随，缩放/平移都不会脱开。 */
 function bindWheel() {
   const c = visual.renderer.domElement;
   c.onwheel = ev => { ev.preventDefault(); };            /* 顶掉引擎自己的 zoom 处理器，避免两套缩放叠加 */
@@ -272,29 +273,26 @@ function bindWheel() {
     const k = ev.deltaY > 0 ? 1.14 : 1 / 1.14;
     frScale = clampFr(frScale * k);
     camTween = null; visual.zoom = 1;
-    if (follow) follow.want = null;                      /* 用户手动缩放 = 放弃尺寸锁定，闭环只保位置 */
     visual.render();
-    reanchor();                                          /* 缩放绕视锥中心，选中的实体要重新钉回锚点 */
     if (cardFor) positionCard(cardFor);
     publishCam();
   }, { passive: false });
 }
 /* QA/宿主可读的相机构图：frScale 是我方唯一的缩放事实源，断言滚轮双向必须有它；
-   顺带把「可用区/锚点」一并发布（freeRect 带 400ms 缓存），否则没点击过的页面读不到期望落点。 */
+   顺带发布「浮层避让可用区」（freeRect 带 400ms 缓存）：信息气泡的夹取范围与 QA 都读它。 */
 function publishCam() {
   const hk = document.getElementById('twin-v2-bridge'); if (!hk) return;
-  const a = anchorPoint(), fq = freeRect();
+  const fq = freeRect();
   hk.dataset.cam = JSON.stringify({ fr: +frScale.toFixed(4), pan: [+myPan[0].toFixed(1), +myPan[1].toFixed(1)],
     yaw: +visual.yaw.toFixed(3), elev: +visual.elev.toFixed(3), zoom: +visual.zoom.toFixed(3),
     hh: +((visual.camera.top - visual.camera.bottom) / 2).toFixed(3),
-    anchor: [+a.x.toFixed(1), +a.y.toFixed(1)],
     free: [+fq.x0.toFixed(0), +fq.y0.toFixed(0), +fq.x1.toFixed(0), +fq.y1.toFixed(0)] });
 }
 
 function bindDotPick() {
   const c = visual.renderer.domElement;
   let down = null;   /* 拖视角后松手不能算点击：与引擎自己的 moved>4px 判定同一阈值 */
-  c.addEventListener('pointerdown', ev => { down = { x: ev.clientX, y: ev.clientY }; if (ev.shiftKey || ev.button !== 0) follow = null; });
+  c.addEventListener('pointerdown', ev => { down = { x: ev.clientX, y: ev.clientY }; });
   c.addEventListener('pointerup', ev => {
     if (ev.button !== 0 || !down) return;
     const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y); down = null;
@@ -350,20 +348,22 @@ function build(v) {
   wrapFrame();
   bindWheel();
   injectLayerStyle();
-  /* 点击任意实体（含桌子凳子）→ 先平滑换到它所在房间，再切近 + 弹信息卡 */
+  /* 点击任意实体（含桌子凳子）→ 只在鼠标旁弹信息卡，相机一步都不动。
+     FR-34 的「切近 + 视觉跟随」按 2026-11-07 反馈整体撤除：售前投影里，讲的人不希望画面被点击牵着跑，
+     要看细节用滚轮自己调，不靠系统替人决定机位。
+     信息卡跟着实体自身的投影位置走（缩放、平移都不会脱开），所以视觉上就是"贴着鼠标旁那台设备"。 */
   addEventListener('space-device-select', ev => {
     const id = ev.detail && ev.detail.id; if (!id) return;
-    /* 台账里有编号 ≠ 三维里有模型：这类实体没有可选中的网格，相机与气泡都做不出真效果。
-       不给假动作（也不静默），交宿主瞬时说明——与 FR-32「未绑定工位的行只给提示」同一条诚实口径。 */
+    /* 台账里有编号 ≠ 三维里有模型：这类实体没有可拾取的网格，弹卡也指不出东西。
+       不给假动作也不静默，交宿主瞬时说明——与 FR-32「未绑定工位的行只给提示」同一条诚实口径。 */
     if (!boxOf(id)) {
       hideCard();
       parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'hint', text: id + '：三维未建模（CAD 台账号已登记，但场景里没有可拾取实体，不做假动作）' }, location.origin);
       return;
     }
-    const zone = /^(\d{3})-/.test(id) ? RegExp.$1 : null;
-    const want = zone === '106' ? 'close' : (zone ? zone + '-close' : visual.view);
-    if (want !== visual.view) { snapCam(); window.spaceNavigation && window.spaceNavigation.setView(want); camCmd({ action: 'drill' }); }
-    camCmd({ action: 'device', deviceId: id, zoneId: zone });
+    visual.selected = id;
+    const c = centerOf(id); if (!c) return;
+    showCard(id, c);
   });
   addEventListener('lab-view-change', hideCard);
   bindDotPick();
@@ -781,7 +781,7 @@ function auditRoutes(list, walls) {
   return report;
 }
 
-/* ================= 相机引擎：下钻 / 切近 / 回总览（补间，不再生硬跳视角） =================
+/* ================= 相机引擎：下钻 / 回总览（补间，不再生硬跳视角） =================
    只用 visual 的 yaw/elev/zoom + 引擎的 pan 作为输入，因此不接管 fitCamera，不与
    whiteblue-spatial-engine / scene-group-highlight 的相机计算打架。 */
 const REDUCED = matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -795,10 +795,10 @@ const HOME = { fr: 1.16, pan: [0, -78] };
 function homeFraming(view) { return /^overall/.test(view || visual.view) ? { fr: HOME.fr, pan: HOME.pan.slice() } : { fr: 1, pan: [0, 0] }; }
 function applyHome(view) { const hm = homeFraming(view); frScale = hm.fr; setPan(hm.pan[0], hm.pan[1]); return hm; }
 /* 视锥补间：scene-group-highlight 的 fitFrame 每帧重算 camera.left/right/top/bottom 且不看 visual.zoom，
-   所以只能在它「之后」按比例缩放视锥——这是下钻/切近能平滑的唯一正确接法。 */
-/* 视角切换必须回到「标定构图」：切近设备会把 frScale 压到 0.1~0.3，
+   所以只能在它「之后」按比例缩放视锥——这是下钻能平滑的唯一正确接法。 */
+/* 视角切换必须回到「标定构图」：任何推近（下钻、当年的切近）都会把 frScale 压到 0.1~0.3，
    而引擎的 setView 只重置 zoom、不管我方 frScale → 点「S1 总览」回来后画面仍停在特写缩放上（违反 FR-10「回到同一机位」，实测 camHH 14.2→10.5）。
-   所以任何 setView 都先把 frScale/pan 归位；随后 focusDevice/drill 再按需设自己的缩放，顺序上安全。 */
+   所以任何 setView 都先把 frScale/pan 归位；随后 drill 再按需设自己的缩放，顺序上安全。 */
 function hookSetViewReset() {
   if (visual.__twinViewReset) return; visual.__twinViewReset = true;
   const orig = visual.setView.bind(visual);
@@ -830,10 +830,10 @@ function wrapFrame() {
 }
 function natHH() { const c = visual.camera; return (c.top - c.bottom) / 2 / frScale; }
 /* —— pan 的真相：原来 setPan 把位移 postMessage 给宿主，宿主并不转发 type:'pan'，
-   引擎里的 pan 恒为 0 → 切近落点永远停在画面正中（实测 dx 恒 +189~198px，看着就是"跟随不准"）。
+   引擎里的 pan 恒为 0 → 特写落点永远停在画面正中（当年做切近时实测 dx 恒 +189~198px，看着就是"跟随不准"）。
    改成在**我方视锥钩子里直接平移视锥**：单位就是屏幕像素，pan 与位移 1:1，标定/除法全部退出这条链路。 */
 function setPan(x, y) { myPan = [x, y]; }
-/* 画面可用区：三维画面被顶栏/左列/告警流/区面板/底栏压住，切近落点与气泡都必须躲开这些浮层，
+/* 画面可用区：三维画面被顶栏/左列/告警流/区面板/底栏压住，信息气泡的锚点必须躲开这些浮层，
    否则设备会被推到面板底下甚至画面外（实测 106-18 落在画面外 691px → 用户看到"点了没弹窗"）。 */
 const OVERLAY_SEL = '.topbar,.rail,.stream,.zonepanel,.dock,.detail';
 let freeCache = { t: 0, r: null };
@@ -865,61 +865,20 @@ function freeRect() {
   freeCache = { t: now, r: { x0, y0, x1, y1 } };
   return freeCache.r;
 }
-function anchorPoint() {                                /* 落点：可用区中心略偏左，右侧留给信息气泡 */
-  const host = visual.host.getBoundingClientRect(), f = freeRect();
-  const a = { x: host.left + (f.x0 + f.x1) / 2 - 64, y: host.top + (f.y0 + f.y1) / 2 };
-  window.__twinAnchor = a; window.__twinFree = f;      /* QA 读取：期望落点与可用区，断言不用再写死百分比 */
-  return a;
-}
 function centerOf(id) { const b = boxOf(id); return b ? b.getCenter(new THREE.Vector3()) : null; }
-/* 闭环跟随：补间只保证终点构图，但房间分离动画还在改自然视锥、滚轮还会改倍率，
-   开环解算一次必然残留误差 → 每帧量一次真实屏幕位置，残差直接加回 pan（1:1，一步收敛不振荡）。 */
-let follow = null;
+/* 视觉跟随机制（follow / reanchor / trackFollow / releaseFollow / anchorPoint）已随「点击切近」整体撤除（2026-11-07）。
+   留一句为什么当初要做、又为什么撤：
+   · 当初：补间只保证终点构图，房间分离动画还在改自然视锥、滚轮还会改倍率，开环解算一次必然残留误差，
+     所以每帧量一次真实屏幕位置、把残差 1:1 加回 pan（一步收敛不振荡）。
+   · 现在：售前投影里讲的人不希望画面被点击牵着跑，点击只弹信息卡；
+     气泡靠实体自身投影每帧定位（positionCard），缩放平移都不会脱开——不再需要钉相机。
+   教训常驻：删这套机制时必须 grep 调用点，bindWheel 里残留过一次 follow.want=null，每次滚轮都抛 ReferenceError。 */
 /* 缩放边界必须相对「本视角自然构图」：frScale 的上界是绝对数时，跨房间点击后构图本来就在 3~4 倍，
-   滚轮第一格就被拍回上限，看起来像「滚轮没反应」（实测 103 切近后 4.31→in1.8）。
+   滚轮第一格就被拍回上限，看起来像「滚轮没反应」（当年在 103 推近后实测 4.31→1.8）。
    下界改成物理量：画面半高不小于 26cm，再近就没有信息量了。 */
 function clampFr(v) {
   const base = natHH() || 1;
   return Math.max(0.012, Math.min(4, Math.max(0.26 / base, v)));
-}
-function reanchor() {
-  if (!cardFor) return;
-  const c = centerOf(cardFor); if (!c) return;
-  const a = anchorPoint(), p = proj(c.x, c.y, c.z);
-  setPan(myPan[0] + (a.x - p.x), myPan[1] + (a.y - p.y));
-  visual.render();
-}
-function trackFollow(now) {
-  if (!follow) return;
-  if (camTween) return;                                  /* 补间途中交给补间曲线（这里再插一手会把横向推移变成瞬移，动效就"突兀"了） */
-  if (now > follow.until || !cardFor || cardFor !== follow.id) { releaseFollow(); return; }
-  const c = centerOf(follow.id); if (!c) { releaseFollow(); return; }
-  /* 会动的目标（AGV 在跑循环剧本）：点它就是要看它跑，钉不住就变成"跟随后又跑掉"（实测 106-08 残留 131px）。
-     只要它还在动就把窗口往后推，静止 0.9s 或累计 20s 放手——无限跟会抢用户的方向盘。 */
-  if (follow.lastC) {
-    const mv = Math.hypot(c.x - follow.lastC[0], c.z - follow.lastC[1]);
-    if (mv > 0.005) follow.until = Math.min(now + 900, follow.hardUntil);
-  }
-  follow.lastC = [c.x, c.z];
-  const a = anchorPoint();
-  if (follow.want) {                                     /* 尺寸收敛：房间分离动画在补间之后还在改自然视锥，构图半高要跟着修 */
-    const hhNow = (visual.camera.top - visual.camera.bottom) / 2;
-    if (hhNow > 1e-4 && Math.abs(hhNow - follow.want) / follow.want > 0.02) frScale = clampFr(frScale * (1 + (follow.want / hhNow - 1) * 0.4));
-  }
-  visual.render();
-  const p = proj(c.x, c.y, c.z);
-  if (p.z > 1) return;                                   /* 点在相机背后：等构图稳定后再跟 */
-  const ex = a.x - p.x, ey = a.y - p.y;
-  const hs = (visual.camera.top - visual.camera.bottom) / 2;
-  window.__twinFocusResidual = +Math.hypot(ex, ey).toFixed(1);
-  window.__twinFocusHH = +hs.toFixed(2);
-  const settled = Math.abs(ex) < 1.5 && Math.abs(ey) < 1.5 && (!follow.want || Math.abs(hs - follow.want) / follow.want < 0.03);
-  if (settled && now > follow.ready) { releaseFollow(); return; }
-  setPan(myPan[0] + ex * 0.5, myPan[1] + ey * 0.5);      /* 增益 0.5：残差用两三帧 glide 掉，不做单帧瞬移 */
-}
-function releaseFollow() {
-  if (follow && cardFor) { const c = centerOf(cardFor); if (c) { const a = anchorPoint(), p = proj(c.x, c.y, c.z); window.__twinFocusResidual = +Math.hypot(a.x - p.x, a.y - p.y).toFixed(1); } }
-  follow = null;
 }
 /* 世界坐标 → 屏幕像素。必须走 camera.project()：视锥中心（midX/midY）不是 0——
    fitFrame 按房间角点求包围盒时中心就会偏，平移 pan 之后更偏；
@@ -969,53 +928,9 @@ function camCmd(d) {
     tween({ yaw: visual.yaw, elev: visual.elev, scale: s0, pan: pan0 }, { yaw: visual.yaw, elev: visual.elev, scale: hm.fr, pan: hm.pan }, 760);
     return;
   }
-  if (d.action === 'device') { focusDevice(d.deviceId, d.zoneId); return; }
   if (d.action === 'reset') { camTween = null; applyHome(); hideCard(); visual.render(); return; }
 }
 function boxOf(id) { const m = visual.modelRoots.get(id); if (!m) return null; const b = new THREE.Box3().setFromObject(m); return b.isEmpty() ? null : b; }
-function focusDevice(id, zoneId) {
-  const b = boxOf(id); if (!b) return;
-  const c = b.getCenter(new THREE.Vector3());
-  const room = (visual.g.rooms || []).find(r => r.id === (zoneId || (id.slice(0, 3))));
-  let rc = null;
-  if (room) { const xs = room.points.map(q => q[0] * 0.05), zs = room.points.map(q => q[1] * 0.05); rc = new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, 0, (Math.min(...zs) + Math.max(...zs)) / 2); }
-  const dir = rc ? new THREE.Vector3(c.x - rc.x, 0, c.z - rc.z) : new THREE.Vector3(-1, 0, 0);
-  if (dir.lengthSq() < 0.04) dir.set(-1, 0, 0);
-  dir.normalize();
-  const yaw = Math.atan2(-dir.x, dir.z);                       // 相机站到「房间中心→设备」的反方向一侧，正对设备操作面
-  const size = Math.max(b.max.x - b.min.x, b.max.z - b.min.z, b.max.y);
-  /* 目标构图半高：按实体自身尺寸给，最小 0.9m。原来固定下限 2.4m，
-     0.1m 级的小件（烟感/展示牌/配电箱）切近后只占画面 1.7%，等于没切近（实测 101-04）。 */
-  const want = Math.max(0.9, Math.min(9, size * 2.2));
-  wrapFrame();
-  /* 倍率基准必须取「切近目标构图下的自然半高」，不能取切换前的 hh()：
-     跨房间点击时 from 是 S1 总览（hh≈14），to 是新房间特写，用旧基准算 sTarget，
-     切近后画面反而比原构图更远（实测 103-01 落点 hh 14.2→24.1，4m 的机器只占画面 8%）。 */
-  const keep = { yaw: visual.yaw, elev: visual.elev, scale: frScale, pan: myPan.slice() };
-  visual.yaw = keep.yaw; visual.elev = 0.62; frScale = 1; setPan(0, 0); visual.render();
-  const baseNat = (visual.camera.top - visual.camera.bottom) / 2 || 1;
-  const sTarget = Math.max(0.012, Math.min(4, want / baseNat));
-  visual.yaw = keep.yaw; visual.elev = keep.elev; frScale = keep.scale; setPan(keep.pan[0], keep.pan[1]);
-  const from = { yaw: visual.yaw, elev: visual.elev, scale: frScale, pan: myPan.slice() };
-  const to = { yaw: from.yaw + ((((yaw - from.yaw) % 6.2832) + 9.42) % 6.2832) - 3.1416, elev: 0.62, scale: sTarget, pan: [0, 0] };
-  /* —— 落点解算：先把相机摆到目标构图（朝向/倍率），再量「pan→像素」的真实斜率并解一次平移。
-     平移现在在视锥钩子里按像素做，斜率恒为 1，解一次就中；仍保留 2 次修正 + 残差记录，
-     是因为房间分离动画会改自然视锥，闭环 trackFollow 才是最终保证。 —— */
-  visual.yaw = to.yaw; visual.elev = to.elev; frScale = to.scale; setPan(0, 0); visual.render();
-  const a = anchorPoint();   /* 落点锚 = 浮层避让后的可用区中心，右侧留给气泡 */
-  const at = (px, py) => { setPan(px, py); visual.render(); return proj(c.x, c.y, c.z); };
-  let panX = 0, panY = 0, q = at(0, 0);
-  const STEP = 24;
-  const sx = (at(STEP, 0).x - q.x) / STEP || 1, sy = (at(0, STEP).y - q.y) / STEP || 1;
-  for (let it = 0; it < 3 && (Math.abs(q.x - a.x) > 2 || Math.abs(q.y - a.y) > 2); it++) {
-    panX += (q.x - a.x) / sx; panY += (q.y - a.y) / sy; q = at(panX, panY);
-  }
-  to.pan = [+panX.toFixed(2), +panY.toFixed(2)];
-  window.__twinFocusResidual = +Math.hypot(q.x - a.x, q.y - a.y).toFixed(1);
-  follow = { id, want, until: performance.now() + 1800, ready: performance.now() + 260, hardUntil: performance.now() + 20000, lastC: null };
-  tween(from, to, 720);
-  showCard(id, c);
-}
 /* ---------- 实体信息卡（任何有名字的 CAD 实体，含桌子凳子） ---------- */
 function ensureCard() {
   if (cardEl) return cardEl;
