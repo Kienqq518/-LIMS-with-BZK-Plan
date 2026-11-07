@@ -323,6 +323,7 @@ function boot() {
 }
 
 let visual, robots = {}, lines = null, tinted = new Map();
+import { applyLook, setLookQuality } from './twin-look.js?v=2';
 const COLORS = { alarm: TWIN_TOKEN.alarm, working: TWIN_TOKEN.working, ready: TWIN_TOKEN.ready, standby: TWIN_TOKEN.idle, guide: TWIN_TOKEN.route };
 
 function build(v) {
@@ -337,6 +338,9 @@ function build(v) {
 
   treatArchitecture();
   applyMaterialPass();
+  /* 光影材质精修（twin-look.js）：必须在 applyMaterialPass 之后——它在那套白蓝配色之上再分材质角色、
+     重排灯光分工、加纵深雾与选择性 bloom。?look=flat 可关（对比取证），?quality=low 交付档自动关后处理。 */
+  try { window.__twinLookDiag = applyLook(visual, { low: LOW }); } catch (e) { console.error('look 装载失败：' + e.message); }
   startAnimLoop();
   loadNames();
   hookSetViewReset();
@@ -502,6 +506,7 @@ function setQuality(level) {
     visual.renderer.setPixelRatio(low ? 1 : pixelRatioBase);
     if (visual.reflector) visual.reflector.visible = !low;
   }
+  setLookQuality(low);                                     /* 光影档同步：低配关 bloom 并把灯光收回保守值（不重新打补丁） */
   const hook = document.getElementById('twin-v2-bridge'); if (hook) hook.dataset.quality = low ? 'low' : 'high';
   if (visual) visual.render();
 }

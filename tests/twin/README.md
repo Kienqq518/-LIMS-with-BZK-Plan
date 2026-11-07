@@ -9,7 +9,7 @@
 ```bash
 cd tests/twin
 npm i                 # 只装 playwright（用系统 Chrome，不需要下载 Chromium）
-node run-all.mjs                       # 全量 22 套（含 focuscheck 约 4 分钟）：自动起本地静态服务，跑完自动关
+node run-all.mjs                       # 全量 23 套（含 focuscheck 约 4 分钟）：自动起本地静态服务，跑完自动关
 node run-all.mjs --only smoke,alarmlvl # 只跑关心的套件
 TWIN_BASE=https://<部署域名> node run-all.mjs --no-serve   # 打线上（只能验已 push 的 commit）
 ```
@@ -40,6 +40,7 @@ TWIN_BASE=https://<部署域名> node run-all.mjs --no-serve   # 打线上（只
 | `collapsec` | 「收起底栏」只作用今日任务表；机器人状态条与底部说明条已整体删除 |
 | `s3check` | S3 告警回溯已移出 MVP：抽屉/按钮/按键映射都不存在 |
 | `uxcheck` | 透明浮层三处、下钻与切近补间、实体信息卡、循环剧本、避让自检（44 项） |
+| `lookcheck` | 光影材质精修守卫（FR-37，twin-look.js）：材质按角色分（glass/panelDark/metal/ground/body/signal 六类 ≥5 命中、共享材质 112 个）、灯光 key/fill/rim/hemi 分工且压过引擎预设（exposure 1.02、PCFSoft）、雾窗口按机位距离平移、投影灯 ≤2 与贴图 ≤70 在预算内、后处理在场仍 ≥50fps、**画布空白处 alpha 必须 <24**（合成写 alpha=1 会把不透明黑铺满整屏、玻璃浮层瞬间被压暗）、`?look=flat` 与 `?quality=low` 两个开关真生效 |
 | `chartcheck` | 3D 图表守卫（FR-36）：G2 来自 `twin/future-lab/vendor/g2.min.js` 且无 CDN 请求；8~10 张图逐张扫描非透明像素；图与表数字逐一比对（委托/样品/试验项目/调度/告警三分区/设备五档/102 样品五类）；`/api/iot/temp-hum-series` 末点必须钉住节点当前读数；点温湿度节点行换序列且选中态由渲染拥有；周期切换与下钻出图（106 任务四档 / 103 检测项目四档）；每张图 role=img + aria-label；reduced-motion 下照样出图；面颜色走 style.fill 回调不许 encode.color 塞 hex |
 | `focuscheck` | **逐个**验 89 个三维实体（FR-34，不抽样）：三级点击入口（实体本体→状态光点→事件兜底）、`selected` 与卡内编号一致、切近落点偏差 <14px、气泡完整落在「浮层避让可用区」内、画面占比 4%~120% 且 ≥34px、滚轮放大缩小双向且缩放后仍钉住、未建模的 11 个只出 `flashHint` 说明且相机/气泡都不许动。单跑 `node focuscheck.mjs 106` 可只验一个房间 |
 | `uiconcheck` | 视觉一致性守卫（FR-35）：`.rail/.stream/.zonepanel/.dk` 的 bg+blur+描边+圆角+阴影五项必须完全相同；屏上不许出现 <10.4px 文字；`twin-scene-v2.css` 里零裸值（hex/blur(Npx)/font-size:Npx/z-index:N/border-radius:Npx）；3D 侧 `__twinTokensForQA` 与 CSS token 同值；可点元素 cursor:pointer + 存在 focus-visible 规则；场景内房间标签与节点标记已并回宿主 token；读数 tabular-nums |

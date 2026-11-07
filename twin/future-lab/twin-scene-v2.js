@@ -39,7 +39,11 @@
       alarmFilter: readFilter(p.get('alarmFilter')), quality: p.get('quality') || 'high', strip: p.get('strip') ? 1 : 0 };
   }
   function writeURL() {
-    var p = new URLSearchParams(); p.set('mode', st.mode); if (st.mode === 'ZONE') p.set('zone', st.zone);
+    /* 从当前参数起步、只覆盖我们托管的那几个键：外来开关（?look=flat 光影对比取证、以后可能还有）
+       必须活着走过第一次 replaceState，否则场景帧读 parent URL 时它已经没了（本轮真实踩到）。 */
+    var p = new URLSearchParams(location.search);
+    ['mode','zone','period','alarmFilter','quality','strip','layers'].forEach(function (k) { p.delete(k); });
+    p.set('mode', st.mode); if (st.mode === 'ZONE') p.set('zone', st.zone);
     p.set('period', st.period); p.set('alarmFilter', secIds().map(function (k) { return st.alarmFilter[k] || 'open'; }).join(',')); if (st.quality === 'low') p.set('quality', 'low'); if (st.strip) p.set('strip', '1');
     p.set('layers', LAYER_KEYS.filter(function (k) { return st.layers[k]; }).join(','));
     history.replaceState(null, '', location.pathname + '?' + p.toString() + '#v2=1&native-nodes=1');

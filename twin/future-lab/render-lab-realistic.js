@@ -102,7 +102,7 @@ export class RealisticLab{
   this.tierName=tierName;this.tier=RENDER_TIERS[tierName];this.lightGroup.visible=this.enabled;
   for(const s of this.lights){s.o.visible=this.enabled?false:s.visible;s.o.intensity=s.intensity;}
   if(!this.enabled){r.shadowMap.type=this.original.shadowType;r.shadowMap.autoUpdate=this.original.shadowAuto;this.uniforms.labReflectionActive.value=0;return;}
-  v.reflector.visible=false;r.shadowMap.type=THREE.PCFShadowMap;r.shadowMap.autoUpdate=false;
+  v.reflector.visible=false;r.shadowMap.type=THREE.PCFSoftShadowMap;r.shadowMap.autoUpdate=false;   /* 阴影只烘一次(autoUpdate=false)，PCFSoft 的采样成本与 PCF 同级，边沿不再锯齿；twin-look.js 也按 soft 断言 */
   this.uniforms.labReflectionActive.value=this.tier.reflectionSize?1:0;
   const key=rid+'-'+tierName;
   if(this.profileKey===key)return;this.profileKey=key;
