@@ -202,6 +202,8 @@ function startAnimLoop() {
         }
         const p = posAt(pts, tgt.local);
         g.position.set(p.x, 0, p.z);
+        /* QA 取证口：屏上「第 n 道任务」必须能和机器人真实位置对上（cyclecheck 用它证明道↔站↔AGV 一致） */
+        if (id === 'RB-C-02') window.__twinAgv = { u: +tgt.local.toFixed(4), x: +p.x.toFixed(3), z: +p.z.toFixed(3), action: tgt.action || null, demo: !!tgt.demoCycle };
         const ahead = posAt(pts, Math.min(1, tgt.local + 0.004));
         const dx = ahead.x - p.x, dz = ahead.z - p.z;
         if (Math.abs(dx) + Math.abs(dz) > 1e-4) g.rotation.y = Math.atan2(dx, dz);   /* 原地掉头：方向由前进段决定，不做平滑摆动 */
@@ -344,6 +346,7 @@ function build(v) {
   startAnimLoop();
   loadNames();
   hookSetViewReset();
+  applyHome();          /* 首屏：引擎构造时的 setView 早于本 hook，这里补一次，保证第一帧就是参考图那版机位 */
   wrapFrame();
   bindWheel();
   injectLayerStyle();
@@ -784,6 +787,13 @@ function auditRoutes(list, walls) {
 const REDUCED = matchMedia('(prefers-reduced-motion:reduce)').matches;
 const REF = { x: 14, y: 0.6, z: 19 };                       // 参考世界点：用它度量切换前后的画面位移与比例
 let camSnap = null, camTween = null, myPan = [0, 0], objectInfo = {}, cardFor = null, cardEl = null, namesMap = null, frScale = 1;
+/* 首屏机位（2026-11-07 参考图：比原来小一号、整体往上移）。
+   frScale>1 = 画面范围变大（模型缩小）；pan 的单位就是屏幕像素，pan[1] 为负 = 模型往上走。
+   它必须同时是「回总览」的标定构图：只写在一处、drill 补间终点与 reset 都取它，
+   否则第一次回 S1 就把 HOME 冲回 1/0（camcheck 的 FR-10 断言正是守这条）。 */
+const HOME = { fr: 1.16, pan: [0, -78] };
+function homeFraming(view) { return /^overall/.test(view || visual.view) ? { fr: HOME.fr, pan: HOME.pan.slice() } : { fr: 1, pan: [0, 0] }; }
+function applyHome(view) { const hm = homeFraming(view); frScale = hm.fr; setPan(hm.pan[0], hm.pan[1]); return hm; }
 /* 视锥补间：scene-group-highlight 的 fitFrame 每帧重算 camera.left/right/top/bottom 且不看 visual.zoom，
    所以只能在它「之后」按比例缩放视锥——这是下钻/切近能平滑的唯一正确接法。 */
 /* 视角切换必须回到「标定构图」：切近设备会把 frScale 压到 0.1~0.3，
@@ -792,7 +802,7 @@ let camSnap = null, camTween = null, myPan = [0, 0], objectInfo = {}, cardFor = 
 function hookSetViewReset() {
   if (visual.__twinViewReset) return; visual.__twinViewReset = true;
   const orig = visual.setView.bind(visual);
-  visual.setView = v => { camTween = null; frScale = 1; setPan(0, 0); return orig(v); };
+  visual.setView = v => { camTween = null; applyHome(v); return orig(v); };   /* 总览=HOME 机位，房间特写=引擎自然构图 */
 }
 
 function wrapFrame() {
@@ -955,11 +965,12 @@ function camCmd(d) {
     frScale = s0; setPan(pan0[0], pan0[1]); visual.render();
     /* 终点缩放恒为 1：新视角的构图由引擎 fitFrame 自己算（下钻=自然特写、回总览=标定机位）。
        原来收在 camSnap.scale（=切换前的缩放），于是切近设备后回 S1 会停在特写上，违反 FR-10「回到同一机位」。 */
-    tween({ yaw: visual.yaw, elev: visual.elev, scale: s0, pan: pan0 }, { yaw: visual.yaw, elev: visual.elev, scale: 1, pan: [0, 0] }, 760);
+    const hm = homeFraming();   /* 终点构图：回总览要落在 HOME 机位，进房间才用该视角的自然构图 */
+    tween({ yaw: visual.yaw, elev: visual.elev, scale: s0, pan: pan0 }, { yaw: visual.yaw, elev: visual.elev, scale: hm.fr, pan: hm.pan }, 760);
     return;
   }
   if (d.action === 'device') { focusDevice(d.deviceId, d.zoneId); return; }
-  if (d.action === 'reset') { camTween = null; frScale = 1; setPan(0, 0); hideCard(); visual.render(); return; }
+  if (d.action === 'reset') { camTween = null; applyHome(); hideCard(); visual.render(); return; }
 }
 function boxOf(id) { const m = visual.modelRoots.get(id); if (!m) return null; const b = new THREE.Box3().setFromObject(m); return b.isEmpty() ? null : b; }
 function focusDevice(id, zoneId) {

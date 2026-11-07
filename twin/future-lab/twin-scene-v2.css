@@ -8,8 +8,23 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 .brand{display:flex;align-items:center;gap:0}
 .brand img{height:24px}
 .brand span{display:none}                                  /* 「应敏科技 · 」不再作为文字出现，公司名只留在 logo 图与 alt/title 里 */
-.title{margin:0;font-size:var(--tw-fs-strong);font-weight:650;letter-spacing:.3px;color:var(--tw-ink-1);
- text-shadow:var(--tw-text-plate)}
+/* 标题：正中间、加大、立体字（2026-11-07 反馈）。
+   仍然守 FR-33——顶栏不许有底色/边框/毛玻璃，所以立体感全部走文字本身：
+   ::before 用 data-text 复制一层做挤出厚度，本体是渐变面 + 缓慢流过的光泽。
+   对比度：最暗 #123A6B 压在浅背景上 >7:1，光泽段也不掉到 4.5:1 以下。
+   注意：本体不能再写 text-shadow——color:transparent + background-clip:text 时，
+   影子会从透明字形里透出来糊在渐变面上；厚度全部交给 ::before 那一层。 */
+.title{position:absolute;left:50%;top:50%;transform:translate(-50%,-52%) perspective(760px) rotateX(11deg);
+ margin:0;font-size:var(--tw-fs-hero-title);font-weight:800;letter-spacing:3.5px;white-space:nowrap;
+ background:var(--tw-hero-face);
+ background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+ animation:twTitleSheen 7.5s linear infinite}
+.title::before{content:attr(data-text);position:absolute;left:0;top:0;z-index:var(--tw-z-behind);color:var(--tw-hero-ink);
+ -webkit-text-fill-color:var(--tw-hero-ink);text-shadow:0 1px 0 rgba(255,255,255,.9),0 2px 0 rgba(40,120,255,.42),
+ 0 4px 0 rgba(11,79,191,.26),0 6px 1px rgba(15,40,80,.2),0 12px 26px rgba(15,40,80,.26)}
+@keyframes twTitleSheen{from{background-position:0% 0}to{background-position:250% 0}}
+@media (prefers-reduced-motion:reduce){.title{animation:none}}
+@media (max-width:1500px){.title{font-size:var(--tw-fs-hero-title-sm);letter-spacing:2px}}
 .modes{display:flex;gap:2px;margin-left:6px}
 .mode{position:relative;font:inherit;font-size:var(--tw-fs-body);color:var(--tw-ink-3);background:transparent;border:0;padding:6px 10px;cursor:pointer;
  text-shadow:var(--tw-text-plate)}
@@ -28,8 +43,8 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 .pill.active{color:var(--tw-color-brand-strong);background:var(--tw-glass-on);border:0;box-shadow:var(--tw-press-ring)}
 .pill.flow{color:var(--tw-color-brand);border-color:var(--tw-tint-brand-line)}
 /* 浮层几何的唯一事实源：宽度与沟槽都从这里算，改一处即可 */
-:root{--tw-rail-w:224px;--tw-stream-w:296px;--tw-panel-w:352px;--tw-float-gap:16px}
-.rail{position:fixed;left:14px;top:70px;width:var(--tw-rail-w);display:flex;flex-direction:column;gap:var(--tw-float-gap);z-index:var(--tw-z-panel);
+:root{--tw-rail-w:300px;--tw-rail-gap:12px;--tw-stream-h:560px;--tw-stream-w:296px;--tw-panel-w:352px;--tw-float-gap:16px}
+.rail{position:fixed;left:14px;top:70px;width:var(--tw-rail-w);display:flex;flex-direction:column;gap:var(--tw-rail-gap);z-index:var(--tw-z-panel);
  background:var(--tw-glass-panel);backdrop-filter:var(--tw-blur) var(--tw-sat);border:1px solid var(--tw-glass-border);
  border-radius:var(--tw-radius-card);box-shadow:var(--tw-shadow-card);padding:12px 12px 10px;max-height:calc(100vh - 92px);overflow:auto}
 .ga{background:var(--tw-color-alertRed)}.gb{background:var(--tw-color-bottleneckOrange)}.gc{background:var(--tw-color-warnAmber)}
@@ -126,27 +141,24 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 .lic:focus-visible{outline:2px solid var(--tw-color-brand);outline-offset:2px}
 
 /* ---- 右侧告警流（连续滚动，透明玻璃） ---- */
-.stream{position:absolute;right:16px;top:70px;bottom:16px;width:var(--tw-stream-w);display:flex;flex-direction:column;background:var(--tw-glass-panel);backdrop-filter:var(--tw-blur) var(--tw-sat);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);box-shadow:var(--tw-shadow-card);z-index:var(--tw-z-panel);overflow:hidden}
+/* 右列：top:14 起（原来 top:70 落在 .stage 内 = 页面 126px，上面白空 112px）。
+   告警流高度固定（不随条数伸缩），组态物联吃剩余高度——两块共用同一档玻璃配方。 */
+.rcol{position:absolute;right:16px;top:14px;bottom:16px;width:var(--tw-stream-w);display:flex;flex-direction:column;gap:var(--tw-float-gap);z-index:var(--tw-z-panel)}
+.stream,.nodepanel{position:relative;display:flex;flex-direction:column;background:var(--tw-glass-panel);
+ backdrop-filter:var(--tw-blur) var(--tw-sat);-webkit-backdrop-filter:var(--tw-blur) var(--tw-sat);
+ border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);box-shadow:var(--tw-shadow-card);overflow:hidden}
+.stream{flex:none;height:var(--tw-stream-h)}
+.nodepanel{flex:1;min-height:0}
 .stream>header{display:flex;flex-direction:column;gap:7px;padding:11px 13px 10px;border-bottom:1px solid var(--tw-hairline);background:var(--tw-glass-head)}
 .stream>header .sh-top{display:flex;align-items:baseline;gap:8px}
 .stream>header b{font-size:var(--tw-fs-strong)}
 .stream>header .sh-top span{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums}
-.stream>header .sh-legend{display:flex;gap:6px;font-size:var(--tw-fs-micro);color:var(--tw-ink-4)}
-.stream>header .sh-legend span{border:1px solid var(--tw-hairline-strong);border-radius:var(--tw-radius-pill);padding:2px 8px;background:rgba(255,255,255,.6)}
+.stream>header .sh-filter{display:flex;gap:5px;justify-content:flex-end}
 /* ---- 告警三分区（A 异常 / B 阻塞瓶颈 / C 校准期限）：各自计数与独立筛选 ---- */
-.asec{border:1px solid var(--tw-hairline);border-radius:var(--tw-radius-chip);background:var(--tw-glass-inner);margin-bottom:9px;overflow:hidden}
-.asec>header{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--tw-glass-head);border-bottom:1px solid var(--tw-hairline);flex-wrap:wrap}
-.asec>header .gd{font-size:var(--tw-fs-micro);font-weight:800;color:var(--tw-on-color);border-radius:var(--tw-radius-badge);padding:2px 7px}
-.asec>header .gd.a{background:var(--tw-color-alertRed)}.asec>header .gd.b{background:var(--tw-color-bottleneckOrange)}.asec>header .gd.c{background:var(--tw-color-warnAmber)}
-.asec>header b{font-size:var(--tw-fs-label);color:var(--tw-ink-1)}
-.asec>header .cnt{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;margin-left:auto}
-.asec>header .toggle{display:flex;gap:4px;flex:1 1 100%;justify-content:flex-end}
-.asec-body{max-height:236px;overflow:hidden;position:relative;-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 26px),transparent)}
-.asec-track{display:flex;flex-direction:column;gap:7px;padding:7px 9px}
-.asec-track.scroll{animation:asecUp 26s linear infinite;will-change:transform}
-.asec:hover .asec-track.scroll,.asec:focus-within .asec-track.scroll{animation-play-state:paused}   /* 悬停与键盘焦点都暂停（遥控翻页时用 Tab 停在某行也能读全） */
+.stream-board.scroll{animation:asecUp 30s linear infinite;will-change:transform}
+.stream:hover .stream-board.scroll,.stream:focus-within .stream-board.scroll{animation-play-state:paused}   /* 悬停与键盘焦点都暂停（遥控翻页时用 Tab 停在某行也能读全） */
 @keyframes asecUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
-@media (prefers-reduced-motion:reduce){.asec-track.scroll{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.stream-board.scroll{animation:none!important}}
 .zsec{margin-bottom:9px}
 .zsec-hd{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px}
 .zsec-hd .gd{font-size:var(--tw-fs-micro);font-weight:800;color:var(--tw-on-color);border-radius:var(--tw-radius-badge);padding:2px 7px}
@@ -181,14 +193,14 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 /* ---------- 底栏四块（2026-11-06）：每块独立玻璃卡，各自滚动、各自暂停 ---------- */
 /* 浮层间距：所有悬浮区块之间统一 16px 沟槽（产品负责人：不能全部粘在一起）。
    左栏占 [14,238]、右侧占 [1552,1904]，所以底栏必须从 254 起、到 1536 止——原来写死 left:180 与左栏重叠 58px */
-.dock{position:absolute;left:calc(var(--tw-float-gap) * 2 + var(--tw-rail-w));right:calc(var(--tw-float-gap) * 2 + var(--tw-stream-w));bottom:14px;height:172px;display:grid;grid-template-columns:236px minmax(0,1.12fr) minmax(0,1.02fr) minmax(0,.92fr);gap:var(--tw-float-gap);z-index:var(--tw-z-dock)}
+.dock{position:absolute;left:calc(var(--tw-float-gap) * 2 + var(--tw-rail-w));right:calc(var(--tw-float-gap) * 2 + var(--tw-stream-w));bottom:14px;height:172px;display:grid;grid-template-columns:236px minmax(0,1.25fr) minmax(0,1.15fr);gap:var(--tw-float-gap);z-index:var(--tw-z-dock)}
 .dk{display:flex;flex-direction:column;background:var(--tw-glass-panel);backdrop-filter:var(--tw-blur) var(--tw-sat);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);box-shadow:var(--tw-shadow-card);overflow:hidden}
 .dk>header{display:flex;align-items:baseline;gap:8px;padding:7px 11px;border-bottom:1px solid var(--tw-hairline);background:var(--tw-glass-head)}
 .dk>header b{font-size:var(--tw-fs-label);color:var(--tw-ink-1);white-space:nowrap}
 .dk>header .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dk-view{flex:1;overflow:hidden;position:relative;-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent)}
 .dk-track{display:flex;flex-direction:column;will-change:transform;animation:dkUp 26s linear infinite}
-.dk:hover .dk-track,.dk:focus-within .dk-track{animation-play-state:paused}
+.dk:hover .dk-track,.dk:focus-within .dk-track,.nodepanel:hover .dk-track,.nodepanel:focus-within .dk-track{animation-play-state:paused}   /* 组态物联挪到右列后，悬停暂停必须跟着走 */
 @keyframes dkUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
 @media (prefers-reduced-motion:reduce){.dk-track{animation:none!important}}
 /* 106 下钻时底栏右侧要让位给更宽的区域面板（352 而不是 296）；非 106 房间整条底栏隐藏 */
@@ -285,13 +297,13 @@ body[data-zone-dock="1"] .dock{right:calc(var(--tw-float-gap) * 2 + var(--tw-pan
 
 /* ---- 左栏四张数据表（透明克制，替代原 KPI 五行） ---- */
 .tables{display:flex;flex-direction:column;gap:9px}
-.dtable{background:rgba(255,255,255,.66);border:1px solid rgba(255,255,255,.92);border-radius:var(--tw-radius-chip);padding:8px 10px 7px;box-shadow:0 6px 18px rgba(15,40,80,.06)}
+.dtable{background:rgba(255,255,255,.66);border:1px solid rgba(255,255,255,.92);border-radius:var(--tw-radius-chip);padding:7px 10px 6px;box-shadow:0 6px 18px rgba(15,40,80,.06)}
 .dtable>header{display:flex;align-items:baseline;gap:6px;margin-bottom:5px}
 .dtable>header b{font-size:var(--tw-fs-label);color:var(--tw-ink-1)}
 .dtable>header .src{margin-left:auto;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dtable>header .src.err{color:var(--tw-tint-abn-fg)}
 .dtable table{width:100%;border-collapse:collapse;font-size:var(--tw-fs-label)}
-.dtable td{padding:3px 0;border-top:1px solid rgba(237,242,248,.85);color:var(--tw-ink-3)}
+.dtable td{padding:2.5px 0;border-top:1px solid rgba(237,242,248,.85);color:var(--tw-ink-3)}
 .dtable tr:first-child td{border-top:0}
 .dtable td.v{text-align:right;font-variant-numeric:tabular-nums;color:var(--tw-ink-1);font-weight:700;white-space:nowrap}
 .dtable td.pct{text-align:right;width:42px;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums}
@@ -301,7 +313,7 @@ body[data-zone-dock="1"] .dock{right:calc(var(--tw-float-gap) * 2 + var(--tw-pan
 .dtable tr.warn td.v{color:var(--tw-st-alarm)}
 .dtable tr.due td.v{color:var(--tw-st-warn)}
 .dtable tr.ok td.v{color:var(--tw-tint-ok-fg)}
-.dtable>footer{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums}
+.dtable>footer{display:flex;align-items:center;gap:5px;margin-top:3px;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums}
 .dtable>footer .d.up{color:var(--tw-color-okGreen)}.dtable>footer .d.down{color:var(--tw-color-alertRed)}
 .dtable .na{color:var(--tw-st-na)}
 .rail-foot{margin-top:auto}
@@ -331,11 +343,16 @@ body[data-full="1"] .rail,body[data-full="1"] .stream,body[data-full="1"] .zonep
 /* ---- 3D 图表容器（G2 画在 canvas 里，容器只负责给宽与高；高度必须与 JS 传的 height 一致，
        否则 sizeOf 判定"太矮"就跳过绘制，图上什么都不留）---- */
 .tw-chart{position:relative;width:100%;min-height:20px}
-.dtable .tw-chart{height:88px;margin:4px 0 1px;padding-top:5px;border-top:1px dashed var(--tw-hairline)}
 .stream .tw-chart{height:104px;padding:8px 12px 2px;border-bottom:1px solid var(--tw-hairline)}
 .dk .tw-chart{height:88px;margin:0 0 4px}
 #dkDevices{padding:8px 10px 6px}
-#dkNodes .tw-chart{height:62px}
+.nodepanel>header{display:flex;align-items:baseline;gap:8px;padding:7px 11px;border-bottom:1px solid var(--tw-hairline);background:var(--tw-glass-head)}
+.nodepanel>header b{font-size:var(--tw-fs-label);color:var(--tw-ink-1);white-space:nowrap}
+.nodepanel>header .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nodepanel .th-wrap{padding:8px 10px 2px}
+.nodepanel .tw-chart{height:74px}
+.np-view{flex:1;min-height:0;overflow:hidden;position:relative;padding:2px 0;
+ -webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent)}
 .zonepanel .tw-chart{height:92px;margin:0 0 8px}
 #chartZoneSamples{height:132px;margin:0 0 6px}
 .dk-total-only{grid-template-columns:1fr 1fr}

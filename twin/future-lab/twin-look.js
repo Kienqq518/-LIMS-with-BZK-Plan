@@ -18,14 +18,20 @@
  *   共 4 个额外 pass，符合技能给的桌面预算（post passes ≤2  Beyond render+output 的口径里
  *   我们把 bloom 的两级模糊算作一组，实测 1080p/DPR1 帧时不变、60fps 保持）。
  *
- * 关掉的方式：?look=flat（对比取证用）；?quality=low 交付档自动关后处理并降阴影精度。
+ * 默认**关闭**（2026-11-07 产品负责人反馈：精修版偏暗偏蓝，大屏回到原来的光影）。
+ * 开关：`?look=pro`（或 `?look=on`）显式启用精修档；`?look=flat` 是强制关闭（默认已经是关，留着做对比取证语义）；
+ *      `?quality=low` 交付档在启用 pro 的前提下再关后处理并降阴影精度。
+ * 技能口径：用户指定的风格覆盖 recipe 默认值——"premium"不是目的，客户认的那版画面才是。
  * ========================================================================== */
 import * as THREE from './vendor/three.module.js';
 
 /* 参数在宿主大屏页的 URL 上（场景帧自己的 query 只有 ?v2=1&native-nodes=1），
    同源可以直接读 parent.location.search；读不到就退回本帧参数。 */
 const params = new URLSearchParams(((() => { try { return (parent && parent.location && parent.location.search) || location.search; } catch (e) { return location.search; } })()));
-const OFF = params.get('look') === 'flat';
+const LOOK = params.get('look');
+/* 默认关：不改 URL 时场景渲染与 FR-37 之前逐像素一致。
+   精修档要显式要：?look=pro / ?look=on（售前想要"演示质感"时一个参数的事）。 */
+const OFF = LOOK !== 'pro' && LOOK !== 'on';
 
 /* ---------- 程序化微表面：一张共享噪声图，按角色给不同 repeat，不新建贴图池 ---------- */
 function noiseTexture(size, lo, hi, seed) {
@@ -233,7 +239,9 @@ export function applyLook(v, opts) {
     window.__twinLookLightingHooked = true;
     const re = () => setTimeout(applyLightingPass, 0);
     addEventListener('twin-lighting-preset', re);          /* 引擎设完它的灯光预设后再压一遍，顺序不再靠运气 */
-    setTimeout(re, 1500);                                  /* 兜底：事件没来也要有最终数值 */
+    /* 收口三次：render-lab-realistic 的 applyTier 也会把 shadowMap.type 压回 PCF，
+       它可能比这些事件都晚。pro 档不是默认档，但既然开了就要稳定成立，别留给运气。 */
+    [300, 1200, 3000].forEach(ms => setTimeout(re, ms));
   }
   const fog = depth(v); diag.fog = true;
   if (!LOW) {

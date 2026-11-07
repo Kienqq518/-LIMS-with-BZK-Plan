@@ -16,7 +16,7 @@ p.on('console',m=>{if(m.type()==='error'&&!/favicon/.test(m.text()))err.push('co
 await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
 await p.waitForTimeout(15000);
 const st=await p.evaluate(()=>{
-  const cs=(sel)=>getComputedStyle(document.querySelector(sel));
+  const cs=(sel,pseudo)=>getComputedStyle(document.querySelector(sel),pseudo||null);   /* 第二个参数取伪元素：标题的立体厚度在 ::before 上 */
   const R=(sel)=>{const e=document.querySelector(sel);if(!e)return null;const r=e.getBoundingClientRect();return {x:Math.round(r.x),r:Math.round(r.right),y:Math.round(r.y),b:Math.round(r.bottom)};};
   const tb=cs('.topbar');
   return {
@@ -31,7 +31,7 @@ const st=await p.evaluate(()=>{
     titleBox:R('.title'), acts:R('.acts'), clock:R('.clock'),
     clockBg:cs('.clock').backgroundColor, clockBorder:cs('.clock').borderTopWidth,
     railTop:R('.rail').y, topbarB:R('.topbar').b,
-    shadows:{title:cs('.title').textShadow!=='none', mode:cs('.mode').textShadow!=='none', zsel:cs('.zsel').textShadow!=='none', clock:cs('.clock').textShadow!=='none'},
+    shadows:{title:cs('.title','::before').textShadow!=='none'||cs('.title').textShadow!=='none', mode:cs('.mode').textShadow!=='none', zsel:cs('.zsel').textShadow!=='none', clock:cs('.clock').textShadow!=='none'},
     licCount:document.querySelectorAll('.lic').length, licOnBg:cs('.lic.on').backgroundColor,
     topbarText:document.querySelector('.topbar').innerText.replace(/\s+/g,' ')
   };

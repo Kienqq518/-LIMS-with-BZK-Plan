@@ -23,7 +23,7 @@
     <button class="mode active" data-mode="S1">实验室总览</button>
   </nav>
 
-  <h1 class="title">未来实验室数字孪生</h1>
+  <h1 class="title" data-text="未来实验室数字孪生">未来实验室数字孪生</h1>
 
   <nav class="acts" aria-label="渲染图层与演示控制">
     <div class="layers" role="group" aria-label="渲染图层">
@@ -49,7 +49,7 @@
   <div class="tables" id="tables"></div>
 <span class="rc-cap">调度任务</span></div>
   </div>
-  <div class="cycle" id="cycleBox" title="无人化任务循环剧本：小机器人按调度任务明细顺序在各工位间行走停靠">
+  <div class="cycle" id="cycleBox">
     <div class="cy-top"><b id="cyNow">–</b><span id="cyLabel">无人化循环</span></div>
     <div class="cy-bar"><i id="cyBar"></i></div>
     <div class="cy-sub" id="cySub">等待剧本</div>
@@ -62,14 +62,26 @@
 <main class="stage">
   <iframe id="scene" src="tour-space-v3-1.html?v2=1&native-nodes=1" title="未来实验室三维场景" allow="fullscreen"></iframe>
 
-  <section class="stream" id="alarmStream" aria-live="polite" aria-label="告警流（滚动）">
-    <header>
-      <div class="sh-top"><b>告警流</b><span id="streamMeta">今日 – 条</span></div>
-      <div class="sh-legend"><span>A 异常</span><span>B 阻塞·瓶颈</span><span>C 校准期限</span></div>
-    </header>
-    <div class="tw-chart" id="chartAlarms" role="img" aria-label="告警分级 3D 柱状图：A/B/C 三级的今日条数与未解除条数"></div>
-    <div class="stream-view"><div class="stream-board" id="streamTrack"></div></div>
-  </section>
+  <!-- 右列（2026-11-07 改版）：上移到 top:14 填满原来空着的 112px；
+       告警流高度固定、不再切 A/B/C 三区，按发生时间平铺；组态物联信息挪到告警流下方。 -->
+  <div class="rcol" id="rightCol">
+    <section class="stream" id="alarmStream" aria-live="polite" aria-label="告警流（按发生时间滚动）">
+      <header>
+        <div class="sh-top"><b>告警流</b><span id="streamMeta">今日 – 条</span></div>
+        <div class="sh-filter" role="group" aria-label="告警筛选">
+          <button class="mini" data-sfilter="open">只看未解除</button>
+          <button class="mini active" data-sfilter="all">全部</button>
+        </div>
+      </header>
+      <div class="tw-chart" id="chartAlarms" role="img" aria-label="告警分级 3D 柱状图：A/B/C 三级的今日条数与未解除条数"></div>
+      <div class="stream-view"><div class="stream-board" id="streamTrack"></div></div>
+    </section>
+    <section class="nodepanel" id="iotPanel" aria-label="组态物联节点">
+      <header><b>组态物联节点</b><span class="src" id="dkNodesCnt">—</span></header>
+      <div class="th-wrap"><div class="tw-chart th" id="chartTH" role="img" aria-label="温湿度节点近 16 点 3D 折线带：温度与湿度两条序列"></div><div class="th-cap" id="chartTHCap">温湿度时序</div></div>
+      <div class="np-view"><div class="dk-track" id="dkNodesTrack"></div></div>
+    </section>
+  </div>
   <!-- 区域视图五类信息（2026-11-05 信息模型）：设备 / 环境数据 / 任务统计 / 正在运行的任务 / 告警 -->
   <aside class="zonepanel" id="zonePanel" hidden aria-label="区域运行面板">
     <header><b id="zpName">–</b><span id="zpMeta">–</span><button class="close" id="zpClose" aria-label="返回总览">×</button></header>
@@ -91,8 +103,8 @@
     </div>
   </aside>
 
-  <!-- 底栏四块（2026-11-06 产品负责人方案）：① 设备信息统计 ② 无人化调度任务队列 ③ 委托单试验项完成情况 ④ 组态物联节点 -->
-  <footer class="dock" id="taskStrip" aria-label="底部运行信息四块（滚动）">
+  <!-- 底栏三块（2026-11-07：④ 组态物联节点挪到右列告警流下方）：① 设备信息统计 ② 无人化调度任务队列 ③ 委托单试验项完成情况 -->
+  <footer class="dock" id="taskStrip" aria-label="底部运行信息三块（滚动）">
     <section class="dk" id="dkDevices" aria-label="设备信息统计">
       <header><b>设备信息统计</b><span class="src" id="dkDevSrc">数采</span></header>
       <div class="tw-chart" id="chartDevices" role="img" aria-label="设备状态 3D 柱状图：在测/就绪/异常/待机/停止 五档台数"></div>
@@ -105,11 +117,6 @@
     <section class="dk" id="dkItems" aria-label="委托单试验项完成情况">
       <header><b>试验项完成情况</b><span class="src" id="dkItemsHead">—</span></header>
       <div class="dk-view"><div class="dk-track" id="dkItemsTrack"></div></div>
-    </section>
-    <section class="dk" id="dkNodes" aria-label="组态物联节点">
-      <header><b>组态物联节点</b><span class="src" id="dkNodesCnt">—</span></header>
-      <div class="th-wrap"><div class="tw-chart th" id="chartTH" role="img" aria-label="温湿度节点近 16 点 3D 折线带：温度与湿度两条序列"></div><div class="th-cap" id="chartTHCap">温湿度时序</div></div>
-      <div class="dk-view"><div class="dk-track" id="dkNodesTrack"></div></div>
     </section>
   </footer>
 

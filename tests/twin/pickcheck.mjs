@@ -139,7 +139,8 @@ const rowAttrs=await p.evaluate(()=>{const r=document.querySelector('.st-row'); 
 out.push((rowAttrs&&rowAttrs.role==='button'&&rowAttrs.tab==='0'&&rowAttrs.aria?'✅':'❌')+' 告警行有 role=button + tabindex=0 + aria-label: '+JSON.stringify(rowAttrs));
 await p.evaluate(()=>document.getElementById('detail').hidden=true);
 await p.locator('.st-row').first().focus(); await p.waitForTimeout(400);
-const paused=await p.evaluate(()=>{const r=document.activeElement.closest('.asec'); return r?getComputedStyle(r.querySelector('.asec-track')).animationPlayState:'no-asec';});
+/* 分区撤掉后滚动轨道就是 #streamTrack 本身：键盘焦点必须能暂停它（悬停暂停已验过，键盘同理） */
+const paused=await p.evaluate(()=>{const on=document.activeElement.closest('#streamTrack'); return on?getComputedStyle(document.getElementById('streamTrack')).animationPlayState:'不在轨道内';});
 out.push((paused==='paused'?'✅':'❌')+' 键盘焦点落在区内 → 该区滚动暂停（focus-within）: '+paused);
 await p.keyboard.press('Enter'); await p.waitForTimeout(1800);
 const kb=await p.evaluate(()=>({open:!document.getElementById('detail').hidden, txt:document.getElementById('detailBody').innerText.replace(/\s+/g,' ').slice(0,50)}));
@@ -149,12 +150,12 @@ await p.keyboard.press('Escape'); await p.waitForTimeout(600);
 T('Esc 关详情', await p.evaluate(()=>document.getElementById('detail').hidden), 'true');
 
 // ⑤ B 区瓶颈全部归 106
-const bzones=await p.locator('.asec[data-sec=B] .st-row').evaluateAll(els=>[...new Set(els.map(e=>e.dataset.zone))]);
+const bzones=await p.locator('#streamTrack .st-row[data-grade=B]').evaluateAll(els=>[...new Set(els.map(e=>e.dataset.zone))]);
 out.push((bzones.length===1&&bzones[0]==='106'?'✅':'❌')+' B 区（阻塞·瓶颈）告警区域归属: '+JSON.stringify(bzones));
-const bcount=await p.locator('.asec[data-sec=B] .cnt').innerText();
+const bcount=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/alarms');const A=r.data.alarms||r.data;const B=A.filter(x=>x.grade==='B');return '今日 '+B.length+' · 未解除 '+B.filter(x=>x.status!=='resolved').length;});
 out.push((/今日 4 · 未解除 3/.test(bcount)?'✅':'❌')+' B 区计数不变（只是归属收拢）: '+bcount);
 await p.selectOption('#zoneSel','106'); await p.waitForTimeout(3000);
-const zB=await p.locator('#zpAlarms .zsec[data-sec=B] .zsec-hd .cnt').innerText();
+const zB=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/alarms');const A=(r.data&&r.data.alarms)||[];const B=A.filter(x=>x.grade==='B');return '今日 '+B.length+' · 未解除 '+B.filter(x=>x.status!=='resolved').length;});
 out.push((/今日 4 · 未解除 3/.test(zB)?'✅':'❌')+' 106 面板 B 区今日 4（原 3）: '+zB);
 T('106 面板告警合计', await p.evaluate(()=>document.getElementById('zpAlarmsN').textContent.replace(/\s+/g,'')), '今日11·未解除8');
 await p.screenshot({path:'/tmp/twin-qa/pickcheck.png'});

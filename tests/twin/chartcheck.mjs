@@ -32,7 +32,8 @@ const paint=await p.evaluate(()=>[...document.querySelectorAll('canvas')].map(c=
   const x=c.getContext('2d'); if(!x) return {w:c.width,h:c.height,n:-1};
   try{const d=x.getImageData(0,0,c.width,c.height).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>10)n++;
     return {w:c.width,h:c.height,n};}catch(e){return {w:c.width,h:c.height,n:-2};}}));
-ok(paint.length===7,`S1 出图数量 =7（左栏 4 柱 + 告警分组柱 + 设备柱 + 温湿度折线带）：实得 ${paint.length}`);
+ok(paint.length===3,`S1 出图数量 =3（告警分组柱 + 设备柱 + 温湿度折线带）：实得 ${paint.length}`);
+ok(await p.evaluate(()=>document.querySelectorAll('.rail .tw-chart').length)===0,'左栏不再挂图（2026-11-07：图表去掉、左栏加宽缩短、不出滚动条）');
 ok(paint.every(c=>c.n>200),`每张图都画出内容（非透明像素 >200）：${paint.map(c=>c.n).join(',')}`);
 const errs=await p.evaluate(()=>window.__twinCharts.state.errors);
 ok(errs.length===0,'图表层无渲染错误: '+JSON.stringify(errs).slice(0,160));
@@ -42,16 +43,16 @@ const list=await p.evaluate(()=>window.__twinCharts.list());
 const sig=n=>{const r=list.find(x=>x.name===n);return r?JSON.parse(r.sig):null;};
 const tbl=await p.evaluate(()=>{const g=k=>{const s=document.querySelector(`.dtable[data-key="${k}"]`);if(!s)return null;
   return [...s.querySelectorAll('tbody tr')].map(tr=>({label:tr.children[0].innerText.replace(/\s+/g,'').replace(/(LIMS)$/,''),v:+tr.children[1].innerText}))};return {entrust:g('entrust'),samples:g('samples'),testItems:g('testItems'),dispatch:g('dispatch')};});
-const eq=(arr,pairs)=>pairs.every(([i,k])=>arr[i].v===tbl[k][tbl[k].length-1-i]?.v||arr[i].v===tbl[k].find(r=>r.label.includes(arr[i].k))?.v);
-const ent=sig('entrust'),sam=sig('samples'),ti=sig('testItems'),di=sig('dispatch');
-ok(ent && ent[0].v===tbl.entrust.find(r=>r.label.includes('电力电缆')).v && ent[1].v===tbl.entrust.find(r=>r.label.includes('安全工器具')).v,
-  `委托任务柱 == 表格（${ent&&ent.map(x=>x.v).join('/')} vs ${tbl.entrust.map(r=>r.v).join('/')}）`);
-ok(sam && sam.map(x=>x.v).join(',')===tbl.samples.map(r=>r.v).join(','),
-  `样品流转柱 == 表格（${sam&&sam.map(x=>x.v).join('/')} vs 表 ${tbl.samples.map(r=>r.v).join('/')}）`);
-ok(ti && ti.map(x=>x.v).join(',')===tbl.testItems.slice(1,4).map(r=>r.v).join(','),
-  `试验项目柱 == 表格前三段（${ti&&ti.map(x=>x.v).join('/')} vs ${tbl.testItems.slice(1,4).map(r=>r.v).join('/')}）`);
-ok(di && di[0].v===tbl.dispatch.find(r=>r.label.includes('已完成')).v,
-  `调度柱·已完成 == 表格（${di&&di[0].v} vs ${tbl.dispatch.find(r=>r.label.includes('已完成'))&&tbl.dispatch.find(r=>r.label.includes('已完成')).v}）`);
+/* 左栏四张表只留数字：柱状图把同一批数字再画一遍，还各吃掉 88px 高度——
+   产品负责人要求左栏加宽、缩短、不出滚动条，所以这里反过来断言"图上没有图"，
+   但表格数字与接口必须仍然一致（口径没被顺手改掉）。 */
+const tblOk=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/lab-status');const P=r.data.panels;
+  const g=k=>[...document.querySelectorAll(`.dtable[data-key="${k}"] tbody tr`)].map(tr=>+tr.children[1].innerText);
+  return {entrust:g('entrust').join(',')===`${P.entrust.periods.day.total},${P.entrust.periods.day.power},${P.entrust.periods.day.safety}`,
+    samples:g('samples').join(',')===`${P.samples.periods.day.received},${P.samples.periods.day.testing},${P.samples.periods.day.done}`,
+    testItems:g('testItems').slice(0,4).join(',')===`${P.testItems.periods.day.testing+P.testItems.periods.day.pending+P.testItems.periods.day.done},${P.testItems.periods.day.testing},${P.testItems.periods.day.pending},${P.testItems.periods.day.done}`};});
+ok(tblOk.entrust&&tblOk.samples&&tblOk.testItems,`左栏表格数字仍等于接口（撤图不许动口径）: ${JSON.stringify(tblOk)}`);
+
 /* 底栏块2 不出图（172px 里塞 96px 环形会把滚动明细压到 40px，dockcheck 实测报"任务行找不到"）：
    改查设备柱五档相加 == 建档合计，并断言队列图确实没被塞回来 */
 const dv=sig('devices');
@@ -59,8 +60,9 @@ const dkTotal=await p.evaluate(()=>{const c=document.querySelector('#dkDevBody .
 ok(dv && dv.length===5 && dv.reduce((s,d)=>s+d.v,0)===dkTotal,`设备柱五档相加 == 建档合计（${dv&&dv.map(x=>x.v).join('+')} = ${dv&&dv.reduce((s,d)=>s+d.v,0)} vs ${dkTotal}）`);
 ok(!list.some(x=>x.name==='queue'),'底栏队列块不再塞图，清单保持完整');
 const al=sig('alarms');
-const cnt=await p.evaluate(()=>[...document.querySelectorAll('.asec>header .cnt')].map(e=>e.innerText.match(/\d+/g).map(Number)));
-ok(al && al.every((g,i)=>g.s[0].v===cnt[i][0]&&g.s[1].v===cnt[i][1]),`告警分组柱 == 三分区表头计数（${al&&al.map(g=>g.s.map(x=>x.v).join('/')).join(' ')} vs ${cnt.map(c=>c.join('/')).join(' ')}）`);
+const cnt=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/alarms');const A=r.data.alarms||r.data;
+  return ['A','B','C'].map(g=>{const l=A.filter(x=>x.grade===g);return [l.length,l.filter(x=>x.status!=='resolved').length];});});
+ok(al && al.every((g,i)=>g.s[0].v===cnt[i][0]&&g.s[1].v===cnt[i][1]),`告警分组柱 == 接口分级计数（分区撤了，柱图仍要等于数据：${al&&al.map(g=>g.s.map(x=>x.v).join('/')).join(' ')} vs ${cnt.map(c=>c.join('/')).join(' ')}）`);
 
 // ④ 温湿度末点钉住当前读数
 const th=await p.evaluate(async()=>{
@@ -83,12 +85,6 @@ if(switched&&switched.x){ await p.mouse.click(switched.x,switched.y); await p.wa
 const after=await p.evaluate(()=>({cap:(document.getElementById('chartTHCap')||{}).textContent,act:[...document.querySelectorAll('.nd-row.th-active')].map(x=>x.dataset.node)}));
 ok(/温湿度01/.test(after.cap||'')&&new Set(after.act).size===1 && after.act[0]==='IOT-102-TH-01',`点温湿度节点行 → 折线带换到该节点：cap="${after.cap}" active=${[...new Set(after.act)].join(',')}`);
 
-// ⑥ 周期切换跟着变
-const before=(await p.evaluate(()=>window.__twinCharts.list())).find(x=>x.name==='entrust').sig;
-await p.click('.seg[data-period="month"]'); await p.waitForTimeout(2500);
-const nowSig=await p.evaluate(()=>window.__twinCharts.list().find(x=>x.name==='entrust').sig);
-ok(nowSig!==before && JSON.parse(nowSig)[0].v>100,`周期切到本月 → 图表数字跟着换（${JSON.parse(before)[0].v} → ${JSON.parse(nowSig)[0].v}）`);
-await p.click('.seg[data-period="day"]'); await p.waitForTimeout(1800);
 
 // ⑦ 下钻出图
 await p.selectOption('#zoneSel','106'); await p.waitForTimeout(4200);
@@ -96,6 +92,22 @@ const z106=await p.evaluate(()=>window.__twinCharts.list().map(x=>x.name));
 ok(z106.includes('zstats'),'106 下钻出任务统计柱: '+z106.join(','));
 await p.selectOption('#zoneSel','103'); await p.waitForTimeout(4200);
 const z103=await p.evaluate(()=>({names:window.__twinCharts.list().map(x=>x.name),sig:window.__twinCharts.list().find(x=>x.name==='zstats')}));
+/* ⑥ 周期切换跟着变（左栏撤图后，这条由区域面板的统计柱来验——它同样是"图必须跟着口径走"） */
+const per0=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='zstats');return r?JSON.parse(r.sig):null;});
+/* 周期切换器存在于两处：左栏可见时是 .rail .seg，下钻到非 106 时是 #zpPeriod .seg。
+   必须按当前视图挑可见的那个——点隐藏的那个 Playwright 会重试到 30s 超时（本轮踩过）。 */
+const segOf=async(v)=>{
+  const sel=await p.evaluate((val)=>{
+    const rail=document.querySelector('.rail');
+    return ((rail && !rail.hidden) ? '.rail ' : '#zpPeriod ') + '[data-period="' + val + '"]';
+  }, v);
+  await p.click(sel); await p.waitForTimeout(2600);
+};
+await segOf('month');
+const per1=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='zstats');return r?JSON.parse(r.sig):null;});
+ok(per0&&per1&&JSON.stringify(per0)!==JSON.stringify(per1)&&per1[0].v>per0[0].v,
+  `周期切到本月 → 面板统计柱数字跟着换（已完成 ${per0&&per0[0].v} → ${per1&&per1[0].v}）`);
+await segOf('day');
 ok(z103.names.includes('zstats')&&/检测中/.test(z103.sig.sig),`103 下钻出检测项目数柱（口径随 viewProfile.blocks 走）: ${z103.sig.sig.slice(0,52)}`);
 await p.selectOption('#zoneSel','102'); await p.waitForTimeout(4200);
 const sm=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='zsamples');return r?JSON.parse(r.sig):null;});
@@ -108,7 +120,7 @@ ok(a11y.noLabel===0,`每张图都有 role=img + aria-label（${a11y.total-a11y.n
 const p2=await b.newPage({viewport:{width:1920,height:1080},reducedMotion:'reduce'});
 await p2.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});await p2.waitForTimeout(15000);
 const rm=await p2.evaluate(()=>({n:document.querySelectorAll('canvas').length,errs:window.__twinCharts.state.errors.length}));
-ok(rm.n===7&&rm.errs===0,`prefers-reduced-motion 下照样出图（${rm.n} 张，错误 ${rm.errs}）——图表不靠动画表意`);
+ok(rm.n===3&&rm.errs===0,`prefers-reduced-motion 下照样出图（${rm.n} 张，错误 ${rm.errs}）——图表不靠动画表意`);
 await p2.close();
 
 // ⑨ 纪律：不许把 hex 塞进数据当 encode.color

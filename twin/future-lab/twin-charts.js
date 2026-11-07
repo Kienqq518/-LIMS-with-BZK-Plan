@@ -127,8 +127,11 @@
   }
   function draw(el, name, kind, sig, specOf) {
     const w = sizeOf(el);
-    if (!w) { registry.set(name, { name, kind, sig: 'pending', pending: true }); return false; }
-    const rec = registry.get(name);
+    if (!w) { registry.set(name, { name, kind, sig: 'pending', pending: true, el }); return false; }
+    let rec = registry.get(name);
+    /* 身份 = 名字 + 容器元素：106 的 #chartZoneStats 与 103 的 #chartZoneItems 都叫 zstats，
+       只按名字复用时，切房间会把更新打到上一个（现已隐藏的）容器上，新容器永远画不出 canvas。 */
+    if (rec && rec.el && rec.el !== el) { if (rec.chart) { try { rec.chart.destroy(); } catch (e) { } } registry.delete(name); rec = null; }
     if (rec && !rec.pending && rec.sig === sig && rec.w === w) return true;
     let spec; try { spec = specOf(); } catch (e) { state.errors.push(name + ' spec: ' + e.message); return false; }
     const h = spec.__h; delete spec.__h;
@@ -139,12 +142,11 @@
       let c = rec && rec.chart && rec.kind === kind && rec.w === w ? rec.chart : null;
       if (c) { c.options(spec); c.render(); state.updated++; }
       else {
-        if (rec && rec.chart) { try { rec.chart.destroy(); } catch (e) { } }
         c = new global.G2.Chart({ container: el, width: w, height: h, autoFit: false });
         c.options(spec); c.axis(false); c.legend(false); c.render();
         state.rendered++;
       }
-      registry.set(name, { name, kind, sig, chart: c, w });
+      registry.set(name, { name, kind, sig, chart: c, w, el });
       return true;
     } catch (e) { state.errors.push(name + ': ' + e.message); registry.delete(name); return false; }
   }

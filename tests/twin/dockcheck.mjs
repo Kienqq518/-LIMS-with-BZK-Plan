@@ -16,8 +16,8 @@ await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
 await p.waitForTimeout(16000);
 
 // 结构
-T('底栏块数', await p.locator('.dock .dk').count(), 4);
-T('块标题', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '设备信息统计|无人化调度任务|试验项完成情况|组态物联节点');
+T('底栏块数（④ 组态物联已挪到右列告警流下方）', await p.locator('.dock .dk').count(), 3);
+T('块标题', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '设备信息统计|无人化调度任务|试验项完成情况');
 
 // ① 设备信息统计：六格 + 稼动率 + 机器人分工
 /* 块1 结构（2026-11-07 FR-36）：五档状态改 3D 柱（数字进柱顶标签），只剩「合计建档 / 稼动中」两格数字。
@@ -86,13 +86,13 @@ const nd=await p.evaluate(()=>[...document.querySelectorAll('#dkNodesTrack .nd-r
 out.push((nd.length>=16&&nd.every((x,i)=>i===0||x.rm>=nd[i-1].rm)?'✅':'❌')+' 块4 按房间 101→110 排序滚动: '+nd.slice(0,6).map(x=>x.rm+x.nm).join(' '));
 out.push((nd.filter(x=>/画面未接入/.test(x.rd)).length===4?'✅':'❌')+' 块4 视觉点位诚实标注「画面未接入」（4 个摄像头）: '+nd.filter(x=>/画面未接入/.test(x.rd)).length);
 out.push((nd.filter(x=>/℃|lx|正常|无人|有人|触点|已触发|超限/.test(x.rd)).length>=12?'✅':'❌')+' 块4 其余点位显示实时读数（与场景节点层同源）');
-const cnt=await p.evaluate(()=>document.getElementById('dkNodesCnt').innerText);
+const cnt=await p.evaluate(()=>document.getElementById('dkNodesCnt').innerText);   /* 组态物联现在在右列 .nodepanel 里，id 不变 */
 out.push((/16 个点位 · 按房间排序/.test(cnt)?'✅':'❌')+' 块4 头部计数: '+cnt);
 
 // 点击与键盘落点（冻结滚动后挑窗口内的行）
 const land=await p.evaluate(()=>{
   document.querySelectorAll('.dk-track').forEach(t=>t.style.animation='none');
-  const pick=(sel)=>{const tr=document.querySelector(sel); const v=tr.closest('.dk').querySelector('.dk-view').getBoundingClientRect();
+  const pick=(sel)=>{const tr=document.querySelector(sel); const box=tr.closest('.dk-view')||tr.closest('.np-view'); if(!box) return null; const v=box.getBoundingClientRect();
     return [...tr.children].filter(e=>e.dataset.cad||e.dataset.node).map(e=>({e,r:e.getBoundingClientRect()})).filter(x=>x.r.top>=v.top-1&&x.r.bottom<=v.bottom+1)[0];};
   const q=pick('#dkQueueTrack'), ti=pick('#dkItemsTrack'), nd=pick('#dkNodesTrack');
   return {qCad:q&&q.e.dataset.cad, qRole:q&&q.e.getAttribute('role'), tiCad:ti&&ti.e.dataset.cad, ndNode:nd&&nd.e.dataset.node, ndTab:nd&&nd.e.getAttribute('tabindex')};

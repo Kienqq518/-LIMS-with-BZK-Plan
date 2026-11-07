@@ -18,10 +18,10 @@ const hooks=async()=>page.evaluate(()=>{try{return document.getElementById('scen
 a('区域下拉项数', await page.locator('#zoneSel option').count(), 10);
 a('KPI 四张表', await page.locator('.dtable').count(), 4);
 a('报告份数不再展示', (await page.locator('#tables').innerText()).includes('报告'), false);
-a('告警流汇总行', (await page.locator('#streamMeta').innerText()).replace(/\s+/g,' '), '今日 13 条 · 未解除 9 · 悬停暂停');
-a('告警三分区', await page.locator('.asec').count(), 3);
-a('右侧告警流行数(三区各 3×2)', await page.locator('.st-row').count(), 18);
-a('三态徽章存在', await page.locator('.st-row .st').count(), 18);
+a('告警流汇总行', (await page.locator('#streamMeta').innerText()).replace(/\s+/g,' '), '今日 13 条 · 未解除 9 · 最新在前');
+a('告警不再切 A/B/C 三区（2026-11-07）', await page.locator('.asec').count(), 0);
+a('右侧告警流行数(13 条 ×2 无缝复制)', await page.locator('#streamTrack .st-row').count(), 26);
+a('三态徽章存在', await page.locator('#streamTrack .st-row .st').count(), 26);
 a('安灯写回按钮已删', await page.locator('[data-ack]').count(), 0);
 a('回溯按钮已随 S3 移除', await page.locator('[data-trace]').count(), 0);
 a('S3 按钮已移除', await page.locator('[data-mode=S3]').count(), 0);
@@ -74,7 +74,7 @@ await page.keyboard.press('1'); await page.waitForTimeout(1200);
 a('场景内按键1=总览(桥接转发)', await page.evaluate(()=>new URLSearchParams(location.search).get('mode')), 'S1');
 await page.keyboard.press('3'); await page.waitForTimeout(1200);
 a('按键3 已无回溯屏', await page.locator('#s3Drawer').count(), 0);
-a('告警行点击出闭环详情', await (async()=>{ await page.evaluate(()=>{document.querySelectorAll('.asec-track').forEach(t=>t.style.animationPlayState='paused');}); const rows=page.locator('.st-row'); const n=await rows.count(); let idx=0; for(let i=0;i<n;i++){const bb=await rows.nth(i).boundingBox(); if(bb&&bb.y>150&&bb.y<900){idx=i;break;} } await rows.nth(idx).click(); await page.waitForTimeout(1200); const t=(await page.locator('#detailBody').innerText()).replace(/\s+/g,' '); return /闭环状态/.test(t)&&/派至/.test(t)&&/来源系统/.test(t); })(), true);
+a('告警行点击出闭环详情', await (async()=>{ await page.evaluate(()=>{document.getElementById('streamTrack').style.animation='none';}); const rows=page.locator('.st-row'); const n=await rows.count(); let idx=0; for(let i=0;i<n;i++){const bb=await rows.nth(i).boundingBox(); if(bb&&bb.y>150&&bb.y<900){idx=i;break;} } await rows.nth(idx).click(); await page.waitForTimeout(1200); const t=(await page.locator('#detailBody').innerText()).replace(/\s+/g,' '); return /闭环状态/.test(t)&&/派至/.test(t)&&/来源系统/.test(t); })(), true);
 
 
 // 面板→场景高亮（发得出消息）

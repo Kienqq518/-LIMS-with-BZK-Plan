@@ -1,13 +1,14 @@
 /**
- * 光影材质精修守卫（FR-37，twin-look.js）
- *  ① look 真的装上了：角色 kit 命中数、灯光数值、雾窗口
- *  ② 画布必须仍然透明——合成写 alpha=1 会让"没有几何体的地方"变成不透明黑，整屏玻璃浮层被压暗（本轮真实踩过）
- *  ③ 灯光数值不许被引擎预设覆盖（顺序竞态：谁后跑谁赢）
- *  ④ 阴影：单一主光投影、PCFSoft、贴图 ≤2048（技能桌面预算）
- *  ⑤ 后处理链在场且帧时不劣化；?look=flat 与 ?quality=low 都能关
- *  ⑥ 自发光不吃雾（光点/屏幕/线路要一直清晰）
+ * 光影档守卫（FR-37 → 2026-11-07 回退后的口径）
+ * 产品负责人反馈：精修版偏暗偏蓝，大屏要回到原来的光影（图1）。
+ * 于是精修不再是默认档，而是显式交付档 ?look=pro。这个套件因此锁两件事：
+ *   ① 默认档必须**逐项等于 FR-37 之前**（灯光数值/雾/阴影/无后处理），并且与精修前的截图逐像素一致；
+ *   ② ?look=pro 仍然完整可用（六类材质角色、雾窗口、bloom、曝光回收），别把做过的工作写成死代码。
+ * 另外两条常驻教训仍然有效：合成必须透传 alpha（写 1 会把画布空白处变成不透明黑、玻璃浮层整屏压暗）；
+ * 灯光数值不许被引擎/realistic-lab 预设覆盖（顺序竞态）。
  */
 import { chromium } from 'playwright';
+import fs from 'node:fs';
 import { BASE } from './_env.mjs';
 const out=[],err=[];
 const ok=(c,m)=>out.push((c?'✅':'❌')+' '+m);
@@ -18,47 +19,75 @@ p.on('console',m=>{if(m.type()==='error'&&!/favicon|404/.test(m.text()))err.push
 await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
 await p.waitForTimeout(17000);
 const f=p.frames().find(x=>/tour-space-v3-1/.test(x.url()));
-const look=await f.evaluate(()=>{const d=window.__twinLook||{};const v=window.visual106,r=v.renderer;
- return {on:d.on,roles:d.roles,materials:d.materials,emissive:d.emissive,post:d.post,low:d.low,
-  L:d.lighting,shadowType:r.shadowMap.type,exp:+r.toneMappingExposure.toFixed(3),tm:r.toneMapping,
-  fog:!!v.scene.fog,far:v.scene.fog?v.scene.fog.far:null,near:v.scene.fog?v.scene.fog.near:null,
-  casters:(()=>{let n=0;v.scene.traverse(o=>{if(o.isLight&&o.castShadow)n++;});return n;})(),
-  rim:(()=>{let n=null;v.scene.traverse(o=>{if(o.name==='twin-rim')n=+o.intensity.toFixed(2);});return n;})(),
-  envInt:+(v.scene.environmentIntensity||0).toFixed(2)};});
-ok(look.on===true,'look 已装载（?look=flat 未开）');
-const roles=Object.entries(look.roles||{});
-ok(roles.length>=5&&look.materials>40,`材质角色 kit 命中 ${roles.length} 类 / ${look.materials} 个共享材质：${roles.map(([k,n])=>k+'×'+n).join(' ')}`);
-ok(look.roles.glass>0&&look.roles.panelDark>0&&look.roles.metal>0&&look.roles.ground>0,'玻璃 / 深色台面 / 金属 / 地面 四类都分到了角色（靠 roughness·metalness 区分，不靠色相）');
-ok(look.shadowType===2&&look.exp<=1.05,`灯光数值压过了引擎预设：shadowType=${look.shadowType}(2=PCFSoft) exposure=${look.exp}`);
-ok(look.L&&look.L.hemi<=.5&&look.L.key>=2.4&&look.rim!==null,`主/补/轮廓分工到位：key ${look.L&&look.L.key} fill ${look.L&&look.L.fill} hemi ${look.L&&look.L.hemi} rim ${look.rim}`);
-ok(look.casters<=2&&look.fog&&look.far>look.near,`投影光源 ${look.casters} 盏（技能桌面预算 ≤2；lab 开启时原 sun 不可见），雾窗口 near ${look.near&&look.near.toFixed(1)} → far ${look.far&&look.far.toFixed(1)}`);
-ok(look.envInt>=.6,`IBL 强度抬到 ${look.envInt}（金属与玻璃的反射是"渲染感"的主要来源）`);
 
-/* ② 画布透明度：这是本轮最贵的一条教训，必须常驻断言 */
-/* WebGL 画布不能用 2d context 取像素；renderer 开了 preserveDrawingBuffer，直接 gl.readPixels（y 轴翻转） */
-const alpha=await f.evaluate(()=>{const v=window.visual106,gl=v.renderer.getContext();
-  const w=gl.drawingBufferWidth,h=gl.drawingBufferHeight,px=(x,y)=>{const d=new Uint8Array(4);gl.readPixels(x,h-1-y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,d);return [...d];};
-  return {corner:px(3,h-4),mid:px(Math.round(w*.5),Math.round(h*.5)),size:w+'x'+h};});
-ok(alpha.corner[3]<24,`画布空白处仍然透明（alpha=${alpha.corner[3]}，${alpha.size}）——合成写 alpha=1 会把这里变成不透明黑，整屏玻璃浮层瞬间被压暗`);
-ok(alpha.mid[3]>200 || alpha.mid[3]<24,`画面中心有模型且不透明（alpha=${alpha.mid[3]} rgb=${alpha.mid.slice(0,3).join(',')}）`);
+/* —— ① 默认档 = 原光影 —— */
+const d=await f.evaluate(()=>{const v=window.visual106,r=v.renderer,L=window.__twinLook||{};
+  let hemi=null,key=null,fill=null,rim=null;
+  v.scene.traverse(o=>{if(o.isHemisphereLight)hemi=+o.intensity.toFixed(2);
+    else if(o.isDirectionalLight){if(o.name==='twin-rim')rim=+o.intensity.toFixed(2);
+      else if(o.castShadow)key=+o.intensity.toFixed(2);else if(o.position.x>20)fill=+o.intensity.toFixed(2);}});
+  return {on:L.on,roles:Object.keys(L.roles||{}).length,fog:!!v.scene.fog,exp:+r.toneMappingExposure.toFixed(2),
+    shadowType:r.shadowMap.type,hemi,key,fill,rim,env:+(v.scene.environmentIntensity||0).toFixed(2),
+    postActive:!!(L.api&&L.api.on)};});
+ok(d.on===false,'默认档不加载精修（?look=pro 才开）：__twinLook.on='+d.on);
+ok(d.fog===false&&d.postActive===false&&d.roles===0,`默认档无雾、无后处理、未做角色改写：fog=${d.fog} post=${d.postActive} roles=${d.roles}`);
+ok(d.exp===1.12&&d.shadowType===1,`默认档回到引擎原值：exposure ${d.exp}（原 1.12）、shadowType ${d.shadowType}（1=PCF 原档）`);
+ok(d.hemi===0.63&&d.key===2.2&&d.fill===0.58&&d.rim===null,`灯光三元组原值：hemi ${d.hemi} key ${d.key} fill ${d.fill} 轮廓光 ${d.rim===null?'不存在（原档就没有）':d.rim}`);
+ok(d.env===0.5,`IBL 强度回到原 .5：${d.env}`);
 
-/* ⑤ 帧时与开关 */
-const fps=await p.evaluate(()=>new Promise(r=>{let n=0;const t0=performance.now();const tick=()=>{n++;if(performance.now()-t0<3000)requestAnimationFrame(tick);else r(Math.round(n/((performance.now()-t0)/1000)));};requestAnimationFrame(tick);}));
-ok(fps>=50,`后处理链在场时帧率 ${fps}fps（≥50）`);
-const diag=await f.evaluate(()=>{const i=window.visual106.renderer.info;return {calls:i.render.calls,tex:i.memory.textures,geo:i.memory.geometries};});
-ok(diag.tex<=70&&diag.geo<=3200,`资源预算：textures ${diag.tex}（≤70，共享噪声图不新建贴图池）、geometries ${diag.geo}`);
+/* 默认档 vs 精修档：证明"开关真的换了画面"，而不是靠一张会过期的基准截图。
+   上一版这里比对的是 FR-37 之前存的 PNG——首屏机位与左栏一改就必然假失败（本轮踩过），
+   所以改成同一会话内两张实时截图互比：默认档必须干净、pro 档必须真的不同。 */
+const shotA=await p.screenshot();
+const pA=await b.newPage({viewport:{width:1920,height:1080}});
+await pA.goto(BASE+'/twin/future-lab/twin-scene-v2.html?look=pro',{waitUntil:'load'});await pA.waitForTimeout(15000);
+const shotB=await pA.screenshot();
+const diff=await p.evaluate(async([a,c])=>{
+  const dec=async b64=>{const bin=atob(b64);const arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);return createImageBitmap(new Blob([arr],{type:'image/png'}));};
+  const A=await dec(a),C=await dec(c);const g=new OffscreenCanvas(1920,1080),x=g.getContext('2d');
+  x.drawImage(A,0,0);const pa=x.getImageData(340,120,1100,600).data;
+  x.clearRect(0,0,1920,1080);x.drawImage(C,0,0);const pc=x.getImageData(340,120,1100,600).data;
+  let sum=0,n=0,lumA=[],lumB=[];
+  for(let i=0;i<pa.length;i+=4){sum+=(Math.abs(pa[i]-pc[i])+Math.abs(pa[i+1]-pc[i+1])+Math.abs(pa[i+2]-pc[i+2]))/3;n++;
+    if(i%800===0){lumA.push(.2126*pa[i]+.7152*pa[i+1]+.0722*pa[i+2]);lumB.push(.2126*pc[i]+.7152*pc[i+1]+.0722*pc[i+2]);}}
+  const p95=a=>{a=a.slice().sort((x2,y2)=>x2-y2);return a[Math.floor(a.length*.95)];},p05=a=>{a=a.slice().sort((x2,y2)=>x2-y2);return a[Math.floor(a.length*.05)];};
+  return {mad:+(sum/n).toFixed(1),contrastDefault:Math.round(p95(lumA)-p05(lumA)),contrastPro:Math.round(p95(lumB)-p05(lumB))};
+},[shotA.toString('base64'),shotB.toString('base64')]);
+await pA.close();
+ok(diff.mad>3,`默认档与 ?look=pro 精修档画面确实不同（平均差 ${diff.mad}/255）——开关是活的，不是摆设`);
+ok(diff.contrastDefault>=60&&diff.contrastDefault<=diff.contrastPro+40,`默认档亮度对比 p5–p95=${diff.contrastDefault}（技能口径 <60 算被雾/暗压扁），pro 档=${diff.contrastPro}`);
+
+/* 画布仍然透明（这条与精修无关，但它是本轮最贵的一课，常驻） */
+const al=await f.evaluate(()=>{const v=window.visual106,gl=v.renderer.getContext();
+  const w=gl.drawingBufferWidth,h=gl.drawingBufferHeight,px=(x,y)=>{const q=new Uint8Array(4);gl.readPixels(x,h-1-y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,q);return [...q];};
+  return {corner:px(3,h-4),mid:px(w>>1,h>>1)};});
+ok(al.corner[3]<24,`画布空白处透明（alpha=${al.corner[3]}）——合成写 alpha=1 会让这里变不透明黑、整屏玻璃浮层被压暗`);
+
+/* —— ② ?look=pro 仍然完整可用 —— */
 const p2=await b.newPage({viewport:{width:1920,height:1080}});
-await p2.goto(BASE+'/twin/future-lab/twin-scene-v2.html?look=flat',{waitUntil:'load'});await p2.waitForTimeout(13000);
-const f2=p2.frames().find(x=>/tour-space-v3-1/.test(x.url()));
-const flat=await f2.evaluate(()=>({on:(window.__twinLook||{}).on,fog:!!window.visual106.scene.fog,exp:+window.visual106.renderer.toneMappingExposure.toFixed(2)}));
-ok(flat.on===false&&flat.fog===false,`?look=flat 一键回到原始渲染（对比取证用）：${JSON.stringify(flat)}`);
+await p2.goto(BASE+'/twin/future-lab/twin-scene-v2.html?look=pro',{waitUntil:'load'});await p2.waitForTimeout(17000);
+const f2=p2.frames().find(x=>/tour-space/.test(x.url()));
+const pro=await f2.evaluate(()=>{const v=window.visual106,r=v.renderer,L=window.__twinLook||{};
+  return {on:L.on,roles:Object.keys(L.roles||{}).length,mats:L.materials,emissive:L.emissive,fog:!!v.scene.fog,
+    near:v.scene.fog?Math.round(v.scene.fog.near):null,far:v.scene.fog?Math.round(v.scene.fog.far):null,
+    exp:+r.toneMappingExposure.toFixed(2),shadowType:r.shadowType||r.shadowMap.type,
+    postActive:!!(L.api&&L.api.on),rim:(()=>{let n=null;v.scene.traverse(o=>{if(o.name==='twin-rim')n=+o.intensity.toFixed(2);});return n;})()};});
+ok(pro.on===true&&pro.postActive===true&&pro.fog===true,'?look=pro 精修档完整加载：角色 kit / 雾 / 后处理都在');
+ok(pro.roles>=5&&pro.mats>40&&pro.emissive>0,`精修档材质 kit：${pro.roles} 类角色 / ${pro.mats} 个共享材质 / ${pro.emissive} 个自发光提亮`);
+ok(pro.exp<=1.05&&pro.rim!==null&&pro.near<pro.far,`精修档灯光与雾窗口：exposure ${pro.exp}、轮廓光 ${pro.rim}、雾 ${pro.near}→${pro.far}`);
+const proAl=await f2.evaluate(()=>{const v=window.visual106,gl=v.renderer.getContext();
+  const w=gl.drawingBufferWidth,h=gl.drawingBufferHeight,q=new Uint8Array(4);gl.readPixels(3,h-4,1,1,gl.RGBA,gl.UNSIGNED_BYTE,q);return q[3];});
+ok(proAl<24,`精修档合成后画布空白处仍然透明（alpha=${proAl}）`);
 await p2.close();
+
+/* 交付档：?quality=low 在 pro 之下也要能关掉后处理（只改数值，不重复打补丁） */
 const p3=await b.newPage({viewport:{width:1920,height:1080}});
-await p3.goto(BASE+'/twin/future-lab/twin-scene-v2.html?mode=S1&period=day&layers=path,labels&quality=low',{waitUntil:'load'});   /* readURL() 要求带齐 mode/period，裸 ?quality=low 会退回默认档 */await p3.waitForTimeout(13000);
-const f3=p3.frames().find(x=>/tour-space-v3-1/.test(x.url()));
+await p3.goto(BASE+'/twin/future-lab/twin-scene-v2.html?look=pro&mode=S1&period=day&layers=path,labels&quality=low',{waitUntil:'load'});
+await p3.waitForTimeout(14000);
+const f3=p3.frames().find(x=>/tour-space/.test(x.url()));
 const low=await f3.evaluate(()=>{const d=window.__twinLook||{};
- return {low:d.low,postInstalled:!!d.post,postActive:!!(d.api&&d.api.on),q:document.getElementById('twin-v2-bridge')?.dataset.quality};});
-ok(low.q==='low'&&low.postInstalled===true&&low.postActive===false,`?quality=low 交付档把后处理关掉（链已装但 active=false）：${JSON.stringify(low)}`);
+  return {low:d.low,installed:!!d.post,active:!!(d.api&&d.api.on),q:document.getElementById('twin-v2-bridge')?.dataset.quality};});
+ok(low.q==='low'&&low.installed===true&&low.active===false,`?quality=low 交付档把后处理关掉（链已装但 active=false）：${JSON.stringify(low)}`);
 await p3.close();
 ok(err.length===0,'无 pageerror/console error: '+err.slice(0,3).join(' | '));
 console.log(out.join('\n'));

@@ -18,9 +18,8 @@
   var LAYER_KEYS = ['path', 'labels', 'heatmap'];   /* 分区色块、剖墙开关均已按 2026-11-06 反馈移除；墙体剖切改为场景侧固定行为 */
   /* 分区 id 由数据（/api/overview/alarm-sections）给出；URL 与面板签名都用它，不再写死 A/B/C。
      readURL 在 SECTIONS 赋值之前执行，所以 secIds 兜底到内置三区的顺序。 */
-  function secIds() { return (Array.isArray(SECTIONS) && SECTIONS.length ? SECTIONS : [{ id: 'A' }, { id: 'B' }, { id: 'C' }]).map(function (x) { return x.id; }); }
-  function readFilter(v) { var a = (v || '').split(','); var o = {}; secIds().forEach(function (k, i) { o[k] = a[i] === 'all' ? 'all' : 'open'; }); return o; }
-  var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 1, heatmap: 0 }, alarmFilter: { A: 'open', B: 'open', C: 'open' }, quality: 'high', strip: 0 };
+  function secIds() { return (Array.isArray(SECTIONS) && SECTIONS.length ? SECTIONS : [{ id: 'A' }, { id: 'B' }, { id: 'C' }]).map(function (x) { return x.id; }); }   /* 仍供分级柱的轴标签用：等级标题来自 /api/overview/alarm-sections */
+  var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 1, heatmap: 0 }, streamFilter: 'all', quality: 'high', strip: 0 };
 
   function sendScene(type, data) { if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'twin-v2', type: type }, data), location.origin); }
   var pendingView = null;
@@ -36,15 +35,15 @@
     var lay = {}; (p.get('layers') || '').split(',').forEach(function (k) { if (k) lay[k] = 1; });
     return { mode: p.get('mode'), zone: p.get('zone') || '106', period: p.get('period') || 'day',
       layers: { path: lay.path == null ? 1 : lay.path, labels: lay.labels == null ? 1 : lay.labels, heatmap: lay.heatmap ? 1 : 0 },
-      alarmFilter: readFilter(p.get('alarmFilter')), quality: p.get('quality') || 'high', strip: p.get('strip') ? 1 : 0 };
+      streamFilter: p.get('sf') === 'open' ? 'open' : 'all', quality: p.get('quality') || 'high', strip: p.get('strip') ? 1 : 0 };
   }
   function writeURL() {
     /* 从当前参数起步、只覆盖我们托管的那几个键：外来开关（?look=flat 光影对比取证、以后可能还有）
        必须活着走过第一次 replaceState，否则场景帧读 parent URL 时它已经没了（本轮真实踩到）。 */
     var p = new URLSearchParams(location.search);
-    ['mode','zone','period','alarmFilter','quality','strip','layers'].forEach(function (k) { p.delete(k); });
+    ['mode','zone','period','alarmFilter','quality','strip','layers','sf'].forEach(function (k) { p.delete(k); });
     p.set('mode', st.mode); if (st.mode === 'ZONE') p.set('zone', st.zone);
-    p.set('period', st.period); p.set('alarmFilter', secIds().map(function (k) { return st.alarmFilter[k] || 'open'; }).join(',')); if (st.quality === 'low') p.set('quality', 'low'); if (st.strip) p.set('strip', '1');
+    p.set('period', st.period); p.set('sf', st.streamFilter || 'all'); if (st.quality === 'low') p.set('quality', 'low'); if (st.strip) p.set('strip', '1');
     p.set('layers', LAYER_KEYS.filter(function (k) { return st.layers[k]; }).join(','));
     history.replaceState(null, '', location.pathname + '?' + p.toString() + '#v2=1&native-nodes=1');
   }
@@ -144,7 +143,7 @@
           '<header><b>' + escapeHtml(per[key].title) + '</b><span class="src"></span></header>' +
           '<table><tbody></tbody></table>' +
           (CHART_KIND[key] ? '<div class="tw-chart" id="chart-' + key + '" role="img" aria-label="' + escapeHtml(per[key].title + ' ' + CHART_KIND[key]) + '"></div>' : '') +
-          '<footer class="f-cmp"></footer><footer class="f-note"></footer></section>';
+          '<footer class="f-cmp"></footer></section>';
       }).join('');
     }
     keys.forEach(function (key) {
@@ -155,7 +154,8 @@
         if (val == null) return '<tr><td>' + r.label + '</td><td class="v na">—</td><td class="pct"></td></tr>';
         var base = r.of ? (r.computed ? r.computed(v) : v[r.of]) : null;
         var pct = (!r.noPct && base) ? Math.round(val / base * 100) + '%' : '';
-        var tag = r.lims ? '<span class="limstag" title="口径来自 LIMS「要求检测完成时间」，当前为 Mock 数据">LIMS</span>' : '';
+        /* 长注释段落从屏上撤掉（左栏要短、不要滚动条），但口径不许丢：整句并进 LIMS 角标的 title */
+        var tag = r.lims ? '<span class="limstag" title="' + escapeHtml('口径来自 LIMS「要求检测完成时间」，当前为 Mock 数据，二期接口接入后自动变真值' + (p.note ? '。' + p.note : '')) + '">LIMS</span>' : '';
         var tip = '';
         if (r.pick) {
           var list = planItems.filter(function (x) { return x[r.pick]; });
@@ -171,7 +171,7 @@
       sec.querySelector('.f-cmp').innerHTML = c == null ? '' :
         '<span class="d ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</span><span>' + ({ day: '较上日', month: '较上月', year: '较去年' })[st.period] + '</span>';
       sec.querySelector('.f-cmp').hidden = c == null;
-      var fn = sec.querySelector('.f-note'); fn.innerHTML = p.note || ''; fn.hidden = !p.note;
+      /* 长注释段落不再上屏（左栏要短、不要滚动条）；口径没丢，整句挪进该表 LIMS 角标的 title 里 */
     });
   }
   /* 时钟：大屏右上角常驻，秒级走动 */
@@ -231,32 +231,31 @@
         ' data-zone="' + x.zoneId.replace('Z-', '') + '" data-grade="' + x.grade + '" data-status="' + x.status + '"' +
         ' data-to="' + escapeHtml(x.dispatchedTo || '') + '" data-title="' + escapeHtml(x.title) + '"';
       return '<div' + attrs + '>' +
-        '<div class="l1"><span>' + escapeHtml(x.title) + '</span><span class="tm">' + x.occurredAt + '</span></div>' +
+        '<div class="l1"><span class="gd ' + x.grade.toLowerCase() + '">' + x.grade + '</span><span>' + escapeHtml(x.title) + '</span><span class="tm">' + x.occurredAt + '</span></div>' +
         '<div class="rs">' + escapeHtml(x.reason) + '</div>' +
         '<div class="l2"><span class="st ' + x.status + '">' + ST_AB(x.status) + '</span><span class="zn">' + x.zoneId.replace('Z-', '') + ' 区</span>' +
         '<span class="to" title="派至 ' + escapeHtml(x.dispatchedTo || '待派发') + '">派至 ' + escapeHtml(x.dispatchedTo || '待派发') + '</span>' + (cls === 'st-row' ? '<span class="tr">详情</span>' : '') + '</div></div>';
     }).join('');
   }
-  function secBlock(sec, pool) {
-    var all = pool.filter(function (x) { return x.grade === sec.id; });
-    var open = all.filter(function (x) { return x.status !== 'resolved'; });
-    var mode = st.alarmFilter[sec.id] || 'open';
-    var shown = mode === 'all' ? all : open;
-    var rows = alarmRows(shown, 'st-row');
-    return '<section class="asec" data-sec="' + sec.id + '">' +
-      '<header><span class="gd ' + sec.id.toLowerCase() + '">' + sec.id + '</span><b>' + sec.title + '</b>' +
-      '<span class="cnt">今日 ' + all.length + ' · 未解除 ' + open.length + '</span>' +
-      '<span class="toggle" role="group" aria-label="' + sec.title + '筛选">' +
-      '<button class="mini' + (mode === 'open' ? ' active' : '') + '" data-alarmfilter="open" data-sec="' + sec.id + '">只看未解除</button>' +
-      '<button class="mini' + (mode === 'all' ? ' active' : '') + '" data-alarmfilter="all" data-sec="' + sec.id + '">全部</button></span></header>' +
-      '<div class="asec-body"><div class="asec-track' + (rows ? ' scroll' : '') + '">' + (rows || '<div class="zp-empty">今日无' + sec.title + '</div>') + (rows ? rows : '') + '</div></div>' +
-      '</section>';
-  }
+
+  /* 告警流（2026-11-07 改版）：不再切 A/B/C 三个分区，按发生时间倒序平铺——
+     运维要的是"接下来处理哪条"，不是"哪一级有几条"；等级仍写在每行的徽标里，信息一项没丢。
+     分级计数没有消失，交给上方那张 3D 分组柱（今日 / 未解除）。 */
   function renderAlarms() {
     var openN = alarmOpen().length;
-    $('#streamMeta').textContent = '今日 ' + alarms.length + ' 条 · 未解除 ' + openN + ' · 悬停暂停';
-    $('#streamTrack').innerHTML = SECTIONS.map(function (sec) { return secBlock(sec, alarms); }).join('');
-    keyable($('#streamTrack'));
+    $('#streamMeta').textContent = '今日 ' + alarms.length + ' 条 · 未解除 ' + openN + ' · 最新在前';
+    var mode = st.streamFilter || 'all';
+    var list = alarms.slice().sort(function (a, b) { return String(b.occurredAt).localeCompare(String(a.occurredAt)); });
+    if (mode === 'open') list = list.filter(function (a) { return a.status !== 'resolved'; });
+    document.querySelectorAll('#alarmStream [data-sfilter]').forEach(function (x) { x.classList.toggle('active', x.dataset.sfilter === mode); });
+    var track = $('#streamTrack');
+    var rowsHtml = alarmRows(list, 'st-row');
+    /* 无缝滚动靠 translateY(-50%)，所以内容必须原样复制一份——平铺后没人再做这件事，
+       不复制就会滚到一半跳回顶部（回归当场抓到：行数 13 而不是 26）。aria-hidden 让读屏只念一遍。 */
+    track.innerHTML = rowsHtml ? rowsHtml + '<div class="dup" aria-hidden="true">' + rowsHtml + '</div>'
+                               : '<div class="zp-empty">' + (mode === 'open' ? '今日无未解除告警' : '今日无告警') + '</div>';
+    track.classList.toggle('scroll', list.length > 4);   /* 只有真的溢出才滚动：四五条硬滚动反而读不完 */
+    keyable(track);
   }
 
   /* ---------- ③ 106 主叙事：机器人卡住 / 当前调度任务 / 设备状态 / 异常（决策 Q4） ---------- */
@@ -383,22 +382,23 @@
     }
 
     /* ⑤ 告警（本区域，只读三态） */
-    var abSig = secIds().map(function (k) { return k + ':' + (st.alarmFilter[k] || 'open'); }).join(',') + '|' + zalarms.map(function (a) { return a.alarmId + a.status; }).join('|');
+    var abSig = (st.streamFilter || 'all') + '|' + zalarms.map(function (a) { return a.alarmId + a.status; }).join('|');
     if (zpSig.ab !== abSig) {
       zpSig.ab = abSig;
-      var zopen = zalarms.filter(function (a) { return a.status !== 'resolved'; });
-      zp('#zpAlarms .zp-body').innerHTML = SECTIONS.map(function (sec) {
-        var all = zalarms.filter(function (a) { return a.grade === sec.id; });
-        var op = all.filter(function (a) { return a.status !== 'resolved'; });
-        var shown = st.alarmFilter[sec.id] === 'all' ? all : op;
-        var rows = alarmRows(shown, 'zp-row');
-        return '<div class="zsec" data-sec="' + sec.id + '"><div class="zsec-hd"><span class="gd ' + sec.id.toLowerCase() + '">' + sec.id + '</span>' +
-          '<b>' + sec.title + '</b><span class="cnt">今日 ' + all.length + ' · 未解除 ' + op.length + '</span>' +
-          '<span class="toggle"><button class="mini' + (st.alarmFilter[sec.id] !== 'all' ? ' active' : '') + '" data-alarmfilter="open" data-sec="' + sec.id + '">只看未解除</button>' +
-          '<button class="mini' + (st.alarmFilter[sec.id] === 'all' ? ' active' : '') + '" data-alarmfilter="all" data-sec="' + sec.id + '">全部</button></span></div>' +
-          (rows || '<div class="zp-empty">本区今日无' + sec.title + '</div>') + '</div>';
-      }).join('');
-      zp('#zpAlarmsN').textContent = '今日 ' + zalarms.length + ' · 未解除 ' + zopen.length;
+      /* 与右列同一口径（2026-11-07）：区域告警也按时间平铺，等级写在行内徽标，不再切三区。
+         两套分区模型并存最容易出事——筛选态、计数、键盘焦点都要各写一遍，迟早对不上。 */
+      var mode = st.streamFilter || 'all';
+      var list = zalarms.slice().sort(function (a, b) { return String(b.occurredAt).localeCompare(String(a.occurredAt)); });
+      if (mode === 'open') list = list.filter(function (a) { return a.status !== 'resolved'; });
+      zp('#zpAlarmsN').textContent = '今日 ' + zalarms.length + ' · 未解除 ' + zalarms.filter(function (a) { return a.status !== 'resolved'; }).length;
+      var tog = '<span class="toggle" role="group" aria-label="本区告警筛选">' +
+        '<button class="mini' + (mode === 'open' ? ' active' : '') + '" data-sfilter="open">只看未解除</button>' +
+        '<button class="mini' + (mode !== 'open' ? ' active' : '') + '" data-sfilter="all">全部</button></span>';
+      zp('#zpAlarms .zp-body').innerHTML =
+        '<div class="zp-filter-row">' + tog + '</div>' +   /* 右列在区域视图是隐藏的，筛选开关必须跟着进面板 */
+        (alarmRows(list, 'zp-row') || '<div class="zp-empty">本区今日无告警</div>');
+      keyable(zp('#zpAlarms .zp-body'));
+
     }
     keyable($('#zonePanel'));   /* 面板五块都补：设备行/机器人行/告警行都有点击语义 */
     /* 收尾：本房间不展示的块，内容必须清掉——各块自己的写入发生在上一步的显隐之后，
@@ -426,16 +426,28 @@
   function NODE_CN(t) { return { temperature: '温湿度', smoke: '烟感', gas: '气体', water: '水浸', motion: '人体', switch: '开关量', camera: '视觉', light: '照明' }[t] || t; }
 
   /* 与 mock/场景同一套时间轴公式：t0=停靠开始，travel 在其之前；按墙上时钟取模 */
+  /* 与 mock/场景同一套 steps 时间轴（2026-11-07 改版）：
+     屏上"第 n 道"取的是任务窗口，不再是站点序号——一个站点可能连着办 2~3 道任务。
+     行进段归到"下一道的路上"，所以显示第 n 道时 AGV 一定正跑在第 n 道对应的线路上。 */
   function cycleAt(t) {
     if (!cycleDef || !cycleDef.stops) return null;
-    var S = cycleDef.stops, L = cycleDef.loopSec; t = (t % L);
-    var cur = S[S.length - 1], idx = S.length - 1, tail = false;
-    for (var i = 0; i < S.length; i++) { if (t < S[i].t0 + S[i].dwellSec) { cur = S[i]; idx = i; break; } }
-    if (t >= S[S.length - 1].t0 + S[S.length - 1].dwellSec) tail = true;
-    if (tail) return { order: S.length, label: '返回 102 家位/充电位', flow: '返航', phase: 'travel', remainingSec: Math.max(0, Math.round(L - t)), taskNo: null, deviceCode: null, total: S.length };
-    var dwell = t >= cur.t0;
-    return { order: cur.order, label: cur.label, flow: cur.flow, taskNo: cur.taskNo, deviceCode: cur.deviceCode, total: S.length,
-      phase: dwell ? 'dwell' : 'travel', remainingSec: Math.max(0, Math.round(dwell ? cur.t0 + cur.dwellSec - t : cur.t0 - t)) };
+    var L = cycleDef.loopSec, ST = cycleDef.steps || [];
+    if (!ST.length) return null;
+    t = ((t % L) + L) % L;
+    for (var i = 0; i < ST.length; i++) {
+      if (t < ST[i].endSec) {
+        var sp = ST[i], dwell = t >= sp.t0;
+        return { order: sp.no, total: ST.length, label: sp.label,
+          flow: sp.flowCode ? sp.flowCode + ' ' + sp.flowName : sp.flowName,
+          phase: dwell ? 'dwell' : 'travel', remainingSec: Math.max(0, Math.round(dwell ? sp.endSec - t : sp.t0 - t)),
+          taskNo: sp.taskNo, deviceCode: sp.deviceCode, seq: sp.seq, kind: sp.kind,
+          visit: sp.visit, visits: cycleDef.stops.length };
+      }
+    }
+    var last = ST[ST.length - 1];
+    return { order: last.no, total: ST.length, label: '返回 102 家位/充电位', flow: '返航', phase: 'travel',
+      remainingSec: Math.max(0, Math.round(L - t)), taskNo: null, deviceCode: null, seq: null, kind: 'return',
+      visit: cycleDef.stops.length, visits: cycleDef.stops.length };
   }
   function tickCycle() { renderCycle(cycleAt(Date.now() / 1000)); }
 
@@ -460,7 +472,7 @@
         if (tm) tm.textContent = (t.shown === 'running' && t.elapsedMin) ? ('已 ' + t.elapsedMin + '/' + t.plannedMin + 'min') : (t.time || '—');
       });
     });
-    var cnt = $('#dkQueueCnt'); if (cnt) cnt.textContent = '流程配置 ' + qt.length + ' 条 · 循环同步' + (queueData && queueData.liveFlow ? '：' + queueData.liveFlow : '');
+    var cnt = $('#dkQueueCnt'); if (cnt) cnt.textContent = '流程配置 ' + qt.length + ' 条 · 循环同步' + (queueData && queueData.liveStep && queueData.liveStep.flowCode ? '：' + queueData.liveStep.flowCode : (queueData && queueData.liveStep && queueData.liveStep.kind === 'pickup' ? '：样品室取样' : ''));
     (envNodes || []).forEach(function (n) {
       document.querySelectorAll('#dkNodesTrack .nd-row[data-node="' + n.id + '"]').forEach(function (el) {
         var rd = el.querySelector('.rd'), ti = el.querySelectorAll('.ti')[1];
@@ -497,7 +509,7 @@
           '<span class="tm">' + (g[0] === 'running' && t.elapsedMin ? '已 ' + t.elapsedMin + '/' + t.plannedMin + 'min' : (t.time || '—')) + '</span></div>';
       }).join('');
     }).join('');
-    $('#dkQueueCnt').textContent = '流程配置 ' + qt.length + ' 条 · 循环同步' + (queueData && queueData.liveFlow ? '：' + queueData.liveFlow : '');
+    $('#dkQueueCnt').textContent = '流程配置 ' + qt.length + ' 条 · 循环同步' + (queueData && queueData.liveStep && queueData.liveStep.flowCode ? '：' + queueData.liveStep.flowCode : (queueData && queueData.liveStep && queueData.liveStep.kind === 'pickup' ? '：样品室取样' : ''));
     dkTrack('#dkQueueTrack', qhtml, qt.length);
 
     /* ③ 正在检测的委托单 → 试验项完成情况（图4 的名称与检测设备） */
@@ -533,9 +545,12 @@
 
   function renderCycle(c) {
     if (!c) return;
+    /* 「无人化循环」→「无人化任务」（2026-11-07）；计数走任务道（17 道 = 16 条调度任务 + 样品室取样 1 道），
+       括号里保留站点数，避免有人把"第 9 道"误读成"第 9 个工位"。 */
     $('#cyNow').textContent = c.order + '/' + c.total;
-    $('#cyLabel').textContent = '无人化循环 · ' + (c.phase === 'dwell' ? '停靠作业' : '行走中');
-    $('#cySub').textContent = c.label + (c.flow ? ' · ' + c.flow : '') + ' · 剩余 ' + c.remainingSec + 's' + (c.deviceCode ? ' · 服务 ' + c.deviceCode : '');
+    $('#cyLabel').textContent = '无人化任务 · ' + (c.phase === 'dwell' ? '作业中' : '行进中');
+    $('#cySub').textContent = (c.flow || c.label) + ' @ ' + c.label + ' · 剩余 ' + c.remainingSec + 's' +
+      (c.deviceCode ? ' · 服务 ' + c.deviceCode : '') + (c.visits ? '（第 ' + c.visit + '/' + c.visits + ' 站）' : '');
     var done = (c.order - 1 + (c.phase === 'dwell' ? 0.5 : 0.2)) / c.total;
     $('#cyBar').style.width = Math.round(Math.min(1, done) * 100) + '%';
   }
@@ -630,7 +645,9 @@
      环形 = 少数类别的「构成占比」，各类相加必须等于总数；
      柱状 = 同口径下的「量级比较」，类别之间不必相加；
      折线带 = 时序趋势。逾期/临期不进环形：它们是「未完成」的子集，塞进同一个环会重复计数。 */
-  var CHART_KIND = { entrust: '3D 柱状图', samples: '3D 柱状图', testItems: '3D 柱状图', dispatch: '3D 柱状图' };
+  /* 左栏不出图（2026-11-07 产品负责人：图表去掉、加宽、缩短、不要滚动条）。
+     四张表的数字本来就是精确读数口径，柱状图只是把同一批数字再画一遍，还额外吃掉 4×88px 高度。 */
+  var CHART_KIND = {};
   /* ---------- 3D 图表：所有输入都从「表格里已经在用的同一批变量」取，绝不另算一套 ---------- */
   function renderCharts() {
     if (!window.TwinCharts) return;
@@ -640,15 +657,7 @@
     var e = v('entrust'), sa = v('samples'), ti = v('testItems'), di = v('dispatch');
     /* 左栏只有 176px 净宽：环形在这里放不下「环 + 指认标签」，实测百分比被裁。
        改用柱状（类别名落在柱底，宽度够用），构成关系靠柱高与表格里已有的百分比读。 */
-    if (e) TwinCharts.bar($('#chart-entrust'), 'entrust',
-      [{ k: '电缆类', v: e.power, c: '#2878FF' }, { k: '工器具类', v: e.safety, c: '#16A34A' }], { height: 86 });   /* 短名：全名就在上方表格，176px 里两个五字标签会挤在一起 */
-    if (sa) TwinCharts.bar($('#chart-samples'), 'samples',
-      [{ k: '已收样', v: sa.received, c: '#2878FF' }, { k: '在检', v: sa.testing, c: '#F59E0B' }, { k: '已完成', v: sa.done, c: '#16A34A' }], { height: 84 });
-    if (ti) TwinCharts.bar($('#chart-testItems'), 'testItems',
-      [{ k: '在检', v: ti.testing, c: '#2878FF' }, { k: '待检', v: ti.pending, c: '#F59E0B' }, { k: '已完成', v: ti.done, c: '#16A34A' }], { height: 86 });
-    if (di) TwinCharts.bar($('#chart-dispatch'), 'dispatch',
-      [{ k: '已完成', v: di.done, c: '#16A34A' }, { k: '未解决', v: di.blockedUnresolved, c: '#E5484D' }, { k: '已解决', v: di.blockedResolved, c: '#94A3B8' }], { height: 84 });
-
+    /* 左栏四张表：只出数字表，不出图（见上方 CHART_KIND 注释） */
     /* 告警分级：A/B/C × 今日/未解除（分组柱，两个口径并排才看得出「积压比例」） */
     var SECS = [['A', '异常'], ['B', '阻塞'], ['C', '校准']];
     if (st.mode === 'S1' && alarms.length) {
@@ -726,7 +735,7 @@
     TwinCharts.ribbon($('#chartTH'), 'temp-hum', [
       { name: '温度', unit: '℃', values: t, c: '#2878FF' },
       { name: '湿度', unit: '%RH', values: h, c: '#16A34A' }
-    ], { height: 62, xLabels: ['-15h', '-8h', '现在'] });
+    ], { height: 74, xLabels: ['-15h', '-8h', '现在'] });
   }
 
   function applyAll() {
@@ -748,7 +757,7 @@
       document.querySelectorAll('#zpPeriod .seg').forEach(function (b) { b.classList.toggle('active', b.dataset.period === st.period); });
     }
     $('#taskStrip').hidden = (vp.dock !== true) || !!st.strip;
-    $('#alarmStream').hidden = st.mode === 'ZONE';   /* 区域视图时让位给右侧面板（面板内的告警块已按 A/B/C 三分区呈现，控件不丢） */
+    $('#rightCol').hidden = st.mode === 'ZONE';   /* 区域视图时整列让位给右侧面板（面板内已有告警与环境块，控件不丢） */
     /* 机器人状态条与底部说明条已整体删除（2026-11-06）。
        底栏显隐由上面的 viewProfile 决定（106 保留、其他房间隐藏），这里只处理「收起底栏」按钮本身的状态 */
     /* 详情面板随视图重新停靠：总览时覆盖右侧，区域视图时让位到面板左边，否则会挡住五类信息（实测缺陷） */
@@ -761,11 +770,9 @@
     if (st.mode === 'ZONE') { loadZone(); renderZonePanel(); }
     renderCharts();
   }
-  function setAlarmFilter(sec, v) {
-    if (!sec || !v || st.alarmFilter[sec] === v) return;
-    st.alarmFilter[sec] = v;                       /* 三个分区各自独立筛选，互不影响 */
-    document.querySelectorAll('[data-sec="' + sec + '"][data-alarmfilter]').forEach(function (x) { x.classList.toggle('active', x.dataset.alarmfilter === v); });
-    renderAlarms(); renderZonePanel(); writeURL();
+  function setStreamFilter(v) {                          /* 右列一个开关，不再三区各一套 */
+    if (!v || st.streamFilter === v) return;
+    st.streamFilter = v; renderAlarms(); writeURL();
   }
 
   function setMode(m, zone) {
@@ -840,11 +847,6 @@
     document.querySelectorAll('.seg').forEach(function (b) { b.onclick = function () {
       document.querySelectorAll('.seg').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.period = b.dataset.period; renderTables(); renderZonePanel(); renderCharts(); writeURL();
     }; });
-    /* 筛选控件改为事件委托：同一套按钮现在渲染在两处（右侧告警流头部、区域视图的告警块），必须统一响应 */
-    document.addEventListener('click', function (e) {
-      var btn = e.target.closest('[data-alarmfilter]'); if (!btn) return;
-      setAlarmFilter((btn.closest('[data-sec]') || { dataset: {} }).dataset.sec || btn.dataset.sec, btn.dataset.alarmfilter);
-    });
     document.querySelectorAll('.lic').forEach(function (b) { b.onclick = function () {
       var k = b.dataset.layer; st.layers[k] = st.layers[k] ? 0 : 1;
       b.classList.toggle('on', !!st.layers[k]); b.setAttribute('aria-pressed', !!st.layers[k]);
@@ -863,6 +865,8 @@
     /* 底栏四块的点击/键盘落点（FR-30）：任务行与试验项行定位工位，节点行选中物联节点 */
     document.addEventListener('click', function (e) {
       if (!e.target || !e.target.closest) return;
+      var sf = e.target.closest('[data-sfilter]');      /* 右列与区域面板共用这一个开关 */
+      if (sf) { setStreamFilter(sf.dataset.sfilter); return; }
       var q = e.target.closest('#dkQueueTrack .dq-row');
       if (q) { dockLocate(q.dataset.cad, q.querySelector('.nm').textContent); return; }
       var ti = e.target.closest('#dkItemsTrack .ti-row');
@@ -958,7 +962,7 @@
     document.querySelectorAll('.lic').forEach(function (b) { b.classList.toggle('on', !!st.layers[b.dataset.layer]); b.setAttribute('aria-pressed', !!st.layers[b.dataset.layer]); });
     syncFs();
     document.querySelectorAll('.seg').forEach(function (b) { b.classList.toggle('active', b.dataset.period === st.period); });
-    document.querySelectorAll('[data-alarmfilter]').forEach(function (b) { var sec = b.dataset.sec; if (sec) b.classList.toggle('active', st.alarmFilter[sec] === b.dataset.alarmfilter); });
+    document.querySelectorAll('[data-sfilter]').forEach(function (b) { b.classList.toggle('active', (st.streamFilter || 'all') === b.dataset.sfilter); });   /* 一个开关，右列与区域面板同步（三区筛选随分区退场） */
   }
 
   /* ---------- 详情与实时 ---------- */

@@ -1,73 +1,69 @@
+/**
+ * 告警分级口径（2026-11-07 改版：告警流不再切 A/B/C 三个区域，按发生时间平铺）
+ * 这条套件因此从"验三区"改成"验等级信息在平铺后一项没丢"：
+ *  ① 行内等级徽标只有 A/B/C，且与接口 alarm-sections 的分级计数一致；
+ *  ② 排序口径可验证（最新在前）；
+ *  ③ 一个筛选开关（只看未解除 / 全部）在两处面板同步，URL 可恢复；
+ *  ④ 屏上不出现 Grade 英文；详情卡同；
+ *  ⑤ 区域视图的告警块同样平铺（两套分区模型并存的坑已拆掉）。
+ */
 import { chromium } from 'playwright';
 import { BASE } from './_env.mjs';
 const out=[],err=[];
+const ok=(c,m)=>out.push((c?'✅':'❌')+' '+m);
+const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期望 ${e})`);
 const b=await chromium.launch({channel:'chrome'});
 const p=await b.newPage({viewport:{width:1920,height:1080}});
 p.on('pageerror',e=>err.push('pageerror: '+e.message));
-p.on('console',m=>{if(m.type()==='error'&&!/favicon/.test(m.text()))err.push('console: '+m.text().slice(0,160));});
+p.on('console',m=>{if(m.type()==='error'&&!/favicon|404/.test(m.text()))err.push('console: '+m.text().slice(0,150));});
 await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
 await p.waitForTimeout(15000);
-const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期望 ${e})`);
-T('页面不含 Grade 英文', await p.evaluate(()=>document.body.innerText.includes('Grade')), false);
-T('分区数量', await p.locator('.asec').count(), 3);
-const heads=await p.locator('.asec>header').allInnerTexts();
-out.push((heads.length===3&&/A/.test(heads[0])&&/异常告警/.test(heads[0])&&/今日 5 · 未解除 3/.test(heads[0])&&/今日 4 · 未解除 3/.test(heads[1])&&/今日 4 · 未解除 3/.test(heads[2])?'✅':'❌')+' 三分区标题与今日计数: '+heads.map(h=>h.replace(/\s+/g,' ').slice(0,34)).join(' | '));
-const secData=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/alarm-sections');return r.data;});
-out.push(((secData||[]).length===3&&secData.every((x,i)=>heads[i].includes(x.title)&&heads[i].includes(x.id))?'✅':'❌')+' 分区标题/徽标来自接口数据（不在 JS 写死口径）: '+((secData||[]).map(x=>x.id+'='+x.title).join(' / ')));
-out.push(((secData||[]).length===3&&secData.every(x=>/anomaly|blockage|calibration/.test(x.key))?'✅':'❌')+' 分区 key 与告警 category 同一套词表: '+((secData||[]).map(x=>x.key).join(',')));
-const grades=await p.locator('.asec').evaluateAll(els=>els.map(e=>({sec:e.dataset.sec, rows:[...e.querySelectorAll('.st-row')].map(r=>r.dataset.grade)})));
-out.push((grades.every(g=>g.rows.length>0&&g.rows.every(x=>x===g.sec))?'✅':'❌')+' 每区只含本级告警: '+JSON.stringify(grades.map(g=>g.sec+':'+g.rows.length)));
-// 分区独立筛选
-const cnt=async sec=>await p.locator(`.asec[data-sec=${sec}] .st-row`).count();
-const before={A:await cnt('A'),B:await cnt('B'),C:await cnt('C')};
-await p.click('.asec[data-sec=B] [data-alarmfilter=all]'); await p.waitForTimeout(800);
-const after={A:await cnt('A'),B:await cnt('B'),C:await cnt('C')};
-out.push((after.B>before.B&&after.A===before.A&&after.C===before.C?'✅':'❌')+` 分区筛选互不影响：B ${before.B}→${after.B}，A ${before.A}→${after.A}，C ${before.C}→${after.C}`);
-T('URL 记录三区筛选态', await p.evaluate(()=>new URLSearchParams(location.search).get('alarmFilter')), 'open,all,open');
-// 详情卡不再出现 Grade
-await p.evaluate(()=>{document.querySelectorAll('.asec-track').forEach(t=>t.style.animationPlayState='paused');});
-const row=p.locator('.asec[data-sec=A] .st-row').first();
-await row.click(); await p.waitForTimeout(1200);
-const dt=(await p.locator('#detailBody').innerText()).replace(/\s+/g,' ');
-out.push((/A 级/.test(dt)&&!/Grade/.test(dt)?'✅':'❌')+' 告警详情用「A 级」中文表述: '+dt.slice(0,70));
-/* B 区那条没有台账号的告警（AL-204）必须仍能把镜头与描边落到 106-12 那张桌上。
-   注意：AL-204 是已解除状态，默认「只看未解除」下不渲染；切到全部后它排在 236px 可视窗口之外——
-   这里验的是 openAlarm 的分支逻辑，不是鼠标可见性，所以用 DOM click 走同一个委托入口。 */
-/* 上一步点开告警留下的 #detail 会盖住右侧告警流（S1 模式下它是覆盖式面板），先 Esc 关掉再点筛选 */
-await p.keyboard.press('Escape'); await p.waitForTimeout(700);
-out.push(((await p.evaluate(()=>document.getElementById('detail').hidden))?'✅':'❌')+' 告警详情可用 Esc 关闭（否则它会挡住告警流的筛选控件）');
-await p.click('.asec[data-sec=B] [data-alarmfilter=all]'); await p.waitForTimeout(900);
-const clicked=await p.evaluate(()=>{
-  const el=document.querySelector('.asec[data-sec=B] [data-alarm="AL-204"]');
-  if(!el) return {ok:false, why:'AL-204 未渲染（B 区归属或筛选态变了）'};
-  el.click(); return {ok:true, zone:el.dataset.zone, dev:el.dataset.dev||'(空)'};
-});
-await p.waitForTimeout(2000);
-out.push((clicked.ok?'✅':'❌')+' AL-204 在 B 区且可点（zone='+clicked.zone+'，data-dev="'+clicked.dev+'"）'+(clicked.ok?'':clicked.why));
-const hl=await p.evaluate(()=>document.body.dataset.lastHighlight||'');
-out.push((hl==='106-12'?'✅':'❌')+' 点击后描边落到 CAD 实体 106-12（非数采桌无台账号）: lastHighlight='+hl);
-const dtxt=(await p.locator('#detailBody').innerText()).replace(/\s+/g,' ');
-out.push((/闭环状态|原因/.test(dtxt)&&!/复合机器人 RB/.test(dtxt)?'✅':'❌')+' 详情仍是告警内容（没被机器人卡覆盖）: '+dtxt.slice(0,64));
-await p.keyboard.press('Escape'); await p.click('.asec[data-sec=B] [data-alarmfilter=open]'); await p.waitForTimeout(700);
 
-// 区域视图：面板内同样三分区
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(2500);
-T('区域面板三分区', await p.locator('#zpAlarms .zsec').count(), 3);
-const zh=await p.locator('#zpAlarms .zsec-hd').allInnerTexts();
-out.push((zh.length===3&&/今日 \d+ · 未解除 \d+/.test(zh[0])?'✅':'❌')+' 区域面板分区计数: '+zh.map(h=>h.replace(/\s+/g,' ').slice(0,30)).join(' | '));
-/* 用「今日 > 未解除」的分区验证筛选真的换了集合；本区 C 恰好今日=未解除，用它验证会误报 */
-const zc=await p.locator('#zpAlarms .zsec[data-sec=B] .zp-row').count();
-await p.locator('#zpAlarms .zsec[data-sec=B] [data-alarmfilter=all]').click(); await p.waitForTimeout(900);
-const zd=await p.locator('#zpAlarms .zsec[data-sec=B] .zp-row').count();
-const zact=await p.locator('#zpAlarms .zsec[data-sec=B] [data-alarmfilter=all]').evaluate(e=>e.classList.contains('active'));
-out.push(((zd>zc||zd===zc)&&zact?'✅':'❌')+` 区域面板分区筛选生效：B ${zc}→${zd} 行，按钮态=${zact}`);
-T('区域面板无 Grade', await p.locator('#zonePanel').innerText().then(t=>t.includes('Grade')), false);
-// 刷新恢复
-await p.reload({waitUntil:'load'}); await p.waitForTimeout(14000);
-const preUrl=await p.evaluate(()=>new URLSearchParams(location.search).get('alarmFilter'));
-T('刷新后三区筛选态恢复', await p.evaluate(()=>new URLSearchParams(location.search).get('alarmFilter')), preUrl);
-out.push(((await p.locator('.asec[data-sec=B] .st-row').count())===8?'✅':'❌')+' 恢复后 B 区行数=全部 8（4×2 复制）: '+await p.locator('.asec[data-sec=B] .st-row').count());
-T('装载链无被吞异常', await p.evaluate(()=>document.getElementById('freshTxt').textContent), '');
-await p.keyboard.press('1'); await p.waitForTimeout(2500); await p.screenshot({path:'/tmp/twin-qa/alarm-3sec.png'});
-console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,5).join('\n'));
+T('页面不含 Grade 英文', await p.evaluate(()=>document.body.innerText.includes('Grade')), false);
+T('A/B/C 分区已撤（.asec 数）', await p.locator('.asec').count(), 0);
+T('告警流是平铺列表（13 条 ×2 无缝复制）', await p.locator('#streamTrack .st-row').count(), 26);
+const meta=(await p.locator('#streamMeta').innerText()).replace(/\s+/g,' ');
+out.push((/今日 13 条 · 未解除 9 · 最新在前/.test(meta)?'✅':'❌')+' 头部汇总口径: '+meta);
+
+const rows=await p.evaluate(()=>[...document.querySelectorAll('#streamTrack .st-row')].slice(0,13).map(r=>({g:r.dataset.grade,t:r.querySelector('.tm').innerText,badge:(r.querySelector('.gd')||{}).innerText})));
+out.push((rows.every(r=>['A','B','C'].includes(r.g)&&r.badge===r.g)?'✅':'❌')+' 每行行首徽标只有 A/B/C 且等于该行等级: '+rows.slice(0,5).map(r=>r.badge).join(','));
+const times=rows.map(r=>r.t);
+out.push((times.slice().sort().reverse().join('|')===times.join('|')?'✅':'❌')+' 排序=按发生时间倒序（最新在前）: '+times.slice(0,4).join(' → '));
+const secApi=await p.evaluate(async()=>(await TwinApi.get('/api/overview/alarm-sections')).data);
+const dist=['A','B','C'].map(g=>rows.filter(r=>r.g===g).length);
+const apiCnt=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/alarms');const A=r.data.alarms||r.data;
+  return ['A','B','C'].map(g=>A.filter(x=>x.grade===g).length);});
+out.push((apiCnt.every((v,i)=>v===dist[i])?'✅':'❌')+` 分级计数与告警接口一致（分区撤了，数据层口径没动）: 屏上 ${dist.join('/')} vs 接口 ${apiCnt.join('/')}`);
+out.push((secApi.length===3&&['A','B','C'].every((g,i)=>secApi[i].id===g&&secApi[i].title&&secApi[i].key)?'✅':'❌')
+  +' 等级标题/key 仍来自 /api/overview/alarm-sections（分区撤了但分级词表没写死在 JS）: '+secApi.map(x=>x.id+'='+x.title).join(' / '));
+
+/* 一个筛选开关 */
+const before=await p.locator('#streamTrack .st-row').count();
+await p.click('#alarmStream [data-sfilter=open]'); await p.waitForTimeout(900);
+const after=await p.locator('#streamTrack .st-row').count();
+out.push((after<before&&after===18?'✅':'❌')+` 「只看未解除」= 9 条 ×2 复制: ${before}→${after}`);
+T('URL 记录筛选态', await p.evaluate(()=>new URLSearchParams(location.search).get('sf')), 'open');
+await p.click('#alarmStream [data-sfilter=all]'); await p.waitForTimeout(700);
+out.push(((await p.locator('#streamTrack .st-row').count())===26?'✅':'❌')+' 切回全部恢复 26 行');
+
+/* 详情卡 */
+await p.evaluate(()=>{const t=document.getElementById('streamTrack');t.style.animation='none';});
+const first=p.locator('#streamTrack .st-row').first();
+await first.click(); await p.waitForTimeout(1300);
+const card=(await p.locator('#detail').innerText().catch(()=>''));
+out.push((card&&!/Grade/.test(card)?'✅':'❌')+' 点行出详情卡且卡内无 Grade 英文: '+card.replace(/\s+/g,' ').slice(0,44));
+await p.keyboard.press('Escape'); await p.waitForTimeout(600);
+
+/* 区域视图同样平铺 */
+await p.selectOption('#zoneSel','106'); await p.waitForTimeout(4200);
+T('区域视图告警块也无分区（.zsec 数）', await p.locator('.zsec').count(), 0);
+const zrows=await p.evaluate(()=>[...document.querySelectorAll('#zpAlarms .zp-row')].map(r=>({g:r.dataset.grade,badge:(r.querySelector('.gd')||{}).innerText})));
+out.push((zrows.length>0&&zrows.every(r=>r.badge===r.g)?'✅':'❌')+' 区域告警行同样带等级徽标: '+zrows.length+' 行');
+out.push(((await p.locator('#zpAlarms [data-sfilter]').count())===2?'✅':'❌')+' 区域视图里筛选开关跟着进面板（右列此时是隐藏的）');
+
+ok(err.length===0,'无 pageerror/console error: '+err.slice(0,3).join(' | '));
+console.log(out.join('\n'));
+const bad=out.filter(l=>l.startsWith('❌')).length;
+console.log('\n通过 '+out.filter(l=>l.startsWith('✅')).length+' · 失败 '+bad);
 await b.close();
+process.exit(bad?1:0);

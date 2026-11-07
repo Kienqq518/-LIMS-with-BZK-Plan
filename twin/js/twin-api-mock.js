@@ -163,6 +163,36 @@
     });
     rb.displayLegs = dlegs;
     rb.pathLengthM = +L.toFixed(2);
+    /* ---------- 循环剧本的"任务层"（2026-11-07 改版） ----------
+       屏上计数从「第几站」改成「第几道任务」：16 条调度任务 + 最开始从样品室取样 1 道 = 17 道。
+       一个站点常常要连着办 2~3 道（106-02 三道、102-01 取样+放料两道），所以：
+         · 任务按 seed 的 cad 归到对应站点，站内按 seq 升序连着办；
+         · 该站的 dwellSec = max(原值, 站内任务数 × WORK)，办不完不许走；
+         · 每道任务在站内占一个均分窗口 [t0+j×WORK, t0+(j+1)×WORK)，窗口结束才进下一道；
+         · 行进段属于"下一道的路上"——所以屏上第 n 道，AGV 就一定在第 n 道对应的线路上跑。
+       站点顺序、弧长 u、腿长这些几何量一个都没动：机器人走的还是那条路线，只是把"任务"这层挂上去。 */
+    var WORK = 6;
+    var stepsAudit = { total: 0, unmatched: [] };
+    if (rb.demoCycle && rb.demoCycle.stops) {
+      var tasks = ((state.overview['dispatch-queue'] || {}).tasks) || [];
+      var byCad = {};
+      tasks.slice().sort(function (a, b) { return a.seq - b.seq; }).forEach(function (t) { (byCad[t.cad || ''] = byCad[t.cad || ''] || []).push(t); });
+      var visits = rb.demoCycle.stops;
+      var kth = 0;
+      visits.forEach(function (st) {
+        var mine = (byCad[st.cad] || []).slice();
+        var list = [];
+        if (st.cad === '102-01') list.push({ kind: 'pickup', seq: null, flowCode: null,
+          flowName: '样品室取样（粗制样电缆）', cad: st.cad, label: st.label, deviceCode: null, taskNo: null });
+        mine.forEach(function (t) { list.push({ kind: 'task', seq: t.seq, flowCode: t.flowCode, flowName: t.flowName,
+          cad: st.cad, label: st.label, deviceCode: t.deviceCode || null, taskNo: t.taskNo || null }); });
+        st.steps = list;
+        st.dwellSec = Math.max(st.dwellSec || 0, list.length * WORK);
+        delete byCad[st.cad];
+      });
+      Object.keys(byCad).forEach(function (cad) { (byCad[cad] || []).forEach(function (t) { if (t.cad) stepsAudit.unmatched.push(t.seq + '@' + t.cad); }); });
+      stepsAudit.total = visits.reduce(function (a, st) { return a + (st.steps || 0).length; }, 0);
+    }
     /* 时间轴：t0=停靠开始，travel 段在 [t0-travelSec, t0)；u 与 travelSec 都由弧长推导 */
     if (rb.demoCycle && rb.demoCycle.stops) {
       var stops = rb.demoCycle.stops;
@@ -173,6 +203,22 @@
         st.travelSec = k === 0 ? 0 : legs[k - 1].travelSec;
         st.t0 = k === 0 ? 0 : +(stops[k - 1].t0 + stops[k - 1].dwellSec + legs[k - 1].travelSec).toFixed(1);
       });
+      /* 步骤时间轴：站内按 seq 顺序均分 dwell，窗口结束才轮到下一道 */
+      var steps = [];
+      stops.forEach(function (st) {
+        var list = st.steps || [];
+        if (!list.length) return;
+        var w = st.dwellSec / list.length;
+        list.forEach(function (sp, j) {
+          sp.no = steps.length + 1; sp.visit = st.order; sp.t0 = +(st.t0 + j * w).toFixed(1);
+          sp.durSec = +w.toFixed(1); sp.endSec = +(sp.t0 + w).toFixed(1);
+          steps.push(sp);
+        });
+      });
+      rb.demoCycle.steps = steps;
+      rb.demoCycle.stepCount = steps.length;
+      rb.demoCycle.workSec = WORK;
+      rb.demoCycle.stepsAudit = stepsAudit;
       var last = stops[stops.length - 1];
       rb.demoCycle.loopSec = +((last.t0 + last.dwellSec + tailArc / speed)).toFixed(1);
       rb.demoCycle.pathLengthM = +L.toFixed(1);
@@ -196,7 +242,21 @@
     if (tail) { var tailSec = c.loopSec - (last.t0 + last.dwellSec); u = last.u + (1 - last.u) * Math.min(1, (t - last.t0 - last.dwellSec) / (tailSec || 1)); }
     else if (phase === 'travel') u = prevU + (cur.u - prevU) * f;
     else u = cur.u;
-    return { cycle: c, robot: rb, index: idx, stop: cur, next: next, phase: phase, f: f, tail: tail, u: Math.max(0, Math.min(1, u)),
+    /* 当前任务道：dwell 段落在哪一道的窗口里就是哪一道；行进段属于"下一道的路上"（尾航段算最后一道） */
+    var step = null, stepPhase = phase, stepRemain = 0;
+    var S = c.steps || [];
+    if (S.length) {
+      if (tail) { step = S[S.length - 1]; stepPhase = 'travel'; stepRemain = Math.max(0, Math.round(c.loopSec - t)); }
+      else {
+        for (var si = 0; si < S.length; si++) {
+          if (t < S[si].endSec) { step = S[si]; stepPhase = t < S[si].t0 ? 'travel' : 'dwell';
+            stepRemain = Math.max(0, Math.round(stepPhase === 'dwell' ? S[si].endSec - t : S[si].t0 - t)); break; }
+        }
+        if (!step) { step = S[S.length - 1]; stepPhase = 'travel'; stepRemain = Math.max(0, Math.round(c.loopSec - t)); }
+      }
+    }
+    return { cycle: c, robot: rb, index: idx, stop: cur, next: next, phase: phase, f: f, tail: tail, step: step, stepPhase: stepPhase, stepRemaining: stepRemain,
+      u: Math.max(0, Math.min(1, u)),
       remaining: Math.max(0, Math.round(tail ? c.loopSec - t : (phase === 'dwell' ? cur.t0 + cur.dwellSec - t : dwellStart - t))) };
   }
   function applyCycle() {
@@ -208,17 +268,21 @@
     rb.taskElapsedMin = dwell ? Math.round(cy.f * st.dwellSec / 60 * 10) / 10 : 0; rb.stallLimitMin = 15;
     var served = state.zone106.devices.filter(function (x) { return x.code === st.deviceCode; })[0];
     rb.servingDeviceId = served ? served.deviceId : rb.servingDeviceId;
-    rb.cycle = { order: cy.tail ? cy.cycle.stops.length : st.order, total: cy.cycle.stops.length,
-      label: cy.tail ? '返回 102 家位/充电位' : st.label, phase: cy.phase, remainingSec: cy.remaining, taskNo: st.taskNo, flow: st.flow, deviceCode: st.deviceCode };
+    var sp = cy.step;
+    rb.cycle = { order: sp ? sp.no : (cy.tail ? cy.cycle.stepCount : st.order), total: cy.cycle.stepCount || 17,
+      label: cy.tail ? '返回 102 家位/充电位' : (sp ? sp.label : st.label), phase: cy.stepPhase || cy.phase,
+      remainingSec: cy.stepRemaining != null ? cy.stepRemaining : cy.remaining,
+      taskNo: sp ? sp.taskNo : st.taskNo, flow: sp ? (sp.flowCode ? sp.flowCode + ' ' + sp.flowName : sp.flowName) : st.flow,
+      deviceCode: sp ? sp.deviceCode : st.deviceCode, seq: sp ? sp.seq : null, kind: sp ? sp.kind : 'travel', visit: st.order, visits: cy.cycle.stops.length };
     /* 设备运行态由剧本驱动：正在停靠的设备=在测 */
     state.zone106.devices.forEach(function (x) {
       if (x.code === st.deviceCode && dwell) { x.status = 'working'; x.currentTaskId = st.taskNo || x.currentTaskId; }
       else if (x.status === 'working' && !x.currentSampleId) { x.status = 'ready'; }
     });
-    return { order: cy.tail ? cy.cycle.stops.length : st.order, total: cy.cycle.stops.length,
-      label: cy.tail ? '返回 102 家位/充电位' : st.label, phase: cy.phase, remainingSec: cy.remaining,
-      taskNo: cy.tail ? null : st.taskNo, flow: cy.tail ? '返航' : st.flow, deviceCode: cy.tail ? null : st.deviceCode,
-      u: +cy.u.toFixed(3), loopSec: cy.cycle.loopSec };
+    return { order: rb.cycle.order, total: rb.cycle.total, label: rb.cycle.label, phase: rb.cycle.phase,
+      remainingSec: rb.cycle.remainingSec, taskNo: rb.cycle.taskNo, flow: rb.cycle.flow, deviceCode: rb.cycle.deviceCode,
+      seq: rb.cycle.seq, kind: rb.cycle.kind, visit: rb.cycle.visit, visits: rb.cycle.visits,
+      u: +cy.u.toFixed(3), loopSec: cy.cycle.loopSec, stepCount: cy.cycle.stepCount, stepsAudit: cy.cycle.stepsAudit };
   }
 
   /* ---------- 底栏块2：调度任务队列的状态现算 ----------
@@ -228,22 +292,22 @@
   function queueView(q) {
     if (!q || !q.tasks) return q;
     var cy = cycleNow();
-    var live = cy && cy.stop ? { flow: cy.stop.flowCode, cad: cy.stop.cad || null, order: cy.stop.order } : null;
-    /* 流号 → 工位：由循环剧本反推，不在队列里手填（手填过一次对不上，「循环中」就永远标不出来） */
-    var cadOf = {};
-    if (cy && cy.cycle && cy.cycle.stops) cy.cycle.stops.forEach(function (st) { if (st.flowCode && st.cad) cadOf[st.flowCode] = st.cad; });
-    var taken = {};
+    var sp = cy && cy.step;
+    /* 「循环中」按任务 seq 精确指认：seq 是调度侧的主键，比"流号反推工位"可靠
+       （流号会重复出现在多个站点，反推一旦对不上就永远标不出循环中——本轮就是这么改掉的）。
+       取样那道不属于调度队列（seq=null），此时没有行被标循环中，屏上也不该硬凑。 */
+    q.liveSeq = sp ? sp.seq : null;
+    q.liveStep = sp ? { no: sp.no, kind: sp.kind, seq: sp.seq, cad: sp.cad, flowCode: sp.flowCode, phase: cy.stepPhase } : null;
     q.tasks.forEach(function (t) {
-      if (cadOf[t.flowCode]) t.cad = cadOf[t.flowCode];
-      t.live = false;
-      if (live && t.flowCode === live.flow && !taken[t.flowCode]) { t.live = true; taken[t.flowCode] = 1; }
+      t.live = !!(sp && sp.seq != null && t.seq === sp.seq);
       t.shown = t.live ? 'running' : t.state;
     });
     q.counts = { running: q.tasks.filter(function (t) { return t.shown === 'running'; }).length,
                  unassigned: q.tasks.filter(function (t) { return t.shown === 'unassigned'; }).length,
                  done: q.tasks.filter(function (t) { return t.shown === 'done'; }).length };
-    q.liveFlow = live ? live.flow : null;
-    q.liveOrder = live ? live.order : null;   /* 顺带给出剧本站序，测试可核对「循环中」确实对应机器人当前所在站 */
+    q.liveFlow = sp ? sp.flowCode : null;                 /* 取样那道没有流号，给 null 而不是硬凑一个 */
+    q.liveOrder = sp ? sp.visit : null;                   /* 站序：测试可核对「第 n 道」确实落在机器人当前所在站 */
+    q.stepCount = (cy && cy.cycle && cy.cycle.stepCount) || 0;
     return q;
   }
 
@@ -368,7 +432,11 @@
       }
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/cycle$/))) {
         var rb = (state.zone106.robots || []).filter(function (x) { return x.robotId === 'RB-C-02'; })[0];
-        return resolve(envelope(rb && rb.demoCycle ? { robotId: 'RB-C-02', cycle: rb.demoCycle, live: (function () { var c = cycleNow(); return c ? { order: c.stop.order, label: c.stop.label, phase: c.phase, remainingSec: c.remaining, u: c.u, loopSec: c.cycle.loopSec } : null; })() } : { unsupported: true }));
+        return resolve(envelope(rb && rb.demoCycle ? { robotId: 'RB-C-02', cycle: rb.demoCycle, live: (function () { var c = cycleNow(); if (!c) return null; var sp = c.step || {};
+              return { order: sp.no || null, total: (c.cycle.stepCount || (c.cycle.steps || []).length) || null, label: sp.label || null,
+                flow: sp.flowCode ? sp.flowCode + ' ' + sp.flowName : (sp.flowName || null), seq: sp.seq == null ? null : sp.seq, kind: sp.kind || null,
+                visit: sp.visit || null, visits: c.cycle.stops.length, phase: c.stepPhase || c.phase,
+                remainingSec: c.stepRemaining == null ? c.remaining : c.stepRemaining, u: c.u, loopSec: c.cycle.loopSec }; })() } : { unsupported: true }));
       }
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/alarms$/))) {
         return resolve(envelope({ zoneId: 'Z-' + m[1], alarms: clone((state.overview.alarms || []).filter(function (a) { return a.zoneId === 'Z-' + m[1]; })) }));

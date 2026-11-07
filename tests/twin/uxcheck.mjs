@@ -20,9 +20,10 @@ T('四张数据表', await p.locator('.dtable').count(), 4);
 out.push(((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x)).length>=6?'✅':'❌')+' 表内占比列（替代原环形/条形图）: '+((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x))).join(','));
 out.push(((await p.locator('.dtable>header .src').allInnerTexts()).every(x=>/数采|调度/.test(x)&&/\d{2}:\d{2}:\d{2}/.test(x))?'✅':'❌')+' 每表表头带来源+更新时间');
 out.push(((await p.locator('#streamMeta').innerText()).includes('未解除')?'✅':'❌')+' 告警流头部汇总（今日/未解除）: '+(await p.locator('#streamMeta').innerText()).replace(/\s+/g,' '));
-const secCnt=await p.locator('.asec>header .cnt').allInnerTexts();
-out.push((secCnt.length===3&&secCnt.every(x=>/今日 \d+ · 未解除 \d+/.test(x))?'✅':'❌')+' 三分区各自今日计数: '+secCnt.join(' | '));
-out.push(((await p.locator('.asec>header .gd').allInnerTexts()).join('')==='ABC'?'✅':'❌')+' 分区徽标只有 A/B/C（无 Grade 英文）: '+(await p.locator('.asec>header .gd').allInnerTexts()).join(','));
+const smeta=(await p.locator('#streamMeta').innerText()).replace(/\s+/g,' ');
+out.push((/今日 13 条 · 未解除 9 · 最新在前/.test(smeta)?'✅':'❌')+' 告警流头部汇总（平铺后一个总数口径）: '+smeta);
+const rowG=(await p.locator('#streamTrack .st-row .gd').allInnerTexts()).slice(0,3);
+out.push((rowG.length===3&&rowG.every(x=>/^[ABC]$/.test(x))?'✅':'❌')+' 等级徽标移到每行行首（分区撤掉后等级信息不丢，且仍只有 A/B/C）: '+rowG.join(','));
 out.push(((await p.locator('.stream').innerText()).match(/Grade/g)||[]).length===0?'✅':'❌'+' 告警流内无 Grade 英文残留');
 
 // 1) 图层图标
@@ -52,7 +53,7 @@ const in106=heat.filter(h=>h.x>=9&&h.x<=18.5&&h.z>=9.6&&h.z<=28.1), other=heat.f
 out.push(((in106.length&&Math.max(...in106.map(h=>h.o))>=0.15&&(!other.length||Math.max(...other.map(h=>h.o))<=0.08))?'✅':'❌')+` 热力分级：106 ${in106.length}块 max=${in106.length?Math.max(...in106.map(h=>h.o)):'-'} / 其他 ${other.length}块 max=${other.length?Math.max(...other.map(h=>h.o)):'-'}`);
 await p.click('.lic[data-layer=heatmap]'); await p.waitForTimeout(600);
 // 4) 底栏=四块（设备统计 / 调度任务队列 / 委托单试验项 / 组态物联节点），除统计块外各自滚动
-T('底栏块数', await p.locator('.dock .dk').count(), 4);
+T('底栏块数（组态物联已挪到右列）', await p.locator('.dock .dk').count(), 3);
 T('底栏滚动轨道数（块1 是统计格不滚）', await p.locator('.dk-track').count(), 3);
 out.push(((await p.evaluate(()=>getComputedStyle(document.getElementById('dkQueueTrack')).animationName))==='dkUp'?'✅':'❌')+' 队列块滚动动画: '+await p.evaluate(()=>getComputedStyle(document.getElementById('dkQueueTrack')).animationName));
 
@@ -61,18 +62,24 @@ const dkGlass=await p.evaluate(()=>{const e=getComputedStyle(document.querySelec
 const dkAlpha=(dkGlass.bg.match(/rgba\(255, 255, 255, ([0-9.]+)\)/)||[])[1];
 out.push((+dkAlpha>=.3&&+dkAlpha<=.7&&/blur\(\d+px\)/.test(dkGlass.blur)?'✅':'❌')+` 底栏块=半透明玻璃底（alpha ${dkAlpha} + ${dkGlass.blur}）`);
 // 5) 右侧告警流滚动
-T('告警流行数(三区各 3×2)', await p.locator('.st-row').count(), 18);
-const asecAnim=await p.evaluate(()=>[...document.querySelectorAll('.asec-track')].map(t=>getComputedStyle(t).animationName));
-out.push((asecAnim.length===3&&asecAnim.every(x=>x==='asecUp')?'✅':'❌')+' 每个分区独立滚动（非整块滚动）: '+asecAnim.join(','));
-out.push(((await p.evaluate(()=>getComputedStyle(document.getElementById('streamTrack')).animationName))==='none'?'✅':'❌')+' 外层 .stream-board 不再整体滚动（分区表头不飘）');
+T('告警流行数(13 条 ×2 无缝复制)', await p.locator('#streamTrack .st-row').count(), 26);
+const boardAnim=await p.evaluate(()=>{const t=document.getElementById('streamTrack');return {name:getComputedStyle(t).animationName,cls:t.className};});
+out.push((boardAnim.name==='asecUp'&&/scroll/.test(boardAnim.cls)?'✅':'❌')+' 平铺列表整条滚动（分区撤掉后滚动回到轨道本身）: '+JSON.stringify(boardAnim));
 // 6) 循环剧本
 const cy=await p.locator('#cycleBox').innerText();
-out.push((/\d\/11/.test(cy)&&/无人化循环/.test(cy)?'✅':'❌')+' 无人化循环指示（11 站：含 102 取样与跨区送样两段航程）: '+cy.replace(/\s+/g,' ').slice(0,90));
+out.push(((/\d\/17/.test(cy)&&/无人化任务/.test(cy)&&!/无人化循环/.test(cy))?'✅':'❌')+' 无人化任务指示（17 道 = 16 条调度任务 + 样品室取样 1 道）: '+cy.replace(/\s+/g,' ').slice(0,96));
 /* 剧本运动：先在场景内起 100ms 记录器（避免每 400ms 一次跨进程往返的抖动），
    并且**对齐到下一次停靠**再开窗——盲开 28s 窗口可能整段落在 26.5s 的 102→106 长行走段里，
    那样「出现停靠静止」就会假失败（animation-spec §16）。 */
-const live0=await p.evaluate(async()=>{const l=(await TwinApi.get('/api/zone/106/cycle')).data.live;return l&&{phase:l.phase,remainingSec:l.remainingSec};});
-if(live0&&live0.phase==='travel') await p.waitForTimeout(Math.min(28000,(live0.remainingSec+0.6)*1000));
+/* 对齐到下一次停靠再开窗。上限必须给足：17 道改版后最长航段（102→106 走廊）约 47s，
+   原来 28s 的封顶会把窗口整段丢在行走里 → 「连续停靠静止 0.0s」假失败（animation-spec §16 同一条教训）。 */
+const tAlign=Date.now();
+let live0=null;
+for(;;){
+  live0=await p.evaluate(async()=>{const l=(await TwinApi.get('/api/zone/106/cycle')).data.live;return l&&{phase:l.phase,remainingSec:l.remainingSec};});
+  if(!live0||live0.phase!=='travel'||Date.now()-tAlign>90000) break;
+  await p.waitForTimeout(Math.min(6000,Math.max(600,(live0.remainingSec+0.6)*1000)));
+}
 await ev(()=>{window.__rec=[];window.__recT=setInterval(()=>{const m=window.visual106.modelRoots.get('106-08');
   if(m) window.__rec.push([performance.now(),m.position.x,m.position.z]);},100);});
 await p.waitForTimeout(26000);
@@ -89,9 +96,15 @@ maxDwellRun=Math.max(maxDwellRun,dwellRun); stillMs=maxDwellRun;
 /* 位移总量取决于采样窗口落在剧本的哪一段（含 6–12s 停靠），所以按「速度」而非「距离」判定 */
 out.push((moved>3&&peak<=1.0&&peak>=0.6&&stillMs>=1.5&&speeds.length===0?'✅':'❌')+` 小机器人按剧本行进：0.5s 滑窗速度峰值 ${peak.toFixed(2)}m/s（剧本 0.75）· 连续停靠静止 ${stillMs.toFixed(1)}s · 窗口内位移 ${moved.toFixed(2)}m · 超速样本 ${speeds.length}（采样 ${rec.length} 点/100ms）`);
 // 停靠站与剧本一致：UI 报的站序必须等于端点 live.order
-const both=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/cycle');return {live:r.data.live, ui:document.getElementById('cycleBox').innerText.replace(/\s+/g,' ')};});
-const sa=both.live; const uiTxt=both.ui;
-out.push((uiTxt.includes(sa.order+'/11')?'✅':'❌')+` 停靠站与剧本一致：UI「${uiTxt.slice(0,42)}」↔ 端点 order=${sa.order}(${sa.label})`);
+/* UI 每 1s 刷一次、端点按墙上时钟现算，两道之间只有 6s——正好卡在边界上就会"两个都对但不一致"。
+   所以同一次读取里比对 + 最多重试三次（DOM 下一秒就会追上），而不是把时序抖动当成缺陷。 */
+let sa=null, uiTxt='', agree=false;
+for(let k=0;k<4;k++){
+  const both=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/cycle');return {live:r.data.live, ui:document.getElementById('cycleBox').innerText.replace(/\s+/g,' ')};});
+  sa=both.live; uiTxt=both.ui; if(uiTxt.includes(sa.order+'/17')){agree=true;break;}
+  await p.waitForTimeout(1200);
+}
+out.push((agree?'✅':'❌')+` 停靠道与剧本一致：UI「${uiTxt.slice(0,52)}」↔ 端点 live.order=${sa.order}(${sa.label})`);
 // 7) 下钻动画（采样相机，应连续变化而非一次跳变）
 await p.keyboard.press('1'); await p.waitForTimeout(2500);
 const cam=()=>ev(()=>{const c=window.visual106.camera;return [+c.position.x.toFixed(2),+c.position.y.toFixed(2),+c.position.z.toFixed(2),+((c.top-c.bottom)/2).toFixed(2)];});
