@@ -10,6 +10,7 @@
   var scene = $('#scene');
   var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [], planItems = [], queueData = null, entrust = null;
   var rtTimer = null, detailDev = null, bridgeReady = false, pendingState = null;
+  var thNode = 'IOT-106-TH-02', thSeries = null, thLoading = false, chartsBooted = false;
   var zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false, routeAudit = null, cycleDef = null, cycTimer = null;
   var SRC_NAME = { daq: '数采', dispatch: '调度', iot: '物联', lims: 'LIMS', rule: '判定规则' };
   var ORDER = [];  /* 遥控翻页序列 */
@@ -82,7 +83,7 @@
     if (ev.type === 'tick') {
       robots = (ev.payload.robots && ev.payload.robots.length ? ev.payload.robots : robots);
       devices.forEach(function (d) { var s = ev.payload.devices.filter(function (x) { return x.deviceId === d.deviceId; })[0]; if (s) d.status = s.status; });
-      renderZonePanel(); renderTables(); pushState();
+      renderZonePanel(); renderTables(); renderCharts(); pushState();
       /* 底栏：块1 统计与块2 的"循环中"要跟着心跳走，但只就地改文本（见 refreshDock） */
       renderDockStats();
       TwinApi.get('/api/overview/dispatch-queue').then(function (r) { queueData = r.data; refreshDock(); }).catch(function () { });
@@ -123,11 +124,28 @@
       { k: 'blockedUnresolved', label: '其中未解决', sub: true, of: 'blocked', cls: 'warn' }
     ]
   };
+  /* ---------- 图型选型（口径写死在这里，避免下轮随手换图型把语义换掉）----------
+     环形 = 少数类别的「构成占比」，各类相加必须等于总数；
+     柱状 = 同一口径下的「量级比较」，类别之间可以不相加（88 vs 8 用环形会把 8 挤没，那是骗人）；
+     折线带 = 时序趋势。逾期/临期不进环形：它们是「未完成」的子集，塞进同一个环会重复计数。 */
   function renderTables() {
     if (!status || !status.panels) return;
     var per = status.panels, stamp = new Date(status.updatedAt || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
-    $('#tables').innerHTML = Object.keys(per).map(function (key) {
+    var keys = Object.keys(per);
+    var host = $('#tables');
+    if (host.dataset.keys !== keys.join(',')) {                        /* 骨架：只在面板集合变化时重建 */
+      host.dataset.keys = keys.join(',');
+      host.innerHTML = keys.map(function (key) {
+        return '<section class="dtable" data-key="' + key + '">' +
+          '<header><b>' + escapeHtml(per[key].title) + '</b><span class="src"></span></header>' +
+          '<table><tbody></tbody></table>' +
+          (CHART_KIND[key] ? '<div class="tw-chart" id="chart-' + key + '" role="img" aria-label="' + escapeHtml(per[key].title + ' ' + CHART_KIND[key]) + '"></div>' : '') +
+          '<footer class="f-cmp"></footer><footer class="f-note"></footer></section>';
+      }).join('');
+    }
+    keys.forEach(function (key) {
       var p = per[key], v = p.periods[st.period], rows = ROWS[key] || [];
+      var sec = host.querySelector('.dtable[data-key="' + key + '"]'); if (!sec) return;
       var body = rows.map(function (r) {
         var val = r.computed ? r.computed(v) : v[r.k];
         if (val == null) return '<tr><td>' + r.label + '</td><td class="v na">—</td><td class="pct"></td></tr>';
@@ -141,13 +159,16 @@
         }
         return '<tr class="' + (r.head ? 'head ' : 'sub ') + (r.cls || '') + '"' + tip + '><td>' + r.label + tag + '</td><td class="v">' + val + '</td><td class="pct">' + pct + '</td></tr>';
       }).join('');
+      sec.querySelector('tbody').innerHTML = body;
+      var src = sec.querySelector('.src');
+      src.textContent = dataError ? '数据延迟' : (SRC_NAME2[p.source] || p.source) + ' · ' + stamp;
+      src.classList.toggle('err', !!dataError);
       var c = v.compare;
-      var foot = c == null ? '' : '<span class="d ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</span><span>' + ({ day: '较上日', month: '较上月', year: '较去年' })[st.period] + '</span>';
-      return '<section class="dtable"><header><b>' + p.title + '</b><span class="src' + (dataError ? ' err' : '') + '">' +
-        (dataError ? '数据延迟' : (SRC_NAME2[p.source] || p.source) + ' · ' + stamp) + '</span></header>' +
-        '<table><tbody>' + body + '</tbody></table>' + (foot ? '<footer>' + foot + '</footer>' : '') +
-        (p.note ? '<footer>' + p.note + '</footer>' : '') + '</section>';
-    }).join('');
+      sec.querySelector('.f-cmp').innerHTML = c == null ? '' :
+        '<span class="d ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</span><span>' + ({ day: '较上日', month: '较上月', year: '较去年' })[st.period] + '</span>';
+      sec.querySelector('.f-cmp').hidden = c == null;
+      var fn = sec.querySelector('.f-note'); fn.innerHTML = p.note || ''; fn.hidden = !p.note;
+    });
   }
   /* 时钟：大屏右上角常驻，秒级走动 */
   function tickClock() {
@@ -245,7 +266,7 @@
       .then(function (r) {
         if (st.mode !== 'ZONE' || st.zone !== z) return;
         zstats = r[0].data || null; zrunning = (r[1].data && r[1].data.tasks) || []; zalarms = (r[2].data && r[2].data.alarms) || [];
-        renderZonePanel();
+        renderZonePanel(); renderCharts();
       }).catch(function (e) { fail('区域数据加载失败：' + e.message); });
   }
   function zp(sel) { return document.querySelector('#zonePanel ' + sel); }
@@ -450,10 +471,10 @@
     var total = devices.length, rate = total ? Math.round(cnt.working / total * 100) : 0;
     var el = $('#dkDevSrc'); if (el) el.textContent = '数采 · ' + devices.length + ' 台建档';
     var body = $('#dkDevBody'); if (!body) return;
-    body.innerHTML = '<div class="dk-grid">' +
-      [['working', '在测'], ['ready', '就绪'], ['alarm', '异常'], ['standby', '待机'], ['stopped', '停止'], ['total', '合计']]
-        .map(function (x) { return '<div class="dk-cell ' + x[0] + '"><b>' + (x[0] === 'total' ? total : (cnt[x[0]] || 0)) + '</b><span>' + x[1] + '</span></div>'; }).join('') +
-      '</div><div class="dk-rate">稼动率 <b style="font-variant-numeric:tabular-nums">' + rate + '%</b><i><b style="width:' + rate + '%"></b></i></div>' +
+    /* 五档状态是「同类量级比较」→ 3D 柱；数字直接进柱顶标签，合计与口径不丢（表头已有「N 台建档」） */
+    body.innerHTML = '<div class="dk-grid dk-total-only"><div class="dk-cell total"><b>' + total + '</b><span>合计建档</span></div>' +
+      '<div class="dk-cell working"><b>' + cnt.working + '</b><span>稼动中</span></div></div>' +
+      '<div class="dk-rate">稼动率 <b style="font-variant-numeric:tabular-nums">' + rate + '%</b><i><b style="width:' + rate + '%"></b></i></div>' +
       '<div class="dk-rate" style="margin-top:5px">机器人 ' + robots.length + ' 台 · 在跑 ' + robots.filter(function (r) { return !r.parked; }).length + ' · 停靠充电 ' + robots.filter(function (r) { return r.parked; }).length + '</div>';
   }
   function renderDock() {
@@ -494,7 +515,8 @@
     var zn = {}; (zones || []).forEach(function (z) { zn[z.zoneId.slice(2)] = z.name; });
     var nhtml = ns.map(function (n) {
       var cam = n.type === 'camera';
-      return '<div class="nd-row ' + (cam ? 'cam' : '') + '" data-node="' + n.id + '" tabindex="0" role="button" aria-label="' + escapeHtml(n.name + '，' + n.roomId + ' ' + (zn[n.roomId] || '') + '，回车查看节点详情') + '">' +
+      var thOn = n.id === thNode;
+      return '<div class="nd-row ' + (cam ? 'cam' : '') + (thOn ? ' th-active' : '') + '" data-node="' + n.id + '" tabindex="0" role="button" aria-label="' + escapeHtml(n.name + '，' + n.roomId + ' ' + (zn[n.roomId] || '') + '，回车查看节点详情' + (thOn ? '（当前折线带序列）' : '')) + '">' +
         '<i class="nd-dot"></i><span class="rm">' + n.roomId + '</span><span class="nm">' + escapeHtml(n.name) + '</span>' +
         '<span class="ti">' + NODE_CN(n.type) + '</span><span class="rd">' + nodeReading(n) + '</span>' +
         '<span class="ti">' + new Date(n.updatedAt).toLocaleTimeString('zh-CN', { hour12: false }) + '</span></div>';
@@ -600,6 +622,109 @@
     sceneCmd('view', { view: view });
     toScene('camera', { action: 'drill' });
   }
+  /* ---------- 图型选型（口径写死，避免下轮随手换图型把语义换掉）----------
+     环形 = 少数类别的「构成占比」，各类相加必须等于总数；
+     柱状 = 同口径下的「量级比较」，类别之间不必相加；
+     折线带 = 时序趋势。逾期/临期不进环形：它们是「未完成」的子集，塞进同一个环会重复计数。 */
+  var CHART_KIND = { entrust: '3D 柱状图', samples: '3D 柱状图', testItems: '3D 柱状图', dispatch: '3D 柱状图' };
+  /* ---------- 3D 图表：所有输入都从「表格里已经在用的同一批变量」取，绝不另算一套 ---------- */
+  function renderCharts() {
+    if (!window.TwinCharts) return;
+    if (!chartsBooted) { chartsBooted = true; TwinCharts.boot().then(function (ok) { if (!ok) { flashHint('图表引擎未加载（vendor/g2.min.js），读数仍以表格呈现'); return; } renderCharts(); }); }
+    if (!globalThis.G2) return;
+    var per = (status && status.panels) || {}, v = function (k) { return per[k] ? per[k].periods[st.period] : null; };
+    var e = v('entrust'), sa = v('samples'), ti = v('testItems'), di = v('dispatch');
+    /* 左栏只有 176px 净宽：环形在这里放不下「环 + 指认标签」，实测百分比被裁。
+       改用柱状（类别名落在柱底，宽度够用），构成关系靠柱高与表格里已有的百分比读。 */
+    if (e) TwinCharts.bar($('#chart-entrust'), 'entrust',
+      [{ k: '电缆类', v: e.power, c: '#2878FF' }, { k: '工器具类', v: e.safety, c: '#16A34A' }], { height: 86 });   /* 短名：全名就在上方表格，176px 里两个五字标签会挤在一起 */
+    if (sa) TwinCharts.bar($('#chart-samples'), 'samples',
+      [{ k: '已收样', v: sa.received, c: '#2878FF' }, { k: '在检', v: sa.testing, c: '#F59E0B' }, { k: '已完成', v: sa.done, c: '#16A34A' }], { height: 84 });
+    if (ti) TwinCharts.bar($('#chart-testItems'), 'testItems',
+      [{ k: '在检', v: ti.testing, c: '#2878FF' }, { k: '待检', v: ti.pending, c: '#F59E0B' }, { k: '已完成', v: ti.done, c: '#16A34A' }], { height: 86 });
+    if (di) TwinCharts.bar($('#chart-dispatch'), 'dispatch',
+      [{ k: '已完成', v: di.done, c: '#16A34A' }, { k: '未解决', v: di.blockedUnresolved, c: '#E5484D' }, { k: '已解决', v: di.blockedResolved, c: '#94A3B8' }], { height: 84 });
+
+    /* 告警分级：A/B/C × 今日/未解除（分组柱，两个口径并排才看得出「积压比例」） */
+    var SECS = [['A', '异常'], ['B', '阻塞'], ['C', '校准']];
+    if (st.mode === 'S1' && alarms.length) {
+      TwinCharts.group($('#chartAlarms'), 'alarms', SECS.map(function (g) {
+        var all = alarms.filter(function (x) { return x.grade === g[0]; });
+        var open = all.filter(function (x) { return x.status !== 'resolved'; });
+        return { k: g[0] + ' ' + g[1], s: [{ v: all.length }, { v: open.length, c: '#E5484D' }] };
+      }), { height: 104 });
+    }
+    /* 底栏块2 不出图（2026-11-07 决定）：这块的主体是 16 条队列的滚动明细，
+       三态计数已经在分组表头（进行中 · 3 / 未派单 · 4 / 已完成 · 9）。
+       实测在 172px 高的块里塞 96px 环形会把列表压到只剩 40px，dockcheck 当场报"任务行找不到"——
+       清单不该为图让位。环形改放到 102 的样品分布（各类相加=在库存量，且面板有纵向空间）。 */
+    /* 底栏块1：设备状态五档（六宫格里的五个数字换成柱，合计仍走表头「数采 · N 台建档」） */
+    if (devices.length) {
+      var cnt = { working: 0, ready: 0, standby: 0, stopped: 0, alarm: 0 };
+      devices.forEach(function (d) { cnt[d.status] = (cnt[d.status] || 0) + 1; });
+      TwinCharts.bar($('#chartDevices'), 'devices', [
+        { k: '在测', v: cnt.working, c: '#2878FF' }, { k: '就绪', v: cnt.ready, c: '#16A34A' },
+        { k: '异常', v: cnt.alarm, c: '#E5484D' }, { k: '待机', v: cnt.standby, c: '#94A3B8' },
+        { k: '停止', v: cnt.stopped, c: '#7E8C9B' }], { height: 88 });
+    }
+    /* 区面板任务统计 / 检测项目数统计：四格换柱（数字进标签，口径进 title）。
+       出不出图跟着 viewProfile.blocks 走——与面板出不出这块同一判据；
+       别用 statsKind 字符串硬比（种子里是 'task' / 'testItems'，写成 'tasks' / 'test-items' 就永远不出图，本轮真实踩过）。 */
+    var zprof = ((zones.filter(function (x) { return x.zoneId === 'Z-' + st.zone; })[0] || {}).viewProfile || {});
+    var blocks = zprof.blocks || [];
+    if (st.mode === 'ZONE' && zstats) {
+      var per2 = zstats.periods ? zstats.periods[st.period] : null;
+      if (blocks.indexOf('task-stats') >= 0 && per2) {
+        TwinCharts.bar($('#chartZoneStats'), 'zstats', [
+          { k: '已完成', v: per2.done || 0, c: '#16A34A' }, { k: '执行中', v: per2.running || 0, c: '#2878FF' },
+          { k: '异常挂起', v: per2.abnormal || 0, c: '#E5484D' }, { k: '排队', v: per2.queued || 0, c: '#F59E0B' }
+        ], { height: 92 });
+      } else if (blocks.indexOf('test-items') >= 0 && zstats.testItems) {
+        var t2 = zstats.testItems[st.period] || zstats.testItems;
+        TwinCharts.bar($('#chartZoneItems'), 'zstats', [   /* 注意是 #chartZoneItems：非 106 房间出的是这块，#zpStats 此时是 hidden */
+          { k: '检测中', v: t2.testing || 0, c: '#2878FF' }, { k: '待检测', v: t2.pending || 0, c: '#F59E0B' },
+          { k: '已完成', v: t2.done || 0, c: '#16A34A' }, { k: '逾期', v: t2.overdue || 0, c: '#E5484D' }
+        ], { height: 92 });
+      }
+    }
+    /* 102 样品分布环形：byName 各类相加 == 在库存量才成立（面板里已有同一条一致性检查） */
+    var sp = zstats && zstats.samples;
+    if (st.mode === 'ZONE' && sp && (zprof.blocks || []).indexOf('samples') >= 0) {
+      var sum = (sp.byName || []).reduce(function (a, x) { return a + x.count; }, 0);
+      /* 环形必须把各类别全画进去：slice(0,4) 会少掉一类（实测 272 vs 存量 286），
+         相加不等于总数就不配用环形——宁可不画。类别多于 6 种也退回表格。 */
+      if (sum === sp.stored && sp.byName.length && sp.byName.length <= 6) {
+        TwinCharts.donut($('#chartZoneSamples'), 'zsamples', sp.byName.map(function (x, i) {
+          return { k: x.name, v: x.count, c: ['#2878FF', '#16A34A', '#F59E0B', '#7C6CF0', '#94A3B8', '#E5484D'][i % 6] };
+        }), { height: 132, cy: .30, rx: .24, flat: .62, ly: .74, cols: 2, lw: .5 });
+      }
+    }
+    drawTH();
+  }
+  /* 温湿度 3D 折线带：末点必须等于列表里的当前读数（数据源见 /api/iot/temp-hum-series 的钉住约定） */
+  function drawTH() {
+    var n = (envNodes || []).filter(function (x) { return x.id === thNode; })[0];
+    if (!n || !n.values || n.values.temperature == null) { if (envNodes && envNodes.length) { var alt = envNodes.filter(function (x) { return x.type === 'temperature'; })[0]; if (alt) { thNode = alt.id; } } return; }
+    var cap = $('#chartTHCap');
+    if (cap) cap.textContent = n.name + '（' + n.roomId + ' 区）· 近 ' + (thSeries ? thSeries.series.length : 16) + ' 点 · Mock 时序';
+    if (!thSeries || thSeries.nodeId !== thNode) {
+      if (!thLoading) {
+        thLoading = true;
+        TwinApi.get('/api/iot/temp-hum-series?node=' + thNode + '&temp=' + n.values.temperature + '&hum=' + n.values.humidity + '&points=16')
+          .then(function (r) { thSeries = r && r.data ? r.data : null; thLoading = false; if (thSeries) drawTH(); })
+          .catch(function () { thLoading = false; });
+      }
+      return;
+    }
+    var t = thSeries.series.map(function (x) { return x.temperature; }), h = thSeries.series.map(function (x) { return x.humidity; });
+    /* 末点钉住当前读数：图与列表不一致会被一眼看穿 */
+    t[t.length - 1] = n.values.temperature; h[h.length - 1] = n.values.humidity;
+    TwinCharts.ribbon($('#chartTH'), 'temp-hum', [
+      { name: '温度', unit: '℃', values: t, c: '#2878FF' },
+      { name: '湿度', unit: '%RH', values: h, c: '#16A34A' }
+    ], { height: 62, xLabels: ['-15h', '-8h', '现在'] });
+  }
+
   function applyAll() {
     document.querySelectorAll('.mode').forEach(function (b) { b.classList.toggle('active', (st.mode === 'S1' && b.dataset.mode === 'S1') || (st.mode === 'S3' && b.dataset.mode === 'S3')); });
     if ($('#zoneSel').options.length) $('#zoneSel').value = st.zone;
@@ -628,9 +753,9 @@
     $('#stripBtn').textContent = st.strip ? '▴ 展开底栏' : '▾ 收起底栏'; $('#stripBtn').setAttribute('aria-pressed', !!st.strip);
     $('#stripBtn').disabled = st.mode !== 'S1';
     drillTo(st.mode === 'ZONE' ? zoneView(st.zone) : 'overall-101');
-    renderTables(); renderAlarms(); renderDock(); pushState(); writeURL();
+    renderTables(); renderAlarms(); renderDock(); renderCharts(); pushState(); writeURL();
     if (st.mode === 'ZONE') { loadZone(); renderZonePanel(); }
-
+    renderCharts();
   }
   function setAlarmFilter(sec, v) {
     if (!sec || !v || st.alarmFilter[sec] === v) return;
@@ -709,7 +834,7 @@
     document.querySelectorAll('.mode').forEach(function (b) { b.onclick = function () { setMode(b.dataset.mode); }; });
     $('#zoneSel').onchange = function () { setMode('ZONE', this.value); };
     document.querySelectorAll('.seg').forEach(function (b) { b.onclick = function () {
-      document.querySelectorAll('.seg').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.period = b.dataset.period; renderTables(); renderZonePanel(); writeURL();
+      document.querySelectorAll('.seg').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.period = b.dataset.period; renderTables(); renderZonePanel(); renderCharts(); writeURL();
     }; });
     /* 筛选控件改为事件委托：同一套按钮现在渲染在两处（右侧告警流头部、区域视图的告警块），必须统一响应 */
     document.addEventListener('click', function (e) {
@@ -738,6 +863,14 @@
       if (q) { dockLocate(q.dataset.cad, q.querySelector('.nm').textContent); return; }
       var ti = e.target.closest('#dkItemsTrack .ti-row');
       if (ti) { dockLocate(ti.dataset.cad, ti.querySelector('.nm').textContent); return; }
+      var ndTh = e.target.closest('#dkNodesTrack .nd-row');
+      if (ndTh) {
+        var ndv = (envNodes || []).filter(function (x) { return x.id === ndTh.dataset.node; })[0];
+        if (ndv && ndv.values && ndv.values.temperature != null && thNode !== ndv.id) {
+          thNode = ndv.id; thSeries = null; document.querySelectorAll('#dkNodesTrack .nd-row').forEach(function (r) { r.classList.toggle('th-active', r.dataset.node === thNode); });
+          drawTH(); flashHint('温湿度时序已切到 ' + ndv.name + '（' + ndv.roomId + ' 区）');
+        }
+      }
       var nd = e.target.closest('#dkNodesTrack .nd-row');
       if (nd) { dockSelectNode(nd.dataset.node); }
     });

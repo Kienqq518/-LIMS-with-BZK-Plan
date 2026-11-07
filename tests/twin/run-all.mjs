@@ -38,6 +38,7 @@ const SUITES = [
   ['s3check', 'S3 告警回溯已移出 MVP：抽屉/按钮/按键映射都不存在，告警只呈现当前闭环'],
   ['uxcheck', '透明浮层 + 下钻/切近补间 + 信息卡 + 循环剧本 + 避让自检（44 项）'],
   ['uiconcheck', '视觉一致性守卫（FR-35）：四块面板同一玻璃配方、字号地板 10.4px、宿主样式零裸值、3D 与 DOM 同一组状态色、可点元素三态齐、场景内标签/节点标记并回 token、读数等宽'],
+  ['chartcheck', '3D 图表（FR-36）：本地 vendor 无 CDN、每张图真有像素、图与表同源、环形三片相加=分组之和、温湿度末点钉住当前读数、点节点行换序列、周期与下钻跟着变、role=img、reduced-motion 仍出图'],
   ['focuscheck', '**89 个设备/物品逐个验**：点击→选中→气泡→落点偏差<14px→构图占比→滚轮双向且钉住；未建模 11 个只给说明不动相机（约 4 分钟，FR-34）'],
 ];
 const list = only ? SUITES.filter(([n]) => only.split(',').includes(n)) : SUITES;

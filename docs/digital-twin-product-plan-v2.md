@@ -349,6 +349,31 @@ method: GitHub skill `chituai/prd-writer`（三视角诊断→概念版→落地
   9. **回归**：新增 `tests/twin/uiconcheck.mjs`（12 项）把上面 1/2/3/4/6/7 变成断言；
      同时把 uxcheck 里「底栏块透明底 = alpha 0.42」这种钉死具体数值的断言改成验语义（半透明 + 真有 blur）——
      **断言要钉口径，不钉数值**，否则 token 调一档就假失败。
+- FR-36【2026-11-07 新增 · 3D 图表与选型口径】左右两侧与下方的读数按"能不能相加"决定图型，立体效果不许牺牲可比性：
+  1. **选型三条判据**（口径写进 `twin-charts.js` 注释，防下轮随手换图型换语义）：
+     ① 各类相加=总数才允许环形；② 只比量级不必相加用柱状（88 vs 3 用环形会把 3 压成看不见，那是骗人）；③ 时序用折线带。
+     逾期/临期是「未完成」的子集，**绝不进任何环形**，只留在表格里。选型表见 `docs/twin-design/chart-3d.md`。
+  2. **等轴挤出，不用透视**：数据面保持正交（y 线性可比、扇区角度严格按数值），只挤顶面与侧面厚度。
+     透视 3D 让近处的柱子天然比远处高，售前投影与运维读屏两种场景里都是错的。
+     深度写成 `dy = yMax × 5.5%`，像素深度恒等于绘图高度的 5.5%，换数据范围不会变胖变瘦。
+  3. **窄面不出环形**：左栏净宽 176px 放不下"环 + 指认标签"（实测百分比被裁一半），委托/样品/试验项目/调度四块一律用柱；
+     环形改留给 102 区面板的样品分布（5 类相加=在库存量 286，面板有纵向空间；类别多于 6 种也退回表格）。
+     底栏队列块**不出图**：那块 172px 高的主体是 16 条队列的滚动明细，塞 96px 环形会把列表压到 40px，
+     `dockcheck` 当场报「任务行找不到」——清单不为图让位。
+  4. **温湿度折线带**（产品指定）：温度 + 湿度两条序列各自归一只比趋势，绝对值写进端点标签，不靠轴读数；
+     点列表里任意温湿度节点行即切换序列，选中态由渲染拥有（命令式加 class 会在下一拍 innerHTML 重建时被抹掉）。
+  5. **数据同源硬约束**：`/api/iot/temp-hum-series` 的**末点必须钉住请求带进来的当前读数**——
+     图上最后一点和列表/区域面板不是同一个数，客户一眼看穿是两套假数据；历史部分用日周期曲线 + 节点指纹抖动，同一小时内可重复。
+  6. **引擎本地化**：G2 v5 走 `twin/future-lab/vendor/g2.min.js`，**零 CDN 依赖**（展厅断网也要能开）；
+     加载失败或容器隐藏时数字表格照常显示——图表是读数的一种呈现，不是读数的唯一来源。
+  7. **心跳不许重建有状态的子树**：图表容器挂在 `renderTables()` 的 innerHTML 里时，8 张图两轮心跳后只剩 2 张
+     （canvas 被连锅端走，而签名没变又不重绘）。改成表格骨架只建一次、每拍只改数字，图表容器一律是稳定兄弟节点。
+     数据变化走 `chart.options()+render()` 增量更新，不 destroy 重建（重建会让大屏每 2s 闪一下白）。
+  8. **G2 v5 三条实测坑**：`style.radius` 数组会让 interval 整条不渲染且不报错；
+     把 hex 存进数据再 `encode.color` 会被序数色板重染（蓝红变紫绿），面颜色必须走 `style.fill` 回调；
+     `view.children` 里 interval 用数组 encode 会抛 `getBandWidth is not a function`，立体几何全部改用 polygon。
+  9. 环形必须把类别**全**画进去：`slice(0,4)` 少画一类就出现「图上 272 vs 存量 286」（被自己的守卫当场抓到）——相加不等于总数就不配用环形，宁可不画。
+10. 性能：S1 七张图、下钻最多九张，与 three.js 同屏宿主 rAF 实测 60fps，`state.rendered` 稳定不涨。
 - FR-2b【本次更新 · 决策 Q6】：S1 不加能力叙事层（不做试验项目/精度等级/案例墙），只做运行镜像。
 
 ### 5.2 关键页面线框（建议版 · 1920×1080 基准）
@@ -594,6 +619,7 @@ flowchart TD
 | FR-31 下钻画像 | `tests/twin/zoneview.mjs`（34 项）：106 保留左栏+底栏且机器人 6s 位移 >0.3m、非 106 左栏与底栏隐藏、五档房间的块列表逐一比对、隐藏块无脏数据、浮层两两不重叠 | 自动 |
 | FR-35 视觉 token 统一 | `tests/twin/uiconcheck.mjs`（12 项）：`.rail/.stream/.zonepanel/.dk` 五项玻璃属性完全相同、屏上无 <10.4px 文字、宿主样式零裸值（hex/blur/font-size/z-index/border-radius）、`__twinTokensForQA` 与 CSS token 同值、可点元素 cursor:pointer 且存在 focus-visible 规则、场景内房间标签与节点标记已并回宿主 token、读数 tabular-nums | 自动 |
 | FR-32 底栏行落点 | `tests/twin/dockcheck.mjs`：点任务行/试验项行 → `body[data-last-highlight]` 等于该行 cad；点节点行 → `#iot-audit.selectedId` 与 `cardVisible` 对上 | 自动 |
+| FR-36 3D 图表 | `tests/twin/chartcheck.mjs`（23 项）：G2 来自本地 vendor 且无 CDN 请求；逐张扫描 canvas 非透明像素；图与表数字逐张相等（委托/样品/试验项目/调度/告警三分区/设备五档/102 样品五类）；环形三片相加=分组表头之和；`/api/iot/temp-hum-series` 末点钉住当前读数；点温湿度行换序列且选中态在重建后仍在；周期切换与两种下钻出图；每张图 role=img+aria-label；reduced-motion 下照样出图；面颜色不许 encode.color 塞 hex | 自动 |
 | FR-29 线路推导与当前航段 | `tests/twin/routecheck.mjs`：11 个定位点仍贴各自设备、`pathLengthM` 与场景弧长一致（92.2 vs 92.22）、走廊带内折线 32.4m 覆盖 z[11.59,25.4]、102 西门与 106 北门各穿越 2 次且落在门洞内、自检 `transits` 恰 4 次且无第三处穿墙、前两站 cad=102-05/102-01、`mission` 三段 | 自动 |
 | FR-28 一台停靠一台跑 | `tests/twin/robotcheck.mjs`：本体停在桩中心 (26.44,13.48)、8s 内位移 0、路线层只剩一条折线、电量回升、不判卡住、Enter 出详情、无告警挂在停靠机器人上 | 自动 |
 | FR-27 键盘可达 | 同上：行有 `role=button`+`tabindex=0`，Enter 打开详情，焦点落在区内 `.asec-track` 计算态为 `paused` | 自动 |
@@ -702,6 +728,7 @@ flowchart TD
 | **新增 ✅已上线** | 行进范围与避让（FR-12） | `twin/api/seed.json`、`twin-scene-bridge.js`、`twin-scene-v2.{html,css,js}` | 删手绘环线；路线由 CAD 占地 A* 推导；家位挪出设备；场景内 3758 点逐段校验 + 左栏徽标 | routecheck 7 项全绿（违规 0） |
 | **新增 ✅已上线** | 透明浮层三处 + 下钻/切近补间 + 实体信息卡 + 无人化循环剧本 + 图层 icon 化 + 系统流移除（§5.9、FR-13~FR-17） | `twin-scene-v2.{html,css,js}`、`twin-scene-bridge.js`、`whiteblue-spatial-engine.js`、`twin-api-mock.js`、`seed.json` | 玻璃浮层+现算图表；`camera:begin/focus-scene/view/drill` 序列与视锥比例补间；`pan` 指令；剧本时钟 | uxcheck 38 项 + smoke 35 项 + reduced-motion 4 项全绿 |
 | **新增 ✅已上线** | 界面效果统一（FR-35 视觉 token 层） | `twin/future-lab/twin-tokens.css`（新）、`twin-scene-v2.{css,js,html}`、`tour-space-v3-1.html`、`twin-scene-bridge.js`、`tests/twin/uiconcheck.mjs`（新） | 玻璃四档 / 字号七档（地板 10.5px，原 20 档含 8/9/9.5px）/ 圆角五档 / 时长四档 / z 阶梯五档 / 状态色一族；3D 侧四份散写 hex 改读 CSS 变量；底座那族蓝在 V2 下并回品牌蓝（`:root[data-v2]`）；删 72 条死规则；补 hover/active/focus-visible 与区域面板入场；小按钮从 Arial 回到 UI 字体 | uiconcheck 12✅ · 全量 21 套 0❌ |
+| **新增 ✅已上线** | 3D 图表与选型口径（FR-36） | `twin/future-lab/twin-charts.js`（新）、`twin/future-lab/vendor/g2.min.js`（新，1.08MB）、`twin-scene-v2.{html,css,js}`、`twin/js/twin-api-mock.js`（`/api/iot/temp-hum-series`）、`tests/twin/chartcheck.mjs`（新）、`docs/twin-design/chart-3d.md`（新） | 左栏 4 柱 + 右侧分组柱 + 底栏设备柱 + 区面板柱与 102 环形 + 温湿度双序列折线带；等轴挤出（polygon 三面）不用透视；表格骨架只建一次不再每拍重建；增量更新不 destroy 重建；末点钉住当前读数 | chartcheck 23✅ · 全量 22 套 0❌ |
 | **修复 ✅已上线** | 点击跟随 / 滚轮缩小 / 信息气泡（FR-34） | `twin-scene-bridge.js`、`twin-scene-v2.js`、`tests/twin/focuscheck.mjs` | pan 从「postMessage 给宿主（没人转发）」改为视锥按像素平移；`proj()` 改走 `camera.project()`（少算视锥中心是落点越修越偏的真因）；倍率基准改为切近目标构图的自然半高，小件下限 0.9m；开环解算之外再加闭环跟随（钉位置 + 收尺寸）；滚轮顶掉引擎 `onwheel` 并绑到 document，边界相对本视角；气泡夹进可用区；光点拾取降为兜底；未建模实体给诚实说明 | focuscheck 89 实体逐个 · 全量套件 0❌ |
 | **新增 ✅已上线** | 顶栏去导航栏化（FR-33） | `twin-scene-v2.{html,css}`、`tests/twin/topbarcheck.mjs` | 底色/下边框/毛玻璃条归零，只留顶部渐隐；标题去「应敏科技 ·」前缀、logo 独占左上角、区域切换移到标题左侧；S1/S2/S3 编号从屏上撤掉且不放回 S3；开启态由实心蓝底改淡底描边；时钟与下拉去框；功能类名 id 全保留 | topbarcheck 19✅ · 全量 19 套 0❌ |
 | **新增 ✅已上线** | 底栏四块 + 下钻画像 + 浮层间距（FR-30/30a/30b/31/32） | `twin-scene-v2.{html,css,js}`、`twin/api/seed.json`（dispatch-queue/entrust-testitems/viewProfile/zoneStats.testItems/samples）、`twin/js/twin-api-mock.js`（queueView 由剧本反推工位）、`tests/twin/{dockcheck,zoneview}.mjs` | 底栏从一张表改四块并排、各自滚动各自暂停；队列三分类且「循环中」实时同步；102 样品台账/101 只环境数据/非 106 检测项目数统计；浮层宽度与沟槽走 CSS 变量（旧 dock left:180 与左栏重叠 58px 已修）；隐藏块渲染收尾清空 | dockcheck 24✅ · zoneview 34✅ · 全量 18 套 0❌ |
@@ -723,6 +750,7 @@ flowchart TD
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| 2.27 | 2026-11-07 | 【本次更新】新增 **FR-36 3D 图表与选型口径**：左右两侧与下方读数按「能不能相加」决定图型（相加=总数才用环形；只比量级用柱；时序用折线带），逾期/临期作为子集绝不进环形；立体效果用**等轴挤出**（数据面保持正交、扇区角度严格按数值、深度写成 yMax 的固定比例），不用透视——透视会让近处的柱子天然比远处高，投影与读屏两种场景都是错的。新增 `twin-charts.js`（G2 v5 Spec Mode + polygon 三面 + style.fill 回调）与 `/api/iot/temp-hum-series`（**末点钉住当前读数**，历史用日周期曲线+节点指纹抖动）；温湿度折线带支持点节点行切换序列；G2 走本地 vendor 零 CDN（展厅断网可开），失败时表格照常显示。三条实测坑写进 `docs/twin-design/chart-3d.md`：`style.radius` 数组让 interval 整条不渲染且不报错；hex 塞进数据当 `encode.color` 会被序数色板重染；**图表容器挂在每拍重建 innerHTML 的表格里，8 张图两轮心跳后只剩 2 张**（同 FR-30b 教训，改为表格骨架只建一次 + 图表容器一律稳定兄弟节点 + 数据变化走增量更新，避免每 2s 闪白）。8~10 张图与 three.js 同屏实测 60fps。新增 `tests/twin/chartcheck.mjs`（23 项）。|
 | 2.26 | 2026-11-07 | 【本次更新】新增 **FR-35 界面效果统一（视觉 token 层）**：按 ui-ux-pro-max 设计库（glassmorphism / data-dense-dashboard / accessible-and-ethical / 实时流图型口径）把整屏效果收进唯一事实源 `twin-tokens.css`——玻璃四档（.46 面板 / .72 次级块 / .82 文字浮层 / .5 表头，blur 全站 14px）、字号七档且地板 10.5px（原 20 档含 8/9/9.5px）、圆角五档、时长四档（面板进 420 出 240）、z 阶梯五档、状态色一族；**3D 侧与 DOM 侧同源**（开机把 CSS 变量读进 TWIN_TOKEN，光点/描色/热力/线路不再各写各的 hex），底座那族蓝（#096bff/#519dff/#1b72eb）只在 V2 下用 `:root[data-v2]` 并回品牌蓝、不动 tour-lab 本体；补齐可点元素三态与数据行 hover、区域面板 0ms 瞬现改 420ms 入场、小按钮从 Arial 回到 UI 字体；删掉宿主样式里 72 条已下线选择器（382→318 行）。两条**有意偏离**库的地方写进文档以免下轮被纠正回去：不用库推荐的深色 + Orbitron/Exo2（本屏是白底 CAD 运行镜像、中文界面无中文字形），玻璃透明度高于库的 .10–.30（画面接近纯白，低透明度下 10–12px 小字对比掉破 4.5:1）。新增 `tests/twin/uiconcheck.mjs`（12 项）把纪律变成回归；并把 uxcheck 里钉死 alpha=0.42 的断言改为验语义（**断言钉口径不钉数值**）。本轮真实踩到的新坑：`:active{transform:translateY(1px)}` 会顶掉 `.node-marker` 靠 `transform:translate(-50%,-50%)` 的定位，标记跳开半个身位、点击全部落空（pickcheck 当场抓到）——按下反馈改用独立 `translate` 属性。|
 | 2.25 | 2026-11-07 | 【本次更新】新增 **FR-34 点击实体的视觉跟随 / 滚轮缩放 / 信息气泡**——用户三条反馈同一个根：`setPan()` 把平移 postMessage 给宿主而宿主不转发，pan 恒 0，落点永远在构图中心（dx 恒 +189px）；`proj()` 按 `(X-left)/(right-left)` 少算视锥中心，解算器量不到自己推出去的位移，越修越偏（实测把实体推出画面 2169px，气泡跟着一起跑出可视范围 = 「点了没弹窗」）。修法：平移改在我方视锥钩子里按**屏幕像素**直接做（`panSens/calibPan` 退役）、投影统一走 `camera.project()`、倍率基准取切近目标构图的自然半高（小件下限 0.9m，原来 0.1m 级小件切近后只占画面 1.7%）、开环解算之外加**闭环跟随**（每帧把残差 glide 回锚点并收敛构图，房间抬升动画在补间后仍在改视锥）、滚轮**顶掉引擎 onwheel**（两套缩放并存时缩小方向被 zoom 下限 .55 卡死）并绑到 document（画面上层 DOM 会吃掉滚轮）、缩放后重新钉住、气泡夹进「浮层避让可用区」、光点拾取降为兜底（同像素有实体时实体赢，修掉点 103-02 出 103-01 的卡）、未建模台账号只给 `flashHint` 说明不动相机。新增 `tests/twin/focuscheck.mjs`：**89 个设备与物品逐个验证**（不抽样） |
 | 2.24 | 2026-11-07 | 【本次更新】新增 **FR-33 顶栏去"导航栏化"**：去掉整条底色、下边框与毛玻璃条（只留一层极淡顶部渐隐），标题/总览/区域/时钟/icon 改为浮在三维画面上的文字并统一带白投影，开启态从实心蓝底按钮改成淡底+描边；标题去掉「应敏科技 ·」前缀（公司名只留在 logo 图与 alt/title），logo 独占左上角，区域切换移到标题左侧，动作 icon 组留在标题右侧；**屏上不再出现 S1/S2/S3 编号前缀**（"S1 实验室总览"→"实验室总览"；S3 告警回溯按 2026-11-06 的范围决定保持缺席，不借改版复活），时钟与区域下拉一并去框。功能类名与 id 全部保留（回归靠它们定位），新增 `tests/twin/topbarcheck.mjs` 19 项守住视觉与功能两侧；§5.1 控制层草图同步去掉 S 编号 |

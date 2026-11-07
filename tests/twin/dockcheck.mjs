@@ -20,10 +20,13 @@ T('底栏块数', await p.locator('.dock .dk').count(), 4);
 T('块标题', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '设备信息统计|无人化调度任务|试验项完成情况|组态物联节点');
 
 // ① 设备信息统计：六格 + 稼动率 + 机器人分工
+/* 块1 结构（2026-11-07 FR-36）：五档状态改 3D 柱（数字进柱顶标签），只剩「合计建档 / 稼动中」两格数字。
+   自洽检查不许因为换了图型就丢掉——五档的值改从图表签名取，与合计仍然必须相等（同源同一条口径）。 */
 const cells=await p.evaluate(()=>[...document.querySelectorAll('#dkDevBody .dk-cell')].map(e=>e.innerText.replace(/\s+/g,'')));
-const nums=cells.map(c=>parseInt(c,10));
-out.push((cells.length===6&&/^\d+在测$/.test(cells[0])?'✅':'❌')+' 块1 六格状态统计: '+cells.join(' '));
-out.push((nums[0]+nums[1]+nums[2]+nums[3]+nums[4]===nums[5]?'✅':'❌')+` 块1 自洽：五档之和 ${nums.slice(0,5).reduce((a,x)=>a+x,0)} == 合计 ${nums[5]}`);
+out.push((cells.length===2&&/^\d+合计建档$/.test(cells[0])?'✅':'❌')+' 块1=五档柱 + 合计/稼动中两格: '+cells.join(' '));
+const dev=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='devices');return r?JSON.parse(r.sig):null;});
+const total=cells.length?parseInt(cells[0],10):null;
+out.push(dev&&dev.length===5&&dev.reduce((a,x)=>a+x.v,0)===total?'✅':'❌'+` 块1 自洽：柱上五档之和 ${dev&&dev.map(x=>x.v).join('+')} = ${dev&&dev.reduce((a,x)=>a+x.v,0)} == 合计 ${total}`);
 const rate=await p.evaluate(()=>document.querySelector('#dkDevBody .dk-rate').innerText.replace(/\s+/g,' '));
 out.push((/稼动率 \d+%"?/.test(rate.replace(/"/g,''))?'✅':'❌')+' 块1 稼动率现算: '+rate);
 const rb=await p.evaluate(()=>document.querySelectorAll('#dkDevBody .dk-rate')[1].innerText.replace(/\s+/g,' '));

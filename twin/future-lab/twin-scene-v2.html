@@ -47,6 +47,8 @@
     <button class="seg" data-period="year" role="tab">本年</button>
   </div>
   <div class="tables" id="tables"></div>
+<span class="rc-cap">调度任务</span></div>
+  </div>
   <div class="cycle" id="cycleBox" title="无人化任务循环剧本：小机器人按调度任务明细顺序在各工位间行走停靠">
     <div class="cy-top"><b id="cyNow">–</b><span id="cyLabel">无人化循环</span></div>
     <div class="cy-bar"><i id="cyBar"></i></div>
@@ -65,6 +67,7 @@
       <div class="sh-top"><b>告警流</b><span id="streamMeta">今日 – 条</span></div>
       <div class="sh-legend"><span>A 异常</span><span>B 阻塞·瓶颈</span><span>C 校准期限</span></div>
     </header>
+    <div class="tw-chart" id="chartAlarms" role="img" aria-label="告警分级 3D 柱状图：A/B/C 三级的今日条数与未解除条数"></div>
     <div class="stream-view"><div class="stream-board" id="streamTrack"></div></div>
   </section>
   <!-- 区域视图五类信息（2026-11-05 信息模型）：设备 / 环境数据 / 任务统计 / 正在运行的任务 / 告警 -->
@@ -80,9 +83,9 @@
     <div class="zp-scroll">
       <section id="zpDevices"><h4><i class="k dev"></i>设备<em id="zpDevicesN"></em></h4><div class="zp-body"></div></section>
       <section id="zpEnv"><h4><i class="k env"></i>环境数据<em id="zpEnvN"></em></h4><div class="zp-body"></div></section>
-      <section id="zpStats"><h4><i class="k stat"></i>任务统计<em id="zpStatsPeriod"></em></h4><div class="zp-body"></div></section>
-      <section id="zpTestItems" hidden><h4><i class="k stat"></i>检测项目数统计<em id="zpTestItemsPeriod"></em></h4><div class="zp-body"></div></section>
-      <section id="zpSamples" hidden><h4><i class="k dev"></i>样品台账<em id="zpSamplesN"></em></h4><div class="zp-body"></div></section>
+      <section id="zpStats"><h4><i class="k stat"></i>任务统计<em id="zpStatsPeriod"></em></h4><div class="tw-chart" id="chartZoneStats" role="img" aria-label="任务统计 3D 柱状图：完成/执行中/异常/排队"></div><div class="zp-body"></div></section>
+      <section id="zpTestItems" hidden><h4><i class="k stat"></i>检测项目数统计<em id="zpTestItemsPeriod"></em></h4><div class="tw-chart" id="chartZoneItems" role="img" aria-label="检测项目数 3D 柱状图：检测中/待检测/已完成/逾期"></div><div class="zp-body"></div></section>
+      <section id="zpSamples" hidden><h4><i class="k dev"></i>样品台账<em id="zpSamplesN"></em></h4><div class="tw-chart" id="chartZoneSamples" role="img" aria-label="样品按名称分布 3D 环形图：各类支数与占比，相加等于在库存量"></div><div class="zp-body"></div></section>
       <section id="zpRunning"><h4><i class="k run"></i>正在运行的任务<em id="zpRunningN"></em></h4><div class="zp-body"></div></section>
       <section id="zpAlarms"><h4><i class="k ab"></i>告警<em id="zpAlarmsN"></em></h4><div class="zp-body"></div></section>
     </div>
@@ -92,6 +95,7 @@
   <footer class="dock" id="taskStrip" aria-label="底部运行信息四块（滚动）">
     <section class="dk" id="dkDevices" aria-label="设备信息统计">
       <header><b>设备信息统计</b><span class="src" id="dkDevSrc">数采</span></header>
+      <div class="tw-chart" id="chartDevices" role="img" aria-label="设备状态 3D 柱状图：在测/就绪/异常/待机/停止 五档台数"></div>
       <div class="dk-body" id="dkDevBody"></div>
     </section>
     <section class="dk" id="dkQueue" aria-label="无人化调度任务队列">
@@ -104,6 +108,7 @@
     </section>
     <section class="dk" id="dkNodes" aria-label="组态物联节点">
       <header><b>组态物联节点</b><span class="src" id="dkNodesCnt">—</span></header>
+      <div class="th-wrap"><div class="tw-chart th" id="chartTH" role="img" aria-label="温湿度节点近 16 点 3D 折线带：温度与湿度两条序列"></div><div class="th-cap" id="chartTHCap">温湿度时序</div></div>
       <div class="dk-view"><div class="dk-track" id="dkNodesTrack"></div></div>
     </section>
   </footer>
@@ -117,6 +122,7 @@
 
   <p class="remote-hint" id="remoteHint" hidden aria-hidden="true">翻页提示</p>
 </main>
+<script src="twin-charts.js?v=1" defer></script>
 <script src="twin-scene-v2.js?v=5" defer></script>
 </body>
 </html>

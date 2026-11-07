@@ -297,6 +297,27 @@
     return new Promise(function (resolve, reject) {
       if (!state) return reject(new Error('TwinApi 未就绪'));
       var m;
+      /* 温湿度节点近 24 点时序（3D 折线带的数据源）。
+         Mock 阶段没有历史库，但**末点必须钉住当前读数**：图上的最后一点和右侧列表、区域面板里的读数
+         如果不是同一个数，客户一眼就看穿是两套假数据。所以这里用「日周期曲线 + 节点指纹抖动」造历史，
+         再把最后一个点强制写成请求带进来的实时值（temp/hum 由调用方从节点层原样传入，不在这重新算一套）。
+         真接 DAQ/组态历史库后，把 body 换成查询结果即可，前端与断言口径不变。 */
+      if ((m = path.match(/^\/api\/iot\/temp-hum-series\?node=([\w-]+)&temp=([-\d.]+)&hum=([-\d.]+)(?:&points=(\d+))?$/))) {
+        var nid = m[1], curT = +m[2], curH = +m[3], N = +(m[4] || 16);
+        var seed = 0; for (var ci = 0; ci < nid.length; ci++) seed = (seed * 31 + nid.charCodeAt(ci)) % 9973;
+        var hr = new Date().getHours(), hist = [];
+        for (var i = 0; i < N; i++) {
+          var k = N - 1 - i;                                                   /* k=0 即当前点 */
+          var h = ((hr - k) % 24 + 24) % 24;
+          var diurnal = Math.sin((h - 9) / 24 * Math.PI * 2);                  /* 白天高、夜间低的日常形状 */
+          var wob = ((seed * (k + 7)) % 97) / 97 - .5;                         /* 节点指纹抖动：同一小时内可重复 */
+          var t = k === 0 ? curT : +(curT + diurnal * 1.6 + wob * .7).toFixed(1);
+          var hu = k === 0 ? curH : +(curH - diurnal * 5.2 - wob * 3.4).toFixed(1);
+          hist.push({ offsetH: -k, hour: h, temperature: t, humidity: Math.max(25, Math.min(80, hu)) });
+        }
+        return resolve(envelope({ nodeId: nid, windowPoints: N, note: 'Mock 时序：日周期曲线 + 节点指纹抖动，末点钉住当前实时读数',
+          pinned: { temperature: curT, humidity: curH }, series: hist }));
+      }
       if (path === '/api/overview/test-item-plan') {
         var pl = (state.testItemPlan || {}).items || [];
         return resolve(envelope({ note: state.testItemPlan.note, overdueRule: state.testItemPlan.overdueRule, dueSoonRule: state.testItemPlan.dueSoonRule,
