@@ -46,12 +46,11 @@
     <button class="seg" data-period="month" role="tab">本月</button>
     <button class="seg" data-period="year" role="tab">本年</button>
   </div>
-  <!-- 运行指标：四张表合并成一块面板（2026-11-07 参考图一）——
-       顶部四个 KPI 胶囊给"一眼看清"，下面每个值占一行给"逐条可查"，
-       来源与更新时间只在面板头出现一次（原来四张卡各重复一遍时间戳）。 -->
+  <!-- 运行指标（FR-41 压缩版）：一组两行——标题｜大数｜环比 + 一行分解值；
+       只有「分解相加==大数」的组才多一条 5px 分段条。
+       KPI 胶囊与来源/时间戳小字都已撤掉（同一批数字不写两遍，口径转 aria-label）。 -->
   <section class="railpanel" id="railPanel" aria-label="运行指标（合并面板）">
-    <header class="rp-head"><b>运行指标</b><span class="rp-src" id="rpSrc">数采 · 调度</span></header>
-    <div class="rp-kpis" id="rpKpis"></div>
+    <header class="rp-head"><b>运行指标</b><span class="rp-src" id="rpSrc" aria-label="来源与更新时间">—</span></header>
     <div class="tables" id="tables"></div>
   </section>
   <div class="cycle" id="cycleBox">
@@ -110,7 +109,7 @@
   <!-- 底栏三块（2026-11-07：④ 组态物联节点挪到右列告警流下方）：① 设备运行状态（四档圆环）② 无人化调度任务队列 ③ 委托单试验项完成情况 -->
   <footer class="dock" id="taskStrip" aria-label="底部运行信息三块（滚动）">
     <section class="dk" id="dkDevices" aria-label="设备运行状态">
-      <header><b>设备运行状态</b><span class="src" id="dkDevSrc">数采</span></header>
+      <header><b>设备运行状态</b><span class="src" id="dkDevSrc" aria-label="来源 数采">—</span></header>
       <div class="tw-chart" id="chartDevices" role="img" aria-label="设备运行状态 3D 圆环图：运行中/待机/停机/异常 四档数量与占比，中心为设备总数"></div>
       <div class="dk-body" id="dkDevBody"></div>
       <div class="dk-rate" id="dkRobots">机器人 —</div>

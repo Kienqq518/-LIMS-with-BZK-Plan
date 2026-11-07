@@ -26,10 +26,15 @@ T('四张数据表', await p.locator('.dtable').count(), 4);
 out.push(((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x)).length>=6?'✅':'❌')+' 表内占比列（替代原环形/条形图）: '+((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x))).join(','));
 /* 合并面板口径（2026-11-07）：来源词每表仍要标，但时间戳只在面板头出现一次——
    四张表各盖一遍同一个更新时间，是"四块独立卡片"时代的遗产。 */
-const srcs=await p.locator('.dtable>header .src').allInnerTexts();
-out.push(((srcs.length===4&&srcs.every(x=>/数采|调度|LIMS/.test(x)&&!/\d{2}:\d{2}:\d{2}/.test(x)))?'✅':'❌')+' 每表只标来源词（时间戳不重复四处盖）: '+srcs.join('|'));
-const rpSrc=await p.locator('#rpSrc').innerText();
-out.push(((/数采|调度/.test(rpSrc)&&/\d{2}:\d{2}:\d{2}/.test(rpSrc))?'✅':'❌')+' 面板头带来源+更新时间（只此一处）: '+rpSrc);
+/* 反向断言（2026-11-07 圈图）：左栏屏上不该再有「数采 / 调度 / 时间戳」这类小文本；
+   唯一允许出现在屏上的是异常态提示「数据延迟」——那是提示不是装饰。 */
+/* 来源词不再渲染成元素（不能拿文字比对——组名「调度任务」里就带「调度」两个字） */
+const srcTxt=await p.evaluate(()=>({srcEls:document.querySelectorAll('.dtable>header .src').length,
+  rp:(document.getElementById('rpSrc')||{}).textContent||'',
+  railTime:/\d{2}:\d{2}:\d{2}/.test(document.querySelector('.rail').innerText),
+  heads:[...document.querySelectorAll('.dtable>header')].map(e=>e.innerText.replace(/\s+/g,' ').trim())}));
+out.push(((srcTxt.srcEls===0&&srcTxt.rp===''&&!srcTxt.railTime)?'✅':'❌')
+  +' 左栏屏上无来源词与时间戳（时间戳只在读屏里）: src元素='+srcTxt.srcEls+' 面板头="'+srcTxt.rp+'" 含时间='+srcTxt.railTime);
 out.push(((await p.locator('#streamMeta').innerText()).includes('未解除')?'✅':'❌')+' 告警流头部汇总（今日/未解除）: '+(await p.locator('#streamMeta').innerText()).replace(/\s+/g,' '));
 const smeta=(await p.locator('#streamMeta').innerText()).replace(/\s+/g,' ');
 out.push((/今日 13 条 · 未解除 9 · 最新在前/.test(smeta)?'✅':'❌')+' 告警流头部汇总（平铺后一个总数口径）: '+smeta);

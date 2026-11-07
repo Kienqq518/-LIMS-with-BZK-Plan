@@ -317,44 +317,35 @@ body[data-zone-dock="1"] .dock{right:calc(var(--tw-float-gap) * 2 + var(--tw-pan
 .tables{display:flex;flex-direction:column;gap:9px}
 .railpanel{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;
  border:0;border-radius:0;box-shadow:none;padding:0 2px 0 0}
-.rp-head{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+.rp-head{display:flex;align-items:baseline;gap:8px;margin-bottom:7px}
 .rp-head b{font-size:var(--tw-fs-strong);font-weight:800;letter-spacing:.4px;color:var(--tw-ink-1)}
 .rp-head .rp-src{margin-left:auto;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap}
-/* KPI 胶囊（图一顶部那种）：图标 + 名称 + 大数字 + 环比，四格 2×2 */
-.rp-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-/* 两行排法（图一那种）：120px 宽的单行放不下「图标+名称+大数字+环比」，
-   硬放就把名称截成"委…"——名称是这格的身份，宁可占一行也不能截。 */
-.rp-kpi{display:flex;flex-direction:column;gap:3px;padding:6px 8px 7px;border-radius:var(--tw-radius-chip);
- border:1px solid var(--tw-hairline-strong);background:var(--tw-glass-inner);min-width:0}
-.rp-kpi .t{display:flex;align-items:center;gap:5px;min-width:0}
-.rp-kpi svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.rp-kpi .nm{font-size:var(--tw-fs-micro);color:var(--tw-ink-3);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rp-kpi .b{display:flex;align-items:baseline;gap:6px}
-.rp-kpi .vv{font-size:var(--tw-fs-kpi);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--tw-ink-1);flex:none}
-.rp-kpi .dl{font-size:var(--tw-fs-micro);font-variant-numeric:tabular-nums;white-space:nowrap;flex:none}
-.rp-kpi .dl.up{color:var(--tw-st-ready)}.rp-kpi .dl.down{color:var(--tw-st-alarm)}
-.rp-kpi svg.i-entrust{color:var(--tw-st-working)}.rp-kpi svg.i-samples{color:var(--tw-st-cat)}
-.rp-kpi svg.i-testItems{color:var(--tw-st-warn)}.rp-kpi svg.i-dispatch{color:var(--tw-st-ready)}
-/* 组=面板里的分隔行，不再是独立卡片 */
-.dtable{background:transparent;border:0;border-radius:0;padding:0;box-shadow:none}
+/* KPI 胶囊（.rp-kpis / .rp-kpi）整块删除（FR-41）：那四个数与下面四组的大数是同一批数字，
+   在屏上写两遍，白吃约 150px 高度——左栏从 842px 压到约 300px 的主要来源就是这一刀。 */
+/* ---- 左栏「运行指标」压缩版（FR-41）：一组两行 + 可选分段条 ----
+   一组 = 标题｜大数｜环比 一行，分解值一行（放不下自动折行）。
+   原来的 2×2 KPI 胶囊与四张表第一行是同一批数字写两遍，整块删除（省 ~150px）。 */
+.dtable{display:flex;flex-direction:column;gap:2px;padding:0}
 .dtable+.dtable{margin-top:9px;padding-top:8px;border-top:1px solid var(--tw-hairline)}
-.dtable>header{display:flex;align-items:baseline;gap:6px;margin-bottom:5px}
-.dtable>header b{font-size:var(--tw-fs-label);color:var(--tw-ink-1)}
-.dtable>header .src{margin-left:auto;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap}
-.dtable>header .src.err{color:var(--tw-tint-abn-fg)}
-.dtable table{width:100%;border-collapse:collapse;font-size:var(--tw-fs-label)}
-.dtable td{padding:2.5px 0;border-top:1px solid rgba(237,242,248,.85);color:var(--tw-ink-3)}
-.dtable tr:first-child td{border-top:0}
-.dtable td.v{text-align:right;font-variant-numeric:tabular-nums;color:var(--tw-ink-1);font-weight:700;white-space:nowrap}
-.dtable td.pct{text-align:right;width:42px;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums}
-.dtable tr.head td{color:var(--tw-ink-1);font-weight:700}
-.dtable tr.sub td:first-child{padding-left:9px;position:relative}
-.dtable tr.sub td:first-child::before{content:"";position:absolute;left:2px;top:50%;width:4px;height:1px;background:var(--tw-surface-line)}
-.dtable tr.warn td.v{color:var(--tw-st-alarm)}
-.dtable tr.due td.v{color:var(--tw-st-warn)}
-.dtable tr.ok td.v{color:var(--tw-tint-ok-fg)}
-.dtable>footer{display:flex;align-items:center;gap:5px;margin-top:3px;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums}
-.dtable>footer .d.up{color:var(--tw-color-okGreen)}.dtable>footer .d.down{color:var(--tw-color-alertRed)}
+.dtable>header{display:flex;align-items:baseline;gap:8px}
+.dtable>header b{flex:1 1 auto;min-width:0;font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-2);
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dt-q{flex:none;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);white-space:nowrap}
+.dt-v{flex:none;font-size:var(--tw-fs-num);font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;color:var(--tw-ink-1)}
+.dt-v.ok{color:var(--tw-tint-ok-fg)}.dt-v.warn{color:var(--tw-st-alarm)}.dt-v.due{color:var(--tw-st-warn)}
+.dt-c{flex:none;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dt-c .d{font-style:normal;font-weight:700;margin-right:3px}
+.dt-c .d.up{color:var(--tw-color-okGreen)}.dt-c .d.down{color:var(--tw-color-alertRed)}
+/* 分段条：只有「各部分相加==大数」的组才画（FR-36 选型纪律），宽度取真实比例 */
+.dt-bar{display:flex;gap:1px;height:5px;border-radius:var(--tw-radius-bar);overflow:hidden;margin:2px 0 1px}
+.dt-bar i{display:block;height:100%}
+.dt-detail{display:flex;flex-wrap:wrap;gap:1px 12px;font-size:var(--tw-fs-micro);color:var(--tw-ink-3);line-height:1.5}
+.dt-i{display:inline-flex;align-items:baseline;gap:4px;white-space:nowrap;min-width:0}
+.dt-i .lb{color:var(--tw-ink-3)}
+.dt-i .v{font-size:var(--tw-fs-label);font-weight:800;font-variant-numeric:tabular-nums;color:var(--tw-ink-1)}
+.dt-i .pct{color:var(--tw-ink-4);font-variant-numeric:tabular-nums}
+.dt-i.ok .v{color:var(--tw-tint-ok-fg)}.dt-i.warn .v{color:var(--tw-st-alarm)}.dt-i.due .v{color:var(--tw-st-warn)}
+.dt-i.na .v{color:var(--tw-ink-4);font-weight:600}
 .dtable .na{color:var(--tw-st-na)}
 .rail-foot{margin-top:auto}
 /* 告警汇总与筛选控件已移入右侧告警流头部（2026-11-06）；区域视图时同样出现在区域面板的告警块里 */

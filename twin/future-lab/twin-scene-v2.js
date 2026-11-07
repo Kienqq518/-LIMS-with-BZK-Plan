@@ -131,12 +131,14 @@
      环形 = 少数类别的「构成占比」，各类相加必须等于总数；
      柱状 = 同一口径下的「量级比较」，类别之间可以不相加（88 vs 8 用环形会把 8 挤没，那是骗人）；
      折线带 = 时序趋势。逾期/临期不进环形：它们是「未完成」的子集，塞进同一个环会重复计数。 */
-  /* KPI 胶囊的图标：SVG 描线，语义各自明确（技能口径：不许用 emoji 当图标） */
-  var KPI_ICON = {
-    entrust: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h8v11H4z"/><path d="M6 5.5h4M6 8h4M6 10.5h2.5"/></svg>',
-    samples: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 2h3"/><path d="M7 2v4L4.4 12a1.4 1.4 0 0 0 1.3 2h4.6a1.4 1.4 0 0 0 1.3-2L9 6V2"/></svg>',
-    testItems: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 12.5a5.5 5.5 0 1 1 11 0"/><path d="M8 12.5 10.4 7"/></svg>',
-    dispatch: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="6" r="3"/><path d="M4 13.5h8M8 9v4.5"/></svg>'
+  /* 左栏压缩口径（FR-41，2026-11-07 产品负责人：这块占位太多）。
+     一组两行：① 标题 + 大数 + 环比  ② 分解值（放不下自动换行）；
+     ③ 只有「分解值相加 == 大数」的组才多一条 5px 分段条——不能相加的画条形就是骗人（FR-36 同一条纪律）。
+     2×2 KPI 胶囊整块删除：那四个数就是四组表的第一行，同一批数字在屏上写两遍，
+     白吃 ~150px 高度，还把该当主角的三维画面挤掉三分之一。 */
+  var COMPACT_BAR = {
+    entrust: { parts: ['power', 'safety'], colors: ['--tw-st-working', '--tw-st-cat'] },
+    testItems: { parts: ['testing', 'pending', 'done'], colors: ['--tw-st-working', '--tw-st-warn', '--tw-st-ready'] }
   };
   function renderTables() {
     if (!status || !status.panels) return;
@@ -147,55 +149,67 @@
       host.dataset.keys = keys.join(',');
       host.innerHTML = keys.map(function (key) {
         return '<section class="dtable" data-key="' + key + '">' +
-          '<header><b>' + escapeHtml(per[key].title) + '</b><span class="src"></span></header>' +
-          '<table><tbody></tbody></table>' +
-          '<footer class="f-cmp"></footer></section>';
+          '<header><b>' + escapeHtml(per[key].title) + '</b><span class="dt-q"></span><span class="dt-v">—</span><span class="dt-c"></span></header>' +
+          '<div class="dt-bar" role="img" hidden></div>' +
+          '<div class="dt-detail"></div></section>';
       }).join('');
     }
-    /* 面板头：来源与更新时间只在这里出现一次（原来四张卡各写一遍同样的时间戳） */
+    /* 面板头：来源词与更新时间从屏上撤掉（2026-11-07 圈图），但「数据延迟」必须留着——
+       那是异常态提示不是装饰。来源与时间戳改走 aria-label（读屏与二期接口核对仍拿得到）。 */
     var srcs = []; keys.forEach(function (k) { var n = SRC_NAME2[per[k].source] || per[k].source; if (n && srcs.indexOf(n) < 0) srcs.push(n); });
-    $('#rpSrc').textContent = srcs.join(' · ') + ' · ' + stamp + (dataError ? ' · 数据延迟' : '');
+    var rp = $('#rpSrc');
+    rp.textContent = dataError ? '数据延迟' : '';
+    rp.setAttribute('aria-label', '来源 ' + srcs.join(' · ') + ' · 更新 ' + stamp + (dataError ? ' · 数据延迟' : ''));
     keys.forEach(function (key) {
       var p = per[key], v = p.periods[st.period], rows = ROWS[key] || [];
       var sec = host.querySelector('.dtable[data-key="' + key + '"]'); if (!sec) return;
-      var body = rows.map(function (r) {
-        var val = r.computed ? r.computed(v) : v[r.k];
-        if (val == null) return '<tr><td>' + r.label + '</td><td class="v na">—</td><td class="pct"></td></tr>';
-        var base = r.of ? (r.computed ? r.computed(v) : v[r.of]) : null;
+      var valOf = function (r) { return r.computed ? r.computed(v) : v[r.k]; };
+      var head = rows.filter(function (r) { return r.head; })[0] || rows[0];
+      var hv = head ? valOf(head) : null;
+      /* 大数前面必须挂一个限定词（组名去掉后的那两三个字）：「调度任务 88」会被读成"共 88 个调度任务"，
+         而 88 其实是「已完成」——压缩可以省字，不能省掉让数字说真话的那几个字。 */
+      var qe = sec.querySelector('.dt-q');
+      var q = head ? (head.label.indexOf(p.title) === 0 ? head.label.slice(p.title.length) : head.label) : '';
+      qe.textContent = q || '';
+      var ve = sec.querySelector('.dt-v');
+      ve.textContent = hv == null ? '—' : hv;
+      ve.className = 'dt-v' + (head && head.cls ? ' ' + head.cls : '');
+      var c = v.compare, ce = sec.querySelector('.dt-c');
+      ce.hidden = c == null;
+      ce.innerHTML = c == null ? '' : '<i class="d ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</i>' +
+        ({ day: '较上日', month: '较上月', year: '较去年' })[st.period];
+      /* 分解行：head 那行的数字就是右侧大数，不再重复一遍标签文字 */
+      var subs = rows.filter(function (r) { return r !== head; });
+      sec.querySelector('.dt-detail').innerHTML = subs.map(function (r) {
+        var val = valOf(r);
+        if (val == null) return '<span class="dt-i na"><span class="lb">' + escapeHtml(r.label) + '</span><b class="v">—</b></span>';
+        var base = r.of ? v[r.of] : null;
         var pct = (!r.noPct && base) ? Math.round(val / base * 100) + '%' : '';
-        /* 长注释不上屏（左栏要短、不出滚动条），口径整句并进 LIMS 角标的 title */
-        var tag = r.lims ? '<span class="limstag" title="' + escapeHtml('口径来自 LIMS「要求检测完成时间」，当前为 Mock 数据，二期接口接入后自动变真值' + (p.note ? '。' + p.note : '')) + '">LIMS</span>' : '';
-        var tip = '';
+        var tag = r.lims ? '<span class="limstag" aria-label="口径来自 LIMS「要求检测完成时间」，当前为 Mock 数据，二期接口接入后自动变真值' + (p.note ? '。' + p.note : '') + '">LIMS</span>' : '';
+        var aria = '';
         if (r.pick) {
           var list = planItems.filter(function (x) { return x[r.pick]; });
-          tip = ' title="' + escapeHtml(list.map(function (x) { return x.sampleId + ' ' + x.item + ' · 要求 ' + x.requiredAt; }).join('\n') || '无') + '"';
+          /* 明细清单不上屏也不给 hover（产品负责人：连 hover 都不想要）；留 aria-label 给读屏与 QA 复核 */
+          aria = ' aria-label="' + escapeHtml(r.label + ' ' + val + '：' + (list.map(function (x) { return x.sampleId + ' ' + x.item + ' · 要求 ' + x.requiredAt; }).join('；') || '无')) + '"';
         }
-        return '<tr class="' + (r.head ? 'head ' : 'sub ') + (r.cls || '') + '"' + tip + '><td>' + r.label + tag + '</td><td class="v">' + val + '</td><td class="pct">' + pct + '</td></tr>';
+        return '<span class="dt-i' + (r.cls ? ' ' + r.cls : '') + '"' + aria + '><span class="lb">' + escapeHtml(r.label) + '</span>' +
+          tag + '<b class="v">' + val + '</b>' + (pct ? '<span class="pct">' + pct + '</span>' : '') + '</span>';
       }).join('');
-      sec.querySelector('tbody').innerHTML = body;
-      sec.querySelector('.src').textContent = SRC_NAME2[p.source] || p.source || '';   /* 组里只留来源词，时间戳在面板头 */
-      var c = v.compare;
-      sec.querySelector('.f-cmp').innerHTML = c == null ? '' :
-        '<span class="d ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</span><span>' + ({ day: '较上日', month: '较上月', year: '较去年' })[st.period] + '</span>';
-      sec.querySelector('.f-cmp').hidden = c == null;
+      /* 分段条：各部分相加必须等于大数才画；宽度用真实比例（不是四舍五入后的百分比） */
+      var bar = sec.querySelector('.dt-bar'), cfg = COMPACT_BAR[key], sum = 0, segs = [];
+      if (cfg && hv) {
+        cfg.parts.forEach(function (k2) { var r2 = rows.filter(function (x) { return x.k === k2; })[0]; if (!r2) return; var vv = valOf(r2) || 0; sum += vv; segs.push({ r: r2, v: vv }); });
+      }
+      if (cfg && hv && sum === hv && segs.length > 1) {
+        bar.hidden = false;
+        bar.innerHTML = segs.map(function (x, i2) {
+          return '<i style="width:' + (x.v / hv * 100).toFixed(2) + '%;background:var(' + cfg.colors[i2 % cfg.colors.length] + ')"></i>';
+        }).join('');
+        bar.setAttribute('aria-label', p.title + ' 构成：' + segs.map(function (x) { return x.r.label + ' ' + x.v + '（' + Math.round(x.v / hv * 100) + '%）'; }).join(' · '));
+      } else { bar.hidden = true; bar.innerHTML = ''; bar.removeAttribute('aria-label'); }
+      sec.setAttribute('aria-label', p.title + ' ' + (hv == null ? '暂无' : hv) + ' · 来源 ' + (SRC_NAME2[p.source] || p.source || '—') + ' · 更新 ' + stamp +
+        ' · ' + subs.map(function (r) { return r.label + ' ' + valOf(r); }).join('，'));
     });
-    /* KPI 胶囊：四组的头一个数 + 环比，一眼看清；下面逐行仍可查（参考图一顶部两个胶囊的排法） */
-    var KPI = [
-      { key: 'entrust', name: '委托任务', pick: 'total' },
-      { key: 'samples', name: '已收样', pick: 'received' },
-      { key: 'testItems', name: '试验项目', pick: null, computed: function (v) { return v.testing + v.pending + v.done; } },
-      { key: 'dispatch', name: '调度完成', pick: 'done' }
-    ];
-    $('#rpKpis').innerHTML = KPI.map(function (k) {
-      var p = per[k.key]; if (!p) return '';
-      var v = p.periods[st.period];
-      var val = k.computed ? k.computed(v) : v[k.pick];
-      var c = v.compare;
-      return '<div class="rp-kpi i-' + k.key + '" title="' + escapeHtml(p.title + ' · ' + (SRC_NAME2[p.source] || p.source) + ' 口径') + '">' +
-        '<div class="t">' + KPI_ICON[k.key] + '<span class="nm">' + k.name + '</span></div>' +
-        '<div class="b"><b class="vv">' + (val == null ? '—' : val) + '</b>' +
-        (c == null ? '' : '<span class="dl ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</span>') + '</div></div>';
-    }).join('');
   }
   /* 时钟：大屏右上角常驻，秒级走动 */
   function tickClock() {
@@ -513,7 +527,7 @@
     var cnt = { working: 0, ready: 0, standby: 0, stopped: 0, alarm: 0 };
     devices.forEach(function (d) { cnt[d.status] = (cnt[d.status] || 0) + 1; });
     var total = devices.length;   /* 稼动率不再单列一行：它就是「运行中」那档的台数与占比 */
-    var el = $('#dkDevSrc'); if (el) el.textContent = '数采 · ' + devices.length + ' 台建档';
+    var el = $('#dkDevSrc'); if (el) el.textContent = devices.length + ' 台建档';   /* 「数采」这个来源词按 2026-11-07 圈图撤掉，台数是内容不是装饰 */
     var body = $('#dkDevBody'); if (!body) return;
     /* 块1 改「设备运行状态」圆环（2026-11-07 参考图一）：四档 = 运行中/待机/停机/异常。
        产品要求去掉「就绪」，但就绪的台数必须有家——否则四档相加 != 设备总数，圆环就是假图。

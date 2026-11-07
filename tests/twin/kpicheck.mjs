@@ -23,26 +23,36 @@ const titles=(await p.locator('.dtable>header b').allInnerTexts()).join('|');
 T('表标题', titles, '委托任务|样品流转|试验项目|调度任务');
 out.push(((await p.locator('#tables').innerText()).includes('报告')?'❌':'✅')+' 报告份数已不再出现');
 const t1=(await p.locator('.dtable').nth(0).innerText()).replace(/\s+/g,' ');
-out.push((/委托任务总数\s*14/.test(t1)&&/电力电缆类\s*9\s*64%/.test(t1)&&/安全工器具类\s*5\s*36%/.test(t1)?'✅':'❌')+' 委托表含分类与占比: '+t1);
+out.push((/委托任务\s*总数\s*14/.test(t1)&&/电力电缆类\s*9\s*64%/.test(t1)&&/安全工器具类\s*5\s*36%/.test(t1)?'✅':'❌')+' 委托组含限定词、分类与占比: '+t1);
 const t2=(await p.locator('.dtable').nth(1).innerText()).replace(/\s+/g,' ');
 out.push((/已收样\s*23/.test(t2)&&/正在检测\s*12\s*52%/.test(t2)&&/已完成\s*9\s*39%/.test(t2)&&!/样品总数/.test(t2)?'✅':'❌')+' 样品表三维度（不再有总数行）: '+t2);
 const t3=(await p.locator('.dtable').nth(2).innerText()).replace(/\s+/g,' ');
-out.push((/正在检测\s*12/.test(t3)&&/待检测\s*9/.test(t3)&&/已完成检测\s*16/.test(t3)&&/逾期(?:LIMS)?\s*2/.test(t3)&&/临期\(3天内\)(?:LIMS)?\s*3/.test(t3)?'✅':'❌')+' 试验项目表含逾期/临期标注: '+t3);
+out.push((/正在检测\s*12/.test(t3)&&/待检测\s*9/.test(t3)&&/已完成检测\s*16/.test(t3)&&/逾期\s*(?:LIMS)?\s*2/.test(t3)&&/临期\(3天内\)\s*(?:LIMS)?\s*3/.test(t3)?'✅':'❌')+' 试验项目组含逾期/临期标注: '+t3);
 const t4=(await p.locator('.dtable').nth(3).innerText()).replace(/\s+/g,' ');
-out.push((/已完成\s*88/.test(t4)&&/阻塞\s*8/.test(t4)&&/其中已解决\s*5/.test(t4)&&/其中未解决\s*3/.test(t4)?'✅':'❌')+' 调度表含阻塞拆分: '+t4);
-// 每表都有来源与更新时间
-const gsrc=(await p.locator('.dtable>header .src').allInnerTexts()).filter(Boolean);
-const psrc=(await p.locator('#rpSrc').innerText()).replace(/\s+/g,' ');
-out.push((gsrc.length===4&&gsrc.every(x=>/数采|调度/.test(x))&&/\d{2}:\d{2}:\d{2}/.test(psrc)?'✅':'❌')+' 来源在每组、更新时间在面板头（合并面板后时间戳不再重复四遍，诚实口径不丢）: 组='+gsrc.join('/')+' 头='+psrc);
+/* 「调度任务 88」必须带「已完成」限定词——88 不是调度任务总数，裸放会被读成总数（压缩不许牺牲真话） */
+out.push((/调度任务\s*已完成\s*88/.test(t4)&&/阻塞\s*8/.test(t4)&&/其中已解决\s*5/.test(t4)&&/其中未解决\s*3/.test(t4)?'✅':'❌')+' 调度组带限定词且含阻塞拆分: '+t4);
+/* 来源词与更新时间从屏上撤除（2026-11-07 圈图），但口径不许跟着丢：
+   每组与面板头都必须在 aria-label 里带「来源 + 更新时间」，读屏与二期接口核对仍拿得到。 */
+const srcOnScreen=await p.evaluate(()=>({
+  tableSrc:document.querySelectorAll('.dtable>header .src').length,
+  rpSrc:(document.getElementById('rpSrc')||{}).textContent||'',
+  rpAria:(document.getElementById('rpSrc')||{}).getAttribute('aria-label')||'',
+  tableAria:[...document.querySelectorAll('.dtable')].map(e=>e.getAttribute('aria-label')||'')}));
+const clean=srcOnScreen.tableSrc===0&&!/数采|调度|\d{2}:\d{2}:\d{2}/.test(srcOnScreen.rpSrc)&&srcOnScreen.tableAria.length===4
+  &&srcOnScreen.tableAria.every(a=>/来源 /.test(a)&&/更新 \d{2}:\d{2}:\d{2}/.test(a))
+  &&/来源 /.test(srcOnScreen.rpAria)&&/更新 \d{2}:\d{2}:\d{2}/.test(srcOnScreen.rpAria);
+out.push((clean?'✅':'❌')+` 屏上无来源词/时间戳，口径全部转 aria-label（撤字不许撤口径）: 屏上rpSrc="${srcOnScreen.rpSrc}" 表头src元素=${srcOnScreen.tableSrc} aria样例="${(srcOnScreen.tableAria[0]||'').slice(0,44)}"`);
 // 周期切换联动四表
 await p.locator('[data-period=month]:visible').first().click();  /* 周期按钮同屏可能有左右两组，只点可见那份 */ await p.waitForTimeout(800);
 const m=(await p.locator('#tables').innerText()).replace(/\s+/g,' ');
-out.push((/委托任务总数\s*268/.test(m)&&/电力电缆类\s*171/.test(m)&&/已收样\s*511/.test(m)&&/试验项目合计\s*842/.test(m)&&/调度任务已完成\s*2011/.test(m)?'✅':'❌')+' 本月切换四表联动: '+m.slice(0,60));
+out.push((/委托任务\s*总数\s*268/.test(m)&&/电力电缆类\s*171/.test(m)&&/已收样\s*511/.test(m)&&/试验项目\s*合计\s*842/.test(m)&&/调度任务\s*已完成\s*2011/.test(m)?'✅':'❌')+' 本月切换四组联动: '+m.slice(0,72));
 await p.locator('[data-period=day]:visible').first().click();  /* 周期按钮同屏可能有左右两组，只点可见那份 */ await p.waitForTimeout(600);
 // 自洽：分类相加=总数、检测+完成≤收样、检测+待检+完成=合计
+/* 新 DOM（FR-41 压缩版）：大数在 .dt-v，分解值按顺序在 .dt-detail .v */
 const calc=await p.evaluate(()=>{const t=document.querySelectorAll('.dtable');
- const g=(el,i)=>+t[el].querySelectorAll('tbody tr')[i].querySelector('.v').textContent;
- return {e:[g(0,0),g(0,1)+g(0,2)], s:[g(1,0),g(1,1)+g(1,2)], i:[g(2,0),g(2,1)+g(2,2)+g(2,3)], d:[g(3,1),g(3,2)+g(3,3)]};});
+ const vs=i=>[+t[i].querySelector('.dt-v').textContent,...[...t[i].querySelectorAll('.dt-detail .v')].map(e=>+e.textContent)];
+ const e=vs(0),s=vs(1),ii=vs(2),d=vs(3);
+ return {e:[e[0],e[1]+e[2]], s:[s[0],s[1]+s[2]], i:[ii[0],ii[1]+ii[2]+ii[3]], d:[d[1],d[2]+d[3]]};});
 out.push((calc.e[0]===calc.e[1]&&calc.s[1]<=calc.s[0]&&calc.i[0]===calc.i[1]&&calc.d[0]===calc.d[1]?'✅':'❌')+' 数字自洽（分类和=总数、检测+完成≤收样、三项和=合计、拆分和=阻塞）: '+JSON.stringify(calc));
 await p.screenshot({path:'/tmp/twin-qa/kpi-tables.png'});
 console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,6).join('\n'));

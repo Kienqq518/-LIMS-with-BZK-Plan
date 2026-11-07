@@ -17,16 +17,20 @@ out.push((exp.overdue===2&&exp.dueSoon===3?'✅':'❌')+` 清单推导：逾期 
 out.push((got.overdue===exp.overdue&&got.dueSoon===exp.dueSoon&&got.testing===exp.testing&&got.pending===exp.pending&&got.done===exp.done?'✅':'❌')
   +` 接口值与清单一致：接口 逾期${got.overdue}/临期${got.dueSoon}/在测${got.testing}/待检${got.pending}/完成${got.done}`);
 const ui=await p.evaluate(()=>{const t=[...document.querySelectorAll('.dtable')][2];return {txt:t.innerText.replace(/\s+/g,' '),
-  tags:[...t.querySelectorAll('.limstag')].length, tips:[...t.querySelectorAll('tr[title]')].map(r=>r.getAttribute('title').slice(0,60))};});
-out.push(((/逾期(?:LIMS)? 2/.test(ui.txt)&&/临期\(3天内\)(?:LIMS)? 3/.test(ui.txt))?'✅':'❌')+' 屏上数值正确: '+ui.txt.slice(0,110));
+  tags:[...t.querySelectorAll('.limstag')].length,
+  /* 明细清单从 title 挪进 aria-label（2026-11-07：连 hover 都不想要），读屏与 QA 仍能追到具体项目 */
+  tips:[...t.querySelectorAll('.dt-i[aria-label]')].map(r=>r.getAttribute('aria-label').slice(0,80)).filter(x=>/要求 /.test(x))};});
+out.push(((/逾期\s*(?:LIMS)?\s*2/.test(ui.txt)&&/临期\(3天内\)\s*(?:LIMS)?\s*3/.test(ui.txt))?'✅':'❌')+' 屏上数值正确: '+ui.txt.slice(0,110));
 out.push((ui.tags===2?'✅':'❌')+` LIMS 角标数量=${ui.tags}（逾期/临期两行各一个）`);
-out.push((ui.tips.length===2&&/SPL-2611/.test(ui.tips[0])&&/要求 /.test(ui.tips[0])?'✅':'❌')+' 明细 title 可追到具体项目: '+String(ui.tips[0]).slice(0,70));
+out.push((ui.tips.length===2&&/SPL-2611/.test(ui.tips[0])?'✅':'❌')+' 明细走 aria-label 可追到具体项目（屏上无 hover）: '+String(ui.tips[0]).slice(0,72));
 // 周期切换：逾期/临期保持现在时口径
 await p.locator('[data-period=year]:visible').first().click();  /* 周期按钮同屏可能有左右两组，只点可见那份 */ await p.waitForTimeout(700);
 const y=await p.evaluate(()=>[...document.querySelectorAll('.dtable')][2].innerText.replace(/\s+/g,' '));
-out.push(((/逾期(?:LIMS)? 2/.test(y)&&/临期\(3天内\)(?:LIMS)? 3/.test(y)&&/8890/.test(y))?'✅':'❌')+' 切本年：合计随周期(8890)、逾期/临期保持现在时: '+y.slice(0,80));
+/* 本年：合计 9127（=96 在测 + 141 待检 + 8890 完成）随周期变；逾期 2 / 临期 3 是现在时口径，不随周期变 */
+out.push(((/逾期\s*(?:LIMS)?\s*2/.test(y)&&/临期\(3天内\)\s*(?:LIMS)?\s*3/.test(y)&&/合计\s*9127/.test(y)&&/已完成检测\s*8890/.test(y))?'✅':'❌')+' 切本年：合计随周期(9127=96+141+8890)、逾期/临期保持现在时: '+y.slice(0,96));
 // 自洽：在测+待检+完成=合计
-const calc=await p.evaluate(()=>{const t=[...document.querySelectorAll('.dtable')][2];const v=[...t.querySelectorAll('tbody tr .v')].map(x=>+x.textContent);return v;});
+const calc=await p.evaluate(()=>{const t=[...document.querySelectorAll('.dtable')][2];
+ return [+t.querySelector('.dt-v').textContent, ...[...t.querySelectorAll('.dt-detail .v')].map(x=>+x.textContent)];});
 out.push((calc[0]===calc[1]+calc[2]+calc[3]?'✅':'❌')+` 三项相加=合计: ${calc.join('/')}`);
 await p.screenshot({path:'/tmp/twin-qa/plan-lims.png'});
 console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,5).join('\n'));

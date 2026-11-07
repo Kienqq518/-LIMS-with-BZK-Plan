@@ -47,8 +47,8 @@ a('非106 机器人不越区', (await page.locator('#zpDevices').innerText()).in
 // 周期切换：月→报告份数置灰
 /* 左栏隐藏时周期按钮在区域面板里，两处都可能有：点当前可见的那一个 */
 await page.locator('[data-period=month]:visible').first().click(); await page.waitForTimeout(400);
-a('本月四表联动', await page.evaluate(()=>document.querySelectorAll('.dtable').length===4 && document.querySelector('.dtable tbody tr .v').textContent==='268'), true);
-a('本月委托总数', (await page.evaluate(()=>document.querySelector('.dtable tbody tr .v').textContent)),'268');
+a('本月四组联动', await page.evaluate(()=>document.querySelectorAll('.dtable').length===4 && document.querySelector('.dtable .dt-v').textContent==='268'), true);
+a('本月委托总数', (await page.evaluate(()=>document.querySelector('.dtable .dt-v').textContent)),'268');
 
 // 图层：关路径
 await page.click('.lic[data-layer=path]'); await page.waitForTimeout(1500);

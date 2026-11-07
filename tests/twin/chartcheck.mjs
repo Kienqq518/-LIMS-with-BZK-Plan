@@ -62,13 +62,15 @@ ok(errs.length===0,'图表层无渲染错误: '+JSON.stringify(errs).slice(0,160
 // ③ 图与表同源
 const list=await p.evaluate(()=>window.__twinCharts.list());
 const sig=n=>{const r=list.find(x=>x.name===n);return r?JSON.parse(r.sig):null;};
+/* FR-41 压缩版 DOM：大数在 .dt-v、分解值按序在 .dt-detail .v（表格结构已不存在） */
 const tbl=await p.evaluate(()=>{const g=k=>{const s=document.querySelector(`.dtable[data-key="${k}"]`);if(!s)return null;
-  return [...s.querySelectorAll('tbody tr')].map(tr=>({label:tr.children[0].innerText.replace(/\s+/g,'').replace(/(LIMS)$/,''),v:+tr.children[1].innerText}))};return {entrust:g('entrust'),samples:g('samples'),testItems:g('testItems'),dispatch:g('dispatch')};});
+  return [{label:'head',v:+s.querySelector('.dt-v').innerText},...[...s.querySelectorAll('.dt-detail .v')].map(e=>({label:'',v:+e.innerText}))];};
+  return {entrust:g('entrust'),samples:g('samples'),testItems:g('testItems'),dispatch:g('dispatch')};});
 /* 左栏四张表只留数字：柱状图把同一批数字再画一遍，还各吃掉 88px 高度——
    产品负责人要求左栏加宽、缩短、不出滚动条，所以这里反过来断言"图上没有图"，
    但表格数字与接口必须仍然一致（口径没被顺手改掉）。 */
 const tblOk=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/lab-status');const P=r.data.panels;
-  const g=k=>[...document.querySelectorAll(`.dtable[data-key="${k}"] tbody tr`)].map(tr=>+tr.children[1].innerText);
+  const g=k=>{const s=document.querySelector(`.dtable[data-key="${k}"]`);return [+s.querySelector('.dt-v').innerText,...[...s.querySelectorAll('.dt-detail .v')].map(e=>+e.innerText)];};
   return {entrust:g('entrust').join(',')===`${P.entrust.periods.day.total},${P.entrust.periods.day.power},${P.entrust.periods.day.safety}`,
     samples:g('samples').join(',')===`${P.samples.periods.day.received},${P.samples.periods.day.testing},${P.samples.periods.day.done}`,
     testItems:g('testItems').slice(0,4).join(',')===`${P.testItems.periods.day.testing+P.testItems.periods.day.pending+P.testItems.periods.day.done},${P.testItems.periods.day.testing},${P.testItems.periods.day.pending},${P.testItems.periods.day.done}`};});
