@@ -388,6 +388,32 @@
           windowPoints: N, note: 'Mock 时序：日周期曲线 + 指纹抖动，末点钉住当前实时读数' + (avg ? '（' + fromIds.length + ' 个温湿度点位的均值）' : ''),
           pinned: { temperature: curT, humidity: curH }, series: hist }));
       }
+      /* 安全管家场景监测（2026-11-08 产品负责人：底栏「试验项完成情况」换成「安全管家场景监测状态」）。
+         状态一律现算，不在 seed 里写死：
+           · 存在告警 = 该场景所在房间有未闭环告警（active/dispatched），并把条数带出来，屏上就能自证为什么是红的；
+           · 异常     = 所辖点位读数越限（气体超限 / 烟感报警 / 浸水 / 温度>28℃ / 湿度>70%RH），且该房间没有未闭环告警；
+           · 正常     = 以上都不成立。
+         点位读数与右列组态物联、场景节点层同源（同一份 envNodes），不建第二套真相。 */
+      if (path === '/api/overview/safety-scenes') {
+        var sc = (state.overview['safety-scenes'] || {});
+        /* 告警在 state.overview.alarms（不是 state.alarms——写错时这里恒为空，六个场景全报"正常"，
+           一个看起来正常的红绿条其实什么也没判。上一版就是这么错的，靠"必须至少出现一个非正常态"的断言抓回来）。
+           点位越限不在这里算：读数由宿主侧 data/iot-nodes.json + monitoring-data.js 现生成，
+           mock 手里没有那份真相，硬算就是造第二套数据。这里只给"所在房间未闭环告警"这一半事实。 */
+        var openAlarms = (state.overview.alarms || []).filter(function (a) { return a.status !== 'resolved'; });
+        var scenes = (sc.scenes || []).map(function (x) {
+          /* zoneId 带连字符（Z-106）：上一版拼成 'Z'+roomId='Z106'，一个都匹配不上，
+             六个场景恒判「正常」——红绿条画得再漂亮也是空的。 */
+          /* 只算 A/B 级（异常与瓶颈）：C 级是校准/维护到期，属于设备台账事件，
+             把它算进"涉水场景存在告警"就是误报（实测 108 只有那条 DL-09 校准过期，场景被刷红）。 */
+          var inRoom = openAlarms.filter(function (a) { return a.zoneId === 'Z-' + x.roomId && a.grade !== 'C'; });
+          return { sceneId: x.sceneId, name: x.name, tag: x.tag, roomId: x.roomId, rule: x.rule, ruleKind: x.ruleKind,
+            actions: x.actions, pending: x.pending || null, nodes: x.nodes,
+            openAlarms: inRoom.length, openAlarmIds: inRoom.map(function (a) { return a.alarmId; }) };
+        });
+        return resolve(envelope({ note: sc.note, statusRule: sc.statusRule, statusLabels: sc.statusLabels,
+          deployedCount: scenes.length, scenes: scenes }));
+      }
       if (path === '/api/overview/test-item-plan') {
         var pl = (state.testItemPlan || {}).items || [];
         return resolve(envelope({ note: state.testItemPlan.note, overdueRule: state.testItemPlan.overdueRule, dueSoonRule: state.testItemPlan.dueSoonRule,

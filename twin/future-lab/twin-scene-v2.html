@@ -61,7 +61,12 @@
       <div class="tw-chart" id="chartDevices" role="img" aria-label="设备运行状态 3D 圆环图：运行中/待机/停机/异常 四档数量与占比，中心为建档合计"></div>
       <div class="dk-body" id="dkDevBody"></div>
     </div>
-    <div class="dk-rate" id="dkRobots">机器人 —</div>
+  </section>
+  <!-- AGV 机器人（2026-11-08 产品负责人：设备运行状态下面加一块 AGV 状态与电量，两块之间留间隙）。
+       原来只有一行「机器人 2 台 · 在跑 1 · 停靠充电 1」的文字，看不出每台在干什么、还剩多少电。 -->
+  <section class="raildev railagv" id="railAgv" aria-label="AGV 机器人状态与电量">
+    <header><b>AGV 机器人</b><span class="src" id="agvCnt">—</span></header>
+    <div class="agv-list" id="agvList"></div>
   </section>
   <!-- 数据源胶囊 / draw calls / 风格预览 按 2026-11-06 反馈移除；来源与更新时间改为写进每张表头（诚实口径不丢） -->
   <!-- 避让校验常驻徽标已按 2026-11-06 反馈移除；自检照跑，结果写 body[data-route-audit] 供 QA，违规时才瞬时提示 -->
@@ -109,7 +114,13 @@
   <!-- 底栏三块（FR-45 铺满整屏宽）：① 上=AGV 当前任务，下=调度任务三列（进行中/未派单/已完成）
        ② 委托单试验项完成情况 ③ 组态物联节点（从右列挪下来，位置几乎没变，但底栏因此能铺满）。
        右列从此只剩告警流，高度反而更大。设备运行状态在左栏（FR-42）。 -->
-  <footer class="dock" id="taskStrip" aria-label="底部三块铺满整屏宽：AGV 与调度任务 / 试验项完成情况 / 组态物联节点">
+  <footer class="dock" id="taskStrip" aria-label="底部三块铺满整屏宽：安全管家场景监测 / 无人化调度任务 / 组态物联节点">
+    <!-- 安全管家场景监测（2026-11-08 产品负责人：这块替掉「试验项完成情况」，并放到最左、与调度任务交换位置）。
+         每行=场景名 + 运行状态 + 所用节点 icon + 所在房间号；状态由告警与点位阈值现算（见 mock）。 -->
+    <section class="dk scpanel" id="dkScenes" aria-label="安全管家场景监测状态">
+      <header><b>安全管家场景监测</b><span class="src" id="scCnt">—</span></header>
+      <div class="dk-view"><div class="dk-track" id="dkScenesTrack"></div></div>
+    </section>
     <section class="dk dkq" id="dkQueue" aria-label="AGV 与无人化调度任务">
       <header><b>无人化调度任务</b><span class="src" id="dkQueueCnt">流程配置</span></header>
       <div class="cycle" id="cycleBox">
@@ -122,10 +133,6 @@
         <div class="dq-col" data-state="unassigned"><h4>未派单 <b id="dqNUnassigned">0</b></h4><div class="dk-view"><div class="dk-track" id="dqTrackUnassigned"></div></div></div>
         <div class="dq-col" data-state="done"><h4>已完成 <b id="dqNDone">0</b></h4><div class="dk-view"><div class="dk-track" id="dqTrackDone"></div></div></div>
       </div>
-    </section>
-    <section class="dk" id="dkItems" aria-label="委托单试验项完成情况">
-      <header><b>试验项完成情况</b><span class="src" id="dkItemsHead">—</span></header>
-      <div class="dk-view"><div class="dk-track" id="dkItemsTrack"></div></div>
     </section>
       <section class="dk nodepanel" id="iotPanel" aria-label="组态物联节点">
       <header><b>组态物联节点</b><span class="src" id="dkNodesCnt">—</span></header>

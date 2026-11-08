@@ -46,7 +46,8 @@
       alarm: tv('--tw-st-alarm') || '#E5484D', warn: tv('--tw-st-warn') || '#F59E0B',
       idle: tv('--tw-st-idle') || '#94A3B8', done: tv('--tw-st-done') || '#7E8C9B', na: tv('--tw-st-na') || '#C3CCD6',
       ink1: tv('--tw-ink-1') || '#0F2740', ink3: tv('--tw-ink-3') || '#5B6B7D', ink4: tv('--tw-ink-4') || '#8D9AAB',
-      fsLabel: parseFloat(tv('--tw-fs-label')) || 11.5, fsBody: parseFloat(tv('--tw-fs-body')) || 12.5
+      fsLabel: parseFloat(tv('--tw-fs-label')) || 11.5, fsBody: parseFloat(tv('--tw-fs-body')) || 12.5,
+      fsMicro: parseFloat(tv('--tw-fs-micro')) || 10.5
     };
   }
   const toRgb = h => { const s = h.replace('#', ''); const n = parseInt(s.length === 3 ? s.split('').map(c => c + c).join('') : s, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
@@ -91,14 +92,25 @@
   function ringFaces(items, opt) {
     const total = items.reduce((s, d) => s + Math.max(0, d.v), 0) || 1;
     /* cx 可偏左：左栏只有 200px 宽，环居中再把图例塞在下面会糊成一团；环靠左、图例靠右才读得开 */
-    const cx = opt.cx == null ? .5 : opt.cx, cy = opt.cy == null ? .5 : opt.cy, rx = opt.rx || .34, ry = rx * (opt.flat || .55), dep = rx * .16, ir = opt.inner || .5;
+    const cx = opt.cx == null ? .5 : opt.cx, cy = opt.cy == null ? .5 : opt.cy, rx = opt.rx || .34, ry = rx * (opt.flat || .55);
+    const dep = rx * (opt.depth == null ? .16 : opt.depth), ir = opt.inner || .5;
+    /* 扇区分隔角（2026-11-08 产品负责人「环形图很丑」）：
+       原来四档挤成一条连续环，运行中(蓝)与待机(灰)明度又接近，读起来是一坨色带而不是"分布"。
+       两档以上时每档两端各让开半个缝，成为独立挤出块——和场景里"物件"的语言一致；
+       同时把侧面压暗的幅度收小（.30→.18）、顶面提亮（.42→.50）并描一根极淡白边，立体感在但不脏。 */
+    const nz = items.filter(d => d.v > 0).length;
+    const pad = nz > 1 ? (opt.padDeg == null ? 5 : opt.padDeg) * Math.PI / 180 : 0;
     let a = -Math.PI / 2; const poly = [];
     items.forEach(d => {
       const v = Math.max(0, d.v); if (!v) return;
-      const a1 = a + v / total * TAU, f = faces(d.c);
-      poly.push({ pts: [...arc(cx, cy - dep, rx, ry, a, a1, 26), ...arc(cx, cy - dep, rx * ir, ry * ir, a1, a, 26)], c: f.top });
-      poly.push({ pts: [...arc(cx, cy, rx, ry, a, a1, 26).reverse(), ...arc(cx, cy - dep, rx, ry, a, a1, 26)], c: f.front });
-      poly.push({ pts: [...arc(cx, cy, rx * ir, ry * ir, a, a1, 26), ...arc(cx, cy - dep, rx * ir, ry * ir, a, a1, 26).reverse()], c: f.side });
+      const a1 = a + v / total * TAU;
+      const s0 = a + pad / 2, s1 = a1 - pad / 2;
+      const top = lighten(d.c, .5), side = darken(d.c, .18);
+      if (s1 > s0) {
+        poly.push({ pts: [...arc(cx, cy - dep, rx, ry, s0, s1, 30), ...arc(cx, cy - dep, rx * ir, ry * ir, s1, s0, 30)], c: top, cap: 1 });
+        poly.push({ pts: [...arc(cx, cy, rx, ry, s0, s1, 30).reverse(), ...arc(cx, cy - dep, rx, ry, s0, s1, 30)], c: d.c });
+        poly.push({ pts: [...arc(cx, cy, rx * ir, ry * ir, s0, s1, 30), ...arc(cx, cy - dep, rx * ir, ry * ir, s0, s1, 30).reverse()], c: side });
+      }
       a = a1;
     });
     return { poly, total, dep, rx };
@@ -228,8 +240,11 @@
           t: d.k + ' ' + d.v + '·' + Math.round(d.v / g.total * 100) + '%', c: d.c }));
         return {
           __h: h, type: 'view', children: [
-            { type: 'polygon', data: g.poly, encode: { x: d => d.pts.map(q => q[0]), y: d => d.pts.map(q => q[1]) }, style: { fill: d => d.c, inset: 0 } },
+            { type: 'polygon', data: g.poly, encode: { x: d => d.pts.map(q => q[0]), y: d => d.pts.map(q => q[1]) },
+              style: { fill: d => d.c, inset: 0, stroke: d => (d.cap ? 'rgba(255,255,255,.7)' : 'transparent'), lineWidth: d => (d.cap ? .6 : 0) } },
             { type: 'text', data: [{ x: (o.cx == null ? .5 : o.cx), y: (o.cy == null ? .5 : o.cy) - g.dep * .5, t: String(g.total) }], encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsBody * 1.2, fontWeight: 800, fill: p.ink1, textAlign: 'center' } },
+            /* 中心只留一个裸数字会读成「11 是什么」；补一条极小的档位说明，环自己就能解释（不算新增面板文字） */
+            { type: 'text', data: [{ x: (o.cx == null ? .5 : o.cx), y: (o.cy == null ? .5 : o.cy) - g.dep * .5 - .17, t: o.cap || '合计' }], encode: { x: 'x', y: 'y', text: 't' }, tooltip: false, style: { fontSize: p.fsMicro, fill: p.ink4, textAlign: 'center' } },
             { type: 'text', data: legend, encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsLabel, fontWeight: 700, fill: d => d.c, textAlign: d => d.anchor } }
           ],
           scale: { x: { type: 'linear', domain: [0, 1], nice: false }, y: { type: 'linear', domain: [.98, .02], nice: false } }

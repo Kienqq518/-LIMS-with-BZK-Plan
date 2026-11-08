@@ -8,7 +8,7 @@
 (function () {
   var $ = function (s) { return document.querySelector(s); };
   var scene = $('#scene');
-  var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [], planItems = [], queueData = null, entrust = null;
+  var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [], planItems = [], queueData = null, safety = null, scSig = '';
   var rtTimer = null, detailDev = null, bridgeReady = false, pendingState = null;
   var thSeries = null, thLoading = false, chartsBooted = false;
   var dqSig = '', zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false, routeAudit = null, cycleDef = null, cycTimer = null;
@@ -66,7 +66,7 @@
       TwinApi.get('/api/zone/106/samples'), TwinApi.get('/api/zone/106/dispatch-tasks'),
       TwinApi.get('/api/zone/103/devices'), TwinApi.get('/api/zone/106/cycle'), TwinApi.get('/api/zone/106/walls'),
       TwinApi.get('/api/overview/test-item-plan'), TwinApi.get('/api/overview/alarm-sections'),
-      TwinApi.get('/api/overview/dispatch-queue'), TwinApi.get('/api/overview/entrust-testitems')
+      TwinApi.get('/api/overview/dispatch-queue'), TwinApi.get('/api/overview/safety-scenes')
     ]);
   }).then(function (r) {
     status = r[0].data; zones = r[1].data || []; tasks = r[2].data || []; alarms = r[3].data || [];
@@ -76,7 +76,7 @@
     walls = (r[10] && r[10].data) || [];
     planItems = (r[11] && r[11].data && r[11].data.items) || [];
     setSections(r[12] && r[12].data);   /* A/B/C 分区口径来自数据，不在 JS 里写死（FR-24 第 4 条） */
-    queueData = r[13] && r[13].data || null; entrust = r[14] && r[14].data || null;   /* 底栏块2/块3 */
+    queueData = r[13] && r[13].data || null; safety = r[14] && r[14].data || null;   /* 底栏块2 调度任务 / 块1 安全管家场景 */
     /* 讲解顺序（决策 Q1 售前投影）：总览 → 106 无人化区（主叙事）→ 其余区域 */
     ORDER = ['S1', 'Z106'].concat(zones.map(function (z) { return 'Z' + z.zoneId.slice(2); }).filter(function (z) { return z !== 'Z106'; }));   /* 讲解序列不再包含告警回溯屏 */
     if (r[9] && r[9].data && r[9].data.cycle) { cycleDef = r[9].data.cycle; if (!cycTimer) cycTimer = setInterval(tickCycle, 1000); tickCycle(); }
@@ -88,7 +88,7 @@
     if (ev.type === 'tick') {
       robots = (ev.payload.robots && ev.payload.robots.length ? ev.payload.robots : robots);
       devices.forEach(function (d) { var s = ev.payload.devices.filter(function (x) { return x.deviceId === d.deviceId; })[0]; if (s) d.status = s.status; });
-      renderZonePanel(); renderTables(); renderCharts(); pushState();
+      renderZonePanel(); renderTables(); renderCharts(); pushState(); renderScenes();
       /* 底栏：块1 统计与块2 的"循环中"要跟着心跳走，但只就地改文本（见 refreshDock） */
       renderDockStats();
       TwinApi.get('/api/overview/dispatch-queue').then(function (r) { queueData = r.data; refreshDock(); }).catch(function () { });
@@ -566,14 +566,116 @@
         '<i style="background:' + x.c + '"></i><span class="nm">' + x.k + '</span>' +
         '<b class="vv">' + x.v + '</b><span class="pc">' + pc + '%</span></div>';
     }).join('') + '</div>';
-    /* 机器人分工写进稳定节点：它属于整块，不属于图例列（挤在右列里会折成两行） */
-    var rbEl = $('#dkRobots');
-    if (rbEl) rbEl.textContent = '机器人 ' + robots.length + ' 台 · 在跑 ' + robots.filter(function (r) { return !r.parked; }).length + ' · 停靠充电 ' + robots.filter(function (r) { return r.parked; }).length;
+    /* 机器人那一行文字已经升级成左栏独立的 AGV 块（renderAgv），这里不再重复写一遍 */
+    renderAgv();
     /* 圆环只画非零档，中心数字是建档合计；精确数与占比走上面的 HTML 图例
        （字更清晰、可选中、可读屏，而且等轴挤出的扁洞里放不下两行字） */
     TwinCharts.donut($('#chartDevices'), 'devices', buckets.map(function (x) { return { k: x.k, v: x.v, c: x.c }; }),
-      { height: 96, legend: false, cx: .5, cy: .5, rx: .32, flat: .9, inner: .6 });
+      /* 环放大（rx .32→.355）、带子收薄（inner .6→.58）、挤出减浅（depth .16→.105）、档间留 5° 缝。
+         产品负责人嫌原来「一坨蓝」，这几项合起来才读得出这是四档分布而不是一个蓝色圆盘。 */
+      { height: 96, legend: false, cx: .5, cy: .52, rx: .355, flat: .86, inner: .58, depth: .105, padDeg: 5, cap: '台建档' });
   }
+  /* AGV 机器人块（2026-11-08）：每台一行——编号 / 状态 + 正在办的任务 / 电量条 + 百分比。
+     电量与状态全部来自调度心跳里的 robots（seed 有 battery，mock 每 tick 掉电/回充，低电自己回桩），
+     屏上不编数：停靠桩的那台显示「停靠充电 · 回升中」，不写成故障。 */
+  function renderAgv() {
+    var el = $('#agvList'); if (!el) return;
+    el.innerHTML = robots.map(function (r) {
+      var bat = Math.round(r.battery == null ? 0 : r.battery);
+      var charging = !!r.parked || r.action === 'charging';
+      var st = r.parked ? '停靠充电' : (r.action === 'charging' ? '充电中' : r.action === 'moving' ? '行进中' : '待机');
+      var low = bat <= 20 && !charging;
+      var cls = (charging ? 'charge' : (r.action === 'moving' ? 'moving' : '')) + (low ? ' low' : '');
+      var what = r.parked ? ('停靠 ' + (r.chargingBay || '102-05') + ' 充电位 · 回升中')
+        : ((r.currentFlowName || '无在制任务') + (r.taskElapsedMin != null ? ' 已 ' + r.taskElapsedMin + 'min' : ''));
+      return '<div class="agv-row ' + cls + '" data-robot="' + r.robotId + '" tabindex="0" role="button"'
+        + ' aria-label="' + escapeHtml(r.robotId + ' ' + st + '，' + what + '，电量 ' + bat + '%' + (low ? '（低电）' : '')) + '">'
+        + '<i class="dot"></i><span class="id">' + r.robotId + '</span>'
+        + '<span class="st">' + escapeHtml(st + ' · ' + what) + '</span>'
+        + '<span class="bat"><i class="agv-barrow"><i style="width:' + bat + '%"></i></i><b class="pct">' + bat + '%</b></span></div>';
+    }).join('');
+    var c = $('#agvCnt');
+    if (c) c.textContent = robots.length + ' 台 · 在跑 ' + robots.filter(function (r) { return !r.parked; }).length
+      + ' · 充电 ' + robots.filter(function (r) { return r.parked; }).length;
+  }
+
+  /* 节点类型 icon：场景行要读的是"这个场景靠哪几类点位跑"，所以画类型不画编号
+     （编号在组态物联列表与场景节点层里都有）。图形全部 currentColor，跟随 ink 层级。 */
+  var NODE_ICON = {
+    temperature: '<path d="M6 2a1.5 1.5 0 0 1 3 0v6.2a3 3 0 1 1-3 0z"/><path d="M7.5 11.5a1.5 1.5 0 1 0 0 .01"/>',
+    smoke: '<path d="M4 10a4 4 0 0 1 8 0z"/><path d="M8 6V3"/><path d="M5.5 13h5"/>',
+    gas: '<path d="M8 2c2 3 3.5 4.2 3.5 6.5a3.5 3.5 0 0 1-7 0C4.5 6.2 6 5 8 2z"/>',
+    water: '<path d="M3 11h10"/><path d="M5 13.5h8"/><path d="M8 2c1.8 2.6 3 3.8 3 5.6A3 3 0 0 1 5 7.6C5 5.8 6.2 4.6 8 2z"/>',
+    motion: '<circle cx="8" cy="4" r="1.8"/><path d="M4.5 13.5 6 9l2 1.5V13.5"/><path d="M9.5 10.5 11.5 9"/>',
+    switch: '<circle cx="8" cy="4.5" r="1.6"/><circle cx="8" cy="11.5" r="1.6"/><path d="M8 6.1v3.8"/>',
+    camera: '<rect x="2.5" y="5" width="8" height="6" rx="1.2"/><path d="M10.5 7.5 13.5 6v6l-3-1.5z"/>',
+    light: '<path d="M8 2.5a3.5 3.5 0 0 1 2 6.3V11H6V8.8a3.5 3.5 0 0 1 2-6.3z"/><path d="M6.5 13h3"/>'
+  };
+  function nodeIcon(t) {
+    return '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      + (NODE_ICON[t] || NODE_ICON.switch) + '</svg>';
+  }
+
+  /* 安全管家场景行：名称 + 标签 + 状态徽标 + 节点 icon 串 + 房间号。
+     状态来自 mock 现算（未闭环告警归属 / 点位阈值），行内把"为什么是红的"的条数一起带出来，
+     屏上可自证；点位没补齐的场景（如工器具微动开关）标 pending，不谎称已在跑。 */
+  function renderScenes() {
+    var el = $('#dkScenesTrack'); if (!el) return;
+    var list = (safety && safety.scenes) || [];
+    /* 场景状态 = 两半事实拼起来：所在房间未闭环告警（mock 给）+ 所辖点位当前读数越限（宿主 envNodes 给，
+       与右列组态物联、场景节点层同一份读数，不另建第二套真相）。阈值取场景方案文档里的规则原值：
+       温度 >28℃、湿度 >70%RH、气体 exceeded、烟感/水浸 detected。 */
+    var byId = {}; (envNodes || []).forEach(function (n) { byId[n.id] = n; });
+    list = list.map(function (x) {
+      var breach = [];
+      (x.nodes || []).forEach(function (nd) {
+        var n = byId[nd.id], v = (n && n.values) || {};
+        if (nd.type === 'gas' && v.exceeded === true) breach.push('可燃气体超限');
+        if (nd.type === 'smoke' && v.detected === true) breach.push('烟感报警');
+        if (nd.type === 'water' && v.detected === true) breach.push('检测到浸水');
+        if (nd.type === 'temperature' && v.temperature > 28) breach.push('温度 ' + v.temperature + '℃>28℃');
+        if (nd.type === 'temperature' && v.humidity > 70) breach.push('湿度 ' + v.humidity + '%RH>70%');
+      });
+      var st = x.openAlarms ? 'alarm' : (breach.length ? 'abnormal' : 'normal');
+      var c = Object.create(x);
+      c.status = st; c.breach = breach;
+      c.statusLabel = ((safety && safety.statusLabels) || {})[st] || st;
+      return c;
+    });
+    var sig = list.map(function (x) { return x.sceneId + ':' + x.status + ':' + x.openAlarms + ':' + (x.breach || []).join('/'); }).join(',');
+    if (sig && sig === scSig) return;          /* 内容没变就不重建轨道（重建会把无缝滚动弹回顶部，见 FR-30b） */
+    scSig = sig;
+    var html = list.map(function (x) {
+      var icons = (x.nodes || []).map(function (n) { return nodeIcon(n.type); }).join('');
+      var aria = x.sceneId + ' ' + x.name + '，' + x.tag + '，' + x.statusLabel
+        + (x.openAlarms ? '（本区未闭环告警 ' + x.openAlarms + ' 条）' : '')
+        + ((x.breach || []).length ? '（越限：' + x.breach.join('、') + '）' : '')
+        + '，位于 ' + x.roomId + ' 区，节点 ' + (x.nodes || []).map(function (n) { return NODE_CN(n.type); }).join('/')
+        + '，核心规则 ' + x.rule + (x.pending ? '。' + x.pending : '');
+      return '<div class="sc-row' + (x.pending ? ' pending' : '') + ' ' + x.status + '" data-scene="' + x.sceneId + '"'
+        + ' data-room="' + x.roomId + '" data-nodes="' + escapeHtml((x.nodes || []).map(function (n) { return n.id; }).join(',')) + '"'
+        + ' tabindex="0" role="button" aria-label="' + escapeHtml(aria) + '">'
+        + '<span class="nm">' + escapeHtml(x.name) + '<span class="tag">' + escapeHtml(x.tag) + '</span></span>'
+        + '<span class="nodes">' + icons + '<span class="rm">' + x.roomId + '</span></span>'
+        + '<span class="st ' + x.status + '"><i></i>' + escapeHtml(x.statusLabel) + (x.openAlarms ? ' ' + x.openAlarms : '') + '</span></div>';
+    }).join('');
+    dkTrack('#dkScenesTrack', html, list.length);
+    var c = $('#scCnt');
+    if (c) c.textContent = '已部署 ' + list.length + ' 套 · 告警 ' + list.filter(function (x) { return x.status === 'alarm'; }).length
+      + ' · 异常 ' + list.filter(function (x) { return x.status === 'abnormal'; }).length;
+  }
+
+  /* 点场景行：把该场景所辖节点在场景里点选出来（复用物联节点那套 select-node 通道），
+     并说一句这个场景的核心规则——屏上不常驻，只在提示里出现一次。 */
+  function dockLocateScene(sceneId) {
+    var x = ((safety && safety.scenes) || []).filter(function (y) { return y.sceneId === sceneId; })[0];
+    if (!x) return;
+    var first = (x.nodes || [])[0];
+    if (first) dockSelectNode(first.id);
+    document.body.dataset.lastScene = sceneId;
+    flashHint(x.name + '（' + x.roomId + ' 区 · ' + x.statusLabel + '）规则：' + x.rule);
+  }
+
   function renderDock() {
     /* ① 设备信息统计：状态分布 + 稼动率（在测/建档，现算不写死） */
 
@@ -595,17 +697,9 @@
     $('#dkQueueCnt').textContent = '流程配置 ' + qt.length + ' 条 · 循环同步' + (queueData && queueData.liveStep && queueData.liveStep.flowCode ? '：' + queueData.liveStep.flowCode : (queueData && queueData.liveStep && queueData.liveStep.kind === 'pickup' ? '：样品室取样' : ''));
     dqSig = qt.map(function (t) { return t.seq + ':' + t.shown; }).join(',');   /* 列归属指纹：只有换列才重建 */
 
-    /* ③ 正在检测的委托单 → 试验项完成情况（图4 的名称与检测设备） */
-    var its = (entrust && entrust.items) || [];
-    var lbl = (entrust && entrust.stateLabels) || {};
-    $('#dkItemsHead').textContent = entrust ? (entrust.entrustNo + ' · 样品 ' + entrust.sampleCount + ' 件 · 时效 ' + entrust.dueDate) : '—';
-    var ihtml = its.map(function (t) {
-      var st = t.state;
-      return '<div class="ti-row ' + st + '" data-cad="' + (t.cad || '') + '" tabindex="0" role="button" aria-label="' + escapeHtml(t.name + '，' + (lbl[st] || st) + '，回车定位检测设备') + '">' +
-        '<i class="ti-dot"></i><span class="nm">' + escapeHtml(t.name) + '</span>' +
-        '<span class="dv">' + escapeHtml(t.device) + '</span><span class="tm" style="color:var(--tw-color-textMuted);white-space:nowrap">' + (lbl[st] || st) + '</span></div>';
-    }).join('');
-    dkTrack('#dkItemsTrack', ihtml, its.length);
+    /* ③ 安全管家场景监测（2026-11-08 替换原「试验项完成情况」；委托单试验项接口仍在契约里，只是不再上屏——
+       试验项目的数在左栏「试验项目」组与 106 区域面板里都有，同一批数字不在屏上写两遍） */
+    renderScenes();
 
     /* ④ 组态物联节点：按房间排序滚动（101→110），读数用 nodeReading 唯一口径 */
     var ns = (envNodes || []).slice().sort(function (a, b) {
@@ -967,8 +1061,8 @@
          改按容器类匹配，列再多也不怕再漏一列。 */
       var q = e.target.closest('.dq3 .dq-row');
       if (q) { dockLocate(q.dataset.cad, q.querySelector('.nm').textContent); return; }
-      var ti = e.target.closest('#dkItemsTrack .ti-row');
-      if (ti) { dockLocate(ti.dataset.cad, ti.querySelector('.nm').textContent); return; }
+      var scEl = e.target.closest('#dkScenesTrack .sc-row');
+      if (scEl) { dockLocateScene(scEl.dataset.scene); return; }
       var ndTh = e.target.closest('#dkNodesTrack .nd-row');
       if (ndTh) {
         var ndv = (envNodes || []).filter(function (x) { return x.id === ndTh.dataset.node; })[0];

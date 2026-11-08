@@ -42,17 +42,35 @@ const shotA=await p.screenshot();
 const pA=await b.newPage({viewport:{width:1920,height:1080}});
 await pA.goto(BASE+'/twin/future-lab/twin-scene-v2.html?look=pro',{waitUntil:'load'});await pA.waitForTimeout(15000);
 const shotB=await pA.screenshot();
-const diff=await p.evaluate(async([a,c])=>{
-  const dec=async b64=>{const bin=atob(b64);const arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);return createImageBitmap(new Blob([arr],{type:'image/png'}));};
-  const A=await dec(a),C=await dec(c);const g=new OffscreenCanvas(1920,1080),x=g.getContext('2d');
-  x.drawImage(A,0,0);const pa=x.getImageData(340,120,1100,600).data;
-  x.clearRect(0,0,1920,1080);x.drawImage(C,0,0);const pc=x.getImageData(340,120,1100,600).data;
+/* 取样框跟着构图走：原来写死 (340,120,1100,600) 是上一版 fr 1.32 时建模的屏幕外框，
+   FR-55 把初始构图缩到 fr 2.13 后，框里多出来的是空白背景，亮度对比被稀释到 55（<60）——
+   量的不再是"建模光影对比"，而是"背景有多少"。改成按投影实时求框（地坪四角+墙顶，内缩 6px 避开抗锯齿边），
+   这条指标从此与构图无关：换 fr、换 pan、改窗口大小都不该再动它。 */
+const f0 = p.frames().find(x => /tour-space-v3-1/.test(x.url()));
+const box = await f0.evaluate(() => {
+  const v = window.visual106, host = v.host.getBoundingClientRect(), V = v.overview.position.constructor, S = 0.05;
+  let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9;
+  (v.g.rooms || []).forEach(r => (r.points || []).forEach(q => { minX = Math.min(minX, q[0] * S); maxX = Math.max(maxX, q[0] * S); minZ = Math.min(minZ, q[1] * S); maxZ = Math.max(maxZ, q[1] * S); }));
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (const x of [minX, maxX]) for (const z of [minZ, maxZ]) for (const y of [0, 1.6]) {
+    const q = new V(x, y, z).project(v.camera);
+    const sx = (q.x * .5 + .5) * host.width, sy = (-q.y * .5 + .5) * host.height;
+    x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy); }
+  return [Math.round(host.left + x0) + 6, Math.round(host.top + y0) + 6,
+          Math.max(240, Math.round(host.width ? (x1 - x0) : 700) - 12), Math.max(160, Math.round(y1 - y0) - 12)];
+});
+out.push((box[2] > 300 && box[3] > 200 ? '✅' : '❌') + ' 亮度取样框按建模投影实时求得: ' + JSON.stringify(box));
+const diff = await p.evaluate(async ([a, c, bx]) => {
+  const dec = async b64 => { const bin = atob(b64); const arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++)arr[i] = bin.charCodeAt(i); return createImageBitmap(new Blob([arr], { type: 'image/png' })); };
+  const A = await dec(a), C = await dec(c); const g = new OffscreenCanvas(1920, 1080), x = g.getContext('2d');
+  x.drawImage(A, 0, 0); const pa = x.getImageData(bx[0], bx[1], bx[2], bx[3]).data;
+  x.clearRect(0, 0, 1920, 1080); x.drawImage(C, 0, 0); const pc = x.getImageData(bx[0], bx[1], bx[2], bx[3]).data;
   let sum=0,n=0,lumA=[],lumB=[];
   for(let i=0;i<pa.length;i+=4){sum+=(Math.abs(pa[i]-pc[i])+Math.abs(pa[i+1]-pc[i+1])+Math.abs(pa[i+2]-pc[i+2]))/3;n++;
     if(i%800===0){lumA.push(.2126*pa[i]+.7152*pa[i+1]+.0722*pa[i+2]);lumB.push(.2126*pc[i]+.7152*pc[i+1]+.0722*pc[i+2]);}}
   const p95=a=>{a=a.slice().sort((x2,y2)=>x2-y2);return a[Math.floor(a.length*.95)];},p05=a=>{a=a.slice().sort((x2,y2)=>x2-y2);return a[Math.floor(a.length*.05)];};
   return {mad:+(sum/n).toFixed(1),contrastDefault:Math.round(p95(lumA)-p05(lumA)),contrastPro:Math.round(p95(lumB)-p05(lumB))};
-},[shotA.toString('base64'),shotB.toString('base64')]);
+},[shotA.toString('base64'),shotB.toString('base64'),box]);
 await pA.close();
 ok(diff.mad>3,`默认档与 ?look=pro 精修档画面确实不同（平均差 ${diff.mad}/255）——开关是活的，不是摆设`);
 ok(diff.contrastDefault>=60&&diff.contrastDefault<=diff.contrastPro+40,`默认档亮度对比 p5–p95=${diff.contrastDefault}（技能口径 <60 算被雾/暗压扁），pro 档=${diff.contrastPro}`);

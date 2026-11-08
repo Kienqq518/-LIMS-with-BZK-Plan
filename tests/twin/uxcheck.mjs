@@ -72,8 +72,8 @@ const in106=heat.filter(h=>h.x>=9&&h.x<=18.5&&h.z>=9.6&&h.z<=28.1), other=heat.f
 out.push(((in106.length&&Math.max(...in106.map(h=>h.o))>=0.15&&(!other.length||Math.max(...other.map(h=>h.o))<=0.08))?'✅':'❌')+` 热力分级：106 ${in106.length}块 max=${in106.length?Math.max(...in106.map(h=>h.o)):'-'} / 其他 ${other.length}块 max=${other.length?Math.max(...other.map(h=>h.o)):'-'}`);
 await p.click('.lic[data-layer=heatmap]'); await p.waitForTimeout(600);
 // 4) 底栏=四块（设备统计 / 调度任务队列 / 委托单试验项 / 组态物联节点），除统计块外各自滚动
-T('底栏块数（FR-45 三块铺满整屏宽：调度任务 / 试验项 / 组态物联）', await p.locator('.dock .dk').count(), 3);
-T('滚动轨道数（任务三列 + 试验项 + 右列物联）', await p.locator('.dk-track').count(), 5);
+T('底栏块数（FR-45 三块铺满整屏宽：安全管家场景 / 调度任务 / 组态物联）', await p.locator('.dock .dk').count(), 3);
+T('滚动轨道数（任务三列 + 场景 + 物联）', await p.locator('.dk-track').count(), 5);
 out.push(((await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')))==='dkUp/dkUp/dkUp'?'✅':'❌')+' 三列各自滚动: '+await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')));
 
 /* FR-42 全站一律无底板；FR-46 把 F 档垫底由「更重的白」改成「淡灰」——
@@ -170,8 +170,11 @@ const samples=[]; for(let i=0;i<7;i++){ await p.waitForTimeout(140); samples.pus
 const uniq=new Set(samples.map(s=>s.join(','))).size;
 out.push((uniq>=4?'✅':'❌')+` 下钻为补间动画（800ms 内采到 ${uniq} 个不同机位）`);
 await p.waitForTimeout(2600); const fr1=await bboxFrac();
-out.push((fr1.w>=.30&&fr1.w<=.42&&fr1.h<=.62&&fr1.x1<=.66&&fr1.y0>=.12&&fr1.h>fr0.h&&fr1.x1<fr0.x1-.04?'✅':'❌')
-  +` 106 下钻落在标定构图内（包围盒 宽${fr0.w}→${fr1.w} 高${fr0.h}→${fr1.h}、右缘 ${fr0.x1}→${fr1.x1} 让出区域面板，不越屏、不被面板压住）`);
+/* 总览构图缩到 fr 2.13 后，106 在总览里只占 ~0.21 宽，下钻到标定构图的 0.36 ——
+   「下钻确实把 106 拉近」这条现在比旧版更有意义（≥1.2×）。旧的「右缘必须再左移 4%」是
+   拿旧总览的右缘当基线，总览缩小后基线本身就左移了，继续用它会把正确的构图判成失败。 */
+out.push((fr1.w>=.30&&fr1.w<=.42&&fr1.h<=.62&&fr1.x1<=.66&&fr1.y0>=.12&&fr1.w>fr0.w*1.2&&fr1.h>fr0.h?'✅':'❌')
+  +` 106 下钻落在标定构图内且确实推近（包围盒 宽${fr0.w}→${fr1.w} 高${fr0.h}→${fr1.h}，右缘 ${fr1.x1} 让出区域面板，不越屏不被压住）`);
 const z=await ev(()=>window.visual106.view);
 T('下钻后视角', z, 'close');
 T('下拉框同步', await p.inputValue('#zoneSel'), '106');

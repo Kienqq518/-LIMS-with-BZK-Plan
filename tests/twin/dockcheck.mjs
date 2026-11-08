@@ -16,8 +16,8 @@ await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
 await p.waitForTimeout(16000);
 
 // 结构
-T('底栏块数（FR-45：调度任务 / 试验项 / 组态物联，铺满整屏宽）', await p.locator('.dock .dk').count(), 3);
-T('块标题', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '无人化调度任务|试验项完成情况|组态物联节点');
+T('底栏块数（FR-45：安全管家场景 / 调度任务 / 组态物联，铺满整屏宽）', await p.locator('.dock .dk').count(), 3);
+T('块标题与块序（FR-51：场景监测与调度任务已交换位置）', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '安全管家场景监测|无人化调度任务|组态物联节点');
 T('设备运行状态在左栏（FR-42 重排）', await p.evaluate(()=>{const e=document.querySelector('.rail .raildev');return !!e&&e.offsetParent!==null;}), 'true');
 
 // ① 设备运行状态：四档圆环 + 四行图例 + 机器人分工
@@ -41,8 +41,23 @@ const readyN=await p.evaluate(async()=>{const a=await TwinApi.get('/api/zone/106
   return [...(a.data||[]),...(b.data||[])].filter(d=>d.status==='ready'||d.status==='standby').length;});
 out.push((lg[0].v===working?'✅':'❌')+` 运行中档 == 接口 working 台数（屏上 ${lg[0].v} vs 接口 ${working}）`);
 out.push((lg[1].v===readyN?'✅':'❌')+` 待机档 == 接口 待机+就绪 台数（就绪折进本档，屏上 ${lg[1].v} vs 接口 ${readyN}）`);
-const rb=await p.evaluate(()=>document.getElementById('dkRobots').innerText.replace(/\s+/g,' '));   /* 机器人行改成块1 的跨列说明节点（挤在图例列里会折两行） */
-out.push((/在跑 1 · 停靠充电 1/.test(rb)?'✅':'❌')+' 块1 机器人分工（一台跑 / 一台常驻充电位）: '+rb);
+/* FR-52：机器人从「一行文字」升级成左栏独立 AGV 块（编号 / 状态+在办任务 / 电量条+百分比）。
+   断言跟着改，并且钉死一件事：屏上的电量必须等于接口现值——电量这种会动的数，
+   一旦在渲染层另算一套，大屏上就会出现"进度条和调度系统说的不一样"。 */
+const agv=await p.evaluate(()=>({cnt:(document.getElementById('agvCnt')||{}).innerText||'',
+  rows:[...document.querySelectorAll('.agv-row')].map(e=>({id:(e.querySelector('.id')||{}).innerText||'',
+    st:(e.querySelector('.st')||{}).innerText||'',pct:(e.querySelector('.pct')||{}).innerText||'',
+    w:(e.querySelector('.agv-barrow i')||{}).style?.width||'',aria:e.getAttribute('aria-label')||''}))}));
+const apiR=await p.evaluate(async()=>(await TwinApi.get('/api/zone/106/robots')).data.map(r=>({id:r.robotId,bat:Math.round(r.battery)})));
+const cntN=(agv.cnt.match(/在跑 (\d+) · 充电 (\d+)/)||[]);
+out.push((agv.rows.length===2&&cntN[1]==='1'&&cntN[2]==='1'?'✅':'❌')+' 左栏 AGV 块：两台且分工计数正确（一台跑 / 一台常驻充电位）: '+agv.cnt.replace(/\s+/g,' '));
+out.push((agv.rows.every(x=>/^RB-/.test(x.id)&&/行进中|停靠充电|充电中|待机/.test(x.st)&&/\d+%/.test(x.pct)&&/\d+%/.test(x.w))?'✅':'❌')
+  +' AGV 每行=编号+状态+在办事+电量条+百分比: '+agv.rows.map(x=>x.id+' '+x.st.slice(0,22)+' '+x.pct).join(' | '));
+const batOk=agv.rows.every(x=>{const a=apiR.filter(y=>y.id===x.id)[0];return !!a&&Math.abs(parseInt(x.pct)-a.bat)<=1;});
+out.push((batOk?'✅':'❌')+' AGV 电量 == 接口现值（±1 心跳容差，屏上不另算一套）: 屏上 '
+  +agv.rows.map(x=>x.id+'='+x.pct).join(' ')+' vs 接口 '+apiR.map(x=>x.id+'='+x.bat+'%').join(' '));
+out.push((agv.rows.every(x=>x.aria.length>30&&/电量 \d+%/.test(x.aria))?'✅':'❌')
+  +' AGV 行 aria 完整（读屏得到编号/状态/在办事/电量）: '+(agv.rows[0]&&agv.rows[0].aria||'').slice(0,76));
 
 // ② 任务队列：三分类分组 + 与流程配置一致
 /* FR-42：三分类从「一张长列表的三个分组」改成三列并排，状态=列，行内不再重复状态字 */
@@ -102,15 +117,26 @@ const cols1=await p.evaluate(()=>[...document.querySelectorAll('.dq3 .dq-col>h4 
 out.push((moved>0.5||cols0!==cols1?'✅':'❌')+` 心跳刷新不无谓重置滚动（7s 位移 ${moved.toFixed(1)}px；列分布 ${cols0}→${cols1}，只有换列才允许重建）`);
 out.push((/循环同步/.test(after.cnt)?'✅':'❌')+' 块2 头部显示与剧本同步: '+after.cnt.replace(/\s+/g,' '));
 
-// ③ 试验项（图4 的名称与检测设备）
-const items=await p.evaluate(()=>[...document.querySelectorAll('#dkItemsTrack .ti-row')].slice(0,5).map(e=>({t:e.innerText.replace(/\s+/g,' '),cls:e.className})));
-const want=['哑铃样尺寸检查','绝缘厚度测量试验','老化前绝缘的机械性能试验','XLPE绝缘的热延伸试验','XLPE绝缘的收缩试验'];
-out.push((items.length>=5&&want.every(w=>items.some(x=>x.t.includes(w)))?'✅':'❌')+' 块3 五个试验项名称与图4 一致: '+items.map(x=>x.t.split(' ')[0]).join(' | '));
-out.push((items.every(x=>/砝码库|测试仪|测试系统|检测系统/.test(x.t))?'✅':'❌')+' 块3 每行带检测设备: '+items[1].t);
-const states=await p.evaluate(()=>[...document.querySelectorAll('#dkItemsTrack .ti-row')].slice(0,5).map(e=>e.classList.contains('testing')||e.classList.contains('pending')||e.classList.contains('done')||e.classList.contains('redo')));
-out.push((states.every(Boolean)?'✅':'❌')+' 块3 四态标注（未检测/检测中/已完成/退回复测）齐: '+states.join(','));
-const head=await p.evaluate(()=>document.getElementById('dkItemsHead').innerText);
-out.push((/SC2026-0422/.test(head)&&/时效/.test(head)?'✅':'❌')+' 块3 头部=正在检测的委托单: '+head);
+// ③ 安全管家场景监测（FR-51，替掉原「试验项完成情况」）
+const scApi=await p.evaluate(async()=>(await TwinApi.get('/api/overview/safety-scenes')).data);
+const scRows=await p.evaluate(()=>[...document.querySelectorAll('#dkScenesTrack .sc-row')].filter(r=>r.getAttribute('aria-hidden')!=='true')
+  .map(e=>({id:e.dataset.scene,room:e.dataset.room,t:e.innerText.replace(/\s+/g,' '),icons:e.querySelectorAll('.nodes svg').length,
+    st:(e.querySelector('.st')||{}).textContent,cls:e.className.match(/normal|abnormal|alarm/)?RegExp.lastMatch[0]:'?',aria:e.getAttribute('aria-label')})));
+const SC_NAMES=['高危区域入侵主动防御','消防安全·烟雾与可燃气体预警','涉水区域浸水与泄漏告警','受限空间准入安全管控','恒温恒湿环境自动调节','工器具使用规范化智能引导'];
+out.push((scApi.scenes.length===6&&scRows.length===6&&SC_NAMES.every(n=>scRows.some(x=>x.t.includes(n)))?'✅':'❌')
+  +' 块1 六套场景与安全管家场景库一致: '+scRows.map(x=>x.t.split(' ')[0]).join(' | '));
+out.push((scRows.every(x=>x.icons>=2&&/\d{3}/.test(x.room)&&x.st)?'✅':'❌')
+  +' 块1 每行都有 名称+状态+节点icon+房间号: '+scRows.map(x=>x.room+'/'+x.icons+'icon/'+x.st.trim().slice(0,6)).join(' '));
+/* 状态必须由事实推导出来，不能恒为「正常」：上一版把 zoneId 拼成 'Z106'（真实是 'Z-106'），
+   六个场景全绿，红绿条画得再漂亮也是空的——这条就是抓那种"看起来没坏的假通过"。 */
+const alarmSc=scRows.filter(x=>x.st.includes('存在告警'));
+out.push((alarmSc.length>=1&&alarmSc.every(x=>+x.st.replace(/\D/g,'')>0)?'✅':'❌')
+  +' 至少一个场景按未闭环告警判为「存在告警」且带条数: '+alarmSc.map(x=>x.id+'@'+x.room+' '+x.st.trim()).join(' / '));
+out.push((scRows.every(x=>/口径|规则|未闭环|越限|位于/.test(x.aria||'')&&x.aria.length>40)?'✅':'❌')
+  +' 每行 aria 带完整口径（规则/房间/节点/为什么是这个状态）: '+(scRows[1]&&scRows[1].aria||'').slice(0,80));
+out.push((/已部署 6 套/.test(await p.evaluate(()=>document.getElementById('scCnt').innerText))?'✅':'❌')
+  +' 块1 头部计数=已部署 6 套: '+await p.evaluate(()=>document.getElementById('scCnt').innerText));
+out.push(((await p.locator('.ti-row').count())===0?'✅':'❌')+' 试验项块已整块下屏（不留半截 DOM）: .ti-row 数='+await p.locator('.ti-row').count());
 
 // ④ 组态物联节点：按房间排序 + 读数 + 心跳
 const nd=await p.evaluate(()=>[...document.querySelectorAll('#dkNodesTrack .nd-row')].slice(0,16).map(e=>({rm:e.querySelector('.rm').innerText,nm:e.querySelector('.nm').innerText,rd:e.querySelector('.rd').innerText})));
@@ -127,14 +153,16 @@ const land=await p.evaluate(()=>{
   document.querySelectorAll('.dk-track').forEach(t=>t.style.animation='none');
   const pick=(sel)=>{const tr=document.querySelector(sel); const box=tr.closest('.dk-view')||tr.closest('.np-view'); if(!box) return null; const v=box.getBoundingClientRect();
     return [...tr.children].filter(e=>e.dataset.cad||e.dataset.node).map(e=>({e,r:e.getBoundingClientRect()})).filter(x=>x.r.top>=v.top-1&&x.r.bottom<=v.bottom+1)[0];};
-  const q=pick('#dqTrackRunning')||pick('#dqTrackUnassigned')||pick('#dqTrackDone'), ti=pick('#dkItemsTrack'), nd=pick('#dkNodesTrack');
-  return {qCad:q&&q.e.dataset.cad, qRole:q&&q.e.getAttribute('role'), tiCad:ti&&ti.e.dataset.cad, ndNode:nd&&nd.e.dataset.node, ndTab:nd&&nd.e.getAttribute('tabindex')};
+  const q=pick('#dqTrackRunning')||pick('#dqTrackUnassigned')||pick('#dqTrackDone'), sc=pick('#dkScenesTrack'), nd=pick('#dkNodesTrack');
+  return {qCad:q&&q.e.dataset.cad, qRole:q&&q.e.getAttribute('role'), scId:sc&&sc.e.dataset.scene, scNodes:sc&&sc.e.dataset.nodes, ndNode:nd&&nd.e.dataset.node, ndTab:nd&&nd.e.getAttribute('tabindex')};
 });
 out.push((land.qCad&&land.qRole==='button'?'✅':'❌')+' 块2 任务行可点/可聚焦（role=button + data-cad）: '+land.qCad);
 if(land.qCad){ await p.evaluate((cad)=>document.querySelector('.dq3 .dq-row[data-cad="'+cad+'"]').click(), land.qCad); await p.waitForTimeout(900);
   out.push((await p.evaluate(()=>document.body.dataset.lastHighlight)===land.qCad?'✅':'❌')+' 点任务行 → 场景描边对应工位: '+await p.evaluate(()=>document.body.dataset.lastHighlight)); }
-if(land.tiCad){ await p.evaluate((cad)=>document.querySelector('#dkItemsTrack .ti-row[data-cad="'+cad+'"]').click(), land.tiCad); await p.waitForTimeout(900);
-  out.push((await p.evaluate(()=>document.body.dataset.lastHighlight)===land.tiCad?'✅':'❌')+' 点试验项行 → 描边其检测设备: '+await p.evaluate(()=>document.body.dataset.lastHighlight)); }
+if(land.scId){ await p.evaluate((id)=>document.querySelector('#dkScenesTrack .sc-row[data-scene="'+id+'"]').click(), land.scId); await p.waitForTimeout(1200);
+  const got=await p.evaluate(()=>({scene:document.body.dataset.lastScene,node:document.body.dataset.lastNode}));
+  const first=(land.scNodes||'').split(',')[0];
+  out.push((got.scene===land.scId&&got.node===first?'✅':'❌')+' 点场景行 → 记下场景并选中其首个节点: '+JSON.stringify(got)+' 期望节点 '+first); }
 if(land.ndNode){ const f=p.frames().find(x=>/tour-space/.test(x.url()));
   await p.evaluate((id)=>document.querySelector('#dkNodesTrack .nd-row[data-node="'+id+'"]').click(), land.ndNode); await p.waitForTimeout(1400);
   const card=await f.evaluate(()=>{const a=document.getElementById('iot-audit');return a?JSON.parse(a.textContent):null;});
