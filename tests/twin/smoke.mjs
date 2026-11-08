@@ -19,7 +19,8 @@ const hooks=async()=>page.evaluate(()=>{try{return document.getElementById('scen
    所以项数按 value 非空来数，占位项另验它在不在。 */
 a('区域下拉房间项数（不含占位）', await page.evaluate(() => [...document.querySelectorAll('#zoneSel option')].filter(o => o.value).length), 10);
 a('房间下拉默认不选中任何房间', await page.evaluate(() => document.getElementById('zoneSel').value), '');
-a('KPI 四张表', await page.locator('.dtable').count(), 4);
+/* 左栏三组（调度任务子区域按 FR-73 移出左栏） */
+a('KPI 三张表', await page.locator('.dtable').count(), 3);
 a('报告份数不再展示', (await page.locator('#tables').innerText()).includes('报告'), false);
 a('告警流汇总行', (await page.locator('#streamMeta').innerText()).replace(/\s+/g,' '), '今日 13 条 · 未解除 9 · 最新在前');
 a('告警不再切 A/B/C 三区（2026-11-07）', await page.locator('.asec').count(), 0);
@@ -35,15 +36,23 @@ a('墙体剖切仍固定生效（前侧外墙不透明度 0.12）', await page.f
 
 // 切区域=106
 await gotoZone(page,'106'); await page.waitForTimeout(2500);
-a('106 区域面板显示（五类信息）', await page.locator('#zonePanel').isVisible(), true);
+/* FR-80：区域面板退役，106 下钻后信息在左栏两块 + 底栏 + 右列 */
+a('106 下钻后左栏接管（任务统计 + 设备）', await page.evaluate(()=>!!document.querySelector('#railZoneStats') && !document.querySelector('#railZoneStats').hidden && !document.querySelector('#railZoneDevs').hidden), true);
+/* FR-80：面板不是"隐藏"，是连 DOM 一起删——留一份 display:none 的影子 UI，
+   读文本的断言会绿、按键盘的断言会红，同一套数据两种结论，比删掉更危险。 */
+a('区域面板 DOM 已删除（不留隐藏影子）', await page.locator('#zonePanel').count(), 0);
 /* 106 = 8 台设备 + 2 台机器人 = 10 行。原来期望 11，是因为智能型数字电桥被"数据归属分区"
    挂在 106 名下，而它实物在 107-01（FR-67 已归位）。这一行同时钉住"面板与全场表同源"。 */
-a('面板设备行含机器人（8 台 + 2 台）', await page.locator('#zpDevices .zp-row').count(), 10);
-a('106 面板台数与全场表同源', await page.locator('#zpDevicesN').innerText(), '8 台建档 · 2 台机器人');
-a('停靠充电的机器人不判卡住（RB-C-01 在 102-05 桩上）', (await page.locator('#zpDevices').innerText()).includes('停靠充电'), true);
-a('卡住/超时叙事仍在（在制任务超时标注）', (await page.locator('#zpRunning').innerText()).includes('超时'), true);
+/* 8 台设备 + 2 台复合机器人 = 10 行：机器人原来是"区域面板设备块"里的两行，
+   面板退役后归左栏，106 下钻时 .raildev 是隐藏的，这里是唯一的机器人落点。 */
+a('左栏行数（8 台建档 + 2 台机器人）', await page.locator('#zDevsList .zd-row').count(), 10);
+a('106 左栏台数与全场表同源', await page.locator('#zDevsN').innerText(), '8 台建档 · 2 台机器人');
+a('停靠充电的机器人不判卡住（总览 AGV 块写明停靠与回升）', (await page.evaluate(()=>{document.querySelector('.mode.lv[data-level="overview"]').click();return '';})||(await page.locator('#railAgv').innerText())).includes('停靠充电'), true);
+a('卡住/超时叙事仍在（告警流里那条节拍超时）', (await page.locator('#streamTrack').innerText()).includes('超时'), true);
 a('106 下钻后底栏保留（机器人与任务继续走）', await page.locator('#taskStrip').isVisible(), true);
-  a('106 下钻后告警流让位给区域面板（信息不重复）', await page.locator('#alarmStream').isHidden(), true);
+  /* FR-80：区域面板退役，右列不再让位——本房间的告警流就是这一列的内容，不重复（面板那份已撤）。
+   所以这条从"让位"改成"接管后仍在，且只剩本房间"。 */
+a('106 下钻后右列告警流接管（不再整列让位）', await page.evaluate(()=>{const r=document.querySelector('#rightCol').getBoundingClientRect();return r.width>2&&r.height>2;}), true);
 
 // 非 106 诚实降级
 await gotoZone(page,'107'); await page.waitForTimeout(1800);
@@ -51,15 +60,22 @@ await gotoZone(page,'107'); await page.waitForTimeout(1800);
    诚实降级这条留给真的没有检测设备的区（101 接待大厅 / 104 控制室）。 */
 /* 107 = 5 台试验机（维卡软化/液压万能/电子万能/两工位×2）+ 归位过来的智能型数字电桥 = 6 台。
    上一笔我把期望写成 7 就推了，是我的数错，不是产品错——这里按接口实际派生值写死并加同源校验。 */
-a('107 面板从全场表派生出设备', await page.locator('#zpDevices .zp-row').count(), 6);
-a('107 面板台数与全场表同源', await page.locator('#zpDevicesN').innerText(), '6 台建档');
-a('107 设备行格式=编号 名称「型号」', (await page.locator('#zpDevices .zp-body .zp-row').first().innerText()).includes('智能型数字电桥'), true);
-a('非106 机器人不越区', (await page.locator('#zpDevices').innerText()).includes('RB-C-01'), false);
+a('107 左栏从全场表派生出设备', await page.locator('#zDevsList .zd-row').count(), 6);
+a('107 台数与全场表同源', await page.locator('#zDevsN').innerText(), '6 台建档');
+a('107 设备行格式=编号 名称「型号」', /智能型数字电桥.*QJ-36/.test(await page.locator('#zDevsList .zd-row').first().innerText()), true);
+a('非106 机器人不越区', (await page.locator('#zDevsList').innerText()).includes('RB-C-01'), false);
 
 // 周期切换：月→报告份数置灰
 /* 左栏隐藏时周期按钮在区域面板里，两处都可能有：点当前可见的那一个 */
 await page.locator('[data-period=month]:visible').first().click(); await page.waitForTimeout(400);
-a('本月四组联动', await page.evaluate(()=>document.querySelectorAll('.dtable').length===4 && document.querySelector('.dtable .dt-v').textContent==='268'), true);
+/* 左栏三组（调度任务子区域已移出左栏，FR-73）：本月切换要三组一起联动。
+   为什么这里必须回总览读，而不是就地读：这一步页面在 107 下钻，#tables 整块被 CSS 隐藏，
+   隐藏元素的 innerText 会退回 textContent——"总数 268" 变成 "总数268"，
+   带空格的判据当场假失败（上一轮就是被这条判成"产品没联动"）。
+   回总览既读到真实渲染文本，又顺手验了一条用户路径：在区域里切了本月，回总览还得是本月。 */
+await gotoZone(page,'106'); await page.waitForTimeout(1200);
+await page.click('.mode.lv[data-level="overview"]'); await page.waitForTimeout(2200);
+a('本月三组联动（含区域切完回总览仍是本月）', await page.evaluate(()=>{const t=[...document.querySelectorAll('.dtable')].map(e=>e.innerText.replace(/\s+/g,' ')).join(' | ');return /总数 268/.test(t)&&/已收样 511/.test(t)&&/合计 842/.test(t)&&t.indexOf('调度任务')<0;}), true);
 a('本月委托总数', (await page.evaluate(()=>document.querySelector('.dtable .dt-v').textContent)),'268');
 
 // 图层：关路径
@@ -93,8 +109,8 @@ a('告警行点击出闭环详情', await (async()=>{ await page.evaluate(()=>{d
 /* 用下拉而不是按键 2：上一步刚在场景里点过，焦点在 iframe 内，按键要靠桥接层转发；
    这里要验的是面板行的点击链路，不该被焦点归属影响（实测这样会因面板尚未出现而行不可点导致超时） */
 await gotoZone(page,'106'); await page.waitForTimeout(3000);
-const devRow=await page.evaluate(()=>{const el=document.querySelector('#zpDevices:not([hidden]) .zp-row'); if(!el) return null; el.click(); return el.dataset.dev||el.dataset.robot||'row';});
-out.push((devRow?'✅':'❌')+' 面板设备行存在且可点（106 画像保留设备块）: '+devRow);
+const devRow=await page.evaluate(()=>{const el=document.querySelector('#zDevsList .zd-row[data-dev]'); if(!el) return null; el.click(); return el.dataset.dev||'row';});
+out.push((devRow?'✅':'❌')+' 左栏设备行存在且可点（面板退役后这是唯一落点）: '+devRow);
 await page.waitForTimeout(1200);
 a('详情面板弹出', await page.locator('#detail').isVisible(), true);
 a('详情停靠不遮面板', await page.locator('#detail.docked').count(), 1);

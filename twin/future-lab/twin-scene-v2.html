@@ -61,6 +61,21 @@
       </div><span class="rp-src" id="rpSrc" aria-label="来源与更新时间">—</span></header>
     <div class="tables" id="tables"></div>
   </section>
+  <!-- 区域视图左栏（2026-11-08 重排）：任务统计（纯数字 + 日月年，柱图撤掉）与本房间设备列表。
+       这两块只在 ZONE 出现；总览那三块（运行指标/设备运行状态/AGV）在 ZONE 让位。 -->
+  <section class="railpanel zstats" id="railZoneStats" hidden aria-label="任务统计">
+    <header class="rp-head"><b>任务统计</b>
+      <div class="period" role="tablist" aria-label="统计周期">
+        <button class="seg active" data-period="day" role="tab">本日</button>
+        <button class="seg" data-period="month" role="tab">本月</button>
+        <button class="seg" data-period="year" role="tab">本年</button>
+      </div></header>
+    <div class="zs-grid" id="zsGrid"></div>
+  </section>
+  <section class="railpanel zdevs" id="railZoneDevs" hidden aria-label="设备">
+    <header class="rp-head"><b id="zDevsTitle">设备</b><span class="rp-src" id="zDevsN">—</span></header>
+    <div class="zd-list" id="zDevsList"></div>
+  </section>
   <!-- 设备运行状态（FR-42 从底栏挪进左栏）：圆环 + 四行图例 + 机器人一行。
        左栏从此只有两件事：读数（运行指标）与设备状态；AGV 与调度任务归到底栏。 -->
   <section class="raildev" id="railDev" aria-label="设备运行状态">
@@ -106,27 +121,9 @@
       <div class="cam-grid" id="camGrid"></div>
     </section>
   </div>
-  <!-- 区域视图五类信息（2026-11-05 信息模型）：设备 / 环境数据 / 任务统计 / 正在运行的任务 / 告警 -->
-  <aside class="zonepanel" id="zonePanel" hidden aria-label="区域运行面板">
-    <header><b id="zpName">–</b><span id="zpMeta">–</span><button class="close" id="zpClose" aria-label="返回总览">×</button></header>
-    <!-- 左栏在非 106 房间隐藏后，周期切换器必须跟着进面板：检测项目数统计就是按周期变的 -->
-    <div class="zp-period" id="zpPeriod" role="group" aria-label="统计周期" hidden>
-      <span class="lb">统计周期</span>
-      <button class="mini seg" data-period="day">本日</button>
-      <button class="mini seg" data-period="month">本月</button>
-      <button class="mini seg" data-period="year">本年</button>
-    </div>
-    <div class="zp-scroll">
-      <section id="zpDevices"><h4><i class="k dev"></i><span class="zp-title">设备</span><em id="zpDevicesN"></em></h4><div class="zp-body"></div></section>
-      <section id="zpEnv"><h4><i class="k env"></i>环境数据<em id="zpEnvN"></em></h4><div class="zp-body"></div></section>
-      <section id="zpStats"><h4><i class="k stat"></i>任务统计<em id="zpStatsPeriod"></em></h4><div class="tw-chart" id="chartZoneStats" role="img" aria-label="任务统计 3D 柱状图：完成/执行中/异常/排队"></div><div class="zp-body"></div></section>
-      <section id="zpTestItems" hidden><h4><i class="k stat"></i>检测项目数统计<em id="zpTestItemsPeriod"></em></h4><div class="tw-chart" id="chartZoneItems" role="img" aria-label="检测项目数 3D 柱状图：检测中/待检测/已完成/逾期"></div><div class="zp-body"></div></section>
-      <section id="zpSamples" hidden><h4><i class="k dev"></i>样品台账<em id="zpSamplesN"></em></h4><div class="tw-chart" id="chartZoneSamples" role="img" aria-label="样品按名称分布 3D 环形图：各类支数与占比，相加等于在库存量"></div><div class="zp-body"></div></section>
-      <section id="zpRunning"><h4><i class="k run"></i>正在运行的任务<em id="zpRunningN"></em></h4><div class="zp-body"></div></section>
-      <section id="zpAlarms"><h4><i class="k ab"></i>告警<em id="zpAlarmsN"></em></h4><div class="zp-body"></div></section>
-    </div>
-  </aside>
-
+  <!-- 区域视图五段长面板（2026-11-05 信息模型）已整体退役（FR-80，2026-11-08）：
+       它的七块信息分别交接给左栏 #zsGrid / #zDevsList、底栏 #dkRunningTrack、右列告警流与组态物联。
+       保留 hidden 的旧面板曾把三个套件带到假绿里（见 js 里 renderZoneView 上方注释），所以这次连 DOM 一起删。 -->
   <!-- 底栏三块（FR-45 铺满整屏宽）：① 上=AGV 当前任务，下=调度任务三列（进行中/未派单/已完成）
        ② 委托单试验项完成情况 ③ 组态物联节点（从右列挪下来，位置几乎没变，但底栏因此能铺满）。
        右列从此只剩告警流，高度反而更大。设备运行状态在左栏（FR-42）。 -->
@@ -150,6 +147,10 @@
         <div class="dq-col" data-state="unassigned"><h4>未派单 <b id="dqNUnassigned">0</b></h4><div class="dk-view"><div class="dk-track" id="dqTrackUnassigned"></div></div></div>
         <div class="dq-col" data-state="done"><h4>已完成 <b id="dqNDone">0</b></h4><div class="dk-view"><div class="dk-track" id="dqTrackDone"></div></div></div>
       </div>
+    </section>
+    <section class="dk" id="dkRunning" hidden aria-label="运行中的任务">
+      <header><b>运行中的任务</b><span class="src" id="dkRunningN">—</span></header>
+      <div class="dk-view"><div class="dk-track" id="dkRunningTrack"></div></div>
     </section>
       <section class="dk nodepanel" id="iotPanel" aria-label="组态物联节点状态监测">
       <header><b>组态物联节点状态监测</b><span class="src" id="dkNodesCnt">—</span></header>

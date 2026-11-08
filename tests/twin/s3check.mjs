@@ -35,11 +35,23 @@ await rows.nth(idx).click(); await p.waitForTimeout(1500);
 await p.evaluate(()=>{document.getElementById('streamTrack').style.animationPlayState='';});
 T('点告警行出详情面板', await p.locator('#detail').isVisible(), 'true');
 const dt=(await p.locator('#detailBody').innerText()).replace(/\s+/g,' ');
-out.push((/闭环状态/.test(dt)&&/派至/.test(dt)&&/来源系统/.test(dt)&&/MVP 只呈现当前告警/.test(dt)?'✅':'❌')+' 告警详情内容: '+dt.slice(0,120));
+/* 「MVP 只呈现当前告警…孪生只读…」这句按 2026-11-08 反馈从屏上撤了（口径留在 PRD/docs），
+   所以这里改成反向断言：屏上不许再出现这句免责声明，但闭环状态/派至/来源系统三格必须还在。 */
+out.push((/闭环状态/.test(dt)&&/派至/.test(dt)&&/来源系统/.test(dt)&&!/MVP 只呈现当前告警/.test(dt)?'✅':'❌')+' 告警详情内容（撤免责声明、留三格口径）: '+dt.slice(0,120));
 // 区域面板告警块的「详情」按钮可用
+/* FR-80：本区告警行的唯一入口就是右列告警流（面板退役）。
+   滚动列表在自动化里永远"不稳定"，所以同样先停动画、再挑完整落在本区可见框内的一行，
+   用 DOM click 而不是 mouse.click——居中详情弹窗会盖住场景，但盖不住流内的行本身。 */
 await gotoZone(p, '106'); await p.waitForTimeout(2500);
-await p.locator('#zpAlarms .zp-row[data-alarm]').first().click(); await p.waitForTimeout(1200);   /* 区域面板的告警行本身可点（无滚动动画，不会被相邻元素遮挡） */
-out.push(((await p.locator('#detail').isVisible())?'✅':'❌')+' 区域面板告警「详情」可点: '+await p.locator('#detailBody h3').innerText());
+await p.evaluate(()=>{const t=document.getElementById('streamTrack'); if(t) t.style.animation='none';});
+await p.waitForTimeout(400);
+const zClicked=await p.evaluate(()=>{const vb=document.querySelector('.stream-view'); if(!vb) return 'no-stream-view';
+  const b=vb.getBoundingClientRect();
+  const rows=[...document.querySelectorAll('#streamTrack .st-row[data-alarm]')].filter(r=>{const q=r.getBoundingClientRect();return q.top>=b.y-1&&q.bottom<=b.bottom+1;});
+  if(!rows.length) return 'no-fully-visible-alarm-row';
+  rows[0].click(); return (rows[0].getAttribute('aria-label')||'').slice(0,36);});
+await p.waitForTimeout(1200);
+out.push(((await p.locator('#detail').isVisible())?'✅':'❌')+' 区域视图右列告警行可点出详情（'+zClicked+'）: '+await p.locator('#detailBody h3').innerText());
 // 遥控序列不再包含 S3
 await p.keyboard.press('1'); await p.waitForTimeout(2000);
 const seq=[]; for(let i=0;i<12;i++){ await p.keyboard.press('PageDown'); await p.waitForTimeout(700); seq.push(await p.evaluate(()=>new URLSearchParams(location.search).get('mode')+'/'+ (new URLSearchParams(location.search).get('zone')||''))); }

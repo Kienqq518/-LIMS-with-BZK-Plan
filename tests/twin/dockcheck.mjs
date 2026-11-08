@@ -16,8 +16,9 @@ await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
 await p.waitForTimeout(16000);
 
 // 结构
-T('底栏块数（FR-45：安全管家场景 / 调度任务 / 组态物联，铺满整屏宽）', await p.locator('.dock .dk').count(), 3);
-T('块标题与块序（FR-51 交换 + 任务19 改名）', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '安全管家场景监测|无人化调度任务|组态物联节点状态监测');
+/* 底栏 DOM 恒 4 块（调度任务与在制任务互斥存在），块数必须按可见数 */
+T('底栏可见块数（S1：场景 / 调度任务 / 组态物联）', await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).length), 3);
+T('块标题与块序（S1 可见三块）', (await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).map(e=>e.querySelector('header b').innerText).join('|'))), '安全管家场景监测|无人化调度任务|组态物联节点状态监测');
 T('设备运行状态在左栏（FR-42 重排）', await p.evaluate(()=>{const e=document.querySelector('.rail .raildev');return !!e&&e.offsetParent!==null;}), 'true');
 
 // ① 设备运行状态：五档圆环 + 五行图例 + AGV 块

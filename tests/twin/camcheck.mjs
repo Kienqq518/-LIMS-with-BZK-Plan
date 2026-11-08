@@ -28,14 +28,14 @@ out.push((cam.yaw<-1.0&&cam.yaw>-1.1&&Math.abs(cam.elev-0.6)<0.02?'✅':'❌')+`
 await p.screenshot({path:'/tmp/twin-qa/cam-final.png'});
 // 统计四格新口径
 await p.keyboard.press('2'); await p.waitForTimeout(3000);
-const cells=await p.locator('#zpStats .zp-stat span').allInnerTexts();
-const vals=await p.locator('#zpStats .zp-stat b').allInnerTexts();
+/* FR-80：四格从退役面板搬进左栏 #zsGrid（span=标签，b=数字） */
+const cells=await p.locator('#zsGrid .zs-i span').allInnerTexts();
+const vals=await p.locator('#zsGrid .zs-i b').allInnerTexts();
 out.push((cells.join('|')==='已完成|执行中|异常挂起|排队'?'✅':'❌')+' 四格标题: '+cells.join('|'));
 out.push((vals.join('/')==='3/2/1/0'?'✅':'❌')+' 本日106 四格值: '+vals.join('/'));
-/* 周期切换器同屏可能有两份（左栏 .rail>.period 与面板 #zpPeriod），必须点可见的那一份：
-   106 撤掉左栏指标后 .rail>.period 只是 display:none，仍在 DOM 里，直接写属性选择器会撞 strict mode。 */
+/* 周期切换器同屏可能有两份（左栏运行指标组 + 左栏任务统计组），必须点可见的那一份 */
 await p.locator('[data-period=month]:visible').first().click(); await p.waitForTimeout(700);
-out.push(((await p.locator('#zpStats .zp-stat b').allInnerTexts()).join('/')==='60/2/1/32'?'✅':'❌')+' 本月106 四格值: '+((await p.locator('#zpStats .zp-stat b').allInnerTexts()).join('/')));
+out.push(((await p.locator('#zsGrid .zs-i b').allInnerTexts()).join('/')==='60/2/1/32'?'✅':'❌')+' 本月106 四格值: '+((await p.locator('#zpStats .zp-stat b').allInnerTexts()).join('/')));
 // URL 恢复的视角不再被丢弃
 await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html?mode=ZONE&zone=107&period=day&layers=path,labels,zones,walls#v2=1&native-nodes=1',{waitUntil:'load'});
 await p.waitForTimeout(13000);

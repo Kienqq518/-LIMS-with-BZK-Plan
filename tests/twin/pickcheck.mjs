@@ -85,6 +85,13 @@ const go=async()=>{ await f.evaluate(()=>{const c=document.getElementById('twin-
 let g=await goBtn();
 if(g){ const r=await go(); out.push((r.open&&/数采分系统/.test(r.txt)?'✅':'❌')+` 设备卡「查看详情」打开台账详情（${devPt&&devPt.id}）: ${r.txt.slice(0,70)}`); }
 else out.push('❌ 设备卡里没有「查看详情」按钮（应有台账落点）');
+/* 关掉上一步「查看详情」打开的居中弹窗。
+   这个坑花了整轮才定位：弹窗按 FR-81 改成居中浮层（实测覆盖 730,383→1190,753），
+   正好压住机器人光点的像素 (1067,558)——点击落在弹窗里的 .row 上，场景根本没收到事件，
+   于是屏幕上留着的是上一步 106-01 的旧卡，看起来像"点机器人出别人家的卡"的真回归。
+   取证脚本 ~/twin-qa/probe4.mjs：弹窗开着→点空；Esc 关掉→同一像素出 RB-C-01 卡。
+   弹窗遮住场景是正确行为（模态本来就该挡），错的是测试没关自己开的窗。 */
+await p.keyboard.press('Escape'); await p.waitForTimeout(600);
 /* 机器人本体：点它应给真状态（停靠充电），不是「无实时数据」。
    注意：106-09 属 106 模型组，在 102-close 视角里 worldVisible=false，所以只能在总览点它；
    本体在 CAD 里被货架挡住时点不中，因此点它的**状态光点**（屏幕距离命中，专为这种小目标做的入口）。 */
@@ -105,6 +112,27 @@ if(!robPt.err){ await closeCard(); const t4=await toTop(robPt.x,robPt.y); await 
   else out.push('❌ 机器人卡里没有「查看详情」按钮');
   await p.keyboard.press('Escape');
 }
+/* 光点必须长在本体上（2026-11-08 实测缺陷）：ensureDot 只在创建那一帧定位，
+   而机器人本体每帧被剧本搬走——实测 106-08 的身体在 (15.5,13.4)，光点还钉在 CAD 家位 (25.6,12.4)，
+   相距 10.8m：屏上像"机器人没动"，点光点弹的是别家设备的卡。
+   这也是上一轮"光点被 106-01 桌子挡住"那个误判的真身：几何错，不是拾取优先级错。 */
+const follow=await f.evaluate(()=>{const v=window.visual106,TH=v.modelRoots.get('106-08').position.constructor,res={};
+  for(const id of ['106-08','106-09']){const m=v.modelRoots.get(id),d=v.statusDots.get(id); if(!m||!d) continue;
+    m.updateWorldMatrix(true,true);
+    const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
+    m.traverse(o=>{if(!o.isMesh||!o.geometry)return;if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+      /* Vector3 没有 0/1/2 下标：写 w[i] 会取到 undefined，Math.min 一变就是 NaN，
+         断言因此永远红（第一版就是这么红的——红的是判据，不是产品）。 */
+      for(const a of [o.geometry.boundingBox.min,o.geometry.boundingBox.max]){
+        const w=new TH(a.x,a.y,a.z).applyMatrix4(o.matrixWorld);
+        lo[0]=Math.min(lo[0],w.x);lo[1]=Math.min(lo[1],w.y);lo[2]=Math.min(lo[2],w.z);
+        hi[0]=Math.max(hi[0],w.x);hi[1]=Math.max(hi[1],w.y);hi[2]=Math.max(hi[2],w.z);}});
+    const c=[(lo[0]+hi[0])/2,(lo[1]+hi[1])/2,(lo[2]+hi[2])/2], dd=v.statusDots.get(id).position;
+    res[id]={dx:+Math.hypot(dd.x-c[0],dd.z-c[2]).toFixed(2),dy:+(dd.y-c[1]).toFixed(2)};}
+  return res;});
+const fj=Object.entries(follow).map(([k,x])=>k+' Δ'+x.dx+'m');
+out.push((Object.keys(follow).length===2&&Object.values(follow).every(x=>x.dx<=0.9)?'✅':'❌')
+  +' 行进/停靠的机器人，光点跟着本体走（水平偏差 ≤0.9m）: '+fj.join(' | '));
 /* 未建档实体：诚实降级，不编状态（回 106 视角，台桌在那儿） */
 await gotoZone(p, '106'); await p.waitForTimeout(3500);
 const tabPt=await f.evaluate(()=>{const v=window.visual106,m=v.modelRoots.get('106-18'); if(!m) return null;
@@ -162,7 +190,12 @@ out.push((/今日 4 · 未解除 3/.test(bcount)?'✅':'❌')+' B 区计数不�
 await gotoZone(p, '106'); await p.waitForTimeout(3000);
 const zB=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/alarms');const A=(r.data&&r.data.alarms)||[];const B=A.filter(x=>x.grade==='B');return '今日 '+B.length+' · 未解除 '+B.filter(x=>x.status!=='resolved').length;});
 out.push((/今日 4 · 未解除 3/.test(zB)?'✅':'❌')+' 106 面板 B 区今日 4（原 3）: '+zB);
-T('106 面板告警合计', await p.evaluate(()=>document.getElementById('zpAlarmsN').textContent.replace(/\s+/g,'')), '今日11·未解除8');
+/* 面板退役后本区告警计数只剩右列头部一处。同源判据：屏上数字 == 本区接口算出来的条数，
+   而不是把「今日 11」这个字面量钉死（改种子就得回来改两处）。 */
+const zMeta=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/alarms');const A=(r.data&&r.data.alarms)||[];
+  return {api:[A.length,A.filter(x=>x.status!=='resolved').length],screen:((document.getElementById('streamMeta')||{}).innerText||'').replace(/\s+/g,' ')};});
+const mNum=(zMeta.screen.match(/今日\s*(\d+)/)||[])[1];
+out.push((mNum!=null&&+mNum===zMeta.api[0]?'✅':'❌')+' 106 下钻后右列告警头与本区接口同源: 屏上「'+zMeta.screen+'」 API 今日 '+zMeta.api[0]+' 条');
 await p.screenshot({path:'/tmp/twin-qa/pickcheck.png'});
 console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,5).join('\n'));
 await b.close();

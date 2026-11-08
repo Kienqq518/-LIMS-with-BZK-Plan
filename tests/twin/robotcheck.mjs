@@ -59,11 +59,13 @@ out.push((bat[1]>=bat[0]?'✅':'❌')+` 桩上电量回升不掉的：${bat[0]}%
 
 // ⑤ 面板：停靠行说清停在哪、不判卡住；机器人行键盘可达（FR-27 复用）
 await gotoZone(p, '106'); await p.waitForTimeout(3000);
-const dev=await p.locator('#zpDevices').innerText();
-out.push((/RB-C-01[\s\S]{0,80}停靠充电/.test(dev)&&/102-05 充电位/.test(dev)?'✅':'❌')+' 面板 RB-C-01 行=停靠充电 + 桩号: '+dev.replace(/\s+/g,' ').match(/RB-C-01[\s\S]{0,70}/)[0]);
+/* FR-80：机器人行从退役的五段面板搬到左栏 #zDevsList。
+   下钻时 .raildev（总览的 AGV 块）按 viewProfile 隐藏，左栏就是机器人信息的唯一落点，所以必须在这里验。 */
+const dev=await p.locator('#zDevsList').innerText();
+out.push((/RB-C-01[\s\S]{0,80}停靠充电/.test(dev)&&/102-05 充电位/.test(dev)?'✅':'❌')+' 左栏 RB-C-01 行=停靠充电 + 桩号: '+dev.replace(/\s+/g,' ').match(/RB-C-01[\s\S]{0,70}/)[0]);
 out.push((!dev.includes('疑似卡住')?'✅':'❌')+' 停靠不再被误判卡住（全场无「疑似卡住」）');
-out.push(((await p.locator('#zpRunning').innerText()).includes('超时')?'✅':'❌')+' 卡住叙事改由在制任务超时承载（Q4 仍可答）');
-const rbRow=p.locator('#zpDevices [data-robot="RB-C-01"]');
+out.push(((await p.locator('#dkRunningTrack').innerText()).includes('超时')?'✅':'❌')+' 卡住叙事改由底栏「运行中的任务」的超时承载（Q4 仍可答，这一格从面板接了过来）');
+const rbRow=p.locator('#zDevsList [data-robot="RB-C-01"]');
 T('机器人行键盘可达（role/tabindex）', await rbRow.evaluate(e=>[e.getAttribute('role'),e.getAttribute('tabindex')].join('/')), 'button/0');
 await rbRow.focus(); await p.keyboard.press('Enter'); await p.waitForTimeout(1200);
 const det=await p.evaluate(()=>({open:!document.getElementById('detail').hidden,txt:document.getElementById('detailBody').innerText.replace(/\s+/g,' ')}));

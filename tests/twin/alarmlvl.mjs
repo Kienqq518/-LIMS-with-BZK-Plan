@@ -57,9 +57,10 @@ await p.keyboard.press('Escape'); await p.waitForTimeout(600);
 /* 区域视图同样平铺 */
 await gotoZone(p, '106'); await p.waitForTimeout(4200);
 T('区域视图告警块也无分区（.zsec 数）', await p.locator('.zsec').count(), 0);
-const zrows=await p.evaluate(()=>[...document.querySelectorAll('#zpAlarms .zp-row')].map(r=>({g:r.dataset.grade,badge:(r.querySelector('.gd')||{}).innerText})));
+/* FR-80：不再另有一份"面板告警"，右列告警流就是本区告警的唯一落点（也只剩这一套分区模型） */
+const zrows=await p.evaluate(()=>[...document.querySelectorAll('#streamTrack .st-row[data-alarm]')].map(r=>({g:r.dataset.grade,badge:(r.querySelector('.gd')||{}).innerText})));
 out.push((zrows.length>0&&zrows.every(r=>r.badge===r.g)?'✅':'❌')+' 区域告警行同样带等级徽标: '+zrows.length+' 行');
-out.push(((await p.locator('#zpAlarms [data-sfilter]').count())===2?'✅':'❌')+' 区域视图里筛选开关跟着进面板（右列此时是隐藏的）');
+out.push(((await p.locator('#rightCol [data-sfilter]').count())===2?'✅':'❌')+' 区域视图里筛选开关在右列告警流上（面板退役，右列不再整列让位）');
 
 ok(err.length===0,'无 pageerror/console error: '+err.slice(0,3).join(' | '));
 console.log(out.join('\n'));

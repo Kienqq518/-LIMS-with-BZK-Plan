@@ -27,6 +27,16 @@ if (!f) { console.log('❌ 三维场景 iframe 未装载'); console.log(out.join
 const ok = (cond, msg) => out.push((cond ? '✅' : '❌') + ' ' + msg);
 const ev = (fn, ...a) => f.evaluate(fn, ...a);
 async function toPage(x, y) { let fx = x, fy = y, cur = f; while (cur.parentFrame()) { const fe = await cur.frameElement(); const bb = await fe.boundingBox(); fx += bb.x; fy += bb.y; cur = cur.parentFrame(); } return { x: fx, y: fy }; }
+/* #freshTxt 是装载链/区域数据 fail() 的哨兵。原来只在最后收一次账：
+   红了只知道"某一处吞了异常"，不知道是哪个房间、处理到哪台实体时置位的。
+   下面每房间收尾查一次，并在每台实体开工前查一次，把首次变脏点钉到（房间, 实体）。 */
+const sent = () => p.evaluate(() => { const e = document.getElementById('freshTxt');
+  return e ? e.textContent.trim() : 'NO-SENTINEL-ELEMENT'; });
+let sentHit = null;
+const sentSee = async (room, before) => { const v = await sent();
+  if (v && !sentHit) { sentHit = { room, before, text: v }; out.push('❌ 哨兵首次变脏 @' + room + ' 区（处理 ' + before + ' 时已置位）：' + v); }
+  return v; };
+
 const ROOMS = (process.argv[2] ? process.argv[2].split(',') : ['101', '102', '103', '104', '105', '106', '107', '108', '109', '110']);
 const LIMIT = Number(process.env.FOCUS_LIMIT || 0);
 
@@ -145,6 +155,7 @@ for (const room of ROOMS) {
   const list = LIMIT ? ids.slice(0, LIMIT) : ids; nAll += list.length;
   out.push(`—— ${room} 区：${list.length} 个实体（modelRoots 共 ${ids.length}）`);
   for (const id of list) {
+    await sentSee(room, id);
     await waitCamIdle();
     /* —— 分支一：台账有编号但三维未建模 → 不给假动作，只许出诚实说明，相机与气泡都不许动 —— */
     if (modeledMap[id] === false) {
@@ -246,6 +257,8 @@ for (const room of ROOMS) {
       }
     }
   }
+  const rsv = await sentSee(room, '（本房间最后一个实体之后）');
+  out.push(`ℹ️ 哨兵 @${room} 收尾: ` + (rsv || '（空）'));
 }
 out.push(`ℹ️ 入口分布：点实体本体 ${nTest - nEvent - nDot - nUnmodeled} · 点它的状态光点 ${nDot}（其中光点下压着别的实体、按「实体优先」让位 ${dotBlocked}）· 事件兜底 ${nEvent} · 点击被抢后重投 ${hijack} · 未建模诚实提示 ${nUnmodeled}`);
 if (dotMiss.length) out.push(`ℹ️ 光点让位清单（该像素上确实有别的实体，CAD 优先是 FR-25 的既定口径）：${dotMiss.join(' / ')}`);
@@ -259,7 +272,10 @@ ok(err.length === 0, '无 pageerror/console error: ' + err.slice(0, 3).join(' | 
 ok(await ev(() => !(window.__twinLoopErr || '')), '动画环未抛错（撤除跟随后循环照跑）');
 ok(await ev(() => !('anchor' in JSON.parse(document.getElementById('twin-v2-bridge').dataset.cam || '{}')) && !window.__twinAnchor),
   '跟随机制与 anchor 发布口已下线（dataset.cam 不含 anchor、window.__twinAnchor 不存在）');
-ok(await p.locator('#freshTxt').innerText().then(t => !t.trim()).catch(() => true), 'fail() 未被触发（#freshTxt 为空）');
+const svEnd = await sent();
+ok(!svEnd, 'fail() 未被触发（#freshTxt 为空）'
+  + (svEnd ? `：末态非空「${svEnd}」` : '')
+  + (sentHit ? `；首次出现于 ${sentHit.room} 区、处理到 ${sentHit.before} 时：${sentHit.text}` : '（全程未置位）'));
 console.log(out.join('\n'));
 const badN = out.filter(l => l.startsWith('❌')).length;
 console.log(`\n通过 ${out.filter(l => l.startsWith('✅')).length} · 失败 ${badN} · 验证实体 ${nTest}`);

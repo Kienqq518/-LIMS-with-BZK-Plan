@@ -25,10 +25,11 @@ out.push((back.sf==='open'&&back.open?'✅':'❌')+' 刷新后筛选态从 URL �
 /* 区域视图：面板里的开关与右列同一个状态源 */
 await p.click('#alarmStream [data-sfilter=all]'); await p.waitForTimeout(600);
 await gotoZone(p, '106'); await p.waitForTimeout(4200);
-const z=await p.evaluate(()=>({n:document.querySelectorAll('#zpAlarms [data-sfilter]').length,allAct:document.querySelector('#zpAlarms [data-sfilter=all]').classList.contains('active')}));
+/* FR-80：区域视图的告警就是右列那条告警流（面板退役），筛选控件也只剩这一份 */
+const z=await p.evaluate(()=>({n:document.querySelectorAll('#rightCol [data-sfilter]').length,allAct:document.querySelector('#rightCol [data-sfilter=all]').classList.contains('active')}));
 out.push((z.n===2&&z.allAct?'✅':'❌')+' 区域面板的告警开关与全局同一个状态源: '+JSON.stringify(z));
-await p.click('#zpAlarms [data-sfilter=open]'); await p.waitForTimeout(900);
-const sync=await p.evaluate(()=>({zrows:document.querySelectorAll('#zpAlarms .zp-row').length,url:new URLSearchParams(location.search).get('sf')}));
+await p.click('#rightCol [data-sfilter=open]'); await p.waitForTimeout(900);
+const sync=await p.evaluate(()=>({zrows:document.querySelectorAll('#streamTrack .st-row').length,url:new URLSearchParams(location.search).get('sf')}));
 out.push((sync.url==='open'?'✅':'❌')+' 面板里切换也写回 URL（两处共用一个开关状态）: '+JSON.stringify(sync));
 out.push((err.length===0?'✅':'❌')+' 无 pageerror: '+err.slice(0,2).join(' | '));
 console.log(out.join('\n'));

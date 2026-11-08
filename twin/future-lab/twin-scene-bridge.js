@@ -119,6 +119,21 @@ window.__twinTokensForQA = TWIN_TOKEN;   /* QA：3D 侧实际吃到的值必须�
 /* ---------- 设备状态视觉分级：克制版 = 顶部小呼吸光点 + 既有描色 ---------- */
 const STATUS_LIGHT = { working: [TWIN_TOKEN.working, 'pulse'], ready: [TWIN_TOKEN.ready, 'static'], standby: [TWIN_TOKEN.standby, 'dim'], stopped: [TWIN_TOKEN.stopped, 'dim'], alarm: [TWIN_TOKEN.alarm, 'fast'] };
 const statusDots = new Map();
+/* 光点半径与抬升量：两个数同时被"跟随本体"和拾取判据使用，必须单点定义（原来 0.155/0.18 各写两遍）。 */
+const DOT_R = 0.155, DOT_LIFT = 0.18;
+const _followBox = new THREE.Box3();
+/* 光点必须跟着本体走（2026-11-08 实测缺陷）。
+   ensureDot 只在创建那一帧按包围盒定位，而机器人本体每帧被剧本搬到新位置：
+   实测 106-08 的身体在 (15.5,13.4) 的过道上跑，光点却还钉在它 CAD 家位 (25.6,12.4) —— 相距 10.8m。
+   屏幕上就是"机器人明明走了，光点还留在原来那排"，点那个光点弹出的自然是别家设备的卡。
+   这不是拾取优先级问题，是几何问题：光点得先长在本体上，才谈得上点得中。 */
+function followDot(devId) {
+  const dot = statusDots.get(devId), mesh = visual.modelRoots.get(devId);
+  if (!dot || !mesh) return;
+  _followBox.setFromObject(mesh);
+  if (_followBox.isEmpty()) return;
+  dot.position.set((_followBox.min.x + _followBox.max.x) / 2, _followBox.max.y + DOT_LIFT, (_followBox.min.z + _followBox.max.z) / 2);
+}
 function ensureDot(devId, status) {
   const mesh = visual.modelRoots.get(devId); if (!mesh) return;
   let dot = statusDots.get(devId);
@@ -127,9 +142,9 @@ function ensureDot(devId, status) {
     const mat = new THREE.MeshStandardMaterial({ color: 0x101010, emissive: TWIN_TOKEN.brand, emissiveIntensity: 2.2, roughness: 0.4 });
     /* 光点半径 0.10→0.155m（2026-11-08 产品负责人第二次提「还是太小了」）：
        总览构图缩小后 0.10m 只剩 4~5px，几乎看不见；14×12 段数够圆，不额外加面数。 */
-    dot = new THREE.Mesh(new THREE.SphereGeometry(0.155, 16, 12), mat);
+    dot = new THREE.Mesh(new THREE.SphereGeometry(DOT_R, 16, 12), mat);
     dot.userData.room = String(devId).slice(0, 3);   /* 下钻时按房间收放光点用 */
-    dot.position.set((box.min.x + box.max.x) / 2, box.max.y + 0.18, (box.min.z + box.max.z) / 2);
+    dot.position.set((box.min.x + box.max.x) / 2, box.max.y + DOT_LIFT, (box.min.z + box.max.z) / 2);
     visual.detail.add(dot); statusDots.set(devId, dot);
   }
   const conf = STATUS_LIGHT[status] || STATUS_LIGHT.standby;
@@ -198,7 +213,16 @@ function startAnimLoop() {
         /* 光点先挂上：停靠的机器人也要有状态光点（暗色待机），否则「FR-25 光点是设备状态唯一入口」对停着的那台就失效了。
            路径单点（停靠）的机器人在下面早退，不参与插值。 */
         ensureDot(tgt.modelRoot, (tgt.parked || tgt.action === 'charging') ? 'standby' : 'working');
-        if (!tgt.path || tgt.path.length < 2) return;
+        if (!tgt.path || tgt.path.length < 2) {
+          /* 停靠的那台必须真的被摆到充电位上（2026-11-08 第 1 条修复）。
+             原来这里直接早退：网格永远留在 CAD 里 106-09 的原位，而 seed/屏上都说它停在 102-05 充电位——
+             于是「说好在 102 充电，实际站在 106 过道」的穿帮 + pickcheck 点它命中的是别家设备，同一个根因。
+             坐标口径与行进中的那台完全一致（同一个 path/homeAnchor，同样 y=0），不另发明一套。 */
+          const p0 = (tgt.path && tgt.path[0]) || tgt.homeAnchor;
+          if (p0) { g.position.set(p0[0], 0, p0[2]); g.userData.parkedAt = [+p0[0].toFixed(2), +p0[2].toFixed(2)]; }
+          followDot(tgt.modelRoot);            /* 本体搬完立刻刷光点，否则点还停在 CAD 家位 */
+          return;
+        }
         const pts = tgt.mpts && tgt.mpts.length > 1 ? tgt.mpts : (tgt.mpts = manhattan(tgt.path).map(q => new THREE.Vector3(q[0], 0, q[1])));
         if (tgt.local == null) { tgt.local = tgt.progress || 0; tgt.animFrom = tgt.local; tgt.animTo = tgt.local; tgt.animT0 = t; }
         if (tgt.demoCycle) {
@@ -214,6 +238,7 @@ function startAnimLoop() {
         }
         const p = posAt(pts, tgt.local);
         g.position.set(p.x, 0, p.z);
+        followDot(tgt.modelRoot);              /* 光点跟随本体（见 followDot 上方实测记录） */
         /* QA 取证口：屏上「第 n 道任务」必须能和机器人真实位置对上（cyclecheck 用它证明道↔站↔AGV 一致） */
         if (id === 'RB-C-02') window.__twinAgv = { u: +tgt.local.toFixed(4), x: +p.x.toFixed(3), z: +p.z.toFixed(3), action: tgt.action || null, demo: !!tgt.demoCycle };
         const ahead = posAt(pts, Math.min(1, tgt.local + 0.004));
@@ -244,13 +269,34 @@ function startAnimLoop() {
    半径 20px：光点按 2026-11-07 反馈放大到半径 0.10m（总览机位下直径也就十几像素），
   比可点中的热区还小，纯射线检测容易点偏，必须留像素热区。 */
 const DOT_PICK_PX = 20;
+/* 光点 vs 本体：比深度，不比注册顺序（2026-11-08 定量后重写这条规则）。
+   旧规则是「这个像素上只要射线碰到任何 CAD 实体，实体就赢」，光点因此只能捡空地上的漏：
+   总览构图下光点圆心恰好没有实体，测试才是绿的；一旦转视角让光点压在某台设备前面，
+   点这个明摆在最前面的光点，弹出的仍是远处被射线顺带碰到的那台。
+   现在按真实三维口径判：光点（半径 DOT_R 的球）沿射线的距离不晚于命中实体，才算点在光点上。
+   为什么不会退化成历史上翻过两次车的「点 A 出 B」：抢中仍要求命中点落在光点 20px 热区内，
+   且光点确实挡在实体前面。取证：36 个光点 × 每台设备本体中心逐个互验，被邻家光点抢走 0 例
+   （脚本 ~/twin-qa/probe2.mjs）。 */
 /* 该像素上引擎会拾到的 CAD 实体（与 visual-106.bind() 的 pointerup 同一套射线，避免两套判定打架） */
-function rayHitId(ev) {
+function rayHitInfo(ev) {
   const r = visual.renderer.domElement.getBoundingClientRect();
-  visual.raycaster.setFromCamera(new THREE.Vector2((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1), visual.camera);
+  visual.raycaster.setFromCamera({ x: (ev.clientX - r.left) / r.width * 2 - 1, y: -(ev.clientY - r.top) / r.height * 2 + 1 }, visual.camera);
   const hit = visual.raycaster.intersectObjects([...visual.modelRoots.values()], true)[0];
   if (!hit) return null; let m = hit.object; while (m && !m.userData.id) m = m.parent;
-  return m ? m.userData.id : null;
+  return { id: m ? m.userData.id : null, dist: hit.distance };
+}
+function rayHitId(ev) { const h = rayHitInfo(ev); return h && h.id; }
+/* 光点是否挡在命中实体前面：用射线参数比距离，不再"谁先注册谁赢" */
+function dotInFrontOfHit(ev, devId) {
+  const hit = rayHitInfo(ev);
+  if (!hit || !hit.id) return true;                      /* 该像素上没有实体：光点当然赢 */
+  const dot = statusDots.get(devId); if (!dot) return false;
+  const r = visual.renderer.domElement.getBoundingClientRect();
+  visual.raycaster.setFromCamera({ x: (ev.clientX - r.left) / r.width * 2 - 1, y: -(ev.clientY - r.top) / r.height * 2 + 1 }, visual.camera);
+  const ray = visual.raycaster.ray, w = new THREE.Vector3();
+  w.setFromMatrixPosition(dot.matrixWorld);
+  const v = new THREE.Vector3().subVectors(w, ray.origin);
+  return v.dot(ray.direction) - DOT_R <= hit.dist;        /* 光点前表面不晚于实体命中点 */
 }
 function dotHitId(ev) {
   const host = visual.host.getBoundingClientRect();
@@ -309,11 +355,12 @@ function bindDotPick() {
     if (ev.button !== 0 || !down) return;
     const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y); down = null;
     if (moved > 4) return;
-    /* 光点拾取只能是兜底：那个像素上真有 CAD 实体时，必须让实体本体赢。
-       本处理器注册在引擎之后（引擎 onpointerup 先跑并已 selected），若这里再按 16px 半径抢一次，
-       紧挨着别人光点的实体就会"点 A 出 B"（实测点 103-02 弹出 103-01 的卡、点 105-05 什么都不出）。 */
-    if (rayHitId(ev)) return;
+    /* 引擎自己的 pointerup 先跑，并已按射线命中画了一张卡；这里判定光点该赢时，
+       再走同一条 space-device-select 把它改判成光点所属设备（同步覆盖，屏幕上不会闪两张）。 */
+    const hitId = rayHitId(ev);
     const id = dotHitId(ev); if (!id) return;
+    if (hitId === id) return;                              /* 实体与光点同属一台，不必改判 */
+    if (hitId && !dotInFrontOfHit(ev, id)) return;         /* 实体挡在光点前面：以本体为准，防止"点 A 出 B" */
     if (visual.selected === id) return;                      /* CAD 拾取已经选中同一台，别重复触发补间 */
     visual.selected = id;
     window.dispatchEvent(new CustomEvent('space-device-select', { detail: { id, name: id, roomId: id.slice(0, 3) } }));

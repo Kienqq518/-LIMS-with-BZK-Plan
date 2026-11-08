@@ -73,9 +73,12 @@ const in106=heat.filter(h=>h.x>=9&&h.x<=18.5&&h.z>=9.6&&h.z<=28.1), other=heat.f
 out.push(((in106.length&&Math.max(...in106.map(h=>h.o))>=0.15&&(!other.length||Math.max(...other.map(h=>h.o))<=0.08))?'✅':'❌')+` 热力分级：106 ${in106.length}块 max=${in106.length?Math.max(...in106.map(h=>h.o)):'-'} / 其他 ${other.length}块 max=${other.length?Math.max(...other.map(h=>h.o)):'-'}`);
 await p.click('.lic[data-layer=heatmap]'); await p.waitForTimeout(600);
 // 4) 底栏=四块（设备统计 / 调度任务队列 / 委托单试验项 / 组态物联节点），除统计块外各自滚动
-T('底栏块数（FR-45 三块铺满整屏宽：安全管家场景 / 调度任务 / 组态物联）', await p.locator('.dock .dk').count(), 3);
+/* FR-80 后 DOM 里恒有 4 块（「运行中的任务」与「无人化调度任务」按房间互斥存在），
+   所以"几块"必须按可见数：数 .dock .dk 会把当前视角不显示的那块也算进来。 */
+const visDk=()=>p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).length);
+T('底栏块数（总览可见三块：安全管家场景 / 无人化调度任务 / 组态物联）', await visDk(), 3);
 /* 场景块改成固定 3×2 网格后不再有滚动轨道：三列任务 + 物联 = 4 条（FR-61） */
-T('滚动轨道数（任务三列 + 物联；场景块已改固定六格）', await p.locator('.dk-track').count(), 4);
+T('滚动轨道数（任务三列 + 物联；场景块固定六格、区域专用块不计）', await p.evaluate(()=>[...document.querySelectorAll('.dk-track')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).length), 4);
 out.push(((await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')))==='dkUp/dkUp/dkUp'?'✅':'❌')+' 三列各自滚动: '+await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')));
 
 /* FR-42 全站一律无底板；FR-46 把 F 档垫底由「更重的白」改成「淡灰」——

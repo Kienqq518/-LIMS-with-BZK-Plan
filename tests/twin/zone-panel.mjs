@@ -1,68 +1,89 @@
+/**
+ * 区域视图三区接管（FR-80，2026-11-08 重排）
+ * 切到具体房间后，信息回到与总览同一套分区，右侧五段长面板退役：
+ *   左＝任务统计（纯数字 + 本日/本月/本年，柱图撤掉）+ 本房间设备/资产
+ *   下＝106 无人化调度任务 / 其他房间 运行中的任务（互斥，不重复出现）
+ *   右＝本房间告警流 + 组态物联节点状态监测（本房间点位）+ 视觉节点实时画面（本房间有摄像头才出现）
+ * 本套件从"验五段面板"重写为"验三区接管"。
+ */
 import { chromium } from 'playwright';
 import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
+const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期望 ${e})`);
 const b=await chromium.launch({channel:'chrome'});
 const p=await b.newPage({viewport:{width:1920,height:1080}});
 p.on('pageerror',e=>err.push('pageerror: '+e.message));
-p.on('console',m=>{if(m.type()==='error'&&!/favicon/.test(m.text()))err.push('console: '+m.text().slice(0,170));});
+p.on('console',m=>{if(m.type()==='error'&&!/favicon|404/.test(m.text()))err.push('console: '+m.text().slice(0,150));});
 await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
-await p.waitForTimeout(11000);
-const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期望 ${e})`);
-await p.keyboard.press('2'); await p.waitForTimeout(3000);
-T('面板显示', await p.locator('#zonePanel').isVisible(), 'true');
-T('106 出五块（DOM 里有 7 个块，画像决定显隐）', await p.locator('#zonePanel section:not([hidden])').count(), 5);
-const heads=await p.locator('#zonePanel h4').allInnerTexts();
-const em = async id => (await p.locator('#zonePanel '+id).innerText()).replace(/\s+/g,'');
-T('五块标题', (await p.locator('#zonePanel section:not([hidden]) h4').evaluateAll(els=>els.map(e=>e.textContent.replace(e.querySelector('em').textContent,'').trim()))).join('|'), '设备|环境数据|任务统计|正在运行的任务|告警');
-T('设备计数', await em('#zpDevicesN'), '8台建档·2台机器人');
-T('环境计数', await em('#zpEnvN'), '4个点位·5s心跳');
-T('统计周期', await em('#zpStatsPeriod'), '本日');
-{ const rn = parseInt(await em('#zpRunningN'), 10); out.push((rn >= 1 && rn <= 5 ? '✅' : '❌') + ' 在制计数在合理区间(1–5，随 mock 进度浮动): ' + rn); }
-T('告警计数（B 区瓶颈已全部收在 106）', await em('#zpAlarmsN'), '今日11·未解除8');
-/* 智能型数字电桥实物在 107-01，FR-67 已归位：106 = 8 台设备 + 2 台机器人 = 10 行 */
-T('设备行数', await p.locator('#zpDevices .zp-row').count(), 10);
-T('停靠机器人标注（不判卡住）', (await p.locator('#zpDevices').innerText()).includes('停靠充电'), 'true');
-T('在制任务超时标注承载卡住叙事', (await p.locator('#zpRunning').innerText()).includes('超时'), 'true');
-T('环境含读数', /℃.*%RH/.test(await p.locator('#zpEnv').innerText()), 'true');
-T('统计四格', await p.locator('#zpStats .zp-stat').count(), 4);
-T('统计数值=本日106', (await p.locator('#zpStats .zp-stat b').allInnerTexts()).join('/'), '3/2/1/0');
-T('在制来源标签', (await p.locator('#zpRunning').innerText()).includes('调度')&&(await p.locator('#zpRunning').innerText()).includes('数采'), 'true');
-T('告警只读三态', (await p.locator('#zpAlarms').innerText()).includes('未解除')&&(await p.locator('#zpAlarms').innerText()).includes('派至'), 'true');
-T('区域视图时告警流让位给面板', await p.locator('#alarmStream').isVisible(), 'false');
-T('机器人浮条已整体删除', await p.locator('#robotZone').count(), 0);
-T('106 底栏保留（任务队列继续走）', await p.locator('#taskStrip').isVisible(), 'true');
-// 周期联动
-await p.locator('[data-period=month]:visible').first().click();  /* 周期按钮同屏可能有左右两组，只点可见那份 */ await p.waitForTimeout(600);
-T('统计随周期', (await p.locator('#zpStats .zp-stat b').allInnerTexts()).join('/'), '60/2/1/32');
-// 点击设备行 → 详情停靠（不遮挡面板），面板其余块仍可点
-await p.locator('#zpDevices .zp-row').first().click(); await p.waitForTimeout(1500);
-T('点设备出详情', await p.locator('#detail').isVisible(), 'true');
-T('详情停靠不盖面板', await p.locator('#detail.docked').count(), 1);
-const dv=await p.locator('#detail').boundingBox(), zpb=await p.locator('#zonePanel').boundingBox();
-T('详情与面板几何不相交', (dv.x+dv.width<=zpb.x+1)?'true':'false', 'true');
-// 点击本区告警「详情」→ 就地详情（回溯抽屉已随 S3 移除）
-await p.locator('#zpAlarms [data-alarm]').first().click(); await p.waitForTimeout(1500);
-T('本区告警详情打开', await p.locator('#detail').isVisible(), 'true');
-T('回溯抽屉不存在', await p.locator('#s3Drawer').count(), 0);
-// 切到 107（无档案/1个环境点位）与 101（非试验区）
-await gotoZone(p, '107'); await p.waitForTimeout(2500);
-/* FR-66：区域设备列表改从全场表按 roomId 派生后，107 有 6 台，不该再写「未建设备档案」。
-   诚实降级这条口径留给**真的没有检测设备**的区（101 接待大厅 / 104 控制室），
-   而且措辞要说"该区无试验检测设备"，不能写成"未建档、接入后自动出现"——那是把业务事实说成我们的进度。 */
-T('107 设备列表已从全场表派生（6 台，不再写未建档）', await p.evaluate(async()=>{
-  const d=(await TwinApi.get('/api/zone/107/devices')).data; return (d.devices||[]).length; }), 6);
-T('107 面板头台数与列表同源', (await p.locator('#zpDevicesN').innerText()).includes('6 台建档'), 'true');
-T('107 环境仍有点位', await p.locator('#zpEnv .zp-row').count(), 1);
-await gotoZone(p, '101'); await p.waitForTimeout(2500);
-T('101 只出环境数据块（画像：接待大厅不需要任务/告警/设备）', await p.locator('#zonePanel section:not([hidden])').count(), 1);
-/* 101 的点位是光照/人体，不能拿"温湿度"当判据——按行数与头部计数验 */
-out.push(((await p.locator('#zpEnv .zp-row').count())>0?'✅':'❌')+' 101 环境数据块有真实点位行: '+await p.locator('#zpEnv .zp-row').count()+' 行 · '+await p.locator('#zpEnv em').first().innerText());
-out.push(((await p.locator('#zpStats').getAttribute('hidden'))!==null&&(await p.locator('#zpAlarms').getAttribute('hidden'))!==null?'✅':'❌')+' 101 的任务统计/告警块确实隐藏');
-out.push(((await p.locator('#zpStats .zp-body').innerText())===''?'✅':'❌')+' 隐藏的块内容已清空（不残留上一个房间的脏数据）');
-await p.keyboard.press('1'); await p.waitForTimeout(2000);
-T('回总览面板收起', await p.locator('#zonePanel').isVisible(), 'false');
-T('总览底栏仍在', await p.locator('#taskStrip').isVisible(), 'true');
-await p.keyboard.press('2'); await p.waitForTimeout(3000); await p.screenshot({path:'/tmp/twin-qa/shot-zonepanel-106.png'});
-await gotoZone(p, '101'); await p.waitForTimeout(2000); await p.screenshot({path:'/tmp/twin-qa/shot-zonepanel-101.png'});
-console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,8).join('\n'));
+await p.waitForTimeout(15000);
+const vis=sel=>p.evaluate(s=>{const e=document.querySelector(s); if(!e) return 'absent';
+  const c=getComputedStyle(e), r=e.getBoundingClientRect();
+  return (c.display==='none'||e.hidden||r.width<2||r.height<2)?'hidden':Math.round(r.x)+','+Math.round(r.y)+'→'+Math.round(r.right)+','+Math.round(r.bottom);},sel);
+
+// ① 总览基线：区域专属块不得出现在总览
+T('总览左栏是运行指标（非区域块）', await vis('#railZoneStats'), 'hidden');
+/* 底栏在 DOM 里恒有 4 块（运行中的任务与调度任务互斥存在），"几块"必须按**可见**数，
+   数 .dock .dk 会把隐藏的那块也算进去，于是总览被误报成 4 块。 */
+T('总览底栏可见三块', await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).length), 3);
+T('总览底栏无「运行中的任务」', await p.evaluate(()=>!document.querySelector('#dkRunning')||document.querySelector('#dkRunning').hidden), 'true');
+
+// ② 106：无人化区
+await gotoZone(p,'106'); await p.waitForTimeout(3000);
+T('106 接管标记', await p.evaluate(()=>document.body.dataset.zoneView+'/'+document.body.dataset.unmanned), '1/1');
+out.push(((await vis('.rail'))!=='hidden'?'✅':'❌')+' 106 左栏可见: '+await vis('.rail'));   /* T() 是字符串相等比较，不能拿函数当期望值 */
+out.push(((await vis('#railZoneStats'))!=='hidden'?'✅':'❌')+' 106 左栏「任务统计」出现: '+await vis('#railZoneStats'));
+out.push(((await vis('#railZoneDevs'))!=='hidden'?'✅':'❌')+' 106 左栏「设备」出现: '+await vis('#railZoneDevs'));
+T('106 任务统计四格（纯数字，无柱图）', await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .zs-i span')].map(e=>e.innerText).join('/')), '已完成/执行中/异常挂起/排队');
+T('106 左栏任务统计无柱图容器', await p.locator('#railZoneStats .tw-chart').count(), 0);
+T('106 设备标题=设备（无资产）', await p.locator('#zDevsTitle').innerText(), '设备');
+T('106 设备台数与全场表同源', await p.locator('#zDevsN').innerText(), '8 台建档 · 2 台机器人');
+/* 8 台设备 + 2 台复合机器人 = 10 行：机器人原来住在退役面板的设备块里，面板没了就必须在这块接住
+   （下钻时总览的 AGV 块按 viewProfile 隐藏，左栏是机器人信息唯一落点）。 */
+T('106 左栏行数=设备+机器人', await p.locator('#zDevsList .zd-row').count(), 10);
+T('106 左栏机器人两行（在跑 + 停靠）', await p.locator('#zDevsList [data-robot]').count(), 2);
+out.push((/停靠 102-05 充电位/.test(await p.locator('#zDevsList [data-robot=\"RB-C-01\"]').innerText())?'✅':'❌')+' 左栏说清 RB-C-01 停在哪个桩: '+await p.locator('#zDevsList [data-robot=\"RB-C-01\"]').innerText());
+T('106 底栏=无人化调度任务（不是在制任务）', await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).map(e=>e.querySelector('header b').innerText).join('|')), '安全管家场景监测|无人化调度任务|组态物联节点状态监测');
+T('106 底栏无「运行中的任务」（同一批任务不出现两遍）', await p.evaluate(()=>document.querySelector('#dkRunning').hidden), 'true');
+T('106 场景监测只列本房间场景', await p.locator('#dkScenesGrid .sc-row, #dkScenesGrid .sc-row').count(), 1);
+T('106 右列告警流只看本房间', await p.evaluate(()=>{const v=document.querySelector('.stream-view'); if(!v) return 0;
+  const bb=v.getBoundingClientRect(); return [...document.querySelectorAll('#streamTrack .st-row')].filter(r=>{const q=r.getBoundingClientRect();
+    return q.top>=bb.top-1&&q.bottom<=bb.bottom+1;}).length;}) , 3);
+T('106 告警全部属于 106 区', await p.evaluate(()=>[...document.querySelectorAll('#streamTrack .st-row')].every(r=>/106 区/.test(r.innerText))), 'true');
+T('106 视觉画面=1 格（本房间只有视觉03）', await p.locator('#camGrid .cam-tile').count(), 1);
+T('106 组态物联只列本房间点位', await p.evaluate(()=>[...document.querySelectorAll('#dkNodesTrack .nd-row')].filter(r=>r.getAttribute('aria-hidden')!=='true').every(r=>/^106/.test(r.innerText.replace(/\s+/g,'')))), 'true');
+/* 退役 = 连 DOM 一起删，不是 hidden：留一份读得到、点不到的影子 UI，
+   就会出现"读文本的断言全绿、按键盘的断言全红"的分裂状态（本轮 robotcheck 正是这样红了一轮）。 */
+T('区域面板 DOM 已删除', await vis('#zonePanel'), 'absent');
+
+// ③ 107：非无人化区 + 无摄像头
+await gotoZone(p,'107'); await p.waitForTimeout(3000);
+T('107 接管标记', await p.evaluate(()=>document.body.dataset.zoneView+'/'+document.body.dataset.unmanned), '1/0');
+T('107 底栏=运行中的任务（不是调度任务）', await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).map(e=>e.querySelector('header b').innerText).join('|')), '安全管家场景监测|运行中的任务|组态物联节点状态监测');
+T('107 调度任务块不可见（非无人化区）', await p.evaluate(()=>{const r=document.querySelector('#dkQueue').getBoundingClientRect();return r.width>2&&r.height>2;}), 'false');
+T('107 设备标题=设备', await p.locator('#zDevsTitle').innerText(), '设备');
+T('107 设备台数与全场表同源', await p.locator('#zDevsN').innerText(), '6 台建档');
+T('107 无摄像头 → 视觉画面整块不显示', await vis('#cctvBox'), 'hidden');
+T('107 本区今日无告警 → 空态说清是哪个区', await p.locator('.stream-view').innerText(), '107 区今日无告警');
+/* 107 有部署场景（恒温恒湿环境自动调节 · 107），所以这块必须显示——上一版我按"107 没场景"写期望，
+   是期望错，不是产品错。真正要验的是"只显示本房间那一套"。 */
+T('107 场景监测只显示本房间场景', await p.locator('#dkScenesGrid .sc-row').count(), 1);
+out.push((/恒温恒湿/.test(await p.locator('#dkScenesGrid .sc-row').first().innerText())?'✅':'❌')+' 107 那套场景是「恒温恒湿环境自动调节」: '+await p.locator('#dkScenesGrid .sc-row').first().innerText());
+
+// ④ 102：资产口径 + 有摄像头
+await gotoZone(p,'102'); await p.waitForTimeout(3000);
+T('102 标题改「资产」（货架/充电位/电视不是检测设备）', await p.locator('#zDevsTitle').innerText(), '资产');
+T('102 资产条数=5（收样登记台+2 货架+充电位+电视）', await p.locator('#zDevsList .zd-row').count(), 5);
+T('102 有视觉节点? 无 → 画面块不显示', await vis('#cctvBox'), 'hidden');
+
+// ⑤ 左栏周期开关真的能切（柱图撤了，数字必须跟着周期变）
+await gotoZone(p,'106'); await p.waitForTimeout(3000);
+const day=await p.locator('#zsGrid').innerText();
+await p.locator('#railZoneStats [data-period=year]').click(); await p.waitForTimeout(1800);
+const year=await p.locator('#zsGrid').innerText();
+out.push((day!==year?'✅':'❌')+` 左栏周期开关切得动、数字随周期变（本日「${day.replace(/\s+/g,' ').trim()}」→ 本年「${year.replace(/\s+/g,' ').trim()}」）`);
+out.push(((await p.evaluate(()=>new URLSearchParams(location.search).get('period')))==='year'?'✅':'❌')+' 周期进 URL（售前翻页笔回来还是那一档）');
+const url=await p.evaluate(()=>new URLSearchParams(location.search).toString());
+out.push((/mode=ZONE&zone=106/.test(url)?'✅':'❌')+' 区域视图 URL 可复现: '+url.slice(0,60));
+console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,4).join('\n'));
 await b.close();
+process.exit(out.filter(l=>l.startsWith('❌')).length?1:0);

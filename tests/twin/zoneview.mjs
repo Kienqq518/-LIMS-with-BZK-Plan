@@ -20,9 +20,11 @@ const rects=()=>p.evaluate(()=>{
   const R=(sel)=>{const e=document.querySelector(sel); if(!e) return null;
     if(getComputedStyle(e).display==='none'||e.hidden) return 'hidden';
     const r=e.getBoundingClientRect(); return {x:Math.round(r.x),r:Math.round(r.right),y:Math.round(r.y),b:Math.round(r.bottom)};};
-  return {rail:R('.rail'),stream:R('.stream'),panel:R('#zonePanel'),dock:R('.dock')};
+  /* 参与"互不重叠"的必须是同级浮层：.stream/.cctv 都住在 #rightCol 里，
+     把容器 rcol 也放进去，量到的必然是"父子重叠 430px"——那是判据错，不是版式错。 */
+  return {rail:R('.rail'),stream:R('.stream'),cctv:R('.cctv'),dock:R('.dock'),rcol:R('#rightCol')};
 });
-const noOverlap=(o)=>{const vis=Object.entries(o).filter(([,v])=>v&&v!=='hidden');
+const noOverlap=(o)=>{const vis=Object.entries(o).filter(([k,v])=>v&&v!=='hidden'&&k!=='rcol');
   for(let i=0;i<vis.length;i++)for(let j=i+1;j<vis.length;j++){
     const a=vis[i][1],c=vis[j][1];
     const xOverlap=Math.min(a.r,c.r)-Math.max(a.x,c.x), yOverlap=Math.min(a.b,c.b)-Math.max(a.y,c.y);
@@ -39,22 +41,16 @@ out.push((r.dock.y-r.rail.b>=12?'✅':'❌')+` 底栏压在左栏下方且留出
 out.push((r.dock.y-r.stream.b>=12?'✅':'❌')+` 底栏压在告警流下方且留出 ${r.dock.y-r.stream.b}px 垂直间距`);
 const vw=await p.evaluate(()=>window.innerWidth);
 out.push(((r.dock.x<=20&&r.dock.r>=vw-24)?'✅':'❌')+` 底栏确实铺满整屏宽：${r.dock.x}→${r.dock.r}（视口 ${vw}）`);
-const inner=await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].map(e=>Math.round(e.getBoundingClientRect().x)));
+const inner=await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].map(e=>{const q=e.getBoundingClientRect();return {x:Math.round(q.x),w:q.width};}).filter(e=>e.w>2).map(e=>e.x));
 out.push((inner[1]-inner[0]>0&&inner.every((x,i)=>i===0||x>inner[i-1])?'✅':'❌')+' 底栏四块之间也有间距: 起点 '+JSON.stringify(inner));
 
-// ① 106 下钻
+// ① 106 下钻（FR-80 三区接管后的画像：左栏两块 + 底栏 + 右列）
 await gotoZone(p, '106'); await p.waitForTimeout(3200);
 r=await rects();
 out.push((!noOverlap(r)?'✅':'❌')+' 106 下钻后浮层仍互不重叠: '+noOverlap(r));
 out.push(((r.dock&&r.dock!=='hidden')?'✅':'❌')+' 106 下钻后底栏仍在（任务队列继续走）: '+JSON.stringify(r.dock));
-/* FR-42 重排后 106 的左栏整块不再出现：AGV 与任务在底栏（dock:true），
-   设备状态在区域面板里已有，左栏留着就是空壳。周期切换器搬进面板头部。 */
-out.push(((r.rail==='hidden')?'✅':'❌')+' 106 下钻后左栏整块隐藏（不再留空壳；AGV 与任务在底栏）: '+JSON.stringify(r.rail));
-const m106=await p.evaluate(()=>{const rp=document.querySelector('.railpanel'),cy=document.getElementById('cycleBox'),pp=document.getElementById('zpPeriod');
-  const vis=e=>!!e&&e.offsetParent!==null&&getComputedStyle(e).display!=='none';
-  return {panel:vis(rp),cycle:vis(cy),zpPeriod:vis(pp),flag:document.body.dataset.zoneMetrics};});
-out.push((m106.panel===false&&m106.cycle===true&&m106.flag==='0'?'✅':'❌')+' 106 撤掉左侧指标面板、AGV 任务行仍在底栏（与右侧面板不重复）: '+JSON.stringify(m106));
-out.push((m106.zpPeriod===true?'✅':'❌')+' 周期切换器随指标面板搬进区域面板（否则 106 的本日/本月/本年没人能点）');
+out.push(((r.rail&&r.rail!=='hidden')?'✅':'❌')+' 106 下钻后左栏仍在（接管为任务统计 + 设备/机器人两块）: '+JSON.stringify(r.rail));
+out.push(((r.rcol&&r.rcol!=='hidden')?'✅':'❌')+' 106 下钻后右列不再整列让位（告警流留在原位）: '+JSON.stringify(r.rcol));
 /* 观察窗必须覆盖「一次停靠 + 一段行走」：剧本最长 dwell 9s，原来只看 6s，
    整窗落进停靠段就报「机器人没走」——那是假失败（2026-11-07 全量踩到，位移 0.00m）。
    改成轮询到出现位移即早退，最长 24s（≈ 一圈里最长的停靠 + 跨站行走）。 */
@@ -64,72 +60,103 @@ while (Date.now()<tEnd) { await p.waitForTimeout(2500); pos1=await robPos(); mov
 out.push((moved>0.3?'✅':'❌')+` 106 下钻后机器人仍在行进（≤24s 观察窗内位移 ${moved.toFixed(2)}m，含停靠段）`);
 const live=await p.evaluate(async()=>{const x=await TwinApi.get('/api/zone/106/cycle');return x.data.live.order+'/'+x.data.live.total+' '+x.data.live.phase;});
 out.push(((live.split(' ')[1]==='travel'||live.indexOf('dwell')>0)?'✅':'❌')+' 任务也在推进: '+live);
-const blocks106=await p.evaluate(()=>[...document.querySelectorAll('#zonePanel .zp-scroll > section')].filter(e=>!e.hidden).map(e=>e.querySelector('h4').innerText.split('\n')[0].trim()));
-out.push((blocks106.join('|')==='设备|环境数据|任务统计|正在运行的任务|告警'?'✅':'❌')+' 106 五类信息齐全: '+blocks106.join(' / '));
 
-// ② 非 106 房间
-const CASES={
-  '101':{blocks:['环境数据'],rail:false,dock:false},
-  '102':{blocks:['设备','环境数据','样品台账','告警'],rail:false,dock:false},
-  '103':{blocks:['设备','环境数据','检测项目数统计','告警'],rail:false,dock:false},
-  '104':{blocks:['设备','环境数据','告警'],rail:false,dock:false},
-  '107':{blocks:['设备','环境数据','检测项目数统计','告警'],rail:false,dock:false},
-};
-for(const z of Object.keys(CASES)){
-  await gotoZone(p,z); await p.waitForTimeout(3000);
-  const rr=await rects(); const c=CASES[z];
-  out.push(((rr.rail==='hidden')===!c.rail?'✅':'❌')+` ${z} 左栏${c.rail?'保留':'隐藏'}（非 106 只看右侧面板）`);
-  out.push(((rr.dock==='hidden')===!c.dock?'✅':'❌')+` ${z} 底栏${c.dock?'保留':'隐藏'}`);
-  const bl=await p.evaluate(()=>[...document.querySelectorAll('#zonePanel .zp-scroll > section')].filter(e=>!e.hidden).map(e=>e.querySelector('h4').innerText.split('\n')[0].trim()));
-  out.push((bl.join('|')===c.blocks.join('|')?'✅':'❌')+` ${z} 展示块=${JSON.stringify(bl)}（期望 ${JSON.stringify(c.blocks)}）`);
+/* ②③ 每个房间的画像由数据推导，不写死房间号：
+   viewProfile.blocks 决定统计口径，unmanned 决定底栏出调度任务还是在制任务，
+   有没有摄像头决定画面块，有没有资产决定标题写「设备」还是「资产」。
+   同时把"切房间必须换数"钉死——上一轮实测过脏数据：102 挂着 107 的「4 条在制」。 */
+const KIND={'task-stats':'任务统计','test-items':'检测项目数统计','samples':'样品台账'};
+const ROOMS=['101','102','103','104','106','107'];
+let prevGrid='';
+for(const z of ROOMS){
+  await gotoZone(p,z); await p.waitForTimeout(3400);
+  const rr=await rects();
+  const A=await p.evaluate(async(z)=>{
+    const ts=(await TwinApi.get('/api/zone/'+z+'/task-stats')).data||{};
+    const zs=(await TwinApi.get('/api/overview/zones')).data||[];
+    const prof=(zs.filter(x=>x.zoneId==='Z-'+z)[0]||{}).viewProfile||{};
+    return {blocks:prof.blocks||[],unmanned:prof.unmanned===true,period:'day',
+      per:(ts.periods||{}).day||ts,ti:(ts.testItems||{}).day,samples:ts.samples||null,note:ts.note||null};},z);
+  const D=await p.evaluate(()=>({
+    kind:(document.getElementById('zsGrid')||{}).dataset?.kind||'',
+    grid:(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim(),
+    statsVis:(()=>{const e=document.getElementById('railZoneStats');if(!e)return 'absent';const q=e.getBoundingClientRect();return (q.width>2&&q.height>2)?'V':'H';})(),
+    devsTitle:(document.getElementById('zDevsTitle')||{}).textContent||'',
+    devsN:(document.getElementById('zDevsN')||{}).textContent||'',
+    devRows:document.querySelectorAll('#zDevsList .zd-row').length,
+    robots:document.querySelectorAll('#zDevsList [data-robot]').length,
+    dkTitles:[...document.querySelectorAll('.dock .dk')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).map(e=>e.querySelector('header b').innerText),
+    camTiles:[...document.querySelectorAll('#camGrid .cam-tile')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length,
+    camRooms:[...new Set([...document.querySelectorAll('#camGrid .cam-tile .rm')].map(e=>e.innerText.trim()))],
+    stream:(document.querySelector('.stream-view')||{}).innerText?.replace(/\s+/g,' ').trim().slice(0,40)||'',
+    nodesOut:[...document.querySelectorAll('#dkNodesTrack .nd-row')].filter(e=>e.getAttribute('aria-hidden')!=='true')
+      .filter(e=>!e.innerText.replace(/\s+/g,'').startsWith(document.body.dataset.zone||'1')).map(e=>e.innerText.slice(0,10)),
+  }));
+  /* 期望口径 = blocks 里第一个带统计的块（顺序 task-stats > test-items > samples） */
+  const wantKind = A.blocks.map(b=>KIND[b]).filter(Boolean)[0]||'';
+  out.push((D.kind===wantKind?'✅':'❌')+` ${z} 统计口径随 viewProfile.blocks＝「${wantKind||'（无）'}」，屏上＝「${D.kind||'（无）'}」`);
+  /* 数字必须与本区接口同源：把接口值按同一口径独立重算一遍再比 */
+  if(wantKind==='任务统计'){
+    const exp=[A.per.done,A.per.running,A.per.abnormal,A.per.queued].join('/');
+    const nums=(D.grid.match(/-?\d+/g)||[]).slice(0,4).join('/');
+    out.push((nums===exp?'✅':'❌')+` ${z} 四格数字＝接口本日值（屏上 ${nums} vs API ${exp}）——换房间不留上一个房间的数`);
+  } else if(wantKind==='检测项目数统计'){
+    const exp=[A.ti.testing,A.ti.pending,A.ti.done,A.ti.overdue].join('/');
+    const nums=(D.grid.match(/-?\d+/g)||[]).slice(0,4).join('/');
+    out.push((nums===exp?'✅':'❌')+` ${z} 检测项目四格＝接口值（屏上 ${nums} vs API ${exp}）`);
+    out.push((/逾期未出/.test(D.grid)?'✅':'❌')+' '+z+' 逾期格写的是「逾期未出」（出报告口径），不是裸的「逾期」');
+  } else if(wantKind==='样品台账'){
+    const exp=[A.samples.stored,A.samples.receivedToday,A.samples.returnedToday,A.samples.pendingReturn].join('/');
+    const nums=(D.grid.match(/-?\d+/g)||[]).slice(0,4).join('/');
+    out.push((nums===exp?'✅':'❌')+` ${z} 样品台账四格＝接口值（屏上 ${nums} vs API ${exp}）`);
+    const spSum=await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .sp-nm')].reduce((a,e)=>a+(+((e.innerText.match(/(\d+) 支/)||[0,0])[1]||0)),0));
+    out.push((spSum===A.samples.stored?'✅':'❌')+` ${z} 按名称分布合计＝在库存量（${spSum} vs ${A.samples.stored}）`);
+  } else {
+    out.push((/无任务与检测项目口径/.test(D.grid)?'✅':'❌')+` ${z} 没有统计口径就明说，不摆四个 0：「${D.grid.slice(0,32)}」`);
+    out.push(((A.blocks.indexOf('env')>=0)===/环境数据见右列/.test(D.grid)?'✅':'❌')+` ${z} 空态文案与本区 blocks 一致（有 env 才指向右列）`);
+  }
+  out.push((!prevGrid||D.grid!==prevGrid||wantKind===''?'✅':'❌')+` ${z} 与上一个房间的统计不是同一份（脏数据回归防护）`);
+  prevGrid=D.grid;
+  /* 底栏：无人化区出调度任务，其他房间出在制任务，两者不得同时出现 */
+  out.push(((A.unmanned?D.dkTitles.includes('无人化调度任务'):D.dkTitles.includes('运行中的任务'))?'✅':'❌')
+    +` ${z} 底栏任务块按 unmanned=${A.unmanned} 出「${A.unmanned?'无人化调度任务':'运行中的任务'}」: ${JSON.stringify(D.dkTitles)}`);
+  out.push((!(D.dkTitles.includes('无人化调度任务')&&D.dkTitles.includes('运行中的任务'))?'✅':'❌')
+    +' '+z+' 同一批任务不会在底栏出现两遍: '+JSON.stringify(D.dkTitles));
+  /* 设备/资产标题与条数、机器人只在 106、画面块只在有摄像头的房间 */
+  const hasAsset=await p.evaluate(async(z)=>{const r=await TwinApi.get('/api/zone/'+z+'/devices');
+    /* 资产不是第二份表：它就在 overview.devices 里带 asset:true，由 /api/zone/:z/devices 分成 devices/assets 两栏返回 */
+    return ((r.data||{}).assets||[]).length>0;},z);
+  out.push(((D.devsTitle==='资产')===hasAsset?'✅':'❌')+` ${z} 标题「${D.devsTitle}」与该区是否存在资产一致（assets=${hasAsset}）`);
+  out.push((/^\d+ 台建档$/.test(D.devsN)||/ 台建档 · /.test(D.devsN)?'✅':'❌')+` ${z} 台数写法＝建档数（+机器人数）: ${D.devsN}`);
+  out.push((D.robots===(z==='106'?2:0)?'✅':'❌')+` ${z} 左栏机器人行 ${D.robots} 行（只有 106 的复合机器人归本区，跨区不越界）`);
+  out.push((D.camTiles===0||D.camRooms.every(x=>x.indexOf(z)>=0)?'✅':'❌')+` ${z} 画面块只列本房间摄像头: ${JSON.stringify(D.camRooms)}`);
+  const emptyOk=!/无告警/.test(D.stream)||D.stream.indexOf(z+' 区今日无告警')>=0;
+  out.push((emptyOk?'✅':'❌')+' '+z+' 无告警时空态说清是哪个区: 「'+D.stream+'」');
   out.push((!noOverlap(rr)?'✅':'❌')+` ${z} 浮层不重叠: ${noOverlap(rr)||'OK'}`);
-  const stale=await p.evaluate(()=>{const h=document.querySelector('#zpSamples:not([hidden]) .zp-body, #zpTestItems:not([hidden]) .zp-body, #zpStats:not([hidden]) .zp-body');
-    const hidden=[...document.querySelectorAll('#zonePanel .zp-scroll > section')].filter(e=>e.hidden);
-    return hidden.every(e=>!e.querySelector('.zp-body').innerText.trim()) ? '' : hidden.map(e=>e.id).join(',');});
-  out.push((!stale?'✅':'❌')+' 隐藏块不留脏数据（仍能看到内容：'+(stale||'无')+'）');
-  if(z==='102'){
-    const g=await p.evaluate(()=>document.querySelector('#zpSamples .zp-grid').innerText.replace(/\s+/g,' ').trim());
-    out.push((/286 在库存量\(支\)/.test(g)&&/23 今日收样/.test(g)&&/17 今日还样/.test(g)?'✅':'❌')+' 102 样品台账四格: '+g);
-    const names=await p.evaluate(()=>[...document.querySelectorAll('#zpSamples .sp-nm')].map(e=>e.innerText.replace(/\s+/g,' ').trim()));
-    const sum=names.reduce((a,x)=>a+(parseInt((x.match(/(\d+) 支/)||[0,0])[1],10)||0),0);
-    out.push((names.length===5&&sum===286?'✅':'❌')+` 102 按样品名称分布 5 类且合计=存量 286（实际 ${sum}）: ${names.join(' | ')}`);
-  }
-  if(z==='103'){
-    const g=await p.evaluate(()=>document.querySelector('#zpTestItems .zp-grid').innerText.replace(/\s+/g,' ').trim());
-    out.push((/检测中/.test(g)&&/待检测/.test(g)&&/逾期未出/.test(g)?'✅':'❌')+' 非 106 用检测项目数统计替代任务四格: '+g);
-    const hasTask=await p.evaluate(()=>!document.querySelector('#zpStats').hidden);
-    out.push((hasTask===false?'✅':'❌')+' 103 不再出现「任务统计」块');
-  }
 }
-// ⑤ 周期切换器必须随左栏交接：左栏在→用左栏那组；左栏隐藏但该房间有按周期变的统计→面板这组顶上
-await gotoZone(p, '106'); await p.waitForTimeout(2800);
-/* 106 的左栏在，但「运行指标」面板已按 2026-11-07 反馈撤掉（与右侧区域面板同源重复）——
-   `.rail>.period` 只是 display:none，仍在 DOM 里。周期切换器必须搬进面板，
-   否则 106 的任务统计（按本日/本月/本年变）就没有任何入口能切。 */
-const pp106 = await p.evaluate(() => ({panelHidden: document.getElementById('zpPeriod').hidden,
-  /* 周期切换器现在在「运行指标」标题行里（FR-73），不再是 .rail 的直接子代——
-     用直接子代选择器会拿到 null，整套 49 项一条都跑不到（上一版就是这么崩的）。 */
-  railVisible: (() => { const e = document.querySelector('.rail .period'); if (!e) return false;
-    const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; })()}));
-out.push((!pp106.panelHidden ? '✅' : '❌') + ` 106 撤左栏指标后周期切换器搬进面板（否则任务统计没人能切）: panel.hidden=${pp106.panelHidden}`);
-out.push((!pp106.railVisible ? '✅' : '❌') + ' 同屏只留一份可见（106 收起左栏指标后，rail 内周期组不可见）: rail .period 可见=' + pp106.railVisible);
-const stDay = await p.evaluate(() => document.querySelector('#zpStats .zp-grid').innerText.replace(/\s+/g, ' ').trim());
+/* ⑤ 周期切换器：接管后只有左栏这一组，且必须真的驱动四格并写进 URL */
+await gotoZone(p, '106'); await p.waitForTimeout(3000);
+const segN=await p.evaluate(()=>[...document.querySelectorAll('.period .seg')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length);
+out.push((segN<=3?'✅':'❌')+` 同屏最多一份可见周期开关（当前可见 ${segN} 个按钮，≤3 即只有一份）`);
+const stDay=await p.evaluate(()=>document.getElementById('zsGrid').innerText.replace(/\s+/g,' ').trim());
 await p.locator('[data-period=month]:visible').first().click(); await p.waitForTimeout(1800);
-const stMon = await p.evaluate(() => document.querySelector('#zpStats .zp-grid').innerText.replace(/\s+/g, ' ').trim());
-await p.locator('[data-period=day]:visible').first().click(); await p.waitForTimeout(1200);
-out.push((stDay !== stMon ? '✅' : '❌') + ` 面板这组切换器真能驱动 106 任务统计: 本日「${stDay.slice(0, 34)}」→ 本月「${stMon.slice(0, 34)}」`);
-await gotoZone(p, '107'); await p.waitForTimeout(2800);
-const pp=await p.evaluate(()=>{const e=document.getElementById('zpPeriod');
-  return {hidden:e.hidden, btns:e.querySelectorAll('.seg').length, active:(e.querySelector('.seg.active')||{}).dataset};});
-out.push((!pp.hidden&&pp.btns===3?'✅':'❌')+' 107（左栏隐藏）周期切换器出现在面板头部: hidden='+pp.hidden+' 按钮 '+pp.btns+' 个');
-const g1=await p.evaluate(()=>document.querySelector('#zpTestItems .zp-grid').innerText.replace(/\s+/g,' ').trim());
-await p.locator('#zpPeriod [data-period=year]').click(); await p.waitForTimeout(1600);
-const g2=await p.evaluate(()=>({grid:document.querySelector('#zpTestItems .zp-grid').innerText.replace(/\s+/g,' ').trim(),
-  per:document.getElementById('zpTestItemsPeriod').innerText, url:new URLSearchParams(location.search).get('period')}));
-out.push((g1!==g2.grid&&g2.per==='本年'&&g2.url==='year'?'✅':'❌')+' 面板里的周期切换真的换数并写进 URL: '+g1.slice(0,26)+' → '+g2.grid.slice(0,26));
-await p.locator('#zpPeriod [data-period=day]').click(); await p.waitForTimeout(1000);
+const stMon=await p.evaluate(()=>document.getElementById('zsGrid').innerText.replace(/\s+/g,' ').trim());
+const urlMon=await p.evaluate(()=>new URLSearchParams(location.search).get('period'));
+out.push((stDay!==stMon?'✅':'❌')+` 左栏这组开关真能驱动 106 统计: 本日「${stDay.slice(0,30)}」→ 本月「${stMon.slice(0,30)}」`);
+out.push((urlMon==='month'?'✅':'❌')+' 周期写进 URL（售前翻页笔回来还是那一档）: '+urlMon);
+await p.locator('[data-period=day]:visible').first().click(); await p.waitForTimeout(1000);
+/* 非 106 房间也一样：检测项目数统计是按周期变的，开关不能只对着 106 生效 */
+await gotoZone(p, '103'); await p.waitForTimeout(3000);
+const g1=await p.evaluate(()=>document.getElementById('zsGrid').innerText.replace(/\s+/g,' ').trim());
+await p.locator('[data-period=year]:visible').first().click(); await p.waitForTimeout(1800);
+const g2=await p.evaluate(()=>({grid:document.getElementById('zsGrid').innerText.replace(/\s+/g,' ').trim(),
+  per:new URLSearchParams(location.search).get('period')}));
+out.push((g1!==g2.grid&&g2.per==='year'?'✅':'❌')+' 103（非 106）周期切换真的换数并写进 URL: '+g1.slice(0,24)+' → '+g2.grid.slice(0,24));
+await p.locator('[data-period=day]:visible').first().click(); await p.waitForTimeout(1000);
 await gotoZone(p, '101'); await p.waitForTimeout(2600);
-out.push(((await p.evaluate(()=>document.getElementById('zpPeriod').hidden))?'✅':'❌')+' 101（无按周期变的块）周期切换器不出现');
+out.push(((await p.evaluate(()=>{const e=document.querySelector('#railZoneStats .period');if(!e)return true;
+  const q=e.getBoundingClientRect();return !(q.width>2&&q.height>2);}))?'✅':'❌')+' 101 没有按周期变的块，周期开关不占位');
+await gotoZone(p, '106'); await p.waitForTimeout(3000);
 
 // 画像来自数据而非写死：改 seed 里的 blocks 应立刻反映（用 API 校验一致性）
 const prof=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/zones');

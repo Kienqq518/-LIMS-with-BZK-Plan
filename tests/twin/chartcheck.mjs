@@ -198,8 +198,16 @@ const froze=await p.evaluate(()=>{
   row.scrollIntoView({block:'center'});
   const r=row.getBoundingClientRect(); return {x:r.x+30,y:r.y+6};});
 if(froze){ await p.mouse.click(froze.x,froze.y); await p.waitForTimeout(2400); }
+/* 图表容器宽度为 0 时 twin-charts 把 sig 置成字符串 'pending'（见 twin-charts.js:171）。
+   直接 JSON.parse 它会让整套 42 项当场蒸发（上一轮就是这么 0 项"跑过"的）：
+   这里等它出真序列，等不到就明说"这块图在当前视角根本没有宽度"——那是真缺陷，不是判据问题。 */
+const waitSig=async(name,max=14)=>{for(let i=0;i<max;i++){
+  const r=await p.evaluate(n=>{const x=window.__twinCharts.list().find(y=>y.name===n);return x&&!x.pending?x.sig:null;},name);
+  if(r) return r; await p.waitForTimeout(1000);} return null;};
 /* 心跳会让末点跟着新读数走，所以"序列不许变"不能比对整串 sig：
    要比对的是口径——末点仍等于当下右列温湿度读数的均值（点位级序列绝不会被点出来）。 */
+const thSigRaw=await waitSig('temp-hum');
+if(!thSigRaw) out.push('❌ temp-hum 图始终 pending：容器在当前视角没有宽度，图等于没画（接管改动不许把右列图表压成 0 高）');
 const after=await p.evaluate(()=>({rb:JSON.parse(window.__twinCharts.list().find(x=>x.name==='temp-hum').sig),
   mean:(()=>{const seen=[],vals=[];
     [...document.querySelectorAll('#dkNodesTrack .nd-row')].forEach(r=>{const id=r.dataset.node;if(seen.includes(id))return;
@@ -214,29 +222,39 @@ ok(Math.abs(lt-after.mean.t)<=0.05&&Math.abs(lh-after.mean.h)<=0.05&&after.rb.le
 ok(after.act===0&&after.cap===null,`th-active 选中态与图下说明文本都已撤除（active=${after.act}，chartTHCap 元素不存在=${after.cap===null}）`);
 
 
-// ⑦ 下钻出图
+// ⑦ 下钻口径跟着 viewProfile 走（FR-80：面板退役后不再出柱图/环形，
+//    产品负责人 2026-11-08 定的口径是「四格数字已把结论说完，柱子在 300px 宽里只是把同一件事再画一遍」。
+//    所以这条从"验图"改成"验左栏四格的口径与数字随房间/周期变"——验屏上真给客户看的那份。)
 await gotoZone(p, '106'); await p.waitForTimeout(4200);
-const z106=await p.evaluate(()=>window.__twinCharts.list().map(x=>x.name));
-ok(z106.includes('zstats'),'106 下钻出任务统计柱: '+z106.join(','));
+const k106=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
+  txt:(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim()}));
+ok(k106.kind==='任务统计'&&/已完成/.test(k106.txt)&&/排队/.test(k106.txt),'106 下钻＝任务统计四格: '+JSON.stringify(k106).slice(0,96));
 await gotoZone(p, '103'); await p.waitForTimeout(4200);
-const z103=await p.evaluate(()=>({names:window.__twinCharts.list().map(x=>x.name),sig:window.__twinCharts.list().find(x=>x.name==='zstats')}));
-/* ⑥ 周期切换跟着变（左栏撤图后，这条由区域面板的统计柱来验——它同样是"图必须跟着口径走"） */
-const per0=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='zstats');return r?JSON.parse(r.sig):null;});
-/* 周期切换器存在于两处：左栏可见时是 .rail .seg，下钻到非 106 时是 #zpPeriod .seg。
-   必须按当前视图挑可见的那个——点隐藏的那个 Playwright 会重试到 30s 超时（本轮踩过）。 */
-/* 只点"可见的那一份"周期按钮：106 撤指标后 .rail>.period 仍留在 DOM 里（display:none），
-   按 rail.hidden 判断会选中它，Playwright 对隐藏元素重试到 30s 超时（本轮踩过）。 */
+const k103=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
+  txt:(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim()}));
+ok(k103.kind==='检测项目数统计'&&/检测中/.test(k103.txt)&&/逾期未出/.test(k103.txt),
+  `103 下钻＝检测项目数统计（口径随 viewProfile.blocks 走，不是写死 106）: ${JSON.stringify(k103).slice(0,96)}`);
 const segOf=async(v)=>{ await p.locator('[data-period="'+v+'"]:visible').first().click(); await p.waitForTimeout(2600); };
+await gotoZone(p, '106'); await p.waitForTimeout(3000);
+const per0=await p.evaluate(()=>(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim());
 await segOf('month');
-const per1=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='zstats');return r?JSON.parse(r.sig):null;});
-ok(per0&&per1&&JSON.stringify(per0)!==JSON.stringify(per1)&&per1[0].v>per0[0].v,
-  `周期切到本月 → 面板统计柱数字跟着换（已完成 ${per0&&per0[0].v} → ${per1&&per1[0].v}）`);
+const per1=await p.evaluate(()=>(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim());
+await segOf('year');
+const per2=await p.evaluate(()=>(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim());
+ok(per0&&per1&&per0!==per1&&per1!==per2,`周期切换驱动左栏四格（本日「${per0.slice(0,26)}」→本月「${per1.slice(0,26)}」→本年「${per2.slice(0,26)}」）`);
 await segOf('day');
-ok(z103.names.includes('zstats')&&/检测中/.test(z103.sig.sig),`103 下钻出检测项目数柱（口径随 viewProfile.blocks 走）: ${z103.sig.sig.slice(0,52)}`);
 await gotoZone(p, '102'); await p.waitForTimeout(4200);
-const sm=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='zsamples');return r?JSON.parse(r.sig):null;});
-const stored=await p.evaluate(()=>{const e=document.querySelector('#zpSamplesN');return e?+e.innerText.replace(/\D/g,''):0;});
-ok(sm&&sm.length>=3&&sm.reduce((a,x)=>a+x.v,0)===stored,`102 样品分布环形各类相加 == 在库存量（${sm&&sm.map(x=>x.v).join('+')} = ${sm&&sm.reduce((a,x)=>a+x.v,0)} vs ${stored}）`);
+const k102=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
+  cells:[...document.querySelectorAll('#zsGrid .zs-i')].map(e=>e.innerText.replace(/\s+/g,' ').trim()),
+  names:[...document.querySelectorAll('#zsGrid .sp-nm')].map(e=>+((e.innerText.match(/(\d+) 支/)||[0,0])[1]||0),0)[1]}));
+const sum102=k102.names.reduce((a,x)=>a+x,0);
+ok(k102.kind==='样品台账'&&/286 在库存量\(支\)/.test(k102.cells.join(' '))&&k102.names.length>=3&&sum102===286,
+  `102 下钻＝样品台账四格 + 按名称分布，且分布合计=在库存量（${k102.names.join('+')}=${sum102} vs 286）: ${k102.cells.join(' / ')}`);
+const k101=await (async()=>{ await gotoZone(p,'101'); await p.waitForTimeout(3600);
+  return p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
+    txt:(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim()}));})();
+ok(k101.kind===''&&/无任务与检测项目口径/.test(k101.txt)&&/环境数据见右列/.test(k101.txt),
+  `101 没有统计口径就明说，不摆四个 0 冒充数据: ${JSON.stringify(k101).slice(0,90)}`);
 
 // ⑧ 无障碍与 reduced-motion
 const a11y=await p.evaluate(()=>{const n=[...document.querySelectorAll('.tw-chart')];return {total:n.length,noLabel:n.filter(e=>e.getAttribute('role')!=='img'||!e.getAttribute('aria-label')).length};});

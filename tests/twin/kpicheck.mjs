@@ -38,8 +38,8 @@ out.push((/正在检测\s*12/.test(t3)&&/待检测\s*9/.test(t3)&&/已完成检�
 const t4=await p.evaluate(()=>[...document.querySelectorAll('#tables .dtable')].map(e=>e.innerText.replace(/\s+/g,' ')).join(' | '));
 out.push((!/调度任务/.test(t4)?'✅':'❌')+' 左栏已无「调度任务」子区域（三组收尾）: '+t4.slice(-56));
 await gotoZone(p,'106'); await p.waitForTimeout(2600);
-const zt=(await p.locator('#zpStats').innerText()).replace(/\s+/g,' ');
-out.push((/已完成/.test(zt)&&/异常挂起/.test(zt)&&/排队/.test(zt)?'✅':'❌')+' 调度数没丢：106 面板任务统计四格仍在（已完成/执行中/异常挂起/排队）: '+zt.slice(0,72));
+const zt=(await p.locator('#zsGrid').innerText()).replace(/\s+/g,' ');   /* FR-80：统计四格在左栏 #zsGrid */
+out.push((/已完成/.test(zt)&&/异常挂起/.test(zt)&&/排队/.test(zt)?'✅':'❌')+' 调度数没丢：106 左栏任务统计四格仍在（已完成/执行中/异常挂起/排队）: '+zt.slice(0,72));
 await p.keyboard.press('1'); await p.waitForTimeout(2400);
 /* 来源词与更新时间从屏上撤除（2026-11-07 圈图），但口径不许跟着丢：
    每组与面板头都必须在 aria-label 里带「来源 + 更新时间」，读屏与二期接口核对仍拿得到。 */
