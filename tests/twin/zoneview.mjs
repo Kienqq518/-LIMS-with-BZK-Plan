@@ -107,9 +107,12 @@ await gotoZone(p, '106'); await p.waitForTimeout(2800);
    `.rail>.period` 只是 display:none，仍在 DOM 里。周期切换器必须搬进面板，
    否则 106 的任务统计（按本日/本月/本年变）就没有任何入口能切。 */
 const pp106 = await p.evaluate(() => ({panelHidden: document.getElementById('zpPeriod').hidden,
-  railVisible: (() => { const e = document.querySelector('.rail>.period'); const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; })()}));
+  /* 周期切换器现在在「运行指标」标题行里（FR-73），不再是 .rail 的直接子代——
+     用直接子代选择器会拿到 null，整套 49 项一条都跑不到（上一版就是这么崩的）。 */
+  railVisible: (() => { const e = document.querySelector('.rail .period'); if (!e) return false;
+    const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; })()}));
 out.push((!pp106.panelHidden ? '✅' : '❌') + ` 106 撤左栏指标后周期切换器搬进面板（否则任务统计没人能切）: panel.hidden=${pp106.panelHidden}`);
-out.push((!pp106.railVisible ? '✅' : '❌') + ' 同屏只留一份可见（左栏那组在 106 已收起）: rail>.period 可见=' + pp106.railVisible);
+out.push((!pp106.railVisible ? '✅' : '❌') + ' 同屏只留一份可见（106 收起左栏指标后，rail 内周期组不可见）: rail .period 可见=' + pp106.railVisible);
 const stDay = await p.evaluate(() => document.querySelector('#zpStats .zp-grid').innerText.replace(/\s+/g, ' ').trim());
 await p.locator('[data-period=month]:visible').first().click(); await p.waitForTimeout(1800);
 const stMon = await p.evaluate(() => document.querySelector('#zpStats .zp-grid').innerText.replace(/\s+/g, ' ').trim());

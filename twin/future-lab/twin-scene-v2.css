@@ -48,7 +48,7 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 .pill.active{color:var(--tw-color-brand-strong);background:var(--tw-glass-on);border:0;box-shadow:var(--tw-press-ring)}
 .pill.flow{color:var(--tw-color-brand);border-color:var(--tw-tint-brand-line)}
 /* 浮层几何的唯一事实源：宽度与沟槽都从这里算，改一处即可 */
-:root{--tw-rail-w:300px;--tw-rail-gap:20px;   /* 2026-11-08 产品负责人：左栏几块粘在一起了，间距从 12 拉到 20 */--tw-stream-h:492px;--tw-stream-w:520px;   /* 2026-11-08 再圈一次：更矮更宽，可见区仍是 6 条（下面腾出来的位置给 4 路监控画面） */--tw-panel-w:352px;--tw-float-gap:16px}
+:root{--tw-rail-w:300px;--tw-rail-gap:20px;   /* 2026-11-08 产品负责人：左栏几块粘在一起了，间距从 12 拉到 20 */--tw-stream-h:492px;--tw-stream-w:430px;   /* 2026-11-08 再圈一次：更矮更宽，可见区仍是 6 条（下面腾出来的位置给 4 路监控画面） */--tw-panel-w:352px;--tw-float-gap:16px}
 /* 侧栏底板层整体撤除（2026-11-07 产品负责人圈图：连面板底下那层白/玻璃底板也不要）。
    左栏、告警流、组态物联、AGV 任务块都只剩内容浮在三维画面上：无底、无描边、无圆角、无阴影、无毛玻璃。
    可读性改由 --tw-text-plate 白垫底承担（CAD 画面近白，深色字 + 白垫底对比度仍 >7:1）。
@@ -156,7 +156,7 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 /* ---- 右侧告警流（连续滚动，透明玻璃） ---- */
 /* 右列：top:14 起（原来 top:70 落在 .stage 内 = 页面 126px，上面白空 112px）。
    告警流高度固定（不随条数伸缩），组态物联吃剩余高度——两块共用同一档玻璃配方。 */
-.rcol{position:absolute;right:16px;top:14px;bottom:16px;width:var(--tw-stream-w);display:flex;flex-direction:column;gap:var(--tw-float-gap);z-index:var(--tw-z-panel)}
+.rcol{position:absolute;right:16px;top:70px;   /* 顶部与左栏「运行指标」齐平（2026-11-08 圈图） */bottom:16px;width:var(--tw-stream-w);display:flex;flex-direction:column;gap:var(--tw-float-gap);z-index:var(--tw-z-panel)}
 .stream,.nodepanel{position:relative;display:flex;flex-direction:column;background:transparent;
  backdrop-filter:none;-webkit-backdrop-filter:none;
  border:0;border-radius:0;box-shadow:none;overflow:hidden;text-shadow:var(--tw-text-plate)}
@@ -326,7 +326,9 @@ body[data-zone-dock="1"] .dock{right:calc(var(--tw-float-gap) * 2 + var(--tw-pan
 .tables{display:flex;flex-direction:column;gap:9px}
 .railpanel{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;
  border:0;border-radius:0;box-shadow:none;padding:0 2px 0 0}
-.rp-head{display:flex;align-items:baseline;gap:8px;margin-bottom:7px}
+.rp-head{display:flex;align-items:baseline;gap:10px;margin-bottom:7px}
+.rp-head .period{margin-left:auto}          /* 周期开关贴标题行右侧 */
+.rp-head .rp-src{margin-left:0}
 .rp-head b{font-size:var(--tw-fs-strong);font-weight:800;letter-spacing:.4px;color:var(--tw-ink-1)}
 .rp-head .rp-src{margin-left:auto;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap}
 /* KPI 胶囊（.rp-kpis / .rp-kpi）整块删除（FR-41）：那四个数与下面四组的大数是同一批数字，
@@ -478,6 +480,8 @@ body[data-zone-metrics="0"] .rail,body[data-zone-metrics="0"] .raildev{display:n
 .dock{left:14px;right:16px;height:var(--tw-dock-h)}
 /* 块序 2026-11-08 交换：场景监测（名称长，给最宽）/ 调度任务（下面还有三列）/ 组态物联 */
 footer.dock{grid-template-columns:minmax(0,1.18fr) minmax(0,1.34fr) minmax(0,1fr)}
+/* 底栏三块加高（2026-11-08 圈图）：172 装不下"标题 + 三行内容"，读起来每块都被切一脚 */
+:root{--tw-dock-h:212px}
 /* 右列只剩告警流：省出来的高度全部给它（原来固定 560px，现在 70→880，多读十几条） */
 .rcol{bottom:var(--tw-band)}
 .stream{flex:none;height:var(--tw-stream-h);min-height:0}   /* 改回固定高：600px 正好装 6 条（原来贴满 810px 读 9 条，块头太重） */
@@ -616,3 +620,26 @@ footer.dock{grid-template-columns:minmax(0,1.18fr) minmax(0,1.34fr) minmax(0,1fr
 /* 左栏每块之间：原来 gap 20 + 各块自己又写 margin，实际间隔忽大忽小。
    现在 margin 全部归零，只由 gap 说话，并拉到 34px——图一那个"间隔不明显"就是 20px 在 1080 高里太弱。 */
 :root{--tw-rail-gap:34px}
+
+
+/* ================= FR-72（2026-11-08）视觉节点实时画面格位 =================
+   2×2 四格，对应 103/105/106/109 四个视觉点位。格子里先放"这路是谁的、在哪、点位状态"，
+   画面本身由场景离屏渲相机接入（下一步）。没有画面时不许留一块假黑的屏——
+   写「画面待接入」比放一张静态图诚实。 */
+.cctv{flex:none;display:flex;flex-direction:column;gap:6px}
+.cctv>header{display:flex;align-items:baseline;gap:8px}
+.cctv>header b{font-size:var(--tw-fs-strong);font-weight:700;color:var(--tw-ink-1)}
+.cctv>header .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums}
+.cam-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px}
+.cam-tile{position:relative;min-height:96px;border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip);
+ background:var(--tw-glass-plate);overflow:hidden}
+.cam-tile canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cam-tile .cm{position:absolute;left:7px;top:6px;right:7px;display:flex;align-items:center;gap:6px;
+ font-size:var(--tw-fs-micro);color:var(--tw-ink-1);text-shadow:var(--tw-text-plate);pointer-events:none}
+.cam-tile .cm b{font-weight:700;font-variant-numeric:tabular-nums}
+.cam-tile .cm .rm{color:var(--tw-ink-3)}
+.cam-tile .rec{width:6px;height:6px;border-radius:50%;background:var(--tw-st-alarm);flex:none}
+.cam-tile .st{position:absolute;right:7px;bottom:6px;font-size:var(--tw-fs-micro);color:var(--tw-ink-3);
+ text-shadow:var(--tw-text-plate)}
+.cam-tile .wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+ font-size:var(--tw-fs-micro);color:var(--tw-ink-3);letter-spacing:.3px}

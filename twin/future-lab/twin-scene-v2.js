@@ -159,7 +159,9 @@
   function renderTables() {
     if (!status || !status.panels) return;
     var per = status.panels, stamp = new Date(status.updatedAt || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
-    var keys = Object.keys(per);
+    /* 「调度任务」子区域从左栏撤掉（2026-11-08 圈图）：同一批数在底栏「无人化调度任务」三列与
+       106 区域面板里都在，左栏再列一遍就是把一屏当两屏用。数据与接口都不动，只是不在这里出现。 */
+    var keys = Object.keys(per).filter(function (k) { return k !== 'dispatch'; });
     var host = $('#tables');
     if (host.dataset.keys !== keys.join(',')) {                        /* 骨架：只在面板集合变化时重建 */
       host.dataset.keys = keys.join(',');
@@ -560,6 +562,7 @@
       });
     });
     queueAria(qt);
+    renderCams();
     (envNodes || []).forEach(function (n) {
       document.querySelectorAll('#dkNodesTrack .nd-row[data-node="' + n.id + '"]').forEach(function (el) {
         var rd = el.querySelector('.rd'), ti = el.querySelectorAll('.ti')[1];
@@ -656,6 +659,22 @@
   /* AGV 机器人块（2026-11-08）：每台一行——编号 / 状态 + 正在办的任务 / 电量条 + 百分比。
      电量与状态全部来自调度心跳里的 robots（seed 有 battery，mock 每 tick 掉电/回充，低电自己回桩），
      屏上不编数：停靠桩的那台显示「停靠充电 · 回升中」，不写成故障。 */
+  /* 4 路视觉节点画面：格位与归属先按真实节点表落好（103/105/106/109）。
+     画面本身要场景离屏渲相机才能给，没渲之前写「画面待接入」，不放静态图冒充实时。 */
+  function renderCams() {
+    var el = $('#camGrid'); if (!el) return;
+    var cams = (envNodes || []).filter(function (n) { return n.type === 'camera'; });
+    el.innerHTML = cams.map(function (n) {
+      return '<div class="cam-tile" data-node="' + n.id + '" tabindex="0" role="button" aria-label="'
+        + escapeHtml(n.id + ' ' + n.name + '，位于 ' + n.roomId + ' 区，' + nodeReading(n) + '，实时画面待接入（二期由视觉节点回传）') + '">'
+        + '<canvas width="320" height="180"></canvas>'
+        + '<div class="cm"><i class="rec"></i><b>' + escapeHtml(n.name) + '</b><span class="rm">' + escapeHtml(n.roomId) + ' 区</span></div>'
+        + '<div class="wait">画面待接入</div>'
+        + '<div class="st">' + escapeHtml(nodeReading(n)) + '</div></div>';
+    }).join('');
+    var c = $('#cctvCnt'); if (c) c.textContent = cams.length + ' 路 · ' + cams.map(function (n) { return n.roomId; }).join('/');
+  }
+
   function renderAgv() {
     var el = $('#agvList'); if (!el) return;
     el.innerHTML = robots.map(function (r) {
@@ -957,7 +976,7 @@
     if (!chartsBooted) { chartsBooted = true; TwinCharts.boot().then(function (ok) { if (!ok) { flashHint('图表引擎未加载（vendor/g2.min.js），读数仍以表格呈现'); return; } renderCharts(); }); }
     if (!globalThis.G2) return;
     var per = (status && status.panels) || {}, v = function (k) { return per[k] ? per[k].periods[st.period] : null; };
-    var e = v('entrust'), sa = v('samples'), ti = v('testItems'), di = v('dispatch');
+    var e = v('entrust'), sa = v('samples'), ti = v('testItems'), di = v('dispatch');   /* di 仍要算：环比与底栏同步用得上，只是不上左栏 */
     /* 左栏只有 176px 净宽：环形在这里放不下「环 + 指认标签」，实测百分比被裁。
        改用柱状（类别名落在柱底，宽度够用），构成关系靠柱高与表格里已有的百分比读。 */
     /* 左栏四张表：只出数字表，不出图（见上方 CHART_KIND 注释） */

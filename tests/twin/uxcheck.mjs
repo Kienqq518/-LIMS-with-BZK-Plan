@@ -23,8 +23,9 @@ out.push(((streamSheet.bg==='rgba(0, 0, 0, 0)'||streamSheet.bg==='transparent')&
 /* FR-42 全站一律无底板：底栏块不再有玻璃（反向断言），行卡自己带 F 档垫底 */
 out.push(((await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.dk'));return c.backgroundColor==='rgba(0, 0, 0, 0)'&&c.backdropFilter==='none'&&c.borderTopWidth==='0px';}))?'✅':'❌')+' 底栏三块都无底板（全站一律）');
 out.push(((await p.evaluate(()=>{const r=document.getElementById('scene').getBoundingClientRect();const l=document.querySelector('.rail').getBoundingClientRect();return l.x>r.x&&l.y>r.y;}))?'✅':'❌')+' 浮层确实悬浮在三维画面之上（非分栏布局）');
-T('四张数据表', await p.locator('.dtable').count(), 4);
-out.push(((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x)).length>=6?'✅':'❌')+' 表内占比列（替代原环形/条形图）: '+((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x))).join(','));
+/* 左栏现在三组（调度任务子区域按 FR-73 移出左栏，数在底栏与 106 面板） */
+T('左栏数据表组数（三组）', await p.locator('.dtable').count(), 3);
+out.push(((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x)).length>=4?'✅':'❌')+' 左栏三组占比列（调度组已移出，实测剩 4 个）: '+((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x))).join(','));
 /* 合并面板口径（2026-11-07）：来源词每表仍要标，但时间戳只在面板头出现一次——
    四张表各盖一遍同一个更新时间，是"四块独立卡片"时代的遗产。 */
 /* 反向断言（2026-11-07 圈图）：左栏屏上不该再有「数采 / 调度 / 时间戳」这类小文本；
@@ -195,7 +196,9 @@ out.push((cardPos&&cardPos.x>500&&cardPos.y>100&&cardPos.w>180?'✅':'❌')+' �
 await ev(()=>{window.dispatchEvent(new CustomEvent('space-device-select',{detail:{id:'106-18'}}));});
 await p.waitForTimeout(1800);
 const card2=(await f.locator('#twin-v2-card').innerText()).replace(/\s+/g,' ');
-out.push(((/无实时数据|非数采对象/.test(card2))?'✅':'❌')+' 桌子/凳子也有信息卡（诚实显示无实时数据）: '+card2.slice(0,110));
+/* FR-65 之后屏上不写「无实时数据」「非数采对象」：桌台类也是数采对应，
+   没有实时值就是设备状态「停机」。诚实降级换了说法，断言跟着换，不是放宽。 */
+out.push(((/停机|数采对应|非设备（家具）/.test(card2))?'✅':'❌')+' 桌子/凳子也有信息卡（数采对应 + 状态停机，不编实时态）: '+card2.slice(0,110));
 // 9) 场景内避让自检仍然 0 违规（新路线）
 const A=await ev(()=>{const e=document.getElementById('twin-v2-route-audit');return e?{v:+e.dataset.violations,c:+e.dataset.checked,d:e.dataset.detail}:null;});
 out.push((A&&A.v===0?'✅':'❌')+` 新循环路线避让校验: ${A&&A.c} 采样点 违规 ${A&&A.v} ${A&&A.v?A.d:''}`);
