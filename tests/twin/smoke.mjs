@@ -49,7 +49,10 @@ a('106 下钻后底栏保留（机器人与任务继续走）', await page.locat
 await gotoZone(page,'107'); await page.waitForTimeout(1800);
 /* 口径变了（FR-66）：非 106 的房间不是"未建档"，而是从全场表按物理房间派生——107 有 7 台。
    诚实降级这条留给真的没有检测设备的区（101 接待大厅 / 104 控制室）。 */
-a('107 面板从全场表派生出设备', await page.locator('#zpDevices .zp-row').count(), 7);
+/* 107 = 5 台试验机（维卡软化/液压万能/电子万能/两工位×2）+ 归位过来的智能型数字电桥 = 6 台。
+   上一笔我把期望写成 7 就推了，是我的数错，不是产品错——这里按接口实际派生值写死并加同源校验。 */
+a('107 面板从全场表派生出设备', await page.locator('#zpDevices .zp-row').count(), 6);
+a('107 面板台数与全场表同源', await page.locator('#zpDevicesN').innerText(), '6 台建档');
 a('107 设备行格式=编号 名称「型号」', (await page.locator('#zpDevices .zp-body .zp-row').first().innerText()).includes('智能型数字电桥'), true);
 a('非106 机器人不越区', (await page.locator('#zpDevices').innerText()).includes('RB-C-01'), false);
 
