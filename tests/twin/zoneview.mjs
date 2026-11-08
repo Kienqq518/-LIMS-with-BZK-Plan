@@ -32,8 +32,13 @@ const noOverlap=(o)=>{const vis=Object.entries(o).filter(([,v])=>v&&v!=='hidden'
 // ④ S1 间距
 let r=await rects();
 out.push((!noOverlap(r)?'✅':'❌')+' S1 四块浮层互不重叠: '+JSON.stringify(r)+' '+noOverlap(r));
-out.push((r.dock.x-r.rail.r>=12?'✅':'❌')+` 底栏与左栏之间有 ${r.dock.x-r.rail.r}px 沟槽（旧值：底栏 left:180 压在左栏 238 上）`);
-out.push((r.stream.x-r.dock.r>=12?'✅':'❌')+` 底栏与右侧告警流之间有 ${r.stream.x-r.dock.r}px 沟槽`);
+/* FR-45 之后底栏 left:14 铺到 right:16（整屏宽），它和左栏/告警流是**上下关系**而不是左右关系：
+   旧的两条"水平沟槽"量的是 dock.x - rail.r，新布局下必然是负数（两块横向重叠但纵向分开）。
+   口径跟着改成垂直间距——上下不许粘在一起，也不许互相压住（压住由上面 noOverlap 兜）。 */
+out.push((r.dock.y-r.rail.b>=12?'✅':'❌')+` 底栏压在左栏下方且留出 ${r.dock.y-r.rail.b}px 垂直间距（旧口径：水平沟槽，FR-45 铺满整屏宽后失效）`);
+out.push((r.dock.y-r.stream.b>=12?'✅':'❌')+` 底栏压在告警流下方且留出 ${r.dock.y-r.stream.b}px 垂直间距`);
+const vw=await p.evaluate(()=>window.innerWidth);
+out.push(((r.dock.x<=20&&r.dock.r>=vw-24)?'✅':'❌')+` 底栏确实铺满整屏宽：${r.dock.x}→${r.dock.r}（视口 ${vw}）`);
 const inner=await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].map(e=>Math.round(e.getBoundingClientRect().x)));
 out.push((inner[1]-inner[0]>0&&inner.every((x,i)=>i===0||x>inner[i-1])?'✅':'❌')+' 底栏四块之间也有间距: 起点 '+JSON.stringify(inner));
 

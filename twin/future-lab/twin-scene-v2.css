@@ -351,7 +351,6 @@ body[data-zone-dock="1"] .dock{right:calc(var(--tw-float-gap) * 2 + var(--tw-pan
 /* 告警汇总与筛选控件已移入右侧告警流头部（2026-11-06）；区域视图时同样出现在区域面板的告警块里 */
 
 /* 逾期/临期 口径来自 LIMS，行内带角标；hover 出明细（哪个样品/项目、要求完成时间） */
-.dtable .limstag{display:inline-block;margin-left:5px;font-size:var(--tw-fs-micro);font-weight:700;color:var(--tw-st-cat);background:var(--tw-tint-cat-bg);border:1px solid var(--tw-tint-cat-line);border-radius:var(--tw-radius-bar);padding:0 4px;vertical-align:1px}
 .dtable tr.warn td.v,.dtable tr.due td.v{cursor:help}
 
 /* ---- 全屏按钮（低配按钮已按 2026-11-06 反馈移除，能力保留为 ?quality=low 交付参数） ---- */
@@ -392,7 +391,7 @@ body[data-full="1"] .rail,body[data-full="1"] .stream,body[data-full="1"] .zonep
 .nodepanel>header b{font-size:var(--tw-fs-label);color:var(--tw-ink-1);white-space:nowrap}
 .nodepanel>header .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nodepanel .th-wrap{padding:8px 10px 4px}
-.nodepanel .tw-chart{height:78px}
+.nodepanel .tw-chart{height:64px}
 .np-view{flex:1;min-height:0;overflow:hidden;position:relative;padding:2px 0;
  -webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent)}
 .zonepanel .tw-chart{height:92px;margin:0 0 8px}
@@ -442,7 +441,7 @@ footer.dock{grid-template-columns:minmax(0,1.62fr) minmax(0,1fr)}
 .raildev>header b{font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-2);flex:1 1 auto}
 .raildev>header .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap}
 .rd-wrap{display:grid;grid-template-columns:132px minmax(0,1fr);gap:8px;align-items:start}
-#railDev #chartDevices{height:78px;margin:0}
+#railDev #chartDevices{height:96px;margin:0}
 #railDev .dk-body{padding:0;overflow:visible;min-width:0}
 #railDev .dk-rate{margin-top:4px}
 /* 106 下钻：左栏整块交给底栏与右侧面板（设备状态在区域面板里已经有），不再留空壳 */
@@ -460,3 +459,53 @@ body[data-zone-metrics="0"] .rail,body[data-zone-metrics="0"] .raildev{display:n
 .dq-col .dk-view{flex:1;min-height:0}
 .dq-row .st{display:none}
 .dq-row.running .st{display:inline}
+
+/* ================= FR-45（2026-11-08）底栏铺满整屏宽 · 设备块下移 · 告警流不出滚动条 =================
+   产品负责人圈图三条：① 左栏「设备运行状态」往下挪；② 底下那排三块拉宽铺满屏幕宽度；
+   ③ 告警流滚动时不要出现滚动条。这一段同样写在末尾，按同特异度后者生效。 */
+:root{--tw-dock-h:172px; --tw-band:calc(var(--tw-dock-h) + 28px)}   /* 底栏带：块高 + 上下边距，左栏与右列都到此为止 */
+
+/* ② 底栏从「左栏右侧」扩到整屏宽；组态物联从右列挪进第三块（它本来就在右下角，位置几乎没变） */
+.dock{left:14px;right:16px;height:var(--tw-dock-h)}
+footer.dock{grid-template-columns:minmax(0,1.55fr) minmax(0,.92fr) minmax(0,1fr)}
+/* 右列只剩告警流：省出来的高度全部给它（原来固定 560px，现在 70→880，多读十几条） */
+.rcol{bottom:var(--tw-band)}
+.stream{flex:1 1 auto;height:auto;min-height:0}
+/* ① 左栏：周期与读数仍贴顶，设备运行状态贴到栏底（正好在底栏上方，中间不再空一块） */
+.rail{top:70px;bottom:var(--tw-band);max-height:none}
+.raildev{margin-top:auto}
+/* ③ 滚动条一律不画：这些列表本来就是自动滚动 + 悬停暂停，滚动条是纯噪声。
+     只去掉视觉，不改 overflow——滚轮与键盘仍然能滚（accessibility 不降级）。 */
+.stream-view,.rail,.np-view,.dk-view,.zonepanel{scrollbar-width:none;-ms-overflow-style:none}
+.stream-view::-webkit-scrollbar,.rail::-webkit-scrollbar,.np-view::-webkit-scrollbar,
+.dk-view::-webkit-scrollbar,.zonepanel::-webkit-scrollbar{width:0;height:0;display:none}
+/* 组态物联进了底栏：块高只有 172px，图与列表都要更紧凑一点才不挤掉读数 */
+#iotPanel .th-wrap{padding:4px 10px 2px}
+#iotPanel .tw-chart{height:64px}
+#iotPanel>header{padding:2px 10px 4px}
+
+/* ================= FR-48（2026-11-08）图表 tooltip 跟全站口径 =================
+   G2 的 tooltip 是它自己往容器里插的 DOM，样式全写在内联 style 上（近白底 + 重阴影），
+   不压住就成了全站唯一一块"白卡片"。这里只改外观不改行为：淡灰垫底、细描边、字号收到 label 档。
+   内容口径（真实时刻 + ℃/%RH）在 twin-charts.js 里改，那条才是产品负责人圈的重点。 */
+.g2-tooltip{background:var(--tw-glass-plate)!important;border:1px solid var(--tw-glass-border)!important;
+ box-shadow:none!important;border-radius:var(--tw-radius-chip)!important;color:var(--tw-ink-1)!important;
+ font-family:var(--tw-font-familyUI)!important;font-size:var(--tw-fs-label)!important;padding:6px 9px!important;
+ backdrop-filter:var(--tw-blur) var(--tw-sat);-webkit-backdrop-filter:var(--tw-blur) var(--tw-sat)}
+.g2-tooltip-title{font-size:var(--tw-fs-micro)!important;color:var(--tw-ink-3)!important;margin:0 0 3px!important;
+ font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.g2-tooltip-list{gap:2px!important}
+.g2-tooltip-list-item,.g2-tooltip-list-item-name,.g2-tooltip-list-item-value{font-size:var(--tw-fs-label)!important;color:var(--tw-ink-1)!important}
+.g2-tooltip-list-item-name{color:var(--tw-ink-3)!important}
+.g2-tooltip-list-item-value{font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ================= FR-46（2026-11-08）告警流字号收小 + 行卡背景由白改淡灰 =================
+   产品负责人两条：① 告警流的字号比三维画面里其它读数大，看着不协调；
+   ② 行卡背景太白（底栏同理）。②改的是 F 档 token（一处改，全站行卡一起变），
+   ①在这里把告警流三档字号各降一档，并收紧内边距——省出来的高度让一屏多读两三条。 */
+.st-row{padding:7px 10px}
+.st-row .l1{font-size:var(--tw-fs-label);gap:6px}          /* 12.5 → 11.5，与 dq-row/ti-row 同级 */
+.st-row .rs{font-size:var(--tw-fs-micro);margin-top:2px;line-height:1.45}   /* 11.5 → 10.5（地板 10.4px 之下不许再小） */
+.st-row .l2{margin-top:5px}
+.st-row .gd{padding:1px 6px}
+.st-row .st{padding:1px 6px}

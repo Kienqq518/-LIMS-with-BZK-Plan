@@ -16,8 +16,8 @@ await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
 await p.waitForTimeout(16000);
 
 // 结构
-T('底栏块数（FR-42：设备状态挪进左栏，底栏只剩两块）', await p.locator('.dock .dk').count(), 2);
-T('块标题', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '无人化调度任务|试验项完成情况');
+T('底栏块数（FR-45：调度任务 / 试验项 / 组态物联，铺满整屏宽）', await p.locator('.dock .dk').count(), 3);
+T('块标题', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '无人化调度任务|试验项完成情况|组态物联节点');
 T('设备运行状态在左栏（FR-42 重排）', await p.evaluate(()=>{const e=document.querySelector('.rail .raildev');return !!e&&e.offsetParent!==null;}), 'true');
 
 // ① 设备运行状态：四档圆环 + 四行图例 + 机器人分工
@@ -28,7 +28,7 @@ const lg=await p.evaluate(()=>[...document.querySelectorAll('#dkDevBody .dk-lg')
   v:+e.querySelector('.vv').innerText,pc:+e.querySelector('.pc').innerText.replace('%',''),zero:e.classList.contains('zero')})));
 out.push((lg.length===4&&lg.map(x=>x.nm).join('/')==='运行中/待机/停机/异常'?'✅':'❌')+' 块1 四档圆环 + 四行图例: '+lg.map(x=>x.nm+' '+x.v+' '+x.pc+'%').join(' / '));
 const dev=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='devices');return r?JSON.parse(r.sig):null;});
-const srcTxt=await p.evaluate(()=>document.querySelector('#dkDevBody').closest('.dk').querySelector('.src').innerText.replace(/\s+/g,' '));
+const srcTxt=await p.evaluate(()=>document.getElementById('dkDevSrc').innerText.replace(/\s+/g,' '));   /* 设备块已搬进左栏 .raildev，不能再拿 .dk 找它 */
 const total=+(srcTxt.match(/(\d+) 台建档/)||[])[1];
 /* 圆环只画非零档（0 台的弧线画不出来），四档之和这条纪律改由图例承担：
    非零档相加 == 图例四档相加 == 建档合计，三者必须同源。 */
@@ -46,8 +46,16 @@ out.push((/在跑 1 · 停靠充电 1/.test(rb)?'✅':'❌')+' 块1 机器人分
 
 // ② 任务队列：三分类分组 + 与流程配置一致
 /* FR-42：三分类从「一张长列表的三个分组」改成三列并排，状态=列，行内不再重复状态字 */
-const grp=await p.evaluate(()=>[...document.querySelectorAll('.dq3 .dq-col')].map(e=>({h:e.querySelector('h4').innerText.replace(/\s+/g,' ').trim(),
-  n:e.querySelectorAll('.dq-row').length, st:e.dataset.state})));
+/* 无缝滚动靠把整列内容复制一遍（dkTrack 的 html+html），所以 .dq-row 的物理数量恒等于道次的两倍。
+   列头计数说的是"这一列有几道任务"，按行身份 data-seq 去重才对；回声副本本身由下面那条
+   「回声不进无障碍树/Tab 序」单独守，不许在这里靠"数一半"混过去。 */
+const grp=await p.evaluate(()=>[...document.querySelectorAll('.dq3 .dq-col')].map(e=>{
+  const rows=[...e.querySelectorAll('.dq-row')], seq=[...new Set(rows.map(r=>r.dataset.seq))];
+  return {h:e.querySelector('h4').innerText.replace(/\s+/g,' ').trim(), n:seq.length, rows:rows.length,
+    echo:rows.filter(r=>r.getAttribute('aria-hidden')==='true').length,
+    echoTab:rows.filter(r=>r.getAttribute('aria-hidden')==='true'&&r.tabIndex>=0).length, st:e.dataset.state};}));
+out.push((grp.every(x=>x.rows===x.n*2&&x.echo===x.n&&x.echoTab===0)?'✅':'❌')
+  +' 回声副本只为滚动存在（行数=道次×2、副本全部 aria-hidden 且不在 Tab 序里）: '+grp.map(x=>x.st+' '+x.n+'道/物理'+x.rows+'/隐藏'+x.echo+'/可Tab副本'+x.echoTab).join(' / '));
 out.push((grp.length===3&&grp[0].st==='running'&&/进行中/.test(grp[0].h)&&/未派单/.test(grp[1].h)&&/已完成/.test(grp[2].h)?'✅':'❌')+' 底栏任务三列（进行中/未派单/已完成）: '+JSON.stringify(grp));
 out.push((grp.every(x=>+x.h.split(/\s+/)[1]===x.n)?'✅':'❌')+' 每列标题的计数 == 该列真实行数（列头不许虚报）: '+grp.map(x=>x.h+'→'+x.n).join(' / '));
 const q=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/dispatch-queue');

@@ -122,14 +122,23 @@
     out.push(pts[pts.length - 1].slice());
     return out;
   }
-  function ribbonFaces(values, color) {
+  function ribbonFaces(values, color, top, times, band) {
     var n = values.length; if (n < 2) return { poly: [], pts: [], color: color };
     var lo = Math.min.apply(null, values), hi = Math.max.apply(null, values), span = (hi - lo) || 1;
-    /* 每条序列各自归一到 [0.12,0.88]：温度(℃)与湿度(%RH)量纲不同，同图里只能比趋势；
-       绝对值一律写进端点标签，不靠轴读数——这是诚实口径，不是省事。 */
+    /* 顶部留白由调用方给：图内画标题时线必须整体下移，否则 64px 高的图里标题直接压在线上（实测踩过） */
+    var b0 = band ? band[0] : .06, b1 = band ? band[1] : (top == null ? .88 : top);
+    /* 序列在自己的横向带内归一：温度(℃)与湿度(%RH)量纲不同，同一条带里各自拉伸就会频繁交叉
+       （2026-11-08 产品负责人圈图：湿度数值本来就比温度高一倍，交叉线看着像"湿度有时低于温度"，是错的）。
+       带由 ribbon() 按均值大小分配，绝对值一律写进端点标签与 tooltip，不靠轴读数。 */
     var raw = [], dx = .012, dy = .05, th = .035, poly = [];
-    for (var i = 0; i < n; i++) raw.push([i / (n - 1), .12 + (values[i] - lo) / span * .76]);
-    var pts = smooth(raw).map(function (q) { return { x: q[0], y: q[1] }; });
+    for (var i = 0; i < n; i++) raw.push([i / (n - 1), b0 + (values[i] - lo) / span * (b1 - b0)]);
+    /* 平滑后点数比原始点多，但 tooltip 必须报"实际那一个采样"的数：按 x 反查最近的原始点，
+       把真实值与真实时刻一起挂在 datum 上。归一化坐标只是画图用的内部量，
+       绝不能进 tooltip——上一版没挂，hover 出来是 0.6777777… 和 y 0.662994…（产品负责人圈出来的）。 */
+    var pts = smooth(raw).map(function (q) {
+      var idx = Math.max(0, Math.min(n - 1, Math.round(q[0] * (n - 1))));
+      return { x: q[0], y: q[1], i: idx, v: values[idx], t: times ? times[idx] : null };
+    });
     for (var k = 0; k < pts.length - 1; k++) {
       var a = pts[k], c = pts[k + 1], fc = faces(color);
       poly.push({ pts: [[a.x, a.y], [c.x, c.y], [c.x, c.y - th], [a.x, a.y - th]], c: fc.front });
@@ -235,13 +244,32 @@
       o = o || {}; const p = palette();
       return draw(el, name, 'ribbon', JSON.stringify(series), () => {
         const h = o.height || 76, kids = [], ends = [];
-        /* 一条极淡的基线：没有底板之后，两条细线需要一条参照，否则像飘在空中的两根头发 */
-        kids.push({ type: 'line', data: [{ x: 0, y: .06 }, { x: 1, y: .06 }], encode: { x: 'x', y: 'y' }, style: { stroke: p.ink4, lineWidth: 1, lineDash: [3, 3], strokeOpacity: .5 } });
+        /* 分带：图内标题占掉顶部一行，剩下的画区按序列条数等分成带，带之间留 gap。
+           带的位置按**均值大小**分配——数值大的在上，数值小的在下，与"湿度(%RH) 比 温度(℃) 高"
+           这个直觉一致；每条序列仍在本带内归一，所以各自的趋势幅度一点没被压掉。
+           这里没有共享 y 轴（draw() 里 c.axis(false)），所以分带不谎报量级，绝对值看端点标签与 tooltip。 */
+        /* 带间距按"平滑线会不会过冲到对带"来定：Catmull-Rom 会略微过冲，实测 .07（≈3.8px）时
+           两条线最近只隔 2px，读起来还是贴在一起；放到 .12（≈6.5px）才真的分得开，
+           代价是每条带矮 0.015（≈0.8px），趋势幅度基本没丢。 */
+        const yTop = o.title ? .70 : .88, yBot = .06, bandGap = .12;
+        const k = series.length, bandH = Math.max(.05, (yTop - yBot - bandGap * (k - 1)) / k);
+        const means = series.map(s => (s.values || []).reduce((a, b) => a + b, 0) / Math.max(1, (s.values || []).length));
+        const bands = new Array(k);
+        means.map((m, i) => [m, i]).sort((a, b) => a[0] - b[0]).forEach((x, bi) => {
+          bands[x[1]] = [yBot + bi * (bandH + bandGap), yBot + bi * (bandH + bandGap) + bandH];
+        });
+        /* 一条极淡的基线：没有底板之后，细线需要一条参照，否则像飘在空中的头发 */
+        kids.push({ type: 'line', data: [{ x: 0, y: yBot - .03 }, { x: 1, y: yBot - .03 }], encode: { x: 'x', y: 'y' }, tooltip: false, style: { stroke: p.ink4, lineWidth: 1, lineDash: [3, 3], strokeOpacity: .5 } });
         series.forEach((s, i) => {
-          const c = s.c || (i ? p.ready : p.working), r = ribbonFaces(s.values, c);
-          kids.push({ type: 'line', data: r.pts, encode: { x: 'x', y: 'y' }, style: { stroke: c, lineWidth: 1.5, lineAppendWidth: 3, strokeOpacity: .95 } });
+          const c = s.c || (i ? p.ready : p.working), r = ribbonFaces(s.values, c, null, o.times, bands[i]);
+          /* tooltip 只挂在序列线上：标题=真实时刻，值=原始读数（带单位），颜色跟线一致。
+             两条序列各自一条 item，合在同一个 tooltip 里读——这正是"只比趋势、绝对值另标"那条纪律的补位：
+             趋势看图，具体数看这里。 */
+          kids.push({ type: 'line', data: r.pts, encode: { x: 'x', y: 'y' },
+            tooltip: { title: (d) => (d.t == null ? '' : d.t), items: [{ field: 'v', name: s.name, color: c, valueFormatter: (v) => v + (s.unit || '') }] },
+            style: { stroke: c, lineWidth: 1.5, lineAppendWidth: 3, strokeOpacity: .95 } });
           const last = r.pts[r.pts.length - 1];
-          if (last) kids.push({ type: 'point', data: [last], encode: { x: 'x', y: 'y' }, style: { fill: c, r: 2.6, stroke: '#fff', lineWidth: .8 } });
+          if (last) kids.push({ type: 'point', data: [last], encode: { x: 'x', y: 'y' }, tooltip: false, style: { fill: c, r: 2.6, stroke: '#fff', lineWidth: .8 } });
           ends.push({ x: 1.03, y: last ? last.y : .5, t: s.name + ' ' + s.values[s.values.length - 1] + (s.unit || ''), c });
         });
         /* 端点标签按 y 排序后强制最小间距：两条序列的最后一点常常落在同一高度，直接叠成一行糊字（实测「温度46.9%RH」） */
@@ -251,10 +279,14 @@
         const gap = Math.max(.28, .17 * (76 / Math.max(40, h)));
         for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < gap) ends[i].y = ends[i - 1].y + gap;
         ends.forEach(d => { d.y = Math.max(-.10, Math.min(1.00, d.y)); });
-        kids.push({ type: 'text', data: ends, encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsLabel, fontWeight: 700, fill: d => d.c, textAlign: 'start' } });
-        if (o.xLabels) kids.push({ type: 'text', data: o.xLabels.map((t, i) => ({ x: i / (o.xLabels.length - 1), y: -.09, t })), encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsLabel, fill: p.ink3, textAlign: 'center' } });
+        kids.push({ type: 'text', data: ends, encode: { x: 'x', y: 'y', text: 't' }, tooltip: false, style: { fontSize: p.fsLabel, fontWeight: 700, fill: d => d.c, textAlign: 'start' } });
+        /* x 轴刻度：优先用调用方给的 xLabels；没给但有 times（真实时刻序列）时，按 4 档均匀取实际时刻。
+           取的是采样点自己的下标，不是"把 0~1 四等分"——16 个点时 0/5/10/15 才真的是首、中、中、末的时刻。 */
+        const xTicks = o.xLabels ? o.xLabels.map((t, i) => ({ x: i / (o.xLabels.length - 1), y: -.09, t }))
+          : (o.times ? (function (k) { const n = o.times.length, out = []; for (let i = 0; i < k; i++) out.push({ x: Math.round(i * (n - 1) / (k - 1)) / (n - 1), y: -.09, t: o.times[Math.round(i * (n - 1) / (k - 1))] }); return out; })(Math.min(4, o.times.length)) : null);
+        if (xTicks) kids.push({ type: 'text', data: xTicks, encode: { x: 'x', y: 'y', text: 't' }, tooltip: false, style: { fontSize: p.fsLabel, fill: p.ink3, textAlign: 'center' } });
         /* 标题画在图内左上角：产品要求撤掉图下方那行说明文本，但"这是谁的、什么的时序"必须还能读出来 */
-        if (o.title) kids.push({ type: 'text', data: [{ x: .005, y: 1.0, t: o.title }], encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsLabel, fontWeight: 700, fill: p.ink3, textAlign: 'start' } });
+        if (o.title) kids.push({ type: 'text', data: [{ x: .005, y: 1.0, t: o.title }], encode: { x: 'x', y: 'y', text: 't' }, tooltip: false, style: { fontSize: p.fsLabel, fontWeight: 700, fill: p.ink3, textAlign: 'start' } });
         return {
           __h: h, type: 'view', children: kids, animate: false,
           scale: { x: { type: 'linear', domain: [-.02, 1.42], nice: false }, y: { type: 'linear', domain: [-.16, 1.02], nice: false } }

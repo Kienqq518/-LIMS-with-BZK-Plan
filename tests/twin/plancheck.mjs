@@ -18,16 +18,20 @@ out.push((got.overdue===exp.overdue&&got.dueSoon===exp.dueSoon&&got.testing===ex
   +` 接口值与清单一致：接口 逾期${got.overdue}/临期${got.dueSoon}/在测${got.testing}/待检${got.pending}/完成${got.done}`);
 const ui=await p.evaluate(()=>{const t=[...document.querySelectorAll('.dtable')][2];return {txt:t.innerText.replace(/\s+/g,' '),
   tags:[...t.querySelectorAll('.limstag')].length,
-  /* 明细清单从 title 挪进 aria-label（2026-11-07：连 hover 都不想要），读屏与 QA 仍能追到具体项目 */
-  tips:[...t.querySelectorAll('.dt-i[aria-label]')].map(r=>r.getAttribute('aria-label').slice(0,80)).filter(x=>/要求 /.test(x))};});
-out.push(((/逾期\s*(?:LIMS)?\s*2/.test(ui.txt)&&/临期\(3天内\)\s*(?:LIMS)?\s*3/.test(ui.txt))?'✅':'❌')+' 屏上数值正确: '+ui.txt.slice(0,110));
-out.push((ui.tags===2?'✅':'❌')+` LIMS 角标数量=${ui.tags}（逾期/临期两行各一个）`);
-out.push((ui.tips.length===2&&/SPL-2611/.test(ui.tips[0])?'✅':'❌')+' 明细走 aria-label 可追到具体项目（屏上无 hover）: '+String(ui.tips[0]).slice(0,72));
+  /* 明细清单从 title 挪进 aria-label（2026-11-07：连 hover 都不想要），读屏与 QA 仍能追到具体项目。
+     截长一点：FR-49 之后 LIMS 口径也并进了同一条 aria-label，排在明细之后。 */
+  tips:[...t.querySelectorAll('.dt-i[aria-label]')].map(r=>r.getAttribute('aria-label').slice(0,240)).filter(x=>/要求 /.test(x))};});
+/* FR-49（2026-11-08 圈图）：屏上的 LIMS 角标撤除，口径并进 aria-label。
+   这两条合起来才是完整口径——「屏上干净」与「口径没丢」必须同时成立，缺一个就是回归。 */
+out.push(((/逾期\s*2/.test(ui.txt)&&/临期\(3天内\)\s*3/.test(ui.txt)&&!/LIMS/.test(ui.txt)&&ui.tags===0)?'✅':'❌')
+  +' 屏上数值正确且不再出现 LIMS 角标: '+ui.txt.slice(0,110));
+out.push((ui.tips.length===2&&/SPL-2611/.test(ui.tips[0])&&ui.tips.every(x=>/LIMS「要求检测完成时间」/.test(x))?'✅':'❌')
+  +' 明细与 LIMS 口径都在 aria-label（读屏/QA 可追）: '+String(ui.tips[0]).slice(0,150));
 // 周期切换：逾期/临期保持现在时口径
 await p.locator('[data-period=year]:visible').first().click();  /* 周期按钮同屏可能有左右两组，只点可见那份 */ await p.waitForTimeout(700);
 const y=await p.evaluate(()=>[...document.querySelectorAll('.dtable')][2].innerText.replace(/\s+/g,' '));
 /* 本年：合计 9127（=96 在测 + 141 待检 + 8890 完成）随周期变；逾期 2 / 临期 3 是现在时口径，不随周期变 */
-out.push(((/逾期\s*(?:LIMS)?\s*2/.test(y)&&/临期\(3天内\)\s*(?:LIMS)?\s*3/.test(y)&&/合计\s*9127/.test(y)&&/已完成检测\s*8890/.test(y))?'✅':'❌')+' 切本年：合计随周期(9127=96+141+8890)、逾期/临期保持现在时: '+y.slice(0,96));
+out.push(((/逾期\s*2/.test(y)&&/临期\(3天内\)\s*3/.test(y)&&!/LIMS/.test(y)&&/合计\s*9127/.test(y)&&/已完成检测\s*8890/.test(y))?'✅':'❌')+' 切本年：合计随周期(9127=96+141+8890)、逾期/临期保持现在时: '+y.slice(0,96));
 // 自洽：在测+待检+完成=合计
 const calc=await p.evaluate(()=>{const t=[...document.querySelectorAll('.dtable')][2];
  return [+t.querySelector('.dt-v').textContent, ...[...t.querySelectorAll('.dt-detail .v')].map(x=>+x.textContent)];});

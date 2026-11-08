@@ -54,9 +54,17 @@ T('图层 icon 数（路径/场地标签/热力）', st.licCount, 3);
 out.push((st.licOnBg!=='rgb(40, 120, 255)'?'✅':'❌')+' 开启态不再是实心蓝底按钮（改为淡底+描边）: '+st.licOnBg);
 
 // 功能没被视觉改动打断
+/* FR-42 把「场地标签」初始化改成默认关，这条期望还是旧的"点一下就关"，于是把一次成功的开启判成失败。
+   这条的本意是"顶栏悬浮化没打断功能"，那就该验**两次点击把开关原样翻回去**，比只验一个方向更严。 */
+const licOn=()=>p.evaluate(()=>!!document.querySelector('.lic[data-layer=labels]').classList.contains('on'));
+const licPressed=()=>p.evaluate(()=>document.querySelector('.lic[data-layer=labels]').getAttribute('aria-pressed'));
+const l0=await licOn();                                   /* 初始态：默认关 */
 await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(1000);
-out.push(((await p.evaluate(()=>!document.querySelector('.lic[data-layer=labels]').classList.contains('on')))?'✅':'❌')+' 悬浮化后 icon 仍可点（场地标签关）');
+const l1=await licOn(), a1=await licPressed();
 await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(800);
+const l2=await licOn();
+out.push(((l0===false&&l1===true&&l2===false&&a1==='true')?'✅':'❌')
+  +` 悬浮化后 icon 仍可点：场地标签默认关→点开→再点关（aria-pressed 跟着走，实测 ${l0}/${l1}/${l2} pressed=${a1}）`);
 await p.selectOption('#zoneSel','106'); await p.waitForTimeout(2600);
 out.push(((await p.evaluate(()=>new URLSearchParams(location.search).get('mode')))==='ZONE'?'✅':'❌')+' 悬浮化后区域切换仍下钻');
 await p.click('.mode[data-mode=S1]'); await p.waitForTimeout(2200);

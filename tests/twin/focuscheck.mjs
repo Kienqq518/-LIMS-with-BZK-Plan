@@ -114,6 +114,13 @@ function expectCard(g, st, free) {
 }
 /* 该页面点是否被宿主浮层压住（压住 = 用户在那里根本点不到三维画面） */
 const blockedAt = async (x, y) => host.evaluate(([px, py]) => { const e = document.elementFromPoint(px, py); return !e || e.id !== 'scene'; }, [x, y]);
+/* 场景文档自己的顶层元素：上一台设备的信息气泡 #twin-v2-card 就贴在实体旁边，它会盖住下一台的候选像素
+   （实测连点 22 次 106-05，21 次点到的都是 #twin-v2-card，根本没点到三维画面）。宿主的 blockedAt 只看
+   iframe 这一层，看不见 iframe 内部的浮层，所以这一层必须单独量：点到的若不是 <canvas>，那一次点击
+   压根没进拾取管线，拿它断言"点击不改机位"量的就不是同一件事。 */
+const sceneTop = async (x, y) => ev(([px, py]) => { const e = document.elementFromPoint(px, py);
+  if (!e) return '空'; if (e.tagName === 'CANVAS') return '';
+  return e.id ? '#' + e.id : '.' + String(e.className).split(' ')[0].slice(0, 24); }, [x, y]);
 /* 机位必须真的静下来才能比"点击前后"：下钻补间还在跑就取样，等于把补间的位移算到点击头上 */
 async function waitCamIdle(ms = 3200) {
   const t0 = Date.now(); let last = null, same = 0;
@@ -162,6 +169,9 @@ for (const room of ROOMS) {
       if (st2.open || c1 !== c0 || !/未建模/.test(hint2)) badHint.push(`${id}(card=${st2.open},cam相同=${c1 === c0},hint=${(hint2 || '').slice(0, 18)})`);
       nUnmodeled++; nTest++; continue;
     }
+    /* 先把上一台留下的气泡按产品自己的 × 关掉：不关掉的话，下一台的候选像素会被它盖住，
+       点击落到气泡上（点在 .go「在台账打开」上还会跳走），那时"机位没动"就变成假通过/假失败。 */
+    await ev(() => { const c = document.getElementById('twin-v2-card'); if (c && !c.hidden) c.querySelector('.x')?.click(); });
     let via = 'click', pt = cand && cand.pt;
     if (!pt) {                                            /* 本体点不到 → 试它自己的状态光点 */
       const dp = await ev(i => {
@@ -170,14 +180,17 @@ for (const room of ROOMS) {
         q.setFromMatrixPosition(dot.matrixWorld); q.project(v.camera); if (q.z > 1) return null;
         return [h.left + (q.x * .5 + .5) * h.width, h.top + (-q.y * .5 + .5) * h.height];
       }, id);
-      if (dp) { const tp2 = await toPage(dp[0], dp[1]); if (await blockedAt(tp2.x, tp2.y)) { /* 被宿主浮层压住 */ } else { pt = dp; via = 'dot'; } }
+      if (dp) { const tp2 = await toPage(dp[0], dp[1]);
+        if (await blockedAt(tp2.x, tp2.y) || await sceneTop(dp[0], dp[1])) { /* 被宿主浮层或场景内浮层压住 → 落回事件兜底 */ } else { pt = dp; via = 'dot'; } }
     }
     const fire = () => ev(i => { window.visual106.selected = i; window.dispatchEvent(new CustomEvent('space-device-select', { detail: { id: i, name: i, roomId: i.slice(0, 3) } })); }, id);
     if (!pt) { via = 'event'; unclickable.push(id); }
     const c0 = await camRaw();          /* 点击前的机位原样留档，点击后逐位比对 */
     if (pt) {
       const tp = await toPage(pt[0], pt[1]);
-      if (await blockedAt(tp.x, tp.y)) { via = 'event'; unclickable.push(id + (via === 'dot' ? '(光点也被压住)' : '(被宿主浮层压住)')); pt = null; }
+      const stop = await sceneTop(pt[0], pt[1]);
+      if (await blockedAt(tp.x, tp.y) || stop) { via = 'event';
+        unclickable.push(id + (stop ? `(被场景内浮层${stop}抢点)` : (via === 'dot' ? '(光点也被压住)' : '(被宿主浮层压住)'))); pt = null; }
       else {
         await p.mouse.click(tp.x, tp.y);
         await p.waitForTimeout(140);

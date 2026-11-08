@@ -126,6 +126,42 @@ ok(th.n>=2&&rb&&rb.length===2&&rb[0].values.length===16&&Math.abs(lastT-th.avgT)
   `折线带两条序列各 16 点，末点 == 右列 ${th.n} 个温湿度点位读数均值（图与列表同一套数）：图上 ${lastT}℃/${lastH}%RH vs 均值 ${th.avgT}℃/${th.avgH}%RH`);
 ok(await p.evaluate(()=>{const c=document.querySelector('#chartTH canvas');return !!c&&c.width>0;}),'均值折线带真有像素');
 
+/* ④b 两条线不许交叉（2026-11-08 产品负责人圈图：湿度数值本来就比温度高一倍，
+   两条线各自归一到同一条带里频繁交叉，看着像"湿度有时低于温度"，那是错的）。
+   这条直接在**渲染出来的像素**上量：绿=湿度(22,163,74)、蓝=温度(40,120,255)，
+   每列取各自最靠上的一个像素行，要求绿的 y 恒小于蓝的 y。
+   只扫左侧 60% 宽度——右边那截是端点标签文字，同样是这两种颜色，扫进来会把文字当线。 */
+const bandPix = await p.evaluate(()=>{const cv=document.querySelector('#chartTH canvas'); if(!cv) return null;
+  const ctx=cv.getContext('2d',{willReadFrequently:true}); if(!ctx) return null;
+  const w=cv.width,h=cv.height,d=ctx.getImageData(0,0,w,h).data;
+  const G=[22,163,74],B=[40,120,255];
+  const dist=(i,c)=>Math.abs(d[i]-c[0])+Math.abs(d[i+1]-c[1])+Math.abs(d[i+2]-c[2]);
+  let both=0,crossed=0,topG=[],topB=[];
+  for(let x=0;x<Math.floor(w*.6);x++){let gy=-1,by=-1;
+    for(let y=0;y<h;y++){const i=(y*w+x)*4; if(d[i+3]<120) continue;
+      const dg=dist(i,G),db=dist(i,B);
+      if(gy<0&&dg<90&&dg<db) gy=y; if(by<0&&db<90&&db<dg) by=y;}
+    if(gy>=0&&by>=0){both++; if(gy>by) crossed++; topG.push(gy); topB.push(by);}}
+  return {both,crossed,w,h,gapPx:both?Math.round(Math.min(...topB.map((b,k)=>b-topG[k]))):-1}});
+ok(bandPix&&bandPix.both>40&&bandPix.crossed===0&&bandPix.gapPx>=2,
+  `温湿度两条线分带后互不交叉（逐列量：可比较列 ${bandPix&&bandPix.both}，交叉 ${bandPix&&bandPix.crossed}，最小上下间距 ${bandPix&&bandPix.gapPx}px；湿度在上、温度在下）`);
+
+/* ④c hover 出来的必须是真实时刻与真实读数。上一版没给 tooltip 挂数据，G2 就把画图用的
+   归一化内部量原样报出来（屏上是 0.6777777… 和 y 0.662994…），这是把内部实现泄漏给用户。 */
+const thBox = await p.evaluate(()=>{const r=document.querySelector('#chartTH').getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};});
+const tipReads=[];
+for(const f of [0.22,0.45,0.60]){ await p.mouse.move(thBox.x+thBox.w*f, thBox.y+thBox.h*.55); await p.waitForTimeout(380);
+  tipReads.push(await p.evaluate(()=>{const el=document.querySelector('.g2-tooltip'); if(!el) return '';
+    const c=getComputedStyle(el); return c.visibility==='hidden'?'' : el.innerText.replace(/\s+/g,' ').trim();})); }
+const tipBad = tipReads.filter(t=>!/\d{2}:\d{2}/.test(t)||!/℃/.test(t)||!/%RH/.test(t)||/\b0\.\d{4,}\b/.test(t)||/\by\s+0\./.test(t));
+ok(tipReads.filter(t=>t).length>=2&&tipBad.length===0,
+  `hover 出真实时刻与真实读数（含 HH:MM + ℃ + %RH，绝无归一化内部量）: ${tipReads.filter(t=>t).map(t=>t.slice(0,34)).join(' ‖ ')}`);
+const tipStyle = await p.evaluate(()=>{const el=document.querySelector('.g2-tooltip'); if(!el) return null;
+  const c=getComputedStyle(el); const m=c.backgroundColor.match(/rgba?\((\d+), (\d+), (\d+)(?:, ([0-9.]+))?\)/);
+  return {bg:c.backgroundColor, rgb:m?[+m[1],+m[2],+m[3]]:null, fs:c.fontSize};});
+ok(!!tipStyle&&!!tipStyle.rgb&&tipStyle.rgb.every(v=>v>=185&&v<=240)&&parseFloat(tipStyle.fs)<=12.6,   /* 三通道都在淡灰区间，本身就排除了纯白 */
+  `tooltip 跟全站淡灰口径（不是 G2 默认那块白）: ${tipStyle&&tipStyle.bg} / ${tipStyle&&tipStyle.fs}`);
+
 // ⑤ 点节点行 = 只开详情卡，折线带序列不许被换掉（序列口径是全场均值，跟着点击换点位就成了假标题）
 const froze=await p.evaluate(()=>{
   const tr=document.getElementById('dkNodesTrack'); if(tr) tr.style.animation='none';

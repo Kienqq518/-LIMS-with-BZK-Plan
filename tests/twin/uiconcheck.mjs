@@ -37,7 +37,20 @@ const noSheet=s=>{const [bg,blur,border,radius,shadow]=String(s||'').split('|');
   return (bg==='rgba(0, 0, 0, 0)'||bg==='transparent')&&blur==='none'&&/^0px/.test(border)&&shadow==='false';};
 ok(noSheet(glass2.rail)&&noSheet(glass2.stream),`侧栏无底板层（左栏 + 告警流：透明/无 blur/无描边/无阴影）: rail=${String(glass2.rail).slice(0,40)} stream=${String(glass2.stream).slice(0,40)}`);
 ok(new Set([glass2.zone,glass2.dk].filter(Boolean)).size===1,`底栏与区域面板仍同一档玻璃配方：${[...new Set([glass2.zone,glass2.dk])].map(x=>x.slice(0,46)).join('  ||  ')}`);
-ok(/blur\(14px\)/.test(glass2.dk||''),'玻璃那档 blur 真的生效（不是 none——裸 14px 会让整条 backdrop-filter 失效）');
+/* FR-42 把底栏与区域面板的底板也撤了，"玻璃那档"只剩两处仍在使用：顶栏 icon 组 .layers（宿主）
+   与三维里的实体信息气泡 #twin-v2-card（场景文档）。断言原意不变——守住 --tw-blur 必须是完整函数：
+   backdrop-filter 只吃 <filter-list>，裸 14px 会让整条声明静默失效变 none，那时 computed 里根本量不出来。 */
+const blurLive=await p.evaluate(()=>{const g=s=>{const e=document.querySelector(s);return e?getComputedStyle(e).backdropFilter:'absent';};
+  return {token:getComputedStyle(document.documentElement).getPropertyValue('--tw-blur').trim(),layers:g('.layers')};});
+/* 实体气泡是首次选中时才建的（bridge 里 cardEl 懒创建），所以先走引擎自己的选中事件把它请出来，
+   量完立刻按产品自己的 × 关掉，不给后面的断言留残留状态。 */
+await f.evaluate(()=>{window.visual106.selected='106-12';
+  window.dispatchEvent(new CustomEvent('space-device-select',{detail:{id:'106-12',name:'106-12',roomId:'106'}}));});
+await p.waitForTimeout(500);
+const cardBlur=await f.evaluate(()=>{const c=document.getElementById('twin-v2-card');
+  const v=c?getComputedStyle(c).backdropFilter:'no-card-el'; if(c&&c.querySelector('.x')) c.querySelector('.x').click(); return v;});
+ok(/^blur\(\d+(\.\d+)?px\)$/.test(blurLive.token)&&blurLive.layers.includes(blurLive.token)&&cardBlur.includes(blurLive.token),
+  `玻璃那档 blur 真的生效（--tw-blur=${blurLive.token}，.layers 与实体气泡两处都解析得出来）: layers=${blurLive.layers} card=${cardBlur}`);
 const plate=await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.rail'));
   return {ts:c.textShadow,token:getComputedStyle(document.documentElement).getPropertyValue('--tw-text-plate').trim()};});
 ok(plate.ts!=='none'&&plate.ts.replace(/\s+/g,' ').includes('255, 255, 255'),`无底板后文字带白垫底（--tw-text-plate）: ${plate.ts.slice(0,64)}`);

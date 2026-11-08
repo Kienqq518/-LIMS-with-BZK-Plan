@@ -21,7 +21,7 @@ const streamSheet=await p.evaluate(()=>{const c=getComputedStyle(document.queryS
   return {bg:c.backgroundColor,blur:c.backdropFilter,border:c.borderTopWidth,shadow:c.boxShadow==='none',plate:c.textShadow!=='none'};});
 out.push(((streamSheet.bg==='rgba(0, 0, 0, 0)'||streamSheet.bg==='transparent')&&streamSheet.blur==='none'&&streamSheet.border==='0px'&&streamSheet.shadow&&streamSheet.plate?'✅':'❌')+' 告警流无底板层（行卡自己浮着，背后不再有整块白）: '+JSON.stringify(streamSheet));
 /* FR-42 全站一律无底板：底栏块不再有玻璃（反向断言），行卡自己带 F 档垫底 */
-out.push(((await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.dk'));return c.backgroundColor==='rgba(0, 0, 0, 0)'&&c.backdropFilter==='none'&&c.borderTopWidth==='0px';}))?'✅':'❌')+' 底栏两块也无底板（全站一律）');
+out.push(((await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.dk'));return c.backgroundColor==='rgba(0, 0, 0, 0)'&&c.backdropFilter==='none'&&c.borderTopWidth==='0px';}))?'✅':'❌')+' 底栏三块都无底板（全站一律）');
 out.push(((await p.evaluate(()=>{const r=document.getElementById('scene').getBoundingClientRect();const l=document.querySelector('.rail').getBoundingClientRect();return l.x>r.x&&l.y>r.y;}))?'✅':'❌')+' 浮层确实悬浮在三维画面之上（非分栏布局）');
 T('四张数据表', await p.locator('.dtable').count(), 4);
 out.push(((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x)).length>=6?'✅':'❌')+' 表内占比列（替代原环形/条形图）: '+((await p.locator('.dtable .pct').allInnerTexts()).filter(x=>/%/.test(x))).join(','));
@@ -72,16 +72,27 @@ const in106=heat.filter(h=>h.x>=9&&h.x<=18.5&&h.z>=9.6&&h.z<=28.1), other=heat.f
 out.push(((in106.length&&Math.max(...in106.map(h=>h.o))>=0.15&&(!other.length||Math.max(...other.map(h=>h.o))<=0.08))?'✅':'❌')+` 热力分级：106 ${in106.length}块 max=${in106.length?Math.max(...in106.map(h=>h.o)):'-'} / 其他 ${other.length}块 max=${other.length?Math.max(...other.map(h=>h.o)):'-'}`);
 await p.click('.lic[data-layer=heatmap]'); await p.waitForTimeout(600);
 // 4) 底栏=四块（设备统计 / 调度任务队列 / 委托单试验项 / 组态物联节点），除统计块外各自滚动
-T('底栏块数（FR-42：设备状态进左栏，AGV+任务合成一块）', await p.locator('.dock .dk').count(), 2);
+T('底栏块数（FR-45 三块铺满整屏宽：调度任务 / 试验项 / 组态物联）', await p.locator('.dock .dk').count(), 3);
 T('滚动轨道数（任务三列 + 试验项 + 右列物联）', await p.locator('.dk-track').count(), 5);
 out.push(((await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')))==='dkUp/dkUp/dkUp'?'✅':'❌')+' 三列各自滚动: '+await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')));
 
-/* FR-42 全站一律无底板：底栏块不再有玻璃，行卡自己带 F 档垫底（更重的白） */
-const dkSheet=await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.dk'));const row=getComputedStyle(document.querySelector('.dq-row'));
-  return {bg:c.backgroundColor,blur:c.backdropFilter,border:c.borderTopWidth,plate:row.backgroundColor,plateB:row.borderTopWidth};});
-const plateAlpha=+((dkSheet.plate.match(/rgba\(255, 255, 255, ([0-9.]+)\)/)||[0,.86])[1]);
-out.push(((dkSheet.bg==='rgba(0, 0, 0, 0)'||dkSheet.bg==='transparent')&&dkSheet.blur==='none'&&dkSheet.border==='0px'&&plateAlpha>=.8&&+dkSheet.plateB.replace('px','')>=1?'✅':'❌')
-  +` 底栏无底板 + 行卡垫底加重到 F 档（alpha ${plateAlpha}、描边 ${dkSheet.plateB}）: ${JSON.stringify(dkSheet)}`);
+/* FR-42 全站一律无底板；FR-46 把 F 档垫底由「更重的白」改成「淡灰」——
+   断言跟着改成「有底、够实、且不是纯白」，只盯 alpha 挡不住白不白这件事。 */
+/* FR-42 全站一律无底板；FR-46 把 F 档垫底由「更重的白」改成「淡灰」。
+   取样必须避开 .dq-row.running：进行中行按设计是品牌蓝底纹（.dq-row.running{background:var(--tw-tint-run-bg)}
+   特异度更高，盖掉 F 档），拿它当"淡灰垫底"的样本，量到的永远是蓝不是灰。 */
+const dkSheet=await p.evaluate(()=>{const c=getComputedStyle(document.querySelector('.dk'));
+  const st=document.querySelector('.st-row'), dq=document.querySelector('.dq-row:not(.running)')||document.querySelector('.dq-row');
+  return {bg:c.backgroundColor,blur:c.backdropFilter,border:c.borderTopWidth,
+    plate:getComputedStyle(st).backgroundColor,plateB:getComputedStyle(st).borderTopWidth,
+    plate2:getComputedStyle(dq).backgroundColor,plate2Cls:String(dq.className)};});
+const gray=s=>{const m=String(s).match(/rgba?\((\d+), (\d+), (\d+)(?:, ([0-9.]+))?\)/); if(!m) return null;
+  const rgb=[+m[1],+m[2],+m[3]], alpha=m[4]!=null?+m[4]:1;   /* rgba 第 4 组没匹配到时是纯 rgb，按不透明算 */
+  return {rgb,alpha,ok:alpha>=.6&&rgb.every(v=>v>=185&&v<=240)&&!(rgb[0]>=248&&rgb[1]>=248&&rgb[2]>=248)};};
+const g1=gray(dkSheet.plate), g2=gray(dkSheet.plate2);
+out.push(((dkSheet.bg==='rgba(0, 0, 0, 0)'||dkSheet.bg==='transparent')&&dkSheet.blur==='none'&&dkSheet.border==='0px'
+  &&g1&&g1.ok&&g2&&g2.ok&&+dkSheet.plateB.replace('px','')>=1?'✅':'❌')
+  +` 底栏无底板 + 行卡垫底=淡灰（告警流 rgb ${g1&&g1.rgb.join('/')} α${g1&&g1.alpha} / 底栏 ${g2&&g2.rgb.join('/')} α${g2&&g2.alpha}〔${dkSheet.plate2Cls}〕、描边 ${dkSheet.plateB}；进行中行走蓝底纹，不计入）`);
 // 5) 右侧告警流滚动
 T('告警流行数(13 条 ×2 无缝复制)', await p.locator('#streamTrack .st-row').count(), 26);
 const boardAnim=await p.evaluate(()=>{const t=document.getElementById('streamTrack');return {name:getComputedStyle(t).animationName,cls:t.className};});
@@ -137,11 +148,30 @@ out.push((agree?'✅':'❌')+` 停靠道与剧本一致：UI「${uiTxt.slice(0,5
 await p.keyboard.press('1'); await p.waitForTimeout(2500);
 const cam=()=>ev(()=>{const c=window.visual106.camera;return [+c.position.x.toFixed(2),+c.position.y.toFixed(2),+c.position.z.toFixed(2),+((c.top-c.bottom)/2).toFixed(2)];});
 const c0=await cam();
-await p.selectOption('#zoneSel','106'); 
+/* FR-45 给 106 配了专属构图（bridge 的 DRILL['106']={fr:2.2,pan:[-280,20]}，按产品负责人给的参考图定标），
+   旧口径「下钻必须把主体推近 ≥1.4×」不再是正确代理：定标后的构图只把 106 往画面左中挪、让出右侧区域面板，
+   宽度占比几乎不变、高度略增。于是改量「106 设备包围盒落在屏幕上的哪一块」，并要求它落在标定区间内。
+   ⚠ 基线 fr0 必须在下钻**之前**取——上一版把它写在 selectOption 之后，量到的是两张"下钻后"的图，恒等。
+   重标定方法：跑 ~/twin-qa/probe.mjs §4 取 fr0/fr1，再把下面上下限各放 ±0.04。 */
+const bboxFrac=()=>ev(()=>{const v=window.visual106,h=v.host.getBoundingClientRect(),V=v.overview.position.constructor;
+  let lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
+  v.modelRoots.forEach((m,id)=>{ if(id.slice(0,3)!=='106')return; m.updateWorldMatrix(true,true);
+    m.traverse(o=>{ if(!o.isMesh||!o.geometry)return; if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+      for(const q of [o.geometry.boundingBox.min,o.geometry.boundingBox.max]){ const w=new V(q.x,q.y,q.z); w.applyMatrix4(o.matrixWorld);
+        lo=[Math.min(lo[0],w.x),Math.min(lo[1],w.y),Math.min(lo[2],w.z)]; hi=[Math.max(hi[0],w.x),Math.max(hi[1],w.y),Math.max(hi[2],w.z)]; } }); });
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  for(const x of [lo[0],hi[0]]) for(const y of [lo[1],hi[1]]) for(const z of [lo[2],hi[2]]){
+    const q=new V(x,y,z).project(v.camera); const sx=(q.x*.5+.5)*h.width, sy=(-q.y*.5+.5)*h.height;
+    x0=Math.min(x0,sx); x1=Math.max(x1,sx); y0=Math.min(y0,sy); y1=Math.max(y1,sy); }
+  return {w:+((x1-x0)/h.width).toFixed(3), h:+((y1-y0)/h.height).toFixed(3), x1:+(x1/h.width).toFixed(3), y0:+(y0/h.height).toFixed(3)};});
+const fr0=await bboxFrac();
+await p.selectOption('#zoneSel','106');
 const samples=[]; for(let i=0;i<7;i++){ await p.waitForTimeout(140); samples.push(await cam()); }
 const uniq=new Set(samples.map(s=>s.join(','))).size;
 out.push((uniq>=4?'✅':'❌')+` 下钻为补间动画（800ms 内采到 ${uniq} 个不同机位）`);
-out.push(((samples[6][3]<c0[3]-1)?'✅':'❌')+` 下钻是推近（画面半高 ${c0[3]} → ${samples[6][3]}）`);
+await p.waitForTimeout(2600); const fr1=await bboxFrac();
+out.push((fr1.w>=.30&&fr1.w<=.42&&fr1.h<=.62&&fr1.x1<=.66&&fr1.y0>=.12&&fr1.h>fr0.h&&fr1.x1<fr0.x1-.04?'✅':'❌')
+  +` 106 下钻落在标定构图内（包围盒 宽${fr0.w}→${fr1.w} 高${fr0.h}→${fr1.h}、右缘 ${fr0.x1}→${fr1.x1} 让出区域面板，不越屏、不被面板压住）`);
 const z=await ev(()=>window.visual106.view);
 T('下钻后视角', z, 'close');
 T('下拉框同步', await p.inputValue('#zoneSel'), '106');

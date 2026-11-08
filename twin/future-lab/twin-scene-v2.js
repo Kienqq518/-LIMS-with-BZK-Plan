@@ -187,15 +187,19 @@
         if (val == null) return '<span class="dt-i na"><span class="lb">' + escapeHtml(r.label) + '</span><b class="v">—</b></span>';
         var base = r.of ? v[r.of] : null;
         var pct = (!r.noPct && base) ? Math.round(val / base * 100) + '%' : '';
-        var tag = r.lims ? '<span class="limstag" aria-label="口径来自 LIMS「要求检测完成时间」，当前为 Mock 数据，二期接口接入后自动变真值' + (p.note ? '。' + p.note : '') + '">LIMS</span>' : '';
-        var aria = '';
+        /* FR-49（2026-11-08 圈图）：屏上的「LIMS」角标撤掉——左栏是运行镜像，不是数据字典，
+           来源标记飘在数字前面反而成了噪声。口径本身不能丢：并进这一行的 aria-label，
+           读屏与 QA 仍复核得到，与 FR-41/FR-43「来源与时间戳一律转 aria-label、不上屏」同一条纪律。 */
+        var ariaBits = [];
         if (r.pick) {
           var list = planItems.filter(function (x) { return x[r.pick]; });
-          /* 明细清单不上屏也不给 hover（产品负责人：连 hover 都不想要）；留 aria-label 给读屏与 QA 复核 */
-          aria = ' aria-label="' + escapeHtml(r.label + ' ' + val + '：' + (list.map(function (x) { return x.sampleId + ' ' + x.item + ' · 要求 ' + x.requiredAt; }).join('；') || '无')) + '"';
+          /* 明细清单同样不上屏也不给 hover（产品负责人：连 hover 都不想要） */
+          ariaBits.push(r.label + ' ' + val + '：' + (list.map(function (x) { return x.sampleId + ' ' + x.item + ' · 要求 ' + x.requiredAt; }).join('；') || '无'));
         }
+        if (r.lims) ariaBits.push('口径来自 LIMS「要求检测完成时间」，当前为 Mock 数据，二期接口接入后自动变真值' + (p.note ? '。' + p.note : ''));
+        var aria = ariaBits.length ? ' aria-label="' + escapeHtml(ariaBits.join('。')) + '"' : '';
         return '<span class="dt-i' + (r.cls ? ' ' + r.cls : '') + '"' + aria + '><span class="lb">' + escapeHtml(r.label) + '</span>' +
-          tag + '<b class="v">' + val + '</b>' + (pct ? '<span class="pct">' + pct + '</span>' : '') + '</span>';
+          '<b class="v">' + val + '</b>' + (pct ? '<span class="pct">' + pct + '</span>' : '') + '</span>';
       }).join('');
       /* 分段条：各部分相加必须等于大数才画；宽度用真实比例（不是四舍五入后的百分比） */
       var bar = sec.querySelector('.dt-bar'), cfg = COMPACT_BAR[key], sum = 0, segs = [];
@@ -497,6 +501,14 @@
   function dkTrack(id, html, per) {
     var el = $(id); if (!el) return;
     el.innerHTML = html + html;                                  /* 复制一份做无缝滚动 */
+    /* 后一半是「回声副本」，只为 translateY(-50%) 的无缝滚动存在，不是第二条任务：
+       告警流那边用 .dup[aria-hidden] 包一层解决，这里 .dk-track 是 flex 列、行自带 margin，
+       包一层会改行距（-50% 就对不齐，滚动会跳），所以逐行标注，口径一致。
+       不标注的代价是实打实的：每条任务/试验项/物联点位被读屏念两遍、Tab 停点多一倍。
+       副本仍可点击——点在副本与点在原件是同一件事，只是不再进无障碍树与 Tab 序。 */
+    var nn = el.children.length;
+    for (var ii = nn >> 1; ii < nn; ii++) { var cc = el.children[ii];
+      cc.setAttribute('aria-hidden', 'true'); cc.tabIndex = -1; cc.removeAttribute('role'); }
     el.style.animation = per > 1 ? ('dkUp ' + Math.max(18, Math.round(per * 4.6)) + 's linear infinite') : 'none';
   }
   /* 心跳刷新：只就地改类名与文本。
@@ -800,12 +812,18 @@
       return;
     }
     var a = thSeries.series.map(function (x) { return x.temperature; }), h = thSeries.series.map(function (x) { return x.humidity; });
+    /* x 轴与 tooltip 的时刻：采样是整点粒度（mock 按 hour 生成，末点钉当前实时值），
+       所以写 HH:00 而不是假装到分；末点前缀"现在"——它确实是当前均值，不是 15 小时前的历史值。 */
+    var thTimes = thSeries.series.map(function (x, i) {
+      var lbl = (x.hour < 10 ? '0' : '') + x.hour + ':00';
+      return i === thSeries.series.length - 1 ? '现在 ' + lbl : lbl;
+    });
     /* 末点钉住当前均值：图上最后一点和右列列表、区域面板的读数不许是两套数 */
     a[a.length - 1] = avgT; h[h.length - 1] = avgH;
     TwinCharts.ribbon($('#chartTH'), 'temp-hum', [
       { name: '温度', unit: '℃', values: a, c: '#2878FF' },
       { name: '湿度', unit: '%RH', values: h, c: '#16A34A' }
-    ], { height: 78, xLabels: ['-15h', '-8h', '现在'], title: '未来实验室平均温湿度（' + th.length + ' 个点位均值 · 近 16 点）' });
+    ], { height: 64, times: thTimes, title: '未来实验室平均温湿度（' + th.length + ' 个点位均值 · 近 ' + a.length + ' 点）' });
   }
 
   function applyAll() {
@@ -901,6 +919,7 @@
   var KEYABLE = '[data-alarm], [data-dev], [data-robot], [data-cad], [data-node]';   /* 底栏四块里可点的行：任务/试验项带 data-cad，节点行带 data-node */
   function keyable(root) {
     (root || document).querySelectorAll(KEYABLE).forEach(function (el) {
+      if (el.getAttribute('aria-hidden') === 'true') return;   /* 无缝滚动的回声副本：不给它补回可点击语义 */
       if (el.tagName === 'BUTTON' || el.tagName === 'A') return;
       if (el.hasAttribute('role') && el.hasAttribute('tabindex')) return;
       var label = (el.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 60);
@@ -943,7 +962,10 @@
       if (!e.target || !e.target.closest) return;
       var sf = e.target.closest('[data-sfilter]');      /* 右列与区域面板共用这一个开关 */
       if (sf) { setStreamFilter(sf.dataset.sfilter); return; }
-      var q = e.target.closest('#dkQueueTrack .dq-row');
+      /* FR-42 把任务队列改成三列（#dqTrackRunning/Unassigned/Done）后，这里还指着已经不存在的
+         #dkQueueTrack —— 结果三列任务行全都不响应点击与回车，"定位工位"整条链路静默断掉（dockcheck 抓到）。
+         改按容器类匹配，列再多也不怕再漏一列。 */
+      var q = e.target.closest('.dq3 .dq-row');
       if (q) { dockLocate(q.dataset.cad, q.querySelector('.nm').textContent); return; }
       var ti = e.target.closest('#dkItemsTrack .ti-row');
       if (ti) { dockLocate(ti.dataset.cad, ti.querySelector('.nm').textContent); return; }
