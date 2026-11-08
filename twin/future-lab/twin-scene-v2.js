@@ -257,7 +257,7 @@
     }
     else if (a.cadEntity) {
       sceneCmd('equipment-highlight', { id: a.cadEntity });   /* 描边照做——CAD 实体号是事实，不需要台账号 */
-      flashHint('已描边 ' + a.cadEntity + '（非数采实体，无台账号与实时参数）');
+      flashHint('已描边 ' + a.cadEntity + '（数采对应，台账与实时通道待接入）');
     }
   }
 
@@ -1202,7 +1202,7 @@
     var r = robots.filter(function (x) { return x.modelRoot === id; })[0];
     if (r) { openRobot(r); return; }
     openDetail('<h3>' + escapeHtml(dev.name || id) + '</h3><div class="sub">' + id + ' · ' + id.slice(0, 3) + ' 区</div>' +
-      '<div class="row"><span>台账</span><b>未建档</b></div><div class="row"><span>数采</span><b>非数采对象</b></div>' +
+      '<div class="row"><span>台账</span><b>待建档</b></div><div class="row"><span>数采</span><b>数采对应</b></div>' +
       '<p style="font-size:11px;color:var(--tw-color-textMuted)">该实体只存在于 CAD（无设备台账号、无数采通道），所以没有实时参数可显示——屏上不编造状态。孪生只读，不下发控制。</p>');
   }
 
@@ -1258,7 +1258,8 @@
   function pollRealtime() {
     clearInterval(rtTimer); if (!detailDev) return;
     var pull = function () { TwinApi.get('/api/device/' + detailDev.deviceId + '/realtime').then(function (r) {
-      var el = $('#rt'); if (!el || !r.data) { if (el) el.innerHTML = '<div class="row"><span>关键参数</span><b>无实时数据</b></div>'; return; }
+      /* 「无实时数据」这个词撤掉：没有实时值时设备就是停机，屏上说状态而不是说我们的接口缺口 */
+      var el = $('#rt'); if (!el || !r.data) { if (el) el.innerHTML = '<div class="row"><span>关键参数</span><b>停机 · 暂无参数</b></div>'; return; }
       el.innerHTML = r.data.keyParams.map(function (p) { return '<div class="row"><span>' + escapeHtml(p.name) + '</span><b>' + p.value + (p.unit ? ' ' + p.unit : '') + '</b></div>'; }).join('') +
         '<div class="row"><span>更新时间</span><b>' + new Date(r.data.updatedAt).toLocaleTimeString('zh-CN', { hour12: false }) + '</b></div>';
     }, function () { var el = $('#rt'); if (el) el.innerHTML = '<div class="row"><span>关键参数</span><b>数据延迟 · 请重试</b></div>'; }); };

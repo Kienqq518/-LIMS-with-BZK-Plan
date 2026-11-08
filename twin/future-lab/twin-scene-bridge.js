@@ -993,6 +993,14 @@ const TYPE_CN = { detect: '检测', unmanned: '无人化', sample: '制样', rec
   materials: '材料', highvoltage: '高压', environment: '环境', electrical: '电气', control: '控制', comprehensive: '综合' };
 const ROOM_CN = { '101': '接待大厅', '102': '智能样品室', '103': '智能力学室', '104': '控制室', '105': '智能高压室', '106': '无人化电缆试验区', '107': '材料试验区', '108': '环境试验区', '109': '综合试验区', '110': '数智化电气试验区' };
 const ST_CN = { working: '运行', ready: '就绪', standby: '待机', stopped: '停机', alarm: '异常', charging: '停靠充电' };
+/* 数采口径（2026-11-08 产品负责人）：除了凳子椅子这类家具，制样/检测/测量设备**都是数采对应**。
+   原来屏上给 CAD-only 实体写「非数采对象」「无实时数据」，等于替现场下了一个错的结论——
+   真实情况是"这台设备数采对应，但台账/实时通道还没接进这份 mock"。
+   所以：状态没有实时值 → 按「停机」显示（停机是设备状态，不是数据缺口）；
+   数采那一行 → 「数采对应 · 台账待接入」；只有桌椅类才说"非设备"。 */
+const FURNITURE = /椅|凳|座椅|托盘|灭火器|展示墙|宣传资料/;
+function isFurniture(nm) { return FURNITURE.test(String(nm || '')); }
+
 function showCard(id, center) {
   ensureCard(); cardFor = id;
   loadNames().then(() => renderCard(id, center));
@@ -1001,18 +1009,21 @@ function renderCard(id, center) {
   if (!cardEl || !cardFor) return;
   const n = (namesMap || {})[id] || {}, o = objectInfo[id] || null;
   const status = o ? o.status : null;
+  const furn = isFurniture(n.displayName || n.cadName);
   const b = boxOf(id);
   const fp = b ? (Math.round((b.max.x - b.min.x) * 100) / 100) + '×' + (Math.round((b.max.z - b.min.z) * 100) / 100) + ' m' : '—';
   const room = id.slice(0, 3);
   const params = (o && o.params || []).slice(0, 2).map(p => p.name + ' ' + p.value + (p.unit || '')).join(' · ');
   cardEl.innerHTML = '<button class="x" aria-label="关闭">×</button><h4>' + esc(n.displayName || n.cadName || (o && o.name) || id) + '</h4>' +
     '<div class="cid">' + id + (o && o.code ? ' · ' + o.code : '') + ' · ' + room + ' ' + (ROOM_CN[room] || '') + '</div>' +
-    '<div class="row"><span>状态</span><b class="st ' + (status || 'na') + '"><i></i>' + (status ? ST_CN[status] : '无实时数据') + '</b></div>' +
+    '<div class="row"><span>状态</span><b class="st ' + (status || (furn ? 'na' : 'stopped')) + '"><i></i>'
+    + (status ? ST_CN[status] : (furn ? '非设备（家具）' : ST_CN.stopped)) + '</b></div>' +
     '<div class="row"><span>' + (o ? '类型' : '归档') + '</span><b>' + esc(o ? (TYPE_CN[o.type] || o.type || '—') : (n.nameConfirmed ? 'CAD 已确认名称' : 'CAD 原始名称')) + '</b></div>' +
     (o && o.subZone ? '<div class="row"><span>分区</span><b>' + esc(o.subZone) + '</b></div>' : '') +
     (params ? '<div class="row"><span>关键参数</span><b>' + esc(params) + '</b></div>' : '') +
     '<div class="row"><span>占地</span><b>' + fp + '</b></div>' +
-    (o ? '<button class="go" data-go="' + id + '">查看详情与实时参数</button>' : '<div class="row"><span>数采</span><b>非数采对象</b></div>');
+    (o ? '<button class="go" data-go="' + id + '">查看详情与实时参数</button>'
+      : '<div class="row"><span>数采</span><b>' + (furn ? '非设备，不计数采' : '数采对应 · 台账待接入') + '</b></div>');
   cardEl.querySelector('.x').onclick = hideCard;
   cardEl.querySelector('[data-go]') && (cardEl.querySelector('[data-go]').onclick = () => parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'device-open', device: { id: id, name: (namesMap[id] || {}).displayName || id } }, location.origin));
   cardEl.hidden = false;

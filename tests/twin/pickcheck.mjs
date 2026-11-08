@@ -112,8 +112,11 @@ const tabPt=await f.evaluate(()=>{const v=window.visual106,m=v.modelRoots.get('1
   return {x:h.left+(s.x*.5+.5)*h.width,y:h.top+(-s.y*.5+.5)*h.height};});
 if(tabPt){ await closeCard(); const t5=await toTop(tabPt.x,tabPt.y); await p.mouse.click(t5.x,t5.y); await p.waitForTimeout(2200);
   const g5=await goBtn();
-  if(g5){ const r5=await go(); out.push((r5.open&&/未建档|非数采对象/.test(r5.txt)&&!/运行|就绪/.test(r5.txt)?'✅':'❌')+' 未建档实体「查看详情」→ 诚实降级文案: '+r5.txt.slice(0,80)); }
-  else out.push((g5===null?'✅':'❌')+' 未建档实体的卡里没有「查看详情」按钮（只有非数采对象标注，不给可点的空入口）');
+  /* 数采口径更正（任务9）：除了凳子椅子，制样/检测/测量设备都是数采对应。
+     所以无台账记录的 CAD 实体不再写「非数采对象」，状态也不再写「无实时数据」而是按设备状态「停机」显示；
+     诚实降级仍然降级——不给可点的空「查看详情」入口，也不许编一个运行/就绪出来。 */
+  if(g5){ const r5=await go(); out.push((r5.open&&/数采对应/.test(r5.txt)&&/停机/.test(r5.txt)&&!/运行|就绪/.test(r5.txt)?'✅':'❌')+' 未建档实体 → 数采对应·台账待接入 + 状态停机（不编实时态）: '+r5.txt.slice(0,86)); }
+  else out.push((g5===null?'✅':'❌')+' 未建档实体的卡里没有「查看详情」按钮（只有「数采对应·台账待接入」标注，不给可点的空入口）');
 }
 
 // ③ 物联节点：身份标签下线，点标记出详情卡（用 #iot-audit 的 worldAnchors 找画面内可点的节点）

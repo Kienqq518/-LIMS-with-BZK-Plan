@@ -769,6 +769,18 @@ method: GitHub skill `chituai/prd-writer`（三视角诊断→概念版→落地
 - FR-64【2026-11-08 新增 · 周期切换器缩小】
   三颗 `flex:1` 平摊 300px 栏宽（每颗 ~98px、11.5px 字）看着像一条导航。改成按内容收宽 + micro 字号 + 3px 内边距，
   控件退回"辅助开关"的分量；字号地板仍是 10.4px（`uiconcheck` 守），用的是 `--tw-fs-micro`=10.5，没踩线。
+- FR-65【2026-11-08 新增 · 数采口径更正：撤「非数采对象」「无实时数据」】
+  产品负责人原话：**除了凳子椅子那些，制样/检测/测量设备都是数采对应**；状态是「无实时数据」的都改成「停机」。
+  原来给 CAD-only 实体写「非数采对象」，是替现场下了一个错的结论——真实情况是"这台设备数采对应，
+  只是台账号与实时通道还没接进这份 mock"。改法：
+  1. 状态无实时值 → 按设备状态 **停机**（深灰）显示；只有桌椅类才说「非设备（家具）」。
+  2. 数采那一行 → **「数采对应 · 台账待接入」**；`openDeviceByCad` 的「台账 未建档」改「待建档」。
+  3. 告警 AL-204 的理由文案里那句「该桌为数采外实体，无设备台账号」同步改掉——
+     **屏上叙事与弹窗文案不许对同一件事给两种结论**，否则售前被问一句就崩。
+  4. 诚实降级保留：无台账记录仍然**不给可点的空「查看详情」入口**，也不编运行/就绪出来（pickcheck 钉住）。
+  ⚠ 遗留不一致（下一轮要处理）：区域面板的设备列表仍读 `/api/zone/{z}/devices`，只有 106/103 两个区有数据，
+  所以 107 面板还写着「未建设备档案」，而全场表里 107 已有 6 台。要么让区域端点从 overview.devices 按 roomId 派生，
+  要么在屏上说明"区域列表只列已接入数采的区"——现在这样两边各自成立、互相矛盾。
 - FR-2b【本次更新 · 决策 Q6】：S1 不加能力叙事层（不做试验项目/精度等级/案例墙），只做运行镜像。
 
 ### 5.2 关键页面线框（建议版 · 1920×1080 基准）
@@ -1132,6 +1144,7 @@ flowchart TD
 | **新增 ✅已上线** | 侧栏底板层撤除（FR-40） | `twin-scene-v2.css`、`tests/twin/{uiconcheck,uxcheck}.mjs`、`docs/twin-design/ui-tokens.md` | `.rail/.railpanel/.cycle` 与 `.stream/.nodepanel`（含两块面板头）全部去底、去描边、去圆角、去阴影、去毛玻璃；容器带 `--tw-text-plate` 白垫底保对比度；行卡 `.st-row` 与 KPI 胶囊 `.rp-kpi` 保留 B 档玻璃（内容级，不是承托级）；底栏与区域面板本轮未圈到，维持 A 档玻璃 | uiconcheck 15✅ · uxcheck 44✅（侧栏反向断言"无底板"） |
 | **新增 ✅已上线** | 左栏运行指标压缩（FR-41） | `twin-scene-v2.{html,css,js}`、`tests/twin/{kpicheck,plancheck,chartcheck,smoke,uxcheck}.mjs` | 一组两行（组名+限定词+大数+环比 / 分解值折行）；2×2 KPI 胶囊整块删除（与四组大数重复）；只有分解相加==大数的组画 5px 分段条（样品、调度不画）；逾期/临期明细从 hover 挪进 aria-label；`#tables` 690→269px、整栏 842→约 400px、左栏不再滚动 | kpicheck 16✅ · plancheck 7✅ · chartcheck 30✅ · smoke 40✅ · uxcheck 43✅ · zoneview 48✅；收尾全量 24 套 557✅ / 0❌ |
 | **新增 ✅已上线** | 全站无底板 + 底栏重排 + 浅灰底 + 场地标签默认关 + 初始构图缩小（FR-42）与温湿度细线（FR-43） | `twin-scene-v2.{html,css,js}`、`twin-tokens.css`、`twin-charts.js`、`twin-scene-bridge.js`、`twin-look.js`、`tour-space-v3-1.html`、`twin/api/seed.json`、`tests/twin/{camcheck,dockcheck,uxcheck,chartcheck,sitelabel,smoke,zoneview,collapsec}.mjs` | 底栏与区域面板也撤底板，行卡改用新 F 档 `--tw-glass-plate:.86`；设备运行状态搬进左栏，底栏两块=「AGV + 任务三列」与「试验项」，状态=列后行内不再重复状态字，心跳按列归属指纹才重建（不每 2s 弹回顶部）；底层改冷浅灰（宿主渐变中间档不再是 #fff + 场景帧 `:root[data-v2]` 覆盖，`?look=pro` 雾色改读 token，`?bg=white` 可回看）；场地标签默认关（`layers` 默认 `path`）；HOME fr 1.16→1.32、上移 78→64 并重标定 camcheck 十个标签中心（RMSE 0.0px）；温湿度改 1.5px 细线 + 末端小圆点 + 淡基线；修掉搬 DOM 时删掉 `#dkQueueCnt` 导致心跳链抛错被 `fail()` 吞成「数据延迟」、圆环与物联列表整片不渲染的缺陷 | camcheck 10✅ · dockcheck 32✅ · chartcheck 30✅ · sitelabel 8✅ · uxcheck/smoke/zoneview/collapsec 见收尾全量 |
+| **修复 ✅已上线** | 数采口径更正：撤「非数采对象」「无实时数据」（FR-65） | `twin-scene-bridge.js`、`twin-scene-v2.js`、`twin/api/seed.json`、`tests/twin/pickcheck.mjs` | 无实时值按「停机」显示、桌椅类才说「非设备（家具）」；数采行改「数采对应 · 台账待接入」；AL-204 理由文案同步（屏上叙事与弹窗不许对同一件事给两种结论）；无台账仍不给空「查看详情」入口、不编运行态 | pickcheck 23✅（含新的数采对应+停机断言）；区域面板 107「未建设备档案」与全场表 6 台的矛盾记为遗留项 |
 | **修复/新增 ✅已上线** | 建档合计更正为全场 32 台并同步 LIMS 台账（FR-59）· 顶栏两段式控件（FR-60）· 场景块固定 3×2 + 房间归属修订 + 待布点诚实标注（FR-61）· CAD 地坪底板不再显形 + 左栏间距 + 构图再左移（FR-62）· 撤「流程配置/循环同步」屏上文本（FR-63）· 周期切换器缩小（FR-64） | `twin/api/seed.json`、`twin/js/twin-api-mock.js`、`js/equip-store.js`、`twin-scene-v2.{html,css,js}`、`twin-scene-bridge.js`、`visual-106-whiteblue.js`、`tests/twin/{dockcheck,chartcheck,smoke,topbarcheck,_env}.mjs` 等 15 套 | 新增 /api/overview/devices（32 台逐台带 roomId/cad/型号/状态），建档合计·五档分布·hover 清单同读一张表；台账补 20 条到 37 并升 STORAGE_KEY v13→v14；修掉 3 处型号撞码（SY-01/YLS-01/GZ-150A）；顶栏拆成层级+房间两段（level 与 mode 可不一致，房间默认未选中），29 处 selectOption 统一走 gotoZone；场景块改固定六格（顺带消灭回声副本），受限空间回 103、工器具改 102 并如实标「待布点」；地坪底板改与场景背景同色；左栏间距 12→20、HOME pan→[-78,-20]；「流程配置 N 条·循环同步」两处写入点收进唯一 queueAria() 并转 aria-label；周期切换器按内容收宽 + micro 字号 | 本轮全量跑到 20/24 时出现 4 条**口径滞后**（建档换表、场景块改网格、顶栏两段式、剧本窗口字段名），逐条改到对应数据源后单跑复验：dockcheck 43✅ / s3check 13✅ / uxcheck 45✅ / chartcheck 33✅ / smoke 41✅ / topbarcheck 19✅ / zone-panel 33✅ / filtercheck 7✅ / kpicheck 16✅ / plancheck 6✅ / lookcheck 15✅ / uiconcheck 15✅ / bluecheck 3✅ / collapsec 9✅；**完整 24 套一次性重跑留待下一笔提交**，此处不虚报成全绿 |
 | **新增 ✅已上线** | 设备状态五档定色（FR-56）· 状态光点再放大（FR-57）· 环形图 hover 设备清单（FR-58） | `twin-tokens.css`、`twin-scene-v2.{js,css}`、`twin-scene-bridge.js`、`twin-charts.js`、`twin/api/seed.json`、`tests/twin/{dockcheck,chartcheck,pickcheck}.mjs` | 运行蓝/就绪绿/异常红/待机浅灰/停机深灰；撤销就绪折进待机；新增 --tw-st-standby/--tw-st-stopped 两条独立 token（原来借用 idle/done 只差一档明度，肉眼分不开）；状态中文统一 在测→运行、停止→停机，卡片里那份硬编码 hex 状态色表改读 token；光点半径 0.10→0.155m（构图缩到 fr 2.13 后只剩 4~5px，构图与光点尺寸是耦合的）；环形图 hover 用像素比色命中该档（不猜几何，换环径/DPR 不失准），卡片跟随鼠标、F 档淡灰、每档最多 8 台；twin 设备记录从台账 code→型号 补齐 model（11/11）；donut 的 filter/map 丢 list、签名含 list 会每 2s 重建闪白，两条都写成注释与断言 | __QA_ROW5__ |
 | **新增 ✅已上线** | 安全管家场景监测块（FR-51）· 左栏 AGV 状态与电量块 + 设备块上移（FR-52）· 告警流矮而宽固定 6 条（FR-53）· 环形图美化（FR-54）· 初始构图按红框重标定（FR-55） | `twin/api/seed.json`、`twin/js/twin-api-mock.js`、`twin-scene-v2.{html,css,js}`、`twin-charts.js`、`twin-scene-bridge.js`、`tests/twin/{dockcheck,camcheck,uxcheck}.mjs` | 底栏第二块换成 6 套安全管家场景（名称/标签/规则/所需节点取自场景方案文档），并与调度任务块交换到最左；状态由「所在房间 A/B 级未闭环告警」+「所辖点位读数越限」现算，越限判断放宿主侧（读数在那边）；点场景行选中其首个节点；试验项块整块下屏（.ti-row=0），接口仍在契约里；左栏新增 AGV 块（编号/状态+在办事/电量条+百分比，电量对接口现值），设备运行状态上移并与各块留间隙；告警流 296→420 宽、固定 600px 高（实测行高 74，正好 6 条）；环形图加 5° 分隔角 + 柔化明度 + 环放大 + 中心补「台建档」；HOME fr 1.32→2.13、pan→[12,-20]（按建模外框投影算出 k=1.617，不是手调），camcheck 基准表与 uxcheck 下钻判据跟着重标定 | 收尾全量 24 套：570✅/1❌ → lookcheck 取样框改为实时投影求得后复跑 15✅/0❌，合计 571✅ / 0❌ |
