@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
 const b=await chromium.launch({channel:'chrome'});
 const p=await b.newPage({viewport:{width:1920,height:1080}});
@@ -44,10 +44,10 @@ await p.locator('#zpAlarms [data-alarm]').first().click(); await p.waitForTimeou
 T('本区告警详情打开', await p.locator('#detail').isVisible(), 'true');
 T('回溯抽屉不存在', await p.locator('#s3Drawer').count(), 0);
 // 切到 107（无档案/1个环境点位）与 101（非试验区）
-await p.selectOption('#zoneSel','107'); await p.waitForTimeout(2500);
+await gotoZone(p, '107'); await p.waitForTimeout(2500);
 T('107 设备未建档诚实', (await p.locator('#zpDevices .zp-body').innerText()).includes('未建设备档案'), 'true');
 T('107 环境仍有点位', await p.locator('#zpEnv .zp-row').count(), 1);
-await p.selectOption('#zoneSel','101'); await p.waitForTimeout(2500);
+await gotoZone(p, '101'); await p.waitForTimeout(2500);
 T('101 只出环境数据块（画像：接待大厅不需要任务/告警/设备）', await p.locator('#zonePanel section:not([hidden])').count(), 1);
 /* 101 的点位是光照/人体，不能拿"温湿度"当判据——按行数与头部计数验 */
 out.push(((await p.locator('#zpEnv .zp-row').count())>0?'✅':'❌')+' 101 环境数据块有真实点位行: '+await p.locator('#zpEnv .zp-row').count()+' 行 · '+await p.locator('#zpEnv em').first().innerText());
@@ -57,6 +57,6 @@ await p.keyboard.press('1'); await p.waitForTimeout(2000);
 T('回总览面板收起', await p.locator('#zonePanel').isVisible(), 'false');
 T('总览底栏仍在', await p.locator('#taskStrip').isVisible(), 'true');
 await p.keyboard.press('2'); await p.waitForTimeout(3000); await p.screenshot({path:'/tmp/twin-qa/shot-zonepanel-106.png'});
-await p.selectOption('#zoneSel','101'); await p.waitForTimeout(2000); await p.screenshot({path:'/tmp/twin-qa/shot-zonepanel-101.png'});
+await gotoZone(p, '101'); await p.waitForTimeout(2000); await p.screenshot({path:'/tmp/twin-qa/shot-zonepanel-101.png'});
 console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,8).join('\n'));
 await b.close();

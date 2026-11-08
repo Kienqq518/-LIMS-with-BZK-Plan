@@ -9,7 +9,7 @@
  *  ⑦ 数字等宽（tabular-nums），滚动刷新时不跳字
  */
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
 const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期望 ${e})`);
 const ok=(c,m)=>out.push((c?'✅':'❌')+' '+m);
@@ -25,7 +25,7 @@ const f=p.frames().find(x=>/tour-space-v3-1/.test(x.url()));
 const glass=await p.evaluate(()=>{const g=s=>{const e=document.querySelector(s);if(!e)return null;const c=getComputedStyle(e);
   return [c.backgroundColor,c.backdropFilter,c.borderTopWidth+' '+c.borderTopColor,c.borderTopLeftRadius,c.boxShadow!== 'none'].join('|');};
   return {rail:g('.rail'),stream:g('.stream'),zone:g('.zonepanel'),dk:g('.dk')};});
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(2600);
+await gotoZone(p, '106'); await p.waitForTimeout(2600);
 const glass2=await p.evaluate(()=>{const g=s=>{const e=document.querySelector(s);if(!e)return null;const c=getComputedStyle(e);
   return [c.backgroundColor,c.backdropFilter,c.borderTopWidth+' '+c.borderTopColor,c.borderTopLeftRadius,c.boxShadow!=='none'].join('|');};
   return {rail:g('.rail'),stream:g('.stream'),zone:g('.zonepanel'),dk:g('.dk')};});

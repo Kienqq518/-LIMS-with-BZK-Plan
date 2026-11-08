@@ -8,7 +8,7 @@
  *  ⑤ 区域视图的告警块同样平铺（两套分区模型并存的坑已拆掉）。
  */
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
 const ok=(c,m)=>out.push((c?'✅':'❌')+' '+m);
 const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期望 ${e})`);
@@ -55,7 +55,7 @@ out.push((card&&!/Grade/.test(card)?'✅':'❌')+' 点行出详情卡且卡内�
 await p.keyboard.press('Escape'); await p.waitForTimeout(600);
 
 /* 区域视图同样平铺 */
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(4200);
+await gotoZone(p, '106'); await p.waitForTimeout(4200);
 T('区域视图告警块也无分区（.zsec 数）', await p.locator('.zsec').count(), 0);
 const zrows=await p.evaluate(()=>[...document.querySelectorAll('#zpAlarms .zp-row')].map(r=>({g:r.dataset.grade,badge:(r.querySelector('.gd')||{}).innerText})));
 out.push((zrows.length>0&&zrows.every(r=>r.badge===r.g)?'✅':'❌')+' 区域告警行同样带等级徽标: '+zrows.length+' 行');

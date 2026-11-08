@@ -6,7 +6,7 @@
  *  ④ 顶栏不再出现 S1/S2/S3 这类编号前缀；S3 告警回溯按既定范围决定保持缺席
  */
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
 const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期望 ${e})`);
 const b=await chromium.launch({channel:'chrome'});
@@ -27,6 +27,9 @@ const st=await p.evaluate(()=>{
     brandSpanShown:(document.querySelector('.brand span')?cs('.brand span').display:'absent'),
     logo:R('.brand img'), logoAlt:(document.querySelector('.brand img')||{}).alt,
     zone:R('.zsel'), zoneSelBg:cs('#zoneSel').backgroundColor, zoneSelBorder:cs('#zoneSel').borderTopWidth,
+    /* 两段式控件（任务20）：组件1 两颗层级按钮的矩形 + 组件2 是否隐藏 */
+    lv:R('.lv[data-level="overview"]'), lv2:R('.lv[data-level="zone"]'),
+    roomHidden:!!document.getElementById('roomWrap').hidden,
     mode:(document.querySelector('.mode')||{}).innerText,
     titleBox:R('.title'), acts:R('.acts'), clock:R('.clock'),
     clockBg:cs('.clock').backgroundColor, clockBorder:cs('.clock').borderTopWidth,
@@ -43,7 +46,12 @@ out.push(((st.brandSpanShown==='none'||st.brandSpanShown==='absent')&&!st.topbar
 out.push(((st.logoAlt==='应敏科技')&&!!st.logo&&st.logo.x<120?'✅':'❌')+(' logo 在左上角: alt='+st.logoAlt+' x='+st.logo.x+'（<120）'));
 out.push((st.zone&&st.titleBox&&st.zone.r<=st.titleBox.x?'✅':'❌')+` 区域切换在标题左侧（区域右缘 ${st.zone&&st.zone.r} ≤ 标题左缘 ${st.titleBox&&st.titleBox.x}）`);
 out.push((st.acts.x>st.titleBox.r?'✅':'❌')+` 动作 icon 组在标题右侧（${st.titleBox.r} → ${st.acts.x}）`);
-out.push((st.logo.r<=st.zone.x?'✅':'❌')+` 顺序＝logo → 区域 → 总览 → 标题：logo右${st.logo.r} / 区域左${st.zone.x}`);
+/* 两段式控件（任务20）：组件1 是「实验室总览 / 区域」两颗层级按钮，组件2「区域房间」只在选区域时出现。
+   总览态下 .zsel 是 hidden，拿它的 rect 会量到 0,0——上一版就是这么误判成"区域跑到 logo 左边"。
+   顺序断言因此改在**层级按钮**上，并另外验一次"组件2 默认隐藏、切区域后出现"。 */
+out.push((st.logo.r<=st.lv.x&&st.lv.x<st.lv2.x&&st.lv2.r<=st.titleBox.x?'✅':'❌')
+  +` 顺序＝logo → 实验室总览 → 区域 → 标题：logo右${st.logo.r} / 层级组${st.lv.x}→${st.lv2.r} / 标题左${st.titleBox.x}`);
+out.push((st.roomHidden===true?'✅':'❌')+` 总览态下组件2（区域房间）默认隐藏: hidden=${st.roomHidden}`);
 out.push((!/S[123]/.test(st.mode)&&!/S[123]/.test(st.topbarText)?'✅':'❌')+' 顶栏没有任何 S1/S2/S3 编号前缀: '+st.topbarText.slice(0,64));
 out.push((st.topbarText.indexOf('告警回溯')<0?'✅':'❌')+' S3 告警回溯仍不在屏上（按 2026-11-06 范围决定，未复活）');
 out.push(((st.clockBg==='rgba(0, 0, 0, 0)'||st.clockBg==='transparent')&&st.clockBorder==='0px'?'✅':'❌')+` 时钟也去掉胶囊框，只做悬浮文字：bg=${st.clockBg} border=${st.clockBorder}`);
@@ -65,7 +73,7 @@ await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(800);
 const l2=await licOn();
 out.push(((l0===false&&l1===true&&l2===false&&a1==='true')?'✅':'❌')
   +` 悬浮化后 icon 仍可点：场地标签默认关→点开→再点关（aria-pressed 跟着走，实测 ${l0}/${l1}/${l2} pressed=${a1}）`);
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(2600);
+await gotoZone(p, '106'); await p.waitForTimeout(2600);
 out.push(((await p.evaluate(()=>new URLSearchParams(location.search).get('mode')))==='ZONE'?'✅':'❌')+' 悬浮化后区域切换仍下钻');
 await p.click('.mode[data-mode=S1]'); await p.waitForTimeout(2200);
 out.push(((await p.evaluate(()=>new URLSearchParams(location.search).get('mode')))==='S1'?'✅':'❌')+' 「实验室总览」文字按钮仍回总览');

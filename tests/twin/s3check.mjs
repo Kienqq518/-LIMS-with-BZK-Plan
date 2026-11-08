@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
 const b=await chromium.launch({channel:'chrome'});
 const p=await b.newPage({viewport:{width:1920,height:1080},reducedMotion:'no-preference'});
@@ -11,7 +11,9 @@ const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期�
 T('S3 按钮已移除', await p.locator('[data-mode=S3]').count(), 0);
 T('回溯抽屉已移除', await p.locator('#s3Drawer').count(), 0);
 T('回溯按钮已移除', await p.locator('[data-trace]').count(), 0);
-T('顶栏只剩两个叙事入口', await p.locator('.modes .mode').count(), 1);
+/* FR-60 顶栏两段式：组件1 就是「实验室总览 / 区域」两颗层级按钮（S3 告警回溯入口仍然不许回来）。
+   原来期望 1 颗，是因为那时"区域"是下拉、只有总览一颗按钮。 */
+T('顶栏层级按钮数（总览 / 区域，无 S3 入口）', await p.locator('.topbar .mode.lv').count(), 2);
 out.push(((await p.locator('.modes').innerText()).includes('告警回溯')?'❌':'✅')+' 顶栏无「告警回溯」字样: '+p.locator('.modes').innerText());
 T('装载链无被吞异常', await p.evaluate(()=>document.getElementById('freshTxt').textContent), '');
 T('告警流行数（13 条 ×2 无缝复制）', await p.locator('#streamTrack .st-row').count(), 26);
@@ -35,7 +37,7 @@ T('点告警行出详情面板', await p.locator('#detail').isVisible(), 'true')
 const dt=(await p.locator('#detailBody').innerText()).replace(/\s+/g,' ');
 out.push((/闭环状态/.test(dt)&&/派至/.test(dt)&&/来源系统/.test(dt)&&/MVP 只呈现当前告警/.test(dt)?'✅':'❌')+' 告警详情内容: '+dt.slice(0,120));
 // 区域面板告警块的「详情」按钮可用
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(2500);
+await gotoZone(p, '106'); await p.waitForTimeout(2500);
 await p.locator('#zpAlarms .zp-row[data-alarm]').first().click(); await p.waitForTimeout(1200);   /* 区域面板的告警行本身可点（无滚动动画，不会被相邻元素遮挡） */
 out.push(((await p.locator('#detail').isVisible())?'✅':'❌')+' 区域面板告警「详情」可点: '+await p.locator('#detailBody h3').innerText());
 // 遥控序列不再包含 S3

@@ -6,7 +6,7 @@
  *  ④ 所有浮层之间必须有间距，不许重叠（历史上 dock left:180 与左栏 238 重叠 58px）
  */
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
 const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期望 ${e})`);
 const b=await chromium.launch({channel:'chrome'});
@@ -43,7 +43,7 @@ const inner=await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].map
 out.push((inner[1]-inner[0]>0&&inner.every((x,i)=>i===0||x>inner[i-1])?'✅':'❌')+' 底栏四块之间也有间距: 起点 '+JSON.stringify(inner));
 
 // ① 106 下钻
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(3200);
+await gotoZone(p, '106'); await p.waitForTimeout(3200);
 r=await rects();
 out.push((!noOverlap(r)?'✅':'❌')+' 106 下钻后浮层仍互不重叠: '+noOverlap(r));
 out.push(((r.dock&&r.dock!=='hidden')?'✅':'❌')+' 106 下钻后底栏仍在（任务队列继续走）: '+JSON.stringify(r.dock));
@@ -76,7 +76,7 @@ const CASES={
   '107':{blocks:['设备','环境数据','检测项目数统计','告警'],rail:false,dock:false},
 };
 for(const z of Object.keys(CASES)){
-  await p.selectOption('#zoneSel',z); await p.waitForTimeout(3000);
+  await gotoZone(p,z); await p.waitForTimeout(3000);
   const rr=await rects(); const c=CASES[z];
   out.push(((rr.rail==='hidden')===!c.rail?'✅':'❌')+` ${z} 左栏${c.rail?'保留':'隐藏'}（非 106 只看右侧面板）`);
   out.push(((rr.dock==='hidden')===!c.dock?'✅':'❌')+` ${z} 底栏${c.dock?'保留':'隐藏'}`);
@@ -102,7 +102,7 @@ for(const z of Object.keys(CASES)){
   }
 }
 // ⑤ 周期切换器必须随左栏交接：左栏在→用左栏那组；左栏隐藏但该房间有按周期变的统计→面板这组顶上
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(2800);
+await gotoZone(p, '106'); await p.waitForTimeout(2800);
 /* 106 的左栏在，但「运行指标」面板已按 2026-11-07 反馈撤掉（与右侧区域面板同源重复）——
    `.rail>.period` 只是 display:none，仍在 DOM 里。周期切换器必须搬进面板，
    否则 106 的任务统计（按本日/本月/本年变）就没有任何入口能切。 */
@@ -115,7 +115,7 @@ await p.locator('[data-period=month]:visible').first().click(); await p.waitForT
 const stMon = await p.evaluate(() => document.querySelector('#zpStats .zp-grid').innerText.replace(/\s+/g, ' ').trim());
 await p.locator('[data-period=day]:visible').first().click(); await p.waitForTimeout(1200);
 out.push((stDay !== stMon ? '✅' : '❌') + ` 面板这组切换器真能驱动 106 任务统计: 本日「${stDay.slice(0, 34)}」→ 本月「${stMon.slice(0, 34)}」`);
-await p.selectOption('#zoneSel','107'); await p.waitForTimeout(2800);
+await gotoZone(p, '107'); await p.waitForTimeout(2800);
 const pp=await p.evaluate(()=>{const e=document.getElementById('zpPeriod');
   return {hidden:e.hidden, btns:e.querySelectorAll('.seg').length, active:(e.querySelector('.seg.active')||{}).dataset};});
 out.push((!pp.hidden&&pp.btns===3?'✅':'❌')+' 107（左栏隐藏）周期切换器出现在面板头部: hidden='+pp.hidden+' 按钮 '+pp.btns+' 个');
@@ -125,14 +125,14 @@ const g2=await p.evaluate(()=>({grid:document.querySelector('#zpTestItems .zp-gr
   per:document.getElementById('zpTestItemsPeriod').innerText, url:new URLSearchParams(location.search).get('period')}));
 out.push((g1!==g2.grid&&g2.per==='本年'&&g2.url==='year'?'✅':'❌')+' 面板里的周期切换真的换数并写进 URL: '+g1.slice(0,26)+' → '+g2.grid.slice(0,26));
 await p.locator('#zpPeriod [data-period=day]').click(); await p.waitForTimeout(1000);
-await p.selectOption('#zoneSel','101'); await p.waitForTimeout(2600);
+await gotoZone(p, '101'); await p.waitForTimeout(2600);
 out.push(((await p.evaluate(()=>document.getElementById('zpPeriod').hidden))?'✅':'❌')+' 101（无按周期变的块）周期切换器不出现');
 
 // 画像来自数据而非写死：改 seed 里的 blocks 应立刻反映（用 API 校验一致性）
 const prof=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/zones');
   return r.data.map(z=>z.zoneId+':'+(z.viewProfile?z.viewProfile.blocks.join('+'):'none')).join(' | ');});
 out.push((prof.indexOf('Z-101:env')>=0&&prof.indexOf('Z-102:devices+samples+env+alarms')>=0?'✅':'❌')+' 画像是数据（seed.overview.zones[].viewProfile）: '+prof.slice(0,120));
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(3000);
+await gotoZone(p, '106'); await p.waitForTimeout(3000);
 await p.screenshot({path:'/tmp/twin-qa/zoneview-106.png'});
 await p.keyboard.press('1'); await p.waitForTimeout(3000); await p.screenshot({path:'/tmp/twin-qa/zoneview-s1.png'});
 console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,5).join('\n'));

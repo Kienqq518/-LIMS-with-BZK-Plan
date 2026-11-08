@@ -13,7 +13,7 @@
  * 用法：node tests/twin/focuscheck.mjs [房间号...]      FOCUS_LIMIT=n 每房间最多验 n 台（默认全部）
  */
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out = [], err = [];
 const b = await chromium.launch({ channel: 'chrome' });
 const p = await b.newPage({ viewport: { width: 1920, height: 1080 }, reducedMotion: 'no-preference' });
@@ -139,7 +139,7 @@ const modeledMap = await ev(() => { const el = document.getElementById('visual-a
   const j = JSON.parse(el.textContent); const m = {}; (j.entries || []).forEach(e => { m[e.id] = !!e.modeled; }); return m; });
 let nTest = 0, nAll = 0, nEvent = 0, nDot = 0, dotBlocked = 0, hijack = 0, nUnmodeled = 0, unclickable = [], badHint = [], dotMiss = [], camMoved = [], cardFar = [];
 for (const room of ROOMS) {
-  await p.selectOption('#zoneSel', room).catch(() => {});
+  await gotoZone(p, room).catch(() => {});
   await p.waitForTimeout(2300);
   const ids = await ev(r => [...window.visual106.modelRoots.keys()].filter(k => k.startsWith(r + '-')), room);
   const list = LIMIT ? ids.slice(0, LIMIT) : ids; nAll += list.length;

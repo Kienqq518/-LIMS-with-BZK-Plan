@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
 const b=await chromium.launch({channel:'chrome'});
 const p=await b.newPage({viewport:{width:1920,height:1080}});
@@ -29,7 +29,7 @@ await p.click('#stripBtn'); await p.waitForTimeout(1200);
 const e2=await snap();
 out.push((e2.table?'✅':'❌')+' 再点恢复: '+JSON.stringify(e2));
 // 区域视图下机器人条本就归面板管
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(2000);
+await gotoZone(p, '106'); await p.waitForTimeout(2000);
 const f=await snap();
 out.push(((await p.locator('#zonePanel [data-robot]').count())>=2?'✅':'❌')+' 区域视图机器人信息在面板「设备」块内: '+JSON.stringify(f));
 await p.screenshot({path:'/tmp/twin-qa/collapse.png'});

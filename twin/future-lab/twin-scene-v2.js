@@ -8,7 +8,7 @@
 (function () {
   var $ = function (s) { return document.querySelector(s); };
   var scene = $('#scene');
-  var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [], planItems = [], queueData = null, safety = null, scSig = '';
+  var status = null, devices = [], robots = [], alarms = [], tasks = [], samples = [], zones = [], dispatchTasks = [], routeNote = '', walls = [], planItems = [], queueData = null, safety = null, scSig = '', labDevices = [], labMeta = null;
   var rtTimer = null, detailDev = null, bridgeReady = false, pendingState = null;
   var thSeries = null, thLoading = false, chartsBooted = false;
   var dqSig = '', zstats = null, zrunning = [], zalarms = [], envNodes = [], zpSig = { dev: '', env: '', run: '', ab: '' }, sceneReady = false, routeAudit = null, cycleDef = null, cycTimer = null;
@@ -21,7 +21,10 @@
   function secIds() { return (Array.isArray(SECTIONS) && SECTIONS.length ? SECTIONS : [{ id: 'A' }, { id: 'B' }, { id: 'C' }]).map(function (x) { return x.id; }); }   /* 仍供分级柱的轴标签用：等级标题来自 /api/overview/alarm-sections */
   /* 图层默认：路径开、场地标签关、热力关（产品负责人 2026-11-07：初始化时场地标签默认不开启）。
      房间名在区域面板与顶栏「区域」下拉里都有，三维里飘十个标签反而压住设备；要看得点顶栏「场地标签」。 */
-  var st = readURL() || { mode: 'S1', zone: '106', period: 'day', layers: { path: 1, labels: 0, heatmap: 0 }, streamFilter: 'all', quality: 'high', strip: 0 };
+  /* zone 初值改为 null：选中「区域」不等于已经选了房间，默认不选中任何房间（产品负责人 2026-11-08）。
+     level 是组件1 的状态（overview / zone），mode 是三维真实视图——两者可以不一致：
+     只点了「区域」还没挑房间时，level=zone 而 mode 仍是 S1（画面不跳）。 */
+  var st = readURL() || { mode: 'S1', level: 'overview', zone: null, period: 'day', layers: { path: 1, labels: 0, heatmap: 0 }, streamFilter: 'all', quality: 'high', strip: 0 };
 
   function sendScene(type, data) { if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'twin-v2', type: type }, data), location.origin); }
   var pendingView = null;
@@ -37,6 +40,7 @@
     var lay = {}; (p.get('layers') || '').split(',').forEach(function (k) { if (k) lay[k] = 1; });
     return { mode: p.get('mode'), zone: p.get('zone') || '106', period: p.get('period') || 'day',
       layers: { path: lay.path == null ? 1 : lay.path, labels: lay.labels == null ? 0 : lay.labels, heatmap: lay.heatmap ? 1 : 0 },
+      level: p.get('level') || (p.get('mode') === 'ZONE' ? 'zone' : 'overview'),
       streamFilter: p.get('sf') === 'open' ? 'open' : 'all', quality: p.get('quality') || 'high', strip: p.get('strip') ? 1 : 0 };
   }
   function writeURL() {
@@ -66,6 +70,7 @@
       TwinApi.get('/api/zone/106/samples'), TwinApi.get('/api/zone/106/dispatch-tasks'),
       TwinApi.get('/api/zone/103/devices'), TwinApi.get('/api/zone/106/cycle'), TwinApi.get('/api/zone/106/walls'),
       TwinApi.get('/api/overview/test-item-plan'), TwinApi.get('/api/overview/alarm-sections'),
+      TwinApi.get('/api/overview/devices'),
       TwinApi.get('/api/overview/dispatch-queue'), TwinApi.get('/api/overview/safety-scenes')
     ]);
   }).then(function (r) {
@@ -76,7 +81,10 @@
     walls = (r[10] && r[10].data) || [];
     planItems = (r[11] && r[11].data && r[11].data.items) || [];
     setSections(r[12] && r[12].data);   /* A/B/C 分区口径来自数据，不在 JS 里写死（FR-24 第 4 条） */
-    queueData = r[13] && r[13].data || null; safety = r[14] && r[14].data || null;   /* 底栏块2 调度任务 / 块1 安全管家场景 */
+    /* ⚠ 这批下标是位置敏感的：装载数组里插入 /api/overview/devices 之后，调度队列与场景块整体后移一位。
+       以前 r[13]/r[14] 就是它俩，现在必须跟着走——写错不会报错，只会让底栏两块静默空掉。 */
+    labMeta = r[13] && r[13].data || null; labDevices = (r[13] && r[13].data && r[13].data.devices) || [];
+    queueData = r[14] && r[14].data || null; safety = r[15] && r[15].data || null;   /* 底栏块2 调度任务 / 块1 安全管家场景 */
     /* 讲解顺序（决策 Q1 售前投影）：总览 → 106 无人化区（主叙事）→ 其余区域 */
     ORDER = ['S1', 'Z106'].concat(zones.map(function (z) { return 'Z' + z.zoneId.slice(2); }).filter(function (z) { return z !== 'Z106'; }));   /* 讲解序列不再包含告警回溯屏 */
     if (r[9] && r[9].data && r[9].data.cycle) { cycleDef = r[9].data.cycle; if (!cycTimer) cycTimer = setInterval(tickCycle, 1000); tickCycle(); }
@@ -464,7 +472,7 @@
     return '—';
   }
 
-  function ST_CN(x) { return { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常' }[x] || x; }
+  function ST_CN(x) { return { working: '运行', ready: '就绪', standby: '待机', stopped: '停机', alarm: '异常' }[x] || x; }
   function ST_AB(x) { return { active: '未解除', dispatched: '已派发', resolved: '已解除' }[x] || x; }
   function NODE_CN(t) { return { temperature: '温湿度', smoke: '烟感', gas: '气体', water: '水浸', motion: '人体', switch: '开关量', camera: '视觉', light: '照明' }[t] || t; }
 
@@ -528,7 +536,7 @@
         if (tm) tm.textContent = (t.shown === 'running' && t.elapsedMin) ? ('已 ' + t.elapsedMin + '/' + t.plannedMin + 'min') : (t.time || '—');
       });
     });
-    var cnt = $('#dkQueueCnt'); if (cnt) cnt.textContent = '流程配置 ' + qt.length + ' 条 · 循环同步' + (queueData && queueData.liveStep && queueData.liveStep.flowCode ? '：' + queueData.liveStep.flowCode : (queueData && queueData.liveStep && queueData.liveStep.kind === 'pickup' ? '：样品室取样' : ''));
+    queueAria(qt);
     (envNodes || []).forEach(function (n) {
       document.querySelectorAll('#dkNodesTrack .nd-row[data-node="' + n.id + '"]').forEach(function (el) {
         var rd = el.querySelector('.rd'), ti = el.querySelectorAll('.ti')[1];
@@ -543,26 +551,34 @@
     return v || '#2878FF';
   }
   function renderDockStats() {
+    /* 建档合计的唯一真相 = /api/overview/devices（全场功能设备 32 台，逐台可对）。
+       原来这里用 devices（=106 接口 + 103 接口相加=11 台）当全场，那是"接口给了哪两个区"，
+       不是"场里有几台设备"——产品负责人一句"你怎么写建档才 11 台"戳穿的就是这个。 */
+    var pool = labDevices.length ? labDevices : devices;
     var cnt = { working: 0, ready: 0, standby: 0, stopped: 0, alarm: 0 };
-    devices.forEach(function (d) { cnt[d.status] = (cnt[d.status] || 0) + 1; });
-    var total = devices.length;   /* 稼动率不再单列一行：它就是「运行中」那档的台数与占比 */
-    var el = $('#dkDevSrc'); if (el) el.textContent = devices.length + ' 台建档';   /* 「数采」这个来源词按 2026-11-07 圈图撤掉，台数是内容不是装饰 */
+    pool.forEach(function (d) { cnt[d.status] = (cnt[d.status] || 0) + 1; });
+    var total = pool.length;   /* 稼动率不再单列一行：它就是「运行」那档的台数与占比 */
+    var el = $('#dkDevSrc'); if (el) el.textContent = total + ' 台建档';   /* 台数是内容不是装饰；来源词按 2026-11-07 圈图撤掉 */
     var body = $('#dkDevBody'); if (!body) return;
-    /* 块1 改「设备运行状态」圆环（2026-11-07 参考图一）：四档 = 运行中/待机/停机/异常。
-       产品要求去掉「就绪」，但就绪的台数必须有家——否则四档相加 != 设备总数，圆环就是假图。
-       所以把「就绪」折进语义最近的「待机」，折了几台写在该行 title 里，不藏口径。
-       「停止」按现场叫法改成「停机」。 */
     /* 颜色一律读状态 token（FR-35：一个语义一个色，屏上任何角落不许漂移）——
        圆环、图例色点、三维状态光点、台账状态标签因此是同一族值，不是四份抄来的 hex。 */
+    /* 五档（2026-11-08 产品负责人定色）：运行蓝 / 就绪绿 / 异常红 / 待机浅灰 / 停机深灰。
+       上一轮把「就绪」折进「待机」只是为了凑"四档相加=总数"；现在五档各自有家，
+       折档说明与 title 里的辩护一并撤除——口径不需要解释就是好口径。 */
+    function listOf(st) {
+      return pool.filter(function (d) { return d.status === st; })
+        .map(function (d) { return { code: d.code, name: d.name, subZone: d.subZone, model: d.model || null, type: d.type }; });
+    }
     var buckets = [
-      { k: '运行中', v: cnt.working, c: TOK('--tw-st-working'), note: '在测设备台数' },
-      { k: '待机', v: cnt.standby + cnt.ready, c: TOK('--tw-st-idle'), note: '待机 + 就绪（就绪 ' + cnt.ready + ' 台折进本档，保证四档相加=总数）' },
-      { k: '停机', v: cnt.stopped, c: TOK('--tw-st-done'), note: '停机（原口径名「停止」）' },
-      { k: '异常', v: cnt.alarm, c: TOK('--tw-st-alarm'), note: '异常告警中的设备' }
+      { k: '运行', v: cnt.working, c: TOK('--tw-st-working'), list: listOf('working') },
+      { k: '就绪', v: cnt.ready, c: TOK('--tw-st-ready'), list: listOf('ready') },
+      { k: '异常', v: cnt.alarm, c: TOK('--tw-st-alarm'), list: listOf('alarm') },
+      { k: '待机', v: cnt.standby, c: TOK('--tw-st-standby'), list: listOf('standby') },
+      { k: '停机', v: cnt.stopped, c: TOK('--tw-st-stopped'), list: listOf('stopped') }
     ];
     body.innerHTML = '<div class="dk-legend">' + buckets.map(function (x) {
       var pc = total ? Math.round(x.v / total * 100) : 0;
-      return '<div class="dk-lg' + (x.v ? '' : ' zero') + '" title="' + escapeHtml(x.k + ' ' + x.v + ' 台（' + pc + '%）· ' + x.note) + '">' +
+      return '<div class="dk-lg' + (x.v ? '' : ' zero') + '" title="' + escapeHtml(x.k + ' ' + x.v + ' 台（' + pc + '%）· ' + (x.list.map(function (y) { return y.code; }).join('、') || '无')) + '">' +
         '<i style="background:' + x.c + '"></i><span class="nm">' + x.k + '</span>' +
         '<b class="vv">' + x.v + '</b><span class="pc">' + pc + '%</span></div>';
     }).join('') + '</div>';
@@ -570,10 +586,49 @@
     renderAgv();
     /* 圆环只画非零档，中心数字是建档合计；精确数与占比走上面的 HTML 图例
        （字更清晰、可选中、可读屏，而且等轴挤出的扁洞里放不下两行字） */
-    TwinCharts.donut($('#chartDevices'), 'devices', buckets.map(function (x) { return { k: x.k, v: x.v, c: x.c }; }),
+    TwinCharts.donut($('#chartDevices'), 'devices', buckets.map(function (x) { return { k: x.k, v: x.v, c: x.c, list: x.list }; }),
       /* 环放大（rx .32→.355）、带子收薄（inner .6→.58）、挤出减浅（depth .16→.105）、档间留 5° 缝。
          产品负责人嫌原来「一坨蓝」，这几项合起来才读得出这是四档分布而不是一个蓝色圆盘。 */
       { height: 96, legend: false, cx: .5, cy: .52, rx: .355, flat: .86, inner: .58, depth: .105, padDeg: 5, cap: '台建档' });
+    bindRingTip();
+  }
+  /* 环形图 hover（产品负责人：hover 到对应颜色环上应展示该档设备的名称/区域/编号/型号）。
+     命中判定不猜几何——直接读指针下那一个像素的颜色，与各档的顶/前/侧三条色带比距离：
+     换环径、换挤出深度、换 DPR 都不会失准（用角度反算就得跟着 ringFaces 的参数一起维护）。
+     卡片跟随鼠标，与设备信息气泡同一套交互（不牵动相机，FR-40 的既定口径）。 */
+  function bindRingTip() {
+    var wrap = $('#chartDevices'); if (!wrap || wrap.__tipBound) return; wrap.__tipBound = true;
+    var tip = document.createElement('div'); tip.className = 'ring-tip'; tip.hidden = true; tip.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(tip);
+    function segAt(ev) {
+      var segs = wrap.__ring; if (!segs || !segs.length) return null;
+      var cv = wrap.querySelector('canvas'); if (!cv || !cv.width) return null;
+      var r = cv.getBoundingClientRect(); if (r.width < 10 || r.height < 10) return null;
+      var x = Math.round((ev.clientX - r.left) * (cv.width / r.width)), y = Math.round((ev.clientY - r.top) * (cv.height / r.height));
+      if (x < 0 || y < 0 || x >= cv.width || y >= cv.height) return null;
+      var d; try { d = cv.getContext('2d').getImageData(x, y, 1, 1).data; } catch (e) { return null; }
+      if (d[3] < 120) return null;
+      var best = null, bd = 1e9;
+      segs.forEach(function (s) { s.colors.forEach(function (c) {
+        var dd = Math.abs(d[0] - c[0]) + Math.abs(d[1] - c[1]) + Math.abs(d[2] - c[2]);
+        if (dd < bd) { bd = dd; best = s; } }); });
+      return bd <= 60 ? best : null;
+    }
+    wrap.addEventListener('pointermove', function (ev) {
+      var s = segAt(ev);
+      if (!s) { tip.hidden = true; return; }
+      var rows = s.list.slice(0, 8).map(function (x) {
+        return '<div class="rt-i"><b>' + escapeHtml(x.code) + '</b><span>' + escapeHtml(x.name) +
+          '<em>' + escapeHtml(x.subZone || '') + (x.model ? ' · ' + escapeHtml(x.model) : '') + '</em></span></div>';
+      }).join('');
+      tip.innerHTML = '<div class="rt-h"><i style="background:' + s.c + '"></i>' + escapeHtml(s.k) + ' ' + s.v + ' 台 · ' + s.pc + '%</div>'
+        + rows + (s.list.length > 8 ? '<div class="rt-m">…共 ' + s.list.length + ' 台，完整清单见设备台账</div>' : '');
+      tip.hidden = false;
+      var w = tip.offsetWidth || 212, h = tip.offsetHeight || 120;
+      tip.style.left = Math.min(window.innerWidth - w - 12, ev.clientX + 14) + 'px';
+      tip.style.top = Math.min(window.innerHeight - h - 12, Math.max(12, ev.clientY - 10)) + 'px';
+    });
+    wrap.addEventListener('pointerleave', function () { tip.hidden = true; });
   }
   /* AGV 机器人块（2026-11-08）：每台一行——编号 / 状态 + 正在办的任务 / 电量条 + 百分比。
      电量与状态全部来自调度心跳里的 robots（seed 有 battery，mock 每 tick 掉电/回充，低电自己回桩），
@@ -620,7 +675,7 @@
      状态来自 mock 现算（未闭环告警归属 / 点位阈值），行内把"为什么是红的"的条数一起带出来，
      屏上可自证；点位没补齐的场景（如工器具微动开关）标 pending，不谎称已在跑。 */
   function renderScenes() {
-    var el = $('#dkScenesTrack'); if (!el) return;
+    var el = $('#dkScenesGrid'); if (!el) return;
     var list = (safety && safety.scenes) || [];
     /* 场景状态 = 两半事实拼起来：所在房间未闭环告警（mock 给）+ 所辖点位当前读数越限（宿主 envNodes 给，
        与右列组态物联、场景节点层同一份读数，不另建第二套真相）。阈值取场景方案文档里的规则原值：
@@ -645,21 +700,27 @@
     var sig = list.map(function (x) { return x.sceneId + ':' + x.status + ':' + x.openAlarms + ':' + (x.breach || []).join('/'); }).join(',');
     if (sig && sig === scSig) return;          /* 内容没变就不重建轨道（重建会把无缝滚动弹回顶部，见 FR-30b） */
     scSig = sig;
+    document.body.dataset.sceneCount = String(list.length);
     var html = list.map(function (x) {
-      var icons = (x.nodes || []).map(function (n) { return nodeIcon(n.type); }).join('');
+      /* 没有点位就直说"待布点"，不去借别的房间的节点凑一张 icon 串——
+         场景已配置但点位没到位，本身就是现场要推进的事，屏上藏起来等于替现场撒了谎。 */
+      var icons = (x.nodes || []).length
+        ? (x.nodes || []).map(function (n) { return nodeIcon(n.type); }).join('')
+        : '<span class="pend">待布点</span>';
       var aria = x.sceneId + ' ' + x.name + '，' + x.tag + '，' + x.statusLabel
         + (x.openAlarms ? '（本区未闭环告警 ' + x.openAlarms + ' 条）' : '')
         + ((x.breach || []).length ? '（越限：' + x.breach.join('、') + '）' : '')
-        + '，位于 ' + x.roomId + ' 区，节点 ' + (x.nodes || []).map(function (n) { return NODE_CN(n.type); }).join('/')
+        + '，位于 ' + x.roomId + ' 区，节点 ' + ((x.nodes || []).length ? (x.nodes || []).map(function (n) { return NODE_CN(n.type); }).join('/') : '待布点')
         + '，核心规则 ' + x.rule + (x.pending ? '。' + x.pending : '');
-      return '<div class="sc-row' + (x.pending ? ' pending' : '') + ' ' + x.status + '" data-scene="' + x.sceneId + '"'
+      return '<div class="sc-row' + (x.pending ? ' pending' : '') + ' ' + x.status + '" role="listitem" data-scene="' + x.sceneId + '"'
         + ' data-room="' + x.roomId + '" data-nodes="' + escapeHtml((x.nodes || []).map(function (n) { return n.id; }).join(',')) + '"'
-        + ' tabindex="0" role="button" aria-label="' + escapeHtml(aria) + '">'
-        + '<span class="nm">' + escapeHtml(x.name) + '<span class="tag">' + escapeHtml(x.tag) + '</span></span>'
-        + '<span class="nodes">' + icons + '<span class="rm">' + x.roomId + '</span></span>'
-        + '<span class="st ' + x.status + '"><i></i>' + escapeHtml(x.statusLabel) + (x.openAlarms ? ' ' + x.openAlarms : '') + '</span></div>';
+        + ' tabindex="0" aria-label="' + escapeHtml(aria) + '">'
+        + '<span class="nm">' + escapeHtml(x.name) + '</span>'
+        + '<span class="meta"><span class="nodes">' + icons + '<span class="rm">' + x.roomId + '</span></span>'
+        + '<span class="st ' + x.status + '"><i></i>' + escapeHtml(x.statusLabel) + (x.openAlarms ? ' ' + x.openAlarms : '') + '</span></span></div>';
     }).join('');
-    dkTrack('#dkScenesTrack', html, list.length);
+    el.innerHTML = html;   /* 固定六格，不再走 dkTrack：没有滚动就没有回声副本，也就没有"同一场景被念两遍"的问题 */
+    keyable(el);
     var c = $('#scCnt');
     if (c) c.textContent = '已部署 ' + list.length + ' 套 · 告警 ' + list.filter(function (x) { return x.status === 'alarm'; }).length
       + ' · 异常 ' + list.filter(function (x) { return x.status === 'abnormal'; }).length;
@@ -674,6 +735,18 @@
     if (first) dockSelectNode(first.id);
     document.body.dataset.lastScene = sceneId;
     flashHint(x.name + '（' + x.roomId + ' 区 · ' + x.statusLabel + '）规则：' + x.rule);
+  }
+
+  /* 「流程配置 N 条 · 循环同步：xxxxx」不再上屏（2026-11-08 圈图），但口径必须还有人能看到：
+     写进块级 aria-label，读屏与 QA 都取得到。函数只此一处，两处心跳路径共用，
+     避免出现"元素删了、写入点还在"那种静默断链。 */
+  function queueAria(qt) {
+    var blk = $('#dkQueue'); if (!blk) return;
+    var live = queueData && queueData.liveStep;
+    var sync = live && live.flowCode ? '，循环同步 ' + live.flowCode
+      : (live && live.kind === 'pickup' ? '，循环同步 样品室取样' : (live && live.kind === 'return' ? '，循环同步 返航' : ''));
+    blk.setAttribute('aria-label', '无人化调度任务：流程配置 ' + (qt ? qt.length : 0) + ' 条' + sync
+      + '，按进行中 / 未派单 / 已完成三列');
   }
 
   function renderDock() {
@@ -694,7 +767,7 @@
           '<span class="tm">' + (g[0] === 'running' && t.elapsedMin ? '已 ' + t.elapsedMin + '/' + t.plannedMin + 'min' : (t.time || '—')) + '</span></div>';
       }).join(''), rows.length);
     });
-    $('#dkQueueCnt').textContent = '流程配置 ' + qt.length + ' 条 · 循环同步' + (queueData && queueData.liveStep && queueData.liveStep.flowCode ? '：' + queueData.liveStep.flowCode : (queueData && queueData.liveStep && queueData.liveStep.kind === 'pickup' ? '：样品室取样' : ''));
+    queueAria(qt);
     dqSig = qt.map(function (t) { return t.seq + ':' + t.shown; }).join(',');   /* 列归属指纹：只有换列才重建 */
 
     /* ③ 安全管家场景监测（2026-11-08 替换原「试验项完成情况」；委托单试验项接口仍在契约里，只是不再上屏——
@@ -921,8 +994,15 @@
   }
 
   function applyAll() {
-    document.querySelectorAll('.mode').forEach(function (b) { b.classList.toggle('active', (st.mode === 'S1' && b.dataset.mode === 'S1') || (st.mode === 'S3' && b.dataset.mode === 'S3')); });
-    if ($('#zoneSel').options.length) $('#zoneSel').value = st.zone;
+    /* 组件1：层级按钮的选中态跟 level 走（不是跟 mode）——只点「区域」没挑房间时，
+       「区域」是亮的而画面仍在总览，这正是产品要的表达：意图已选，跳转待房间确认。
+       组件2：房间下拉只在 level=zone 时出现；没挑房间时值为空占位。 */
+    document.querySelectorAll('.mode.lv').forEach(function (b) {
+      var on = b.dataset.level === st.level;
+      b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var rw = $('#roomWrap'); if (rw) rw.hidden = st.level !== 'zone';
+    if ($('#zoneSel').options.length) $('#zoneSel').value = st.zone || '';
     /* 区域视图=右侧五块面板；浮层（告警卡/机器人卡）与底栏让位，避免同一信息出现两次 */
     $('#zonePanel').hidden = st.mode !== 'ZONE';
     /* 下钻画像（seed.overview.zones[].viewProfile）决定左栏/底栏留不留：
@@ -964,6 +1044,8 @@
   }
 
   function setMode(m, zone) {
+    st.level = (m === 'ZONE' || zone) ? 'zone' : 'overview';   /* 真正下钻了才算选中「区域」层级 */
+    if (m === 'S1') st.zone = null;                            /* 回总览：房间选择复位，下次进「区域」仍是未选中 */
     st.mode = m;
     if (zone && zone !== st.zone) { st.zone = zone; $('#detail').hidden = true; clearInterval(rtTimer); detailDev = null; }  /* 换区域即收起上一区域的详情，避免串区 */
     applyAll(); flashHint();
@@ -1001,10 +1083,11 @@
   }
 
   function buildZoneSelect() {
-    $('#zoneSel').innerHTML = zones.map(function (z) {
+    /* 第一项是空占位：默认不选中任何房间（产品负责人：选中「区域」时第二个组件默认不选中） */
+    $('#zoneSel').innerHTML = '<option value="">选择房间…</option>' + zones.map(function (z) {
       return '<option value="' + z.zoneId.slice(2) + '"' + (z.detailLevel !== 'device' ? ' data-lite="1"' : '') + '>' + z.zoneId.slice(2) + ' ' + escapeHtml(z.name) + (z.alarmState === 'alarm' ? ' ⚠' : '') + '</option>';
     }).join('');
-    $('#zoneSel').value = st.zone;
+    $('#zoneSel').value = st.zone || '';
   }
 
   /* ---------- 键盘可达（2026-11-06 反馈：告警行键盘点不到） ----------
@@ -1032,7 +1115,11 @@
 
   function bindControls() {
     document.querySelectorAll('.mode').forEach(function (b) { b.onclick = function () { setMode(b.dataset.mode); }; });
-    $('#zoneSel').onchange = function () { setMode('ZONE', this.value); };
+    /* 组件2 的语义：空值=还没选房间 → 画面不动（回总览构图），选中任意房间才刷新跳转 */
+    $('#zoneSel').onchange = function () {
+      if (!this.value) { st.level = 'zone'; st.zone = null; setMode('S1'); return; }
+      setMode('ZONE', this.value);
+    };
     document.querySelectorAll('.seg').forEach(function (b) { b.onclick = function () {
       document.querySelectorAll('.seg').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); st.period = b.dataset.period; renderTables(); renderZonePanel(); renderCharts(); writeURL();
     }; });
@@ -1061,7 +1148,7 @@
          改按容器类匹配，列再多也不怕再漏一列。 */
       var q = e.target.closest('.dq3 .dq-row');
       if (q) { dockLocate(q.dataset.cad, q.querySelector('.nm').textContent); return; }
-      var scEl = e.target.closest('#dkScenesTrack .sc-row');
+      var scEl = e.target.closest('#dkScenesGrid .sc-row');
       if (scEl) { dockLocateScene(scEl.dataset.scene); return; }
       var ndTh = e.target.closest('#dkNodesTrack .nd-row');
       if (ndTh) {
@@ -1157,7 +1244,9 @@
 
   /* ---------- 详情与实时 ---------- */
   function deviceHtml(d) {
-    var stMap = { working: ['#2878FF', '在测'], ready: ['#16A34A', '就绪'], standby: ['#94A3B8', '待机'], stopped: ['#64748B', '停止'], alarm: ['#E5484D', '异常'] };
+    /* 状态色不许在这里抄第四份 hex（FR-35：一个语义一个色，屏上任何角落不许漂移）——全部读 token */
+    var stMap = { working: [TOK('--tw-st-working'), '运行'], ready: [TOK('--tw-st-ready'), '就绪'],
+      standby: [TOK('--tw-st-standby'), '待机'], stopped: [TOK('--tw-st-stopped'), '停机'], alarm: [TOK('--tw-st-alarm'), '异常'] };
     var a = stMap[d.status] || stMap.standby;
     return '<h3>' + escapeHtml(d.name) + '</h3><div class="sub">' + d.code + ' · ' + escapeHtml(d.subZone) + ' · ' + d.type + '</div>' +
       '<div class="row"><span>状态</span><b class="st" style="background:' + a[0] + '">' + a[1] + '</b></div>' +

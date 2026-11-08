@@ -117,7 +117,7 @@ const TWIN_TOKEN = (() => {
 window.__twinTokensForQA = TWIN_TOKEN;   /* QA：3D 侧实际吃到的值必须等于 CSS token */
 
 /* ---------- 设备状态视觉分级：克制版 = 顶部小呼吸光点 + 既有描色 ---------- */
-const STATUS_LIGHT = { working: [TWIN_TOKEN.working, 'pulse'], ready: [TWIN_TOKEN.ready, 'static'], standby: [TWIN_TOKEN.idle, 'dim'], stopped: [TWIN_TOKEN.done, 'dim'], alarm: [TWIN_TOKEN.alarm, 'fast'] };
+const STATUS_LIGHT = { working: [TWIN_TOKEN.working, 'pulse'], ready: [TWIN_TOKEN.ready, 'static'], standby: [TWIN_TOKEN.standby, 'dim'], stopped: [TWIN_TOKEN.stopped, 'dim'], alarm: [TWIN_TOKEN.alarm, 'fast'] };
 const statusDots = new Map();
 function ensureDot(devId, status) {
   const mesh = visual.modelRoots.get(devId); if (!mesh) return;
@@ -125,7 +125,9 @@ function ensureDot(devId, status) {
   if (!dot) {
     const box = new THREE.Box3().setFromObject(mesh);
     const mat = new THREE.MeshStandardMaterial({ color: 0x101010, emissive: TWIN_TOKEN.brand, emissiveIntensity: 2.2, roughness: 0.4 });
-    dot = new THREE.Mesh(new THREE.SphereGeometry(0.10, 14, 12), mat);
+    /* 光点半径 0.10→0.155m（2026-11-08 产品负责人第二次提「还是太小了」）：
+       总览构图缩小后 0.10m 只剩 4~5px，几乎看不见；14×12 段数够圆，不额外加面数。 */
+    dot = new THREE.Mesh(new THREE.SphereGeometry(0.155, 16, 12), mat);
     dot.position.set((box.min.x + box.max.x) / 2, box.max.y + 0.18, (box.min.z + box.max.z) / 2);
     visual.detail.add(dot); statusDots.set(devId, dot);
   }
@@ -487,7 +489,7 @@ function applyLayer(name, on) {
 function drawHeatmap() {
   if (!heatGroup) { heatGroup = new THREE.Group(); heatGroup.name = 'twin-v2-heat'; visual.scene.add(heatGroup); }
   heatGroup.visible = true; heatGroup.clear();
-  const COL = { working: TWIN_TOKEN.working, ready: TWIN_TOKEN.ready, standby: TWIN_TOKEN.idle, stopped: TWIN_TOKEN.done, alarm: TWIN_TOKEN.alarm };
+  const COL = { working: TWIN_TOKEN.working, ready: TWIN_TOKEN.ready, standby: TWIN_TOKEN.standby, stopped: TWIN_TOKEN.stopped, alarm: TWIN_TOKEN.alarm };
   /* 负荷口径（2026-11-06 定稿）：106 无人化区设备=高负荷；其他区域降到最低（几乎不可见，保留存在性但不抢注意力） */
   (lastDeviceStatus || []).forEach(([id, status]) => {
     const mesh = visual.modelRoots.get(id); if (!mesh) return;
@@ -801,7 +803,7 @@ let camSnap = null, camTween = null, myPan = [0, 0], objectInfo = {}, cardFor = 
    pan 按中心差 1:1 补 (12, -20)。复算脚本 ~/twin-qa/probe11.mjs（改完再跑一次，px 应进红框）。
    注：建模投影长宽比 1.81 比红框的 2.50 更方，所以贴合高度后左右会各留 ~150px 空白，
    这是几何决定的，不是没缩到位。 */
-const HOME = { fr: 2.13, pan: [12, -20] };
+const HOME = { fr: 2.13, pan: [-78, -20] };   /* 2026-11-08 追加：整体再往左一点（pan 是 1:1 屏幕像素，负值向左）*/
 /* 下钻构图标定（2026-11-07 参考图一）：引擎的 close 自然构图把 106 放得太大——
    探针实测设备包围盒投影横向占 79.5%、纵向占 99%，顶上被裁、右边压进区域面板底下。
    图一的目标：房间约占 36%×42%，中心偏左（右侧要让给区域面板）。
@@ -990,7 +992,7 @@ function loadNames() {
 const TYPE_CN = { detect: '检测', unmanned: '无人化', sample: '制样', reception: '接待', mechanics: '力学', measure: '测量',
   materials: '材料', highvoltage: '高压', environment: '环境', electrical: '电气', control: '控制', comprehensive: '综合' };
 const ROOM_CN = { '101': '接待大厅', '102': '智能样品室', '103': '智能力学室', '104': '控制室', '105': '智能高压室', '106': '无人化电缆试验区', '107': '材料试验区', '108': '环境试验区', '109': '综合试验区', '110': '数智化电气试验区' };
-const ST_CN = { working: '在测', ready: '就绪', standby: '待机', stopped: '停止', alarm: '异常', charging: '停靠充电' };
+const ST_CN = { working: '运行', ready: '就绪', standby: '待机', stopped: '停机', alarm: '异常', charging: '停靠充电' };
 function showCard(id, center) {
   ensureCard(); cardFor = id;
   loadNames().then(() => renderCard(id, center));

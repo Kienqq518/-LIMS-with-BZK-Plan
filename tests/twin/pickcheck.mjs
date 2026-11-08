@@ -7,7 +7,7 @@
  *  ⑤ B 区瓶颈告警全部归 106（无人化区看本区）
  */
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 /* 在画面安全区里找可点目标：左栏 x<300、右侧浮层 x>innerWidth-360、底栏 y>innerHeight-150 都不能点 */
 const SAFE = `(x,y)=>x>300&&x<innerWidth-360&&y>90&&y<innerHeight-200`;
 const out=[],err=[];
@@ -28,7 +28,7 @@ async function toTop(x,y){   /* CAD 视口坐标 → 顶层页面坐标：逐层
   return {x:fx,y:fy};
 }
 /* 先进 106（光点与设备都在这个视角里） */
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(3500);
+await gotoZone(p, '106'); await p.waitForTimeout(3500);
 
 // ① 点状态光点
 const dotPt=await f.evaluate(()=>{
@@ -106,13 +106,13 @@ if(!robPt.err){ await closeCard(); const t4=await toTop(robPt.x,robPt.y); await 
   await p.keyboard.press('Escape');
 }
 /* 未建档实体：诚实降级，不编状态（回 106 视角，台桌在那儿） */
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(3500);
+await gotoZone(p, '106'); await p.waitForTimeout(3500);
 const tabPt=await f.evaluate(()=>{const v=window.visual106,m=v.modelRoots.get('106-18'); if(!m) return null;
   const s=new(m.position.constructor)(); s.setFromMatrixPosition(m.matrixWorld); s.project(v.camera); const h=v.host.getBoundingClientRect();
   return {x:h.left+(s.x*.5+.5)*h.width,y:h.top+(-s.y*.5+.5)*h.height};});
 if(tabPt){ await closeCard(); const t5=await toTop(tabPt.x,tabPt.y); await p.mouse.click(t5.x,t5.y); await p.waitForTimeout(2200);
   const g5=await goBtn();
-  if(g5){ const r5=await go(); out.push((r5.open&&/未建档|非数采对象/.test(r5.txt)&&!/在测|就绪/.test(r5.txt)?'✅':'❌')+' 未建档实体「查看详情」→ 诚实降级文案: '+r5.txt.slice(0,80)); }
+  if(g5){ const r5=await go(); out.push((r5.open&&/未建档|非数采对象/.test(r5.txt)&&!/运行|就绪/.test(r5.txt)?'✅':'❌')+' 未建档实体「查看详情」→ 诚实降级文案: '+r5.txt.slice(0,80)); }
   else out.push((g5===null?'✅':'❌')+' 未建档实体的卡里没有「查看详情」按钮（只有非数采对象标注，不给可点的空入口）');
 }
 
@@ -156,7 +156,7 @@ const bzones=await p.locator('#streamTrack .st-row[data-grade=B]').evaluateAll(e
 out.push((bzones.length===1&&bzones[0]==='106'?'✅':'❌')+' B 区（阻塞·瓶颈）告警区域归属: '+JSON.stringify(bzones));
 const bcount=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/alarms');const A=r.data.alarms||r.data;const B=A.filter(x=>x.grade==='B');return '今日 '+B.length+' · 未解除 '+B.filter(x=>x.status!=='resolved').length;});
 out.push((/今日 4 · 未解除 3/.test(bcount)?'✅':'❌')+' B 区计数不变（只是归属收拢）: '+bcount);
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(3000);
+await gotoZone(p, '106'); await p.waitForTimeout(3000);
 const zB=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/alarms');const A=(r.data&&r.data.alarms)||[];const B=A.filter(x=>x.grade==='B');return '今日 '+B.length+' · 未解除 '+B.filter(x=>x.status!=='resolved').length;});
 out.push((/今日 4 · 未解除 3/.test(zB)?'✅':'❌')+' 106 面板 B 区今日 4（原 3）: '+zB);
 T('106 面板告警合计', await p.evaluate(()=>document.getElementById('zpAlarmsN').textContent.replace(/\s+/g,'')), '今日11·未解除8');

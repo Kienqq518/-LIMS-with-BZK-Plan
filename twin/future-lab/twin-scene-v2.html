@@ -18,9 +18,16 @@
        顺序＝logo（左上角）→ 区域切换（标题左侧）→ 总览 → 标题 → 右侧 icon 组 -->
   <div class="brand"><img src="assets/yingmin.png" alt="应敏科技" title="应敏科技"></div>
 
-  <nav class="modes" aria-label="叙事视图（MVP：总览 + 区域下钻）">
-    <label class="zsel"><span>区域</span><select id="zoneSel" aria-label="选择区域（选中即下钻，106 为完整视图）"></select></label>
-    <button class="mode active" data-mode="S1">实验室总览</button>
+  <!-- 视图层级拆成两个组件（2026-11-08 产品负责人）：
+       组件1＝实验室总览 / 区域（默认总览）；组件2＝区域房间，只在选中「区域」时出现，
+       且默认不选中任何房间——只有真的挑了房间，下方三维才刷新跳过去。 -->
+  <nav class="modes" aria-label="视图层级（先选层级，再选房间）">
+    <div class="lvgrp" role="group" aria-label="视图层级">
+      <button class="mode lv active" data-mode="S1" data-level="overview" aria-pressed="true">实验室总览</button>
+      <button class="mode lv" data-mode="ZONE" data-level="zone" aria-pressed="false">区域</button>
+    </div>
+    <label class="zsel" id="roomWrap" hidden><span>区域房间</span>
+      <select id="zoneSel" aria-label="选择区域房间（选中后三维空间跳转到该房间）"></select></label>
   </nav>
 
   <h1 class="title" data-text="未来实验室数字孪生">未来实验室数字孪生</h1>
@@ -119,10 +126,11 @@
          每行=场景名 + 运行状态 + 所用节点 icon + 所在房间号；状态由告警与点位阈值现算（见 mock）。 -->
     <section class="dk scpanel" id="dkScenes" aria-label="安全管家场景监测状态">
       <header><b>安全管家场景监测</b><span class="src" id="scCnt">—</span></header>
-      <div class="dk-view"><div class="dk-track" id="dkScenesTrack"></div></div>
+      <div class="sc-grid" id="dkScenesGrid" role="list"></div>
     </section>
     <section class="dk dkq" id="dkQueue" aria-label="AGV 与无人化调度任务">
-      <header><b>无人化调度任务</b><span class="src" id="dkQueueCnt">流程配置</span></header>
+      <header><b>无人化调度任务</b></header>   <!-- 「流程配置 N 条 · 循环同步：xxxxx」按 2026-11-08 圈图撤除：
+       同一条流程号下面 AGV 任务行已经写了，屏上不重复第二遍；口径转进块级 aria-label -->
       <div class="cycle" id="cycleBox">
         <div class="cy-top"><b id="cyNow">–</b><span id="cyLabel">AGV 任务</span></div>
         <div class="cy-bar"><i id="cyBar"></i></div>
@@ -134,8 +142,8 @@
         <div class="dq-col" data-state="done"><h4>已完成 <b id="dqNDone">0</b></h4><div class="dk-view"><div class="dk-track" id="dqTrackDone"></div></div></div>
       </div>
     </section>
-      <section class="dk nodepanel" id="iotPanel" aria-label="组态物联节点">
-      <header><b>组态物联节点</b><span class="src" id="dkNodesCnt">—</span></header>
+      <section class="dk nodepanel" id="iotPanel" aria-label="组态物联节点状态监测">
+      <header><b>组态物联节点状态监测</b><span class="src" id="dkNodesCnt">—</span></header>
       <div class="th-wrap"><div class="tw-chart th" id="chartTH" role="img" aria-label="未来实验室平均温湿度 3D 平滑折线带：温度与湿度两条序列，取全部温湿度点位当前均值"></div></div>
       <div class="np-view"><div class="dk-track" id="dkNodesTrack"></div></div>
     </section>

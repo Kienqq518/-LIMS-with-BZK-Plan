@@ -3,7 +3,7 @@
  * 这里守三件事：开关的几何位置没跑出去、两处 active 同步、URL 能恢复。
  */
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
 const b=await chromium.launch({channel:'chrome'});
 const p=await b.newPage({viewport:{width:1920,height:1080}});
@@ -24,7 +24,7 @@ const back=await p.evaluate(()=>({sf:new URLSearchParams(location.search).get('s
 out.push((back.sf==='open'&&back.open?'✅':'❌')+' 刷新后筛选态从 URL 恢复: '+JSON.stringify(back));
 /* 区域视图：面板里的开关与右列同一个状态源 */
 await p.click('#alarmStream [data-sfilter=all]'); await p.waitForTimeout(600);
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(4200);
+await gotoZone(p, '106'); await p.waitForTimeout(4200);
 const z=await p.evaluate(()=>({n:document.querySelectorAll('#zpAlarms [data-sfilter]').length,allAct:document.querySelector('#zpAlarms [data-sfilter=all]').classList.contains('active')}));
 out.push((z.n===2&&z.allAct?'✅':'❌')+' 区域面板的告警开关与全局同一个状态源: '+JSON.stringify(z));
 await p.click('#zpAlarms [data-sfilter=open]'); await p.waitForTimeout(900);

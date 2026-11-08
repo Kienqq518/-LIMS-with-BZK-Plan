@@ -25,7 +25,12 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 @keyframes twTitleSheen{from{background-position:0% 0}to{background-position:250% 0}}
 @media (prefers-reduced-motion:reduce){.title{animation:none}}
 @media (max-width:1500px){.title{font-size:var(--tw-fs-hero-title-sm);letter-spacing:2px}}
-.modes{display:flex;gap:2px;margin-left:6px}
+.modes{display:flex;align-items:center;gap:10px;margin-left:6px}
+/* 两段式控件：组件1（层级）与组件2（房间）之间留一条极淡竖线，读起来是"两件事"而不是并排三个按钮 */
+.lvgrp{display:flex;gap:2px}
+.zsel{position:relative}
+.zsel::before{content:'';position:absolute;left:-6px;top:50%;transform:translateY(-50%);width:1px;height:14px;background:var(--tw-hairline-strong)}
+.zsel[hidden]{display:none}
 .mode{position:relative;font:inherit;font-size:var(--tw-fs-body);color:var(--tw-ink-3);background:transparent;border:0;padding:6px 10px;cursor:pointer;
  text-shadow:var(--tw-text-plate)}
 .mode:hover{color:var(--tw-color-brand-strong)}
@@ -43,7 +48,7 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 .pill.active{color:var(--tw-color-brand-strong);background:var(--tw-glass-on);border:0;box-shadow:var(--tw-press-ring)}
 .pill.flow{color:var(--tw-color-brand);border-color:var(--tw-tint-brand-line)}
 /* 浮层几何的唯一事实源：宽度与沟槽都从这里算，改一处即可 */
-:root{--tw-rail-w:300px;--tw-rail-gap:12px;--tw-stream-h:600px;--tw-stream-w:420px;   /* 2026-11-08 圈图：告警流高度调低、宽度调宽，可见区固定 6 条 */--tw-panel-w:352px;--tw-float-gap:16px}
+:root{--tw-rail-w:300px;--tw-rail-gap:20px;   /* 2026-11-08 产品负责人：左栏几块粘在一起了，间距从 12 拉到 20 */--tw-stream-h:600px;--tw-stream-w:420px;   /* 2026-11-08 圈图：告警流高度调低、宽度调宽，可见区固定 6 条 */--tw-panel-w:352px;--tw-float-gap:16px}
 /* 侧栏底板层整体撤除（2026-11-07 产品负责人圈图：连面板底下那层白/玻璃底板也不要）。
    左栏、告警流、组态物联、AGV 任务块都只剩内容浮在三维画面上：无底、无描边、无圆角、无阴影、无毛玻璃。
    可读性改由 --tw-text-plate 白垫底承担（CAD 画面近白，深色字 + 白垫底对比度仍 >7:1）。
@@ -70,8 +75,12 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 /* 机器人状态条与底部说明条已整体删除（2026-11-06）：信息分别落在区域面板「设备」块、告警流与各表表头的来源+更新时间 */
 /* ---- V2 · 三格控制层与运行看板新增（决策 Q1/Q3/Q4/Q7/Q8） ---- */
 [hidden]{display:none!important}
-.period{display:flex;gap:4px;background:transparent;border-radius:var(--tw-radius-pill);padding:0}   /* 2026-11-07：白底轨道撤掉，选中态自己带底，控件直接浮在画面上 */
-.seg{flex:1;font-size:var(--tw-fs-label);color:var(--tw-ink-2);background:transparent;border:0;border-radius:var(--tw-radius-pill);padding:5px 6px;cursor:pointer}
+/* 周期切换器缩小（2026-11-08 产品负责人：太大了）：
+   原来三颗 flex:1 平摊 300px 栏宽，每颗 ~98px 宽、11.5px 字，看着像一整条导航；
+   改成按内容收宽 + micro 字号 + 更薄内边距，控件退回"辅助开关"的分量。
+   字号地板仍是 10.4px（uiconcheck 守），这里用的是 --tw-fs-micro=10.5，没有踩线。 */
+.period{display:flex;gap:3px;background:transparent;border-radius:var(--tw-radius-pill);padding:0;width:max-content}
+.seg{flex:none;font-size:var(--tw-fs-micro);color:var(--tw-ink-2);background:transparent;border:0;border-radius:var(--tw-radius-pill);padding:3px 11px;cursor:pointer;letter-spacing:.2px}
 .seg.active{color:var(--tw-on-color);background:var(--tw-color-brand);font-weight:700}
 .filter{display:flex;gap:5px}
 .mini{font-size:var(--tw-fs-micro);color:var(--tw-ink-2);background:var(--tw-glass-chip);border:1px solid var(--tw-hairline-strong);border-radius:var(--tw-radius-pill);padding:3px 8px;cursor:pointer}
@@ -518,15 +527,33 @@ footer.dock{grid-template-columns:minmax(0,1.18fr) minmax(0,1.34fr) minmax(0,1fr
 .g2-tooltip-list-item-name{color:var(--tw-ink-3)!important}
 .g2-tooltip-list-item-value{font-weight:700;font-variant-numeric:tabular-nums}
 
+/* ================= FR-58（2026-11-08）环形图 hover 设备清单卡片 =================
+   与实体信息气泡同一套交互：跟随鼠标、不牵动相机；底色走 F 档淡灰，不许又是全站唯一一块白卡。 */
+.ring-tip{position:fixed;z-index:var(--tw-z-card);min-width:212px;max-width:292px;
+ background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip);
+ box-shadow:none;padding:7px 9px;font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);
+ backdrop-filter:var(--tw-blur) var(--tw-sat);-webkit-backdrop-filter:var(--tw-blur) var(--tw-sat)}
+.ring-tip .rt-h{display:flex;align-items:center;gap:6px;font-size:var(--tw-fs-label);font-weight:700;margin-bottom:4px}
+.ring-tip .rt-h i{width:8px;height:8px;border-radius:50%;flex:none}
+.ring-tip .rt-i{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px;padding:2.5px 0;border-top:1px dashed var(--tw-hairline)}
+.ring-tip .rt-i b{font-size:var(--tw-fs-micro);font-weight:700;color:var(--tw-ink-2);font-variant-numeric:tabular-nums}
+.ring-tip .rt-i span{font-size:var(--tw-fs-micro);color:var(--tw-ink-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ring-tip .rt-i em{display:block;font-style:normal;color:var(--tw-ink-3);font-size:var(--tw-fs-micro)}
+.ring-tip .rt-m{font-size:var(--tw-fs-micro);color:var(--tw-ink-3);padding-top:3px}
+
 /* ================= FR-51（2026-11-08）安全管家场景监测块 =================
    一行一个场景：名称（可截断）+ 状态徽标 + 节点 icon 串 + 房间号。
    icon 用「节点类型」而不是点位编号——一屏 6 个场景要读的是"这个场景靠哪几类点位跑"，
    编号在物联节点列表与场景节点层里都有，这里重复一遍只会挤掉场景名。 */
-.sc-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;
+/* 固定 3 列 × 2 行（2026-11-08 产品负责人：不做滚动，六套场景一次看全）。
+   六格等高，格内两行：场景名（可截断）/ 节点icon + 房间号 + 状态。不再需要 dk-view 与滚动轨道。 */
+.sc-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:6px 8px}
+.sc-row{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;gap:3px;align-content:center;
  background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip);
- padding:5px 9px;margin:0 0 3px;text-shadow:none;cursor:pointer;transition:border-color var(--tw-dur-1)}
+ padding:5px 8px;text-shadow:none;cursor:pointer;transition:border-color var(--tw-dur-1);min-width:0}
 .sc-row:hover{border-color:var(--tw-color-brand-line)}
-.sc-row .nm{font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc-row .nm{font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sc-row .meta{display:flex;align-items:center;gap:6px;min-width:0}
 .sc-row .tag{font-size:var(--tw-fs-micro);color:var(--tw-ink-3);font-weight:400;margin-left:6px}
 .sc-row .st{display:inline-flex;align-items:center;gap:4px;font-size:var(--tw-fs-micro);font-weight:700;
  padding:1px 6px;border-radius:var(--tw-radius-pill);white-space:nowrap}
@@ -540,6 +567,8 @@ footer.dock{grid-template-columns:minmax(0,1.18fr) minmax(0,1.34fr) minmax(0,1fr
 .sc-row .nodes svg{width:13px;height:13px;color:var(--tw-ink-3);flex:none}
 .sc-row .nodes .rm{font-size:var(--tw-fs-micro);color:var(--tw-ink-3);font-variant-numeric:tabular-nums;margin-left:3px}
 .sc-row.pending .nodes svg{opacity:.5}
+.sc-row .nodes .pend{font-size:var(--tw-fs-micro);color:var(--tw-ink-3);border:1px dashed var(--tw-hairline-strong);
+ border-radius:var(--tw-radius-pill);padding:0 5px}
 
 /* ================= FR-46（2026-11-08）告警流字号收小 + 行卡背景由白改淡灰 =================
    产品负责人两条：① 告警流的字号比三维画面里其它读数大，看着不协调；

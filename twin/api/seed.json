@@ -1067,21 +1067,633 @@
           "sceneId": "SC-06",
           "name": "工器具使用规范化智能引导",
           "tag": "状态监护",
-          "roomId": "110",
+          "roomId": "102",
           "rule": "工器具超时未归位提醒",
           "ruleKind": "当/如果/就执行",
           "actions": "语音播报 + App 通知（柜门为关时才开始计时）",
-          "nodes": [
+          "nodes": [],
+          "pending": "待布点：柜门门磁 ×1、工具挂钩微动开关 ×n（102 现有点位仅温湿度，补齐后场景自动开始判定）"
+        }
+      ]
+    },
+    "devices": {
+      "note": "全场功能设备清单（建档合计的唯一真相）：台账已建档 11 台 + 现场功能设备 21 台 = 32 台。规则：计入能独立出具检测结果的功能设备与自动装置；不计产线工位承载桌/操作台/座椅/货架/展示柜/配电箱/电视/充电位置/验电器支架/移动平台/CAD 未命名实体；复合机器人（2 台）在左栏 AGV 块单独列，不进设备环。",
+      "rule": "equipment-names.json 实物表逐台核对 + equip-store.js 台账型号",
+      "devices": [
+        {
+          "deviceId": "eq_ymwrh02",
+          "code": "YM-WRH-02",
+          "name": "全自动绝缘厚度测试仪（无人化版）",
+          "type": "sample_make",
+          "subZone": "制样区",
+          "modelNode": "cad:106-06",
+          "status": "working",
+          "currentTaskId": "TK-2611-002",
+          "currentSampleId": "SPL-26110208",
+          "keyParams": [
             {
-              "id": "IOT-110-SMOKE-02",
-              "type": "smoke"
+              "name": "制样程序",
+              "value": "GB/T 2951 B-1"
             },
             {
-              "id": "IOT-106-IO-01",
-              "type": "switch"
+              "name": "循环数",
+              "value": 6,
+              "unit": "片"
             }
           ],
-          "pending": "工具挂钩微动开关 ×n 与柜门门磁尚未布点（场景已配置，点位补齐后自动生效）"
+          "model": "YWD-11F",
+          "roomId": "106",
+          "zone": "106",
+          "source": "ledger"
+        },
+        {
+          "deviceId": "eq_ymwrh03",
+          "code": "YM-WRH-03",
+          "name": "绝缘层机械性能智能测试系统-无人化版",
+          "type": "detect",
+          "subZone": "检测区",
+          "modelNode": "cad:106-05",
+          "daqUnitId": "DAQ-SUB-YM-WRH-03",
+          "status": "working",
+          "currentTaskId": "TK-2611-001",
+          "currentSampleId": "SPL-26110207",
+          "keyParams": [
+            {
+              "name": "拉力",
+              "value": 12.4,
+              "unit": "N/mm²"
+            },
+            {
+              "name": "伸长率",
+              "value": 182,
+              "unit": "%"
+            }
+          ],
+          "model": "YWL-5D",
+          "roomId": "106",
+          "zone": "106",
+          "source": "ledger"
+        },
+        {
+          "deviceId": "eq_ymwrh04",
+          "code": "YM-WRH-04",
+          "name": "电缆热延伸全自动检测系统-无人化版",
+          "type": "detect",
+          "subZone": "检测区",
+          "modelNode": "cad:106-07",
+          "daqUnitId": "DAQ-SUB-YM-WRH-04",
+          "status": "ready",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": [
+            {
+              "name": "炉温",
+              "value": 200,
+              "unit": "℃"
+            }
+          ],
+          "model": "YWH-6D",
+          "roomId": "106",
+          "zone": "106",
+          "source": "ledger"
+        },
+        {
+          "deviceId": "eq_ymwrh05",
+          "code": "YM-WRH-05",
+          "name": "电缆热收缩试验智能检测系统-无人化版",
+          "type": "detect",
+          "subZone": "测量区",
+          "modelNode": "cad:106-04",
+          "daqUnitId": "DAQ-SUB-YM-WRH-05",
+          "status": "standby",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": [
+            {
+              "name": "水温",
+              "value": 90,
+              "unit": "℃"
+            }
+          ],
+          "model": "YRSC-200I",
+          "roomId": "106",
+          "zone": "106",
+          "source": "ledger"
+        },
+        {
+          "deviceId": "eq_ymwrh06",
+          "code": "YM-WRH-06",
+          "name": "砝码库",
+          "type": "third_party",
+          "subZone": "样品缓存区",
+          "modelNode": "cad:106-10",
+          "status": "ready",
+          "keyParams": [
+            {
+              "name": "可用砝码",
+              "value": 18,
+              "unit": "件"
+            }
+          ],
+          "model": "YM-FMK",
+          "roomId": "106",
+          "zone": "106",
+          "source": "ledger"
+        },
+        {
+          "deviceId": "eq_qj36",
+          "code": "2411020108",
+          "name": "智能型数字电桥",
+          "type": "measure",
+          "subZone": "测量区",
+          "modelNode": "cad:107-01",
+          "status": "working",
+          "currentTaskId": "TK-2611-003",
+          "currentSampleId": "SPL-26110209",
+          "keyParams": [
+            {
+              "name": "电阻",
+              "value": 0.0171,
+              "unit": "Ω/km"
+            }
+          ],
+          "model": "QJ-36",
+          "roomId": "107",
+          "zone": "106",
+          "source": "ledger"
+        },
+        {
+          "deviceId": "eq_y0301011103",
+          "code": "Y0301011103",
+          "name": "电缆径向全自动制样智能平台",
+          "type": "sample_make",
+          "subZone": "制样区",
+          "modelNode": "cad:106-02",
+          "status": "working",
+          "currentTaskId": "TK-2611-002",
+          "currentSampleId": "SPL-26110208",
+          "keyParams": [
+            {
+              "name": "制样程序",
+              "value": "径向-GB/T2951"
+            },
+            {
+              "name": "循环数",
+              "value": 4,
+              "unit": "件"
+            }
+          ],
+          "model": "YWJQ-500G",
+          "roomId": "106",
+          "zone": "106",
+          "source": "ledger"
+        },
+        {
+          "deviceId": "eq_y0302010102",
+          "code": "Y0302010102",
+          "name": "全自动一体式哑铃片制样机",
+          "type": "sample_make",
+          "subZone": "制样区",
+          "modelNode": "cad:106-01",
+          "status": "ready",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": [
+            {
+              "name": "制样程序",
+              "value": "哑铃片-B1"
+            },
+            {
+              "name": "完成计数",
+              "value": 12,
+              "unit": "片"
+            }
+          ],
+          "model": "YMZL-2500A",
+          "roomId": "106",
+          "zone": "106",
+          "source": "ledger"
+        },
+        {
+          "deviceId": "eq_y0301011102",
+          "code": "Y0301011102",
+          "name": "电缆热收缩全自动切割智能平台",
+          "type": "sample_make",
+          "subZone": "制样区",
+          "modelNode": "cad:106-03",
+          "status": "standby",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": [
+            {
+              "name": "切割长度",
+              "value": 200,
+              "unit": "mm"
+            }
+          ],
+          "model": "YWRS-500G",
+          "roomId": "106",
+          "zone": "106",
+          "source": "ledger"
+        },
+        {
+          "deviceId": "eq_y0701020102",
+          "code": "Y0701020102",
+          "name": "跨入型卧式拉力试验机",
+          "type": "detect",
+          "zoneId": "Z-103",
+          "subZone": "智能力学室",
+          "modelNode": "cad:103-01",
+          "daqUnitId": "DAQ-SUB-Y0701020102",
+          "status": "working",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": [
+            {
+              "name": "最大试验力",
+              "value": 500,
+              "unit": "kN"
+            },
+            {
+              "name": "负荷速度",
+              "value": "0.5–500"
+            },
+            {
+              "name": "标距",
+              "value": "12",
+              "unit": "m"
+            }
+          ],
+          "note": "unresolved-items 悬案销账：103-01 长条多工位设备架 = 跨入型卧式拉力试验机（2026-11-05 用户确认）",
+          "model": "YMW-500B-12m",
+          "roomId": "103",
+          "zone": "103",
+          "source": "ledger"
+        },
+        {
+          "deviceId": "eq_y0102160101",
+          "code": "Y0102160101",
+          "name": "工器具六工位综合力学性能试验机",
+          "type": "detect",
+          "zoneId": "Z-103",
+          "subZone": "智能力学室",
+          "modelNode": "cad:103-03",
+          "daqUnitId": "DAQ-SUB-Y0102160101",
+          "status": "ready",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": [
+            {
+              "name": "工位数",
+              "value": 6,
+              "unit": "工位"
+            },
+            {
+              "name": "版本",
+              "value": "智慧版"
+            }
+          ],
+          "note": "unresolved-items 销案：103-03 环形试验设备=工器具六工位综合力学性能试验机（2026-11-05 用户确认）",
+          "model": "YLGW-6I",
+          "roomId": "103",
+          "zone": "103",
+          "source": "ledger"
+        },
+        {
+          "deviceId": "eq_10202",
+          "code": "SY-01",
+          "name": "收样登记台（RFID／色环／条码）",
+          "model": "SY-01",
+          "type": "test",
+          "subZone": "样品接收区",
+          "modelNode": "cad:102-02",
+          "status": "working",
+          "roomId": "102",
+          "zone": "102",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10501",
+          "code": "YLS-01",
+          "name": "循环注水绝缘靴手套耐压测试台",
+          "model": "YLS-01",
+          "type": "test",
+          "subZone": "高压试验区",
+          "modelNode": "cad:105-01",
+          "status": "ready",
+          "roomId": "105",
+          "zone": "105",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10502",
+          "code": "GZ-150A",
+          "name": "150kV 智慧工频耐压系统",
+          "model": "GZ-150A",
+          "type": "test",
+          "subZone": "高压试验区",
+          "modelNode": "cad:105-02",
+          "status": "standby",
+          "roomId": "105",
+          "zone": "105",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10505",
+          "code": "YDFD-50A",
+          "name": "多功能耐压测试台",
+          "model": "YDFD-50A",
+          "type": "test",
+          "subZone": "高压试验区",
+          "modelNode": "cad:105-05",
+          "status": "ready",
+          "roomId": "105",
+          "zone": "105",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10506",
+          "code": "YFG-35A",
+          "name": "圆形整段绝缘杆耐压测试平台 35kV",
+          "model": "YFG-35A",
+          "type": "test",
+          "subZone": "高压试验区",
+          "modelNode": "cad:105-06",
+          "status": "standby",
+          "roomId": "105",
+          "zone": "105",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10705",
+          "code": "WK-200A",
+          "name": "维卡软化试验机",
+          "model": "WK-200A",
+          "type": "test",
+          "subZone": "材料试验区",
+          "modelNode": "cad:107-05",
+          "status": "working",
+          "roomId": "107",
+          "zone": "107",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10706",
+          "code": "HY-600A",
+          "name": "液压万能试验机",
+          "model": "HY-600A",
+          "type": "test",
+          "subZone": "材料试验区",
+          "modelNode": "cad:107-06",
+          "status": "ready",
+          "roomId": "107",
+          "zone": "107",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10707",
+          "code": "EW-100A",
+          "name": "电子万能试验机",
+          "model": "EW-100A",
+          "type": "test",
+          "subZone": "材料试验区",
+          "modelNode": "cad:107-07",
+          "status": "working",
+          "roomId": "107",
+          "zone": "107",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10708",
+          "code": "YM-2A",
+          "name": "两工位机械性能试验机",
+          "model": "YM-2A",
+          "type": "test",
+          "subZone": "材料试验区",
+          "modelNode": "cad:107-08",
+          "status": "standby",
+          "roomId": "107",
+          "zone": "107",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10709",
+          "code": "YM-2B",
+          "name": "两工位机械性能试验机（带尺寸测量）",
+          "model": "YM-2B",
+          "type": "test",
+          "subZone": "材料试验区",
+          "modelNode": "cad:107-09",
+          "status": "stopped",
+          "roomId": "107",
+          "zone": "107",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10802",
+          "code": "DL-09",
+          "name": "空气老化试验箱 1",
+          "model": "DL-09",
+          "type": "test",
+          "subZone": "环境试验区",
+          "modelNode": "cad:108-02",
+          "status": "working",
+          "roomId": "108",
+          "zone": "108",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10803",
+          "code": "DL-10",
+          "name": "空气老化试验箱 2",
+          "model": "DL-10",
+          "type": "test",
+          "subZone": "环境试验区",
+          "modelNode": "cad:108-03",
+          "status": "ready",
+          "roomId": "108",
+          "zone": "108",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10804",
+          "code": "YM-WRH-06A",
+          "name": "智能砝码库",
+          "model": "YM-WRH-06A",
+          "type": "test",
+          "subZone": "环境试验区",
+          "modelNode": "cad:108-04",
+          "status": "ready",
+          "roomId": "108",
+          "zone": "108",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10901",
+          "code": "PB-01",
+          "name": "电缆外护套全自动剥切装置",
+          "model": "PB-01",
+          "type": "test",
+          "subZone": "综合试验区",
+          "modelNode": "cad:109-01",
+          "status": "standby",
+          "roomId": "109",
+          "zone": "109",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10902",
+          "code": "QD-02",
+          "name": "电缆自动切断制样装置",
+          "model": "QD-02",
+          "type": "test",
+          "subZone": "综合试验区",
+          "modelNode": "cad:109-02",
+          "status": "ready",
+          "roomId": "109",
+          "zone": "109",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10903",
+          "code": "RS-03",
+          "name": "电缆热收缩全自动切割制样机",
+          "model": "RS-03",
+          "type": "test",
+          "subZone": "综合试验区",
+          "modelNode": "cad:109-03",
+          "status": "working",
+          "roomId": "109",
+          "zone": "109",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10904",
+          "code": "JX-04",
+          "name": "电缆径向全自动制样机",
+          "model": "JX-04",
+          "type": "test",
+          "subZone": "综合试验区",
+          "modelNode": "cad:109-04",
+          "status": "ready",
+          "roomId": "109",
+          "zone": "109",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10905",
+          "code": "DL-05",
+          "name": "全自动一体式哑铃片制样机",
+          "model": "DL-05",
+          "type": "test",
+          "subZone": "综合试验区",
+          "modelNode": "cad:109-05",
+          "status": "stopped",
+          "roomId": "109",
+          "zone": "109",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_10906",
+          "code": "HQ-06",
+          "name": "电缆外护套环切制样机",
+          "model": "HQ-06",
+          "type": "test",
+          "subZone": "综合试验区",
+          "modelNode": "cad:109-06",
+          "status": "standby",
+          "roomId": "109",
+          "zone": "109",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_11001",
+          "code": "WS-01",
+          "name": "金具温升试验工位",
+          "model": "WS-01",
+          "type": "test",
+          "subZone": "数智化电气试验区",
+          "modelNode": "cad:110-01",
+          "status": "ready",
+          "roomId": "110",
+          "zone": "110",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
+        },
+        {
+          "deviceId": "eq_11002",
+          "code": "WS-02",
+          "name": "开关柜温升试验工位",
+          "model": "WS-02",
+          "type": "test",
+          "subZone": "数智化电气试验区",
+          "modelNode": "cad:110-02",
+          "status": "working",
+          "roomId": "110",
+          "zone": "110",
+          "source": "field",
+          "currentTaskId": null,
+          "currentSampleId": null,
+          "keyParams": []
         }
       ]
     }
@@ -1108,7 +1720,8 @@
             "value": 6,
             "unit": "片"
           }
-        ]
+        ],
+        "model": "YWD-11F"
       },
       {
         "deviceId": "eq_ymwrh03",
@@ -1132,7 +1745,8 @@
             "value": 182,
             "unit": "%"
           }
-        ]
+        ],
+        "model": "YWL-5D"
       },
       {
         "deviceId": "eq_ymwrh04",
@@ -1151,7 +1765,8 @@
             "value": 200,
             "unit": "℃"
           }
-        ]
+        ],
+        "model": "YWH-6D"
       },
       {
         "deviceId": "eq_ymwrh05",
@@ -1170,7 +1785,8 @@
             "value": 90,
             "unit": "℃"
           }
-        ]
+        ],
+        "model": "YRSC-200I"
       },
       {
         "deviceId": "eq_ymwrh06",
@@ -1186,7 +1802,8 @@
             "value": 18,
             "unit": "件"
           }
-        ]
+        ],
+        "model": "YM-FMK"
       },
       {
         "deviceId": "eq_qj36",
@@ -1204,7 +1821,8 @@
             "value": 0.0171,
             "unit": "Ω/km"
           }
-        ]
+        ],
+        "model": "QJ-36"
       },
       {
         "deviceId": "eq_y0301011103",
@@ -1226,7 +1844,8 @@
             "value": 4,
             "unit": "件"
           }
-        ]
+        ],
+        "model": "YWJQ-500G"
       },
       {
         "deviceId": "eq_y0302010102",
@@ -1248,7 +1867,8 @@
             "value": 12,
             "unit": "片"
           }
-        ]
+        ],
+        "model": "YMZL-2500A"
       },
       {
         "deviceId": "eq_y0301011102",
@@ -1266,7 +1886,8 @@
             "value": 200,
             "unit": "mm"
           }
-        ]
+        ],
+        "model": "YWRS-500G"
       }
     ],
     "robots": [
@@ -2394,7 +3015,8 @@
             "unit": "m"
           }
         ],
-        "note": "unresolved-items 悬案销账：103-01 长条多工位设备架 = 跨入型卧式拉力试验机（2026-11-05 用户确认）"
+        "note": "unresolved-items 悬案销账：103-01 长条多工位设备架 = 跨入型卧式拉力试验机（2026-11-05 用户确认）",
+        "model": "YMW-500B-12m"
       },
       {
         "deviceId": "eq_y0102160101",
@@ -2419,7 +3041,8 @@
             "value": "智慧版"
           }
         ],
-        "note": "unresolved-items 销案：103-03 环形试验设备=工器具六工位综合力学性能试验机（2026-11-05 用户确认）"
+        "note": "unresolved-items 销案：103-03 环形试验设备=工器具六工位综合力学性能试验机（2026-11-05 用户确认）",
+        "model": "YLGW-6I"
       }
     ]
   },

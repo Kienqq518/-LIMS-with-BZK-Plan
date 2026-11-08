@@ -414,6 +414,18 @@
         return resolve(envelope({ note: sc.note, statusRule: sc.statusRule, statusLabels: sc.statusLabels,
           deployedCount: scenes.length, scenes: scenes }));
       }
+      /* 全场功能设备（任务15）：建档合计的唯一真相。
+         原来左栏「设备运行状态」只把 106 + 103 两个区的记录相加 = 11 台当成全场，
+         产品负责人一句「整个未来实验室是 22 还是 23 台，你怎么写建档才 11 台」把它戳穿了——
+         那是"接口给了哪两个区"，不是"场里有几台设备"。现在读 overview.devices（32 台，逐台可对）。 */
+      if (path === '/api/overview/devices') {
+        var dv = state.overview.devices || {};
+        var all = dv.devices || [];
+        var c = {}; all.forEach(function (d) { c[d.status] = (c[d.status] || 0) + 1; });
+        return resolve(envelope({ note: dv.note, rule: dv.rule, total: all.length,
+          byStatus: c, byRoom: all.reduce(function (m, d) { m[d.roomId] = (m[d.roomId] || 0) + 1; return m; }, {}),
+          devices: clone(all) }));
+      }
       if (path === '/api/overview/test-item-plan') {
         var pl = (state.testItemPlan || {}).items || [];
         return resolve(envelope({ note: state.testItemPlan.note, overdueRule: state.testItemPlan.overdueRule, dueSoonRule: state.testItemPlan.dueSoonRule,

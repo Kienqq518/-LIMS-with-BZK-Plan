@@ -17,16 +17,17 @@ await p.waitForTimeout(16000);
 
 // 结构
 T('底栏块数（FR-45：安全管家场景 / 调度任务 / 组态物联，铺满整屏宽）', await p.locator('.dock .dk').count(), 3);
-T('块标题与块序（FR-51：场景监测与调度任务已交换位置）', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '安全管家场景监测|无人化调度任务|组态物联节点');
+T('块标题与块序（FR-51 交换 + 任务19 改名）', (await p.locator('.dk>header b').allInnerTexts()).join('|'), '安全管家场景监测|无人化调度任务|组态物联节点状态监测');
 T('设备运行状态在左栏（FR-42 重排）', await p.evaluate(()=>{const e=document.querySelector('.rail .raildev');return !!e&&e.offsetParent!==null;}), 'true');
 
-// ① 设备运行状态：四档圆环 + 四行图例 + 机器人分工
-/* 块1 结构（2026-11-07 参考图一改版）：柱图→圆环，五档→四档（运行中/待机/停机/异常），
-   「停止」按现场叫法改「停机」，「就绪」折进「待机」——四档相加必须等于建档合计，否则圆环是假图。
-   稼动率不再单独一行：它就是「运行中」那档的台数与占比，屏上直接读得到。 */
+// ① 设备运行状态：五档圆环 + 五行图例 + AGV 块
+/* 块1 结构（2026-11-08 产品负责人定档定色）：运行(蓝) / 就绪(绿) / 异常(红) / 待机(浅灰) / 停机(深灰)。
+   上一轮为了凑"四档相加=总数"把就绪折进待机；现在五档各自有家，折档口径撤销——
+   五档相加仍必须等于建档合计，否则圆环是假图（纪律不变，只是不再靠折档来维持）。
+   稼动率不单独一行：它就是「运行」那档的台数与占比，屏上直接读得到。 */
 const lg=await p.evaluate(()=>[...document.querySelectorAll('#dkDevBody .dk-lg')].map(e=>({nm:e.querySelector('.nm').innerText.trim(),
   v:+e.querySelector('.vv').innerText,pc:+e.querySelector('.pc').innerText.replace('%',''),zero:e.classList.contains('zero')})));
-out.push((lg.length===4&&lg.map(x=>x.nm).join('/')==='运行中/待机/停机/异常'?'✅':'❌')+' 块1 四档圆环 + 四行图例: '+lg.map(x=>x.nm+' '+x.v+' '+x.pc+'%').join(' / '));
+out.push((lg.length===5&&lg.map(x=>x.nm).join('/')==='运行/就绪/异常/待机/停机'?'✅':'❌')+' 块1 五档圆环 + 五行图例（档序按产品负责人给的顺序）: '+lg.map(x=>x.nm+' '+x.v+' '+x.pc+'%').join(' / '));
 const dev=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='devices');return r?JSON.parse(r.sig):null;});
 const srcTxt=await p.evaluate(()=>document.getElementById('dkDevSrc').innerText.replace(/\s+/g,' '));   /* 设备块已搬进左栏 .raildev，不能再拿 .dk 找它 */
 const total=+(srcTxt.match(/(\d+) 台建档/)||[])[1];
@@ -35,12 +36,18 @@ const total=+(srcTxt.match(/(\d+) 台建档/)||[])[1];
 const sumOk=!!dev&&dev.every(x=>x.v>0)&&dev.reduce((a,x)=>a+x.v,0)===total&&lg.reduce((a,x)=>a+x.v,0)===total;
 out.push((sumOk?'✅':'❌')+` 块1 自洽：环 ${dev&&dev.map(x=>x.k+':'+x.v).join(' + ')} 与图例 ${lg.map(x=>x.v).join('+')} 都 == 建档合计 ${total}（src="${srcTxt}"）`);
 out.push((lg.every(x=>Math.abs(Math.round(x.v/total*100)-x.pc)<=1)?'✅':'❌')+' 块1 占比现算（台数/合计，不写死）: '+lg.map(x=>x.nm+' '+x.pc+'%').join(' / '));
-const working=await p.evaluate(async()=>{const a=await TwinApi.get('/api/zone/106/devices'),b=await TwinApi.get('/api/zone/103/devices');
-  return [...(a.data||[]),...(b.data||[])].filter(d=>d.status==='working').length;});
-const readyN=await p.evaluate(async()=>{const a=await TwinApi.get('/api/zone/106/devices'),b=await TwinApi.get('/api/zone/103/devices');
-  return [...(a.data||[]),...(b.data||[])].filter(d=>d.status==='ready'||d.status==='standby').length;});
-out.push((lg[0].v===working?'✅':'❌')+` 运行中档 == 接口 working 台数（屏上 ${lg[0].v} vs 接口 ${working}）`);
-out.push((lg[1].v===readyN?'✅':'❌')+` 待机档 == 接口 待机+就绪 台数（就绪折进本档，屏上 ${lg[1].v} vs 接口 ${readyN}）`);
+/* 建档合计的唯一真相已换成 /api/overview/devices（全场功能设备 32 台）。
+   原来这里拿 106+103 两个区接口相加=11 台，正是产品负责人戳穿的那句"你怎么写建档才 11 台"，
+   所以逐档核对必须对着同一张全场表算，否则屏上 11 vs 接口 6 这种"两边都对、对不上"的假失败会一直挂着。 */
+const apiCnt=await p.evaluate(async()=>{const d=(await TwinApi.get('/api/overview/devices')).data;
+  const all=d.devices||[];const c={};['working','ready','alarm','standby','stopped'].forEach(s=>c[s]=all.filter(d2=>d2.status===s).length);
+  c._total=all.length;return c;});
+['working','ready','alarm','standby','stopped'].forEach((k,i)=>{
+  out.push((lg[i].v===apiCnt[k]?'✅':'❌')+` ${lg[i].nm}档 == 全场表 ${k} 台数（屏上 ${lg[i].v} vs 接口 ${apiCnt[k]}）`);});
+out.push((lg.reduce((a,x)=>a+x.v,0)===apiCnt._total?'✅':'❌')+` 五档相加 == 建档合计 ${apiCnt._total}（全场表台数，圆环不是假图）`);
+/* 五档色必须各归其主：待机与停机原来借用 idle/done，两档只差一档明度，圆环与光点上肉眼分不开 */
+const sw=await p.evaluate(()=>[...document.querySelectorAll('#dkDevBody .dk-lg i')].map(e=>getComputedStyle(e).backgroundColor));
+out.push((new Set(sw).size===5?'✅':'❌')+' 五档五色互不相同（待机浅灰/停机深灰不再借色）: '+sw.join(' '));
 /* FR-52：机器人从「一行文字」升级成左栏独立 AGV 块（编号 / 状态+在办任务 / 电量条+百分比）。
    断言跟着改，并且钉死一件事：屏上的电量必须等于接口现值——电量这种会动的数，
    一旦在渲染层另算一套，大屏上就会出现"进度条和调度系统说的不一样"。 */
@@ -93,7 +100,12 @@ for(let k=0;k<18;k++){
     const q2=await TwinApi.get('/api/overview/dispatch-queue');
     const run=q2.data.tasks.filter(t=>t.shown==='running');
     const liveRows=q2.data.tasks.filter(t=>t.live);
-    return {liveFlow:q2.data.liveFlow, runFlows:[...new Set(run.map(t=>t.flowCode))],
+    /* 接口给的是 liveStep（{flowCode,kind,...}），不是 liveFlow；取样/返航两段本来就没有 flowCode，
+       只等 flowCode 会在 102→106 那 47s 长航段里永远等不到——改成把 kind 也算一条"流"，
+       换段就算推进，窗口不必拉到一整圈。 */
+    const ls=q2.data.liveStep||null;
+    const lf=ls?(ls.flowCode||('取样段'===ls.kind||ls.kind==='pickup'?'样品室取样':(ls.kind==='return'?'返航段':null))):null;
+    return {liveFlow:lf, runFlows:[...new Set(run.map(t=>t.flowCode))],
       liveCount:liveRows.length, liveCad:(liveRows[0]||{}).cad, order:(q2.data.liveOrder||null)};
   });
   if(sync.liveFlow) seenFlows.add(sync.liveFlow);
@@ -103,30 +115,38 @@ for(let k=0;k<18;k++){
 out.push((sync.liveFlow&&sync.runFlows.indexOf(sync.liveFlow)>=0&&sync.liveCount===1?'✅':'❌')
   +' 块2「循环中」在同一次响应内自洽（liveFlow 属于 running 且只标一行）: live='+sync.liveFlow+' running='+sync.runFlows.join(','));
 out.push((seenFlows.size>=2?'✅':'❌')+' 随剧本推进换过 '+seenFlows.size+' 条流: '+[...seenFlows].join(' → '));
-out.push((sync.liveCad&&/^\d{3}-\d{2}$/.test(sync.liveCad)?'✅':'❌')+' 「循环中」那行的工位由剧本反推: '+sync.liveCad);
+/* 取样段/返航段本来就没有"循环中"那一行（live 属于剧本而非队列），此时工位反推不适用，如实说明而不是判失败 */
+out.push(((sync.liveCount===0&&!/\d{3}-\d{2}$/.test(sync.liveCad||''))||sync.liveCad&&/^\d{3}-\d{2}$/.test(sync.liveCad)?'✅':'❌')
+  +' 「循环中」那行的工位由剧本反推（取样/返航段无该行，不计）: '+(sync.liveCad||'—')+' liveCount='+sync.liveCount);
 
 const before=await p.evaluate(()=>({dur:getComputedStyle(document.getElementById('dqTrackDone')).transform,pos:document.getElementById('dqTrackDone').getBoundingClientRect().y}));
 await p.waitForTimeout(7000);
 const after=await p.evaluate(()=>({dur:getComputedStyle(document.getElementById('dqTrackDone')).transform,pos:document.getElementById('dqTrackDone').getBoundingClientRect().y,
-  cnt:document.getElementById('dkQueueCnt').innerText}));
+  cnt:document.getElementById('dkQueue').getAttribute('aria-label')}));
 /* FR-42 三列之后，「行换列」必须重建轨道（CSS 无缝滚动会跳回原点）——这是有意代价，
    一圈里只发生几次而不是每 2s 一次。所以断言改成二选一：要么滚动连续，要么这一窗内确实有任务换了列。 */
 const cols0=await p.evaluate(()=>[...document.querySelectorAll('.dq3 .dq-col>h4 b')].map(e=>e.textContent).join('/'));
 const moved=Math.abs(after.pos-before.pos);
 const cols1=await p.evaluate(()=>[...document.querySelectorAll('.dq3 .dq-col>h4 b')].map(e=>e.textContent).join('/'));
 out.push((moved>0.5||cols0!==cols1?'✅':'❌')+` 心跳刷新不无谓重置滚动（7s 位移 ${moved.toFixed(1)}px；列分布 ${cols0}→${cols1}，只有换列才允许重建）`);
-out.push((/循环同步/.test(after.cnt)?'✅':'❌')+' 块2 头部显示与剧本同步: '+after.cnt.replace(/\s+/g,' '));
+/* 屏上那行「流程配置 16 条 · 循环同步：xxxxx」已撤（与 AGV 任务行重复），口径转 aria-label：
+   这里验的是"同步关系还在被陈述"，不是"屏上还有那行字"。 */
+out.push((/循环同步/.test(after.cnt)&&/流程配置 \d+ 条/.test(after.cnt)?'✅':'❌')+' 块2 与剧本同步的口径在 aria-label 里: '+after.cnt.replace(/\s+/g,' '));
+out.push(((await p.evaluate(()=>document.getElementById('dkQueueCnt'))===null)?'✅':'❌')+' 屏上不再出现「流程配置 N 条 · 循环同步」那行文本');
 
 // ③ 安全管家场景监测（FR-51，替掉原「试验项完成情况」）
 const scApi=await p.evaluate(async()=>(await TwinApi.get('/api/overview/safety-scenes')).data);
-const scRows=await p.evaluate(()=>[...document.querySelectorAll('#dkScenesTrack .sc-row')].filter(r=>r.getAttribute('aria-hidden')!=='true')
+const scRows=await p.evaluate(()=>[...document.querySelectorAll('#dkScenesGrid .sc-row')]
   .map(e=>({id:e.dataset.scene,room:e.dataset.room,t:e.innerText.replace(/\s+/g,' '),icons:e.querySelectorAll('.nodes svg').length,
-    st:(e.querySelector('.st')||{}).textContent,cls:e.className.match(/normal|abnormal|alarm/)?RegExp.lastMatch[0]:'?',aria:e.getAttribute('aria-label')})));
+    st:(e.querySelector('.st')||{}).textContent,cls:e.className.match(/normal|abnormal|alarm/)?RegExp.lastMatch[0]:'?',aria:e.getAttribute('aria-label'),
+    pend:!!e.querySelector('.nodes .pend')})));
 const SC_NAMES=['高危区域入侵主动防御','消防安全·烟雾与可燃气体预警','涉水区域浸水与泄漏告警','受限空间准入安全管控','恒温恒湿环境自动调节','工器具使用规范化智能引导'];
 out.push((scApi.scenes.length===6&&scRows.length===6&&SC_NAMES.every(n=>scRows.some(x=>x.t.includes(n)))?'✅':'❌')
   +' 块1 六套场景与安全管家场景库一致: '+scRows.map(x=>x.t.split(' ')[0]).join(' | '));
-out.push((scRows.every(x=>x.icons>=2&&/\d{3}/.test(x.room)&&x.st)?'✅':'❌')
-  +' 块1 每行都有 名称+状态+节点icon+房间号: '+scRows.map(x=>x.room+'/'+x.icons+'icon/'+x.st.trim().slice(0,6)).join(' '));
+/* 102 的工器具场景点位还没布（门磁/微动），icon 数为 0 且带「待布点」才是诚实表现——
+   借别区的节点凑一张 icon 串过去，屏上好看但现场事实就没了。 */
+out.push((scRows.every(x=>(/\d{3}/.test(x.room)&&x.st)&&(x.icons>=2||x.pend))?'✅':'❌')
+  +' 块1 每行都有 名称+状态+（节点icon 或 待布点）+房间号: '+scRows.map(x=>x.room+'/'+(x.icons||'待布点')+'/'+x.st.trim().slice(0,6)).join(' '));
 /* 状态必须由事实推导出来，不能恒为「正常」：上一版把 zoneId 拼成 'Z106'（真实是 'Z-106'），
    六个场景全绿，红绿条画得再漂亮也是空的——这条就是抓那种"看起来没坏的假通过"。 */
 const alarmSc=scRows.filter(x=>x.st.includes('存在告警'));
@@ -151,18 +171,27 @@ out.push((cnt===''&&nd.length>=16?'✅':'❌')+` 块4 头部计数文本已撤�
 // 点击与键盘落点（冻结滚动后挑窗口内的行）
 const land=await p.evaluate(()=>{
   document.querySelectorAll('.dk-track').forEach(t=>t.style.animation='none');
-  const pick=(sel)=>{const tr=document.querySelector(sel); const box=tr.closest('.dk-view')||tr.closest('.np-view'); if(!box) return null; const v=box.getBoundingClientRect();
+  /* pick 必须先确认轨道存在：场景块改成固定 3×2 后已经没有 #dkScenesTrack，
+     少了这道判空就是 tr.closest 直接抛错，整套 40 项一条都跑不到（上一版就是这么崩的）。 */
+  const pick=(sel)=>{const tr=document.querySelector(sel); if(!tr) return null; const box=tr.closest('.dk-view')||tr.closest('.np-view'); if(!box) return null; const v=box.getBoundingClientRect();
     return [...tr.children].filter(e=>e.dataset.cad||e.dataset.node).map(e=>({e,r:e.getBoundingClientRect()})).filter(x=>x.r.top>=v.top-1&&x.r.bottom<=v.bottom+1)[0];};
-  const q=pick('#dqTrackRunning')||pick('#dqTrackUnassigned')||pick('#dqTrackDone'), sc=pick('#dkScenesTrack'), nd=pick('#dkNodesTrack');
-  return {qCad:q&&q.e.dataset.cad, qRole:q&&q.e.getAttribute('role'), scId:sc&&sc.e.dataset.scene, scNodes:sc&&sc.e.dataset.nodes, ndNode:nd&&nd.e.dataset.node, ndTab:nd&&nd.e.getAttribute('tabindex')};
+  const q=pick('#dqTrackRunning')||pick('#dqTrackUnassigned')||pick('#dqTrackDone'), nd=pick('#dkNodesTrack');
+  /* 场景块是固定六格（不滚动），直接取第一格即可 */
+  const scEl=document.querySelector('#dkScenesGrid .sc-row');
+  return {qCad:q&&q.e.dataset.cad, qRole:q&&q.e.getAttribute('role'),
+    scId:scEl&&scEl.dataset.scene, scNodes:scEl&&scEl.dataset.nodes, ndNode:nd&&nd.e.dataset.node, ndTab:nd&&nd.e.getAttribute('tabindex')};
 });
 out.push((land.qCad&&land.qRole==='button'?'✅':'❌')+' 块2 任务行可点/可聚焦（role=button + data-cad）: '+land.qCad);
 if(land.qCad){ await p.evaluate((cad)=>document.querySelector('.dq3 .dq-row[data-cad="'+cad+'"]').click(), land.qCad); await p.waitForTimeout(900);
   out.push((await p.evaluate(()=>document.body.dataset.lastHighlight)===land.qCad?'✅':'❌')+' 点任务行 → 场景描边对应工位: '+await p.evaluate(()=>document.body.dataset.lastHighlight)); }
-if(land.scId){ await p.evaluate((id)=>document.querySelector('#dkScenesTrack .sc-row[data-scene="'+id+'"]').click(), land.scId); await p.waitForTimeout(1200);
+/* 场景块改成固定 3×2 网格（#dkScenesGrid），不再有滚动轨道；
+   这里上一版还留着 #dkScenesTrack 的选择器，querySelector 返回 null 就直接 .click() 崩掉整套。 */
+if(land.scId){ await p.evaluate((id)=>document.querySelector('#dkScenesGrid .sc-row[data-scene="'+id+'"]').click(), land.scId); await p.waitForTimeout(1200);
   const got=await p.evaluate(()=>({scene:document.body.dataset.lastScene,node:document.body.dataset.lastNode}));
   const first=(land.scNodes||'').split(',')[0];
-  out.push((got.scene===land.scId&&got.node===first?'✅':'❌')+' 点场景行 → 记下场景并选中其首个节点: '+JSON.stringify(got)+' 期望节点 '+first); }
+  /* 待布点的场景没有节点，点它只该记下场景、不该硬选一个不存在的点位 */
+  out.push((got.scene===land.scId&&(!first?got.node!=='undefined':got.node===first)?'✅':'❌')
+    +' 点场景行 → 记下场景并选中其首个节点: '+JSON.stringify(got)+' 期望节点 '+(first||'（待布点）')); }
 if(land.ndNode){ const f=p.frames().find(x=>/tour-space/.test(x.url()));
   await p.evaluate((id)=>document.querySelector('#dkNodesTrack .nd-row[data-node="'+id+'"]').click(), land.ndNode); await p.waitForTimeout(1400);
   const card=await f.evaluate(()=>{const a=document.getElementById('iot-audit');return a?JSON.parse(a.textContent):null;});

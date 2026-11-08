@@ -3,7 +3,7 @@
  * 守的是三件事：① 停靠位真的是 102-05 充电桩中心 ② 全场只有一台在动 ③ 停靠的那台不参与卡住判定、电量只回升
  */
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
 const T=(k,v,e)=>out.push((String(v)===String(e)?'✅':'❌')+` ${k}: ${v} (期望 ${e})`);
 const b=await chromium.launch({channel:'chrome'});
@@ -58,7 +58,7 @@ const bat=await p.evaluate(async()=>{const a=await TwinApi.get('/api/zone/106/ro
 out.push((bat[1]>=bat[0]?'✅':'❌')+` 桩上电量回升不掉的：${bat[0]}% → ${bat[1]}%`);
 
 // ⑤ 面板：停靠行说清停在哪、不判卡住；机器人行键盘可达（FR-27 复用）
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(3000);
+await gotoZone(p, '106'); await p.waitForTimeout(3000);
 const dev=await p.locator('#zpDevices').innerText();
 out.push((/RB-C-01[\s\S]{0,80}停靠充电/.test(dev)&&/102-05 充电位/.test(dev)?'✅':'❌')+' 面板 RB-C-01 行=停靠充电 + 桩号: '+dev.replace(/\s+/g,' ').match(/RB-C-01[\s\S]{0,70}/)[0]);
 out.push((!dev.includes('疑似卡住')?'✅':'❌')+' 停靠不再被误判卡住（全场无「疑似卡住」）');

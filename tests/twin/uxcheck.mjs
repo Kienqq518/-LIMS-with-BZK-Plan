@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
 const b=await chromium.launch({channel:'chrome'});
 const p=await b.newPage({viewport:{width:1920,height:1080},reducedMotion:'no-preference'});
@@ -73,7 +73,8 @@ out.push(((in106.length&&Math.max(...in106.map(h=>h.o))>=0.15&&(!other.length||M
 await p.click('.lic[data-layer=heatmap]'); await p.waitForTimeout(600);
 // 4) 底栏=四块（设备统计 / 调度任务队列 / 委托单试验项 / 组态物联节点），除统计块外各自滚动
 T('底栏块数（FR-45 三块铺满整屏宽：安全管家场景 / 调度任务 / 组态物联）', await p.locator('.dock .dk').count(), 3);
-T('滚动轨道数（任务三列 + 场景 + 物联）', await p.locator('.dk-track').count(), 5);
+/* 场景块改成固定 3×2 网格后不再有滚动轨道：三列任务 + 物联 = 4 条（FR-61） */
+T('滚动轨道数（任务三列 + 物联；场景块已改固定六格）', await p.locator('.dk-track').count(), 4);
 out.push(((await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')))==='dkUp/dkUp/dkUp'?'✅':'❌')+' 三列各自滚动: '+await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')));
 
 /* FR-42 全站一律无底板；FR-46 把 F 档垫底由「更重的白」改成「淡灰」——
@@ -165,7 +166,7 @@ const bboxFrac=()=>ev(()=>{const v=window.visual106,h=v.host.getBoundingClientRe
     x0=Math.min(x0,sx); x1=Math.max(x1,sx); y0=Math.min(y0,sy); y1=Math.max(y1,sy); }
   return {w:+((x1-x0)/h.width).toFixed(3), h:+((y1-y0)/h.height).toFixed(3), x1:+(x1/h.width).toFixed(3), y0:+(y0/h.height).toFixed(3)};});
 const fr0=await bboxFrac();
-await p.selectOption('#zoneSel','106');
+await gotoZone(p, '106');
 const samples=[]; for(let i=0;i<7;i++){ await p.waitForTimeout(140); samples.push(await cam()); }
 const uniq=new Set(samples.map(s=>s.join(','))).size;
 out.push((uniq>=4?'✅':'❌')+` 下钻为补间动画（800ms 内采到 ${uniq} 个不同机位）`);

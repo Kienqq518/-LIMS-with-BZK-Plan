@@ -229,9 +229,17 @@
         中心恒为合计——不提供 centerTop 副标题：洞是扁的（等轴挤出），两行字必然压到环带上。 */
     donut(el, name, items, o) {
       o = o || {}; const p = palette();
-      const data = items.filter(d => d.v > 0).map((d, i) => ({ k: d.k, v: d.v, c: d.c || [p.working, p.ready, p.warn, p.idle][i % 4] }));
-      return draw(el, name, 'donut', JSON.stringify(data), () => {
+      /* list 必须跟着过这道 filter/map：上一版只搬 k/v/c，hover 卡片拿到的是空清单，
+         环上悬停只剩一行「运行 6 台 · 55%」，产品要的名称/编号/分区/型号一条都没出来。 */
+      const data = items.filter(d => d.v > 0).map((d, i) => ({ k: d.k, v: d.v, c: d.c || [p.working, p.ready, p.warn, p.idle][i % 4], list: d.list || [] }));
+      /* 轨道签名只算档位与台数：设备清单（list）每拍都可能重排，把它算进签名会让圆环
+         每 2s 无谓重建（重建会先清屏再画，大屏上就是闪一下白——FR-39 真实踩过）。 */
+      return draw(el, name, 'donut', JSON.stringify(data.map(d => ({ k: d.k, v: d.v, c: d.c }))), () => {
         const g = ringFaces(data, o), h = o.height || 96;
+        /* 把每档的三条色带（顶/前/侧）与该档设备清单挂到容器上：宿主 hover 读像素比色用，
+           图表几何改了也不用同步改命中逻辑。 */
+        el.__ring = data.map(d => ({ k: d.k, v: d.v, c: d.c, pc: Math.round(d.v / g.total * 100), list: d.list || [],
+          colors: [toRgb(lighten(d.c, .5)), toRgb(d.c), toRgb(darken(d.c, .18))] }));
         /* 百分比贴在扇区中角外侧：位置+颜色双通道指认扇区，比在 176px 宽里排一列文字可读 */
         /* 图例放环下方，按列数折行：一行排 5 项在 352px 里必然互相叠字（实测「118·4控制电缆样品」糊成一串），
            类别多于 2 个就按 cols 换行；环也往上抬，给图例让出真实高度。 */

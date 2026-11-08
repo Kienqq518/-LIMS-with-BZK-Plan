@@ -12,7 +12,7 @@
  *  ⑨ 纪律：面颜色走 style.fill 回调，不许把 hex 塞进数据再当 encode.color 的类别
  */
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const out=[],err=[];
 const ok=(c,m)=>out.push((c?'✅':'❌')+' '+m);
 const b=await chromium.launch({channel:'chrome'});
@@ -84,19 +84,25 @@ const dkNum=await p.evaluate(()=>{const lg=[...document.querySelectorAll('#dkDev
     v:+e.querySelector('.vv').innerText,pc:+e.querySelector('.pc').innerText.replace('%','')}));
   return {lg,sum:lg.reduce((a,x)=>a+x.v,0)};});
 /* 建档口径与宿主同源：devices = 106 全量 + 103 已建档（宿主就是这么拼的），没有单独的总表接口 */
-const devicesApi=await p.evaluate(async()=>{const a=await TwinApi.get('/api/zone/106/devices');const b=await TwinApi.get('/api/zone/103/devices');
+/* 建档合计读全场设备表（/api/overview/devices，32 台），不再用 106+103 两区相加=11 台 */
+const devicesApi=await p.evaluate(async()=>{const a=await TwinApi.get('/api/overview/devices').then(r=>({data:(r.data.devices||[]).filter(d=>true)}));const b=await Promise.resolve({data:[]});
   return (a.data||[]).length+(b.data||[]).length;});
 /* 圆环只画非零档（0 台的弧线画不出来，硬塞会变成"图上有一片没有内容"），
    但四档之和这条纪律不许丢：非零档相加必须等于图例四档相加，也等于建档合计。 */
 ok(dv&&dv.length>=1&&dv.filter(x=>x.v<=0).length===0&&dv.reduce((s,d)=>s+d.v,0)===dkNum.sum,
   `圆环各档相加 == 图例四档相加（环 ${dv&&dv.map(x=>x.k+':'+x.v).join(' + ')}=${dv&&dv.reduce((s,d)=>s+d.v,0)} vs 图例 ${dkNum.lg.map(x=>x.v).join('+')}=${dkNum.sum}；0 台档只进图例不进环）`);
-ok(dkNum.lg.map(x=>x.nm).join('/')==='运行中/待机/停机/异常',`四档名与顺序（「停止」已改「停机」、就绪折进待机）: ${dkNum.lg.map(x=>x.nm).join('/')}`);
-ok(dv&&dv.reduce((s,d)=>s+d.v,0)===devicesApi,`四档相加 == 接口建档台数 ${devicesApi}（圆环不是假图）`);
+ok(dkNum.lg.map(x=>x.nm).join('/')==='运行/就绪/异常/待机/停机',`五档名与顺序（2026-11-08 定档定色，就绪不再折进待机）: ${dkNum.lg.map(x=>x.nm).join('/')}`);
+ok(dv&&dv.reduce((s,d)=>s+d.v,0)===devicesApi,`五档相加 == 接口建档台数 ${devicesApi}（圆环不是假图）`);
 ok(dkNum.lg.every(x=>Math.abs(Math.round(x.v/devicesApi*100)-x.pc)<=1),
   `图例百分比 = 台数/合计（现算不写死）: ${dkNum.lg.map(x=>x.nm+' '+x.v+' '+x.pc+'%').join(' / ')}`);
 const donut=await p.evaluate(()=>({cnt:document.querySelectorAll('#dkDevBody .dk-lg').length,
   zero:[...document.querySelectorAll('#dkDevBody .dk-lg.zero')].map(e=>e.querySelector('.nm').innerText.trim())}));
-ok(donut.cnt===4&&donut.zero.join(',')==='停机,异常',`0 台档位保留并弱化（不删行，"异常 0 台"本身就是要看的信息）: ${JSON.stringify(donut)}`);
+/* 五档（FR-56）：0 台档照样保留并弱化——"异常 0 台"本身就是要看的信息；
+   弱化行的顺序跟着图例走（运行/就绪/异常/待机/停机），当前为 异常、停机 两档为 0。 */
+/* 哪些档是 0 台由数据决定（全场表里现在只剩「异常」为 0），所以期望值也从接口推，不写死档名 */
+const zeroApi=await p.evaluate(async()=>{const d=(await TwinApi.get('/api/overview/devices')).data;
+  return ['运行','就绪','异常','待机','停机'].filter((k,i)=>[(d.byStatus.working||0),(d.byStatus.ready||0),(d.byStatus.alarm||0),(d.byStatus.standby||0),(d.byStatus.stopped||0)][i]===0);});
+ok(donut.cnt===5&&donut.zero.join(',')===zeroApi.join(','),`0 台档位保留并弱化（不删行，"异常 0 台"本身就是要看的信息）: 屏上 ${JSON.stringify(donut)} 接口应为 0 的档 ${zeroApi.join('/')||'（无）'}`);
 ok(!list.some(x=>x.name==='queue'),'底栏队列块不再塞图，清单保持完整');
 const al=sig('alarms');
 ok(al===null,'告警分组柱已从图表层摘除（不是画了个空的）');
@@ -186,10 +192,10 @@ ok(after.act===0&&after.cap===null,`th-active 选中态与图下说明文本都�
 
 
 // ⑦ 下钻出图
-await p.selectOption('#zoneSel','106'); await p.waitForTimeout(4200);
+await gotoZone(p, '106'); await p.waitForTimeout(4200);
 const z106=await p.evaluate(()=>window.__twinCharts.list().map(x=>x.name));
 ok(z106.includes('zstats'),'106 下钻出任务统计柱: '+z106.join(','));
-await p.selectOption('#zoneSel','103'); await p.waitForTimeout(4200);
+await gotoZone(p, '103'); await p.waitForTimeout(4200);
 const z103=await p.evaluate(()=>({names:window.__twinCharts.list().map(x=>x.name),sig:window.__twinCharts.list().find(x=>x.name==='zstats')}));
 /* ⑥ 周期切换跟着变（左栏撤图后，这条由区域面板的统计柱来验——它同样是"图必须跟着口径走"） */
 const per0=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='zstats');return r?JSON.parse(r.sig):null;});
@@ -204,7 +210,7 @@ ok(per0&&per1&&JSON.stringify(per0)!==JSON.stringify(per1)&&per1[0].v>per0[0].v,
   `周期切到本月 → 面板统计柱数字跟着换（已完成 ${per0&&per0[0].v} → ${per1&&per1[0].v}）`);
 await segOf('day');
 ok(z103.names.includes('zstats')&&/检测中/.test(z103.sig.sig),`103 下钻出检测项目数柱（口径随 viewProfile.blocks 走）: ${z103.sig.sig.slice(0,52)}`);
-await p.selectOption('#zoneSel','102'); await p.waitForTimeout(4200);
+await gotoZone(p, '102'); await p.waitForTimeout(4200);
 const sm=await p.evaluate(()=>{const r=window.__twinCharts.list().find(x=>x.name==='zsamples');return r?JSON.parse(r.sig):null;});
 const stored=await p.evaluate(()=>{const e=document.querySelector('#zpSamplesN');return e?+e.innerText.replace(/\D/g,''):0;});
 ok(sm&&sm.length>=3&&sm.reduce((a,x)=>a+x.v,0)===stored,`102 样品分布环形各类相加 == 在库存量（${sm&&sm.map(x=>x.v).join('+')} = ${sm&&sm.reduce((a,x)=>a+x.v,0)} vs ${stored}）`);

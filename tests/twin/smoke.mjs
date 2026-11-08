@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, gotoZone } from './_env.mjs';
 const B=BASE;
 const out=[], err=[];
 const a=(k,v,exp)=>out.push(`${String(v).toUpperCase().startsWith(String(exp).toUpperCase())?'✅':'❌'} ${k}: ${v} (期望 ${exp})`);
@@ -15,7 +15,10 @@ await page.goto(B+'/twin/future-lab/twin-scene-v2.html', {waitUntil:'load'});
 await page.waitForTimeout(9000);
 
 const hooks=async()=>page.evaluate(()=>{try{return document.getElementById('scene').contentDocument.getElementById('twin-v2-bridge')?.dataset||null}catch(e){return null}});
-a('区域下拉项数', await page.locator('#zoneSel option').count(), 10);
+/* 两段式控件（任务20）之后，房间下拉多了一项空占位「选择房间…」——它不是一个区域，
+   所以项数按 value 非空来数，占位项另验它在不在。 */
+a('区域下拉房间项数（不含占位）', await page.evaluate(() => [...document.querySelectorAll('#zoneSel option')].filter(o => o.value).length), 10);
+a('房间下拉默认不选中任何房间', await page.evaluate(() => document.getElementById('zoneSel').value), '');
 a('KPI 四张表', await page.locator('.dtable').count(), 4);
 a('报告份数不再展示', (await page.locator('#tables').innerText()).includes('报告'), false);
 a('告警流汇总行', (await page.locator('#streamMeta').innerText()).replace(/\s+/g,' '), '今日 13 条 · 未解除 9 · 最新在前');
@@ -31,7 +34,7 @@ a('剖墙 icon 已移除', await page.locator('.lic[data-layer=walls]').count(),
 a('墙体剖切仍固定生效（前侧外墙不透明度 0.12）', await page.frames().find(f=>/tour-space/.test(f.url())).evaluate(()=>{let m=null;window.visual106.overview.children.forEach(c=>{if(c.isMesh&&c.material&&c.material.transparent&&c.material.color&&c.material.color.getHex()===0xbbcbd7)m=c;});return m?+m.material.opacity.toFixed(2):'no-wall';}), 0.12);
 
 // 切区域=106
-await page.selectOption('#zoneSel','106'); await page.waitForTimeout(2500);
+await gotoZone(page,'106'); await page.waitForTimeout(2500);
 a('106 区域面板显示（五类信息）', await page.locator('#zonePanel').isVisible(), true);
 a('面板设备行含机器人', await page.locator('#zpDevices .zp-row').count(), 11);
 a('停靠充电的机器人不判卡住（RB-C-01 在 102-05 桩上）', (await page.locator('#zpDevices').innerText()).includes('停靠充电'), true);
@@ -40,7 +43,7 @@ a('106 下钻后底栏保留（机器人与任务继续走）', await page.locat
   a('106 下钻后告警流让位给区域面板（信息不重复）', await page.locator('#alarmStream').isHidden(), true);
 
 // 非 106 诚实降级
-await page.selectOption('#zoneSel','107'); await page.waitForTimeout(1800);
+await gotoZone(page,'107'); await page.waitForTimeout(1800);
 a('非106 面板诚实降级', (await page.locator('#zpDevices .zp-body').innerText()).includes('未建设备档案'), true);
 a('非106 机器人不越区', (await page.locator('#zpDevices').innerText()).includes('RB-C-01'), false);
 
@@ -80,7 +83,7 @@ a('告警行点击出闭环详情', await (async()=>{ await page.evaluate(()=>{d
 // 面板→场景高亮（发得出消息）
 /* 用下拉而不是按键 2：上一步刚在场景里点过，焦点在 iframe 内，按键要靠桥接层转发；
    这里要验的是面板行的点击链路，不该被焦点归属影响（实测这样会因面板尚未出现而行不可点导致超时） */
-await page.selectOption('#zoneSel','106'); await page.waitForTimeout(3000);
+await gotoZone(page,'106'); await page.waitForTimeout(3000);
 const devRow=await page.evaluate(()=>{const el=document.querySelector('#zpDevices:not([hidden]) .zp-row'); if(!el) return null; el.click(); return el.dataset.dev||el.dataset.robot||'row';});
 out.push((devRow?'✅':'❌')+' 面板设备行存在且可点（106 画像保留设备块）: '+devRow);
 await page.waitForTimeout(1200);
