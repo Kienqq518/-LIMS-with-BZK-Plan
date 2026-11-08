@@ -132,6 +132,29 @@ ok(th.n>=2&&rb&&rb.length===2&&rb[0].values.length===16&&Math.abs(lastT-th.avgT)
   `折线带两条序列各 16 点，末点 == 右列 ${th.n} 个温湿度点位读数均值（图与列表同一套数）：图上 ${lastT}℃/${lastH}%RH vs 均值 ${th.avgT}℃/${th.avgH}%RH`);
 ok(await p.evaluate(()=>{const c=document.querySelector('#chartTH canvas');return !!c&&c.width>0;}),'均值折线带真有像素');
 
+/* 常驻守卫：G2 默认 tooltip 会把画图用的内部坐标原样列出来，这类事故已经踩到第三次
+   （折线带 0.6777…、环中心 0.5 / 5013625、多边形顶点一长串编号）。
+   所以这里不只验"某一处关掉了"，而是把每张图的中心与边缘都 hover 一遍，
+   要求除了均值折线带（那是我们自己的卡片）之外，任何图上都不许冒出 .g2-tooltip 可见内容。 */
+const leakSpots=await p.evaluate(async()=>{
+  const spots=[]; const cvs=[...document.querySelectorAll('.tw-chart')];
+  for(const w of cvs){ const r=w.getBoundingClientRect(); if(r.width<20) continue;
+    /* 折线带的 hover 由 ④c 专门验，这里跳过它，免得两条断言互相踩 */
+    if(w.id==='chartTH') continue;
+    spots.push({id:w.id, x:Math.round(r.x+r.width/2), y:Math.round(r.y+r.height/2)});
+    spots.push({id:w.id, x:Math.round(r.x+r.width*.28), y:Math.round(r.y+r.height*.72)}); }
+  return spots;});
+let leaked=[];
+for(const sp of leakSpots){
+  await p.mouse.move(sp.x, sp.y); await p.waitForTimeout(260);
+  const bad=await p.evaluate(()=>{const e=document.querySelector('.g2-tooltip'); if(!e) return null;
+    const c=getComputedStyle(e); if(c.visibility==='hidden'||+c.opacity<.05) return null;
+    const t=e.innerText.replace(/\s+/g,' ').trim(); return t?t:null;});
+  /* #chartTH 的 tooltip 是产品要的（真实时刻 + ℃/%RH），不算泄漏；
+     但要反过来验它的内容确实是真实读数，而不是哪天又被换回内部坐标 */
+  if(bad && sp.id==='chartTH'){ if(!/\d{2}:\d{2}/.test(bad)||!/℃/.test(bad)||!/%RH/.test(bad)) leaked.push('chartTH 内容不是真实读数:'+bad.slice(0,26)); }
+  else if(bad) leaked.push(sp.id+':'+bad.slice(0,26)); }
+ok(leaked.length===0, `所有图表 hover 任何位置都不许漏出 G2 默认 tooltip（内部坐标/顶点编号）: ${leaked.slice(0,4).join(' | ')||'干净'}`);
 /* ④b 两条线不许交叉（2026-11-08 产品负责人圈图：湿度数值本来就比温度高一倍，
    两条线各自归一到同一条带里频繁交叉，看着像"湿度有时低于温度"，那是错的）。
    这条直接在**渲染出来的像素**上量：绿=湿度(22,163,74)、蓝=温度(40,120,255)，

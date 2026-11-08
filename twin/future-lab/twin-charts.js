@@ -203,9 +203,9 @@
           /* children 里不许留 null：G2 拿到 null 子节点会整张图不渲染（实测把 cap 改成条件元素后，
              圆环直接消失、注册表里查不到 devices）。所以统一 .filter(Boolean)。 */
           __h: h, type: 'view', children: [
-            { type: 'polygon', data: g.poly, encode: { x: d => d.pts.map(q => q[0]), y: d => d.pts.map(q => q[1]) }, style: { fill: d => d.c, inset: 0 } },
-            { type: 'text', data: g.lab, encode: { x: 'x', y: d => d.y + g.dy * 2.6, text: 't' }, style: { fontSize: p.fsBody, fontWeight: 700, fill: p.ink1, textAlign: 'center' } },
-            { type: 'text', data: g.lab, encode: { x: 'x', y: () => -g.ymax * .16, text: 'k' }, style: { fontSize: p.fsLabel, fill: p.ink3, textAlign: 'center' } }
+            { tooltip: false, type: 'polygon', data: g.poly, encode: { x: d => d.pts.map(q => q[0]), y: d => d.pts.map(q => q[1]) }, style: { fill: d => d.c, inset: 0 } },
+            { tooltip: false, type: 'text', data: g.lab, encode: { x: 'x', y: d => d.y + g.dy * 2.6, text: 't' }, style: { fontSize: p.fsBody, fontWeight: 700, fill: p.ink1, textAlign: 'center' } },
+            { tooltip: false, type: 'text', data: g.lab, encode: { x: 'x', y: () => -g.ymax * .16, text: 'k' }, style: { fontSize: p.fsLabel, fill: p.ink3, textAlign: 'center' } }
           ],
           scale: { x: { type: 'linear', domain: [-.62, data.length - .38], nice: false }, y: { type: 'linear', domain: [-g.ymax * .22, g.ymax * 1.18], nice: false } }
         };
@@ -219,8 +219,8 @@
         const g = groupFaces(data), h = o.height || 100;
         return {
           __h: h, type: 'view', children: [
-            { type: 'polygon', data: g.poly, encode: { x: d => d.pts.map(q => q[0]), y: d => d.pts.map(q => q[1]) }, style: { fill: d => d.c, inset: 0 } },
-            { type: 'text', data: g.lab, encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsLabel, fontWeight: d => d.head ? 400 : 700, fill: d => d.head ? p.ink3 : p.ink1, textAlign: 'center' } }
+            { tooltip: false, type: 'polygon', data: g.poly, encode: { x: d => d.pts.map(q => q[0]), y: d => d.pts.map(q => q[1]) }, style: { fill: d => d.c, inset: 0 } },
+            { tooltip: false, type: 'text', data: g.lab, encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsLabel, fontWeight: d => d.head ? 400 : 700, fill: d => d.head ? p.ink3 : p.ink1, textAlign: 'center' } }
           ],
           scale: { x: { type: 'linear', domain: [-.08, data.length + .08], nice: false }, y: { type: 'linear', domain: [-g.ymax * .2, g.ymax * 1.22], nice: false } }
         };
@@ -255,12 +255,12 @@
                环上该说的是"这一档有哪些设备"，那份清单走宿主自己的像素比色卡片（FR-58）。 */
             { type: 'polygon', data: g.poly, encode: { x: d => d.pts.map(q => q[0]), y: d => d.pts.map(q => q[1]) }, tooltip: false,
               style: { fill: d => d.c, inset: 0, stroke: d => (d.cap ? 'rgba(255,255,255,.7)' : 'transparent'), lineWidth: d => (d.cap ? .6 : 0) } },
-            { type: 'text', data: [{ x: (o.cx == null ? .5 : o.cx), y: (o.cy == null ? .5 : o.cy) - g.dep * .5, t: String(g.total) }], encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsBody * 1.2, fontWeight: 800, fill: p.ink1, textAlign: 'center' } },
+            { tooltip: false, type: 'text', data: [{ x: (o.cx == null ? .5 : o.cx), y: (o.cy == null ? .5 : o.cy) - g.dep * .5, t: String(g.total) }], encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsBody * 1.2, fontWeight: 800, fill: p.ink1, textAlign: 'center' } },
             /* 「台建档」这行小字按 2026-11-08 圈图撤除：中心数字、块标题「设备运行状态」、
                右侧「32 台建档」已经把这件事说了三遍，环上再压一行只会糊住弧线（图二就是这个效果）。
                传了 o.cap 才画，默认不画。 */
             (o.cap ? { type: 'text', data: [{ x: (o.cx == null ? .5 : o.cx), y: (o.cy == null ? .5 : o.cy) - g.dep * .5 - .17, t: o.cap }], encode: { x: 'x', y: 'y', text: 't' }, tooltip: false, style: { fontSize: p.fsMicro, fill: p.ink4, textAlign: 'center' } } : null),
-            { type: 'text', data: legend, encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsLabel, fontWeight: 700, fill: d => d.c, textAlign: d => d.anchor } }
+            { tooltip: false, type: 'text', data: legend, encode: { x: 'x', y: 'y', text: 't' }, style: { fontSize: p.fsLabel, fontWeight: 700, fill: d => d.c, textAlign: d => d.anchor } }
           ].filter(Boolean),
           scale: { x: { type: 'linear', domain: [0, 1], nice: false }, y: { type: 'linear', domain: [.98, .02], nice: false } }
         };
@@ -295,7 +295,7 @@
           /* tooltip 只挂在序列线上：标题=真实时刻，值=原始读数（带单位），颜色跟线一致。
              两条序列各自一条 item，合在同一个 tooltip 里读——这正是"只比趋势、绝对值另标"那条纪律的补位：
              趋势看图，具体数看这里。 */
-          kids.push({ type: 'line', data: r.pts, encode: { x: 'x', y: 'y' },
+          kids.push({ tooltip: false, type: 'line', data: r.pts, encode: { x: 'x', y: 'y' },
             tooltip: { title: (d) => (d.t == null ? '' : d.t), items: [{ field: 'v', name: s.name, color: c, valueFormatter: (v) => v + (s.unit || '') }] },
             style: { stroke: c, lineWidth: 1.5, lineAppendWidth: 3, strokeOpacity: .95 } });
           const last = r.pts[r.pts.length - 1];
