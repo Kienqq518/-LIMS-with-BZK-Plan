@@ -38,7 +38,10 @@
   function readURL() {
     var p = new URLSearchParams(location.search); if (!p.get('mode')) return null;
     var lay = {}; (p.get('layers') || '').split(',').forEach(function (k) { if (k) lay[k] = 1; });
-    return { mode: p.get('mode'), zone: p.get('zone') || '106', period: p.get('period') || 'day',
+    /* URL 没写 zone 时不再默认 106：那是"切区域自动选中了 106"的另一半来源。
+     层级是 overview 时本来就不该有房间；ZONE 却缺 zone 才回退到主叙事 106。 */
+    var zoneParam = p.get('zone') || (p.get('mode') === 'ZONE' ? '106' : '');
+    return { mode: p.get('mode'), zone: zoneParam, period: p.get('period') || 'day',
       layers: { path: lay.path == null ? 1 : lay.path, labels: lay.labels == null ? 0 : lay.labels, heatmap: lay.heatmap ? 1 : 0 },
       level: p.get('level') || (p.get('mode') === 'ZONE' ? 'zone' : 'overview'),
       streamFilter: p.get('sf') === 'open' ? 'open' : 'all', quality: p.get('quality') || 'high', strip: p.get('strip') ? 1 : 0 };
@@ -79,7 +82,9 @@
        原来这里只把 106 + 103 两个区接口相加=11 台，于是 107 面板永远空、
        点 105/107 的设备也查无此人——区域面板读的是这张表，不是各区端点。
        全场表拿不到时退回两区相加，保证装载链不整片断掉。 */
-    labDevices = (r[13] && r[13].data && r[13].data.devices) || [];
+    /* 资产（货架/充电位/显示屏）不产出检测数据：不进建档合计、不进运行状态环，
+       但它们是房间里的东西，区域面板必须列出来（102 那一栏标题因此是「资产」）。 */
+    labDevices = ((r[13] && r[13].data && r[13].data.devices) || []).concat((r[13] && r[13].data && r[13].data.assets) || []);
     devices = labDevices.length ? labDevices.map(function (d) { return Object.assign({}, d, { zone: d.roomId }); })
       : (r[4].data || []).map(stamp('106')).concat((r[8].data || []).map(stamp('103')));
     robots = r[5].data || []; samples = r[6].data || []; dispatchTasks = r[7].data || [];
@@ -327,6 +332,9 @@
       return rm === z;
     });
   }
+  /* 这一区有没有资产决定面板标题：102 样品室的货架/充电位/电视不是"设备"，
+     但客户要在那一栏看到它们，所以标题写「资产」、列的是设备+资产。 */
+  function zoneHasAssets(z) { return devices.some(function (d) { return d.asset && (d.roomId || '') === z; }); }
 
   /* ---------- 区域视图五类信息：设备 / 环境数据 / 任务统计 / 正在运行的任务 / 告警 ---------- */
   function loadZone() {
@@ -375,6 +383,7 @@
       zp('#zpDevices .zp-body').innerHTML = rows || '<div class="zp-empty">该区为'
         + escapeHtml((zn.name || '').replace(/^\d+\s*/, '')) + '，无试验检测设备（全场设备表 '
         + (zn.deviceCount || 0) + ' 台）。数采接入后实时参数在此出现。</div>';
+      zp('#zpDevices .zp-title').textContent = zoneHasAssets(z) ? '资产' : '设备';
       zp('#zpDevicesN').textContent = pool.length ? pool.length + ' 台建档' + (z === '106' ? ' · ' + robots.length + ' 台机器人' : '') : '未建档';
     }
 
@@ -580,7 +589,7 @@
     /* 建档合计的唯一真相 = /api/overview/devices（全场功能设备 32 台，逐台可对）。
        原来这里用 devices（=106 接口 + 103 接口相加=11 台）当全场，那是"接口给了哪两个区"，
        不是"场里有几台设备"——产品负责人一句"你怎么写建档才 11 台"戳穿的就是这个。 */
-    var pool = labDevices.length ? labDevices : devices;
+    var pool = (labDevices.length ? labDevices : devices).filter(function (d) { return !d.asset; });
     var cnt = { working: 0, ready: 0, standby: 0, stopped: 0, alarm: 0 };
     pool.forEach(function (d) { cnt[d.status] = (cnt[d.status] || 0) + 1; });
     var total = pool.length;   /* 稼动率不再单列一行：它就是「运行」那档的台数与占比 */
@@ -1212,7 +1221,12 @@
        挑了具体房间才跳转。原来这里无差别 setMode(b.dataset.mode)，点「区域」会连带把视图切一次。 */
     document.querySelectorAll('.mode').forEach(function (b) {
       b.onclick = function () {
-        if (b.dataset.level === 'zone') { st.level = 'zone'; applyAll(); flashHint('请选择房间后再跳转（画面保持当前视角）'); return; }
+        if (b.dataset.level === 'zone') {
+          /* 「区域」只是展开房间选择，默认必须未选中（产品负责人反复圈过这条）。
+             上一版只切 level，没清 zone：从总览点进来时组件2 直接显示着 106，
+             看起来就像"切区域自动选中了 106"——而画面其实没跳，两者对不上更迷惑。 */
+          st.level = 'zone'; st.zone = null;
+          applyAll(); flashHint('请选择房间后再跳转（画面保持当前视角）'); return; }
         setMode(b.dataset.mode);
       };
     });

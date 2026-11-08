@@ -508,8 +508,11 @@
                         于是 106 面板里混进一台实物在 107 的智能型数字电桥（产品负责人：106 没有电桥，去掉）。
                         归属口径留给统计与告警，设备列表只认它站在哪个房间。 */
           var lab = ((state.overview.devices || {}).devices || []).filter(function (d) { return d.roomId === zr; });
+          /* 资产不再单开一份：它就在 overview.devices 里（asset:true），
+             这里多返回一份 assets 就是第二处真相，早晚和面板对不上。 */
           return resolve(envelope({ zoneId: 'Z-' + zr, derivedFrom: 'overview.devices（全场功能设备表，按物理房间 roomId 派生）',
-            devices: clone(lab) }));
+            devices: clone(lab.filter(function (x) { return !x.asset; })),
+            assets: clone(lab.filter(function (x) { return x.asset; })) }));
         }
       }
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/([\w-]+)$/))) {

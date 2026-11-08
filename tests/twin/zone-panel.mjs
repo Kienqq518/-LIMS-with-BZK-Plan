@@ -14,12 +14,13 @@ T('106 出五块（DOM 里有 7 个块，画像决定显隐）', await p.locator
 const heads=await p.locator('#zonePanel h4').allInnerTexts();
 const em = async id => (await p.locator('#zonePanel '+id).innerText()).replace(/\s+/g,'');
 T('五块标题', (await p.locator('#zonePanel section:not([hidden]) h4').evaluateAll(els=>els.map(e=>e.textContent.replace(e.querySelector('em').textContent,'').trim()))).join('|'), '设备|环境数据|任务统计|正在运行的任务|告警');
-T('设备计数', await em('#zpDevicesN'), '9台建档·2台机器人');
+T('设备计数', await em('#zpDevicesN'), '8台建档·2台机器人');
 T('环境计数', await em('#zpEnvN'), '4个点位·5s心跳');
 T('统计周期', await em('#zpStatsPeriod'), '本日');
 { const rn = parseInt(await em('#zpRunningN'), 10); out.push((rn >= 1 && rn <= 5 ? '✅' : '❌') + ' 在制计数在合理区间(1–5，随 mock 进度浮动): ' + rn); }
 T('告警计数（B 区瓶颈已全部收在 106）', await em('#zpAlarmsN'), '今日11·未解除8');
-T('设备行数', await p.locator('#zpDevices .zp-row').count(), 11);
+/* 智能型数字电桥实物在 107-01，FR-67 已归位：106 = 8 台设备 + 2 台机器人 = 10 行 */
+T('设备行数', await p.locator('#zpDevices .zp-row').count(), 10);
 T('停靠机器人标注（不判卡住）', (await p.locator('#zpDevices').innerText()).includes('停靠充电'), 'true');
 T('在制任务超时标注承载卡住叙事', (await p.locator('#zpRunning').innerText()).includes('超时'), 'true');
 T('环境含读数', /℃.*%RH/.test(await p.locator('#zpEnv').innerText()), 'true');

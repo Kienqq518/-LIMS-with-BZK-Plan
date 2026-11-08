@@ -48,7 +48,7 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 .pill.active{color:var(--tw-color-brand-strong);background:var(--tw-glass-on);border:0;box-shadow:var(--tw-press-ring)}
 .pill.flow{color:var(--tw-color-brand);border-color:var(--tw-tint-brand-line)}
 /* 浮层几何的唯一事实源：宽度与沟槽都从这里算，改一处即可 */
-:root{--tw-rail-w:300px;--tw-rail-gap:20px;   /* 2026-11-08 产品负责人：左栏几块粘在一起了，间距从 12 拉到 20 */--tw-stream-h:492px;--tw-stream-w:430px;   /* 2026-11-08 再圈一次：更矮更宽，可见区仍是 6 条（下面腾出来的位置给 4 路监控画面） */--tw-panel-w:352px;--tw-float-gap:16px}
+:root{--tw-rail-w:300px;--tw-rail-gap:20px;   /* 2026-11-08 产品负责人：左栏几块粘在一起了，间距从 12 拉到 20 */--tw-stream-h:352px;--tw-stream-w:430px;   /* 2026-11-08 再圈：高度调短到可见 4 条，把位置让给下面四路画面 */   /* 2026-11-08 再圈一次：更矮更宽，可见区仍是 6 条（下面腾出来的位置给 4 路监控画面） */--tw-panel-w:352px;--tw-float-gap:16px}
 /* 侧栏底板层整体撤除（2026-11-07 产品负责人圈图：连面板底下那层白/玻璃底板也不要）。
    左栏、告警流、组态物联、AGV 任务块都只剩内容浮在三维画面上：无底、无描边、无圆角、无阴影、无毛玻璃。
    可读性改由 --tw-text-plate 白垫底承担（CAD 画面近白，深色字 + 白垫底对比度仍 >7:1）。
@@ -156,7 +156,8 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 /* ---- 右侧告警流（连续滚动，透明玻璃） ---- */
 /* 右列：top:14 起（原来 top:70 落在 .stage 内 = 页面 126px，上面白空 112px）。
    告警流高度固定（不随条数伸缩），组态物联吃剩余高度——两块共用同一档玻璃配方。 */
-.rcol{position:absolute;right:16px;top:70px;   /* 顶部与左栏「运行指标」齐平（2026-11-08 圈图） */bottom:16px;width:var(--tw-stream-w);display:flex;flex-direction:column;gap:var(--tw-float-gap);z-index:var(--tw-z-panel)}
+.rcol{position:absolute;right:16px;top:62px;overflow:hidden;   /* 再上移一点；overflow:hidden 兜住溢出——
+    上一版四路画面块撑出 rcol 底边，直接盖在「组态物联节点状态监测」标题上，两块文字叠成一团 */bottom:16px;width:var(--tw-stream-w);display:flex;flex-direction:column;gap:var(--tw-float-gap);z-index:var(--tw-z-panel)}
 .stream,.nodepanel{position:relative;display:flex;flex-direction:column;background:transparent;
  backdrop-filter:none;-webkit-backdrop-filter:none;
  border:0;border-radius:0;box-shadow:none;overflow:hidden;text-shadow:var(--tw-text-plate)}
@@ -327,8 +328,8 @@ body[data-zone-dock="1"] .dock{right:calc(var(--tw-float-gap) * 2 + var(--tw-pan
 .railpanel{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;
  border:0;border-radius:0;box-shadow:none;padding:0 2px 0 0}
 .rp-head{display:flex;align-items:baseline;gap:10px;margin-bottom:7px}
-.rp-head .period{margin-left:auto}          /* 周期开关贴标题行右侧 */
-.rp-head .rp-src{margin-left:0}
+.rp-head .rp-src{margin-left:auto;order:2}      /* 空的来源位把右侧撑开，周期开关才能贴到表格右边界 */
+.rp-head .period{order:3;margin-left:6px}
 .rp-head b{font-size:var(--tw-fs-strong);font-weight:800;letter-spacing:.4px;color:var(--tw-ink-1)}
 .rp-head .rp-src{margin-left:auto;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap}
 /* KPI 胶囊（.rp-kpis / .rp-kpi）整块删除（FR-41）：那四个数与下面四组的大数是同一批数字，
@@ -576,13 +577,17 @@ footer.dock{grid-template-columns:minmax(0,.92fr) minmax(0,1.66fr) minmax(0,1fr)
    编号在物联节点列表与场景节点层里都有，这里重复一遍只会挤掉场景名。 */
 /* 固定 3 列 × 2 行（2026-11-08 产品负责人：不做滚动，六套场景一次看全）。
    六格等高，格内两行：场景名（可截断）/ 节点icon + 房间号 + 状态。不再需要 dk-view 与滚动轨道。 */
-.sc-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:6px 8px}
+.sc-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:6px 8px}
 .sc-row{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;gap:3px;align-content:center;
  background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip);
  padding:5px 8px;text-shadow:none;cursor:pointer;transition:border-color var(--tw-dur-1);min-width:0}
 .sc-row:hover{border-color:var(--tw-color-brand-line)}
-.sc-row .nm{font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.sc-row .meta{display:flex;align-items:center;gap:6px;min-width:0}
+.sc-row .nm{font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-1);min-width:0;
+ white-space:normal;overflow-wrap:anywhere;line-height:1.3}   /* 场景名展示完全，不许省略号截断 */
+.sc-row .meta{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:nowrap}
+.sc-row .nodes{min-width:0;overflow:hidden;flex:0 1 auto}
+.sc-row .nodes .rm,.sc-row .st{flex:none;white-space:nowrap}
+.sc-row .nodes .pend{white-space:nowrap;flex:none}
 .sc-row .tag{font-size:var(--tw-fs-micro);color:var(--tw-ink-3);font-weight:400;margin-left:6px}
 .sc-row .st{display:inline-flex;align-items:center;gap:4px;font-size:var(--tw-fs-micro);font-weight:700;
  padding:1px 6px;border-radius:var(--tw-radius-pill);white-space:nowrap}
@@ -592,7 +597,7 @@ footer.dock{grid-template-columns:minmax(0,.92fr) minmax(0,1.66fr) minmax(0,1fr)
 .sc-row .st.abnormal i{background:var(--tw-st-warn)}
 .sc-row .st.alarm{color:var(--tw-tint-bad-fg);background:var(--tw-tint-bad-bg)}
 .sc-row .st.alarm i{background:var(--tw-st-alarm)}
-.sc-row .nodes{display:flex;align-items:center;gap:3px}
+.sc-row .nodes{display:flex;align-items:center;gap:3px;flex:none}
 .sc-row .nodes svg{width:13px;height:13px;color:var(--tw-ink-3);flex:none}
 .sc-row .nodes .rm{font-size:var(--tw-fs-micro);color:var(--tw-ink-3);font-variant-numeric:tabular-nums;margin-left:3px}
 .sc-row.pending .nodes svg{opacity:.5}
@@ -633,7 +638,7 @@ footer.dock{grid-template-columns:minmax(0,.92fr) minmax(0,1.66fr) minmax(0,1fr)
 .cctv>header b{font-size:var(--tw-fs-strong);font-weight:700;color:var(--tw-ink-1)}
 .cctv>header .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums}
 .cam-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px}
-.cam-tile{position:relative;min-height:96px;border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip);
+.cam-tile{position:relative;min-height:78px;border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip);
  background:var(--tw-glass-plate);overflow:hidden}
 .cam-tile canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .cam-tile .cm{position:absolute;left:7px;top:6px;right:7px;display:flex;align-items:center;gap:6px;

@@ -128,6 +128,7 @@ function ensureDot(devId, status) {
     /* 光点半径 0.10→0.155m（2026-11-08 产品负责人第二次提「还是太小了」）：
        总览构图缩小后 0.10m 只剩 4~5px，几乎看不见；14×12 段数够圆，不额外加面数。 */
     dot = new THREE.Mesh(new THREE.SphereGeometry(0.155, 16, 12), mat);
+    dot.userData.room = String(devId).slice(0, 3);   /* 下钻时按房间收放光点用 */
     dot.position.set((box.min.x + box.max.x) / 2, box.max.y + 0.18, (box.min.z + box.max.z) / 2);
     visual.detail.add(dot); statusDots.set(devId, dot);
   }
@@ -135,7 +136,16 @@ function ensureDot(devId, status) {
   dot.material.emissive.setHex(conf[0]); dot.userData.mode = conf[1];
 }
 function pulseDots(t) {
+  /* 下钻到某个房间时，别的房间的状态点要收掉（2026-11-08 圈图：106 画面里飘着一堆房间外的点，
+     它们的设备模型已经被裁在画面外，点还留着就像"这些点属于 106"，是误导）。
+     总览（overview）仍全量显示——那时整个实验室都在画面里。 */
+  const roomNow = /^\d{3}/.test(String(visual.view || '')) ? String(visual.view).slice(0, 3)
+    : (visual.view === 'close' ? '106' : null);
   statusDots.forEach(dot => {
+    /* 光点的房间归属：总览全显；下钻到某房间只显示那一间的。
+       上一版没有这条，106 画面里飘着 107/108/109/110 的点——它们的设备模型已被裁在画面外，
+       点还亮着，客户就会以为那些点是 106 的设备状态。 */
+    dot.visible = !roomNow || dot.userData.room === roomNow;
     if (LOW) { dot.material.emissiveIntensity = dot.userData.mode === 'fast' ? 3.2 : dot.userData.mode === 'dim' ? 0.7 : 2.2; return; }
     const mode = dot.userData.mode;
     if (mode === 'pulse') dot.material.emissiveIntensity = 2.4 + Math.sin(t * 0.0035) * 1.1;
@@ -1085,7 +1095,10 @@ function renderCard(id, center) {
     '<div class="cid">' + id + (o && o.code ? ' · ' + o.code : '') + ' · ' + room + ' ' + (ROOM_CN[room] || '') + '</div>' +
     '<div class="row"><span>状态</span><b class="st ' + (status || (furn ? 'na' : 'stopped')) + '"><i></i>'
     + (status ? ST_CN[status] : (furn ? '非设备（家具）' : ST_CN.stopped)) + '</b></div>' +
-    '<div class="row"><span>' + (o ? '类型' : '归档') + '</span><b>' + esc(o ? (TYPE_CN[o.type] || o.type || '—') : (n.nameConfirmed ? 'CAD 已确认名称' : 'CAD 原始名称')) + '</b></div>' +
+    /* 「归档：CAD 已确认名称」按 2026-11-08 圈图从所有房间的设备/物品卡片撤除：
+       那是我们建模时的命名进度记录，不是客户要看的东西；名称本身已经确认过才会出现在这里。
+       台账设备仍保留「类型」（检测/制样/测量——那是现场真正会问的一栏）。 */
+    (o ? '<div class="row"><span>类型</span><b>' + esc(TYPE_CN[o.type] || o.type || '—') + '</b></div>' : '') +
     (o && o.subZone ? '<div class="row"><span>分区</span><b>' + esc(o.subZone) + '</b></div>' : '') +
     (params ? '<div class="row"><span>关键参数</span><b>' + esc(params) + '</b></div>' : '') +
     '<div class="row"><span>占地</span><b>' + fp + '</b></div>' +
