@@ -661,18 +661,42 @@
      屏上不编数：停靠桩的那台显示「停靠充电 · 回升中」，不写成故障。 */
   /* 4 路视觉节点画面：格位与归属先按真实节点表落好（103/105/106/109）。
      画面本身要场景离屏渲相机才能给，没渲之前写「画面待接入」，不放静态图冒充实时。 */
+  var camList = [], camPull = null;
   function renderCams() {
     var el = $('#camGrid'); if (!el) return;
     var cams = (envNodes || []).filter(function (n) { return n.type === 'camera'; });
     el.innerHTML = cams.map(function (n) {
       return '<div class="cam-tile" data-node="' + n.id + '" tabindex="0" role="button" aria-label="'
-        + escapeHtml(n.id + ' ' + n.name + '，位于 ' + n.roomId + ' 区，' + nodeReading(n) + '，实时画面待接入（二期由视觉节点回传）') + '">'
+        + escapeHtml(n.id + ' ' + n.name + '，位于 ' + n.roomId + ' 区，' + nodeReading(n) + '；当前画面是孪生场景按该点位坐标渲的色，非现场实拍；视频通道二期接入') + '">'
         + '<canvas width="320" height="180"></canvas>'
         + '<div class="cm"><i class="rec"></i><b>' + escapeHtml(n.name) + '</b><span class="rm">' + escapeHtml(n.roomId) + ' 区</span></div>'
         + '<div class="wait">画面待接入</div>'
-        + '<div class="st">' + escapeHtml(nodeReading(n)) + '</div></div>';
+        /* 右下角原来贴的是点位读数 nodeReading(n)，对摄像头那类返回「画面未接入」——
+           画面都渲出来了还写"未接入"，是自己跟自己打架。真实情况是：
+           **视频通道确实没接，屏上是孪生场景按该点位坐标渲的色**，所以标这个。
+           二期接上 RTSP/WebRTC 后，这段换成真视频纹理，标注改回「实拍」。 */
+        + '<div class="st">渲染色 · 非现场实拍</div></div>';
     }).join('');
     var c = $('#cctvCnt'); if (c) c.textContent = cams.length + ' 路 · ' + cams.map(function (n) { return n.roomId; }).join('/');
+    camList = cams.slice(0, 4);
+    sendScene('feeds', { cams: camList.map(function (n) { return { id: n.id, roomId: n.roomId, position: n.position }; }) });
+    if (!camPull) camPull = setInterval(pullCamFeeds, 460);
+    pullCamFeeds();
+  }
+  /* 把场景离屏渲好的 strip 裁进四个格子。取不到（场景没渲/跨帧竞态）就保持「画面待接入」，
+     不画半张图糊在格子上。 */
+  function pullCamFeeds() {
+    var strip = null;
+    try { strip = scene.contentWindow && scene.contentWindow.document.getElementById('feedStrip'); } catch (e) { return; }
+    if (!strip || !strip.width) return;
+    document.querySelectorAll('#camGrid .cam-tile').forEach(function (tile, i) {
+      var cv = tile.querySelector('canvas'); if (!cv) return;
+      var ctx = cv.getContext('2d'); if (!ctx) return;
+      try {
+        ctx.drawImage(strip, i * 320, 0, 320, 180, 0, 0, cv.width, cv.height);
+        var w = tile.querySelector('.wait'); if (w) w.remove();
+      } catch (e) { /* 场景还没渲出来：留着"画面待接入" */ }
+    });
   }
 
   function renderAgv() {
@@ -741,6 +765,10 @@
       return c;
     });
     var sig = list.map(function (x) { return x.sceneId + ':' + x.status + ':' + x.openAlarms + ':' + (x.breach || []).join('/'); }).join(',');
+    /* scView 必须在提前 return 之前落定：它是点击处理（dockLocateScene）唯一的依据。
+       上一版把它写在 return 之后，于是第一次心跳之后签名不再变化 → 直接 return → scView 永远是空数组
+       → 点场景行毫无反应、body[data-last-scene] 也不写，屏上那句「回车定位」成了空承诺。 */
+    scView = list;
     if (sig && sig === scSig) return;          /* 内容没变就不重建轨道（重建会把无缝滚动弹回顶部，见 FR-30b） */
     scSig = sig;
     document.body.dataset.sceneCount = String(list.length);
@@ -763,7 +791,6 @@
         + '<span class="st ' + x.status + '"><i></i>' + escapeHtml(x.statusLabel) + (x.openAlarms ? ' ' + x.openAlarms : '') + '</span></span></div>';
     }).join('');
     el.innerHTML = html;   /* 固定六格，不再走 dkTrack：没有滚动就没有回声副本，也就没有"同一场景被念两遍"的问题 */
-    scView = list;   /* 状态标签是这里现算的，点击处理必须读这份：原始表里没有 statusLabel，于是屏上出现过「（105 区 · undefined）」 */
     keyable(el);
     var c = $('#scCnt');
     if (c) c.textContent = '已部署 ' + list.length + ' 套 · 告警 ' + list.filter(function (x) { return x.status === 'alarm'; }).length

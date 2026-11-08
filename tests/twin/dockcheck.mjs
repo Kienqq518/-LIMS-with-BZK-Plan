@@ -112,8 +112,12 @@ for(let k=0;k<18;k++){
   if(seenFlows.size>=2) break;
   await p.waitForTimeout(4000);
 }
-out.push((sync.liveFlow&&sync.runFlows.indexOf(sync.liveFlow)>=0&&sync.liveCount===1?'✅':'❌')
-  +' 块2「循环中」在同一次响应内自洽（liveFlow 属于 running 且只标一行）: live='+sync.liveFlow+' running='+sync.runFlows.join(','));
+/* 取样段/返航段本来就不在队列流号里（live 属于剧本，不属于派单），
+   这时「循环中」一行都不该有——所以两种情况都算自洽：要么 liveFlow 是某条 running 流且只标一行，
+   要么正处在取样/返航段且一行都没标。 */
+const legOk=/取样|返航/.test(sync.liveFlow||'');
+out.push((sync.liveFlow&&(legOk?sync.liveCount===0:(sync.runFlows.indexOf(sync.liveFlow)>=0&&sync.liveCount===1))?'✅':'❌')
+  +' 块2「循环中」在同一次响应内自洽（流号属于 running 且只标一行；取样/返航段则一行都不标）: live='+sync.liveFlow+' running='+sync.runFlows.join(',')+' 标了'+sync.liveCount+'行');
 out.push((seenFlows.size>=2?'✅':'❌')+' 随剧本推进换过 '+seenFlows.size+' 条流: '+[...seenFlows].join(' → '));
 /* 取样段/返航段本来就没有"循环中"那一行（live 属于剧本而非队列），此时工位反推不适用，如实说明而不是判失败 */
 out.push(((sync.liveCount===0&&!/\d{3}-\d{2}$/.test(sync.liveCad||''))||sync.liveCad&&/^\d{3}-\d{2}$/.test(sync.liveCad)?'✅':'❌')

@@ -385,7 +385,72 @@ function build(v) {
     if (d.type === 'quality') setQuality(d.level === 'low' ? 'low' : 'high');
     if (d.type === 'camera') camCmd(d);
     if (d.type === 'objects') { objectInfo = d.objects || {}; if (cardFor) renderCard(cardFor); }
+    if (d.type === 'feeds') setFeeds(d.cams || []);
   });
+
+  /* ── 视觉节点实时画面（2026-11-08 产品负责人：告警流下方四格要放监控实时画面）───────────────
+     做法：在**每个视觉点位的坐标处架一路相机**，离屏渲到 RenderTarget，再翻到一条 strip 画布上，
+     宿主按格裁过去。三点为什么这么做：
+       · 不借主相机：主相机被切走四次就是满屏闪，售前投影上这是事故；
+       · 不用生成图：imagegen 出来的照片和你在同一个模型里看到的设备位置/外观会打架，
+         等于自己给自己造第二个真相；渲场景自己，画面与几何永远一致。
+     诚实边界：这是**孪生场景的渲染色**，不是现场实拍。格子里标「画面待接入」直到真机回传，
+     二期接 RTSP/WebRTC 后这段渲染直接换成视频纹理，格位与标注都不用动。 */
+  const FEED_W = 320, FEED_H = 180;
+  let feedRt = null, feedCam = null, feedStrip = null, feedCtx = null, feedImg = null, feedBuf = null, feedCams = [], feedSeq = 0;
+  function ensureFeed() {
+    if (feedRt) return true;
+    if (!visual.renderer || !visual.scene) return false;
+    feedRt = new THREE.WebGLRenderTarget(FEED_W, FEED_H, { depthBuffer: true });
+    feedCam = new THREE.PerspectiveCamera(58, FEED_W / FEED_H, .05, 160);
+    feedStrip = document.createElement('canvas');
+    feedStrip.id = 'feedStrip'; feedStrip.width = FEED_W * 4; feedStrip.height = FEED_H;
+    feedStrip.setAttribute('aria-hidden', 'true');
+    feedStrip.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + FEED_W * 4 + 'px;height:' + FEED_H + 'px';
+    document.body.appendChild(feedStrip);
+    feedCtx = feedStrip.getContext('2d');
+    feedImg = feedCtx.createImageData(FEED_W, FEED_H);
+    feedBuf = new Uint8Array(FEED_W * FEED_H * 4);
+    return true;
+  }
+  function setFeeds(cams) {
+    feedCams = cams;
+    if (cams.length && !ensureFeed()) return;
+    renderFeeds();
+  }
+  function roomCenter(rm) {
+    /* 看向本房间地面多边形的形心：这就是"这个摄像头对着自己房间"的意思，
+       比写死一个朝向稳（朝向写死后，CAD 一改房间轮廓画面就歪） */
+    const r = (visual.g.rooms || []).filter(x => String(x.id) === rm)[0];
+    if (!r || !r.points || !r.points.length) return null;
+    let sx = 0, sz = 0; r.points.forEach(p => { sx += p[0]; sz += p[1]; });
+    return new THREE.Vector3(sx / r.points.length * .05, .9, sz / r.points.length * .05);
+  }
+  function renderFeeds() {
+    if (!feedRt || !feedCams.length) return;
+    const R = visual.renderer, oldT = R.getRenderTarget();
+    for (let i = 0; i < feedCams.length && i < 4; i++) {
+      const c = feedCams[i], p = c.position || {}, from = new THREE.Vector3(p.x || 0, (p.y || 2.55) - .12, p.z || 0);
+      const to = roomCenter(String(c.roomId || '')) || from.clone().add(new THREE.Vector3(0, 0, -1));
+      feedCam.position.copy(from); feedCam.lookAt(to); feedCam.updateProjectionMatrix();
+      R.setRenderTarget(feedRt);
+      R.render(visual.scene, feedCam);
+      R.readRenderTargetPixels(feedRt, 0, 0, FEED_W, FEED_H, feedBuf);
+      /* WebGL 的原点在左下、ImageData 在左上：不翻 Y 出来的画面是倒的（第一次做就栽在这） */
+      for (let y = 0; y < FEED_H; y++) {
+        const src = (FEED_H - 1 - y) * FEED_W * 4, dst = y * FEED_W * 4;
+        for (let x = 0; x < FEED_W; x++) {
+          const s = src + x * 4, d = dst + x * 4;
+          feedImg.data[d] = feedBuf[s]; feedImg.data[d + 1] = feedBuf[s + 1]; feedImg.data[d + 2] = feedBuf[s + 2]; feedImg.data[d + 3] = 255;
+        }
+      }
+      feedCtx.putImageData(feedImg, i * FEED_W, 0);
+    }
+    R.setRenderTarget(oldT);          /* 必须还原：留着 RenderTarget 下一帧主画面就渲到离屏去了 */
+    feedSeq++;
+  }
+  setInterval(() => { if (feedCams.length) renderFeeds(); }, 420);   /* ~2.4fps：演示够用，又不至于吃掉主循环 */
+  visual.renderFeeds = renderFeeds;
 
   /* 焦点在三维场景里时，翻页笔按键交回宿主（决策 Q1：售前投影遥控翻页） */
   addEventListener('keydown', ev => {
