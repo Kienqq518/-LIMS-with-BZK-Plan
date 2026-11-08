@@ -418,6 +418,19 @@
          原来左栏「设备运行状态」只把 106 + 103 两个区的记录相加 = 11 台当成全场，
          产品负责人一句「整个未来实验室是 22 还是 23 台，你怎么写建档才 11 台」把它戳穿了——
          那是"接口给了哪两个区"，不是"场里有几台设备"。现在读 overview.devices（32 台，逐台可对）。 */
+      /* deviceCount 不再用 seed 里手抄的那一份（实测与全场表几乎每区都对不上：105 是 5 vs 8、
+         109 是 6 vs 3、110 是 2 vs 5）。「这个区有几台设备」只允许有一个真相源 = overview.devices，
+         否则区域面板写「台账投影：8 台」、左栏圆环写 33 台，售前一问就穿。 */
+      if (path === '/api/overview/zones') {
+        var zs = clone(state.overview.zones || []), labZ = ((state.overview.devices || {}).devices || []);
+        zs.forEach(function (z) {
+          var rm = z.zoneId.slice(2);
+          var n = labZ.filter(function (d) { return d.roomId === rm; }).length;
+          z.deviceCountSeed = z.deviceCount; z.deviceCount = n;
+          z.deviceCountBasis = 'overview.devices 按 roomId 派生（seed 手抄值见 deviceCountSeed）';
+        });
+        return resolve(envelope(zs));
+      }
       if (path === '/api/overview/devices') {
         var dv = state.overview.devices || {};
         var all = dv.devices || [];
@@ -484,6 +497,20 @@
       }
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/alarms$/))) {
         return resolve(envelope({ zoneId: 'Z-' + m[1], alarms: clone((state.overview.alarms || []).filter(function (a) { return a.zoneId === 'Z-' + m[1]; })) }));
+      }
+      /* 107 那处矛盾（FR-65 遗留）就在这条之前补：区域面板的设备列表原来只有 106/103 两个区有数据，
+         于是 107 面板写「未建设备档案」，而全场设备表里 107 已经有 6 台——两边各自成立、互相矛盾。
+         106/103 继续走下面的老分支（它们带实时任务与关键参数，归属口径是"数据来源分区"，台数不能动）；
+         其余房间从 overview.devices 按物理 roomId 派生，读同一张全场表，不再出现"这区没档案"。 */
+      if ((m = path.match(/^\/api\/zone\/(\d{3})\/devices$/))) {
+        var zr = m[1];
+        if (true) {   /* 全部房间统一按物理 roomId 派生：原来 106/103 走"数据归属分区"的老分支，
+                        于是 106 面板里混进一台实物在 107 的智能型数字电桥（产品负责人：106 没有电桥，去掉）。
+                        归属口径留给统计与告警，设备列表只认它站在哪个房间。 */
+          var lab = ((state.overview.devices || {}).devices || []).filter(function (d) { return d.roomId === zr; });
+          return resolve(envelope({ zoneId: 'Z-' + zr, derivedFrom: 'overview.devices（全场功能设备表，按物理房间 roomId 派生）',
+            devices: clone(lab) }));
+        }
       }
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/([\w-]+)$/))) {
         var zone = state['zone' + m[1]];

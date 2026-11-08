@@ -75,7 +75,13 @@
     ]);
   }).then(function (r) {
     status = r[0].data; zones = r[1].data || []; tasks = r[2].data || []; alarms = r[3].data || [];
-    devices = (r[4].data || []).map(stamp('106')).concat((r[8].data || []).map(stamp('103')));   /* 106 全量 + 103 已建档；归属=数据来源分区 */
+    /* 设备清单的唯一真相 = 全场功能设备表（33 台，含 105/107/108/109/110）。
+       原来这里只把 106 + 103 两个区接口相加=11 台，于是 107 面板永远空、
+       点 105/107 的设备也查无此人——区域面板读的是这张表，不是各区端点。
+       全场表拿不到时退回两区相加，保证装载链不整片断掉。 */
+    labDevices = (r[13] && r[13].data && r[13].data.devices) || [];
+    devices = labDevices.length ? labDevices.map(function (d) { return Object.assign({}, d, { zone: d.roomId }); })
+      : (r[4].data || []).map(stamp('106')).concat((r[8].data || []).map(stamp('103')));
     robots = r[5].data || []; samples = r[6].data || []; dispatchTasks = r[7].data || [];
     routeNote = (robots[0] && robots[0].routeBasis) ? '机器人位置基准：' + robots[0].routeBasis : '';
     walls = (r[10] && r[10].data) || [];
@@ -311,7 +317,14 @@
 
   /* ---------- ③ 106 主叙事：机器人卡住 / 当前调度任务 / 设备状态 / 异常（决策 Q4） ---------- */
   function stamp(z) { return function (d) { d.zoneId = d.zoneId || 'Z-' + z; return d; }; }   /* 区域归属=数据来源分区（删机器人浮条时曾被连带删掉，导致整条装载链中断） */
-  function zoneDevices(z) { return devices.filter(function (d) { return (d.zoneId || '').slice(2) === z; }); }
+  /* 区域设备列表按**物理房间**取：全场表记录带 roomId（10 位数字），老的两区记录带 zoneId（Z-106）。
+     之前只认 zoneId，换成全场表后每个区都筛成空列表——面板于是写「未建档」、108/109/110 一台都不出。 */
+  function zoneDevices(z) {
+    return devices.filter(function (d) {
+      var rm = d.roomId || (d.zoneId || '').slice(2);
+      return rm === z;
+    });
+  }
 
   /* ---------- 区域视图五类信息：设备 / 环境数据 / 任务统计 / 正在运行的任务 / 告警 ---------- */
   function loadZone() {
@@ -338,7 +351,12 @@
       var bad = {}; zalarms.forEach(function (a) { if (a.status !== 'resolved' && a.deviceId) bad[a.deviceId] = 1; });
       var rows = pool.slice().sort(function (a, b) { return (bad[b.deviceId] ? 1 : 0) - (bad[a.deviceId] ? 1 : 0); }).map(function (d) {
         var cls = bad[d.deviceId] ? 'alarm' : d.status;
-        return '<div class="zp-row ' + cls + '" data-dev="' + d.deviceId + '" data-cad="' + (d.modelNode || '').replace('cad:', '') + '"><i class="dot"></i><span class="nm">' + d.code + '</span><span class="sub">' + escapeHtml(d.subZone) + ' · ' + ST_CN(cls) + '</span></div>';
+        /* 格式按 2026-11-08 要求：编号 + 名称 +「型号」。
+           原来只写编号，售前一问「YM-WRH-04 是什么」就得翻台账；名称与型号都在全场表里，没有额外数据源。 */
+        return '<div class="zp-row ' + cls + '" data-dev="' + d.deviceId + '" data-cad="' + (d.modelNode || '').replace('cad:', '') + '">'
+          + '<i class="dot"></i><span class="nm">' + escapeHtml(d.code) + ' ' + escapeHtml(d.name || '')
+          + '<em class="mdl">' + escapeHtml(d.model || d.code) + '</em></span>'
+          + '<span class="sub">' + escapeHtml(d.subZone) + ' · ' + ST_CN(cls) + '</span></div>';
       }).join('');
       if (z === '106') rows += robots.map(function (r) {
         var stall = (r.taskElapsedMin != null && r.stallLimitMin != null && r.taskElapsedMin > r.stallLimitMin && r.action !== 'charging' && !r.parked);
@@ -349,7 +367,12 @@
           (stall ? '<span class="tag stall">疑似卡住</span>' : '<span class="tag">' + (r.parked ? '停靠充电' : r.action === 'charging' ? '充电中' : r.action === 'moving' ? '行进中' : '待机') + '</span>') +
           '<span class="sub">' + sub + '</span></div>';
       }).join('');
-      zp('#zpDevices .zp-body').innerHTML = rows || '<div class="zp-empty">该区 V1 未建设备档案（台账投影：' + (zn.deviceCount || 0) + ' 台）。接入数采分区数据后自动出现。</div>';
+      /* 空状态的措辞跟着口径走：101/104 这类接待与控制区本来就没有试验检测设备，
+         不该写成"未建设备档案/接入后自动出现"（那听起来像我们没做完），
+         也不该再引用一个和左栏不同的台数。 */
+      zp('#zpDevices .zp-body').innerHTML = rows || '<div class="zp-empty">该区为'
+        + escapeHtml((zn.name || '').replace(/^\d+\s*/, '')) + '，无试验检测设备（全场设备表 '
+        + (zn.deviceCount || 0) + ' 台）。数采接入后实时参数在此出现。</div>';
       zp('#zpDevicesN').textContent = pool.length ? pool.length + ' 台建档' + (z === '106' ? ' · ' + robots.length + ' 台机器人' : '') : '未建档';
     }
 
@@ -589,7 +612,7 @@
     TwinCharts.donut($('#chartDevices'), 'devices', buckets.map(function (x) { return { k: x.k, v: x.v, c: x.c, list: x.list }; }),
       /* 环放大（rx .32→.355）、带子收薄（inner .6→.58）、挤出减浅（depth .16→.105）、档间留 5° 缝。
          产品负责人嫌原来「一坨蓝」，这几项合起来才读得出这是四档分布而不是一个蓝色圆盘。 */
-      { height: 96, legend: false, cx: .5, cy: .52, rx: .355, flat: .86, inner: .58, depth: .105, padDeg: 5, cap: '台建档' });
+      { height: 96, legend: false, cx: .5, cy: .52, rx: .355, flat: .86, inner: .58, depth: .105, padDeg: 5 });
     bindRingTip();
   }
   /* 环形图 hover（产品负责人：hover 到对应颜色环上应展示该档设备的名称/区域/编号/型号）。
@@ -681,6 +704,7 @@
        与右列组态物联、场景节点层同一份读数，不另建第二套真相）。阈值取场景方案文档里的规则原值：
        温度 >28℃、湿度 >70%RH、气体 exceeded、烟感/水浸 detected。 */
     var byId = {}; (envNodes || []).forEach(function (n) { byId[n.id] = n; });
+    scView = [];
     list = list.map(function (x) {
       var breach = [];
       (x.nodes || []).forEach(function (nd) {
@@ -720,6 +744,7 @@
         + '<span class="st ' + x.status + '"><i></i>' + escapeHtml(x.statusLabel) + (x.openAlarms ? ' ' + x.openAlarms : '') + '</span></span></div>';
     }).join('');
     el.innerHTML = html;   /* 固定六格，不再走 dkTrack：没有滚动就没有回声副本，也就没有"同一场景被念两遍"的问题 */
+    scView = list;   /* 状态标签是这里现算的，点击处理必须读这份：原始表里没有 statusLabel，于是屏上出现过「（105 区 · undefined）」 */
     keyable(el);
     var c = $('#scCnt');
     if (c) c.textContent = '已部署 ' + list.length + ' 套 · 告警 ' + list.filter(function (x) { return x.status === 'alarm'; }).length
@@ -729,12 +754,12 @@
   /* 点场景行：把该场景所辖节点在场景里点选出来（复用物联节点那套 select-node 通道），
      并说一句这个场景的核心规则——屏上不常驻，只在提示里出现一次。 */
   function dockLocateScene(sceneId) {
-    var x = ((safety && safety.scenes) || []).filter(function (y) { return y.sceneId === sceneId; })[0];
+    var x = (scView || []).filter(function (y) { return y.sceneId === sceneId; })[0];   /* 读算好的那份，不读原始表 */
     if (!x) return;
     var first = (x.nodes || [])[0];
     if (first) dockSelectNode(first.id);
     document.body.dataset.lastScene = sceneId;
-    flashHint(x.name + '（' + x.roomId + ' 区 · ' + x.statusLabel + '）规则：' + x.rule);
+    sceneTip(x);   /* 气泡改到「安全管家场景监测」块正上方（产品负责人：弹窗要在图表附近，别跑画面中间） */
   }
 
   /* 「流程配置 N 条 · 循环同步：xxxxx」不再上屏（2026-11-08 圈图），但口径必须还有人能看到：
@@ -748,6 +773,28 @@
     blk.setAttribute('aria-label', '无人化调度任务：流程配置 ' + (qt ? qt.length : 0) + ' 条' + sync
       + '，按进行中 / 未派单 / 已完成三列');
   }
+
+  /* 场景说明气泡：锚在场景监测块上方，内容含 名称/标签/状态/所在房间/节点类型/核心规则/动作，
+     待布点与越限也如实带出来。6s 自动收，点别处即换。 */
+  function sceneTip(x) {
+    var blk = $('#dkScenes'); if (!blk) { flashHint(x.name); return; }
+    var tip = document.getElementById('scTip');
+    if (!tip) { tip = document.createElement('div'); tip.id = 'scTip'; tip.className = 'sc-tip'; document.body.appendChild(tip); }
+    tip.innerHTML = '<div class="st-h"><b>' + esc0(x.name) + '</b><span class="st-t">' + esc0(x.tag) + '</span>'
+      + '<span class="st-s ' + x.status + '">' + esc0(x.statusLabel) + (x.openAlarms ? ' ' + x.openAlarms : '') + '</span></div>'
+      + '<div class="st-r">位于 ' + esc0(x.roomId) + ' 区 · 节点 '
+      + esc0((x.nodes || []).length ? (x.nodes || []).map(function (n) { return NODE_CN(n.type); }).join('/') : '待布点') + '</div>'
+      + '<div class="st-r">核心规则：' + esc0(x.rule) + '</div>'
+      + '<div class="st-a">动作：' + esc0(x.actions || '—') + '</div>'
+      + ((x.breach || []).length ? '<div class="st-b">越限：' + esc0(x.breach.join('、')) + '</div>' : '')
+      + (x.pending ? '<div class="st-p">' + esc0(x.pending) + '</div>' : '');
+    var r = blk.getBoundingClientRect();
+    tip.style.left = Math.round(r.left) + 'px';
+    tip.style.bottom = Math.round(window.innerHeight - r.top + 10) + 'px';
+    tip.hidden = false;
+    clearTimeout(tip.__t); tip.__t = setTimeout(function () { tip.hidden = true; }, 6000);
+  }
+  function esc0(v) { return escapeHtml(v == null ? '' : String(v)); }
 
   function renderDock() {
     /* ① 设备信息统计：状态分布 + 稼动率（在测/建档，现算不写死） */
@@ -1114,7 +1161,15 @@
   });
 
   function bindControls() {
-    document.querySelectorAll('.mode').forEach(function (b) { b.onclick = function () { setMode(b.dataset.mode); }; });
+    /* 组件1 的两颗按钮语义不同（2026-11-08 产品负责人：切到「区域」时下方建模先不要变换）：
+       「实验室总览」= 真的回总览构图；「区域」= 只把组件2（房间选择）展开，画面保持不动，
+       挑了具体房间才跳转。原来这里无差别 setMode(b.dataset.mode)，点「区域」会连带把视图切一次。 */
+    document.querySelectorAll('.mode').forEach(function (b) {
+      b.onclick = function () {
+        if (b.dataset.level === 'zone') { st.level = 'zone'; applyAll(); flashHint('请选择房间后再跳转（画面保持当前视角）'); return; }
+        setMode(b.dataset.mode);
+      };
+    });
     /* 组件2 的语义：空值=还没选房间 → 画面不动（回总览构图），选中任意房间才刷新跳转 */
     $('#zoneSel').onchange = function () {
       if (!this.value) { st.level = 'zone'; st.zone = null; setMode('S1'); return; }

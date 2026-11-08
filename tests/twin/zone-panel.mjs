@@ -45,7 +45,12 @@ T('本区告警详情打开', await p.locator('#detail').isVisible(), 'true');
 T('回溯抽屉不存在', await p.locator('#s3Drawer').count(), 0);
 // 切到 107（无档案/1个环境点位）与 101（非试验区）
 await gotoZone(p, '107'); await p.waitForTimeout(2500);
-T('107 设备未建档诚实', (await p.locator('#zpDevices .zp-body').innerText()).includes('未建设备档案'), 'true');
+/* FR-66：区域设备列表改从全场表按 roomId 派生后，107 有 6 台，不该再写「未建设备档案」。
+   诚实降级这条口径留给**真的没有检测设备**的区（101 接待大厅 / 104 控制室），
+   而且措辞要说"该区无试验检测设备"，不能写成"未建档、接入后自动出现"——那是把业务事实说成我们的进度。 */
+T('107 设备列表已从全场表派生（6 台，不再写未建档）', await p.evaluate(async()=>{
+  const d=(await TwinApi.get('/api/zone/107/devices')).data; return (d.devices||[]).length; }), 6);
+T('107 面板头台数与列表同源', (await p.locator('#zpDevicesN').innerText()).includes('6 台建档'), 'true');
 T('107 环境仍有点位', await p.locator('#zpEnv .zp-row').count(), 1);
 await gotoZone(p, '101'); await p.waitForTimeout(2500);
 T('101 只出环境数据块（画像：接待大厅不需要任务/告警/设备）', await p.locator('#zonePanel section:not([hidden])').count(), 1);

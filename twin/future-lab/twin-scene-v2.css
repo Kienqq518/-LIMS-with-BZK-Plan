@@ -48,7 +48,7 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 .pill.active{color:var(--tw-color-brand-strong);background:var(--tw-glass-on);border:0;box-shadow:var(--tw-press-ring)}
 .pill.flow{color:var(--tw-color-brand);border-color:var(--tw-tint-brand-line)}
 /* 浮层几何的唯一事实源：宽度与沟槽都从这里算，改一处即可 */
-:root{--tw-rail-w:300px;--tw-rail-gap:20px;   /* 2026-11-08 产品负责人：左栏几块粘在一起了，间距从 12 拉到 20 */--tw-stream-h:600px;--tw-stream-w:420px;   /* 2026-11-08 圈图：告警流高度调低、宽度调宽，可见区固定 6 条 */--tw-panel-w:352px;--tw-float-gap:16px}
+:root{--tw-rail-w:300px;--tw-rail-gap:20px;   /* 2026-11-08 产品负责人：左栏几块粘在一起了，间距从 12 拉到 20 */--tw-stream-h:492px;--tw-stream-w:520px;   /* 2026-11-08 再圈一次：更矮更宽，可见区仍是 6 条（下面腾出来的位置给 4 路监控画面） */--tw-panel-w:352px;--tw-float-gap:16px}
 /* 侧栏底板层整体撤除（2026-11-07 产品负责人圈图：连面板底下那层白/玻璃底板也不要）。
    左栏、告警流、组态物联、AGV 任务块都只剩内容浮在三维画面上：无底、无描边、无圆角、无阴影、无毛玻璃。
    可读性改由 --tw-text-plate 白垫底承担（CAD 画面近白，深色字 + 白垫底对比度仍 >7:1）。
@@ -526,6 +526,28 @@ footer.dock{grid-template-columns:minmax(0,1.18fr) minmax(0,1.34fr) minmax(0,1fr
 .g2-tooltip-list-item,.g2-tooltip-list-item-name,.g2-tooltip-list-item-value{font-size:var(--tw-fs-label)!important;color:var(--tw-ink-1)!important}
 .g2-tooltip-list-item-name{color:var(--tw-ink-3)!important}
 .g2-tooltip-list-item-value{font-weight:700;font-variant-numeric:tabular-nums}
+
+/* 场景说明气泡（2026-11-08）：锚在「安全管家场景监测」块正上方，F 档淡灰，跟随全站无底板口径。
+   原来这条信息走全局提示条，跑到画面正中，离它说的是哪一格十万八千里。 */
+.sc-tip{position:fixed;z-index:var(--tw-z-card);left:14px;bottom:200px;max-width:392px;
+ background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);
+ box-shadow:none;padding:9px 11px;font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);
+ backdrop-filter:var(--tw-blur) var(--tw-sat);-webkit-backdrop-filter:var(--tw-blur) var(--tw-sat)}
+.sc-tip[hidden]{display:none}
+.sc-tip .st-h{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px}
+.sc-tip .st-h b{font-size:var(--tw-fs-strong);font-weight:700}
+.sc-tip .st-t{font-size:var(--tw-fs-micro);color:var(--tw-ink-3)}
+.sc-tip .st-s{margin-left:auto;font-size:var(--tw-fs-micro);font-weight:700;padding:1px 7px;border-radius:var(--tw-radius-pill)}
+.sc-tip .st-s.normal{color:var(--tw-tint-ok-fg);background:var(--tw-tint-ok-bg)}
+.sc-tip .st-s.abnormal{color:var(--tw-tint-warn-fg);background:var(--tw-tint-warn-bg)}
+.sc-tip .st-s.alarm{color:var(--tw-tint-bad-fg);background:var(--tw-tint-bad-bg)}
+.sc-tip .st-r,.sc-tip .st-a,.sc-tip .st-p,.sc-tip .st-b{font-size:var(--tw-fs-micro);color:var(--tw-ink-2);line-height:1.55;margin-top:2px}
+.sc-tip .st-p{color:var(--tw-tint-warn-fg)}
+.sc-tip .st-b{color:var(--tw-tint-bad-fg)}
+
+/* 设备行的「型号」：比编号小一档、灰一档，用「」包住与名称区分（2026-11-08 格式要求） */
+.zp-row .nm .mdl{font-style:normal;font-weight:400;font-size:var(--tw-fs-micro);color:var(--tw-ink-3);margin-left:5px}
+.zp-row .nm{white-space:normal;line-height:1.35}
 
 /* ================= FR-58（2026-11-08）环形图 hover 设备清单卡片 =================
    与实体信息气泡同一套交互：跟随鼠标、不牵动相机；底色走 F 档淡灰，不许又是全站唯一一块白卡。 */
