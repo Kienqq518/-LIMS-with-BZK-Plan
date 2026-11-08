@@ -40,7 +40,11 @@ out.push((lg.every(x=>Math.abs(Math.round(x.v/total*100)-x.pc)<=1)?'✅':'❌')+
    原来这里拿 106+103 两个区接口相加=11 台，正是产品负责人戳穿的那句"你怎么写建档才 11 台"，
    所以逐档核对必须对着同一张全场表算，否则屏上 11 vs 接口 6 这种"两边都对、对不上"的假失败会一直挂着。 */
 const apiCnt=await p.evaluate(async()=>{const d=(await TwinApi.get('/api/overview/devices')).data;
-  const all=d.devices||[];const c={};['working','ready','alarm','standby','stopped'].forEach(s=>c[s]=all.filter(d2=>d2.status===s).length);
+  /* 资产（货架/充电位/电视，asset:true）不产出检测数据：不进建档合计、不进运行状态环。
+     上一版这里把 /api/overview/devices 的全表长度当合计（34 设备 + 4 资产 = 38），
+     于是"五档相加 == 建档合计"必然差 4 条——红的是取样口径，不是圆环。 */
+  const all=(d.devices||[]).filter(function (x) { return !x.asset; });
+  const c={};['working','ready','alarm','standby','stopped'].forEach(s=>c[s]=all.filter(d2=>d2.status===s).length);
   c._total=all.length;return c;});
 ['working','ready','alarm','standby','stopped'].forEach((k,i)=>{
   out.push((lg[i].v===apiCnt[k]?'✅':'❌')+` ${lg[i].nm}档 == 全场表 ${k} 台数（屏上 ${lg[i].v} vs 接口 ${apiCnt[k]}）`);});
