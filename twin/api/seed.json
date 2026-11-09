@@ -919,57 +919,6 @@
         }
       ]
     },
-    "entrust-testitems": {
-      "entrustNo": "SC2026-0422",
-      "customer": "杭州数叠智能科技有限公司",
-      "sampleCount": 1,
-      "dueDate": "2026-11-06",
-      "issuedAt": "2026-11-04 14:40:51",
-      "sample": {
-        "id": "SC2026-0422010 1",
-        "name": "额定电压8.7/10kV3芯电力电缆",
-        "state": "未检测"
-      },
-      "stateLabels": {
-        "pending": "未检测",
-        "testing": "检测中",
-        "done": "已完成",
-        "redo": "退回复测"
-      },
-      "note": "试验项名称与检测设备取自 LIMS 委托检测详情（图4）；本期为 Mock 假数据，接入后由 /api/overview/entrust-testitems 供数",
-      "items": [
-        {
-          "name": "哑铃样尺寸检查",
-          "device": "砝码库",
-          "state": "done",
-          "cad": "106-01"
-        },
-        {
-          "name": "绝缘厚度测量试验",
-          "device": "全自动绝缘厚度测试仪（无人化版）",
-          "state": "testing",
-          "cad": "106-06"
-        },
-        {
-          "name": "老化前绝缘的机械性能试验",
-          "device": "绝缘层机械性能智能测试系统-无人化版",
-          "state": "pending",
-          "cad": "106-05"
-        },
-        {
-          "name": "XLPE绝缘的热延伸试验",
-          "device": "电缆热延伸全自动检测系统-无人化版",
-          "state": "pending",
-          "cad": "106-07"
-        },
-        {
-          "name": "XLPE绝缘的收缩试验",
-          "device": "电缆热收缩试验智能检测系统-无人化版",
-          "state": "redo",
-          "cad": "106-04"
-        }
-      ]
-    },
     "safety-scenes": {
       "note": "安全管家场景库（未来实验室已部署 6 套）：名称/标签/核心规则/所需节点取自安全管家场景方案文档；运行状态不在这里写死，由 mock 按「未闭环告警归属 + 所辖点位阈值」现算",
       "statusLabels": {
@@ -3954,6 +3903,301 @@
         "status": "done",
         "dueInHours": 138,
         "finishedInHours": -7
+      }
+    ]
+  },
+  "entrust-list": {
+    "note": "委托单↔样品↔试验项↔设备(CAD) 链条的唯一真相（2026-11-09 #1 口径落档）：房间视图左栏三子区域由它推导；图4 委托单（SC2026-0422）=records[0]。原 overview.entrust-testitems 是死键——注释说「接口仍在契约里」，实际 mock 从未供数、宿主从未读取，一并删除，不留第二套说法。试验项 state 即「该设备上这项检测」的状态，样品/委托计数按去重。",
+    "stateLabels": {
+      "pending": "未检测",
+      "testing": "检测中",
+      "done": "已完成",
+      "redo": "退回复测"
+    },
+    "records": [
+      {
+        "entrustNo": "SC2026-0422",
+        "customer": "杭州数叠智能科技有限公司",
+        "sampleCount": 1,
+        "dueDate": "2026-11-06",
+        "issuedAt": "2026-11-04 14:40:51",
+        "sample": {
+          "id": "SC2026-0422010 1",
+          "name": "额定电压8.7/10kV3芯电力电缆",
+          "state": "未检测"
+        },
+        "stateLabels": {
+          "pending": "未检测",
+          "testing": "检测中",
+          "done": "已完成",
+          "redo": "退回复测"
+        },
+        "note": "试验项名称与检测设备取自 LIMS 委托检测详情（图4）；本期为 Mock 假数据，接入后由 /api/overview/entrust-testitems 供数",
+        "items": [
+          {
+            "name": "哑铃样尺寸检查",
+            "device": "砝码库",
+            "state": "done",
+            "cad": "106-01"
+          },
+          {
+            "name": "绝缘厚度测量试验",
+            "device": "全自动绝缘厚度测试仪（无人化版）",
+            "state": "testing",
+            "cad": "106-06"
+          },
+          {
+            "name": "老化前绝缘的机械性能试验",
+            "device": "绝缘层机械性能智能测试系统-无人化版",
+            "state": "pending",
+            "cad": "106-05"
+          },
+          {
+            "name": "XLPE绝缘的热延伸试验",
+            "device": "电缆热延伸全自动检测系统-无人化版",
+            "state": "pending",
+            "cad": "106-07"
+          },
+          {
+            "name": "XLPE绝缘的收缩试验",
+            "device": "电缆热收缩试验智能检测系统-无人化版",
+            "state": "redo",
+            "cad": "106-04"
+          }
+        ]
+      },
+      {
+        "entrustNo": "SC2026-0431",
+        "customer": "杭州数叠智能科技有限公司",
+        "dueDate": "2026-11-13",
+        "issuedAt": "2026-11-09 09:12:40",
+        "samples": [
+          {
+            "id": "SC2026-0431010 1",
+            "name": "额定电压0.6/1kV多芯控制电缆",
+            "state": "检测中"
+          },
+          {
+            "id": "SC2026-0431020 1",
+            "name": "额定电压45/75kV直流软电缆",
+            "state": "检测中"
+          }
+        ],
+        "items": [
+          {
+            "name": "哑铃样拉伸强度试验",
+            "device": "绝缘层机械性能智能测试系统-无人化版",
+            "cad": "106-05",
+            "state": "done",
+            "sampleId": "SC2026-0431010 1"
+          },
+          {
+            "name": "断裂伸长率试验",
+            "device": "绝缘层机械性能智能测试系统-无人化版",
+            "cad": "106-05",
+            "state": "done",
+            "sampleId": "SC2026-0431010 1"
+          },
+          {
+            "name": "绝缘厚度测量试验",
+            "device": "全自动绝缘厚度测试仪（无人化版）",
+            "cad": "106-06",
+            "state": "done",
+            "sampleId": "SC2026-0431020 1"
+          },
+          {
+            "name": "护套厚度测量试验",
+            "device": "全自动绝缘厚度测试仪（无人化版）",
+            "cad": "106-06",
+            "state": "testing",
+            "sampleId": "SC2026-0431020 1"
+          },
+          {
+            "name": "热收缩试验",
+            "device": "电缆热收缩试验智能检测系统-无人化版",
+            "cad": "106-04",
+            "state": "testing",
+            "sampleId": "SC2026-0431010 1"
+          }
+        ]
+      },
+      {
+        "entrustNo": "SC2026-0438",
+        "customer": "杭州数叠智能科技有限公司",
+        "dueDate": "2026-11-15",
+        "issuedAt": "2026-11-09 10:05:11",
+        "samples": [
+          {
+            "id": "SC2026-0438010 1",
+            "name": "交联聚乙烯绝缘电力电缆",
+            "state": "检测中"
+          }
+        ],
+        "items": [
+          {
+            "name": "热延伸试验",
+            "device": "电缆热延伸全自动检测系统-无人化版",
+            "cad": "106-07",
+            "state": "testing",
+            "sampleId": "SC2026-0438010 1"
+          },
+          {
+            "name": "老化前机械性能试验",
+            "device": "绝缘层机械性能智能测试系统-无人化版",
+            "cad": "106-05",
+            "state": "pending",
+            "sampleId": "SC2026-0438010 1"
+          },
+          {
+            "name": "老化后机械性能试验",
+            "device": "绝缘层机械性能智能测试系统-无人化版",
+            "cad": "106-05",
+            "state": "done",
+            "sampleId": "SC2026-0438010 1"
+          }
+        ]
+      },
+      {
+        "entrustNo": "SC2026-0441",
+        "customer": "宁波永达特种电缆有限公司",
+        "dueDate": "2026-11-12",
+        "issuedAt": "2026-11-08 16:22:03",
+        "samples": [
+          {
+            "id": "SC2026-0441010 1",
+            "name": "矿用软电缆MCPTJ",
+            "state": "检测中"
+          }
+        ],
+        "items": [
+          {
+            "name": "拉力强度试验",
+            "device": "跨入型卧式拉力试验机",
+            "cad": "103-01",
+            "state": "done",
+            "sampleId": "SC2026-0441010 1"
+          },
+          {
+            "name": "断后伸长率试验",
+            "device": "跨入型卧式拉力试验机",
+            "cad": "103-01",
+            "state": "testing",
+            "sampleId": "SC2026-0441010 1"
+          },
+          {
+            "name": "弯曲试验",
+            "device": "工器具六工位综合力学性能试验机",
+            "cad": "103-03",
+            "state": "pending",
+            "sampleId": "SC2026-0441010 1"
+          }
+        ]
+      },
+      {
+        "entrustNo": "SC2026-0445",
+        "customer": "宁波永达特种电缆有限公司",
+        "dueDate": "2026-11-18",
+        "issuedAt": "2026-11-09 08:41:56",
+        "samples": [
+          {
+            "id": "SC2026-0445010 1",
+            "name": "低烟无卤护套电缆",
+            "state": "检测中"
+          },
+          {
+            "id": "SC2026-0445020 1",
+            "name": "阻燃A类电缆料",
+            "state": "未检测"
+          }
+        ],
+        "items": [
+          {
+            "name": "维卡软化温度试验",
+            "device": "维卡软化试验机",
+            "cad": "107-05",
+            "state": "done",
+            "sampleId": "SC2026-0445010 1"
+          },
+          {
+            "name": "拉伸强度试验",
+            "device": "电子万能试验机",
+            "cad": "107-07",
+            "state": "testing",
+            "sampleId": "SC2026-0445010 1"
+          },
+          {
+            "name": "密度试验",
+            "device": "两工位机械性能试验机",
+            "cad": "107-08",
+            "state": "done",
+            "sampleId": "SC2026-0445020 1"
+          },
+          {
+            "name": "冲击试验",
+            "device": "液压万能试验机",
+            "cad": "107-06",
+            "state": "pending",
+            "sampleId": "SC2026-0445020 1"
+          }
+        ]
+      },
+      {
+        "entrustNo": "SC2026-0449",
+        "customer": "江苏中天高压附件厂",
+        "dueDate": "2026-11-20",
+        "issuedAt": "2026-11-09 11:02:30",
+        "samples": [
+          {
+            "id": "SC2026-0449010 1",
+            "name": "110kV电缆附件硅橡胶",
+            "state": "检测中"
+          }
+        ],
+        "items": [
+          {
+            "name": "工频耐压试验",
+            "device": "150kV 智慧工频耐压系统",
+            "cad": "105-02",
+            "state": "testing",
+            "sampleId": "SC2026-0449010 1"
+          },
+          {
+            "name": "泄漏电流试验",
+            "device": "多功能耐压测试台",
+            "cad": "105-05",
+            "state": "pending",
+            "sampleId": "SC2026-0449010 1"
+          }
+        ]
+      },
+      {
+        "entrustNo": "SC2026-0452",
+        "customer": "杭州数叠智能科技有限公司",
+        "dueDate": "2026-11-21",
+        "issuedAt": "2026-11-09 13:20:08",
+        "samples": [
+          {
+            "id": "SC2026-0452010 1",
+            "name": "10kV交联绝缘料",
+            "state": "检测中"
+          }
+        ],
+        "items": [
+          {
+            "name": "空气老化试验",
+            "device": "空气老化试验箱 1",
+            "cad": "108-02",
+            "state": "done",
+            "sampleId": "SC2026-0452010 1"
+          },
+          {
+            "name": "失重试验",
+            "device": "空气老化试验箱 2",
+            "cad": "108-03",
+            "state": "testing",
+            "sampleId": "SC2026-0452010 1"
+          }
+        ]
       }
     ]
   }

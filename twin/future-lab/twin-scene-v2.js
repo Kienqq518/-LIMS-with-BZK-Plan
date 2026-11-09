@@ -494,7 +494,9 @@
     /* 建档合计的唯一真相 = /api/overview/devices（全场功能设备 32 台，逐台可对）。
        原来这里用 devices（=106 接口 + 103 接口相加=11 台）当全场，那是"接口给了哪两个区"，
        不是"场里有几台设备"——产品负责人一句"你怎么写建档才 11 台"戳穿的就是这个。 */
-    var pool = (labDevices.length ? labDevices : devices).filter(function (d) { return !d.asset; });
+    /* ②（2026-11-09 10 点清单）：圆环回到房间视图左栏，口径跟着「只统计本房间」——
+       与左栏设备列表同一个 zoneDevices 池，两处数字必须互洽；总览仍是全场 32 台建档。 */
+    var pool = (st.mode === 'ZONE' ? zoneDevices(st.zone) : (labDevices.length ? labDevices : devices)).filter(function (d) { return !d.asset; });
     var cnt = { working: 0, ready: 0, standby: 0, stopped: 0, alarm: 0 };
     pool.forEach(function (d) { cnt[d.status] = (cnt[d.status] || 0) + 1; });
     var total = pool.length;   /* 稼动率不再单列一行：它就是「运行」那档的台数与占比 */
@@ -791,6 +793,24 @@
           if (perBtn) perBtn.hidden = true; return; }
         if (perBtn) perBtn.hidden = false;
         if (tt) tt.textContent = head;
+        /* ①（2026-11-09 10 点清单）：106 任务统计升级为三子区域——委托任务/样品/试验项目，
+           口径由 mock 从 entrust-list 推导（本房间设备→已完成检测·正在检测的试验项→去重委托/样品），
+           四格周期数不再出现：产品负责人说「不摆总数当结论」，试验项目就分开给两个数。 */
+        if (hasTask && d.room) {
+          var rm = d.room;
+          /* 三子区域是「当前态」口径（在检/已检的试验项链条），与日/月/年无关——
+             周期开关在这里必须藏起来：留着它，点了高亮换了、三个数一个都不动。 */
+          if (perBtn) perBtn.hidden = true;
+          g.innerHTML = '<div class="zs3">'
+            + '<div class="zs3-c"><b>' + rm.entrusts + '</b><span>委托任务</span><i>关联本房间在检·已检试验项的委托单（去重）</i></div>'
+            + '<div class="zs3-c"><b>' + rm.samples + '</b><span>样品</span><i>同一批试验项关联的样品（去重，非收样/还样口径）</i></div>'
+            + '<div class="zs3-c"><b>' + rm.items.done + '<em>+</em>' + rm.items.testing + '</b><span>试验项目</span><i>已完成检测 + 正在检测，不给总数</i></div>'
+            + '</div>';
+          g.dataset.kind = head;
+          g.setAttribute('aria-label', z + ' 区任务统计（本房间口径）：关联委托 ' + rm.entrusts + ' 个，关联样品 ' + rm.samples
+            + ' 批，试验项目 已完成 ' + rm.items.done + ' 正在检测 ' + rm.items.testing);
+          return;
+        }
         g.innerHTML = cells.map(function (x) {
           return '<div class="zs-i"><b>' + (x[1] == null ? '—' : x[1]) + '</b><span>' + x[0] + '</span></div>';
         }).join('') + (hasSamples ? sampleSpread(sp) : '');
@@ -1092,15 +1112,26 @@
      参与均值的点位 id 一并传过去（数据源由节点层决定，mock 不自己维护第二套点位表）。
      标题画在图内左上角，不再在图下多加一行说明文本。 */
   function drawTH() {
-    var th = (envNodes || []).filter(function (x) { return x.values && x.values.temperature != null && x.values.humidity != null; });
+    var thAll = (envNodes || []).filter(function (x) { return x.values && x.values.temperature != null && x.values.humidity != null; });
+    /* ⑩（2026-11-09 10 点清单）：房间视图底栏的组态物联块——行已经只列本房间节点，
+       图却还挂着「未来实验室平均温湿度（4 点位均值）」：同一块里行是房间口径、图是全场口径，
+       两套数并排出现就是口径不一致。现在图跟着行走：本房间点位均值 + 标题带房间号；
+       本房间没有温湿度点位就不画全场图顶替（宁可说明，不编数）。 */
+    var zoneMode = st.mode === 'ZONE';
+    var th = zoneMode ? thAll.filter(function (x) { return String(x.roomId) === String(st.zone); }) : thAll;
+    var nid = zoneMode ? 'avg-' + st.zone : 'lab-avg';
+    /* 空点位就安静退出，别往 #chartTH 里塞占位 div：G2 的 Chart 构造不清容器，
+       首拍 envNodes 未到时塞进去的说明文字会永远和 canvas 并排躺着，tooltip 直接挂不出来
+       （chartcheck ④c 两条当场变红——我这次的回归替它把这句话说了）。
+       房间视图里这条分支实际不可见：组态物联块只在 106 底栏出现，而 106 有温湿度点位。 */
     if (!th.length) return;
     var sumT = 0, sumH = 0, ids = [];
     th.forEach(function (n) { sumT += n.values.temperature; sumH += n.values.humidity; ids.push(n.id); });
     var avgT = Math.round(sumT / th.length * 10) / 10, avgH = Math.round(sumH / th.length * 10) / 10;
-    if (!thSeries || thSeries.nodeId !== 'lab-avg') {
+    if (!thSeries || thSeries.nodeId !== nid) {
       if (!thLoading) {
         thLoading = true;
-        TwinApi.get('/api/iot/temp-hum-series?node=lab-avg&temp=' + avgT + '&hum=' + avgH + '&points=16&from=' + ids.join(','))
+        TwinApi.get('/api/iot/temp-hum-series?node=' + nid + '&temp=' + avgT + '&hum=' + avgH + '&points=16&from=' + ids.join(','))
           .then(function (r) { thSeries = r && r.data ? r.data : null; thLoading = false; drawTH(); })
           .catch(function () { thLoading = false; });
       }
@@ -1118,7 +1149,7 @@
     TwinCharts.ribbon($('#chartTH'), 'temp-hum', [
       { name: '温度', unit: '℃', values: a, c: '#2878FF' },
       { name: '湿度', unit: '%RH', values: h, c: '#16A34A' }
-    ], { height: 64, times: thTimes, title: '未来实验室平均温湿度（' + th.length + ' 个点位均值 · 近 ' + a.length + ' 点）' });
+    ], { height: 64, times: thTimes, title: (zoneMode ? st.zone + ' 平均温湿度（' : '未来实验室平均温湿度（') + th.length + ' 个点位均值 · 近 ' + a.length + ' 点）' });
   }
 
   function applyAll() {
@@ -1150,7 +1181,16 @@
     if ($('#railZoneStats')) $('#railZoneStats').hidden = !zone;
     if ($('#railZoneDevs')) $('#railZoneDevs').hidden = !zone;
     if ($('#dkRunning')) $('#dkRunning').hidden = !(zone && vp.unmanned !== true);
+    /* ⑧（2026-11-09 10 点清单）：无人化房间的「安全管家场景监测」搬到右列（画面块下方），
+       底栏让位；离开该视图时搬回底栏最左原位。同一份 DOM，监听与气泡锚点跟着块走，不复制第二套。 */
+    var scEl = $('#dkScenes'), rcEl = $('#rightCol'), dkEl = $('#taskStrip');
+    if (scEl && rcEl && dkEl) {
+      var toRight = zone && vp.unmanned === true;
+      if (toRight && scEl.parentElement !== rcEl) rcEl.appendChild(scEl);
+      else if (!toRight && scEl.parentElement !== dkEl) dkEl.insertBefore(scEl, $('#dkQueue') || null);
+    }
     renderZoneRail(); renderZoneScenes(); renderZoneRunning(); renderCams();
+    if (zone) renderDockStats();   /* ② 圆环进/出房间视图都要按当前口径重画（总览↔房间共用这一个渲染入口） */
     /* renderCams 必须在切房间时跑：它同时决定「视觉节点实时画面」整块要不要出现。
        上一版只在 renderDock 里调，于是 106 切到 107（无摄像头）后画面块还挂着 106 的那一路。 */
     /* 周期切换器随左栏一起交接：左栏在→用左栏那组；左栏隐藏但房间有按周期变的统计块→用面板这组 */

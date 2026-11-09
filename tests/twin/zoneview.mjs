@@ -60,6 +60,50 @@ while (Date.now()<tEnd) { await p.waitForTimeout(2500); pos1=await robPos(); mov
 out.push((moved>0.3?'✅':'❌')+` 106 下钻后机器人仍在行进（≤24s 观察窗内位移 ${moved.toFixed(2)}m，含停靠段）`);
 const live=await p.evaluate(async()=>{const x=await TwinApi.get('/api/zone/106/cycle');return x.data.live.order+'/'+x.data.live.total+' '+x.data.live.phase;});
 out.push(((live.split(' ')[1]==='travel'||live.indexOf('dwell')>0)?'✅':'❌')+' 任务也在推进: '+live);
+/* ②⑥⑩（2026-11-09 10 点清单）：设备环=本房间口径 / 调度任务三列有真内容 / 组态物联图=本房间均值。 */
+{
+  const A = await p.evaluate(async () => {
+    const rd = document.getElementById('railDev'), rr = rd.getBoundingClientRect();
+    const legend = [...document.querySelectorAll('#dkDevBody .dk-lg')].map(e => ({ k: e.querySelector('.nm').innerText, v: +(e.querySelector('.vv').innerText || 0) }));
+    const sum = legend.reduce((a, x) => a + x.v, 0);
+    const zc = (document.getElementById('zDevsN') || {}).innerText || '';
+    const cols = [...document.querySelectorAll('.dq3 .dq-col')].map(c => ({ st: c.dataset.state, rows: c.querySelectorAll('.dq-row').length, head: c.querySelector('h4').innerText.trim() }));
+    const cyNow = document.getElementById('cyNow').innerText.trim();
+    /* 底栏滚动轨道是无缝轮播：每行都有一份克隆，按 data-node 去重后再比集合，
+       否则 from=1 个点位永远打不平屏上 2 行（第一次跑就栽在这）。 */
+    const rows = [...new Map([...document.querySelectorAll('#dkNodesTrack .nd-row')].map(e => [e.dataset.node, e])).values()].map(e => {
+      const m = e.innerText.match(/(-?[\d.]+)℃\s*·\s*(-?[\d.]+)%RH/);
+      return m ? { id: e.dataset.node, t: +m[1], h: +m[2] } : null; }).filter(Boolean);
+    return { vis: rr.width > 2 && rr.height > 2, legend, sum, zc, cols, cyNow, rows };
+  });
+  const nRoom = parseInt((A.zc.match(/(\d+)\s*台建档/) || [])[1] || '-1', 10);
+  out.push((A.vis && A.sum === nRoom && nRoom > 0 ? '✅' : '❌')
+    + ` ② 106 左栏设备环回到房间视图且=本房间口径：五档相加 ${A.sum} == 左栏「${A.zc}」的建档数 ${nRoom}`);
+  const headsOk = A.cols.length === 3 && A.cols.every(c => c.rows > 0);
+  out.push((headsOk && A.cyNow !== '–' ? '✅' : '❌')
+    + ` ⑥ 106 底栏「无人化调度任务」三列都有真内容（探针不再靠 .dq-grp——那行标题在 dq3 三列版式里已退役）: `
+    + JSON.stringify(A.cols.map(c => c.head + '×' + c.rows)) + ` · 当前道「${A.cyNow}」`);
+  /* ⑩ 图的口径：切走再切回，抓 temp-hum-series 的请求参数——
+     from= 的点位集合必须 == 底栏本房间温湿度行的节点 id；temp/hum 参数 == 那些读数的均值。
+     「图与表同源」在房间视图的同一条断言，不接受 lab-avg 混进来顶替。 */
+  /* TwinApi 是进程内 mock——/api/... 根本不走网络，page.on('request') 抓不到任何东西。
+     直接挂钩 TwinApi.get：回总览一次（lab-avg）+ 进 106 一次（avg-106），最后一条必是房间口径。 */
+  await p.evaluate(()=>{ if(!window.__thHook){ window.__thReq=[]; const g=window.TwinApi.get.bind(window.TwinApi);
+    window.TwinApi.get=u=>{ if(String(u).includes('temp-hum-series')) window.__thReq.push(String(u)); return g(u); }; } return 'hooked'; });
+  await p.keyboard.press('1'); await p.waitForTimeout(2800);
+  await gotoZone(p, '106'); await p.waitForTimeout(3400);
+  const reqs = await p.evaluate(()=>window.__thReq||[]);
+  const last = reqs[reqs.length - 1] || '';
+  const q = new URLSearchParams((last.split('?')[1] || ''));
+  const ids = (q.get('from') || '').split(',').filter(Boolean);
+  const wantIds = A.rows.map(r => r.id).sort().join(',');
+  const meanT = A.rows.length ? Math.round(A.rows.reduce((a, r) => a + r.t, 0) / A.rows.length * 10) / 10 : NaN;
+  const meanH = A.rows.length ? Math.round(A.rows.reduce((a, r) => a + r.h, 0) / A.rows.length * 10) / 10 : NaN;
+  const thOk = q.get('node') === 'avg-106' && ids.sort().join(',') === wantIds
+    && Math.abs(+q.get('temp') - meanT) <= 0.06 && Math.abs(+q.get('hum') - meanH) <= 0.06;
+  out.push((thOk ? '✅' : '❌')
+    + ` ⑩ 106 组态物联图=本房间点位均值（不再挂全场 lab-avg）：node=${q.get('node')} · from=${ids.length} 点位与底栏行同集合 · temp ${q.get('temp')}==均值 ${meanT} · hum ${q.get('hum')}==${meanH}`);
+}
 
 /* ②③ 每个房间的画像由数据推导，不写死房间号：
    viewProfile.blocks 决定统计口径，unmanned 决定底栏出调度任务还是在制任务，
@@ -97,9 +141,27 @@ for(const z of ROOMS){
   out.push((D.kind===wantKind?'✅':'❌')+` ${z} 统计口径随 viewProfile.blocks＝「${wantKind||'（无）'}」，屏上＝「${D.kind||'（无）'}」`);
   /* 数字必须与本区接口同源：把接口值按同一口径独立重算一遍再比 */
   if(wantKind==='任务统计'){
-    const exp=[A.per.done,A.per.running,A.per.abnormal,A.per.queued].join('/');
+    /* ①（2026-11-09 10 点清单）：106 任务统计＝三子区域（委托/样品/试验项目），
+       期望值不写死——从 /api/overview/entrust-list 用测试侧的独立实现重算（同源比对，
+       文档 §3.3 的规矩：不接受写死的期望数字）。链条：本房间设备→state∈{done,testing} 的试验项→
+       委托去重/样品去重；试验项目给「已完成+正在检测」两个数。 */
+    const el=await p.evaluate(async()=>(await TwinApi.get('/api/overview/entrust-list')).data);
+    const zz=z;
+    const en={},sa={};let dn=0,ts=0;
+    (el.records||[]).forEach(e=>{(e.items||[]).forEach(it=>{
+      if(!it.cad||String(it.cad).slice(0,3)!==zz)return;
+      if(it.state!=='done'&&it.state!=='testing')return;
+      en[e.entrustNo]=1;
+      const sid=it.sampleId||((e.samples||[e.sample])[0]||{}).id;
+      if(sid)sa[sid]=1;
+      it.state==='done'?dn++:ts++;});});
+    const exp=[Object.keys(en).length,Object.keys(sa).length,dn,ts].join('/');
     const nums=(D.grid.match(/-?\d+/g)||[]).slice(0,4).join('/');
-    out.push((nums===exp?'✅':'❌')+` ${z} 四格数字＝接口本日值（屏上 ${nums} vs API ${exp}）——换房间不留上一个房间的数`);
+    out.push((nums===exp?'✅':'❌')+` ${z} 三子区域＝entrust-list 独立重算（屏上 ${nums} vs 复算 ${exp}=委托/样品/已完成/正在检测）`);
+    out.push((/委托任务/.test(D.grid)&&/关联/.test(D.grid)&&/样品/.test(D.grid)&&/试验项目/.test(D.grid)?'✅':'❌')+
+      ` ${z} 三子区域标题与口径说明在屏上（不是四个裸数字）: ${D.grid.replace(/\s+/g,' ').slice(0,64)}`);
+    out.push((await p.evaluate(()=>{const b=[...document.querySelectorAll('.period .seg')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;});return b.length;}))===0?
+      '✅':'❌'+' '+z+' 三子区域是当前态口径，周期开关必须隐身（点了不动数的控件比没有控件更糟）');
   } else if(wantKind==='检测项目数统计'){
     const exp=[A.ti.testing,A.ti.pending,A.ti.done,A.ti.overdue].join('/');
     const nums=(D.grid.match(/-?\d+/g)||[]).slice(0,4).join('/');
@@ -134,17 +196,13 @@ for(const z of ROOMS){
   out.push((emptyOk?'✅':'❌')+' '+z+' 无告警时空态说清是哪个区: 「'+D.stream+'」');
   out.push((!noOverlap(rr)?'✅':'❌')+` ${z} 浮层不重叠: ${noOverlap(rr)||'OK'}`);
 }
-/* ⑤ 周期切换器：接管后只有左栏这一组，且必须真的驱动四格并写进 URL */
+/* ⑤ 周期切换器（2026-11-09 #1 后）：106 三子区域是当前态口径，左栏周期开关在 106 隐身；
+   开关本体仍由 103（检测项目数按周期变）验证驱动与 URL 写入。 */
 await gotoZone(p, '106'); await p.waitForTimeout(3000);
 const segN=await p.evaluate(()=>[...document.querySelectorAll('.period .seg')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length);
-out.push((segN<=3?'✅':'❌')+` 同屏最多一份可见周期开关（当前可见 ${segN} 个按钮，≤3 即只有一份）`);
+out.push((segN===0?'✅':'❌')+` 106 三子区域不挂周期开关（可见按钮 ${segN} 个，应为 0——旧「≤3」是四格时代的口径）`);
 const stDay=await p.evaluate(()=>document.getElementById('zsGrid').innerText.replace(/\s+/g,' ').trim());
-await p.locator('[data-period=month]:visible').first().click(); await p.waitForTimeout(1800);
-const stMon=await p.evaluate(()=>document.getElementById('zsGrid').innerText.replace(/\s+/g,' ').trim());
-const urlMon=await p.evaluate(()=>new URLSearchParams(location.search).get('period'));
-out.push((stDay!==stMon?'✅':'❌')+` 左栏这组开关真能驱动 106 统计: 本日「${stDay.slice(0,30)}」→ 本月「${stMon.slice(0,30)}」`);
-out.push((urlMon==='month'?'✅':'❌')+' 周期写进 URL（售前翻页笔回来还是那一档）: '+urlMon);
-await p.locator('[data-period=day]:visible').first().click(); await p.waitForTimeout(1000);
+out.push((/委托任务/.test(stDay)?'✅':'❌')+' 106 左栏统计仍是三子区域: '+stDay.slice(0,42));
 /* 非 106 房间也一样：检测项目数统计是按周期变的，开关不能只对着 106 生效 */
 await gotoZone(p, '103'); await p.waitForTimeout(3000);
 const g1=await p.evaluate(()=>document.getElementById('zsGrid').innerText.replace(/\s+/g,' ').trim());

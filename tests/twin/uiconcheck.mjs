@@ -103,7 +103,11 @@ ok(/rgb\(40, 120, 255\)/.test(scene.marker||''),'节点标记用宿主品牌蓝�
 ok((scene.size||'').split('|')[0]==='26px','V2 大屏节点标记收到 26px（底座 40px 只留给笔记本鼠标）: '+scene.size);
 
 // ⑦ 数字等宽
-const nums=await p.evaluate(()=>['.dk-lg .vv','.zs-i b'   /* FR-80：统计四格从退役面板搬到左栏 #zsGrid，等宽判据跟着换目标 */,'.dq-row .tm'].map(s=>{const e=document.querySelector(s);return e?getComputedStyle(e).fontVariantNumeric:'missing';}));
+/* FR-80：统计数字搬到左栏 #zsGrid；①（2026-11-09）106 又升级为三子区域 .zs3-c——
+   两代版式都可能在屏上（102/103 仍是 .zs-i 四格，106 是 .zs3-c），逐个槽位取「存在的那个」，
+   都不存在才算 missing，等宽判据本身不放宽。 */
+const nums=await p.evaluate(()=>{const pick=sels=>{for(const s of [].concat(sels)){const e=document.querySelector(s);if(e)return getComputedStyle(e).fontVariantNumeric;}return 'missing';};
+  return ['.dk-lg .vv',['.zs-i b','.zs3-c b'],'.dq-row .tm'].map(pick);});
 ok(nums.every(x=>x==='tabular-nums'),'读数等宽（滚动不跳字）: '+JSON.stringify(nums));
 
 ok(err.length===0,'无 pageerror/console error: '+err.slice(0,3).join(' | '));

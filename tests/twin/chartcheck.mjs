@@ -234,21 +234,21 @@ ok(after.act===0&&after.cap===null,`th-active 选中态与图下说明文本都�
 await gotoZone(p, '106'); await p.waitForTimeout(4200);
 const k106=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
   txt:(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim()}));
-ok(k106.kind==='任务统计'&&/已完成/.test(k106.txt)&&/排队/.test(k106.txt),'106 下钻＝任务统计四格: '+JSON.stringify(k106).slice(0,96));
+ok(k106.kind==='任务统计'&&/委托任务/.test(k106.txt)&&/试验项目/.test(k106.txt)&&!/排队/.test(k106.txt),
+  '106 下钻＝任务统计三子区域（①口径：委托/样品/试验项目，四格已退役）: '+JSON.stringify(k106).slice(0,110));
 await gotoZone(p, '103'); await p.waitForTimeout(4200);
 const k103=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
   txt:(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim()}));
 ok(k103.kind==='检测项目数统计'&&/检测中/.test(k103.txt)&&/逾期未出/.test(k103.txt),
   `103 下钻＝检测项目数统计（口径随 viewProfile.blocks 走，不是写死 106）: ${JSON.stringify(k103).slice(0,96)}`);
 const segOf=async(v)=>{ await p.locator('[data-period="'+v+'"]:visible').first().click(); await p.waitForTimeout(2600); };
+/* ①（2026-11-09）：106 三子区域与周期无关，左栏开关在 106 隐身；
+   「周期真的驱动统计」由 102/103 的按周期口径承担（下面 102/103 断言在屏上可见时才点，
+   106 里找不到可见开关就是正确行为，不是失败）。 */
 await gotoZone(p, '106'); await p.waitForTimeout(3000);
 const per0=await p.evaluate(()=>(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim());
-await segOf('month');
-const per1=await p.evaluate(()=>(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim());
-await segOf('year');
-const per2=await p.evaluate(()=>(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim());
-ok(per0&&per1&&per0!==per1&&per1!==per2,`周期切换驱动左栏四格（本日「${per0.slice(0,26)}」→本月「${per1.slice(0,26)}」→本年「${per2.slice(0,26)}」）`);
-await segOf('day');
+const segVis=await p.evaluate(()=>[...document.querySelectorAll('.period .seg')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length);
+ok(per0&&segVis===0,`106 三子区域＝当前态口径，周期开关隐身（可见 ${segVis} 个，应为 0）: 「${per0.slice(0,30)}」`);
 await gotoZone(p, '102'); await p.waitForTimeout(4200);
 const k102=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
   cells:[...document.querySelectorAll('#zsGrid .zs-i')].map(e=>e.innerText.replace(/\s+/g,' ').trim()),

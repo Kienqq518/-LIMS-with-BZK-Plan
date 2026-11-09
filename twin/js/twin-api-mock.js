@@ -379,9 +379,9 @@
           var hu = k === 0 ? curH : +(curH - diurnal * 5.2 - wob * 3.4).toFixed(1);
           hist.push({ offsetH: -k, hour: h, temperature: t, humidity: Math.max(25, Math.min(80, hu)) });
         }
-        var avg = nid === 'lab-avg';
-        return resolve(envelope({ nodeId: nid, scope: avg ? 'lab-average' : 'node',
-          scopeLabel: avg ? '未来实验室平均温湿度' : null,
+        var avg = nid === 'lab-avg' || /^avg-\d{3}$/.test(nid);   /* ⑩（2026-11-09 10 点清单）：房间视图的平均序列——node=avg-<房间号>，参与均值的点位仍由调用方 from 传入 */
+        return resolve(envelope({ nodeId: nid, scope: avg ? (nid === 'lab-avg' ? 'lab-average' : 'room-average') : 'node',
+          scopeLabel: avg ? (nid === 'lab-avg' ? '未来实验室平均温湿度' : '本房间平均温湿度') : null,
           /* 参与均值的点位由调用方传入：谁是数据源由节点层说了算，mock 不自己维护一份点位表（那会有第二套真相） */
           aggregatedFrom: avg ? fromIds : null,
           /* 点位数现读自 from 参数：写死"四个"的话，将来加第五个温湿度点位这条 note 就成了假话 */
@@ -394,6 +394,8 @@
            · 异常     = 所辖点位读数越限（气体超限 / 烟感报警 / 浸水 / 温度>28℃ / 湿度>70%RH），且该房间没有未闭环告警；
            · 正常     = 以上都不成立。
          点位读数与右列组态物联、场景节点层同源（同一份 envNodes），不建第二套真相。 */
+      /* ① 委托链条整表：测试与未来的委托面板都从这里取，推导不许有第二份实现 */
+      if (path === '/api/overview/entrust-list') return resolve(envelope(state['entrust-list'] || { records: [] }));
       if (path === '/api/overview/safety-scenes') {
         var sc = (state.overview['safety-scenes'] || {});
         /* 告警在 state.overview.alarms（不是 state.alarms——写错时这里恒为空，六个场景全报"正常"，
@@ -466,10 +468,33 @@
         var zone = (state.overview.zones || []).filter(function (z) { return z.zoneId === zk; })[0] || {};
         var prof = zone.viewProfile || { rail: false, dock: false, blocks: ['devices', 'env', 'alarms'], statsKind: 'none' };
         if (!zstat) return resolve(envelope({ unsupported: true, zoneId: m[1], viewProfile: prof, note: '该区无统计口径' }));
+        /* ①（2026-11-09 10 点清单）三子区域口径——产品负责人原话转写，不得自行改写：
+           本房间设备 → 状态∈{已完成检测, 正在检测} 的试验项 → 这些试验项关联的委托单（去重）/样品（去重）；
+           试验项目 = 已完成 + 正在检测 两个数，不摆总数当结论。
+           数据链唯一真相 = seed entrust-list（委托↔样品↔试验项↔CAD 设备）；缺字段就补数据链，
+           不许拿相近的数顶替（例如拿收样数顶样品关联数）。 */
+        var room = null;
+        var EL = (state['entrust-list'] || {}).records || [];
+        var en = {}, sa = {}, done = 0, testing = 0;
+        EL.forEach(function (e) {
+          var ss = e.samples || (e.sample ? [e.sample] : []);
+          (e.items || []).forEach(function (it) {
+            if (!it.cad || String(it.cad).slice(0, 3) !== m[1]) return;
+            if (it.state !== 'done' && it.state !== 'testing') return;   /* 未检测/退回复测不进这条链 */
+            en[e.entrustNo] = 1;
+            var sid = it.sampleId || (ss[0] && ss[0].id);
+            if (sid) sa[sid] = 1;
+            if (it.state === 'done') done++; else testing++;
+          });
+        });
+        if (EL.length) room = { entrusts: Object.keys(en).length, samples: Object.keys(sa).length,
+          items: { done: done, testing: testing },
+          basis: '本房间设备→已完成检测/正在检测的试验项→关联委托(去重)/样品(去重)；试验项目=两个数，不给总数' };
         return resolve(envelope({
           zoneId: zk, viewProfile: prof, statsKind: prof.statsKind,
           periods: zstat, note: zstat.note || null,
-          testItems: zstat.testItems || null, samples: zstat.samples || null
+          testItems: zstat.testItems || null, samples: zstat.samples || null,
+          room: room
         }));
       }
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/running-tasks$/))) {

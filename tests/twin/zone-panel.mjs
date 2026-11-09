@@ -33,7 +33,8 @@ T('106 接管标记', await p.evaluate(()=>document.body.dataset.zoneView+'/'+do
 out.push(((await vis('.rail'))!=='hidden'?'✅':'❌')+' 106 左栏可见: '+await vis('.rail'));   /* T() 是字符串相等比较，不能拿函数当期望值 */
 out.push(((await vis('#railZoneStats'))!=='hidden'?'✅':'❌')+' 106 左栏「任务统计」出现: '+await vis('#railZoneStats'));
 out.push(((await vis('#railZoneDevs'))!=='hidden'?'✅':'❌')+' 106 左栏「设备」出现: '+await vis('#railZoneDevs'));
-T('106 任务统计四格（纯数字，无柱图）', await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .zs-i span')].map(e=>e.innerText).join('/')), '已完成/执行中/异常挂起/排队');
+/* ①（2026-11-09）：四格升级为三子区域（委托任务/样品/试验项目），无柱图的原约束保留 */
+T('106 任务统计＝三子区域（大字+口径小字，无柱图）', await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .zs3-c span')].map(e=>e.innerText).join('/')), '委托任务/样品/试验项目');
 T('106 左栏任务统计无柱图容器', await p.locator('#railZoneStats .tw-chart').count(), 0);
 T('106 设备标题=设备（无资产）', await p.locator('#zDevsTitle').innerText(), '设备');
 T('106 设备台数与全场表同源', await p.locator('#zDevsN').innerText(), '8 台建档 · 2 台机器人');
@@ -42,7 +43,9 @@ T('106 设备台数与全场表同源', await p.locator('#zDevsN').innerText(), 
 T('106 左栏行数=设备+机器人', await p.locator('#zDevsList .zd-row').count(), 10);
 T('106 左栏机器人两行（在跑 + 停靠）', await p.locator('#zDevsList [data-robot]').count(), 2);
 out.push((/停靠 102-05 充电位/.test(await p.locator('#zDevsList [data-robot=\"RB-C-01\"]').innerText())?'✅':'❌')+' 左栏说清 RB-C-01 停在哪个桩: '+await p.locator('#zDevsList [data-robot=\"RB-C-01\"]').innerText());
-T('106 底栏=无人化调度任务（不是在制任务）', await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).map(e=>e.querySelector('header b').innerText).join('|')), '安全管家场景监测|无人化调度任务|组态物联节点状态监测');
+/* ⑧（2026-11-09 10 点清单）：安全管家场景监测搬进右列（画面块下方），底栏让位成两块。 */
+T('106 底栏=调度任务+组态物联（安全管家已搬右列，底栏让位）', await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).map(e=>e.querySelector('header b').innerText).join('|')), '无人化调度任务|组态物联节点状态监测');
+T('106 右列含安全管家场景监测块', await p.evaluate(()=>{const e=document.querySelector('#rightCol #dkScenes');if(!e)return 'missing';const r=e.getBoundingClientRect();return r.width>2&&r.height>2?'present':'zero';}), 'present');
 T('106 底栏无「运行中的任务」（同一批任务不出现两遍）', await p.evaluate(()=>document.querySelector('#dkRunning').hidden), 'true');
 T('106 场景监测只列本房间场景', await p.locator('#dkScenesGrid .sc-row, #dkScenesGrid .sc-row').count(), 1);
 /* 数"完整可见的行"之前必须先停掉无缝滚动：告警流现在是 3 行高（279px＝标题 57+3×74），
@@ -51,9 +54,18 @@ T('106 场景监测只列本房间场景', await p.locator('#dkScenesGrid .sc-ro
 await p.evaluate(()=>{['#streamTrack','.stream-board','.stream-board.scroll'].forEach(s=>document.querySelectorAll(s)
   .forEach(e=>{e.style.animation='none';e.style.animationPlayState='paused';}));});
 await p.waitForTimeout(400);
-T('106 右列告警流只看本房间', await p.evaluate(()=>{const v=document.querySelector('.stream-view'); if(!v) return 0;
-  const bb=v.getBoundingClientRect(); return [...document.querySelectorAll('#streamTrack .st-row')].filter(r=>{const q=r.getBoundingClientRect();
-    return q.top>=bb.top-1&&q.bottom<=bb.bottom+1;}).length;}) , 3);
+/* ⑦（2026-11-09 10 点清单）：房间视图告警流不再固定 279px——按画面/场景块实际占位拉高。
+   旧断言「完整可见=3 行」是 279px 时代的产物；现在量两件事：
+   · 可视高度确实超过旧固定高（拉高是真的，不是换个数字糊弄）；
+   · 完整可见行数 ≥4（279px 只装得下 3 行）。本房间口径由下一条「全部属于 106 区」守住。 */
+{
+  const g=await p.evaluate(()=>{const v=document.querySelector('.stream-view'); if(!v) return null;
+    const bb=v.getBoundingClientRect(); return {h:Math.round(bb.height),
+      rows:[...document.querySelectorAll('#streamTrack .st-row')].filter(r=>{const q=r.getBoundingClientRect();
+        return q.top>=bb.top-1&&q.bottom<=bb.bottom+1;}).length};});
+  out.push((g&&g.h>279+40&&g.rows>=4?'✅':'❌')+` ⑦ 106 告警流按占位拉高：可视 ${g&&g.h}px（旧固定 279）· 完整可见 ${g&&g.rows} 行（≥4）`);
+  T('106 右列告警流只看本房间（完整可见行数计入上行）', g&&g.rows>0?'有':'无', '有');
+}
 T('106 告警全部属于 106 区', await p.evaluate(()=>[...document.querySelectorAll('#streamTrack .st-row')].every(r=>/106 区/.test(r.innerText))), 'true');
 T('106 视觉画面=1 格（本房间只有视觉03）', await p.locator('#camGrid .cam-tile').count(), 1);
 T('106 组态物联只列本房间点位', await p.evaluate(()=>[...document.querySelectorAll('#dkNodesTrack .nd-row')].filter(r=>r.getAttribute('aria-hidden')!=='true').every(r=>/^106/.test(r.innerText.replace(/\s+/g,'')))), 'true');
@@ -81,13 +93,14 @@ T('102 标题改「资产」（货架/充电位/电视不是检测设备）', aw
 T('102 资产条数=5（收样登记台+2 货架+充电位+电视）', await p.locator('#zDevsList .zd-row').count(), 5);
 T('102 有视觉节点? 无 → 画面块不显示', await vis('#cctvBox'), 'hidden');
 
-// ⑤ 左栏周期开关真的能切（柱图撤了，数字必须跟着周期变）
+/* ⑤（2026-11-09 ①口径）：106 三子区域是当前态统计，周期开关在 106 隐身——
+   旧断言「切 year 数字要变」随四格一起退役（它点一个不该存在的按钮，点了 30 秒把整套 TimeoutError 掉）。
+   「周期真的驱动数字」由 102/103 的按周期口径承担（zoneview ⑤ 段在 103 上验驱动与 URL）。 */
 await gotoZone(p,'106'); await p.waitForTimeout(3000);
 const day=await p.locator('#zsGrid').innerText();
-await p.locator('#railZoneStats [data-period=year]').click(); await p.waitForTimeout(1800);
-const year=await p.locator('#zsGrid').innerText();
-out.push((day!==year?'✅':'❌')+` 左栏周期开关切得动、数字随周期变（本日「${day.replace(/\s+/g,' ').trim()}」→ 本年「${year.replace(/\s+/g,' ').trim()}」）`);
-out.push(((await p.evaluate(()=>new URLSearchParams(location.search).get('period')))==='year'?'✅':'❌')+' 周期进 URL（售前翻页笔回来还是那一档）');
+const segVis=await p.evaluate(()=>[...document.querySelectorAll('#railZoneStats .period .seg, #railZoneStats .period button')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length);
+out.push((segVis===0?'✅':'❌')+' 106 左栏周期开关隐身（三子区域＝当前态口径，不该留着切不动的控件）: 可见 '+segVis+' 个');
+out.push((/委托任务/.test(day)&&/试验项目/.test(day)?'✅':'❌')+' 106 左栏仍是三子区域: '+day.replace(/\s+/g,' ').trim().slice(0,52));
 const url=await p.evaluate(()=>new URLSearchParams(location.search).toString());
 out.push((/mode=ZONE&zone=106/.test(url)?'✅':'❌')+' 区域视图 URL 可复现: '+url.slice(0,60));
 console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,4).join('\n'));

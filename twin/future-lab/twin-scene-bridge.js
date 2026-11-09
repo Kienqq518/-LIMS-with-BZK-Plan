@@ -640,6 +640,7 @@ function cctvInit() {
 }
 
 let robotPathsDrawn = false, routeSig = null;
+const robotRootIds = new Set();   /* 机器人 modelRoot（RB-C-01/02=106-09/08）：构图解算必须排除——它们满场跑，算进去等于让画面跟着机器人走 */
 function applyState(d) {
   (d.robots || []).forEach(r => {
     const tn = performance.now(), slot = robotTargets[r.robotId];
@@ -664,6 +665,7 @@ function applyState(d) {
       root.position.set(r.homeAnchor[0], 0, r.homeAnchor[2]); root.userData.homeParked = true;
     }
     if (!robots[r.robotId] && r.modelRoot) robots[r.robotId] = visual.modelRoots.get(r.modelRoot) || null;
+    if (r.modelRoot) robotRootIds.add(r.modelRoot);
   });
   /* 自检必须跟着数据走：路线或墙体一变就重画+重算（接入真实调度后路径会换，只跑首帧等于没校验） */
   if (d.walls) lastWalls = d.walls;
@@ -1054,7 +1056,7 @@ const HOME = { fr: 1.92, pan: [42, -92] };
    图一的目标：房间约占 36%×42%，中心偏左（右侧要让给区域面板）。
    frScale 与屏幕尺寸成反比（0.795/0.36≈2.2），pan 是 1:1 屏幕像素，
    下面这组值来自 drill106 探针实测，不是估的。 */
-const DRILL = { '106': { fr: 2.2, pan: [-280, 20] } };   /* 第二格实测：只缩小不左移会压在区域面板下，pan 是 1:1 屏幕像素 */
+const DRILL = { '106': { fr: 2.2, pan: [-280, 20] } };   /* 2026-11-09 #5 后降级为兜底：正常路径走 fitDrillRoom 按浮层解算 */   /* 第二格实测：只缩小不左移会压在区域面板下，pan 是 1:1 屏幕像素 */
 /* 视角名怎么认房间：106 在引擎里就叫 close（其余是 107-close 这种带号前缀），
    所以裸 'close' 就是 106 主叙事——这条映射写下来，别靠猜。 */
 function roomOfView(v) { const m = /^(\d{3})-/.exec(v || ''); if (m) return m[1]; return /^close$/.test(v || '') ? '106' : null; }
@@ -1077,7 +1079,12 @@ function fitOverview() {
     a = rl.getBoundingClientRect(); c = rc.getBoundingClientRect(); d = dk.getBoundingClientRect();
   } catch (e) { return fallback; }
   if (!(c.width > 2) || !(a.width > 2)) return fallback;
-  const x0 = a.right + 24, x1 = c.left - 24, y0 = 70, y1 = d.top - 12;
+  /* 浮层矩形在宿主坐标系，投影在场景 canvas 坐标系——iframe 被顶栏压下去 56px，
+     两个系直接混用会把带子整体下移一个顶栏高（建模底缘钻到宿主底栏底下 44px）。
+     统一换算：减掉本帧在宿主里的偏移，band 与投影同在 canvas 系。 */
+  let fx = 0, fy = 0;
+  try { const fe = window.frameElement; if (fe) { const fr = fe.getBoundingClientRect(); fx = fr.left; fy = fr.top; } } catch (e) { }
+  const x0 = a.right + 24 - fx, x1 = c.left - 24 - fx, y0 = 70 - fy, y1 = d.top - 12 - fy;
   const key = [Math.round(innerWidth), Math.round(innerHeight), Math.round(x0), Math.round(x1), Math.round(y1)].join('x');
   if (key === fitKey && fitVal) return fitVal;
   const bandW = x1 - x0, bandH = y1 - y0;
@@ -1093,18 +1100,106 @@ function fitOverview() {
   const w0 = rx - lx, h0 = by - ty, cx0 = (lx + rx) / 2, cy0 = (ty + by) / 2;
   const k = Math.min(bandW * FIT_FILL / w0, bandH * FIT_FILL / h0);
   const fr = +(frScale / k).toFixed(4);
-  /* 换 fr 会以视锥中心为基准缩放位置，所以先算"新 fr 下的中心"，再用 pan 把它推到带中心 */
-  const cxNew = host.width / 2 + (cx0 - host.width / 2) * k, cyNew = host.height / 2 + (cy0 - host.height / 2) * k;
-  const pan = [Math.round(myPan[0] + ((x0 + x1) / 2 - cxNew)), Math.round(myPan[1] + ((y0 + y1) / 2 - cyNew))];
+  /* 换 fr 会以视锥中心为基准缩放位置——但缩的是「不含 pan 位移」的那部分：
+     pan 是屏幕像素平移，1:1 不随 fr 变（视锥钩子里就是这么实现的）。
+     早先把整段 cx0（含旧 pan）一起乘 k，等于把旧 pan 也放大——下钻起点 pan0 有 ~90px，
+     解出来的中心就飘了 74px，建模右缘压过右列 10px。正确分解：去 pan → 缩放 → 加新 pan。 */
+  const cxNew = host.width / 2 + (cx0 - myPan[0] - host.width / 2) * k, cyNew = host.height / 2 + (cy0 - myPan[1] - host.height / 2) * k;
+  const pan = [Math.round((x0 + x1) / 2 - cxNew), Math.round((y0 + y1) / 2 - cyNew)];
   fitKey = key; fitVal = { fr, pan, fit: { w0: Math.round(w0), bandW: Math.round(bandW), k: +k.toFixed(3) } };
   const hk = document.getElementById('twin-v2-bridge'); if (hk) hk.dataset.homeFit = JSON.stringify(fitVal.fit);
   return fitVal;
 }
+/* ── #5（2026-11-09 二次圈图）：房间视图构图同样按真实浮层解算 ──
+   旧 DRILL['106']={fr:2.2,pan:[-280,20]} 是 FR-45「让给五段面板」年代的标定：面板已退役，
+   固定值在 1457×864 实测投影中心 x=446 vs 视口 729——偏左 282px，建模没放正中间。
+   非 106 房间原来走引擎自然构图（fr=1）：引擎按全视口居中，右列 352px 面板照样压在建模上，
+   和总览当年是同一类病。所以对所有可下钻房间统一：量本房间 CAD 角点在当前画面的投影，
+   在「左栏右缘→右列左缘」带内解 fr/pan（口径与 fitOverview 完全一致：同 FIT_FILL、同呼吸边距、
+   同"先解 fr 再推带中心"）。缓存键带上 natHH——它是引擎视锥的身份：close 与 overall 的
+   自然半高不同，量错视锥的解会被 tween 起点用到终点，键不同就不会互相污染。
+   拿不到浮层/多边形时退回标定值（106=DRILL，其余=引擎自然构图）。 */
+let drillFitKey = '', drillFitVal = null;
+function fitDrillRoom(rid) {
+  const fb = DRILL[rid] ? { fr: DRILL[rid].fr, pan: DRILL[rid].pan.slice() } : { fr: 1, pan: [0, 0] };
+  const room = ((visual.g || {}).rooms || []).find(r => String(r.id) === String(rid));
+  if (!room || !room.points || room.points.length < 3) return fb;
+  let a, c, d;
+  try {
+    const pd = parent.document;
+    const rl = pd.querySelector('.rail'), rc = pd.querySelector('.rcol'), dk = pd.querySelector('.dock');
+    if (!rl || !rc || !dk) return fb;
+    a = rl.getBoundingClientRect(); c = rc.getBoundingClientRect(); d = dk.getBoundingClientRect();
+  } catch (e) { return fb; }
+  let fx = 0, fy = 0;
+  try { const fe = window.frameElement; if (fe) { const fr = fe.getBoundingClientRect(); fx = fr.left; fy = fr.top; } } catch (e) { }
+  const x0 = (a.width > 2 ? a.right + 24 : 24) - fx;                 /* 非 106 房间左栏让位：从 24px 边距起算 */
+  const x1 = (c.width > 2 ? c.left - 24 : innerWidth - 24) - fx;
+  const y0 = 70 - fy, y1 = (d.height > 2 ? d.top - 12 : innerHeight - 24) - fy;   /* 106 保留底栏；其余房间底栏让位 */
+  const key = [rid, Math.round(innerWidth), Math.round(innerHeight), Math.round(x0), Math.round(x1), Math.round(y1), Math.round(natHH() * 1000)].join('x');
+  if (key === drillFitKey && drillFitVal) return drillFitVal;
+  const bandW = x1 - x0, bandH = y1 - y0;
+  if (bandW < 240 || bandH < 180) return fb;
+  const v = visual, TH = v.overview.position.constructor, S = 0.05, host = v.renderer.domElement.getBoundingClientRect();
+  let lx = 1e9, rx = -1e9, ty = 1e9, by = -1e9;
+  const push = (x, y, z) => { const q = new TH(x, y, z).project(v.camera);
+    if (q.z > 1) return;
+    const px = (q.x * .5 + .5) * host.width, py = (-q.y * .5 + .5) * host.height;
+    lx = Math.min(lx, px); rx = Math.max(rx, px); ty = Math.min(ty, py); by = Math.max(by, py); };
+  /* 目标取「客户实际看到的那一坨」：本房间设备实体包围盒的 8 角投影——与 uxcheck/focuscheck
+     量的口径同源。早先用房间多边形@2.85m 当代理，1920 下解出 k=2.075，实测建模占宽 1210px
+     直接越过 1112px 带压进右列：高设备的视差让包围盒比多边形投影大 34%，代理不成立。
+     无实体房间（101 接待厅等）退回多边形代理。 */
+  let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9], hasDev = false;
+  v.modelRoots.forEach((m, id) => {
+    if (String(id).slice(0, 3) !== String(rid) || robotRootIds.has(id)) return; hasDev = true;
+    m.updateWorldMatrix(true, true);
+    m.traverse(o => { if (!o.isMesh || !o.geometry) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      for (const q of [o.geometry.boundingBox.min, o.geometry.boundingBox.max]) { const ww = new TH(q.x, q.y, q.z).applyMatrix4(o.matrixWorld);
+        lo = [Math.min(lo[0], ww.x), Math.min(lo[1], ww.y), Math.min(lo[2], ww.z)];
+        hi = [Math.max(hi[0], ww.x), Math.max(hi[1], ww.y), Math.max(hi[2], ww.z)]; } });
+  });
+  if (hasDev && lo[0] < hi[0]) {
+    for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) push(x, y, z);
+  } else {
+    for (const pt of room.points) { push(pt[0] * S, 0, pt[1] * S); push(pt[0] * S, 2.85, pt[1] * S); }
+  }
+  if (lx > rx - 1) return fb;
+  const w0 = rx - lx, h0 = by - ty, cx0 = (lx + rx) / 2, cy0 = (ty + by) / 2;
+  const k = Math.min(bandW * FIT_FILL / w0, bandH * FIT_FILL / h0);
+  const fr = +(frScale / k).toFixed(4);
+  const cxNew = host.width / 2 + (cx0 - myPan[0] - host.width / 2) * k, cyNew = host.height / 2 + (cy0 - myPan[1] - host.height / 2) * k;
+  const pan = [Math.round((x0 + x1) / 2 - cxNew), Math.round((y0 + y1) / 2 - cyNew)];
+  /* 二遍校正：解析式假设「位置绕屏幕中心等比缩放」，而引擎 close 视锥的 fitFrame 中心并不严格
+     落在屏幕中心（bounds 带 1.07 余量 + 宽高比取大），1920 实测一版残差 y 向 25px——建模底缘
+     压进底栏 10px，正是产品负责人这次要消灭的东西。解完先按 (fr,pan) 渲染一遍、重测包围盒，
+     用实测残差直接修 fr 与 pan（pan 是像素 1:1，平移修正恒精确），再把相机恢复给 tween 起点。 */
+  const frSave = frScale, panSave = myPan.slice();
+  const c0 = visual.camera, hhBefore = (c0.top - c0.bottom) / 2;
+  frScale = fr; setPan(pan[0], pan[1]); visual.render(); visual.camera.updateMatrixWorld(true);
+  const hhAfter = (c0.top - c0.bottom) / 2;
+  lx = 1e9; rx = -1e9; ty = 1e9; by = -1e9;
+  for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) push(x, y, z);
+  let fr2 = fr, pan2 = pan, w2 = null, h2 = null, k2 = null;
+  if (lx < rx - 1) {
+    w2 = rx - lx; h2 = by - ty;
+    const cx2 = (lx + rx) / 2, cy2 = (ty + by) / 2;
+    k2 = Math.max(0.2, Math.min(bandW * FIT_FILL / w2, bandH * FIT_FILL / h2));
+    fr2 = +(fr / k2).toFixed(4);
+    pan2 = [Math.round(pan[0] + ((x0 + x1) / 2 - cx2)), Math.round(pan[1] + ((y0 + y1) / 2 - cy2))];
+  }
+  frScale = frSave; setPan(panSave[0], panSave[1]); visual.render();
+  drillFitKey = key; drillFitVal = { fr: fr2, pan: pan2 };
+  const hk = document.getElementById('twin-v2-bridge');
+  if (hk) hk.dataset.drillFit = JSON.stringify({ rid, w0: Math.round(w0), h0: Math.round(h0), bandW: Math.round(bandW), k: +k.toFixed(3), fr, pan, pass2: w2 === null ? null : { w2: Math.round(w2), h2: Math.round(h2), k2: +k2.toFixed(3), fr2, pan2, hhBefore: +hhBefore.toFixed(3), hhAfter: +hhAfter.toFixed(3) } });
+  return drillFitVal;
+}
 function homeFraming(view) {
   const v = view || visual.view;
   if (/^overall/.test(v)) { const q = fitOverview(); return { fr: q.fr, pan: q.pan.slice() }; }
-  const d = DRILL[roomOfView(v)];
-  return d ? { fr: d.fr, pan: d.pan.slice() } : { fr: 1, pan: [0, 0] };
+  const rid = roomOfView(v);
+  if (rid) { const q = fitDrillRoom(rid); return { fr: q.fr, pan: q.pan.slice() }; }
+  return { fr: 1, pan: [0, 0] };
 }
 function applyHome(view) { const hm = homeFraming(view); frScale = hm.fr; setPan(hm.pan[0], hm.pan[1]); return hm; }
 /* 视锥补间：scene-group-highlight 的 fitFrame 每帧重算 camera.left/right/top/bottom 且不看 visual.zoom，

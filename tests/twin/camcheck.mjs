@@ -5,7 +5,7 @@ import { BASE } from './_env.mjs';
    改一次 HOME 就要跟着重跑一次，否则这条断言拿旧截图判新构图。 */
 /* 2026-11-08 FR-73 重标定：HOME pan 上移到 [-78,-92] 后实测的十个房间名中心。
    重算方法：~/twin-qa/labels.mjs（打开场地标签→量中心），改一次 HOME 就要重跑一次。 */
-const T={'101':[1291,485],'102':[1160,552],'103':[952,619],'104':[795,670],'105':[624,652],'106':[885,484],'107':[584,581],'108':[498,496],'109':[670,393],'110':[859,332],'E':[0,0],'WC':[0,0]};   /* 2026-11-09 二次重标定：总览构图改为按真实浮层解算（fr 随窗口变），建模 774→1045px */   /* 2026-11-09 用 ~/twin-qa/labels.mjs 重标定：HOME fr 2.13→1.92、pan x −78→+42（三维放大并右移）后必须重跑，否则十个房间名基准全废 */
+const T={'101':[1291,429],'102':[1160,496],'103':[952,563],'104':[795,614],'105':[624,596],'106':[885,428],'107':[584,525],'108':[498,440],'109':[670,337],'110':[859,276],'E':[0,0],'WC':[0,0]};   /* 2026-11-09 三次重标定（~/twin-qa/labels.mjs 实测）：fit 解算的 band 换算到 canvas 坐标系（iframe 顶栏 56px 偏移），十个房间名 y 整体上移 56——不是构图玄学变了，是之前解算一直把建模往顶栏底下多压 56px 没被发现 */
 const out=[],err=[];
 const b=await chromium.launch({channel:'chrome'});
 const p=await b.newPage({viewport:{width:1920,height:1080}});
@@ -26,16 +26,21 @@ const rmse=Math.sqrt(Object.keys(T).reduce((a,k)=>{if(!cam.labels[k])return a;co
 out.push((rmse<60?'✅':'❌')+` 首屏机位与截图拟合残差 RMSE=${rmse.toFixed(1)}px（${n}/10 标签，平移偏移 ${mx.toFixed(0)},${my.toFixed(0)}）`);
 out.push((cam.yaw<-1.0&&cam.yaw>-1.1&&Math.abs(cam.elev-0.6)<0.02?'✅':'❌')+` 首屏相机参数 yaw=${cam.yaw} elev=${cam.elev} zoom=${cam.zoom} view=${cam.view}`);
 await p.screenshot({path:'/tmp/twin-qa/cam-final.png'});
-// 统计四格新口径
+/* ①（2026-11-09）：106 统计升级为三子区域——旧「四格 + 点周期切月值」整段退役：
+   周期开关在 106 已隐身，`[data-period=month]:visible` 点不到，30s 后 TimeoutError
+   把整套 camcheck 带走（全量里那个 0 项的 ❌ 就是它）。周期驱动改由 103 承担（zoneview ⑤），
+   三子区域的数不写死——从 /api/overview/entrust-list 独立重算（文档 §3.3）。 */
 await p.keyboard.press('2'); await p.waitForTimeout(3000);
-/* FR-80：四格从退役面板搬进左栏 #zsGrid（span=标签，b=数字） */
-const cells=await p.locator('#zsGrid .zs-i span').allInnerTexts();
-const vals=await p.locator('#zsGrid .zs-i b').allInnerTexts();
-out.push((cells.join('|')==='已完成|执行中|异常挂起|排队'?'✅':'❌')+' 四格标题: '+cells.join('|'));
-out.push((vals.join('/')==='3/2/1/0'?'✅':'❌')+' 本日106 四格值: '+vals.join('/'));
-/* 周期切换器同屏可能有两份（左栏运行指标组 + 左栏任务统计组），必须点可见的那一份 */
-await p.locator('[data-period=month]:visible').first().click(); await p.waitForTimeout(700);
-out.push(((await p.locator('#zsGrid .zs-i b').allInnerTexts()).join('/')==='60/2/1/32'?'✅':'❌')+' 本月106 四格值: '+((await p.locator('#zpStats .zp-stat b').allInnerTexts()).join('/')));
+const zs3=await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .zs3-c')].map(e=>({t:e.querySelector('span').innerText,v:e.querySelector('b').innerText.replace(/\s+/g,'')})));
+out.push((zs3.map(x=>x.t).join('|')==='委托任务|样品|试验项目'?'✅':'❌')+' 三子区域标题: '+zs3.map(x=>x.t).join('|'));
+const el=await p.evaluate(async()=>(await TwinApi.get('/api/overview/entrust-list')).data);
+const en={},sa={};let dn=0,ts=0;
+(el.records||[]).forEach(e=>{(e.items||[]).forEach(it=>{if(!it.cad||it.cad.slice(0,3)!=='106')return;
+  if(it.state!=='done'&&it.state!=='testing')return; en[e.entrustNo]=1;
+  const sid=it.sampleId||((e.samples||[e.sample])[0]||{}).id; if(sid)sa[sid]=1;
+  it.state==='done'?dn++:ts++;});});
+const exp=[String(Object.keys(en).length),String(Object.keys(sa).length),(dn+'+'+ts)];
+out.push((zs3.length===3&&zs3.map(x=>x.v).join('|')===exp.join('|')?'✅':'❌')+' 106 三子区域值＝entrust-list 独立重算 '+exp.join('|')+'（屏上 '+zs3.map(x=>x.v).join('|')+'）');
 // URL 恢复的视角不再被丢弃
 await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html?mode=ZONE&zone=107&period=day&layers=path,labels,zones,walls#v2=1&native-nodes=1',{waitUntil:'load'});
 await p.waitForTimeout(13000);

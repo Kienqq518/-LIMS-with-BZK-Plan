@@ -40,7 +40,10 @@ out.push((d.roomVisible===0?'✅':'❌')+' 再点收回（回到默认关）: '+
     return [Math.round(h.left+(s.x*.5+.5)*h.width), Math.round(h.top+(-s.y*.5+.5)*h.height)];},[x,z,y]);
     return [q[0]+off[0], q[1]+off[1]];};
   const zoneNow=()=>p.evaluate(()=>document.getElementById('zoneSel').value);
-  let [cx,cy]=await proj(13.9,25.5);
+  /* 取 (16.0,26.0)：106 内无设备、无光点、且不在 RB-C-02 的进出线 x=13.9 上——
+     旧点 13.9,25.5 正压在进线上，机器人路过那两秒会命中本体走卡片分支（优先级正确），
+     下钻断言就跟着车的位置 20 分钟红一次（全量第一次就踩中）。 */
+  let [cx,cy]=await proj(16.0,26.0);
   await p.mouse.click(cx,cy); await p.waitForTimeout(3000);
   T('⑩ 标签关：点 106 空地面 → 下钻', await zoneNow(), '106');
   await p.keyboard.press('1'); await p.waitForTimeout(2600);

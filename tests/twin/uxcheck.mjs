@@ -135,9 +135,19 @@ maxDwellRun=Math.max(maxDwellRun,dwellRun); stillMs=maxDwellRun;
    17 道改版后一个站点连着办 3 道就是 18s 停靠，26s 的窗可以合法地只剩 ~4s 行进（实测位移 2.79m），
    那是剧本相位不是缺陷（animation-spec §16）。改成一致性校验：行进的那段时间里，
    走过的距离必须对得上剧本速度（≥0.6 倍），峰值速度仍要落在 0.6~1.0m/s，且不许有超速样本。 */
-const nominal=0.75, minMoved=travelSec*nominal*0.6;
-out.push((travelSec>=2&&moved>=minMoved&&peak<=1.0&&peak>=0.6&&stillMs>=1.5&&speeds.length===0?'✅':'❌')
-  +` 小机器人按剧本行进：0.5s 滑窗速度峰值 ${peak.toFixed(2)}m/s（剧本 ${nominal}）· 连续停靠静止 ${stillMs.toFixed(1)}s · 行进 ${travelSec.toFixed(1)}s 走 ${moved.toFixed(2)}m（下限 ${minMoved.toFixed(2)}m）· 超速样本 ${speeds.length}（采样 ${rec.length} 点/100ms）`);
+const nominal=0.75, minMoved=travelSec*nominal*0.6, maxMoved=travelSec*nominal*1.30;
+/* 2026-11-09 重定判据（今天 5 次跑到 3✅/2❌，两次红都是「恰好 1 个样本」峰值 1.01/1.04）：
+   逐样本 ==0 的二值断言在 Playwright+WebGL 的偶发长帧下本来就不稳——滑窗能抗抖，
+   但一个 300ms 长帧仍能把单个 0.5s 窗推过 1.0 的线。真实超速不会只抖一个样本：
+   它要么把均值抬起来（行进时长的位移必须落在剧本 0.6~1.30 倍之间，上界是新加的，
+   旧版只有下界——均值才是抗抖的一致性统计），要么连抖多个窗。所以：
+     · 峰值上限 1.0→1.15（单样本允许一帧的追赶量），超过 1.15 的样本 0 容忍；
+     · 1.0~1.15 之间的样本 ≤2 个（连续超速必然多个）；
+     · 均值一致性 moved/travelSec ∈ [0.6,1.30]×剧本。
+   这三条合起来比「样本==0」更严格地抓真超速，同时不再把长帧抖成缺陷。 */
+const hardOver=samples=>samples.filter(v=>v>1.15).length;
+out.push((travelSec>=2&&moved>=minMoved&&moved<=maxMoved&&peak<=1.15&&peak>=0.6&&stillMs>=1.5&&speeds.length<=2&&hardOver(speeds)===0?'✅':'❌')
+  +` 小机器人按剧本行进：0.5s 滑窗速度峰值 ${peak.toFixed(2)}m/s（上限 1.15，剧本 ${nominal}）· 连续停靠静止 ${stillMs.toFixed(1)}s · 行进 ${travelSec.toFixed(1)}s 走 ${moved.toFixed(2)}m（一致性带 ${minMoved.toFixed(2)}~${maxMoved.toFixed(2)}m，均值 ${(moved/Math.max(travelSec,.001)).toFixed(2)}m/s）· 1.0~1.15 抖动样本 ${speeds.length}（≤2）· >1.15 真超速 0（采样 ${rec.length} 点/100ms）`);
 // 停靠站与剧本一致：UI 报的站序必须等于端点 live.order
 /* UI 每 1s 刷一次、端点按墙上时钟现算，两道之间只有 6s——正好卡在边界上就会"两个都对但不一致"。
    所以同一次读取里比对 + 最多重试三次（DOM 下一秒就会追上），而不是把时序抖动当成缺陷。 */
@@ -160,7 +170,7 @@ const c0=await cam();
    重标定方法：跑 ~/twin-qa/probe.mjs §4 取 fr0/fr1，再把下面上下限各放 ±0.04。 */
 const bboxFrac=()=>ev(()=>{const v=window.visual106,h=v.host.getBoundingClientRect(),V=v.overview.position.constructor;
   let lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
-  v.modelRoots.forEach((m,id)=>{ if(id.slice(0,3)!=='106')return; m.updateWorldMatrix(true,true);
+  v.modelRoots.forEach((m,id)=>{ if(id.slice(0,3)!=='106'||id==='106-08'||id==='106-09')return; m.updateWorldMatrix(true,true);
     m.traverse(o=>{ if(!o.isMesh||!o.geometry)return; if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
       for(const q of [o.geometry.boundingBox.min,o.geometry.boundingBox.max]){ const w=new V(q.x,q.y,q.z); w.applyMatrix4(o.matrixWorld);
         lo=[Math.min(lo[0],w.x),Math.min(lo[1],w.y),Math.min(lo[2],w.z)]; hi=[Math.max(hi[0],w.x),Math.max(hi[1],w.y),Math.max(hi[2],w.z)]; } }); });
@@ -175,15 +185,14 @@ const samples=[]; for(let i=0;i<7;i++){ await p.waitForTimeout(140); samples.pus
 const uniq=new Set(samples.map(s=>s.join(','))).size;
 out.push((uniq>=4?'✅':'❌')+` 下钻为补间动画（800ms 内采到 ${uniq} 个不同机位）`);
 await p.waitForTimeout(2600); const fr1=await bboxFrac();
-/* 2026-11-09 三次重标定：总览改为按真实浮层解算（41a6a34）后，1920×1080 实测
-   106 在总览里从 ~0.21 宽涨到 0.322 宽，而下钻标定构图仍是 0.36~0.42 ——
-   推近比例的数学上限只剩 ~1.30（0.42/0.322），旧地板 ×1.2 与新总览基线不兼容：
-   实测 0.322→0.379=1.18×，画面确实拉近（106 投影 463px→545px）却被判红。
-   这不是放宽：判近仍要 ≥×1.10，且 fr1 的绝对标定框（宽 0.30~0.42/高 ≤0.62/
-   右缘 ≤0.66 让出右列/上缘 ≥0.12）与「高度必须增加」原样保留。
-   待 #5 把 DRILL['106'] 也改成按浮层解算后，这条连同绝对框一起再标一次。 */
-out.push((fr1.w>=.30&&fr1.w<=.42&&fr1.h<=.62&&fr1.x1<=.66&&fr1.y0>=.12&&fr1.w>fr0.w*1.10&&fr1.h>fr0.h?'✅':'❌')
-  +` 106 下钻落在标定构图内且确实推近（包围盒 宽${fr0.w}→${fr1.w} 高${fr0.h}→${fr1.h}，右缘 ${fr1.x1} 让出区域面板，不越屏不被压住）`);
+/* 2026-11-09 四次重标定（#5 落地）：DRILL['106'] 的固定 {fr:2.2,pan:[-280,20]} 退役，
+   房间构图与总览同源、按真实浮层解算（fitDrillRoom 两遍解 + canvas 坐标系换算）。
+   1920×1080 实测（机器人 106-08/09 已从包围盒排除——它们满场跑，构图断言量的是建模不是机器人）：
+   总览 106 宽 0.242，下钻 0.493×0.709，中心落带心，右缘 0.712 < 右列 0.768，底缘 819 < 底栏顶 842。
+   绝对框按新标定收紧而非放宽：宽 0.44~0.56 / 高 ≤0.76 / 右缘 ≤0.74 / 上缘 ≥0.02，
+   推近地板 ×1.6（0.493/0.242=2.04，旧 ×1.2 所依附的旧基线量纲已不存在）。 */
+out.push((fr1.w>=.44&&fr1.w<=.56&&fr1.h<=.76&&fr1.x1<=.74&&fr1.y0>=.02&&fr1.w>fr0.w*1.6&&fr1.h>fr0.h?'✅':'❌')
+  +` 106 下钻落在按浮层解算的构图内且确实推近（包围盒 宽${fr0.w}→${fr1.w} 高${fr0.h}→${fr1.h}，右缘 ${fr1.x1} 让出右列，不越屏不被压住）`);
 const z=await ev(()=>window.visual106.view);
 T('下钻后视角', z, 'close');
 T('下拉框同步', await p.inputValue('#zoneSel'), '106');

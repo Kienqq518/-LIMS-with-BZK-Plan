@@ -445,8 +445,11 @@ footer.dock{grid-template-columns:minmax(0,1.62fr) minmax(0,1fr)}
    上一版新加的两块"数据算出来了但屏上看不见"，根因就在这行。
    现在只藏总览那三块，栏本身留着。 */
 body[data-zone-metrics="0"] .railpanel:not(.zstats):not(.zdevs),
-body[data-zone-metrics="0"] .raildev,body[data-zone-metrics="0"] .railagv,
+body[data-zone-metrics="0"] .railagv,
 body[data-zone-metrics="0"] .rail>.period{display:none}
+/* ②（2026-11-09 10 点清单）：.raildev 从本规则里摘出来——metrics:false 当年藏的是「总览三块」，
+   把设备运行状态圆环一起藏掉是搭便车。产品负责人点名要它回到房间视图左栏，
+   口径跟着房间走（renderDockStats 的 zoneDevices 分支），这里只负责别再挡它。 */
 
 /* ② AGV 行进底栏 + 任务三列：状态=列，行内不再重复状态字 */
 .cycle{padding:0 2px 6px}
@@ -652,7 +655,8 @@ footer.dock{grid-template-columns:minmax(0,.92fr) minmax(0,1.66fr) minmax(0,1fr)
    好处不只是位置统一：区域面板那套"五段长列表"与总览的告警流/物联列表本来就是同一批数据的两种排版，
    两套并存就会出现"同一件事两种格式"，客户会问哪个准。 */
 body[data-zone-view="1"] .railpanel:not(.zstats):not(.zdevs),
-body[data-zone-view="1"] .raildev{display:none}
+body[data-zone-view="1"] .railagv{display:none}   /* ②（2026-11-09 10 点清单）：设备运行状态圆环回到房间视图左栏；
+   AGV 独立块（④）本轮未排期，机器人落点仍在左栏设备列表，这块继续让位 */
 /* .zonepanel 的显示规则已随 DOM 一起删除（FR-80） */
 body[data-zone-view="1"] #rightCol{display:flex}          /* 右列不再整列让位 */
 .zstats .zs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px}
@@ -678,6 +682,20 @@ body[data-zone-view="1"] #dkQueue{display:none}           /* 非 106 房间不�
 body[data-zone-view="1"][data-unmanned="1"] #dkQueue{display:flex}
 body[data-zone-view="1"][data-unmanned="1"] #dkRunning{display:none}
 body[data-zone-view="1"] #dkScenes[hidden]{display:none}
+/* ⑦⑧（2026-11-09 10 点清单）：106 房间视图右列——
+   ⑦ 告警流不再固定 279px：按画面/场景块的实际占位拉高（flex 吃掉剩余高度）；
+   ⑧ 安全管家场景监测从底栏搬进右列（画面块下方），底栏让位成两块。搬动在 JS 里做 DOM 迁移，
+      这里只管落位后的形态：六格仍 2 列 3 行，行高改为内容自适应，块高不再跟底栏的 flex:1。 */
+body[data-zone-view="1"][data-unmanned="1"] .stream{flex:1 1 auto;height:auto;min-height:0}
+.zs3{display:flex;flex-direction:column;gap:6px}   /* ① 三子区域：委托/样品/试验项目，大字+口径小字 */
+.zs3-c{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:0 8px;align-items:baseline;
+ padding:4px 8px;background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip)}
+.zs3-c b{grid-row:1/3;font-size:var(--tw-fs-metric,22px);font-weight:800;color:var(--tw-ink-1);font-variant-numeric:tabular-nums;line-height:1}
+.zs3-c b em{font-style:normal;font-weight:600;color:var(--tw-ink-3);padding:0 2px}
+.zs3-c span{font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-2)}
+.zs3-c i{grid-column:2;font-style:normal;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);white-space:normal;line-height:1.35}
+.rcol .scpanel{flex:none;min-height:0}
+.rcol .sc-grid{grid-template-rows:repeat(3,auto)}
 
 
 /* ================= FR-81（2026-11-08）告警详情弹窗：居中 + 变矮 =================
