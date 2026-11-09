@@ -350,6 +350,37 @@ function publishCam() {
     free: [+fq.x0.toFixed(0), +fq.y0.toFixed(0), +fq.x1.toFixed(0), +fq.y1.toFixed(0)] });
 }
 
+/* ⑩（2026-11-09 产品负责人：「场地标签关闭时点房间下钻」）：
+   场地标签默认关（FR-43），房间名药丸下线后「点房间下钻」的入口也跟着消失——只剩顶栏下拉一条路。
+   这里补上本体入口：射线打到地平面（y=0），落点在该房间 CAD 多边形内就发 room-selected，
+   与点标签走完全同一条宿主链路（决策 Q7 双向绑定）。命中设备/光点时不进来（卡片优先）；
+   已在某房间视角里不重复触发；点在房间外（走廊/墙外空地）多边形全不命中，什么都不发生。 */
+function roomClickDrill(ev) {
+  if (roomOfView(visual.view)) return;                       /* 已下钻在某房间里：不做邻房跳转 */
+  const r = visual.renderer.domElement.getBoundingClientRect();
+  visual.raycaster.setFromCamera({ x: (ev.clientX - r.left) / r.width * 2 - 1, y: -(ev.clientY - r.top) / r.height * 2 + 1 }, visual.camera);
+  const ray = visual.raycaster.ray;
+  if (Math.abs(ray.direction.y) < 1e-6) return;
+  const t = -ray.origin.y / ray.direction.y; if (t <= 0) return;
+  const wx = ray.origin.x + ray.direction.x * t, wz = ray.origin.z + ray.direction.z * t;
+  for (const room of ((visual.g || {}).rooms || [])) {
+    if (!/^10[1-9]$|^110$/.test(String(room.id))) continue;  /* 与宿主 knownRoom 同一口径 */
+    if (pointInRoom(room.points, wx, wz)) {
+      parent.postMessage({ channel: 'room-tour-node-v3', type: 'room-selected', roomId: String(room.id) }, location.origin);
+      return;
+    }
+  }
+}
+/* 射线法点在多边形：room.points 是 CAD 单位 [x, z]，世界坐标 = ×0.05（与 allowedRects/fitOverview 同源） */
+function pointInRoom(pts, wx, wz) {
+  if (!pts || pts.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i][0] * 0.05, zi = pts[i][1] * 0.05, xj = pts[j][0] * 0.05, zj = pts[j][1] * 0.05;
+    if ((zi > wz) !== (zj > wz) && wx < (xj - xi) * (wz - zi) / (zj - zi) + xi) inside = !inside;
+  }
+  return inside;
+}
 function bindDotPick() {
   const c = visual.renderer.domElement;
   let down = null;   /* 拖视角后松手不能算点击：与引擎自己的 moved>4px 判定同一阈值 */
@@ -361,7 +392,8 @@ function bindDotPick() {
     /* 引擎自己的 pointerup 先跑，并已按射线命中画了一张卡；这里判定光点该赢时，
        再走同一条 space-device-select 把它改判成光点所属设备（同步覆盖，屏幕上不会闪两张）。 */
     const hitId = rayHitId(ev);
-    const id = dotHitId(ev); if (!id) return;
+    const id = dotHitId(ev);
+    if (!id) { if (!hitId) roomClickDrill(ev); return; }   /* ⑩ 无光点也无实体：点房间本体=下钻（场地标签关闭时的兜底入口） */
     if (hitId === id) return;                              /* 实体与光点同属一台，不必改判 */
     if (hitId && !dotInFrontOfHit(ev, id)) return;         /* 实体挡在光点前面：以本体为准，防止"点 A 出 B" */
     if (visual.selected === id) return;                      /* CAD 拾取已经选中同一台，别重复触发补间 */
@@ -784,6 +816,7 @@ function allowedRects(r) {
   });
   if (r.corridor) rects.push({ x0: r.corridor.x[0], x1: r.corridor.x[1], z0: r.corridor.z[0], z1: r.corridor.z[1], id: 'corridor' });
   if (r.corridorSouth) rects.push({ x0: r.corridorSouth.x[0], x1: r.corridorSouth.x[1], z0: r.corridorSouth.z[0], z1: r.corridorSouth.z[1], id: 'corridorSouth' });   /* 106 南走廊带（#11） */
+  if (r.corridorNorth) rects.push({ x0: r.corridorNorth.x[0], x1: r.corridorNorth.x[1], z0: r.corridorNorth.z[0], z1: r.corridorNorth.z[1], id: 'corridorNorth' });   /* 106 北走廊带（#11 二次修订） */
   if (!rects.length) { const q = roomRect('106'); if (q) rects.push(q); }
   return rects;
 }

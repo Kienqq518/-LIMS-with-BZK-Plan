@@ -43,7 +43,8 @@ const geo=await f.evaluate(()=>{
   /* ── #11 判据（2026-11-09 按产品负责人圈图重写）──
      判据不再"信 seed 声明"，而是"信渲染实测"：
        · 声明有墙片的范围内不许穿越（东玻璃墙实测连续 z[9.64,28.04]，原来在这里穿了两回＝穿玻璃）；
-       · 穿越只许发生在实测没有墙片的位置（南墙两根角柱之间 x[9.54,17.94] 无墙片＝106 的唯一出入口）。 */
+       · 穿越只许发生在实测没有墙片的位置（北墙门垛 12.51 与东北角柱之间 x[12.53,17.94] 无墙片，门扇区间 x[12.53,15.20]＝106 的唯一出入口；
+         内侧东段 x[15.20,17.94] 是货架 106-15/14 贴墙，不可过）。2026-11-09 二次圈图：门在南开口对面，南墙线穿越必须＝0。 */
   const crossAt=(axis, at, lo, hi)=>{const hits=[];let side=0,last=null;
     for(const q of poly){
       const a=axis==='x'?q[0]:q[1], c=axis==='x'?q[1]:q[0];
@@ -57,8 +58,9 @@ const geo=await f.evaluate(()=>{
     }
     return hits;};
   const eastCross=crossAt('x',18.44,9.64,28.04);      /* 东玻璃墙范围内：必须 0 次 */
-  const southCross=crossAt('z',9.84,9.54,17.94);      /* 南墙开口：进出各一次 */
-  const southAny=crossAt('z',9.84,8.94,18.54);        /* 整条南墙线（含两根角柱，按声明跨度） */
+  const northCross=crossAt('z',28.09,12.53,17.94);    /* 北墙开口：进出各一次 */
+  const northAny=crossAt('z',28.09,8.94,18.54);       /* 整条北墙线（含玻璃板/门垛/角柱，按声明跨度） */
+  const southCross=crossAt('z',9.84,9.54,17.94);      /* 南墙开口（首轮圈定位置）：二次圈图后必须 0 次 */
   function covered(axis, at, lo, hi) {
     const out=[];
     v.scene.updateMatrixWorld(true);
@@ -82,8 +84,13 @@ const geo=await f.evaluate(()=>{
       if(last&&q[0]<=last[1]+0.06) last[1]=Math.max(last[1],q[1]); else merged.push(q.slice());});
     return merged;
   }
-  const covEast=covered('x',18.44,9.64,28.04), covSouthIn=covered('z',9.84,10.10,17.40),
-        covSouthPost=covered('z',9.84,8.90,9.60);
+  const covEast=covered('x',18.44,9.64,28.04), covNorthLeaf=covered('z',28.09,12.60,15.10),
+        covNorthPost=covered('z',28.09,17.90,18.60);
+  let rackWest=null; v.modelRoots.forEach((m,id)=>{ if(id!=='106-15')return; m.updateWorldMatrix(true,true);
+    const P=v.overview.position.constructor; let lo=1e9;
+    m.traverse(o=>{ if(!o.isMesh||!o.geometry)return; if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+      const a=new P().copy(o.geometry.boundingBox.min).applyMatrix4(o.matrixWorld); lo=Math.min(lo,a.x); });
+    rackWest=+lo.toFixed(2); });
   const clip=(a,lo,hi)=>Math.max(lo,Math.min(hi,a));
   /* 折线落在走廊带 x[18.44,20.84] 内的长度（去+返）：
      东西向只算带内那一截；南北向必须整段 x 在带内才算——否则带外的南北段会被误计成带内长度 */
@@ -97,31 +104,35 @@ const geo=await f.evaluate(()=>{
   const corridorZSpan=inb.length?[+Math.min(...inb.map(q=>q[1])).toFixed(2),+Math.max(...inb.map(q=>q[1])).toFixed(2)]:null;
   const markers=[]; g.traverse(o=>{ if(o.isMesh&&o.geometry&&o.geometry.type==='PlaneGeometry'&&o.material&&o.material.color&&o.material.color.getHex()===0x16a34a) markers.push('gate'); });
   const band=g.getObjectByName('corridor-RB-C-02');
-  return {polyN:poly.length, legsDrawn:legNames.length, legNames, gate102, gate106, eastCross, southCross, southAny, covEast, covSouthIn, covSouthPost, inCorridor, markers:markers.length, band:!!band, corridorEnd, corridorZSpan};
+  return {polyN:poly.length, legsDrawn:legNames.length, legNames, gate102, gate106, eastCross, northCross, northAny, southCross, covEast, covNorthLeaf, covNorthPost, rackWest, inCorridor, markers:markers.length, band:!!band, corridorEnd, corridorZSpan};
 });
 out.push((geo.gate102.length===2&&geo.gate102.every(z=>z>=10.69+0.651&&z<=12.49-0.651)?'✅':'❌')+' 102 西门：折线只在门洞内穿越 x=20.84 共 '+geo.gate102.length+' 次（去+返）@ z='+JSON.stringify(geo.gate102));
 out.push((geo.corridorEnd!==null&&geo.corridorEnd<=20.84-0.651?'✅':'❌')+' 走廊内最东点 '+geo.corridorEnd+'m ≤ 20.189m（贴 102 西墙前折返，留 0.651m 扫掠半宽）');
 out.push((geo.eastCross.length===0?'✅':'❌')
   +' 106 东玻璃墙（实测连续 z[9.64,28.04]）范围内穿越＝0 次：'+JSON.stringify(geo.eastCross)
   +'（原来蓝色线就是从这里穿玻璃进来的）');
-out.push((geo.southCross.length===2&&geo.southCross.every(x=>x>=9.54+0.651&&x<=17.94-0.651)?'✅':'❌')
-  +' 进出 106 只走南墙开口：穿越 z≈9.84 落在开口 x[9.54,17.94] 内共 '+geo.southCross.length+' 次 @ x='
-  +JSON.stringify(geo.southCross)+'（距角柱须 ≥0.651m 扫掠半宽）');
-out.push((geo.southAny.length===geo.southCross.length?'✅':'❌')
-  +' 没有从角柱上硬穿：整条南墙线穿越 '+geo.southAny.length+' 次，全部落在开口内（'+JSON.stringify(geo.southAny)+'）');
-out.push((geo.covSouthIn.length===0?'✅':'❌')
-  +' 开口是实测出来的：x[10.10,17.40] · z≈9.84 内可见墙片 '+JSON.stringify(geo.covSouthIn)+' 段（应 0 段）');
-out.push((geo.covSouthPost.length>=1?'✅':'❌')
-  +' 对照：同一条线西南角柱确有墙片 '+JSON.stringify(geo.covSouthPost)+'（所以那里不许穿）');
+out.push((geo.northCross.length===2&&geo.northCross.every(x=>x>=12.53+0.651&&x<=15.20-0.651)?'✅':'❌')
+  +' 进出 106 只走北墙门扇：穿越 z≈28.09 落在门扇 x[12.53,15.20] 内共 '+geo.northCross.length+' 次 @ x='
+  +JSON.stringify(geo.northCross)+'（距门垛/货架须 ≥0.651m 扫掠半宽，穿越线=门中线 13.90）');
+out.push((geo.northAny.length===geo.northCross.length?'✅':'❌')
+  +' 没有从角柱/玻璃板上硬穿：整条北墙线穿越 '+geo.northAny.length+' 次，全部落在门扇内（'+JSON.stringify(geo.northAny)+'）');
+out.push((geo.southCross.length===0?'✅':'❌')
+  +' 南墙开口（首轮圈定位置）不再穿越：z≈9.84 穿越 '+geo.southCross.length+' 次（应 0——二次圈图把门改到对面）');
+out.push((geo.covNorthLeaf.length===0?'✅':'❌')
+  +' 门扇是实测出来的：x[12.60,15.10] · z≈28.09 内可见墙片 '+JSON.stringify(geo.covNorthLeaf)+' 段（应 0 段）');
+out.push((geo.covNorthPost.length>=1?'✅':'❌')
+  +' 对照：同一条线东北角柱确有墙片 '+JSON.stringify(geo.covNorthPost)+'（所以那里不许穿）');
+out.push((geo.rackWest!==null&&geo.rackWest-13.90>=0.651?'✅':'❌')
+  +' 穿越线为何不取开口几何中点：货架 106-15 西缘 '+geo.rackWest+'m，13.90+0.651m 扫掠 ≤ 西缘（门扇东段被贴墙货架挡死，0.9m 机器人过不去）');
 out.push((geo.covEast.length>=1&&(geo.covEast[geo.covEast.length-1][1]-geo.covEast[0][0])>=17.5?'✅':'❌')
   +' 对照：东玻璃墙实测连续覆盖 '+JSON.stringify(geo.covEast)+'（无洞口＝线路不许走这里）');
-/* 走廊使用长度随门的位置变：门从"读图估值的北端入口"改成实测南开口后，
-   走廊只被用作 102 西门↔南走廊这一段（z 8.60–11.59 往返 + 进出带内的横穿），
-   期望从 ≥25m 改成 ≥6m——判据要跟着真实几何走，不能拿一个错门洞换来的长数字当标准。 */
-out.push((geo.inCorridor>=6&&geo.band?'✅':'❌')+' 走廊里画得出折线：落在走廊带内 '+geo.inCorridor+'m（102 西门↔106 南开口，去+返）+ 范围带='+(geo.band?'有':'无'));
-out.push((geo.corridorZSpan&&geo.corridorZSpan[0]<=8.61&&geo.corridorZSpan[1]>=11.59&&geo.southCross.length===2?'✅':'❌')
+/* 走廊使用长度随门的位置变：二次圈图把门从南开口挪到北墙后，走廊成为 102 西门↔北走廊的
+   通过式干线（z 11.59–29.30 往返 + 进出带内横穿 ≈37.8m），期望从 ≥6m 提到 ≥30m——
+   数字跟着真实几何走，上一轮那个"≥6m"是拿一个错门洞换来的短标准，同样不能留。 */
+out.push((geo.inCorridor>=30&&geo.band?'✅':'❌')+' 走廊里画得出折线：落在走廊带内 '+geo.inCorridor+'m（102 西门↔106 北开口，去+返）+ 范围带='+(geo.band?'有':'无'));
+out.push((geo.corridorZSpan&&geo.corridorZSpan[0]<=11.60&&geo.corridorZSpan[1]>=29.29&&geo.northCross.length===2?'✅':'❌')
   +' 走廊是"通过式"通道而不是原地折返的盲端：折线在走廊带内覆盖 z '+JSON.stringify(geo.corridorZSpan)
-  +'（南端要探到 8.60 才能进 106 南开口），并在南走廊与东走廊之间真的走了个 L 形');
+  +'（北端要探到 29.30 才能进 106 北开口），并在北走廊与东走廊之间真的走了个 L 形');
 out.push((geo.markers===0?'✅':'❌')+' 墙上绿色门洞小方块已取消（路径层内 Plane 记号 '+geo.markers+' 个；起点圆点保留）');
 
 /* 改路径必须重算 demoCycle 的 u/travelSec/t0：停靠点一个都不许挪位。
@@ -164,8 +175,8 @@ out.push((bad.length===0&&seedStops.meta.stations===11?'✅':'❌')+` 11 个定�
 out.push((Math.abs(geom.L-seedStops.meta.pathLengthM)<=0.3?'✅':'❌')+` 剧本元数据与路径一致：pathLengthM ${seedStops.meta.pathLengthM} / 实测 ${geom.L}，loopSec ${seedStops.meta.loopSec}`);
 /* 合法穿门清单：自检按顶点侧向变化统计，去/返各一次 */
 const tr=await f.evaluate(()=>{const e=document.getElementById('twin-v2-route-audit');return e?JSON.parse(e.dataset.transits||'[]'):[];});
-out.push((tr.length===4&&tr.filter(t=>t.wall.startsWith('102')).length===2&&tr.filter(t=>t.wall.startsWith('106')).length===2?'✅':'❌')+' 自检记录的穿门=4 次（102 西门去/返 + 106 南开口去/返）: '+JSON.stringify(tr.map(t=>t.wall.slice(0,7)+'@'+(t.z??t.x))));
-out.push((tr.every(t=>t.wall.startsWith('102 西墙')||t.wall.startsWith('106 南墙'))?'✅':'❌')+' 穿门只发生在这两道门（102 西门 + 106 南开口），没有第三处: '+JSON.stringify([...new Set(tr.map(t=>t.wall))]));
+out.push((tr.length===4&&tr.filter(t=>t.wall.startsWith('102')).length===2&&tr.filter(t=>t.wall.startsWith('106')).length===2?'✅':'❌')+' 自检记录的穿门=4 次（102 西门去/返 + 106 北开口去/返）: '+JSON.stringify(tr.map(t=>t.wall.slice(0,7)+'@'+(t.z??t.x))));
+out.push((tr.every(t=>t.wall.startsWith('102 西墙')||t.wall.startsWith('106 北墙'))?'✅':'❌')+' 穿门只发生在这两道门（102 西门 + 106 北开口），没有第三处: '+JSON.stringify([...new Set(tr.map(t=>t.wall))]));
 
 /* 反向验证：注入一条「在 z=12.39 直接穿 106 东墙」的坏路径，自检必须抓到——否则上面的 0 违规是空转 */
 const inject=await f.evaluate(async()=>{
