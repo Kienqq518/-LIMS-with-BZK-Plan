@@ -31,6 +31,29 @@ T('图层状态写入 URL（labels 已加入）', await p.evaluate(()=>new URLSe
 await p.click('.lic[data-layer=labels]'); await p.waitForTimeout(1200);
 const d=await probe();
 out.push((d.roomVisible===0?'✅':'❌')+' 再点收回（回到默认关）: '+d.roomVisible);
+/* ⑩（2026-11-09 产品负责人：「场地标签关闭时点房间下钻」）：房间名药丸下线后，
+   点房间本体的兜底链路=射线→地平面→CAD 多边形→room-selected，与点标签同一宿主通道。 */
+{
+  const off=await p.evaluate(()=>{const i=document.getElementById('scene')||document.querySelector('iframe');const r=i.getBoundingClientRect();return [Math.round(r.left),Math.round(r.top)];});
+  const proj=async(x,z,y)=>{const q=await f.evaluate(([x,z,y])=>{const v=window.visual106,TH=v.overview.position.constructor,h=v.renderer.domElement.getBoundingClientRect();
+    const s=new TH(x,y||0,z).project(v.camera);
+    return [Math.round(h.left+(s.x*.5+.5)*h.width), Math.round(h.top+(-s.y*.5+.5)*h.height)];},[x,z,y]);
+    return [q[0]+off[0], q[1]+off[1]];};
+  const zoneNow=()=>p.evaluate(()=>document.getElementById('zoneSel').value);
+  let [cx,cy]=await proj(13.9,25.5);
+  await p.mouse.click(cx,cy); await p.waitForTimeout(3000);
+  T('⑩ 标签关：点 106 空地面 → 下钻', await zoneNow(), '106');
+  await p.keyboard.press('1'); await p.waitForTimeout(2600);
+  [cx,cy]=await proj(16.5,23.6,0.9);
+  await p.mouse.click(cx,cy); await p.waitForTimeout(1500);
+  const cardOn=await f.evaluate(()=>{const e=document.getElementById('twin-v2-card');return e&&!e.hidden;});
+  const zAfter=await zoneNow();
+  out.push((cardOn&&zAfter===''?'✅':'❌')+' ⑩ 点设备本体：出卡片且不下钻（卡片优先于房间本体）: card='+cardOn+' zone='+JSON.stringify(zAfter));
+  await p.keyboard.press('1'); await p.waitForTimeout(2600);
+  [cx,cy]=await proj(-5,-5);
+  await p.mouse.click(cx,cy); await p.waitForTimeout(1500);
+  T('⑩ 点房间外（墙外空地）：什么都不发生', await zoneNow(), '');
+}
 T('装载链无被吞异常', await p.evaluate(()=>document.getElementById('freshTxt').textContent), '');
 await p.screenshot({path:'/tmp/twin-qa/site-labels-off.png'});
 console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,4).join('\n'));
