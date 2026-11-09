@@ -699,6 +699,7 @@ function allowedRects(r) {
     const q = roomRect(m[1]); if (q) rects.push(q);
   });
   if (r.corridor) rects.push({ x0: r.corridor.x[0], x1: r.corridor.x[1], z0: r.corridor.z[0], z1: r.corridor.z[1], id: 'corridor' });
+  if (r.corridorSouth) rects.push({ x0: r.corridorSouth.x[0], x1: r.corridorSouth.x[1], z0: r.corridorSouth.z[0], z1: r.corridorSouth.z[1], id: 'corridorSouth' });   /* 106 南走廊带（#11） */
   if (!rects.length) { const q = roomRect('106'); if (q) rects.push(q); }
   return rects;
 }
