@@ -207,5 +207,30 @@ const A=await ev(()=>{const e=document.getElementById('twin-v2-route-audit');ret
 out.push((A&&A.v===0?'✅':'❌')+` 新循环路线避让校验: ${A&&A.c} 采样点 违规 ${A&&A.v} ${A&&A.v?A.d:''}`);
 await p.screenshot({path:'/tmp/twin-qa/ux-device.png'});
 await p.keyboard.press('1'); await p.waitForTimeout(3000); await p.screenshot({path:'/tmp/twin-qa/ux-s1.png'});
+/* ── 2026-11-09 圈图三条：写成守卫，别靠下一次肉眼 ──
+   这三条在 1920×1080 与 1459×867（产品负责人实际窗口）两种尺寸下都要成立：
+   以前只在一种尺寸下看过，所以"画面被底栏切半截"这种问题能活好几轮。 */
+{
+  const p3=await b.newPage({viewport:{width:1459,height:867}});
+  await p3.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});
+  await p3.waitForTimeout(15000);
+  const g=await p3.evaluate(()=>{
+    const R=s=>{const e=document.querySelector(s);if(!e)return null;const q=e.getBoundingClientRect();
+      return {x:Math.round(q.x),y:Math.round(q.y),r:Math.round(q.right),b:Math.round(q.bottom)};};
+    const rows=[...document.querySelectorAll('#streamTrack .st-row')].map(e=>e.getBoundingClientRect());
+    const vb=document.querySelector('.stream-view').getBoundingClientRect();
+    const tiles=[...document.querySelectorAll('#camGrid .cam-tile')].map(e=>e.getBoundingClientRect());
+    return {railTop:R('.railpanel').y, streamTop:R('.stream').y,
+      rowL:Math.round(rows[0].x), rowR:Math.round(rows[0].right),
+      tileL:Math.round(tiles[0].x), tileR:Math.round(tiles[1].right), tileB:Math.round(tiles[3].bottom),
+      tileW:Math.round(tiles[0].width), tileH:Math.round(tiles[0].height),
+      viewH:Math.round(vb.height), rowH:Math.round(rows[0].height), dockTop:R('.dock').y, n:tiles.length};});
+  out.push((g.streamTop===g.railTop?'✅':'❌')+` 告警流顶边＝左栏「运行指标」顶边（${g.streamTop} vs ${g.railTop}；.rcol 曾是 .stage 里的 absolute，差 56px 永远对不齐）`);
+  out.push((g.tileL===g.rowL&&g.tileR===g.rowR?'✅':'❌')+` 四路画面与上方告警流左右缘逐像素齐（格 ${g.tileL}–${g.tileR} vs 行 ${g.rowL}–${g.rowR}）`);
+  out.push((g.n===4&&g.tileB<=g.dockTop-4?'✅':'❌')+` 2×2 画面在矮窗口里完整可见、不被底栏切（画面底 ${g.tileB} ≤ 底栏顶 ${g.dockTop}）`);
+  out.push((Math.abs(g.tileW/g.tileH-16/9)<0.12?'✅':'❌')+` 监控格保持 16:9（${g.tileW}×${g.tileH}=${(g.tileW/g.tileH).toFixed(2)}），不是被 flex 拉出来的竖块`);
+  out.push((Math.floor(g.viewH/g.rowH)===3?'✅':'❌')+` 告警流可见 ${Math.floor(g.viewH/g.rowH)} 行（可视区 ${g.viewH} / 行高 ${g.rowH}），高度已让给画面块`);
+  await p3.close();
+}
 console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,8).join('\n'));
 await b.close();

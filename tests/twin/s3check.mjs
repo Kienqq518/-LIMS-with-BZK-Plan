@@ -20,7 +20,9 @@ T('告警流行数（13 条 ×2 无缝复制）', await p.locator('#streamTrack 
 out.push(((await p.locator('#streamMeta').innerText()).includes('今日')?'✅':'❌')+' 告警流头部显示今日计数: '+await p.locator('#streamMeta').innerText());
 // 点告警行 → 就地详情（不再开抽屉）
 /* 滚动列表在自动化里永远"不稳定"；先按 CSS 的暂停开关停住（等价于真机悬停暂停），再点 */
-await p.evaluate(()=>{const t=document.getElementById('streamTrack');t.style.animation='none';});   /* 完全停住=回到 translateY(0)，首行必然完整可见 */
+await p.evaluate(()=>{['#streamTrack','.stream-board','.stream-board.scroll'].forEach(s=>document.querySelectorAll(s)
+  .forEach(e=>{e.style.animation='none';e.style.animationPlayState='paused';}));});
+await p.waitForTimeout(400);   /* 完全停住=回到 translateY(0)，首行必然完整可见 */
 await p.waitForTimeout(300);
 /* 滚动列表里被裁掉的行仍参与几何计算：必须挑「完整落在本区可见框内」的行，否则点击点会落到相邻表头上被拦截 */
 const rows=p.locator('#streamTrack .st-row'); const n=await rows.count(); let idx=-1;

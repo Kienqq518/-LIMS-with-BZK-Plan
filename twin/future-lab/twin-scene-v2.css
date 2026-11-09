@@ -48,7 +48,7 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 .pill.active{color:var(--tw-color-brand-strong);background:var(--tw-glass-on);border:0;box-shadow:var(--tw-press-ring)}
 .pill.flow{color:var(--tw-color-brand);border-color:var(--tw-tint-brand-line)}
 /* 浮层几何的唯一事实源：宽度与沟槽都从这里算，改一处即可 */
-:root{--tw-rail-w:300px;--tw-rail-gap:20px;   /* 2026-11-08 产品负责人：左栏几块粘在一起了，间距从 12 拉到 20 */--tw-stream-h:352px;--tw-stream-w:430px;   /* 2026-11-08 再圈：高度调短到可见 4 条，把位置让给下面四路画面 */   /* 2026-11-08 再圈一次：更矮更宽，可见区仍是 6 条（下面腾出来的位置给 4 路监控画面） */--tw-panel-w:352px;--tw-float-gap:16px}
+:root{--tw-rail-w:300px;--tw-rail-gap:20px;   /* 2026-11-08 产品负责人：左栏几块粘在一起了，间距从 12 拉到 20 */--tw-stream-h:279px;--tw-stream-w:430px;   /* 2026-11-08 再圈：高度调短到可见 4 条，把位置让给下面四路画面 */   /* 2026-11-08 再圈一次：更矮更宽，可见区仍是 6 条（下面腾出来的位置给 4 路监控画面） */--tw-panel-w:352px;--tw-float-gap:16px}
 /* 侧栏底板层整体撤除（2026-11-07 产品负责人圈图：连面板底下那层白/玻璃底板也不要）。
    左栏、告警流、组态物联、AGV 任务块都只剩内容浮在三维画面上：无底、无描边、无圆角、无阴影、无毛玻璃。
    可读性改由 --tw-text-plate 白垫底承担（CAD 画面近白，深色字 + 白垫底对比度仍 >7:1）。
@@ -129,7 +129,7 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 /* ---- 右侧告警流（连续滚动，透明玻璃） ---- */
 /* 右列：top:14 起（原来 top:70 落在 .stage 内 = 页面 126px，上面白空 112px）。
    告警流高度固定（不随条数伸缩），组态物联吃剩余高度——两块共用同一档玻璃配方。 */
-.rcol{position:absolute;right:16px;top:54px;   /* 再上移（圈图）；overflow:hidden 已撤——
+.rcol{position:fixed;right:16px;top:70px;   /* 与 .rail 同一个坐标系（.rail 是 fixed；.rcol 以前是 .stage 里的 absolute，而 .stage 从 y=56 起，于是 top:70 实际落在 126，永远对不齐左栏顶）*/   /* 再上移（圈图）；overflow:hidden 已撤——
     它把四路画面的下半截裁掉了，"看不见"被我用裁切掩盖成"没问题"，那是自欺。
     现在靠格位高度自适应把内容真的装下，装不下就该改格位而不是裁。 */bottom:16px;width:var(--tw-stream-w);display:flex;flex-direction:column;gap:var(--tw-float-gap);z-index:var(--tw-z-panel)}
 .stream,.nodepanel{position:relative;display:flex;flex-direction:column;background:transparent;
@@ -157,7 +157,10 @@ body{font-family:var(--tw-font-familyUI);color:var(--tw-ink-1);background:linear
 .st-row .l1 .tm{margin-left:auto;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);font-variant-numeric:tabular-nums}
 /* 外层不再整体滚动：三个分区各自滚动，否则分区表头也跟着飘（自动化里表现为"永远不稳定"） */
 .stream-view{flex:1;overflow:auto;position:relative}
-.stream-board{display:flex;flex-direction:column;padding:10px 12px}
+/* 上内缩 10px 必须去掉：可视区现在是 222px＝正好 3×74，那 10px 会把第一行顶出去，
+   于是"告警流缩短到 3 行"在屏上其实只有 2 行完整可见（zone-panel 的 2≠3 就是这么来的）。
+   行与标题之间已有 header 的 8px 下边距，不再需要这块的顶部留白。 */
+.stream-board{display:flex;flex-direction:column;padding:0 12px}
 .st-row{background:var(--tw-glass-inner);border:1px solid var(--tw-hairline);border-radius:var(--tw-radius-chip);padding:9px 11px;cursor:pointer;transition:border-color var(--tw-dur-1),box-shadow var(--tw-dur-1)}
 .st-row:hover{border-color:var(--tw-tint-alarm-line);box-shadow:var(--tw-shadow-row)}
 /* 键盘可达（2026-11-06 反馈）：委托点击的行必须有可见焦点环，投影时看得出停在哪儿 */
@@ -617,15 +620,18 @@ footer.dock{grid-template-columns:minmax(0,.92fr) minmax(0,1.66fr) minmax(0,1fr)
    2×2 四格，对应 103/105/106/109 四个视觉点位。格子里先放"这路是谁的、在哪、点位状态"，
    画面本身由场景离屏渲相机接入（下一步）。没有画面时不许留一块假黑的屏——
    写「画面待接入」比放一张静态图诚实。 */
-.cctv{flex:none;display:flex;flex-direction:column;gap:6px;min-height:0}
+.cctv{flex:none;display:flex;flex-direction:column;gap:6px;min-height:0}   /* 高度由格位算出来，不靠 flex 抢剩余空间：抢满以后 2×2 变成 199×193 的竖块，监控画面比例是错的 */
 /* 与告警流左边界齐平：.stream 的内容本来就有 12px 左右内边距，画面块没有，
    于是标题与格子的左边缘比告警流文字更靠左（圈图那条"宽度不齐平"）。 */
 .cctv>header,.cam-grid{padding-left:12px;padding-right:12px}
 .cctv>header{display:flex;align-items:baseline;gap:8px}
 .cctv>header b{font-size:var(--tw-fs-strong);font-weight:700;color:var(--tw-ink-1)}
 .cctv>header .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums}
-.cam-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,minmax(72px,1fr));gap:8px;min-height:0}
-.cam-tile{position:relative;min-height:0;border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip);
+/* 格位尺寸由 16:9 决定（宽 199 → 高 112），两块 2×2 + 标题共 262px；
+   加上告警流 279 + 间距 16 + 顶 70 = 627，正好落在底栏带（1080 高时 840，867 高时 639）之上，
+   所以更矮的窗口也不会再把画面切半截——这次圈图的第二条就是这个。 */
+.cam-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,auto);gap:8px;min-height:0}
+.cam-tile{position:relative;min-height:0;aspect-ratio:16/9;border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip);
  background:var(--tw-glass-plate);overflow:hidden}
 .cam-tile canvas{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
 .cam-tile .cm{position:absolute;left:7px;top:6px;right:7px;display:flex;align-items:center;gap:6px;
@@ -681,3 +687,12 @@ body[data-zone-view="1"] #dkScenes[hidden]{display:none}
  max-height:52vh;overflow:auto;border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);
  box-shadow:var(--tw-shadow-card);padding:14px 16px}
 .detail.docked{right:auto;left:50%;top:50%;bottom:auto;width:min(460px,86vw);transform:translate(-50%,-50%)}
+
+/* ── 2026-11-09 圈图三条（写成规则，别靠巧合）──
+   ① 右列顶边＝左栏「运行指标」顶边（都是 70）：以前 .rcol 从 54 起、告警流实际落在 110，
+      两块顶部差 40px，客户一眼就看出来没对齐。
+   ② 告警流固定 3 行（279px＝标题 57 + 3×74），把位置让给下面的 2×2 画面。
+   ③ 画面块 flex:1 吃满右列剩余高度，格子按 minmax(56px,1fr) 收缩——
+      在 1459×867 这种更矮的窗口里，底栏上移会把固定高度的画面块切掉半截（本次圈图的现象）。
+   宽度：告警流行与画面格都用同一 12px 内缩，右列本身 430 宽，两块左右缘必须逐像素相等。 */
+.stream,.cctv,.cam-grid,.stream-board{box-sizing:border-box}

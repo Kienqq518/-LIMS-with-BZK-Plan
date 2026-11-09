@@ -29,7 +29,9 @@ ok(res.some(n=>/vendor\/g2\.min\.js/.test(n)) && !res.some(n=>/unpkg|jsdelivr|cd
 ok(await p.evaluate(()=>!!window.G2 && !!window.TwinCharts),'引擎与图表层都已就绪');
 
 // ② 每张图真的有像素
-const paint=await p.evaluate(()=>[...document.querySelectorAll('canvas')].map(c=>{
+/* 选择器必须限定 .tw-chart canvas：FR-74/75 之后 S1 里还挂着 4 个监控画面画布，
+   原来这句把画面也算成"图表"，于是"出图数量=2"报成 6——红的是判据范围，不是产品。 */
+const paint=await p.evaluate(()=>[...document.querySelectorAll('.tw-chart canvas')].map(c=>{
   const x=c.getContext('2d'); if(!x) return {w:c.width,h:c.height,n:-1};
   try{const d=x.getImageData(0,0,c.width,c.height).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>10)n++;
     return {w:c.width,h:c.height,n};}catch(e){return {w:c.width,h:c.height,n:-2};}}));
@@ -85,8 +87,10 @@ const dkNum=await p.evaluate(()=>{const lg=[...document.querySelectorAll('#dkDev
   return {lg,sum:lg.reduce((a,x)=>a+x.v,0)};});
 /* 建档口径与宿主同源：devices = 106 全量 + 103 已建档（宿主就是这么拼的），没有单独的总表接口 */
 /* 建档合计读全场设备表（/api/overview/devices，32 台），不再用 106+103 两区相加=11 台 */
-const devicesApi=await p.evaluate(async()=>{const a=await TwinApi.get('/api/overview/devices').then(r=>({data:(r.data.devices||[]).filter(d=>true)}));const b=await Promise.resolve({data:[]});
-  return (a.data||[]).length+(b.data||[]).length;});
+/* 建档合计必须排除资产（asset:true 的货架/充电位/电视/支架）：它们不产出检测数据，既不进运行状态环也不进图例。
+   dockcheck 早已按这条改过（"五档相加必然差 4 条，红的是取样口径不是圆环"），chartcheck 当时漏了同一处，所以 34≠38。 */
+const devicesApi=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/devices');
+  return (r.data.devices||[]).filter(d=>!d.asset).length;});
 /* 圆环只画非零档（0 台的弧线画不出来，硬塞会变成"图上有一片没有内容"），
    但四档之和这条纪律不许丢：非零档相加必须等于图例四档相加，也等于建档合计。 */
 ok(dv&&dv.length>=1&&dv.filter(x=>x.v<=0).length===0&&dv.reduce((s,d)=>s+d.v,0)===dkNum.sum,
@@ -263,7 +267,7 @@ const a11y=await p.evaluate(()=>{const n=[...document.querySelectorAll('.tw-char
 ok(a11y.noLabel===0,`每张图都有 role=img + aria-label（${a11y.total-a11y.noLabel}/${a11y.total}）`);
 const p2=await b.newPage({viewport:{width:1920,height:1080},reducedMotion:'reduce'});
 await p2.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'});await p2.waitForTimeout(15000);
-const rm=await p2.evaluate(()=>({n:document.querySelectorAll('canvas').length,errs:window.__twinCharts.state.errors.length}));
+const rm=await p2.evaluate(()=>({n:document.querySelectorAll('.tw-chart canvas').length,errs:window.__twinCharts.state.errors.length}));
 ok(rm.n===2&&rm.errs===0,`prefers-reduced-motion 下照样出图（S1 =${rm.n} 张：设备圆环 + 均值折线带，错误 ${rm.errs}）——图表不靠动画表意`);
 await p2.close();
 

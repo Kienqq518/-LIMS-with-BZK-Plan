@@ -45,6 +45,12 @@ out.push((/停靠 102-05 充电位/.test(await p.locator('#zDevsList [data-robot
 T('106 底栏=无人化调度任务（不是在制任务）', await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).map(e=>e.querySelector('header b').innerText).join('|')), '安全管家场景监测|无人化调度任务|组态物联节点状态监测');
 T('106 底栏无「运行中的任务」（同一批任务不出现两遍）', await p.evaluate(()=>document.querySelector('#dkRunning').hidden), 'true');
 T('106 场景监测只列本房间场景', await p.locator('#dkScenesGrid .sc-row, #dkScenesGrid .sc-row').count(), 1);
+/* 数"完整可见的行"之前必须先停掉无缝滚动：告警流现在是 3 行高（279px＝标题 57+3×74），
+   动画平移中随时可能只剩 2 行完整落在可视区里，于是这条判据 2/3 交替——
+   与本仓其它套件既有做法一致（先 style.animation='none'，等价真机悬停暂停）。 */
+await p.evaluate(()=>{['#streamTrack','.stream-board','.stream-board.scroll'].forEach(s=>document.querySelectorAll(s)
+  .forEach(e=>{e.style.animation='none';e.style.animationPlayState='paused';}));});
+await p.waitForTimeout(400);
 T('106 右列告警流只看本房间', await p.evaluate(()=>{const v=document.querySelector('.stream-view'); if(!v) return 0;
   const bb=v.getBoundingClientRect(); return [...document.querySelectorAll('#streamTrack .st-row')].filter(r=>{const q=r.getBoundingClientRect();
     return q.top>=bb.top-1&&q.bottom<=bb.bottom+1;}).length;}) , 3);
