@@ -45,7 +45,7 @@ out.push((rowG.length===3&&rowG.every(x=>/^[ABC]$/.test(x))?'✅':'❌')+' 等�
 out.push(((await p.locator('.stream').innerText()).match(/Grade/g)||[]).length===0?'✅':'❌'+' 告警流内无 Grade 英文残留');
 
 // 1) 图层图标
-T('图层图标数（路径/场地标签/热力，剖墙已移除）', await p.locator('.lic').count(), 3);
+T('图层图标数（右上组：路径/场地标签/热力，剖墙已移除）', await p.locator('.acts .lic').count(), 3);   /* ⑧ 监控视角开关在左侧层级组，不混进这一档 */
 T('分区色块已移除', await p.locator('.lic[data-layer=zones]').count(), 0);
 T('系统流按钮已删', await p.locator('#flowBtn').count(), 0);
 T('系统流视图已删', await p.locator('#flowView').count(), 0);

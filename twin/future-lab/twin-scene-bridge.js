@@ -482,6 +482,9 @@ function build(v) {
     if (d.type === 'camera') camCmd(d);
     if (d.type === 'objects') { objectInfo = d.objects || {}; if (cardFor) renderCard(cardFor); }
     if (d.type === 'feeds') setFeeds(d.cams || []);
+    /* ⑧（2026-11-09 三次圈图）：监控视角开关的按钮搬进宿主顶栏（图三位），命令从这里进来；
+       高亮、悬停画面、键盘聚焦都还在本层——控件与状态第一次分家，dataset.cctv 仍是唯一回显。 */
+    if (d.type === 'cctv') cctvSet(d.on);
   });
 
   /* ── 视觉节点实时画面（2026-11-08 产品负责人：告警流下方四格要放监控实时画面）───────────────
@@ -603,20 +606,17 @@ function cctvShow(m) {
 }
 function cctvHide() { if (CCTV.pop) CCTV.pop.hidden = true; clearInterval(CCTV.timer); CCTV.timer = 0; CCTV.idx = -1; }
 function cctvInit() {
-  if (CCTV.btn) return;
-  const btn = document.createElement('button');
-  btn.type = 'button'; btn.id = 'cctvBtn';
-  btn.setAttribute('aria-pressed', 'false');
-  btn.setAttribute('aria-label', '监控视角：默认关闭；点亮后高亮 4 个视觉节点，悬停或键盘聚焦查看该点位的实时画面');
-  btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
-    + '<path d="M3 7h13l2.4 3.2L16 13.6H3z"/><path d="M6 13.6v3.2h4v-3.2"/></svg><span>监控</span>';
-  btn.addEventListener('click', () => cctvSet(!CCTV.on));
+  if (CCTV.pop) return;
+  /* ⑧（2026-11-09 三次圈图）：按钮不再建在场景左上角——那里和左栏「运行指标」叠字（图二）。
+     开关本体在宿主顶栏（区域房间 chip 之后、标题之左，图三），命令走 channel twin-v2 的 cctv 消息；
+     本层保留高亮/悬停画面/键盘聚焦的全部行为与 dataset.cctv 回显。 */
+  CCTV.btn = null;
   const pop = document.createElement('div');
   pop.id = 'cctvPop'; pop.hidden = true; pop.setAttribute('role', 'status'); pop.setAttribute('aria-live', 'polite');
   pop.innerHTML = '<canvas width="' + FEED_W + '" height="' + FEED_H + '"></canvas>'
     + '<div class="pp-h"><b>—</b><span></span></div><div class="pp-f">—</div>';
-  document.body.append(btn, pop);
-  CCTV.btn = btn; CCTV.pop = pop; CCTV.ctx = pop.querySelector('canvas').getContext('2d');
+  document.body.append(pop);
+  CCTV.pop = pop; CCTV.ctx = pop.querySelector('canvas').getContext('2d');
   const cam = e => { const m = e.target && e.target.closest ? e.target.closest('.node-marker[data-type="camera"]') : null; return m; };
   document.addEventListener('pointerover', e => { const m = cam(e); if (m) cctvShow(m); });
   document.addEventListener('pointerout', e => { if (cam(e)) cctvHide(); });
@@ -1068,7 +1068,9 @@ function roomOfView(v) { const m = /^(\d{3})-/.exec(v || ''); if (m) return m[1]
    2026-11-09 圈图报的"重叠"正是这个（两个盒子几何上并不相交，纯视觉穿透，所以只量盒子会漏掉）。
    HOME 那组标定值保留作兜底：拿不到宿主浮层几何时仍按标定值走。 */
 let fitKey = '', fitVal = null;
-const FIT_FILL = 0.94;                     /* 留 6% 呼吸，不把建模硬塞到浮层脸上 */
+const FIT_FILL = 0.94;                     /* 房间视图（fitDrillRoom）：留 6% 呼吸 */
+const FIT_FILL_HOME = 1.02;                /* ①（2026-11-09 圈图）：初始化总览「比原来再大一些」——0.94→1.02，
+                                              建模吃进两侧 24px 呼吸边距约 7px；房间视图没让动，常量拆开各管各的 */
 function fitOverview() {
   const fallback = { fr: HOME.fr, pan: HOME.pan.slice() };
   let a, c, d;
@@ -1098,7 +1100,7 @@ function fitOverview() {
   for (const r of ((v.g || {}).rooms || [])) for (const pt of (r.points || [])) { push(pt[0] * S, 0, pt[1] * S); push(pt[0] * S, 2.85, pt[1] * S); }
   if (lx > rx - 1) return fallback;
   const w0 = rx - lx, h0 = by - ty, cx0 = (lx + rx) / 2, cy0 = (ty + by) / 2;
-  const k = Math.min(bandW * FIT_FILL / w0, bandH * FIT_FILL / h0);
+  const k = Math.min(bandW * FIT_FILL_HOME / w0, bandH * FIT_FILL_HOME / h0);
   const fr = +(frScale / k).toFixed(4);
   /* 换 fr 会以视锥中心为基准缩放位置——但缩的是「不含 pan 位移」的那部分：
      pan 是屏幕像素平移，1:1 不随 fr 变（视锥钩子里就是这么实现的）。

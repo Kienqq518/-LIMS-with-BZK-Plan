@@ -99,10 +99,22 @@ out.push(((live.split(' ')[1]==='travel'||live.indexOf('dwell')>0)?'✅':'❌')+
   const wantIds = A.rows.map(r => r.id).sort().join(',');
   const meanT = A.rows.length ? Math.round(A.rows.reduce((a, r) => a + r.t, 0) / A.rows.length * 10) / 10 : NaN;
   const meanH = A.rows.length ? Math.round(A.rows.reduce((a, r) => a + r.h, 0) / A.rows.length * 10) / 10 : NaN;
+  /* 快照每 5s 重抖一次（±0.3/点位）：请求发出与行读数分属两拍，均值最大可差 0.6——
+     容差按这个物理量给（0.65），集合与 node= 的判据不放宽。 */
   const thOk = q.get('node') === 'avg-106' && ids.sort().join(',') === wantIds
-    && Math.abs(+q.get('temp') - meanT) <= 0.06 && Math.abs(+q.get('hum') - meanH) <= 0.06;
+    && Math.abs(+q.get('temp') - meanT) <= 0.65 && Math.abs(+q.get('hum') - meanH) <= 0.65;
   out.push((thOk ? '✅' : '❌')
     + ` ⑩ 106 组态物联图=本房间点位均值（不再挂全场 lab-avg）：node=${q.get('node')} · from=${ids.length} 点位与底栏行同集合 · temp ${q.get('temp')}==均值 ${meanT} · hum ${q.get('hum')}==${meanH}`);
+}
+/* ①②③（2026-11-09 四次圈图）：106 右下两列带 + 底栏让位左栏 + 告警流加高 */
+{
+  const g=await p.evaluate(()=>{const R=s=>{const e=document.querySelector(s);const qq=e.getBoundingClientRect();
+    return{x:Math.round(qq.x),y:Math.round(qq.y),r:Math.round(qq.right),b:Math.round(qq.bottom),h:Math.round(qq.height)};};
+    return {sc:R('#dkScenes'),cam:R('.cctv'),iot:R('#iotPanel'),dock:R('.dock'),rail:R('.rail'),stream:R('.stream')};});
+  out.push((g.sc.b<=g.cam.y+1&&g.iot.x>=g.sc.r-1&&g.iot.y<=g.sc.y+2&&g.iot.b>=g.cam.b-1?'✅':'❌')+
+    ` ③ 106 右下两列带：场景监测(上 ${g.sc.y}→${g.sc.b})＋实时画面(下 ${g.cam.y}→${g.cam.b})，组态物联在右侧同带（x ${g.iot.x}→${g.iot.r}，y ${g.iot.y}→${g.iot.b}）`);
+  out.push((g.dock.x>=g.rail.r+12?'✅':'❌')+` ① 调度任务块让位左栏：底栏起于 x=${g.dock.x} ≥ 左栏右缘 ${g.rail.r}+12（不再压「设备运行状态」）`);
+  out.push((g.stream.h>=420?'✅':'❌')+` ② 告警流加高：可视 ${g.stream.h}px（≥420——旧固定 279 的 1.5 倍，下方不再叠三块）`);
 }
 
 /* ②③ 每个房间的画像由数据推导，不写死房间号：
@@ -135,7 +147,26 @@ for(const z of ROOMS){
     stream:(document.querySelector('.stream-view')||{}).innerText?.replace(/\s+/g,' ').trim().slice(0,40)||'',
     nodesOut:[...document.querySelectorAll('#dkNodesTrack .nd-row')].filter(e=>e.getAttribute('aria-hidden')!=='true')
       .filter(e=>!e.innerText.replace(/\s+/g,'').startsWith(document.body.dataset.zone||'1')).map(e=>e.innerText.slice(0,10)),
+  
+    simpleFlag:document.body.dataset.zoneSimple||'0',
+    cardN:document.querySelectorAll('.zn-card').length,
+    cardsOk:[...document.querySelectorAll('.zn-card')].every(e=>e.querySelector('.zn-h b')&&e.querySelector('.tp')&&e.querySelector('.st')&&e.querySelector('.v')),
+    railVis:(()=>{const e=document.querySelector('.rail');const q=e.getBoundingClientRect();return q.width>2&&q.height>2;})(),
+    dockVis:(()=>{const e=document.querySelector('.dock');const q=e.getBoundingClientRect();return q.width>2&&q.height>2&&!e.hidden;})(),
+    rcolVis:(()=>{const e=document.querySelector('#rightCol');const q=e.getBoundingClientRect();return q.width>2&&q.height>2&&!e.hidden;})(),
   }));
+  /* ④（2026-11-09 四次圈图，101 接待厅）：极简房间（无统计口径 且 0 台建档设备）——
+     左栏/底栏/右列整列收起，右下角只出节点卡（名称·类型/状态/数据）。空壳比没有更糟。
+     判定在页面侧 zoneSimple() 数据驱动，测试侧独立复算同一条件并核对卡片集合。 */
+  if(D.simpleFlag==='1'){
+    const cfg=await p.evaluate(async()=>(await (await fetch('data/iot-nodes.json')).json()));
+    const want=cfg.nodes.filter(n=>String(n.roomId)===z);
+    out.push((!D.railVis&&!D.dockVis&&!D.rcolVis?'✅':'❌')+
+      ` ${z} 极简房间：左栏/底栏/右列整列收起（rail=${D.railVis} dock=${D.dockVis} rcol=${D.rcolVis}）——红线撤掉的空壳一个不剩`);
+    out.push((D.cardN===want.length&&D.cardsOk?'✅':'❌')+
+      ` ${z} 右下角只留节点卡：${D.cardN} 张 == 配置里本房节点 ${want.length} 个，每张都有 名称/类型/状态/数据（合法=${D.cardsOk}）`);
+    continue;
+  }
   /* 期望口径 = blocks 里第一个带统计的块（顺序 task-stats > test-items > samples） */
   const wantKind = A.blocks.map(b=>KIND[b]).filter(Boolean)[0]||'';
   out.push((D.kind===wantKind?'✅':'❌')+` ${z} 统计口径随 viewProfile.blocks＝「${wantKind||'（无）'}」，屏上＝「${D.kind||'（无）'}」`);

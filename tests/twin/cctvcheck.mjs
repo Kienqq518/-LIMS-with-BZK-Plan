@@ -1,6 +1,8 @@
 /**
  * #8 监控视角（2026-11-09 产品负责人点名"记得完成"）
- *  左上角 icon（默认不亮）→ 点击高亮 4 个视觉节点 → 悬停/键盘聚焦出该点位视角画面
+ *  顶栏 icon（默认不亮）→ 点击高亮 4 个视觉节点 → 悬停/键盘聚焦出该点位视角画面
+ *  ⑧ 三次圈图（2026-11-09）：icon 从场景左上角搬进宿主顶栏（区域房间 chip 后、标题左）——
+ *  左上角与左栏「运行指标」叠字。按钮在宿主、高亮/画面/键盘行为仍在场景帧，断言跟着分两侧取。
  * 重点验三件事：① 默认态真的是"不亮"；② 高亮只落在 camera，不牵连别的物联节点；
  * ③ 浮层里的画面是真的按该点位渲出来的（有内容、不是纯色/空白），并且诚实标注非实拍。
  */
@@ -20,22 +22,25 @@ if(!f){ console.log('❌ 三维场景 iframe 未装载'); console.log(out.join('
 const S=sel=>f.evaluate(s=>{const e=document.querySelector(s); if(!e) return null; const q=e.getBoundingClientRect();
   return {x:Math.round(q.x),y:Math.round(q.y),w:Math.round(q.width),h:Math.round(q.height),r:Math.round(q.right),b:Math.round(q.bottom)};},sel);
 
-// ① icon 在左上角
-const btn=await S('#cctvBtn');
-ok(!!btn,'左上角监控 icon 存在');
-if(btn) ok(btn.x<60&&btn.y<60&&btn.w>20&&btn.h>18,`icon 位置在建模左上角（${btn.x},${btn.y} ${btn.w}×${btn.h}）`);
+// ① icon 在顶栏（图三位）：区域房间 chip 之后、标题之左
+const btn=await p.evaluate(()=>{const e=document.getElementById('cctvToggle');if(!e)return null;const q=e.getBoundingClientRect();
+  const t=document.querySelector('.title').getBoundingClientRect();return {x:Math.round(q.x),y:Math.round(q.y),w:Math.round(q.width),h:Math.round(q.height),r:Math.round(q.right),tx:Math.round(t.left)};});
+ok(!!btn,'顶栏监控 icon 存在（#cctvToggle）');
+if(btn) ok(btn.y<52&&btn.r<=btn.tx&&btn.w>20&&btn.h>18,`icon 落在顶栏且在标题左侧（${btn.x},${btn.y} ${btn.w}×${btn.h}，标题 x=${btn.tx}）`);
+ok(await p.evaluate(()=>!document.querySelector('#scene').contentWindow.document.getElementById('cctvBtn')),'场景左上角的旧按钮已撤（不再与「运行指标」叠字）');
 // ② 默认不亮
-T('默认 aria-pressed', await f.evaluate(()=>document.getElementById('cctvBtn').getAttribute('aria-pressed')), 'false');
+T('默认 aria-pressed', await p.evaluate(()=>document.getElementById('cctvToggle').getAttribute('aria-pressed')), 'false');
 T('默认 body 无 cctv-on', await f.evaluate(()=>document.body.classList.contains('cctv-on')), false);
 T('默认无高亮标记', await f.locator('.node-marker.cctv-hi').count(), 0);
 T('默认浮层隐藏', await f.evaluate(()=>document.getElementById('cctvPop').hidden), true);
 // ③ 点击 → 高亮 4 个视觉节点
-await f.evaluate(()=>document.getElementById('cctvBtn').click()); await p.waitForTimeout(1200);
+await p.evaluate(()=>document.getElementById('cctvToggle').click()); await p.waitForTimeout(1400);
 const hi=await f.evaluate(()=>({n:document.querySelectorAll('.node-marker.cctv-hi').length,
   types:[...new Set([...document.querySelectorAll('.node-marker.cctv-hi')].map(e=>e.dataset.type))],
   cams:document.querySelectorAll('.node-marker[data-type="camera"]').length,
   hook:(JSON.parse((document.getElementById('twin-v2-bridge')||{}).dataset.cctv||'{}')).cams}));
-T('aria-pressed 变亮', await f.evaluate(()=>document.getElementById('cctvBtn').getAttribute('aria-pressed')), 'true');
+T('aria-pressed 变亮（宿主按钮）', await p.evaluate(()=>document.getElementById('cctvToggle').getAttribute('aria-pressed')), 'true');
+T('场景层收到命令（dataset.cctv.on）', await f.evaluate(()=>JSON.parse(document.getElementById('twin-v2-bridge').dataset.cctv||'{}').on), true);
 ok(hi.n===hi.cams&&hi.n>=3,`高亮数＝场景里视觉节点数（高亮 ${hi.n} / camera 标记 ${hi.cams}），宿主取的画面路数 ${JSON.stringify(hi.cams?hi.hook:[]).slice(0,80)}`);
 ok(hi.types.length===1&&hi.types[0]==='camera',`只有视觉(camera)节点被高亮，温湿度/烟感/人体等一律不亮: ${JSON.stringify(hi.types)}`);
 ok(hi.n>0&&await f.evaluate(()=>!!document.querySelector('.node-marker[data-type="motion"]')&&!document.querySelector('.node-marker[data-type="motion"]').classList.contains('cctv-hi')),'反向确认：非摄像头标记确实没被牵连');
@@ -71,17 +76,17 @@ ok(info2.title!==info.title,`换点位标题跟着换：「${info.title}」→�
 await f.evaluate(()=>{const m=document.querySelector('.node-marker.cctv-hi'); m.dispatchEvent(new PointerEvent('pointerout',{bubbles:true}));});
 await p.waitForTimeout(500);
 T('移开后浮层隐藏', await f.evaluate(()=>document.getElementById('cctvPop').hidden), true);
-await f.evaluate(()=>document.getElementById('cctvBtn').click()); await p.waitForTimeout(800);
+await p.evaluate(()=>document.getElementById('cctvToggle').click()); await p.waitForTimeout(1000);
 T('再点 icon 取消高亮', await f.locator('.node-marker.cctv-hi').count(), 0);
-T('取消后 aria-pressed=false', await f.evaluate(()=>document.getElementById('cctvBtn').getAttribute('aria-pressed')), 'false');
+T('取消后 aria-pressed=false', await p.evaluate(()=>document.getElementById('cctvToggle').getAttribute('aria-pressed')), 'false');
 // ⑦ 键盘可达（标记本身是 button[tabindex=0]，icon 也必须能纯键盘用）
 await p.keyboard.press('Tab');   /* 交给页面自然焦点顺序，只验 icon 可聚焦可切换 */
-const kb=await f.evaluate(()=>{const btn=document.getElementById('cctvBtn'); btn.focus();
+const kb=await p.evaluate(()=>{const btn=document.getElementById('cctvToggle'); btn.focus();
   return {focused:document.activeElement===btn, role:btn.tagName, label:(btn.getAttribute('aria-label')||'').slice(0,20)};});
 ok(kb.focused&&kb.role==='BUTTON',`icon 可键盘聚焦（${kb.role}，标签「${kb.label}…」）`);
-await f.evaluate(()=>document.getElementById('cctvBtn').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
-await f.evaluate(()=>document.getElementById('cctvBtn').click()); await p.waitForTimeout(600);
-T('键盘路径后 aria-pressed 与高亮一致', await f.evaluate(()=>document.getElementById('cctvBtn').getAttribute('aria-pressed')+'/'+(document.querySelectorAll('.node-marker.cctv-hi').length>0)), 'true/true');
+await p.evaluate(()=>document.getElementById('cctvToggle').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
+await p.evaluate(()=>document.getElementById('cctvToggle').click()); await p.waitForTimeout(800);
+T('键盘路径后 aria-pressed 与高亮一致', await p.evaluate(()=>document.getElementById('cctvToggle').getAttribute('aria-pressed'))+'/'+await f.evaluate(()=>document.querySelectorAll('.node-marker.cctv-hi').length>0), 'true/true');
 await f.evaluate(()=>{const m=document.querySelector('.node-marker.cctv-hi'); m.focus();}); await p.waitForTimeout(900);
 ok(await f.evaluate(()=>!document.getElementById('cctvPop').hidden),'键盘聚焦 camera 标记同样出画面（与悬停同一出口）');
 await p.screenshot({path:'/tmp/twin-qa/cctv-on.png'});

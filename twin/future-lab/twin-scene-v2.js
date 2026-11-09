@@ -386,7 +386,32 @@
     var zo = zones.filter(function (x) { return x.zoneId === 'Z-' + z; })[0] || {};
     return (zo.viewProfile || {}).blocks || [];
   }
-  function renderZoneView() { if (st.mode !== 'ZONE') return; renderZoneRail(); renderZoneRunning(); }
+  /* ④（2026-11-09 四次圈图）「极简房间」判定，数据驱动不写死 101：
+     没有任何按口径的统计（task-stats/test-items/samples 都不在 blocks）
+     且本房间 0 台建档功能设备 → 左栏/底栏/告警流对它就是空壳。101 接待厅、104 控制室命中。 */
+  function zoneSimple(z) {
+    var bl = zoneBlocks(z);
+    var hasStats = bl.indexOf('task-stats') >= 0 || bl.indexOf('test-items') >= 0 || bl.indexOf('samples') >= 0;
+    var pool = zoneDevices(z).filter(function (d) { return !d.asset; });
+    return !hasStats && pool.length === 0;
+  }
+  /* 极简房间右下角：每个节点一张小卡——名称＋类型、状态、数据（口径与底栏组态行完全同源：nodeReading）。 */
+  function renderZoneNodes() {
+    var box = $('#zoneNodes'); if (!box) return;
+    if (!(st.mode === 'ZONE' && document.body.dataset.zoneSimple === '1')) { box.hidden = true; return; }
+    var ns = (envNodes || []).filter(function (n) { return String(n.roomId) === String(st.zone); });
+    box.hidden = false;
+    box.innerHTML = ns.map(function (n) {
+      var stt = n.status === 'normal' ? '正常' : (n.status === 'offline' ? '离线' : (n.status || '—'));
+      var val = nodeReading(n) || '—';
+      return '<div class="zn-card" data-node="' + escapeHtml(n.id) + '" role="listitem"'
+        + ' aria-label="' + escapeHtml(n.name + '，类型 ' + (n.type || '') + '，状态 ' + stt + '，数据 ' + val) + '">'
+        + '<div class="zn-h"><b>' + escapeHtml(n.name) + '</b><span class="tp">' + escapeHtml(NODE_CN(n.type) || '节点') + '</span></div>'
+        + '<div class="zn-r"><span class="st ' + (n.status === 'normal' ? 'normal' : 'off') + '">' + escapeHtml(stt) + '</span>'
+        + '<b class="v">' + escapeHtml(val) + '</b></div></div>';
+    }).join('');
+  }
+  function renderZoneView() { if (st.mode !== 'ZONE') return; renderZoneRail(); renderZoneRunning(); renderZoneNodes(); }
 
   /* 样品按名称分布（原在退役面板的「样品台账」块里）：合计与存量不一致必须当场说出来，不静默。 */
   function sampleSpread(sp) {
@@ -801,10 +826,12 @@
           /* 三子区域是「当前态」口径（在检/已检的试验项链条），与日/月/年无关——
              周期开关在这里必须藏起来：留着它，点了高亮换了、三个数一个都不动。 */
           if (perBtn) perBtn.hidden = true;
+          /* ④（2026-11-09 四次圈图「很丑很丑」）：三行紧凑卡——数字左置大号等宽，
+             标题+一行口径小字右置；长句压成短语，完整口径进 aria，不再换行糊成三坨。 */
           g.innerHTML = '<div class="zs3">'
-            + '<div class="zs3-c"><b>' + rm.entrusts + '</b><span>委托任务</span><i>关联本房间在检·已检试验项的委托单（去重）</i></div>'
-            + '<div class="zs3-c"><b>' + rm.samples + '</b><span>样品</span><i>同一批试验项关联的样品（去重，非收样/还样口径）</i></div>'
-            + '<div class="zs3-c"><b>' + rm.items.done + '<em>+</em>' + rm.items.testing + '</b><span>试验项目</span><i>已完成检测 + 正在检测，不给总数</i></div>'
+            + '<div class="zs3-c"><b>' + rm.entrusts + '</b><div class="zs3-t"><span>委托任务</span><i>关联委托单 · 去重</i></div></div>'
+            + '<div class="zs3-c"><b>' + rm.samples + '</b><div class="zs3-t"><span>样品</span><i>关联样品 · 去重</i></div></div>'
+            + '<div class="zs3-c"><b>' + rm.items.done + '<em>+</em>' + rm.items.testing + '</b><div class="zs3-t"><span>试验项目</span><i>已完成 ＋ 正在检测</i></div></div>'
             + '</div>';
           g.dataset.kind = head;
           g.setAttribute('aria-label', z + ' 区任务统计（本房间口径）：关联委托 ' + rm.entrusts + ' 个，关联样品 ' + rm.samples
@@ -1002,6 +1029,17 @@
   }
 
 
+  addEventListener('resize', function () { syncStreamW(); });   /* ② 窗口一变，物联块宽度就变，右列跟着 */
+  /* ⑧（2026-11-09 三次圈图）监控视角开关：按钮在顶栏（图三位），命令进场景层；
+     场景层 dataset.cctv 是唯一回显，宿主按钮态在装载与恢复时都跟它对齐。 */
+  var cctvOn = false;
+  var ctBtn = $('#cctvToggle');
+  if (ctBtn) ctBtn.addEventListener('click', function () {
+    cctvOn = !cctvOn;
+    ctBtn.classList.toggle('on', cctvOn); ctBtn.setAttribute('aria-pressed', cctvOn ? 'true' : 'false');
+    if (scene.contentWindow) scene.contentWindow.postMessage({ channel: 'twin-v2', type: 'cctv', on: cctvOn }, location.origin);
+  });
+
   /* ---------- V4 节点协议：nodes-ready → 推送快照点亮 IoT 层；room-selected → 切特写 ---------- */
   let nodeConfigs = null;
   fetch('data/iot-nodes.json').then(function (r) { return r.json(); }).then(function (c) { nodeConfigs = c.nodes; });
@@ -1057,6 +1095,33 @@
 
   /* ---------- 三层控制 ---------- */
   function zoneView(z) { return z === '106' ? 'close' : z + '-close'; }
+  /* ②（2026-11-09 三次圈图）：告警流/监控「还是太宽」——右列宽度与下方「组态物联节点状态监测」块
+     保持一致。物联块是底栏全宽网格的 1fr 列（1455×868 下实测 389px），随视口宽变化，
+     所以同步的是实测值而不是抄一个常数：只在总览同步（房间视图里物联块不在右列正下方，
+     「与下方一致」不成立），底栏收起/隐藏时量到 0 宽就保持上一次值。
+     fitOverview/fitDrillRoom 读的是运行时矩形，宽度一变构图自动跟着重解。 */
+  function syncStreamW() {
+    var root = document.documentElement.style;
+    var cur = root.getPropertyValue('--tw-stream-w');
+    if (st.mode !== 'S1') {
+      /* 房间视图：右列要装下两列带（③），宽度回落到 :root 标定的 430——
+         撤掉内联变量即可；带内组态物联块的宽度是列宽的结果，不再反过来定义右列。 */
+      if (cur) { root.removeProperty('--tw-stream-w');
+        if (scene.contentWindow) scene.contentWindow.postMessage({ channel: 'twin-v2', type: 'camera', action: 'reset' }, location.origin); }
+      return;
+    }
+    var iot = document.querySelector('#iotPanel');
+    if (!iot) return;
+    var q = iot.getBoundingClientRect();
+    if (q.width < 50) return;                        /* 底栏收起时量到 0 宽：保持上一次值 */
+    var w = Math.round(q.width) + 'px';
+    if (cur !== w) {
+      root.setProperty('--tw-stream-w', w);
+      /* 右列一变，建模带就变了：iframe 尺寸没变、场景层自己等不到 resize，
+         必须主动发 reset 让 fitOverview 按新矩形重解——否则构图停在旧带上。 */
+      if (scene.contentWindow) scene.contentWindow.postMessage({ channel: 'twin-v2', type: 'camera', action: 'reset' }, location.origin);
+    }
+  }
   /* 下钻动效：先让桥接层记录切换前构图，再切视角+分组抬升，最后由桥接层补间推近（不再生硬跳帧） */
   /* 下钻＝纯相机补间：begin 记录旧构图 → 切视角 → drill 平滑回落。
      不再发 focus-scene（分组抬升）：它会给 roomIds 里的每个房间描一圈蓝色轮廓，
@@ -1142,7 +1207,9 @@
        所以写 HH:00 而不是假装到分；末点前缀"现在"——它确实是当前均值，不是 15 小时前的历史值。 */
     var thTimes = thSeries.series.map(function (x, i) {
       var lbl = (x.hour < 10 ? '0' : '') + x.hour + ':00';
-      return i === thSeries.series.length - 1 ? '现在 ' + lbl : lbl;
+      /* 房间视图带右列只有 ~200px：末点标签再挂时刻就和图例叠字（16:32 目检抓的）。
+         窄列只写「现在」，时刻语义由"近 16 点"标题与总览完整轴承担。 */
+      return i === thSeries.series.length - 1 ? (zoneMode ? '现在' : '现在 ' + lbl) : lbl;
     });
     /* 末点钉住当前均值：图上最后一点和右列列表、区域面板的读数不许是两套数 */
     a[a.length - 1] = avgT; h[h.length - 1] = avgH;
@@ -1178,16 +1245,30 @@
     var zone = st.mode === 'ZONE';
     document.body.dataset.zoneView = zone ? '1' : '0';
     document.body.dataset.unmanned = (zone && vp.unmanned === true) ? '1' : '0';
+    /* ④ 极简房间标记：CSS 据此收起左栏/底栏/右列，右下角只出节点卡 */
+    document.body.dataset.zoneSimple = (zone && zoneSimple(st.zone)) ? '1' : '0';
     if ($('#railZoneStats')) $('#railZoneStats').hidden = !zone;
     if ($('#railZoneDevs')) $('#railZoneDevs').hidden = !zone;
     if ($('#dkRunning')) $('#dkRunning').hidden = !(zone && vp.unmanned !== true);
-    /* ⑧（2026-11-09 10 点清单）：无人化房间的「安全管家场景监测」搬到右列（画面块下方），
-       底栏让位；离开该视图时搬回底栏最左原位。同一份 DOM，监听与气泡锚点跟着块走，不复制第二套。 */
+    /* ⑧→③（2026-11-09 四次圈图升级）：无人化房间右下两列带——
+       左列＝安全管家场景监测（上）＋视觉节点实时画面（下），右列＝组态物联节点状态监测（高块）。
+       三块 DOM 迁移（同一份节点，监听/气泡/滚动都跟着走），离开房间视图回总览时各回原位：
+       场景监测→底栏最左、画面→右列告警流后、组态物联→底栏最右。 */
     var scEl = $('#dkScenes'), rcEl = $('#rightCol'), dkEl = $('#taskStrip');
-    if (scEl && rcEl && dkEl) {
-      var toRight = zone && vp.unmanned === true;
-      if (toRight && scEl.parentElement !== rcEl) rcEl.appendChild(scEl);
-      else if (!toRight && scEl.parentElement !== dkEl) dkEl.insertBefore(scEl, $('#dkQueue') || null);
+    var camEl = $('#cctvBox'), iotEl = $('#iotPanel'), bandEl = $('#zoneBand');
+    var zl = bandEl && bandEl.querySelector('.zb-l'), zr = bandEl && bandEl.querySelector('.zb-r');
+    if (scEl && rcEl && dkEl && camEl && iotEl && bandEl && zl && zr) {
+      var toBand = zone && vp.unmanned === true;
+      if (bandEl.hidden === toBand) bandEl.hidden = !toBand;
+      function mv(el, host, ref) { if (el.parentElement !== host) (ref ? host.insertBefore(el, ref) : host.appendChild(el)); }
+      if (toBand) {
+        mv(scEl, zl); mv(camEl, zl);
+        /* 场景在上、画面在下：谁先到不重要，落位后把场景提到画面之前 */
+        if (camEl.previousElementSibling !== scEl) zl.insertBefore(scEl, camEl);
+        mv(iotEl, zr);
+      } else {
+        mv(scEl, dkEl, $('#dkQueue')); mv(camEl, rcEl, bandEl); mv(iotEl, dkEl);
+      }
     }
     renderZoneRail(); renderZoneScenes(); renderZoneRunning(); renderCams();
     if (zone) renderDockStats();   /* ② 圆环进/出房间视图都要按当前口径重画（总览↔房间共用这一个渲染入口） */
@@ -1213,8 +1294,13 @@
 
     $('#stripBtn').textContent = st.strip ? '▴ 展开底栏' : '▾ 收起底栏'; $('#stripBtn').setAttribute('aria-pressed', !!st.strip);
     $('#stripBtn').disabled = st.mode !== 'S1';
+    /* 右列宽度必须在 drillTo 之前定版：上一版把它排在补间起飞之后，进 106 时带内布局让右列
+       从同步值回到标定 430——补间刚起步就被这条宽度变化的 reset 掐死（uxcheck「800ms 只采到 1 个机位」）。
+       先定宽、再起跳，宽度变化自身的 reset 只会在没有补间在飞时发生。 */
+    syncStreamW();
     drillTo(st.mode === 'ZONE' ? zoneView(st.zone) : 'overall-101');
     renderTables(); renderAlarms(); renderDock(); renderCharts(); pushState(); writeURL();
+    syncStreamW();   /* ② 底栏网格刚重排完，右列宽度跟着组态物联块走 */
     if (st.mode === 'ZONE') { loadZone(); renderZoneView(); }
     renderCharts();
   }

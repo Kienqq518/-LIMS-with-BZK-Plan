@@ -35,7 +35,8 @@ const st=await p.evaluate(()=>{
     clockBg:cs('.clock').backgroundColor, clockBorder:cs('.clock').borderTopWidth,
     railTop:R('.rail').y, topbarB:R('.topbar').b,
     shadows:{title:cs('.title','::before').textShadow!=='none'||cs('.title').textShadow!=='none', mode:cs('.mode').textShadow!=='none', zsel:cs('.zsel').textShadow!=='none', clock:cs('.clock').textShadow!=='none'},
-    licCount:document.querySelectorAll('.lic').length, licOnBg:cs('.lic.on').backgroundColor,
+    licCount:document.querySelectorAll('.acts .lic').length,   /* ⑧ 起按组计数：右上=图层三件套；监控 icon 在左侧 nav.modes（图三位），不混进这一档 */
+    licAll:document.querySelectorAll('.lic').length, cctvInModes:!!document.querySelector('.modes #cctvToggle'), licOnBg:cs('.lic.on').backgroundColor,
     topbarText:document.querySelector('.topbar').innerText.replace(/\s+/g,' ')
   };
 });
@@ -58,7 +59,8 @@ out.push(((st.clockBg==='rgba(0, 0, 0, 0)'||st.clockBg==='transparent')&&st.cloc
 out.push(((st.zoneSelBg==='rgba(0, 0, 0, 0)'||st.zoneSelBg==='transparent')&&st.zoneSelBorder==='0px'?'✅':'❌')+` 区域下拉同样无框无底：bg=${st.zoneSelBg}`);
 out.push((st.shadows.title&&st.shadows.mode&&st.shadows.zsel&&st.shadows.clock?'✅':'❌')+' 悬浮文字都带投影保证在三维画面上可读: '+JSON.stringify(st.shadows));
 out.push((st.railTop>=st.topbarB?'✅':'❌')+` 顶栏与左栏不重叠（顶栏底 ${st.topbarB} ≤ 左栏顶 ${st.railTop}）`);
-T('图层 icon 数（路径/场地标签/热力）', st.licCount, 3);
+T('图层 icon 数（右上组：路径/场地标签/热力）', st.licCount, 3);
+out.push((st.licAll===4&&st.cctvInModes?'✅':'❌')+' 第 4 个 .lic 是监控视角开关，且落在左侧视图层级组里（区域房间 chip 后、标题左）: 全部 '+st.licAll+' 个，位置='+st.cctvInModes);
 out.push((st.licOnBg!=='rgb(40, 120, 255)'?'✅':'❌')+' 开启态不再是实心蓝底按钮（改为淡底+描边）: '+st.licOnBg);
 
 // 功能没被视觉改动打断

@@ -28,6 +28,11 @@
     </div>
     <label class="zsel" id="roomWrap" hidden><span>区域房间</span>
       <select id="zoneSel" aria-label="选择区域房间（选中后三维空间跳转到该房间）"></select></label>
+    <!-- ⑧ 监控视角开关（2026-11-09 三次圈图，图三位置）：区域房间 chip 之后、标题之左。
+         原来在场景帧左上角，和左栏「运行指标」叠字（图二）。按钮在宿主，高亮/画面/键盘行为仍在场景层。 -->
+    <button class="lic" id="cctvToggle" type="button" aria-pressed="false"
+      title="监控视角：默认关闭；点亮后高亮 4 个视觉节点，悬停或键盘聚焦查看该点位的实时画面" desc="监控视角">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 7h13l2.4 3.2L16 13.6H3z"/><path d="M6 13.6v3.2h4v-3.2"/></svg><span>监控</span></button>
   </nav>
 
   <h1 class="title" data-text="未来实验室数字孪生">未来实验室数字孪生</h1>
@@ -120,7 +125,18 @@
       <header><b>视觉节点实时画面</b><span class="src" id="cctvCnt">—</span></header>
       <div class="cam-grid" id="camGrid"></div>
     </section>
+    <!-- ③（2026-11-09 四次圈图，106 房间视图）：右下两列带——
+         左列＝安全管家场景监测（上）＋视觉节点实时画面（下），右列＝组态物联节点状态监测（高块）。
+         三块由 applyViewProfile DOM 迁移，回总览各回原位；告警流在带上方吃满剩余高度（②加高）。 -->
+    <div class="zband" id="zoneBand" hidden>
+      <div class="zb-col zb-l"></div>
+      <div class="zb-col zb-r"></div>
+    </div>
   </div>
+  <!-- ④（2026-11-09 四次圈图，101 接待厅）：无统计口径、无建档设备的极简房间——
+       左栏三块、底栏两块、右列告警流全是空占位，产品负责人红线全撤；
+       右下角只留本房间物联节点卡：名称＋类型、状态、数据。 -->
+  <aside class="znodes" id="zoneNodes" role="list" aria-label="本房间物联节点" hidden></aside>
   <!-- 区域视图五段长面板（2026-11-05 信息模型）已整体退役（FR-80，2026-11-08）：
        它的七块信息分别交接给左栏 #zsGrid / #zDevsList、底栏 #dkRunningTrack、右列告警流与组态物联。
        保留 hidden 的旧面板曾把三个套件带到假绿里（见 js 里 renderZoneView 上方注释），所以这次连 DOM 一起删。 -->

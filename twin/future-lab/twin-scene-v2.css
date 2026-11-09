@@ -660,6 +660,8 @@ body[data-zone-view="1"] .railagv{display:none}   /* ②（2026-11-09 10 点清�
 /* .zonepanel 的显示规则已随 DOM 一起删除（FR-80） */
 body[data-zone-view="1"] #rightCol{display:flex}          /* 右列不再整列让位 */
 .zstats .zs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px}
+.zstats .zs-grid .zs3{grid-column:1/-1}   /* ④ 三子区域横贯两列——#zsGrid 是旧四格的 2 列网格，别把新行卡挤进第一列 */
+body[data-zone-view="1"] .rcol{bottom:16px}   /* ②③ 房间视图右列贴到屏底：两列带落在底部，告警流吃中间——这才是「加高」 */
 .zstats .zs-i{display:flex;align-items:baseline;gap:6px}
 .zstats .zs-i b{font-size:var(--tw-fs-num);font-weight:800;font-variant-numeric:tabular-nums;color:var(--tw-ink-1)}
 .zstats .zs-i span{font-size:var(--tw-fs-label);color:var(--tw-ink-3)}
@@ -687,13 +689,44 @@ body[data-zone-view="1"] #dkScenes[hidden]{display:none}
    ⑧ 安全管家场景监测从底栏搬进右列（画面块下方），底栏让位成两块。搬动在 JS 里做 DOM 迁移，
       这里只管落位后的形态：六格仍 2 列 3 行，行高改为内容自适应，块高不再跟底栏的 flex:1。 */
 body[data-zone-view="1"][data-unmanned="1"] .stream{flex:1 1 auto;height:auto;min-height:0}
+/* ①（2026-11-09 四次圈图）：房间视图底栏从左栏右侧起排——上一轮把「设备运行状态」圆环放回左栏后
+   左栏变高，底栏还从 x=14 起铺，「无人化调度任务」块头就压进圆环（图一红线）。右缘同时让开右列。 */
+body[data-zone-view="1"] .dock{left:calc(var(--tw-rail-w) + 30px);right:calc(var(--tw-float-gap) * 2 + var(--tw-stream-w))}
+body[data-zone-view="1"][data-unmanned="1"] .dock{grid-template-columns:minmax(0,1fr)}
+/* ③（2026-11-09 四次圈图）：106 右下两列带——左列 场景监测(上)+实时画面(下)，右列 组态物联(高块)。
+   带高 322px；告警流在带上方吃满剩余高度——②「告警流加高」由这条结构变化自然达成。 */
+.zband{display:none;grid-template-columns:minmax(0,1.04fr) minmax(0,1fr);gap:var(--tw-float-gap);flex:none;height:322px;min-height:0}
+body[data-zone-view="1"][data-unmanned="1"] .zband{display:grid}
+.zb-l{display:flex;flex-direction:column;gap:var(--tw-float-gap);min-width:0;min-height:0}
+.zb-r{min-width:0;display:flex;flex-direction:column}
+.zb-l .scpanel{flex:0 1 auto;min-height:0}
+.zb-l .cctv{flex:1 1 auto;min-height:0}
+.zb-r .nodepanel{flex:1;display:flex;min-height:0}
+/* ④（2026-11-09 四次圈图，101 接待厅）：极简房间（zoneSimple 判定，数据驱动）空壳全撤——
+   左栏/底栏/右列整列收起，右下角只留节点卡（名称·类型 / 状态 / 数据）。 */
+body[data-zone-simple="1"] .rail,body[data-zone-simple="1"] .dock,body[data-zone-simple="1"] #rightCol{display:none}
+.znodes{position:fixed;right:16px;bottom:16px;width:290px;display:flex;flex-direction:column;gap:var(--tw-float-gap);z-index:var(--tw-z-panel)}
+.zn-card{background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);
+ padding:8px 10px;box-shadow:var(--tw-shadow-card)}
+.zn-h{display:flex;align-items:baseline;gap:8px}
+.zn-h b{font-size:var(--tw-fs-strong);color:var(--tw-ink-1)}
+.zn-h .tp{font-size:var(--tw-fs-micro);color:var(--tw-ink-3);border:1px solid var(--tw-glass-border);
+ border-radius:var(--tw-radius-pill);padding:1px 7px}
+.zn-r{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+.zn-r .st{font-size:var(--tw-fs-micro);font-weight:700;padding:1px 6px;border-radius:var(--tw-radius-pill)}
+.zn-r .st.normal{color:var(--tw-tint-ok-fg);background:var(--tw-tint-ok-bg)}
+.zn-r .st.off{color:var(--tw-tint-warn-fg);background:var(--tw-tint-warn-bg)}
+.zn-r .v{margin-left:auto;font-size:var(--tw-fs-body);font-weight:700;color:var(--tw-ink-1);font-variant-numeric:tabular-nums}
 .zs3{display:flex;flex-direction:column;gap:6px}   /* ① 三子区域：委托/样品/试验项目，大字+口径小字 */
-.zs3-c{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:0 8px;align-items:baseline;
- padding:4px 8px;background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip)}
-.zs3-c b{grid-row:1/3;font-size:var(--tw-fs-metric,22px);font-weight:800;color:var(--tw-ink-1);font-variant-numeric:tabular-nums;line-height:1}
-.zs3-c b em{font-style:normal;font-weight:600;color:var(--tw-ink-3);padding:0 2px}
-.zs3-c span{font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-2)}
-.zs3-c i{grid-column:2;font-style:normal;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);white-space:normal;line-height:1.35}
+/* ④（2026-11-09 四次圈图「很丑很丑」）：三行紧凑卡——数字左置大号等宽，
+   标题+一行短语右置；长口径压进 aria-label，不再三行换行糊成坨。 */
+.zs3-c{display:flex;align-items:center;gap:10px;padding:7px 10px;
+ background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-chip)}
+.zs3-c b{flex:none;min-width:2.4ch;text-align:right;font-size:var(--tw-fs-metric);font-weight:800;color:var(--tw-ink-1);font-variant-numeric:tabular-nums;line-height:1}
+.zs3-c b em{font-style:normal;font-weight:600;color:var(--tw-ink-3);padding:0 1px}
+.zs3-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.zs3-t span{font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-2);white-space:nowrap}
+.zs3-t i{font-style:normal;font-size:var(--tw-fs-micro);color:var(--tw-ink-4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
 .rcol .scpanel{flex:none;min-height:0}
 .rcol .sc-grid{grid-template-rows:repeat(3,auto)}
 

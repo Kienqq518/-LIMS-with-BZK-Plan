@@ -44,7 +44,9 @@ T('106 左栏行数=设备+机器人', await p.locator('#zDevsList .zd-row').cou
 T('106 左栏机器人两行（在跑 + 停靠）', await p.locator('#zDevsList [data-robot]').count(), 2);
 out.push((/停靠 102-05 充电位/.test(await p.locator('#zDevsList [data-robot=\"RB-C-01\"]').innerText())?'✅':'❌')+' 左栏说清 RB-C-01 停在哪个桩: '+await p.locator('#zDevsList [data-robot=\"RB-C-01\"]').innerText());
 /* ⑧（2026-11-09 10 点清单）：安全管家场景监测搬进右列（画面块下方），底栏让位成两块。 */
-T('106 底栏=调度任务+组态物联（安全管家已搬右列，底栏让位）', await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).map(e=>e.querySelector('header b').innerText).join('|')), '无人化调度任务|组态物联节点状态监测');
+/* ③（2026-11-09 四次圈图）：组态物联也进了右下带（右列高块），底栏只剩无人化调度任务，且从左栏右侧起排 */
+T('106 底栏=只剩无人化调度任务', await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).map(e=>e.querySelector('header b').innerText).join('|')), '无人化调度任务');
+T('106 组态物联在右列两列带的右列里', await p.evaluate(()=>{const e=document.querySelector('#rightCol .zb-r #iotPanel');if(!e)return 'missing';const r=e.getBoundingClientRect();return r.width>2&&r.height>2?'present':'zero';}), 'present');
 T('106 右列含安全管家场景监测块', await p.evaluate(()=>{const e=document.querySelector('#rightCol #dkScenes');if(!e)return 'missing';const r=e.getBoundingClientRect();return r.width>2&&r.height>2?'present':'zero';}), 'present');
 T('106 底栏无「运行中的任务」（同一批任务不出现两遍）', await p.evaluate(()=>document.querySelector('#dkRunning').hidden), 'true');
 T('106 场景监测只列本房间场景', await p.locator('#dkScenesGrid .sc-row, #dkScenesGrid .sc-row').count(), 1);
