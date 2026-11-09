@@ -231,6 +231,26 @@ await p.keyboard.press('1'); await p.waitForTimeout(3000); await p.screenshot({p
   out.push((Math.abs(g.tileW/g.tileH-16/9)<0.12?'✅':'❌')+` 监控格保持 16:9（${g.tileW}×${g.tileH}=${(g.tileW/g.tileH).toFixed(2)}），不是被 flex 拉出来的竖块`);
   out.push((Math.floor(g.viewH/g.rowH)===3?'✅':'❌')+` 告警流可见 ${Math.floor(g.viewH/g.rowH)} 行（可视区 ${g.viewH} / 行高 ${g.rowH}），高度已让给画面块`);
   await p3.close();
+  /* 建模 vs 透明浮层：右列/左栏都没有底板，建模一旦投影到它们底下，
+     客户看到的就是三维压在告警行与四路画面上——而两个盒子的 getBoundingClientRect 并不相交，
+     只量盒子永远发现不了（2026-11-09 圈图那条）。所以这里量"建模投影的实际像素范围"。 */
+  for (const [w,h] of [[1920,1080],[1457,864],[1366,768]]) {
+    const p4=await b.newPage({viewport:{width:w,height:h}});
+    await p4.goto(BASE+'/twin/future-lab/twin-scene-v2.html',{waitUntil:'load'}); await p4.waitForTimeout(14000);
+    const f4=p4.frames().find(x=>/tour-space-v3-1/.test(x.url()));
+    const mm=await f4.evaluate(()=>{
+      const v=window.visual106,TH=v.overview.position.constructor,S=.05,host=v.renderer.domElement.getBoundingClientRect();
+      let lx=1e9,rx=-1e9;
+      const push=(x,y,z)=>{const q=new TH(x,y,z).project(v.camera); if(q.z>1)return;
+        const px=(q.x*.5+.5)*host.width; lx=Math.min(lx,px); rx=Math.max(rx,px);};
+      for(const r of (v.g.rooms||[])) for(const pt of (r.points||[])){push(pt[0]*S,0,pt[1]*S);push(pt[0]*S,2.85,pt[1]*S);}
+      return {left:Math.round(host.left+lx),right:Math.round(host.left+rx)};});
+    const ob=await p4.evaluate(()=>({railR:Math.round(document.querySelector('.rail').getBoundingClientRect().right),
+      colL:Math.round(document.querySelector('.rcol').getBoundingClientRect().left)}));
+    out.push((mm.left>=ob.railR&&mm.right<=ob.colL?'✅':'❌')
+      +` ${w}×${h}：建模投影 ${mm.left}→${mm.right} 完全落在左栏(${ob.railR})与右列(${ob.colL})之间，不伸到透明浮层底下`);
+    await p4.close();
+  }
 }
 console.log(out.join('\n')); console.log('errors('+err.length+'):\n'+err.slice(0,8).join('\n'));
 await b.close();

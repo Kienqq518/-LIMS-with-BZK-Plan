@@ -1025,9 +1025,51 @@ const DRILL = { '106': { fr: 2.2, pan: [-280, 20] } };   /* 第二格实测：�
 /* 视角名怎么认房间：106 在引擎里就叫 close（其余是 107-close 这种带号前缀），
    所以裸 'close' 就是 106 主叙事——这条映射写下来，别靠猜。 */
 function roomOfView(v) { const m = /^(\d{3})-/.exec(v || ''); if (m) return m[1]; return /^close$/.test(v || '') ? '106' : null; }
+/* ── 总览初始构图：按当前窗口的真实浮层几何解算（2026-11-09）──
+   实测建模投影恒占视口宽约 43%，而"左栏右缘→右列左缘"的可用带：
+     1920×1080 = 1112px（58%）｜1457×864 = 649px（44.5%）｜1366×768 = 558px（40.8%）。
+   窗口越窄，可用带相对越小 —— 所以任何一组固定 fr/pan 都会在某个尺寸下把建模塞进右列底下。
+   右列是透明的（FR-42 全站无底板），建模一旦伸到它底下，客户看到的就是三维压在告警行与四路画面上：
+   2026-11-09 圈图报的"重叠"正是这个（两个盒子几何上并不相交，纯视觉穿透，所以只量盒子会漏掉）。
+   HOME 那组标定值保留作兜底：拿不到宿主浮层几何时仍按标定值走。 */
+let fitKey = '', fitVal = null;
+const FIT_FILL = 0.94;                     /* 留 6% 呼吸，不把建模硬塞到浮层脸上 */
+function fitOverview() {
+  const fallback = { fr: HOME.fr, pan: HOME.pan.slice() };
+  let a, c, d;
+  try {
+    const pd = parent.document;
+    const rl = pd.querySelector('.rail'), rc = pd.querySelector('.rcol'), dk = pd.querySelector('.dock');
+    if (!rl || !rc || !dk) return fallback;
+    a = rl.getBoundingClientRect(); c = rc.getBoundingClientRect(); d = dk.getBoundingClientRect();
+  } catch (e) { return fallback; }
+  if (!(c.width > 2) || !(a.width > 2)) return fallback;
+  const x0 = a.right + 24, x1 = c.left - 24, y0 = 70, y1 = d.top - 12;
+  const key = [Math.round(innerWidth), Math.round(innerHeight), Math.round(x0), Math.round(x1), Math.round(y1)].join('x');
+  if (key === fitKey && fitVal) return fitVal;
+  const bandW = x1 - x0, bandH = y1 - y0;
+  if (bandW < 240 || bandH < 180) return fallback;            /* 窗口小到不成样子时不硬解，沿用标定值 */
+  const v = visual, TH = v.overview.position.constructor, S = 0.05, host = v.renderer.domElement.getBoundingClientRect();
+  let lx = 1e9, rx = -1e9, ty = 1e9, by = -1e9;
+  const push = (x, y, z) => { const q = new TH(x, y, z).project(v.camera);
+    if (q.z > 1) return;                                       /* 相机背后的点投影坐标是假的，一律不参与 */
+    const px = (q.x * .5 + .5) * host.width, py = (-q.y * .5 + .5) * host.height;
+    lx = Math.min(lx, px); rx = Math.max(rx, px); ty = Math.min(ty, py); by = Math.max(by, py); };
+  for (const r of ((v.g || {}).rooms || [])) for (const pt of (r.points || [])) { push(pt[0] * S, 0, pt[1] * S); push(pt[0] * S, 2.85, pt[1] * S); }
+  if (lx > rx - 1) return fallback;
+  const w0 = rx - lx, h0 = by - ty, cx0 = (lx + rx) / 2, cy0 = (ty + by) / 2;
+  const k = Math.min(bandW * FIT_FILL / w0, bandH * FIT_FILL / h0);
+  const fr = +(frScale / k).toFixed(4);
+  /* 换 fr 会以视锥中心为基准缩放位置，所以先算"新 fr 下的中心"，再用 pan 把它推到带中心 */
+  const cxNew = host.width / 2 + (cx0 - host.width / 2) * k, cyNew = host.height / 2 + (cy0 - host.height / 2) * k;
+  const pan = [Math.round(myPan[0] + ((x0 + x1) / 2 - cxNew)), Math.round(myPan[1] + ((y0 + y1) / 2 - cyNew))];
+  fitKey = key; fitVal = { fr, pan, fit: { w0: Math.round(w0), bandW: Math.round(bandW), k: +k.toFixed(3) } };
+  const hk = document.getElementById('twin-v2-bridge'); if (hk) hk.dataset.homeFit = JSON.stringify(fitVal.fit);
+  return fitVal;
+}
 function homeFraming(view) {
   const v = view || visual.view;
-  if (/^overall/.test(v)) return { fr: HOME.fr, pan: HOME.pan.slice() };
+  if (/^overall/.test(v)) { const q = fitOverview(); return { fr: q.fr, pan: q.pan.slice() }; }
   const d = DRILL[roomOfView(v)];
   return d ? { fr: d.fr, pan: d.pan.slice() } : { fr: 1, pan: [0, 0] };
 }
