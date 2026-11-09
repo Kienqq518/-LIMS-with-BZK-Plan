@@ -11,7 +11,10 @@ if (new URLSearchParams(location.search).get('v2') === '1') boot();
 /* ---------- 墙体/隔断/柱子/地面分区处理（V1 视觉语言 §3：看设备运行，不看房间布局） ---------- */
 let wallMesh = null, wallBase = null, labCenter = null, wallOpacityBase = null;
 /* 渲染层状态（决策 Q7/Q8）：图层开关 + 低配模式。图层语义=渲染可见性，与业务切片无关。 */
-const LAYERS = { path: true, labels: true, heatmap: false };   /* 分区色块与剖墙开关已按 2026-11-06 反馈移除；墙体剖切=固定渲染行为（见 treatArchitecture） */
+const LAYERS = { path: true, labels: true, heatmap: false };
+/* CCTV 的状态对象必须声明在文件顶部：build() 在模块求值期间就会被调用，
+   放在下面会撞上 TDZ（Cannot access 'CCTV' before initialization），icon 直接建不出来。 */
+const CCTV = { on: false, btn: null, pop: null, ctx: null, idx: -1, timer: 0 };   /* 分区色块与剖墙开关已按 2026-11-06 反馈移除；墙体剖切=固定渲染行为（见 treatArchitecture） */
 let LOW = false, frames = 0, heatGroup = null, lastDeviceStatus = [];
 function findWalls() {
   visual.overview.children.forEach(c => {
@@ -407,6 +410,10 @@ function build(v) {
   wrapFrame();
   bindWheel();
   injectLayerStyle();
+  /* #8 监控视角开关（默认不亮）。必须延后一拍：build() 在模块求值期间就被调用，
+     而 FEED_W/feedStrip 是下面才声明的 const，此刻直接 cctvInit() 会撞 TDZ
+     （Cannot access 'FEED_W' before initialization），icon 一个都建不出来。 */
+  setTimeout(cctvInit, 0);
   /* 点击任意实体（含桌子凳子）→ 只在鼠标旁弹信息卡，相机一步都不动。
      FR-34 的「切近 + 视觉跟随」按 2026-11-07 反馈整体撤除：售前投影里，讲的人不希望画面被点击牵着跑，
      要看细节用滚轮自己调，不靠系统替人决定机位。
@@ -509,6 +516,83 @@ function build(v) {
   setInterval(() => { if (feedCams.length) renderFeeds(); }, 420);   /* ~2.4fps：演示够用，又不至于吃掉主循环 */
   visual.renderFeeds = renderFeeds;
 
+
+/* ══════════ #8 监控视角：左上角 icon（默认不亮）→ 高亮 4 个视觉节点 → 悬停/聚焦出该视角画面 ══════════
+   2026-11-09 产品负责人点名"这个任务请记得完成"。三条设计决定：
+   ① 控件压在建模上（左上角），不再给右列加第五块面板——它管的是"三维里这 4 个点位的视角长什么样"，
+      视线本来就在模型上；
+   ② 画面本体不新做一套渲染：直接裁已经在跑的离屏 strip（renderFeeds 每 420ms 刷 4 格）。
+      再开一路相机就是自己给自己造第二个真相，画面会与三维几何、与右下四宫格对不上；
+   ③ 高亮只认 data-type=camera 的节点标记（按钮本身，tabindex=0），键盘聚焦与鼠标悬停走同一条出口。 */
+function cctvMarkers() { return [...document.querySelectorAll('.node-marker[data-type="camera"]')]; }
+function cctvIndex(id) { let i = -1; for (let k = 0; k < feedCams.length; k++) if (String(feedCams[k].id) === String(id)) { i = k; break; } return i; }
+function cctvApply() {
+  const ms = cctvMarkers();
+  ms.forEach(m => m.classList.toggle('cctv-hi', CCTV.on));
+  const hook = document.getElementById('twin-v2-bridge');
+  if (hook) hook.dataset.cctv = JSON.stringify({ on: CCTV.on, hi: ms.filter(m => m.classList.contains('cctv-hi')).length, cams: feedCams.map(c => c.id) });
+}
+function cctvSet(on) {
+  CCTV.on = !!on;
+  document.body.classList.toggle('cctv-on', CCTV.on);
+  if (CCTV.btn) CCTV.btn.setAttribute('aria-pressed', CCTV.on ? 'true' : 'false');
+  if (!CCTV.on) cctvHide();
+  cctvApply();
+}
+function cctvPaint() {
+  const i = CCTV.idx; if (i < 0 || !feedStrip || !CCTV.ctx) return;
+  CCTV.ctx.clearRect(0, 0, FEED_W, FEED_H);
+  CCTV.ctx.drawImage(feedStrip, i * FEED_W, 0, FEED_W, FEED_H, 0, 0, FEED_W, FEED_H);
+}
+function cctvShow(m) {
+  if (!CCTV.on || !m) return;
+  const id = m.dataset.nodeId, i = cctvIndex(id);
+  const head = CCTV.pop.querySelector('.pp-h b'), sub = CCTV.pop.querySelector('.pp-h span'), ft = CCTV.pop.querySelector('.pp-f');
+  head.textContent = m.title || id;
+  if (i < 0) {
+    /* 诚实边界：这个摄像头没被宿主取进 4 路画面（房间过滤或超出 4 路），
+       宁可不画，也不拿别个点位的画面冒充——拿静态图/别人的视角凑数正是被反复批评的那种做法。 */
+    CCTV.idx = -1; CCTV.pop.hidden = false; CCTV.pop.classList.add('no-feed');
+    ft.textContent = '该点位未进当前 4 路画面（' + id + '），不拿别的视角冒充';
+    CCTV.ctx.clearRect(0, 0, FEED_W, FEED_H);
+  } else {
+    CCTV.idx = i; CCTV.pop.classList.remove('no-feed');
+    ft.textContent = '渲染色 · 非现场实拍 · 视频通道二期接入';
+    cctvPaint();
+  }
+  /* 定位：优先放在标记右侧；越界就翻到左侧，再不行贴顶/贴底，绝不盖住标记本身 */
+  const W = 252, H = 168, r = m.getBoundingClientRect();
+  let x = r.right + 10, y = r.top - 6;
+  if (x + W > innerWidth - 8) x = Math.max(8, r.left - W - 10);
+  if (y + H > innerHeight - 8) y = Math.max(8, innerHeight - H - 10);
+  CCTV.pop.style.left = Math.round(x) + 'px'; CCTV.pop.style.top = Math.round(y) + 'px';
+  CCTV.pop.hidden = false;
+  clearInterval(CCTV.timer); CCTV.timer = setInterval(cctvPaint, 420);   /* 与 strip 同一节奏刷新，画面不会停在旧帧 */
+}
+function cctvHide() { if (CCTV.pop) CCTV.pop.hidden = true; clearInterval(CCTV.timer); CCTV.timer = 0; CCTV.idx = -1; }
+function cctvInit() {
+  if (CCTV.btn) return;
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.id = 'cctvBtn';
+  btn.setAttribute('aria-pressed', 'false');
+  btn.setAttribute('aria-label', '监控视角：默认关闭；点亮后高亮 4 个视觉节点，悬停或键盘聚焦查看该点位的实时画面');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+    + '<path d="M3 7h13l2.4 3.2L16 13.6H3z"/><path d="M6 13.6v3.2h4v-3.2"/></svg><span>监控</span>';
+  btn.addEventListener('click', () => cctvSet(!CCTV.on));
+  const pop = document.createElement('div');
+  pop.id = 'cctvPop'; pop.hidden = true; pop.setAttribute('role', 'status'); pop.setAttribute('aria-live', 'polite');
+  pop.innerHTML = '<canvas width="' + FEED_W + '" height="' + FEED_H + '"></canvas>'
+    + '<div class="pp-h"><b>—</b><span></span></div><div class="pp-f">—</div>';
+  document.body.append(btn, pop);
+  CCTV.btn = btn; CCTV.pop = pop; CCTV.ctx = pop.querySelector('canvas').getContext('2d');
+  const cam = e => { const m = e.target && e.target.closest ? e.target.closest('.node-marker[data-type="camera"]') : null; return m; };
+  document.addEventListener('pointerover', e => { const m = cam(e); if (m) cctvShow(m); });
+  document.addEventListener('pointerout', e => { if (cam(e)) cctvHide(); });
+  document.addEventListener('focusin', e => { const m = cam(e); if (m) cctvShow(m); });
+  document.addEventListener('focusout', () => cctvHide());
+  /* 标记会被房间切换/下钻重建，类不能只加一次：跟着 420ms 的画面节奏重贴 */
+  setInterval(() => { if (CCTV.on) cctvApply(); }, 1200);
+}
   /* 焦点在三维场景里时，翻页笔按键交回宿主（决策 Q1：售前投影遥控翻页） */
   addEventListener('keydown', ev => {
     if (['PageUp', 'PageDown', 'Home', 'End', '1', '2', '3', 'Escape'].includes(ev.key)) {
