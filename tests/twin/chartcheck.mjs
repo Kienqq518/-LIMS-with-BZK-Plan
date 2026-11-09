@@ -208,7 +208,9 @@ const waitSig=async(name,max=14)=>{for(let i=0;i<max;i++){
    要比对的是口径——末点仍等于当下右列温湿度读数的均值（点位级序列绝不会被点出来）。 */
 const thSigRaw=await waitSig('temp-hum');
 if(!thSigRaw) out.push('❌ temp-hum 图始终 pending：容器在当前视角没有宽度，图等于没画（接管改动不许把右列图表压成 0 高）');
-const after=await p.evaluate(()=>({rb:JSON.parse(window.__twinCharts.list().find(x=>x.name==='temp-hum').sig),
+/* 图不存在时 list().find() 返回 undefined，直接 .sig 会让整套 42 项蒸发（崩≠过）：
+   兜一个空序列，让下面那条判据以 ❌ 明说"temp-hum 没出图"，而不是静默消失。 */
+const after=await p.evaluate(()=>({rb:JSON.parse((window.__twinCharts.list().find(x=>x.name==='temp-hum')||{sig:'[]'}).sig),
   mean:(()=>{const seen=[],vals=[];
     [...document.querySelectorAll('#dkNodesTrack .nd-row')].forEach(r=>{const id=r.dataset.node;if(seen.includes(id))return;
       const m=(r.querySelector('.rd')?r.querySelector('.rd').innerText.trim():'').match(/^(-?[\d.]+)℃ · ([\d.]+)%RH$/);
@@ -216,7 +218,7 @@ const after=await p.evaluate(()=>({rb:JSON.parse(window.__twinCharts.list().find
     return {n:vals.length,t:Math.round(vals.reduce((a,x)=>a+x.t,0)/vals.length*10)/10,h:Math.round(vals.reduce((a,x)=>a+x.h,0)/vals.length*10)/10};})(),
   act:document.querySelectorAll('.nd-row.th-active').length, cap:document.getElementById('chartTHCap'),
   card:(()=>{const c=document.querySelector('#iotPanel .node-card, .node-card');return c?c.innerText.replace(/\s+/g,' '):null;})()}));
-const lt=after.rb[0].values[after.rb[0].values.length-1], lh=after.rb[1].values[after.rb[1].values.length-1];
+const lt=after.rb.length>0?after.rb[0].values[after.rb[0].values.length-1]:NaN, lh=after.rb.length>1?after.rb[1].values[after.rb[1].values.length-1]:NaN;
 ok(Math.abs(lt-after.mean.t)<=0.05&&Math.abs(lh-after.mean.h)<=0.05&&after.rb.length===2,
   `点节点行后折线带仍是全场均值（末点 ${lt}/${lh} == 均值 ${after.mean.t}/${after.mean.h}，${after.mean.n} 个点位）——没被换成单点位序列`);
 ok(after.act===0&&after.cap===null,`th-active 选中态与图下说明文本都已撤除（active=${after.act}，chartTHCap 元素不存在=${after.cap===null}）`);
@@ -246,7 +248,7 @@ await segOf('day');
 await gotoZone(p, '102'); await p.waitForTimeout(4200);
 const k102=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
   cells:[...document.querySelectorAll('#zsGrid .zs-i')].map(e=>e.innerText.replace(/\s+/g,' ').trim()),
-  names:[...document.querySelectorAll('#zsGrid .sp-nm')].map(e=>+((e.innerText.match(/(\d+) 支/)||[0,0])[1]||0),0)[1]}));
+  names:[...document.querySelectorAll('#zsGrid .sp-nm')].map(e=>{const m=e.innerText.match(/(\d+) 支/);return +((m&&m[1])||0);})}));
 const sum102=k102.names.reduce((a,x)=>a+x,0);
 ok(k102.kind==='样品台账'&&/286 在库存量\(支\)/.test(k102.cells.join(' '))&&k102.names.length>=3&&sum102===286,
   `102 下钻＝样品台账四格 + 按名称分布，且分布合计=在库存量（${k102.names.join('+')}=${sum102} vs 286）: ${k102.cells.join(' / ')}`);

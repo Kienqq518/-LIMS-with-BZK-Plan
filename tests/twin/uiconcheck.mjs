@@ -36,7 +36,10 @@ const glass2=await p.evaluate(()=>{const g=s=>{const e=document.querySelector(s)
 const noSheet=s=>{const [bg,blur,border,radius,shadow]=String(s||'').split('|');
   return (bg==='rgba(0, 0, 0, 0)'||bg==='transparent')&&blur==='none'&&/^0px/.test(border)&&shadow==='false';};
 ok(noSheet(glass2.rail)&&noSheet(glass2.stream),`侧栏无底板层（左栏 + 告警流：透明/无 blur/无描边/无阴影）: rail=${String(glass2.rail).slice(0,40)} stream=${String(glass2.stream).slice(0,40)}`);
-ok(new Set([glass2.zone,glass2.dk].filter(Boolean)).size===1,`底栏与区域面板仍同一档玻璃配方：${[...new Set([glass2.zone,glass2.dk])].map(x=>x.slice(0,46)).join('  ||  ')}`);
+/* FR-80 之后 .zonepanel 连 DOM 一起删了，glass2.zone 恒为 null：
+   原来这行对未过滤 null 的集合做 x.slice()，整套 15 项当场蒸发（崩掉不等于通过）。
+   判据改成"只剩底栏一处玻璃配方，且区域面板不再贡献第二处"——退役要留下痕迹，不能靠删断言蒙过去。 */
+ok(glass2.zone===null&&!!glass2.dk,`底栏仍是唯一使用玻璃档的浮层，区域面板已无第二处：dk=${String(glass2.dk).slice(0,46)} zone=${String(glass2.zone)}`);
 /* FR-42 把底栏与区域面板的底板也撤了，"玻璃那档"只剩两处仍在使用：顶栏 icon 组 .layers（宿主）
    与三维里的实体信息气泡 #twin-v2-card（场景文档）。断言原意不变——守住 --tw-blur 必须是完整函数：
    backdrop-filter 只吃 <filter-list>，裸 14px 会让整条声明静默失效变 none，那时 computed 里根本量不出来。 */
@@ -100,7 +103,7 @@ ok(/rgb\(40, 120, 255\)/.test(scene.marker||''),'节点标记用宿主品牌蓝�
 ok((scene.size||'').split('|')[0]==='26px','V2 大屏节点标记收到 26px（底座 40px 只留给笔记本鼠标）: '+scene.size);
 
 // ⑦ 数字等宽
-const nums=await p.evaluate(()=>['.dk-lg .vv','.zp-stat b','.dq-row .tm'].map(s=>{const e=document.querySelector(s);return e?getComputedStyle(e).fontVariantNumeric:'missing';}));
+const nums=await p.evaluate(()=>['.dk-lg .vv','.zs-i b'   /* FR-80：统计四格从退役面板搬到左栏 #zsGrid，等宽判据跟着换目标 */,'.dq-row .tm'].map(s=>{const e=document.querySelector(s);return e?getComputedStyle(e).fontVariantNumeric:'missing';}));
 ok(nums.every(x=>x==='tabular-nums'),'读数等宽（滚动不跳字）: '+JSON.stringify(nums));
 
 ok(err.length===0,'无 pageerror/console error: '+err.slice(0,3).join(' | '));
