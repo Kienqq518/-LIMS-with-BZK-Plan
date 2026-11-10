@@ -452,12 +452,16 @@
      （节点卡自己就是本房间逐点真数，均值图在这里没有增量信息）。 */
   function renderZoneIotPanel() {
     var pnl = $('#iotPanel'); if (!pnl) return;
-    var inBand = pnl.parentElement && (pnl.parentElement.classList.contains('zb-r') || pnl.parentElement.id === 'rightCol');
+    var inBand = pnl.parentElement && (pnl.parentElement.classList.contains('zb-r') || pnl.parentElement.id === 'rightCol' || pnl.parentElement.id === 'zonePair');
     var thw = pnl.querySelector('.th-wrap'), npv = pnl.querySelector('.np-view');
     var zb = pnl.querySelector('#dkNodesZone');
     if (!inBand) {
       if (thw) thw.hidden = false; if (npv) npv.hidden = false;
       if (zb) { zb.hidden = true; zb.innerHTML = ''; }
+      /* 空态隐藏不许跨视图泄漏：房间视图里因「无非视觉节点」收起的整块，
+         回总览必须亮回来（总览看全场清单）。不这样 syncStreamW 会量到 0 宽早退，
+         右列宽度停在房间值 380 上——总览构图按错带解算（zoneview 守卫抓到 1185px）。 */
+      pnl.hidden = false;
       return;
     }
     if (!zb) {
@@ -477,11 +481,14 @@
       var stw = n.status === 'normal' ? '正常' : (n.status === 'offline' ? '离线' : (n.status || '—'));
       var dot = n.status === 'offline' ? ' off' : (n.status === 'normal' ? '' : ' bad');
       var val = nodeReading(n) || '—';
+      /* 窄列（带右列 ~180px）里「左名称右数值」一行式会把读数裁掉半截——
+         改上下两行：第一行 状态点+名称+类型，第二行 状态字 + 右对齐读数。窄位也完整。 */
       return '<div class="zi-card" role="listitem" data-node="' + escapeHtml(n.id) + '"'
         + ' aria-label="' + escapeHtml(n.name + '，' + NODE_CN(n.type) + '，状态 ' + stw + '，数据 ' + val) + '">'
-        + '<div class="zi-l"><i class="zi-dot' + dot + '"></i><div class="zi-t"><b>' + escapeHtml(n.name) + '</b>'
-        + '<span>' + escapeHtml(n.roomId + ' 区 · ' + NODE_CN(n.type)) + '</span></div></div>'
-        + '<div class="zi-v">' + escapeHtml(val) + '</div></div>';
+        + '<div class="zi-l"><i class="zi-dot' + dot + '"></i><b>' + escapeHtml(n.name) + '</b>'
+        + '<span class="zi-tp">' + escapeHtml(NODE_CN(n.type)) + '</span></div>'
+        + '<div class="zi-r"><span class="zi-st' + dot + '">' + escapeHtml(stw) + '</span>'
+        + '<b class="zi-v">' + escapeHtml(val) + '</b></div></div>';
     }).join('');
   }
   /* ②（2026-11-10 圈图）：设备运行状态钉在左栏底部后，「无人化调度任务」块顶边跟着它的标题走——
@@ -777,7 +784,11 @@
     if (scRoom) list = list.filter(function (x) { return String(x.roomId) === String(scRoom); });
     /* ③（2026-11-10 圈图）：场景块占满分给它的高度——行数跟着场景数走（2 列 × ceil(n/2) 行），
        106 只有 1 套场景时不再让六格网格把内容挤成一小坨。 */
-    el.style.gridTemplateRows = 'repeat(' + Math.max(1, Math.ceil(list.length / 2)) + ',minmax(0,1fr))';
+    /* ③（2026-11-10 圈图）：列数跟着场景数走——带内/右列窄位放 1 套场景时必须是整宽单列，
+       两列网格会把内容挤进半列（106 安全管家样式错乱的直接原因）；总览六套照旧 2 列 3 行。 */
+    var ncol = list.length > 2 ? 2 : 1;
+    el.style.gridTemplateColumns = 'repeat(' + ncol + ',minmax(0,1fr))';
+    el.style.gridTemplateRows = 'repeat(' + Math.max(1, Math.ceil(list.length / ncol)) + ',minmax(0,1fr))';
     /* 场景状态 = 两半事实拼起来：所在房间未闭环告警（mock 给）+ 所辖点位当前读数越限（宿主 envNodes 给，
        与右列组态物联、场景节点层同一份读数，不另建第二套真相）。阈值取场景方案文档里的规则原值：
        温度 >28℃、湿度 >70%RH、气体 exceeded、烟感/水浸 detected。 */
@@ -793,10 +804,13 @@
         if (nd.type === 'temperature' && v.temperature > 28) breach.push('温度 ' + v.temperature + '℃>28℃');
         if (nd.type === 'temperature' && v.humidity > 70) breach.push('湿度 ' + v.humidity + '%RH>70%');
       });
-      var st = x.openAlarms ? 'alarm' : (breach.length ? 'abnormal' : 'normal');
+      /* ③（2026-11-10 圈图，102 工器具场景）：一个物联节点都没布的场景不是「正常」——
+         它压根没在监测，屏上标绿是替现场说谎。待布点=关闭（灰），与 待布点 icon 占位同一事实。 */
+      var noNodes = !(x.nodes || []).length;
+      var st = x.openAlarms ? 'alarm' : (breach.length ? 'abnormal' : (noNodes ? 'off' : 'normal'));
       var c = Object.create(x);
       c.status = st; c.breach = breach;
-      c.statusLabel = ((safety && safety.statusLabels) || {})[st] || st;
+      c.statusLabel = ((safety && safety.statusLabels) || {})[st] || (st === 'off' ? '关闭' : st);
       return c;
     });
     var sig = list.map(function (x) { return x.sceneId + ':' + x.status + ':' + x.openAlarms + ':' + (x.breach || []).join('/'); }).join(',');
@@ -921,23 +935,30 @@
           var pv = ((d.periods || {})[st.period]) || {};
           var seg = function (w, tok) { return '<i style="width:' + (w > 0 ? w.toFixed(2) : 0) + '%;background:var(' + tok + ')"></i>'; };
           var tiSum = Math.max(1, rm.items.done + rm.items.testing);
+          var sp = rm.samples || { total: 0, done: 0, testing: 0 };
+          var spSum = Math.max(1, sp.done + sp.testing);
+          /* ①（2026-11-10 圈图）：去「去重」文案；样品=双色段（已完成检测/检测中）；
+             试验项目文案带标签；第四块标题「调度任务」——周期开关驱动的就是它。 */
           g.innerHTML = '<div class="zs2">'
             + '<div class="zs2-g"><div class="zs2-h"><span>委托任务</span><b style="color:var(--tw-st-working)">' + rm.entrusts + '</b></div>'
-            + '<i class="zs2-bar">' + seg(100, '--tw-st-working') + '</i><div class="zs2-d">关联委托单 · 去重</div></div>'
-            + '<div class="zs2-g"><div class="zs2-h"><span>样品</span><b style="color:var(--tw-st-cat)">' + rm.samples + '</b></div>'
-            + '<i class="zs2-bar">' + seg(100, '--tw-st-cat') + '</i><div class="zs2-d">关联样品 · 去重（非收样/还样口径）</div></div>'
+            + '<i class="zs2-bar">' + seg(100, '--tw-st-working') + '</i><div class="zs2-d">关联委托单</div></div>'
+            + '<div class="zs2-g"><div class="zs2-h"><span>样品</span><b style="color:var(--tw-st-ready)">' + sp.total + '</b></div>'
+            + '<i class="zs2-bar">' + seg(sp.done / spSum * 100, '--tw-st-ready') + seg(sp.testing / spSum * 100, '--tw-st-cat') + '</i>'
+            + '<div class="zs2-d">已完成检测 <b style="color:var(--tw-st-ready)">' + sp.done + '</b> · 检测中样品 <b style="color:var(--tw-st-cat)">' + sp.testing + '</b></div></div>'
             + '<div class="zs2-g"><div class="zs2-h"><span>试验项目</span><b><span style="color:var(--tw-st-ready)">' + rm.items.done + '</span><em>+</em><span style="color:var(--tw-st-working)">' + rm.items.testing + '</span></b></div>'
-            + '<i class="zs2-bar">' + seg(rm.items.done / tiSum * 100, '--tw-st-ready') + seg(rm.items.testing / tiSum * 100, '--tw-st-working') + '</i><div class="zs2-d">已完成 ＋ 正在检测 · 不给总数</div></div>'
-            + '<div class="zs2-p" role="status">本' + ({ day: '日', month: '月', year: '年' })[st.period] + '：已完成 <b style="color:var(--tw-st-ready)">' + (pv.done == null ? '—' : pv.done) + '</b>'
+            + '<i class="zs2-bar">' + seg(rm.items.done / tiSum * 100, '--tw-st-ready') + seg(rm.items.testing / tiSum * 100, '--tw-st-working') + '</i>'
+            + '<div class="zs2-d">已完成 <b style="color:var(--tw-st-ready)">' + rm.items.done + '</b> · 检测中 <b style="color:var(--tw-st-working)">' + rm.items.testing + '</b></div></div>'
+            + '<div class="zs2-g zs2-g-dispatch"><div class="zs2-h"><span>调度任务</span><b>' + ({ day: '本日', month: '本月', year: '本年' })[st.period] + '</b></div>'
+            + '<div class="zs2-p" role="status">已完成 <b style="color:var(--tw-st-ready)">' + (pv.done == null ? '—' : pv.done) + '</b>'
             + ' · 执行中 <b style="color:var(--tw-st-working)">' + (pv.running == null ? '—' : pv.running) + '</b>'
             + ' · 异常挂起 <b style="color:var(--tw-st-alarm)">' + (pv.abnormal == null ? '—' : pv.abnormal) + '</b>'
-            + ' · 排队 <b style="color:var(--tw-st-idle)">' + (pv.queued == null ? '—' : pv.queued) + '</b></div>'
+            + ' · 排队 <b style="color:var(--tw-st-idle)">' + (pv.queued == null ? '—' : pv.queued) + '</b></div></div>'
             + '</div>';
           if (perBtn) perBtn.hidden = false;
           g.dataset.kind = head;
-          g.setAttribute('aria-label', z + ' 区任务统计（本房间口径）：关联委托 ' + rm.entrusts + ' 个，关联样品 ' + rm.samples
-            + ' 批，试验项目 已完成 ' + rm.items.done + ' 正在检测 ' + rm.items.testing
-            + '；本周期 已完成 ' + pv.done + ' 执行中 ' + pv.running + ' 异常挂起 ' + pv.abnormal + ' 排队 ' + pv.queued);
+          g.setAttribute('aria-label', z + ' 区任务统计（本房间口径）：关联委托 ' + rm.entrusts + ' 个，关联样品 ' + sp.total
+            + ' 批（已完成检测 ' + sp.done + '、检测中 ' + sp.testing + '，同一批样品可两边都在），试验项目 已完成 ' + rm.items.done + ' 检测中 ' + rm.items.testing
+            + '；调度任务本周期 已完成 ' + pv.done + ' 执行中 ' + pv.running + ' 异常挂起 ' + pv.abnormal + ' 排队 ' + pv.queued);
           return;
         }
         g.innerHTML = cells.map(function (x) {
@@ -1156,6 +1177,7 @@
       });
       envNodes = nodes;   /* 面板「环境数据」与场景节点层同源，避免两处各算一套 */
       scene.contentWindow.postMessage({ channel: 'room-tour-node-v3', type: 'snapshots', nodes: nodes }, location.origin);
+      updateCctvBtn();   /* 快照没到的首拍 cams=0 会误藏监控按钮——数据一到立刻重估（总览/房间都吃这条） */
       if (st.mode === 'ZONE') renderZoneView();
     });
   }
@@ -1183,6 +1205,9 @@
     if (d.type === 'device-open') openDeviceByCad(d.device);
     if (d.type === 'remote') handleKey(d.key);
     if (d.type === 'route-audit') { routeAudit = d; renderAudit(); renderZoneView(); }
+    /* ②（2026-11-10 圈图）：hover 弹窗住在场景 iframe 里，天然低于宿主底栏——
+       场景开弹窗时知会一声，宿主把 iframe 抬到顶层，关掉立刻放下（平时底栏照常可交互）。 */
+    if (d.type === 'cctv-pop') { document.body.classList.toggle('cctv-pop-open', !!d.open); }
   });
   /* 自检结果不再常驻显示（2026-11-06 反馈）：
      · 通过 → 界面上什么都不出现
@@ -1197,6 +1222,14 @@
 
   /* ---------- 三层控制 ---------- */
   function zoneView(z) { return z === '106' ? 'close' : z + '-close'; }
+  /* ①（2026-11-10 圈图，108）：选中的房间没有监控点位，顶栏「监控」就不该出现——
+     点亮一个找不到任何摄像头可高亮的开关，是空承诺不是功能。总览有 4 路照常显示。 */
+  function updateCctvBtn() {
+    var btn = $('#cctvToggle'); if (!btn) return;
+    var cams = (envNodes || []).filter(function (n) { return n.type === 'camera' && (st.mode !== 'ZONE' || String(n.roomId) === String(st.zone)); });
+    btn.hidden = cams.length === 0;
+    if (btn.hidden && cctvOn) { btn.click(); }   /* 带灭入房：把开关状态收干净，别留 aria-pressed 的幽灵 */
+  }
   /* ②（2026-11-09 三次圈图）：告警流/监控「还是太宽」——右列宽度与下方「组态物联节点状态监测」块
      保持一致。物联块是底栏全宽网格的 1fr 列（1455×868 下实测 389px），随视口宽变化，
      所以同步的是实测值而不是抄一个常数：只在总览同步（房间视图里物联块不在右列正下方，
@@ -1206,9 +1239,10 @@
     var root = document.documentElement.style;
     var cur = root.getPropertyValue('--tw-stream-w');
     if (st.mode !== 'S1') {
-      /* 房间视图：右列要装下两列带（③），宽度回落到 :root 标定的 430——
-         撤掉内联变量即可；带内组态物联块的宽度是列宽的结果，不再反过来定义右列。 */
-      if (cur) { root.removeProperty('--tw-stream-w');
+      /* 房间视图：④（2026-11-10 圈图）右列整体拉窄——430 太挤（告警流+下方模块占屏过宽），
+         380 把画面还给三维；带/堆叠的列宽由它派生。 */
+      var zw = '380px';
+      if (cur !== zw) { root.setProperty('--tw-stream-w', zw);
         if (scene.contentWindow) scene.contentWindow.postMessage({ channel: 'twin-v2', type: 'camera', action: 'reset' }, location.origin); }
       return;
     }
@@ -1369,19 +1403,32 @@
       bandEl.hidden = !toBand;
       function mv(el, host, ref) { if (el.parentElement !== host) (ref ? host.insertBefore(el, ref) : host.appendChild(el)); }
       if (toBand) {
+        var zp0 = $('#zonePair'); if (zp0) zp0.hidden = true;
         mv(scEl, zl); mv(camEl, zl);
         /* 场景在上、画面在下：谁先到不重要，落位后把场景提到画面之前 */
         if (camEl.previousElementSibling !== scEl) zl.insertBefore(scEl, camEl);
         mv(iotEl, zr);
       } else if (toRight) {
-        mv(camEl, rcEl, bandEl);
-        mv(scEl, rcEl, camEl);          /* 场景监测在画面之前 */
-        mv(iotEl, rcEl);                /* 组态物联压底（101 式卡） */
+        /* ③（2026-11-10 圈图，105）：第一行=安全管家场景监测（整宽），
+           第二行=画面与组态物联左右挨着；只存在一个时它自动占满整行（兄弟隐藏，flex:1 独占）。 */
+        var zp = $('#zonePair');
+        if (zp) {
+          mv(camEl, zp); mv(iotEl, zp);
+          mv(zp, rcEl);
+          mv(scEl, rcEl, zp);
+          zp.hidden = false;
+        } else {
+          mv(camEl, rcEl, bandEl); mv(scEl, rcEl, camEl); mv(iotEl, rcEl);
+        }
       } else {
         mv(scEl, dkEl, $('#dkQueue')); mv(camEl, rcEl, bandEl); mv(iotEl, dkEl);
+        var zp2 = $('#zonePair'); if (zp2) zp2.hidden = true;
       }
+      /* 搬家之后必须立刻重估组态物联块的显隐与内容——renderZoneView 只在 ZONE 里跑，
+         回总览这条路没人走它；空态 hidden 就是这样跨视图泄漏的（见 renderZoneIotPanel 注释）。 */
+      renderZoneIotPanel();
     }
-    renderZoneRail(); renderZoneScenes(); renderZoneRunning(); renderCams();
+    renderZoneRail(); renderZoneScenes(); renderZoneRunning(); renderCams(); updateCctvBtn();
     if (zone) renderDockStats();   /* ② 圆环进/出房间视图都要按当前口径重画（总览↔房间共用这一个渲染入口） */
     /* renderCams 必须在切房间时跑：它同时决定「视觉节点实时画面」整块要不要出现。
        上一版只在 renderDock 里调，于是 106 切到 107（无摄像头）后画面块还挂着 106 的那一路。 */

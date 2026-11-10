@@ -475,7 +475,7 @@
            不许拿相近的数顶替（例如拿收样数顶样品关联数）。 */
         var room = null;
         var EL = (state['entrust-list'] || {}).records || [];
-        var en = {}, sa = {}, done = 0, testing = 0;
+        var en = {}, sa = {}, saDone = {}, saTest = {}, done = 0, testing = 0;
         EL.forEach(function (e) {
           var ss = e.samples || (e.sample ? [e.sample] : []);
           (e.items || []).forEach(function (it) {
@@ -483,13 +483,16 @@
             if (it.state !== 'done' && it.state !== 'testing') return;   /* 未检测/退回复测不进这条链 */
             en[e.entrustNo] = 1;
             var sid = it.sampleId || (ss[0] && ss[0].id);
-            if (sid) sa[sid] = 1;
+            if (sid) { sa[sid] = 1; if (it.state === 'done') saDone[sid] = 1; else saTest[sid] = 1; }
             if (it.state === 'done') done++; else testing++;
           });
         });
-        if (EL.length) room = { entrusts: Object.keys(en).length, samples: Object.keys(sa).length,
+        /* 样品也要双色分段（2026-11-10 圈图）：关联样品拆成「已完成检测」与「检测中」两个数——
+           同一批样品可以两边都出现（有的试验项做完了、有的还在测），所以两个数各自去重、不做减法。 */
+        if (EL.length) room = { entrusts: Object.keys(en).length,
+          samples: { total: Object.keys(sa).length, done: Object.keys(saDone).length, testing: Object.keys(saTest).length },
           items: { done: done, testing: testing },
-          basis: '本房间设备→已完成检测/正在检测的试验项→关联委托(去重)/样品(去重)；试验项目=两个数，不给总数' };
+          basis: '本房间设备→已完成检测/正在检测的试验项→关联委托(去重)/样品(去重)；样品与试验项目都分开给两个数，不摆总数当结论' };
         return resolve(envelope({
           zoneId: zk, viewProfile: prof, statsKind: prof.statsKind,
           periods: zstat, note: zstat.note || null,

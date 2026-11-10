@@ -34,7 +34,7 @@ out.push(((await vis('.rail'))!=='hidden'?'✅':'❌')+' 106 左栏可见: '+awa
 out.push(((await vis('#railZoneStats'))!=='hidden'?'✅':'❌')+' 106 左栏「任务统计」出现: '+await vis('#railZoneStats'));
 out.push(((await vis('#railZoneDevs'))!=='hidden'?'✅':'❌')+' 106 左栏「设备」出现: '+await vis('#railZoneDevs'));
 /* ①（2026-11-09）：四格升级为三子区域（委托任务/样品/试验项目），无柱图的原约束保留 */
-T('106 任务统计＝三子区域（图二样式：标题/大数/分段条/短语，无柱图）', await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .zs2-g .zs2-h > span')].map(e=>e.innerText).join('/')), '委托任务/样品/试验项目');
+T('106 任务统计＝三子区域+调度任务（图二样式：标题/大数/分段条/短语，无柱图）', await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .zs2-g .zs2-h > span')].map(e=>e.innerText).join('/')), '委托任务/样品/试验项目/调度任务');
 T('106 左栏任务统计无柱图容器', await p.locator('#railZoneStats .tw-chart').count(), 0);
 T('106 设备标题=设备（无资产）', await p.locator('#zDevsTitle').innerText(), '设备');
 T('106 设备台数与全场表同源', await p.locator('#zDevsN').innerText(), '8 台建档 · 2 台机器人');
@@ -85,7 +85,7 @@ T('107 底栏=只剩运行中的任务（钉最左，与左栏同宽）', await 
   const dk=document.querySelector('.dock').getBoundingClientRect();
   const rail=document.querySelector('.rail').getBoundingClientRect();
   return vis+' @x'+Math.round(dk.x)+'w'+Math.round(dk.width)+' railR'+Math.round(rail.right);}), '运行中的任务 @x14w300 railR314');
-{const rc=await p.evaluate(()=>{const inRcol=id=>{const e=document.getElementById(id);return e&&e.parentElement&&e.parentElement.id==='rightCol'&&!e.hidden&&e.getBoundingClientRect().width>2;};
+{const rc=await p.evaluate(()=>{const inRcol=id=>{const e=document.getElementById(id);return e&&e.parentElement&&(e.parentElement.id==='rightCol'||e.parentElement.id==='zonePair')&&!e.hidden&&e.getBoundingClientRect().width>2;};
   const cards=[...document.querySelectorAll('#dkNodesZone .zi-card')].map(e=>Math.round(e.getBoundingClientRect().height));
   const empty=document.querySelector('.stream-view .zp-empty');
   return {sc:inRcol('dkScenes'),iot:inRcol('iotPanel'),cards,
@@ -116,7 +116,7 @@ const segVis=await p.evaluate(()=>[...document.querySelectorAll('#railZoneStats 
 out.push((segVis===3?'✅':'❌')+' 106 左栏周期开关回归（日/月/年 3 个，驱动本周期行）: 可见 '+segVis+' 个');
 await p.locator('#railZoneStats [data-period=year]').click(); await p.waitForTimeout(1600);
 const year=await p.locator('#zsGrid').innerText();
-out.push((year!==day&&/本年：/.test(year)?'✅':'❌')+' 切「本年」本周期行真的变（三子区域数字不动）: '+year.replace(/\s+/g,' ').match(/本\S+：[^本]*/)?.[0]?.slice(0,44));
+out.push((year!==day&&/本年/.test(year)?'✅':'❌')+' 切「本年」调度任务块真的变（前三块数字不动）: '+year.replace(/\s+/g,' ').match(/调度任务[^]*?排队 \d+/)?.[0]?.slice(0,60));
 await p.locator('#railZoneStats [data-period=day]').click(); await p.waitForTimeout(1000);
 out.push((/委托任务/.test(day)&&/试验项目/.test(day)?'✅':'❌')+' 106 左栏仍是三子区域: '+day.replace(/\s+/g,' ').trim().slice(0,52));
 const url=await p.evaluate(()=>new URLSearchParams(location.search).toString());

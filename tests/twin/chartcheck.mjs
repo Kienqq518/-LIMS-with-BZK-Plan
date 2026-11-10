@@ -250,8 +250,13 @@ ok(after.act===0&&after.cap===null,`th-active 选中态与图下说明文本都�
 await gotoZone(p, '106'); await p.waitForTimeout(4200);
 const k106=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
   txt:(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim()}));
-ok(k106.kind==='任务统计'&&/委托任务/.test(k106.txt)&&/试验项目/.test(k106.txt)&&/本\S+：已完成/.test(k106.txt),
-  '106 下钻＝任务统计三子区域＋本周期行（①口径＋⑥周期回归；旧四格的「排队」只允许出现在周期行里）: '+JSON.stringify(k106).slice(0,130));
+/* 结构性判据代替文本黑名单：「排队」这个词现在合法地活在调度任务块里，
+   该禁的是旧四格 markup（.zs-i）复活，不是某个汉字。 */
+const zs106=await p.evaluate(()=>({cells:document.querySelectorAll('#zsGrid .zs-i').length,
+  groups:document.querySelectorAll('#zsGrid .zs2-g').length,
+  titles:[...document.querySelectorAll('#zsGrid .zs2-h > span')].map(e=>e.innerText).join('/')}));
+ok(k106.kind==='任务统计'&&zs106.cells===0&&zs106.groups===4&&zs106.titles==='委托任务/样品/试验项目/调度任务',
+  '106 下钻＝任务统计四块（委托/样品/试验项目/调度任务），旧四格 markup 未复活: '+JSON.stringify(zs106));
 await gotoZone(p, '103'); await p.waitForTimeout(4200);
 const k103=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
   txt:(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim()}));

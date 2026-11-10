@@ -92,6 +92,12 @@ ok(!info.noFeed&&info.uniq>12&&info.cov>60,`画面嵌在卡里且真有内容：
 ok(!/渲染色|非现场实拍|视频通道/.test(info.screenText)&&/非现场实拍/.test(info.aria),`「渲染色·非现场实拍·视频通道二期接入」已撤下屏、口径进 aria（①）`);
 ok(/rgba\(64, 158, 255/.test(info.glow||''),`高亮呼吸带荧光蓝外发光（②）: ${String(info.glow||'').slice(0,80)}`);
 ok(info.r<=info.vw&&info.bo<=info.vh,`弹窗不越出场景视口（右 ${info.r}/${info.vw}，底 ${info.bo}/${info.vh}）`);
+/* 层级 bug 守卫（2026-11-10）：弹窗开着时 iframe 被宿主抬到顶层，弹窗不再被底栏吞掉半张卡 */
+{const lay=await p.evaluate(()=>({cls:document.body.classList.contains('cctv-pop-open'),z:getComputedStyle(document.getElementById('scene')).zIndex}));
+ const pop=await f.evaluate(()=>{const r=document.getElementById('cctvPop').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)};});
+ const off=await p.evaluate(()=>{const i=document.getElementById('scene');const r=i.getBoundingClientRect();return [Math.round(r.left),Math.round(r.top)];});
+ const topEl=await p.evaluate(a=>{const e=document.elementFromPoint(a[0],a[1]);return e?e.tagName+(e.id?'#'+e.id:''):'null';},[pop.x+off[0],pop.y+off[1]]);
+ out.push((lay.cls&&lay.z!=='auto'&&topEl.startsWith('IFRAME')?'✅':'❌')+` 弹窗打开时压在弹窗上的底栏让位（body=${lay.cls} iframe z=${lay.z}，弹窗中心命中=${topEl}）`);}
 // ⑤ 换第二个点位：画面必须跟着换（不是同一帧糊过去）
 const second=f.locator('.node-marker.cctv-hi').nth(1);
 await second.hover(); await p.waitForTimeout(1400);

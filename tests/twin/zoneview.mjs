@@ -83,28 +83,21 @@ out.push(((live.split(' ')[1]==='travel'||live.indexOf('dwell')>0)?'✅':'❌')+
   out.push((headsOk && A.cyNow !== '–' ? '✅' : '❌')
     + ` ⑥ 106 底栏「无人化调度任务」三列都有真内容（探针不再靠 .dq-grp——那行标题在 dq3 三列版式里已退役）: `
     + JSON.stringify(A.cols.map(c => c.head + '×' + c.rows)) + ` · 当前道「${A.cyNow}」`);
-  /* ⑩ 图的口径：切走再切回，抓 temp-hum-series 的请求参数——
-     from= 的点位集合必须 == 底栏本房间温湿度行的节点 id；temp/hum 参数 == 那些读数的均值。
-     「图与表同源」在房间视图的同一条断言，不接受 lab-avg 混进来顶替。 */
-  /* TwinApi 是进程内 mock——/api/... 根本不走网络，page.on('request') 抓不到任何东西。
-     直接挂钩 TwinApi.get：回总览一次（lab-avg）+ 进 106 一次（avg-106），最后一条必是房间口径。 */
-  await p.evaluate(()=>{ if(!window.__thHook){ window.__thReq=[]; const g=window.TwinApi.get.bind(window.TwinApi);
-    window.TwinApi.get=u=>{ if(String(u).includes('temp-hum-series')) window.__thReq.push(String(u)); return g(u); }; } return 'hooked'; });
-  await p.keyboard.press('1'); await p.waitForTimeout(2800);
-  await gotoZone(p, '106'); await p.waitForTimeout(3400);
-  const reqs = await p.evaluate(()=>window.__thReq||[]);
-  const last = reqs[reqs.length - 1] || '';
-  const q = new URLSearchParams((last.split('?')[1] || ''));
-  const ids = (q.get('from') || '').split(',').filter(Boolean);
-  const wantIds = A.rows.map(r => r.id).sort().join(',');
-  const meanT = A.rows.length ? Math.round(A.rows.reduce((a, r) => a + r.t, 0) / A.rows.length * 10) / 10 : NaN;
-  const meanH = A.rows.length ? Math.round(A.rows.reduce((a, r) => a + r.h, 0) / A.rows.length * 10) / 10 : NaN;
-  /* 快照每 5s 重抖一次（±0.3/点位）：请求发出与行读数分属两拍，均值最大可差 0.6——
-     容差按这个物理量给（0.65），集合与 node= 的判据不放宽。 */
-  const thOk = q.get('node') === 'avg-106' && ids.sort().join(',') === wantIds
-    && Math.abs(+q.get('temp') - meanT) <= 0.65 && Math.abs(+q.get('hum') - meanH) <= 0.65;
-  out.push((thOk ? '✅' : '❌')
-    + ` ⑩ 106 组态物联图=本房间点位均值（不再挂全场 lab-avg）：node=${q.get('node')} · from=${ids.length} 点位与底栏行同集合 · temp ${q.get('temp')}==均值 ${meanT} · hum ${q.get('hum')}==${meanH}`);
+  /* ⑩（2026-11-10 改版）：房间视图的组态物联不再是「均值图+滚动行」——
+     等分卡片就是本房间逐点真数（图与表同源的最终形态：卡即表）。
+     断言：卡片集合 == 配置里本房间非视觉节点；每卡带 区·类型 与读数；均值图与轮播在房间视图不出现。 */
+  {
+    const cfg=await p.evaluate(async()=>(await (await fetch('data/iot-nodes.json')).json()));
+    const want=cfg.nodes.filter(n=>String(n.roomId)==='106'&&n.type!=='camera').map(n=>n.name).sort();
+    const got=await p.evaluate(()=>({
+      names:[...document.querySelectorAll('#dkNodesZone .zi-card .zi-l b')].map(e=>e.innerText).sort(),
+      typed:[...document.querySelectorAll('#dkNodesZone .zi-card')].every(e=>e.querySelector('.zi-tp')&&e.querySelector('.zi-st')&&e.querySelector('.zi-v').innerText!==''),
+      marquee:(()=>{const e=document.querySelector('#iotPanel .np-view');return !e||e.hidden;})(),
+      chart:(()=>{const e=document.querySelector('#iotPanel .th-wrap');return !e||e.hidden;})()}));
+    out.push((got.names.join('|')===want.join('|')&&got.typed?'✅':'❌')+
+      ` ⑩ 106 组态物联=本房间非视觉节点等分卡（${got.names.join('/')} == 配置 ${want.join('/')}），每卡带 名称/类型/状态/读数 四要素`);
+    out.push((got.marquee&&got.chart?'✅':'❌')+' 106 房间视图撤掉全场均值图与无缝轮播（卡即表，不留两套）');
+  }
 }
 /* ①②③（2026-11-09 四次圈图）：106 右下两列带 + 底栏让位左栏 + 告警流加高 */
 {
@@ -205,26 +198,42 @@ for(const z of ROOMS){
       const sid=it.sampleId||((e.samples||[e.sample])[0]||{}).id;
       if(sid)sa[sid]=1;
       it.state==='done'?dn++:ts++;});});
-    const exp=[Object.keys(en).length,Object.keys(sa).length,dn,ts].join('/');
-    const nums=(D.grid.match(/-?\d+/g)||[]).slice(0,4).join('/');
-    out.push((nums===exp?'✅':'❌')+` ${z} 三子区域＝entrust-list 独立重算（屏上 ${nums} vs 复算 ${exp}=委托/样品/已完成/正在检测）`);
-    out.push((/委托任务/.test(D.grid)&&/关联/.test(D.grid)&&/样品/.test(D.grid)&&/试验项目/.test(D.grid)?'✅':'❌')+
-      ` ${z} 三子区域标题与口径说明在屏上（不是四个裸数字）: ${D.grid.replace(/\s+/g,' ').slice(0,64)}`);
+    /* ①（2026-11-10 圈图）：四块=委托/样品/试验项目/调度任务；样品拆「已完成检测·检测中」双色。
+       重算按块对块，不扫全文数字。 */
+    const saDone={},saTest={};
+    (el.records||[]).forEach(e=>{(e.items||[]).forEach(it=>{
+      if(!it.cad||String(it.cad).slice(0,3)!==zz)return;
+      if(it.state!=='done'&&it.state!=='testing')return;
+      const sid=it.sampleId||((e.samples||[e.sample])[0]||{}).id;
+      if(!sid)return; (it.state==='done'?saDone:saTest)[sid]=1;});});
+    const blocks=await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .zs2-g')].map(e=>({
+      t:(e.querySelector('.zs2-h span')||{}).innerText||'', v:(e.querySelector('.zs2-h b')||{}).innerText||'',
+      d:(e.querySelector('.zs2-d')||e.querySelector('.zs2-p')||{}).innerText||'',
+      bars:[...(e.querySelectorAll('.zs2-bar i')||[])].map(i=>Math.round(i.getBoundingClientRect().width))})));
+    const expV=[String(Object.keys(en).length),String(Object.keys(sa).length),(dn+'+'+ts)];
+    const gotV=blocks.slice(0,3).map(x=>x.v.replace(/\s+/g,''));
+    out.push((blocks.length===4&&gotV.join('|')===expV.join('|')?'✅':'❌')+
+      ` ${z} 前三块数值＝entrust-list 独立重算 ${expV.join('|')}（屏上 ${gotV.join('|')}），第四块=调度任务`);
+    out.push((blocks[1]&&new RegExp('已完成检测\\s*'+Object.keys(saDone).length).test(blocks[1].d.replace(/\s+/g,m=>m))&&
+      blocks[1].d.includes('检测中样品')&&blocks[1].bars.length===2?'✅':'❌')+
+      ` ${z} 样品双色段：已完成检测 ${Object.keys(saDone).length} · 检测中样品 ${Object.keys(saTest).length}，条=${blocks[1]&&blocks[1].bars.length} 段`);
+    out.push((blocks[3]&&blocks[3].t==='调度任务'?'✅':'❌')+' 第四块标题=调度任务（周期开关驱动的就是它）: '+blocks[3].d.replace(/\s+/g,' ').slice(0,44));
+    out.push((/委托任务/.test(blocks[0].t)&&!/去重/.test(blocks.map(b=>b.d).join(''))?'✅':'❌')+' 「去重」文案已撤下屏（口径进 aria）');
     /* ⑥（2026-11-10 圈图，参考图二）：周期开关回到 106 标题行——它驱动「本周期」补充行（真数据），
        三子区域本身保持当前态不随周期动（动了就是编数）。 */
     {const per=await p.evaluate(async()=>{
       const segN=[...document.querySelectorAll('.period .seg')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length;
       const p0=document.querySelector('#zsGrid .zs2-p')?.innerText||'';
-      const g0=[...document.querySelectorAll('#zsGrid .zs2-g b')].map(e=>e.innerText).join('|');
+      const g0=[...document.querySelectorAll('#zsGrid .zs2-g')].slice(0,3).map(e=>(e.querySelector('.zs2-h b')||{}).innerText||'').join('|');
       document.querySelector('[data-period=month]').click();
       await new Promise(r=>setTimeout(r,1600));
       const p1=document.querySelector('#zsGrid .zs2-p')?.innerText||'';
-      const g1=[...document.querySelectorAll('#zsGrid .zs2-g b')].map(e=>e.innerText).join('|');
+      await new Promise(r=>setTimeout(r,200));const g1=[...document.querySelectorAll('#zsGrid .zs2-g')].slice(0,3).map(e=>(e.querySelector('.zs2-h b')||{}).innerText||'').join('|');
       document.querySelector('[data-period=day]').click();
       await new Promise(r=>setTimeout(r,1200));
       return {segN,p0,p1,g0,g1};});
       out.push((per.segN===3?'✅':'❌')+` ${z} 周期开关回到标题行（可见 ${per.segN} 个按钮，日/月/年一组）`);
-      out.push((per.p0!==per.p1&&/本\S+：已完成/.test(per.p0)?'✅':'❌')+` 开关驱动「本周期」行：「${per.p0.slice(0,34)}」→「${per.p1.slice(0,34)}」`);
+      out.push((per.p0!==per.p1&&/已完成 \d+/.test(per.p0)?'✅':'❌')+` 开关驱动「调度任务」周期行：「${per.p0.slice(0,34)}」→「${per.p1.slice(0,34)}」`);
       out.push((per.g0===per.g1?'✅':'❌')+' 三子区域保持当前态、不随周期漂移（周期口径只进补充行）: '+per.g0);
     }
   } else if(wantKind==='检测项目数统计'){
@@ -267,7 +276,7 @@ for(const z of ROOMS){
 {
   await gotoZone(p,'107'); await p.waitForTimeout(3200);
   const a=await p.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return !!e&&!e.hidden&&e.getBoundingClientRect().width>2;};
-    const inR=id=>{const e=document.getElementById(id);return vis(id)&&e.parentElement&&e.parentElement.id==='rightCol';};
+    const inR=id=>{const e=document.getElementById(id);return vis(id)&&e.parentElement&&(e.parentElement.id==='rightCol'||e.parentElement.id==='zonePair');};
     const dk=document.querySelector('.dock').getBoundingClientRect();
     return {dkTitles:[...document.querySelectorAll('.dock .dk')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2;}).map(e=>e.querySelector('header b').innerText),
       dkX:Math.round(dk.x),dkW:Math.round(dk.width),sc:inR('dkScenes'),iot:inR('iotPanel'),cam:inR('cctvBox'),
@@ -278,7 +287,7 @@ for(const z of ROOMS){
     ` 107 右列底部上下叠：场景监测✓ 组态物联 101 式等高卡×${a.cards.length}（无摄像头画面块不出现）`);
   await gotoZone(p,'103'); await p.waitForTimeout(3200);
   const c=await p.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return !!e&&!e.hidden&&e.getBoundingClientRect().width>2;};
-    const inR=id=>{const e=document.getElementById(id);return vis(id)&&e.parentElement&&e.parentElement.id==='rightCol';};
+    const inR=id=>{const e=document.getElementById(id);return vis(id)&&e.parentElement&&(e.parentElement.id==='rightCol'||e.parentElement.id==='zonePair');};
     const tile=document.querySelector('#camGrid .cam-tile')?.getBoundingClientRect();
     const grid=document.querySelector('#camGrid')?.getBoundingClientRect();
     return {sc:inR('dkScenes'),cam:inR('cctvBox'),iot:vis('iotPanel'),
@@ -287,6 +296,46 @@ for(const z of ROOMS){
   out.push((c.sc&&c.cam&&!c.iot?'✅':'❌')+
     ` 103 右列底部上下叠：场景监测(上 y${c.scY}) → 画面(下 y${c.camY})；无非视觉节点 → 组态物联整块消失（不挂空面板）`);
   out.push((c.tileW>=c.gridW-26?'✅':'❌')+` 103 单路画面占满右列宽：格 ${c.tileW} ≥ 网格内容 ${c.gridW-24}`);
+
+  /* ①②③（2026-11-10 圈图，102/105/108/109/110）：逐房间的卡集合 + 监控按钮按房间出没 +
+     待布点场景=关闭 + 第二行左右分栏（105）+ 回总览构图不许缩（缓存键 bug 守卫）。 */
+  const ROOMSET={'102':{iot:1,cam:0,mon:0,sc:1,scSt:'关闭'},'105':{iot:1,cam:1,mon:1,sc:1,pair:1},'108':{iot:2,cam:0,mon:0,sc:1},'109':{iot:0,cam:1,mon:1,sc:0},'110':{iot:1,cam:0,mon:0,sc:0}};
+  /* 基线要钉稳：点 S1 按钮（键盘 '1' 会被聚焦控件吃掉——typeahead 抢键是真回归，
+     但守卫不该依赖按键），再轮询到补间落定（fr 连续两次一致）才量。 */
+  const s1fr=async()=>{
+    await p.click('.mode[data-mode=S1]');
+    let prev='',cur='';
+    for(let k=0;k<14;k++){ await p.waitForTimeout(700);
+      cur=await f.evaluate(()=>{const hk=document.getElementById('twin-v2-bridge');const c=JSON.parse((hk&&hk.dataset.cam)||'{}');
+        const v=window.visual106,TH=v.overview.position.constructor,hh=v.renderer.domElement.getBoundingClientRect();
+        let lx=1e9,rx=-1e9;for(const r of (v.g.rooms||[]))for(const pt of (r.points||[]))for(const y of [0,2.85]){const q=new TH(pt[0]*.05,y,pt[1]*.05).project(v.camera);if(q.z>1)continue;lx=Math.min(lx,(q.x*.5+.5)*hh.width);rx=Math.max(rx,(q.x*.5+.5)*hh.width);}
+        return JSON.stringify({fr:c.fr,w:Math.round(rx-lx),view:v.view});});
+      if(cur===prev)break; prev=cur; }
+    return JSON.parse(cur);};
+  const s0=await s1fr();
+  for(const [z,exp] of Object.entries(ROOMSET)){
+    await gotoZone(p,z); await p.waitForTimeout(3200);
+    const r=await p.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return !!e&&!e.hidden&&e.getBoundingClientRect().width>2;};
+      const cam=document.getElementById('cctvBox').getBoundingClientRect(), iot=document.getElementById('iotPanel').getBoundingClientRect();
+      return {iot:vis('iotPanel'),cam:vis('cctvBox'),mon:vis('cctvToggle'),sc:vis('dkScenes'),
+        cards:document.querySelectorAll('#dkNodesZone .zi-card').length,
+        scSt:(document.querySelector('#dkScenesGrid .st')||{}).innerText||'',
+        sameRow:Math.abs(cam.y-iot.y)<4&&cam.x<iot.x};});
+    out.push((r.iot===(exp.iot>0)&&r.cam===(exp.cam>0)&&r.mon===!!exp.mon&&r.sc===(exp.sc>0)&&(!exp.iot||r.cards===exp.iot)?'✅':'❌')+
+      ` ${z} 块集合对圈图：物联${exp.iot}卡/画面${exp.cam?'现':'隐'}/监控按钮${exp.mon?'显':'隐'}/场景${exp.sc?'现':'隐'}（屏上 cards=${r.cards}）`);
+    if(exp.scSt) out.push((r.scSt===exp.scSt?'✅':'❌')+` ${z} 待布点场景状态=「${exp.scSt}」（不是借绿点冒充正常）: 屏上「${r.scSt}」`);
+    if(exp.pair) out.push((r.sameRow?'✅':'❌')+' 105 第二行左右挨着：画面与组态物联同行（cam 左 iot 右）');
+  }
+  const backRaw=await s1fr();
+  const diag=await p.evaluate(()=>({sw:getComputedStyle(document.documentElement).getPropertyValue('--tw-stream-w').trim(),
+    rcw:Math.round(document.getElementById('rightCol').getBoundingClientRect().width),
+    railW:Math.round(document.querySelector('.rail').getBoundingClientRect().width),
+    dkHidden:document.getElementById('taskStrip').hidden,dkW:Math.round(document.getElementById('taskStrip').getBoundingClientRect().width),
+    iotW:Math.round(document.getElementById('iotPanel').getBoundingClientRect().width),
+    iotHidden:document.getElementById('iotPanel').hidden,
+    simple:document.body.dataset.zoneSimple,zoneView:document.body.dataset.zoneView}));
+  out.push((s0.view==='overall-101'&&backRaw.view==='overall-101'&&Math.abs(backRaw.w-s0.w)<=12&&Math.abs(backRaw.fr-s0.fr)<0.01?'✅':'❌')+
+    ` 房间来回后回总览构图不缩（fitOverview 缓存键含视锥身份的守卫）：${s0.w}px/fr${s0.fr} → ${backRaw.w}px/fr${backRaw.fr} @ ${JSON.stringify(diag)}`);
 }
 
 /* ⑤ 周期切换器（2026-11-10 ⑥ 后）：106 标题行重新挂上日/月/年——驱动「本周期」行；
@@ -295,7 +344,7 @@ await gotoZone(p, '106'); await p.waitForTimeout(3000);
 const segN=await p.evaluate(()=>[...document.querySelectorAll('.period .seg')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length);
 out.push((segN<=3?'✅':'❌')+` 同屏最多一份可见周期开关（当前 ${segN} 个按钮）`);
 const stDay=await p.evaluate(()=>document.getElementById('zsGrid').innerText.replace(/\s+/g,' ').trim());
-out.push((/委托任务/.test(stDay)&&/本\S+：已完成/.test(stDay)?'✅':'❌')+' 106 左栏统计＝三子区域＋本周期行: '+stDay.slice(0,52));
+out.push((/委托任务/.test(stDay)&&/调度任务/.test(stDay)&&/已完成 \d+/.test(stDay)?'✅':'❌')+' 106 左栏统计＝三子区域＋调度任务块: '+stDay.slice(0,58));
 /* 非 106 房间也一样：检测项目数统计是按周期变的，开关不能只对着 106 生效 */
 await gotoZone(p, '103'); await p.waitForTimeout(3000);
 const g1=await p.evaluate(()=>document.getElementById('zsGrid').innerText.replace(/\s+/g,' ').trim());

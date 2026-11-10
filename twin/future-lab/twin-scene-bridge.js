@@ -633,9 +633,14 @@ function cctvShow(m) {
   if (y + H > innerHeight - 8) y = Math.max(70, innerHeight - H - 10);
   pop.style.left = Math.round(x) + 'px'; pop.style.top = Math.round(y) + 'px';
   pop.hidden = false;
+  /* 修层级 bug（2026-11-10 圈图）：弹窗住在场景 iframe 里，iframe 层级低于宿主底栏——
+     弹窗一垂到屏幕下部就被调度队列/组态物联压在下面。开弹窗时知会宿主抬 iframe 一层，
+     关了就放下：底栏平时照常可交互，不该为一张临时卡让整页换层序。 */
+  parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'cctv-pop', open: true }, location.origin);
   clearInterval(CCTV.timer); CCTV.timer = setInterval(cctvPaint, 420);   /* 与 strip 同一节奏刷新，画面不会停在旧帧 */
 }
-function cctvHide() { if (CCTV.pop) CCTV.pop.hidden = true; clearInterval(CCTV.timer); CCTV.timer = 0; CCTV.idx = -1; }
+function cctvHide() { if (CCTV.pop) CCTV.pop.hidden = true; clearInterval(CCTV.timer); CCTV.timer = 0; CCTV.idx = -1;
+  parent.postMessage({ channel: 'future-lab-tech-blue-spatial', type: 'cctv-pop', open: false }, location.origin); }
 function cctvInit() {
   if (CCTV.pop) return;
   /* ⑧（2026-11-09 三次圈图）：按钮不再建在场景左上角——那里和左栏「运行指标」叠字（图二）。
@@ -1123,7 +1128,10 @@ function fitOverview() {
   let fx = 0, fy = 0;
   try { const fe = window.frameElement; if (fe) { const fr = fe.getBoundingClientRect(); fx = fr.left; fy = fr.top; } } catch (e) { }
   const x0 = a.right + 24 - fx, x1 = c.left - 24 - fx, y0 = 70 - fy, y1 = d.top - 12 - fy;
-  const key = [Math.round(innerWidth), Math.round(innerHeight), Math.round(x0), Math.round(x1), Math.round(y1)].join('x');
+  /* 缓存键必须带引擎视锥身份（natHH）：回总览时宿主会先因宽度同步发一次 reset——
+     那一下还在 close 视锥里测量，若键不含视锥半高，切完 overall 视锥后同键命中，
+     就把 close 视锥下解出的 fr 当成 overall 的用了（2026-11-10 实测：建模从 702px 缩成 417px）。 */
+  const key = [Math.round(innerWidth), Math.round(innerHeight), Math.round(x0), Math.round(x1), Math.round(y1), Math.round(natHH() * 1000)].join('x');
   if (key === fitKey && fitVal) return fitVal;
   const bandW = x1 - x0, bandH = y1 - y0;
   if (bandW < 240 || bandH < 180) return fallback;            /* 窗口小到不成样子时不硬解，沿用标定值 */
@@ -1179,11 +1187,16 @@ function fitDrillRoom(rid) {
   const bandW = x1 - x0, bandH = y1 - y0;
   if (bandW < 240 || bandH < 180) return fb;
   const v = visual, TH = v.overview.position.constructor, S = 0.05, host = v.renderer.domElement.getBoundingClientRect();
-  let lx = 1e9, rx = -1e9, ty = 1e9, by = -1e9;
+  let lx = 1e9, rx = -1e9, ty = 1e9, by = -1e9, mcx = 0, mcy = 0, mn = 0;
   const push = (x, y, z) => { const q = new TH(x, y, z).project(v.camera);
     if (q.z > 1) return;
     const px = (q.x * .5 + .5) * host.width, py = (-q.y * .5 + .5) * host.height;
     lx = Math.min(lx, px); rx = Math.max(rx, px); ty = Math.min(ty, py); by = Math.max(by, py); };
+  /* ④（2026-11-10 圈图，102）：居中目标与大小约束分家——
+     大小看设备包围盒（客户要看得见设备），中心看房间多边形投影质心（客户看到的"房间"是玻璃墙围起来的整体）。
+     102 的设备全挤在西侧（货架/登记台），按包围盒居中就把整个房间推歪；按质心才"正中间"。 */
+  const pushCenter = (x, y, z) => { const q = new TH(x, y, z).project(v.camera);
+    if (q.z > 1) return; mcx += (q.x * .5 + .5) * host.width; mcy += (-q.y * .5 + .5) * host.height; mn++; };
   /* 目标取「客户实际看到的那一坨」：本房间设备实体包围盒的 8 角投影——与 uxcheck/focuscheck
      量的口径同源。早先用房间多边形@2.85m 当代理，1920 下解出 k=2.075，实测建模占宽 1210px
      直接越过 1112px 带压进右列：高设备的视差让包围盒比多边形投影大 34%，代理不成立。
@@ -1202,8 +1215,9 @@ function fitDrillRoom(rid) {
   } else {
     for (const pt of room.points) { push(pt[0] * S, 0, pt[1] * S); push(pt[0] * S, 2.85, pt[1] * S); }
   }
+  for (const pt of room.points) pushCenter(pt[0] * S, 1.4, pt[1] * S);
   if (lx > rx - 1) return fb;
-  const w0 = rx - lx, h0 = by - ty, cx0 = (lx + rx) / 2, cy0 = (ty + by) / 2;
+  const w0 = rx - lx, h0 = by - ty, cx0 = mn ? mcx / mn : (lx + rx) / 2, cy0 = mn ? mcy / mn : (ty + by) / 2;
   const k = Math.min(bandW * FIT_FILL / w0, bandH * FIT_FILL / h0);
   const fr = +(frScale / k).toFixed(4);
   const cxNew = host.width / 2 + (cx0 - myPan[0] - host.width / 2) * k, cyNew = host.height / 2 + (cy0 - myPan[1] - host.height / 2) * k;
@@ -1216,12 +1230,17 @@ function fitDrillRoom(rid) {
   const c0 = visual.camera, hhBefore = (c0.top - c0.bottom) / 2;
   frScale = fr; setPan(pan[0], pan[1]); visual.render(); visual.camera.updateMatrixWorld(true);
   const hhAfter = (c0.top - c0.bottom) / 2;
-  lx = 1e9; rx = -1e9; ty = 1e9; by = -1e9;
-  for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) push(x, y, z);
+  lx = 1e9; rx = -1e9; ty = 1e9; by = -1e9; mcx = 0; mcy = 0; mn = 0;
+  if (hasDev && lo[0] < hi[0]) {
+    for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) push(x, y, z);
+  } else {
+    for (const pt of room.points) { push(pt[0] * S, 0, pt[1] * S); push(pt[0] * S, 2.85, pt[1] * S); }
+  }
+  for (const pt of room.points) pushCenter(pt[0] * S, 1.4, pt[1] * S);
   let fr2 = fr, pan2 = pan, w2 = null, h2 = null, k2 = null;
   if (lx < rx - 1) {
     w2 = rx - lx; h2 = by - ty;
-    const cx2 = (lx + rx) / 2, cy2 = (ty + by) / 2;
+    const cx2 = mn ? mcx / mn : (lx + rx) / 2, cy2 = mn ? mcy / mn : (ty + by) / 2;
     k2 = Math.max(0.2, Math.min(bandW * FIT_FILL / w2, bandH * FIT_FILL / h2));
     fr2 = +(fr / k2).toFixed(4);
     pan2 = [Math.round(pan[0] + ((x0 + x1) / 2 - cx2)), Math.round(pan[1] + ((y0 + y1) / 2 - cy2))];
