@@ -33,6 +33,19 @@ T('默认 aria-pressed', await p.evaluate(()=>document.getElementById('cctvToggl
 T('默认 body 无 cctv-on', await f.evaluate(()=>document.body.classList.contains('cctv-on')), false);
 T('默认无高亮标记', await f.locator('.node-marker.cctv-hi').count(), 0);
 T('默认浮层隐藏', await f.evaluate(()=>document.getElementById('cctvPop').hidden), true);
+// ②b（2026-11-10 ⑦）：hover 弹窗与开关解耦——icon 不亮，hover 视觉节点同样出「卡片+画面」
+const camAny=f.locator('.node-marker[data-type="camera"]').first();
+await camAny.hover(); await p.waitForTimeout(1200);
+const popOff=await f.evaluate(()=>{const q=document.getElementById('cctvPop'); if(!q||q.hidden)return {hidden:true};
+  const c=q.querySelector('canvas'),x=c.getContext('2d');let alpha=0;try{const d=x.getImageData(0,0,c.width,c.height).data;for(let i=3;i<d.length;i+=4)if(d[i]>10)alpha++;}catch(e){}
+  return {hidden:false,name:(q.querySelector('.pp-name')||{}).textContent,cov:+(alpha/(c.width*c.height)*100).toFixed(1),
+    on:JSON.parse(document.getElementById('twin-v2-bridge').dataset.cctv||'{}').on};});
+ok(!popOff.hidden&&popOff.on===false&&popOff.cov>60,`icon 未点亮时 hover 弹窗照样出画面（统一入口，两种状态一致）：「${popOff.name}」覆盖 ${popOff.cov}%，开关=${popOff.on}`);
+await f.evaluate(()=>{const m=document.querySelector('.node-marker[data-type="camera"]'); m.dispatchEvent(new PointerEvent('pointerout',{bubbles:true}));});
+await p.mouse.move(760,540);   /* 真把鼠标挪开：不离开元素再 hover，pointerover 根本不再触发（上一版 ④ 的假失败就在这） */
+await p.waitForTimeout(400);
+T('移开后（开关未亮）弹窗隐藏', await f.evaluate(()=>document.getElementById('cctvPop').hidden), true);
+
 // ③ 点击 → 高亮 4 个视觉节点
 await p.evaluate(()=>document.getElementById('cctvToggle').click()); await p.waitForTimeout(1400);
 const hi=await f.evaluate(()=>({n:document.querySelectorAll('.node-marker.cctv-hi').length,
@@ -52,7 +65,8 @@ const dotG=await f.evaluate(()=>{const g=document.getElementById('twin-v2-bridge
   return {vis, feed: g&&g.dataset.feedDots!=null?+g.dataset.feedDots:-1};});
 ok(dotG.feed>0&&dotG.feed===dotG.vis,`离屏渲染摘除全部可见状态灯：摘 ${dotG.feed} == 主视图可见光点 ${dotG.vis}（画面里不会再飘灯，主视图照常带灯）`);
 
-// ④ 悬停出画面
+// ④ 悬停出画面（先把鼠标放到别处，保证 hover 是一次真正的进入）
+await p.mouse.move(760,540); await p.waitForTimeout(300);
 const first=f.locator('.node-marker.cctv-hi').first();
 await first.hover(); await p.waitForTimeout(1200);
 const pop=await S('#cctvPop');
@@ -65,20 +79,25 @@ const info=await f.evaluate(()=>{const q=document.getElementById('cctvPop'); if(
   let uniq=new Set(), alpha=0;
   try{const d=x.getImageData(0,0,c.width,c.height).data;
     for(let i=0;i<d.length;i+=4){ if(d[i+3]>10) alpha++; uniq.add((d[i]>>3)+','+(d[i+1]>>3)+','+(d[i+2]>>3)); }}catch(e){}
-  return {hidden:false, title:q.querySelector('.pp-h b').textContent, foot:q.querySelector('.pp-f').textContent,
-    uniq:uniq.size, cov:+(alpha/(c.width*c.height)*100).toFixed(1), noFeed:q.classList.contains('no-feed'),
+  const glow=(()=>{const m=document.querySelector('.node-marker.cctv-hi');return m?getComputedStyle(m).boxShadow:'';})();
+  return {hidden:false, title:q.querySelector('.pp-name').textContent, room:q.querySelector('.pp-room').textContent,
+    id:q.querySelector('.pp-id').textContent, st:q.querySelector('.status-chip b').textContent,
+    time:q.querySelector('.pp-time').textContent, aria:q.getAttribute('aria-label'),
+    screenText:q.innerText.replace(/\s+/g,' '),
+    uniq:uniq.size, cov:+(alpha/(c.width*c.height)*100).toFixed(1), noFeed:q.classList.contains('no-feed'), glow,
     vw:innerWidth, vh:innerHeight, r:Math.round(q.getBoundingClientRect().right), bo:Math.round(q.getBoundingClientRect().bottom)};});
-ok(!info.hidden,'悬停后浮层可见');
-ok((info.title||'').includes('视觉')||(info.title||'').includes('10'),`浮层标题是该点位（「${info.title}」，与标记 title 同源）`);
-ok(!info.noFeed&&info.uniq>12&&info.cov>60,`画面真有内容：不同色 ${info.uniq} 种、覆盖 ${info.cov}%（不是空白也不是纯色）`);
-ok(/渲染色/.test(info.foot)&&/非现场实拍/.test(info.foot),`诚实标注在位：「${info.foot}」`);
-ok(info.r<=info.vw&&info.bo<=info.vh,`浮层不越出场景视口（右 ${info.r}/${info.vw}，底 ${info.bo}/${info.vh}）`);
+ok(!info.hidden,'悬停后弹窗可见');
+ok((info.title||'').includes('视觉')&&/^10\d/.test((info.room||'').trim())&&/^IOT-/.test(info.id||''),`弹窗=图一结构：名称「${info.title}」·房间「${info.room}」·编号 ${info.id}·状态「${info.st}」·更新时间 ${info.time}`);
+ok(!info.noFeed&&info.uniq>12&&info.cov>60,`画面嵌在卡里且真有内容：不同色 ${info.uniq} 种、覆盖 ${info.cov}%（不是空白也不是纯色）`);
+ok(!/渲染色|非现场实拍|视频通道/.test(info.screenText)&&/非现场实拍/.test(info.aria),`「渲染色·非现场实拍·视频通道二期接入」已撤下屏、口径进 aria（①）`);
+ok(/rgba\(64, 158, 255/.test(info.glow||''),`高亮呼吸带荧光蓝外发光（②）: ${String(info.glow||'').slice(0,80)}`);
+ok(info.r<=info.vw&&info.bo<=info.vh,`弹窗不越出场景视口（右 ${info.r}/${info.vw}，底 ${info.bo}/${info.vh}）`);
 // ⑤ 换第二个点位：画面必须跟着换（不是同一帧糊过去）
 const second=f.locator('.node-marker.cctv-hi').nth(1);
 await second.hover(); await p.waitForTimeout(1400);
 const info2=await f.evaluate(()=>{const q=document.getElementById('cctvPop'); const c=q.querySelector('canvas'), x=c.getContext('2d');
   let s=0; try{const d=x.getImageData(0,0,c.width,c.height).data; for(let i=0;i<d.length;i+=1600) s+=d[i]+d[i+1]+d[i+2];}catch(e){}
-  return {title:q.querySelector('.pp-h b').textContent, sig:s};});
+  return {title:q.querySelector('.pp-name').textContent, sig:s};});
 ok(info2.title!==info.title,`换点位标题跟着换：「${info.title}」→「${info2.title}」`);
 // ⑥ 移开 → 关；再点 icon → 灭
 await f.evaluate(()=>{const m=document.querySelector('.node-marker.cctv-hi'); m.dispatchEvent(new PointerEvent('pointerout',{bubbles:true}));});
@@ -87,6 +106,12 @@ T('移开后浮层隐藏', await f.evaluate(()=>document.getElementById('cctvPop
 await p.evaluate(()=>document.getElementById('cctvToggle').click()); await p.waitForTimeout(1000);
 T('再点 icon 取消高亮', await f.locator('.node-marker.cctv-hi').count(), 0);
 T('取消后 aria-pressed=false', await p.evaluate(()=>document.getElementById('cctvToggle').getAttribute('aria-pressed')), 'false');
+{await p.mouse.move(760,540); await p.waitForTimeout(300);
+ const c2=f.locator('.node-marker[data-type="camera"]').first();
+ await c2.hover(); await p.waitForTimeout(1200);
+ const offPop=await f.evaluate(()=>{const q=document.getElementById('cctvPop');return q&&!q.hidden;});
+ ok(offPop,'开关取消后 hover 弹窗依旧（两种状态完全一致，⑦）');
+ await f.evaluate(()=>{const m=document.querySelector('.node-marker[data-type="camera"]'); m.dispatchEvent(new PointerEvent('pointerout',{bubbles:true}));});}
 // ⑦ 键盘可达（标记本身是 button[tabindex=0]，icon 也必须能纯键盘用）
 await p.keyboard.press('Tab');   /* 交给页面自然焦点顺序，只验 icon 可聚焦可切换 */
 const kb=await p.evaluate(()=>{const btn=document.getElementById('cctvToggle'); btn.focus();
@@ -98,6 +123,8 @@ T('键盘路径后 aria-pressed 与高亮一致', await p.evaluate(()=>document.
 await f.evaluate(()=>{const m=document.querySelector('.node-marker.cctv-hi'); m.focus();}); await p.waitForTimeout(900);
 ok(await f.evaluate(()=>!document.getElementById('cctvPop').hidden),'键盘聚焦 camera 标记同样出画面（与悬停同一出口）');
 await p.screenshot({path:'/tmp/twin-qa/cctv-on.png'});
+{const tiles=await p.evaluate(()=>[...document.querySelectorAll('.cam-tile')].map(e=>({st:!!e.querySelector('.st'),aria:e.getAttribute('aria-label')||''})));
+ ok(tiles.length>=4&&tiles.every(t=>!t.st&&/非现场实拍/.test(t.aria)),'右下格子「渲染色·非现场实拍」撤屏、口径进 aria：'+tiles.length+' 格');}
 ok(err.length===0,'无 pageerror/console error: '+err.slice(0,3).join(' | '));
 console.log(out.join('\n'));
 const bad=out.filter(l=>l.startsWith('❌')).length;

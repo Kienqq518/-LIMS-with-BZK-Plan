@@ -4,18 +4,21 @@
    三次圈图（2026-11-09）：开关按钮从场景左上角搬进宿主顶栏（图三位）——
    左上角和左栏「运行指标」叠字。#cctvBtn 一族规则随按钮退役；
    高亮标记（.cctv-hi）与悬浮画面（#cctvPop）仍在本层。 */
-/* 4 个视觉节点的高亮：呼吸环，与状态光点同一族动效；reduced-motion 下只留静态描边 */
-.node-marker.cctv-hi{border-color:var(--tw-color-brand);box-shadow:0 0 0 4px var(--tw-color-brand-soft);
- animation:cctvBreath 1.6s ease-in-out infinite}
-@keyframes cctvBreath{0%,100%{box-shadow:0 0 0 3px var(--tw-color-brand-soft)}50%{box-shadow:0 0 0 7px var(--tw-color-brand-soft)}}
+/* 4 个视觉节点的高亮：⑧（2026-11-10 圈图）「闪烁不明显，加荧光蓝」——
+   呼吸环升级为双层：品牌蓝描边 + 荧光外发光，50% 峰值时外扩到 26px；reduced-motion 只留静态描边+常亮辉光 */
+.node-marker.cctv-hi{border-color:var(--tw-color-brand);
+ box-shadow:0 0 0 4px var(--tw-color-brand-soft),0 0 14px 3px rgba(64,158,255,.5);
+ animation:cctvBreath 1.2s ease-in-out infinite}
+@keyframes cctvBreath{
+ 0%,100%{box-shadow:0 0 0 3px var(--tw-color-brand-soft),0 0 8px 2px rgba(64,158,255,.3)}
+ 50%{box-shadow:0 0 0 7px var(--tw-color-brand-soft),0 0 26px 8px rgba(64,158,255,.75)}}
 @media (prefers-reduced-motion:reduce){.node-marker.cctv-hi{animation:none}}
-#cctvPop{position:fixed;z-index:8;width:252px;padding:0;overflow:hidden;
- background:var(--tw-glass-panel);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);
- box-shadow:var(--tw-shadow-card);backdrop-filter:var(--tw-blur) var(--tw-sat);-webkit-backdrop-filter:var(--tw-blur) var(--tw-sat)}
-#cctvPop canvas{display:block;width:252px;height:auto;background:#0d1420}
-#cctvPop .pp-h{display:flex;align-items:baseline;gap:6px;padding:6px 8px 2px}
-#cctvPop .pp-h b{font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-1)}
-#cctvPop .pp-h span{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto}
-#cctvPop .pp-f{padding:2px 8px 7px;font-size:var(--tw-fs-micro);color:var(--tw-ink-4)}
-#cctvPop.no-feed canvas{opacity:.25}
-#cctvPop.no-feed .pp-f{color:var(--tw-color-warnAmber)}
+/* ⑦（2026-11-10 圈图）：hover 弹窗=节点卡结构（interface.css 的 .node-card 一族）+ 画面嵌在卡中部；
+   「渲染色·非现场实拍」文案已撤上屏（口径进 aria）。 */
+#cctvPop{position:fixed;z-index:8;width:292px;max-width:calc(100% - 24px)}
+#cctvPop .cctv-video{margin:0 -17px 12px;position:relative}
+#cctvPop .cctv-video canvas{display:block;width:100%;height:auto;background:#0d1420}
+#cctvPop .cctv-video::after{content:"";position:absolute;inset:0;border:1px solid var(--tw-glass-border);border-left:0;border-right:0;pointer-events:none}
+#cctvPop.no-feed .cctv-video canvas{opacity:.25}
+#cctvPop .card-meta{margin:14px 0 12px}
+#cctvPop .card-meta .status-chip b{font-weight:600}

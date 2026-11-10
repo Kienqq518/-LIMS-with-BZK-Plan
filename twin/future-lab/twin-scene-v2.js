@@ -135,11 +135,13 @@
     ],
     testItems: [
       { k: 'all', label: '试验项目合计', head: true, computed: function (v) { return v.testing + v.pending + v.done; } },
-      { k: 'testing', label: '正在检测', of: 'all' },
-      { k: 'pending', label: '待检测', of: 'all' },
-      { k: 'done', label: '已完成检测', cls: 'ok', of: 'all' },
-      { k: 'overdue', label: '未完成中·逾期', cls: 'warn', noPct: true, lims: true, pick: 'overdue' },
-      { k: 'dueSoon', label: '未完成中·临期(3天内)', cls: 'due', noPct: true, lims: true, pick: 'dueSoon' }
+      /* ⑤（2026-11-10 圈图）：tone=数字颜色必须与它头顶的分段条同色（谁是谁一眼对上）；
+         row:2=「未完成中」两项下移第二行，头顶配一条与「正在检测+待检测」等长的双线。 */
+      { k: 'testing', label: '正在检测', of: 'all', tone: '--tw-st-working' },
+      { k: 'pending', label: '待检测', of: 'all', tone: '--tw-st-warn' },
+      { k: 'done', label: '已完成检测', cls: 'ok', of: 'all', tone: '--tw-st-ready' },
+      { k: 'overdue', label: '未完成中·逾期', cls: 'warn', noPct: true, lims: true, pick: 'overdue', row: 2, tone: '--tw-st-alarm' },
+      { k: 'dueSoon', label: '未完成中·临期(3天内)', cls: 'due', noPct: true, lims: true, pick: 'dueSoon', row: 2, tone: '--tw-st-warn' }
     ],
     dispatch: [
       { k: 'done', label: '调度任务已完成', head: true, cls: 'ok' },
@@ -159,7 +161,8 @@
      白吃 ~150px 高度，还把该当主角的三维画面挤掉三分之一。 */
   var COMPACT_BAR = {
     entrust: { parts: ['power', 'safety'], colors: ['--tw-st-working', '--tw-st-cat'] },
-    testItems: { parts: ['testing', 'pending', 'done'], colors: ['--tw-st-working', '--tw-st-warn', '--tw-st-ready'] }
+    testItems: { parts: ['testing', 'pending', 'done'], colors: ['--tw-st-working', '--tw-st-warn', '--tw-st-ready'],
+      parts2: ['overdue', 'dueSoon'], colors2: ['--tw-st-alarm', '--tw-st-warn'], basis2: ['testing', 'pending'] }
   };
   function renderTables() {
     if (!status || !status.panels) return;
@@ -174,7 +177,9 @@
         return '<section class="dtable" data-key="' + key + '">' +
           '<header><b>' + escapeHtml(per[key].title) + '</b><span class="dt-q"></span><span class="dt-v">—</span><span class="dt-c"></span></header>' +
           '<div class="dt-bar" role="img" hidden></div>' +
-          '<div class="dt-detail"></div></section>';
+          '<div class="dt-detail"></div>' +
+          '<div class="dt-bar dt-bar2" role="img" hidden></div>' +
+          '<div class="dt-detail dt-detail2"></div></section>';
       }).join('');
     }
     /* 面板头：来源词与更新时间从屏上撤掉（2026-11-07 圈图），但「数据延迟」必须留着——
@@ -202,15 +207,18 @@
       ce.innerHTML = c == null ? '' : '<i class="d ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲' : '▼') + Math.abs(c) + '%</i>' +
         ({ day: '较上日', month: '较上月', year: '较去年' })[st.period];
       /* 分解行：head 那行的数字就是右侧大数，不再重复一遍标签文字 */
-      var subs = rows.filter(function (r) { return r !== head; });
-      sec.querySelector('.dt-detail').innerHTML = subs.map(function (r) {
+      var subs = rows.filter(function (r) { return r !== head && !r.row; });
+      var subs2 = rows.filter(function (r) { return r !== head && r.row === 2; });
+      /* FR-49（2026-11-08 圈图）：屏上的「LIMS」角标撤掉——左栏是运行镜像，不是数据字典，
+         来源标记飘在数字前面反而成了噪声。口径本身不能丢：并进这一行的 aria-label，
+         读屏与 QA 仍复核得到，与 FR-41/FR-43「来源与时间戳一律转 aria-label、不上屏」同一条纪律。
+         ①（2026-11-10）：行一/行二共用同一个构造器——逾期/临期下移第二行时，
+         明细清单与 LIMS 口径的 aria 一字不能丢（plancheck 抓到过一次只留口径不留明细）。 */
+      function rowHTML(r) {
         var val = valOf(r);
         if (val == null) return '<span class="dt-i na"><span class="lb">' + escapeHtml(r.label) + '</span><b class="v">—</b></span>';
         var base = r.of ? v[r.of] : null;
         var pct = (!r.noPct && base) ? Math.round(val / base * 100) + '%' : '';
-        /* FR-49（2026-11-08 圈图）：屏上的「LIMS」角标撤掉——左栏是运行镜像，不是数据字典，
-           来源标记飘在数字前面反而成了噪声。口径本身不能丢：并进这一行的 aria-label，
-           读屏与 QA 仍复核得到，与 FR-41/FR-43「来源与时间戳一律转 aria-label、不上屏」同一条纪律。 */
         var ariaBits = [];
         if (r.pick) {
           var list = planItems.filter(function (x) { return x[r.pick]; });
@@ -219,9 +227,34 @@
         }
         if (r.lims) ariaBits.push('口径来自 LIMS「要求检测完成时间」，当前为 Mock 数据，二期接口接入后自动变真值' + (p.note ? '。' + p.note : ''));
         var aria = ariaBits.length ? ' aria-label="' + escapeHtml(ariaBits.join('。')) + '"' : '';
-        return '<span class="dt-i' + (r.cls ? ' ' + r.cls : '') + '"' + aria + '><span class="lb">' + escapeHtml(r.label) + '</span>' +
-          '<b class="v">' + val + '</b>' + (pct ? '<span class="pct">' + pct + '</span>' : '') + '</span>';
-      }).join('');
+        return '<span class="dt-i' + (r.cls ? ' ' + r.cls : '') + '"' + aria + (r.tone ? ' data-tone="' + r.tone + '"' : '') + '><span class="lb">' + escapeHtml(r.label) + '</span>' +
+          '<b class="v"' + (r.tone ? ' style="color:var(' + r.tone + ')"' : '') + '>' + val + '</b>' + (pct ? '<span class="pct">' + pct + '</span>' : '') + '</span>';
+      }
+      sec.querySelector('.dt-detail').innerHTML = subs.map(rowHTML).join('');
+      /* ⑤ 第二行（未完成中·逾期/临期）+ 头顶二级条：
+         二级条总长 == 一级条「正在检测+待检测」两段合计的宽度（圈图原话），
+         内部按 逾期:临期 的真实数量比例分色分段；数字颜色与所属分段同色。 */
+      var bar2 = sec.querySelector('.dt-bar2'), d2 = sec.querySelector('.dt-detail2');
+      /* 注意：一级条的 cfg 在下方才赋值（var 提升让它此刻是 undefined）——二级条必须自己取配置 */
+      var cfg2 = COMPACT_BAR[key];
+      if (cfg2 && cfg2.parts2 && subs2.length) {
+        var seg2 = [], sum2 = 0, basis = 0;
+        cfg2.basis2.forEach(function (k2) { basis += (v[k2] || 0); });
+        cfg2.parts2.forEach(function (k2) {
+          var r2 = rows.filter(function (x) { return x.k === k2; })[0]; if (!r2) return;
+          var vv = valOf(r2) || 0; sum2 += vv; seg2.push({ r: r2, v: vv });
+        });
+        d2.innerHTML = subs2.map(rowHTML).join('');
+        if (hv && basis > 0 && seg2.length) {
+          bar2.hidden = false;
+          bar2.innerHTML = '<span class="dt-bar2-inner" style="width:' + Math.min(100, basis / hv * 100).toFixed(2) + '%">' +
+            seg2.map(function (x, i2) {
+              return '<i style="width:' + (sum2 ? x.v / sum2 * 100 : 50).toFixed(2) + '%;background:var(' + cfg2.colors2[i2 % cfg2.colors2.length] + ')"></i>';
+            }).join('') + '</span>';
+          bar2.setAttribute('aria-label', '未完成中构成：' + seg2.map(function (x) { return x.r.label + ' ' + x.v; }).join(' · ') +
+            '（条长与上方「正在检测＋待检测」等长）');
+        } else { bar2.hidden = true; bar2.innerHTML = ''; }
+      } else if (d2) { d2.innerHTML = ''; if (bar2) { bar2.hidden = true; bar2.innerHTML = ''; } }
       /* 分段条：各部分相加必须等于大数才画；宽度用真实比例（不是四舍五入后的百分比） */
       var bar = sec.querySelector('.dt-bar'), cfg = COMPACT_BAR[key], sum = 0, segs = [];
       if (cfg && hv) {
@@ -411,7 +444,58 @@
         + '<b class="v">' + escapeHtml(val) + '</b></div></div>';
     }).join('');
   }
-  function renderZoneView() { if (st.mode !== 'ZONE') return; renderZoneRail(); renderZoneRunning(); renderZoneNodes(); }
+  function renderZoneView() { if (st.mode !== 'ZONE') return; renderZoneRail(); renderZoneRunning(); renderZoneNodes(); renderZoneIotPanel(); }
+
+  /* ⑤（2026-11-10 圈图）：房间视图带右列的组态物联块重排——
+     除视觉外本房间有几个物联节点，就把整块等分成几行、一行一节点、行高一致；
+     撤掉无缝轮播（节点本来就少，滚动是总览大清单的做法），全场均值图也不在房间视图出现
+     （节点卡自己就是本房间逐点真数，均值图在这里没有增量信息）。 */
+  function renderZoneIotPanel() {
+    var pnl = $('#iotPanel'); if (!pnl) return;
+    var inBand = pnl.parentElement && pnl.parentElement.classList.contains('zb-r');
+    var thw = pnl.querySelector('.th-wrap'), npv = pnl.querySelector('.np-view');
+    var zb = pnl.querySelector('#dkNodesZone');
+    if (!inBand) {
+      if (thw) thw.hidden = false; if (npv) npv.hidden = false;
+      if (zb) { zb.hidden = true; zb.innerHTML = ''; }
+      return;
+    }
+    if (!zb) {
+      zb = document.createElement('div'); zb.id = 'dkNodesZone';
+      zb.setAttribute('role', 'list'); zb.setAttribute('aria-label', '本房间物联节点（等分卡片，无滚动）');
+      pnl.appendChild(zb);
+    }
+    if (thw) thw.hidden = true; if (npv) npv.hidden = true; zb.hidden = false;
+    var ns = (envNodes || []).filter(function (n) { return String(n.roomId) === String(st.zone) && n.type !== 'camera'; })
+      .sort(function (a, b) { return String(a.id).localeCompare(String(b.id)); });
+    zb.style.gridTemplateRows = 'repeat(' + Math.max(1, ns.length) + ',minmax(0,1fr))';
+    zb.innerHTML = ns.map(function (n) {
+      var stw = n.status === 'normal' ? '正常' : (n.status === 'offline' ? '离线' : (n.status || '—'));
+      var dot = n.status === 'offline' ? ' off' : (n.status === 'normal' ? '' : ' bad');
+      var val = nodeReading(n) || '—';
+      return '<div class="zi-card" role="listitem" data-node="' + escapeHtml(n.id) + '"'
+        + ' aria-label="' + escapeHtml(n.name + '，' + NODE_CN(n.type) + '，状态 ' + stw + '，数据 ' + val) + '">'
+        + '<div class="zi-l"><i class="zi-dot' + dot + '"></i><div class="zi-t"><b>' + escapeHtml(n.name) + '</b>'
+        + '<span>' + escapeHtml(n.roomId + ' 区 · ' + NODE_CN(n.type)) + '</span></div></div>'
+        + '<div class="zi-v">' + escapeHtml(val) + '</div></div>';
+    }).join('');
+  }
+  /* ②（2026-11-10 圈图）：设备运行状态钉在左栏底部后，「无人化调度任务」块顶边跟着它的标题走——
+     底栏 top 由 JS 按实测矩形对齐（CSS 猜不出内容高度），回总览/非无人化房间时清掉内联值。 */
+  function syncZoneBandTop() {
+    /* 圆环是异步出图的（TwinCharts pending 重试），首量时 rd-wrap 还是塌的——
+       renderCharts 尾部会再叫一次本函数，底栏顶边永远跟着圆环的最终位置。 */
+    var dk = $('#taskStrip'), rd = $('#railDev'); if (!dk || !rd) return;
+    var on = st.mode === 'ZONE' && document.body.dataset.unmanned === '1';
+    if (on && !dk.hidden) {
+      var q = rd.getBoundingClientRect();
+      /* .dock 住在 .stage 里（absolute，stage 从顶栏下 y=56 起算），
+         railDev 的 rect 是视口坐标——直接写 top 会整体低一个顶栏高（zoneview ① 抓到 56px 偏差）。 */
+      var sr = (document.querySelector('.stage') || dk.offsetParent || document.body).getBoundingClientRect();
+      if (q.height > 2) { dk.style.top = Math.round(q.top - sr.top) + 'px'; dk.style.height = 'auto'; return; }
+    }
+    dk.style.top = ''; dk.style.height = '';
+  }
 
   /* 样品按名称分布（原在退役面板的「样品台账」块里）：合计与存量不一致必须当场说出来，不静默。 */
   function sampleSpread(sp) {
@@ -613,13 +697,13 @@
         + escapeHtml(n.id + ' ' + n.name + '，位于 ' + n.roomId + ' 区，' + nodeReading(n) + '；当前画面是孪生场景按该点位坐标渲的色，非现场实拍；视频通道二期接入') + '">'
         + '<canvas width="320" height="180"></canvas>'
         + '<div class="cm"><i class="rec"></i><b>' + escapeHtml(n.name) + '</b><span class="rm">' + escapeHtml(n.roomId) + ' 区</span></div>'
-        + '<div class="wait">画面待接入</div>'
-        /* 右下角原来贴的是点位读数 nodeReading(n)，对摄像头那类返回「画面未接入」——
-           画面都渲出来了还写"未接入"，是自己跟自己打架。真实情况是：
-           **视频通道确实没接，屏上是孪生场景按该点位坐标渲的色**，所以标这个。
-           二期接上 RTSP/WebRTC 后，这段换成真视频纹理，标注改回「实拍」。 */
-        + '<div class="st">渲染色 · 非现场实拍</div></div>';
+        + '<div class="wait">画面待接入</div></div>';
     }).join('');
+    /* ①（2026-11-10 圈图）：格子里的「渲染色 · 非现场实拍」文案撤下屏——口径不丢，
+       已在每格的 aria-label 里（「当前画面是孪生场景按该点位坐标渲的色，非现场实拍；视频通道二期接入」）。
+       ④（同日）：单路画面不再挤在 2 列网格的半列里——列数/行数随路数走，一格就占满整行。 */
+    el.style.gridTemplateColumns = cams.length === 1 ? '1fr' : '1fr 1fr';
+    el.style.gridTemplateRows = 'repeat(' + Math.max(1, Math.ceil(cams.length / 2)) + ',minmax(0,1fr))';
     var c = $('#cctvCnt'); if (c) c.textContent = cams.length + ' 路 · ' + cams.map(function (n) { return n.roomId; }).join('/');
     camList = cams.slice(0, 4);
     sendScene('feeds', { cams: camList.map(function (n) { return { id: n.id, roomId: n.roomId, position: n.position }; }) });
@@ -687,6 +771,9 @@
     var el = $('#dkScenesGrid'); if (!el) return;
     var list = (safety && safety.scenes) || [];
     if (scRoom) list = list.filter(function (x) { return String(x.roomId) === String(scRoom); });
+    /* ③（2026-11-10 圈图）：场景块占满分给它的高度——行数跟着场景数走（2 列 × ceil(n/2) 行），
+       106 只有 1 套场景时不再让六格网格把内容挤成一小坨。 */
+    el.style.gridTemplateRows = 'repeat(' + Math.max(1, Math.ceil(list.length / 2)) + ',minmax(0,1fr))';
     /* 场景状态 = 两半事实拼起来：所在房间未闭环告警（mock 给）+ 所辖点位当前读数越限（宿主 envNodes 给，
        与右列组态物联、场景节点层同一份读数，不另建第二套真相）。阈值取场景方案文档里的规则原值：
        温度 >28℃、湿度 >70%RH、气体 exceeded、烟感/水浸 detected。 */
@@ -823,19 +910,30 @@
            四格周期数不再出现：产品负责人说「不摆总数当结论」，试验项目就分开给两个数。 */
         if (hasTask && d.room) {
           var rm = d.room;
-          /* 三子区域是「当前态」口径（在检/已检的试验项链条），与日/月/年无关——
-             周期开关在这里必须藏起来：留着它，点了高亮换了、三个数一个都不动。 */
-          if (perBtn) perBtn.hidden = true;
-          /* ④（2026-11-09 四次圈图「很丑很丑」）：三行紧凑卡——数字左置大号等宽，
-             标题+一行口径小字右置；长句压成短语，完整口径进 aria，不再换行糊成三坨。 */
-          g.innerHTML = '<div class="zs3">'
-            + '<div class="zs3-c"><b>' + rm.entrusts + '</b><div class="zs3-t"><span>委托任务</span><i>关联委托单 · 去重</i></div></div>'
-            + '<div class="zs3-c"><b>' + rm.samples + '</b><div class="zs3-t"><span>样品</span><i>关联样品 · 去重</i></div></div>'
-            + '<div class="zs3-c"><b>' + rm.items.done + '<em>+</em>' + rm.items.testing + '</b><div class="zs3-t"><span>试验项目</span><i>已完成 ＋ 正在检测</i></div></div>'
+          /* ⑥（2026-11-10 圈图，参考图二）：任务统计改「指标组」样式——标题左/大数右/分段条在下/一行短语口径。
+             日月年切换回到标题行：它不驱动三子区域（当前态口径，跟着周期动就是编数），
+             驱动底部「本周期」行——task-stats periods 的真数（已完成/执行中/异常挂起/排队），
+             开关有真活干，不是切了不动的死控件。 */
+          var pv = ((d.periods || {})[st.period]) || {};
+          var seg = function (w, tok) { return '<i style="width:' + (w > 0 ? w.toFixed(2) : 0) + '%;background:var(' + tok + ')"></i>'; };
+          var tiSum = Math.max(1, rm.items.done + rm.items.testing);
+          g.innerHTML = '<div class="zs2">'
+            + '<div class="zs2-g"><div class="zs2-h"><span>委托任务</span><b style="color:var(--tw-st-working)">' + rm.entrusts + '</b></div>'
+            + '<i class="zs2-bar">' + seg(100, '--tw-st-working') + '</i><div class="zs2-d">关联委托单 · 去重</div></div>'
+            + '<div class="zs2-g"><div class="zs2-h"><span>样品</span><b style="color:var(--tw-st-cat)">' + rm.samples + '</b></div>'
+            + '<i class="zs2-bar">' + seg(100, '--tw-st-cat') + '</i><div class="zs2-d">关联样品 · 去重（非收样/还样口径）</div></div>'
+            + '<div class="zs2-g"><div class="zs2-h"><span>试验项目</span><b><span style="color:var(--tw-st-ready)">' + rm.items.done + '</span><em>+</em><span style="color:var(--tw-st-working)">' + rm.items.testing + '</span></b></div>'
+            + '<i class="zs2-bar">' + seg(rm.items.done / tiSum * 100, '--tw-st-ready') + seg(rm.items.testing / tiSum * 100, '--tw-st-working') + '</i><div class="zs2-d">已完成 ＋ 正在检测 · 不给总数</div></div>'
+            + '<div class="zs2-p" role="status">本' + ({ day: '日', month: '月', year: '年' })[st.period] + '：已完成 <b style="color:var(--tw-st-ready)">' + (pv.done == null ? '—' : pv.done) + '</b>'
+            + ' · 执行中 <b style="color:var(--tw-st-working)">' + (pv.running == null ? '—' : pv.running) + '</b>'
+            + ' · 异常挂起 <b style="color:var(--tw-st-alarm)">' + (pv.abnormal == null ? '—' : pv.abnormal) + '</b>'
+            + ' · 排队 <b style="color:var(--tw-st-idle)">' + (pv.queued == null ? '—' : pv.queued) + '</b></div>'
             + '</div>';
+          if (perBtn) perBtn.hidden = false;
           g.dataset.kind = head;
           g.setAttribute('aria-label', z + ' 区任务统计（本房间口径）：关联委托 ' + rm.entrusts + ' 个，关联样品 ' + rm.samples
-            + ' 批，试验项目 已完成 ' + rm.items.done + ' 正在检测 ' + rm.items.testing);
+            + ' 批，试验项目 已完成 ' + rm.items.done + ' 正在检测 ' + rm.items.testing
+            + '；本周期 已完成 ' + pv.done + ' 执行中 ' + pv.running + ' 异常挂起 ' + pv.abnormal + ' 排队 ' + pv.queued);
           return;
         }
         g.innerHTML = cells.map(function (x) {
@@ -1029,7 +1127,7 @@
   }
 
 
-  addEventListener('resize', function () { syncStreamW(); });   /* ② 窗口一变，物联块宽度就变，右列跟着 */
+  addEventListener('resize', function () { syncStreamW(); syncZoneBandTop(); });   /* ②③ 窗口一变：右列宽度跟物联块、底栏顶边跟左栏圆环 */
   /* ⑧（2026-11-09 三次圈图）监控视角开关：按钮在顶栏（图三位），命令进场景层；
      场景层 dataset.cctv 是唯一回显，宿主按钮态在装载与恢复时都跟它对齐。 */
   var cctvOn = false;
@@ -1171,7 +1269,8 @@
        但再没有谁叫它画一次——S1 与区域视图里那条折线带整条不见（chartcheck 8 条 ❌ 同一个根因）。
        本文件里早就写着这条教训「删函数要 grep 调用点，改图型同理」，这次是我自己没执行。 */
     drawTH();
-  }
+      syncZoneBandTop();
+}
   /* 温湿度折线带 = 未来实验室平均温湿度（2026-11-07）：
      取全部温湿度点位的当前均值送进 /api/iot/temp-hum-series?node=lab-avg，
      参与均值的点位 id 一并传过去（数据源由节点层决定，mock 不自己维护第二套点位表）。
@@ -1298,9 +1397,11 @@
        从同步值回到标定 430——补间刚起步就被这条宽度变化的 reset 掐死（uxcheck「800ms 只采到 1 个机位」）。
        先定宽、再起跳，宽度变化自身的 reset 只会在没有补间在飞时发生。 */
     syncStreamW();
+    syncZoneBandTop();
     drillTo(st.mode === 'ZONE' ? zoneView(st.zone) : 'overall-101');
     renderTables(); renderAlarms(); renderDock(); renderCharts(); pushState(); writeURL();
     syncStreamW();   /* ② 底栏网格刚重排完，右列宽度跟着组态物联块走 */
+    syncZoneBandTop();
     if (st.mode === 'ZONE') { loadZone(); renderZoneView(); }
     renderCharts();
   }

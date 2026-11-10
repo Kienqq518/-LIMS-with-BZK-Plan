@@ -106,6 +106,22 @@ const donut=await p.evaluate(()=>({cnt:document.querySelectorAll('#dkDevBody .dk
 /* 哪些档是 0 台由数据决定（全场表里现在只剩「异常」为 0），所以期望值也从接口推，不写死档名 */
 const zeroApi=await p.evaluate(async()=>{const d=(await TwinApi.get('/api/overview/devices')).data;
   return ['运行','就绪','异常','待机','停机'].filter((k,i)=>[(d.byStatus.working||0),(d.byStatus.ready||0),(d.byStatus.alarm||0),(d.byStatus.standby||0),(d.byStatus.stopped||0)][i]===0);});
+/* ⑦（2026-11-10 圈图）：圆环 hover 弹窗里设备名称起始位置对齐——
+   编号列钉成台账最长编号宽（11ch），所有行名称列同一个 x。 */
+{const box=await p.evaluate(()=>{const r=document.querySelector('#chartDevices canvas').getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};});
+  let rt=null;
+  /* 环带实测在 (72,30) 一圈（132×96 画布，cy .52、竖半径 ~20px）——扫点贴着真实环带来 */
+  for(const [fx,fy] of [[0.5,0.31],[0.5,0.73],[0.3,0.33],[0.62,0.31],[0.27,0.52],[0.78,0.52],[0.35,0.7],[0.66,0.71],[0.5,0.28]]){
+    await p.mouse.move(box.x+box.w*fx, box.y+box.h*fy); await p.waitForTimeout(320);
+    rt=await p.evaluate(()=>{const tip=document.querySelector('.ring-tip');
+      if(!tip||tip.hidden) return null;
+      return {xs:[...tip.querySelectorAll('.rt-i span')].map(e=>Math.round(e.getBoundingClientRect().x)),n:tip.querySelectorAll('.rt-i').length};});
+    if(rt) break;
+  }
+  ok(!!rt&&rt.n>1&&new Set(rt.xs).size===1,
+    `圆环弹窗名称列同一起点（编号列定宽 11ch，⑦ 2026-11-10）: ${JSON.stringify(rt&&rt.xs)}`);
+  await p.mouse.move(10,400);
+}
 ok(donut.cnt===5&&donut.zero.join(',')===zeroApi.join(','),`0 台档位保留并弱化（不删行，"异常 0 台"本身就是要看的信息）: 屏上 ${JSON.stringify(donut)} 接口应为 0 的档 ${zeroApi.join('/')||'（无）'}`);
 ok(!list.some(x=>x.name==='queue'),'底栏队列块不再塞图，清单保持完整');
 const al=sig('alarms');
@@ -234,8 +250,8 @@ ok(after.act===0&&after.cap===null,`th-active 选中态与图下说明文本都�
 await gotoZone(p, '106'); await p.waitForTimeout(4200);
 const k106=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
   txt:(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim()}));
-ok(k106.kind==='任务统计'&&/委托任务/.test(k106.txt)&&/试验项目/.test(k106.txt)&&!/排队/.test(k106.txt),
-  '106 下钻＝任务统计三子区域（①口径：委托/样品/试验项目，四格已退役）: '+JSON.stringify(k106).slice(0,110));
+ok(k106.kind==='任务统计'&&/委托任务/.test(k106.txt)&&/试验项目/.test(k106.txt)&&/本\S+：已完成/.test(k106.txt),
+  '106 下钻＝任务统计三子区域＋本周期行（①口径＋⑥周期回归；旧四格的「排队」只允许出现在周期行里）: '+JSON.stringify(k106).slice(0,130));
 await gotoZone(p, '103'); await p.waitForTimeout(4200);
 const k103=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
   txt:(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim()}));
@@ -248,7 +264,7 @@ const segOf=async(v)=>{ await p.locator('[data-period="'+v+'"]:visible').first()
 await gotoZone(p, '106'); await p.waitForTimeout(3000);
 const per0=await p.evaluate(()=>(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim());
 const segVis=await p.evaluate(()=>[...document.querySelectorAll('.period .seg')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length);
-ok(per0&&segVis===0,`106 三子区域＝当前态口径，周期开关隐身（可见 ${segVis} 个，应为 0）: 「${per0.slice(0,30)}」`);
+ok(per0&&segVis===3,`106 周期开关回到标题行（⑥ 2026-11-10：可见 ${segVis} 个，驱动本周期行）: 「${per0.slice(0,30)}」`);
 await gotoZone(p, '102'); await p.waitForTimeout(4200);
 const k102=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
   cells:[...document.querySelectorAll('#zsGrid .zs-i')].map(e=>e.innerText.replace(/\s+/g,' ').trim()),

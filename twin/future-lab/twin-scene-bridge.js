@@ -582,7 +582,8 @@ function cctvSet(on) {
   CCTV.on = !!on;
   document.body.classList.toggle('cctv-on', CCTV.on);
   if (CCTV.btn) CCTV.btn.setAttribute('aria-pressed', CCTV.on ? 'true' : 'false');
-  if (!CCTV.on) cctvHide();
+  /* ⑦（2026-11-10 圈图）：开关只管高亮，不再管悬浮弹窗——
+     hover 画面与监控 icon 无关，两种状态下弹窗完全一致。 */
   cctvApply();
 }
 function cctvPaint() {
@@ -590,29 +591,48 @@ function cctvPaint() {
   CCTV.ctx.clearRect(0, 0, FEED_W, FEED_H);
   CCTV.ctx.drawImage(feedStrip, i * FEED_W, 0, FEED_W, FEED_H, 0, 0, FEED_W, FEED_H);
 }
+/* ⑦（2026-11-10 圈图）：hover 视觉节点的弹窗统一成「节点卡 + 画面嵌进卡里」——
+   不管监控 icon 亮不亮，弹窗一模一样（图一的结构 + 图二的画面进绿框位）。
+   「渲染色·非现场实拍·视频通道二期接入」不再上屏（产品负责人点名去除），
+   口径没丢：进 aria-label，读屏与 QA 仍复核得到。数据全部读现成的：
+   名称/房间来自标记 title，状态来自 dataset（node-layer 维护），更新时间来自宿主 V4 快照。 */
+let snapTimes = {};
+addEventListener('message', e => {
+  const d = e.data; if (!d || d.channel !== 'room-tour-node-v3' || d.type !== 'snapshots') return;
+  (d.nodes || []).forEach(n => { snapTimes[n.id] = n.updatedAt; });
+});
+const ST_TXT = { normal: '正常', alarm: '告警', offline: '离线' };
 function cctvShow(m) {
-  if (!CCTV.on || !m) return;
+  if (!m) return;
   const id = m.dataset.nodeId, i = cctvIndex(id);
-  const head = CCTV.pop.querySelector('.pp-h b'), sub = CCTV.pop.querySelector('.pp-h span'), ft = CCTV.pop.querySelector('.pp-f');
-  head.textContent = m.title || id;
+  const pop = CCTV.pop;
+  const tt = String(m.title || id).split(' · ');
+  pop.querySelector('.pp-name').textContent = tt[0] || id;
+  pop.querySelector('.pp-room').textContent = tt[1] || '';
+  pop.querySelector('.pp-id').textContent = id;
+  const stt = m.dataset.status || 'normal';
+  const chip = pop.querySelector('.status-chip');
+  chip.dataset.status = stt; chip.querySelector('b').textContent = ST_TXT[stt] || stt;
+  const up = snapTimes[id];
+  const tm = pop.querySelector('.pp-time');
+  if (up) { const t = new Date(up).toLocaleTimeString('zh-CN', { hour12: false }); tm.textContent = t; tm.setAttribute('datetime', up); }
+  else tm.textContent = '—';
   if (i < 0) {
-    /* 诚实边界：这个摄像头没被宿主取进 4 路画面（房间过滤或超出 4 路），
-       宁可不画，也不拿别个点位的画面冒充——拿静态图/别人的视角凑数正是被反复批评的那种做法。 */
-    CCTV.idx = -1; CCTV.pop.hidden = false; CCTV.pop.classList.add('no-feed');
-    ft.textContent = '该点位未进当前 4 路画面（' + id + '），不拿别的视角冒充';
+    /* 诚实边界不变：没被取进 4 路画面就不拿别的视角冒充；文案上屏改 aria */
+    CCTV.idx = -1; pop.classList.add('no-feed');
     CCTV.ctx.clearRect(0, 0, FEED_W, FEED_H);
+    pop.setAttribute('aria-label', (tt[0] || id) + ' 实时画面：该点位未进当前 4 路画面，不拿别的视角冒充');
   } else {
-    CCTV.idx = i; CCTV.pop.classList.remove('no-feed');
-    ft.textContent = '渲染色 · 非现场实拍 · 视频通道二期接入';
+    CCTV.idx = i; pop.classList.remove('no-feed');
+    pop.setAttribute('aria-label', (tt[0] || id) + ' 实时画面：渲染色，非现场实拍，视频通道二期接入');
     cctvPaint();
   }
-  /* 定位：优先放在标记右侧；越界就翻到左侧，再不行贴顶/贴底，绝不盖住标记本身 */
-  const W = 252, H = 168, r = m.getBoundingClientRect();
-  let x = r.right + 10, y = r.top - 6;
+  const W = 292, H = 320, r = m.getBoundingClientRect();
+  let x = r.right + 10, y = Math.max(70, r.top - 20);
   if (x + W > innerWidth - 8) x = Math.max(8, r.left - W - 10);
-  if (y + H > innerHeight - 8) y = Math.max(8, innerHeight - H - 10);
-  CCTV.pop.style.left = Math.round(x) + 'px'; CCTV.pop.style.top = Math.round(y) + 'px';
-  CCTV.pop.hidden = false;
+  if (y + H > innerHeight - 8) y = Math.max(70, innerHeight - H - 10);
+  pop.style.left = Math.round(x) + 'px'; pop.style.top = Math.round(y) + 'px';
+  pop.hidden = false;
   clearInterval(CCTV.timer); CCTV.timer = setInterval(cctvPaint, 420);   /* 与 strip 同一节奏刷新，画面不会停在旧帧 */
 }
 function cctvHide() { if (CCTV.pop) CCTV.pop.hidden = true; clearInterval(CCTV.timer); CCTV.timer = 0; CCTV.idx = -1; }
@@ -623,10 +643,14 @@ function cctvInit() {
      本层保留高亮/悬停画面/键盘聚焦的全部行为与 dataset.cctv 回显。 */
   CCTV.btn = null;
   const pop = document.createElement('div');
-  pop.id = 'cctvPop'; pop.hidden = true; pop.setAttribute('role', 'status'); pop.setAttribute('aria-live', 'polite');
-  pop.innerHTML = '<canvas width="' + FEED_W + '" height="' + FEED_H + '"></canvas>'
-    + '<div class="pp-h"><b>—</b><span></span></div><div class="pp-f">—</div>';
+  pop.id = 'cctvPop'; pop.className = 'node-card'; pop.hidden = true; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '视觉节点实时画面');
+  pop.innerHTML = '<div class="node-card-heading"><span class="card-symbol"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 7h13l2.4 3.2L16 13.6H3z"/><path d="M6 13.6v3.2h4v-3.2"/></svg></span>'
+    + '<div><h2 class="pp-name">—</h2><p class="pp-room">—</p></div><button class="card-close" type="button" aria-label="关闭画面">×</button></div>'
+    + '<div class="card-meta"><span class="status-chip" data-status="normal"><i></i><b>—</b></span><code class="pp-id">—</code></div>'
+    + '<div class="cctv-video"><canvas width="' + FEED_W + '" height="' + FEED_H + '"></canvas></div>'
+    + '<div class="card-time">更新时间 <time class="pp-time">—</time></div>';
   document.body.append(pop);
+  pop.querySelector('.card-close').addEventListener('click', () => cctvHide());
   CCTV.pop = pop; CCTV.ctx = pop.querySelector('canvas').getContext('2d');
   const cam = e => { const m = e.target && e.target.closest ? e.target.closest('.node-marker[data-type="camera"]') : null; return m; };
   document.addEventListener('pointerover', e => { const m = cam(e); if (m) cctvShow(m); });
@@ -635,6 +659,7 @@ function cctvInit() {
   document.addEventListener('focusout', () => cctvHide());
   /* 标记会被房间切换/下钻重建，类不能只加一次：跟着 420ms 的画面节奏重贴 */
   setInterval(() => { if (CCTV.on) cctvApply(); }, 1200);
+  cctvApply();   /* 装载即回显（dataset.cctv 从加载起就在，QA 不必等第一次点击） */
 }
   /* 焦点在三维场景里时，翻页笔按键交回宿主（决策 Q1：售前投影遥控翻页） */
   addEventListener('keydown', ev => {

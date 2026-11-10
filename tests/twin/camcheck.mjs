@@ -31,7 +31,7 @@ await p.screenshot({path:'/tmp/twin-qa/cam-final.png'});
    把整套 camcheck 带走（全量里那个 0 项的 ❌ 就是它）。周期驱动改由 103 承担（zoneview ⑤），
    三子区域的数不写死——从 /api/overview/entrust-list 独立重算（文档 §3.3）。 */
 await p.keyboard.press('2'); await p.waitForTimeout(3000);
-const zs3=await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .zs3-c')].map(e=>({t:e.querySelector('span').innerText,v:e.querySelector('b').innerText.replace(/\s+/g,'')})));
+const zs3=await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .zs2-g')].map(e=>({t:e.querySelector('.zs2-h span').innerText,v:e.querySelector('.zs2-h b').innerText.replace(/\s+/g,'')})));
 out.push((zs3.map(x=>x.t).join('|')==='委托任务|样品|试验项目'?'✅':'❌')+' 三子区域标题: '+zs3.map(x=>x.t).join('|'));
 const el=await p.evaluate(async()=>(await TwinApi.get('/api/overview/entrust-list')).data);
 const en={},sa={};let dn=0,ts=0;

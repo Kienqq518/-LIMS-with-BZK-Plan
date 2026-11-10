@@ -107,7 +107,7 @@ ok((scene.size||'').split('|')[0]==='26px','V2 大屏节点标记收到 26px（�
    两代版式都可能在屏上（102/103 仍是 .zs-i 四格，106 是 .zs3-c），逐个槽位取「存在的那个」，
    都不存在才算 missing，等宽判据本身不放宽。 */
 const nums=await p.evaluate(()=>{const pick=sels=>{for(const s of [].concat(sels)){const e=document.querySelector(s);if(e)return getComputedStyle(e).fontVariantNumeric;}return 'missing';};
-  return ['.dk-lg .vv',['.zs-i b','.zs3-c b'],'.dq-row .tm'].map(pick);});
+  return ['.dk-lg .vv',['.zs-i b','.zs2-h b'],'.dq-row .tm'].map(pick);});
 ok(nums.every(x=>x==='tabular-nums'),'读数等宽（滚动不跳字）: '+JSON.stringify(nums));
 
 ok(err.length===0,'无 pageerror/console error: '+err.slice(0,3).join(' | '));

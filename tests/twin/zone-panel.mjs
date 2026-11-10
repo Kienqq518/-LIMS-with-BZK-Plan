@@ -34,7 +34,7 @@ out.push(((await vis('.rail'))!=='hidden'?'✅':'❌')+' 106 左栏可见: '+awa
 out.push(((await vis('#railZoneStats'))!=='hidden'?'✅':'❌')+' 106 左栏「任务统计」出现: '+await vis('#railZoneStats'));
 out.push(((await vis('#railZoneDevs'))!=='hidden'?'✅':'❌')+' 106 左栏「设备」出现: '+await vis('#railZoneDevs'));
 /* ①（2026-11-09）：四格升级为三子区域（委托任务/样品/试验项目），无柱图的原约束保留 */
-T('106 任务统计＝三子区域（大字+口径小字，无柱图）', await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .zs3-c span')].map(e=>e.innerText).join('/')), '委托任务/样品/试验项目');
+T('106 任务统计＝三子区域（图二样式：标题/大数/分段条/短语，无柱图）', await p.evaluate(()=>[...document.querySelectorAll('#zsGrid .zs2-g .zs2-h > span')].map(e=>e.innerText).join('/')), '委托任务/样品/试验项目');
 T('106 左栏任务统计无柱图容器', await p.locator('#railZoneStats .tw-chart').count(), 0);
 T('106 设备标题=设备（无资产）', await p.locator('#zDevsTitle').innerText(), '设备');
 T('106 设备台数与全场表同源', await p.locator('#zDevsN').innerText(), '8 台建档 · 2 台机器人');
@@ -95,13 +95,15 @@ T('102 标题改「资产」（货架/充电位/电视不是检测设备）', aw
 T('102 资产条数=5（收样登记台+2 货架+充电位+电视）', await p.locator('#zDevsList .zd-row').count(), 5);
 T('102 有视觉节点? 无 → 画面块不显示', await vis('#cctvBox'), 'hidden');
 
-/* ⑤（2026-11-09 ①口径）：106 三子区域是当前态统计，周期开关在 106 隐身——
-   旧断言「切 year 数字要变」随四格一起退役（它点一个不该存在的按钮，点了 30 秒把整套 TimeoutError 掉）。
-   「周期真的驱动数字」由 102/103 的按周期口径承担（zoneview ⑤ 段在 103 上验驱动与 URL）。 */
+/* ⑤⑥（2026-11-10 圈图）：周期开关回到 106——驱动「本周期」行；三子区域保持当前态。 */
 await gotoZone(p,'106'); await p.waitForTimeout(3000);
 const day=await p.locator('#zsGrid').innerText();
-const segVis=await p.evaluate(()=>[...document.querySelectorAll('#railZoneStats .period .seg, #railZoneStats .period button')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length);
-out.push((segVis===0?'✅':'❌')+' 106 左栏周期开关隐身（三子区域＝当前态口径，不该留着切不动的控件）: 可见 '+segVis+' 个');
+const segVis=await p.evaluate(()=>[...document.querySelectorAll('#railZoneStats .period .seg')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length);
+out.push((segVis===3?'✅':'❌')+' 106 左栏周期开关回归（日/月/年 3 个，驱动本周期行）: 可见 '+segVis+' 个');
+await p.locator('#railZoneStats [data-period=year]').click(); await p.waitForTimeout(1600);
+const year=await p.locator('#zsGrid').innerText();
+out.push((year!==day&&/本年：/.test(year)?'✅':'❌')+' 切「本年」本周期行真的变（三子区域数字不动）: '+year.replace(/\s+/g,' ').match(/本\S+：[^本]*/)?.[0]?.slice(0,44));
+await p.locator('#railZoneStats [data-period=day]').click(); await p.waitForTimeout(1000);
 out.push((/委托任务/.test(day)&&/试验项目/.test(day)?'✅':'❌')+' 106 左栏仍是三子区域: '+day.replace(/\s+/g,' ').trim().slice(0,52));
 const url=await p.evaluate(()=>new URLSearchParams(location.search).toString());
 out.push((/mode=ZONE&zone=106/.test(url)?'✅':'❌')+' 区域视图 URL 可复现: '+url.slice(0,60));

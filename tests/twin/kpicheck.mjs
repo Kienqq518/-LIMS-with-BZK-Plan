@@ -32,6 +32,28 @@ const t2=(await p.locator('.dtable').nth(1).innerText()).replace(/\s+/g,' ');
 out.push((/已收样\s*23/.test(t2)&&/正在检测\s*12\s*52%/.test(t2)&&/已完成\s*9\s*39%/.test(t2)&&!/样品总数/.test(t2)?'✅':'❌')+' 样品表三维度（不再有总数行）: '+t2);
 const t3=(await p.locator('.dtable').nth(2).innerText()).replace(/\s+/g,' ');
 out.push((/正在检测\s*12/.test(t3)&&/待检测\s*9/.test(t3)&&/已完成检测\s*16/.test(t3)&&/逾期\s*(?:LIMS)?\s*2/.test(t3)&&/临期\(3天内\)\s*(?:LIMS)?\s*3/.test(t3)?'✅':'❌')+' 试验项目组含逾期/临期标注: '+t3);
+/* ①②（2026-11-10 圈图）：逾期/临期下移第二行；头顶二级条长度=「正在检测+待检测」之和；
+   每条数字的颜色与它所对应的分段条同色（谁是谁一眼对上）。 */
+{const r2=await p.evaluate(()=>{const sec=document.querySelector('.dtable[data-key="testItems"]');
+  const bar1=[...sec.querySelectorAll('.dt-bar:not(.dt-bar2) i')];
+  const bar2=sec.querySelector('.dt-bar2'); const inner=bar2.querySelector('.dt-bar2-inner');
+  const row1=[...sec.querySelectorAll('.dt-detail .dt-i')].map(e=>({lb:e.querySelector('.lb').innerText,col:getComputedStyle(e.querySelector('b.v')).color}));
+  const row2=[...sec.querySelectorAll('.dt-detail2 .dt-i')].map(e=>({lb:e.querySelector('.lb').innerText,v:e.querySelector('b.v').innerText,col:getComputedStyle(e.querySelector('b.v')).color}));
+  const seg1=bar1.map(e=>getComputedStyle(e).backgroundColor);
+  const seg2=inner?[...inner.children].map(e=>getComputedStyle(e).backgroundColor):[];
+  return {hidden:bar2.hidden,
+    w1:bar1.slice(0,2).reduce((a,e)=>a+e.getBoundingClientRect().width,0),
+    w2:inner?inner.getBoundingClientRect().width:-1,
+    row1,row2,seg1,seg2};});
+  out.push((!r2.hidden&&r2.row2.length===2&&/逾期/.test(r2.row2[0].lb)&&/临期/.test(r2.row2[1].lb)?'✅':'❌')+
+    ' ① 逾期/临期移到第二行独立成排: '+JSON.stringify(r2.row2.map(i=>i.lb+' '+i.v)));
+  out.push((!r2.hidden&&Math.abs(r2.w2-r2.w1)<=2?'✅':'❌')+
+    ' ② 二级条总长=「正在检测+待检测」两段之和: '+r2.w2.toFixed(1)+'px vs '+r2.w1.toFixed(1)+'px');
+  const colOk=r2.row1.length>=3&&r2.row1[0].col===r2.seg1[0]&&r2.row1[1].col===r2.seg1[1]&&r2.row1[2].col===r2.seg1[2]
+    &&r2.row2.length===2&&r2.row2[0].col===r2.seg2[0]&&r2.row2[1].col===r2.seg2[1];
+  out.push((colOk?'✅':'❌')+' 每条数字的颜色=它头顶分段的颜色: 行一 '+JSON.stringify(r2.row1.map(i=>i.col))+' vs '+JSON.stringify(r2.seg1)+
+    '；行二 '+JSON.stringify(r2.row2.map(i=>i.col))+' vs '+JSON.stringify(r2.seg2));
+}
 /* 「调度任务」子区域按 2026-11-08 圈图移出左栏（FR-73），所以这里不再读第 4 组，
    而是钉两件事：① 左栏确实没有它；② 它的数没有丢——106 区域面板的「任务统计」四格仍在，
    且「88 已完成」必须带限定词（88 不是调度任务总数，裸放会被读成总数）。 */

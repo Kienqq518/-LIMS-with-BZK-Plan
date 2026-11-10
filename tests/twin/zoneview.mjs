@@ -116,6 +116,25 @@ out.push(((live.split(' ')[1]==='travel'||live.indexOf('dwell')>0)?'✅':'❌')+
   out.push((g.dock.x>=g.rail.r+12?'✅':'❌')+` ① 调度任务块让位左栏：底栏起于 x=${g.dock.x} ≥ 左栏右缘 ${g.rail.r}+12（不再压「设备运行状态」）`);
   out.push((g.stream.h>=420?'✅':'❌')+` ② 告警流加高：可视 ${g.stream.h}px（≥420——旧固定 279 的 1.5 倍，下方不再叠三块）`);
 }
+/* ①②③④⑤（2026-11-10 圈图）：106 五条版式的持久守卫 */
+{
+  const q=await p.evaluate(()=>{const R=s=>{const e=document.querySelector(s);if(!e)return null;const r=e.getBoundingClientRect();return{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),r:Math.round(r.right),b:Math.round(r.bottom)};};
+    const dk=document.getElementById('taskStrip');
+    const tiles=[...document.querySelectorAll('#camGrid .cam-tile')].map(e=>{const r=e.getBoundingClientRect();return{w:Math.round(r.width),h:Math.round(r.height)};});
+    const grid=document.querySelector('#camGrid').getBoundingClientRect();
+    const cards=[...document.querySelectorAll('#dkNodesZone .zi-card')].map(e=>Math.round(e.getBoundingClientRect().height));
+    return {rd:R('#railDev'),dkTop:Math.round(dk.getBoundingClientRect().top),dkInline:dk.style.top||'',sc:R('#dkScenes'),cam:R('.cctv'),iot:R('#iotPanel'),
+      tiles,tileGridW:Math.round(grid.width),cards,
+      camN:document.querySelectorAll('#camGrid .cam-tile').length,
+      marquee:document.querySelector('#iotPanel .np-view')?.hidden,th:document.querySelector('#iotPanel .th-wrap')?.hidden};});
+  out.push((q.dkTop===q.rd.y&&q.dkInline!==''?'✅':'❌')+` ① 底栏顶边与「设备运行状态」标题齐平：dock.top ${q.dkTop} == railDev.top ${q.rd.y}（inline ${q.dkInline||'无'}）`);
+  out.push((Math.abs(q.sc.h-q.cam.h)<=4&&q.sc.y>=q.iot.y-2&&q.cam.b<=q.iot.b+2&&q.iot.x>=q.sc.r-1?'✅':'❌')+
+    ` ③ 带左列场景/画面二分高度各占满（${q.sc.h} vs ${q.cam.h}），组态物联在右侧同带（x ${q.iot.x}→${q.iot.x+q.iot.w}）`);
+  out.push((q.camN===1&&q.tiles.length===1&&q.tiles[0].w>=q.tileGridW-26?'✅':'❌')+
+    ` ④ 单路画面占满整行：格宽 ${q.tiles[0]&&q.tiles[0].w} ≥ 网格内容宽 ${q.tileGridW-24}（网格左右各 12px 内衬；不再挤半列）`);
+  out.push((q.cards.length===3&&new Set(q.cards).size===1&&q.marquee===true&&q.th===true?'✅':'❌')+
+    ` ⑤ 组态物联=3 张等高卡（${JSON.stringify(q.cards)}），滚动与均值图撤下：np-view=${q.marquee} th-wrap=${q.th}`);
+}
 
 /* ②③ 每个房间的画像由数据推导，不写死房间号：
    viewProfile.blocks 决定统计口径，unmanned 决定底栏出调度任务还是在制任务，
@@ -191,8 +210,23 @@ for(const z of ROOMS){
     out.push((nums===exp?'✅':'❌')+` ${z} 三子区域＝entrust-list 独立重算（屏上 ${nums} vs 复算 ${exp}=委托/样品/已完成/正在检测）`);
     out.push((/委托任务/.test(D.grid)&&/关联/.test(D.grid)&&/样品/.test(D.grid)&&/试验项目/.test(D.grid)?'✅':'❌')+
       ` ${z} 三子区域标题与口径说明在屏上（不是四个裸数字）: ${D.grid.replace(/\s+/g,' ').slice(0,64)}`);
-    out.push((await p.evaluate(()=>{const b=[...document.querySelectorAll('.period .seg')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;});return b.length;}))===0?
-      '✅':'❌'+' '+z+' 三子区域是当前态口径，周期开关必须隐身（点了不动数的控件比没有控件更糟）');
+    /* ⑥（2026-11-10 圈图，参考图二）：周期开关回到 106 标题行——它驱动「本周期」补充行（真数据），
+       三子区域本身保持当前态不随周期动（动了就是编数）。 */
+    {const per=await p.evaluate(async()=>{
+      const segN=[...document.querySelectorAll('.period .seg')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length;
+      const p0=document.querySelector('#zsGrid .zs2-p')?.innerText||'';
+      const g0=[...document.querySelectorAll('#zsGrid .zs2-g b')].map(e=>e.innerText).join('|');
+      document.querySelector('[data-period=month]').click();
+      await new Promise(r=>setTimeout(r,1600));
+      const p1=document.querySelector('#zsGrid .zs2-p')?.innerText||'';
+      const g1=[...document.querySelectorAll('#zsGrid .zs2-g b')].map(e=>e.innerText).join('|');
+      document.querySelector('[data-period=day]').click();
+      await new Promise(r=>setTimeout(r,1200));
+      return {segN,p0,p1,g0,g1};});
+      out.push((per.segN===3?'✅':'❌')+` ${z} 周期开关回到标题行（可见 ${per.segN} 个按钮，日/月/年一组）`);
+      out.push((per.p0!==per.p1&&/本\S+：已完成/.test(per.p0)?'✅':'❌')+` 开关驱动「本周期」行：「${per.p0.slice(0,34)}」→「${per.p1.slice(0,34)}」`);
+      out.push((per.g0===per.g1?'✅':'❌')+' 三子区域保持当前态、不随周期漂移（周期口径只进补充行）: '+per.g0);
+    }
   } else if(wantKind==='检测项目数统计'){
     const exp=[A.ti.testing,A.ti.pending,A.ti.done,A.ti.overdue].join('/');
     const nums=(D.grid.match(/-?\d+/g)||[]).slice(0,4).join('/');
@@ -227,13 +261,13 @@ for(const z of ROOMS){
   out.push((emptyOk?'✅':'❌')+' '+z+' 无告警时空态说清是哪个区: 「'+D.stream+'」');
   out.push((!noOverlap(rr)?'✅':'❌')+` ${z} 浮层不重叠: ${noOverlap(rr)||'OK'}`);
 }
-/* ⑤ 周期切换器（2026-11-09 #1 后）：106 三子区域是当前态口径，左栏周期开关在 106 隐身；
-   开关本体仍由 103（检测项目数按周期变）验证驱动与 URL 写入。 */
+/* ⑤ 周期切换器（2026-11-10 ⑥ 后）：106 标题行重新挂上日/月/年——驱动「本周期」行；
+   同屏仍只有一份可见开关（≤3 个按钮）。 */
 await gotoZone(p, '106'); await p.waitForTimeout(3000);
 const segN=await p.evaluate(()=>[...document.querySelectorAll('.period .seg')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2&&q.height>2;}).length);
-out.push((segN===0?'✅':'❌')+` 106 三子区域不挂周期开关（可见按钮 ${segN} 个，应为 0——旧「≤3」是四格时代的口径）`);
+out.push((segN<=3?'✅':'❌')+` 同屏最多一份可见周期开关（当前 ${segN} 个按钮）`);
 const stDay=await p.evaluate(()=>document.getElementById('zsGrid').innerText.replace(/\s+/g,' ').trim());
-out.push((/委托任务/.test(stDay)?'✅':'❌')+' 106 左栏统计仍是三子区域: '+stDay.slice(0,42));
+out.push((/委托任务/.test(stDay)&&/本\S+：已完成/.test(stDay)?'✅':'❌')+' 106 左栏统计＝三子区域＋本周期行: '+stDay.slice(0,52));
 /* 非 106 房间也一样：检测项目数统计是按周期变的，开关不能只对着 106 生效 */
 await gotoZone(p, '103'); await p.waitForTimeout(3000);
 const g1=await p.evaluate(()=>document.getElementById('zsGrid').innerText.replace(/\s+/g,' ').trim());
