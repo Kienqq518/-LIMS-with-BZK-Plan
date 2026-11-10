@@ -78,7 +78,21 @@ T('区域面板 DOM 已删除', await vis('#zonePanel'), 'absent');
 // ③ 107：非无人化区 + 无摄像头
 await gotoZone(p,'107'); await p.waitForTimeout(3000);
 T('107 接管标记', await p.evaluate(()=>document.body.dataset.zoneView+'/'+document.body.dataset.unmanned), '1/0');
-T('107 底栏=运行中的任务（不是调度任务）', await p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).map(e=>e.querySelector('header b').innerText).join('|')), '安全管家场景监测|运行中的任务|组态物联节点状态监测');
+/* ①②（2026-11-10 圈图，107）：底栏只剩「运行中的任务」钉最左（与左栏同宽）；
+   场景监测与组态物联搬进右列底部上下叠放；空告警要有体面的底框卡。 */
+T('107 底栏=只剩运行中的任务（钉最左，与左栏同宽）', await p.evaluate(()=>{
+  const vis=[...document.querySelectorAll('.dock .dk')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).map(e=>e.querySelector('header b').innerText).join('|');
+  const dk=document.querySelector('.dock').getBoundingClientRect();
+  const rail=document.querySelector('.rail').getBoundingClientRect();
+  return vis+' @x'+Math.round(dk.x)+'w'+Math.round(dk.width)+' railR'+Math.round(rail.right);}), '运行中的任务 @x14w300 railR314');
+{const rc=await p.evaluate(()=>{const inRcol=id=>{const e=document.getElementById(id);return e&&e.parentElement&&e.parentElement.id==='rightCol'&&!e.hidden&&e.getBoundingClientRect().width>2;};
+  const cards=[...document.querySelectorAll('#dkNodesZone .zi-card')].map(e=>Math.round(e.getBoundingClientRect().height));
+  const empty=document.querySelector('.stream-view .zp-empty');
+  return {sc:inRcol('dkScenes'),iot:inRcol('iotPanel'),cards,
+    empty:empty?{w:Math.round(empty.getBoundingClientRect().width),border:getComputedStyle(empty).borderTopWidth,radius:getComputedStyle(empty).borderRadius}:null};});
+  out.push((rc.sc&&rc.iot?'✅':'❌')+' 107 右列底部上下叠：安全管家场景监测 → 组态物联（101 式等高卡 '+JSON.stringify(rc.cards)+'）');
+  out.push((rc.empty&&rc.empty.w>200&&rc.empty.border!=='0px'&&parseFloat(rc.empty.radius)>=8?'✅':'❌')+' 107 空告警提示有底框卡：'+JSON.stringify(rc.empty));
+}
 T('107 调度任务块不可见（非无人化区）', await p.evaluate(()=>{const r=document.querySelector('#dkQueue').getBoundingClientRect();return r.width>2&&r.height>2;}), 'false');
 T('107 设备标题=设备', await p.locator('#zDevsTitle').innerText(), '设备');
 T('107 设备台数与全场表同源', await p.locator('#zDevsN').innerText(), '6 台建档');

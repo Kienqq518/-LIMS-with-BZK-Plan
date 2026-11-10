@@ -715,6 +715,24 @@ body[data-zone-view="1"][data-unmanned="1"] .zband{display:grid}
    左栏/底栏/右列整列收起，右下角只留节点卡（名称·类型 / 状态 / 数据）。 */
 body[data-zone-simple="1"] .rail,body[data-zone-simple="1"] .dock,body[data-zone-simple="1"] #rightCol{display:none}
 .znodes{position:fixed;right:16px;bottom:16px;width:290px;display:flex;flex-direction:column;gap:var(--tw-float-gap);z-index:var(--tw-z-panel)}
+/* ①②（2026-11-10 圈图，非无人化房间）：底栏=「运行中的任务」钉最左（与左栏同宽），
+   右列底部纵向叠 场景监测→画面→组态物联（等高卡），各占一行、一块一行。 */
+body[data-zone-view="1"]:not([data-unmanned="1"]) .dock{left:14px;right:auto;width:var(--tw-rail-w);grid-template-columns:minmax(0,1fr)}
+/* 只在非无人化房间：组态物联作为右列普通堆叠块时按内容高；
+   无人化房间的带右列（.zb-r 也住在 .rcol 里）必须继续 flex:1 占满整带——上一版这条没限定作用域，
+   把带右列压矮 53px，zoneview ③ 当场抓到。 */
+/* 非无人化右列堆叠沉底：告警流保持固定高在上，场景监测→画面→组态物联贴着屏底排
+   （107/103 圈图绿框位置——堆叠跟着内容走，中间留白由 margin-top:auto 吃掉）。 */
+body[data-zone-view="1"]:not([data-unmanned="1"]) .rcol .scpanel{margin-top:auto}
+body[data-zone-view="1"]:not([data-unmanned="1"]) .rcol .nodepanel{flex:none;min-height:0}
+.rcol #dkNodesZone{padding:2px 0 4px}
+/* ②（2026-11-10 圈图）：告警流空态加底框——从前是一行飘着的裸文本，现在是一张安静的卡：
+   玻璃底板+描边+圆角+左侧状态点，「XX 区今日无告警」也要体面地说话。 */
+.stream-view .zp-empty{display:flex;align-items:center;gap:9px;margin:6px 12px;padding:13px 14px;
+ background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);
+ box-shadow:var(--tw-shadow-card);font-size:var(--tw-fs-label);font-weight:700;color:var(--tw-ink-2)}
+.stream-view .zp-empty::before{content:"";width:8px;height:8px;border-radius:50%;flex:none;
+ background:var(--tw-st-ready);box-shadow:0 0 0 3px var(--tw-color-brand-soft)}
 .zn-card{background:var(--tw-glass-plate);border:1px solid var(--tw-glass-border);border-radius:var(--tw-radius-card);
  padding:8px 10px;box-shadow:var(--tw-shadow-card)}
 .zn-h{display:flex;align-items:baseline;gap:8px}

@@ -452,7 +452,7 @@
      （节点卡自己就是本房间逐点真数，均值图在这里没有增量信息）。 */
   function renderZoneIotPanel() {
     var pnl = $('#iotPanel'); if (!pnl) return;
-    var inBand = pnl.parentElement && pnl.parentElement.classList.contains('zb-r');
+    var inBand = pnl.parentElement && (pnl.parentElement.classList.contains('zb-r') || pnl.parentElement.id === 'rightCol');
     var thw = pnl.querySelector('.th-wrap'), npv = pnl.querySelector('.np-view');
     var zb = pnl.querySelector('#dkNodesZone');
     if (!inBand) {
@@ -468,6 +468,10 @@
     if (thw) thw.hidden = true; if (npv) npv.hidden = true; zb.hidden = false;
     var ns = (envNodes || []).filter(function (n) { return String(n.roomId) === String(st.zone) && n.type !== 'camera'; })
       .sort(function (a, b) { return String(a.id).localeCompare(String(b.id)); });
+    /* 空块比没有块更糟（101 原则的延伸）：本房间除视觉外一个物联节点都没有（如 103 只有视觉01），
+       整块直接消失，不挂一张只有标题的空面板。 */
+    if (!ns.length) { pnl.hidden = true; return; }
+    pnl.hidden = false;
     zb.style.gridTemplateRows = 'repeat(' + Math.max(1, ns.length) + ',minmax(0,1fr))';
     zb.innerHTML = ns.map(function (n) {
       var stw = n.status === 'normal' ? '正常' : (n.status === 'offline' ? '离线' : (n.status || '—'));
@@ -1358,13 +1362,21 @@
     var zl = bandEl && bandEl.querySelector('.zb-l'), zr = bandEl && bandEl.querySelector('.zb-r');
     if (scEl && rcEl && dkEl && camEl && iotEl && bandEl && zl && zr) {
       var toBand = zone && vp.unmanned === true;
-      if (bandEl.hidden === toBand) bandEl.hidden = !toBand;
+      /* ①②（2026-11-10 圈图，107/103）：非无人化房间（且不是 101 型极简房）——
+         底栏只留「运行中的任务」钉最左（左栏宽度内），
+         右列底部纵向叠：安全管家场景监测 → 视觉节点实时画面 → 组态物联（101 式等高卡）。 */
+      var toRight = zone && vp.unmanned !== true && document.body.dataset.zoneSimple !== '1';
+      bandEl.hidden = !toBand;
       function mv(el, host, ref) { if (el.parentElement !== host) (ref ? host.insertBefore(el, ref) : host.appendChild(el)); }
       if (toBand) {
         mv(scEl, zl); mv(camEl, zl);
         /* 场景在上、画面在下：谁先到不重要，落位后把场景提到画面之前 */
         if (camEl.previousElementSibling !== scEl) zl.insertBefore(scEl, camEl);
         mv(iotEl, zr);
+      } else if (toRight) {
+        mv(camEl, rcEl, bandEl);
+        mv(scEl, rcEl, camEl);          /* 场景监测在画面之前 */
+        mv(iotEl, rcEl);                /* 组态物联压底（101 式卡） */
       } else {
         mv(scEl, dkEl, $('#dkQueue')); mv(camEl, rcEl, bandEl); mv(iotEl, dkEl);
       }

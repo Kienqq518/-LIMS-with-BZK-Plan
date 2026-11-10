@@ -261,6 +261,34 @@ for(const z of ROOMS){
   out.push((emptyOk?'✅':'❌')+' '+z+' 无告警时空态说清是哪个区: 「'+D.stream+'」');
   out.push((!noOverlap(rr)?'✅':'❌')+` ${z} 浮层不重叠: ${noOverlap(rr)||'OK'}`);
 }
+/* ①②（2026-11-10 圈图，107/103）：非无人化房间版式守卫——
+   底栏只剩「运行中的任务」钉最左；右列底部叠 场景监测→画面→组态物联（101 式等高卡）；
+   没有非视觉节点的房间（103）组态物联整块消失，不挂空面板。 */
+{
+  await gotoZone(p,'107'); await p.waitForTimeout(3200);
+  const a=await p.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return !!e&&!e.hidden&&e.getBoundingClientRect().width>2;};
+    const inR=id=>{const e=document.getElementById(id);return vis(id)&&e.parentElement&&e.parentElement.id==='rightCol';};
+    const dk=document.querySelector('.dock').getBoundingClientRect();
+    return {dkTitles:[...document.querySelectorAll('.dock .dk')].filter(e=>{const q=e.getBoundingClientRect();return q.width>2;}).map(e=>e.querySelector('header b').innerText),
+      dkX:Math.round(dk.x),dkW:Math.round(dk.width),sc:inR('dkScenes'),iot:inR('iotPanel'),cam:inR('cctvBox'),
+      cards:[...document.querySelectorAll('#dkNodesZone .zi-card')].map(e=>Math.round(e.getBoundingClientRect().height))};});
+  out.push((a.dkTitles.join('|')==='运行中的任务'&&a.dkX<=16&&a.dkW>=290&&a.dkW<=310?'✅':'❌')+
+    ` 107 底栏=运行中的任务钉最左（x${a.dkX} w${a.dkW}，与左栏同宽不叠影）: ${JSON.stringify(a.dkTitles)}`);
+  out.push((a.sc&&a.iot&&!a.cam&&a.cards.length===1?'✅':'❌')+
+    ` 107 右列底部上下叠：场景监测✓ 组态物联 101 式等高卡×${a.cards.length}（无摄像头画面块不出现）`);
+  await gotoZone(p,'103'); await p.waitForTimeout(3200);
+  const c=await p.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return !!e&&!e.hidden&&e.getBoundingClientRect().width>2;};
+    const inR=id=>{const e=document.getElementById(id);return vis(id)&&e.parentElement&&e.parentElement.id==='rightCol';};
+    const tile=document.querySelector('#camGrid .cam-tile')?.getBoundingClientRect();
+    const grid=document.querySelector('#camGrid')?.getBoundingClientRect();
+    return {sc:inR('dkScenes'),cam:inR('cctvBox'),iot:vis('iotPanel'),
+      tileW:tile?Math.round(tile.width):0,gridW:grid?Math.round(grid.width):0,
+      camY:Math.round(document.querySelector('#cctvBox').getBoundingClientRect().y),scY:Math.round(document.querySelector('#dkScenes').getBoundingClientRect().y)};});
+  out.push((c.sc&&c.cam&&!c.iot?'✅':'❌')+
+    ` 103 右列底部上下叠：场景监测(上 y${c.scY}) → 画面(下 y${c.camY})；无非视觉节点 → 组态物联整块消失（不挂空面板）`);
+  out.push((c.tileW>=c.gridW-26?'✅':'❌')+` 103 单路画面占满右列宽：格 ${c.tileW} ≥ 网格内容 ${c.gridW-24}`);
+}
+
 /* ⑤ 周期切换器（2026-11-10 ⑥ 后）：106 标题行重新挂上日/月/年——驱动「本周期」行；
    同屏仍只有一份可见开关（≤3 个按钮）。 */
 await gotoZone(p, '106'); await p.waitForTimeout(3000);
