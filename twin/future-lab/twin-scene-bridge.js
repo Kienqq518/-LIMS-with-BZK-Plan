@@ -528,6 +528,14 @@ function build(v) {
   function renderFeeds() {
     if (!feedRt || !feedCams.length) return;
     const R = visual.renderer, oldT = R.getRenderTarget();
+    /* ⑤（2026-11-10 圈图）：监控实时画面里不许出现设备状态灯——悬浮光点是主视图的标注层，
+       不是摄像头看得见的东西。离屏渲染前摘灯、渲完立刻装回：本函数同步跑完（420ms 一拍），
+       主视图看不到摘灯的中间态；摘/装只动"当时可见"的光点，房间过滤逻辑不受影响。 */
+    const litDots = [];
+    statusDots.forEach(d => { if (d.visible) { litDots.push(d); d.visible = false; } });
+    const hk = document.getElementById('twin-v2-bridge');
+    if (hk) hk.dataset.feedDots = String(litDots.length);   /* 每拍离屏时摘掉的光点数——cctvcheck 的守卫读数 */
+    try {
     for (let i = 0; i < feedCams.length && i < 4; i++) {
       const c = feedCams[i], p = c.position || {}, from = new THREE.Vector3(p.x || 0, (p.y || 2.55) - .12, p.z || 0);
       const to = roomCenter(String(c.roomId || '')) || from.clone().add(new THREE.Vector3(0, 0, -1));
@@ -545,7 +553,10 @@ function build(v) {
       }
       feedCtx.putImageData(feedImg, i * FEED_W, 0);
     }
-    R.setRenderTarget(oldT);          /* 必须还原：留着 RenderTarget 下一帧主画面就渲到离屏去了 */
+    } finally {
+      litDots.forEach(d => { d.visible = true; });          /* 装回：主视图的光点层照常 */
+      R.setRenderTarget(oldT);                              /* 必须还原：留着 RenderTarget 下一帧主画面就渲到离屏去了 */
+    }
     feedSeq++;
   }
   setInterval(() => { if (feedCams.length) renderFeeds(); }, 420);   /* ~2.4fps：演示够用，又不至于吃掉主循环 */

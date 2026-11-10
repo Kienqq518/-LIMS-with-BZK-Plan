@@ -44,6 +44,14 @@ T('场景层收到命令（dataset.cctv.on）', await f.evaluate(()=>JSON.parse(
 ok(hi.n===hi.cams&&hi.n>=3,`高亮数＝场景里视觉节点数（高亮 ${hi.n} / camera 标记 ${hi.cams}），宿主取的画面路数 ${JSON.stringify(hi.cams?hi.hook:[]).slice(0,80)}`);
 ok(hi.types.length===1&&hi.types[0]==='camera',`只有视觉(camera)节点被高亮，温湿度/烟感/人体等一律不亮: ${JSON.stringify(hi.types)}`);
 ok(hi.n>0&&await f.evaluate(()=>!!document.querySelector('.node-marker[data-type="motion"]')&&!document.querySelector('.node-marker[data-type="motion"]').classList.contains('cctv-hi')),'反向确认：非摄像头标记确实没被牵连');
+// ⑤（2026-11-10 圈图）监控画面里不许有状态灯：离屏渲染前摘灯、渲完装回——
+//   dataset.feedDots=每拍摘掉的光点数，必须等于主视图当前可见光点数（摘干净），
+//   且此刻（非渲染中间态）光点全部在原位（装回来，主视图标注层不受影响）。
+const dotG=await f.evaluate(()=>{const g=document.getElementById('twin-v2-bridge');
+  const vis=[...window.visual106.detail.children].filter(o=>o.isMesh&&o.geometry&&o.geometry.type==='SphereGeometry'&&o.visible&&o.userData.room).length;
+  return {vis, feed: g&&g.dataset.feedDots!=null?+g.dataset.feedDots:-1};});
+ok(dotG.feed>0&&dotG.feed===dotG.vis,`离屏渲染摘除全部可见状态灯：摘 ${dotG.feed} == 主视图可见光点 ${dotG.vis}（画面里不会再飘灯，主视图照常带灯）`);
+
 // ④ 悬停出画面
 const first=f.locator('.node-marker.cctv-hi').first();
 await first.hover(); await p.waitForTimeout(1200);
