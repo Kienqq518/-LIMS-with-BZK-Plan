@@ -910,7 +910,7 @@
         var hasItems = !hasTask && bl.indexOf('test-items') >= 0 && !!ti2;
         var hasSamples = !hasTask && !hasItems && bl.indexOf('samples') >= 0 && !!sp;
         var cells = hasTask ? [['已完成', per.done], ['执行中', per.running], ['异常挂起', per.abnormal], ['排队', per.queued]]
-          : hasItems ? [['检测中', ti2.testing], ['待检测', ti2.pending], ['已完成', ti2.done], ['逾期未出', ti2.overdue]]
+          : hasItems ? [['检测中', ti2.testing], ['待检测', ti2.pending], ['已完成', ti2.done], ['逾期未完成', ti2.overdue]]
           : hasSamples ? [['在库存量(支)', sp.stored], ['今日收样', sp.receivedToday], ['今日还样', sp.returnedToday], ['待还样', sp.pendingReturn]] : null;
         var head = hasTask ? '任务统计' : hasItems ? '检测项目数统计' : hasSamples ? '样品台账' : '';
         var tt = document.querySelector('#railZoneStats .rp-head b');
@@ -1028,6 +1028,10 @@
     var n0 = $('#dkRunningN');
     if (!rows.length) {
       tr.innerHTML = '<div class="ti-row empty"><span class="nm">该区当前无在制任务</span></div>';
+      /* 空态这一行必须停掉无缝滚动：.dk-track 默认挂着 dkUp 26s infinite，一行没有可滚的内容，
+         却被 translateY 一路顶到容器上沿外——「该区当前无在制任务」被裁掉半截（2026-11-11 圈图，所有房间）。
+         有任务时动画由 dkTrack 按行数接管（≤1 行同样 none），这里它不会被调用，所以只能就地关。 */
+      tr.style.animation = 'none';
       if (n0) n0.textContent = '空闲';
       return;
     }

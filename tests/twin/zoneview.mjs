@@ -240,7 +240,7 @@ for(const z of ROOMS){
     const exp=[A.ti.testing,A.ti.pending,A.ti.done,A.ti.overdue].join('/');
     const nums=(D.grid.match(/-?\d+/g)||[]).slice(0,4).join('/');
     out.push((nums===exp?'✅':'❌')+` ${z} 检测项目四格＝接口值（屏上 ${nums} vs API ${exp}）`);
-    out.push((/逾期未出/.test(D.grid)?'✅':'❌')+' '+z+' 逾期格写的是「逾期未出」（出报告口径），不是裸的「逾期」');
+    out.push((/逾期未完成/.test(D.grid)?'✅':'❌')+' '+z+' 逾期格写的是「逾期未完成」（出报告口径，2026-11-11 圈图改名），不是裸的「逾期」');
   } else if(wantKind==='样品台账'){
     const exp=[A.samples.stored,A.samples.receivedToday,A.samples.returnedToday,A.samples.pendingReturn].join('/');
     const nums=(D.grid.match(/-?\d+/g)||[]).slice(0,4).join('/');
@@ -317,14 +317,35 @@ for(const z of ROOMS){
     await gotoZone(p,z); await p.waitForTimeout(3200);
     const r=await p.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return !!e&&!e.hidden&&e.getBoundingClientRect().width>2;};
       const cam=document.getElementById('cctvBox').getBoundingClientRect(), iot=document.getElementById('iotPanel').getBoundingClientRect();
+      /* 2026-11-11 圈图两条：① 组态物联独占第二行时（本房间无摄像头画面块）必须铺满整行，
+            卡宽＝头顶场景卡宽；② 「运行中的任务」空态那一行不许被 dkUp 无缝滚动顶出容器上沿。 */
+      const scCard=document.querySelector('#dkScenesGrid > *')?.getBoundingClientRect();
+      const card=document.querySelector('#dkNodesZone .zi-card')?.getBoundingClientRect();
+      const trk=document.getElementById('dkRunningTrack'), v0=trk?.closest('.dk-view')?.getBoundingClientRect();
+      const rowE=trk?.firstElementChild, row0=rowE?.getBoundingClientRect();
       return {iot:vis('iotPanel'),cam:vis('cctvBox'),mon:vis('cctvToggle'),sc:vis('dkScenes'),
         cards:document.querySelectorAll('#dkNodesZone .zi-card').length,
         scSt:(document.querySelector('#dkScenesGrid .st')||{}).innerText||'',
-        sameRow:Math.abs(cam.y-iot.y)<4&&cam.x<iot.x};});
+        sameRow:Math.abs(cam.y-iot.y)<4&&cam.x<iot.x,
+        iotW:Math.round(iot.width),cardW:card?Math.round(card.width):0,scCardW:scCard?Math.round(scCard.width):0,
+        rcW:Math.round(document.getElementById('rightCol').getBoundingClientRect().width),
+        empty:!!(rowE&&/无在制任务/.test(rowE.innerText)),
+        anim:trk?getComputedStyle(trk).animationName:'-',
+        clipTop:row0&&v0?Math.round(v0.top-row0.top):-1};});
     out.push((r.iot===(exp.iot>0)&&r.cam===(exp.cam>0)&&r.mon===!!exp.mon&&r.sc===(exp.sc>0)&&(!exp.iot||r.cards===exp.iot)?'✅':'❌')+
       ` ${z} 块集合对圈图：物联${exp.iot}卡/画面${exp.cam?'现':'隐'}/监控按钮${exp.mon?'显':'隐'}/场景${exp.sc?'现':'隐'}（屏上 cards=${r.cards}）`);
     if(exp.scSt) out.push((r.scSt===exp.scSt?'✅':'❌')+` ${z} 待布点场景状态=「${exp.scSt}」（不是借绿点冒充正常）: 屏上「${r.scSt}」`);
     if(exp.pair) out.push((r.sameRow?'✅':'❌')+' 105 第二行左右挨着：画面与组态物联同行（cam 左 iot 右）');
+    /* ① 组态物联宽度：画面块在场=二分一行；只剩它一个=独占整行，卡宽与头顶场景卡齐平。
+       （从前 .rcol .nodepanel{flex:none} 在横排的 .zpair 里把宽度也钉成内容宽，102 只有 163px。） */
+    if(exp.iot>0&&exp.sc>0){
+      const wantW=exp.cam>0?Math.floor((r.rcW-16)/2):r.scCardW;
+      out.push((Math.abs(r.cardW-wantW)<=Math.max(6,exp.cam>0?70:2)?'✅':'❌')+
+        ` ${z} 组态物联卡宽 ${r.cardW}＝${exp.cam>0?'与画面二分一行':'独占整行、与场景卡同宽'}（场景卡 ${r.scCardW}，右列 ${r.rcW}）`);
+    }
+    /* ② 空态行不许上漂：animation 必须 none，行顶不得高于容器可视顶（负值=被裁） */
+    if(r.empty) out.push((r.anim==='none'&&r.clipTop<=0&&r.clipTop>-2?'✅':'❌')+
+      ` ${z} 「运行中的任务」空态钉在原位：animation=${r.anim}，行顶相对容器上沿 ${r.clipTop}px（>0 即被裁半截）`);
   }
   const backRaw=await s1fr();
   const diag=await p.evaluate(()=>({sw:getComputedStyle(document.documentElement).getPropertyValue('--tw-stream-w').trim(),

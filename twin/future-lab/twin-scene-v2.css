@@ -730,6 +730,11 @@ body[data-zone-view="1"]:not([data-unmanned="1"]) .dock{left:14px;right:auto;wid
    （107/103 圈图绿框位置——堆叠跟着内容走，中间留白由 margin-top:auto 吃掉）。 */
 body[data-zone-view="1"]:not([data-unmanned="1"]) .rcol .scpanel{margin-top:auto}
 body[data-zone-view="1"]:not([data-unmanned="1"]) .rcol .nodepanel{flex:none;min-height:0}
+/* 但 .zpair 是横排的一行：上面那条 flex:none 在这里顺手把宽度也钉成了内容宽——
+   102/108/110 这类「只有一个物联节点、又没有摄像头画面块」的房间，整块缩到 163px，
+   比头顶「安全管家场景监测」的卡窄一大截（2026-11-11 圈图）。
+   行内回到 flex:1：有画面块时两者二分一行，只剩组态物联时独占整行＝与场景卡同宽。 */
+body[data-zone-view="1"]:not([data-unmanned="1"]) .zpair .nodepanel{flex:1;min-width:0}
 .rcol #dkNodesZone{padding:2px 0 4px}
 /* ②（2026-11-10 圈图）：告警流空态加底框——从前是一行飘着的裸文本，现在是一张安静的卡：
    玻璃底板+描边+圆角+左侧状态点，「XX 区今日无告警」也要体面地说话。 */

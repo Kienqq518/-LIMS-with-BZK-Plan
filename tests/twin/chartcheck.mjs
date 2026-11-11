@@ -260,7 +260,7 @@ ok(k106.kind==='任务统计'&&zs106.cells===0&&zs106.groups===4&&zs106.titles==
 await gotoZone(p, '103'); await p.waitForTimeout(4200);
 const k103=await p.evaluate(()=>({kind:(document.getElementById('zsGrid')||{}).dataset?.kind,
   txt:(document.getElementById('zsGrid')||{}).innerText.replace(/\s+/g,' ').trim()}));
-ok(k103.kind==='检测项目数统计'&&/检测中/.test(k103.txt)&&/逾期未出/.test(k103.txt),
+ok(k103.kind==='检测项目数统计'&&/检测中/.test(k103.txt)&&/逾期未完成/.test(k103.txt),
   `103 下钻＝检测项目数统计（口径随 viewProfile.blocks 走，不是写死 106）: ${JSON.stringify(k103).slice(0,96)}`);
 const segOf=async(v)=>{ await p.locator('[data-period="'+v+'"]:visible').first().click(); await p.waitForTimeout(2600); };
 /* ①（2026-11-09）：106 三子区域与周期无关，左栏开关在 106 隐身；
