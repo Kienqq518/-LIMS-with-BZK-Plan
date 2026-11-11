@@ -354,7 +354,10 @@ body[data-zone-dock="1"] .dock{right:calc(var(--tw-float-gap) * 2 + var(--tw-pan
 .fsbtn{display:flex;align-items:center;gap:6px}
 .fsbtn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .fsbtn .fs-t{font-size:var(--tw-fs-label)}
-body[data-full="1"] .rail,body[data-full="1"] .stream,body[data-full="1"] .tasktable{box-shadow:0 18px 52px rgba(15,40,80,.16)}
+/* 全屏不再给左栏/告警流/任务表加投影（2026-11-11 圈图）。
+   这条是「全站一律无底板」之前留下的：透明元素配一圈 52px 大投影，视觉上就是中间多了一层板——
+   全屏与非全屏读起来是两套版式，客户会问哪个才是真的。全屏只改尺寸，不改层。 */
+body[data-full="1"] .rail,body[data-full="1"] .stream,body[data-full="1"] .tasktable{box-shadow:none}
 
 /* ---- 交互态补齐（ui-ux-pro-max：可点元素一律有 hover / active / focus-visible 三态，
        时长与缓动吃同一组 token；数据行 hover 高亮是 dense dashboard 的既定口径）---- */
@@ -641,9 +644,11 @@ footer.dock{grid-template-columns:minmax(0,.92fr) minmax(0,1.66fr) minmax(0,1fr)
 /* 与告警流左边界齐平：.stream 的内容本来就有 12px 左右内边距，画面块没有，
    于是标题与格子的左边缘比告警流文字更靠左（圈图那条"宽度不齐平"）。 */
 .cctv>header,.cam-grid{padding-left:12px;padding-right:12px}
-.cctv>header{display:flex;align-items:baseline;gap:8px}
-.cctv>header b{font-size:var(--tw-fs-strong);font-weight:700;color:var(--tw-ink-1)}
-.cctv>header .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums}
+.cctv>header{display:flex;align-items:baseline;gap:6px}
+/* 106 右下带里画面块只有 ~186px：标题与「N 路 · 房间」都被挤成两行，块头读起来像坏了
+   （2026-11-11 圈图）。两处一起钉成一行——标题不许折，计数也不许把「106」单独甩下去。 */
+.cctv>header b{font-size:var(--tw-fs-strong);font-weight:700;color:var(--tw-ink-1);white-space:nowrap}
+.cctv>header .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap;flex:none}
 /* 格位尺寸由 16:9 决定（宽 199 → 高 112），两块 2×2 + 标题共 262px；
    加上告警流 279 + 间距 16 + 顶 70 = 627，正好落在底栏带（1080 高时 840，867 高时 639）之上，
    所以更矮的窗口也不会再把画面切半截——这次圈图的第二条就是这个。 */
@@ -726,7 +731,13 @@ body[data-zone-view="1"][data-unmanned="1"] .zband{display:grid}
 /* ④（2026-11-09 四次圈图，101 接待厅）：极简房间（zoneSimple 判定，数据驱动）空壳全撤——
    左栏/底栏/右列整列收起，右下角只留节点卡（名称·类型 / 状态 / 数据）。 */
 body[data-zone-simple="1"] .rail,body[data-zone-simple="1"] .dock,body[data-zone-simple="1"] #rightCol{display:none}
-.znodes{position:fixed;right:16px;bottom:16px;width:290px;display:flex;flex-direction:column;gap:var(--tw-float-gap);z-index:var(--tw-z-panel)}
+.znodes{position:fixed;right:16px;bottom:16px;width:290px;display:flex;flex-direction:column;gap:9px;z-index:var(--tw-z-panel)}
+/* 极简房间右下角的块标题（2026-11-11 圈图）：从前只有卡片没有标题，右下角两张卡说不出是谁的数据。
+   标题档与其它块一致（--tw-fs-strong/700/ink-1），计数走 .src 小字；卡片之间仍是浮层沟槽。 */
+.zn-title{display:flex;align-items:baseline;gap:8px}
+.zn-title b{font-size:var(--tw-fs-strong);font-weight:700;color:var(--tw-ink-1)}
+.zn-title .src{font-size:var(--tw-fs-micro);color:var(--tw-ink-4);margin-left:auto;font-variant-numeric:tabular-nums}
+.zn-list{display:flex;flex-direction:column;gap:var(--tw-float-gap)}
 /* ①②（2026-11-10 圈图，非无人化房间）：底栏=「运行中的任务」钉最左（与左栏同宽），
    右列底部纵向叠 场景监测→画面→组态物联（等高卡），各占一行、一块一行。 */
 body[data-zone-view="1"]:not([data-unmanned="1"]) .dock{left:14px;right:auto;width:var(--tw-rail-w);grid-template-columns:minmax(0,1fr)}

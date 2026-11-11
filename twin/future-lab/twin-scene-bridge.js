@@ -137,6 +137,50 @@ function followDot(devId) {
   if (_followBox.isEmpty()) return;
   dot.position.set((_followBox.min.x + _followBox.max.x) / 2, _followBox.max.y + DOT_LIFT, (_followBox.min.z + _followBox.max.z) / 2);
 }
+/* ---------- 光点/航路点的「几何所在房间」判定（2026-11-11 圈图） ----------
+   下钻到某房间时，屏上只该留那一间的设备状态点。上一版按「设备归属房间」过滤，
+   漏了一类：RB-C-01 停在 102-05 充电位、RB-C-02 去 102 取样——它们的 modelRoot 是 106-xx，
+   本体却走在 106 门外，光点跟着本体走（followDot 是 2026-11-08 定的规矩），于是在 106 的画面里
+   就飘着一个 106 归属、位置在 102 的点。AGV 的站点点（knots）同理散在门外，客户把它们读成
+   「别间的设备状态点」。这里改成按几何位置判定：多边形是 CAD 原始单位，世界坐标 ×0.05。 */
+let _roomPolys = null, _roomPolysSrc = null;
+function roomPolys() {
+  const rooms = (visual.g && visual.g.rooms) || [];
+  if (_roomPolysSrc === rooms && _roomPolys) return _roomPolys;
+  _roomPolysSrc = rooms;
+  _roomPolys = rooms.filter(r => /^\d{3}$/.test(String(r.id || r.name || '')))
+    .map(r => ({ id: String(r.id || r.name), pts: (r.points || []).map(q => [q[0] * 0.05, q[1] * 0.05]) }));
+  return _roomPolys;
+}
+function pip(x, z, pts) {
+  let c = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const x1 = pts[i][0], z1 = pts[i][1], x2 = pts[j][0], z2 = pts[j][1];
+    if ((z1 > z) !== (z2 > z) && x < (x2 - x1) * (z - z1) / (z2 - z1) + x1) c = !c;
+  }
+  return c;
+}
+/* 落在走廊/房间外（返回空串）不当作「别家的点」——只有明确落在另一间房里才收起来 */
+function roomAt(x, z) { const hit = roomPolys().find(r => pip(x, z, r.pts)); return hit ? hit.id : ''; }
+function drillRoom() {
+  const v = String(visual.view || '');
+  return /^\d{3}/.test(v) ? v.slice(0, 3) : (v === 'close' ? '106' : '');
+}
+const _dotPos = new THREE.Vector3();
+function dotInDrillRoom(dot, room) {
+  dot.getWorldPosition(_dotPos);
+  const key = _dotPos.x.toFixed(1) + ',' + _dotPos.z.toFixed(1);
+  if (dot.userData.geoKey !== key) { dot.userData.geoKey = key; dot.userData.geoRoom = roomAt(_dotPos.x, _dotPos.z); }
+  return !dot.userData.geoRoom || dot.userData.geoRoom === room;
+}
+/* 航路点（定位点/拐点）跟着同一套规则走：下钻时只留本房间的，回总览全部还原 */
+function clipKnotsToRoom(room) {
+  if (!lines) return;
+  lines.traverse(o => {
+    if (!o.userData || o.userData.knotRoom === undefined) return;
+    o.visible = !room || !o.userData.knotRoom || o.userData.knotRoom === room;
+  });
+}
 function ensureDot(devId, status) {
   const mesh = visual.modelRoots.get(devId); if (!mesh) return;
   let dot = statusDots.get(devId);
@@ -157,13 +201,12 @@ function pulseDots(t) {
   /* 下钻到某个房间时，别的房间的状态点要收掉（2026-11-08 圈图：106 画面里飘着一堆房间外的点，
      它们的设备模型已经被裁在画面外，点还留着就像"这些点属于 106"，是误导）。
      总览（overview）仍全量显示——那时整个实验室都在画面里。 */
-  const roomNow = /^\d{3}/.test(String(visual.view || '')) ? String(visual.view).slice(0, 3)
-    : (visual.view === 'close' ? '106' : null);
+  const roomNow = drillRoom();
   statusDots.forEach(dot => {
     /* 光点的房间归属：总览全显；下钻到某房间只显示那一间的。
        上一版没有这条，106 画面里飘着 107/108/109/110 的点——它们的设备模型已被裁在画面外，
        点还亮着，客户就会以为那些点是 106 的设备状态。 */
-    dot.visible = !roomNow || dot.userData.room === roomNow;
+    dot.visible = !roomNow || (dot.userData.room === roomNow && dotInDrillRoom(dot, roomNow));
     if (LOW) { dot.material.emissiveIntensity = dot.userData.mode === 'fast' ? 3.2 : dot.userData.mode === 'dim' ? 0.7 : 2.2; return; }
     const mode = dot.userData.mode;
     if (mode === 'pulse') dot.material.emissiveIntensity = 2.4 + Math.sin(t * 0.0035) * 1.1;
@@ -171,6 +214,7 @@ function pulseDots(t) {
     else if (mode === 'dim') dot.material.emissiveIntensity = 0.7;
     else dot.material.emissiveIntensity = 2.2;
   });
+  clipKnotsToRoom(roomNow);
 }
 
 /* ---------- 剧本时钟：位置直接由 demoCycle + 墙上时钟算出 ----------
@@ -911,13 +955,14 @@ function drawRoutes(list, walls) {
     const knots = new THREE.Group(); knots.name = 'knots-' + r.robotId;
     const nodes = r.routeNodes || [];
     const mkDot = (x, z, rad, color, op, ring) => {
+      const knotRoom = roomAt(x, z);   /* 画的时候就知道它落在哪一间：下钻时按这条收放 */
       const m = new THREE.Mesh(new THREE.CircleGeometry(rad, 20),
         new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, toneMapped: false, depthWrite: false }));
-      m.rotation.x = -Math.PI / 2; m.position.set(x, 0.026, z);
+      m.rotation.x = -Math.PI / 2; m.position.set(x, 0.026, z); m.userData.knotRoom = knotRoom;
       if (ring) {
         const rg = new THREE.Mesh(new THREE.RingGeometry(rad + 0.055, rad + 0.10, 24),
           new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op * 0.55, toneMapped: false, depthWrite: false, side: THREE.DoubleSide }));
-        rg.rotation.x = -Math.PI / 2; rg.position.set(x, 0.025, z); knots.add(rg);
+        rg.rotation.x = -Math.PI / 2; rg.position.set(x, 0.025, z); rg.userData.knotRoom = knotRoom; knots.add(rg);
       }
       knots.add(m);
     };

@@ -452,6 +452,72 @@ out.push((prof.indexOf('Z-101:env')>=0&&prof.indexOf('Z-102:devices+samples+env+
   out.push((rl.active.includes('S1')&&rl.roomWrapHidden&&rl.mode==='S1'?'✅':'❌')+
     ` 刷新后回到「实验室总览」选中态: ${JSON.stringify(rl)}`);
 }
+/* ⑦⑧⑨⑩（2026-11-11 二次圈图）：极简房间块标题 / 106 画面标题不折行 /
+   下钻只留本房间的设备光点与航路点 / 全屏不再多一层板 */
+{
+  for (const z of ['101', '104']) {
+    await gotoZone(p, z); await p.waitForTimeout(3200);
+    const a = await p.evaluate(() => {
+      const t = document.querySelector('#zoneNodes .zn-title'), c0 = document.querySelector('#zoneNodes .zn-card');
+      if (!t || !c0) return { t: null };
+      const tr = t.getBoundingClientRect(), cr = c0.getBoundingClientRect();
+      return { t: t.innerText.replace(/\s+/g, ' '), gap: Math.round(cr.top - tr.bottom),
+        w: Math.round(tr.width), cw: Math.round(cr.width), cards: document.querySelectorAll('#zoneNodes .zn-card').length };
+    });
+    out.push((a.t && /^组态物联节点状态监测 \d+ 个点位$/.test(a.t) && a.gap > 0 && a.gap <= 16 && Math.abs(a.w - a.cw) <= 2 ? '✅' : '❌') +
+      ` ${z} 右下角有块标题「组态物联节点状态监测 · N 个点位」，卡片在标题下方且同宽: ${JSON.stringify(a)}`);
+  }
+  await gotoZone(p, '106'); await p.waitForTimeout(3600);
+  const c = await p.evaluate(() => {
+    const h = document.querySelector('#cctvBox > header'); if (!h) return null;
+    const b = h.querySelector('b').getBoundingClientRect(), s2 = h.querySelector('.src').getBoundingClientRect();
+    return { title: h.querySelector('b').innerText, src: h.querySelector('.src').innerText,
+      sameLine: Math.abs(b.top - s2.top) < 6, h: Math.round(h.getBoundingClientRect().height) };
+  });
+  out.push((c && c.sameLine && c.h <= 24 ? '✅' : '❌') +
+    ` 106 画面块标题与「N 路 · 房间」各占一行不折断: ${JSON.stringify(c)}`);
+  {
+    const fr = p.frames().find(x => /tour-space/.test(x.url()));
+    const d = await fr.evaluate(() => {
+      const v = window.visual106, V3 = v.camera.position.constructor, w = new V3();
+      const rooms = (v.g.rooms || []).filter(r => /^\d{3}$/.test(String(r.id || r.name)))
+        .map(r => ({ id: String(r.id || r.name), pts: r.points.map(q => [q[0] * .05, q[1] * .05]) }));
+      const pip = (x, z, pts) => { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const x1 = pts[i][0], z1 = pts[i][1], x2 = pts[j][0], z2 = pts[j][1]; if ((z1 > z) !== (z2 > z) && x < (x2 - x1) * (z - z1) / (z2 - z1) + x1) c = !c; } return c; };
+      const own = (x, z) => { const r = rooms.find(q => pip(x, z, q.pts)); return r ? r.id : ''; };
+      const dots = []; let knOut = 0, knVis = 0, knHid = 0;
+      v.scene.traverse(o => {
+        const g = o.geometry; if (!g) return;
+        if (o.visible && /Sphere/.test(g.type)) { o.getWorldPosition(w); dots.push(own(w.x, w.z)); }
+        if (g && /^Circle/.test(g.type) && o.userData && o.userData.knotRoom !== undefined) {
+          if (o.visible) { knVis++; if (o.userData.knotRoom && o.userData.knotRoom !== '106') knOut++; } else knHid++; }
+      });
+      return { view: v.view, dots, knVis, knOut, knHid };
+    });
+    const stray = d.dots.filter(r => r && r !== '106').length;
+    out.push((/^close|^106/.test(d.view) && d.dots.length > 0 && stray === 0 ? '✅' : '❌') +
+      ` 106 画面里的设备光点全部落在 106 地界（可见 ${d.dots.length} 个，飘在别房间的 ${stray} 个——含停在 102-05 充电位的那台机器人）`);
+    out.push((d.knOut === 0 && d.knHid > 0 ? '✅' : '❌') +
+      ` 106 画面里的 AGV 航路点只留本房间的（可见 ${d.knVis}、别房间 0、收起 ${d.knHid}）`);
+    /* 回总览必须全部还原：收起来是为了房间画面干净，不是把全场数据弄丢 */
+    await p.click('.mode[data-mode=S1]'); await p.waitForTimeout(4000);
+    const back = await fr.evaluate(() => {
+      const v = window.visual106; let dots = 0, kn = 0, knHid = 0;
+      v.scene.traverse(o => { const g = o.geometry; if (!g) return;
+        if (o.visible && /Sphere/.test(g.type)) dots++;
+        if (/^Circle/.test(g.type) && o.userData && o.userData.knotRoom !== undefined) { if (o.visible) kn++; else knHid++; } });
+      return { dots, kn, knHid };
+    });
+    out.push((back.dots > d.dots.length && back.knHid === 0 ? '✅' : '❌') +
+      ` 回总览光点与航路点全部还原（光点 ${back.dots} > 房内 ${d.dots.length}，航路点收起 ${back.knHid}）`);
+  }
+  /* 全屏：透明浮层配大投影=中间多一层板。全屏只改尺寸，不改层。 */
+  await p.evaluate(() => { document.body.dataset.full = '1'; }); await p.waitForTimeout(700);
+  const sh = await p.evaluate(() => ['.rail', '.stream', '.tasktable'].map(sel => {
+    const e = document.querySelector(sel); return e ? getComputedStyle(e).boxShadow : 'no-el'; }));
+  await p.evaluate(() => { document.body.dataset.full = '0'; }); await p.waitForTimeout(400);
+  /* .tasktable 在这张页面上本来就没有（旧版遗留选择器），缺元素不算违规 */
+  out.push((sh.filter(v => v !== 'no-el').every(v => v === 'none') ? '✅' : '❌') + ` 全屏态左栏/告警流/任务表都没有多出来的一层板: ${JSON.stringify(sh)}`);
+}
 await gotoZone(p, '106'); await p.waitForTimeout(3000);
 await p.screenshot({path:'/tmp/twin-qa/zoneview-106.png'});
 await p.keyboard.press('1'); await p.waitForTimeout(3000); await p.screenshot({path:'/tmp/twin-qa/zoneview-s1.png'});

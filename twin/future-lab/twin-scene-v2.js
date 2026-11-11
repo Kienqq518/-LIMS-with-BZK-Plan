@@ -441,7 +441,11 @@
     if (!(st.mode === 'ZONE' && document.body.dataset.zoneSimple === '1')) { box.hidden = true; return; }
     var ns = (envNodes || []).filter(function (n) { return String(n.roomId) === String(st.zone); });
     box.hidden = false;
-    box.innerHTML = ns.map(function (n) {
+    /* 这块从前只有卡片、没有标题：右下角孤零零两张卡，没人说得出它是「组态物联节点状态监测」——
+       与其它房间视图里同一块数据的标题对齐（2026-11-11 圈图，101/104）。计数走块头小字，与 .dk>header .src 同一档。 */
+    var list = document.getElementById('znList'), cnt = document.getElementById('znCnt');
+    if (cnt) cnt.textContent = ns.length + ' 个点位';
+    (list || box).innerHTML = ns.map(function (n) {
       var stt = n.status === 'normal' ? '正常' : (n.status === 'offline' ? '离线' : (n.status || '—'));
       var val = nodeReading(n) || '—';
       return '<div class="zn-card" data-node="' + escapeHtml(n.id) + '" role="listitem"'

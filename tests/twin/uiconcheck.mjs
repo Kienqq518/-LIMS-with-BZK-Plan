@@ -67,7 +67,7 @@ const tiny=await p.evaluate(()=>{const bad=[];const walk=document.createTreeWalk
 ok(tiny.length===0,'屏上没有 <10.4px 的文字（8/9/9.5px 三档已并掉）: '+JSON.stringify(tiny));
 
 // ③ 裸值纪律（源文件扫描）
-const src=await p.evaluate(async()=>{const t=await (await fetch('twin-scene-v2.css?v=7')).text();
+const src=await p.evaluate(async()=>{const t=await (await fetch('twin-scene-v2.css?v=8')).text();
   const noComment=t.replace(/\/\*[\s\S]*?\*\//g,'');
   return {hex:(noComment.match(/#[0-9a-fA-F]{3,6}\b/g)||[]).filter(x=>x!=='#000'&&x!=='#fff'),
     blur:(noComment.match(/blur\(\d/g)||[]).length,fs:(noComment.match(/font-size:\d/g)||[]).length,
