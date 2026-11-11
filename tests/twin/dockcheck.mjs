@@ -81,13 +81,16 @@ const grp=await p.evaluate(()=>[...document.querySelectorAll('.dq3 .dq-col')].ma
   /* 行身份：调度行按 data-seq；「进行中」列里还有设备在制行（正在制样/正在检测），
      它们没有 seq（不属于那 60 道调度任务），按 data-dev 记身份，否则去重会把它们算成同一个 undefined。 */
   const seq=[...new Set(rows.map(r=>r.dataset.seq != null && r.dataset.seq !== '' ? 'T' + r.dataset.seq : 'D' + (r.dataset.dev || r.querySelector('.nm')?.innerText || '')))];
-  return {h:e.querySelector('h4').innerText.replace(/\s+/g,' ').trim(), n:seq.length, rows:rows.length,
+  /* 列头的数字只数调度任务：设备在制行排在本列里但不算一道（正本按 aria-hidden 排除回声） */
+  const dev=[...new Set(rows.filter(r=>r.getAttribute('aria-hidden')!=='true'&&r.querySelector('.tag.daq'))
+    .map(r=>'D'+(r.dataset.dev||r.querySelector('.nm')?.innerText||'')))].length;
+  return {h:e.querySelector('h4').innerText.replace(/\s+/g,' ').trim(), n:seq.length, dev, rows:rows.length,
     echo:rows.filter(r=>r.getAttribute('aria-hidden')==='true').length,
     echoTab:rows.filter(r=>r.getAttribute('aria-hidden')==='true'&&r.tabIndex>=0).length, st:e.dataset.state};}));
 out.push((grp.every(x=>x.rows===x.n*2&&x.echo===x.n&&x.echoTab===0)?'✅':'❌')
   +' 回声副本只为滚动存在（行数=道次×2、副本全部 aria-hidden 且不在 Tab 序里）: '+grp.map(x=>x.st+' '+x.n+'道/物理'+x.rows+'/隐藏'+x.echo+'/可Tab副本'+x.echoTab).join(' / '));
 out.push((grp.length===3&&grp[0].st==='running'&&/进行中/.test(grp[0].h)&&/未派单/.test(grp[1].h)&&/已完成/.test(grp[2].h)?'✅':'❌')+' 底栏任务三列（进行中/未派单/已完成）: '+JSON.stringify(grp));
-out.push((grp.every(x=>+x.h.split(/\s+/)[1]===x.n)?'✅':'❌')+' 每列标题的计数 == 该列真实行数（列头不许虚报）: '+grp.map(x=>x.h+'→'+x.n).join(' / '));
+out.push((grp.every(x=>+x.h.split(/\s+/)[1]===x.n-x.dev)?'✅':'❌')+' 每列标题的计数 == 该列调度道数（设备在制行在列内但不计数）: '+grp.map(x=>x.h+'→'+(x.n-x.dev)+'道+设备'+x.dev).join(' / '));
 const q=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/dispatch-queue');
   return {n:r.data.tasks.length, flows:[...new Set(r.data.tasks.map(t=>t.flowCode))].sort(), counts:r.data.counts};});
 out.push((q.n===60&&q.flows.length===20?'✅':'❌')+` 块2 数据=图3 流程配置 16 条 / 20 种流（含图1 的热延伸取放 0161/0162）：${q.flows.join(',')}`);

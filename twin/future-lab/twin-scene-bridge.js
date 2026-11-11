@@ -483,6 +483,23 @@ function build(v) {
   loadNames();
   hookSetViewReset();
   applyHome();          /* 首屏：引擎构造时的 setView 早于本 hook，这里补一次，保证第一帧就是参考图那版机位 */
+  /* 视口一变，构图必须重解（2026-11-11 产品负责人：「初始化位置和大小还是不对」）：
+     fr/pan 是按当时的视口算出来的一组数，窗口一改大小（进出全屏、拖窗口边）就整体错位——
+     实测 1919×1072 下建模只剩 530×245 且往左上偏，而同一份代码在 1684×999 解出的是 811×429。
+     宿主那边只有 syncStreamW/syncZoneBandTop，它改的是浮层宽度，iframe 尺寸变化场景层自己等不到，
+     所以在这里挂 ResizeObserver：清掉两把构图缓存 → 按当前视角重解 → 立刻渲染。
+     滚轮的自定义缩放不受影响——那是 visual.zoom，applyHome 只归位 frScale/pan。 */
+  let lastViewSize = '';
+  new ResizeObserver(() => {
+    const r = visual.renderer.domElement.getBoundingClientRect();
+    const k = Math.round(r.width) + 'x' + Math.round(r.height);
+    if (!k || k === lastViewSize) return;
+    const hadBaseline = !!lastViewSize;
+    lastViewSize = k;
+    if (!hadBaseline) return;                       /* 第一拍只立基线，别在启动途中抢跑 */
+    fitKey = ''; fitVal = null; drillFitKey = ''; drillFitVal = null;
+    applyHome(visual.view); visual.render(); publishCam();
+  }).observe(visual.renderer.domElement);
   wrapFrame();
   bindWheel();
   injectLayerStyle();

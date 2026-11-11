@@ -75,7 +75,22 @@ while (Date.now()-t0 < Math.min(300000, (geo.loopSec+20)*1000)) {
   await p.waitForTimeout(150);
 }
 const nos=[...new Set(seen.map(x=>x.no))].filter(x=>x>0).sort((a,b2)=>a-b2);
-ok(nos.length===60,`一圈内 60 道全部被走到（观察 ${Math.round((Date.now()-t0)/1000)}s，覆盖 ${nos.join(',')}`+')');
+/* 一圈内 60 道全部被走到——判据改成「时序结构」而不是「采样点数够不够」：
+   引擎的道次只会 +1 前进（cycleAt 按窗口取第一道没收的），所以只要
+     b) 道次单调不减（回绕除外），
+     c) 首尾都见到（1 与 60），
+     d) 相邻两次观测的道次跳跃 ≤ 3（跳更多就是真的整段漏道），
+   就能证明 60 道全被走到。原来直接数 distinct==60，在压缩圈里会被采样密度卡出假失败
+   （实测 59/60，缺的第 21 道窗口只有 3.4s，两次 CDP 往返就跨过去了）。 */
+const seq=seen.map(x=>x.no).filter(x=>x>0);
+let wraps=0,maxJump=0,back=0;
+for(let i=1;i<seq.length;i++){const d=seq[i]-seq[i-1];
+  /* 唯一的合法倒退是「整圈回绕」：上一拍已经在圈尾、这一拍已经在圈头。
+     其余任何倒退都说明道次不是单调推进（比如时间轴被算乱）。 */
+  if(d<0){ if(seq[i-1]>=55&&seq[i]<=6) wraps++; else back++; } else if(d>maxJump)maxJump=d;}
+const obsS=(Date.now()-t0)/1000;
+ok(back===0&&maxJump<=3&&nos.length===60,
+  `一圈内 60 道全部被实时走到（观察 ${obsS.toFixed(0)}s / 一圈 ${geo.loopSec}s；道次单调不减、最大跳跃 ${maxJump}、覆盖 ${nos.length}/60）`);
 const dwellChecks=seen.filter(x=>x.phase==='dwell'&&x.agv&&x.live&&x.live.cad);
 const badPos=dwellChecks.filter(x=>{const st=geo.stops.find(s=>s.cad===x.live.cad);if(!st||!st.at)return false;
   return Math.hypot(st.at[0]-x.agv.x, st.at[1]-x.agv.z)>0.25;});

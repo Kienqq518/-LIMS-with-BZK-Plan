@@ -70,9 +70,9 @@ const dq=await p.evaluate(()=>({cols:[...document.querySelectorAll('.dq3 .dq-col
    不是「每列都必须非空」（那等于要求队列永远静止在中间态，正是这次要改掉的假数据）。
    进行中列里还挂着设备在制（正在制样/正在检测）的行，它们不属于那 60 道，要单独扣掉。 */
 const nums=dq.cols.map(c=>+(c.h.match(/(\d+)\s*$/)||[0,0])[1]);
-out.push((dq.cols.length===3&&nums[1]+nums[2]+(nums[0]-dq.devRows)===60&&dq.devRows>=1?'✅':'❌')
-  + ' 调度数没丢：60 道在三列里守恒（进行中扣掉设备在制 ' + dq.devRows + ' 行后 ' + (nums[0]-dq.devRows)
-  + ' 道）+ 未派单 ' + nums[1] + ' + 已完成 ' + nums[2] + ' = 60 —— ' + JSON.stringify(dq.cols.map(c=>c.h)));
+out.push((dq.cols.length===3&&nums[0]+nums[1]+nums[2]===60&&dq.devRows>=1?'✅':'❌')
+  + ' 调度数没丢：列头只报调度任务，三列相加=60 道（进行中 ' + nums[0] + ' + 未派单 ' + nums[1] + ' + 已完成 ' + nums[2]
+  + '）；另有设备在制 ' + dq.devRows + ' 行排在「进行中」列内但不进列头 —— ' + JSON.stringify(dq.cols.map(c=>c.h)));
 out.push((nums[0]>=1?'✅':'❌')+' 进行中至少一道是机器人的目的地（含设备在制共 ' + nums[0] + ' 行）');
 await p.keyboard.press('1'); await p.waitForTimeout(2400);
 /* 来源词与更新时间从屏上撤除（2026-11-07 圈图），但口径不许跟着丢：

@@ -582,7 +582,7 @@
      renderDock 写它、refreshDock 读它，必须同一个函数算，否则两边永远不等、每拍都重建。 */
   function dqSigOf(qt, dvt) {
     return (qt || []).map(function (t) { return t.seq + ':' + t.shown; }).join(',')
-      + '|dev:' + (dvt || []).map(function (t) { return t.taskId + ':' + t.stage + ':' + (t.percent == null ? '' : t.percent); }).join(',');
+      + '|dev:' + (dvt || []).map(function (t) { return t.taskId; }).join(',');   /* 只认成员：阶段/进度走就地更新，不参与重建判定 */
   }
   function dkTrack(id, html, per) {
     var el = $(id); if (!el) return;
@@ -609,6 +609,16 @@
        （AGV 每办完一道，那条任务从 进行中 挪进 已完成），而不是每 2s 一次。 */
     var sig = dqSigOf(qt, (queueData && queueData.deviceTasks) || []);
     if (dqSig && sig !== dqSig) { renderDock(); return; }   /* 只有列归属真变了才重建（重建会把无缝滚动弹回顶部，FR-30b） */
+    /* 设备在制行：成员没变就不重建整列，只就地改阶段与进度。
+       （重建会把 CSS 无缝滚动弹回顶部——FR-30b 的老教训，这轮设备每 2s 跳一次百分比，
+         把百分比放进指纹里等于每拍重建一次，7s 内测到位移 0.0px 就是这么来的。） */
+    ((queueData && queueData.deviceTasks) || []).forEach(function (t) {
+      document.querySelectorAll('.dq3 .dq-row[data-task="' + t.taskId + '"]').forEach(function (el) {
+        var st = el.querySelector('.st'), tm = el.querySelector('.tm');
+        if (st) st.textContent = t.stage;
+        if (tm) tm.textContent = t.percent != null ? t.percent + '%' : (t.elapsedMin != null ? '已 ' + t.elapsedMin + 'min' : '—');
+      });
+    });
     qt.forEach(function (t) {
       document.querySelectorAll('.dq3 .dq-row[data-seq="' + t.seq + '"]').forEach(function (el) {
         el.classList.remove('running', 'unassigned', 'done'); el.classList.add(t.shown);
@@ -1118,7 +1128,10 @@
       var rows = qt.filter(function (t) { return t.shown === g[0]; });
       var dev = g[0] === 'running' ? dvt : [];
       var n = document.getElementById('dqN' + g[0].charAt(0).toUpperCase() + g[0].slice(1));
-      if (n) n.textContent = rows.length + dev.length;
+      /* 列头的数字只数调度任务（三列相加恒等于 60 道，读的人才对得上"一圈 60 道"）。
+         设备在制行照旧排在「进行中」列里、也进 aria，但不计进这个数——它们是设备侧的活，
+         不是调度队列的一道（2026-11-11 产品负责人定的口径）。 */
+      if (n) n.textContent = rows.length;
       dkTrack('#dqTrack' + g[0].charAt(0).toUpperCase() + g[0].slice(1), rows.map(function (t) {
         return '<div class="dq-row ' + g[0] + '" data-seq="' + t.seq + '" data-cad="' + (t.cad || '') + '" data-flow="' + t.flowCode + '" tabindex="0" role="button" aria-label="' + escapeHtml(t.flowCode + ' ' + t.flowName + '，' + g[1] + '，回车定位工位') + '">' +
           '<i class="dq-dot"></i><span class="nm">' + escapeHtml(t.flowCode + ' ' + t.flowName) + '</span>' +
@@ -1130,7 +1143,7 @@
           + (t.percent != null ? '，进度 ' + t.percent + '%' : '')
           + (t.elapsedMin != null ? '，已 ' + t.elapsedMin + ' 分钟' + (t.plannedMin ? '（计划 ' + t.plannedMin + ' 分钟）' : '') : '')
           + '，回车定位该设备';
-        return '<div class="dq-row running" data-dev="' + escapeHtml(t.deviceCode || '') + '" tabindex="0" role="button" aria-label="' + escapeHtml(lb) + '">'
+        return '<div class="dq-row running" data-task="' + escapeHtml(t.taskId || '') + '" data-dev="' + escapeHtml(t.deviceCode || '') + '" tabindex="0" role="button" aria-label="' + escapeHtml(lb) + '">'
           + '<i class="dq-dot"></i><span class="tag daq">设备</span><span class="nm">' + escapeHtml(t.name) + '</span>'
           + '<span class="st">' + escapeHtml(t.stage) + '</span>'
           + '<span class="tm">' + (t.percent != null ? t.percent + '%' : (t.elapsedMin != null ? '已 ' + t.elapsedMin + 'min' : '—')) + '</span></div>';
