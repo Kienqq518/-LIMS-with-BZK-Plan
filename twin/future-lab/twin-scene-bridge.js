@@ -1155,8 +1155,9 @@ function roomOfView(v) { const m = /^(\d{3})-/.exec(v || ''); if (m) return m[1]
    HOME 那组标定值保留作兜底：拿不到宿主浮层几何时仍按标定值走。 */
 let fitKey = '', fitVal = null;
 const FIT_FILL = 0.94;                     /* 房间视图（fitDrillRoom）：留 6% 呼吸 */
-const FIT_FILL_HOME = 1.02;                /* ①（2026-11-09 圈图）：初始化总览「比原来再大一些」——0.94→1.02，
-                                              建模吃进两侧 24px 呼吸边距约 7px；房间视图没让动，常量拆开各管各的 */
+const FIT_FILL_HOME = 0.95;                /* 2026-11-09 曾到 1.02（「比原来再大一些」，吃进呼吸边距）；
+                                              2026-11-11 产品负责人按红框标定：建模应落在 812×438 这一档，
+                                              回到 0.95＝两侧各留回约 21px 呼吸。房间视图的 0.94 没让动。 */
 function fitOverview() {
   const fallback = { fr: HOME.fr, pan: HOME.pan.slice() };
   let a, c, d;
@@ -1186,17 +1187,27 @@ function fitOverview() {
     if (q.z > 1) return;                                       /* 相机背后的点投影坐标是假的，一律不参与 */
     const px = (q.x * .5 + .5) * host.width, py = (-q.y * .5 + .5) * host.height;
     lx = Math.min(lx, px); rx = Math.max(rx, px); ty = Math.min(ty, py); by = Math.max(by, py); };
-  for (const r of ((v.g || {}).rooms || [])) for (const pt of (r.points || [])) { push(pt[0] * S, 0, pt[1] * S); push(pt[0] * S, 2.85, pt[1] * S); }
+  /* 只量真房间（101–110）：CAD 里还有 E / EMPTY / WC 这类无名分区，它们的地块比实验室本身还大
+     （EMPTY 跨 x 0.24–17.1m），把它们算进包围盒会把总览整体顶高 50px、往左上偏——
+     屏上就是「建模缩在左上、下方一条空带」。产品负责人 2026-11-11 给的框是实验室本身的大小与位置。 */
+  for (const r of ((v.g || {}).rooms || [])) {
+    if (!/^\d{3}$/.test(String(r.id || r.name || ''))) continue;
+    for (const pt of (r.points || [])) { push(pt[0] * S, 0, pt[1] * S); push(pt[0] * S, 2.85, pt[1] * S); }
+  }
   if (lx > rx - 1) return fallback;
   const w0 = rx - lx, h0 = by - ty, cx0 = (lx + rx) / 2, cy0 = (ty + by) / 2;
   const k = Math.min(bandW * FIT_FILL_HOME / w0, bandH * FIT_FILL_HOME / h0);
-  const fr = +(frScale / k).toFixed(4);
   /* 换 fr 会以视锥中心为基准缩放位置——但缩的是「不含 pan 位移」的那部分：
      pan 是屏幕像素平移，1:1 不随 fr 变（视锥钩子里就是这么实现的）。
      早先把整段 cx0（含旧 pan）一起乘 k，等于把旧 pan 也放大——下钻起点 pan0 有 ~90px，
      解出来的中心就飘了 74px，建模右缘压过右列 10px。正确分解：去 pan → 缩放 → 加新 pan。 */
   const cxNew = host.width / 2 + (cx0 - myPan[0] - host.width / 2) * k, cyNew = host.height / 2 + (cy0 - myPan[1] - host.height / 2) * k;
+  const fr = +(frScale / k).toFixed(4);
   const pan = [Math.round((x0 + x1) / 2 - cxNew), Math.round((y0 + y1) / 2 - cyNew)];
+  /* 一遍解就够：带中心 (y0+y1)/2 与投影测量同在 canvas 系，本就对齐。
+     曾加过「第二遍按残差补平移」，那是被校对脚本漏加 iframe 的 56px 偏移骗出来的——
+     实测一遍解后中心 764,360(canvas)=764,416(页面) vs 带中心 765,415 只差 1px；
+     二遍反而把尺寸解坏（811x429 缩成 451x238），撤掉。 */
   fitKey = key; fitVal = { fr, pan, fit: { w0: Math.round(w0), bandW: Math.round(bandW), k: +k.toFixed(3) } };
   const hk = document.getElementById('twin-v2-bridge'); if (hk) hk.dataset.homeFit = JSON.stringify(fitVal.fit);
   return fitVal;

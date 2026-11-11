@@ -77,7 +77,10 @@ out.push((agv.rows.every(x=>x.aria.length>30&&/电量 \d+%/.test(x.aria))?'✅':
    列头计数说的是"这一列有几道任务"，按行身份 data-seq 去重才对；回声副本本身由下面那条
    「回声不进无障碍树/Tab 序」单独守，不许在这里靠"数一半"混过去。 */
 const grp=await p.evaluate(()=>[...document.querySelectorAll('.dq3 .dq-col')].map(e=>{
-  const rows=[...e.querySelectorAll('.dq-row')], seq=[...new Set(rows.map(r=>r.dataset.seq))];
+  const rows=[...e.querySelectorAll('.dq-row')];
+  /* 行身份：调度行按 data-seq；「进行中」列里还有设备在制行（正在制样/正在检测），
+     它们没有 seq（不属于那 60 道调度任务），按 data-dev 记身份，否则去重会把它们算成同一个 undefined。 */
+  const seq=[...new Set(rows.map(r=>r.dataset.seq != null && r.dataset.seq !== '' ? 'T' + r.dataset.seq : 'D' + (r.dataset.dev || r.querySelector('.nm')?.innerText || '')))];
   return {h:e.querySelector('h4').innerText.replace(/\s+/g,' ').trim(), n:seq.length, rows:rows.length,
     echo:rows.filter(r=>r.getAttribute('aria-hidden')==='true').length,
     echoTab:rows.filter(r=>r.getAttribute('aria-hidden')==='true'&&r.tabIndex>=0).length, st:e.dataset.state};}));
@@ -90,7 +93,7 @@ const q=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/disp
 out.push((q.n===60&&q.flows.length===20?'✅':'❌')+` 块2 数据=图3 流程配置 16 条 / 20 种流（含图1 的热延伸取放 0161/0162）：${q.flows.join(',')}`);
 out.push((q.counts.running+q.counts.unassigned+q.counts.done===60?'✅':'❌')+' 块2 三态合计=60: '+JSON.stringify(q.counts));
 const names=await p.evaluate(()=>[...new Set([...document.querySelectorAll('.dq3 .dq-row .nm')].map(e=>e.innerText.trim()))].length);
-out.push((names>=11?'✅':'❌')+' 块2 渲染出的任务名（流号+流名）覆盖全部 11 种流: '+names);
+out.push((names>=22?'✅':'❌')+' 块2 渲染出的行名覆盖 20 种流 + 设备在制（流号+流名/设备任务名）: '+names);
 
 // ②b 队列状态跟着循环剧本走（进行中那一行 = 机器人当前停靠/正在前往的站）
 /* 「循环中」的正确性只能在一次响应内校验：队列与剧本各自按墙上时钟取模，

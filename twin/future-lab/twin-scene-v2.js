@@ -578,16 +578,25 @@
   /* ---------- 底栏四块（2026-11-06 产品负责人方案，见 PRD §5.2A） ----------
      ① 设备运行状态（四档圆环）  ② 无人化调度任务队列（图3 流程配置 + 图1 三分类）
      ③ 正在检测委托单下的试验项完成情况（图4 名称与检测设备）  ④ 组态物联节点滚动 */
+  /* 队列列归属指纹：调度任务（按 seq:shown）+ 设备在制（按 taskId:stage:percent）。
+     renderDock 写它、refreshDock 读它，必须同一个函数算，否则两边永远不等、每拍都重建。 */
+  function dqSigOf(qt, dvt) {
+    return (qt || []).map(function (t) { return t.seq + ':' + t.shown; }).join(',')
+      + '|dev:' + (dvt || []).map(function (t) { return t.taskId + ':' + t.stage + ':' + (t.percent == null ? '' : t.percent); }).join(',');
+  }
   function dkTrack(id, html, per) {
     var el = $(id); if (!el) return;
-    el.innerHTML = html + html;                                  /* 复制一份做无缝滚动 */
+    /* 一行的时候不许复制回声副本：滚动动画虽然关了（per>1 才开），副本仍是一个可见的
+       .dq-row——屏上就出现两条一模一样的「0161 热延伸试验取料 · 循环中」（2026-11-11 圈图）。
+       复制只为 translateY(-50%) 的无缝滚动服务，没有可滚的内容就没有复制的理由。 */
+    el.innerHTML = per > 1 ? html + html : html;
     /* 后一半是「回声副本」，只为 translateY(-50%) 的无缝滚动存在，不是第二条任务：
        告警流那边用 .dup[aria-hidden] 包一层解决，这里 .dk-track 是 flex 列、行自带 margin，
        包一层会改行距（-50% 就对不齐，滚动会跳），所以逐行标注，口径一致。
        不标注的代价是实打实的：每条任务/试验项/物联点位被读屏念两遍、Tab 停点多一倍。
        副本仍可点击——点在副本与点在原件是同一件事，只是不再进无障碍树与 Tab 序。 */
     var nn = el.children.length;
-    for (var ii = nn >> 1; ii < nn; ii++) { var cc = el.children[ii];
+    for (var ii = per > 1 ? nn >> 1 : nn; ii < nn; ii++) { var cc = el.children[ii];
       cc.setAttribute('aria-hidden', 'true'); cc.tabIndex = -1; cc.removeAttribute('role'); }
     el.style.animation = per > 1 ? ('dkUp ' + Math.max(18, Math.round(per * 4.6)) + 's linear infinite') : 'none';
   }
@@ -598,8 +607,8 @@
     /* 三列布局下，任务换状态=换列，就地改字改不了位置。重建会把 CSS 无缝滚动弹回顶部
        （FR-30b 那条教训），所以只在「列归属真的变了」时重建一次——一圈里这只会发生几次
        （AGV 每办完一道，那条任务从 进行中 挪进 已完成），而不是每 2s 一次。 */
-    var sig = qt.map(function (t) { return t.seq + ':' + t.shown; }).join(',');
-    if (dqSig && sig !== dqSig) { renderDock(); return; }
+    var sig = dqSigOf(qt, (queueData && queueData.deviceTasks) || []);
+    if (dqSig && sig !== dqSig) { renderDock(); return; }   /* 只有列归属真变了才重建（重建会把无缝滚动弹回顶部，FR-30b） */
     qt.forEach(function (t) {
       document.querySelectorAll('.dq3 .dq-row[data-seq="' + t.seq + '"]').forEach(function (el) {
         el.classList.remove('running', 'unassigned', 'done'); el.classList.add(t.shown);
@@ -878,7 +887,9 @@
     var live = queueData && queueData.liveStep;
     var sync = live && live.flowCode ? '，循环同步 ' + live.flowCode
       : (live && live.kind === 'pickup' ? '，循环同步 样品室取样' : (live && live.kind === 'return' ? '，循环同步 返航' : ''));
+    var dv = (queueData && queueData.deviceTasks) || [];
     blk.setAttribute('aria-label', '无人化调度任务：流程配置 ' + (qt ? qt.length : 0) + ' 条' + sync
+      + (dv.length ? '，另有设备在制 ' + dv.length + ' 项（正在制样/正在检测）' : '')
       + '，按进行中 / 未派单 / 已完成三列');
   }
 
@@ -1097,20 +1108,36 @@
     /* ② 调度任务队列（FR-42）：进行中 / 未派单 / 已完成 改成三列并排。
        状态已经是「列」，所以行内不再重复写状态字（只有 AGV 正在办的那道标「循环中」）。 */
     var qt = (queueData && queueData.tasks) || [];
+    /* 设备侧在制任务（正在制样/正在检测）——2026-11-11 产品负责人：
+       「进行中」= 小机器人行进路线的目的地那一道 + 正在制样或正在检测的设备的任务。
+       只有机器人那一道是不够的：AGV 把料放进工位后，真正在出结果的是设备，
+       那一列却空着，读的人以为整间实验室只有一个人有事干。 */
+    var dvt = (queueData && queueData.deviceTasks) || [];
     var groups = [['running', '进行中'], ['unassigned', '未派单'], ['done', '已完成']];
     groups.forEach(function (g) {
       var rows = qt.filter(function (t) { return t.shown === g[0]; });
+      var dev = g[0] === 'running' ? dvt : [];
       var n = document.getElementById('dqN' + g[0].charAt(0).toUpperCase() + g[0].slice(1));
-      if (n) n.textContent = rows.length;
+      if (n) n.textContent = rows.length + dev.length;
       dkTrack('#dqTrack' + g[0].charAt(0).toUpperCase() + g[0].slice(1), rows.map(function (t) {
         return '<div class="dq-row ' + g[0] + '" data-seq="' + t.seq + '" data-cad="' + (t.cad || '') + '" data-flow="' + t.flowCode + '" tabindex="0" role="button" aria-label="' + escapeHtml(t.flowCode + ' ' + t.flowName + '，' + g[1] + '，回车定位工位') + '">' +
           '<i class="dq-dot"></i><span class="nm">' + escapeHtml(t.flowCode + ' ' + t.flowName) + '</span>' +
           '<span class="st">' + (t.live ? '循环中' : '') + '</span>' +
           '<span class="tm">' + (g[0] === 'running' && t.elapsedMin ? '已 ' + t.elapsedMin + '/' + t.plannedMin + 'min' : (t.time || '—')) + '</span></div>';
-      }).join(''), rows.length);
+      }).join('') + dev.map(function (t) {
+        var lb = '设备任务 ' + t.name + '，' + t.stage + (t.deviceCode ? '，工位 ' + t.deviceCode : '')
+          + (t.sampleId ? '，样品 ' + t.sampleId : '')
+          + (t.percent != null ? '，进度 ' + t.percent + '%' : '')
+          + (t.elapsedMin != null ? '，已 ' + t.elapsedMin + ' 分钟' + (t.plannedMin ? '（计划 ' + t.plannedMin + ' 分钟）' : '') : '')
+          + '，回车定位该设备';
+        return '<div class="dq-row running" data-dev="' + escapeHtml(t.deviceCode || '') + '" tabindex="0" role="button" aria-label="' + escapeHtml(lb) + '">'
+          + '<i class="dq-dot"></i><span class="tag daq">设备</span><span class="nm">' + escapeHtml(t.name) + '</span>'
+          + '<span class="st">' + escapeHtml(t.stage) + '</span>'
+          + '<span class="tm">' + (t.percent != null ? t.percent + '%' : (t.elapsedMin != null ? '已 ' + t.elapsedMin + 'min' : '—')) + '</span></div>';
+      }).join(''), rows.length + dev.length);
     });
     queueAria(qt);
-    dqSig = qt.map(function (t) { return t.seq + ':' + t.shown; }).join(',');   /* 列归属指纹：只有换列才重建 */
+    dqSig = dqSigOf(qt, dvt);   /* 列归属指纹：只有换列才重建 */
 
     /* ③ 安全管家场景监测（2026-11-08 替换原「试验项完成情况」；委托单试验项接口仍在契约里，只是不再上屏——
        试验项目的数在左栏「试验项目」组与 106 区域面板里都有，同一批数字不在屏上写两遍） */
@@ -1659,7 +1686,15 @@
         return;
       }
       var q = e.target.closest('.dq3 .dq-row');
-      if (q) { dockLocate(q.dataset.cad, q.querySelector('.nm').textContent); return; }
+      if (q) {
+        /* 设备在制行没有 CAD 工位号（它不是机器人要搬的那一道），按设备号开设备卡 */
+        if (!q.dataset.cad && q.dataset.dev) {
+          var dv = devices.filter(function (x) { return x.code === q.dataset.dev || x.deviceId === q.dataset.dev; })[0];
+          if (dv) { selectDevice(dv, (dv.modelNode || '').replace('cad:', '')); return; }
+          flashHint('设备 ' + q.dataset.dev + ' 无建档记录，暂不定位'); return;
+        }
+        dockLocate(q.dataset.cad, q.querySelector('.nm').textContent); return;
+      }
       var scEl = e.target.closest('#dkScenesGrid .sc-row');
       if (scEl) { dockLocateScene(scEl.dataset.scene); return; }
       var ndTh = e.target.closest('#dkNodesTrack .nd-row');

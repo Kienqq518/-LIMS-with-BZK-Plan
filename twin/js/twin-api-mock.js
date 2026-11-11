@@ -377,6 +377,21 @@
     q.liveFlow = sp ? sp.flowCode : null;                 /* 取样那道没有流号，给 null 而不是硬凑一个 */
     q.liveOrder = sp ? sp.visit : null;                   /* 站序：测试可核对「第 n 道」确实落在机器人当前所在站 */
     q.stepCount = (cy && cy.cycle && cy.cycle.stepCount) || 0;
+    /* 「进行中」这一列不止 AGV 那一道（2026-11-11 产品负责人）：
+       = 机器人行进路线的目的地那一道（上面 liveStep 那条）+ 正在制样/正在检测的设备任务。
+       设备任务读 overview/today-tasks——与区域视图「运行中的任务」同一份数采口径，不另发明一套数。
+       只取 106 设备链上、结果未出（含异常挂起）的：已完成的属于历史，不属于在制。 */
+    var codes106 = {}; (((state.zone106 || {}).devices) || []).forEach(function (x) { codes106[x.code] = 1; });
+    q.deviceTasks = (((state.overview || {})['today-tasks']) || []).filter(function (t) {
+      if (t.result === 'passed') return false;
+      return (t.deviceChain || []).some(function (c) { return codes106[c]; });
+    }).map(function (t) {
+      return { taskId: t.taskId, kind: 'device', name: t.type, stage: t.stage || '进行中',
+        deviceCode: (t.deviceChain || [])[0] || null, deviceChain: t.deviceChain || [],
+        percent: t.progress ? t.progress.percent : null, elapsedMin: t.elapsedMin || 0,
+        plannedMin: t.plannedMin || null, sampleId: t.sampleId || null,
+        alarm: t.result === 'alarm', shown: 'running' };
+    });
     q.loopSec = (cy && cy.cycle && cy.cycle.loopSec) || null;
     q.lapProgress = (cy && cy.cycle && cy.cycle.loopSec) ? Math.round((cy.t / cy.cycle.loopSec) * 100) / 100 : null;
     return q;
@@ -582,7 +597,7 @@
         cadStops.forEach(function (st) { if (st.deviceCode && !cadDev[st.cad]) cadDev[st.cad] = st.deviceCode; });
         var liveQ = queueView(clone(state.overview['dispatch-queue'] || { tasks: [] }));
         (liveQ.tasks || []).forEach(function (t) {
-          if (t.shown === 'done') return;                       // 本轮走完的不算「在制」
+          if (t.shown !== 'running') return;                   // 未派单不是「在制任务」，别把 50 道 backlog 塞进这一格
           out.push({ kind: 'dispatch', taskId: t.taskNo || ('CYC-' + t.seq), name: t.flowCode + ' ' + t.flowName,
             deviceCode: cadDev[t.cad] || t.cad, robotId: t.robotId || null, startedAt: t.time === '—' ? null : t.time,
             elapsedMin: t.elapsedMin || null, plannedMin: t.plannedMin || null,
