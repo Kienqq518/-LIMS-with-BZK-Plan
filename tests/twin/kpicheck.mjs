@@ -63,7 +63,10 @@ await gotoZone(p,'106'); await p.waitForTimeout(2600);
 const zt=(await p.locator('#zsGrid').innerText()).replace(/\s+/g,' ');   /* ①（2026-11-09）：四格升级为三子区域 */
 out.push((/委托任务/.test(zt)&&/样品/.test(zt)&&/试验项目/.test(zt)?'✅':'❌')+' 106 左栏统计＝三子区域（旧「已完成/执行中/异常挂起/排队」四格按①口径退役，委托/样品/试验项目接棒）: '+zt.slice(0,80));
 const dq=await p.evaluate(()=>[...document.querySelectorAll('.dq3 .dq-col')].map(c=>({h:c.querySelector('h4').innerText.replace(/\s+/g,' ').trim(),n:c.querySelectorAll('.dq-row').length})));
-out.push((dq.length===3&&dq.every(c=>c.n>0&&/\d+/.test(c.h))?'✅':'❌')+' 调度数没丢：底栏调度队列三列各带计数（执行中/未派单/已完成由队列块继续承载）—— '+JSON.stringify(dq.map(c=>c.h+'×'+c.n)));
+/* 三列计数由循环剧本现算（2026-11-11 三相流程）：一圈刚开始时「已完成」可以是 0、
+   返航段「未派单」也可以是 0——所以判据是「三列相加=60 道且每列都带数字」，
+   不是「每列都必须非空」（那等于要求队列永远静止在中间态，正是这次要改掉的假数据）。 */
+out.push((dq.length===3&&dq.map(c=>+(c.h.match(/(\d+)\s*$/)||[0,0])[1]).reduce((a2,b2)=>a2+b2,0)===60&&dq.every(c=>/\d+/.test(c.h))?'✅':'❌')+' 调度数没丢：底栏调度队列三列计数相加=60 道（进行中/未派单/已完成随 AGV 实时变）—— '+JSON.stringify(dq.map(c=>c.h)));
 await p.keyboard.press('1'); await p.waitForTimeout(2400);
 /* 来源词与更新时间从屏上撤除（2026-11-07 圈图），但口径不许跟着丢：
    每组与面板头都必须在 aria-label 里带「来源 + 更新时间」，读屏与二期接口核对仍拿得到。 */

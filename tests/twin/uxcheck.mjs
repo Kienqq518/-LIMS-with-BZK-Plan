@@ -79,7 +79,15 @@ const visDk=()=>p.evaluate(()=>[...document.querySelectorAll('.dock .dk')].filte
 T('底栏块数（总览可见三块：安全管家场景 / 无人化调度任务 / 组态物联）', await visDk(), 3);
 /* 场景块改成固定 3×2 网格后不再有滚动轨道：三列任务 + 物联 = 4 条（FR-61） */
 T('滚动轨道数（任务三列 + 物联；场景块固定六格、区域专用块不计）', await p.evaluate(()=>[...document.querySelectorAll('.dk-track')].filter(e=>{const r=e.getBoundingClientRect();return r.width>2&&r.height>2;}).length), 4);
-out.push(((await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')))==='dkUp/dkUp/dkUp'?'✅':'❌')+' 三列各自滚动: '+await p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>getComputedStyle(document.getElementById(i)).animationName).join('/')));
+/* 三列滚动：队列改成按循环剧本现算后，「进行中」恒为 1 道（AGV 同一次只办一道），
+   一行没有可滚的内容 ⇒ dkTrack 给它 animation:none 是对的（硬要滚就是把一行字顶出容器，
+   正是 2026-11-11 修掉的那条空态裁字 bug）。判据改成：多行的列必须滚，单行的列必须不滚。 */
+const trkAnim=()=>p.evaluate(()=>['dqTrackRunning','dqTrackUnassigned','dqTrackDone'].map(i=>{const e=document.getElementById(i);
+  const rows=[...e.children].filter(c=>c.getAttribute('aria-hidden')!=='true').length;
+  return {id:i,rows,anim:getComputedStyle(e).animationName};}));
+const ta=await trkAnim();
+out.push((ta.every(x=>(x.rows>1?x.anim==='dkUp':x.anim==='none'))&&ta.filter(x=>x.rows>1).length>=2?'✅':'❌')
+  +' 多行的列各自滚动、单行的列不滚（进行中恒 1 道）: '+JSON.stringify(ta.map(x=>x.id.replace('dqTrack','')+':'+x.rows+'行/'+x.anim)));
 
 /* FR-42 全站一律无底板；FR-46 把 F 档垫底由「更重的白」改成「淡灰」——
    断言跟着改成「有底、够实、且不是纯白」，只盯 alpha 挡不住白不白这件事。 */
@@ -155,7 +163,7 @@ let sa=null, uiTxt='', agree=false;
 for(let k=0;k<4;k++){
   const both=await p.evaluate(async()=>{const r=await TwinApi.get('/api/zone/106/cycle');
     return {live:r.data.live, ui:(document.getElementById('cycleBox').innerText+' | '+document.getElementById('cyNow').getAttribute('aria-label')).replace(/\s+/g,' ')};});
-  sa=both.live; uiTxt=both.ui; if(uiTxt.includes('第 '+sa.order+'/17 道')){agree=true;break;}
+  sa=both.live; uiTxt=both.ui; if(uiTxt.includes('第 '+sa.order+'/60 道')){agree=true;break;}
   await p.waitForTimeout(1200);
 }
 out.push((agree?'✅':'❌')+` 停靠道与剧本一致：UI「${uiTxt.slice(0,52)}」↔ 端点 live.order=${sa.order}(${sa.label})`);

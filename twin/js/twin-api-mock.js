@@ -121,8 +121,19 @@
       return { at: at, pts: out };
     };
     var legs = [], prevArc = 0, prevSt = null;
+    /* 站点弧长必须按「停靠顺序」在折线上向前走查（2026-11-11 三相流程）：
+       原来用坐标反查 arcOf(at)，同一个工位一圈被访问好几次时永远命中第一次出现的位置，
+       后面的停靠弧长比前一个小 ⇒ t0 递减、legs 倒着算、返航被算成 375s——整条时间轴都乱。 */
+    var stArc = function (at, fromArc) {
+      for (var j = 0; j < pts.length; j++) {
+        if (C[j] < fromArc - 1e-6) continue;
+        if (Math.abs(pts[j][0] - at[0]) < 1e-3 && Math.abs(pts[j][1] - at[1]) < 1e-3) return C[j];
+      }
+      return arcOf(at);
+    };
     stations.forEach(function (st, k) {
-      var a = arcOf(st.at);
+      var a = stArc(st.at, prevArc);
+      st.__arc = a;
       if (prevSt) {
         var sl = slice(prevArc, a);
         legs.push({ from: prevSt.order, to: st.order, fromLabel: prevSt.label, toLabel: st.label,
@@ -175,22 +186,36 @@
     var stepsAudit = { total: 0, unmatched: [] };
     if (rb.demoCycle && rb.demoCycle.stops) {
       var tasks = ((state.overview['dispatch-queue'] || {}).tasks) || [];
+      var bySeq = {}; tasks.forEach(function (t) { bySeq[t.seq] = t; });
       var byCad = {};
       tasks.slice().sort(function (a, b) { return a.seq - b.seq; }).forEach(function (t) { (byCad[t.cad || ''] = byCad[t.cad || ''] || []).push(t); });
       var visits = rb.demoCycle.stops;
-      var kth = 0;
+      var usedSeq = {};
       visits.forEach(function (st) {
-        var mine = (byCad[st.cad] || []).slice();
         var list = [];
-        if (st.cad === '102-01') list.push({ kind: 'pickup', seq: null, flowCode: null,
-          flowName: '样品室取样（粗制样电缆）', cad: st.cad, label: st.label, deviceCode: null, taskNo: null });
-        mine.forEach(function (t) { list.push({ kind: 'task', seq: t.seq, flowCode: t.flowCode, flowName: t.flowName,
-          cad: st.cad, label: st.label, deviceCode: t.deviceCode || null, taskNo: t.taskNo || null }); });
+        if (st.taskSeqs) {
+          /* 停靠直接点名挂哪几道任务（2026-11-11 三相流程）。同一个工位一圈要被访问好几次，
+             按 cad 归组会把任务全塞进第一次经过的那一站、后面的站扑空——线路与任务就对不上步调。 */
+          st.taskSeqs.forEach(function (sq) {
+            var t = bySeq[sq]; if (!t) { stepsAudit.unmatched.push(sq + '@' + st.cad); return; }
+            usedSeq[sq] = 1;
+            list.push({ kind: 'task', seq: t.seq, flowCode: t.flowCode, flowName: t.flowName, cad: st.cad,
+              label: st.label, deviceCode: st.deviceCode || null, taskNo: t.taskNo || null,
+              phase: t.phase || null, step: t.step || null, plannedMin: t.plannedMin });
+          });
+        } else {
+          var mine = (byCad[st.cad] || []).slice();
+          if (st.cad === '102-01') list.push({ kind: 'pickup', seq: null, flowCode: null,
+            flowName: '样品室取样（粗制样电缆）', cad: st.cad, label: st.label, deviceCode: null, taskNo: null });
+          mine.forEach(function (t) { list.push({ kind: 'task', seq: t.seq, flowCode: t.flowCode, flowName: t.flowName,
+            cad: st.cad, label: st.label, deviceCode: t.deviceCode || null, taskNo: t.taskNo || null }); });
+          delete byCad[st.cad];
+        }
         st.steps = list;
         st.dwellSec = Math.max(st.dwellSec || 0, list.length * WORK);
-        delete byCad[st.cad];
       });
-      Object.keys(byCad).forEach(function (cad) { (byCad[cad] || []).forEach(function (t) { if (t.cad) stepsAudit.unmatched.push(t.seq + '@' + t.cad); }); });
+      Object.keys(byCad).forEach(function (cad) { (byCad[cad] || []).forEach(function (t) { if (t.cad && !usedSeq[t.seq]) stepsAudit.unmatched.push(t.seq + '@' + t.cad); }); });
+      tasks.forEach(function (t) { if (!usedSeq[t.seq]) stepsAudit.unmatched.push(t.seq + '@nowhere'); });
       stepsAudit.total = visits.reduce(function (a, st) { return a + (st.steps || 0).length; }, 0);
     }
     /* 时间轴：t0=停靠开始，travel 段在 [t0-travelSec, t0)；u 与 travelSec 都由弧长推导 */
@@ -198,7 +223,7 @@
       var stops = rb.demoCycle.stops;
       stops.forEach(function (st, k) {
         var sn = stations[Math.min(k, stations.length - 1)];
-        var a = arcOf(sn.at);
+        var a = sn.__arc != null ? sn.__arc : arcOf(sn.at);   /* 与 legs 同一次出现，不再坐标反查 */
         st.u = +(a / L).toFixed(4);
         st.travelSec = k === 0 ? 0 : legs[k - 1].travelSec;
         st.t0 = k === 0 ? 0 : +(stops[k - 1].t0 + stops[k - 1].dwellSec + legs[k - 1].travelSec).toFixed(1);
@@ -224,7 +249,23 @@
       rb.demoCycle.pathLengthM = +L.toFixed(1);
       rb.demoCycle.legs = legs;
     }
-    rb.routeDerived = { nodes: rb.routeNodes.length, vertices: pts.length, stations: stations.length, legs: legs.length, lengthM: +L.toFixed(2), loopSec: rb.demoCycle && rb.demoCycle.loopSec };
+    /* QA/交付参数 ?cycle-compress=k：把一圈的时间轴整体等比压缩 k 倍（几何、顺序、窗口关系一个都不动）。
+       三相流程一圈 60 道 ≈ 20 分钟，回归套件要验「一圈内 60 道全部被走到」不能真等 20 分钟；
+       压缩是等比的，所以「行进结束才进下一道」「窗口不重叠」「道↔站↔AGV 一致」这些判据依然成立。
+       默认不压缩（演示与大屏看到的还是 0.75m/s 的真实速度）。 */
+    var CMP = Math.max(1, Number(new URLSearchParams(location.search).get('cycle-compress') || 1));
+    if (CMP > 1) {
+      rb.demoCycle.compress = CMP;
+      rb.demoCycle.stops.forEach(function (st) {
+        st.dwellSec = +(st.dwellSec / CMP).toFixed(2);
+        st.travelSec = +((st.travelSec || 0) / CMP).toFixed(2);
+        st.t0 = +(st.t0 / CMP).toFixed(2);
+        (st.steps || []).forEach(function (sp) { sp.t0 = +(sp.t0 / CMP).toFixed(2); sp.durSec = +(sp.durSec / CMP).toFixed(2); sp.endSec = +(sp.endSec / CMP).toFixed(2); });
+      });
+      rb.demoCycle.steps.forEach(function (sp) { sp.t0 = +(sp.t0 / CMP).toFixed(2); sp.durSec = +(sp.durSec / CMP).toFixed(2); sp.endSec = +(sp.endSec / CMP).toFixed(2); });
+      rb.demoCycle.loopSec = +(rb.demoCycle.loopSec / CMP).toFixed(2);
+    }
+    rb.routeDerived = { nodes: rb.routeNodes.length, vertices: pts.length, stations: stations.length, legs: legs.length, lengthM: +L.toFixed(2), loopSec: rb.demoCycle && rb.demoCycle.loopSec, compress: CMP > 1 ? CMP : null };
   }
 
   function cycleNow() {
@@ -255,7 +296,7 @@
         if (!step) { step = S[S.length - 1]; stepPhase = 'travel'; stepRemain = Math.max(0, Math.round(c.loopSec - t)); }
       }
     }
-    return { cycle: c, robot: rb, index: idx, stop: cur, next: next, phase: phase, f: f, tail: tail, step: step, stepPhase: stepPhase, stepRemaining: stepRemain,
+    return { cycle: c, robot: rb, index: idx, stop: cur, next: next, phase: phase, f: f, tail: tail, step: step, stepPhase: stepPhase, stepRemaining: stepRemain, t: +t.toFixed(2),
       u: Math.max(0, Math.min(1, u)),
       remaining: Math.max(0, Math.round(tail ? c.loopSec - t : (phase === 'dwell' ? cur.t0 + cur.dwellSec - t : dwellStart - t))) };
   }
@@ -298,9 +339,37 @@
        取样那道不属于调度队列（seq=null），此时没有行被标循环中，屏上也不该硬凑。 */
     q.liveSeq = sp ? sp.seq : null;
     q.liveStep = sp ? { no: sp.no, kind: sp.kind, seq: sp.seq, cad: sp.cad, flowCode: sp.flowCode, phase: cy.stepPhase } : null;
+    /* 状态三分类由「这道任务在循环剧本里排第几步」现算（2026-11-11 产品负责人：返航的时候下面
+       应该所有任务都在已完成——从前读的是 seed 里写死的 state，除了正在跑的那一条，三列数字永远不动）。
+         步号 < 当前步 = 本轮已经走完 = 已完成
+         步号 = 当前步 = 进行中（行进途中就算，屏上第 n 道与机器人第 n 段线路同一口径）
+         步号 > 当前步 = 还没轮到 = 未派单
+       一圈走完回到起点自然清零重来，与「AGV 循环跑三相流程」是同一件事。
+       没有剧本（steps 为空）时退回读 seed 的 state，不让屏上出现空列。 */
+    var steps = (cy && cy.cycle && cy.cycle.steps) || [];
+    var stepOf = {}; steps.forEach(function (st) { if (st.seq != null) stepOf[st.seq] = st; });
+    /* 当前步 = 第一个「窗口还没收」的步骤；行进段算下一道（与「屏上第 n 道=机器人第 n 段线路」同口径）。
+       全部窗口都收完 = 返航段 ⇒ curNo 越过最后一步，三列里只剩已完成，这正是产品负责人要的「返航时下面全在已完成」。 */
+    var curNo = steps.length + 1;
+    for (var si2 = 0; si2 < steps.length; si2++) { if ((cy ? cy.t : 0) < steps[si2].endSec) { curNo = steps[si2].no; break; } }
+    var nowS = Date.now() / 1000;
     q.tasks.forEach(function (t) {
-      t.live = !!(sp && sp.seq != null && t.seq === sp.seq);
-      t.shown = t.live ? 'running' : t.state;
+      var st = stepOf[t.seq];
+      t.stepNo = st ? st.no : null;
+      if (!st) { t.live = !!(sp && sp.seq != null && t.seq === sp.seq); t.shown = t.live ? 'running' : t.state; return; }
+      t.live = st.no === curNo;
+      t.shown = st.no < curNo ? 'done' : (t.live ? 'running' : 'unassigned');
+      t.robotId = t.shown === 'unassigned' ? null : 'RB-C-02';
+      if (t.shown === 'done') {
+        /* 完成时间取本轮这道窗口收尾的墙上时刻：本轮没走到的步骤不会提前拿到时间，也不跨圈编造 */
+        var when = nowS - (cy.t || 0) + st.endSec;
+        t.time = new Date(when * 1000).toLocaleTimeString('zh-CN', { hour12: false }).slice(0, 5);
+        t.elapsedMin = t.plannedMin;
+      } else if (t.live) {
+        var prog = Math.max(0, Math.min(1, ((cy.t || 0) - st.t0) / (st.durSec || 1)));
+        t.time = '—';
+        t.elapsedMin = Math.round(prog * (t.plannedMin || 0) * 10) / 10;
+      } else { t.time = '—'; t.elapsedMin = 0; }
     });
     q.counts = { running: q.tasks.filter(function (t) { return t.shown === 'running'; }).length,
                  unassigned: q.tasks.filter(function (t) { return t.shown === 'unassigned'; }).length,
@@ -308,6 +377,8 @@
     q.liveFlow = sp ? sp.flowCode : null;                 /* 取样那道没有流号，给 null 而不是硬凑一个 */
     q.liveOrder = sp ? sp.visit : null;                   /* 站序：测试可核对「第 n 道」确实落在机器人当前所在站 */
     q.stepCount = (cy && cy.cycle && cy.cycle.stepCount) || 0;
+    q.loopSec = (cy && cy.cycle && cy.cycle.loopSec) || null;
+    q.lapProgress = (cy && cy.cycle && cy.cycle.loopSec) ? Math.round((cy.t / cy.cycle.loopSec) * 100) / 100 : null;
     return q;
   }
 
@@ -503,9 +574,19 @@
       if ((m = path.match(/^\/api\/zone\/(\d{3})\/running-tasks$/))) {
         var codes = {}; ((state['zone' + m[1]] || {}).devices || []).forEach(function (x) { codes[x.code] = 1; });
         var out = [];
-        if (m[1] === '106') (state.zone106['dispatch-tasks'] || []).forEach(function (t) {
-          if (t.status !== 'running') return;
-          out.push({ kind: 'dispatch', taskId: t.taskId, name: t.flowName, deviceCode: t.deviceCode, robotId: t.robotId || null, startedAt: t.time, elapsedMin: t.elapsedMin || null, plannedMin: t.plannedMin || null, stage: '执行中', percent: null });
+        /* 106 的调度道从「实时队列」取，不再读 seed 里那份写死的 dispatch-tasks 清单（2026-11-11 三相流程）：
+           那份是旧 16 条模型，队列已经按循环剧本现算了，两处再各说一套就是"同一件事两种格式"。
+           工位对应的设备号取自停靠站（同一个工位一圈里被访问多次，设备号不变）。 */
+        var cadDev = {};
+        var cadStops = (((state.zone106.robots || []).filter(function (x) { return x.robotId === 'RB-C-02'; })[0] || {}).demoCycle || {}).stops || [];
+        cadStops.forEach(function (st) { if (st.deviceCode && !cadDev[st.cad]) cadDev[st.cad] = st.deviceCode; });
+        var liveQ = queueView(clone(state.overview['dispatch-queue'] || { tasks: [] }));
+        (liveQ.tasks || []).forEach(function (t) {
+          if (t.shown === 'done') return;                       // 本轮走完的不算「在制」
+          out.push({ kind: 'dispatch', taskId: t.taskNo || ('CYC-' + t.seq), name: t.flowCode + ' ' + t.flowName,
+            deviceCode: cadDev[t.cad] || t.cad, robotId: t.robotId || null, startedAt: t.time === '—' ? null : t.time,
+            elapsedMin: t.elapsedMin || null, plannedMin: t.plannedMin || null,
+            stage: t.shown === 'running' ? '执行中' : '待执行', percent: null, phase: t.phase || null });
         });
         (state.overview['today-tasks'] || []).forEach(function (t) {
           if (t.result === 'passed') return;

@@ -87,8 +87,8 @@ out.push((grp.length===3&&grp[0].st==='running'&&/进行中/.test(grp[0].h)&&/�
 out.push((grp.every(x=>+x.h.split(/\s+/)[1]===x.n)?'✅':'❌')+' 每列标题的计数 == 该列真实行数（列头不许虚报）: '+grp.map(x=>x.h+'→'+x.n).join(' / '));
 const q=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/dispatch-queue');
   return {n:r.data.tasks.length, flows:[...new Set(r.data.tasks.map(t=>t.flowCode))].sort(), counts:r.data.counts};});
-out.push((q.n===16&&q.flows.length===11?'✅':'❌')+` 块2 数据=图3 流程配置 16 条 / 11 种流（含图1 的热延伸取放 0161/0162）：${q.flows.join(',')}`);
-out.push((q.counts.running+q.counts.unassigned+q.counts.done===16?'✅':'❌')+' 块2 三态合计=16: '+JSON.stringify(q.counts));
+out.push((q.n===60&&q.flows.length===20?'✅':'❌')+` 块2 数据=图3 流程配置 16 条 / 20 种流（含图1 的热延伸取放 0161/0162）：${q.flows.join(',')}`);
+out.push((q.counts.running+q.counts.unassigned+q.counts.done===60?'✅':'❌')+' 块2 三态合计=60: '+JSON.stringify(q.counts));
 const names=await p.evaluate(()=>[...new Set([...document.querySelectorAll('.dq3 .dq-row .nm')].map(e=>e.innerText.trim()))].length);
 out.push((names>=11?'✅':'❌')+' 块2 渲染出的任务名（流号+流名）覆盖全部 11 种流: '+names);
 

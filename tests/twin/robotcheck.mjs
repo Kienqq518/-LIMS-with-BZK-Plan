@@ -64,7 +64,16 @@ await gotoZone(p, '106'); await p.waitForTimeout(3000);
 const dev=await p.locator('#zDevsList').innerText();
 out.push((/RB-C-01[\s\S]{0,80}停靠充电/.test(dev)&&/102-05 充电位/.test(dev)?'✅':'❌')+' 左栏 RB-C-01 行=停靠充电 + 桩号: '+dev.replace(/\s+/g,' ').match(/RB-C-01[\s\S]{0,70}/)[0]);
 out.push((!dev.includes('疑似卡住')?'✅':'❌')+' 停靠不再被误判卡住（全场无「疑似卡住」）');
-out.push(((await p.locator('#dkRunningTrack').innerText()).includes('超时')?'✅':'❌')+' 卡住叙事改由底栏「运行中的任务」的超时承载（Q4 仍可答，这一格从面板接了过来）');
+/* 卡住/超时的落点（2026-11-11 三相流程改版）：
+   106 是无人化房间，底栏那块是「无人化调度任务」队列，「运行中的任务」整块隐藏——
+   从前那条 ✅ 靠的是 seed 里写死的 16 条 dispatch-tasks（elapsedMin 18 > plannedMin 15 恒成立），
+   队列改成按循环剧本现算后，那道假超时自然消失。真实叙事在告警流：
+   「调度任务卡住 · RB-C-02 超时」+「机器人到站未放行」，Q4 仍然答得出，且不再有第二套数。 */
+const stallAlarm = await p.evaluate(async () => { const r = await TwinApi.get('/api/zone/106/alarms');
+  const t = ((r.data || {}).alarms || []).filter(x => /超时|卡住/.test((x.title || '') + (x.message || '') + (x.summary || '')));
+  return { n: t.length, sample: (t[0] || {}).title || (t[0] || {}).message || '' }; });
+out.push((stallAlarm.n > 0 ? '✅' : '❌') + ' 卡住/超时叙事由告警流承载（Q4 可答，且队列不再挂一份写死的假超时）: ' + JSON.stringify(stallAlarm));
+out.push(((await p.locator('#dkQueue').innerText()).includes('循环中') ? '✅' : '❌') + ' 106 底栏队列里正在跑的那道标「循环中」（道次与 AGV 同源）');
 const rbRow=p.locator('#zDevsList [data-robot="RB-C-01"]');
 T('机器人行键盘可达（role/tabindex）', await rbRow.evaluate(e=>[e.getAttribute('role'),e.getAttribute('tabindex')].join('/')), 'button/0');
 await rbRow.focus(); await p.keyboard.press('Enter'); await p.waitForTimeout(1200);

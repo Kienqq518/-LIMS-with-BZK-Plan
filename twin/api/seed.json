@@ -717,7 +717,7 @@
       }
     ],
     "dispatch-queue": {
-      "note": "流程配置（调度系统里的取/送/放样任务流）· 状态三分类：进行中（未完成）/ 未派单（没有派单）/ 已完成",
+      "note": "流程配置（调度系统里的取/送/放样任务流）· 三相（红/黄/绿）×20 步 = 60 道；状态三分类按 AGV 当前步实时推导：进行中=正在执行的这一道，已完成=本轮已走完的，未派单=还没轮到的。",
       "stateLabels": {
         "running": "进行中",
         "unassigned": "未派单",
@@ -727,195 +727,903 @@
       "tasks": [
         {
           "seq": 1,
-          "flowCode": "0115",
-          "flowName": "绝缘厚度试验循环上下料",
-          "state": "running",
-          "cad": "106-06",
-          "robotId": "RB-C-02",
-          "elapsedMin": 18,
-          "plannedMin": 15,
-          "time": "13:31",
-          "taskNo": "0015202611051331"
+          "flowCode": "0101",
+          "flowName": "样品室取样（红相 三根）",
+          "state": "unassigned",
+          "cad": "102-01",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 1,
+          "note": "取 红 相三芯电力电缆 A/B/C 各 1 根，放上 AGV 上料试验桌"
         },
         {
           "seq": 2,
-          "flowCode": "0141",
-          "flowName": "哑铃样取料",
-          "state": "running",
-          "cad": "106-01",
-          "robotId": "RB-C-02",
-          "elapsedMin": 6,
-          "plannedMin": 8,
-          "time": "13:26",
-          "taskNo": "0041202611051326"
+          "flowCode": "0152",
+          "flowName": "热收缩放料（红相 A）",
+          "state": "unassigned",
+          "cad": "106-03",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 2,
+          "note": "放 A 根进入热收缩样制工位"
         },
         {
           "seq": 3,
           "flowCode": "0142",
-          "flowName": "哑铃样放料",
+          "flowName": "哑铃样放料（红相 B）",
           "state": "unassigned",
-          "cad": "102-01",
+          "cad": "106-01",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 3,
+          "note": "放 B 根进入哑铃样制工位"
+        },
+        {
+          "seq": 4,
+          "flowCode": "0172",
+          "flowName": "径向放料（红相 C）",
+          "state": "unassigned",
+          "cad": "106-02",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 4,
+          "note": "放 C 根进入径向样制工位"
+        },
+        {
+          "seq": 5,
+          "flowCode": "0133",
+          "flowName": "热收缩取料（红相 A）",
+          "state": "unassigned",
+          "cad": "106-03",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 5,
+          "note": "取制样完成的 A 根 1 段"
+        },
+        {
+          "seq": 6,
+          "flowCode": "0132",
+          "flowName": "热收缩试验放料（红相 A）",
+          "state": "unassigned",
+          "cad": "106-04",
           "robotId": null,
           "elapsedMin": 0,
           "plannedMin": 8,
           "time": "—",
-          "taskNo": null
-        },
-        {
-          "seq": 4,
-          "flowCode": "0152",
-          "flowName": "热收缩放料",
-          "state": "unassigned",
-          "cad": "106-12",
-          "robotId": null,
-          "elapsedMin": 0,
-          "plannedMin": 9,
-          "time": "—",
-          "taskNo": null
-        },
-        {
-          "seq": 5,
-          "flowCode": "0161",
-          "flowName": "热延伸试验取料",
-          "state": "unassigned",
-          "cad": "106-07",
-          "robotId": null,
-          "elapsedMin": 0,
-          "plannedMin": 10,
-          "time": "—",
-          "taskNo": null
-        },
-        {
-          "seq": 6,
-          "flowCode": "0162",
-          "flowName": "热延伸试验放料",
-          "state": "unassigned",
-          "cad": "106-02",
-          "robotId": null,
-          "elapsedMin": 0,
-          "plannedMin": 10,
-          "time": "—",
-          "taskNo": null
+          "taskNo": null,
+          "phase": "红相",
+          "step": 6,
+          "note": "A 根放入热收缩检测工位"
         },
         {
           "seq": 7,
-          "flowCode": "0121",
-          "flowName": "双工位机械性能取料",
+          "flowCode": "0171",
+          "flowName": "径向取料（红相 C）",
           "state": "unassigned",
-          "cad": "106-05",
+          "cad": "106-02",
           "robotId": null,
           "elapsedMin": 0,
-          "plannedMin": 10,
+          "plannedMin": 6,
           "time": "—",
-          "taskNo": null
+          "taskNo": null,
+          "phase": "红相",
+          "step": 7,
+          "note": "取 C 根切下的径向试样 1 片"
         },
         {
           "seq": 8,
-          "flowCode": "0172",
-          "flowName": "径向放料",
-          "state": "done",
-          "cad": "106-02",
-          "robotId": "RB-C-02",
+          "flowCode": "0115",
+          "flowName": "绝缘厚度试验上料（红相 C）",
+          "state": "unassigned",
+          "cad": "106-06",
+          "robotId": null,
           "elapsedMin": 0,
-          "plannedMin": 4,
-          "time": "13:16",
-          "taskNo": "0072202611051316"
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 8,
+          "note": "C 的径向试样片放入绝缘层厚度检测工位"
         },
         {
           "seq": 9,
-          "flowCode": "0132",
-          "flowName": "热收缩试验放料",
-          "state": "done",
-          "cad": "106-03",
-          "robotId": "RB-C-02",
+          "flowCode": "0131",
+          "flowName": "热收缩试验取料（红相 A）",
+          "state": "unassigned",
+          "cad": "106-04",
+          "robotId": null,
           "elapsedMin": 0,
-          "plannedMin": 4,
-          "time": "13:19",
-          "taskNo": "0032202611051319"
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 9,
+          "note": "取试验完成的 A 根放回 AGV 上料试验桌"
         },
         {
           "seq": 10,
-          "flowCode": "0131",
-          "flowName": "热收缩试验取料",
-          "state": "done",
-          "cad": "106-04",
-          "robotId": "RB-C-02",
+          "flowCode": "0141",
+          "flowName": "哑铃样取料（红相 B）",
+          "state": "unassigned",
+          "cad": "106-01",
+          "robotId": null,
           "elapsedMin": 0,
-          "plannedMin": 3,
-          "time": "13:34",
-          "taskNo": "0031202611051334"
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 10,
+          "note": "取 B 根制好的两盒哑铃试件（每盒 5 件）"
         },
         {
           "seq": 11,
           "flowCode": "0122",
-          "flowName": "双工位机械性能放料",
-          "state": "done",
+          "flowName": "双工位机械性能放料（红相 B）",
+          "state": "unassigned",
           "cad": "106-05",
-          "robotId": "RB-C-02",
+          "robotId": null,
           "elapsedMin": 0,
-          "plannedMin": 4,
-          "time": "13:44",
-          "taskNo": "0022202611051344"
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 11,
+          "note": "放 B 的一盒（5 件）进机械性能无人化检测工位"
         },
         {
           "seq": 12,
-          "flowCode": "0115",
-          "flowName": "绝缘厚度试验循环上下料",
-          "state": "done",
-          "cad": "106-06",
-          "robotId": "RB-C-02",
+          "flowCode": "0162",
+          "flowName": "热延伸试验放料（红相 B）",
+          "state": "unassigned",
+          "cad": "106-07",
+          "robotId": null,
           "elapsedMin": 0,
-          "plannedMin": 15,
-          "time": "13:31",
-          "taskNo": "0015202611051331"
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 12,
+          "note": "放 B 的另一盒（5 件）进热延伸试验智能检测系统"
         },
         {
           "seq": 13,
-          "flowCode": "0141",
-          "flowName": "哑铃样取料",
-          "state": "done",
-          "cad": "106-01",
-          "robotId": "RB-C-02",
+          "flowCode": "0116",
+          "flowName": "绝缘厚度试验下料（红相 C）",
+          "state": "unassigned",
+          "cad": "106-06",
+          "robotId": null,
           "elapsedMin": 0,
           "plannedMin": 8,
-          "time": "13:26",
-          "taskNo": "0041202611051326"
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 13,
+          "note": "取回 C 的那片绝缘厚度试样"
         },
         {
           "seq": 14,
-          "flowCode": "0132",
-          "flowName": "热收缩试验放料",
-          "state": "done",
-          "cad": "106-03",
-          "robotId": "RB-C-02",
+          "flowCode": "0143",
+          "flowName": "检测上下料桌放料（红相 C）",
+          "state": "unassigned",
+          "cad": "106-13",
+          "robotId": null,
           "elapsedMin": 0,
-          "plannedMin": 4,
-          "time": "13:05",
-          "taskNo": "0032202611051305"
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 14,
+          "note": "C 的试样放到检测上下料试验桌"
         },
         {
           "seq": 15,
-          "flowCode": "0172",
-          "flowName": "径向放料",
-          "state": "done",
-          "cad": "106-02",
-          "robotId": "RB-C-02",
+          "flowCode": "0121",
+          "flowName": "双工位机械性能取料（红相 B）",
+          "state": "unassigned",
+          "cad": "106-05",
+          "robotId": null,
           "elapsedMin": 0,
-          "plannedMin": 4,
-          "time": "12:58",
-          "taskNo": "0072202611051258"
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 15,
+          "note": "取回 B 的一盒（5 件）已测试样"
         },
         {
           "seq": 16,
-          "flowCode": "0142",
-          "flowName": "哑铃样放料",
-          "state": "done",
-          "cad": "102-01",
-          "robotId": "RB-C-02",
+          "flowCode": "0161",
+          "flowName": "热延伸试验取料（红相 B）",
+          "state": "unassigned",
+          "cad": "106-07",
+          "robotId": null,
           "elapsedMin": 0,
           "plannedMin": 8,
-          "time": "12:44",
-          "taskNo": "0042202611051244"
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 16,
+          "note": "取回 B 的另一盒（5 件）已测试样"
+        },
+        {
+          "seq": 17,
+          "flowCode": "0144",
+          "flowName": "检测上下料桌回料（红相 B）",
+          "state": "unassigned",
+          "cad": "106-13",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 17,
+          "note": "B 的两盒料放回检测上下料试验桌"
+        },
+        {
+          "seq": 18,
+          "flowCode": "0173",
+          "flowName": "制样样品取料（红相 B/C）",
+          "state": "unassigned",
+          "cad": "106-02",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 18,
+          "note": "在径向样制工位取 C 的样品线缆、在哑铃样制工位取 B 的样品线缆"
+        },
+        {
+          "seq": 19,
+          "flowCode": "0151",
+          "flowName": "上料桌样品取料（红相 A）",
+          "state": "unassigned",
+          "cad": "106-12",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 19,
+          "note": "捎回检测完成的 A 根样品线缆"
+        },
+        {
+          "seq": 20,
+          "flowCode": "0102",
+          "flowName": "还样回样品室（红相 三根）",
+          "state": "unassigned",
+          "cad": "102-01",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "红相",
+          "step": 20,
+          "note": "三根检测完成的 红 相线缆送回 102 智能样品室"
+        },
+        {
+          "seq": 21,
+          "flowCode": "0101",
+          "flowName": "样品室取样（黄相 三根）",
+          "state": "unassigned",
+          "cad": "102-01",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 1,
+          "note": "取 黄 相三芯电力电缆 A/B/C 各 1 根，放上 AGV 上料试验桌"
+        },
+        {
+          "seq": 22,
+          "flowCode": "0152",
+          "flowName": "热收缩放料（黄相 A）",
+          "state": "unassigned",
+          "cad": "106-03",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 2,
+          "note": "放 A 根进入热收缩样制工位"
+        },
+        {
+          "seq": 23,
+          "flowCode": "0142",
+          "flowName": "哑铃样放料（黄相 B）",
+          "state": "unassigned",
+          "cad": "106-01",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 3,
+          "note": "放 B 根进入哑铃样制工位"
+        },
+        {
+          "seq": 24,
+          "flowCode": "0172",
+          "flowName": "径向放料（黄相 C）",
+          "state": "unassigned",
+          "cad": "106-02",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 4,
+          "note": "放 C 根进入径向样制工位"
+        },
+        {
+          "seq": 25,
+          "flowCode": "0133",
+          "flowName": "热收缩取料（黄相 A）",
+          "state": "unassigned",
+          "cad": "106-03",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 5,
+          "note": "取制样完成的 A 根 1 段"
+        },
+        {
+          "seq": 26,
+          "flowCode": "0132",
+          "flowName": "热收缩试验放料（黄相 A）",
+          "state": "unassigned",
+          "cad": "106-04",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 6,
+          "note": "A 根放入热收缩检测工位"
+        },
+        {
+          "seq": 27,
+          "flowCode": "0171",
+          "flowName": "径向取料（黄相 C）",
+          "state": "unassigned",
+          "cad": "106-02",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 7,
+          "note": "取 C 根切下的径向试样 1 片"
+        },
+        {
+          "seq": 28,
+          "flowCode": "0115",
+          "flowName": "绝缘厚度试验上料（黄相 C）",
+          "state": "unassigned",
+          "cad": "106-06",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 8,
+          "note": "C 的径向试样片放入绝缘层厚度检测工位"
+        },
+        {
+          "seq": 29,
+          "flowCode": "0131",
+          "flowName": "热收缩试验取料（黄相 A）",
+          "state": "unassigned",
+          "cad": "106-04",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 9,
+          "note": "取试验完成的 A 根放回 AGV 上料试验桌"
+        },
+        {
+          "seq": 30,
+          "flowCode": "0141",
+          "flowName": "哑铃样取料（黄相 B）",
+          "state": "unassigned",
+          "cad": "106-01",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 10,
+          "note": "取 B 根制好的两盒哑铃试件（每盒 5 件）"
+        },
+        {
+          "seq": 31,
+          "flowCode": "0122",
+          "flowName": "双工位机械性能放料（黄相 B）",
+          "state": "unassigned",
+          "cad": "106-05",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 11,
+          "note": "放 B 的一盒（5 件）进机械性能无人化检测工位"
+        },
+        {
+          "seq": 32,
+          "flowCode": "0162",
+          "flowName": "热延伸试验放料（黄相 B）",
+          "state": "unassigned",
+          "cad": "106-07",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 12,
+          "note": "放 B 的另一盒（5 件）进热延伸试验智能检测系统"
+        },
+        {
+          "seq": 33,
+          "flowCode": "0116",
+          "flowName": "绝缘厚度试验下料（黄相 C）",
+          "state": "unassigned",
+          "cad": "106-06",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 13,
+          "note": "取回 C 的那片绝缘厚度试样"
+        },
+        {
+          "seq": 34,
+          "flowCode": "0143",
+          "flowName": "检测上下料桌放料（黄相 C）",
+          "state": "unassigned",
+          "cad": "106-13",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 14,
+          "note": "C 的试样放到检测上下料试验桌"
+        },
+        {
+          "seq": 35,
+          "flowCode": "0121",
+          "flowName": "双工位机械性能取料（黄相 B）",
+          "state": "unassigned",
+          "cad": "106-05",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 15,
+          "note": "取回 B 的一盒（5 件）已测试样"
+        },
+        {
+          "seq": 36,
+          "flowCode": "0161",
+          "flowName": "热延伸试验取料（黄相 B）",
+          "state": "unassigned",
+          "cad": "106-07",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 16,
+          "note": "取回 B 的另一盒（5 件）已测试样"
+        },
+        {
+          "seq": 37,
+          "flowCode": "0144",
+          "flowName": "检测上下料桌回料（黄相 B）",
+          "state": "unassigned",
+          "cad": "106-13",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 17,
+          "note": "B 的两盒料放回检测上下料试验桌"
+        },
+        {
+          "seq": 38,
+          "flowCode": "0173",
+          "flowName": "制样样品取料（黄相 B/C）",
+          "state": "unassigned",
+          "cad": "106-02",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 18,
+          "note": "在径向样制工位取 C 的样品线缆、在哑铃样制工位取 B 的样品线缆"
+        },
+        {
+          "seq": 39,
+          "flowCode": "0151",
+          "flowName": "上料桌样品取料（黄相 A）",
+          "state": "unassigned",
+          "cad": "106-12",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 19,
+          "note": "捎回检测完成的 A 根样品线缆"
+        },
+        {
+          "seq": 40,
+          "flowCode": "0102",
+          "flowName": "还样回样品室（黄相 三根）",
+          "state": "unassigned",
+          "cad": "102-01",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "黄相",
+          "step": 20,
+          "note": "三根检测完成的 黄 相线缆送回 102 智能样品室"
+        },
+        {
+          "seq": 41,
+          "flowCode": "0101",
+          "flowName": "样品室取样（绿相 三根）",
+          "state": "unassigned",
+          "cad": "102-01",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 1,
+          "note": "取 绿 相三芯电力电缆 A/B/C 各 1 根，放上 AGV 上料试验桌"
+        },
+        {
+          "seq": 42,
+          "flowCode": "0152",
+          "flowName": "热收缩放料（绿相 A）",
+          "state": "unassigned",
+          "cad": "106-03",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 2,
+          "note": "放 A 根进入热收缩样制工位"
+        },
+        {
+          "seq": 43,
+          "flowCode": "0142",
+          "flowName": "哑铃样放料（绿相 B）",
+          "state": "unassigned",
+          "cad": "106-01",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 3,
+          "note": "放 B 根进入哑铃样制工位"
+        },
+        {
+          "seq": 44,
+          "flowCode": "0172",
+          "flowName": "径向放料（绿相 C）",
+          "state": "unassigned",
+          "cad": "106-02",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 4,
+          "note": "放 C 根进入径向样制工位"
+        },
+        {
+          "seq": 45,
+          "flowCode": "0133",
+          "flowName": "热收缩取料（绿相 A）",
+          "state": "unassigned",
+          "cad": "106-03",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 5,
+          "note": "取制样完成的 A 根 1 段"
+        },
+        {
+          "seq": 46,
+          "flowCode": "0132",
+          "flowName": "热收缩试验放料（绿相 A）",
+          "state": "unassigned",
+          "cad": "106-04",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 6,
+          "note": "A 根放入热收缩检测工位"
+        },
+        {
+          "seq": 47,
+          "flowCode": "0171",
+          "flowName": "径向取料（绿相 C）",
+          "state": "unassigned",
+          "cad": "106-02",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 7,
+          "note": "取 C 根切下的径向试样 1 片"
+        },
+        {
+          "seq": 48,
+          "flowCode": "0115",
+          "flowName": "绝缘厚度试验上料（绿相 C）",
+          "state": "unassigned",
+          "cad": "106-06",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 8,
+          "note": "C 的径向试样片放入绝缘层厚度检测工位"
+        },
+        {
+          "seq": 49,
+          "flowCode": "0131",
+          "flowName": "热收缩试验取料（绿相 A）",
+          "state": "unassigned",
+          "cad": "106-04",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 9,
+          "note": "取试验完成的 A 根放回 AGV 上料试验桌"
+        },
+        {
+          "seq": 50,
+          "flowCode": "0141",
+          "flowName": "哑铃样取料（绿相 B）",
+          "state": "unassigned",
+          "cad": "106-01",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 10,
+          "note": "取 B 根制好的两盒哑铃试件（每盒 5 件）"
+        },
+        {
+          "seq": 51,
+          "flowCode": "0122",
+          "flowName": "双工位机械性能放料（绿相 B）",
+          "state": "unassigned",
+          "cad": "106-05",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 11,
+          "note": "放 B 的一盒（5 件）进机械性能无人化检测工位"
+        },
+        {
+          "seq": 52,
+          "flowCode": "0162",
+          "flowName": "热延伸试验放料（绿相 B）",
+          "state": "unassigned",
+          "cad": "106-07",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 12,
+          "note": "放 B 的另一盒（5 件）进热延伸试验智能检测系统"
+        },
+        {
+          "seq": 53,
+          "flowCode": "0116",
+          "flowName": "绝缘厚度试验下料（绿相 C）",
+          "state": "unassigned",
+          "cad": "106-06",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 13,
+          "note": "取回 C 的那片绝缘厚度试样"
+        },
+        {
+          "seq": 54,
+          "flowCode": "0143",
+          "flowName": "检测上下料桌放料（绿相 C）",
+          "state": "unassigned",
+          "cad": "106-13",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 14,
+          "note": "C 的试样放到检测上下料试验桌"
+        },
+        {
+          "seq": 55,
+          "flowCode": "0121",
+          "flowName": "双工位机械性能取料（绿相 B）",
+          "state": "unassigned",
+          "cad": "106-05",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 15,
+          "note": "取回 B 的一盒（5 件）已测试样"
+        },
+        {
+          "seq": 56,
+          "flowCode": "0161",
+          "flowName": "热延伸试验取料（绿相 B）",
+          "state": "unassigned",
+          "cad": "106-07",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 16,
+          "note": "取回 B 的另一盒（5 件）已测试样"
+        },
+        {
+          "seq": 57,
+          "flowCode": "0144",
+          "flowName": "检测上下料桌回料（绿相 B）",
+          "state": "unassigned",
+          "cad": "106-13",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 17,
+          "note": "B 的两盒料放回检测上下料试验桌"
+        },
+        {
+          "seq": 58,
+          "flowCode": "0173",
+          "flowName": "制样样品取料（绿相 B/C）",
+          "state": "unassigned",
+          "cad": "106-02",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 18,
+          "note": "在径向样制工位取 C 的样品线缆、在哑铃样制工位取 B 的样品线缆"
+        },
+        {
+          "seq": 59,
+          "flowCode": "0151",
+          "flowName": "上料桌样品取料（绿相 A）",
+          "state": "unassigned",
+          "cad": "106-12",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 6,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 19,
+          "note": "捎回检测完成的 A 根样品线缆"
+        },
+        {
+          "seq": 60,
+          "flowCode": "0102",
+          "flowName": "还样回样品室（绿相 三根）",
+          "state": "unassigned",
+          "cad": "102-01",
+          "robotId": null,
+          "elapsedMin": 0,
+          "plannedMin": 8,
+          "time": "—",
+          "taskNo": null,
+          "phase": "绿相",
+          "step": 20,
+          "note": "三根检测完成的 绿 相线缆送回 102 智能样品室"
         }
       ]
     },
@@ -2051,7 +2759,7 @@
         "action": "moving",
         "servingDeviceId": "eq_y0302010102",
         "battery": 64,
-        "routeBasis": "routeNodes 推导（11 定位点 + 拐点）· 102↔走廊走 x=20.84 门洞 z[10.69,12.49]（CAD 门块 45A32·M1824 实测 z10.63–12.55）； 走廊↔106 走**北墙开口**（门扇 x[12.53,15.20]，穿越线 x=13.90 · z=28.09；开口内侧东段 x[15.2,17.94] 是货架 106-15/14 贴墙，不可过）； 走廊北上到 z=29.30 接北走廊带；东玻璃墙实测连续无洞口，禁止穿越 · 逐段扫掠校验",
+        "routeBasis": "routeNodes 由 scripts/gen-106-flow.mjs 在「已验证安全的原折线」上建图后按停靠序列生成：每一段都是原路线的子段，墙体/门洞/CAD 占地判定天然成立。",
         "progress": 0,
         "currentTaskId": "121202611051334",
         "currentFlowName": "0121 双工位机械性能取料",
@@ -2086,19 +2794,17 @@
         "clearanceM": 0.2,
         "serves": [
           "102 家位/充电",
-          "102 取料（粗制样电缆货架）",
-          "门洞（106 东玻璃墙 z=11.0）",
-          "AGV 上料试验桌（双承载位）",
+          "102 取样（粗制样电缆货架）",
+          "AGV 上料试验桌",
+          "热收缩样制工位",
           "哑铃样制工位",
           "径向样制工位",
-          "热收缩样制工位",
           "热收缩检测工位",
-          "热延伸试验智能检测系统",
           "绝缘层厚度检测工位",
           "机械性能无人化检测工位",
+          "热延伸试验智能检测系统",
           "检测上下料试验桌",
-          "门洞返程",
-          "回 102"
+          "102 还样"
         ],
         "routeMethod": "grid-A* on cad_geometry footprints (0.05m cells, obstacles inflated by half-footprint + 0.20m)",
         "sweptEnvelope": 0.902,
@@ -2122,7 +2828,7 @@
               "note": "出入 106 各穿越一次；开口=实测门垛 12.51 与东北角柱 17.94 之间 x[12.53,17.94] 无墙片，门扇区间 x[12.53,15.20]，穿越线 x=13.90 取其中线；内侧东段货架 106-15/14 贴墙不可过（2026-11-09 二次圈图：门在南开口对面）"
             }
           ],
-          "note": "时间轴由 routeNodes 推导；进出 106 走北墙开口（x=13.90 · z=28.09），出 102 走西门门洞（x=20.84 · z≈11.59）",
+          "note": "时间轴由 routeNodes 推导；三相（红/黄/绿）×20 步 = 60 道任务，取样与还样都落在 102-01；进出 106 走北墙开口、进出 102 走西门门洞。",
           "stops": [
             {
               "order": 1,
@@ -2131,117 +2837,864 @@
               "dwellSec": 6,
               "flowCode": null,
               "flow": "",
-              "taskNo": null,
-              "deviceCode": null
+              "deviceCode": null,
+              "taskSeqs": [],
+              "tasks": 0
             },
             {
               "order": 2,
               "cad": "102-01",
               "label": "102 取料位·粗制样电缆货架",
-              "dwellSec": 8,
-              "flowCode": "0142",
-              "flow": "0142 哑铃样放料",
-              "taskNo": "14244202611051316",
-              "deviceCode": "Y0302010102"
+              "dwellSec": 6,
+              "flowCode": "0101",
+              "flow": "0101 样品室取样（红相 三根）",
+              "deviceCode": "102-01",
+              "taskSeqs": [
+                1
+              ],
+              "tasks": 1
             },
             {
               "order": 3,
               "cad": "106-12",
               "label": "AGV 上料试验桌（双承载位）",
-              "flowCode": "0152",
-              "flow": "0152 热收缩放料",
-              "taskNo": "15255202611051316",
-              "taskTime": "13:16",
-              "deviceCode": "Y0301011102",
-              "dwellSec": 9
+              "dwellSec": 6,
+              "flowCode": null,
+              "flow": "",
+              "deviceCode": null,
+              "taskSeqs": [],
+              "tasks": 0
             },
             {
               "order": 4,
-              "cad": "106-01",
-              "label": "哑铃样制工位",
-              "flowCode": "0141",
-              "flow": "0141 哑铃样取料",
-              "taskNo": "14144202611051326",
-              "taskTime": "13:26",
-              "deviceCode": "Y0302010102",
-              "dwellSec": 9
+              "cad": "106-03",
+              "label": "热收缩样制工位",
+              "dwellSec": 6,
+              "flowCode": "0152",
+              "flow": "0152 热收缩放料（红相 A）",
+              "deviceCode": "Y0301011102",
+              "taskSeqs": [
+                2
+              ],
+              "tasks": 1
             },
             {
               "order": 5,
-              "cad": "106-02",
-              "label": "径向样制工位",
-              "flowCode": "0172",
-              "flow": "0172 径向放料",
-              "taskNo": "17277202611051316",
-              "taskTime": "13:16",
-              "deviceCode": "Y0301011103",
-              "dwellSec": 9
+              "cad": "106-01",
+              "label": "哑铃样制工位",
+              "dwellSec": 6,
+              "flowCode": "0142",
+              "flow": "0142 哑铃样放料（红相 B）",
+              "deviceCode": "Y0302010102",
+              "taskSeqs": [
+                3
+              ],
+              "tasks": 1
             },
             {
               "order": 6,
-              "cad": "106-03",
-              "label": "热收缩样制工位",
-              "flowCode": "0132",
-              "flow": "0132 热收缩试验放料",
-              "taskNo": "13233202611051319",
-              "taskTime": "13:19",
+              "cad": "106-02",
+              "label": "径向样制工位",
+              "dwellSec": 6,
+              "flowCode": "0172",
+              "flow": "0172 径向放料（红相 C）",
               "deviceCode": "Y0301011103",
-              "dwellSec": 10
+              "taskSeqs": [
+                4
+              ],
+              "tasks": 1
             },
             {
               "order": 7,
-              "cad": "106-04",
-              "label": "热收缩检测工位",
-              "flowCode": "0131",
-              "flow": "0131 热收缩试验取料",
-              "taskNo": "13133202611051334",
-              "taskTime": "13:34",
-              "deviceCode": "YM-WRH-05",
-              "dwellSec": 9
+              "cad": "106-03",
+              "label": "热收缩样制工位",
+              "dwellSec": 6,
+              "flowCode": "0133",
+              "flow": "0133 热收缩取料（红相 A）",
+              "deviceCode": "Y0301011102",
+              "taskSeqs": [
+                5
+              ],
+              "tasks": 1
             },
             {
               "order": 8,
-              "cad": "106-07",
-              "label": "热延伸试验智能检测系统",
-              "flowCode": "0142",
-              "flow": "0142 哑铃样放料",
-              "taskNo": "14244202611051316",
-              "taskTime": "13:16",
-              "deviceCode": "YM-WRH-02",
-              "dwellSec": 10
+              "cad": "106-04",
+              "label": "热收缩检测工位",
+              "dwellSec": 6,
+              "flowCode": "0132",
+              "flow": "0132 热收缩试验放料（红相 A）",
+              "deviceCode": "YM-WRH-05",
+              "taskSeqs": [
+                6
+              ],
+              "tasks": 1
             },
             {
               "order": 9,
-              "cad": "106-06",
-              "label": "绝缘层厚度检测工位",
-              "flowCode": "0115",
-              "flow": "0115 绝缘厚度试验循环上下料",
-              "taskNo": "11511202611051331",
-              "taskTime": "13:31",
-              "deviceCode": "YM-WRH-03",
-              "dwellSec": 12
+              "cad": "106-02",
+              "label": "径向样制工位",
+              "dwellSec": 6,
+              "flowCode": "0171",
+              "flow": "0171 径向取料（红相 C）",
+              "deviceCode": "Y0301011103",
+              "taskSeqs": [
+                7
+              ],
+              "tasks": 1
             },
             {
               "order": 10,
-              "cad": "106-05",
-              "label": "机械性能无人化检测工位",
-              "flowCode": "0122",
-              "flow": "0122 双工位机械性能放料",
-              "taskNo": "12222202611051344",
-              "taskTime": "13:44",
+              "cad": "106-06",
+              "label": "绝缘层厚度检测工位",
+              "dwellSec": 6,
+              "flowCode": "0115",
+              "flow": "0115 绝缘厚度试验上料（红相 C）",
               "deviceCode": "YM-WRH-02",
-              "dwellSec": 10
+              "taskSeqs": [
+                8
+              ],
+              "tasks": 1
             },
             {
               "order": 11,
+              "cad": "106-04",
+              "label": "热收缩检测工位",
+              "dwellSec": 6,
+              "flowCode": "0131",
+              "flow": "0131 热收缩试验取料（红相 A）",
+              "deviceCode": "YM-WRH-05",
+              "taskSeqs": [
+                9
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 12,
+              "cad": "106-12",
+              "label": "AGV 上料试验桌（双承载位）",
+              "dwellSec": 6,
+              "flowCode": null,
+              "flow": "",
+              "deviceCode": null,
+              "taskSeqs": [],
+              "tasks": 0
+            },
+            {
+              "order": 13,
+              "cad": "106-01",
+              "label": "哑铃样制工位",
+              "dwellSec": 6,
+              "flowCode": "0141",
+              "flow": "0141 哑铃样取料（红相 B）",
+              "deviceCode": "Y0302010102",
+              "taskSeqs": [
+                10
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 14,
+              "cad": "106-05",
+              "label": "机械性能无人化检测工位",
+              "dwellSec": 6,
+              "flowCode": "0122",
+              "flow": "0122 双工位机械性能放料（红相 B）",
+              "deviceCode": "YM-WRH-03",
+              "taskSeqs": [
+                11
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 15,
+              "cad": "106-07",
+              "label": "热延伸试验智能检测系统",
+              "dwellSec": 6,
+              "flowCode": "0162",
+              "flow": "0162 热延伸试验放料（红相 B）",
+              "deviceCode": "YM-WRH-04",
+              "taskSeqs": [
+                12
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 16,
+              "cad": "106-06",
+              "label": "绝缘层厚度检测工位",
+              "dwellSec": 6,
+              "flowCode": "0116",
+              "flow": "0116 绝缘厚度试验下料（红相 C）",
+              "deviceCode": "YM-WRH-02",
+              "taskSeqs": [
+                13
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 17,
               "cad": "106-13",
               "label": "检测上下料试验桌",
+              "dwellSec": 6,
+              "flowCode": "0143",
+              "flow": "0143 检测上下料桌放料（红相 C）",
+              "deviceCode": "106-13",
+              "taskSeqs": [
+                14
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 18,
+              "cad": "106-05",
+              "label": "机械性能无人化检测工位",
+              "dwellSec": 6,
               "flowCode": "0121",
-              "flow": "0121 双工位机械性能取料",
-              "taskNo": "12122202611051024",
-              "taskTime": "10:24",
+              "flow": "0121 双工位机械性能取料（红相 B）",
+              "deviceCode": "YM-WRH-03",
+              "taskSeqs": [
+                15
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 19,
+              "cad": "106-07",
+              "label": "热延伸试验智能检测系统",
+              "dwellSec": 6,
+              "flowCode": "0161",
+              "flow": "0161 热延伸试验取料（红相 B）",
               "deviceCode": "YM-WRH-04",
-              "dwellSec": 9
+              "taskSeqs": [
+                16
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 20,
+              "cad": "106-13",
+              "label": "检测上下料试验桌",
+              "dwellSec": 6,
+              "flowCode": "0144",
+              "flow": "0144 检测上下料桌回料（红相 B）",
+              "deviceCode": "106-13",
+              "taskSeqs": [
+                17
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 21,
+              "cad": "106-02",
+              "label": "径向样制工位",
+              "dwellSec": 6,
+              "flowCode": "0173",
+              "flow": "0173 制样样品取料（红相 B/C）",
+              "deviceCode": "Y0301011103",
+              "taskSeqs": [
+                18
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 22,
+              "cad": "106-01",
+              "label": "哑铃样制工位",
+              "dwellSec": 6,
+              "flowCode": null,
+              "flow": "",
+              "deviceCode": null,
+              "taskSeqs": [],
+              "tasks": 0
+            },
+            {
+              "order": 23,
+              "cad": "106-12",
+              "label": "AGV 上料试验桌（双承载位）",
+              "dwellSec": 6,
+              "flowCode": "0151",
+              "flow": "0151 上料桌样品取料（红相 A）",
+              "deviceCode": "106-12",
+              "taskSeqs": [
+                19
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 24,
+              "cad": "102-01",
+              "label": "102 取料位·粗制样电缆货架",
+              "dwellSec": 12,
+              "flowCode": "0102",
+              "flow": "0102 还样回样品室（红相 三根）",
+              "deviceCode": "102-01",
+              "taskSeqs": [
+                20,
+                21
+              ],
+              "tasks": 2
+            },
+            {
+              "order": 25,
+              "cad": "106-12",
+              "label": "AGV 上料试验桌（双承载位）",
+              "dwellSec": 6,
+              "flowCode": null,
+              "flow": "",
+              "deviceCode": null,
+              "taskSeqs": [],
+              "tasks": 0
+            },
+            {
+              "order": 26,
+              "cad": "106-03",
+              "label": "热收缩样制工位",
+              "dwellSec": 6,
+              "flowCode": "0152",
+              "flow": "0152 热收缩放料（黄相 A）",
+              "deviceCode": "Y0301011102",
+              "taskSeqs": [
+                22
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 27,
+              "cad": "106-01",
+              "label": "哑铃样制工位",
+              "dwellSec": 6,
+              "flowCode": "0142",
+              "flow": "0142 哑铃样放料（黄相 B）",
+              "deviceCode": "Y0302010102",
+              "taskSeqs": [
+                23
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 28,
+              "cad": "106-02",
+              "label": "径向样制工位",
+              "dwellSec": 6,
+              "flowCode": "0172",
+              "flow": "0172 径向放料（黄相 C）",
+              "deviceCode": "Y0301011103",
+              "taskSeqs": [
+                24
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 29,
+              "cad": "106-03",
+              "label": "热收缩样制工位",
+              "dwellSec": 6,
+              "flowCode": "0133",
+              "flow": "0133 热收缩取料（黄相 A）",
+              "deviceCode": "Y0301011102",
+              "taskSeqs": [
+                25
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 30,
+              "cad": "106-04",
+              "label": "热收缩检测工位",
+              "dwellSec": 6,
+              "flowCode": "0132",
+              "flow": "0132 热收缩试验放料（黄相 A）",
+              "deviceCode": "YM-WRH-05",
+              "taskSeqs": [
+                26
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 31,
+              "cad": "106-02",
+              "label": "径向样制工位",
+              "dwellSec": 6,
+              "flowCode": "0171",
+              "flow": "0171 径向取料（黄相 C）",
+              "deviceCode": "Y0301011103",
+              "taskSeqs": [
+                27
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 32,
+              "cad": "106-06",
+              "label": "绝缘层厚度检测工位",
+              "dwellSec": 6,
+              "flowCode": "0115",
+              "flow": "0115 绝缘厚度试验上料（黄相 C）",
+              "deviceCode": "YM-WRH-02",
+              "taskSeqs": [
+                28
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 33,
+              "cad": "106-04",
+              "label": "热收缩检测工位",
+              "dwellSec": 6,
+              "flowCode": "0131",
+              "flow": "0131 热收缩试验取料（黄相 A）",
+              "deviceCode": "YM-WRH-05",
+              "taskSeqs": [
+                29
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 34,
+              "cad": "106-12",
+              "label": "AGV 上料试验桌（双承载位）",
+              "dwellSec": 6,
+              "flowCode": null,
+              "flow": "",
+              "deviceCode": null,
+              "taskSeqs": [],
+              "tasks": 0
+            },
+            {
+              "order": 35,
+              "cad": "106-01",
+              "label": "哑铃样制工位",
+              "dwellSec": 6,
+              "flowCode": "0141",
+              "flow": "0141 哑铃样取料（黄相 B）",
+              "deviceCode": "Y0302010102",
+              "taskSeqs": [
+                30
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 36,
+              "cad": "106-05",
+              "label": "机械性能无人化检测工位",
+              "dwellSec": 6,
+              "flowCode": "0122",
+              "flow": "0122 双工位机械性能放料（黄相 B）",
+              "deviceCode": "YM-WRH-03",
+              "taskSeqs": [
+                31
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 37,
+              "cad": "106-07",
+              "label": "热延伸试验智能检测系统",
+              "dwellSec": 6,
+              "flowCode": "0162",
+              "flow": "0162 热延伸试验放料（黄相 B）",
+              "deviceCode": "YM-WRH-04",
+              "taskSeqs": [
+                32
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 38,
+              "cad": "106-06",
+              "label": "绝缘层厚度检测工位",
+              "dwellSec": 6,
+              "flowCode": "0116",
+              "flow": "0116 绝缘厚度试验下料（黄相 C）",
+              "deviceCode": "YM-WRH-02",
+              "taskSeqs": [
+                33
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 39,
+              "cad": "106-13",
+              "label": "检测上下料试验桌",
+              "dwellSec": 6,
+              "flowCode": "0143",
+              "flow": "0143 检测上下料桌放料（黄相 C）",
+              "deviceCode": "106-13",
+              "taskSeqs": [
+                34
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 40,
+              "cad": "106-05",
+              "label": "机械性能无人化检测工位",
+              "dwellSec": 6,
+              "flowCode": "0121",
+              "flow": "0121 双工位机械性能取料（黄相 B）",
+              "deviceCode": "YM-WRH-03",
+              "taskSeqs": [
+                35
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 41,
+              "cad": "106-07",
+              "label": "热延伸试验智能检测系统",
+              "dwellSec": 6,
+              "flowCode": "0161",
+              "flow": "0161 热延伸试验取料（黄相 B）",
+              "deviceCode": "YM-WRH-04",
+              "taskSeqs": [
+                36
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 42,
+              "cad": "106-13",
+              "label": "检测上下料试验桌",
+              "dwellSec": 6,
+              "flowCode": "0144",
+              "flow": "0144 检测上下料桌回料（黄相 B）",
+              "deviceCode": "106-13",
+              "taskSeqs": [
+                37
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 43,
+              "cad": "106-02",
+              "label": "径向样制工位",
+              "dwellSec": 6,
+              "flowCode": "0173",
+              "flow": "0173 制样样品取料（黄相 B/C）",
+              "deviceCode": "Y0301011103",
+              "taskSeqs": [
+                38
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 44,
+              "cad": "106-01",
+              "label": "哑铃样制工位",
+              "dwellSec": 6,
+              "flowCode": null,
+              "flow": "",
+              "deviceCode": null,
+              "taskSeqs": [],
+              "tasks": 0
+            },
+            {
+              "order": 45,
+              "cad": "106-12",
+              "label": "AGV 上料试验桌（双承载位）",
+              "dwellSec": 6,
+              "flowCode": "0151",
+              "flow": "0151 上料桌样品取料（黄相 A）",
+              "deviceCode": "106-12",
+              "taskSeqs": [
+                39
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 46,
+              "cad": "102-01",
+              "label": "102 取料位·粗制样电缆货架",
+              "dwellSec": 12,
+              "flowCode": "0102",
+              "flow": "0102 还样回样品室（黄相 三根）",
+              "deviceCode": "102-01",
+              "taskSeqs": [
+                40,
+                41
+              ],
+              "tasks": 2
+            },
+            {
+              "order": 47,
+              "cad": "106-12",
+              "label": "AGV 上料试验桌（双承载位）",
+              "dwellSec": 6,
+              "flowCode": null,
+              "flow": "",
+              "deviceCode": null,
+              "taskSeqs": [],
+              "tasks": 0
+            },
+            {
+              "order": 48,
+              "cad": "106-03",
+              "label": "热收缩样制工位",
+              "dwellSec": 6,
+              "flowCode": "0152",
+              "flow": "0152 热收缩放料（绿相 A）",
+              "deviceCode": "Y0301011102",
+              "taskSeqs": [
+                42
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 49,
+              "cad": "106-01",
+              "label": "哑铃样制工位",
+              "dwellSec": 6,
+              "flowCode": "0142",
+              "flow": "0142 哑铃样放料（绿相 B）",
+              "deviceCode": "Y0302010102",
+              "taskSeqs": [
+                43
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 50,
+              "cad": "106-02",
+              "label": "径向样制工位",
+              "dwellSec": 6,
+              "flowCode": "0172",
+              "flow": "0172 径向放料（绿相 C）",
+              "deviceCode": "Y0301011103",
+              "taskSeqs": [
+                44
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 51,
+              "cad": "106-03",
+              "label": "热收缩样制工位",
+              "dwellSec": 6,
+              "flowCode": "0133",
+              "flow": "0133 热收缩取料（绿相 A）",
+              "deviceCode": "Y0301011102",
+              "taskSeqs": [
+                45
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 52,
+              "cad": "106-04",
+              "label": "热收缩检测工位",
+              "dwellSec": 6,
+              "flowCode": "0132",
+              "flow": "0132 热收缩试验放料（绿相 A）",
+              "deviceCode": "YM-WRH-05",
+              "taskSeqs": [
+                46
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 53,
+              "cad": "106-02",
+              "label": "径向样制工位",
+              "dwellSec": 6,
+              "flowCode": "0171",
+              "flow": "0171 径向取料（绿相 C）",
+              "deviceCode": "Y0301011103",
+              "taskSeqs": [
+                47
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 54,
+              "cad": "106-06",
+              "label": "绝缘层厚度检测工位",
+              "dwellSec": 6,
+              "flowCode": "0115",
+              "flow": "0115 绝缘厚度试验上料（绿相 C）",
+              "deviceCode": "YM-WRH-02",
+              "taskSeqs": [
+                48
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 55,
+              "cad": "106-04",
+              "label": "热收缩检测工位",
+              "dwellSec": 6,
+              "flowCode": "0131",
+              "flow": "0131 热收缩试验取料（绿相 A）",
+              "deviceCode": "YM-WRH-05",
+              "taskSeqs": [
+                49
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 56,
+              "cad": "106-12",
+              "label": "AGV 上料试验桌（双承载位）",
+              "dwellSec": 6,
+              "flowCode": null,
+              "flow": "",
+              "deviceCode": null,
+              "taskSeqs": [],
+              "tasks": 0
+            },
+            {
+              "order": 57,
+              "cad": "106-01",
+              "label": "哑铃样制工位",
+              "dwellSec": 6,
+              "flowCode": "0141",
+              "flow": "0141 哑铃样取料（绿相 B）",
+              "deviceCode": "Y0302010102",
+              "taskSeqs": [
+                50
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 58,
+              "cad": "106-05",
+              "label": "机械性能无人化检测工位",
+              "dwellSec": 6,
+              "flowCode": "0122",
+              "flow": "0122 双工位机械性能放料（绿相 B）",
+              "deviceCode": "YM-WRH-03",
+              "taskSeqs": [
+                51
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 59,
+              "cad": "106-07",
+              "label": "热延伸试验智能检测系统",
+              "dwellSec": 6,
+              "flowCode": "0162",
+              "flow": "0162 热延伸试验放料（绿相 B）",
+              "deviceCode": "YM-WRH-04",
+              "taskSeqs": [
+                52
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 60,
+              "cad": "106-06",
+              "label": "绝缘层厚度检测工位",
+              "dwellSec": 6,
+              "flowCode": "0116",
+              "flow": "0116 绝缘厚度试验下料（绿相 C）",
+              "deviceCode": "YM-WRH-02",
+              "taskSeqs": [
+                53
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 61,
+              "cad": "106-13",
+              "label": "检测上下料试验桌",
+              "dwellSec": 6,
+              "flowCode": "0143",
+              "flow": "0143 检测上下料桌放料（绿相 C）",
+              "deviceCode": "106-13",
+              "taskSeqs": [
+                54
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 62,
+              "cad": "106-05",
+              "label": "机械性能无人化检测工位",
+              "dwellSec": 6,
+              "flowCode": "0121",
+              "flow": "0121 双工位机械性能取料（绿相 B）",
+              "deviceCode": "YM-WRH-03",
+              "taskSeqs": [
+                55
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 63,
+              "cad": "106-07",
+              "label": "热延伸试验智能检测系统",
+              "dwellSec": 6,
+              "flowCode": "0161",
+              "flow": "0161 热延伸试验取料（绿相 B）",
+              "deviceCode": "YM-WRH-04",
+              "taskSeqs": [
+                56
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 64,
+              "cad": "106-13",
+              "label": "检测上下料试验桌",
+              "dwellSec": 6,
+              "flowCode": "0144",
+              "flow": "0144 检测上下料桌回料（绿相 B）",
+              "deviceCode": "106-13",
+              "taskSeqs": [
+                57
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 65,
+              "cad": "106-02",
+              "label": "径向样制工位",
+              "dwellSec": 6,
+              "flowCode": "0173",
+              "flow": "0173 制样样品取料（绿相 B/C）",
+              "deviceCode": "Y0301011103",
+              "taskSeqs": [
+                58
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 66,
+              "cad": "106-01",
+              "label": "哑铃样制工位",
+              "dwellSec": 6,
+              "flowCode": null,
+              "flow": "",
+              "deviceCode": null,
+              "taskSeqs": [],
+              "tasks": 0
+            },
+            {
+              "order": 67,
+              "cad": "106-12",
+              "label": "AGV 上料试验桌（双承载位）",
+              "dwellSec": 6,
+              "flowCode": "0151",
+              "flow": "0151 上料桌样品取料（绿相 A）",
+              "deviceCode": "106-12",
+              "taskSeqs": [
+                59
+              ],
+              "tasks": 1
+            },
+            {
+              "order": 68,
+              "cad": "102-01",
+              "label": "102 取料位·粗制样电缆货架",
+              "dwellSec": 6,
+              "flowCode": "0102",
+              "flow": "0102 还样回样品室（绿相 三根）",
+              "deviceCode": "102-01",
+              "taskSeqs": [
+                60
+              ],
+              "tasks": 1
             }
           ]
         },
@@ -2256,7 +3709,10 @@
               12.39
             ],
             "dwellSec": 6,
+            "flowCode": null,
             "flow": "",
+            "taskNo": null,
+            "deviceCode": null,
             "seq": 0
           },
           {
@@ -2265,7 +3721,7 @@
               23.19,
               12.39
             ],
-            "label": "102 内西行拐点",
+            "label": "航路拐点（102-05→102-01）",
             "seq": 1
           },
           {
@@ -2277,11 +3733,11 @@
               23.19,
               10.99
             ],
-            "dwellSec": 8,
-            "flowCode": "0142",
-            "flow": "0142 哑铃样放料",
-            "taskNo": "14244202611051316",
-            "deviceCode": "Y0302010102",
+            "dwellSec": 6,
+            "flowCode": "0101",
+            "flow": "0101 样品室取样（红相 三根）",
+            "taskNo": null,
+            "deviceCode": "102-01",
             "seq": 2
           },
           {
@@ -2290,63 +3746,44 @@
               23.19,
               11.59
             ],
-            "label": "102 西门外侧拐点",
+            "label": "航路拐点（102-01→106-12）",
             "seq": 3
           },
           {
             "kind": "transit",
             "at": [
-              20.84,
+              19.64,
               11.59
             ],
-            "label": "穿 102 西门进走廊",
+            "label": "航路拐点（102-01→106-12）",
             "seq": 4
           },
           {
             "kind": "transit",
             "at": [
               19.64,
-              11.59
+              29.3
             ],
-            "label": "走廊中线南段",
+            "label": "航路拐点（102-01→106-12）",
             "seq": 5
           },
           {
             "kind": "transit",
             "at": [
-              19.64,
+              13.9,
               29.3
             ],
-            "label": "沿走廊北上至北走廊",
+            "label": "航路拐点（102-01→106-12）",
             "seq": 6
           },
           {
             "kind": "transit",
             "at": [
               13.9,
-              29.3
-            ],
-            "label": "北走廊西行至 106 北开口正北",
-            "seq": 7,
-            "evidence": "北走廊带 x[12.53,20.55] · z[28.04,30.04] 实测无墙片、无设备占地（seed.corridorNorth）；z=29.30 西行，距 106 北墙线 0.54m、距 107 南墙线 0.74m（含 0.651m 扫掠半宽）。"
-          },
-          {
-            "kind": "transit",
-            "at": [
-              13.9,
               22.19
             ],
-            "label": "穿 106 北开口南下至检测区北排",
-            "seq": 8,
-            "evidence": "穿越线 x=13.90：北墙门扇区间 x[12.53,15.20]（门垛 12.51～货架西缘 15.20）中线 13.87；开口南下 z 28.09→22.19 全程净空的只有 x[13.72,14.14]——106-13 东缘 13.07、106-12 西缘 14.79、货架 106-15/14 西缘 15.20（各含 0.651m 扫掠半宽）把其余位置挡死。取 13.90 与原「106-12 西侧绕行」航点重合。"
-          },
-          {
-            "kind": "transit",
-            "at": [
-              16.59,
-              22.19
-            ],
-            "seq": 9
+            "label": "航路拐点（102-01→106-12）",
+            "seq": 7
           },
           {
             "kind": "station",
@@ -2357,12 +3794,12 @@
               16.59,
               22.19
             ],
-            "dwellSec": 9,
-            "flowCode": "0152",
-            "flow": "0152 热收缩放料",
-            "taskNo": "15255202611051316",
-            "deviceCode": "Y0301011102",
-            "seq": 10
+            "dwellSec": 6,
+            "flowCode": null,
+            "flow": "",
+            "taskNo": null,
+            "deviceCode": null,
+            "seq": 8
           },
           {
             "kind": "transit",
@@ -2370,56 +3807,72 @@
               15.49,
               22.19
             ],
-            "label": "检测区北口拐点",
-            "seq": 11
+            "label": "航路拐点（106-12→106-03）",
+            "seq": 9
           },
           {
             "kind": "station",
             "order": 4,
-            "cad": "106-01",
-            "label": "哑铃样制工位",
-            "at": [
-              15.49,
-              19.49
-            ],
-            "dwellSec": 9,
-            "flowCode": "0141",
-            "flow": "0141 哑铃样取料",
-            "taskNo": "14144202611051326",
-            "deviceCode": "Y0302010102",
-            "seq": 12
-          },
-          {
-            "kind": "station",
-            "order": 5,
-            "cad": "106-02",
-            "label": "径向样制工位",
-            "at": [
-              15.49,
-              16.39
-            ],
-            "dwellSec": 9,
-            "flowCode": "0172",
-            "flow": "0172 径向放料",
-            "taskNo": "17277202611051316",
-            "deviceCode": "Y0301011103",
-            "seq": 13
-          },
-          {
-            "kind": "station",
-            "order": 6,
             "cad": "106-03",
             "label": "热收缩样制工位",
             "at": [
               15.49,
               13.39
             ],
-            "dwellSec": 10,
-            "flowCode": "0132",
-            "flow": "0132 热收缩试验放料",
-            "taskNo": "13233202611051319",
+            "dwellSec": 6,
+            "flowCode": "0152",
+            "flow": "0152 热收缩放料（红相 A）",
+            "taskNo": null,
+            "deviceCode": "Y0301011102",
+            "seq": 10
+          },
+          {
+            "kind": "station",
+            "order": 5,
+            "cad": "106-01",
+            "label": "哑铃样制工位",
+            "at": [
+              15.49,
+              19.49
+            ],
+            "dwellSec": 6,
+            "flowCode": "0142",
+            "flow": "0142 哑铃样放料（红相 B）",
+            "taskNo": null,
+            "deviceCode": "Y0302010102",
+            "seq": 11
+          },
+          {
+            "kind": "station",
+            "order": 6,
+            "cad": "106-02",
+            "label": "径向样制工位",
+            "at": [
+              15.49,
+              16.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0172",
+            "flow": "0172 径向放料（红相 C）",
+            "taskNo": null,
             "deviceCode": "Y0301011103",
-            "seq": 14
+            "seq": 12
+          },
+          {
+            "kind": "station",
+            "order": 7,
+            "cad": "106-03",
+            "label": "热收缩样制工位",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0133",
+            "flow": "0133 热收缩取料（红相 A）",
+            "taskNo": null,
+            "deviceCode": "Y0301011102",
+            "seq": 13
           },
           {
             "kind": "transit",
@@ -2427,24 +3880,76 @@
               15.14,
               13.39
             ],
-            "label": "南巷拐点",
-            "seq": 15
+            "label": "航路拐点（106-03→106-04）",
+            "seq": 14
           },
           {
             "kind": "station",
-            "order": 7,
+            "order": 8,
             "cad": "106-04",
             "label": "热收缩检测工位",
             "at": [
               15.14,
               11.39
             ],
-            "dwellSec": 9,
-            "flowCode": "0131",
-            "flow": "0131 热收缩试验取料",
-            "taskNo": "13133202611051334",
+            "dwellSec": 6,
+            "flowCode": "0132",
+            "flow": "0132 热收缩试验放料（红相 A）",
+            "taskNo": null,
             "deviceCode": "YM-WRH-05",
+            "seq": 15
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-02）",
             "seq": 16
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-02）",
+            "seq": 17
+          },
+          {
+            "kind": "station",
+            "order": 9,
+            "cad": "106-02",
+            "label": "径向样制工位",
+            "at": [
+              15.49,
+              16.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0171",
+            "flow": "0171 径向取料（红相 C）",
+            "taskNo": null,
+            "deviceCode": "Y0301011103",
+            "seq": 18
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 19
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              13.39
+            ],
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 20
           },
           {
             "kind": "transit",
@@ -2452,8 +3957,8 @@
               15.14,
               12.74
             ],
-            "label": "中央巷道拐点",
-            "seq": 17
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 21
           },
           {
             "kind": "transit",
@@ -2461,56 +3966,210 @@
               12.19,
               12.74
             ],
-            "label": "西侧纵巷拐点",
-            "seq": 18
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 22
           },
           {
             "kind": "station",
-            "order": 8,
-            "cad": "106-07",
-            "label": "热延伸试验智能检测系统",
-            "at": [
-              12.19,
-              13.79
-            ],
-            "dwellSec": 10,
-            "flowCode": "0142",
-            "flow": "0142 哑铃样放料",
-            "taskNo": "14244202611051316",
-            "deviceCode": "YM-WRH-02",
-            "seq": 19
-          },
-          {
-            "kind": "station",
-            "order": 9,
+            "order": 10,
             "cad": "106-06",
             "label": "绝缘层厚度检测工位",
             "at": [
               12.19,
               16.79
             ],
-            "dwellSec": 12,
+            "dwellSec": 6,
             "flowCode": "0115",
-            "flow": "0115 绝缘厚度试验循环上下料",
-            "taskNo": "11511202611051331",
-            "deviceCode": "YM-WRH-03",
-            "seq": 20
+            "flow": "0115 绝缘厚度试验上料（红相 C）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-02",
+            "seq": 23
+          },
+          {
+            "kind": "transit",
+            "at": [
+              12.19,
+              12.74
+            ],
+            "label": "航路拐点（106-06→106-04）",
+            "seq": 24
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              12.74
+            ],
+            "label": "航路拐点（106-06→106-04）",
+            "seq": 25
           },
           {
             "kind": "station",
-            "order": 10,
+            "order": 11,
+            "cad": "106-04",
+            "label": "热收缩检测工位",
+            "at": [
+              15.14,
+              11.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0131",
+            "flow": "0131 热收缩试验取料（红相 A）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-05",
+            "seq": 26
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-12）",
+            "seq": 27
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-12）",
+            "seq": 28
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-04→106-12）",
+            "seq": 29
+          },
+          {
+            "kind": "station",
+            "order": 12,
+            "cad": "106-12",
+            "label": "AGV 上料试验桌（双承载位）",
+            "at": [
+              16.59,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": null,
+            "flow": "",
+            "taskNo": null,
+            "deviceCode": null,
+            "seq": 30
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-12→106-01）",
+            "seq": 31
+          },
+          {
+            "kind": "station",
+            "order": 13,
+            "cad": "106-01",
+            "label": "哑铃样制工位",
+            "at": [
+              15.49,
+              19.49
+            ],
+            "dwellSec": 6,
+            "flowCode": "0141",
+            "flow": "0141 哑铃样取料（红相 B）",
+            "taskNo": null,
+            "deviceCode": "Y0302010102",
+            "seq": 32
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-01→106-05）",
+            "seq": 33
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              22.19
+            ],
+            "label": "航路拐点（106-01→106-05）",
+            "seq": 34
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              19.59
+            ],
+            "label": "航路拐点（106-01→106-05）",
+            "seq": 35
+          },
+          {
+            "kind": "station",
+            "order": 14,
             "cad": "106-05",
             "label": "机械性能无人化检测工位",
             "at": [
               12.19,
               19.59
             ],
-            "dwellSec": 10,
+            "dwellSec": 6,
             "flowCode": "0122",
-            "flow": "0122 双工位机械性能放料",
-            "taskNo": "12222202611051344",
+            "flow": "0122 双工位机械性能放料（红相 B）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-03",
+            "seq": 36
+          },
+          {
+            "kind": "station",
+            "order": 15,
+            "cad": "106-07",
+            "label": "热延伸试验智能检测系统",
+            "at": [
+              12.19,
+              13.79
+            ],
+            "dwellSec": 6,
+            "flowCode": "0162",
+            "flow": "0162 热延伸试验放料（红相 B）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-04",
+            "seq": 37
+          },
+          {
+            "kind": "station",
+            "order": 16,
+            "cad": "106-06",
+            "label": "绝缘层厚度检测工位",
+            "at": [
+              12.19,
+              16.79
+            ],
+            "dwellSec": 6,
+            "flowCode": "0116",
+            "flow": "0116 绝缘厚度试验下料（红相 C）",
+            "taskNo": null,
             "deviceCode": "YM-WRH-02",
-            "seq": 21
+            "seq": 38
+          },
+          {
+            "kind": "transit",
+            "at": [
+              12.19,
+              19.59
+            ],
+            "label": "航路拐点（106-06→106-13）",
+            "seq": 39
           },
           {
             "kind": "transit",
@@ -2518,24 +4177,165 @@
               11.99,
               19.59
             ],
-            "label": "西侧纵巷北行点",
-            "seq": 22
+            "label": "航路拐点（106-06→106-13）",
+            "seq": 40
           },
           {
             "kind": "station",
-            "order": 11,
+            "order": 17,
             "cad": "106-13",
             "label": "检测上下料试验桌",
             "at": [
               11.99,
               22.19
             ],
-            "dwellSec": 9,
+            "dwellSec": 6,
+            "flowCode": "0143",
+            "flow": "0143 检测上下料桌放料（红相 C）",
+            "taskNo": null,
+            "deviceCode": "106-13",
+            "seq": 41
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              19.59
+            ],
+            "label": "航路拐点（106-13→106-05）",
+            "seq": 42
+          },
+          {
+            "kind": "station",
+            "order": 18,
+            "cad": "106-05",
+            "label": "机械性能无人化检测工位",
+            "at": [
+              12.19,
+              19.59
+            ],
+            "dwellSec": 6,
             "flowCode": "0121",
-            "flow": "0121 双工位机械性能取料",
-            "taskNo": "12122202611051024",
+            "flow": "0121 双工位机械性能取料（红相 B）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-03",
+            "seq": 43
+          },
+          {
+            "kind": "station",
+            "order": 19,
+            "cad": "106-07",
+            "label": "热延伸试验智能检测系统",
+            "at": [
+              12.19,
+              13.79
+            ],
+            "dwellSec": 6,
+            "flowCode": "0161",
+            "flow": "0161 热延伸试验取料（红相 B）",
+            "taskNo": null,
             "deviceCode": "YM-WRH-04",
-            "seq": 23
+            "seq": 44
+          },
+          {
+            "kind": "transit",
+            "at": [
+              12.19,
+              19.59
+            ],
+            "label": "航路拐点（106-07→106-13）",
+            "seq": 45
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              19.59
+            ],
+            "label": "航路拐点（106-07→106-13）",
+            "seq": 46
+          },
+          {
+            "kind": "station",
+            "order": 20,
+            "cad": "106-13",
+            "label": "检测上下料试验桌",
+            "at": [
+              11.99,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": "0144",
+            "flow": "0144 检测上下料桌回料（红相 B）",
+            "taskNo": null,
+            "deviceCode": "106-13",
+            "seq": 47
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-13→106-02）",
+            "seq": 48
+          },
+          {
+            "kind": "station",
+            "order": 21,
+            "cad": "106-02",
+            "label": "径向样制工位",
+            "at": [
+              15.49,
+              16.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0173",
+            "flow": "0173 制样样品取料（红相 B/C）",
+            "taskNo": null,
+            "deviceCode": "Y0301011103",
+            "seq": 49
+          },
+          {
+            "kind": "station",
+            "order": 22,
+            "cad": "106-01",
+            "label": "哑铃样制工位",
+            "at": [
+              15.49,
+              19.49
+            ],
+            "dwellSec": 6,
+            "flowCode": null,
+            "flow": "",
+            "taskNo": null,
+            "deviceCode": null,
+            "seq": 50
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-01→106-12）",
+            "seq": 51
+          },
+          {
+            "kind": "station",
+            "order": 23,
+            "cad": "106-12",
+            "label": "AGV 上料试验桌（双承载位）",
+            "at": [
+              16.59,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": "0151",
+            "flow": "0151 上料桌样品取料（红相 A）",
+            "taskNo": null,
+            "deviceCode": "106-12",
+            "seq": 52
           },
           {
             "kind": "transit",
@@ -2543,8 +4343,8 @@
               13.9,
               22.19
             ],
-            "label": "返程 106-12 西侧绕行 · 北上对位北开口",
-            "seq": 24
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 53
           },
           {
             "kind": "transit",
@@ -2552,8 +4352,8 @@
               13.9,
               29.3
             ],
-            "label": "穿 106 北开口北上出",
-            "seq": 25
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 54
           },
           {
             "kind": "transit",
@@ -2561,8 +4361,8 @@
               19.64,
               29.3
             ],
-            "label": "出 106 北开口 · 北走廊东折",
-            "seq": 26
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 55
           },
           {
             "kind": "transit",
@@ -2570,17 +4370,8 @@
               19.64,
               11.59
             ],
-            "label": "沿走廊南下至 102 西门",
-            "seq": 27
-          },
-          {
-            "kind": "transit",
-            "at": [
-              20.84,
-              11.59
-            ],
-            "label": "穿 102 西门回家位",
-            "seq": 28
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 56
           },
           {
             "kind": "transit",
@@ -2588,17 +4379,1340 @@
               23.19,
               11.59
             ],
-            "label": "102 西门内侧",
-            "seq": 29
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 57
           },
           {
-            "kind": "transit",
+            "kind": "station",
+            "order": 24,
+            "cad": "102-01",
+            "label": "102 取料位·粗制样电缆货架",
             "at": [
               23.19,
               10.99
             ],
-            "label": "返程经过 102 取料位",
-            "seq": 30
+            "dwellSec": 12,
+            "flowCode": "0102",
+            "flow": "0102 还样回样品室（红相 三根）",
+            "taskNo": null,
+            "deviceCode": "102-01",
+            "seq": 58
+          },
+          {
+            "kind": "transit",
+            "at": [
+              23.19,
+              11.59
+            ],
+            "label": "航路拐点（102-01→106-12）",
+            "seq": 59
+          },
+          {
+            "kind": "transit",
+            "at": [
+              19.64,
+              11.59
+            ],
+            "label": "航路拐点（102-01→106-12）",
+            "seq": 60
+          },
+          {
+            "kind": "transit",
+            "at": [
+              19.64,
+              29.3
+            ],
+            "label": "航路拐点（102-01→106-12）",
+            "seq": 61
+          },
+          {
+            "kind": "transit",
+            "at": [
+              13.9,
+              29.3
+            ],
+            "label": "航路拐点（102-01→106-12）",
+            "seq": 62
+          },
+          {
+            "kind": "transit",
+            "at": [
+              13.9,
+              22.19
+            ],
+            "label": "航路拐点（102-01→106-12）",
+            "seq": 63
+          },
+          {
+            "kind": "station",
+            "order": 25,
+            "cad": "106-12",
+            "label": "AGV 上料试验桌（双承载位）",
+            "at": [
+              16.59,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": null,
+            "flow": "",
+            "taskNo": null,
+            "deviceCode": null,
+            "seq": 64
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-12→106-03）",
+            "seq": 65
+          },
+          {
+            "kind": "station",
+            "order": 26,
+            "cad": "106-03",
+            "label": "热收缩样制工位",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0152",
+            "flow": "0152 热收缩放料（黄相 A）",
+            "taskNo": null,
+            "deviceCode": "Y0301011102",
+            "seq": 66
+          },
+          {
+            "kind": "station",
+            "order": 27,
+            "cad": "106-01",
+            "label": "哑铃样制工位",
+            "at": [
+              15.49,
+              19.49
+            ],
+            "dwellSec": 6,
+            "flowCode": "0142",
+            "flow": "0142 哑铃样放料（黄相 B）",
+            "taskNo": null,
+            "deviceCode": "Y0302010102",
+            "seq": 67
+          },
+          {
+            "kind": "station",
+            "order": 28,
+            "cad": "106-02",
+            "label": "径向样制工位",
+            "at": [
+              15.49,
+              16.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0172",
+            "flow": "0172 径向放料（黄相 C）",
+            "taskNo": null,
+            "deviceCode": "Y0301011103",
+            "seq": 68
+          },
+          {
+            "kind": "station",
+            "order": 29,
+            "cad": "106-03",
+            "label": "热收缩样制工位",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0133",
+            "flow": "0133 热收缩取料（黄相 A）",
+            "taskNo": null,
+            "deviceCode": "Y0301011102",
+            "seq": 69
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              13.39
+            ],
+            "label": "航路拐点（106-03→106-04）",
+            "seq": 70
+          },
+          {
+            "kind": "station",
+            "order": 30,
+            "cad": "106-04",
+            "label": "热收缩检测工位",
+            "at": [
+              15.14,
+              11.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0132",
+            "flow": "0132 热收缩试验放料（黄相 A）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-05",
+            "seq": 71
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-02）",
+            "seq": 72
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-02）",
+            "seq": 73
+          },
+          {
+            "kind": "station",
+            "order": 31,
+            "cad": "106-02",
+            "label": "径向样制工位",
+            "at": [
+              15.49,
+              16.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0171",
+            "flow": "0171 径向取料（黄相 C）",
+            "taskNo": null,
+            "deviceCode": "Y0301011103",
+            "seq": 74
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 75
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              13.39
+            ],
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 76
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              12.74
+            ],
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 77
+          },
+          {
+            "kind": "transit",
+            "at": [
+              12.19,
+              12.74
+            ],
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 78
+          },
+          {
+            "kind": "station",
+            "order": 32,
+            "cad": "106-06",
+            "label": "绝缘层厚度检测工位",
+            "at": [
+              12.19,
+              16.79
+            ],
+            "dwellSec": 6,
+            "flowCode": "0115",
+            "flow": "0115 绝缘厚度试验上料（黄相 C）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-02",
+            "seq": 79
+          },
+          {
+            "kind": "transit",
+            "at": [
+              12.19,
+              12.74
+            ],
+            "label": "航路拐点（106-06→106-04）",
+            "seq": 80
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              12.74
+            ],
+            "label": "航路拐点（106-06→106-04）",
+            "seq": 81
+          },
+          {
+            "kind": "station",
+            "order": 33,
+            "cad": "106-04",
+            "label": "热收缩检测工位",
+            "at": [
+              15.14,
+              11.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0131",
+            "flow": "0131 热收缩试验取料（黄相 A）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-05",
+            "seq": 82
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-12）",
+            "seq": 83
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-12）",
+            "seq": 84
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-04→106-12）",
+            "seq": 85
+          },
+          {
+            "kind": "station",
+            "order": 34,
+            "cad": "106-12",
+            "label": "AGV 上料试验桌（双承载位）",
+            "at": [
+              16.59,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": null,
+            "flow": "",
+            "taskNo": null,
+            "deviceCode": null,
+            "seq": 86
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-12→106-01）",
+            "seq": 87
+          },
+          {
+            "kind": "station",
+            "order": 35,
+            "cad": "106-01",
+            "label": "哑铃样制工位",
+            "at": [
+              15.49,
+              19.49
+            ],
+            "dwellSec": 6,
+            "flowCode": "0141",
+            "flow": "0141 哑铃样取料（黄相 B）",
+            "taskNo": null,
+            "deviceCode": "Y0302010102",
+            "seq": 88
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-01→106-05）",
+            "seq": 89
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              22.19
+            ],
+            "label": "航路拐点（106-01→106-05）",
+            "seq": 90
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              19.59
+            ],
+            "label": "航路拐点（106-01→106-05）",
+            "seq": 91
+          },
+          {
+            "kind": "station",
+            "order": 36,
+            "cad": "106-05",
+            "label": "机械性能无人化检测工位",
+            "at": [
+              12.19,
+              19.59
+            ],
+            "dwellSec": 6,
+            "flowCode": "0122",
+            "flow": "0122 双工位机械性能放料（黄相 B）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-03",
+            "seq": 92
+          },
+          {
+            "kind": "station",
+            "order": 37,
+            "cad": "106-07",
+            "label": "热延伸试验智能检测系统",
+            "at": [
+              12.19,
+              13.79
+            ],
+            "dwellSec": 6,
+            "flowCode": "0162",
+            "flow": "0162 热延伸试验放料（黄相 B）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-04",
+            "seq": 93
+          },
+          {
+            "kind": "station",
+            "order": 38,
+            "cad": "106-06",
+            "label": "绝缘层厚度检测工位",
+            "at": [
+              12.19,
+              16.79
+            ],
+            "dwellSec": 6,
+            "flowCode": "0116",
+            "flow": "0116 绝缘厚度试验下料（黄相 C）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-02",
+            "seq": 94
+          },
+          {
+            "kind": "transit",
+            "at": [
+              12.19,
+              19.59
+            ],
+            "label": "航路拐点（106-06→106-13）",
+            "seq": 95
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              19.59
+            ],
+            "label": "航路拐点（106-06→106-13）",
+            "seq": 96
+          },
+          {
+            "kind": "station",
+            "order": 39,
+            "cad": "106-13",
+            "label": "检测上下料试验桌",
+            "at": [
+              11.99,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": "0143",
+            "flow": "0143 检测上下料桌放料（黄相 C）",
+            "taskNo": null,
+            "deviceCode": "106-13",
+            "seq": 97
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              19.59
+            ],
+            "label": "航路拐点（106-13→106-05）",
+            "seq": 98
+          },
+          {
+            "kind": "station",
+            "order": 40,
+            "cad": "106-05",
+            "label": "机械性能无人化检测工位",
+            "at": [
+              12.19,
+              19.59
+            ],
+            "dwellSec": 6,
+            "flowCode": "0121",
+            "flow": "0121 双工位机械性能取料（黄相 B）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-03",
+            "seq": 99
+          },
+          {
+            "kind": "station",
+            "order": 41,
+            "cad": "106-07",
+            "label": "热延伸试验智能检测系统",
+            "at": [
+              12.19,
+              13.79
+            ],
+            "dwellSec": 6,
+            "flowCode": "0161",
+            "flow": "0161 热延伸试验取料（黄相 B）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-04",
+            "seq": 100
+          },
+          {
+            "kind": "transit",
+            "at": [
+              12.19,
+              19.59
+            ],
+            "label": "航路拐点（106-07→106-13）",
+            "seq": 101
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              19.59
+            ],
+            "label": "航路拐点（106-07→106-13）",
+            "seq": 102
+          },
+          {
+            "kind": "station",
+            "order": 42,
+            "cad": "106-13",
+            "label": "检测上下料试验桌",
+            "at": [
+              11.99,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": "0144",
+            "flow": "0144 检测上下料桌回料（黄相 B）",
+            "taskNo": null,
+            "deviceCode": "106-13",
+            "seq": 103
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-13→106-02）",
+            "seq": 104
+          },
+          {
+            "kind": "station",
+            "order": 43,
+            "cad": "106-02",
+            "label": "径向样制工位",
+            "at": [
+              15.49,
+              16.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0173",
+            "flow": "0173 制样样品取料（黄相 B/C）",
+            "taskNo": null,
+            "deviceCode": "Y0301011103",
+            "seq": 105
+          },
+          {
+            "kind": "station",
+            "order": 44,
+            "cad": "106-01",
+            "label": "哑铃样制工位",
+            "at": [
+              15.49,
+              19.49
+            ],
+            "dwellSec": 6,
+            "flowCode": null,
+            "flow": "",
+            "taskNo": null,
+            "deviceCode": null,
+            "seq": 106
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-01→106-12）",
+            "seq": 107
+          },
+          {
+            "kind": "station",
+            "order": 45,
+            "cad": "106-12",
+            "label": "AGV 上料试验桌（双承载位）",
+            "at": [
+              16.59,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": "0151",
+            "flow": "0151 上料桌样品取料（黄相 A）",
+            "taskNo": null,
+            "deviceCode": "106-12",
+            "seq": 108
+          },
+          {
+            "kind": "transit",
+            "at": [
+              13.9,
+              22.19
+            ],
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 109
+          },
+          {
+            "kind": "transit",
+            "at": [
+              13.9,
+              29.3
+            ],
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 110
+          },
+          {
+            "kind": "transit",
+            "at": [
+              19.64,
+              29.3
+            ],
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 111
+          },
+          {
+            "kind": "transit",
+            "at": [
+              19.64,
+              11.59
+            ],
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 112
+          },
+          {
+            "kind": "transit",
+            "at": [
+              23.19,
+              11.59
+            ],
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 113
+          },
+          {
+            "kind": "station",
+            "order": 46,
+            "cad": "102-01",
+            "label": "102 取料位·粗制样电缆货架",
+            "at": [
+              23.19,
+              10.99
+            ],
+            "dwellSec": 12,
+            "flowCode": "0102",
+            "flow": "0102 还样回样品室（黄相 三根）",
+            "taskNo": null,
+            "deviceCode": "102-01",
+            "seq": 114
+          },
+          {
+            "kind": "transit",
+            "at": [
+              23.19,
+              11.59
+            ],
+            "label": "航路拐点（102-01→106-12）",
+            "seq": 115
+          },
+          {
+            "kind": "transit",
+            "at": [
+              19.64,
+              11.59
+            ],
+            "label": "航路拐点（102-01→106-12）",
+            "seq": 116
+          },
+          {
+            "kind": "transit",
+            "at": [
+              19.64,
+              29.3
+            ],
+            "label": "航路拐点（102-01→106-12）",
+            "seq": 117
+          },
+          {
+            "kind": "transit",
+            "at": [
+              13.9,
+              29.3
+            ],
+            "label": "航路拐点（102-01→106-12）",
+            "seq": 118
+          },
+          {
+            "kind": "transit",
+            "at": [
+              13.9,
+              22.19
+            ],
+            "label": "航路拐点（102-01→106-12）",
+            "seq": 119
+          },
+          {
+            "kind": "station",
+            "order": 47,
+            "cad": "106-12",
+            "label": "AGV 上料试验桌（双承载位）",
+            "at": [
+              16.59,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": null,
+            "flow": "",
+            "taskNo": null,
+            "deviceCode": null,
+            "seq": 120
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-12→106-03）",
+            "seq": 121
+          },
+          {
+            "kind": "station",
+            "order": 48,
+            "cad": "106-03",
+            "label": "热收缩样制工位",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0152",
+            "flow": "0152 热收缩放料（绿相 A）",
+            "taskNo": null,
+            "deviceCode": "Y0301011102",
+            "seq": 122
+          },
+          {
+            "kind": "station",
+            "order": 49,
+            "cad": "106-01",
+            "label": "哑铃样制工位",
+            "at": [
+              15.49,
+              19.49
+            ],
+            "dwellSec": 6,
+            "flowCode": "0142",
+            "flow": "0142 哑铃样放料（绿相 B）",
+            "taskNo": null,
+            "deviceCode": "Y0302010102",
+            "seq": 123
+          },
+          {
+            "kind": "station",
+            "order": 50,
+            "cad": "106-02",
+            "label": "径向样制工位",
+            "at": [
+              15.49,
+              16.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0172",
+            "flow": "0172 径向放料（绿相 C）",
+            "taskNo": null,
+            "deviceCode": "Y0301011103",
+            "seq": 124
+          },
+          {
+            "kind": "station",
+            "order": 51,
+            "cad": "106-03",
+            "label": "热收缩样制工位",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0133",
+            "flow": "0133 热收缩取料（绿相 A）",
+            "taskNo": null,
+            "deviceCode": "Y0301011102",
+            "seq": 125
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              13.39
+            ],
+            "label": "航路拐点（106-03→106-04）",
+            "seq": 126
+          },
+          {
+            "kind": "station",
+            "order": 52,
+            "cad": "106-04",
+            "label": "热收缩检测工位",
+            "at": [
+              15.14,
+              11.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0132",
+            "flow": "0132 热收缩试验放料（绿相 A）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-05",
+            "seq": 127
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-02）",
+            "seq": 128
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-02）",
+            "seq": 129
+          },
+          {
+            "kind": "station",
+            "order": 53,
+            "cad": "106-02",
+            "label": "径向样制工位",
+            "at": [
+              15.49,
+              16.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0171",
+            "flow": "0171 径向取料（绿相 C）",
+            "taskNo": null,
+            "deviceCode": "Y0301011103",
+            "seq": 130
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 131
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              13.39
+            ],
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 132
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              12.74
+            ],
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 133
+          },
+          {
+            "kind": "transit",
+            "at": [
+              12.19,
+              12.74
+            ],
+            "label": "航路拐点（106-02→106-06）",
+            "seq": 134
+          },
+          {
+            "kind": "station",
+            "order": 54,
+            "cad": "106-06",
+            "label": "绝缘层厚度检测工位",
+            "at": [
+              12.19,
+              16.79
+            ],
+            "dwellSec": 6,
+            "flowCode": "0115",
+            "flow": "0115 绝缘厚度试验上料（绿相 C）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-02",
+            "seq": 135
+          },
+          {
+            "kind": "transit",
+            "at": [
+              12.19,
+              12.74
+            ],
+            "label": "航路拐点（106-06→106-04）",
+            "seq": 136
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              12.74
+            ],
+            "label": "航路拐点（106-06→106-04）",
+            "seq": 137
+          },
+          {
+            "kind": "station",
+            "order": 55,
+            "cad": "106-04",
+            "label": "热收缩检测工位",
+            "at": [
+              15.14,
+              11.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0131",
+            "flow": "0131 热收缩试验取料（绿相 A）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-05",
+            "seq": 138
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.14,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-12）",
+            "seq": 139
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              13.39
+            ],
+            "label": "航路拐点（106-04→106-12）",
+            "seq": 140
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-04→106-12）",
+            "seq": 141
+          },
+          {
+            "kind": "station",
+            "order": 56,
+            "cad": "106-12",
+            "label": "AGV 上料试验桌（双承载位）",
+            "at": [
+              16.59,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": null,
+            "flow": "",
+            "taskNo": null,
+            "deviceCode": null,
+            "seq": 142
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-12→106-01）",
+            "seq": 143
+          },
+          {
+            "kind": "station",
+            "order": 57,
+            "cad": "106-01",
+            "label": "哑铃样制工位",
+            "at": [
+              15.49,
+              19.49
+            ],
+            "dwellSec": 6,
+            "flowCode": "0141",
+            "flow": "0141 哑铃样取料（绿相 B）",
+            "taskNo": null,
+            "deviceCode": "Y0302010102",
+            "seq": 144
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-01→106-05）",
+            "seq": 145
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              22.19
+            ],
+            "label": "航路拐点（106-01→106-05）",
+            "seq": 146
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              19.59
+            ],
+            "label": "航路拐点（106-01→106-05）",
+            "seq": 147
+          },
+          {
+            "kind": "station",
+            "order": 58,
+            "cad": "106-05",
+            "label": "机械性能无人化检测工位",
+            "at": [
+              12.19,
+              19.59
+            ],
+            "dwellSec": 6,
+            "flowCode": "0122",
+            "flow": "0122 双工位机械性能放料（绿相 B）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-03",
+            "seq": 148
+          },
+          {
+            "kind": "station",
+            "order": 59,
+            "cad": "106-07",
+            "label": "热延伸试验智能检测系统",
+            "at": [
+              12.19,
+              13.79
+            ],
+            "dwellSec": 6,
+            "flowCode": "0162",
+            "flow": "0162 热延伸试验放料（绿相 B）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-04",
+            "seq": 149
+          },
+          {
+            "kind": "station",
+            "order": 60,
+            "cad": "106-06",
+            "label": "绝缘层厚度检测工位",
+            "at": [
+              12.19,
+              16.79
+            ],
+            "dwellSec": 6,
+            "flowCode": "0116",
+            "flow": "0116 绝缘厚度试验下料（绿相 C）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-02",
+            "seq": 150
+          },
+          {
+            "kind": "transit",
+            "at": [
+              12.19,
+              19.59
+            ],
+            "label": "航路拐点（106-06→106-13）",
+            "seq": 151
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              19.59
+            ],
+            "label": "航路拐点（106-06→106-13）",
+            "seq": 152
+          },
+          {
+            "kind": "station",
+            "order": 61,
+            "cad": "106-13",
+            "label": "检测上下料试验桌",
+            "at": [
+              11.99,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": "0143",
+            "flow": "0143 检测上下料桌放料（绿相 C）",
+            "taskNo": null,
+            "deviceCode": "106-13",
+            "seq": 153
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              19.59
+            ],
+            "label": "航路拐点（106-13→106-05）",
+            "seq": 154
+          },
+          {
+            "kind": "station",
+            "order": 62,
+            "cad": "106-05",
+            "label": "机械性能无人化检测工位",
+            "at": [
+              12.19,
+              19.59
+            ],
+            "dwellSec": 6,
+            "flowCode": "0121",
+            "flow": "0121 双工位机械性能取料（绿相 B）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-03",
+            "seq": 155
+          },
+          {
+            "kind": "station",
+            "order": 63,
+            "cad": "106-07",
+            "label": "热延伸试验智能检测系统",
+            "at": [
+              12.19,
+              13.79
+            ],
+            "dwellSec": 6,
+            "flowCode": "0161",
+            "flow": "0161 热延伸试验取料（绿相 B）",
+            "taskNo": null,
+            "deviceCode": "YM-WRH-04",
+            "seq": 156
+          },
+          {
+            "kind": "transit",
+            "at": [
+              12.19,
+              19.59
+            ],
+            "label": "航路拐点（106-07→106-13）",
+            "seq": 157
+          },
+          {
+            "kind": "transit",
+            "at": [
+              11.99,
+              19.59
+            ],
+            "label": "航路拐点（106-07→106-13）",
+            "seq": 158
+          },
+          {
+            "kind": "station",
+            "order": 64,
+            "cad": "106-13",
+            "label": "检测上下料试验桌",
+            "at": [
+              11.99,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": "0144",
+            "flow": "0144 检测上下料桌回料（绿相 B）",
+            "taskNo": null,
+            "deviceCode": "106-13",
+            "seq": 159
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-13→106-02）",
+            "seq": 160
+          },
+          {
+            "kind": "station",
+            "order": 65,
+            "cad": "106-02",
+            "label": "径向样制工位",
+            "at": [
+              15.49,
+              16.39
+            ],
+            "dwellSec": 6,
+            "flowCode": "0173",
+            "flow": "0173 制样样品取料（绿相 B/C）",
+            "taskNo": null,
+            "deviceCode": "Y0301011103",
+            "seq": 161
+          },
+          {
+            "kind": "station",
+            "order": 66,
+            "cad": "106-01",
+            "label": "哑铃样制工位",
+            "at": [
+              15.49,
+              19.49
+            ],
+            "dwellSec": 6,
+            "flowCode": null,
+            "flow": "",
+            "taskNo": null,
+            "deviceCode": null,
+            "seq": 162
+          },
+          {
+            "kind": "transit",
+            "at": [
+              15.49,
+              22.19
+            ],
+            "label": "航路拐点（106-01→106-12）",
+            "seq": 163
+          },
+          {
+            "kind": "station",
+            "order": 67,
+            "cad": "106-12",
+            "label": "AGV 上料试验桌（双承载位）",
+            "at": [
+              16.59,
+              22.19
+            ],
+            "dwellSec": 6,
+            "flowCode": "0151",
+            "flow": "0151 上料桌样品取料（绿相 A）",
+            "taskNo": null,
+            "deviceCode": "106-12",
+            "seq": 164
+          },
+          {
+            "kind": "transit",
+            "at": [
+              13.9,
+              22.19
+            ],
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 165
+          },
+          {
+            "kind": "transit",
+            "at": [
+              13.9,
+              29.3
+            ],
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 166
+          },
+          {
+            "kind": "transit",
+            "at": [
+              19.64,
+              29.3
+            ],
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 167
+          },
+          {
+            "kind": "transit",
+            "at": [
+              19.64,
+              11.59
+            ],
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 168
+          },
+          {
+            "kind": "transit",
+            "at": [
+              23.19,
+              11.59
+            ],
+            "label": "航路拐点（106-12→102-01）",
+            "seq": 169
+          },
+          {
+            "kind": "station",
+            "order": 68,
+            "cad": "102-01",
+            "label": "102 取料位·粗制样电缆货架",
+            "at": [
+              23.19,
+              10.99
+            ],
+            "dwellSec": 6,
+            "flowCode": "0102",
+            "flow": "0102 还样回样品室（绿相 三根）",
+            "taskNo": null,
+            "deviceCode": "102-01",
+            "seq": 170
           },
           {
             "kind": "transit",
@@ -2606,25 +5720,18 @@
               23.19,
               12.39
             ],
-            "label": "102 内回程拐点",
-            "seq": 31
-          },
-          {
-            "kind": "transit",
-            "at": [
-              25.59,
-              12.39
-            ],
-            "label": "闭合：回到 102 家位/充电位",
-            "seq": 32
+            "label": "航路拐点（102-01→102-05）",
+            "seq": 171
           }
         ],
         "routeDerive": "定位点=无人化任务要到达的设备前那个点；拐点=直角转向/门洞穿越侧；path/legs/u/travelSec/t0/loopSec/pathLengthM 由 mock deriveRoute() 按弧长推导。",
         "routeSource": "routeNodes（唯一种子级线路输入）；path/legs/u/travelSec/t0/loopSec/pathLengthM 由 twin-api-mock.js deriveRoute() 推导",
         "mission": [
-          "102 取样",
+          "102 取样（三相各一圈内 20 步）",
           "跨区送样进 106（红线路线）",
-          "106 内部各调度任务之间取/送/放样"
+          "106 内按 20 步取/送/放样",
+          "102 还样",
+          "回家位充电"
         ],
         "corridorSouth": {
           "x": [
@@ -3007,7 +6114,7 @@
           10.2,
           11.8
         ],
-        "center": 11.0,
+        "center": 11,
         "evidence": "门把手 0x101010 @ x=18.75 z=10.98 y=0.98–1.07（双开门中缝）",
         "rule": "穿越 x=18.44 必须整块落在 z[10.2,11.8] 内"
       },
