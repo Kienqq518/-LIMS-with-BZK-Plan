@@ -25,6 +25,13 @@
      level 是组件1 的状态（overview / zone），mode 是三维真实视图——两者可以不一致：
      只点了「区域」还没挑房间时，level=zone 而 mode 仍是 S1（画面不跳）。 */
   var st = readURL() || { mode: 'S1', level: 'overview', zone: null, period: 'day', layers: { path: 1, labels: 0, heatmap: 0 }, streamFilter: 'all', quality: 'high', strip: 0 };
+  /* 刷新（F5）= 回到「实验室总览」：上一次停在哪个房间，不该在下次开机时冒充当前状态。
+     只收 mode/level/zone；周期/图层/画质/收起底栏/告警筛选照旧从 URL 带过来。
+     书签与分享进来的深链仍直接进房间——那是入口，不是刷新。 */
+  function isReload() {
+    try { var n = performance.getEntriesByType('navigation')[0]; return !!n && n.type === 'reload'; } catch (e) { return false; }
+  }
+  if (isReload()) { st.mode = 'S1'; st.level = 'overview'; st.zone = null; }
 
   function sendScene(type, data) { if (scene.contentWindow) scene.contentWindow.postMessage(Object.assign({ channel: 'twin-v2', type: type }, data), location.origin); }
   var pendingView = null;
@@ -444,7 +451,9 @@
         + '<b class="v">' + escapeHtml(val) + '</b></div></div>';
     }).join('');
   }
-  function renderZoneView() { if (st.mode !== 'ZONE') return; renderZoneRail(); renderZoneRunning(); renderZoneNodes(); renderZoneIotPanel(); }
+  /* 四个子渲染各自认 st.mode（非 ZONE 时清空/隐藏自己那块），所以这里不许提前 return：
+     提前 return 就是「回总览后 101 的节点卡还挂在右下角」的成因——回总览这条路没人去收 #zoneNodes。 */
+  function renderZoneView() { renderZoneRail(); renderZoneRunning(); renderZoneNodes(); renderZoneIotPanel(); }
 
   /* ⑤（2026-11-10 圈图）：房间视图带右列的组态物联块重排——
      除视觉外本房间有几个物联节点，就把整块等分成几行、一行一节点、行高一致；
@@ -910,7 +919,7 @@
         var hasItems = !hasTask && bl.indexOf('test-items') >= 0 && !!ti2;
         var hasSamples = !hasTask && !hasItems && bl.indexOf('samples') >= 0 && !!sp;
         var cells = hasTask ? [['已完成', per.done], ['执行中', per.running], ['异常挂起', per.abnormal], ['排队', per.queued]]
-          : hasItems ? [['检测中', ti2.testing], ['待检测', ti2.pending], ['已完成', ti2.done], ['逾期未完成', ti2.overdue]]
+          : hasItems ? [['检测中', ti2.testing], ['待检测', ti2.pending], ['已完成', ti2.done], ['逾期未完成', ti2.overdue, 'bad']]
           : hasSamples ? [['在库存量(支)', sp.stored], ['今日收样', sp.receivedToday], ['今日还样', sp.returnedToday], ['待还样', sp.pendingReturn]] : null;
         var head = hasTask ? '任务统计' : hasItems ? '检测项目数统计' : hasSamples ? '样品台账' : '';
         var tt = document.querySelector('#railZoneStats .rp-head b');
@@ -949,6 +958,14 @@
             + '<i class="zs2-bar">' + seg(rm.items.done / tiSum * 100, '--tw-st-ready') + seg(rm.items.testing / tiSum * 100, '--tw-st-working') + '</i>'
             + '<div class="zs2-d">已完成 <b style="color:var(--tw-st-ready)">' + rm.items.done + '</b> · 检测中 <b style="color:var(--tw-st-working)">' + rm.items.testing + '</b></div></div>'
             + '<div class="zs2-g zs2-g-dispatch"><div class="zs2-h"><span>调度任务</span><b>' + ({ day: '本日', month: '本月', year: '本年' })[st.period] + '</b></div>'
+            /* 调度任务补一条分段条（2026-11-11 圈图）：前三块都有条，只有它是一行裸字——
+               四档色与下面文案一一对应（已完成/执行中/异常挂起/排队），全 0 就不画，不摆空条冒充数据。 */
+            + (function () {
+                var q = [pv.done || 0, pv.running || 0, pv.abnormal || 0, pv.queued || 0], qs = q[0] + q[1] + q[2] + q[3];
+                if (!(qs > 0)) return '';
+                return '<i class="zs2-bar">' + seg(q[0] / qs * 100, '--tw-st-ready') + seg(q[1] / qs * 100, '--tw-st-working')
+                  + seg(q[2] / qs * 100, '--tw-st-alarm') + seg(q[3] / qs * 100, '--tw-st-idle') + '</i>';
+              })()
             + '<div class="zs2-p" role="status">已完成 <b style="color:var(--tw-st-ready)">' + (pv.done == null ? '—' : pv.done) + '</b>'
             + ' · 执行中 <b style="color:var(--tw-st-working)">' + (pv.running == null ? '—' : pv.running) + '</b>'
             + ' · 异常挂起 <b style="color:var(--tw-st-alarm)">' + (pv.abnormal == null ? '—' : pv.abnormal) + '</b>'
@@ -962,7 +979,10 @@
           return;
         }
         g.innerHTML = cells.map(function (x) {
-          return '<div class="zs-i"><b>' + (x[1] == null ? '—' : x[1]) + '</b><span>' + x[0] + '</span></div>';
+          /* 逾期未完成 >0 就标红（2026-11-11 圈图）：这一格是「有没有单子过期了」在房间里的唯一落点，
+             与其余三格同色就看不出轻重。0 保持中性色——「没有逾期」不该也染成告警色。 */
+          var bad = x[2] === 'bad' && Number(x[1]) > 0;
+          return '<div class="zs-i' + (bad ? ' bad' : '') + '"><b>' + (x[1] == null ? '—' : x[1]) + '</b><span>' + x[0] + '</span></div>';
         }).join('') + (hasSamples ? sampleSpread(sp) : '');
         g.dataset.kind = head;
         g.setAttribute('aria-label', z + ' 区' + head + '（' + ({ day: '本日', month: '本月', year: '本年' })[st.period] + '）：'
@@ -1360,7 +1380,18 @@
     ], { height: 64, times: thTimes, title: (zoneMode ? st.zone + ' 平均温湿度（' : '未来实验室平均温湿度（') + th.length + ' 个点位均值 · 近 ' + a.length + ' 点）' });
   }
 
+  /* 场景 iframe 里的物联节点卡不认宿主的视图切换：房间切回总览时它还挂在原地
+     （2026-11-11 圈图：104 回总览，烟雾01 的卡压在右下角组态物联列表上）。
+     走「点列表行选中节点」同一条通道——iframe 侧 receive 已支持 clear-selection。 */
+  var lastViewKey = null;
+  function sceneClearNode() {
+    try { scene.contentWindow.postMessage({ channel: 'room-tour-node-v3', type: 'clear-selection' }, location.origin); } catch (e) { /* 场景未就绪：没有卡可收 */ }
+  }
+
   function applyAll() {
+    /* 视图归属变了（进房/出房/换房）才收卡：切周期、收起底栏不改变视图，不许顺手把卡关掉 */
+    var viewKey = st.mode + '/' + (st.zone || '');
+    if (viewKey !== lastViewKey) { lastViewKey = viewKey; sceneClearNode(); }
     /* 组件1：层级按钮的选中态跟 level 走（不是跟 mode）——只点「区域」没挑房间时，
        「区域」是亮的而画面仍在总览，这正是产品要的表达：意图已选，跳转待房间确认。
        组件2：房间下拉只在 level=zone 时出现；没挑房间时值为空占位。 */
@@ -1465,7 +1496,8 @@
     renderTables(); renderAlarms(); renderDock(); renderCharts(); pushState(); writeURL();
     syncStreamW();   /* ② 底栏网格刚重排完，右列宽度跟着组态物联块走 */
     syncZoneBandTop();
-    if (st.mode === 'ZONE') { loadZone(); renderZoneView(); }
+    if (st.mode === 'ZONE') loadZone();
+    renderZoneView();   /* 回总览也要跑：房间专属的四块由它交还给总览 */
     renderCharts();
   }
   function setStreamFilter(v) {                          /* 右列一个开关，不再三区各一套 */

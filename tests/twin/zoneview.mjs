@@ -383,6 +383,75 @@ await gotoZone(p, '106'); await p.waitForTimeout(3000);
 const prof=await p.evaluate(async()=>{const r=await TwinApi.get('/api/overview/zones');
   return r.data.map(z=>z.zoneId+':'+(z.viewProfile?z.viewProfile.blocks.join('+'):'none')).join(' | ');});
 out.push((prof.indexOf('Z-101:env')>=0&&prof.indexOf('Z-102:devices+samples+env+alarms')>=0?'✅':'❌')+' 画像是数据（seed.overview.zones[].viewProfile）: '+prof.slice(0,120));
+/* ⑥⑦⑧⑨（2026-11-11 圈图）：106 指标组与线段拉满整栏 + 调度任务补条 + 逾期>0 标红 +
+   没有场景块的房间（109/110）第二行照样沉底 + 换视图不泄漏节点卡 + 刷新回到实验室总览。 */
+{
+  await gotoZone(p,'106'); await p.waitForTimeout(3200);
+  const q=await p.evaluate(()=>{const W=e=>e?Math.round(e.getBoundingClientRect().width):0;
+    const gs=[...document.querySelectorAll('#zsGrid .zs2-g')];
+    return {gW:gs.map(g=>W(g)),bar:gs.map(g=>W(g.querySelector('.zs2-bar'))),
+      segN:gs.map(g=>g.querySelectorAll('.zs2-bar i').length),dev:W(document.querySelector('#zDevsList .zd-row'))};});
+  out.push((q.gW.length===4&&q.gW.every(v=>Math.abs(v-q.dev)<=2)?'✅':'❌')+
+    ` 106 任务统计四组与「设备」同宽（组=${JSON.stringify(q.gW)} 设备行=${q.dev}）`);
+  out.push((q.bar.every(v=>Math.abs(v-q.dev)<=2)?'✅':'❌')+` 106 四条线段铺满整栏（条=${JSON.stringify(q.bar)}）`);
+  out.push((q.segN[3]>=1?'✅':'❌')+` 106 调度任务补了分段条（段数 ${q.segN[3]}：已完成/执行中/异常挂起/排队）`);
+  await gotoZone(p,'109'); await p.waitForTimeout(3200);
+  const sn=await p.evaluate(()=>{const vis=e=>e&&!e.hidden&&e.getBoundingClientRect().width>2;
+    const kids=[...document.getElementById('rightCol').children].filter(vis);
+    return {n:kids.length,bottom:Math.round(kids[kids.length-1].getBoundingClientRect().bottom),vh:innerHeight};});
+  out.push((Math.abs(sn.vh-sn.bottom-16)<=3?'✅':'❌')+
+    ` 109 无场景块也沉到屏底（最后一块底边 ${sn.bottom} vs 视口 ${sn.vh}-16，右列可见 ${sn.n} 块）`);
+  const ov=async(z)=>{await gotoZone(p,z);await p.waitForTimeout(3000);return p.evaluate(()=>{
+    const c=[...document.querySelectorAll('#zsGrid .zs-i')].find(e=>/逾期未完成/.test(e.innerText));
+    if(!c)return null;return {txt:c.innerText.replace(/\s+/g,''),bad:c.classList.contains('bad'),
+      color:getComputedStyle(c.querySelector('b')).color};});};
+  const o103=await ov('103'), o109=await ov('109');
+  out.push((o103&&o103.bad&&o103.color!==o109.color?'✅':'❌')+` 103 逾期未完成 >0 标红: ${JSON.stringify(o103)}`);
+  out.push((o109&&!o109.bad?'✅':'❌')+` 109 逾期=0 不染告警色（0 不是坏消息）: ${JSON.stringify(o109)}`);
+  /* 弹窗 ×：卡片不许压住宿主浮层，压住以后 × 归宿主管、点它没反应（1680 宽实测复现） */
+  await p.setViewportSize({width:1680,height:1000}); await p.waitForTimeout(1200);
+  await gotoZone(p,'107'); await p.waitForTimeout(3200);
+  {
+    const fr=p.frames().find(x=>/tour-space/.test(x.url()));
+    await fr.evaluate(()=>{const m=[...document.querySelectorAll('.node-marker')].find(x=>!x.hidden&&x.getBoundingClientRect().width>2);m.click();});
+    await p.waitForTimeout(1300);
+    const g=await fr.evaluate(()=>{const c=document.querySelector('#iot-layer .node-card'),x=c.querySelector('.card-close');
+      const r=x.getBoundingClientRect(),cr=c.getBoundingClientRect();
+      return {cx:Math.round(r.x+r.width/2),cy:Math.round(r.y+r.height/2),
+        card:[Math.round(cr.x),Math.round(cr.y),Math.round(cr.right),Math.round(cr.bottom)]};});
+    const hit=await p.evaluate(({cx,cy})=>{const fe=document.getElementById('scene').getBoundingClientRect();
+      const t=document.elementFromPoint(fe.x+cx,fe.y+cy);return t?t.tagName+'.'+(t.className||''):null;},g);
+    const fe=await p.locator('#scene').boundingBox();
+    await p.mouse.click(fe.x+g.cx,fe.y+g.cy); await p.waitForTimeout(1500);
+    const closed=await fr.evaluate(()=>document.querySelector('#iot-layer .node-card').hidden);
+    out.push((closed&&/IFRAME/.test(hit)?'✅':'❌')+
+      ` 1680 宽 107 点 × 真能关掉：卡位 ${JSON.stringify(g.card)}，× 命中 ${hit}，关=${closed}`);
+    /* 回总览：房间专属的节点卡（宿主 101 那组 + 场景里那张）都不许留在屏上 */
+    await p.setViewportSize({width:1920,height:1080}); await p.waitForTimeout(1500);
+  }
+  await gotoZone(p,'101'); await p.waitForTimeout(3200);
+  const znIn=await p.evaluate(()=>!document.getElementById('zoneNodes').hidden);
+  await p.click('.mode[data-mode=S1]'); await p.waitForTimeout(3500);
+  const znBack=await p.evaluate(()=>({hidden:document.getElementById('zoneNodes').hidden,n:document.querySelectorAll('#zoneNodes .zn-card').length}));
+  out.push((znIn&&znBack.hidden?'✅':'❌')+` 101 回总览收掉右下角节点卡（房内出卡=${znIn}，回总览 hidden=${znBack.hidden}，残留 ${znBack.n} 张）`);
+  await gotoZone(p,'104'); await p.waitForTimeout(3200);
+  {
+    const fr=p.frames().find(x=>/tour-space/.test(x.url()));
+    await fr.evaluate(()=>{const m=[...document.querySelectorAll('.node-marker')].find(x=>!x.hidden&&x.getBoundingClientRect().width>2);if(m)m.click();});
+    await p.waitForTimeout(1300);
+    const opened=await fr.evaluate(()=>!document.querySelector('#iot-layer .node-card').hidden);
+    await p.click('.mode[data-mode=S1]'); await p.waitForTimeout(3500);
+    const shut=await fr.evaluate(()=>document.querySelector('#iot-layer .node-card').hidden);
+    out.push((opened&&shut?'✅':'❌')+` 换视图把场景里的节点卡一起收（104 开=${opened} → 回总览关=${shut}）`);
+  }
+  /* 刷新 = 实验室总览（周期/图层这些演示设置仍从 URL 恢复，见 collapsec/filtercheck） */
+  await gotoZone(p,'107'); await p.waitForTimeout(3000);
+  await p.reload({waitUntil:'load'}); await p.waitForTimeout(14000);
+  const rl=await p.evaluate(()=>({active:[...document.querySelectorAll('.mode')].filter(e=>e.classList.contains('active')).map(e=>e.dataset.mode||e.dataset.level),
+    roomWrapHidden:document.getElementById('roomWrap').hidden,mode:new URLSearchParams(location.search).get('mode')}));
+  out.push((rl.active.includes('S1')&&rl.roomWrapHidden&&rl.mode==='S1'?'✅':'❌')+
+    ` 刷新后回到「实验室总览」选中态: ${JSON.stringify(rl)}`);
+}
 await gotoZone(p, '106'); await p.waitForTimeout(3000);
 await p.screenshot({path:'/tmp/twin-qa/zoneview-106.png'});
 await p.keyboard.press('1'); await p.waitForTimeout(3000); await p.screenshot({path:'/tmp/twin-qa/zoneview-s1.png'});

@@ -675,9 +675,16 @@ body[data-zone-view="1"] .railagv{display:none}   /* ②（2026-11-09 10 点清�
 body[data-zone-view="1"] #rightCol{display:flex}          /* 右列不再整列让位 */
 .zstats .zs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px}
 .zstats .zs-grid .zs3{grid-column:1/-1}   /* ④ 三子区域横贯两列——#zsGrid 是旧四格的 2 列网格，别把新行卡挤进第一列 */
+/* 106 任务统计（2026-11-11 圈图）：同一个坑——.zs2 是四格网格里的一个格子，只有 164px，
+   四条线段就跟着缩成半栏宽，与头顶「设备」列表（298px）明显不齐。.zs2 本来就是一列到底的
+   指标组，横贯两列才是它该有的宽度。 */
+.zstats .zs-grid > .zs2{grid-column:1/-1}
 body[data-zone-view="1"] .rcol{bottom:16px}   /* ②③ 房间视图右列贴到屏底：两列带落在底部，告警流吃中间——这才是「加高」 */
 .zstats .zs-i{display:flex;align-items:baseline;gap:6px}
 .zstats .zs-i b{font-size:var(--tw-fs-num);font-weight:800;font-variant-numeric:tabular-nums;color:var(--tw-ink-1)}
+/* 逾期未完成 >0 = 红色（2026-11-11 圈图）：这一格是房间里「有没有单子过期」的唯一落点，
+   与其余三格同色看不出轻重；0 不染（没有逾期不该是告警色）。 */
+.zstats .zs-i.bad b{color:var(--tw-st-alarm)}
 .zstats .zs-i span{font-size:var(--tw-fs-label);color:var(--tw-ink-3)}
 :zdevs .zd-list{display:flex;flex-direction:column;gap:3px}
 /* 区域视图左栏设备行（FR-80 接管后新建）。接管时这块只有 .zd-list 一条规则——
@@ -729,6 +736,10 @@ body[data-zone-view="1"]:not([data-unmanned="1"]) .dock{left:14px;right:auto;wid
 /* 非无人化右列堆叠沉底：告警流保持固定高在上，场景监测→画面→组态物联贴着屏底排
    （107/103 圈图绿框位置——堆叠跟着内容走，中间留白由 margin-top:auto 吃掉）。 */
 body[data-zone-view="1"]:not([data-unmanned="1"]) .rcol .scpanel{margin-top:auto}
+/* 109/110（2026-11-11 圈图）：这两个房间没有部署安全管家场景，场景监测整块 hidden——
+   上一版「沉底」只挂在 .scpanel 上，第一块一消失，画面/组态物联就退回贴着告警流，屏底空一大块。
+   场景不在场时把 margin-top:auto 交给紧随其后的第二行。 */
+body[data-zone-view="1"]:not([data-unmanned="1"]) .rcol .scpanel[hidden]+.zpair{margin-top:auto}
 body[data-zone-view="1"]:not([data-unmanned="1"]) .rcol .nodepanel{flex:none;min-height:0}
 /* 但 .zpair 是横排的一行：上面那条 flex:none 在这里顺手把宽度也钉成了内容宽——
    102/108/110 这类「只有一个物联节点、又没有摄像头画面块」的房间，整块缩到 163px，
