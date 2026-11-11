@@ -39,7 +39,7 @@ const en={},sa={};let dn=0,ts=0;
   if(it.state!=='done'&&it.state!=='testing')return; en[e.entrustNo]=1;
   const sid=it.sampleId||((e.samples||[e.sample])[0]||{}).id; if(sid)sa[sid]=1;
   it.state==='done'?dn++:ts++;});});
-const exp=[String(Object.keys(en).length),String(Object.keys(sa).length),(dn+'+'+ts)];
+const exp=[String(Object.keys(en).length),String(Object.keys(sa).length),String(dn+ts)];   /* 试验项目头顶=合计 */
 out.push((zs3.length===3&&zs3.map(x=>x.v).join('|')===exp.join('|')?'✅':'❌')+' 106 三子区域值＝entrust-list 独立重算 '+exp.join('|')+'（屏上 '+zs3.map(x=>x.v).join('|')+'）');
 // URL 恢复的视角不再被丢弃
 await p.goto(BASE+'/twin/future-lab/twin-scene-v2.html?mode=ZONE&zone=107&period=day&layers=path,labels,zones,walls#v2=1&native-nodes=1',{waitUntil:'load'});

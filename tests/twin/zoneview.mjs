@@ -210,7 +210,7 @@ for(const z of ROOMS){
       t:(e.querySelector('.zs2-h span')||{}).innerText||'', v:(e.querySelector('.zs2-h b')||{}).innerText||'',
       d:(e.querySelector('.zs2-d')||e.querySelector('.zs2-p')||{}).innerText||'',
       bars:[...(e.querySelectorAll('.zs2-bar i')||[])].map(i=>Math.round(i.getBoundingClientRect().width))})));
-    const expV=[String(Object.keys(en).length),String(Object.keys(sa).length),(dn+'+'+ts)];
+    const expV=[String(Object.keys(en).length),String(Object.keys(sa).length),String(dn+ts)];   /* 试验项目头顶=合计（分解在下一行与分段条） */
     const gotV=blocks.slice(0,3).map(x=>x.v.replace(/\s+/g,''));
     out.push((blocks.length===4&&gotV.join('|')===expV.join('|')?'✅':'❌')+
       ` ${z} 前三块数值＝entrust-list 独立重算 ${expV.join('|')}（屏上 ${gotV.join('|')}），第四块=调度任务`);

@@ -490,7 +490,12 @@ footer.dock{grid-template-columns:minmax(0,.92fr) minmax(0,1.66fr) minmax(0,1fr)
 :root{--tw-dock-h:212px}
 /* 右列只剩告警流：省出来的高度全部给它（原来固定 560px，现在 70→880，多读十几条） */
 .rcol{bottom:var(--tw-band)}
-.stream{flex:none;height:var(--tw-stream-h);min-height:0}   /* 改回固定高：600px 正好装 6 条（原来贴满 810px 读 9 条，块头太重） */
+/* 总览右列（2026-11-11 圈图：「画面往下移动，告警流拉高一些」）：
+   实测 1920×1080 时画面块下方还空 168px、2560×1440 空 427px——右列下半段整块是空的，
+   告警流却只给 3 行。改成告警流吃掉画面块之外的余量，画面块沉到右列底部、与底栏带对齐；
+   min-height 仍是原来 3 行，窗口变矮时先收缩告警流，不把画面顶出屏外。
+   区域视图不参与（那边另有 flex 规则）。 */
+body:not([data-zone-view="1"]) .rcol .stream{flex:1 1 auto;height:auto;min-height:var(--tw-stream-h)}
 /* ① 左栏：周期与读数仍贴顶，设备运行状态贴到栏底（正好在底栏上方，中间不再空一块） */
 .rail{top:70px;bottom:var(--tw-band);max-height:none}
 .raildev{margin-top:0}   /* 产品负责人：设备运行状态往上移、与上方运行指标之间保留间隙（原来是 auto 贴到栏底） */

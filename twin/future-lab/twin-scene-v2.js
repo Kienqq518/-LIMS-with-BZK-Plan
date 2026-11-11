@@ -958,7 +958,9 @@
             + '<div class="zs2-g"><div class="zs2-h"><span>样品</span><b style="color:var(--tw-st-ready)">' + sp.total + '</b></div>'
             + '<i class="zs2-bar">' + seg(sp.done / spSum * 100, '--tw-st-ready') + seg(sp.testing / spSum * 100, '--tw-st-cat') + '</i>'
             + '<div class="zs2-d">已完成检测 <b style="color:var(--tw-st-ready)">' + sp.done + '</b> · 检测中样品 <b style="color:var(--tw-st-cat)">' + sp.testing + '</b></div></div>'
-            + '<div class="zs2-g"><div class="zs2-h"><span>试验项目</span><b><span style="color:var(--tw-st-ready)">' + rm.items.done + '</span><em>+</em><span style="color:var(--tw-st-working)">' + rm.items.testing + '</span></b></div>'
+            /* 头顶大数=合计（2026-11-11 圈图：「这里显示总和就行」）。
+               5+4 那种写法把一个数拆成两个颜色，读起来要先做一次心算；分解仍在下面一行与分段条上说话。 */
+            + '<div class="zs2-g"><div class="zs2-h"><span>试验项目</span><b>' + (rm.items.done + rm.items.testing) + '</b></div>'
             + '<i class="zs2-bar">' + seg(rm.items.done / tiSum * 100, '--tw-st-ready') + seg(rm.items.testing / tiSum * 100, '--tw-st-working') + '</i>'
             + '<div class="zs2-d">已完成 <b style="color:var(--tw-st-ready)">' + rm.items.done + '</b> · 检测中 <b style="color:var(--tw-st-working)">' + rm.items.testing + '</b></div></div>'
             + '<div class="zs2-g zs2-g-dispatch"><div class="zs2-h"><span>调度任务</span><b>' + ({ day: '本日', month: '本月', year: '本年' })[st.period] + '</b></div>'
