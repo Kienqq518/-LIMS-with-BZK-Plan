@@ -36,9 +36,12 @@ await p.waitForTimeout(400);
 const notice = await p.locator('#ai-notices').textContent();
 out.push((/CAT-UNCAT-01/.test(notice || '') ? '✅' : '❌') + ' 未配置品类提示');
 
+// AI 审核入口已改由侧边栏「报告审核 / AI 审核工作台」承担；报告编制操作列改为「退回」
 await p.goto(BASE + '/report-list.html', { waitUntil: 'domcontentloaded' });
-const linkCount = await p.locator('a[href*="report-audit.html"]').count();
-out.push((linkCount >= 1 ? '✅' : '❌') + ' report-list 审核入口: ' + linkCount);
+await p.waitForTimeout(200);
+const aiLinkOnList = await p.locator('a[href*="report-audit.html"]').count();
+const returnBtn = await p.locator('#tableBody button', { hasText: '退回' }).count();
+out.push((aiLinkOnList === 0 && returnBtn >= 1 ? '✅' : '❌') + ' 报告编制操作列为退回（无 AI 入口链接）');
 
 console.log(out.join('\n'));
 console.log('errors(' + err.length + '):\n' + err.slice(0, 5).join('\n'));
