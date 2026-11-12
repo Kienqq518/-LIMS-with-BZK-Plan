@@ -32,7 +32,14 @@
       <p class="text-sm">总结论：<span id="ai-conclusion" class="font-medium text-slate-900">—</span></p>
       <div id="ai-notices" class="mt-2 text-xs text-amber-700"></div>
       <div id="ai-issues" class="mt-3 space-y-2"></div>
-      <button id="btn-audit-settle" type="button" class="mt-4 rounded bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700">完成审核处置</button>
+      <label class="mt-4 block text-xs text-slate-500">案例标注
+        <select id="case-label" class="ml-1 rounded border border-slate-300 px-2 py-1 text-sm">
+          <option value="正常">正常</option>
+          <option value="误报">误报</option>
+          <option value="漏报">漏报</option>
+        </select>
+      </label>
+      <button id="btn-audit-settle" type="button" class="mt-3 rounded bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700">完成审核处置</button>
     </div>
   </div>
 
@@ -116,7 +123,7 @@
         ai_issues: auditState.result.issues,
         dispositions: dispositions,
         final_conclusion: auditState.result.conclusion,
-        label: '正常',
+        label: (document.getElementById('case-label') || {}).value || '正常',
         created_at: new Date().toISOString(),
       });
       alert('审核处置已记录');

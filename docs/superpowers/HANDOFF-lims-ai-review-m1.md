@@ -72,6 +72,19 @@ Plan 与 Spec **一起读**：Plan 是对 Spec 的论证，Plan 里拿不准的�
 3. 用 `superpowers:finishing-a-development-branch` 收尾。
 4. 最终回报里列出：做了哪些 `Ruling:`、哪些延后的 Minor、全套测试结果、PR #6 链接。
 
+## 8bis. 整分支 review 结论（2026-11-12）
+
+全新上下文 reviewer 过完整分支 `e3b9664..HEAD`，Review Focus 五项全绿、34/34 测试通过。处置如下：
+
+- **[已修 · Important]** 工作台总结论覆盖（`#override-conclusion`）此前可无理由翻盘且不留痕，违反「人工覆盖结论必须填理由并写入 feedback」。已改为：覆盖且与 AI 结论不同则强制填理由、否则拦截；`feedback`/`cases` 均落 `override_conclusion`+`override_reason`。新增 2 条 `workbenchcheck` 断言。
+- **[已修 · 顺带]** 案例 `label` 原按「是否覆盖」自动推 `误报/正常`、audit 页恒为 `正常`，会污染案例库核心标注。两入口均改为显式 `误报/漏报/正常` 选择器，默认 `正常`。
+- **[已修 · 清理]** 删除 `passesFilter` 中的空死分支。
+
+延后（M2 跟进，非缺陷）：
+
+- **Ruling（保留）**：各页加载即 `reset()`（Plan 明确的原型演示幂等），导致跨页导航不累积 `feedback/cases`。M2 可改为仅在 store 缺失/版本不符时 reset，让沉淀跨页存活。
+- **校准项**：`A01-1`/`A01-6`/`B01-1` 的正则与字典序日期比较为确定性占位口径（仅适配 ISO 种子；如 `ASTM D638-14` 两位年号会被 `A01-6` 命中）。规则 `status='待审核员确认'`，Week-1 校准时复核。
+
 ## 9. 验收对照（Spec §10）
 
 自动触发(Task4) · 两入口(Task3+4) · 逐条处置/人工覆盖写 feedback(Task3/4) · 案例沉淀 cases(Task3/4) · 8 规则可运行且 B01-1 五业务类型零误报(Task2) · 7 表/品类两表空跑/cases 只写/CAT-UNCAT-01(Task1/2/5) · 规则确定性且 is_universal 全真(Task1/5)。
