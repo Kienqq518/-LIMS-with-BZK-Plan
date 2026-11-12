@@ -9,21 +9,23 @@ const p = await b.newPage();
 p.on('pageerror', (e) => err.push('pageerror: ' + e.message));
 p.on('dialog', (d) => d.accept());
 
-// 委托预览：无独立「报告」列，报告入口在操作列
+// 委托预览：独立「报告」+「操作」列，表头表体对齐
 await p.goto(BASE + '/entrust-preview.html', { waitUntil: 'load' });
 await p.waitForTimeout(400);
-const pvOps = await p.evaluate(() => {
+const pvCols = await p.evaluate(() => {
   const table = document.querySelector('#entrustTableBody')?.closest('table');
   if (!table) return false;
   const thTexts = [...table.querySelectorAll('thead th')].map((th) => th.textContent.replace(/\s+/g, ' ').trim());
-  if (thTexts.some((t) => t === '报告')) return false;
   const tr = document.querySelector('#entrustTableBody tr');
-  if (!tr) return false;
-  const ops = tr.cells[tr.cells.length - 1];
-  const lastTh = thTexts[thTexts.length - 1] || '';
-  return /^操作/.test(lastTh) && /手机签署链接/.test(ops.textContent || '');
+  if (!tr || tr.cells.length !== thTexts.length) return false;
+  const reportIdx = thTexts.indexOf('报告');
+  const opsIdx = thTexts.indexOf('操作');
+  if (reportIdx < 0 || opsIdx !== thTexts.length - 1) return false;
+  const reportCell = tr.cells[reportIdx];
+  const opsCell = tr.cells[opsIdx];
+  return /报告/.test(reportCell.textContent || '') && /手机签署链接/.test(opsCell.textContent || '');
 });
-out.push((pvOps ? '✅' : '❌') + ' 委托预览报告入口在操作列');
+out.push((pvCols ? '✅' : '❌') + ' 委托预览报告/操作分列对齐');
 
 // 委托登记：编辑/删除在操作列，表体列数与表头一致（sample-cat-filter 勿重复插列）
 await p.goto(BASE + '/entrust-register.html', { waitUntil: 'load' });

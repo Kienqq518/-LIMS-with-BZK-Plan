@@ -15,7 +15,7 @@
     ::-webkit-scrollbar-track { background: #f1f5f9; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-700">
+<body class="bg-slate-100 text-slate-700" data-cat-col="off">
 
   <!-- ============ 顶部页签 Tab ============ -->
   <div id="pageTabs" class="flex items-center gap-1 border-b border-slate-200 bg-white px-4 pt-2 text-sm" data-close-target="dashboard.html">
@@ -101,7 +101,7 @@
 
       <!-- 表格（列很多，横向滚动） -->
       <div class="overflow-x-auto" data-annotate="preview-cols">
-        <table class="w-full min-w-[2680px] border-collapse text-left text-sm">
+        <table class="w-full min-w-[2760px] border-collapse text-left text-sm">
           <thead>
             <tr class="bg-slate-100 text-xs text-slate-600">
               <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">序号</th>
@@ -124,6 +124,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">检测类型</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">优先等级</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">报告</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
             </tr>
           </thead>
@@ -312,15 +313,9 @@
         const customerDateCell = item.customerDate
           ? '<span class="' + (item.overdue ? 'text-red-500' : '') + '">' + item.customerDate + '</span>'
           : (item.overdue ? '<span class="text-red-500">' + item.requireDate + '</span>' : '');
-        const reportBtn = item.hasReport
+        const reportCell = item.hasReport
           ? '<button type="button" data-annotate="pv-report-btn" onclick="openReport()" class="text-blue-600 hover:underline"><i class="fa fa-file-text-o"></i> 报告</button>'
-          : '';
-        const opsCell =
-          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
-            '<span class="inline-flex flex-wrap items-center gap-x-3 gap-y-1">' +
-              reportBtn +
-              '<button type="button" data-annotate="pv-sign-row" onclick="openSign()" class="text-blue-600 hover:underline"><i class="fa fa-mobile"></i> 手机签署链接</button>' +
-            '</span></td>';
+          : '<span class="text-slate-300">-</span>';
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (idx + 1) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
@@ -342,7 +337,10 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + (item.testType || '/') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (item.priority || '/') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
-          opsCell +
+          '<td class="border border-slate-200 px-3 py-2.5">' + reportCell + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
+            '<button type="button" data-annotate="pv-sign-row" onclick="openSign()" class="text-blue-600 hover:underline"><i class="fa fa-mobile"></i> 手机签署链接</button>' +
+          '</td>' +
           '</tr>';
       }).join('');
       if (window.ColumnConfig && ColumnConfig.refresh) ColumnConfig.refresh();
@@ -448,7 +446,7 @@
             '<strong>展示规则：</strong>三列位于「业务员」与「编制人」之间，顺序为 <strong>任务类型 → 检测类型 → 优先等级</strong>。取值与委托登记同源字典：任务类型 = <code>lims_task_type</code>（电气（输配电类）/ 电气（低压电器类）/ 电气（电工电子产品类）/ 电气（抗震检测类）/ 材料（安全工器具类）/ 材料（电线电缆、金具、金属材料类））；检测类型 = <code>lims_detect_type</code>（常规 / 非常规，本次在字典里补齐「非常规」）；优先等级 = <code>lims_priority</code>（常规 / 加急）。<strong>没有值统一显示「/」</strong>，不留空单元格。<br>' +
             '<strong>查询条件同步：</strong>查询区原「检测性质」文本框去掉，改为「检测类型」「优先等级」两个下拉（「任务类型」下拉原本就有），选项与字典一致。<br>' +
             '<strong>交互逻辑：</strong>三列都纳入本页「列配置」面板，可拖拽排序、可开关是否展示；横向滚动时前两列（序号、委托编号）与最后一列（操作）保持冻结；列数增加后表格最小宽度相应加宽，避免列被压扁。<br>' +
-            '<strong>操作列：</strong>原独立「报告」列已取消；有报告时展示「报告」入口（打开报告记录弹窗），与「手机签署链接」并列于「操作」列。',
+            '<strong>报告 / 操作：</strong>「报告」列为独立列（有报告显示按钮，无报告为「-」）；「操作」列仅「手机签署链接」。本页关闭全局样品大类列注入（<code>data-cat-col=off</code>），避免表头表体列数不一致串列。',
           tag: '列表列'
         },
         {
@@ -457,7 +455,7 @@
           position: 'left',
           title: '报告记录入口',
           content: '<strong>需求逻辑：</strong>列表上就地查看该委托下各报告的节点签署留痕。<br>' +
-            '<strong>展示规则：</strong>仅当该委托已有报告时显示蓝色「报告」按钮，与「手机签署链接」同在操作列。<br>' +
+            '<strong>展示规则：</strong>独立「报告」列；仅当该委托已有报告时显示蓝色「报告」按钮，否则「-」。<br>' +
             '<strong>交互逻辑：</strong>点击打开「报告记录」弹窗；弹窗内可再进「报告操作日志」。',
           tag: '委托预览'
         },
@@ -509,8 +507,8 @@
           id: 'pv-sign-row',
           selector: '[data-annotate="pv-sign-row"]',
           position: 'left',
-          title: '手机签署链接（列表入口）',
-          content: '<strong>展示规则：</strong>操作列固定展示，与「报告」按钮并列。<br>' +
+          title: '手机签署链接（操作列）',
+          content: '<strong>展示规则：</strong>固定位于「操作」列（与「报告」列分列）。<br>' +
             '<strong>交互逻辑：</strong>点击打开签署链接弹窗。',
           tag: '委托预览'
         },
