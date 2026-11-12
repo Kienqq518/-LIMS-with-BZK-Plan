@@ -7,6 +7,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <link rel="stylesheet" href="css/ui-baseline.css" />
+  <script src="js/ai-review-store.js"></script>
+  <script src="js/ai-review-engine.js"></script>
+  <script src="js/report-review-mock.js"></script>
   <style>
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
@@ -69,6 +72,8 @@
         </div>
       </div>
     </div>
+
+    <div id="ai-returned-banner" data-annotate="ai-returned" class="mt-4 hidden rounded border border-red-200 bg-red-50 p-4 text-sm"></div>
 
     <div class="mt-4 rounded bg-white p-4 shadow-sm">
       <div class="overflow-x-auto">
@@ -719,9 +724,30 @@
     }
 
     renderTable();
+    renderAiReturnedBanner();
+
+    // AI 审核不通过自动退回：报告审核阶段命中严重项的报告会被 AI 退回本环节（报告编制），此处置顶提示（与报告审核页同源）
+    function renderAiReturnedBanner() {
+      var box = document.getElementById('ai-returned-banner');
+      if (!box || !window.ReportReviewMock) return;
+      var list = ReportReviewMock.aiReturnedReports();
+      if (!list.length) { box.classList.add('hidden'); return; }
+      box.classList.remove('hidden');
+      box.innerHTML =
+        '<div class="mb-2 font-medium text-red-700"><i class="fa fa-exclamation-triangle mr-1"></i>AI 审核不通过自动退回（' + list.length + ' 份，待重新编制）</div>' +
+        '<div class="space-y-1">' + list.map(function (it) {
+          var reasons = it.reasons.map(function (r) { return r.rule_id + ' ' + r.message; }).join('；');
+          return '<div class="text-slate-700"><b>' + it.reportNo + '</b>（' + it.customer + ' · ' + it.sample + '）：' + reasons +
+            ' <a href="report-compile-edit.html?entrust=' + encodeURIComponent(it.entrustCode) + '" class="ml-1 text-blue-600 hover:underline">去修订</a></div>';
+        }).join('') + '</div>';
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({ annotations: [
+        { id: 'ai-returned', selector: '[data-annotate="ai-returned"]', position: 'bottom', title: 'AI 审核不通过自动退回', content: '<strong>需求逻辑：</strong>报告流转到「报告审核」时自动跑 AI 预审，命中严重项的报告不进人工审核、直接自动退回「报告编制」，编制人需在本环节优先处理。<br>' +
+            '<strong>展示规则：</strong>本环节页顶红色条列出被 AI 退回的报告：报告编号、客户/样品、命中的严重规则项与「去修订」入口；无退回时整条隐藏。<br>' +
+            '<strong>交互逻辑：</strong>数据与「报告审核」页同源（report-review-mock）；演示 SC2026/0238-03 因批准签名缺失(C02-5) 被退回。', tag: '报告编制' },
         { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '<strong>需求逻辑：</strong>报告列表是编制入口；编制发现问题可直接退回上一环节「数据审核」修正后重提。<br>' +
             '<strong>展示规则：</strong>操作列：「报告生成」「编制」「退回」。<br>' +
             '<strong>交互逻辑：</strong>「报告生成」跳转报告编制编辑页；「编制」弹出报告列表；「退回」见独立批注。AI 预审入口在侧边栏「报告审核 / AI 审核工作台」。', tag: '报告编制' },

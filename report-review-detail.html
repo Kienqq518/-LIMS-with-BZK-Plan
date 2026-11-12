@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>报告审核详情 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <script src="js/ai-review-store.js"></script>
+  <script src="js/ai-review-engine.js"></script>
+  <script src="js/report-review-mock.js"></script>
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="report-review.html">
+    <a href="report-review.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">报告审核</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      报告审核详情
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="mx-auto max-w-5xl p-4 space-y-4">
+    <div id="ai-liability" class="flex items-center gap-2 rounded border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">
+      <i class="fa fa-info-circle"></i>
+      <span>AI 仅输出预审意见与问题清单，最终核准与签发由授权审核员确认；下方「标注」仅用于 AI 模型持续学习，不对上下游人员展示。</span>
+    </div>
+
+    <div id="entrust-meta" class="rounded bg-white p-4 shadow-sm text-sm text-slate-600"></div>
+
+    <div id="report-cards" class="space-y-4"></div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    AiReviewStore.reset();
+
+    function qp(name) {
+      var m = new RegExp('[?&]' + name + '=([^&]+)').exec(location.search);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    var CODE = qp('code') || 'SC2026/0238';
+    var entrust = ReportReviewMock.getEntrust(CODE);
+
+    function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;'); }
+
+    function detailText(item) {
+      var ev = item.evidence || {};
+      if (ev.skipped) return '校验口径：收样 ≤ 检测 ≤ 报告；本报告' + ev.skipped + '，已跳过该项并转数据完整性提示。';
+      if (item.rule_id === 'B01-1' && ev.receive_date) return '校验口径：收样(' + ev.receive_date + ') ≤ 检测(' + ev.test_date + ') ≤ 报告(' + ev.report_date + ')，实际日期先后不满足。';
+      if (ev && Object.keys(ev).length) return '命中依据：' + esc(JSON.stringify(ev));
+      return '已按规则口径对该报告字段逐项校验' + (item.severity ? '（严重度：' + item.severity + '）' : '') + '，结论见上。';
+    }
+
+    // 单条规则项：通过项默认折叠（点展开看详情）；需复核/严重项默认展开。
+    function ruleItemHtml(item, idx, itemIdx, opts) {
+      opts = opts || {};
+      var sevCls = item.severity === '严重' ? 'text-red-600' : (item.severity === '一般' ? 'text-amber-600' : 'text-emerald-600');
+      var detailOpen = !!opts.open;
+      var labelCtrl = opts.withLabel
+        ? '<label class="flex items-center gap-1 text-xs text-slate-500" title="' + ReportReviewMock.LABEL_NOTE + '">' +
+            '<i class="fa fa-lock text-slate-400"></i>标注' +
+            '<select class="item-label ml-1 rounded border border-slate-300 px-1.5 py-0.5 text-xs" data-rule="' + item.rule_id + '">' +
+              '<option value="正常">正常</option><option value="误报">误报</option><option value="漏报">漏报</option>' +
+            '</select></label>'
+        : '';
+      return '<div class="rule-item rounded border border-slate-200 px-3 py-2" data-rule-id="' + item.rule_id + '">' +
+        '<div class="flex items-start justify-between gap-3">' +
+          '<div class="min-w-0">' +
+            '<span class="font-medium text-slate-700">' + item.rule_id + '</span>' +
+            '<span class="ml-2 text-xs ' + sevCls + '">' + (item.severity || '') + '</span>' +
+            '<p class="mt-0.5 text-xs text-slate-500">' + esc(item.name) + ' — ' + esc(item.message) + '</p>' +
+          '</div>' +
+          '<div class="flex flex-shrink-0 items-center gap-3">' +
+            '<button type="button" class="toggle-detail text-xs text-blue-600 hover:underline">' + (detailOpen ? '收起' : '展开') + '</button>' +
+            labelCtrl +
+          '</div>' +
+        '</div>' +
+        '<div class="item-detail mt-2 rounded bg-slate-50 px-3 py-2 text-xs text-slate-500 ' + (detailOpen ? '' : 'hidden') + '">' + esc(detailText(item)) + '</div>' +
+      '</div>';
+    }
+
+    function noticesHtml(notices) {
+      if (!notices || !notices.length) return '';
+      return '<div class="mt-2 text-xs text-amber-700">' + notices.map(function (n) {
+        return '<div><i class="fa fa-info-circle mr-1"></i>' + n.code + '：' + esc(n.message) + '</div>';
+      }).join('') + '</div>';
+    }
+
+    function defaultReturnReason(review) {
+      var items = review.map(function (r) { return r.rule_id + ' ' + r.message; }).join('；');
+      return 'AI 预审命中需复核项：' + items + '。请核对修订后重新提交报告审核。';
+    }
+
+    function conclusionBadge(c) {
+      var m = ReportReviewMock.CONCLUSION_META[c];
+      return '<span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ' + m.cls + '"><i class="fa ' + m.icon + '"></i>' + c + '</span>';
+    }
+
+    function buildCard(report, r, idx) {
+      var head =
+        '<div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">' +
+          '<div><span class="font-semibold text-slate-800">' + report.reportNo + '</span>' +
+            '<span class="ml-2 text-xs text-slate-400">' + esc(report.reportName) + ' · 试样 ' + report.sampleNos.join('、') + '</span></div>' +
+          conclusionBadge(r.conclusion) +
+        '</div>';
+
+      var aiBody = '<div class="px-4 py-3">' +
+        '<div class="mb-2 text-xs font-medium text-slate-500"><i class="fa fa-robot mr-1"></i>AI 审查结果</div>';
+
+      if (r.conclusion === '不通过') {
+        aiBody += '<div class="mb-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">' +
+          '<i class="fa fa-times-circle mr-1"></i>命中严重项，已由 AI 自动回退至「报告编制」，无需人工处置。' +
+          ' <a href="report-list.html" class="ml-1 underline">前往报告编制</a></div>';
+        aiBody += '<div class="space-y-2">' + r.severe.map(function (it, j) { return ruleItemHtml(it, idx, j, { open: true }); }).join('') + '</div>';
+      } else if (r.conclusion === '需复核') {
+        aiBody += '<p class="mb-1 text-xs text-slate-500">需复核项（' + r.review.length + '，默认展开详情）：</p>' +
+          '<div class="space-y-2">' + r.review.map(function (it, j) { return ruleItemHtml(it, idx, j, { open: true, withLabel: true }); }).join('') + '</div>';
+        if (r.passed.length) {
+          aiBody += '<p class="mb-1 mt-3 text-xs text-slate-400">其余 ' + r.passed.length + ' 项已通过（点展开查看）：</p>' +
+            '<div class="space-y-2">' + r.passed.map(function (it, j) { return ruleItemHtml(it, idx, 100 + j, { open: false, withLabel: true }); }).join('') + '</div>';
+        }
+      } else {
+        aiBody += '<p class="mb-1 text-xs text-slate-500">通过规则项（' + r.passed.length + '，点展开查看详情）：</p>' +
+          '<div class="space-y-2">' + r.passed.map(function (it, j) { return ruleItemHtml(it, idx, j, { open: false, withLabel: true }); }).join('') + '</div>';
+      }
+      aiBody += noticesHtml(r.notices) + '</div>';
+
+      var action = buildActionArea(report, r, idx);
+
+      return '<div class="report-card rounded bg-white shadow-sm" data-idx="' + idx + '" data-report-id="' + report.id + '" data-conclusion="' + r.conclusion + '">' +
+        head + aiBody + action + '</div>';
+    }
+
+    // 人工处置区：按 AI 结论给不同的「同意 / 不同意」两条路径；标注随每条规则项走。
+    function buildActionArea(report, r, idx) {
+      if (r.conclusion === '不通过') return '';
+
+      var box = '<div class="border-t border-slate-100 bg-slate-50/60 px-4 py-3" data-annotate="' + (idx === 0 ? 'rv-manual' : '') + '">' +
+        '<div class="mb-2 text-xs font-medium text-slate-500"><i class="fa fa-user-check mr-1"></i>人工处置</div>';
+
+      if (r.conclusion === '通过') {
+        box +=
+          '<div class="space-y-1 text-sm">' +
+            '<label class="flex items-start gap-2"><input type="radio" name="choice-' + idx + '" value="agree" class="mt-1" onchange="onChoice(' + idx + ')"/>' +
+              '<span>同意 AI 审核结果 —— 执行<b>通过</b>（逐条标注确认 AI 判断正确）</span></label>' +
+            '<label class="flex items-start gap-2"><input type="radio" name="choice-' + idx + '" value="disagree" class="mt-1" onchange="onChoice(' + idx + ')"/>' +
+              '<span>不同意 AI 审核结果 —— 仍由人工判断执行<b>通过</b>（对存疑项标注 误报/漏报 供 AI 学习）</span></label>' +
+          '</div>' +
+          '<div class="mt-3 flex items-center gap-3">' +
+            '<button type="button" class="btn-exec rounded bg-emerald-600 px-4 py-1.5 text-sm text-white hover:bg-emerald-700" onclick="execPass(' + idx + ')">执行通过</button>' +
+            '<span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行通过</span>' +
+          '</div>';
+      } else { // 需复核
+        box +=
+          '<div class="space-y-1 text-sm">' +
+            '<label class="flex items-start gap-2"><input type="radio" name="choice-' + idx + '" value="return" class="mt-1" onchange="onChoice(' + idx + ')"/>' +
+              '<span>同意 AI 审核结果 —— <b>退回报告编制</b>（逐条标注确认 AI 判断正确）</span></label>' +
+            '<label class="flex items-start gap-2"><input type="radio" name="choice-' + idx + '" value="pass" class="mt-1" onchange="onChoice(' + idx + ')"/>' +
+              '<span>不同意 AI 审核结果 —— <b>直接人工审核通过</b>（对误报项标注 误报 供 AI 学习）</span></label>' +
+          '</div>' +
+          '<div class="return-reason-wrap mt-3 hidden">' +
+            '<label class="mb-1 block text-xs text-slate-500"><span class="text-red-500">*</span> 退回原因（已按 AI 命中项预填，可修改）</label>' +
+            '<textarea class="return-reason w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500" rows="3"></textarea>' +
+          '</div>' +
+          '<div class="mt-3 flex items-center gap-3">' +
+            '<button type="button" class="btn-exec rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700" onclick="execReview(' + idx + ')">执行</button>' +
+            '<span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行</span>' +
+          '</div>';
+      }
+      box += '</div>';
+      return box;
+    }
+
+    var CTX = {}; // idx -> { report, result }
+
+    function render() {
+      if (!entrust) {
+        document.getElementById('entrust-meta').textContent = '未找到委托 ' + CODE;
+        return;
+      }
+      document.getElementById('entrust-meta').innerHTML =
+        '<div class="flex flex-wrap gap-x-8 gap-y-1">' +
+          '<span>委托编号：<b class="text-slate-800">' + entrust.code + '</b></span>' +
+          '<span>客户单位：' + esc(entrust.customer) + '</span>' +
+          '<span>样品名称：' + esc(entrust.sample) + '</span>' +
+          '<span>委托受理日期：' + entrust.acceptDate + '</span>' +
+          '<span>任务状态：' + entrust.status + '</span>' +
+          '<span>报告份数：' + entrust.reports.length + '</span>' +
+        '</div>';
+
+      var html = entrust.reports.map(function (report, idx) {
+        var r = ReportReviewMock.evalReport(report);
+        CTX[idx] = { report: report, result: r };
+        AiReviewStore.saveResult(r.raw);
+        return buildCard(report, r, idx);
+      }).join('');
+      document.getElementById('report-cards').innerHTML = html;
+
+      document.querySelectorAll('.toggle-detail').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var d = btn.closest('.rule-item').querySelector('.item-detail');
+          d.classList.toggle('hidden');
+          btn.textContent = d.classList.contains('hidden') ? '展开' : '收起';
+        });
+      });
+
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function onChoice(idx) {
+      var card = document.querySelector('.report-card[data-idx="' + idx + '"]');
+      var wrap = card.querySelector('.return-reason-wrap');
+      if (!wrap) return;
+      var choice = card.querySelector('input[name="choice-' + idx + '"]:checked');
+      if (choice && choice.value === 'return') {
+        wrap.classList.remove('hidden');
+        var ta = wrap.querySelector('.return-reason');
+        if (ta && !ta.value.trim()) ta.value = defaultReturnReason(CTX[idx].result.review);
+      } else {
+        wrap.classList.add('hidden');
+      }
+    }
+
+    function collectLabels(card) {
+      return Array.prototype.map.call(card.querySelectorAll('.item-label'), function (sel) {
+        return { rule_id: sel.getAttribute('data-rule'), label: sel.value };
+      });
+    }
+
+    function markDone(card) {
+      card.querySelectorAll('input,select,button.btn-exec').forEach(function (el) { el.disabled = true; });
+      var done = card.querySelector('.exec-done');
+      if (done) done.classList.remove('hidden');
+    }
+
+    function persist(idx, agree, finalConclusion, reason) {
+      var ctx = CTX[idx];
+      var card = document.querySelector('.report-card[data-idx="' + idx + '"]');
+      var labels = collectLabels(card);
+      var topLabel = labels.some(function (l) { return l.label === '误报'; }) ? '误报'
+        : labels.some(function (l) { return l.label === '漏报'; }) ? '漏报' : '正常';
+      AiReviewStore.saveFeedback({
+        report_id: ctx.report.id, entrust_code: CODE,
+        ai_conclusion: ctx.result.conclusion, final_conclusion: finalConclusion,
+        agree_ai: agree, return_reason: reason || '', item_labels: labels, at: new Date().toISOString(),
+      });
+      AiReviewStore.appendCase({
+        case_id: 'case-rv-' + ctx.report.id + '-' + Date.now(),
+        report_id: ctx.report.id, entrust_code: CODE,
+        ai_conclusion: ctx.result.conclusion, final_conclusion: finalConclusion,
+        agree_ai: agree, item_labels: labels, label: topLabel, created_at: new Date().toISOString(),
+      });
+    }
+
+    function execPass(idx) {
+      var card = document.querySelector('.report-card[data-idx="' + idx + '"]');
+      var choice = card.querySelector('input[name="choice-' + idx + '"]:checked');
+      if (!choice) { alert('请先选择「同意」或「不同意」AI 审核结果'); return; }
+      persist(idx, choice.value === 'agree', '通过', '');
+      markDone(card);
+      alert('已执行：该报告审核通过（标注已记录，仅用于 AI 学习）');
+    }
+
+    function execReview(idx) {
+      var card = document.querySelector('.report-card[data-idx="' + idx + '"]');
+      var choice = card.querySelector('input[name="choice-' + idx + '"]:checked');
+      if (!choice) { alert('请先选择「同意退回」或「不同意·人工通过」'); return; }
+      if (choice.value === 'return') {
+        var reason = (card.querySelector('.return-reason') || {}).value;
+        reason = (reason || '').trim();
+        if (!reason) { alert('请填写退回原因'); return; }
+        persist(idx, true, '退回报告编制', reason);
+        markDone(card);
+        alert('已执行：同意 AI 结果，报告退回「报告编制」\n退回原因：' + reason);
+      } else {
+        persist(idx, false, '通过', '');
+        markDone(card);
+        alert('已执行：不同意 AI 结果，人工审核通过（标注已记录，仅用于 AI 学习）');
+      }
+    }
+
+    render();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({ annotations: [
+        { id: 'rv-liability', selector: '#ai-liability', position: 'bottom', title: '责任边界 + 标注说明', content: '<strong>需求逻辑：</strong>AI 只做预审，签发责任仍在授权审核员；标注是喂给 AI 学习的内部数据，绝不进入对外报告或上下游流程。<br>' +
+            '<strong>展示规则：</strong>页首蓝条常驻，明确「AI 预审」与「标注内部专用」两点。<br>' +
+            '<strong>交互逻辑：</strong>常驻不可关闭。', tag: '报告审核' },
+        { id: 'rv-ai-pass', selector: '.report-card[data-conclusion="通过"] .rule-item', position: 'right', title: 'AI 结论=通过', content: '<strong>需求逻辑：</strong>通过时审核员主要是抽查确认，不必逐条展开，故通过项默认折叠。<br>' +
+            '<strong>展示规则：</strong>列出所有通过的规则项（编号+规则名+结论），默认折叠；点「展开」看该项校验口径与依据。<br>' +
+            '<strong>交互逻辑：</strong>每项带「标注」（正常/误报/漏报），默认正常；标注仅用于 AI 学习。', tag: '报告审核' },
+        { id: 'rv-ai-review', selector: '.report-card[data-conclusion="需复核"] .rule-item', position: 'right', title: 'AI 结论=需复核', content: '<strong>需求逻辑：</strong>需复核=命中「一般」项，不自动拦，交人工判断，所以这些项要默认展开把依据摆出来。<br>' +
+            '<strong>展示规则：</strong>需复核项默认展开显示详情；其余通过项折叠在下方。<br>' +
+            '<strong>交互逻辑：</strong>每项可标注；配合下方「同意退回 / 不同意人工通过」两条处置路径。', tag: '报告审核' },
+        { id: 'rv-manual', selector: '[data-annotate="rv-manual"]', position: 'top', title: '人工处置（同意 / 不同意 两路）', content: '<strong>需求逻辑：</strong>人工对 AI 结论要么认可要么推翻，两种都要留痕并可反向喂给 AI；执行动作与结论绑定。<br>' +
+            '<strong>展示规则：</strong>通过→「同意执行通过 / 不同意仍执行通过」；需复核→「同意退回报告编制 / 不同意直接人工通过」。退回路径旁出现「退回原因」。<br>' +
+            '<strong>交互逻辑：</strong>选路径后点执行写入 feedback + 历史案例（含逐条标注）。不通过的报告已被 AI 自动退回，无人工处置区。', tag: '报告审核' },
+        { id: 'rv-return-reason', selector: '.return-reason-wrap', position: 'top', title: '退回原因（默认预填，可改）', content: '<strong>需求逻辑：</strong>退回必须讲清原因，且原因应与 AI 命中项对得上；默认预填能省去重复誊写并保证可追溯。<br>' +
+            '<strong>展示规则：</strong>仅在选「同意退回」时出现；文本框预填「AI 预审命中需复核项：…请核对修订后重新提交」。<br>' +
+            '<strong>交互逻辑：</strong>审核员可直接用或改写；留空不允许执行退回。<em>设计结论：默认加载预填文本</em>。', tag: '报告审核' },
+      ] });
+    }
+  </script>
+  <script src="js/ui-a11y.js" defer></script>
+</body>
+</html>

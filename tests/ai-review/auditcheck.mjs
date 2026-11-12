@@ -7,41 +7,58 @@ const err = [];
 const b = await chromium.launch({ channel: 'chrome' });
 const p = await b.newPage();
 p.on('pageerror', (e) => err.push('pageerror: ' + e.message));
+p.on('dialog', (d) => d.accept());
 
-const badId = 'r-bad-sign';
-await p.goto(BASE + '/report-audit.html?report=' + badId, { waitUntil: 'load' });
-await p.waitForTimeout(500);
+// 报告审核主查询页：操作列为「审核」，无旧 AI 链接
+await p.goto(BASE + '/report-review.html', { waitUntil: 'load' });
+await p.waitForTimeout(300);
+const auditLinks = await p.locator('#tableBody a[href*="report-review-detail.html"]').count();
+const auditBtnText = await p.locator('#tableBody a[href*="report-review-detail.html"]').first().textContent();
+out.push((auditLinks >= 1 && /审核/.test(auditBtnText || '') ? '✅' : '❌') + ' 报告审核列表「审核」入口: ' + auditLinks);
 
-const cardVisible = await p.locator('#ai-card').isVisible();
-const concl = (await p.locator('#ai-conclusion').textContent())?.trim();
-const issueCount = await p.locator('#ai-issues .issue[data-rule-id]').count();
-const hitCount = await p.evaluate((id) => {
-  var rep = window.AiReviewStore.getReport(id);
-  var res = window.__lastAuditResult;
-  return res ? res.issues.length : -1;
-}, badId);
-
-out.push((cardVisible && concl === '不通过' && issueCount === hitCount && hitCount > 0 ? '✅' : '❌') + ' 自动触发不通过 命中=' + issueCount);
-
-const issueBtn = p.locator('#ai-issues .issue').first().locator('button[data-action="接受"]');
-if (await issueBtn.count()) await issueBtn.click();
-await p.click('#btn-audit-settle');
-await p.waitForTimeout(200);
-let cases = await p.evaluate(() => window.AiReviewStore.getCases());
-let matchedBad = cases.some((c) => c.report_id === badId);
-out.push((matchedBad ? '✅' : '❌') + ' 审核处置沉淀案例');
-
-await p.goto(BASE + '/report-audit.html?report=r-uncat', { waitUntil: 'load' });
+// 审核详情页：SC2026/0238 三份报告命中 通过 / 需复核 / 不通过
+await p.goto(BASE + '/report-review-detail.html?code=SC2026/0238', { waitUntil: 'load' });
 await p.waitForTimeout(400);
-const notice = await p.locator('#ai-notices').textContent();
-out.push((/CAT-UNCAT-01/.test(notice || '') ? '✅' : '❌') + ' 未配置品类提示');
+const cards = await p.locator('.report-card').count();
+const pass = await p.locator('.report-card[data-conclusion="通过"]').count();
+const review = await p.locator('.report-card[data-conclusion="需复核"]').count();
+const fail = await p.locator('.report-card[data-conclusion="不通过"]').count();
+out.push((cards === 3 && pass === 1 && review === 1 && fail === 1 ? '✅' : '❌') + ` 三态结论 卡片=${cards} 通过=${pass} 需复核=${review} 不通过=${fail}`);
 
-// AI 审核入口已改由侧边栏「报告审核 / AI 审核工作台」承担；报告编制操作列改为「退回」
-await p.goto(BASE + '/report-list.html', { waitUntil: 'domcontentloaded' });
+// 不通过卡片无人工处置区（已被 AI 自动退回）
+const failCard = p.locator('.report-card[data-conclusion="不通过"]');
+const failHasManual = await failCard.locator('button.btn-exec').count();
+out.push((failHasManual === 0 ? '✅' : '❌') + ' 不通过卡片无人工处置按钮');
+
+// 需复核：选「同意退回」出现退回原因且已预填
+const reviewCard = p.locator('.report-card[data-conclusion="需复核"]');
+await reviewCard.locator('input[value="return"]').check();
+await p.waitForTimeout(150);
+const reasonVisible = await reviewCard.locator('.return-reason-wrap').isVisible();
+const reasonVal = await reviewCard.locator('.return-reason').inputValue();
+out.push((reasonVisible && /AI 预审命中/.test(reasonVal) ? '✅' : '❌') + ' 需复核退回原因预填');
+
+// 执行退回 → 写入 feedback（含标注）
+await reviewCard.locator('button.btn-exec').click();
 await p.waitForTimeout(200);
-const aiLinkOnList = await p.locator('a[href*="report-audit.html"]').count();
-const returnBtn = await p.locator('#tableBody button', { hasText: '退回' }).count();
-out.push((aiLinkOnList === 0 && returnBtn >= 1 ? '✅' : '❌') + ' 报告编制操作列为退回（无 AI 入口链接）');
+const fb = await p.evaluate(() => window.AiReviewStore.getFeedback());
+const retFb = fb.find((f) => f.final_conclusion === '退回报告编制');
+out.push((retFb && retFb.agree_ai === true && Array.isArray(retFb.item_labels) ? '✅' : '❌') + ' 退回处置写入 feedback(含标注)');
+
+// 通过卡片：执行通过
+const passCard = p.locator('.report-card[data-conclusion="通过"]');
+await passCard.locator('input[value="agree"]').check();
+await passCard.locator('button.btn-exec').click();
+await p.waitForTimeout(200);
+const cases = await p.evaluate(() => window.AiReviewStore.getCases());
+out.push((cases.some((c) => c.final_conclusion === '通过') ? '✅' : '❌') + ' 通过处置沉淀案例');
+
+// 报告编制页：AI 不通过自动退回横幅可见
+await p.goto(BASE + '/report-list.html', { waitUntil: 'load' });
+await p.waitForTimeout(300);
+const bannerVisible = await p.locator('#ai-returned-banner').isVisible();
+const bannerText = await p.locator('#ai-returned-banner').textContent();
+out.push((bannerVisible && /SC2026\/0238-03/.test(bannerText || '') ? '✅' : '❌') + ' 报告编制页 AI 退回横幅');
 
 console.log(out.join('\n'));
 console.log('errors(' + err.length + '):\n' + err.slice(0, 5).join('\n'));

@@ -85,6 +85,21 @@ Plan 与 Spec **一起读**：Plan 是对 Spec 的论证，Plan 里拿不准的�
 - **Ruling（保留）**：各页加载即 `reset()`（Plan 明确的原型演示幂等），导致跨页导航不累积 `feedback/cases`。M2 可改为仅在 store 缺失/版本不符时 reset，让沉淀跨页存活。
 - **校准项**：`A01-1`/`A01-6`/`B01-1` 的正则与字典序日期比较为确定性占位口径（仅适配 ISO 种子；如 `ASTM D638-14` 两位年号会被 `A01-6` 命中）。规则 `status='待审核员确认'`，Week-1 校准时复核。
 
+## 8ter. 报告审核模块重构（2026-11-12，产品迭代）
+
+旧 `report-audit.html`（单报告内嵌 AI 卡片）被推翻，改为「报告审核」标准两页式，AI 结论复用同一引擎：
+
+- `report-review.html`：报告审核主查询页（筛选 + 列表），操作列由「编辑」改为「审核」。
+- `report-review-detail.html`：按委托打开，页内每份报告下方一块 AI 审查结果区（通过 / 需复核 / 不通过）：
+  - 通过：列通过规则项，默认折叠，点展开看详情；
+  - 需复核：命中「一般」项默认展开详情；
+  - 不通过：命中「严重」项 → AI 自动回退「报告编制」，无人工处置区。
+  - 人工处置两路：通过→同意执行通过 / 不同意仍执行通过；需复核→同意退回编制 / 不同意直接人工通过。退回路径旁「退回原因」**默认按 AI 命中项预填、可改**（设计结论）。
+  - 逐条「标注」（正常/误报/漏报）仅用于 AI 学习，页首明示不对上下游展示；写入 `feedback` + `cases`。
+- `report-list.html`：顶部新增「AI 审核不通过自动退回」横幅（与审核页同源 `js/report-review-mock.js`）。
+- 基座 `js/report-review-mock.js`：委托→多报告，`evalReport()` 复用 `ai-review-engine`，三态结论对外统一。
+- 回归：`auditcheck.mjs` 改测新两页 + 编制页横幅；全套 37/37 绿。AI 审核工作台（`ai-review-workbench.html`）留待后续重构。
+
 ## 9. 验收对照（Spec §10）
 
 自动触发(Task4) · 两入口(Task3+4) · 逐条处置/人工覆盖写 feedback(Task3/4) · 案例沉淀 cases(Task3/4) · 8 规则可运行且 B01-1 五业务类型零误报(Task2) · 7 表/品类两表空跑/cases 只写/CAT-UNCAT-01(Task1/2/5) · 规则确定性且 is_universal 全真(Task1/5)。
