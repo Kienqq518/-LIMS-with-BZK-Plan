@@ -28,8 +28,8 @@ Plan 与 Spec **一起读**：Plan 是对 Spec 的论证，Plan 里拿不准的�
 
 - 分支：**`cursor/lims-ai-review-m1-design-bf8b`**（已在此分支，**继续用它，不要切换/新建**）。
 - PR：**#6** `https://github.com/Kienqq518/-LIMS-with-BZK-Plan/pull/6`（push 到本分支会自动更新；PR 描述被人手改过，**不要覆盖**）。
-- 已提交：Spec、Plan、本 Handoff。**代码尚未实现**。
-- 待办：Plan 的 **Task 1 → Task 6 全部未做**。从 Task 1 开始。
+- 已提交：Spec、Plan、本 Handoff、**M1 原型代码与 6 套 Playwright 回归**。
+- Plan **Task 1 → Task 6 已全部完成**（见 §7 勾选）；交付见 PR #6。
 
 ## 4. Git / 提交规范
 
