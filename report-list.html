@@ -12,9 +12,22 @@
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     .return-detail { font-size: 12px; line-height: 1.5; color: #64748b; white-space: pre-line; }
+    #return-toast {
+      position: fixed; top: 24px; right: 24px; z-index: 9999;
+      display: flex; align-items: center; gap: 8px;
+      min-width: 280px; max-width: 420px;
+      padding: 12px 16px; border-radius: 4px;
+      background: #fff; border: 1px solid #fecaca; box-shadow: 0 4px 12px rgba(15, 23, 42, .12);
+      color: #334155; font-size: 13px; opacity: 0; transform: translateY(-8px);
+      transition: opacity .2s, transform .2s; pointer-events: none;
+    }
+    #return-toast.show { opacity: 1; transform: translateY(0); }
+    #return-toast .icon { color: #ef4444; font-size: 16px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
+
+  <div id="return-toast" role="alert"><i class="fa fa-times-circle icon"></i><span id="return-toast-msg"></span></div>
 
   <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
     <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
@@ -214,12 +227,13 @@
   <script src="js/report-trace.js"></script>
   <script src="js/report-trace-l1.js"></script>
   <script>
+    // hasReportInApproval：一单多报告时，已有报告编制完成并流转到下一节点（报告审核等）→ 整单不可退回
     var ROWS = [
-      { id: 0, code: 'SC2026/02240101', contract: 'SG-2026-0224', unit: '国网某某供电公司', sample: '实壁类塑料电缆导管_直管-PVC-C', acceptDate: '2026-02-24', dueDate: '2026-03-05', priority: '高', sales: '王', compiler: '自动出报', level: 1, reservedLevel: null, traceCode: 'R1u8P' },
-      { id: 2, code: 'SC2026/0099', contract: 'HT11213322', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-17', dueDate: '', priority: '常规', sales: '', compiler: 'admin', demo: false, level: 3, reservedLevel: null, traceCode: 'R3a2K' },
-      { id: 3, code: 'SCZN202508/0007', contract: '—', unit: '国网某某供电公司', sample: '实壁类塑料电缆导管_直管-PVC-C', acceptDate: '2025-07-16', dueDate: '2025-07-25', priority: '高', sales: '李', compiler: '张..', level: null, reservedLevel: 2, traceCode: 'R2c9X' },
-      { id: 4, code: 'SCZN202508/0006', contract: 'HT99887766', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-15', dueDate: '2025-08-01', priority: '', sales: '', compiler: '赵..', level: 4, reservedLevel: null, traceCode: 'R4b7M' },
-      { id: 5, code: 'SCZN202508/0005', contract: '—', unit: '某某建设集团', sample: '混凝土试块', acceptDate: '2025-07-14', dueDate: '', priority: '', sales: '', compiler: '陈..', level: null, reservedLevel: null, traceCode: null }
+      { id: 0, code: 'SC2026/02240101', contract: 'SG-2026-0224', unit: '国网某某供电公司', sample: '实壁类塑料电缆导管_直管-PVC-C', acceptDate: '2026-02-24', dueDate: '2026-03-05', priority: '高', sales: '王', compiler: '自动出报', level: 1, reservedLevel: null, traceCode: 'R1u8P', hasReportInApproval: false },
+      { id: 2, code: 'SC2026/0099', contract: 'HT11213322', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-17', dueDate: '', priority: '常规', sales: '', compiler: 'admin', demo: false, level: 3, reservedLevel: null, traceCode: 'R3a2K', hasReportInApproval: true },
+      { id: 3, code: 'SCZN202508/0007', contract: '—', unit: '国网某某供电公司', sample: '实壁类塑料电缆导管_直管-PVC-C', acceptDate: '2025-07-16', dueDate: '2025-07-25', priority: '高', sales: '李', compiler: '张..', level: null, reservedLevel: 2, traceCode: 'R2c9X', hasReportInApproval: false },
+      { id: 4, code: 'SCZN202508/0006', contract: 'HT99887766', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-15', dueDate: '2025-08-01', priority: '', sales: '', compiler: '赵..', level: 4, reservedLevel: null, traceCode: 'R4b7M', hasReportInApproval: false },
+      { id: 5, code: 'SCZN202508/0005', contract: '—', unit: '某某建设集团', sample: '混凝土试块', acceptDate: '2025-07-14', dueDate: '', priority: '', sales: '', compiler: '陈..', level: null, reservedLevel: null, traceCode: null, hasReportInApproval: false }
     ];
 
     var COMPILE_LIST_DEMO = [
@@ -373,7 +387,7 @@
           '<td class="hidden border border-slate-200 px-3 py-2 whitespace-nowrap">' + transparencyCell(row) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + genLink +
           ' <a href="#" class="ml-3 text-blue-600 hover:underline" onclick="openCompileListModal();return false;">编制</a>' +
-          ' <button type="button" class="ml-3 text-orange-500 hover:underline" onclick="openReturnModal(' + row.id + ')"><i class="fa fa-reply"></i> 退回</button></td></tr>';
+          ' <button type="button" data-annotate="report-return" class="ml-3 text-orange-500 hover:underline" onclick="openReturnModal(' + row.id + ')"><i class="fa fa-reply"></i> 退回</button></td></tr>';
       }).join('');
       document.getElementById('totalText').textContent = '共 ' + data.length + ' 条';
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
@@ -463,7 +477,25 @@
       m.classList.remove('flex');
     }
 
+    function showReturnBlockedToast() {
+      var el = document.getElementById('return-toast');
+      document.getElementById('return-toast-msg').textContent = '还有报告正在审批中,无法退回!';
+      el.classList.add('show');
+      clearTimeout(showReturnBlockedToast._t);
+      showReturnBlockedToast._t = setTimeout(function () { el.classList.remove('show'); }, 2800);
+    }
+
     function openReturnModal(rowId) {
+      var row = null;
+      for (var i = 0; i < ROWS.length; i++) {
+        if (ROWS[i].id === rowId) { row = ROWS[i]; break; }
+      }
+      if (!row) return;
+      // 一单生成多份报告：若已有报告编制完成并流转到下一审批节点，整单禁止退回
+      if (row.hasReportInApproval) {
+        showReturnBlockedToast();
+        return;
+      }
       returnRowId = rowId;
       document.getElementById('returnReason').value = '';
       showModal('returnModal');
@@ -521,7 +553,10 @@
       PrototypeAnnotation.init({ annotations: [
         { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '<strong>需求逻辑：</strong>报告列表是编制入口；编制发现问题可直接退回上一环节「数据审核」修正后重提。<br>' +
             '<strong>展示规则：</strong>操作列：「报告生成」「编制」「退回」。<br>' +
-            '<strong>交互逻辑：</strong>「报告生成」跳转报告编制编辑页；「编制」弹出报告列表；「退回」弹出退回原因（必填），确认后该行离开本列表，流程节点回到「数据审核」。AI 预审入口在侧边栏「报告审核 / AI 审核工作台」。', tag: '报告编制' },
+            '<strong>交互逻辑：</strong>「报告生成」跳转报告编制编辑页；「编制」弹出报告列表；「退回」见独立批注。AI 预审入口在侧边栏「报告审核 / AI 审核工作台」。', tag: '报告编制' },
+        { id: 'report-return', selector: '[data-annotate="report-return"]', position: 'left', title: '退回（整单，受多报告审批约束）', content: '<strong>需求逻辑：</strong>编制发现问题可把委托整单退回「数据审核」；但一单可能生成多份报告，若其中已有报告编制完成并流转到下一节点（报告审核等），再退回会把已在审批中的报告一并打乱，因此此时禁止退回。<br>' +
+            '<strong>展示规则：</strong>操作列橙色「退回」；拦截时右上角错误提示「还有报告正在审批中,无法退回!」。<br>' +
+            '<strong>交互逻辑：</strong>① 该委托下全部报告仍停在编制节点 → 弹出「退回原因」（必填），确认后行离开本列表，流程回到「数据审核」。② 任一报告已进入下一审批节点 → 不打开弹窗，仅提示「还有报告正在审批中,无法退回!」。演示：委托 SC2026/0099 已有报告在审批中，点退回即见拦截。', tag: '报告编制' },
         { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>报告要经过编制、审核、签发、发放多个节点，列表页要能直接看到每份报告卡在哪个节点、谁签的。<br>' +
             '<strong>展示规则：</strong>「报告记录」列/链接。<br>' +
             '<strong>交互逻辑：</strong>点击弹出报告记录表：序号、报告编号、编制、审核、签发、处理、收费审批、发放、操作（日志）。', tag: '报告编制' },
