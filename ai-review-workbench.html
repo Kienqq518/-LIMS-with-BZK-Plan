@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 审核工作台 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <script src="js/ai-review-store.js"></script>
+  <script src="js/ai-review-engine.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      AI 审核工作台
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4 space-y-4">
+    <div id="ai-liability" class="rounded border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">
+      AI 只输出预审意见与问题清单，最终签发由授权签字人确认。
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <button id="btn-run-all" type="button" class="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">
+        <i class="fa fa-play"></i> 全部跑一遍
+      </button>
+      <label class="text-sm text-slate-600">结论筛选
+        <select id="filter-conclusion" class="ml-1 rounded border border-slate-300 px-2 py-1 text-sm">
+          <option value="全部">全部</option>
+          <option value="通过">通过</option>
+          <option value="通过待确认">通过待确认</option>
+          <option value="不通过">不通过</option>
+        </select>
+      </label>
+      <label class="text-sm text-slate-600">严重度
+        <select id="filter-severity" class="ml-1 rounded border border-slate-300 px-2 py-1 text-sm">
+          <option value="全部">全部</option>
+          <option value="严重">严重</option>
+          <option value="一般">一般</option>
+        </select>
+      </label>
+      <button id="tab-board" type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-white">问题看板</button>
+      <button id="tab-stats" type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-white">统计仪表盘</button>
+    </div>
+
+    <div id="panel-main" class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div class="lg:col-span-2 rounded bg-white p-4 shadow-sm overflow-x-auto">
+        <table id="result-table" class="w-full text-sm">
+          <thead><tr class="border-b text-slate-500">
+            <th class="py-2 text-left">报告编号</th><th>业务类型</th><th>品类</th><th>结论</th><th>命中</th>
+          </tr></thead>
+          <tbody id="result-body"></tbody>
+        </table>
+      </div>
+      <div id="detail-panel" class="hidden rounded bg-white p-4 shadow-sm">
+        <h3 class="mb-2 font-medium text-slate-800">逐条处置</h3>
+        <div id="issue-list" class="space-y-3 max-h-96 overflow-y-auto"></div>
+        <div class="mt-3">
+          <label class="text-xs text-slate-500">总结论覆盖（可选）</label>
+          <select id="override-conclusion" class="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-sm">
+            <option value="">保持 AI 结论</option>
+            <option value="通过">通过</option>
+            <option value="通过待确认">通过待确认</option>
+            <option value="不通过">不通过</option>
+          </select>
+        </div>
+        <button id="btn-settle" type="button" class="mt-3 w-full rounded bg-emerald-600 px-3 py-2 text-sm text-white hover:bg-emerald-700">完成处置并沉淀案例</button>
+      </div>
+    </div>
+
+    <div id="board-panel" class="hidden rounded bg-white p-4 shadow-sm">
+      <h3 class="mb-2 font-medium">问题看板（按规则聚合）</h3>
+      <div id="board-content" class="text-sm text-slate-600"></div>
+    </div>
+    <div id="stats-panel" class="hidden rounded bg-white p-4 shadow-sm">
+      <p class="text-sm">通过率：<span id="stat-pass-rate" class="font-semibold text-slate-800">—</span></p>
+      <div id="stats-breakdown" class="mt-2 text-sm text-slate-600"></div>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    var wbState = { results: {}, activeReportId: null, dispositions: {} };
+
+    function runAll() {
+      AiReviewStore.reset();
+      wbState.results = {};
+      wbState.dispositions = {};
+      var rules = AiReviewStore.getRules();
+      var cats = AiReviewStore.getCategories();
+      var binds = AiReviewStore.getBindings();
+      AiReviewStore.getReports().forEach(function (rep) {
+        var res = AiReviewEngine.run(rep, rules, cats, binds);
+        AiReviewStore.saveResult(res);
+        wbState.results[rep.id] = { report: rep, result: res };
+      });
+      renderTable();
+      renderBoard();
+      renderStats();
+    }
+
+    function catLabel(rep) {
+      if (!rep.category_code) return '未配置品类 <span class="text-amber-600 text-xs">CAT-UNCAT-01</span>';
+      return rep.category_name || rep.category_code;
+    }
+
+    function passesFilter(repId) {
+      var item = wbState.results[repId];
+      if (!item) return false;
+      var concl = item.result.conclusion;
+      var fc = document.getElementById('filter-conclusion').value;
+      var fs = document.getElementById('filter-severity').value;
+      if (fc !== '全部' && concl !== fc) return false;
+      if (fs !== '全部') {
+        var hasSev = item.result.issues.some(function (i) { return i.severity === fs; });
+        if (fs === '严重' || fs === '一般') {
+          if (!hasSev && concl !== '通过') { /* ok if conclusion implies */ }
+          if (concl === '通过') return false;
+          if (!hasSev) return false;
+        }
+      }
+      return true;
+    }
+
+    function renderTable() {
+      var tbody = document.getElementById('result-body');
+      tbody.innerHTML = '';
+      Object.keys(wbState.results).forEach(function (rid) {
+        if (!passesFilter(rid)) return;
+        var item = wbState.results[rid];
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-report-id', rid);
+        tr.className = 'border-b cursor-pointer hover:bg-slate-50';
+        var hit = item.result.issues.length;
+        tr.innerHTML =
+          '<td class="py-2">' + (item.report.report_no || rid) + '</td>' +
+          '<td class="text-center">' + item.report.biz_type + '</td>' +
+          '<td class="text-xs">' + catLabel(item.report) + '</td>' +
+          '<td class="text-center concl font-medium">' + item.result.conclusion + '</td>' +
+          '<td class="text-center hit-count" data-count="' + hit + '">' + hit + '</td>';
+        tr.onclick = function () { openDetail(rid); };
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openDetail(rid) {
+      wbState.activeReportId = rid;
+      wbState.dispositions = {};
+      var item = wbState.results[rid];
+      var panel = document.getElementById('detail-panel');
+      panel.classList.remove('hidden');
+      var list = document.getElementById('issue-list');
+      list.innerHTML = '';
+      item.result.issues.forEach(function (iss) {
+        var div = document.createElement('div');
+        div.className = 'issue rounded border border-slate-200 p-2';
+        div.setAttribute('data-rule-id', iss.rule_id);
+        div.innerHTML =
+          '<div class="font-medium text-slate-700">' + iss.rule_id + ' · ' + iss.severity + '</div>' +
+          '<p class="text-xs text-slate-500 mt-1">' + iss.message + '</p>' +
+          '<input class="override-reason mt-2 w-full rounded border border-slate-200 px-2 py-1 text-xs" placeholder="覆盖理由（覆盖时必填）" />' +
+          '<div class="mt-2 flex gap-2">' +
+          '<button type="button" data-action="接受" class="rounded bg-slate-100 px-2 py-1 text-xs">接受</button>' +
+          '<button type="button" data-action="覆盖" class="rounded bg-amber-100 px-2 py-1 text-xs">覆盖</button>' +
+          '</div>';
+        div.querySelectorAll('button').forEach(function (btn) {
+          btn.onclick = function (e) {
+            e.stopPropagation();
+            var action = btn.getAttribute('data-action');
+            var reason = div.querySelector('.override-reason').value.trim();
+            if (action === '覆盖' && !reason) { alert('覆盖须填写理由'); return; }
+            wbState.dispositions[iss.rule_id] = { rule_id: iss.rule_id, action: action, reason: reason || '' };
+            div.style.borderColor = '#34d399';
+          };
+        });
+        list.appendChild(div);
+      });
+      if (!item.result.issues.length) {
+        list.innerHTML = '<p class="text-sm text-slate-500">无命中项，可直接完成处置。</p>';
+      }
+    }
+
+    function renderBoard() {
+      var agg = {};
+      Object.keys(wbState.results).forEach(function (rid) {
+        wbState.results[rid].result.issues.forEach(function (i) {
+          var k = i.rule_id + ' (' + i.severity + ')';
+          agg[k] = (agg[k] || 0) + 1;
+        });
+      });
+      var html = Object.keys(agg).sort().map(function (k) { return k + '：' + agg[k]; }).join('<br>');
+      document.getElementById('board-content').innerHTML = html || '暂无命中';
+    }
+
+    function renderStats() {
+      var total = 0, pass = 0, counts = { 通过: 0, 通过待确认: 0, 不通过: 0 };
+      Object.keys(wbState.results).forEach(function (rid) {
+        total++;
+        var c = wbState.results[rid].result.conclusion;
+        counts[c] = (counts[c] || 0) + 1;
+        if (c === '通过') pass++;
+      });
+      var pct = total ? Math.round((pass / total) * 100) : 0;
+      document.getElementById('stat-pass-rate').textContent = pct + '%（' + pass + '/' + total + '）';
+      document.getElementById('stats-breakdown').innerHTML =
+        '通过 ' + (counts['通过'] || 0) + ' · 通过待确认 ' + (counts['通过待确认'] || 0) + ' · 不通过 ' + (counts['不通过'] || 0);
+    }
+
+    document.getElementById('btn-run-all').onclick = runAll;
+    document.getElementById('filter-conclusion').onchange = renderTable;
+    document.getElementById('filter-severity').onchange = renderTable;
+    document.getElementById('tab-board').onclick = function () {
+      document.getElementById('board-panel').classList.toggle('hidden');
+      document.getElementById('stats-panel').classList.add('hidden');
+      renderBoard();
+    };
+    document.getElementById('tab-stats').onclick = function () {
+      document.getElementById('stats-panel').classList.toggle('hidden');
+      document.getElementById('board-panel').classList.add('hidden');
+      renderStats();
+    };
+
+    document.getElementById('btn-settle').onclick = function () {
+      if (!wbState.activeReportId) return;
+      var item = wbState.results[wbState.activeReportId];
+      var override = document.getElementById('override-conclusion').value;
+      var finalConclusion = override || item.result.conclusion;
+      var dispositions = Object.keys(wbState.dispositions).map(function (k) { return wbState.dispositions[k]; });
+      AiReviewStore.saveFeedback({
+        report_id: wbState.activeReportId,
+        ai_conclusion: item.result.conclusion,
+        final_conclusion: finalConclusion,
+        dispositions: dispositions,
+        at: new Date().toISOString(),
+      });
+      AiReviewStore.appendCase({
+        case_id: 'case-' + Date.now(),
+        report_id: wbState.activeReportId,
+        report_snapshot: item.report,
+        biz_type: item.report.biz_type,
+        ai_conclusion: item.result.conclusion,
+        ai_issues: item.result.issues,
+        dispositions: dispositions,
+        final_conclusion: finalConclusion,
+        label: dispositions.some(function (d) { return d.action === '覆盖'; }) ? '误报' : '正常',
+        created_at: new Date().toISOString(),
+      });
+      alert('已沉淀案例（原型）');
+    };
+
+    AiReviewStore.reset();
+  </script>
+  <script src="js/ui-a11y.js" defer></script>
+</body>
+</html>
