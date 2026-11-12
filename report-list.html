@@ -227,51 +227,118 @@
   <script src="js/report-trace.js"></script>
   <script src="js/report-trace-l1.js"></script>
   <script>
-    // hasReportInApproval：一单多报告时，已有报告编制完成并流转到下一节点（报告审核等）→ 整单不可退回
+    /**
+     * 委托下报告进度：同一份数据同时驱动「编制→报告列表」与「报告记录」弹窗，避免两处编号/节点进度不一致。
+     * node：当前卡点；inApproval：已离开编制进入报告审核及之后 → 整单禁止退回。
+     */
+    var REPORTS_BY_ENTRUST = {
+      'SC2026/0099': [
+        {
+          id: 1, reportNo: 'SC2026/0099-01',
+          sampleNos: ['SCZN202508/0009-0102', 'SCZN202508/0009-0103'],
+          reportName: 'SC2026/0099-01检测报告.docx',
+          createdAt: '2026-07-17 14:30:00',
+          node: '报告编制',
+          inApproval: false,
+          compile: { user: 'admin', date: '2026年07月17日' },
+          audit: { user: 'admin', date: '2026年07月17日', opinion: '审核不通过' },
+          sign: null, process: null, fee: null, issue: null,
+          returnDetail: '退回节点：报告审核\n退回原因：数据填写不完整\n退回人：admin\n退回时间：2026-07-17 15:00:00'
+        },
+        {
+          id: 2, reportNo: 'SC2026/0099-02',
+          sampleNos: ['SCZN202508/0009-0101'],
+          reportName: 'SC2026/0099-02检测报告.docx',
+          createdAt: '2026-07-16 10:20:00',
+          node: '报告审核',
+          inApproval: true,
+          compile: { user: 'admin', date: '2026年07月16日' },
+          audit: null, sign: null, process: null, fee: null, issue: null,
+          returnDetail: '—'
+        }
+      ],
+      'SC2026/02240101': [
+        {
+          id: 11, reportNo: 'SC2026/02240101-01',
+          sampleNos: ['SC2026/02240101'],
+          reportName: 'SC2026/02240101-01检测报告.docx',
+          createdAt: '2026-02-25 09:10:00',
+          node: '报告编制',
+          inApproval: false,
+          compile: { user: '自动出报', date: '2026年02月25日' },
+          audit: null, sign: null, process: null, fee: null, issue: null,
+          returnDetail: '—'
+        }
+      ],
+      'SCZN202508/0007': [
+        {
+          id: 21, reportNo: 'SCZN202508/0007-01',
+          sampleNos: ['SCZN202508/0007-0101'],
+          reportName: 'SCZN202508/0007-01检测报告.docx',
+          createdAt: '2025-07-16 16:00:00',
+          node: '报告编制',
+          inApproval: false,
+          compile: { user: '张..', date: '2025年07月16日' },
+          audit: null, sign: null, process: null, fee: null, issue: null,
+          returnDetail: '—'
+        }
+      ],
+      'SCZN202508/0006': [
+        {
+          id: 31, reportNo: 'SCZN202508/0006-01',
+          sampleNos: ['SCZN202508/0006-0101'],
+          reportName: 'SCZN202508/0006-01检测报告.docx',
+          createdAt: '2025-07-15 11:20:00',
+          node: '报告编制',
+          inApproval: false,
+          compile: { user: '赵..', date: '2025年07月15日' },
+          audit: null, sign: null, process: null, fee: null, issue: null,
+          returnDetail: '—'
+        }
+      ],
+      'SCZN202508/0005': [
+        {
+          id: 41, reportNo: 'SCZN202508/0005-01',
+          sampleNos: ['SCZN202508/0005-0101'],
+          reportName: 'SCZN202508/0005-01检测报告.docx',
+          createdAt: '2025-07-14 15:40:00',
+          node: '报告编制',
+          inApproval: false,
+          compile: { user: '陈..', date: '2025年07月14日' },
+          audit: null, sign: null, process: null, fee: null, issue: null,
+          returnDetail: '—'
+        }
+      ]
+    };
+
+    function reportsOf(code) {
+      return REPORTS_BY_ENTRUST[code] || [];
+    }
+    function hasReportInApproval(code) {
+      return reportsOf(code).some(function (r) { return r.inApproval; });
+    }
+    function opinionText(stage, fallbackWhenInApproval) {
+      if (stage && stage.opinion) return stage.opinion;
+      if (!stage && fallbackWhenInApproval) return '审批中';
+      return '—';
+    }
+
     var ROWS = [
-      { id: 0, code: 'SC2026/02240101', contract: 'SG-2026-0224', unit: '国网某某供电公司', sample: '实壁类塑料电缆导管_直管-PVC-C', acceptDate: '2026-02-24', dueDate: '2026-03-05', priority: '高', sales: '王', compiler: '自动出报', level: 1, reservedLevel: null, traceCode: 'R1u8P', hasReportInApproval: false },
-      { id: 2, code: 'SC2026/0099', contract: 'HT11213322', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-17', dueDate: '', priority: '常规', sales: '', compiler: 'admin', demo: false, level: 3, reservedLevel: null, traceCode: 'R3a2K', hasReportInApproval: true },
-      { id: 3, code: 'SCZN202508/0007', contract: '—', unit: '国网某某供电公司', sample: '实壁类塑料电缆导管_直管-PVC-C', acceptDate: '2025-07-16', dueDate: '2025-07-25', priority: '高', sales: '李', compiler: '张..', level: null, reservedLevel: 2, traceCode: 'R2c9X', hasReportInApproval: false },
-      { id: 4, code: 'SCZN202508/0006', contract: 'HT99887766', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-15', dueDate: '2025-08-01', priority: '', sales: '', compiler: '赵..', level: 4, reservedLevel: null, traceCode: 'R4b7M', hasReportInApproval: false },
-      { id: 5, code: 'SCZN202508/0005', contract: '—', unit: '某某建设集团', sample: '混凝土试块', acceptDate: '2025-07-14', dueDate: '', priority: '', sales: '', compiler: '陈..', level: null, reservedLevel: null, traceCode: null, hasReportInApproval: false }
+      { id: 0, code: 'SC2026/02240101', contract: 'SG-2026-0224', unit: '国网某某供电公司', sample: '实壁类塑料电缆导管_直管-PVC-C', acceptDate: '2026-02-24', dueDate: '2026-03-05', priority: '高', sales: '王', compiler: '自动出报', level: 1, reservedLevel: null, traceCode: 'R1u8P' },
+      { id: 2, code: 'SC2026/0099', contract: 'HT11213322', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-17', dueDate: '', priority: '常规', sales: '', compiler: 'admin', demo: false, level: 3, reservedLevel: null, traceCode: 'R3a2K' },
+      { id: 3, code: 'SCZN202508/0007', contract: '—', unit: '国网某某供电公司', sample: '实壁类塑料电缆导管_直管-PVC-C', acceptDate: '2025-07-16', dueDate: '2025-07-25', priority: '高', sales: '李', compiler: '张..', level: null, reservedLevel: 2, traceCode: 'R2c9X' },
+      { id: 4, code: 'SCZN202508/0006', contract: 'HT99887766', unit: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆', acceptDate: '2025-07-15', dueDate: '2025-08-01', priority: '', sales: '', compiler: '赵..', level: 4, reservedLevel: null, traceCode: 'R4b7M' },
+      { id: 5, code: 'SCZN202508/0005', contract: '—', unit: '某某建设集团', sample: '混凝土试块', acceptDate: '2025-07-14', dueDate: '', priority: '', sales: '', compiler: '陈..', level: null, reservedLevel: null, traceCode: null }
     ];
 
-    var COMPILE_LIST_DEMO = [
-      {
-        id: 1, reportNo: 'SC2026/0003-01',
-        sampleNos: ['SCZN202508/0009-0102', 'SCZN202508/0009-0103'],
-        reportName: 'SC2026-0099-01检测报告.docx',
-        createdAt: '2026-07-17 14:30:00',
-        auditOpinion: '审核不通过',
-        signOpinion: '签发不通过',
-        returnDetail: '退回节点：报告审核\n退回原因：数据填写不完整\n退回人：admin\n退回时间：2026-07-17 15:00:00'
-      },
-      {
-        id: 2, reportNo: 'SC2026/0003-02',
-        sampleNos: ['SCZN202508/0009-0101'],
-        reportName: 'SC2026-0099-02检测报告.docx',
-        createdAt: '2026-07-16 10:20:00',
-        auditOpinion: '—',
-        signOpinion: '—',
-        returnDetail: '—'
-      }
-    ];
-
-    var REPORT_RECORD_DEMO = [
-      {
-        id: 1, reportNo: 'SC2026/0099-01',
-        compile: { user: 'admin', date: '2026年07月17日' },
-        audit: { user: 'admin', date: '2026年07月17日' },
-        sign: { user: 'admin', date: '2026年07月17日' },
-        process: { user: 'admin', date: '2026年07月17日' },
-        fee: { user: 'admin', date: '2026年07月17日' },
-        issue: { user: 'admin', date: '2026年07月17日' }
-      }
-    ];
+    var activeEntrustCode = '';
 
     function stageCell(stage) {
       if (!stage || !stage.user) return '—';
-      return stage.user + '<br><span class="text-xs text-slate-400">' + stage.date + '</span>';
+      var extra = stage.opinion
+        ? '<br><span class="text-xs ' + (stage.opinion.indexOf('不通过') >= 0 ? 'text-red-500' : 'text-emerald-600') + '">' + stage.opinion + '</span>'
+        : '';
+      return stage.user + '<br><span class="text-xs text-slate-400">' + stage.date + '</span>' + extra;
     }
 
     /** 透明度等级列：已选定→徽标+查看溯源；预留→提示；未设定→设置等级 */
@@ -383,19 +450,27 @@
           '<td class="border border-slate-200 px-3 py-2">' + (row.priority || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (row.sales || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.compiler + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="openReportRecordModal();return false;">报告记录</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="openReportRecordModal(\'' + row.code + '\');return false;">报告记录</a></td>' +
           '<td class="hidden border border-slate-200 px-3 py-2 whitespace-nowrap">' + transparencyCell(row) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + genLink +
-          ' <a href="#" class="ml-3 text-blue-600 hover:underline" onclick="openCompileListModal();return false;">编制</a>' +
+          ' <a href="#" class="ml-3 text-blue-600 hover:underline" onclick="openCompileListModal(\'' + row.code + '\');return false;">编制</a>' +
           ' <button type="button" data-annotate="report-return" class="ml-3 text-orange-500 hover:underline" onclick="openReturnModal(' + row.id + ')"><i class="fa fa-reply"></i> 退回</button></td></tr>';
       }).join('');
       document.getElementById('totalText').textContent = '共 ' + data.length + ' 条';
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
-    function renderCompileList() {
-      document.getElementById('compileListBody').innerHTML = COMPILE_LIST_DEMO.map(function (row, i) {
+    function renderCompileList(code) {
+      var list = reportsOf(code);
+      var body = document.getElementById('compileListBody');
+      if (!list.length) {
+        body.innerHTML = '<tr><td colspan="10" class="border border-slate-200 px-3 py-6 text-center text-slate-400">该委托暂无报告</td></tr>';
+        return;
+      }
+      body.innerHTML = list.map(function (row, i) {
         var samples = row.sampleNos.join('<br>');
+        var auditOpinion = opinionText(row.audit, row.inApproval && row.node === '报告审核');
+        var signOpinion = opinionText(row.sign, row.inApproval && row.node === '报告签发');
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-2 py-2 text-center"><input type="checkbox" class="compile-row-check" data-id="' + row.id + '" ' + (i === 0 ? 'checked' : '') + ' /></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
@@ -403,8 +478,8 @@
           '<td class="border border-slate-200 px-3 py-2 text-xs leading-5">' + samples + '</td>' +
           '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="return false;">' + row.reportName + '</a></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.createdAt + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + row.auditOpinion + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + row.signOpinion + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + auditOpinion + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + signOpinion + '</td>' +
           '<td class="border border-slate-200 px-3 py-2"><div class="return-detail">' + row.returnDetail + '</div></td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' +
           '<button class="text-red-500 hover:underline" onclick="alert(\'删除（原型演示）\')"><i class="fa fa-trash-o"></i></button> ' +
@@ -412,13 +487,23 @@
       }).join('');
     }
 
-    function renderReportRecordList() {
-      document.getElementById('reportRecordBody').innerHTML = REPORT_RECORD_DEMO.map(function (row, i) {
+    function renderReportRecordList(code) {
+      var list = reportsOf(code);
+      var body = document.getElementById('reportRecordBody');
+      if (!list.length) {
+        body.innerHTML = '<tr><td colspan="9" class="border border-slate-200 px-3 py-6 text-center text-slate-400">该委托暂无报告记录</td></tr>';
+        return;
+      }
+      body.innerHTML = list.map(function (row, i) {
+        var auditCell = stageCell(row.audit);
+        if (!row.audit && row.inApproval && row.node === '报告审核') {
+          auditCell = '<span class="text-amber-600">审批中</span>';
+        }
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.reportNo + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.compile) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.audit) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + auditCell + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.sign) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.process) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.fee) + '</td>' +
@@ -427,8 +512,9 @@
       }).join('');
     }
 
-    function openCompileListModal() {
-      renderCompileList();
+    function openCompileListModal(code) {
+      activeEntrustCode = code || '';
+      renderCompileList(activeEntrustCode);
       var modal = document.getElementById('compileListModal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -451,8 +537,9 @@
       alert('已打开 Word 在线编制（原型演示），共 ' + n + ' 份报告');
     }
 
-    function openReportRecordModal() {
-      renderReportRecordList();
+    function openReportRecordModal(code) {
+      activeEntrustCode = code || '';
+      renderReportRecordList(activeEntrustCode);
       var modal = document.getElementById('reportRecordModal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -491,8 +578,8 @@
         if (ROWS[i].id === rowId) { row = ROWS[i]; break; }
       }
       if (!row) return;
-      // 一单生成多份报告：若已有报告编制完成并流转到下一审批节点，整单禁止退回
-      if (row.hasReportInApproval) {
+      // 一单生成多份报告：若已有报告编制完成并流转到下一审批节点，整单禁止退回（与报告列表/报告记录同源）
+      if (hasReportInApproval(row.code)) {
         showReturnBlockedToast();
         return;
       }
@@ -557,25 +644,25 @@
         { id: 'report-return', selector: '[data-annotate="report-return"]', position: 'left', title: '退回（整单，受多报告审批约束）', content: '<strong>需求逻辑：</strong>编制发现问题可把委托整单退回「数据审核」；但一单可能生成多份报告，若其中已有报告编制完成并流转到下一节点（报告审核等），再退回会把已在审批中的报告一并打乱，因此此时禁止退回。<br>' +
             '<strong>展示规则：</strong>操作列橙色「退回」；拦截时右上角错误提示「还有报告正在审批中,无法退回!」。<br>' +
             '<strong>交互逻辑：</strong>① 该委托下全部报告仍停在编制节点 → 弹出「退回原因」（必填），确认后行离开本列表，流程回到「数据审核」。② 任一报告已进入下一审批节点 → 不打开弹窗，仅提示「还有报告正在审批中,无法退回!」。演示：委托 SC2026/0099 已有报告在审批中，点退回即见拦截。', tag: '报告编制' },
-        { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>报告要经过编制、审核、签发、发放多个节点，列表页要能直接看到每份报告卡在哪个节点、谁签的。<br>' +
-            '<strong>展示规则：</strong>「报告记录」列/链接。<br>' +
-            '<strong>交互逻辑：</strong>点击弹出报告记录表：序号、报告编号、编制、审核、签发、处理、收费审批、发放、操作（日志）。', tag: '报告编制' },
+        { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>报告要经过编制、审核、签发、发放多个节点，列表页要能直接看到每份报告卡在哪个节点、谁签的；与「编制」弹窗里的报告列表共用同一份进度数据，编号与节点必须一致。<br>' +
+            '<strong>展示规则：</strong>「报告记录」列/链接；弹窗列为序号、报告编号、编制、审核、签发、处理、收费审批、发放、操作（日志）；已发生节点显示「人 + 时间 + 意见」，未发生为 —，卡在审核中显示「审批中」。<br>' +
+            '<strong>交互逻辑：</strong>按当前委托打开；演示 SC2026/0099：-01 编制完成后退回编制（审核不通过），-02 已提交报告审核（审批中）——与点「编制」看到的意见/退回详情同源。', tag: '报告编制' },
         { id: 'report-gen-link', selector: '[data-annotate="report-generate"]', position: 'left', title: '报告生成', content: '<strong>需求逻辑：</strong>演示要能一键走到完整生成流程，因此给一个默认委托入口。<br>' +
             '<strong>展示规则：</strong>「报告生成」链接，演示委托 SCZN202508/0009 · 实壁塑料电缆导管 PVC-C。<br>' +
             '<strong>交互逻辑：</strong>点击进入报告编制编辑页；换其它委托从委托列表进入。', tag: '报告编制' },
-        { id: 'compile-modal', selector: '[data-annotate="compile-confirm"]', position: 'left', title: '编制确认', content: '<strong>需求逻辑：</strong>一次可能要多份报告同时编制，先勾选再进编辑器，避免误改。<br>' +
-            '<strong>展示规则：</strong>弹窗列出该委托下可编制的报告，含报告编号与试样编号。<br>' +
+        { id: 'compile-modal', selector: '[data-annotate="compile-confirm"]', position: 'left', title: '编制确认', content: '<strong>需求逻辑：</strong>一次可能要多份报告同时编制，先勾选再进编辑器，避免误改；列表中的审核/签发意见与退回详情必须与「报告记录」弹窗进度一致。<br>' +
+            '<strong>展示规则：</strong>弹窗列出该委托下报告：编号、试样、名称、生成时间、审核意见、签发意见、退回详情；意见取值与报告记录同源（未发生 — / 审批中 / 审核不通过等）。<br>' +
             '<strong>交互逻辑：</strong>勾选后点「编制」进入 Word 在线编辑（原型演示），关闭弹窗不改变报告状态。', tag: '报告列表' },
         // 透明检测延至明年：列已隐藏，对应批注暂不挂载（col-transparency / rl-level）
         {
           id: 'rl-record',
           selector: '#reportRecordBody',
           position: 'bottom-right',
-          title: '报告记录（节点留痕）',
+          title: '报告记录（节点留痕，与编制列表同源）',
           wide: true,
-          content: '<strong>需求逻辑：</strong>报告从编制到发放经过编制、审核、签发、处理、收费审批、发放六个节点，列表页需就地核对每个节点的经办人与时间。<br>' +
-          '<strong>展示规则：</strong>列为序号、报告编号、编制、审核、签发、处理、收费审批、发放、操作；单元格显示「人 + 时间」，未发生的节点为空；操作列可看该报告的流转日志。<br>' +
-          '<strong>交互逻辑：</strong>由列表「报告编号」或「记录」入口打开；关闭回到列表，不改变数据。',
+          content: '<strong>需求逻辑：</strong>报告从编制到发放经过六个节点；「编制」弹窗与「报告记录」弹窗读同一份委托报告进度，避免同一委托两套编号或节点互相矛盾。<br>' +
+          '<strong>展示规则：</strong>列为序号、报告编号、编制、审核、签发、处理、收费审批、发放、操作；单元格显示「人 + 时间」（有意见时附加），未发生为 —，当前卡在审核显示「审批中」。<br>' +
+          '<strong>交互逻辑：</strong>由列表「报告记录」入口按委托打开；关闭回到列表，不改变数据。',
           tag: '报告列表'
         },
       ] });
