@@ -46,6 +46,38 @@
       box-shadow: 0 0 0 1px rgba(254, 202, 202, 0.4);
     }
     tr.ai-return-row > td:first-child { box-shadow: inset 3px 0 0 #ef4444; }
+    /* 主列表：冻结「操作」列加宽 + 实底，避免横向滚动时与编制人/优先等级列文字叠在一起 */
+    .report-list-table tbody tr.ai-return-row { background-color: #fff7f7; }
+    .report-list-table tbody tr.ai-return-row:hover { background-color: #fef2f2; }
+    .report-list-table th[data-col-key="操作"],
+    .report-list-table td[data-col-key="操作"],
+    .report-list-table th.report-list-ops-col,
+    .report-list-table td.report-list-ops-cell {
+      min-width: 15.5rem; width: 15.5rem; max-width: 15.5rem;
+      box-sizing: border-box; vertical-align: middle;
+    }
+    .report-list-table td.cc-fz-r,
+    .report-list-table th.cc-fz-r {
+      background-color: #fff !important; z-index: 5;
+    }
+    .report-list-table tr.ai-return-row td.cc-fz-r {
+      background-color: #fff7f7 !important;
+    }
+    .report-list-table tr.ai-return-row:hover td.cc-fz-r {
+      background-color: #fef2f2 !important;
+    }
+    .report-list-table .report-list-ops {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.65rem;
+      line-height: 1.5;
+    }
+    .report-list-table .report-list-ops > * { flex-shrink: 0; white-space: nowrap; }
+    .report-list-table .entrust-code-stack {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem;
+      line-height: 1.45; max-width: 15rem;
+    }
+    .report-list-table td[data-col-key="委托编号"] { min-width: 10.5rem; }
+    .report-list-table td[data-col-key="编制人"],
+    .report-list-table td[data-col-key="优先等级"] { white-space: nowrap; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700" data-cat-col="off">
@@ -100,7 +132,7 @@
 
     <div class="mt-4 rounded bg-white p-4 shadow-sm">
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[1400px] border-collapse text-left text-sm">
+        <table class="report-list-table w-full min-w-[1520px] border-collapse text-left text-sm">
           <thead>
             <tr class="bg-slate-100 text-slate-600">
               <th class="border border-slate-200 px-3 py-2 font-medium w-[72px] whitespace-nowrap">序号</th>
@@ -116,7 +148,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-record">报告记录</th>
               <!-- 透明检测延至明年：列暂时隐藏，相关弹窗与逻辑保留便于恢复 -->
               <th class="hidden border border-slate-200 px-3 py-2 font-medium" data-annotate="col-transparency">透明度等级 / 溯源</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="report-ops">操作</th>
+              <th class="report-list-ops-col border border-slate-200 px-3 py-2 font-medium whitespace-nowrap" data-annotate="report-ops">操作</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -591,15 +623,17 @@
       ensureAiReturnedEntrustsInRows();
       var data = list || ROWS;
       document.getElementById('tableBody').innerHTML = data.map(function (row, i) {
-        var trCls = row.aiReturnedHighlight ? 'hover:bg-red-50/80 ai-return-row bg-red-50/30' : 'hover:bg-slate-50';
+        var trCls = row.aiReturnedHighlight ? 'ai-return-row' : 'hover:bg-slate-50';
         var genLink = row.demo
           ? '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline" data-annotate="report-generate"><i class="fa fa-pencil mr-1"></i>报告生成</a>'
           : '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline"><i class="fa fa-pencil mr-1"></i>报告生成</a>';
-        var codeCell = '<a href="entrust-detail.html?code=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline">' + row.code + '</a>';
-        if (row.aiReturnedHighlight) codeCell += ' ' + aiReturnPillHtml();
+        var codeCell = '<div class="entrust-code-stack">' +
+          '<a href="entrust-detail.html?code=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline">' + row.code + '</a>' +
+          (row.aiReturnedHighlight ? aiReturnPillHtml() : '') +
+          '</div>';
         return '<tr class="' + trCls + '">' +
           '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + codeCell + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + codeCell + '</td>' +
           '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="return false;">' + row.contract + '</a></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.unit + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.sample + '</td>' +
@@ -610,9 +644,11 @@
           '<td class="border border-slate-200 px-3 py-2">' + row.compiler + '</td>' +
           '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="openReportRecordModal(\'' + row.code + '\');return false;">报告记录</a></td>' +
           '<td class="hidden border border-slate-200 px-3 py-2 whitespace-nowrap">' + transparencyCell(row) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + genLink +
-          ' <a href="#" class="ml-3 text-blue-600 hover:underline" onclick="openCompileListModal(\'' + row.code + '\');return false;">编制</a>' +
-          ' <button type="button" data-annotate="report-return" class="ml-3 text-orange-500 hover:underline" onclick="openReturnModal(' + row.id + ')"><i class="fa fa-reply"></i> 退回</button></td></tr>';
+          '<td class="report-list-ops-cell border border-slate-200 px-3 py-2">' +
+            '<div class="report-list-ops">' + genLink +
+            '<a href="#" class="text-blue-600 hover:underline" onclick="openCompileListModal(\'' + row.code + '\');return false;">编制</a>' +
+            '<button type="button" data-annotate="report-return" class="text-orange-500 hover:underline" onclick="openReturnModal(' + row.id + ')"><i class="fa fa-reply"></i> 退回</button>' +
+            '</div></td></tr>';
       }).join('');
       document.getElementById('totalText').textContent = '共 ' + data.length + ' 条';
       if (window.ColumnConfig && ColumnConfig.refresh) ColumnConfig.refresh();
