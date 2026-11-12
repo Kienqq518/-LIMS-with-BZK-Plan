@@ -22,6 +22,17 @@ const rlAlign = await p.evaluate(() => {
   return /报告生成/.test(ops.textContent || '') && /退回/.test(ops.textContent || '');
 });
 out.push((rlAlign ? '✅' : '❌') + ' 报告编制列表列对齐与操作列');
+const rlAi = await p.evaluate(() => {
+  const scroll = document.getElementById('ai-returned-scroll');
+  const row238 = [...document.querySelectorAll('#tableBody tr')].some((tr) => /SC2026\/0238/.test(tr.textContent || ''));
+  return scroll && getComputedStyle(scroll).maxHeight !== 'none' && row238;
+});
+out.push((rlAi ? '✅' : '❌') + ' 报告编制 AI 退回区滚动且主表含退回委托');
+await p.evaluate(() => { if (typeof openCompileListModal === 'function') openCompileListModal('SC2026/0238'); });
+await p.waitForTimeout(300);
+const pill = await p.locator('#compileListBody [data-ai-return="1"] .ai-return-pill').count();
+out.push((pill >= 1 ? '✅' : '❌') + ' 编制弹窗 AI 退回标签: ' + pill);
+await p.evaluate(() => { if (typeof closeCompileListModal === 'function') closeCompileListModal(); });
 
 // 委托预览：独立「报告」+「操作」列，表头表体对齐
 await p.goto(BASE + '/entrust-preview.html', { waitUntil: 'load' });

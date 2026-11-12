@@ -26,6 +26,26 @@
     }
     #return-toast.show { opacity: 1; transform: translateY(0); }
     #return-toast .icon { color: #ef4444; font-size: 16px; }
+    #ai-returned-banner .ai-returned-scroll {
+      max-height: 7.25rem; overflow-y: auto; overflow-x: hidden;
+      padding: 0 1rem 0.75rem;
+    }
+    #ai-returned-banner .ai-returned-line {
+      display: flex; align-items: center; gap: 0.5rem;
+      min-height: 2.25rem; padding: 0.35rem 0;
+      border-bottom: 1px dashed #fecaca; font-size: 13px;
+    }
+    #ai-returned-banner .ai-returned-line:last-child { border-bottom: none; }
+    #ai-returned-banner .ai-returned-line .ai-line-main { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ai-return-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      border-radius: 9999px; border: 1px solid #f87171;
+      background: linear-gradient(90deg, #fef2f2, #fff7ed);
+      padding: 2px 8px; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.02em; color: #b91c1c; vertical-align: middle;
+      box-shadow: 0 0 0 1px rgba(254, 202, 202, 0.4);
+    }
+    tr.ai-return-row > td:first-child { box-shadow: inset 3px 0 0 #ef4444; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700" data-cat-col="off">
@@ -73,7 +93,10 @@
       </div>
     </div>
 
-    <div id="ai-returned-banner" data-annotate="ai-returned" class="mt-4 hidden rounded border border-red-200 bg-red-50 p-4 text-sm"></div>
+    <div id="ai-returned-banner" data-annotate="ai-returned" class="mt-4 hidden rounded border border-red-200 bg-red-50 text-sm shadow-sm">
+      <div id="ai-returned-head" class="border-b border-red-100 px-4 py-2.5 font-medium text-red-700"></div>
+      <div id="ai-returned-scroll" class="ai-returned-scroll"></div>
+    </div>
 
     <div class="mt-4 rounded bg-white p-4 shadow-sm">
       <div class="overflow-x-auto">
@@ -255,6 +278,55 @@
      * node：当前卡点；inApproval：已离开编制进入报告审核及之后 → 整单禁止退回。
      */
     var REPORTS_BY_ENTRUST = {
+      'SC2026/0238': [
+        {
+          id: 61, reportNo: 'SC2026/0238-01',
+          sampleNos: ['SC2026/0238-0101'],
+          reportName: 'SC2026-0238-01检测报告.docx',
+          createdAt: '2026-09-02 14:20:00',
+          node: '报告审核',
+          inApproval: true,
+          aiAutoReturn: false,
+          compile: { user: 'admin', date: '2026年09月02日' },
+          audit: null, sign: null, process: null, fee: null, issue: null,
+          returnDetail: '—',
+          logs: [
+            { time: '2026-09-02 16:00:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-01的报告 提交至 报告审核' }
+          ]
+        },
+        {
+          id: 62, reportNo: 'SC2026/0238-02',
+          sampleNos: ['SC2026/0238-0102'],
+          reportName: 'SC2026-0238-02检测报告.docx',
+          createdAt: '2026-09-02 15:05:00',
+          node: '报告编制',
+          inApproval: false,
+          aiAutoReturn: false,
+          compile: { user: 'admin', date: '2026年09月02日' },
+          audit: null, sign: null, process: null, fee: null, issue: null,
+          returnDetail: '—',
+          logs: [
+            { time: '2026-09-02 15:05:00', text: 'admin 在 报告编制 生成 报告编号为SC2026/0238-02的报告' }
+          ]
+        },
+        {
+          id: 63, reportNo: 'SC2026/0238-03',
+          sampleNos: ['SC2026/0238-0103'],
+          reportName: 'SC2026-0238-03检测报告.docx',
+          createdAt: '2026-09-02 15:40:00',
+          node: '报告编制',
+          inApproval: false,
+          aiAutoReturn: true,
+          compile: { user: 'admin', date: '2026年09月02日' },
+          audit: { user: 'AI', date: '2026年09月03日', opinion: 'AI 预审不通过' },
+          sign: null, process: null, fee: null, issue: null,
+          returnDetail: '退回节点：报告审核（AI 自动退回）\n退回原因：C02-5 检测/审核/批准签名位不完整\n退回人：AI 审核引擎\n退回时间：2026-09-03 10:15:00',
+          logs: [
+            { time: '2026-09-03 10:15:00', text: 'AI 审核引擎 在 报告审核 将 报告编号为SC2026/0238-03的报告 自动退回至 报告编制（严重项）' },
+            { time: '2026-09-02 15:50:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-03的报告 提交至 报告审核' }
+          ]
+        }
+      ],
       'SC2026/0099': [
         {
           id: 1, reportNo: 'SC2026/0099-01',
@@ -358,6 +430,46 @@
     }
     function hasReportInApproval(code) {
       return reportsOf(code).some(function (r) { return r.inApproval; });
+    }
+    function aiReturnedReportNos() {
+      if (!window.ReportReviewMock) return {};
+      var map = {};
+      ReportReviewMock.aiReturnedReports().forEach(function (r) { map[r.reportNo] = r; });
+      return map;
+    }
+    function isAiAutoReturnReport(row) {
+      if (row && row.aiAutoReturn) return true;
+      return !!aiReturnedReportNos()[row.reportNo];
+    }
+    function aiReturnPillHtml() {
+      return '<span class="ai-return-pill" title="报告审核 AI 预审命中严重项，已自动退回编制"><i class="fa fa-bolt"></i>AI 自动退回</span>';
+    }
+    /** 被 AI 退回的委托必须出现在主查询列表（与顶部提示条同源） */
+    function ensureAiReturnedEntrustsInRows() {
+      if (!window.ReportReviewMock) return;
+      var grouped = {};
+      ReportReviewMock.aiReturnedReports().forEach(function (r) {
+        if (!grouped[r.entrustCode]) grouped[r.entrustCode] = r;
+      });
+      var nextId = ROWS.reduce(function (m, row) { return Math.max(m, typeof row.id === 'number' ? row.id : m); }, 0) + 1;
+      Object.keys(grouped).forEach(function (code) {
+        if (ROWS.some(function (row) { return row.code === code; })) return;
+        var ent = ReportReviewMock.getEntrust(code);
+        if (!ent) return;
+        ROWS.unshift({
+          id: nextId++,
+          code: code,
+          contract: ent.contract || '/',
+          unit: ent.customer,
+          sample: ent.sample,
+          acceptDate: ent.acceptDate || '',
+          dueDate: ent.requireDate || '',
+          priority: ent.priority || '常规',
+          sales: '',
+          compiler: ent.compiler || 'admin',
+          aiReturnedHighlight: true,
+        });
+      });
     }
     function opinionText(stage, fallbackWhenInApproval) {
       if (stage && stage.opinion) return stage.opinion;
@@ -476,14 +588,18 @@
     }
 
     function renderTable(list) {
+      ensureAiReturnedEntrustsInRows();
       var data = list || ROWS;
       document.getElementById('tableBody').innerHTML = data.map(function (row, i) {
+        var trCls = row.aiReturnedHighlight ? 'hover:bg-red-50/80 ai-return-row bg-red-50/30' : 'hover:bg-slate-50';
         var genLink = row.demo
           ? '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline" data-annotate="report-generate"><i class="fa fa-pencil mr-1"></i>报告生成</a>'
           : '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline"><i class="fa fa-pencil mr-1"></i>报告生成</a>';
-        return '<tr class="hover:bg-slate-50">' +
+        var codeCell = '<a href="entrust-detail.html?code=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline">' + row.code + '</a>';
+        if (row.aiReturnedHighlight) codeCell += ' ' + aiReturnPillHtml();
+        return '<tr class="' + trCls + '">' +
           '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2"><a href="entrust-detail.html?code=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline">' + row.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + codeCell + '</td>' +
           '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="return false;">' + row.contract + '</a></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.unit + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.sample + '</td>' +
@@ -510,14 +626,26 @@
         body.innerHTML = '<tr><td colspan="10" class="border border-slate-200 px-3 py-6 text-center text-slate-400">该委托暂无报告</td></tr>';
         return;
       }
+      var aiMap = aiReturnedReportNos();
       body.innerHTML = list.map(function (row, i) {
         var samples = row.sampleNos.join('<br>');
         var auditOpinion = opinionText(row.audit, row.inApproval && row.node === '报告审核');
         var signOpinion = opinionText(row.sign, row.inApproval && row.node === '报告签发');
-        return '<tr class="hover:bg-slate-50">' +
-          '<td class="border border-slate-200 px-2 py-2 text-center"><input type="checkbox" class="compile-row-check" data-id="' + row.id + '" ' + (i === 0 ? 'checked' : '') + ' /></td>' +
+        var aiHit = isAiAutoReturnReport(row);
+        var aiMeta = aiMap[row.reportNo];
+        var trCls = aiHit ? 'hover:bg-red-50/90 bg-gradient-to-r from-red-50/90 via-white to-white' : 'hover:bg-slate-50';
+        var reportNoCell = '<div class="flex flex-wrap items-center gap-2">' +
+          '<span class="font-medium text-slate-800">' + row.reportNo + '</span>' +
+          (aiHit ? aiReturnPillHtml() : '') +
+          '</div>';
+        if (aiHit && aiMeta && aiMeta.reasons && aiMeta.reasons[0]) {
+          reportNoCell += '<div class="mt-1 text-[11px] text-red-600/90"><i class="fa fa-warning"></i> ' +
+            aiMeta.reasons[0].rule_id + ' ' + aiMeta.reasons[0].message + '</div>';
+        }
+        return '<tr class="' + trCls + '"' + (aiHit ? ' data-ai-return="1"' : '') + '>' +
+          '<td class="border border-slate-200 px-2 py-2 text-center"><input type="checkbox" class="compile-row-check" data-id="' + row.id + '" ' + (aiHit || i === 0 ? 'checked' : '') + ' /></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + row.reportNo + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + reportNoCell + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 text-xs leading-5">' + samples + '</td>' +
           '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="return false;">' + row.reportName + '</a></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.createdAt + '</td>' +
@@ -730,25 +858,42 @@
     // AI 审核不通过自动退回：报告审核阶段命中严重项的报告会被 AI 退回本环节（报告编制），此处置顶提示（与报告审核页同源）
     function renderAiReturnedBanner() {
       var box = document.getElementById('ai-returned-banner');
-      if (!box || !window.ReportReviewMock) return;
+      var head = document.getElementById('ai-returned-head');
+      var scroll = document.getElementById('ai-returned-scroll');
+      if (!box || !head || !scroll || !window.ReportReviewMock) return;
       var list = ReportReviewMock.aiReturnedReports();
       if (!list.length) { box.classList.add('hidden'); return; }
       box.classList.remove('hidden');
-      box.innerHTML =
-        '<div class="mb-2 font-medium text-red-700"><i class="fa fa-exclamation-triangle mr-1"></i>AI 审核不通过自动退回（' + list.length + ' 份，待重新编制）</div>' +
-        '<div class="space-y-1">' + list.map(function (it) {
-          var reasons = it.reasons.map(function (r) { return r.rule_id + ' ' + r.message; }).join('；');
-          return '<div class="text-slate-700"><b>' + it.reportNo + '</b>（' + it.customer + ' · ' + it.sample + '）：' + reasons +
-            ' <a href="report-compile-edit.html?entrust=' + encodeURIComponent(it.entrustCode) + '" class="ml-1 text-blue-600 hover:underline">去修订</a></div>';
-        }).join('') + '</div>';
+      var byEntrust = {};
+      list.forEach(function (it) {
+        if (!byEntrust[it.entrustCode]) {
+          byEntrust[it.entrustCode] = { entrustCode: it.entrustCode, customer: it.customer, sample: it.sample, reports: [] };
+        }
+        byEntrust[it.entrustCode].reports.push(it);
+      });
+      var entrustLines = Object.keys(byEntrust).map(function (code) { return byEntrust[code]; });
+      head.innerHTML = '<i class="fa fa-exclamation-triangle mr-1"></i>AI 审核不通过自动退回（' +
+        entrustLines.length + ' 个委托任务 · ' + list.length + ' 份报告待重新编制）';
+      scroll.innerHTML = entrustLines.map(function (ent) {
+        var brief = ent.reports.map(function (r) {
+          return r.reportNo + '（' + r.reasons.map(function (x) { return x.rule_id; }).join('、') + '）';
+        }).join('；');
+        return '<div class="ai-returned-line">' +
+          '<span class="ai-line-main text-slate-700" title="' + ent.entrustCode + ' · ' + ent.customer + ' · ' + ent.sample + '">' +
+          '<b>' + ent.entrustCode + '</b>（' + ent.customer + ' · ' + ent.sample + '）— ' + brief +
+          '</span>' +
+          '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(ent.entrustCode) + '" class="flex-shrink-0 text-blue-600 hover:underline">去修订</a>' +
+          '</div>';
+      }).join('');
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({ annotations: [
         { id: 'ai-returned', selector: '[data-annotate="ai-returned"]', position: 'bottom', title: 'AI 审核不通过自动退回', content: '<strong>需求逻辑：</strong>报告流转到「报告审核」时自动跑 AI 预审，命中严重项的报告不进人工审核、直接自动退回「报告编制」，编制人需在本环节优先处理。<br>' +
-            '<strong>展示规则：</strong>本环节页顶红色条列出被 AI 退回的报告：报告编号、客户/样品、命中的严重规则项与「去修订」入口；无退回时整条隐藏。<br>' +
-            '<strong>交互逻辑：</strong>数据与「报告审核」页同源（report-review-mock）；演示 SC2026/0238-03 因批准签名缺失(C02-5) 被退回。', tag: '报告编制' },
+            '<strong>展示规则：</strong>固定高度红色提示区（内部滚动），<strong>一行一个委托任务</strong>：委托编号、客户/样品、本单下被退回报告摘要与「去修订」；下方主查询列表<strong>同步展示</strong>这些委托（委托编号旁带 AI 退回徽标）。无退回时整条隐藏。<br>' +
+            '<strong>交互逻辑：</strong>数据与「报告审核」页同源；点「编制」弹窗中 AI 退回的报告在编号旁显示渐变「AI 自动退回」标签与规则摘要。演示 SC2026/0238 / 0238-03（C02-5）。', tag: '报告编制' },
+        { id: 'compile-ai-tag', selector: '[data-ai-return="1"]', position: 'left', title: '编制列表 · AI 自动退回标识', content: '<strong>展示规则：</strong>命中 AI 严重项自动退回的报告：行背景淡红渐变，报告编号下挂「AI 自动退回」胶囊标签与规则摘要；默认勾选便于优先修订。<br><strong>交互逻辑：</strong>与顶部提示条、主列表委托行同源。', tag: '报告列表' },
         { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '<strong>需求逻辑：</strong>报告列表是编制入口；编制发现问题可直接退回上一环节「数据审核」修正后重提。<br>' +
             '<strong>展示规则：</strong>操作列：「报告生成」「编制」「退回」。<br>' +
             '<strong>交互逻辑：</strong>「报告生成」跳转报告编制编辑页；「编制」弹出报告列表；「退回」见独立批注。AI 预审入口在侧边栏「报告审核 / AI 审核工作台」。', tag: '报告编制' },
