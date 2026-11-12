@@ -58,12 +58,12 @@ Plan 与 Spec **一起读**：Plan 是对 Spec 的论证，Plan 里拿不准的�
 
 ## 7. 任务清单（逐个过，细节在 Plan 里）
 
-- [ ] Task 1：`js/ai-review-store.js`（7 表种子 + API）+ 测试骨架（`_env.mjs`/`run-all.mjs`/`storecheck.mjs`/`_fixture.html`）
-- [ ] Task 2：`js/ai-review-engine.js`（8 规则 + 聚合 + CAT-UNCAT-01）+ `enginecheck.mjs`（Review Focus 五个易踩点全在此）
-- [ ] Task 3：`ai-review-workbench.html`（统览/筛选/逐条处置/案例沉淀 + 问题看板 + 统计）+ `workbenchcheck.mjs`
-- [ ] Task 4：`report-audit.html`（自动触发卡片 + 处置 + 案例）+ `report-list.html` 加入口 + `auditcheck.mjs`
-- [ ] Task 5：`ai-review-rules.html`（规则配置 + 预留绑定结构可视）+ `rulescheck.mjs`
-- [ ] Task 6：入口挂载（`index.html` 等）+ `navcheck.mjs` + 全量 6 套回归全绿
+- [x] Task 1：`js/ai-review-store.js`（7 表种子 + API）+ 测试骨架（`_env.mjs`/`run-all.mjs`/`storecheck.mjs`/`_fixture.html`）
+- [x] Task 2：`js/ai-review-engine.js`（8 规则 + 聚合 + CAT-UNCAT-01）+ `enginecheck.mjs`（Review Focus 五个易踩点全在此）
+- [x] Task 3：`ai-review-workbench.html`（统览/筛选/逐条处置/案例沉淀 + 问题看板 + 统计）+ `workbenchcheck.mjs`
+- [x] Task 4：`report-audit.html`（自动触发卡片 + 处置 + 案例）+ `report-list.html` 加入口 + `auditcheck.mjs`
+- [x] Task 5：`ai-review-rules.html`（规则配置 + 预留绑定结构可视）+ `rulescheck.mjs`
+- [x] Task 6：入口挂载（`index.html` 等）+ `navcheck.mjs` + 全量 6 套回归全绿
 
 ## 8. 收尾（Task 6 之后）
 
