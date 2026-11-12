@@ -16,18 +16,18 @@
   function baseReport(overrides) {
     var r = {
       sample_no: 'SC2026-0001',
-      test_standard: 'GB/T 13685-2017',
-      cited_standard: 'GB/T 13685-2017',
-      entrust_items: ['密封性', '壁厚'],
-      result_params: ['密封性', '壁厚'],
+      entrust_items: ['导体直流电阻', '绝缘厚度'],
+      result_params: ['导体直流电阻', '绝缘厚度'],
       receive_date: '2026-08-28',
       test_date: '2026-09-01',
       report_date: '2026-09-03',
       device_calib_from: '2026-01-01',
       device_calib_to: '2026-12-31',
       signatures: { tester: '李明', reviewer: '王芳', approver: '赵强' },
-      units: [{ param: '壁厚', unit: 'mm' }],
-      category_code: 'CAT-FITTING',
+      units: [{ param: '绝缘厚度', unit: 'mm' }],
+      test_standard: 'GB/T 12706.1-2020',
+      cited_standard: 'GB/T 12706.1-2020',
+      category_code: 'CAT-CABLE',
     };
     for (var k in overrides) if (Object.prototype.hasOwnProperty.call(overrides, k)) r[k] = overrides[k];
     return r;
@@ -36,7 +36,7 @@
   // 一张委托可生成多份报告；每份报告都带 AI 审查所需字段 + 展示字段。
   var ENTRUSTS = [
     {
-      code: 'SC2026/0238', contract: '/', customer: '铁流技术', sample: '压盖总成',
+      code: 'SC2026/0238', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆',
       sendDate: '2026-09-03', requireDate: '2026-09-08', acceptDate: '2026-09-03',
       priority: '常规', status: '报告审核', compiler: 'admin',
       reports: [
@@ -48,8 +48,8 @@
           id: 'rr-0238-02', reportNo: 'SC2026/0238-02', reportName: 'SC2026-0238-02检测报告.docx',
           sampleNos: ['SC2026/0238-0102'], sample_no: 'SC2026-0239',
           // 命中「一般」：引用标准号与实检标准不一致(B03-1) + 计量单位越界(C01-4) → 需复核
-          cited_standard: 'GB/T 13685-2011',
-          units: [{ param: '扭矩', unit: 'kgf·m' }],
+          cited_standard: 'GB/T 12706.1-2008',
+          units: [{ param: '导体直流电阻', unit: 'kgf·m' }],
         }),
         baseReport({
           id: 'rr-0238-03', reportNo: 'SC2026/0238-03', reportName: 'SC2026-0238-03检测报告.docx',
@@ -60,7 +60,7 @@
       ],
     },
     {
-      code: 'SC2026/0231', contract: '/', customer: '铁流技术', sample: '压盖总成',
+      code: 'SC2026/0231', contract: '/', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆',
       sendDate: '2026-09-01', requireDate: '2026-09-02', acceptDate: '2026-09-01',
       priority: '常规', status: '报告审核', compiler: 'admin',
       reports: [
