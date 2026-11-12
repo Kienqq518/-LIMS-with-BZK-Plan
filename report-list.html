@@ -73,7 +73,8 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
               <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-record">报告记录</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-transparency">透明度等级 / 溯源</th>
+              <!-- 透明检测延至明年：列暂时隐藏，相关弹窗与逻辑保留便于恢复 -->
+              <th class="hidden border border-slate-200 px-3 py-2 font-medium" data-annotate="col-transparency">透明度等级 / 溯源</th>
               <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="report-ops">操作</th>
             </tr>
           </thead>
@@ -348,7 +349,7 @@
           '<td class="border border-slate-200 px-3 py-2">' + (row.sales || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.compiler + '</td>' +
           '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="openReportRecordModal();return false;">报告记录</a></td>' +
-          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + transparencyCell(row) + '</td>' +
+          '<td class="hidden border border-slate-200 px-3 py-2 whitespace-nowrap">' + transparencyCell(row) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + genLink +
           ' <a href="#" class="ml-3 text-blue-600 hover:underline" onclick="openCompileListModal();return false;">编制</a>' +
           ' <a href="report-audit.html?report=r-bad-sign" class="ml-3 text-blue-600 hover:underline">审核(AI)</a></td></tr>';
@@ -464,9 +465,7 @@
         { id: 'compile-modal', selector: '[data-annotate="compile-confirm"]', position: 'left', title: '编制确认', content: '<strong>需求逻辑：</strong>一次可能要多份报告同时编制，先勾选再进编辑器，避免误改。<br>' +
             '<strong>展示规则：</strong>弹窗列出该委托下可编制的报告，含报告编号与试样编号。<br>' +
             '<strong>交互逻辑：</strong>勾选后点「编制」进入 Word 在线编辑（原型演示），关闭弹窗不改变报告状态。', tag: '报告列表' },
-        { id: 'col-transparency', selector: '[data-annotate="col-transparency"]', position: 'top', title: '透明度等级 / 溯源', content: '<strong>需求逻辑：</strong>透明度等级决定报告可核验到什么程度，必须在签发前选定；等级越高对采集能力要求越高，因此一/二级为预留等级：可选但受能力门禁拦截，暂不放行出具（登记升级预留）。<br>' +
-            '<strong>展示规则：</strong>「透明度等级」列展示所选等级；「溯源」列在签发后显示唯一溯源码与「查看溯源」。<br>' +
-            '<strong>交互逻辑：</strong>检测前为本次报告选定等级（四级）；签发后生成溯源码印刷于报告首页，「查看溯源」即打开扫码公开页。', tag: '透明检测' },
+        // 透明检测延至明年：列已隐藏，对应批注暂不挂载（col-transparency / rl-level）
         {
           id: 'rl-record',
           selector: '#reportRecordBody',
@@ -476,17 +475,6 @@
           content: '<strong>需求逻辑：</strong>报告从编制到发放经过编制、审核、签发、处理、收费审批、发放六个节点，列表页需就地核对每个节点的经办人与时间。<br>' +
           '<strong>展示规则：</strong>列为序号、报告编号、编制、审核、签发、处理、收费审批、发放、操作；单元格显示「人 + 时间」，未发生的节点为空；操作列可看该报告的流转日志。<br>' +
           '<strong>交互逻辑：</strong>由列表「报告编号」或「记录」入口打开；关闭回到列表，不改变数据。',
-          tag: '报告列表'
-        },
-        {
-          id: 'rl-level',
-          selector: '#levelOptions',
-          position: 'bottom-right',
-          title: '选择报告透明度等级（能力与授权双门禁）',
-          wide: true,
-          content: '<strong>需求逻辑：</strong>透明报告分四级（一级全要素透明 → 四级可公示），等级越高对采集能力要求越高；实验室只能出具「能力已就绪」且「不超出授权」的等级，所以选等级不是自由选，而是被两道门禁约束。<br>' +
-          '<strong>展示规则：</strong>四个等级逐条列出，每条含等级名与简述（是否含视频、照片张数、是否人工录入）；当前能力未就绪的等级标注不可选并说明缺失项；低于授权等级的标注「选低，业务确认即可，不属降级出具」。<br>' +
-          '<strong>交互逻辑：</strong>选中后下方即时给出结论（可出具 / 被能力拦截 / 超出授权须重新评定）；点「确定」按所选等级重新生成报告预览，点「取消」放弃。',
           tag: '报告列表'
         },
       ] });
