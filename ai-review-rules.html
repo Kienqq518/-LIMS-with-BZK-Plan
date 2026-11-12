@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 审核规则配置 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <script src="js/ai-review-store.js"></script>
+  <script src="js/ai-review-engine.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="ai-review-workbench.html">
+    <a href="ai-review-workbench.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">AI 审核工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      规则配置
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4 space-y-6">
+    <div class="rounded bg-white p-4 shadow-sm overflow-x-auto">
+      <h2 class="mb-3 text-base font-semibold text-slate-800">审核规则库（通用集）</h2>
+      <table id="rule-table" class="w-full text-sm border-collapse">
+        <thead><tr class="border-b text-slate-500 text-left">
+          <th class="py-2">编号</th><th>维度</th><th>判定式</th><th>严重度</th><th>是否通用</th><th>启用</th>
+        </tr></thead>
+        <tbody id="rule-body"></tbody>
+      </table>
+    </div>
+
+    <div id="binding-section" class="rounded bg-white p-4 shadow-sm">
+      <h2 class="mb-3 text-base font-semibold text-slate-800">品类规则绑定（M1 预留）</h2>
+      <h3 class="text-sm font-medium text-slate-700 mb-2">品类字典镜像</h3>
+      <table id="cat-table" class="w-full text-sm mb-4">
+        <thead><tr class="border-b text-slate-500"><th class="text-left py-1">编码</th><th class="text-left">名称</th><th>已配绑定</th></tr></thead>
+        <tbody id="cat-body"></tbody>
+      </table>
+      <h3 class="text-sm font-medium text-slate-700 mb-2">品类规则绑定</h3>
+      <table id="binding-table" class="w-full text-sm">
+        <thead><tr class="border-b text-slate-500"><th>品类</th><th>规则</th><th>启用</th></tr></thead>
+        <tbody id="binding-body"></tbody>
+      </table>
+      <p id="binding-empty" class="mt-2 text-sm text-amber-700 hidden">M1 未配置品类专属规则，默认只跑通用集，输出 CAT-UNCAT-01</p>
+    </div>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script>
+    function render() {
+      AiReviewStore.reset();
+      var rules = AiReviewStore.getRules();
+      var tbody = document.getElementById('rule-body');
+      tbody.innerHTML = rules.map(function (r) {
+        return '<tr data-rule-id="' + r.id + '" class="border-b">' +
+          '<td class="py-2">' + r.id + '</td>' +
+          '<td>' + r.category + '</td>' +
+          '<td class="text-xs text-slate-600">' + (r.expr || r.name) + '</td>' +
+          '<td>' + r.severity + '</td>' +
+          '<td class="col-universal">通用</td>' +
+          '<td><input type="checkbox" class="rule-enabled" ' + (r.enabled ? 'checked' : '') + ' /></td></tr>';
+      }).join('');
+      tbody.querySelectorAll('.rule-enabled').forEach(function (el) {
+        el.onchange = function () {
+          var tr = el.closest('tr');
+          AiReviewStore.setRuleEnabled(tr.getAttribute('data-rule-id'), el.checked);
+        };
+      });
+
+      var cats = AiReviewStore.getCategories();
+      document.getElementById('cat-body').innerHTML = cats.map(function (c) {
+        return '<tr><td class="py-1">' + c.category_code + '</td><td>' + c.category_name + '</td><td class="text-center">' + (c.is_bound ? '是' : '否') + '</td></tr>';
+      }).join('');
+
+      var binds = AiReviewStore.getBindings();
+      var bb = document.getElementById('binding-body');
+      bb.innerHTML = binds.map(function (b) {
+        return '<tr data-binding-id="' + (b.binding_id || '') + '"><td>' + b.category_code + '</td><td>' + b.rule_id + '</td><td>' + b.enabled + '</td></tr>';
+      }).join('');
+      var emptyEl = document.getElementById('binding-empty');
+      if (!binds.length) emptyEl.classList.remove('hidden');
+      else emptyEl.classList.add('hidden');
+    }
+    render();
+  </script>
+  <script src="js/ui-a11y.js" defer></script>
+</body>
+</html>
