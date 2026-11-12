@@ -9,6 +9,20 @@ const p = await b.newPage();
 p.on('pageerror', (e) => err.push('pageerror: ' + e.message));
 p.on('dialog', (d) => d.accept());
 
+// 报告编制：操作列含报告生成/退回，表头表体列数一致
+await p.goto(BASE + '/report-list.html', { waitUntil: 'load' });
+await p.waitForTimeout(400);
+const rlAlign = await p.evaluate(() => {
+  const table = document.querySelector('#tableBody')?.closest('table');
+  if (!table) return false;
+  const thCount = table.querySelectorAll('thead th').length;
+  const tr = document.querySelector('#tableBody tr');
+  if (!tr || tr.cells.length !== thCount) return false;
+  const ops = tr.cells[tr.cells.length - 1];
+  return /报告生成/.test(ops.textContent || '') && /退回/.test(ops.textContent || '');
+});
+out.push((rlAlign ? '✅' : '❌') + ' 报告编制列表列对齐与操作列');
+
 // 委托预览：独立「报告」+「操作」列，表头表体对齐
 await p.goto(BASE + '/entrust-preview.html', { waitUntil: 'load' });
 await p.waitForTimeout(400);

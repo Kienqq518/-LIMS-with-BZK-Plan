@@ -28,7 +28,7 @@
     #return-toast .icon { color: #ef4444; font-size: 16px; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-700">
+<body class="bg-slate-100 text-slate-700" data-cat-col="off">
 
   <div id="return-toast" role="alert"><i class="fa fa-times-circle icon"></i><span id="return-toast-msg"></span></div>
 
@@ -499,6 +499,7 @@
           ' <button type="button" data-annotate="report-return" class="ml-3 text-orange-500 hover:underline" onclick="openReturnModal(' + row.id + ')"><i class="fa fa-reply"></i> 退回</button></td></tr>';
       }).join('');
       document.getElementById('totalText').textContent = '共 ' + data.length + ' 条';
+      if (window.ColumnConfig && ColumnConfig.refresh) ColumnConfig.refresh();
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
