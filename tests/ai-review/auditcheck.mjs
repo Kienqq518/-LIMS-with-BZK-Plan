@@ -15,6 +15,8 @@ await p.waitForTimeout(300);
 const auditLinks = await p.locator('#tableBody a[href*="report-review-detail.html"]').count();
 const auditBtnText = await p.locator('#tableBody a[href*="report-review-detail.html"]').first().textContent();
 out.push((auditLinks >= 1 && /审核/.test(auditBtnText || '') ? '✅' : '❌') + ' 报告审核列表「审核」入口: ' + auditLinks);
+const ccTrigger = await p.locator('#cc-trigger').count();
+out.push((ccTrigger === 1 ? '✅' : '❌') + ' 报告审核列表列配置入口 #cc-trigger');
 
 // 审核详情页：SC2026/0238 三份报告命中 通过 / 需复核 / 不通过
 await p.goto(BASE + '/report-review-detail.html?code=SC2026/0238', { waitUntil: 'load' });

@@ -86,7 +86,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">任务状态</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
               <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="rv-col-record">报告记录</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="rv-col-ops">操作</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -103,6 +103,7 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     AiReviewStore.reset();
@@ -134,6 +135,7 @@
           '</tr>';
       }).join('');
       document.getElementById('totalText').textContent = '共 ' + data.length + ' 条';
+      if (window.ColumnConfig && ColumnConfig.refresh) ColumnConfig.refresh();
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
@@ -166,10 +168,7 @@
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({ annotations: [
-        { id: 'rv-col-ops', selector: '[data-annotate="rv-col-ops"]', position: 'top-left', title: '操作：审核', content: '<strong>需求逻辑：</strong>报告审核是报告编制完成后的下一环节，审核员在这里逐委托核准报告；本期在此叠加 AI 预审，所以操作由原「编辑」改为「审核」。<br>' +
-            '<strong>展示规则：</strong>操作列仅「审核」一个入口。<br>' +
-            '<strong>交互逻辑：</strong>点「审核」进入报告审核详情页（按委托打开），页内每份报告下方展示 AI 审查结论与人工处置区。', tag: '报告审核' },
-        { id: 'rv-audit-btn', selector: '[data-annotate="rv-audit-btn"]', position: 'left', title: '审核入口', content: '<strong>需求逻辑：</strong>审核以「委托」为单位进入，一张委托下的多份报告一起核。<br>' +
+        { id: 'rv-audit-btn', selector: '[data-annotate="rv-audit-btn"]', position: 'left', title: '审核入口', content: '<strong>需求逻辑：</strong>报告审核是报告编制完成后的下一环节；操作列入口由原「编辑」改为「审核」，并叠加 AI 预审。审核以「委托」为单位进入。<br>' +
             '<strong>展示规则：</strong>蓝色「审核」链接。<br>' +
             '<strong>交互逻辑：</strong>跳转 report-review-detail.html?code=委托编号。演示委托 SC2026/0238 含三份报告，分别命中 AI 通过 / 需复核 / 不通过三种结论。', tag: '报告审核' },
         { id: 'rv-col-record', selector: '[data-annotate="rv-col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>审核前可先看该委托下报告的节点留痕。<br>' +

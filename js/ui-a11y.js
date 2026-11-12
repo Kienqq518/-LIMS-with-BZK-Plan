@@ -138,6 +138,12 @@
     try { fixIcons(root); fixTitleOnly(root); fixTables(root); fixClickable(root); } catch (e) { /* 原型页，静默 */ }
   }
 
+  function notifyParentCloseChromePopovers() {
+    try {
+      if (global.parent !== global) global.parent.postMessage({ type: 'lims-close-chrome-popovers' }, '*');
+    } catch (e) { /* 跨域 iframe 忽略 */ }
+  }
+
   function boot() {
     process(document);
     if (window.MutationObserver && !global.__uiA11yObserver) {
@@ -151,6 +157,8 @@
       });
       global.__uiA11yObserver.observe(document.body, { childList: true, subtree: true });
     }
+    /* 点击 iframe 内任意处收起主壳顶栏个人信息气泡（固定展开时不会随外层 document click 关闭） */
+    document.addEventListener('mousedown', notifyParentCloseChromePopovers, true);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

@@ -34,6 +34,10 @@
     '.pa-user-pop.open { display: flex; }',
     '.pa-user-pop::before { content: ""; position: absolute; right: 18px; top: -6px; width: 12px; height: 12px;',
     '  background: #f0f4ff; border-left: 1px solid #dbe4ff; border-top: 1px solid #dbe4ff; transform: rotate(45deg); }',
+    /* 主壳 index：气泡向上展开，避免 486px 宽面板压住 iframe 内列表右侧「操作」列 */
+    'html.lims-shell .pa-user-wrap .pa-user-pop { top: auto; bottom: calc(100% + 12px); }',
+    'html.lims-shell .pa-user-wrap .pa-user-pop::before { top: auto; bottom: -6px;',
+    '  border-left: none; border-top: none; border-right: 1px solid #dbe4ff; border-bottom: 1px solid #dbe4ff; transform: rotate(45deg); }',
     '.pa-user-left { width: 148px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; }',
     '.pa-user-avatar { width: 116px; height: 92px; border-radius: 10px; object-fit: cover; background: #fff;',
     '  border: 1px solid #e2e8f0; }',
@@ -306,5 +310,5 @@
   if (doc.readyState === 'loading') { doc.addEventListener('DOMContentLoaded', bindAll); } else { bindAll(); }
   new MutationObserver(function () { bindAll(); }).observe(doc.documentElement, { childList: true, subtree: true });
 
-  global.LimsUserProfile = { bind: bindAll, signature: sigGet, setSignature: sigSet, render: renderAll };
+  global.LimsUserProfile = { bind: bindAll, signature: sigGet, setSignature: sigSet, render: renderAll, closeAll: closeAll };
 })(window);

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="lims-shell">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -305,7 +305,10 @@
         pageTitle.textContent = link.textContent.trim();
       }
       nav.querySelectorAll('.menu-link').forEach(function (link) {
-        link.addEventListener('click', function () { markActive(link); });
+        link.addEventListener('click', function () {
+          if (window.LimsUserProfile && LimsUserProfile.closeAll) LimsUserProfile.closeAll();
+          markActive(link);
+        });
       });
 
       /* ===== 与 iframe 里的需求文档舞台联动 =====
@@ -323,9 +326,12 @@
           const link = nav.querySelector('a[href="' + href.split('?')[0] + '"]');
           if (link) markActive(link);
           if (frame) frame.src = href;
+        } else if (d.type === 'lims-close-chrome-popovers') {
+          if (window.LimsUserProfile && LimsUserProfile.closeAll) LimsUserProfile.closeAll();
         }
       });
       if (frame) frame.addEventListener('load', function () {
+        if (window.LimsUserProfile && LimsUserProfile.closeAll) LimsUserProfile.closeAll();
         // 换页后新页面若没接上文档模式，兜底把外壳导航显示回来
         if (!document.documentElement.classList.contains('pa-shell-chrome-hidden')) return;
         clearTimeout(chromeFallbackTimer);
@@ -345,7 +351,7 @@
     })();
   </script>
   <script src="js/current-user.js?v=3" defer></script>
-  <script src="js/user-profile.js?v=7" defer></script>
+  <script src="js/user-profile.js?v=8" defer></script>
   <script src="js/message-store.js?v=4" defer></script>
   <script src="js/message-center.js?v=4" defer></script>
   <script src="js/ui-a11y.js" defer></script>
