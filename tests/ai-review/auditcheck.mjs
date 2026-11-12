@@ -9,6 +9,18 @@ const p = await b.newPage();
 p.on('pageerror', (e) => err.push('pageerror: ' + e.message));
 p.on('dialog', (d) => d.accept());
 
+// 委托登记：编辑/删除在操作列，表体列数与表头一致（sample-cat-filter 勿重复插列）
+await p.goto(BASE + '/entrust-register.html', { waitUntil: 'load' });
+await p.waitForTimeout(300);
+const erAlign = await p.evaluate(() => {
+  const tr = document.querySelector('#registerTableBody tr');
+  if (!tr || tr.cells.length !== 10) return false;
+  const ths = document.querySelectorAll('thead th').length;
+  const ops = tr.cells[9];
+  return ths === 10 && /编辑/.test(ops.textContent || '') && tr.cells[0].textContent.trim() === '1';
+});
+out.push((erAlign ? '✅' : '❌') + ' 委托登记列表列对齐（操作列含编辑删除）');
+
 // 报告审核主查询页：操作列为「审核」，无旧 AI 链接
 await p.goto(BASE + '/report-review.html', { waitUntil: 'load' });
 await p.waitForTimeout(300);

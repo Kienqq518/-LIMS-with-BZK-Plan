@@ -40,8 +40,26 @@
     return el;
   }
 
+  function pageHasMajorCatColumn() {
+    return hasOverlayText('th', '样品大类');
+  }
+
+  function majorCatCell(tr) {
+    if (!state.table || !tr || !tr.cells) return null;
+    var cell = tr.querySelector('td[data-cat-col]');
+    if (cell) return cell;
+    if (!pageHasMajorCatColumn()) return null;
+    var ths = [].slice.call(state.table.querySelectorAll('thead th'));
+    var idx = -1;
+    for (var i = 0; i < ths.length; i++) {
+      if (ths[i].textContent.trim() === '样品大类') { idx = i; break; }
+    }
+    return idx >= 0 && tr.cells[idx] ? tr.cells[idx] : null;
+  }
+
   function fillRow(tr) {
     if (!state.table || !tr || !tr.cells) return;
+    if (pageHasMajorCatColumn()) return;                               // 原生列（如委托登记）不再插 td
     var cells = tr.cells;
     if (state.nameIdx < 0 || cells.length === 0) return;
     if (cells.length === 1 && cells[0].colSpan > 1) return;          // 空态行
@@ -81,7 +99,6 @@
       state.tbody = state.table.tBodies[0];
       if (!state.tbody) return false;
       state.rows = [].slice.call(state.tbody.rows);
-      state.rows.forEach(fillRow);
       watchRows(state.tbody);
       return true;
     }
@@ -151,7 +168,7 @@
     var visible = 0;
     state.rows.forEach(function (tr) {
       if (!tr.cells || !tr.cells.length) return;
-      var cell = tr.querySelector('td[data-cat-col]');
+      var cell = majorCatCell(tr);
       var cat = cell ? cell.textContent.trim() : '';
       var ok = !want || cat === want;
       tr.style.display = ok ? '' : 'none';
