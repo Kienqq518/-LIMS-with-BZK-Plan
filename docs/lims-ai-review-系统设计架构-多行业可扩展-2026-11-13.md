@@ -44,7 +44,7 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=weA2iGxn2Dg3Umm-zZ_1e,mAZbwREpy93qi3Ck4OFB0A)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=0tjBV9M5-cJcM91iq-s25,23Wzm1BCYTDKzEpRS8Kbrw)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b LIMS数据层 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
 **布局说明**：主栏通栏 **1 → 2 → 3a → 4**；右侧 **3b LIMS数据层 / 3c 知识组装**。每层一色（靛蓝 / 琥珀 / 绿 / 深蓝 / 青）；**只画层间箭头**（层内模块用文案标明顺序，不互挂箭头）。3c 的「品类绑定 + 标准/限值库」包在 **Industry Pack** 模块内。
@@ -55,6 +55,12 @@
 - **第 4 层 = AI 审核自有库**（`ai_review_*` 表），不是 LIMS 业务库；LIMS 主数据只读、不回写。
 - **配置域**（行业包 / 包产物 / 品类 / 绑定 / 规则）：配置主数据，由规则台账维护；**供 3c / PackResolver 读取**以组装「本次规则集」。其中 **包产物** = 行业包内的版本化内容（标准表、术语、模板映射等），挂在 `industry_packs` 下。
 - **运行域**（results / issues / feedback / cases）：**每次 AI 审核完成后的留档**（3a/编排器写入）；案例库为学习旁路。不要把「审核留档」理解成配置域。
+
+**3c 与第 4 层配置域不是两套库：**
+- **维护落点（原行业标准/限值等）在第 4 层配置域**：`industry_packs` + **`pack_artifacts`（包产物 = 行业包内的标准表、限值、术语、模板映射等版本化内容）** + `categories` / `bindings` / `rules`。由「规则 / 行业包配置」台账维护。
+- **3c 是运行时组装视图**：按 `industry_code` 从配置域**读取**并叠加（通用 rules ⊕ Pack）→ 产出「本次规则集」给引擎；图上的「标准/限值库」指装载进来的逻辑内容，不是另一份物理库。
+- LIMS 业务库里也可能有标准号字段（报告引用），那是业务数据；**AI 审核判定用的行业标准/限值主数据以配置域 pack_artifacts 为准**（MVP 可先浅做）。
+
 
 
 **3a 读法**：左「主引擎 MVP（RuleEngine）」· 右「补位可选（LLM/ML/网关，虚线框）」· 底「共用出口（门控→三态结论）」。不是一排平级盒子。
