@@ -44,12 +44,14 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=Tj-KZ9xKPNlQLZoovYnwX,zRHCtjy25koRgwpZqNTfdQ)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=SzRqSYb36iJaWhMtjgZWL,AG5CJOKO5oU7nJvWLdnefg)
 
-分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b 集成 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
-**布局说明**：主栏通栏 **1 → 2 → 3a → 4**（层间距加大；分区边框按层配色：蓝 / 琥珀 / 绿 / 深蓝，右侧 3b 靛蓝 / 3c 青）；右侧独立栏 **3b 上 / 3c 下**。3a 独占整行宽度；蓝粗=取数，青粗=判定依据。
+分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b LIMS数据层 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
+**布局说明**：主栏通栏 **1 → 2 → 3a → 4**（层间距加大；分区边框按层配色：蓝 / 琥珀 / 绿 / 深蓝，右侧 3b LIMS数据层（靛蓝） / 3c 青）；右侧独立栏 **3b 上 / 3c 下**。3a 独占整行宽度；蓝粗=取数，青粗=判定依据。
 
-**引擎取数关系**：3b Canonical Snapshot → 3a 取数；3c「本次规则集」→ 3a 判定依据；调度器只负责触发执行。
+**引擎取数关系**：LIMS数据层（原 3b）Canonical Snapshot → 3a 取数；3c「本次规则集」→ 3a 判定依据；调度器只负责触发执行。
+
+**3a 内部关系**：RuleEngine 为主路径（确定性）→ 置信度门控/三态聚合 → 输出编排器；LLM / ML 为可选补位（虚线，经门控，不得单独自动退回）；内网 LLM 网关仅服务 LLM（M5）。
 
 **3c 内部关系（固定组装，不是平级堆叠）：**
 
@@ -80,7 +82,7 @@
         │                     │                     │
         ▼                     ▼                     ▼
 ┌───────────────┐   ┌─────────────────┐   ┌─────────────────────┐
-│ AI 引擎层      │   │ 数据集成层        │   │ 知识 / 行业包层      │
+│ AI 引擎层      │   │ LIMS数据层        │   │ 知识 / 行业包层      │
 │ · RuleEngine  │   │ · 报告快照        │   │ · 通用规则集         │
 │ · LLM（预留）  │←──│ · 委托/样品/原始  │←──│ · 行业包（电网/…）   │
 │ · ML （预留）  │   │ · 设备校准/资质   │   │ · 品类 · param_schema│
