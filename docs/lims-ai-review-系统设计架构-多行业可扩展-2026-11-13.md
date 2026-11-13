@@ -44,7 +44,7 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=ozZiy4-sgsdGdYtmeKmjl,j6Mu7iveMOT7a7bmZdyyPA)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=26qPqpjnnP6z2n1OcOs1r,XlALIdCVIaDYUHj5PJinGA)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b 集成 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
 **布局说明**：已去掉大块半透明底图层；3a/3b/3c 之间留出 gutter。蓝粗箭头=取数（列间短距）；青粗折线=判定依据（走 L2/L3 之间上空通道，避免穿过盒子）。
@@ -89,8 +89,8 @@
         │
         ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  审核数据域（PostgreSQL / 等价）：rules / results / issues /      │
-│  feedback / cases / categories / bindings / industry_packs       │
+│  审核数据域：规则·结果·问题·反馈·案例·品类·绑定·行业包            │
+│  （ai_review_rules/results/issues/feedback/cases/…）             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
