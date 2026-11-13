@@ -44,7 +44,7 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=26qPqpjnnP6z2n1OcOs1r,XlALIdCVIaDYUHj5PJinGA)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=vYkkauW_iPjmAseAw6IgN,dj-xKvQUSqvLXd8c6ZuN7Q)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b 集成 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
 **布局说明**：已去掉大块半透明底图层；3a/3b/3c 之间留出 gutter。蓝粗箭头=取数（列间短距）；青粗折线=判定依据（走 L2/L3 之间上空通道，避免穿过盒子）。
@@ -213,7 +213,16 @@ LLM 低置信 / 冲突 → 需复核
 
 ## 8. 数据模型（在 M1 七表上的增量）
 
-保留 M1：`rules / results / issues / feedback / cases / categories / bindings`。
+保留 M1：`rules / results / issues / feedback / cases / categories / bindings`。关系见架构总览图第 4 层：
+
+```
+配置域：industry_packs ─1:N→ pack_artifacts
+        industry_packs ─scope→ rules
+        categories ─1:N→ bindings ─N:1→ rules
+
+运行域：results ─1:N→ issues ─(rule_id)→ rules
+        issues ─→ feedback ─→ cases（学习旁路）
+```
 
 **新增 / 强化：**
 
