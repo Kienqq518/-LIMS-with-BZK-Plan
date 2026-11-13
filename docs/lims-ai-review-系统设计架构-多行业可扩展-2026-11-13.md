@@ -44,12 +44,12 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=BOzuMUzvb9dy_DQwgAECI,qsz-F9pyi-4Ju3pxNWZTBQ)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=YGfDm6r4fejsV8m1HU4pd,-jUTky0JTcFh9SeSp_BJjg)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b LIMS数据层 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
 **布局说明**：主栏通栏 **1 → 2 → 3a → 4**；右侧 **3b LIMS数据层 / 3c 知识组装**。每层一色（靛蓝 / 琥珀 / 绿 / 深蓝 / 青）；**只画层间箭头**（层内模块用文案标明顺序，不互挂箭头）。3c 的「品类绑定 + 标准/限值库」包在 **Industry Pack** 模块内。
 
-**层间交互（图上仅这些箭头）**：1→2 触发；2→3a 调度执行；3a→4 落库；4→2 反馈（虚线）；3b→3a 取数；3c→3a 依据；3c→2 装载规则集（虚线）。层内顺序用标题文案表达，不画模块间箭头。
+**层间交互（图上仅这些箭头）**：1→2 触发；2→3a 调度执行；3a→4 落库；4→2 反馈（虚线）；2→1 回传界面（虚线，三态结论/建议退回）；3b→3a 取数；3c→3a 依据；3c→2 装载规则集（虚线）。层内顺序用标题文案表达，不画模块间箭头。
 
 **第 3 层 vs 第 4 层：**
 - **第 4 层 = AI 审核自有库**（`ai_review_*` 表），不是 LIMS 业务库；LIMS 主数据只读、不回写。
