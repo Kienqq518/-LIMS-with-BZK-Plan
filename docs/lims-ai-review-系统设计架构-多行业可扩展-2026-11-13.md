@@ -44,12 +44,18 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=I4nN4LTT4lAeTfRfS-S8o,kroy2sb09c_8BiM21ry4Dg)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=dSenQQGSK-tvu4JCEv1xs,qaUhooln98KYXCjI_G17Qw)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b LIMS数据层 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
 **布局说明**：主栏通栏 **1 → 2 → 3a → 4**；右侧 **3b LIMS数据层 / 3c 知识组装**。每层一色（靛蓝 / 琥珀 / 绿 / 深蓝 / 青）；**只画层间箭头**（层内模块用文案标明顺序，不互挂箭头）。3c 的「品类绑定 + 标准/限值库」包在 **Industry Pack** 模块内。
 
 **层间交互（图上仅这些箭头）**：1→2 触发；2→3a 调度执行；3a→4 落库；4→2 反馈（虚线）；3b→3a 取数；3c→3a 依据；3c→2 装载规则集（虚线）。层内顺序用标题文案表达，不画模块间箭头。
+
+**第 3 层 vs 第 4 层：**
+- **第 4 层 = AI 审核自有库**（`ai_review_*` 表），不是 LIMS 业务库；LIMS 主数据只读、不回写。
+- **配置域**（行业包 / 包产物 / 品类 / 绑定 / 规则）：配置主数据，由规则台账维护；**供 3c / PackResolver 读取**以组装「本次规则集」。其中 **包产物** = 行业包内的版本化内容（标准表、术语、模板映射等），挂在 `industry_packs` 下。
+- **运行域**（results / issues / feedback / cases）：**每次 AI 审核完成后的留档**（3a/编排器写入）；案例库为学习旁路。不要把「审核留档」理解成配置域。
+
 
 **3a 读法**：左「主引擎 MVP（RuleEngine）」· 右「补位可选（LLM/ML/网关，虚线框）」· 底「共用出口（门控→三态结论）」。不是一排平级盒子。
 
