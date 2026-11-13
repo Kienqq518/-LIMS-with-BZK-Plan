@@ -44,16 +44,12 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=lUQlTimUIYF9Sr5nTLtWy,nWme05HEE_wqIi1_xvXsFg)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=OkLzfcN94J31isABdJn0H,E-iqwndxCtcjWLeLVp3znQ)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b LIMS数据层 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
-**布局说明**：主栏通栏 **1 → 2 → 3a → 4**（层间距加大；分区边框按层配色：蓝 / 琥珀 / 绿 / 深蓝，右侧 3b LIMS数据层（靛蓝） / 3c 青）；右侧独立栏 **3b 上 / 3c 下**。3a 独占整行宽度；蓝粗=取数，青粗=判定依据。
+**布局说明**：主栏通栏 **1 → 2 → 3a → 4**；右侧 **3b LIMS数据层 / 3c 知识组装**。每层一色（靛蓝 / 琥珀 / 绿 / 深蓝 / 青）；**只画层间箭头**（层内模块用文案标明顺序，不互挂箭头）。3c 的「品类绑定 + 标准/限值库」包在 **Industry Pack** 模块内。
 
-**引擎取数关系**：LIMS数据层（原 3b）Canonical Snapshot → 3a 取数；3c「本次规则集」→ 3a 判定依据；调度器只负责触发执行。
-
-**3a 内部关系**：RuleEngine 为主路径（确定性）→ 置信度门控/三态聚合 → 输出编排器；LLM / ML 为可选补位（虚线，经门控，不得单独自动退回）；内网 LLM 网关仅服务 LLM（M5）。
-
-**第 2 层编排器内部关系**：入口门禁（鉴权·幂等·超时·重试）→ PackResolver 装载本次规则集（←3c）→ 调度引擎下发 3a → 引擎结果回传 → 三态聚合+回调（写 `ai_review_*` / 调 LIMS 流程）。不是四模块平级串联。
+**层间交互（图上仅这些箭头）**：1→2 触发；2→3a 调度执行；3a→4 落库；4→2 反馈（虚线）；3b→3a 取数；3c→3a 依据；3c→2 装载规则集（虚线）。层内顺序用标题文案表达，不画模块间箭头。
 
 **3c 内部关系（固定组装，不是平级堆叠）：**
 
