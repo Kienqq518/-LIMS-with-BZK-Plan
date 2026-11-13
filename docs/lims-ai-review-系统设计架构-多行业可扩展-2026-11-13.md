@@ -44,12 +44,14 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=OkLzfcN94J31isABdJn0H,E-iqwndxCtcjWLeLVp3znQ)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=I4nN4LTT4lAeTfRfS-S8o,kroy2sb09c_8BiM21ry4Dg)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b LIMS数据层 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
 **布局说明**：主栏通栏 **1 → 2 → 3a → 4**；右侧 **3b LIMS数据层 / 3c 知识组装**。每层一色（靛蓝 / 琥珀 / 绿 / 深蓝 / 青）；**只画层间箭头**（层内模块用文案标明顺序，不互挂箭头）。3c 的「品类绑定 + 标准/限值库」包在 **Industry Pack** 模块内。
 
 **层间交互（图上仅这些箭头）**：1→2 触发；2→3a 调度执行；3a→4 落库；4→2 反馈（虚线）；3b→3a 取数；3c→3a 依据；3c→2 装载规则集（虚线）。层内顺序用标题文案表达，不画模块间箭头。
+
+**3a 读法**：左「主引擎 MVP（RuleEngine）」· 右「补位可选（LLM/ML/网关，虚线框）」· 底「共用出口（门控→三态结论）」。不是一排平级盒子。
 
 **3c 内部关系（固定组装，不是平级堆叠）：**
 
