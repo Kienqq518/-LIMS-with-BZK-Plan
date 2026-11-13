@@ -44,10 +44,10 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=vYkkauW_iPjmAseAw6IgN,dj-xKvQUSqvLXd8c6ZuN7Q)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=iPPh-Tqea4nEly31mAUM2,vd415Qtbr7pZewwTGXD-zg)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b 集成 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
-**布局说明**：已去掉大块半透明底图层；3a/3b/3c 之间留出 gutter。蓝粗箭头=取数（列间短距）；青粗折线=判定依据（走 L2/L3 之间上空通道，避免穿过盒子）。
+**布局说明**：按标注重排——**3a AI 引擎**居中偏左主区；**3b 数据集成**右上并贴 LIMS 只读 API；**3c 知识/行业包组装链**右下独立区域；第 4 层表关系在左下。蓝粗=取数；青粗折线=判定依据（沿列间 gutter）。
 
 **引擎取数关系**：3b Canonical Snapshot → 3a 取数；3c「本次规则集」→ 3a 判定依据；调度器只负责触发执行。
 
