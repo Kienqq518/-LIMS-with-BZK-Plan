@@ -124,7 +124,20 @@
     .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
     section[id] { scroll-margin-top: 84px; }
 
-    .hero { padding: 48px 0 8px; }
+    .hero {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 22px;
+    }
+    .hero-shot { margin: 0; }
+    .hero-shot img { width: 100%; display: block; border-radius: 16px; border: 1px solid var(--line); box-shadow: var(--shadow); background: #f4f7fc; }
+    .value-list { display: grid; gap: 12px; }
+    .value-item { display: grid; grid-template-columns: minmax(320px, 42%) 1fr; gap: 18px; align-items: start; }
+    .value-item h3 { margin: 4px 0 0; font-size: 20px; }
+    .value-item .n { color: var(--brand); font-weight: 800; margin-right: 6px; }
+    .value-item ol { margin: 0; padding-left: 1.2em; color: var(--soft); }
+    .value-item li + li { margin-top: 4px; }
     .eyebrow {
       display: inline-flex;
       align-items: center;
@@ -570,6 +583,7 @@
       .compare, .check8, .deploy-grid, .value-grid { grid-template-columns: 1fr; display: grid; }
       .feat.flip .copy { order: 0; }
       .kpis { grid-template-columns: 1fr 1fr; }
+      .value-item { grid-template-columns: 1fr; }
       .top-actions { flex: 1 1 100%; min-width: 0; }
       .nav { flex: 1; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; min-width: 0; }
       .nav a { flex: none; }
@@ -622,6 +636,9 @@
             <li>全流程可追溯</li>
           </ul>
         </div>
+        <figure class="hero-shot">
+          <img src="assets/brochure/00-testos.jpg" alt="Test OS 底座应用总览：实验室管理系统、数据采集系统和其他应用从同一入口进入" />
+        </figure>
       </section>
 
       <section class="block" id="pain">
@@ -891,11 +908,7 @@
           <div class="copy">
             <span class="pill">功能 08 · 流程定制</span>
             <h3>流程按自己的实验室来改</h3>
-            <p>灰色卡片是固定环节，白色卡片可以配置。拖拽调整顺序，勾选启用，取消勾选就停用。收样、审核、报告这些环节，按实验室实际怎么干活来排。</p>
-            <ul>
-              <li>委托登记、试验检测、报告处理三段，都可以按自己的实验室增删环节，不必套一套用不上的流程。</li>
-              <li>改完保存，后续任务按这套流程走。</li>
-            </ul>
+            <p>管理员可根据实际业务场景，自由取消不需要的环节，并调整流程顺序，实现真正的个性化流程管理，以达到去除冗余环节、实现效率提升的目的。</p>
           </div>
           <figure>
             <img src="assets/brochure/09-flow.jpg" alt="流程配置示意：灰色为固定环节，白色为可配置环节，可拖拽排序并勾选启用" />
@@ -1096,29 +1109,47 @@
       <section class="block" id="value">
         <div class="block-h">
           <p class="section-bar">05 · 产品价值</p>
-          <h2>系统跑起来之后，实验室得到什么</h2>
-          <p class="sub">四件事对应前面的模块：流程和记录有统一标准，过程看得见，数据留得住，出了问题能顺着任务改回去。</p>
         </div>
-        <div class="value-grid">
-          <article class="card value-card">
-            <div class="n">01</div>
-            <h3>管理规范化</h3>
-            <p>统一流程与记录标准。委托、样品、试验、记录和报告按同一套模版和标准库往下走。</p>
+        <div class="value-list">
+          <article class="card value-item">
+            <h3><span class="n">01</span> 流程规范化，降低人为差错</h3>
+            <ol>
+              <li>所有业务流程线上固化，杜绝口头交接和纸质遗漏。</li>
+              <li>关键节点需审核通过方可流转，确保责任可追溯。</li>
+              <li>电子签名与日志记录，满足 CNAS、CMA 等资质评审要求。</li>
+            </ol>
           </article>
-          <article class="card value-card">
-            <div class="n">02</div>
-            <h3>过程可视化</h3>
-            <p>进度、异常和负荷实时可见。任务做到哪、哪一项不合格、哪台设备临近校准，不用逐条翻。</p>
+          <article class="card value-item">
+            <h3><span class="n">02</span> 效率提升 30% 以上，缩短报告周期</h3>
+            <ol>
+              <li>自动化生成委托单、收费单、原始记录和报告模版。</li>
+              <li>任务自动推送至责任人，减少沟通成本。</li>
+              <li>数据直传避免二次录入，提升检测效率。</li>
+            </ol>
           </article>
-          <article class="card value-card">
-            <div class="n">03</div>
-            <h3>数据资产化</h3>
-            <p>积累检测数据，支撑分析决策。采集结果、判定和报告留在系统里，可以按样品、项目和客户回看。</p>
+          <article class="card value-item">
+            <h3><span class="n">03</span> 数据资产化，支撑科学决策</h3>
+            <ol>
+              <li>检测数据、客户信息和合同记录集中存储，形成实验室数据资产。</li>
+              <li>通过驾驶舱实时监控业务健康度，及时发现瓶颈。</li>
+              <li>历史数据可追溯，便于客户查询与内部复盘。</li>
+            </ol>
           </article>
-          <article class="card value-card">
-            <div class="n">04</div>
-            <h3>质量持续改进</h3>
-            <p>追溯问题链路，驱动流程优化。按任务回放每个环节，再更新标准库或模版，后续任务按新规则执行。</p>
+          <article class="card value-item">
+            <h3><span class="n">04</span> 客户体验升级，增强信任感</h3>
+            <ol>
+              <li>客户可通过链接完成委托单签署，流程透明。</li>
+              <li>报告状态实时可查，提升服务响应速度。</li>
+              <li>标准化报告格式与快速交付，提升专业形象。</li>
+            </ol>
+          </article>
+          <article class="card value-item">
+            <h3><span class="n">05</span> 轻量易用，适合中小型实验室</h3>
+            <ol>
+              <li>界面简洁，操作逻辑清晰，无需专业 IT 人员维护。</li>
+              <li>权限分级管理，保障数据安全。</li>
+              <li>支持快速部署、灵活扩展，投入成本低，见效快。</li>
+            </ol>
           </article>
         </div>
       </section>
