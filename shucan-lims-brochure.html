@@ -151,6 +151,43 @@
     .perm-board .objs span { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 8px 10px; font-size: 14px; font-weight: 700; white-space: nowrap; }
     .perm-board li.on { border: 1px solid #8eb0ff; color: #2f6bff; background: #eef3ff; }
     .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .slide.duo {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 8px;
+    }
+    .duo-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .duo-top .brand { margin: 0; }
+    .chapter { margin: 0; font-size: 15px; font-weight: 700; color: var(--soft); letter-spacing: 0.02em; }
+    .chapter b { color: #0e172a; font-size: 20px; letter-spacing: -0.04em; margin-right: 6px; }
+    .duo-body { display: grid; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; min-height: 0; }
+    .adv {
+      display: grid;
+      grid-template-columns: minmax(280px, 40%) minmax(0, 1fr);
+      gap: clamp(16px, 2vw, 28px);
+      align-items: center;
+      min-height: 0;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+    .slide.duo h2 { margin: 0 0 6px; font-size: clamp(26px, 2.3vw, 34px); }
+    .slide.duo .lead { margin: 0 0 10px; font-size: 14px; }
+    .slide.duo .points { gap: 8px; }
+    .slide.duo .points li { grid-template-columns: 36px 1fr; gap: 10px; }
+    .slide.duo .ico { width: 36px; height: 36px; border-radius: 10px; }
+    .slide.duo .ico svg { width: 18px; height: 18px; }
+    .slide.duo .points b { font-size: 14px; }
+    .slide.duo .points p { font-size: 13px; line-height: 1.45; }
+    .slide.duo .device { padding: 8px; border-radius: 16px; }
+    .slide.duo .device > img, .slide.duo .pane > img { max-height: 34vh; }
+    .slide.duo .mock { padding: 12px; }
+    .slide.duo .mock h3 { font-size: 15px; margin-bottom: 8px; }
+    .slide.duo .method { padding: 8px 10px; }
+    .slide.duo .method p, .slide.duo .land, .slide.duo .cap { font-size: 12px; }
+    .slide.duo .cap { margin-top: 6px; }
+    .slide.duo table.data th, .slide.duo table.data td { padding: 6px 4px; }
+    .slide.duo .paper { padding: 10px 12px; }
+    .slide.duo .seal { width: 48px; height: 48px; font-size: 11px; }
     .kpi { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
     .kpi b { display: block; font-size: 28px; color: var(--brand); letter-spacing: -0.03em; }
     .kpi span { color: var(--soft); font-size: 13px; }
@@ -161,7 +198,9 @@
       .copy h1, .copy h2 { margin-top: 18px; }
       .no { margin-top: 22px; }
       .device > img, .pane > img { max-height: none; }
-      .methods, .papers, .phones, .wall, .std article, .perm-board { grid-template-columns: 1fr; }
+      .methods, .papers, .phones, .wall, .std article, .perm-board, .adv { grid-template-columns: 1fr; }
+      .duo-body { grid-template-rows: auto auto; }
+      .slide.duo .device > img, .slide.duo .pane > img { max-height: none; }
       .std article { grid-template-columns: 1fr auto; }
     }
     @media print {
@@ -228,126 +267,123 @@
       </div>
     </section>
 
-    <section class="slide" id="modules">
-      <div class="copy">
+    <section class="slide duo" id="modules">
+      <header class="duo-top">
         <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
-        <h2>流程标准化</h2>
-        <p class="lead">委托、收样、分配、检测、审核、签发，全流程线上流转，责任到人。</p>
-        <ul class="points">
-          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16" stroke="currentColor" stroke-width="1.8"/><path d="M7 12h10" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>扫码建卡</b><p>系统生成唯一编号。委托信息、检测项目、判定标准一次录完。</p></div></li>
-          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 18c.7-2.2 2.4-3.4 4.5-3.4s3.8 1.2 4.5 3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>任务对人</b><p>谁做哪一项、做到哪一步，在任务上能对上人。逾期自动提醒。</p></div></li>
-          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h11l3 3v7H5V7z" stroke="currentColor" stroke-width="1.8"/><path d="M8 14h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>线上流转</b><p>制备、发样、试验、审核和报告都在系统里走，不用拼表，也不用把过程文件传来传去。</p></div></li>
-        </ul>
-        <p class="no" aria-hidden="true">03</p>
-      </div>
-      <div class="visual">
-        <div class="device">
-          <img src="assets/brochure/01-entrust.webp" alt="委托与流程示意：任务分配、扫码上传、检测任务和进度预警" />
-        </div>
-        <div class="stand" aria-hidden="true"></div>
-        <div class="foot" aria-hidden="true"></div>
-        <p class="cap">委托登记与任务流转示意</p>
-      </div>
-    </section>
-
-    <section class="slide" id="collect">
-      <div class="copy">
-        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
-        <h2>数据自动化</h2>
-        <p class="lead">仪器数据自动采集，覆盖设备直采、蓝牙连接、图像识别、串口协议等。</p>
-        <ul class="points">
-          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>四种采集</b><p>有通讯接口的走直连或串口，蓝牙仪器走蓝牙。没有数据口、只能看屏幕或表头的，用图像识别，规则可配置、可调试。</p></div></li>
-          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>任务下发，结果回传</b><p>LIMS 按样品和试验项下发采集任务。上位机控制试验开始和结束，结果进入后续判定和出单。</p></div></li>
-          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v10M8 10l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 18h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>采集端不落地</b><p>样品结构可一键同步到数采系统。现场用数据采集 App，按工位、设备或任务扫码进入试验项再上传。</p></div></li>
-        </ul>
-        <p class="no" aria-hidden="true">04</p>
-      </div>
-      <div class="visual">
-        <div class="device">
-          <div class="pane mock">
-            <h3>数蚕 LIMS · 采集方式</h3>
-            <div class="methods">
-              <article class="method"><span class="n">01</span><b>设备直连</b><p>上位机接收任务，控制试验开始和结束，结果回传 LIMS。</p></article>
-              <article class="method"><span class="n">02</span><b>蓝牙连接</b><p>带蓝牙的仪器现场连上，读数传回数采系统和 LIMS。</p></article>
-              <article class="method"><span class="n">03</span><b>图像识别</b><p>没有数据口时读取屏幕或表头。规则可配置、可调试。</p></article>
-              <article class="method"><span class="n">04</span><b>串口协议</b><p>按仪器协议从串口取数，和直连一样回传，不另存一份本地账。</p></article>
+        <p class="chapter"><b>03</b> · 软件优势</p>
+      </header>
+      <div class="duo-body">
+        <article class="adv" id="flow-std">
+          <div class="copy">
+            <h2>流程标准化</h2>
+            <p class="lead">委托、收样、分配、检测、审核、签发，全流程线上流转，责任到人。</p>
+            <ul class="points">
+              <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16" stroke="currentColor" stroke-width="1.8"/><path d="M7 12h10" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>扫码建卡</b><p>系统生成唯一编号。委托信息、检测项目、判定标准一次录完。</p></div></li>
+              <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 18c.7-2.2 2.4-3.4 4.5-3.4s3.8 1.2 4.5 3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>任务对人</b><p>谁做哪一项、做到哪一步，在任务上能对上人。逾期自动提醒。</p></div></li>
+              <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h11l3 3v7H5V7z" stroke="currentColor" stroke-width="1.8"/><path d="M8 14h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>线上流转</b><p>制备、发样、试验、审核和报告都在系统里走，不用拼表，也不用把过程文件传来传去。</p></div></li>
+            </ul>
+          </div>
+          <div class="visual">
+            <div class="device">
+              <img src="assets/brochure/01-entrust.webp" alt="委托与流程示意：任务分配、扫码上传、检测任务和进度预警" />
             </div>
-            <div class="land"><b>采集端不落地。</b> 结果进入 LIMS 后参与计算和判定，采集端不再落一份平行台账。</div>
+            <p class="cap">委托登记与任务流转示意</p>
           </div>
-        </div>
-        <div class="stand" aria-hidden="true"></div>
-        <div class="foot" aria-hidden="true"></div>
-        <p class="cap">四种采集方式示意。串口协议归在有通讯接口的取数里。</p>
-      </div>
-    </section>
-
-    <section class="slide" id="judge">
-      <div class="copy">
-        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
-        <h2>系统自动判定</h2>
-        <p class="lead">按标准文件拆解试验项，系统实现自动判定合格与否。</p>
-        <ul class="points">
-          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 5h12v14H6V5z" stroke="currentColor" stroke-width="1.8"/><path d="M9 9h6M9 13h6M9 17h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>模版带出规则</b><p>录入时带出标准限值、计算公式和修约规则。</p></div></li>
-          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>逐项判定</b><p>每一个试验参数按标准要求给出合格或不合格，不合格标出原因。</p></div></li>
-          <li><span class="ico r" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>不合格不打合格证</b><p>判定不合格的样品不能进入合格证打印。现场不用再对照标准逐项手算。</p></div></li>
-        </ul>
-        <p class="no" aria-hidden="true">05</p>
-      </div>
-      <div class="visual">
-        <div class="device">
-          <div class="pane mock">
-            <h3>数据录入 · 绝缘操作杆 10kV <span class="tag wait">修约规则已绑定</span></h3>
-            <table class="data">
-              <caption class="vh">判定表示意</caption>
-              <thead><tr><th>试验参数</th><th>结果</th><th>标准要求</th><th>判定</th></tr></thead>
-              <tbody>
-                <tr><td>工频耐压</td><td>100kV / 1min</td><td>按规定耐受</td><td><span class="tag ok">合格</span></td></tr>
-                <tr><td>泄漏电流</td><td>86 μA</td><td>按绑定限值</td><td><span class="tag ok">合格</span></td></tr>
-                <tr class="fail"><td>外观</td><td>表面裂纹</td><td>无裂纹、无损伤</td><td><span class="tag bad">不合格</span></td></tr>
-              </tbody>
-            </table>
-            <div class="alert">外观不合格：表面裂纹。该样品不能进入合格证打印。</div>
+        </article>
+        <article class="adv" id="collect">
+          <div class="copy">
+            <h2>数据自动化</h2>
+            <p class="lead">仪器数据自动采集，覆盖设备直采、蓝牙连接、图像识别、串口协议等。</p>
+            <ul class="points">
+              <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>四种采集</b><p>有通讯接口的走直连或串口，蓝牙仪器走蓝牙。没有数据口、只能看屏幕或表头的，用图像识别，规则可配置、可调试。</p></div></li>
+              <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>任务下发，结果回传</b><p>LIMS 按样品和试验项下发采集任务。上位机控制试验开始和结束，结果进入后续判定和出单。</p></div></li>
+              <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v10M8 10l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 18h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>采集端不落地</b><p>样品结构可一键同步到数采系统。现场用数据采集 App，按工位、设备或任务扫码进入试验项再上传。</p></div></li>
+            </ul>
           </div>
-        </div>
-        <div class="stand" aria-hidden="true"></div>
-        <div class="foot" aria-hidden="true"></div>
-        <p class="cap">录入、修约与自动判定示意</p>
-      </div>
-    </section>
-
-    <section class="slide" id="report">
-      <div class="copy">
-        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
-        <h2>可视化模版配置</h2>
-        <p class="lead">提供标准模版，也可按需配置定制化模版，客户可自己完成模版修改。</p>
-        <ul class="points">
-          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h8l3 3v13H7V4z" stroke="currentColor" stroke-width="1.8"/><path d="M15 4v3h3" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>判定完成后生成</b><p>检测委托书、任务单、流转单按配置一起生成。生成、审核、签发都在线上完成。</p></div></li>
-          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 16l4-4 3 3 5-6 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>模版自己配</b><p>实验室做可视化配置。标准或版式变了，更新模版，后续任务按新模版生成。</p></div></li>
-        </ul>
-        <p class="no" aria-hidden="true">06</p>
-      </div>
-      <div class="visual">
-        <div class="device">
-          <div class="pane mock">
-            <div class="papers">
-              <article class="paper">
-                <h3>原始记录单</h3>
-                <p class="kv"><span>编号</span><b>SC2026/00790101</b></p>
-                <p class="kv"><span>来源</span><b>采集结果直接带入</b></p>
-              </article>
-              <article class="paper">
-                <div class="paper-head"><h3>检测报告</h3><div class="seal">待签发</div></div>
-                <p class="kv"><span>样品</span><b>绝缘操作杆 · 10kV</b></p>
-                <p class="kv"><span>编号</span><b>SC2026/00790101</b></p>
-                <p class="kv"><span>委托单位</span><b>客户甲</b></p>
-                <p class="kv"><span>数据</span><b>取自原始记录，不另抄</b></p>
-              </article>
+          <div class="visual">
+            <div class="device">
+              <div class="pane mock">
+                <h3>数蚕 LIMS · 采集方式</h3>
+                <div class="methods">
+                  <article class="method"><span class="n">01</span><b>设备直连</b><p>上位机接收任务，控制试验开始和结束，结果回传 LIMS。</p></article>
+                  <article class="method"><span class="n">02</span><b>蓝牙连接</b><p>带蓝牙的仪器现场连上，读数传回数采系统和 LIMS。</p></article>
+                  <article class="method"><span class="n">03</span><b>图像识别</b><p>没有数据口时读取屏幕或表头。规则可配置、可调试。</p></article>
+                  <article class="method"><span class="n">04</span><b>串口协议</b><p>按仪器协议从串口取数，和直连一样回传，不另存一份本地账。</p></article>
+                </div>
+              </div>
             </div>
+            <p class="cap">四种采集方式示意。结果回传后不再另落一份本地账。</p>
           </div>
-        </div>
-        <div class="stand" aria-hidden="true"></div>
-        <div class="foot" aria-hidden="true"></div>
-        <p class="cap">原始记录单与检测报告示意</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="slide duo" id="judge">
+      <header class="duo-top">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <p class="chapter"><b>04</b> · 软件优势</p>
+      </header>
+      <div class="duo-body">
+        <article class="adv">
+          <div class="copy">
+            <h2>系统自动判定</h2>
+            <p class="lead">按标准文件拆解试验项，系统实现自动判定合格与否。</p>
+            <ul class="points">
+              <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 5h12v14H6V5z" stroke="currentColor" stroke-width="1.8"/><path d="M9 9h6M9 13h6M9 17h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>模版带出规则</b><p>录入时带出标准限值、计算公式和修约规则。</p></div></li>
+              <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>逐项判定</b><p>每一个试验参数按标准要求给出合格或不合格，不合格标出原因。</p></div></li>
+              <li><span class="ico r" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>不合格不打合格证</b><p>判定不合格的样品不能进入合格证打印。现场不用再对照标准逐项手算。</p></div></li>
+            </ul>
+          </div>
+          <div class="visual">
+            <div class="device">
+              <div class="pane mock">
+                <h3>数据录入 · 绝缘操作杆 10kV <span class="tag wait">修约规则已绑定</span></h3>
+                <table class="data">
+                  <caption class="vh">判定表示意</caption>
+                  <thead><tr><th>试验参数</th><th>结果</th><th>标准要求</th><th>判定</th></tr></thead>
+                  <tbody>
+                    <tr><td>工频耐压</td><td>100kV / 1min</td><td>按规定耐受</td><td><span class="tag ok">合格</span></td></tr>
+                    <tr><td>泄漏电流</td><td>86 μA</td><td>按绑定限值</td><td><span class="tag ok">合格</span></td></tr>
+                    <tr class="fail"><td>外观</td><td>表面裂纹</td><td>无裂纹、无损伤</td><td><span class="tag bad">不合格</span></td></tr>
+                  </tbody>
+                </table>
+                <div class="alert">外观不合格：表面裂纹。该样品不能进入合格证打印。</div>
+              </div>
+            </div>
+            <p class="cap">录入、修约与自动判定示意</p>
+          </div>
+        </article>
+        <article class="adv" id="report">
+          <div class="copy">
+            <h2>可视化模版配置</h2>
+            <p class="lead">提供标准模版，也可按需配置定制化模版，客户可自己完成模版修改。</p>
+            <ul class="points">
+              <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h8l3 3v13H7V4z" stroke="currentColor" stroke-width="1.8"/><path d="M15 4v3h3" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>判定完成后生成</b><p>检测委托书、任务单、流转单按配置一起生成。生成、审核、签发都在线上完成。</p></div></li>
+              <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 16l4-4 3 3 5-6 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>模版自己配</b><p>实验室做可视化配置。标准或版式变了，更新模版，后续任务按新模版生成。</p></div></li>
+            </ul>
+          </div>
+          <div class="visual">
+            <div class="device">
+              <div class="pane mock">
+                <div class="papers">
+                  <article class="paper">
+                    <h3>原始记录单</h3>
+                    <p class="kv"><span>编号</span><b>SC2026/00790101</b></p>
+                    <p class="kv"><span>来源</span><b>采集结果直接带入</b></p>
+                  </article>
+                  <article class="paper">
+                    <div class="paper-head"><h3>检测报告</h3><div class="seal">待签发</div></div>
+                    <p class="kv"><span>样品</span><b>绝缘操作杆 · 10kV</b></p>
+                    <p class="kv"><span>编号</span><b>SC2026/00790101</b></p>
+                    <p class="kv"><span>委托单位</span><b>客户甲</b></p>
+                    <p class="kv"><span>数据</span><b>取自原始记录，不另抄</b></p>
+                  </article>
+                </div>
+              </div>
+            </div>
+            <p class="cap">原始记录单与检测报告示意</p>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -361,7 +397,7 @@
           <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h10l4 4v8H5V7z" stroke="currentColor" stroke-width="1.8"/><path d="M9 15h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>修改留版本</b><p>原始记录保留版本。结果要改，走变更申请和审批，修改前后另行留痕。人离职或转岗，记录还在任务上。</p></div></li>
           <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>评审对得上</b><p>样品编号从收样到报告一致。人员按授权上岗，设备处于有效校准。记录由系统生成，报告审核签发后出具。</p></div></li>
         </ul>
-        <p class="no" aria-hidden="true">07</p>
+        <p class="no" aria-hidden="true">05</p>
       </div>
       <div class="visual">
         <div class="device">
@@ -391,7 +427,7 @@
           <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h8l3 3v13H7V4z" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>证书跟着设备</b><p>校准证书跟着设备管理，校准状态一目了然。</p></div></li>
           <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 8h8v8H8z" stroke="currentColor" stroke-width="1.8"/><path d="M12 4v4M12 16v4M4 12h4M16 12h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>对上试验项</b><p>设备可以关联到试验项，用在哪一项试验上能对上。</p></div></li>
         </ul>
-        <p class="no" aria-hidden="true">08</p>
+        <p class="no" aria-hidden="true">06</p>
       </div>
       <div class="visual">
         <div class="device">
@@ -413,7 +449,7 @@
           <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h10M5 17h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>菜单按页面裁剪</b><p>菜单按系统、模块、页面显示或隐藏。未授权的页面默认不开放，不同类型实验室可以只露出自己要用的入口。</p></div></li>
           <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>应用收在一个工作台</b><p>官方应用和本地应用可加入、移除、排序。实验室已有系统用外链接入。调岗改角色，离职取消授权。</p></div></li>
         </ul>
-        <p class="no" aria-hidden="true">09</p>
+        <p class="no" aria-hidden="true">07</p>
       </div>
       <div class="visual">
         <div class="device">
@@ -455,7 +491,7 @@
           <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 7h11M8 12h11M8 17h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5 7v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>顺序可以调整</b><p>拖拽调整流程顺序，勾选启用或停用。</p></div></li>
           <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>按场景配置</b><p>不同检测活动不必共用同一条流程，用来去掉冗余、把效率提上来。</p></div></li>
         </ul>
-        <p class="no" aria-hidden="true">10</p>
+        <p class="no" aria-hidden="true">08</p>
       </div>
       <div class="visual">
         <div class="device">
@@ -477,7 +513,7 @@
           <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>按库逐项给结论</b><p>系统给出合格或不合格，不合格标出原因，不能进入合格证打印。</p></div></li>
           <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16a7 7 0 0 1 12-5l2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 8h4v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>换版只改标准库</b><p>标准换了，更新标准库，不必另改流程。</p></div></li>
         </ul>
-        <p class="no" aria-hidden="true">11</p>
+        <p class="no" aria-hidden="true">09</p>
       </div>
       <div class="visual">
         <div class="device">
@@ -505,7 +541,7 @@
           <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4 18c.8-2.2 2.5-3.4 5-3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>客户和时效</b><p>看客户体量、人员工作量和检测时效。</p></div></li>
           <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 20h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>经营和综合</b><p>经营驾驶舱和综合分析驾驶舱，用来看实验室运行情况。</p></div></li>
         </ul>
-        <p class="no" aria-hidden="true">12</p>
+        <p class="no" aria-hidden="true">10</p>
       </div>
       <div class="visual">
         <div class="device">
@@ -535,7 +571,7 @@
           <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 5h8v14H8z" stroke="currentColor" stroke-width="1.8"/><path d="M10 9h4M10 13h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>数据采集 App</b><p>今日任务、按任务检测、现场确认并上传。</p></div></li>
           <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>不用回办公室补</b><p>接任务、录数据、查进度，在样品旁边完成。</p></div></li>
         </ul>
-        <p class="no" aria-hidden="true">13</p>
+        <p class="no" aria-hidden="true">11</p>
       </div>
       <div class="visual">
         <div class="device">
@@ -567,7 +603,7 @@
           <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V8a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>本地 / 私有化</b><p>部署在客户本地服务器上，数据安全合规，服务器由客户侧管理。</p></div></li>
           <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>功能与服务</b><p>标准版加定制费用，大屏按需购买。服务可以买断加售后年费，也可以按年续费。</p></div></li>
         </ul>
-        <p class="no" aria-hidden="true">14</p>
+        <p class="no" aria-hidden="true">12</p>
       </div>
       <div class="visual">
         <div class="device">
@@ -597,7 +633,7 @@
           <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4 18c.8-2.2 2.5-3.4 5-3.4s4.2 1.2 5 3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>客户体验升级</b><p>客户可通过链接完成委托单签署。报告状态可查。报告按统一格式交付。</p></div></li>
           <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4l2 4 4 .6-3 3 .7 4.4L12 14l-3.7 2 0.7-4.4-3-3L9 8l3-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><div><b>轻量，适合中小型实验室</b><p>操作逻辑清楚，权限分级。支持快速部署和扩展，投入低，见效快。</p></div></li>
         </ul>
-        <p class="no" aria-hidden="true">15</p>
+        <p class="no" aria-hidden="true">13</p>
       </div>
       <div class="visual">
         <div class="device">
