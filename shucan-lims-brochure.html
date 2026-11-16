@@ -28,7 +28,6 @@
       --mist: #d0e7e6;
       --shadow: 0 16px 40px rgba(41, 54, 129, 0.12);
       --font: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Source Han Sans SC", system-ui, sans-serif;
-      --header-h: 64px;
     }
 
     * { box-sizing: border-box; }
@@ -72,43 +71,17 @@
     }
     figure { margin: 0; }
 
-    .top {
-      position: sticky;
-      top: 0;
-      z-index: 30;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      min-height: var(--header-h);
-      padding: 10px 22px;
-      background: rgba(255, 255, 255, 0.92);
-      border-bottom: 1px solid var(--line);
-      backdrop-filter: blur(12px);
-    }
-    .brand { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; min-width: 0; }
-    .mark {
-      display: grid;
-      place-items: center;
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: var(--brand-deep);
-      color: #fff;
-      font-weight: 700;
-      letter-spacing: 0;
-    }
-    .brand b { display: block; font-size: 15px; line-height: 1.2; }
-    .brand small { display: block; color: var(--soft); font-size: 12px; line-height: 1.3; }
-    .nav { display: flex; flex-wrap: wrap; gap: 4px 6px; justify-content: flex-end; }
+    .nav { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin: 0; }
     .nav a {
       color: var(--soft);
       text-decoration: none;
       font-size: 14px;
-      padding: 6px 10px;
+      padding: 6px 12px;
       border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--brand-line);
     }
-    .nav a:hover, .nav a[aria-current="true"] { color: var(--brand-deep); background: var(--brand-soft); }
+    .nav a:hover, .nav a[aria-current="true"] { color: var(--brand-deep); background: #fff; border-color: var(--brand); }
     .ghost {
       border: 1px solid var(--brand-line);
       background: #fff;
@@ -119,21 +92,21 @@
       cursor: pointer;
     }
     .ghost:hover { background: var(--brand-soft); }
-    .top-actions { display: flex; align-items: center; gap: 10px; }
 
     .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
-    section[id] { scroll-margin-top: 84px; }
+    section[id] { scroll-margin-top: 16px; }
 
     .hero {
       display: flex;
       flex-direction: column;
       justify-content: center;
       gap: 14px;
-      height: calc(100dvh - var(--header-h));
+      height: 100dvh;
       min-height: 0;
       padding: 8px 0 12px;
       overflow: hidden;
     }
+    .hero-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px 24px; }
     .hero h1 { font-size: clamp(30px, 3.2vw, 42px); }
     .hero-shot { margin: 0; flex: 1; min-height: 0; display: flex; align-items: center; }
     .hero-shot img { width: 100%; max-height: 100%; object-fit: contain; display: block; border-radius: 16px; border: 1px solid var(--line); box-shadow: var(--shadow); background: #e7f4f3; }
@@ -593,18 +566,17 @@
       .feat.flip .copy { order: 0; }
       .kpis { grid-template-columns: 1fr 1fr; }
       .value-item { grid-template-columns: 1fr; }
-      .top-actions { flex: 1 1 100%; min-width: 0; }
-      .nav { flex: 1; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; min-width: 0; }
+      .hero-head { flex-wrap: wrap; }
+      .nav { flex: 1 1 100%; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; min-width: 0; }
       .nav a { flex: none; }
-      section[id] { scroll-margin-top: 132px; }
-      .top { align-items: flex-start; flex-wrap: wrap; }
-      .hero { height: auto; overflow: visible; padding-top: 32px; }
+      section[id] { scroll-margin-top: 16px; }
+      .hero { height: auto; overflow: visible; padding-top: 24px; }
     }
     @media (max-width: 640px) {
       .shot-grid { grid-template-columns: 1fr; }
     }
     @media print {
-      .top, .ghost, .skip { display: none !important; }
+      .nav, .ghost, .skip { display: none !important; }
       body { background: #fff; }
       #pain, .feat-page, #advantages > .adv-list > .card.adv, #advantages > .review, #advantages > .card.adv, #deploy, #value { min-height: 0; }
       .hero { height: auto; }
@@ -615,36 +587,27 @@
 </head>
 <body>
   <a class="skip" href="#main">跳到正文</a>
-  <header class="top">
-    <a class="brand" href="#top">
-      <span class="mark" aria-hidden="true">蚕</span>
-      <span>
-        <b>数蚕 LIMS</b>
-        <small>实验室信息管理系统</small>
-      </span>
-    </a>
-    <div class="top-actions">
-      <nav class="nav" aria-label="页面章节">
-        <a href="#pain">现状</a>
-        <a href="#modules">功能</a>
-        <a href="#advantages">优势</a>
-        <a href="#deploy">部署购买</a>
-        <a href="#value">价值</a>
-      </nav>
-    </div>
-  </header>
 
   <main id="main">
     <div class="wrap">
       <section class="hero" id="top">
-        <div>
-          <h1>数蚕 LIMS<br /><em>实验室信息管理系统</em></h1>
-          <ul class="chips">
-            <li>采集端数据不落地</li>
-            <li>按标准自动判定</li>
-            <li>记录和报告按模版生成</li>
-            <li>全流程可追溯</li>
-          </ul>
+        <div class="hero-head">
+          <div>
+            <h1>数蚕 LIMS<br /><em>实验室信息管理系统</em></h1>
+            <ul class="chips">
+              <li>采集端数据不落地</li>
+              <li>按标准自动判定</li>
+              <li>记录和报告按模版生成</li>
+              <li>全流程可追溯</li>
+            </ul>
+          </div>
+          <nav class="nav" aria-label="页面章节">
+            <a href="#pain">现状</a>
+            <a href="#modules">功能</a>
+            <a href="#advantages">优势</a>
+            <a href="#deploy">部署购买</a>
+            <a href="#value">价值</a>
+          </nav>
         </div>
         <figure class="hero-shot">
           <img src="assets/brochure/00-testos.webp" alt="Test OS 底座应用总览：左侧实验室AI助手和在线人员，中间八个应用入口，右侧日历、帮助和增值服务" />
