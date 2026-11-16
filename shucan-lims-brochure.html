@@ -483,7 +483,12 @@
 
     .adv-list { display: grid; gap: 14px; }
     .adv { padding: 20px; }
-    .adv h3 { margin: 8px 0; font-size: 22px; }
+    .adv h3 { margin: 8px 0 4px; font-size: 22px; }
+    .adv-sub { margin: 0 0 10px; color: var(--brand-deep); font-weight: 700; font-size: 16px; }
+    .adv-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .adv-split div { background: var(--brand-soft); border-radius: 12px; padding: 12px 14px; }
+    .adv-split h4 { margin: 0 0 6px; font-size: 15px; }
+    .adv-split ul { margin: 0; }
     .adv p { margin: 0 0 8px; color: var(--soft); }
     .adv ul { margin: 0; padding-left: 1.15em; }
     .adv li + li { margin-top: 4px; }
@@ -580,7 +585,7 @@
 
     @media (max-width: 900px) {
       .hero, .feat, .feat.flip .copy, .pain-grid, .split, .phone-row, .app-shots, .org, .poster-grid,
-      .compare, .check8, .deploy-grid, .value-grid { grid-template-columns: 1fr; display: grid; }
+      .compare, .check8, .adv-split, .deploy-grid, .value-grid { grid-template-columns: 1fr; display: grid; }
       .feat.flip .copy { order: 0; }
       .kpis { grid-template-columns: 1fr 1fr; }
       .value-item { grid-template-columns: 1fr; }
@@ -913,21 +918,13 @@
 
           <article class="card adv">
             <span class="idx">02</span>
-            <h3>检测标准库按标准文件拆解，结果自动判定</h3>
-            <p>检测标准库按标准文件拆开维护。内容包括样品规格型号、基本信息、试验项目、试验参数、计算公式、修约规则、检测依据、判定依据和标准要求。</p>
-            <p>同一试验项可以绑定对应标准。不同规格型号带出各自的参数和标准要求。LIMS 直接调用这套标准库做自动判定，逐项给出合格或不合格。</p>
-            <p>标准换版或条款调整时，在标准库里更新上述内容，LIMS 即按新规则执行，不必另改业务流程。</p>
+            <h3>标准入库，结果自动判定</h3>
+            <p class="adv-sub">不合格当场标出，不用对照标准手算</p>
+            <p>标准库按标准文件拆开，规格型号、试验参数、计算公式、修约规则和判定要求都在库里。系统按库逐项给出合格或不合格，不合格标出原因，不能进入合格证打印。标准换版只更新标准库，不必另改流程。</p>
           </article>
 
           <article class="card adv">
             <span class="idx">03</span>
-            <h3>试验参数自动判定，不合格即时提示</h3>
-            <p>系统按标准库中的计算公式、修约规则和标准要求，自动判定每一项试验参数是否合格。参数不合格时，对应试验结果给出提示或告警，不合格项在检测和审核界面直接标出，并带出不合格原因。</p>
-            <p>判定不合格的样品不能进入合格证打印。检测和审核人员看到的是已经判定并标明的结果，现场不必再对照标准逐项手算。</p>
-          </article>
-
-          <article class="card adv">
-            <span class="idx">04</span>
             <h3>原始记录单和检测报告自动生成，模版可以自己配</h3>
             <p>试验数据回传并完成判定后，系统按该样品已启用的记录单模版、报告模版自动生成原始记录单和检测报告。检测委托书、任务单、流转单等业务单据同步按配置生成。</p>
             <p>生成、审核、签发都在线上完成，不需要人工排版、填数、另做一份纸质底稿。记录单可按全部试验项合并生成，也可按单个试验项生成。报告按该型号已启用的模版套用。</p>
@@ -935,66 +932,33 @@
           </article>
         </div>
 
-        <div class="review" style="margin-top:14px">
-          <div class="review-head">
-            <span class="pill">05 + 06 · 方便评审</span>
-            <h2 style="font-size:32px">证据在日常留好，评审周不用连夜补</h2>
-            <p class="sub">第 5 条是留痕，第 6 条是流程按 CMA 资质认定和 CNAS 认可对检测活动的要求来设计。合在一起，就是评审核对的那条证据链，系统里已经能按任务翻出来。</p>
-          </div>
-          <div class="compare">
-            <div class="stack">
-              <h4>评审前常见的三摞材料</h4>
-              <ol>
-                <li>一摞原始记录。翻出几个月前的那份，样品编号经常对不上。</li>
-                <li>一摞仪器使用台账。后补了一次又一次，签字和日期对不上。</li>
-                <li>一摞签了一半的委托单。人已经离职或转岗，补签找不到经办人。</li>
-              </ol>
-            </div>
-            <div class="checks">
-              <h4>评审核对时，通常看这四件事</h4>
-              <ol>
-                <li>编号是否一致：收样、检测、报告对得上同一个样品编号。</li>
-                <li>修改是否留痕：谁改的、什么时间改的，改前改后是否还在。</li>
-                <li>修约和公式是否统一：按标准计算，不靠个人手算。</li>
-                <li>台账是否对应：仪器使用、校准状态和检测日期一致。</li>
-              </ol>
-            </div>
-          </div>
-          <div class="adv-list" style="padding:8px">
-            <article class="card adv">
-              <span class="idx">05</span>
-              <h3>全流程留痕，试验后可按任务追溯</h3>
-              <p>每一份检测任务从委托登记、委托确认、收样、制备、发样、试验、审核，到报告编制、审核、签发、发放和归档，各环节均记录操作时间、操作人和操作内容。</p>
-              <p>操作日志可按人员、模块、时间和任务查阅，登录日志同时保留。原始记录保留版本。检测结果如需更改，走变更申请和审批，修改前后内容另行留痕。</p>
-              <p>试验结束后，可按该任务回放每个环节是谁、在什么时间、做了什么。人员离职或转岗，记录还在任务上，不跟着人走。</p>
-            </article>
-            <article class="card adv">
-              <span class="idx">06</span>
-              <h3>检测流程按 CMA、CNAS 的要求设计</h3>
-              <p>委托、样品、检测、记录、报告和归档的流程，按 CMA 资质认定和 CNAS 认可对检测活动的要求设计。本页只说明流程如何对应这些要求，不表示证书状态。</p>
+        <article class="card adv" style="margin-top:14px">
+          <span class="idx">04</span>
+          <h3>证据在日常留好</h3>
+          <p class="adv-sub">评审周不用连夜补</p>
+          <p>从委托到归档，每一步记下谁、在何时、做了什么。结果要改就走变更，改前改后还在。流程按 CMA 资质认定和 CNAS 认可对检测活动的要求来设计，方便评审时按任务翻证据。这里说的是流程如何对应这些要求，不表示已经取得证书。</p>
+          <div class="adv-split">
+            <div>
+              <h4>留痕</h4>
               <ul>
-                <li>样品编号唯一。检测方法、判定依据和标准要求受控于检测标准库。</li>
-                <li>检测人员具备相应资质，并按授权上岗。所用设备处于有效校准状态。</li>
-                <li>原始记录由系统生成并保留版本。报告经过审核、签发后出具。</li>
-                <li>数据修改留痕，全过程可追溯。自动采集的数据进入系统后直接参与计算和判定，减少人工誊抄。</li>
+                <li>操作日志按人员、时间和任务可查。</li>
+                <li>原始记录留版本，修改前后都在。</li>
+                <li>人离职或转岗，记录还在任务上。</li>
               </ul>
-            </article>
+            </div>
+            <div>
+              <h4>评审对得上</h4>
+              <ul>
+                <li>样品编号从收样到报告一致。</li>
+                <li>人员按授权上岗，设备处于有效校准。</li>
+                <li>记录由系统生成，报告审核签发后出具。</li>
+              </ul>
+            </div>
           </div>
-          <h3 style="padding:4px 16px 8px;margin:0">评审前可以顺着核对的 8 件事</h3>
-          <ol class="check8">
-            <li><b>1</b>样品编号从收样到报告，是否一一对应。</li>
-            <li><b>2</b>原始记录若更改，是否走变更，并留下改前改后。</li>
-            <li><b>3</b>仪器使用、校准状态和检测日期，是否对得上。</li>
-            <li><b>4</b>修约规则和计算公式，是否按标准库统一执行。</li>
-            <li><b>5</b>人员授权和上岗资质，是否在有效期内。</li>
-            <li><b>6</b>电子记录能否查到谁、在何时、改了什么。</li>
-            <li><b>7</b>报告数据是否来自原始记录，而不是另抄一份。</li>
-            <li><b>8</b>离职、转岗人员经手的记录，是否还留在对应任务上。</li>
-          </ol>
-        </div>
+        </article>
 
         <article class="card adv" style="margin-top:14px" id="wall">
-          <span class="idx">07</span>
+          <span class="idx">05</span>
           <h3>底座提供业务数据大屏</h3>
           <p>系统底座提供多类业务数据大屏，包括业务数据分析、样品数据分析、客户体量分析、检测时效监控大屏、经营驾驶舱和综合分析驾驶舱。展示内容可按实验室管理需要配置，用于查看委托与样品数量、检测进度、人员工作量、项目分布和时效情况。</p>
           <p>管理人员不必逐条打开任务，即可掌握实验室运行情况。</p>
@@ -1027,7 +991,7 @@
         </article>
 
         <article class="card adv" style="margin-top:14px">
-          <span class="idx">08</span>
+          <span class="idx">06</span>
           <h3>移动端配套 LIMS App 和数据采集 App</h3>
           <p>形态不只网页。人在样品旁边就能接任务、录数据、查进度，报告也能在手机上查看和下载，不用回到办公室再补一遍。</p>
           <div class="app-shots">
