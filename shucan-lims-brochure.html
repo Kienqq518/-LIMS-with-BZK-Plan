@@ -128,10 +128,15 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 22px;
+      gap: 14px;
+      height: calc(100dvh - var(--header-h));
+      min-height: 0;
+      padding: 8px 0 12px;
+      overflow: hidden;
     }
-    .hero-shot { margin: 0; }
-    .hero-shot img { width: 100%; display: block; border-radius: 16px; border: 1px solid var(--line); box-shadow: var(--shadow); background: #f4f7fc; }
+    .hero h1 { font-size: clamp(30px, 3.2vw, 42px); }
+    .hero-shot { margin: 0; flex: 1; min-height: 0; display: flex; align-items: center; }
+    .hero-shot img { width: 100%; max-height: 100%; object-fit: contain; display: block; border-radius: 16px; border: 1px solid var(--line); box-shadow: var(--shadow); background: #f4f7fc; }
     .value-list { display: grid; gap: 12px; }
     .value-item { display: grid; grid-template-columns: minmax(320px, 42%) 1fr; gap: 18px; align-items: start; }
     .value-item h3 { margin: 4px 0 0; font-size: 20px; }
@@ -175,7 +180,6 @@
     body.presenting .internal { display: none; }
 
     .block { padding: 28px 0 10px; }
-    .hero,
     #pain,
     .feat-page,
     #advantages > .adv-list > .card.adv,
@@ -594,7 +598,7 @@
       .nav a { flex: none; }
       section[id] { scroll-margin-top: 132px; }
       .top { align-items: flex-start; flex-wrap: wrap; }
-      .hero { padding-top: 32px; }
+      .hero { height: auto; overflow: visible; padding-top: 32px; }
     }
     @media (max-width: 640px) {
       .shot-grid { grid-template-columns: 1fr; }
@@ -602,7 +606,8 @@
     @media print {
       .top, .ghost, .skip { display: none !important; }
       body { background: #fff; }
-      .hero, #pain, .feat-page, #advantages > .adv-list > .card.adv, #advantages > .review, #advantages > .card.adv, #deploy, #value { min-height: 0; }
+      #pain, .feat-page, #advantages > .adv-list > .card.adv, #advantages > .review, #advantages > .card.adv, #deploy, #value { min-height: 0; }
+      .hero { height: auto; }
       .feat, .card, .adv, .review { break-inside: avoid; }
       a { text-decoration: none; color: inherit; }
     }
