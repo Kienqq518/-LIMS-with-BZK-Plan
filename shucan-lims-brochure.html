@@ -71,17 +71,6 @@
     }
     figure { margin: 0; }
 
-    .nav { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin: 0; }
-    .nav a {
-      color: var(--soft);
-      text-decoration: none;
-      font-size: 14px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: #fff;
-      border: 1px solid var(--brand-line);
-    }
-    .nav a:hover, .nav a[aria-current="true"] { color: var(--brand-deep); background: #fff; border-color: var(--brand); }
     .ghost {
       border: 1px solid var(--brand-line);
       background: #fff;
@@ -123,7 +112,6 @@
     .hero h1 { margin: 0; font-size: clamp(28px, 2.6vw, 42px); color: #fff; }
     .hero h1 em { color: #95ccdd; }
     .hero .chips li { background: transparent; border-color: rgba(149, 204, 221, 0.75); color: #d0e7e6; }
-    .hero .nav { justify-content: flex-start; }
     .hero-shot {
       position: absolute;
       z-index: 3;
@@ -601,8 +589,6 @@
       .feat.flip .copy { order: 0; }
       .kpis { grid-template-columns: 1fr 1fr; }
       .value-item { grid-template-columns: 1fr; }
-      .nav { flex: 1 1 100%; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; min-width: 0; }
-      .nav a { flex: none; }
       section[id] { scroll-margin-top: 16px; }
       .hero { height: auto; grid-template-columns: 1fr; overflow: visible; }
       .hero-copy { padding: 32px 20px 72px; }
@@ -614,7 +600,7 @@
       .shot-grid { grid-template-columns: 1fr; }
     }
     @media print {
-      .nav, .ghost, .skip { display: none !important; }
+      .ghost, .skip { display: none !important; }
       body { background: #fff; }
       #pain, .feat-page, #advantages > .adv-list > .card.adv, #advantages > .review, #advantages > .card.adv, #deploy, #value { min-height: 0; }
       .hero { height: auto; display: block; background: #fff; }
@@ -643,13 +629,6 @@
           <li>记录和报告按模版生成</li>
           <li>全流程可追溯</li>
         </ul>
-        <nav class="nav" aria-label="页面章节">
-          <a href="#pain">现状</a>
-          <a href="#modules">功能</a>
-          <a href="#advantages">优势</a>
-          <a href="#deploy">部署购买</a>
-          <a href="#value">价值</a>
-        </nav>
       </div>
       <div class="hero-side" aria-hidden="true"></div>
       <figure class="hero-shot">
@@ -1111,26 +1090,5 @@
   </main>
 
   <script src="js/ui-a11y.js"></script>
-  <script>
-    (function () {
-      var links = Array.prototype.slice.call(document.querySelectorAll('.nav a'));
-      var sections = links.map(function (link) {
-        return document.querySelector(link.getAttribute('href'));
-      }).filter(Boolean);
-      if ('IntersectionObserver' in window) {
-        var observer = new IntersectionObserver(function (entries) {
-          entries.forEach(function (entry) {
-            if (!entry.isIntersecting) return;
-            links.forEach(function (link) {
-              var on = link.getAttribute('href') === '#' + entry.target.id;
-              if (on) link.setAttribute('aria-current', 'true');
-              else link.removeAttribute('aria-current');
-            });
-          });
-        }, { rootMargin: '-40% 0px -50% 0px', threshold: 0.01 });
-        sections.forEach(function (section) { observer.observe(section); });
-      }
-    })();
-  </script>
 </body>
 </html>
