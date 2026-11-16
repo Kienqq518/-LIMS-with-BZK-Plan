@@ -141,6 +141,15 @@
     .buy h3 { margin: 8px 0 4px; font-size: 18px; }
     .buy p { margin: 0; color: var(--soft); font-size: 13px; }
     .kicker { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--brand); }
+    .perm-board { display: grid; grid-template-columns: 0.7fr 1.3fr 0.8fr; gap: 12px; align-items: stretch; }
+    .perm-board h3 { grid-column: 1 / -1; }
+    .perm-board ul { list-style: none; margin: 0; padding: 8px; border: 1px solid var(--line); border-radius: 16px; background: #f7f9fc; display: grid; gap: 8px; }
+    .perm-board li { background: #fff; border-radius: 12px; padding: 12px 10px; text-align: center; font-weight: 700; }
+    .perm-board .mid { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 18px; padding: 12px 8px 8px; }
+    .perm-board .bubble { align-self: flex-end; background: #fff; border: 1px solid #d5dced; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 700; color: #2f6bff; box-shadow: 0 8px 18px rgba(16, 24, 40, 0.06); }
+    .perm-board .objs { display: flex; flex-wrap: nowrap; gap: 6px; justify-content: center; }
+    .perm-board .objs span { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 8px 10px; font-size: 14px; font-weight: 700; white-space: nowrap; }
+    .perm-board li.on { border: 1px solid #8eb0ff; color: #2f6bff; background: #eef3ff; }
     .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .kpi { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
     .kpi b { display: block; font-size: 28px; color: var(--brand); letter-spacing: -0.03em; }
@@ -152,7 +161,7 @@
       .copy h1, .copy h2 { margin-top: 18px; }
       .no { margin-top: 22px; }
       .device > img, .pane > img { max-height: none; }
-      .methods, .papers, .phones, .wall, .std article { grid-template-columns: 1fr; }
+      .methods, .papers, .phones, .wall, .std article, .perm-board { grid-template-columns: 1fr; }
       .std article { grid-template-columns: 1fr auto; }
     }
     @media print {
@@ -222,8 +231,8 @@
     <section class="slide" id="modules">
       <div class="copy">
         <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
-        <h2>样品一进门，<br />就有唯一编号</h2>
-        <p class="lead">委托、收样、检测、报告，都跟着这一个号走。</p>
+        <h2>流程标准化</h2>
+        <p class="lead">委托、收样、分配、检测、审核、签发，全流程线上流转，责任到人。</p>
         <ul class="points">
           <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16" stroke="currentColor" stroke-width="1.8"/><path d="M7 12h10" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>扫码建卡</b><p>系统生成唯一编号。委托信息、检测项目、判定标准一次录完。</p></div></li>
           <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 18c.7-2.2 2.4-3.4 4.5-3.4s3.8 1.2 4.5 3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>任务对人</b><p>谁做哪一项、做到哪一步，在任务上能对上人。逾期自动提醒。</p></div></li>
@@ -244,8 +253,8 @@
     <section class="slide" id="collect">
       <div class="copy">
         <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
-        <h2>数从仪器进系统</h2>
-        <p class="lead">直连、串口、蓝牙和图像识别，结果都回传 LIMS。</p>
+        <h2>数据自动化</h2>
+        <p class="lead">仪器数据自动采集，覆盖设备直采、蓝牙连接、图像识别、串口协议等。</p>
         <ul class="points">
           <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>四种采集</b><p>有通讯接口的走直连或串口，蓝牙仪器走蓝牙。没有数据口、只能看屏幕或表头的，用图像识别，规则可配置、可调试。</p></div></li>
           <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>任务下发，结果回传</b><p>LIMS 按样品和试验项下发采集任务。上位机控制试验开始和结束，结果进入后续判定和出单。</p></div></li>
@@ -275,8 +284,8 @@
     <section class="slide" id="judge">
       <div class="copy">
         <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
-        <h2>录入按标准算，<br />当项给出判定</h2>
-        <p class="lead">原始记录用实验室自己配置的模版。系统计算、系统修约，人负责确认。</p>
+        <h2>系统自动判定</h2>
+        <p class="lead">按标准文件拆解试验项，系统实现自动判定合格与否。</p>
         <ul class="points">
           <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 5h12v14H6V5z" stroke="currentColor" stroke-width="1.8"/><path d="M9 9h6M9 13h6M9 17h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>模版带出规则</b><p>录入时带出标准限值、计算公式和修约规则。</p></div></li>
           <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>逐项判定</b><p>每一个试验参数按标准要求给出合格或不合格，不合格标出原因。</p></div></li>
@@ -309,8 +318,8 @@
     <section class="slide" id="report">
       <div class="copy">
         <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
-        <h2>记录单和报告<br />按模版生成</h2>
-        <p class="lead">数据回传并完成判定后，原始记录单和检测报告按已启用模版生成。</p>
+        <h2>可视化模版配置</h2>
+        <p class="lead">提供标准模版，也可按需配置定制化模版，客户可自己完成模版修改。</p>
         <ul class="points">
           <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h8l3 3v13H7V4z" stroke="currentColor" stroke-width="1.8"/><path d="M15 4v3h3" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>判定完成后生成</b><p>检测委托书、任务单、流转单按配置一起生成。生成、审核、签发都在线上完成。</p></div></li>
           <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 16l4-4 3 3 5-6 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>模版自己配</b><p>实验室做可视化配置。标准或版式变了，更新模版，后续任务按新模版生成。</p></div></li>
@@ -345,8 +354,8 @@
     <section class="slide" id="trace">
       <div class="copy">
         <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
-        <h2>每一步都留在<br />这张任务上</h2>
-        <p class="lead">流程按 CMA 资质认定和 CNAS 认可对检测活动的要求来设计，方便评审时按任务翻证据。这里说的是流程如何对应这些要求，不表示已经取得证书。</p>
+        <h2>追溯无死角</h2>
+        <p class="lead">全生命周期记录留痕，随时回溯历史数据，满足合规性要求。</p>
         <ul class="points">
           <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>操作可查</b><p>从委托到归档，记下操作时间、操作人和操作内容。操作日志和登录日志可按人员、模块、时间和任务查阅。</p></div></li>
           <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h10l4 4v8H5V7z" stroke="currentColor" stroke-width="1.8"/><path d="M9 15h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>修改留版本</b><p>原始记录保留版本。结果要改，走变更申请和审批，修改前后另行留痕。人离职或转岗，记录还在任务上。</p></div></li>
@@ -375,8 +384,8 @@
     <section class="slide" id="equip">
       <div class="copy">
         <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
-        <h2>校准到期，<br />系统先提醒</h2>
-        <p class="lead">设备台账集中看校准状态，不用翻表，也不用等人盯着日期。</p>
+        <h2>设备校准与逾期提醒</h2>
+        <p class="lead">维护校准证书、设备状态及试验项关联，设备逾期提前提醒。</p>
         <ul class="points">
           <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>逾期直接标出</b><p>设备逾期、临近下次校准会提醒，超期在列表里直接标出来。</p></div></li>
           <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h8l3 3v13H7V4z" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>证书跟着设备</b><p>校准证书跟着设备管理，校准状态一目了然。</p></div></li>
@@ -397,22 +406,42 @@
     <section class="slide" id="perm">
       <div class="copy">
         <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
-        <h2>一个入口管应用</h2>
-        <p class="lead">Test OS 底座把官方应用和实验室已有系统放在同一入口。</p>
+        <h2>通用权限管控</h2>
+        <p class="lead">面向检测、校准、科研和生产现场等不同类型实验室，统一身份、统一角色、统一入口。</p>
         <ul class="points">
-          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>应用放在一起</b><p>应用可以加入、移除、排序，也可以用外链接进来。</p></div></li>
-          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4 18c.8-2.3 2.6-3.5 5-3.5s4.2 1.2 5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>五类对象管权限</b><p>按用户、角色、部门、菜单、应用来管。</p></div></li>
-          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 8h14M5 12h10M5 16h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>不绑死一种流程</b><p>不同实验室的组织和系统组合都可以配。</p></div></li>
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4 18c.8-2.3 2.6-3.5 5-3.5s4.2 1.2 5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>用户、角色、部门</b><p>一次登录进入 Test OS。人员归属部门，角色按页面授权。固定角色保留试验员、业务负责人、实验室主任等岗位，本单位特有岗位用自定义角色。</p></div></li>
+          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h10M5 17h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>菜单按页面裁剪</b><p>菜单按系统、模块、页面显示或隐藏。未授权的页面默认不开放，不同类型实验室可以只露出自己要用的入口。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>应用收在一个工作台</b><p>官方应用和本地应用可加入、移除、排序。实验室已有系统用外链接入。调岗改角色，离职取消授权。</p></div></li>
         </ul>
         <p class="no" aria-hidden="true">09</p>
       </div>
       <div class="visual">
         <div class="device">
-          <img src="assets/brochure/07-perm.jpg" alt="Test OS 权限中枢示意：用户、角色、部门、菜单、应用，以及角色选择" />
+          <div class="pane mock">
+            <div class="perm-board">
+              <h3>Test OS · 权限中枢</h3>
+              <ul>
+                <li>用户管理</li>
+                <li>部门管理</li>
+                <li>角色管理</li>
+                <li>菜单管理</li>
+              </ul>
+              <div class="mid">
+                <span class="bubble">统一身份、统一角色、统一入口</span>
+                <div class="objs"><span>用户</span><span>角色</span><span>部门</span><span>菜单</span><span>应用</span></div>
+              </div>
+              <ul>
+                <li class="on">试验员</li>
+                <li>实验室主任</li>
+                <li class="on">系统管理员</li>
+                <li>业务负责人</li>
+              </ul>
+            </div>
+          </div>
         </div>
         <div class="stand" aria-hidden="true"></div>
         <div class="foot" aria-hidden="true"></div>
-        <p class="cap">同一入口管应用。权限按用户、角色、部门、菜单、应用来配。</p>
+        <p class="cap">Test OS 权限中枢：用户、角色、部门、菜单和应用。</p>
       </div>
     </section>
 
@@ -562,7 +591,7 @@
         <h2>产品价值</h2>
         <p class="lead">流程、效率、数据和交付，放在同一套系统里。</p>
         <ul class="points">
-          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>流程规范化，降低人为差错</b><p>业务流程线上固化。关键节点审核通过才流转。电子签名与日志记录，满足 CNAS、CMA 等资质评审要求。</p></div></li>
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>流程规范化，降低人为差错</b><p>业务流程线上固化。关键节点审核通过才流转。电子签名与日志记录，对应 CNAS、CMA 等资质评审要求，不表示已经取得证书。</p></div></li>
           <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16l5-5 3 3 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>效率提升 30% 以上</b><p>自动生成委托单、收费单、原始记录和报告模版。任务推给责任人。数据直传，避免二次录入。</p></div></li>
           <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19V6M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 15V10M13 15V8M17 15v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>数据资产化</b><p>检测数据、客户信息和合同记录集中存放。驾驶舱看业务健康度。历史数据可追溯。</p></div></li>
           <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4 18c.8-2.2 2.5-3.4 5-3.4s4.2 1.2 5 3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>客户体验升级</b><p>客户可通过链接完成委托单签署。报告状态可查。报告按统一格式交付。</p></div></li>
