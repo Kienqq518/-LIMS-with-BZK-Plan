@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数蚕 LIMS 实验室信息管理系统 · 销售售前参考</title>
+  <meta name="description" content="数蚕 LIMS 实验室信息管理系统销售与售前参考：传统实验室痛点、功能模块、八条优势、部署方式和产品价值。" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <style>
+    :root {
+      --bg: #f6f1eb;
+      --paper: #fffcf9;
+      --ink: #1f1a17;
+      --soft: #5c534c;
+      --faint: #5e564f;
+      --line: #e6dbd3;
+      --brand: #e25b30;
+      --brand-deep: #c4471c;
+      --brand-soft: #fff1ea;
+      --brand-line: #f3d2c4;
+      --ok: #157a3a;
+      --ok-bg: #e7f6ee;
+      --bad: #b42318;
+      --bad-bg: #fdecec;
+      --navy: #152033;
+      --navy-2: #1d2c46;
+      --navy-3: #263652;
+      --mist: #d7e0ec;
+      --shadow: 0 16px 40px rgba(80, 42, 24, 0.08);
+      --font: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Source Han Sans SC", system-ui, sans-serif;
+      --header-h: 64px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(900px 420px at 90% -10%, rgba(226, 91, 48, 0.14), transparent 60%),
+        var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.75;
+    }
+    img, svg { max-width: 100%; }
+    button, input, select { font: inherit; }
+    :focus-visible { outline: 2px solid var(--brand-deep); outline-offset: 3px; }
+    ::selection { background: #f8d3c4; color: var(--ink); }
+
+    .skip {
+      position: absolute;
+      left: 12px;
+      top: -48px;
+      z-index: 80;
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+    .skip:focus { top: 12px; }
+    .vh {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    figure { margin: 0; }
+
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: var(--header-h);
+      padding: 10px 22px;
+      background: rgba(255, 252, 249, 0.92);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; min-width: 0; }
+    .mark {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--brand-deep);
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+    .brand b { display: block; font-size: 15px; line-height: 1.2; }
+    .brand small { display: block; color: var(--soft); font-size: 12px; line-height: 1.3; }
+    .nav { display: flex; flex-wrap: wrap; gap: 4px 6px; justify-content: flex-end; }
+    .nav a {
+      color: var(--soft);
+      text-decoration: none;
+      font-size: 14px;
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+    .nav a:hover, .nav a[aria-current="true"] { color: var(--brand-deep); background: var(--brand-soft); }
+    .ghost {
+      border: 1px solid var(--brand-line);
+      background: #fff;
+      color: var(--brand-deep);
+      border-radius: 999px;
+      padding: 7px 12px;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .ghost:hover { background: var(--brand-soft); }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+
+    .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    section[id] { scroll-margin-top: 84px; }
+
+    .hero { padding: 56px 0 28px; display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 36px; align-items: center; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 14px;
+      color: var(--brand-deep);
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .eyebrow::before { content: ""; width: 28px; height: 3px; border-radius: 99px; background: var(--brand); }
+    h1 { margin: 0 0 8px; font-size: clamp(36px, 5vw, 58px); line-height: 1.18; letter-spacing: -0.02em; }
+    h1 em { font-style: normal; color: var(--brand); }
+    .lede { margin: 0 0 18px; font-size: 18px; color: var(--soft); max-width: 40em; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .chips li {
+      background: #fff;
+      border: 1px solid var(--brand-line);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+
+    .chain { display: grid; gap: 10px; }
+    .chain article {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+    }
+    .chain .k { margin: 0; color: var(--faint); font-size: 12px; letter-spacing: 0.04em; }
+    .chain strong { display: block; font-size: 16px; }
+    .chain p { margin: 2px 0 0; color: var(--soft); font-size: 14px; }
+    .chain .pass { color: var(--ok); font-weight: 700; }
+    .arrow-down { text-align: center; color: var(--brand); font-size: 12px; letter-spacing: 0.2em; }
+
+    .internal {
+      background: var(--brand-soft);
+      border: 1px dashed var(--brand-line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 8px 0 28px;
+    }
+    .internal h2, .internal p { margin: 0; }
+    .internal h2 { font-size: 15px; color: var(--brand-deep); }
+    .internal ol, .internal ul { margin: 8px 0 0; padding-left: 1.2em; color: var(--ink); }
+    .internal li + li { margin-top: 4px; }
+    body.presenting .internal { display: none; }
+
+    .block { padding: 28px 0 10px; }
+    .block-h { margin-bottom: 18px; }
+    .pill {
+      display: inline-block;
+      background: var(--brand-deep);
+      color: #fff;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    h2 { margin: 12px 0 8px; font-size: clamp(28px, 4vw, 40px); line-height: 1.25; letter-spacing: -0.02em; }
+    .sub { margin: 0; color: var(--soft); font-size: 17px; max-width: 46em; }
+
+    .pain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 20px 20px 18px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 { margin: 8px 0; font-size: 20px; }
+    .card p { margin: 0; color: var(--soft); }
+    .idx {
+      display: inline-grid;
+      place-items: center;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 8px;
+      border-radius: 9px;
+      background: var(--brand-soft);
+      color: var(--brand-deep);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .feat {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap: 28px;
+      align-items: center;
+      padding: 28px 0;
+      border-top: 1px solid var(--line);
+    }
+    .feat.flip .copy { order: 2; }
+    .feat h3 { margin: 10px 0 8px; font-size: 28px; line-height: 1.3; }
+    .copy p { margin: 0 0 10px; color: var(--soft); }
+    .copy ul { margin: 0; padding-left: 1.15em; }
+    .copy li + li { margin-top: 6px; }
+    .cap { margin: 10px 0 0; color: var(--faint); font-size: 13px; }
+
+    .bezel {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .bezel-bar, .dark-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #f8f4f0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .dots { display: flex; gap: 5px; }
+    .dots i { width: 8px; height: 8px; border-radius: 50%; background: #e7d3c8; display: block; }
+    .dots i:first-child { background: var(--brand); }
+    .bezel-body { padding: 14px; }
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.6;
+    }
+    .tag.ok { color: var(--ok); background: var(--ok-bg); }
+    .tag.wait { color: var(--brand-deep); background: var(--brand-soft); }
+    .tag.bad { color: var(--bad); background: var(--bad-bg); }
+    .tag.muted { color: var(--soft); background: #f3eee9; }
+
+    .split { display: grid; grid-template-columns: 0.78fr 1.22fr; gap: 12px; }
+    .label-card, .mini {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff;
+    }
+    .label-card { background: linear-gradient(180deg, #fff, #fff7f3); }
+    .barcode {
+      height: 42px;
+      margin: 8px 0;
+      background: repeating-linear-gradient(90deg, #1f1a17 0 2px, transparent 2px 4px, #1f1a17 4px 5px, transparent 5px 8px);
+      border-radius: 4px;
+    }
+    .kv { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 3px 0; }
+    .kv span { color: var(--soft); }
+    table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.data th, table.data td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    table.data th { color: var(--soft); font-weight: 600; font-size: 12px; }
+    table.data tr.fail { background: var(--bad-bg); }
+    .flowline { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .flowline span {
+      background: #f6f1eb;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      color: var(--soft);
+    }
+    .flowline span.on { background: var(--brand-deep); color: #fff; }
+
+    .methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .method {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff;
+    }
+    .method b { display: block; font-size: 15px; }
+    .method p { margin: 4px 0 0; color: var(--soft); font-size: 13px; line-height: 1.55; }
+    .method .n {
+      display: inline-grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      margin-bottom: 6px;
+      border-radius: 8px;
+      background: var(--brand-soft);
+      color: var(--brand-deep);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .land {
+      margin-top: 10px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: var(--navy);
+      color: #e7eef7;
+      font-size: 13px;
+    }
+    .land b { color: #ffc7b0; }
+
+    .alert {
+      margin-top: 10px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: var(--bad-bg);
+      color: var(--bad);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .papers { display: grid; gap: 12px; }
+    .paper {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    .paper h4 { margin: 0 0 8px; font-size: 16px; }
+    .paper-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .paper-head h4 { margin: 0; }
+    .seal {
+      width: 64px;
+      height: 64px;
+      flex: none;
+      border: 2px solid var(--brand);
+      color: var(--brand-deep);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      transform: rotate(-12deg);
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .timeline { list-style: none; margin: 0; padding: 0 0 0 4px; }
+    .timeline li { display: grid; grid-template-columns: 16px 1fr; gap: 10px; }
+    .rail { display: flex; flex-direction: column; align-items: center; min-height: 100%; }
+    .rail i { width: 10px; height: 10px; border-radius: 50%; background: var(--brand); margin-top: 6px; flex: none; }
+    .rail .line { width: 2px; flex: 1; min-height: 12px; background: var(--brand-line); }
+    .timeline h4 { margin: 0; font-size: 15px; }
+    .timeline p { margin: 0 0 12px; color: var(--soft); font-size: 13px; }
+
+    .phone-row { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 12px; align-items: center; }
+    .phone {
+      width: min(230px, 100%);
+      margin: 0 auto;
+      background: #1a120e;
+      border-radius: 28px;
+      padding: 12px 10px 16px;
+      color: var(--ink);
+    }
+    .phone-screen { background: #fff; border-radius: 18px; overflow: hidden; min-height: 280px; }
+    .ph-top { background: var(--brand-deep); color: #fff; padding: 14px 12px 10px; font-size: 13px; }
+    .ph-top b { display: block; font-size: 15px; }
+    .ph-body { padding: 10px; display: grid; gap: 8px; }
+    .ph-item { border: 1px solid var(--line); border-radius: 10px; padding: 8px; font-size: 12px; }
+    .ph-item b { display: block; font-size: 13px; }
+    .scan {
+      border: 1px dashed var(--brand);
+      color: var(--brand-deep);
+      border-radius: 10px;
+      text-align: center;
+      padding: 8px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .org { display: grid; grid-template-columns: 0.7fr 1.3fr; gap: 10px; }
+    .tree { font-size: 13px; background: var(--navy); color: #e7eef7; border-radius: 12px; padding: 12px; }
+    .tree div { padding: 4px 0 4px 12px; border-left: 2px solid #3a4d6b; }
+    .tree .on { color: #ffc7b0; font-weight: 700; }
+
+    .poster { background: var(--navy); color: #e7eef7; border-radius: 18px; padding: 16px; box-shadow: var(--shadow); }
+    .poster-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: #ffc7b0; margin-bottom: 12px; }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .kpi { background: var(--navy-2); border-radius: 12px; padding: 10px; }
+    .kpi b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; color: #fff; }
+    .kpi span { color: var(--mist); font-size: 12px; }
+    .poster-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 10px; margin-top: 10px; }
+    .panel { background: var(--navy-2); border-radius: 12px; padding: 12px; }
+    .panel h4 { margin: 0 0 8px; font-size: 13px; color: #ffc7b0; }
+    .panel table.data,
+    .screen table.data { color: #e7eef7; }
+    .panel table.data th,
+    .screen table.data th { color: #d5deea; }
+    .panel table.data td,
+    .panel table.data th,
+    .screen table.data td,
+    .screen table.data th { border-bottom-color: rgba(215, 224, 236, 0.28); }
+    .funnel { display: grid; gap: 6px; }
+    .funnel i {
+      display: block;
+      height: 28px;
+      margin-inline: auto;
+      background: linear-gradient(90deg, #e25b30, #ffb088);
+      border-radius: 6px;
+      color: #1f1a17;
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .bars { display: flex; align-items: flex-end; gap: 8px; height: 120px; }
+    .bars span {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      height: var(--h);
+      background: linear-gradient(180deg, #ffb088, #e25b30);
+      border-radius: 6px 6px 2px 2px;
+      color: #1f1a17;
+      font-size: 11px;
+      font-weight: 700;
+      padding-bottom: 4px;
+    }
+    .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; color: var(--mist); }
+
+    .adv-list { display: grid; gap: 14px; }
+    .adv { padding: 20px; }
+    .adv h3 { margin: 8px 0; font-size: 22px; }
+    .adv p { margin: 0 0 8px; color: var(--soft); }
+    .adv ul { margin: 0; padding-left: 1.15em; }
+    .adv li + li { margin-top: 4px; }
+
+    .review {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 8px;
+      box-shadow: var(--shadow);
+    }
+    .review-head { padding: 16px 16px 4px; }
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 8px; }
+    .stack, .checks { border-radius: 14px; padding: 14px; }
+    .stack { background: #f8f4f0; }
+    .checks { background: var(--brand-soft); }
+    .stack h4, .checks h4 { margin: 0 0 8px; font-size: 16px; }
+    .stack ol, .checks ol { margin: 0; padding-left: 1.2em; }
+    .stack li, .checks li { margin: 6px 0; }
+    .check8 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 8px 12px; list-style: none; }
+    .check8 li {
+      list-style: none;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    .check8 { margin: 0; padding-left: 8px; padding-right: 8px; }
+    .check8 b { color: var(--brand-deep); margin-right: 6px; }
+
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; background: #10192a; }
+    .tabs button {
+      border: 1px solid #3a4d6b;
+      background: transparent;
+      color: #d7e0ec;
+      border-radius: 999px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .tabs button[aria-selected="true"] { background: var(--brand-deep); border-color: var(--brand-deep); color: #fff; }
+    .screen { padding: 14px; background: var(--navy); color: #e7eef7; }
+    .screen[hidden] { display: none; }
+    .screen-lead { margin: 0 0 12px; color: #ffc7b0; font-size: 14px; }
+    .hbar { display: grid; gap: 8px; }
+    .hbar div { display: grid; grid-template-columns: 92px 1fr 36px; gap: 8px; align-items: center; font-size: 13px; }
+    .hbar i { display: block; height: 10px; width: var(--w); background: linear-gradient(90deg, #e25b30, #ffb088); border-radius: 99px; }
+    .donut-wrap { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+    .donut {
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      background: conic-gradient(#e25b30 0 46%, #ffb088 46% 68%, #7eb6ff 68% 86%, #d7e0ec 86% 100%);
+      display: grid;
+      place-items: center;
+    }
+    .donut span {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      background: var(--navy);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      text-align: center;
+    }
+    .months { display: flex; align-items: flex-end; gap: 10px; height: 140px; }
+    .months div { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; height: 100%; font-size: 12px; color: var(--mist); }
+    .months i { display: block; width: 100%; height: var(--h); background: #e25b30; border-radius: 6px 6px 2px 2px; }
+
+    .deploy-grid, .value-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .value-grid { grid-template-columns: repeat(4, 1fr); }
+    .deploy-card h3, .value-card h3 { margin: 10px 0 6px; font-size: 22px; }
+    .icon-blob {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: var(--brand-soft);
+      color: var(--brand-deep);
+    }
+    .value-card { position: relative; }
+    .value-card .n { color: var(--brand); font-weight: 800; font-size: 13px; letter-spacing: 0.08em; }
+    .value-line { display: none; }
+
+    .foot { padding: 28px 0 48px; color: var(--soft); }
+    .foot strong { color: var(--ink); }
+    .foot p { margin: 4px 0; }
+
+    @media (max-width: 900px) {
+      .hero, .feat, .feat.flip .copy, .pain-grid, .split, .phone-row, .org, .poster-grid,
+      .compare, .check8, .deploy-grid, .value-grid { grid-template-columns: 1fr; display: grid; }
+      .feat.flip .copy { order: 0; }
+      .kpis { grid-template-columns: 1fr 1fr; }
+      .top-actions { flex: 1 1 100%; min-width: 0; }
+      .nav { flex: 1; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; min-width: 0; }
+      .nav a { flex: none; }
+      section[id] { scroll-margin-top: 132px; }
+      .top { align-items: flex-start; flex-wrap: wrap; }
+      .hero { padding-top: 32px; }
+    }
+    @media print {
+      .top, .ghost, .skip { display: none !important; }
+      body { background: #fff; }
+      .feat, .card, .adv, .review { break-inside: avoid; }
+      a { text-decoration: none; color: inherit; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <header class="top">
+    <a class="brand" href="#top">
+      <span class="mark" aria-hidden="true">蚕</span>
+      <span>
+        <b>数蚕 LIMS</b>
+        <small>实验室信息管理系统 · 内部参考</small>
+      </span>
+    </a>
+    <div class="top-actions">
+      <nav class="nav" aria-label="页面章节">
+        <a href="#pain">现状</a>
+        <a href="#modules">功能</a>
+        <a href="#advantages">优势</a>
+        <a href="#deploy">部署</a>
+        <a href="#value">价值</a>
+      </nav>
+      <button type="button" class="ghost" id="presentToggle" aria-pressed="false">收起内部提示</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap">
+      <section class="hero" id="top">
+        <div>
+          <p class="eyebrow">销售 / 售前参考</p>
+          <h1>数蚕 LIMS<br /><em>实验室信息管理系统</em></h1>
+          <p class="lede">样品进门就有唯一编号。采集、判定、记录、报告和每一次操作，都留在这一条任务上。评审要的证据链，在日常就生成，不用月底再补。</p>
+          <ul class="chips">
+            <li>采集端数据不落地</li>
+            <li>按标准自动判定</li>
+            <li>记录和报告按模版生成</li>
+            <li>全流程可追溯</li>
+          </ul>
+        </div>
+        <div class="chain" aria-label="同一编号从收样走到报告">
+          <article>
+            <p class="k">收样</p>
+            <strong>SC2026/00790101</strong>
+            <p>绝缘操作杆 · 10kV · 演示客户甲</p>
+          </article>
+          <div class="arrow-down" aria-hidden="true">↓ 同一编号</div>
+          <article>
+            <p class="k">采集并判定</p>
+            <strong>泄漏电流 86 μA <span class="pass">合格</span></strong>
+            <p>按该型号绑定的标准、公式和修约规则自动判定</p>
+          </article>
+          <div class="arrow-down" aria-hidden="true">↓</div>
+          <article>
+            <p class="k">出单</p>
+            <strong>原始记录单 · 检测报告</strong>
+            <p>套用已启用模版生成，审核和签发在线上完成</p>
+          </article>
+        </div>
+      </section>
+
+      <aside class="internal" aria-label="内部用法">
+        <h2>这页怎么用</h2>
+        <ol>
+          <li>先用「现状」对齐客户现在的做法：纸、表格，还是已经有一套系统。</li>
+          <li>「功能」按样品往下讲，一个模块配一张示意界面。</li>
+          <li>客户问差别时，用「八条优势」里的机制回答，不要另编能力。</li>
+          <li>收尾确认数据放云上还是放在客户自己的环境，再用四条产品价值收住。</li>
+        </ol>
+        <p style="margin-top:8px">右上角可以收起这种内部提示，方便投到客户屏幕上。界面和数字都是演示，不是案例，也不是检测结果。</p>
+      </aside>
+
+      <section class="block" id="pain">
+        <div class="block-h">
+          <span class="pill">01 · 传统实验室现状</span>
+          <h2>检测做完了，记录还散在各处</h2>
+          <p class="sub">纸质记录、分散表格和人工签字，把样品信息、结果和报告拆开了。流程变慢，评审时也对不齐。</p>
+        </div>
+        <div class="pain-grid">
+          <article class="card">
+            <span class="idx">01</span>
+            <h3>数据缺乏统一管理</h3>
+            <p>依赖纸质记录和分散的电子表格，数据难以整合，也难以共享。跨部门协作受阻，试验容易重复做，判断只能靠碎片信息。</p>
+          </article>
+          <article class="card">
+            <span class="idx">02</span>
+            <h3>手动记录与流程低效</h3>
+            <p>样品信息和检测结果靠人工抄写，容易笔误或漏项。审批要纸质签字，耗时，也容易丢。检测周期拉长，人力上去了，错误率也上去了。</p>
+          </article>
+          <article class="card">
+            <span class="idx">03</span>
+            <h3>报告生成效率低</h3>
+            <p>报告要手工整理数据，再导出到 Word 或 PDF，标准不统一，也容易出错。部门之间传文件会再拖一层，报告周期变长，影响交付。</p>
+          </article>
+          <article class="card">
+            <span class="idx">04</span>
+            <h3>数据利用率低</h3>
+            <p>没有成体系的备份和权限管理，误删或电脑故障可能造成丢数。格式不统一的历史数据很难追溯、对比，也难做趋势统计。</p>
+          </article>
+        </div>
+        <aside class="internal">
+          <h2>讲解提示</h2>
+          <p>先问记录现在放在哪里、报告谁在排版、上次评审前补过什么。听完再进入功能，客户更容易对上自己的场景。</p>
+        </aside>
+      </section>
+
+      <section class="block" id="modules">
+        <div class="block-h">
+          <span class="pill">02 · 功能模块</span>
+          <h2>一条任务，把实验室的事接起来</h2>
+          <p class="sub">下面按使用顺序讲数蚕 LIMS 能做什么。每张图都是功能示意，上面的编号和数值是演示数据，不是真实检测结果。</p>
+        </div>
+
+        <article class="feat">
+          <div class="copy">
+            <span class="pill">功能 01 · 样品与流程</span>
+            <h3>样品一进门，就有唯一编号</h3>
+            <p>扫码建卡，系统生成唯一编号。委托信息、检测项目、判定标准一次录完，制备、发样、试验、审核和报告都跟着这个号走。</p>
+            <ul>
+              <li>谁做哪一项、做到哪一步，在任务上能对上人。逾期自动提醒，不用在群里追进度。</li>
+              <li>委托、收样、检测、报告在系统里流转，不用拼表，也不用把过程文件传来传去。</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="bezel">
+              <div class="bezel-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>数蚕 LIMS · 检测任务</div>
+              <div class="bezel-body">
+                <div class="split">
+                  <div class="label-card">
+                    <div class="kv"><span>样品标签</span><b class="tag wait">已收样</b></div>
+                    <div class="barcode" role="img" aria-label="样品条码示意"></div>
+                    <div class="kv"><span>编号</span><b>SC2026/00790101</b></div>
+                    <div class="kv"><span>名称</span><b>绝缘操作杆</b></div>
+                    <div class="kv"><span>型号</span><b>10kV</b></div>
+                    <div class="kv"><span>委托</span><b>演示客户甲</b></div>
+                  </div>
+                  <div class="mini">
+                    <table class="data">
+                      <caption class="vh">该样品下的检测任务，演示数据</caption>
+                      <thead><tr><th>试验项</th><th>状态</th></tr></thead>
+                      <tbody>
+                        <tr><td>工频耐压</td><td><span class="tag wait">检测中</span></td></tr>
+                        <tr><td>泄漏电流</td><td><span class="tag muted">待采集</span></td></tr>
+                        <tr><td>外观检查</td><td><span class="tag ok">已完成</span></td></tr>
+                      </tbody>
+                    </table>
+                    <div class="flowline" aria-label="流程位置">
+                      <span>委托</span><span class="on">收样</span><span>制备</span><span>试验</span><span>报告</span><span>归档</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption class="cap">样品登记与任务流转示意 · 演示数据</figcaption>
+          </figure>
+        </article>
+
+        <article class="feat flip">
+          <div class="copy">
+            <span class="pill">功能 02 · 数据采集</span>
+            <h3>数从仪器进系统</h3>
+            <p>采集覆盖四种方式。有通讯接口的设备走直连或串口协议；带蓝牙的仪器走蓝牙；没有数据口、只能看屏幕或表头的设备，用图像识别读数。识别规则可以配置，也可以调试。</p>
+            <ul>
+              <li>LIMS 按样品和试验项下发采集任务，结果回传后直接进入判定和出单。</li>
+              <li>样品结构可以一键同步到数采系统，采集字段和试验参数保持一致。</li>
+              <li>数据进系统的同时记下设备使用，用了多久不用月底再补台账。</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="bezel">
+              <div class="bezel-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>数蚕 LIMS · 采集方式</div>
+              <div class="bezel-body">
+                <div class="methods">
+                  <article class="method"><span class="n">01</span><b>设备直连</b><p>上位机接收任务，控制试验开始和结束，结果回传 LIMS。</p></article>
+                  <article class="method"><span class="n">02</span><b>蓝牙连接</b><p>带蓝牙的仪器现场连上，读数传回数采系统和 LIMS。</p></article>
+                  <article class="method"><span class="n">03</span><b>图像识别</b><p>没有数据口时读取屏幕或表头。规则可配置、可调试。</p></article>
+                  <article class="method"><span class="n">04</span><b>串口协议</b><p>按仪器协议从串口取数，和直连一样回传，不另存一份本地账。</p></article>
+                </div>
+                <div class="land"><b>采集端不落地。</b> 结果进入 LIMS 后参与计算和判定，采集端不再落一份平行台账。</div>
+              </div>
+            </div>
+            <figcaption class="cap">四种采集方式示意 · 串口协议归在有通讯接口的取数里</figcaption>
+          </figure>
+        </article>
+
+        <article class="feat">
+          <div class="copy">
+            <span class="pill">功能 03 · 记录与判定</span>
+            <h3>录入按标准算，当项给出判定</h3>
+            <p>原始记录使用实验室自己配置的模版。录入时带出标准限值、计算公式和修约规则。系统计算、系统修约，人负责确认。</p>
+            <ul>
+              <li>每一个试验参数按标准要求给出合格或不合格。</li>
+              <li>不合格项在检测和审核界面标出，并带出原因。</li>
+              <li>判定不合格的样品不能进入合格证打印。现场不用再对照标准逐项手算。</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="bezel">
+              <div class="bezel-bar"><span>数据录入 · 绝缘操作杆 10kV</span><span class="tag wait">修约规则已绑定</span></div>
+              <div class="bezel-body">
+                <table class="data">
+                  <caption class="vh">演示用判定结果，不是真实检测数据</caption>
+                  <thead><tr><th>试验参数</th><th>结果</th><th>标准要求</th><th>判定</th></tr></thead>
+                  <tbody>
+                    <tr><td>工频耐压</td><td>100kV / 1min</td><td>按规定耐受</td><td><span class="tag ok">合格</span></td></tr>
+                    <tr><td>泄漏电流</td><td>86 μA</td><td>按绑定限值</td><td><span class="tag ok">合格</span></td></tr>
+                    <tr class="fail"><td>外观</td><td>表面裂纹</td><td>无裂纹、无损伤</td><td><span class="tag bad">不合格</span></td></tr>
+                  </tbody>
+                </table>
+                <div class="alert">外观不合格：表面裂纹。该样品不能进入合格证打印。</div>
+              </div>
+            </div>
+            <figcaption class="cap">录入、修约与自动判定示意 · 演示数据，非真实结果</figcaption>
+          </figure>
+        </article>
+
+        <article class="feat flip">
+          <div class="copy">
+            <span class="pill">功能 04 · 单据与报告</span>
+            <h3>记录单和报告按模版生成</h3>
+            <p>数据回传并完成判定后，系统按该样品已启用的记录单模版、报告模版生成原始记录单和检测报告。检测委托书、任务单、流转单按配置一起生成。</p>
+            <ul>
+              <li>记录单可以按全部试验项合并生成，也可以按单个试验项生成。报告套用该型号已启用的模版。</li>
+              <li>模版由实验室自己做可视化配置。标准或版式变了，更新模版，后续任务按新模版生成。</li>
+              <li>生成、审核、签发都在线上完成，不用再排版、填数、另做一份纸质底稿。</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="papers">
+              <article class="paper back">
+                <h4>原始记录单</h4>
+                <p class="kv"><span>编号</span><b>SC2026/00790101</b></p>
+                <p class="kv"><span>范围</span><b>可按全部试验项合并</b></p>
+                <p class="kv"><span>来源</span><b>采集结果直接带入</b></p>
+              </article>
+              <article class="paper front">
+                <div class="paper-head">
+                  <h4>检测报告</h4>
+                  <div class="seal">待签发</div>
+                </div>
+                <p class="kv"><span>样品</span><b>绝缘操作杆 · 10kV</b></p>
+                <p class="kv"><span>编号</span><b>SC2026/00790101</b></p>
+                <p class="kv"><span>委托单位</span><b>演示客户甲</b></p>
+                <p class="kv"><span>模版</span><b>该型号已启用模版</b></p>
+                <p class="kv"><span>数据</span><b>取自原始记录，不另抄</b></p>
+              </article>
+            </div>
+            <figcaption class="cap">原始记录单与检测报告示意 · 演示单据，非正式报告</figcaption>
+          </figure>
+        </article>
+
+        <article class="feat">
+          <div class="copy">
+            <span class="pill">功能 05 · 留痕追溯</span>
+            <h3>每一步都留在这张任务上</h3>
+            <p>从委托登记、委托确认、收样、制备、发样、试验、审核，到报告编制、审核、签发、发放和归档，各环节记录操作时间、操作人和操作内容。</p>
+            <ul>
+              <li>操作日志可按人员、模块、时间和任务查阅，登录日志同时保留。</li>
+              <li>原始记录保留版本。结果要改，走变更申请和审批，修改前后另行留痕。</li>
+              <li>试验结束后，可以按该任务回放每个环节是谁、在什么时间、做了什么。</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="bezel">
+              <div class="bezel-bar">任务回放 · SC2026/00790101</div>
+              <div class="bezel-body">
+                <ol class="timeline">
+                  <li><div class="rail"><i></i><span class="line"></span></div><div><h4>委托登记</h4><p>张三 · 11-02 09:12 · 建立委托</p></div></li>
+                  <li><div class="rail"><i></i><span class="line"></span></div><div><h4>收样</h4><p>李四 · 11-02 10:40 · 扫码，生成样品编号</p></div></li>
+                  <li><div class="rail"><i></i><span class="line"></span></div><div><h4>试验</h4><p>潘哲宁 · 11-03 14:05 · 回传工频耐压结果</p></div></li>
+                  <li><div class="rail"><i></i><span class="line"></span></div><div><h4>更改</h4><p>走变更审批 · 改前、改后单独留痕</p></div></li>
+                  <li><div class="rail"><i></i></div><div><h4>签发</h4><p>待审核通过后出具</p></div></li>
+                </ol>
+              </div>
+            </div>
+            <figcaption class="cap">任务留痕示意 · 人名与时间为演示</figcaption>
+          </figure>
+        </article>
+
+        <article class="feat flip">
+          <div class="copy">
+            <span class="pill">功能 06 · 设备、耗材与现场</span>
+            <h3>柜子里的账，现场也能办</h3>
+            <p>仪器台账记录校准、检定周期和使用情况，到期前自动提醒。试剂耗材做入库、领用和库存预警，用到哪一批可以追溯到样品。</p>
+            <ul>
+              <li>现场登记、收样、发样、领样、任务接收和审批，在 LIMS App 上完成。</li>
+              <li>检测员用数据采集 App，按工位、设备或任务进入待检样品，扫描标签定位到试验项，再上传数据。</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="bezel">
+              <div class="bezel-bar">仪器与现场</div>
+              <div class="bezel-body">
+                <div class="phone-row">
+                  <table class="data">
+                    <caption class="vh">仪器状态演示</caption>
+                    <thead><tr><th>设备</th><th>状态</th></tr></thead>
+                    <tbody>
+                      <tr><td>工频耐压试验装置</td><td><span class="tag ok">校准有效</span></td></tr>
+                      <tr><td>泄漏电流测试仪</td><td><span class="tag wait">临近校准</span></td></tr>
+                      <tr><td>标签打印纸</td><td><span class="tag bad">低于库存预警</span></td></tr>
+                    </tbody>
+                  </table>
+                  <div class="phone" aria-hidden="true">
+                    <div class="phone-screen">
+                      <div class="ph-top"><b>数据采集</b>待检 · 工位 03</div>
+                      <div class="ph-body">
+                        <div class="scan">扫描样品标签</div>
+                        <div class="ph-item"><b>SC2026/00790101</b>绝缘操作杆 · 泄漏电流<br />待采集</div>
+                        <div class="ph-item"><b>回传</b>进入数采系统与 LIMS</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption class="cap">设备耗材与数据采集 App 示意 · 演示数据</figcaption>
+          </figure>
+        </article>
+
+        <article class="feat">
+          <div class="copy">
+            <span class="pill">功能 07 · 权限</span>
+            <h3>谁能看、谁能改，按角色定</h3>
+            <p>部门、角色和权限放在一起维护。一个人能看到什么、能改什么，系统按授权说了算，不用靠文件夹和口头约定。</p>
+            <ul>
+              <li>检测、审核、收样、管理看到的范围不同。</li>
+              <li>工作量、及时率、不合格分布按权限出具，管理人员不用逐条打开任务。</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="bezel">
+              <div class="bezel-bar">组织与授权</div>
+              <div class="bezel-body">
+                <div class="org">
+                  <div class="tree">
+                    <div>检测部</div>
+                    <div class="on">绝缘工器具组</div>
+                    <div>质量部</div>
+                    <div>业务部</div>
+                  </div>
+                  <table class="data">
+                    <caption class="vh">人员角色演示</caption>
+                    <thead><tr><th>人员</th><th>角色</th><th>部门</th></tr></thead>
+                    <tbody>
+                      <tr><td>潘哲宁</td><td>检测员</td><td>绝缘工器具组</td></tr>
+                      <tr><td>李四</td><td>审核员</td><td>质量部</td></tr>
+                      <tr><td>张三</td><td>收样员</td><td>业务部</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <figcaption class="cap">组织架构与角色示意 · 人员为演示</figcaption>
+          </figure>
+        </article>
+
+        <article class="feat flip">
+          <div class="copy">
+            <span class="pill">功能 08 · 业务大屏</span>
+            <h3>运行情况，一张屏先看完</h3>
+            <p>底座带多类业务数据大屏：业务驾驶舱、客户分析、样品分析、财务分析、检测时效监控和经营分析。展示内容按实验室管理需要配置。</p>
+            <ul>
+              <li>用来看委托和样品数量、检测进度、人员工作量、项目分布和时效。</li>
+              <li>下面是驾驶舱的静态示意。六类屏的切换放在优势第 7 条，讲解时可以直接点。</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="poster">
+              <div class="poster-top"><span>数蚕 LIMS · 业务驾驶舱</span><span>演示数据</span></div>
+              <div class="kpis">
+                <div class="kpi"><b>214</b><span>在检样品</span></div>
+                <div class="kpi"><b>128</b><span>本月委托</span></div>
+                <div class="kpi"><b>94%</b><span>按期完成</span></div>
+                <div class="kpi"><b>6</b><span>超期预警</span></div>
+              </div>
+              <div class="poster-grid">
+                <div class="panel">
+                  <h4>样品进度</h4>
+                  <div class="funnel" aria-hidden="true">
+                    <i style="width:100%">收样 214</i>
+                    <i style="width:78%">在检 126</i>
+                    <i style="width:52%">待签发 38</i>
+                  </div>
+                </div>
+                <div class="panel">
+                  <h4>项目分布</h4>
+                  <div class="bars" aria-hidden="true">
+                    <span style="--h:88%">耐压</span>
+                    <span style="--h:70%">泄漏</span>
+                    <span style="--h:54%">电阻</span>
+                    <span style="--h:40%">外观</span>
+                  </div>
+                  <div class="legend"><span>柱高表示演示委托量，不是真实统计</span></div>
+                </div>
+              </div>
+            </div>
+            <figcaption class="cap">业务驾驶舱示意 · 数字为演示，非真实经营数据</figcaption>
+          </figure>
+        </article>
+      </section>
+
+      <section class="block" id="advantages">
+        <div class="block-h">
+          <span class="pill">03 · 八条优势</span>
+          <h2>跟客户讲差别，就按这八条</h2>
+          <p class="sub">功能是模块。下面是机制：数据怎么进来、标准怎么判、单据怎么出、评审时证据在哪里。口径与产品能力一致，讲解时不要加页面上没有的认证或接口。</p>
+        </div>
+        <aside class="internal">
+          <h2>讲解顺序</h2>
+          <p>客户拿 Excel 或仪器自带软件对比时，从第 1 条讲到第 4 条。客户关心评审，把第 5 条和第 6 条合在一起讲：证据是日常留下的，不是评审前补的。</p>
+        </aside>
+
+        <div class="adv-list">
+          <article class="card adv">
+            <span class="idx">01</span>
+            <h3>配套数据采集，采集端数据不落地</h3>
+            <p>实验室数据采集系统同时对接试验上位机和 LIMS。LIMS 按样品和试验项下发采集任务，上位机接收任务并控制试验开始、结束。采集结果由数采系统回传 LIMS，直接进入后续判定和出单，采集端不另落一份本地账。</p>
+            <p>采集方式包括设备直采、标准接口采集、蓝牙采集和图像识别。有通讯接口的设备走直采或标准接口，串口协议属于这一类：按仪器协议从串口取数，结果同样回传。带蓝牙的仪器走蓝牙采集。没有数据口、只能看屏幕或表头的设备，用图像识别读取数值，识别规则可配置、可调试。</p>
+            <p>LIMS 中的样品结构可一键同步到数采系统，采集字段与试验参数保持一致。现场使用数据采集 App：检测人员按工位、设备或任务进入待检样品，扫描样品标签定位到对应试验项，再上传。</p>
+          </article>
+
+          <article class="card adv">
+            <span class="idx">02</span>
+            <h3>检测标准库按标准文件拆解，结果自动判定</h3>
+            <p>检测标准库按标准文件拆开维护。内容包括样品规格型号、基本信息、试验项目、试验参数、计算公式、修约规则、检测依据、判定依据和标准要求。</p>
+            <p>同一试验项可以绑定对应标准。不同规格型号带出各自的参数和标准要求。LIMS 直接调用这套标准库做自动判定，逐项给出合格或不合格。</p>
+            <p>标准换版或条款调整时，在标准库里更新上述内容，LIMS 即按新规则执行，不必另改业务流程。</p>
+          </article>
+
+          <article class="card adv">
+            <span class="idx">03</span>
+            <h3>试验参数自动判定，不合格即时提示</h3>
+            <p>系统按标准库中的计算公式、修约规则和标准要求，自动判定每一项试验参数是否合格。参数不合格时，对应试验结果给出提示或告警，不合格项在检测和审核界面直接标出，并带出不合格原因。</p>
+            <p>判定不合格的样品不能进入合格证打印。检测和审核人员看到的是已经判定并标明的结果，现场不必再对照标准逐项手算。</p>
+          </article>
+
+          <article class="card adv">
+            <span class="idx">04</span>
+            <h3>原始记录单和检测报告自动生成，模版可以自己配</h3>
+            <p>试验数据回传并完成判定后，系统按该样品已启用的记录单模版、报告模版自动生成原始记录单和检测报告。检测委托书、任务单、流转单等业务单据同步按配置生成。</p>
+            <p>生成、审核、签发都在线上完成，不需要人工排版、填数、另做一份纸质底稿。记录单可按全部试验项合并生成，也可按单个试验项生成。报告按该型号已启用的模版套用。</p>
+            <p>模版由实验室自行维护，支持可视化配置。标准或版式变化后更新模版，后续任务按新模版自动生成。</p>
+          </article>
+        </div>
+
+        <div class="review" style="margin-top:14px">
+          <div class="review-head">
+            <span class="pill">05 + 06 · 方便评审</span>
+            <h2 style="font-size:32px">证据在日常留好，评审周不用连夜补</h2>
+            <p class="sub">第 5 条是留痕，第 6 条是流程按 CMA 资质认定和 CNAS 认可对检测活动的要求来设计。合在一起，就是评审核对的那条证据链，系统里已经能按任务翻出来。</p>
+          </div>
+          <div class="compare">
+            <div class="stack">
+              <h4>评审前常见的三摞材料</h4>
+              <ol>
+                <li>一摞原始记录。翻出几个月前的那份，样品编号经常对不上。</li>
+                <li>一摞仪器使用台账。后补了一次又一次，签字和日期对不上。</li>
+                <li>一摞签了一半的委托单。人已经离职或转岗，补签找不到经办人。</li>
+              </ol>
+            </div>
+            <div class="checks">
+              <h4>评审核对时，通常看这四件事</h4>
+              <ol>
+                <li>编号是否一致：收样、检测、报告对得上同一个样品编号。</li>
+                <li>修改是否留痕：谁改的、什么时间改的，改前改后是否还在。</li>
+                <li>修约和公式是否统一：按标准计算，不靠个人手算。</li>
+                <li>台账是否对应：仪器使用、校准状态和检测日期一致。</li>
+              </ol>
+            </div>
+          </div>
+          <div class="adv-list" style="padding:8px">
+            <article class="card adv">
+              <span class="idx">05</span>
+              <h3>全流程留痕，试验后可按任务追溯</h3>
+              <p>每一份检测任务从委托登记、委托确认、收样、制备、发样、试验、审核，到报告编制、审核、签发、发放和归档，各环节均记录操作时间、操作人和操作内容。</p>
+              <p>操作日志可按人员、模块、时间和任务查阅，登录日志同时保留。原始记录保留版本。检测结果如需更改，走变更申请和审批，修改前后内容另行留痕。</p>
+              <p>试验结束后，可按该任务回放每个环节是谁、在什么时间、做了什么。人员离职或转岗，记录还在任务上，不跟着人走。</p>
+            </article>
+            <article class="card adv">
+              <span class="idx">06</span>
+              <h3>检测流程按 CMA、CNAS 的要求设计</h3>
+              <p>委托、样品、检测、记录、报告和归档的流程，按 CMA 资质认定和 CNAS 认可对检测活动的要求设计。本页只说明流程如何对应这些要求，不表示证书状态。</p>
+              <ul>
+                <li>样品编号唯一。检测方法、判定依据和标准要求受控于检测标准库。</li>
+                <li>检测人员具备相应资质，并按授权上岗。所用设备处于有效校准状态。</li>
+                <li>原始记录由系统生成并保留版本。报告经过审核、签发后出具。</li>
+                <li>数据修改留痕，全过程可追溯。自动采集的数据进入系统后直接参与计算和判定，减少人工誊抄。</li>
+              </ul>
+            </article>
+          </div>
+          <h3 style="padding:4px 16px 8px;margin:0">评审前可以顺着核对的 8 件事</h3>
+          <ol class="check8">
+            <li><b>1</b>样品编号从收样到报告，是否一一对应。</li>
+            <li><b>2</b>原始记录若更改，是否走变更，并留下改前改后。</li>
+            <li><b>3</b>仪器使用、校准状态和检测日期，是否对得上。</li>
+            <li><b>4</b>修约规则和计算公式，是否按标准库统一执行。</li>
+            <li><b>5</b>人员授权和上岗资质，是否在有效期内。</li>
+            <li><b>6</b>电子记录能否查到谁、在何时、改了什么。</li>
+            <li><b>7</b>报告数据是否来自原始记录，而不是另抄一份。</li>
+            <li><b>8</b>离职、转岗人员经手的记录，是否还留在对应任务上。</li>
+          </ol>
+        </div>
+
+        <article class="card adv" style="margin-top:14px" id="wall">
+          <span class="idx">07</span>
+          <h3>底座提供业务数据大屏</h3>
+          <p>系统底座提供多类业务数据大屏，包括业务驾驶舱、客户分析、样品分析、财务分析、检测时效监控和经营分析。展示内容可按实验室管理需要配置，用于查看委托与样品数量、检测进度、人员工作量、项目分布和时效情况。</p>
+          <p>管理人员不必逐条打开任务，即可掌握实验室运行情况。下面六块都可以点开，是产品示意界面，不是接在真实数据上的屏。</p>
+          <div class="bezel" style="margin-top:12px">
+            <div class="tabs" role="tablist" aria-label="业务数据大屏类型">
+              <button type="button" role="tab" id="tab-cockpit" aria-controls="panel-cockpit" aria-selected="true" tabindex="0">业务驾驶舱</button>
+              <button type="button" role="tab" id="tab-customer" aria-controls="panel-customer" aria-selected="false" tabindex="-1">客户分析</button>
+              <button type="button" role="tab" id="tab-sample" aria-controls="panel-sample" aria-selected="false" tabindex="-1">样品分析</button>
+              <button type="button" role="tab" id="tab-finance" aria-controls="panel-finance" aria-selected="false" tabindex="-1">财务分析</button>
+              <button type="button" role="tab" id="tab-time" aria-controls="panel-time" aria-selected="false" tabindex="-1">检测时效监控</button>
+              <button type="button" role="tab" id="tab-biz" aria-controls="panel-biz" aria-selected="false" tabindex="-1">经营分析</button>
+            </div>
+            <p class="vh" id="wall-status" aria-live="polite">当前示意：业务驾驶舱</p>
+            <div class="screen" role="tabpanel" id="panel-cockpit" aria-labelledby="tab-cockpit">
+              <p class="screen-lead">业务驾驶舱：先看量、进度和预警。演示值：在检样品 214，本月委托 128，按期完成 94%，超期 6。</p>
+              <div class="kpis">
+                <div class="kpi"><b>214</b><span>在检样品</span></div>
+                <div class="kpi"><b>128</b><span>本月委托</span></div>
+                <div class="kpi"><b>94%</b><span>按期完成</span></div>
+                <div class="kpi"><b>6</b><span>超期预警</span></div>
+              </div>
+              <div class="poster-grid">
+                <div class="panel">
+                  <h4>环节存量</h4>
+                  <div class="hbar" aria-hidden="true">
+                    <div><span>待收样</span><i style="--w:46%"></i><span>18</span></div>
+                    <div><span>在检</span><i style="--w:80%"></i><span>126</span></div>
+                    <div><span>待审核</span><i style="--w:34%"></i><span>22</span></div>
+                    <div><span>待签发</span><i style="--w:28%"></i><span>16</span></div>
+                  </div>
+                </div>
+                <div class="panel">
+                  <h4>今日提示</h4>
+                  <table class="data">
+                    <thead><tr><th>事项</th><th>数量</th></tr></thead>
+                    <tbody>
+                      <tr><td>不合格待处理</td><td>3</td></tr>
+                      <tr><td>校准临期设备</td><td>2</td></tr>
+                      <tr><td>超期任务</td><td>6</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="screen" role="tabpanel" id="panel-customer" aria-labelledby="tab-customer" hidden>
+              <p class="screen-lead">客户分析：看委托来自哪些客户、各有多少在检。名称为演示客户。</p>
+              <div class="hbar">
+                <div><span>演示客户甲</span><i style="--w:88%"></i><span>42</span></div>
+                <div><span>演示客户乙</span><i style="--w:62%"></i><span>28</span></div>
+                <div><span>演示客户丙</span><i style="--w:40%"></i><span>17</span></div>
+                <div><span>演示客户丁</span><i style="--w:24%"></i><span>9</span></div>
+              </div>
+            </div>
+            <div class="screen" role="tabpanel" id="panel-sample" aria-labelledby="tab-sample" hidden>
+              <p class="screen-lead">样品分析：按样品种类看占比。演示构成：绝缘操作杆 46%，绝缘硬梯 22%，验电器 18%，其他 14%。</p>
+              <div class="donut-wrap">
+                <div class="donut" aria-hidden="true"><span>样品<br />构成</span></div>
+                <ul>
+                  <li>绝缘操作杆 46%</li>
+                  <li>绝缘硬梯 22%</li>
+                  <li>验电器 18%</li>
+                  <li>其他 14%</li>
+                </ul>
+              </div>
+            </div>
+            <div class="screen" role="tabpanel" id="panel-finance" aria-labelledby="tab-finance" hidden>
+              <p class="screen-lead">财务分析：看委托对应的费用状态。金额是占位演示，不能当成经营结果。</p>
+              <div class="kpis">
+                <div class="kpi"><b>86</b><span>已开票委托</span></div>
+                <div class="kpi"><b>21</b><span>待付款委托</span></div>
+                <div class="kpi"><b>—</b><span>金额以财务模块为准</span></div>
+              </div>
+            </div>
+            <div class="screen" role="tabpanel" id="panel-time" aria-labelledby="tab-time" hidden>
+              <p class="screen-lead">检测时效监控：按项目看是否按期，超期任务可以直接落到样品。</p>
+              <table class="data">
+                <thead><tr><th>项目</th><th>按期</th><th>超期样品</th></tr></thead>
+                <tbody>
+                  <tr><td>工频耐压</td><td>96%</td><td>SC2026/0059</td></tr>
+                  <tr><td>泄漏电流</td><td>91%</td><td>SC2026/0062</td></tr>
+                  <tr><td>外观检查</td><td>99%</td><td>—</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="screen" role="tabpanel" id="panel-biz" aria-labelledby="tab-biz" hidden>
+              <p class="screen-lead">经营分析：看近月委托量和人员工作量。趋势和姓名均为演示。</p>
+              <div class="months" aria-hidden="true">
+                <div><i style="--h:46%"></i>6月</div>
+                <div><i style="--h:58%"></i>7月</div>
+                <div><i style="--h:52%"></i>8月</div>
+                <div><i style="--h:70%"></i>9月</div>
+                <div><i style="--h:64%"></i>10月</div>
+                <div><i style="--h:84%"></i>11月</div>
+              </div>
+              <p>工作量演示：潘哲宁 36 项，李四 28 项，张三 21 项。</p>
+            </div>
+          </div>
+          <p class="cap">六类大屏均可配置展示内容。图中数字全部为演示数据，非真实经营或检测结果。</p>
+        </article>
+
+        <article class="card adv" style="margin-top:14px">
+          <span class="idx">08</span>
+          <h3>移动端配套 LIMS App 和数据采集 App</h3>
+          <p>手机上可以办两件不同的事，不要混成一个 App 来讲。</p>
+          <div class="phone-row" style="margin-top:12px">
+            <div>
+              <div class="phone">
+                <div class="phone-screen">
+                  <div class="ph-top"><b>LIMS App</b>业务办理</div>
+                  <div class="ph-body">
+                    <div class="ph-item"><b>快速登记</b>委托在现场建档</div>
+                    <div class="ph-item"><b>收样 / 发样 / 领样</b>扫标签确认交接</div>
+                    <div class="ph-item"><b>任务接收</b>检测员接下分配到自己的项</div>
+                    <div class="ph-item"><b>审批</b>不用为了签一个字回办公室</div>
+                  </div>
+                </div>
+              </div>
+              <p class="cap">LIMS App：快速登记、收样、发样、领样、任务接收、审批。</p>
+            </div>
+            <div>
+              <div class="phone">
+                <div class="phone-screen">
+                  <div class="ph-top"><b>数据采集 App</b>给检测员用</div>
+                  <div class="ph-body">
+                    <div class="ph-item"><b>进入方式</b>按工位、设备或任务</div>
+                    <div class="scan">扫描样品标签</div>
+                    <div class="ph-item"><b>定位试验项</b>对上该样品要做的项目</div>
+                    <div class="ph-item"><b>上传</b>进入数采系统，并回传 LIMS</div>
+                  </div>
+                </div>
+              </div>
+              <p class="cap">数据采集 App：专门采集试验数据，不承担登记和审批。</p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="block" id="deploy">
+        <div class="block-h">
+          <span class="pill">04 · 部署方式</span>
+          <h2>数据放哪里，先定下来</h2>
+          <p class="sub">两种部署都跑同一套数蚕 LIMS。差别在数据放在哪、谁来管服务器。</p>
+        </div>
+        <aside class="internal">
+          <h2>讲解提示</h2>
+          <p>先问数据能不能离开实验室、客户有没有自己的机房或云账号。国企、研究院、内检实验室多半会把私有化放在前面谈。</p>
+        </aside>
+        <div class="deploy-grid">
+          <article class="card deploy-card">
+            <div class="icon-blob" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M7 18h10a4 4 0 0 0 .4-8 6 6 0 0 0-11.5-1.6A3.5 3.5 0 0 0 7 18Z" stroke="currentColor" stroke-width="1.8"/></svg>
+            </div>
+            <h3>云上</h3>
+            <p>上手快。适合想先跑起来、不想自己管服务器的实验室。业务使用方式和本地同一套，数据放在云端环境。</p>
+          </article>
+          <article class="card deploy-card">
+            <div class="icon-blob" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V8a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.8"/></svg>
+            </div>
+            <h3>本地 / 私有化</h3>
+            <p>数据在客户自己的环境里。国企、研究院、内检实验室常走这条，合规要求更稳。服务器由客户侧管理。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="block" id="value">
+        <div class="block-h">
+          <span class="pill">05 · 产品价值</span>
+          <h2>系统跑起来之后，实验室得到什么</h2>
+          <p class="sub">四件事对应前面的模块：流程和记录有统一标准，过程看得见，数据留得住，出了问题能顺着任务改回去。</p>
+        </div>
+        <div class="value-grid">
+          <article class="card value-card">
+            <div class="n">01</div>
+            <h3>管理规范化</h3>
+            <p>统一流程与记录标准。委托、样品、试验、记录和报告按同一套模版和标准库往下走。</p>
+          </article>
+          <article class="card value-card">
+            <div class="n">02</div>
+            <h3>过程可视化</h3>
+            <p>进度、异常和负荷实时可见。任务做到哪、哪一项不合格、哪台设备临近校准，不用逐条翻。</p>
+          </article>
+          <article class="card value-card">
+            <div class="n">03</div>
+            <h3>数据资产化</h3>
+            <p>积累检测数据，支撑分析决策。采集结果、判定和报告留在系统里，可以按样品、项目和客户回看。</p>
+          </article>
+          <article class="card value-card">
+            <div class="n">04</div>
+            <h3>质量持续改进</h3>
+            <p>追溯问题链路，驱动流程优化。按任务回放每个环节，再更新标准库或模版，后续任务按新规则执行。</p>
+          </article>
+        </div>
+      </section>
+
+      <footer class="foot">
+        <p><strong>数蚕 LIMS 实验室信息管理系统</strong></p>
+        <p>销售 / 售前内部参考。界面均为功能示意，数字均为演示数据，不代表真实检测结果、客户案例或经营数据。</p>
+        <p>检测流程按 CMA 资质认定和 CNAS 认可对检测活动的要求设计。本页不表示已经取得某项资质证书，也不包含页面未写明的加密等级或电子签章能力。</p>
+      </footer>
+    </div>
+  </main>
+
+  <script src="js/ui-a11y.js"></script>
+  <script>
+    (function () {
+      var toggle = document.getElementById('presentToggle');
+      toggle.addEventListener('click', function () {
+        var on = document.body.classList.toggle('presenting');
+        toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+        toggle.textContent = on ? '显示内部提示' : '收起内部提示';
+      });
+
+      var tabs = Array.prototype.slice.call(document.querySelectorAll('#wall [role="tab"]'));
+      var status = document.getElementById('wall-status');
+      function activate(id, focusTab) {
+        tabs.forEach(function (tab) {
+          var selected = tab.getAttribute('aria-controls') === id;
+          tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+          tab.tabIndex = selected ? 0 : -1;
+          if (selected && focusTab) tab.focus();
+        });
+        tabs.forEach(function (tab) {
+          var panel = document.getElementById(tab.getAttribute('aria-controls'));
+          if (panel) panel.hidden = tab.getAttribute('aria-controls') !== id;
+        });
+        var current = document.getElementById(id);
+        var name = '';
+        tabs.forEach(function (tab) {
+          if (tab.getAttribute('aria-controls') === id) name = tab.textContent;
+        });
+        if (status) status.textContent = '当前示意：' + name;
+        if (current) current.hidden = false;
+      }
+      tabs.forEach(function (tab, index) {
+        tab.addEventListener('click', function () {
+          activate(tab.getAttribute('aria-controls'), false);
+        });
+        tab.addEventListener('keydown', function (event) {
+          var next = null;
+          if (event.key === 'ArrowRight') next = tabs[(index + 1) % tabs.length];
+          if (event.key === 'ArrowLeft') next = tabs[(index - 1 + tabs.length) % tabs.length];
+          if (event.key === 'Home') next = tabs[0];
+          if (event.key === 'End') next = tabs[tabs.length - 1];
+          if (!next) return;
+          event.preventDefault();
+          activate(next.getAttribute('aria-controls'), true);
+        });
+      });
+
+      var links = Array.prototype.slice.call(document.querySelectorAll('.nav a'));
+      var sections = links.map(function (link) {
+        return document.querySelector(link.getAttribute('href'));
+      }).filter(Boolean);
+      if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            links.forEach(function (link) {
+              var on = link.getAttribute('href') === '#' + entry.target.id;
+              if (on) link.setAttribute('aria-current', 'true');
+              else link.removeAttribute('aria-current');
+            });
+          });
+        }, { rootMargin: '-40% 0px -50% 0px', threshold: 0.01 });
+        sections.forEach(function (section) { observer.observe(section); });
+      }
+    })();
+  </script>
+</body>
+</html>
