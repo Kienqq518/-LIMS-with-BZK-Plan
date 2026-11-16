@@ -8,1197 +8,590 @@
   <link rel="stylesheet" href="css/ui-baseline.css" />
   <style>
     :root {
-      --bg: #f4f6f8;
-      --paper: #ffffff;
-      --ink: #1a1d24;
-      --soft: #5c6570;
-      --faint: #8b939e;
-      --line: #e6eaf0;
-      --brand: #4f6bed;
-      --brand-deep: #1a1d24;
-      --brand-soft: #eef1ff;
-      --brand-line: #d5dced;
+      --bg: #f5f7fb;
+      --ink: #101828;
+      --soft: #5c6778;
+      --line: #e6ebf2;
+      --brand: #2f6bff;
       --ok: #157a3a;
       --ok-bg: #e7f6ee;
-      --bad: #b42318;
+      --bad: #c24138;
       --bad-bg: #fdecec;
-      --navy: #ffffff;
-      --navy-2: #f3f6fb;
-      --navy-3: #4f6bed;
-      --mist: #5c6570;
-      --shadow: 0 16px 40px rgba(26, 29, 36, 0.08);
+      --shadow: 0 28px 70px rgba(16, 24, 40, 0.14);
       --font: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Source Han Sans SC", system-ui, sans-serif;
     }
-
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      background:
-        radial-gradient(900px 420px at 88% -8%, rgba(79, 107, 237, 0.1), transparent 62%),
-        var(--bg);
-      color: var(--ink);
-      font-family: var(--font);
-      font-size: 16px;
-      line-height: 1.75;
-    }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.6; }
     img, svg { max-width: 100%; }
-    button, input, select { font: inherit; }
-    :focus-visible { outline: 2px solid var(--brand-deep); outline-offset: 3px; }
-    ::selection { background: #d9e2ff; color: #1a1d24; }
-
-    .skip {
-      position: absolute;
-      left: 12px;
-      top: -48px;
-      z-index: 80;
-      background: #fff;
-      color: var(--ink);
-      padding: 8px 12px;
-      border-radius: 8px;
-    }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+    ::selection { background: #d9e4ff; color: var(--ink); }
+    .skip { position: absolute; left: 12px; top: -48px; z-index: 80; background: #fff; color: var(--ink); padding: 8px 12px; border-radius: 8px; }
     .skip:focus { top: 12px; }
-    .vh {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
+    .vh { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     figure { margin: 0; }
 
-    .ghost {
-      border: 1px solid var(--brand-line);
-      background: #fff;
-      color: var(--brand-deep);
-      border-radius: 999px;
-      padding: 7px 12px;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-    .ghost:hover { background: var(--brand-soft); }
-
-    .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
-    section[id] { scroll-margin-top: 16px; }
-
-    .hero {
-      position: relative;
-      display: grid;
-      grid-template-columns: minmax(280px, 32%) 1fr;
-      height: 100dvh;
-      min-height: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #f4f6f8;
-    }
-    .hero-copy {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 18px;
-      padding: 48px clamp(24px, 3vw, 48px) 48px clamp(28px, 4vw, 64px);
-      background: #f7f8fa;
-      color: #1a1d24;
-    }
-    .hero-side {
-      background: linear-gradient(165deg, #eef2f8 0%, #f5f7fb 72%, #f7f8fa 100%);
-    }
-    .hero h1 { margin: 0; font-size: clamp(28px, 2.6vw, 42px); color: #1a1d24; }
-    .hero h1 em { color: #4f6bed; }
-    .hero .chips li { background: #fff; border-color: #d5dced; color: #1a1d24; }
-    .hero-shot {
-      position: absolute;
-      z-index: 3;
-      top: 50%;
-      right: clamp(12px, 2.4vw, 36px);
-      transform: translateY(-50%);
-      margin: 0;
-      width: max-content;
-      max-width: calc(100% - 280px);
-    }
-    .hero-stage { position: relative; width: max-content; max-width: 100%; }
-    .hero-shot img {
-      display: block;
-      width: auto;
-      height: auto;
-      max-width: min(68vw, 920px);
-      max-height: 58vh;
-      border-radius: 22px;
-      border: 1px solid #e6eaf0;
-      box-shadow: 0 24px 60px rgba(26, 29, 36, 0.1);
-      background: #f7f9fc;
-    }
-    .orbit {
-      position: absolute;
-      inset: 0;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      pointer-events: none;
-    }
-    .sat {
-      position: absolute;
-      left: var(--x);
-      top: var(--y);
-      width: var(--w);
-      height: var(--h);
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin: 0;
-      padding: 10px 12px 8px;
-      background: #fff;
-      border: 1px solid #e6ebf2;
-      border-radius: 16px;
-      box-shadow: 0 16px 36px rgba(26, 29, 36, 0.12);
-      color: #1a1d24;
-      overflow: hidden;
-      pointer-events: auto;
-    }
-    .sat > b { font-size: clamp(11px, 0.92vw, 14px); line-height: 1.3; font-weight: 700; }
-    .sat-rows, .sat-docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-    .sat-rows li, .sat-docs li {
-      display: flex;
-      justify-content: space-between;
-      gap: 6px;
-      align-items: center;
-      background: #f6f8fb;
-      border-radius: 8px;
-      padding: 4px 6px;
-      font-size: 11px;
-      line-height: 1.3;
-    }
-    .sat em {
-      font-style: normal;
-      font-size: 10px;
-      font-weight: 700;
-      color: #5c6570;
-      background: #fff;
-      border-radius: 999px;
-      padding: 1px 6px;
-      white-space: nowrap;
-    }
-    .sat em.go { color: #4f6bed; background: #eef1ff; }
-    .sat em.ok { color: #157a3a; background: #e7f6ee; }
-    .sat-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-    .sat-metrics span {
-      background: #f6f8fb;
-      border-radius: 8px;
-      padding: 6px 4px;
-      text-align: center;
-      font-size: 10px;
-      color: #5c6570;
-      line-height: 1.25;
-    }
-    .sat-metrics strong { display: block; color: #4f6bed; font-size: 13px; }
-    .sat-bars { display: flex; align-items: flex-end; gap: 4px; height: 46px; margin-top: auto; }
-    .sat-bars i { flex: 1; height: var(--h); background: linear-gradient(180deg, #8ea0f5, #4f6bed); border-radius: 4px 4px 2px 2px; }
-    .sat-prog { display: grid; gap: 5px; margin-top: 2px; }
-    .sat-prog span { display: grid; grid-template-columns: 52px 1fr; gap: 6px; align-items: center; font-size: 10px; color: #5c6570; }
-    .sat-prog i { display: block; height: 6px; width: var(--w); background: #4f6bed; border-radius: 99px; }
-    .floor { display: grid; grid-template-columns: 1.3fr 0.7fr; grid-template-rows: 1fr 1fr; gap: 4px; flex: 1; min-height: 0; }
-    .floor i { display: block; background: #eef1ff; border: 1px solid #d9e2ff; border-radius: 6px; }
-    .floor i:first-child { grid-row: span 2; background: #e7f6ee; border-color: #c9ead8; }
-    .value-list { display: grid; gap: 12px; }
-    .value-item { display: grid; grid-template-columns: minmax(320px, 42%) 1fr; gap: 18px; align-items: start; }
-    .value-item h3 { margin: 4px 0 0; font-size: 20px; }
-    .value-item .n { color: var(--brand); font-weight: 800; margin-right: 6px; }
-    .value-item ol { margin: 0; padding-left: 1.2em; color: var(--soft); }
-    .value-item li + li { margin-top: 4px; }
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin: 0 0 14px;
-      color: var(--brand-deep);
-      font-weight: 700;
-      font-size: 14px;
-    }
-    .eyebrow::before { content: ""; width: 28px; height: 3px; border-radius: 99px; background: var(--brand); }
-    h1 { margin: 0 0 8px; font-size: clamp(36px, 5vw, 58px); line-height: 1.18; letter-spacing: -0.02em; }
-    h1 em { font-style: normal; color: var(--brand); }
-    .lede { margin: 0 0 18px; font-size: 18px; color: var(--soft); max-width: 40em; }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-    .chips li {
-      background: #fff;
-      border: 1px solid var(--brand-line);
-      color: var(--ink);
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 14px;
-    }
-
-    .internal {
-      background: var(--brand-soft);
-      border: 1px dashed var(--brand-line);
-      border-radius: 16px;
-      padding: 16px 18px;
-      margin: 8px 0 28px;
-    }
-    .internal h2, .internal p { margin: 0; }
-    .internal h2 { font-size: 15px; color: var(--brand-deep); }
-    .internal ol, .internal ul { margin: 8px 0 0; padding-left: 1.2em; color: var(--ink); }
-    .internal li + li { margin-top: 4px; }
-    body.presenting .internal { display: none; }
-
-    .block { padding: 28px 0 10px; }
-    #pain,
-    .feat-page,
-    #advantages > .adv-list > .card.adv,
-    #advantages > .review,
-    #advantages > .card.adv,
-    #deploy,
-    #value {
+    .slide {
       min-height: 100dvh;
-    }
-    .feat-page {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 0 20px;
-    }
-    .feat-page .feat { flex: 1; min-height: 0; padding: 12px 0; }
-    .block-h { margin-bottom: 18px; }
-    .pill {
-      display: inline-block;
-      background: var(--brand);
-      color: #fff;
-      border-radius: 999px;
-      padding: 5px 12px;
-      font-size: 13px;
-      font-weight: 700;
-      line-height: 1.4;
-    }
-    .section-bar {
-      display: block;
-      width: 100%;
-      margin: 0 0 18px;
-      padding: 16px 24px;
-      background: #fff;
-      color: var(--ink);
-      border: 1px solid var(--line);
-      border-left: 6px solid var(--brand);
-      border-radius: 14px;
-      font-size: clamp(20px, 2.4vw, 26px);
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      line-height: 1.35;
-      box-shadow: var(--shadow);
-    }
-    .group-kicker { margin: 20px 0 10px; font-size: 15px; font-weight: 800; letter-spacing: 0.08em; color: var(--brand-deep); }
-    h2 { margin: 12px 0 8px; font-size: clamp(28px, 4vw, 40px); line-height: 1.25; letter-spacing: -0.02em; }
-    .sub { margin: 0; color: var(--soft); font-size: 17px; max-width: 46em; }
-
-    .pain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .card {
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 20px 20px 18px;
-      box-shadow: var(--shadow);
-    }
-    .card h3 { margin: 8px 0; font-size: 20px; }
-    .card p { margin: 0; color: var(--soft); }
-    .idx {
-      display: inline-grid;
-      place-items: center;
-      min-width: 32px;
-      height: 32px;
-      padding: 0 8px;
-      border-radius: 9px;
-      background: var(--brand-soft);
-      color: var(--brand-deep);
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .feat {
       display: grid;
-      grid-template-columns: 0.92fr 1.08fr;
-      gap: 28px;
-      align-items: center;
-      padding: 28px 0;
-      border-top: 1px solid var(--line);
+      grid-template-columns: minmax(300px, 34%) minmax(0, 1fr);
+      gap: clamp(18px, 2.4vw, 40px);
+      align-items: stretch;
+      padding: clamp(22px, 3vh, 36px) clamp(18px, 2.4vw, 40px) clamp(18px, 2.6vh, 32px) clamp(28px, 4vw, 64px);
+      background:
+        radial-gradient(640px 360px at 78% 18%, rgba(47, 107, 255, 0.07), transparent 62%),
+        var(--bg);
     }
-    .feat.flip .copy { order: 2; }
-    .feat figure > img { width: 100%; display: block; border-radius: 16px; border: 1px solid var(--line); box-shadow: var(--shadow); background: #f7f8fb; }
-    .copy p { margin: 0 0 10px; color: var(--soft); }
-    .copy ul { margin: 0; padding-left: 1.15em; }
-    .copy li + li { margin-top: 6px; }
-    .cap { margin: 10px 0 0; color: var(--faint); font-size: 13px; }
-
-    .bezel {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
+    .copy { display: flex; flex-direction: column; min-width: 0; padding-top: 6px; }
+    .brand { display: flex; align-items: center; gap: 10px; margin: 0; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; }
+    .brand i {
+      width: 28px; height: 28px; border-radius: 8px; background: var(--brand); display: grid; place-items: center; color: #fff;
     }
-    .bezel-bar, .dark-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 10px 14px;
-      background: #f4f6f8;
-      border-bottom: 1px solid var(--line);
-      font-size: 13px;
-      font-weight: 700;
+    .brand i svg { width: 16px; height: 16px; }
+    .brand em { font-style: normal; font-weight: 600; color: var(--soft); font-size: 14px; }
+    .copy h1, .copy h2 {
+      margin: 28px 0 12px;
+      font-size: clamp(34px, 3.3vw, 52px);
+      line-height: 1.12;
+      letter-spacing: -0.035em;
+      font-weight: 800;
+      color: #0e172a;
     }
-    .dots { display: flex; gap: 5px; }
-    .dots i { width: 8px; height: 8px; border-radius: 50%; background: #c5d0ee; display: block; }
-    .dots i:first-child { background: var(--brand); }
-    .bezel-body { padding: 14px; }
-    .tag {
-      display: inline-block;
-      border-radius: 999px;
-      padding: 2px 8px;
-      font-size: 12px;
-      font-weight: 700;
-      line-height: 1.6;
+    .lead { margin: 0 0 26px; color: var(--soft); font-size: 16px; max-width: 28em; }
+    .points { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+    .points li { display: grid; grid-template-columns: 44px 1fr; gap: 14px; align-items: flex-start; }
+    .ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; }
+    .ico svg { width: 22px; height: 22px; }
+    .ico.b { background: #e8f1ff; color: #2f6bff; }
+    .ico.g { background: #e7f8ef; color: #159a4a; }
+    .ico.o { background: #fff1e6; color: #e07a1a; }
+    .ico.p { background: #f3e9ff; color: #7a45d6; }
+    .ico.r { background: #fdecec; color: #d14343; }
+    .points b { display: block; font-size: 16px; line-height: 1.35; }
+    .points p { margin: 3px 0 0; color: var(--soft); font-size: 14px; line-height: 1.55; }
+    .no {
+      margin: auto 0 0;
+      padding-top: 18px;
+      font-size: clamp(52px, 5.4vw, 76px);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 0.9;
+      color: #0e172a;
     }
-    .tag.ok { color: var(--ok); background: var(--ok-bg); }
-    .tag.wait { color: var(--brand-deep); background: var(--brand-soft); }
-    .tag.bad { color: var(--bad); background: var(--bad-bg); }
-    .tag.muted { color: var(--soft); background: #f4f6f8; }
-
-    .split { display: grid; grid-template-columns: 0.78fr 1.22fr; gap: 12px; }
-    .label-card, .mini {
-      border: 1px solid var(--line);
-      border-radius: 12px;
+    .visual { min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .device {
+      background: #1b2433;
+      border-radius: 22px;
       padding: 12px;
-      background: #fff;
+      box-shadow: var(--shadow);
     }
-    .label-card { background: linear-gradient(180deg, #fff, #f7f8fb); }
-    .barcode {
-      height: 42px;
-      margin: 8px 0;
-      background: repeating-linear-gradient(90deg, #1a1d24 0 2px, transparent 2px 4px, #1a1d24 4px 5px, transparent 5px 8px);
-      border-radius: 4px;
-    }
-    .kv { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 3px 0; }
-    .kv span { color: var(--soft); }
-    table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
-    table.data th, table.data td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    .pane { background: #fff; border-radius: 12px; overflow: hidden; }
+    .device > img, .pane > img { display: block; width: 100%; height: auto; max-height: calc(100dvh - 88px); object-fit: contain; background: #f4f7fb; }
+    .cap { margin: 10px 4px 0; color: #8b95a5; font-size: 13px; }
+    .stand { width: 22%; height: 16px; margin: 0 auto; background: linear-gradient(#d7dee8, #c5ceda); }
+    .foot { width: 34%; height: 8px; margin: 0 auto; background: #c5ceda; border-radius: 0 0 10px 10px; }
+
+    .mock { padding: 18px; }
+    .mock h3 { margin: 0 0 12px; font-size: 18px; }
+    .note-list { display: grid; gap: 10px; }
+    .note { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+    .note b { display: block; font-size: 15px; }
+    .note span { color: var(--soft); font-size: 13px; }
+    .tag { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .tag.ok { color: var(--ok); background: var(--ok-bg); }
+    .tag.bad { color: var(--bad); background: var(--bad-bg); }
+    .tag.wait { color: #2f6bff; background: #e8f1ff; }
+    .methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .method { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: #fff; }
+    .method .n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: #e8f1ff; color: #2f6bff; font-size: 12px; font-weight: 700; }
+    .method b { display: block; margin-top: 6px; font-size: 15px; }
+    .method p { margin: 4px 0 0; color: var(--soft); font-size: 13px; }
+    .land { margin-top: 10px; border-radius: 12px; padding: 10px 12px; background: #f3f6fb; border: 1px solid var(--line); font-size: 13px; }
+    table.data { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table.data th, table.data td { text-align: left; padding: 9px 6px; border-bottom: 1px solid var(--line); }
     table.data th { color: var(--soft); font-weight: 600; font-size: 12px; }
     table.data tr.fail { background: var(--bad-bg); }
-    .flowline { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-    .flowline span {
-      background: #eef1ff;
-      border-radius: 999px;
-      padding: 3px 8px;
-      font-size: 12px;
-      color: var(--soft);
-    }
-    .flowline span.on { background: var(--brand); color: #fff; }
-
-    .methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .method {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 12px;
-      background: #fff;
-    }
-    .method b { display: block; font-size: 15px; }
-    .method p { margin: 4px 0 0; color: var(--soft); font-size: 13px; line-height: 1.55; }
-    .method .n {
-      display: inline-grid;
-      place-items: center;
-      width: 26px;
-      height: 26px;
-      margin-bottom: 6px;
-      border-radius: 8px;
-      background: var(--brand-soft);
-      color: var(--brand-deep);
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .land {
-      margin-top: 10px;
-      border-radius: 12px;
-      padding: 10px 12px;
-      background: #f3f6fb;
-      color: var(--ink);
-      border: 1px solid var(--line);
-      font-size: 13px;
-    }
-    .land b { color: var(--ink); }
-
-    .alert {
-      margin-top: 10px;
-      border-radius: 12px;
-      padding: 10px 12px;
-      background: var(--bad-bg);
-      color: var(--bad);
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .papers { display: grid; gap: 12px; }
-    .paper {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-      padding: 16px;
-    }
-    .paper h4 { margin: 0 0 8px; font-size: 16px; }
-    .paper-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-    .paper-head h4 { margin: 0; }
-    .seal {
-      width: 64px;
-      height: 64px;
-      flex: none;
-      border: 2px solid var(--brand);
-      color: var(--brand-deep);
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-size: 12px;
-      font-weight: 700;
-      transform: rotate(-12deg);
-      text-align: center;
-      line-height: 1.2;
-    }
-
-    .timeline { list-style: none; margin: 0; padding: 0 0 0 4px; }
+    .alert { margin-top: 10px; border-radius: 12px; padding: 10px 12px; background: var(--bad-bg); color: var(--bad); font-size: 13px; font-weight: 700; }
+    .papers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .paper { border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+    .paper h3 { margin: 0 0 8px; font-size: 16px; }
+    .paper-head { display: flex; justify-content: space-between; align-items: flex-start; }
+    .seal { width: 58px; height: 58px; border: 2px solid var(--brand); color: #1d4ed8; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; transform: rotate(-12deg); text-align: center; line-height: 1.2; }
+    .kv { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 3px 0; }
+    .kv span { color: var(--soft); }
+    .timeline { list-style: none; margin: 0; padding: 0; }
     .timeline li { display: grid; grid-template-columns: 16px 1fr; gap: 10px; }
-    .rail { display: flex; flex-direction: column; align-items: center; min-height: 100%; }
-    .rail i { width: 10px; height: 10px; border-radius: 50%; background: var(--brand); margin-top: 6px; flex: none; }
-    .rail .line { width: 2px; flex: 1; min-height: 12px; background: var(--brand-line); }
-    .timeline h4 { margin: 0; font-size: 15px; }
+    .rail { display: flex; flex-direction: column; align-items: center; }
+    .rail i { width: 10px; height: 10px; border-radius: 50%; background: var(--brand); margin-top: 4px; }
+    .rail .line { width: 2px; flex: 1; min-height: 16px; background: #d5dced; }
+    .timeline h3 { margin: 0; font-size: 15px; }
     .timeline p { margin: 0 0 12px; color: var(--soft); font-size: 13px; }
-
-    .phone-row { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 12px; align-items: center; }
-    .app-shots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
-    .app-shots img { width: 100%; display: block; border-radius: 12px; border: 1px solid var(--line); background: #f7f8fb; }
-    .phone {
-      width: min(230px, 100%);
-      margin: 0 auto;
-      background: #1a1d24;
-      border-radius: 28px;
-      padding: 12px 10px 16px;
-      color: var(--ink);
-    }
-    .phone-screen { background: #fff; border-radius: 18px; overflow: hidden; min-height: 280px; }
-    .ph-top { background: var(--brand); color: #fff; padding: 14px 12px 10px; font-size: 13px; }
-    .ph-top b { display: block; font-size: 15px; }
-    .ph-body { padding: 10px; display: grid; gap: 8px; }
-    .ph-item { border: 1px solid var(--line); border-radius: 10px; padding: 8px; font-size: 12px; }
-    .ph-item b { display: block; font-size: 13px; }
-    .scan {
-      border: 1px dashed var(--brand);
-      color: var(--brand-deep);
-      border-radius: 10px;
-      text-align: center;
-      padding: 8px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .org { display: grid; grid-template-columns: 0.7fr 1.3fr; gap: 10px; }
-    .tree { font-size: 13px; background: #f7f9fc; color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
-    .tree div { padding: 4px 0 4px 12px; border-left: 2px solid #d5dced; }
-    .tree .on { color: var(--brand); font-weight: 700; }
-
-    .poster { background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 18px; padding: 16px; box-shadow: var(--shadow); }
-    .poster-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--soft); margin-bottom: 12px; }
-    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .kpi { background: #f3f6fb; border-radius: 12px; padding: 10px; }
-    .kpi b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; color: var(--brand); }
-    .kpi span { color: var(--soft); font-size: 12px; }
-    .poster-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 10px; margin-top: 10px; }
-    .panel { background: #f7f9fc; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
-    .panel h4 { margin: 0 0 8px; font-size: 13px; color: var(--ink); }
-    .panel table.data,
-    .screen table.data { color: var(--ink); }
-    .panel table.data th,
-    .screen table.data th { color: var(--soft); }
-    .panel table.data td,
-    .panel table.data th,
-    .screen table.data td,
-    .screen table.data th { border-bottom-color: var(--line); }
-    .funnel { display: grid; gap: 6px; }
-    .funnel i {
-      display: block;
-      height: 28px;
-      margin-inline: auto;
-      background: linear-gradient(90deg, #8ea0f5, #4f6bed);
-      border-radius: 6px;
-      color: #fff;
-      font-style: normal;
-      font-size: 12px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .bars { display: flex; align-items: flex-end; gap: 8px; height: 120px; }
-    .bars span {
-      flex: 1;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      height: var(--h);
-      background: linear-gradient(180deg, #8ea0f5, #4f6bed);
-      border-radius: 6px 6px 2px 2px;
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      padding-bottom: 4px;
-    }
-    .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; color: var(--soft); }
-
-    .adv-list { display: grid; gap: 14px; }
-    .adv { padding: 20px; }
-    .adv h3 { margin: 8px 0 4px; font-size: 22px; }
-    .adv-sub { margin: 0 0 10px; color: var(--brand-deep); font-weight: 700; font-size: 16px; }
-    .adv-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
-    .adv-split div { background: var(--brand-soft); border-radius: 12px; padding: 12px 14px; }
-    .adv-split h4 { margin: 0 0 6px; font-size: 15px; }
-    .adv-split ul { margin: 0; }
-    .adv p { margin: 0 0 8px; color: var(--soft); }
-    .adv ul { margin: 0; padding-left: 1.15em; }
-    .adv li + li { margin-top: 4px; }
-
-    .review {
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 8px;
-      box-shadow: var(--shadow);
-    }
-    .review-head { padding: 16px 16px 4px; }
-    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 8px; }
-    .stack, .checks { border-radius: 14px; padding: 14px; }
-    .stack { background: #f4f6f8; }
-    .checks { background: #e7ecff; }
-    .stack h4, .checks h4 { margin: 0 0 8px; font-size: 16px; }
-    .stack ol, .checks ol { margin: 0; padding-left: 1.2em; }
-    .stack li, .checks li { margin: 6px 0; }
-    .check8 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 8px 12px; list-style: none; }
-    .check8 li {
-      list-style: none;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-size: 14px;
-    }
-    .check8 { margin: 0; padding-left: 8px; padding-right: 8px; }
-    .check8 b { color: var(--brand-deep); margin-right: 6px; }
-
-    .tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; background: #f3f6fb; }
-    .tabs button {
-      border: 1px solid var(--brand-line);
-      background: #fff;
-      color: var(--ink);
-      border-radius: 999px;
-      padding: 6px 10px;
-      cursor: pointer;
-      font-size: 13px;
-    }
-    .tabs button[aria-selected="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
-    .screen { padding: 14px; background: #f7f9fc; color: var(--ink); }
-    .screen[hidden] { display: none; }
-    .screen-lead { margin: 0 0 12px; color: var(--soft); font-size: 14px; }
-    .hbar { display: grid; gap: 8px; }
-    .hbar div { display: grid; grid-template-columns: 92px 1fr 36px; gap: 8px; align-items: center; font-size: 13px; }
-    .hbar i { display: block; height: 10px; width: var(--w); background: linear-gradient(90deg, #8ea0f5, #4f6bed); border-radius: 99px; }
-    .donut-wrap { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
-    .donut {
-      width: 132px;
-      height: 132px;
-      border-radius: 50%;
-      background: conic-gradient(#4f6bed 0 46%, #8ea0f5 46% 68%, #2a3f9e 68% 86%, #d9e2ff 86% 100%);
-      display: grid;
-      place-items: center;
-    }
-    .donut span {
-      width: 78px;
-      height: 78px;
-      border-radius: 50%;
-      background: var(--navy);
-      display: grid;
-      place-items: center;
-      font-size: 12px;
-      text-align: center;
-    }
-    .months { display: flex; align-items: flex-end; gap: 10px; height: 140px; }
-    .months div { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; height: 100%; font-size: 12px; color: var(--soft); }
-    .months i { display: block; width: 100%; height: var(--h); background: #4f6bed; border-radius: 6px 6px 2px 2px; }
-    .shot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px 14px; margin-top: 16px; }
-    .shot-grid img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; object-position: center; display: block; border-radius: 12px; border: 1px solid var(--line); background: #f7f8fb; box-shadow: 0 12px 28px rgba(26, 29, 36, 0.08); }
-    .shot-grid figcaption { margin: 8px 0 0; text-align: center; font-size: 14px; font-weight: 700; color: var(--ink); }
-
-    .deploy-grid, .value-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .value-grid { grid-template-columns: repeat(4, 1fr); }
-    .deploy-card h3, .value-card h3 { margin: 10px 0 6px; font-size: 22px; }
-    .icon-blob {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      background: var(--brand-soft);
-      color: var(--brand-deep);
-    }
-    .value-card { position: relative; }
-    .value-card .n { color: var(--brand); font-weight: 800; font-size: 13px; letter-spacing: 0.08em; }
-    .value-line { display: none; }
-
-    .foot { padding: 28px 0 48px; color: var(--soft); }
-    .foot strong { color: var(--ink); }
-    .foot p { margin: 4px 0; }
+    .std { display: grid; gap: 8px; }
+    .std article { display: grid; grid-template-columns: 1.1fr 0.9fr auto; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+    .std b { display: block; }
+    .std span { color: var(--soft); font-size: 13px; }
+    .wall { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; background: #f4f7fb; }
+    .wall img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; display: block; background: #fff; }
+    .wall figcaption { margin-top: 4px; text-align: center; font-size: 12px; font-weight: 700; }
+    .phones { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; background: #f4f7fb; }
+    .phones img { width: 100%; border-radius: 12px; display: block; background: #fff; }
+    .phones figcaption { margin-top: 8px; text-align: center; font-size: 13px; font-weight: 700; }
+    .buy { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .buy article { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+    .buy h3 { margin: 8px 0 4px; font-size: 18px; }
+    .buy p { margin: 0; color: var(--soft); font-size: 13px; }
+    .kicker { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--brand); }
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .kpi { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+    .kpi b { display: block; font-size: 28px; color: var(--brand); letter-spacing: -0.03em; }
+    .kpi span { color: var(--soft); font-size: 13px; }
+    .kpi.wide { grid-column: 1 / -1; }
 
     @media (max-width: 900px) {
-      .hero, .feat, .feat.flip .copy, .pain-grid, .split, .phone-row, .app-shots, .org, .poster-grid,
-      .compare, .check8, .adv-split, .deploy-grid, .value-grid { grid-template-columns: 1fr; display: grid; }
-      .feat.flip .copy { order: 0; }
-      .kpis { grid-template-columns: 1fr 1fr; }
-      .value-item { grid-template-columns: 1fr; }
-      section[id] { scroll-margin-top: 16px; }
-      .hero { height: auto; grid-template-columns: 1fr; overflow: visible; }
-      .hero-copy { padding: 32px 20px 24px; }
-      .hero-side { display: none; }
-      .hero-shot { position: relative; left: auto; right: auto; top: auto; transform: none; width: auto; max-width: none; margin: 0 16px 28px; }
-      .hero-stage { width: 100%; }
-      .hero-shot img { max-height: none; max-width: 100%; width: 100%; }
-      .orbit { position: static; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-      .sat { position: static; width: auto; height: auto; min-height: 132px; }
-    }
-    @media (max-width: 640px) {
-      .shot-grid { grid-template-columns: 1fr; }
+      .slide { grid-template-columns: 1fr; min-height: 0; padding: 28px 18px 32px; }
+      .copy h1, .copy h2 { margin-top: 18px; }
+      .no { margin-top: 22px; }
+      .device > img, .pane > img { max-height: none; }
+      .methods, .papers, .phones, .wall, .std article { grid-template-columns: 1fr; }
+      .std article { grid-template-columns: 1fr auto; }
     }
     @media print {
-      .ghost, .skip { display: none !important; }
+      .skip { display: none !important; }
       body { background: #fff; }
-      #pain, .feat-page, #advantages > .adv-list > .card.adv, #advantages > .review, #advantages > .card.adv, #deploy, #value { min-height: 0; }
-      .hero { height: auto; display: block; background: #fff; }
-      .hero-copy { background: #fff; color: var(--ink); padding: 0 0 16px; }
-      .hero h1, .hero h1 em { color: var(--ink); }
-      .hero h1 em { color: var(--brand); }
-      .hero .chips li { background: #fff; border-color: var(--brand-line); color: var(--ink); }
-      .hero-side { display: none; }
-      .hero-shot { position: static; transform: none; width: auto; max-width: none; margin: 0; }
-      .hero-stage { width: 100%; }
-      .hero-shot img { max-height: none; max-width: 100%; width: 100%; box-shadow: none; }
-      .orbit { position: static; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-      .sat { position: static; width: auto; height: auto; box-shadow: none; }
-      .feat, .card, .adv, .review { break-inside: avoid; }
-      a { text-decoration: none; color: inherit; }
+      .slide { min-height: 0; break-inside: avoid; box-shadow: none; }
+      .device { box-shadow: none; }
     }
   </style>
 </head>
 <body>
   <a class="skip" href="#main">跳到正文</a>
-
   <main id="main">
-    <section class="hero" id="top">
-      <div class="hero-copy">
-        <h1>数蚕 LIMS<br /><em>实验室信息管理系统</em></h1>
-        <ul class="chips">
-          <li>采集端数据不落地</li>
-          <li>按标准自动判定</li>
-          <li>记录和报告按模版生成</li>
-          <li>全流程可追溯</li>
+
+    <section class="slide" id="top">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h1>实验室信息<br />管理系统</h1>
+        <p class="lead">委托、采集、判定、报告和追溯，在同一套系统里走完。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16l4-4 3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>采集端数据不落地</b><p>结果回传后直接进入判定和出单，采集端不另留一份账。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 6h14M5 12h9M5 18h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>按标准自动判定</b><p>限值、公式和修约在录入时带出，当项给出合格或不合格。</p></div></li>
+          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h8l4 4v12H7V4z" stroke="currentColor" stroke-width="1.8"/><path d="M15 4v4h4M9 13h6M9 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>记录和报告按模版生成</b><p>原始记录单和检测报告按该样品已启用的模版生成。</p></div></li>
+          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>全流程可追溯</b><p>每一步记下谁、在何时、做了什么，任务上可以回放。</p></div></li>
         </ul>
+        <p class="no" aria-hidden="true">01</p>
       </div>
-      <div class="hero-side" aria-hidden="true"></div>
-      <figure class="hero-shot">
-        <div class="hero-stage">
+      <div class="visual">
+        <div class="device">
           <img src="assets/brochure/00-testos.webp" alt="Test OS 底座应用总览：左侧实验室AI助手和在线人员，中间八个应用入口，右侧日历、帮助和增值服务" />
-          <ul class="orbit">
-            <li class="sat" style="--x:22%;--y:-11%;--w:25%;--h:30%">
-              <b>实验室管理系统</b>
-              <ul class="sat-rows" aria-hidden="true">
-                <li><span>绝缘操作杆</span><em class="go">检测中</em></li>
-                <li><span>验电器</span><em class="ok">已交接</em></li>
-                <li><span>接地线</span><em>待分配</em></li>
-              </ul>
-            </li>
-            <li class="sat" style="--x:54%;--y:-11%;--w:24%;--h:30%">
-              <b>实验室数据采集系统</b>
-              <div class="sat-metrics" aria-hidden="true">
-                <span><strong>12.6</strong>kV</span>
-                <span><strong>98.2</strong>读数</span>
-                <span><strong>0.04</strong>偏差</span>
-              </div>
-              <div class="sat-bars" aria-hidden="true"><i style="--h:42%"></i><i style="--h:70%"></i><i style="--h:55%"></i><i style="--h:86%"></i><i style="--h:63%"></i></div>
-            </li>
-            <li class="sat" style="--x:76%;--y:14%;--w:26%;--h:32%">
-              <b>智慧运营与决策平台</b>
-              <div class="sat-metrics" aria-hidden="true">
-                <span><strong>128</strong>在检</span>
-                <span><strong>99.1</strong>合格率</span>
-                <span><strong>3.2</strong>天</span>
-              </div>
-            </li>
-            <li class="sat" style="--x:76%;--y:52%;--w:26%;--h:32%">
-              <b>客户管理系统</b>
-              <ul class="sat-rows" aria-hidden="true">
-                <li><span>送检单位 A</span><em>18 单</em></li>
-                <li><span>送检单位 B</span><em>7 单</em></li>
-                <li><span>送检单位 C</span><em class="go">跟进中</em></li>
-              </ul>
-            </li>
-            <li class="sat" style="--x:52%;--y:84%;--w:26%;--h:30%">
-              <b>项目管理系统</b>
-              <div class="sat-prog" aria-hidden="true">
-                <span>工频耐压<i style="--w:72%"></i></span>
-                <span>泄漏电流<i style="--w:40%"></i></span>
-                <span>绝缘电阻<i style="--w:90%"></i></span>
-              </div>
-            </li>
-            <li class="sat" style="--x:20%;--y:84%;--w:26%;--h:30%">
-              <b>数字孪生</b>
-              <div class="floor" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-            </li>
-            <li class="sat" style="--x:-1%;--y:34%;--w:24%;--h:32%">
-              <b>LIMS检测标准库</b>
-              <ul class="sat-docs" aria-hidden="true">
-                <li><span>GB/T 标准</span><em class="ok">现行</em></li>
-                <li><span>DL/T 标准</span><em class="ok">现行</em></li>
-                <li><span>作业指导书</span><em>3 份</em></li>
-              </ul>
-            </li>
-          </ul>
         </div>
-      </figure>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+      </div>
     </section>
-    <div class="wrap">
 
-      <section class="block" id="pain">
-        <div class="block-h">
-          <p class="section-bar">01 · 传统实验室现状</p>
-        </div>
-        <div class="pain-grid">
-          <article class="card">
-            <span class="idx">01</span>
-            <h3>数据缺乏统一管理</h3>
-            <p>依赖纸质记录和分散的电子表格，数据难以整合，也难以共享。跨部门协作受阻，试验容易重复做，判断只能靠碎片信息。</p>
-          </article>
-          <article class="card">
-            <span class="idx">02</span>
-            <h3>手动记录与流程低效</h3>
-            <p>样品信息和检测结果靠人工抄写，容易笔误或漏项。审批要纸质签字，耗时，也容易丢。检测周期拉长，人力上去了，错误率也上去了。</p>
-          </article>
-          <article class="card">
-            <span class="idx">03</span>
-            <h3>报告生成效率低</h3>
-            <p>报告要手工整理数据，再导出到 Word 或 PDF，标准不统一，也容易出错。部门之间传文件会再拖一层，报告周期变长，影响交付。</p>
-          </article>
-          <article class="card">
-            <span class="idx">04</span>
-            <h3>数据利用率低</h3>
-            <p>没有成体系的备份和权限管理，误删或电脑故障可能造成丢数。格式不统一的历史数据很难追溯、对比，也难做趋势统计。</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="block" id="modules">
-        <div class="block-h">
-          <p class="section-bar">02 · 功能模块</p>
-        </div>
-
-        <div class="feat-page">
-        <article class="feat">
-          <div class="copy">
-            <span class="pill">功能 01 · 委托与流程</span>
-            <h3>样品一进门，就有唯一编号</h3>
-            <p>扫码建卡，系统生成唯一编号。委托信息、检测项目、判定标准一次录完，制备、发样、试验、审核和报告都跟着这个号走。</p>
-            <ul>
-              <li>谁做哪一项、做到哪一步，在任务上能对上人。逾期自动提醒，不用在群里追进度。</li>
-              <li>委托、收样、检测、报告在系统里流转，不用拼表，也不用把过程文件传来传去。</li>
-            </ul>
-          </div>
-          <figure>
-            <img src="assets/brochure/01-entrust.webp" alt="委托与流程示意：任务分配、扫码上传、检测任务和进度预警" />
-            <figcaption class="cap">委托登记与任务流转示意</figcaption>
-          </figure>
-        </article>
-
-        <article class="feat flip">
-          <div class="copy">
-            <span class="pill">功能 02 · 数据采集</span>
-            <h3>数从仪器进系统</h3>
-            <p>采集覆盖四种方式。有通讯接口的设备走直连或串口协议；带蓝牙的仪器走蓝牙；没有数据口、只能看屏幕或表头的设备，用图像识别读数。识别规则可以配置，也可以调试。</p>
-            <ul>
-              <li>LIMS 按样品和试验项下发采集任务，结果回传后直接进入判定和出单。</li>
-              <li>样品结构可以一键同步到数采系统，采集字段和试验参数保持一致。</li>
-              <li>数据进系统的同时记下设备使用，用了多久不用月底再补台账。</li>
-            </ul>
-          </div>
-          <figure>
-            <div class="bezel">
-              <div class="bezel-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>数蚕 LIMS · 采集方式</div>
-              <div class="bezel-body">
-                <div class="methods">
-                  <article class="method"><span class="n">01</span><b>设备直连</b><p>上位机接收任务，控制试验开始和结束，结果回传 LIMS。</p></article>
-                  <article class="method"><span class="n">02</span><b>蓝牙连接</b><p>带蓝牙的仪器现场连上，读数传回数采系统和 LIMS。</p></article>
-                  <article class="method"><span class="n">03</span><b>图像识别</b><p>没有数据口时读取屏幕或表头。规则可配置、可调试。</p></article>
-                  <article class="method"><span class="n">04</span><b>串口协议</b><p>按仪器协议从串口取数，和直连一样回传，不另存一份本地账。</p></article>
-                </div>
-                <div class="land"><b>采集端不落地。</b> 结果进入 LIMS 后参与计算和判定，采集端不再落一份平行台账。</div>
-              </div>
+    <section class="slide" id="pain">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>传统实验室现状</h2>
+        <p class="lead">数据、记录、报告和历史数据，各自为政。</p>
+        <ul class="points">
+          <li><span class="ico r" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h14M5 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>数据缺乏统一管理</b><p>纸质记录和分散表格难以整合、难以共享。试验容易重复做，判断只能靠碎片信息。</p></div></li>
+          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 5h8l2 3v11H6V8l2-3z" stroke="currentColor" stroke-width="1.8"/><path d="M9 13h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>手动记录与流程低效</b><p>样品信息和结果靠人工抄写，审批靠纸质签字。周期拉长，人力上去了，错误率也上去了。</p></div></li>
+          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h8l3 3v13H7V4z" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>报告生成效率低</b><p>手工整理后再导出到 Word 或 PDF。部门之间传文件会再拖一层，报告周期变长。</p></div></li>
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19V6M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 15v-3M13 15V9M17 15v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>数据利用率低</b><p>备份和权限不成体系，误删或故障可能丢数。格式不统一的历史数据很难追溯和对比。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">02</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <div class="pane mock">
+            <h3>现在常见的做法</h3>
+            <div class="note-list">
+              <article class="note"><div><b>表格各存各的</b><span>样品、结果、客户不在同一处</span></div><span class="tag bad">难共享</span></article>
+              <article class="note"><div><b>结果靠手抄</b><span>纸质签字，漏项和笔误跟着走</span></div><span class="tag wait">耗时长</span></article>
+              <article class="note"><div><b>报告另做一份</b><span>从表格再导出到 Word 或 PDF</span></div><span class="tag wait">再排版</span></article>
+              <article class="note"><div><b>历史数据对不上</b><span>格式不统一，追溯和统计都费劲</span></div><span class="tag bad">难复用</span></article>
             </div>
-            <figcaption class="cap">四种采集方式示意 · 串口协议归在有通讯接口的取数里</figcaption>
-          </figure>
-        </article>
+          </div>
         </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+      </div>
+    </section>
 
-        <div class="feat-page">
-        <article class="feat">
-          <div class="copy">
-            <span class="pill">功能 03 · 记录与判定</span>
-            <h3>录入按标准算，当项给出判定</h3>
-            <p>原始记录使用实验室自己配置的模版。录入时带出标准限值、计算公式和修约规则。系统计算、系统修约，人负责确认。</p>
-            <ul>
-              <li>每一个试验参数按标准要求给出合格或不合格。</li>
-              <li>不合格项在检测和审核界面标出，并带出原因。</li>
-              <li>判定不合格的样品不能进入合格证打印。现场不用再对照标准逐项手算。</li>
-            </ul>
-          </div>
-          <figure>
-            <div class="bezel">
-              <div class="bezel-bar"><span>数据录入 · 绝缘操作杆 10kV</span><span class="tag wait">修约规则已绑定</span></div>
-              <div class="bezel-body">
-                <table class="data">
-                  <caption class="vh">演示用判定结果，不是真实检测数据</caption>
-                  <thead><tr><th>试验参数</th><th>结果</th><th>标准要求</th><th>判定</th></tr></thead>
-                  <tbody>
-                    <tr><td>工频耐压</td><td>100kV / 1min</td><td>按规定耐受</td><td><span class="tag ok">合格</span></td></tr>
-                    <tr><td>泄漏电流</td><td>86 μA</td><td>按绑定限值</td><td><span class="tag ok">合格</span></td></tr>
-                    <tr class="fail"><td>外观</td><td>表面裂纹</td><td>无裂纹、无损伤</td><td><span class="tag bad">不合格</span></td></tr>
-                  </tbody>
-                </table>
-                <div class="alert">外观不合格：表面裂纹。该样品不能进入合格证打印。</div>
-              </div>
+    <section class="slide" id="modules">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>样品一进门，<br />就有唯一编号</h2>
+        <p class="lead">委托、收样、检测、报告，都跟着这一个号走。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16" stroke="currentColor" stroke-width="1.8"/><path d="M7 12h10" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>扫码建卡</b><p>系统生成唯一编号。委托信息、检测项目、判定标准一次录完。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 18c.7-2.2 2.4-3.4 4.5-3.4s3.8 1.2 4.5 3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>任务对人</b><p>谁做哪一项、做到哪一步，在任务上能对上人。逾期自动提醒。</p></div></li>
+          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h11l3 3v7H5V7z" stroke="currentColor" stroke-width="1.8"/><path d="M8 14h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>线上流转</b><p>制备、发样、试验、审核和报告都在系统里走，不用拼表，也不用把过程文件传来传去。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">03</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <img src="assets/brochure/01-entrust.webp" alt="委托与流程示意：任务分配、扫码上传、检测任务和进度预警" />
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+        <p class="cap">委托登记与任务流转示意</p>
+      </div>
+    </section>
+
+    <section class="slide" id="collect">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>数从仪器进系统</h2>
+        <p class="lead">直连、串口、蓝牙和图像识别，结果都回传 LIMS。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>四种采集</b><p>有通讯接口的走直连或串口，蓝牙仪器走蓝牙。没有数据口、只能看屏幕或表头的，用图像识别，规则可配置、可调试。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>任务下发，结果回传</b><p>LIMS 按样品和试验项下发采集任务。上位机控制试验开始和结束，结果进入后续判定和出单。</p></div></li>
+          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v10M8 10l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 18h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>采集端不落地</b><p>样品结构可一键同步到数采系统。现场用数据采集 App，按工位、设备或任务扫码进入试验项再上传。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">04</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <div class="pane mock">
+            <h3>数蚕 LIMS · 采集方式</h3>
+            <div class="methods">
+              <article class="method"><span class="n">01</span><b>设备直连</b><p>上位机接收任务，控制试验开始和结束，结果回传 LIMS。</p></article>
+              <article class="method"><span class="n">02</span><b>蓝牙连接</b><p>带蓝牙的仪器现场连上，读数传回数采系统和 LIMS。</p></article>
+              <article class="method"><span class="n">03</span><b>图像识别</b><p>没有数据口时读取屏幕或表头。规则可配置、可调试。</p></article>
+              <article class="method"><span class="n">04</span><b>串口协议</b><p>按仪器协议从串口取数，和直连一样回传，不另存一份本地账。</p></article>
             </div>
-            <figcaption class="cap">录入、修约与自动判定示意 · 演示数据，非真实结果</figcaption>
-          </figure>
-        </article>
-
-        <article class="feat flip">
-          <div class="copy">
-            <span class="pill">功能 04 · 单据与报告</span>
-            <h3>记录单和报告按模版生成</h3>
-            <p>数据回传并完成判定后，系统按该样品已启用的记录单模版、报告模版生成原始记录单和检测报告。检测委托书、任务单、流转单按配置一起生成。</p>
-            <ul>
-              <li>记录单可以按全部试验项合并生成，也可以按单个试验项生成。报告套用该型号已启用的模版。</li>
-              <li>模版由实验室自己做可视化配置。标准或版式变了，更新模版，后续任务按新模版生成。</li>
-              <li>生成、审核、签发都在线上完成，不用再排版、填数、另做一份纸质底稿。</li>
-            </ul>
+            <div class="land"><b>采集端不落地。</b> 结果进入 LIMS 后参与计算和判定，采集端不再落一份平行台账。</div>
           </div>
-          <figure>
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+        <p class="cap">四种采集方式示意。串口协议归在有通讯接口的取数里。</p>
+      </div>
+    </section>
+
+    <section class="slide" id="judge">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>录入按标准算，<br />当项给出判定</h2>
+        <p class="lead">原始记录用实验室自己配置的模版。系统计算、系统修约，人负责确认。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 5h12v14H6V5z" stroke="currentColor" stroke-width="1.8"/><path d="M9 9h6M9 13h6M9 17h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>模版带出规则</b><p>录入时带出标准限值、计算公式和修约规则。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>逐项判定</b><p>每一个试验参数按标准要求给出合格或不合格，不合格标出原因。</p></div></li>
+          <li><span class="ico r" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>不合格不打合格证</b><p>判定不合格的样品不能进入合格证打印。现场不用再对照标准逐项手算。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">05</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <div class="pane mock">
+            <h3>数据录入 · 绝缘操作杆 10kV <span class="tag wait">修约规则已绑定</span></h3>
+            <table class="data">
+              <caption class="vh">判定表示意</caption>
+              <thead><tr><th>试验参数</th><th>结果</th><th>标准要求</th><th>判定</th></tr></thead>
+              <tbody>
+                <tr><td>工频耐压</td><td>100kV / 1min</td><td>按规定耐受</td><td><span class="tag ok">合格</span></td></tr>
+                <tr><td>泄漏电流</td><td>86 μA</td><td>按绑定限值</td><td><span class="tag ok">合格</span></td></tr>
+                <tr class="fail"><td>外观</td><td>表面裂纹</td><td>无裂纹、无损伤</td><td><span class="tag bad">不合格</span></td></tr>
+              </tbody>
+            </table>
+            <div class="alert">外观不合格：表面裂纹。该样品不能进入合格证打印。</div>
+          </div>
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+        <p class="cap">录入、修约与自动判定示意</p>
+      </div>
+    </section>
+
+    <section class="slide" id="report">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>记录单和报告<br />按模版生成</h2>
+        <p class="lead">数据回传并完成判定后，原始记录单和检测报告按已启用模版生成。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h8l3 3v13H7V4z" stroke="currentColor" stroke-width="1.8"/><path d="M15 4v3h3" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>判定完成后生成</b><p>检测委托书、任务单、流转单按配置一起生成。生成、审核、签发都在线上完成。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h14M5 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>合并或按项拆开</b><p>记录单可以按全部试验项合并生成，也可以按单个试验项生成。报告套用该型号已启用的模版。</p></div></li>
+          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 16l4-4 3 3 5-6 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>模版自己配</b><p>实验室做可视化配置。标准或版式变了，更新模版，后续任务按新模版生成。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">06</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <div class="pane mock">
             <div class="papers">
-              <article class="paper back">
-                <h4>原始记录单</h4>
+              <article class="paper">
+                <h3>原始记录单</h3>
                 <p class="kv"><span>编号</span><b>SC2026/00790101</b></p>
                 <p class="kv"><span>范围</span><b>可按全部试验项合并</b></p>
                 <p class="kv"><span>来源</span><b>采集结果直接带入</b></p>
               </article>
-              <article class="paper front">
-                <div class="paper-head">
-                  <h4>检测报告</h4>
-                  <div class="seal">待签发</div>
-                </div>
+              <article class="paper">
+                <div class="paper-head"><h3>检测报告</h3><div class="seal">待签发</div></div>
                 <p class="kv"><span>样品</span><b>绝缘操作杆 · 10kV</b></p>
                 <p class="kv"><span>编号</span><b>SC2026/00790101</b></p>
-                <p class="kv"><span>委托单位</span><b>演示客户甲</b></p>
+                <p class="kv"><span>委托单位</span><b>客户甲</b></p>
                 <p class="kv"><span>模版</span><b>该型号已启用模版</b></p>
                 <p class="kv"><span>数据</span><b>取自原始记录，不另抄</b></p>
               </article>
             </div>
-            <figcaption class="cap">原始记录单与检测报告示意 · 演示单据，非正式报告</figcaption>
-          </figure>
-        </article>
-        </div>
-
-        <div class="feat-page">
-        <article class="feat">
-          <div class="copy">
-            <span class="pill">功能 05 · 留痕追溯</span>
-            <h3>每一步都留在这张任务上</h3>
-            <p>从委托登记、委托确认、收样、制备、发样、试验、审核，到报告编制、审核、签发、发放和归档，各环节记录操作时间、操作人和操作内容。</p>
-            <ul>
-              <li>操作日志可按人员、模块、时间和任务查阅，登录日志同时保留。</li>
-              <li>原始记录保留版本。结果要改，走变更申请和审批，修改前后另行留痕。</li>
-              <li>试验结束后，可以按该任务回放每个环节是谁、在什么时间、做了什么。</li>
-            </ul>
           </div>
-          <figure>
-            <div class="bezel">
-              <div class="bezel-bar">任务回放 · SC2026/00790101</div>
-              <div class="bezel-body">
-                <ol class="timeline">
-                  <li><div class="rail"><i></i><span class="line"></span></div><div><h4>委托登记</h4><p>张三 · 11-02 09:12 · 建立委托</p></div></li>
-                  <li><div class="rail"><i></i><span class="line"></span></div><div><h4>收样</h4><p>李四 · 11-02 10:40 · 扫码，生成样品编号</p></div></li>
-                  <li><div class="rail"><i></i><span class="line"></span></div><div><h4>试验</h4><p>潘哲宁 · 11-03 14:05 · 回传工频耐压结果</p></div></li>
-                  <li><div class="rail"><i></i><span class="line"></span></div><div><h4>更改</h4><p>走变更审批 · 改前、改后单独留痕</p></div></li>
-                  <li><div class="rail"><i></i></div><div><h4>签发</h4><p>待审核通过后出具</p></div></li>
-                </ol>
-              </div>
-            </div>
-            <figcaption class="cap">任务留痕示意 · 人名与时间为演示</figcaption>
-          </figure>
-        </article>
-
-        <article class="feat flip">
-          <div class="copy">
-            <span class="pill">功能 06 · 设备管理与校准提醒</span>
-            <h3>校准到期，系统先提醒</h3>
-            <p>设备台账集中看校准状态。逾期和临近校准会提醒，不用翻表，也不用等人盯着日期。</p>
-            <ul>
-              <li>设备逾期、临近下次校准会提醒，超期在列表里直接标出来。</li>
-              <li>校准证书跟着设备管理，校准状态一目了然。</li>
-              <li>设备可以关联到试验项，用在哪一项试验上能对上。</li>
-            </ul>
-          </div>
-          <figure>
-            <img src="assets/brochure/06-equip.jpg" alt="设备管理示意：列表展示下次校准时间和校准状态，已过期直接标出" />
-            <figcaption class="cap">设备台账示意：校准状态一目了然，逾期直接标出。</figcaption>
-          </figure>
-        </article>
         </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+        <p class="cap">原始记录单与检测报告示意</p>
+      </div>
+    </section>
 
-        <div class="feat-page">
-        <article class="feat">
-          <div class="copy">
-            <span class="pill">功能 07 · 权限</span>
-            <h3>一个入口管应用，一套对象管权限</h3>
-            <p>Test OS 底座把官方应用和实验室已有系统放在同一入口。应用可以加入、移除、排序，也可以用外链接进来。</p>
-            <ul>
-              <li>权限按用户、角色、部门、菜单、应用这五类对象来管。</li>
-              <li>不绑死某一种检测或校准流程，不同实验室的组织和系统组合都可以配。</li>
-            </ul>
-          </div>
-          <figure>
-            <img src="assets/brochure/07-perm.jpg" alt="Test OS 权限中枢示意：用户、角色、部门、菜单、应用，以及角色选择" />
-            <figcaption class="cap">同一入口管应用。权限按用户、角色、部门、菜单、应用来配。</figcaption>
-          </figure>
-        </article>
-
-        <article class="feat flip">
-          <div class="copy">
-            <span class="pill">功能 08 · 流程定制</span>
-            <h3>流程按自己的实验室来改</h3>
-            <p>管理员可根据实际业务场景，自由取消不需要的环节，并调整流程顺序，实现真正的个性化流程管理，以达到去除冗余环节、实现效率提升的目的。</p>
-          </div>
-          <figure>
-            <img src="assets/brochure/09-flow.jpg" alt="流程配置示意：灰色为固定环节，白色为可配置环节，可拖拽排序并勾选启用" />
-            <figcaption class="cap">流程可按实验室配置：拖拽排序，勾选启用或停用。</figcaption>
-          </figure>
-        </article>
-        </div>
-      </section>
-
-      <section class="block" id="advantages">
-        <div class="block-h">
-          <p class="section-bar">03 · 软件优势</p>
-        </div>
-
-        <div class="adv-list">
-          <article class="card adv">
-            <span class="idx">01</span>
-            <h3>配套数据采集，采集端数据不落地</h3>
-            <p>实验室数据采集系统同时对接试验上位机和 LIMS。LIMS 按样品和试验项下发采集任务，上位机接收任务并控制试验开始、结束。采集结果由数采系统回传 LIMS，直接进入后续判定和出单，采集端不另落一份本地账。</p>
-            <p>采集方式包括设备直采、标准接口采集、蓝牙采集和图像识别。有通讯接口的设备走直采或标准接口，串口协议属于这一类：按仪器协议从串口取数，结果同样回传。带蓝牙的仪器走蓝牙采集。没有数据口、只能看屏幕或表头的设备，用图像识别读取数值，识别规则可配置、可调试。</p>
-            <p>LIMS 中的样品结构可一键同步到数采系统，采集字段与试验参数保持一致。现场使用数据采集 App：检测人员按工位、设备或任务进入待检样品，扫描样品标签定位到对应试验项，再上传。</p>
-          </article>
-
-          <article class="card adv">
-            <span class="idx">02</span>
-            <h3>标准入库，结果自动判定</h3>
-            <p class="adv-sub">不合格当场标出，不用对照标准手算</p>
-            <p>标准库按标准文件拆开，规格型号、试验参数、计算公式、修约规则和判定要求都在库里。系统按库逐项给出合格或不合格，不合格标出原因，不能进入合格证打印。标准换版只更新标准库，不必另改流程。</p>
-          </article>
-
-          <article class="card adv">
-            <span class="idx">03</span>
-            <h3>原始记录单和检测报告自动生成，模版可以自己配</h3>
-            <p>试验数据回传并完成判定后，系统按该样品已启用的记录单模版、报告模版自动生成原始记录单和检测报告。检测委托书、任务单、流转单等业务单据同步按配置生成。</p>
-            <p>生成、审核、签发都在线上完成，不需要人工排版、填数、另做一份纸质底稿。记录单可按全部试验项合并生成，也可按单个试验项生成。报告按该型号已启用的模版套用。</p>
-            <p>模版由实验室自行维护，支持可视化配置。标准或版式变化后更新模版，后续任务按新模版自动生成。</p>
-          </article>
-        </div>
-
-        <article class="card adv" style="margin-top:14px">
-          <span class="idx">04</span>
-          <h3>证据在日常留好</h3>
-          <p class="adv-sub">评审周不用连夜补</p>
-          <p>从委托到归档，每一步记下谁、在何时、做了什么。结果要改就走变更，改前改后还在。流程按 CMA 资质认定和 CNAS 认可对检测活动的要求来设计，方便评审时按任务翻证据。这里说的是流程如何对应这些要求，不表示已经取得证书。</p>
-          <div class="adv-split">
-            <div>
-              <h4>留痕</h4>
-              <ul>
-                <li>操作日志按人员、时间和任务可查。</li>
-                <li>原始记录留版本，修改前后都在。</li>
-                <li>人离职或转岗，记录还在任务上。</li>
-              </ul>
-            </div>
-            <div>
-              <h4>评审对得上</h4>
-              <ul>
-                <li>样品编号从收样到报告一致。</li>
-                <li>人员按授权上岗，设备处于有效校准。</li>
-                <li>记录由系统生成，报告审核签发后出具。</li>
-              </ul>
-            </div>
-          </div>
-        </article>
-
-        <article class="card adv" style="margin-top:14px" id="wall">
-          <span class="idx">05</span>
-          <h3>底座提供业务数据大屏</h3>
-          <p>系统底座提供多类业务数据大屏，包括业务数据分析、样品数据分析、客户体量分析、检测时效监控大屏、经营驾驶舱和综合分析驾驶舱。展示内容可按实验室管理需要配置，用于查看委托与样品数量、检测进度、人员工作量、项目分布和时效情况。</p>
-          <p>管理人员不必逐条打开任务，即可掌握实验室运行情况。</p>
-          <div class="shot-grid">
-            <figure>
-              <img src="assets/brochure/01-business.jpg" alt="业务数据分析大屏示意" />
-              <figcaption>业务数据分析</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/brochure/02-sample.jpg" alt="样品数据分析大屏示意" />
-              <figcaption>样品数据分析</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/brochure/03-customer.jpg" alt="客户体量分析大屏示意" />
-              <figcaption>客户体量分析</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/brochure/04-timeliness.jpg" alt="检测时效监控大屏示意" />
-              <figcaption>检测时效监控大屏</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/brochure/05-operation.jpg" alt="经营驾驶舱示意" />
-              <figcaption>经营驾驶舱</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/brochure/06-overview.jpg" alt="综合分析驾驶舱示意，中国地图与委托、合同、合格率" />
-              <figcaption>综合分析驾驶舱</figcaption>
-            </figure>
-          </div>
-        </article>
-
-        <article class="card adv" style="margin-top:14px">
-          <span class="idx">06</span>
-          <h3>移动端配套 LIMS App 和数据采集 App</h3>
-          <p>形态不只网页。人在样品旁边就能接任务、录数据、查进度，报告也能在手机上查看和下载，不用回到办公室再补一遍。</p>
-          <div class="app-shots">
-            <figure>
-              <img src="assets/brochure/08-collect-app.jpg" alt="数蚕 LIMS App 宣传示意，应用入口、委托查询和报告编制三个页面" />
-              <figcaption class="cap">LIMS App：从应用中心进入，快速登记，手机可查看下载报告。</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/brochure/07-lims-app.jpg" alt="数蚕数据采集 App 宣传示意，首页、检测列表和检测任务三个页面" />
-              <figcaption class="cap">数据采集 App：今日任务、按任务检测、现场确认并上传。</figcaption>
-            </figure>
-          </div>
-        </article>
-      </section>
-
-      <section class="block" id="deploy">
-        <div class="block-h">
-          <p class="section-bar">04 · 部署和购买方式</p>
-          <h2>放在哪，怎么买</h2>
-          <p class="sub">部署分云上和本地。功能是标准版加定制费用，大屏按需购买。服务可以买断加售后年费，也可以按年续费。</p>
-        </div>
-        <p class="group-kicker">部署</p>
-        <div class="deploy-grid">
-          <article class="card deploy-card">
-            <div class="icon-blob" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M7 18h10a4 4 0 0 0 .4-8 6 6 0 0 0-11.5-1.6A3.5 3.5 0 0 0 7 18Z" stroke="currentColor" stroke-width="1.8"/></svg>
-            </div>
-            <h3>云上</h3>
-            <p>上手快。适合想先跑起来、不想自己管服务器的实验室。</p>
-          </article>
-          <article class="card deploy-card">
-            <div class="icon-blob" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V8a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.8"/></svg>
-            </div>
-            <h3>本地 / 私有化</h3>
-            <p>部署在客户本地服务器上，数据安全合规，服务器由客户侧管理。</p>
-          </article>
-        </div>
-        <p class="group-kicker">购买</p>
-        <div class="deploy-grid">
-          <article class="card deploy-card">
-            <div class="icon-blob" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16" stroke="currentColor" stroke-width="1.8"/></svg>
-            </div>
-            <h3>功能</h3>
-            <p>标准版 + 定制费用。大屏按需购买。</p>
-          </article>
-          <article class="card deploy-card">
-            <div class="icon-blob" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M7 7h10v4H7V7Zm0 6h6v4H7v-4Z" stroke="currentColor" stroke-width="1.8"/></svg>
-            </div>
-            <h3>服务</h3>
-            <p>两种方式：买断 + 售后年费，或按年续费。</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="block" id="value">
-        <div class="block-h">
-          <p class="section-bar">05 · 产品价值</p>
-        </div>
-        <div class="value-list">
-          <article class="card value-item">
-            <h3><span class="n">01</span> 流程规范化，降低人为差错</h3>
-            <ol>
-              <li>所有业务流程线上固化，杜绝口头交接和纸质遗漏。</li>
-              <li>关键节点需审核通过方可流转，确保责任可追溯。</li>
-              <li>电子签名与日志记录，满足 CNAS、CMA 等资质评审要求。</li>
+    <section class="slide" id="trace">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>每一步都留在<br />这张任务上</h2>
+        <p class="lead">流程按 CMA 资质认定和 CNAS 认可对检测活动的要求来设计，方便评审时按任务翻证据。这里说的是流程如何对应这些要求，不表示已经取得证书。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>操作可查</b><p>从委托到归档，记下操作时间、操作人和操作内容。操作日志和登录日志可按人员、模块、时间和任务查阅。</p></div></li>
+          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h10l4 4v8H5V7z" stroke="currentColor" stroke-width="1.8"/><path d="M9 15h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>修改留版本</b><p>原始记录保留版本。结果要改，走变更申请和审批，修改前后另行留痕。人离职或转岗，记录还在任务上。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>评审对得上</b><p>样品编号从收样到报告一致。人员按授权上岗，设备处于有效校准。记录由系统生成，报告审核签发后出具。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">07</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <div class="pane mock">
+            <h3>任务回放 · SC2026/00790101</h3>
+            <ol class="timeline">
+              <li><div class="rail"><i></i><span class="line"></span></div><div><h3>委托登记</h3><p>委托员 · 11-02 09:12 · 建立委托</p></div></li>
+              <li><div class="rail"><i></i><span class="line"></span></div><div><h3>收样</h3><p>收样员 · 11-02 10:40 · 扫码，生成样品编号</p></div></li>
+              <li><div class="rail"><i></i><span class="line"></span></div><div><h3>试验</h3><p>检测员 · 11-03 14:05 · 回传工频耐压结果</p></div></li>
+              <li><div class="rail"><i></i><span class="line"></span></div><div><h3>更改</h3><p>走变更审批 · 改前、改后单独留痕</p></div></li>
+              <li><div class="rail"><i></i></div><div><h3>签发</h3><p>待审核通过后出具</p></div></li>
             </ol>
-          </article>
-          <article class="card value-item">
-            <h3><span class="n">02</span> 效率提升 30% 以上，缩短报告周期</h3>
-            <ol>
-              <li>自动化生成委托单、收费单、原始记录和报告模版。</li>
-              <li>任务自动推送至责任人，减少沟通成本。</li>
-              <li>数据直传避免二次录入，提升检测效率。</li>
-            </ol>
-          </article>
-          <article class="card value-item">
-            <h3><span class="n">03</span> 数据资产化，支撑科学决策</h3>
-            <ol>
-              <li>检测数据、客户信息和合同记录集中存储，形成实验室数据资产。</li>
-              <li>通过驾驶舱实时监控业务健康度，及时发现瓶颈。</li>
-              <li>历史数据可追溯，便于客户查询与内部复盘。</li>
-            </ol>
-          </article>
-          <article class="card value-item">
-            <h3><span class="n">04</span> 客户体验升级，增强信任感</h3>
-            <ol>
-              <li>客户可通过链接完成委托单签署，流程透明。</li>
-              <li>报告状态实时可查，提升服务响应速度。</li>
-              <li>标准化报告格式与快速交付，提升专业形象。</li>
-            </ol>
-          </article>
-          <article class="card value-item">
-            <h3><span class="n">05</span> 轻量易用，适合中小型实验室</h3>
-            <ol>
-              <li>界面简洁，操作逻辑清晰，无需专业 IT 人员维护。</li>
-              <li>权限分级管理，保障数据安全。</li>
-              <li>支持快速部署、灵活扩展，投入成本低，见效快。</li>
-            </ol>
-          </article>
+          </div>
         </div>
-      </section>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+      </div>
+    </section>
 
-    </div>
+    <section class="slide" id="equip">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>校准到期，<br />系统先提醒</h2>
+        <p class="lead">设备台账集中看校准状态，不用翻表，也不用等人盯着日期。</p>
+        <ul class="points">
+          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>逾期直接标出</b><p>设备逾期、临近下次校准会提醒，超期在列表里直接标出来。</p></div></li>
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h8l3 3v13H7V4z" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>证书跟着设备</b><p>校准证书跟着设备管理，校准状态一目了然。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 8h8v8H8z" stroke="currentColor" stroke-width="1.8"/><path d="M12 4v4M12 16v4M4 12h4M16 12h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>对上试验项</b><p>设备可以关联到试验项，用在哪一项试验上能对上。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">08</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <img src="assets/brochure/06-equip.jpg" alt="设备管理示意：列表展示下次校准时间和校准状态，已过期直接标出" />
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+        <p class="cap">设备台账示意：校准状态一目了然，逾期直接标出。</p>
+      </div>
+    </section>
+
+    <section class="slide" id="perm">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>一个入口管应用</h2>
+        <p class="lead">Test OS 底座把官方应用和实验室已有系统放在同一入口。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>应用放在一起</b><p>应用可以加入、移除、排序，也可以用外链接进来。</p></div></li>
+          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4 18c.8-2.3 2.6-3.5 5-3.5s4.2 1.2 5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>五类对象管权限</b><p>按用户、角色、部门、菜单、应用来管。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 8h14M5 12h10M5 16h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>不绑死一种流程</b><p>不同实验室的组织和系统组合都可以配。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">09</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <img src="assets/brochure/07-perm.jpg" alt="Test OS 权限中枢示意：用户、角色、部门、菜单、应用，以及角色选择" />
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+        <p class="cap">同一入口管应用。权限按用户、角色、部门、菜单、应用来配。</p>
+      </div>
+    </section>
+
+    <section class="slide" id="flow">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>流程按自己的<br />实验室来改</h2>
+        <p class="lead">管理员按实际业务取消不需要的环节，并调整顺序。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h10M5 17h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>去掉冗余环节</b><p>不需要的环节可以取消，流程按实验室实际来收。</p></div></li>
+          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 7h11M8 12h11M8 17h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5 7v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>顺序可以调整</b><p>拖拽调整流程顺序，勾选启用或停用。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>按场景配置</b><p>不同检测活动不必共用同一条流程，用来去掉冗余、把效率提上来。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">10</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <img src="assets/brochure/09-flow.jpg" alt="流程配置示意：灰色为固定环节，白色为可配置环节，可拖拽排序并勾选启用" />
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+        <p class="cap">流程可按实验室配置：拖拽排序，勾选启用或停用。</p>
+      </div>
+    </section>
+
+    <section class="slide" id="standard">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>标准入库，<br />结果自动判定</h2>
+        <p class="lead">不合格当场标出，不用对照标准手算。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 5h9a2 2 0 0 1 2 2v12H8a2 2 0 0 1-2-2V5z" stroke="currentColor" stroke-width="1.8"/><path d="M9 9h5M9 13h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>标准拆开入库</b><p>规格型号、试验参数、计算公式、修约规则和判定要求都在库里。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>按库逐项给结论</b><p>系统给出合格或不合格，不合格标出原因，不能进入合格证打印。</p></div></li>
+          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16a7 7 0 0 1 12-5l2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 8h4v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>换版只改标准库</b><p>标准换了，更新标准库，不必另改流程。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">11</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <div class="pane mock">
+            <h3>LIMS 检测标准库</h3>
+            <div class="std">
+              <article><div><b>工频耐压</b><span>绝缘操作杆 · 10kV</span></div><span>按规定耐受</span><span class="tag ok">合格</span></article>
+              <article><div><b>泄漏电流</b><span>按绑定限值</span></div><span>86 μA</span><span class="tag ok">合格</span></article>
+              <article><div><b>外观</b><span>无裂纹、无损伤</span></div><span>表面裂纹</span><span class="tag bad">不合格</span></article>
+            </div>
+          </div>
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section class="slide" id="wall">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>底座上的<br />业务数据大屏</h2>
+        <p class="lead">展示内容可按实验室管理需要配置。管理人员不必逐条打开任务。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19V6M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 15l3-4 2 2 4-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>业务和样品</b><p>看委托与样品数量、项目分布和检测进度。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4 18c.8-2.2 2.5-3.4 5-3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>客户和时效</b><p>看客户体量、人员工作量和检测时效。</p></div></li>
+          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 20h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>经营和综合</b><p>经营驾驶舱和综合分析驾驶舱，用来看实验室运行情况。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">12</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <div class="pane">
+            <div class="wall">
+              <figure><img src="assets/brochure/01-business.jpg" alt="业务数据分析大屏示意" /><figcaption>业务数据分析</figcaption></figure>
+              <figure><img src="assets/brochure/02-sample.jpg" alt="样品数据分析大屏示意" /><figcaption>样品数据分析</figcaption></figure>
+              <figure><img src="assets/brochure/03-customer.jpg" alt="客户体量分析大屏示意" /><figcaption>客户体量分析</figcaption></figure>
+              <figure><img src="assets/brochure/04-timeliness.jpg" alt="检测时效监控大屏示意" /><figcaption>检测时效监控</figcaption></figure>
+              <figure><img src="assets/brochure/05-operation.jpg" alt="经营驾驶舱示意" /><figcaption>经营驾驶舱</figcaption></figure>
+              <figure><img src="assets/brochure/06-overview.jpg" alt="综合分析驾驶舱示意" /><figcaption>综合分析驾驶舱</figcaption></figure>
+            </div>
+          </div>
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section class="slide" id="apps">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>人在样品旁边<br />就能做</h2>
+        <p class="lead">形态不只网页。配 LIMS App 和数据采集 App。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="8" y="3" width="8" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>LIMS App</b><p>从应用中心进入，快速登记。报告在手机上查看和下载。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 5h8v14H8z" stroke="currentColor" stroke-width="1.8"/><path d="M10 9h4M10 13h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>数据采集 App</b><p>今日任务、按任务检测、现场确认并上传。</p></div></li>
+          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>不用回办公室补</b><p>接任务、录数据、查进度，在样品旁边完成。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">13</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <div class="pane">
+            <div class="phones">
+              <figure>
+                <img src="assets/brochure/08-collect-app.jpg" alt="数蚕 LIMS App 宣传示意，应用入口、委托查询和报告编制三个页面" />
+                <figcaption>LIMS App：快速登记，手机查看和下载报告</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/brochure/07-lims-app.jpg" alt="数蚕数据采集 App 宣传示意，首页、检测列表和检测任务三个页面" />
+                <figcaption>数据采集 App：今日任务，现场确认并上传</figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section class="slide" id="deploy">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>放在哪，怎么买</h2>
+        <p class="lead">部署分云上和本地。功能是标准版加定制费用，大屏按需购买。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 17h10a4 4 0 0 0 .4-8 6 6 0 0 0-11.5-1.5A3.5 3.5 0 0 0 7 17z" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>云上</b><p>上手快。适合想先跑起来、不想自己管服务器的实验室。</p></div></li>
+          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V8a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>本地 / 私有化</b><p>部署在客户本地服务器上，数据安全合规，服务器由客户侧管理。</p></div></li>
+          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>功能与服务</b><p>标准版加定制费用，大屏按需购买。服务可以买断加售后年费，也可以按年续费。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">14</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <div class="pane mock">
+            <div class="buy">
+              <article><p class="kicker">部署</p><h3>云上</h3><p>上手快。适合想先跑起来、不想自己管服务器的实验室。</p></article>
+              <article><p class="kicker">部署</p><h3>本地 / 私有化</h3><p>部署在客户本地服务器上，服务器由客户侧管理。</p></article>
+              <article><p class="kicker">购买</p><h3>功能</h3><p>标准版 + 定制费用。大屏按需购买。</p></article>
+              <article><p class="kicker">购买</p><h3>服务</h3><p>买断 + 售后年费，或按年续费。</p></article>
+            </div>
+          </div>
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section class="slide" id="value">
+      <div class="copy">
+        <p class="brand"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 8c0 3 2.2 4.5 5 4.5S17 11 17 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></i>数蚕 <em>LIMS</em></p>
+        <h2>产品价值</h2>
+        <p class="lead">流程、效率、数据和交付，放在同一套系统里。</p>
+        <ul class="points">
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>流程规范化，降低人为差错</b><p>业务流程线上固化。关键节点审核通过才流转。电子签名与日志记录，满足 CNAS、CMA 等资质评审要求。</p></div></li>
+          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16l5-5 3 3 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>效率提升 30% 以上</b><p>自动生成委托单、收费单、原始记录和报告模版。任务推给责任人。数据直传，避免二次录入。</p></div></li>
+          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19V6M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 15V10M13 15V8M17 15v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>数据资产化</b><p>检测数据、客户信息和合同记录集中存放。驾驶舱看业务健康度。历史数据可追溯。</p></div></li>
+          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M4 18c.8-2.2 2.5-3.4 5-3.4s4.2 1.2 5 3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>客户体验升级</b><p>客户可通过链接完成委托单签署。报告状态可查。报告按统一格式交付。</p></div></li>
+          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4l2 4 4 .6-3 3 .7 4.4L12 14l-3.7 2 0.7-4.4-3-3L9 8l3-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><div><b>轻量，适合中小型实验室</b><p>操作逻辑清楚，权限分级。支持快速部署和扩展，投入低，见效快。</p></div></li>
+        </ul>
+        <p class="no" aria-hidden="true">15</p>
+      </div>
+      <div class="visual">
+        <div class="device">
+          <div class="pane mock">
+            <h3>五项目标</h3>
+            <div class="kpis">
+              <article class="kpi"><b>线上</b><span>关键节点审核后才流转，电子签名和日志留在任务上</span></article>
+              <article class="kpi"><b>30%+</b><span>效率提升，报告周期缩短</span></article>
+              <article class="kpi"><b>一处</b><span>检测、客户、合同记录集中存放</span></article>
+              <article class="kpi"><b>可查</b><span>委托签署和报告状态对客户可见</span></article>
+              <article class="kpi wide"><b>轻量部署</b><span>中小型实验室可以快速部署，权限分级，按需要扩展</span></article>
+            </div>
+          </div>
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+      </div>
+    </section>
+
   </main>
-
   <script src="js/ui-a11y.js"></script>
 </body>
 </html>
