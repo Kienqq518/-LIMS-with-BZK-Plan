@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>数蚕 LIMS 实验室信息管理系统</title>
+  <title>数蚕 LIMS 实验室业务管理系统</title>
   <meta name="description" content="数蚕 LIMS：电缆厂实验室的现状和痛点、八项软件优势、功能模块和产品价值。" />
   <link rel="stylesheet" href="css/ui-baseline.css" />
   <style>
@@ -266,6 +266,18 @@
     .kpi { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
     .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .kpi b { display: block; font-size: 28px; color: var(--brand); letter-spacing: -0.03em; }
+    #top .stand, #top .foot { display: none; }
+    #top .visual { min-height: 0; }
+    #top .hub {
+      position: relative;
+      width: 100%;
+      flex: 1 1 auto;
+      height: min(620px, calc(100dvh - 150px));
+      min-height: 420px;
+      background: var(--bg);
+    }
+    #top .hub canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    #top .hub-fallback { width: 100%; height: auto; display: block; }
     #value .visual { align-items: center; }
     #value .device { width: min(100%, 480px); margin-inline: auto; }
     #value .mock { padding: 12px; }
@@ -326,7 +338,7 @@
     <section class="slide" id="top">
       <div class="copy">
         <p class="brand"><img src="assets/brochure/logo-shucan.png" alt="" />数蚕 <em>LIMS</em></p>
-        <h1>实验室信息<br />管理系统</h1>
+        <h1>实验室业务<br />管理系统</h1>
         <p class="lead">遵循 CNAS、CMA 等体系标准要求，整合实验室设备、检测方法标准、质量管理等“人、机、料、法、环”全要素的数据信息，实现实验室全方位数字信息综合分析管理。</p>
         <ul class="points">
           <li><span class="ico r" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h14M5 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b><span class="no">01</span> · 现状和痛点</b><p>信息孤岛、重复抄录、数据防篡改、设备、人才和反馈速度。</p></div></li>
@@ -336,11 +348,9 @@
         </ul>
       </div>
       <div class="visual">
-        <div class="device">
-          <img src="assets/brochure/00-testos.webp?v=bg" alt="Test OS 底座应用总览：左侧实验室AI助手和在线人员，中间八个应用入口，右侧日历、帮助和增值服务" />
+        <div class="hub" id="home-hub" role="img" aria-label="中间是 Test OS。周围八个系统：实验室数据采集系统、实验室业务管理系统、智慧运营与决策平台、客户管理系统、透明检测系统、LIMS检测标准库、数字孪生、项目管理系统。">
+          <img class="hub-fallback" hidden src="assets/brochure/00-testos.webp?v=bg" alt="" />
         </div>
-        <div class="stand" aria-hidden="true"></div>
-        <div class="foot" aria-hidden="true"></div>
       </div>
     </section>
 
@@ -761,5 +771,6 @@
 
   </main>
   <script src="js/ui-a11y.js"></script>
+  <script type="module" src="js/home-hub.js"></script>
 </body>
 </html>
