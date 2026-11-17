@@ -214,14 +214,97 @@
     .slide.duo h2 { margin: 0 0 6px; font-size: clamp(26px, 2.3vw, 34px); }
     #adv-wall h2 .line { letter-spacing: 0.07em; }
     #adv-wall h2 .rest { display: block; }
-    #adv-cost h2 { font-size: clamp(26px, 2.3vw, 34px); }
-    #adv-cost h2 .line { letter-spacing: 1.045em; }
-    #adv-cost h2 .rest { display: block; }
-    #adv-cost .lead { margin-bottom: 14px; }
-    #adv-cost .points { gap: 8px; }
-    #adv-cost .points b { font-size: 14px; }
-    #adv-cost .points p { font-size: 13px; line-height: 1.4; }
-    #adv-cost { grid-template-columns: minmax(340px, 46%) minmax(0, 1fr); }
+    #adv-cost {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-height: 100dvh;
+      overflow: hidden;
+      padding-top: 22px;
+      padding-bottom: 18px;
+    }
+    #adv-cost .cost-head { text-align: center; flex: 0 0 auto; }
+    #adv-cost .cost-head h2 { margin: 0 0 8px; font-size: clamp(26px, 2.3vw, 34px); }
+    #adv-cost .cost-head .lead { max-width: 46em; margin: 0 auto; font-size: 14px; line-height: 1.5; }
+    .cost-stage { position: relative; flex: 1 1 auto; min-height: 0; margin-top: 8px; }
+    .cost-wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .cost-wires line { stroke: #9db6f5; stroke-width: 1.4; stroke-dasharray: 3 5; stroke-linecap: round; }
+    .cost-card {
+      position: absolute;
+      width: min(320px, 30%);
+      margin: 0;
+      padding: 12px 14px;
+      background: #fff;
+      border: 1px solid rgba(214, 224, 240, 0.9);
+      border-radius: 16px;
+      box-shadow: 0 10px 28px rgba(16, 24, 40, 0.08);
+      display: grid;
+      grid-template-columns: 32px 1fr;
+      gap: 8px 10px;
+      align-items: start;
+    }
+    .cost-card .ico { width: 32px; height: 32px; border-radius: 9px; }
+    .cost-card .ico svg { width: 16px; height: 16px; }
+    .cost-card b { display: block; font-size: 14px; line-height: 1.3; color: var(--ink); }
+    .cost-card p { margin: 2px 0 0; font-size: 12px; line-height: 1.45; color: var(--soft); }
+    .cost-card.c1 { left: 1.5%; top: 2%; }
+    .cost-card.c2 { right: 1.5%; top: 2%; }
+    .cost-card.c3 { right: 1.5%; top: 46%; }
+    .cost-card.c4 { left: 1.5%; top: 46%; }
+    .cost-card.c5 { left: 50%; bottom: 2%; transform: translateX(-50%); }
+    .gem {
+      position: absolute;
+      left: 50%;
+      top: 44%;
+      width: 168px;
+      height: 196px;
+      transform: translate(-50%, -50%);
+    }
+    .gem-glow {
+      position: absolute;
+      left: 50%;
+      top: 42%;
+      width: 150px;
+      height: 150px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(45, 104, 255, 0.38), rgba(45, 104, 255, 0) 68%);
+      filter: blur(2px);
+    }
+    .gem-stone { position: absolute; inset: 8px 18px 36px; filter: drop-shadow(0 16px 18px rgba(11, 65, 154, 0.28)); }
+    .gem-stone .top,
+    .gem-stone .bot { position: absolute; left: 0; right: 0; }
+    .gem-stone .top {
+      top: 0;
+      height: 42%;
+      background: linear-gradient(180deg, #f4f7ff 0%, #7aa4ff 55%, #2d68ff 100%);
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    }
+    .gem-stone .bot {
+      top: 38%;
+      height: 62%;
+      background: linear-gradient(180deg, #5b8cff 0%, #1d4ed8 48%, #0b419a 100%);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+    .gem-stone .shine {
+      position: absolute;
+      left: 34%;
+      top: 8%;
+      width: 16%;
+      height: 34%;
+      background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,0));
+      clip-path: polygon(40% 0, 100% 100%, 0 100%);
+    }
+    .gem-base {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      width: 92px;
+      height: 16px;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      background: rgba(45, 104, 255, 0.16);
+      box-shadow: 0 0 0 8px rgba(45, 104, 255, 0.06);
+    }
     .slide.duo .lead { margin: 0 0 18px; max-width: none; font-size: 14px; }
     .slide.duo .points { gap: 8px; }
     .slide.duo .points li { grid-template-columns: 36px 1fr; gap: 10px; }
@@ -319,7 +402,12 @@
       .duo-body, .mod-grid { grid-template-rows: none; grid-template-columns: 1fr; }
       .slide.mods { height: auto; max-height: none; overflow: visible; }
       .slide.duo .device > img, .slide.duo .pane > img, .slide.duo .illu { max-height: none; }
-      #adv-wall h2 .line, #adv-cost h2 .line { letter-spacing: 0; }
+      #adv-wall h2 .line { letter-spacing: 0; }
+      #adv-cost { height: auto; max-height: none; overflow: visible; }
+      .cost-wires { display: none; }
+      .cost-stage { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+      .cost-card, .gem { position: static; width: 100%; transform: none; }
+      .gem { width: 140px; height: 160px; order: -1; }
       #adv-wall h2 .rest { display: inline; }
       .std article { grid-template-columns: 1fr auto; }
     }
@@ -532,32 +620,43 @@
     </section>
 
     <section class="slide" id="adv-cost">
-      <div class="copy">
-        <h2><span class="seq">优势9</span><span class="line">高性价比部署，</span><span class="rest">持续价值赋能</span></h2>
+      <header class="cost-head">
+        <h2><span class="seq">优势9</span>高性价比部署，持续价值赋能</h2>
         <p class="lead">专为电缆行业打造的“标准化+定制化”交付模式，降低数字化门槛，确保实验室在<strong>低试错成本</strong>下，持续获得行业前沿的技术迭代支持。</p>
-        <ul class="points">
-          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 17h10a4 4 0 0 0 .4-8 6 6 0 0 0-11.5-1.5A3.5 3.5 0 0 0 7 17z" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>灵活双模部署</b><p>支持云端托管与本地私有化部署。云端免硬件投入随时办公，本地数据全链路内网闭环，完美适配不同企业的安防需求。</p></div></li>
-          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b>标准化+定制化交付</b><p>摒弃传统软件漫长的开发周期，以专为电缆行业打造的交付模式，大幅降低企业数字化转型的技术门槛与时间成本。</p></div></li>
-          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M13 3L6 13h5l-1 8 8-11h-5l0-7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><div><b>行业工艺开箱即用</b><p>深度内嵌电缆检测行业现行工艺标准与规范，系统上线即刻贴合业务场景，拒绝冗长痛苦的系统磨合期。</p></div></li>
-          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4.2-2.8 7.2-7 8.5C7.8 19.2 5 16.2 5 12V6l7-3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><div><b>阳光报价拒绝隐形</b><p>实行彻底透明化的定价体系，明确每一项功能与服务的价值，坚决拒绝项目实施过程中的任何隐形附加成本。</p></div></li>
-          <li><span class="ico r" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M5.8 5.8l1.4 1.4M16.8 16.8l1.4 1.4M18.2 5.8l-1.4 1.4M7.2 16.8l-1.4 1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b>随规迭代持续维护</b><p>紧跟国家及行业法规标准更新，系统功能持续敏捷迭代，提供全生命周期维护，保障企业系统的长期合规与先进性。</p></div></li>
-        </ul>
-      </div>
-      <div class="visual">
-        <div class="device">
-          <div class="pane mock">
-            <div class="buy">
-              <article><p class="kicker">部署</p><h3>云端托管</h3><p>无需自建服务器，专业级云盾防护，<br />随时随地高效办公。</p></article>
-              <article><p class="kicker">部署</p><h3>本地私有化</h3><p>专属独立环境部署，数据全链路内网闭环，<br />实现完全自主可控。</p></article>
-              <article><p class="kicker">交付</p><h3>标准化 + 定制化</h3><p>专为电缆行业打造，降低数字化门槛。</p></article>
-              <article><p class="kicker">行业</p><h3>开箱即用</h3><p>深度内嵌电缆检测行业工艺标准。</p></article>
-              <article><p class="kicker">报价</p><h3>拒绝隐形成本</h3><p>透明化定价体系，拒绝隐形成本。</p></article>
-              <article><p class="kicker">维护</p><h3>持续迭代</h3><p>随法规更新持续迭代，保障系统长期合规。</p></article>
-            </div>
-          </div>
+      </header>
+      <div class="cost-stage">
+        <svg class="cost-wires" viewBox="0 0 1348 714" preserveAspectRatio="none" aria-hidden="true">
+          <line x1="279.3" y1="115.4" x2="604.8" y2="286.1" />
+          <line x1="1068.6" y1="115.4" x2="743.0" y2="286.1" />
+          <line x1="346.2" y1="359.2" x2="596.4" y2="331.1" />
+          <line x1="1001.7" y1="359.2" x2="751.4" y2="331.1" />
+          <line x1="673.9" y1="595.8" x2="673.9" y2="400.4" />
+        </svg>
+        <article class="cost-card c1">
+          <span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 17h10a4 4 0 0 0 .4-8 6 6 0 0 0-11.5-1.5A3.5 3.5 0 0 0 7 17z" stroke="currentColor" stroke-width="1.8"/></svg></span>
+          <div><b>灵活双模部署</b><p>支持云端托管与本地私有化部署。云端免硬件投入随时办公，本地数据全链路内网闭环，完美适配不同企业的安防需求。</p></div>
+        </article>
+        <article class="cost-card c2">
+          <span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg></span>
+          <div><b>标准化+定制化交付</b><p>摒弃传统软件漫长的开发周期，以专为电缆行业打造的交付模式，大幅降低企业数字化转型的技术门槛与时间成本。</p></div>
+        </article>
+        <article class="cost-card c3">
+          <span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M13 3L6 13h5l-1 8 8-11h-5l0-7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+          <div><b>行业工艺开箱即用</b><p>深度内嵌电缆检测行业现行工艺标准与规范，系统上线即刻贴合业务场景，拒绝冗长痛苦的系统磨合期。</p></div>
+        </article>
+        <article class="cost-card c4">
+          <span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4.2-2.8 7.2-7 8.5C7.8 19.2 5 16.2 5 12V6l7-3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+          <div><b>阳光报价拒绝隐形</b><p>实行彻底透明化的定价体系，明确每一项功能与服务的价值，坚决拒绝项目实施过程中的任何隐形附加成本。</p></div>
+        </article>
+        <article class="cost-card c5">
+          <span class="ico r" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M5.8 5.8l1.4 1.4M16.8 16.8l1.4 1.4M18.2 5.8l-1.4 1.4M7.2 16.8l-1.4 1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+          <div><b>随规迭代持续维护</b><p>紧跟国家及行业法规标准更新，系统功能持续敏捷迭代，提供全生命周期维护，保障企业系统的长期合规与先进性。</p></div>
+        </article>
+        <div class="gem" aria-hidden="true">
+          <div class="gem-glow"></div>
+          <div class="gem-stone"><span class="top"></span><span class="bot"></span><span class="shine"></span></div>
+          <div class="gem-base"></div>
         </div>
-        <div class="stand" aria-hidden="true"></div>
-        <div class="foot" aria-hidden="true"></div>
       </div>
     </section>
 
