@@ -369,23 +369,52 @@
     .kpi.wide { grid-column: 1 / -1; }
 
     .slide.fn {
-      grid-template-columns: minmax(0, 1.18fr) minmax(300px, 0.82fr);
+      grid-template-columns: minmax(0, 1fr);
       grid-template-rows: auto minmax(0, 1fr);
-      align-items: center;
+      align-items: stretch;
       height: 100dvh;
       max-height: 100dvh;
       overflow: hidden;
     }
     .slide.fn.plain { grid-template-rows: minmax(0, 1fr); }
-    .slide.fn .fn-top { grid-column: 1 / -1; align-self: start; }
-    .slide.fn h2 { margin: 0 0 8px; font-size: clamp(24px, 2.1vw, 32px); }
-    .slide.fn .lead { margin: 0 0 12px; max-width: none; font-size: 14px; line-height: 1.5; }
-    .slide.fn .points { gap: 8px; }
-    .slide.fn .points li { grid-template-columns: 34px 1fr; gap: 10px; }
-    .slide.fn .ico { width: 34px; height: 34px; border-radius: 10px; }
-    .slide.fn .ico svg { width: 17px; height: 17px; }
-    .slide.fn .points b { font-size: 14px; }
-    .slide.fn .points p { margin-top: 2px; font-size: 13px; line-height: 1.45; }
+    .slide.fn .fn-top { align-self: start; }
+    .fn-board { min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+    .slide.fn h2 { margin: 0 0 4px; font-size: clamp(22px, 1.9vw, 28px); }
+    .slide.fn .lead { margin: 0; max-width: none; font-size: 14px; line-height: 1.45; }
+    .fn-cols {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .fn-card {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .fn-card .shot {
+      flex: 1 1 auto;
+      min-height: 0;
+      margin: 0;
+      border-radius: 12px;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .fn-card .shot img { width: 100%; height: 100%; object-fit: contain; }
+    .fn-card h3 { margin: 0; font-size: 15px; line-height: 1.35; letter-spacing: -0.02em; }
+    .fn-card .no { color: #0B419A; }
+    .fn-card p { margin: 0; color: var(--soft); font-size: 13px; line-height: 1.45; }
     .vs {
       display: grid;
       grid-template-columns: 1fr auto 1fr;
@@ -427,6 +456,8 @@
       .pain-grid { grid-template-rows: none; }
       .duo-body, .mod-grid { grid-template-rows: none; grid-template-columns: 1fr; }
       .slide.mods, .slide.fn { height: auto; max-height: none; overflow: visible; grid-template-columns: 1fr; }
+      .fn-cols { grid-template-columns: 1fr; }
+      .fn-card .shot { height: 220px; flex: none; }
       .vs { grid-template-columns: 1fr; }
       .vs-arrow { transform: rotate(90deg); justify-self: center; }
       .slide.duo .device > img, .slide.duo .pane > img, .slide.duo .illu { max-height: none; }
@@ -663,108 +694,104 @@
       <header class="fn-top">
         <p class="chapter"><b>03</b> · 功能模块</p>
       </header>
-      <div class="copy">
-        <h2><span class="seq">流程管理</span>全生命周期闭环管理</h2>
-        <p class="lead">样品从进实验室到最终去向，每个环节都留在系统里。</p>
-        <ul class="points">
-          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16" stroke="currentColor" stroke-width="1.8"/></svg></span><div><b><span class="no">01</span> · 样品全生命周期管理</b><p>从样品接收、登记、发样、检测、还样到最终存储或销毁，每个环节在系统中均有迹可循，形成业务闭环，彻底杜绝样品混淆或丢失风险。</p></div></li>
-          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b><span class="no">02</span> · 样品标签/合格证模版自定义</b><p>支持样品二维码、编码内容的灵活定制，扫码即可调用样品全信息，配合移动端实时记录，大幅提升样品流转准确率。</p></div></li>
-          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h10M5 17h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b><span class="no">03</span> · 实验室检测流程自定义</b><p>根据实验室实际业务动态调整流转环节与顺序，确保系统流程与实际流程高度吻合。</p></div></li>
-        </ul>
-      </div>
-      <div class="visual">
-        <div class="vs">
-          <article class="old">
-            <p class="tag">传统模式</p>
-            <b>纸质流转，进度滞后</b>
-            <p>样品靠纸单传递，做到哪一步要问人。</p>
+      <div class="fn-board">
+        <header class="fn-head">
+          <h2><span class="seq">流程管理</span>全生命周期闭环管理</h2>
+          <p class="lead">样品从进实验室到最终去向，每个环节都留在系统里。</p>
+        </header>
+        <div class="fn-cols">
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/01-entrust.webp?v=fn" alt="检测任务列表显示样品处于检测中或已交接，左侧是样品条码，提示全流程数字化管控。" /></figure>
+            <h3><span class="no">01</span> · 样品全生命周期管理</h3>
+            <p>从样品接收、登记、发样、检测、还样到最终存储或销毁，每个环节在系统中均有迹可循，形成业务闭环，彻底杜绝样品混淆或丢失风险。</p>
           </article>
-          <span class="vs-arrow" aria-hidden="true">→</span>
-          <article class="new">
-            <p class="tag">LIMS 模式</p>
-            <b>实时同步，一目了然</b>
-            <p>接收到销毁全程留痕，扫码就能看到去向。</p>
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/15-trace.jpg?v=fn" alt="电缆样品贴有二维码标签，左侧列出抽样、接样、检测、报告，可按批次追溯人机料法环。" /></figure>
+            <h3><span class="no">02</span> · 样品标签/合格证模版自定义</h3>
+            <p>支持样品二维码、编码内容的灵活定制，扫码即可调用样品全信息，配合移动端实时记录，大幅提升样品流转准确率。</p>
+          </article>
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/09-flow.jpg?v=fn" alt="检测流程由委托登记、试验检测和报告处理三行环节组成，可勾选启用并拖拽调整顺序。" /></figure>
+            <h3><span class="no">03</span> · 实验室检测流程自定义</h3>
+            <p>根据实验室实际业务动态调整流转环节与顺序，确保系统流程与实际流程高度吻合。</p>
           </article>
         </div>
       </div>
     </section>
 
     <section class="slide fn plain" id="fn-collect">
-      <div class="copy">
-        <h2><span class="seq">数据采集</span>自动化检测与高效协同</h2>
-        <p class="lead">读数从设备进系统，现场用 App 接任务，模版在页面上自己改。</p>
-        <ul class="points">
-          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b><span class="no">04</span> · 数据自动化采集</b><p>支持直连主流检测设备或改造老旧设备实现设备直采，或者通过协议对接、蓝牙连接或图像识别技术，实现检测数据自动实时回传，规避人工录入误差。</p></div></li>
-          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="8" y="3" width="8" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b><span class="no">05</span> · 数据采集 APP</b><p>为检测人员提供专属应用，支持检测任务一键接收、实验室工厂端实时数据采集及逾期任务自动提醒，确保现场作业高效有序。</p></div></li>
-          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h8l3 3v13H7V4z" stroke="currentColor" stroke-width="1.8"/><path d="M15 4v3h3M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b><span class="no">06</span> · 模版可视化配置</b><p>原始记录单与检测报告模版支持自定义配置，字段可视化点配，业务需求变更无需依赖二次开发。</p></div></li>
-        </ul>
-      </div>
-      <div class="visual">
-        <div class="vs">
-          <article class="old">
-            <p class="tag">传统模式</p>
-            <b>人工敲数，易错低效</b>
-            <p>读数手抄再录入，模版一变就要等开发。</p>
+      <div class="fn-board">
+        <header class="fn-head">
+          <h2><span class="seq">数据采集</span>自动化检测与高效协同</h2>
+          <p class="lead">读数从设备进系统，现场用 App 接任务，模版在页面上自己改。</p>
+        </header>
+        <div class="fn-cols">
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/13-collect.png?v=fn" alt="检测设备通过直采、串口、图像识别和蓝牙把电缆检测数据自动回传到系统。" /></figure>
+            <h3><span class="no">04</span> · 数据自动化采集</h3>
+            <p>支持直连主流检测设备或改造老旧设备实现设备直采，或者通过协议对接、蓝牙连接或图像识别技术，实现检测数据自动实时回传，规避人工录入误差。</p>
           </article>
-          <span class="vs-arrow" aria-hidden="true">→</span>
-          <article class="new">
-            <p class="tag">LIMS 模式</p>
-            <b>设备直连，自动留痕</b>
-            <p>数据实时回传，字段点配，不用二次开发。</p>
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/07-lims-app.jpg?v=fn" alt="数据采集 App 展示今日任务、按任务进入检测，以及现场确认并上传试验数据。" /></figure>
+            <h3><span class="no">05</span> · 数据采集 APP</h3>
+            <p>为检测人员提供专属应用，支持检测任务一键接收、实验室工厂端实时数据采集及逾期任务自动提醒，确保现场作业高效有序。</p>
+          </article>
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/10-report.jpg?v=fn" alt="数据录入页旁有自定义模版入口，检测结果可生成带电子签章的检验检测报告。" /></figure>
+            <h3><span class="no">06</span> · 模版可视化配置</h3>
+            <p>原始记录单与检测报告模版支持自定义配置，字段可视化点配，业务需求变更无需依赖二次开发。</p>
           </article>
         </div>
       </div>
     </section>
 
     <section class="slide fn plain" id="fn-report">
-      <div class="copy">
-        <h2><span class="seq">报告签批</span>智能报告与审批签发</h2>
-        <p class="lead">结果按标准自动判定，签章和审批不用等人把纸送一圈。</p>
-        <ul class="points">
-          <li><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b><span class="no">07</span> · 报告自动判定</b><p>系统根据预设标准自动校核检测结果，实现自动判定，一键生成规范化报告，确保数据判定结果精准合规。</p></div></li>
-          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M8 12l3 3 5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b><span class="no">08</span> · CMA 电子签章认证</b><p>通过加盖合规电子签名以及 CMA 电子签章，快速完成合规签发，大大缩短了报告交付周期，实现无纸化高效办结。</p></div></li>
-          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="8" y="3" width="8" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b><span class="no">09</span> · 移动端在线审批</b><p>可通过移动端随时随地发起和处理报告审批，实现多端流程联动，打破办公地点限制，让审批流程更高效。</p></div></li>
-        </ul>
-      </div>
-      <div class="visual">
-        <div class="vs">
-          <article class="old">
-            <p class="tag">传统模式</p>
-            <b>人工判定，签发周期长</b>
-            <p>对照标准靠人看，纸质签章要等人送。</p>
+      <div class="fn-board">
+        <header class="fn-head">
+          <h2><span class="seq">报告签批</span>智能报告与审批签发</h2>
+          <p class="lead">结果按标准自动判定，签章和审批不用等人把纸送一圈。</p>
+        </header>
+        <div class="fn-cols">
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/12-standard-judge.png?v=fn" alt="表格按公式自动判定导体电阻和绝缘厚度合格、拉伸强度不合格，并可选择四舍五入修约。" /></figure>
+            <h3><span class="no">07</span> · 报告自动判定</h3>
+            <p>系统根据预设标准自动校核检测结果，实现自动判定，一键生成规范化报告，确保数据判定结果精准合规。</p>
           </article>
-          <span class="vs-arrow" aria-hidden="true">→</span>
-          <article class="new">
-            <p class="tag">LIMS 模式</p>
-            <b>自动判定，移动签发</b>
-            <p>一键出报告，电子签章，手机上就能批。</p>
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/18-cnas.png?v=fn" alt="盾牌标明 ISO/IEC 17025 与 CNAS/CMA，周围连着电子签章、标准受控、记录留痕和样品追溯。" /></figure>
+            <h3><span class="no">08</span> · CMA 电子签章认证</h3>
+            <p>通过加盖合规电子签名以及 CMA 电子签章，快速完成合规签发，大大缩短了报告交付周期，实现无纸化高效办结。</p>
+          </article>
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/08-collect-app.jpg?v=fn" alt="手机上可进入委托查询和报告编制，对报告执行退回或生成。" /></figure>
+            <h3><span class="no">09</span> · 移动端在线审批</h3>
+            <p>可通过移动端随时随地发起和处理报告审批，实现多端流程联动，打破办公地点限制，让审批流程更高效。</p>
           </article>
         </div>
       </div>
     </section>
 
     <section class="slide fn plain" id="fn-ops">
-      <div class="copy">
-        <h2><span class="seq">运维协同</span>全场景多端查询与运维</h2>
-        <p class="lead">进度和报告在手机上能查，设备逾期会提醒，岗位只看见该看的菜单。</p>
-        <ul class="points">
-          <li><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="8" y="3" width="8" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b><span class="no">10</span> · 移动端全业务查询</b><p>用户可通过手机 APP 或小程序随时在线查询任务进度、样品流转状态及查看最终检测报告，信息透明，随时随地掌握动态。</p></div></li>
-          <li><span class="ico o" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><b><span class="no">11</span> · 设备校准与逾期预警</b><p>全链路管理实验室设备校准状态，逾期自动触发预警，保障实验数据的准确性与合规性。</p></div></li>
-          <li><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4l7 3v5c0 4.2-2.8 6.8-7 8-4.2-1.2-7-3.8-7-8V7l7-3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><div><b><span class="no">12</span> · 通用权限管控</b><p>内置细粒度权限控制，支持菜单级精准授权。统一管理用户、角色、部门及应用权限，确保实验室各岗位在安全的工作台内高效协作。</p></div></li>
-        </ul>
-      </div>
-      <div class="visual">
-        <div class="vs">
-          <article class="old">
-            <p class="tag">传统模式</p>
-            <b>进度要问人，校准靠记</b>
-            <p>报告和设备状态散在各处，权限边界不清。</p>
+      <div class="fn-board">
+        <header class="fn-head">
+          <h2><span class="seq">运维协同</span>全场景多端查询与运维</h2>
+          <p class="lead">进度和报告在手机上能查，设备逾期会提醒，岗位只看见该看的菜单。</p>
+        </header>
+        <div class="fn-cols">
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/17-pc-mobile.png?v=fn" alt="电脑显示任务进度为已收样、检测中和已出报告，两部手机分别查询报告和采集数据。" /></figure>
+            <h3><span class="no">10</span> · 移动端全业务查询</h3>
+            <p>用户可通过手机 APP 或小程序随时在线查询任务进度、样品流转状态及查看最终检测报告，信息透明，随时随地掌握动态。</p>
           </article>
-          <span class="vs-arrow" aria-hidden="true">→</span>
-          <article class="new">
-            <p class="tag">LIMS 模式</p>
-            <b>手机可查，逾期预警</b>
-            <p>进度和报告随时看，校准到期自动提醒。</p>
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/06-equip.jpg?v=fn" alt="设备管理列表显示下次校准时间和校准状态，其中一台空气老化试验箱已过期。" /></figure>
+            <h3><span class="no">11</span> · 设备校准与逾期预警</h3>
+            <p>全链路管理实验室设备校准状态，逾期自动触发预警，保障实验数据的准确性与合规性。</p>
+          </article>
+          <article class="fn-card">
+            <figure class="shot"><img src="assets/brochure/07-perm.jpg?v=fn" alt="权限中枢管理用户、角色、部门和菜单，右侧可按试验员、实验室主任等岗位授权。" /></figure>
+            <h3><span class="no">12</span> · 通用权限管控</h3>
+            <p>内置细粒度权限控制，支持菜单级精准授权。统一管理用户、角色、部门及应用权限，确保实验室各岗位在安全的工作台内高效协作。</p>
           </article>
         </div>
       </div>
