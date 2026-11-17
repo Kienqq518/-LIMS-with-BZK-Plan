@@ -196,17 +196,20 @@
       background: var(--bg);
       padding: 56px 72px 48px;
     }
-    #pain .duo-top { display: block; margin: 0 0 56px; }
-    #pain .chapter {
+    #pain .duo-top { display: flex; justify-content: flex-end; margin: 0 0 40px; }
+    #pain .chapter,
+    #adv-standards .chapter {
       margin: 0;
-      text-align: left;
-      font-size: 32px;
-      font-weight: 700;
-      line-height: 1.25;
-      letter-spacing: -0.02em;
-      color: #1a1a1a;
+      font-size: clamp(34px, 3.15vw, 48px);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      color: #0e172a;
+      white-space: nowrap;
     }
-    #pain .chapter b { color: inherit; font-size: inherit; margin-right: 0; letter-spacing: inherit; }
+    #pain .chapter { text-align: right; }
+    #adv-standards .duo-top { justify-content: flex-start; }
+    #adv-standards .chapter { margin-left: 0; text-align: left; }
     .pain-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -240,6 +243,9 @@
       min-height: 0;
       padding-top: 8px;
     }
+    .adv.flip { grid-template-columns: minmax(0, 1fr) minmax(280px, 40%); }
+    .adv.flip .visual { order: 1; }
+    .adv.flip .copy { order: 2; }
     h1, h2, h3, .chapter, .copy h1, .copy h2, .pain-card h3, .buy h3, .mock h3, .paper h3, .timeline h3, .perm-board h3 {
       font-family: var(--font);
       font-weight: 700;
@@ -519,7 +525,9 @@
       .pain-grid { grid-template-rows: none; row-gap: 32px; }
       .slide.pains { padding: 28px 18px 36px; }
       #pain .duo-top { margin-bottom: 28px; }
-      #pain .chapter { font-size: 26px; }
+      #pain .chapter, #adv-standards .chapter { font-size: 32px; white-space: normal; }
+      .adv.flip { grid-template-columns: 1fr; }
+      .adv.flip .visual, .adv.flip .copy { order: 0; }
       .pain-card .idx { font-size: 40px; }
       .pain-card h3 { font-size: 20px; }
       .duo-body, .mod-grid { grid-template-rows: none; grid-template-columns: 1fr; }
@@ -575,7 +583,7 @@
     <section class="slide pains" id="pain">
       <header class="duo-top">
         
-        <p class="chapter"><b>01</b> · 现状和痛点</p>
+        <p class="chapter">现状和痛点</p>
       </header>
       <div class="pain-grid">
         <article class="pain-card">
@@ -614,7 +622,7 @@
     <section class="slide duo" id="adv-standards">
       <header class="duo-top">
         
-        <p class="chapter"><b>02</b> · 软件优势</p>
+        <p class="chapter">我们的优势</p>
       </header>
       <div class="duo-body">
         <article class="adv" id="adv-standard">
@@ -631,7 +639,7 @@
             <img class="illu" src="assets/brochure/12-standard-judge.png?v=svg3" alt="表格设置按公式自动判定：导体电阻和绝缘平均厚度合格，拉伸强度不合格。右侧数值公式计算可选择四舍五入，数据自行修约。" />
           </div>
         </article>
-        <article class="adv" id="adv-collect">
+        <article class="adv flip" id="adv-collect">
           <div class="copy">
             <h2><span class="seq">优势2</span>设备数据直采，构筑防篡改的“数据底座”</h2>
             <p class="lead">打通底层仪器壁垒，实现“采-算-判”全链路自动化流转，<br />从源头捍卫质量数据的绝对真实。</p>
@@ -664,7 +672,7 @@
             <img class="illu" src="assets/brochure/14-template.png?v=adv3c" alt="左侧原始记录单列出导体电阻、绝缘厚度和拉伸强度，旁有自定义模版、可视化模版配置、数据自动填充。中间是带 MA 标志的 8.7/10kV 电力电缆检测报告。右侧可在线预览、一键导出，并按客户模版出报告。" />
           </div>
         </article>
-        <article class="adv" id="adv-trace">
+        <article class="adv flip" id="adv-trace">
           <div class="copy">
             <h2><span class="seq">优势4</span>全链路溯源：从原材料到成品的一键穿透</h2>
             <p class="lead">通过批次号或条码，将电缆质量与人、机、料、法、环深度绑定。实现从样品抽检、送接样、实验室检测到最终留样销毁的数字化闭环管理，确保产品质量透明、可控、可回溯。</p>
@@ -701,7 +709,7 @@
             <img class="illu" src="assets/brochure/18-cnas.png?v=shield3" alt="蓝色盾牌中间是 ISO/IEC 17025 与 CNAS/CMA，周围是人员授权、设备管理、记录留痕、标准受控、样品溯源、电子签章、权限分级、数据灾备。" />
           </div>
         </article>
-        <article class="adv" id="adv-wall">
+        <article class="adv flip" id="adv-wall">
           <div class="copy">
             <h2><span class="seq">优势6</span><span class="line">可视化大屏看板，质量与交付</span><span class="rest">一目了然</span></h2>
             <p class="lead">摒弃传统纸质台账，通过可视化看板实时监控实验室流转状态。从待检到出库，每一批次的<strong>质量与进度清晰可控</strong>，大幅提升交付决策效率。</p>
@@ -733,7 +741,7 @@
             <img class="illu" src="assets/brochure/19-integration.png?v=adv7b" alt="浅灰底上，左侧是齿轮里的工厂，中间是数据库和蓝云，双向箭头相连；右侧是传送带上的箱子、虚线齿轮和向右箭头。" />
           </div>
         </article>
-        <article class="adv" id="adv-pc">
+        <article class="adv flip" id="adv-pc">
           <div class="copy">
             <h2><span class="seq">优势8</span>全端协同，打造移动实验室</h2>
             <p class="lead">打破地理空间限制，通过 Web 与移动端全场景覆盖，确保任务下发、检测记录、报告查阅在同一系统中实时同步，实现实验室的<strong>轻量化运营</strong>。</p>
