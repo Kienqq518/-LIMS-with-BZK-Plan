@@ -1,0 +1,96 @@
+<p>端到端流图：<b>① 触发 → ② 编排门禁 → ③ 规范快照 ∥ 规则装载 → ④ 引擎 → ⑤ 三态 → ⑥ 落库 + 双入口 → ⑦ 人工闭环 → ⑧ cases 旁路</b>。</p>
+<p>细粒度交互图（Excalidraw）：<a href="https://excalidraw.com/#json=v5r6eAKNRLIR-tPDeeT7M,YOWe3PCOkm_h5NEGZPTceg">在线打开</a>；源文件见仓库 <code>docs/feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw</code>。</p>
+<callout emoji="💡" background-color="light-blue">
+<p><b>读法：</b>实线 = 当次主路径；虚线 = 可选旁路 / 回传。MVP 主路径只跑 RuleEngine → 门控聚合；LLM 是可选旁路，不是必经中间站。<b>红线：</b>AI 永不自动签发；引擎禁止私自改报告状态。</p>
+</callout>
+
+<h3>① 触发层（系统内事件 · 并列汇入 Orchestrator）</h3>
+<p>产品是 LIMS <b>内嵌能力</b>，触发以系统内事件为准，<b>不做</b>外部轮询降级。</p>
+<ul>
+<li><b>主路径：</b>报告编制完成、流程进入「报告审核」时，LIMS 领域事件 / 回调通知 Orchestrator。</li>
+<li><b>人工重审：</b>审核工作台或报告审核页主动重跑，与主路径并列汇入编排入口。</li>
+</ul>
+
+<h3>② 编排门禁（同版本不重复狂跑）</h3>
+<p>请求进入 Orchestrator 后先过门禁，再开跑取数与装包：</p>
+<ul>
+<li><b>身份鉴权</b>：校验调用方与报告访问权限。</li>
+<li><b>幂等键</b>：<code>report_id + report_revision</code>，同版本不重复计费式狂跑。</li>
+<li><b>超时 · 重试 · 任务态</b>：编排器托管任务生命周期，失败可观测、可重试。</li>
+</ul>
+
+<h3>③ 并行准备：规范快照 ∥ 规则装载</h3>
+<p>过门禁后两条准备路径可并行，互不依赖：</p>
+<ul>
+<li><b>规范报告快照（Canonical Snapshot）</b>：从 LIMS <b>只读</b>取数，按模板映射拼成引擎统一可读的 JSON。通用字段含身份 / 日期 / 项目结果 / 标准 / 设备与签名；行业特有量放进 <code>ext</code>（扩展袋，如化学浓度、汽车扭矩），不污染核心 schema。</li>
+<li><b>规则集装载器（PackResolver）</b>：为本次审核选出要跑的规则。装载顺序：① 通用规则集 → ② Industry Pack（按 <code>industry_code</code>）→ ③ 品类绑定（可覆盖参数）。产出：本次规则清单 + 行业包版本号。</li>
+</ul>
+<p><b>Industry Pack</b> = 某行业的插件包（规则增量 / 标准与限值 / 模板映射 / 术语 / <code>policy</code>）；换行业只换包，不改引擎。</p>
+
+<h3>④ 引擎执行（主路径实线 · LLM 可选虚线）</h3>
+<ol>
+<li><b>规则引擎（主路径 · MVP）</b>：逐条确定性判定（通过 / 命中），写出严重度 + 证据字段；覆盖 L1–L4 已启用级别（MVP 以 L1+L2 为主，少量确定性 L3）。</li>
+<li><b>可选 LLM（旁路）</b>：仅处理语义项，强制结构化输出；低置信只能进「需复核」，禁止单独触发自动退回。</li>
+<li><b>门控聚合</b>：合成三态结论 + 问题清单（含规则 ID、证据、规则/包版本）。</li>
+</ol>
+
+<h3>⑤ 三态结论</h3>
+<table>
+  <colgroup><col width="120"/><col width="320"/><col width="420"/></colgroup>
+  <thead>
+    <tr>
+      <th background-color="light-gray"><p>分流结果</p></th>
+      <th background-color="light-gray"><p>触发条件</p></th>
+      <th background-color="light-gray"><p>后续动作</p></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td background-color="light-green"><p><b>通过</b></p></td>
+      <td><p>无严重 / 一般问题（可有提示）</p></td>
+      <td><p>审核员确认后走原签发流程；AI <b>不</b>自动签发</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-yellow"><p><b>需复核</b></p></td>
+      <td><p>命中「一般」，或 LLM 置信度 &lt; 阈值（默认 90）</p></td>
+      <td><p>人工针对性审核；可覆盖并填理由</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-red"><p><b>不通过</b></p></td>
+      <td><p>命中「严重」</p></td>
+      <td><p>建议退回编制（是否自动退回由行业包 <code>policy</code> 配置）；人工可覆盖</p></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>⑥ 落库 + 双入口回传（并行，不是串联）</h3>
+<p>结论写入审核域 <code>ai_review_results</code> / <code>issues</code>（唯一数据源）。两个界面都直接读 <code>ai_review_*</code>，报告页卡片不经过工作台：</p>
+<ul>
+<li><b>入口 A · AI 审核工作台</b>：统览全系统 AI 审核结果（统计 / 筛选 / 详情 / 处置）。</li>
+<li><b>入口 B · 报告审核页卡片</b>：嵌在 LIMS 主流程「报告审核」，只看本报告结论与处置。</li>
+</ul>
+
+<h3>⑦ 人工处置闭环（AI 永不自动签发）</h3>
+<ul>
+<li><b>通过分支：</b>审核员确认 → 原签发流程；AI 不改报告状态。</li>
+<li><b>需复核分支：</b>逐条处置 / 覆盖；覆盖必填理由。</li>
+<li><b>不通过分支：</b>建议退回编制；是否自动退回看行业包 <code>pack.policy</code>（存在配置域 <code>industry_packs</code>，不是运行结果表）。编排器调 LIMS 流程 API；最终签发仍是授权签字人。</li>
+</ul>
+<callout emoji="❗" background-color="light-orange">
+<p><b>红线：</b>禁止引擎私自改报告；禁止 AI 自动签发；退回动作走 LIMS 既有流程 API。</p>
+</callout>
+
+<h3>⑧ 学习旁路（不进当次判定 · 只沉淀给下期）</h3>
+<p>人工反馈写入学习旁路，供后续优化 / 训练，<b>不进入当次</b> ①→⑤ 判定主路径（MVP 只写；M5 起按行业消费，见 §5.7）：</p>
+<ol>
+<li><code>ai_review_feedback</code>：覆盖理由 + 逐条处置留痕。</li>
+<li><code>ai_review_cases</code>：快照 + AI 结论 + 人工处置；按 <code>industry_code</code> 分桶。</li>
+<li><b>标注</b>（写在反馈 / 案例上，不是独立库表）：
+  <ul>
+    <li><b>正常</b>：人工认同 AI 判断（判对了）</li>
+    <li><b>误报</b>：AI 报了问题，实际无问题（False Positive）</li>
+    <li><b>漏报</b>：AI 未报出问题，人工发现真实问题（False Negative）</li>
+  </ul>
+</li>
+</ol>
+<p>标注仅用于学习，不对上下游业务展示。</p>

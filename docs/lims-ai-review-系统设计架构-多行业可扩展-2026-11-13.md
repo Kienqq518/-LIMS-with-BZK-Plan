@@ -217,6 +217,7 @@ LLM 低置信 / 冲突 → 需复核
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw`](../feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw)
 - 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=v5r6eAKNRLIR-tPDeeT7M,YOWe3PCOkm_h5NEGZPTceg)
+- **①–⑧ 详解已写入飞书产品文档 §2.5**（触发 / 门禁 / 快照∥装包 / 引擎 / 三态 / 双入口 / 人工闭环 / cases 旁路）
 
 与本节 §6–§7 口径一致：系统内事件触发、人工重审、幂等键 `report_id+revision`、三态门控、AI 不自动签发、feedback→cases 学习旁路。
 
@@ -224,10 +225,11 @@ LLM 低置信 / 冲突 → 需复核
 
 ## 6.6 数据飞轮（对应飞书 §5.7）
 
-闭环：**审核 → 人工裁决 → 标注（正常 / 误报 / 漏报）→ 按 `industry_code` 分桶案例库 → 规则 / 提示词改进 → 再审核**。学习旁路不进入当次判定主路径；行业样本隔离，避免电网污染化学。
+六步闭环（按行业分桶 · 越用越准）：**① 审核产出**（三态 + 问题清单 / RuleEngine · L1–L4）→ **② 人工裁决**（同意/覆盖 + 理由；工作台 ∥ 报告页）→ **③ 三类标注**（正常 / 误报 / 漏报）→ **④ 分桶入库**（`feedback` → `cases` · `industry_code`）→ **⑤ 改进**（规则调参 · 提示词/小模型 M5+ · Pack/`pack.policy` 灰度）→ **⑥ 再审核**。学习旁路不进入当次判定主路径；行业样本隔离，避免电网污染化学。
 
 - **Phase 1（M1–M3）**：只建采集通道（只写不消费）——`ai_review_feedback` / `ai_review_cases`、双入口写回流、按规则/按包采纳率与误报看板。
 - **Phase 2（M5 起）**：按行业消费案例——提示词 / 小模型评估、规则阈值与包策略灰度。
+- **红线**：标注仅用于学习，不对上下游业务展示。
 
 细粒度交互图：
 
