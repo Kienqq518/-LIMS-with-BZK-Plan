@@ -232,7 +232,7 @@ LLM 低置信 / 冲突 → 需复核
 细粒度交互图：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-5.7-数据飞轮设计.excalidraw`](../feishu/LIMS-AI-Review-5.7-数据飞轮设计.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=13HfG4tfmDUS-q5Fz6WIV,znZGr_R20KNqqf33uiXBtw)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=u0fdEBYrel3qPQzoY8tmd,FrSpCZQmJNJlY7DzwFeBhA)
 
 ---
 
