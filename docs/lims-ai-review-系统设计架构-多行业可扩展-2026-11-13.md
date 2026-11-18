@@ -44,9 +44,10 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=YGfDm6r4fejsV8m1HU4pd,-jUTky0JTcFh9SeSp_BJjg)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=Y9y0nSBJs1Vlksx2M_gS_,ExMQ0lUjtJyXhOAbsnaiQQ)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b LIMS数据层 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
+**第1层模块分组（勿读成五格流水线）**：A 业务主链（编制→审核→签发）｜B AI 统览入口（工作台）｜C 配置入口（规则/行业包台账，虚线，不进当次触发）。**触发汇聚**仅两项并列进第2层：进入「报告审核」领域事件/回调（主）、人工重审；轮询降级是集成策略，不画成第1层业务模块。  
 **布局说明**：主栏通栏 **1 → 2 → 3a → 4**；右侧 **3b LIMS数据层 / 3c 知识组装**。每层一色（靛蓝 / 琥珀 / 绿 / 深蓝 / 青）；**只画层间箭头**（层内模块用文案标明顺序，不互挂箭头）。3c 的「品类绑定 + 标准/限值库」包在 **Industry Pack** 模块内。
 
 **层间交互（图上仅这些箭头）**：1→2 触发；2→3a 调度执行；3a→4 落库；4→2 反馈（虚线）；2→1 回传界面（虚线，三态结论/建议退回）；3b→3a 取数；3c→3a 依据；3c→2 装载规则集（虚线）。层内顺序用标题文案表达，不画模块间箭头。
@@ -84,9 +85,13 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  LIMS 业务前端（报告编制 / 报告审核 / 签发 / 工作台 / 规则台账）   │
+│  LIMS 用户交互层（第1层）                                          │
+│  A 业务主链：报告编制 → 报告审核★(嵌入AI卡片) → 签发               │
+│  B AI 统览入口：AI 审核工作台（统览/处置，可人工重审）             │
+│  C 配置入口：规则/行业包台账（维护配置域，不触发当次审核）         │
 └────────────────────────────┬────────────────────────────────────┘
-                             │ 事件：进入「报告审核」 / 人工重审
+                             │ 触发汇聚（并列）：进入「报告审核」事件
+                             │              或 人工重审（工作台/审核页）
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  API · 审核编排器 Orchestrator（身份鉴权 / 幂等 / 超时 / 重试）   │
@@ -198,7 +203,7 @@ LLM 低置信 / 冲突 → 需复核
 端到端设计流图（触发 → 门禁 → Snapshot∥Pack → RuleEngine → 三态 → 落库展示 → 人工闭环 → cases 旁路）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw`](../feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw)
-- 在线打开：[https://excalidraw.com/#json=sizYq50bcWsvPM5SC7nOc,J1hsP70b4-5AkhYu455aYQ](https://excalidraw.com/#json=sizYq50bcWsvPM5SC7nOc,J1hsP70b4-5AkhYu455aYQ)
+- 在线打开：[https://excalidraw.com/#json=1OmzrWjJLIWBf_jIYxT6Z,yX_ri_v1bltmeKRZS_UpPw](https://excalidraw.com/#json=1OmzrWjJLIWBf_jIYxT6Z,yX_ri_v1bltmeKRZS_UpPw)
 
 与本节 §6–§7 口径一致：主路径事件回调、轮询降级、幂等键 `report_id+revision`、三态门控、AI 不自动签发、feedback→cases 学习旁路。
 
