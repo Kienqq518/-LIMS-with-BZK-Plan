@@ -202,10 +202,12 @@ LLM 低置信 / 冲突 → 需复核
 
 ## 6.5 AI 审核工作流（对应飞书 §2.5）
 
-端到端设计流图（触发 → 门禁 → 规范快照∥规则装载 → RuleEngine → 三态 → 落库展示 → 人工闭环 → cases 旁路）：
+端到端设计流图（触发 → 门禁 → 规范快照∥规则装载 → RuleEngine → 三态 → 落库 → 工作台∥报告页卡片双入口 → 人工闭环 → cases 旁路）：
+
+**双入口说明：**审核工作台（统览全系统）与报告审核页卡片（嵌入主流程）均直接读取 `ai_review_*`；卡片不经过工作台。
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw`](../feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=FN6xMfKRdc6nyVNXB-Ady,9fRCrGUof0Cg-YIIoiAAbw)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=H4yxZM209IcZwJXFlxYxx,_k8ankrOkG-nJauEb3e3gg)
 
 与本节 §6–§7 口径一致：系统内事件触发、人工重审、幂等键 `report_id+revision`、三态门控、AI 不自动签发、feedback→cases 学习旁路。
 
