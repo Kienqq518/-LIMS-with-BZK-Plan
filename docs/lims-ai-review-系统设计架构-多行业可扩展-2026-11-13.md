@@ -205,7 +205,7 @@ LLM 低置信 / 冲突 → 需复核
 端到端设计流图（触发 → 门禁 → 规范快照∥规则装载 → RuleEngine → 三态 → 落库展示 → 人工闭环 → cases 旁路）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw`](../feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw)
-- 在线打开：[https://excalidraw.com/#json=FN6xMfKRdc6nyVNXB-Ady,9fRCrGUof0Cg-YIIoiAAbw)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=FN6xMfKRdc6nyVNXB-Ady,9fRCrGUof0Cg-YIIoiAAbw)
 
 与本节 §6–§7 口径一致：系统内事件触发、人工重审、幂等键 `report_id+revision`、三态门控、AI 不自动签发、feedback→cases 学习旁路。
 
