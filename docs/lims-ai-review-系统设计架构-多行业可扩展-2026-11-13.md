@@ -141,6 +141,8 @@ Industry Pack = {
     enabled_levels: [L1,L2]  # MVP 电网只开 L1/L2
   }
 }
+
+**`pack.policy` 存放位置：**行业包配置的一部分，落在配置域 `ai_review_industry_packs`（及包版本），由规则/行业包台账维护；**不是** `results/issues` 运行留档字段。编排器在「不通过→是否自动建议退回」时读取该策略。
 ```
 
 **运行时解析顺序（必须固定，避免行业串味）：**
@@ -195,7 +197,12 @@ MVP 成功标准：**电网 L1+L2 闭环可上线给电科院/第三方试点客
 Rule 命中严重     → 不通过建议（可配置是否自动退回编制）
 Rule 命中一般     → 需复核
 LLM 低置信 / 冲突 → 需复核
-人工覆盖          → 必填理由 → feedback + cases（误报/漏报/正常）
+人工覆盖          → 必填理由 → feedback + cases（标注：正常/误报/漏报）
+
+**正常 / 误报 / 漏报含义（案例标注，不是独立库表）：**
+- **正常**：人工认同 AI 判断（AI 判对了）
+- **误报**：AI 报了问题，但人工认为实际无问题（False Positive）
+- **漏报**：AI 未报出问题，但人工发现了真实问题（False Negative）
 ```
 
 ---
@@ -207,7 +214,7 @@ LLM 低置信 / 冲突 → 需复核
 **双入口说明：**审核工作台（统览全系统）与报告审核页卡片（嵌入主流程）均直接读取 `ai_review_*`；卡片不经过工作台。
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw`](../feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=H4yxZM209IcZwJXFlxYxx,_k8ankrOkG-nJauEb3e3gg)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=v5r6eAKNRLIR-tPDeeT7M,YOWe3PCOkm_h5NEGZPTceg)
 
 与本节 §6–§7 口径一致：系统内事件触发、人工重审、幂等键 `report_id+revision`、三态门控、AI 不自动签发、feedback→cases 学习旁路。
 
