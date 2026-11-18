@@ -226,53 +226,47 @@
     </div>
   </div>
 
-  <!-- 报告记录弹窗 -->
+  <!-- 报告记录弹窗：节点进度 + 操作日志同屏（不再二次弹「日志」） -->
   <div id="reportRecordModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-    <div class="flex max-h-[90vh] w-[960px] max-w-full flex-col rounded-lg bg-white shadow-xl">
+    <div class="flex max-h-[92vh] w-[1040px] max-w-full flex-col rounded-lg bg-white shadow-xl" data-annotate="rl-record-merged">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
-        <h3 class="text-base font-medium text-slate-800">报告记录</h3>
+        <div>
+          <h3 class="text-base font-medium text-slate-800">报告记录</h3>
+          <p id="reportRecordSubtitle" class="mt-0.5 text-xs text-slate-500"></p>
+        </div>
         <button type="button" onclick="closeReportRecordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
-      <div class="flex-1 overflow-auto px-6 py-4">
-        <table class="w-full min-w-[860px] border-collapse text-left text-sm">
-          <thead>
-            <tr class="bg-slate-100 text-slate-600">
-              <th class="border border-slate-200 px-3 py-2 font-medium w-[72px] whitespace-nowrap">序号</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">报告编号</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">编制</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">审核</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">签发</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">处理</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">收费审批</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">发放</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium w-20">操作</th>
-            </tr>
-          </thead>
-          <tbody id="reportRecordBody"></tbody>
-        </table>
-        <div class="mt-3 flex items-center justify-end gap-2 text-sm text-slate-500">
-          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
-          <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
-          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 报告操作日志弹窗（叠在报告记录之上） -->
-  <div id="reportLogModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 p-4">
-    <div class="w-[640px] max-w-[92vw] rounded-lg bg-white shadow-xl">
-      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
-        <h3 class="text-base font-medium text-slate-800">报告操作日志</h3>
-        <button type="button" onclick="closeReportLogModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
-      </div>
-      <div class="px-6 py-5">
-        <div id="reportLogList" class="space-y-5 max-h-[60vh] overflow-y-auto"></div>
-        <div class="mt-5 flex justify-center gap-1 text-sm text-slate-500">
-          <button type="button" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
-          <button type="button" class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
-          <button type="button" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
-        </div>
+      <div class="flex-1 space-y-5 overflow-auto px-6 py-4">
+        <section>
+          <div class="mb-2 flex items-center justify-between">
+            <h4 class="text-sm font-medium text-slate-700">节点进度</h4>
+            <span class="text-xs text-slate-400">点击行可筛选下方操作日志</span>
+          </div>
+          <div class="overflow-x-auto rounded border border-slate-200">
+            <table class="w-full min-w-[860px] border-collapse text-left text-sm">
+              <thead>
+                <tr class="bg-slate-100 text-slate-600">
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium w-[56px] whitespace-nowrap">序号</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">报告编号</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">编制</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">审核</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">签发</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">处理</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">收费审批</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">发放</th>
+                </tr>
+              </thead>
+              <tbody id="reportRecordBody"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="border-t border-slate-100 pt-4" data-annotate="rl-record-logs">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h4 class="text-sm font-medium text-slate-700">操作日志</h4>
+            <div id="reportLogFilter" class="flex flex-wrap items-center gap-1.5"></div>
+          </div>
+          <div id="reportLogList" class="max-h-[36vh] space-y-4 overflow-y-auto pr-1"></div>
+        </section>
       </div>
     </div>
   </div>
@@ -694,32 +688,7 @@
       }).join('');
     }
 
-    function renderReportRecordList(code) {
-      var list = reportsOf(code);
-      var body = document.getElementById('reportRecordBody');
-      if (!list.length) {
-        body.innerHTML = '<tr><td colspan="9" class="border border-slate-200 px-3 py-6 text-center text-slate-400">该委托暂无报告记录</td></tr>';
-        return;
-      }
-      body.innerHTML = list.map(function (row, i) {
-        var auditCell = stageCell(row.audit);
-        if (!row.audit && row.inApproval && row.node === '报告审核') {
-          auditCell = '<span class="text-amber-600">审批中</span>';
-        }
-        return '<tr class="hover:bg-slate-50">' +
-          '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + row.reportNo + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.compile) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + auditCell + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.sign) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.process) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.fee) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + stageCell(row.issue) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' +
-          '<button type="button" data-annotate="report-op-log" class="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700" onclick="openReportLogModal(' + row.id + ')">日志</button>' +
-          '</td></tr>';
-      }).join('');
-    }
+    var activeReportLogFilter = 'all'; // 'all' | report id number
 
     function findReportById(reportId) {
       var codes = Object.keys(REPORTS_BY_ENTRUST);
@@ -732,33 +701,99 @@
       return null;
     }
 
-    function renderReportLogList(logs) {
+    function collectEntrustLogs(code, filterId) {
+      var list = reportsOf(code);
+      var items = [];
+      list.forEach(function (row) {
+        if (filterId !== 'all' && row.id !== filterId) return;
+        (row.logs || []).forEach(function (log) {
+          items.push({ time: log.time, text: log.text, reportNo: row.reportNo, reportId: row.id });
+        });
+      });
+      items.sort(function (a, b) { return a.time < b.time ? 1 : (a.time > b.time ? -1 : 0); });
+      return items;
+    }
+
+    function renderReportLogFilter(code) {
+      var list = reportsOf(code);
+      var box = document.getElementById('reportLogFilter');
+      var chips = [{ id: 'all', label: '全部' }].concat(list.map(function (r) {
+        return { id: r.id, label: r.reportNo.split('/').pop() || r.reportNo };
+      }));
+      box.innerHTML = chips.map(function (c) {
+        var active = String(activeReportLogFilter) === String(c.id);
+        var cls = active
+          ? 'rounded-full bg-blue-600 px-2.5 py-0.5 text-xs text-white'
+          : 'rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs text-slate-600 hover:border-blue-300 hover:text-blue-600';
+        return '<button type="button" class="' + cls + '" data-log-filter="' + c.id + '" onclick="setReportLogFilter(\'' + String(c.id).replace(/'/g, '') + '\')">' + c.label + '</button>';
+      }).join('');
+    }
+
+    function setReportLogFilter(id) {
+      activeReportLogFilter = id === 'all' ? 'all' : Number(id);
+      renderReportLogFilter(activeEntrustCode);
+      renderMergedReportLogs(activeEntrustCode);
+      highlightRecordRow(activeReportLogFilter);
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+
+    function highlightRecordRow(filterId) {
+      document.querySelectorAll('#reportRecordBody tr[data-report-id]').forEach(function (tr) {
+        var match = filterId !== 'all' && Number(tr.getAttribute('data-report-id')) === Number(filterId);
+        tr.classList.toggle('bg-blue-50', match);
+        tr.classList.toggle('ring-1', match);
+        tr.classList.toggle('ring-inset', match);
+        tr.classList.toggle('ring-blue-200', match);
+      });
+    }
+
+    function renderMergedReportLogs(code) {
       var box = document.getElementById('reportLogList');
-      if (!logs || !logs.length) {
+      var logs = collectEntrustLogs(code, activeReportLogFilter);
+      if (!logs.length) {
         box.innerHTML = '<p class="py-6 text-center text-sm text-slate-400">暂无操作日志</p>';
         return;
       }
       box.innerHTML = logs.map(function (item) {
         return '<div class="relative border-l-2 border-slate-200 pl-5">' +
           '<span class="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-blue-500 bg-white"></span>' +
-          '<div class="text-sm text-slate-500">' + item.time + '</div>' +
-          '<div class="mt-1 text-sm text-slate-700">' + item.text + '</div></div>';
+          '<div class="flex flex-wrap items-center gap-2 text-sm text-slate-500">' +
+          '<span>' + item.time + '</span>' +
+          '<span class="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">' + item.reportNo + '</span>' +
+          '</div>' +
+          '<div class="mt-1 text-sm leading-6 text-slate-700">' + item.text + '</div></div>';
       }).join('');
     }
 
-    function openReportLogModal(reportId) {
-      var report = findReportById(reportId);
-      renderReportLogList(report && report.logs ? report.logs : []);
-      var modal = document.getElementById('reportLogModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
-    }
-
-    function closeReportLogModal() {
-      var modal = document.getElementById('reportLogModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
+    function renderReportRecordList(code) {
+      var list = reportsOf(code);
+      var body = document.getElementById('reportRecordBody');
+      var sub = document.getElementById('reportRecordSubtitle');
+      if (sub) sub.textContent = code ? ('委托 ' + code + ' · 共 ' + list.length + ' 份报告') : '';
+      if (!list.length) {
+        body.innerHTML = '<tr><td colspan="8" class="px-3 py-6 text-center text-slate-400">该委托暂无报告记录</td></tr>';
+        document.getElementById('reportLogFilter').innerHTML = '';
+        document.getElementById('reportLogList').innerHTML = '<p class="py-6 text-center text-sm text-slate-400">暂无操作日志</p>';
+        return;
+      }
+      body.innerHTML = list.map(function (row, i) {
+        var auditCell = stageCell(row.audit);
+        if (!row.audit && row.inApproval && row.node === '报告审核') {
+          auditCell = '<span class="text-amber-600">审批中</span>';
+        }
+        return '<tr class="cursor-pointer hover:bg-slate-50" data-report-id="' + row.id + '" onclick="setReportLogFilter(' + row.id + ')">' +
+          '<td class="border-b border-slate-100 px-3 py-2.5">' + (i + 1) + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2.5 font-medium text-slate-800">' + row.reportNo + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2.5">' + stageCell(row.compile) + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2.5">' + auditCell + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2.5">' + stageCell(row.sign) + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2.5">' + stageCell(row.process) + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2.5">' + stageCell(row.fee) + '</td>' +
+          '<td class="border-b border-slate-100 px-3 py-2.5">' + stageCell(row.issue) + '</td></tr>';
+      }).join('');
+      renderReportLogFilter(code);
+      renderMergedReportLogs(code);
+      highlightRecordRow(activeReportLogFilter);
     }
 
     function openCompileListModal(code) {
@@ -788,21 +823,22 @@
 
     function openReportRecordModal(code) {
       activeEntrustCode = code || '';
+      activeReportLogFilter = 'all';
       renderReportRecordList(activeEntrustCode);
       var modal = document.getElementById('reportRecordModal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function closeReportRecordModal() {
-      closeReportLogModal();
       var modal = document.getElementById('reportRecordModal');
       modal.classList.add('hidden');
       modal.classList.remove('flex');
     }
 
-    document.getElementById('reportLogModal').addEventListener('click', function (e) {
-      if (e.target === this) closeReportLogModal();
+    document.getElementById('reportRecordModal').addEventListener('click', function (e) {
+      if (e.target === this) closeReportRecordModal();
     });
 
     var returnRowId = null;
@@ -936,9 +972,9 @@
         { id: 'report-return', selector: '[data-annotate="report-return"]', position: 'left', title: '退回（整单，受多报告审批约束）', content: '<strong>需求逻辑：</strong>编制发现问题可把委托整单退回「数据审核」；但一单可能生成多份报告，若其中已有报告编制完成并流转到下一节点（报告审核等），再退回会把已在审批中的报告一并打乱，因此此时禁止退回。<br>' +
             '<strong>展示规则：</strong>操作列橙色「退回」；拦截时右上角错误提示「还有报告正在审批中,无法退回!」。<br>' +
             '<strong>交互逻辑：</strong>① 该委托下全部报告仍停在编制节点 → 弹出「退回原因」（必填），确认后行离开本列表，流程回到「数据审核」。② 任一报告已进入下一审批节点 → 不打开弹窗，仅提示「还有报告正在审批中,无法退回!」。演示：委托 SC2026/0099 已有报告在审批中，点退回即见拦截。', tag: '报告编制' },
-        { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>报告要经过编制、审核、签发、发放多个节点，列表页要能直接看到每份报告卡在哪个节点、谁签的；与「编制」弹窗里的报告列表共用同一份进度数据，编号与节点必须一致。<br>' +
-            '<strong>展示规则：</strong>「报告记录」列/链接；弹窗列为序号、报告编号、编制、审核、签发、处理、收费审批、发放、操作（日志）；已发生节点显示「人 + 时间 + 意见」，未发生为 —，卡在审核中显示「审批中」。<br>' +
-            '<strong>交互逻辑：</strong>按当前委托打开；演示 SC2026/0099：-01 编制完成后退回编制（审核不通过），-02 已提交报告审核（审批中）——与点「编制」看到的意见/退回详情同源。', tag: '报告编制' },
+        { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>报告要经过编制、审核、签发、发放多个节点，列表页要能直接看到每份报告卡在哪个节点、谁签的，以及流转操作日志，避免再点一次「日志」。<br>' +
+            '<strong>展示规则：</strong>「报告记录」列/链接；弹窗上半「节点进度」、下半「操作日志」同屏。<br>' +
+            '<strong>交互逻辑：</strong>按当前委托打开；演示 SC2026/0238 / SC2026/0099。', tag: '报告编制' },
         { id: 'report-gen-link', selector: '[data-annotate="report-generate"]', position: 'left', title: '报告生成', content: '<strong>需求逻辑：</strong>演示要能一键走到完整生成流程，因此给一个默认委托入口。<br>' +
             '<strong>展示规则：</strong>「报告生成」链接，演示委托 SCZN202508/0009 · 实壁塑料电缆导管 PVC-C。<br>' +
             '<strong>交互逻辑：</strong>点击进入报告编制编辑页；换其它委托从委托列表进入。', tag: '报告编制' },
@@ -948,24 +984,24 @@
         // 透明检测延至明年：列已隐藏，对应批注暂不挂载（col-transparency / rl-level）
         {
           id: 'rl-record',
-          selector: '#reportRecordBody',
+          selector: '[data-annotate="rl-record-merged"]',
           position: 'bottom-right',
-          title: '报告记录（节点留痕，与编制列表同源）',
+          title: '报告记录（节点进度 + 操作日志同屏）',
           wide: true,
-          content: '<strong>需求逻辑：</strong>报告从编制到发放经过六个节点；「编制」弹窗与「报告记录」弹窗读同一份委托报告进度，避免同一委托两套编号或节点互相矛盾。<br>' +
-          '<strong>展示规则：</strong>列为序号、报告编号、编制、审核、签发、处理、收费审批、发放、操作；单元格显示「人 + 时间」（有意见时附加），未发生为 —，当前卡在审核显示「审批中」；操作列蓝色「日志」。<br>' +
-          '<strong>交互逻辑：</strong>由列表「报告记录」入口按委托打开；点「日志」叠出报告操作日志；关闭回到列表，不改变数据。',
+          content: '<strong>需求逻辑：</strong>打开「报告记录」就要同时看到节点签署留痕与流转操作日志，不再二次点「日志」。<br>' +
+          '<strong>展示规则：</strong>上半「节点进度」表（序号、报告编号、编制→发放）；下半「操作日志」时间轴（时间 + 报告编号胶囊 + 文案）。筛选芯片：全部 / 各报告后缀。<br>' +
+          '<strong>交互逻辑：</strong>默认展示该委托全部日志；点表格行或芯片筛选对应报告日志；关闭不改数据。与编制列表同源。',
           tag: '报告列表'
         },
         {
           id: 'report-op-log',
-          selector: '#reportLogList',
-          position: 'bottom-right',
-          title: '报告操作日志',
+          selector: '[data-annotate="rl-record-logs"]',
+          position: 'top-right',
+          title: '操作日志（嵌入报告记录）',
           wide: true,
-          content: '<strong>需求逻辑：</strong>单份报告的流转动作要可追溯（谁在哪个节点把报告提交/退回到哪），与报告记录节点进度同源。<br>' +
-          '<strong>展示规则：</strong>弹窗标题「报告操作日志」；时间轴（蓝圈空心点 + 时间 + 文案），文案形如「admin 在 报告编制 将 报告编号为SC2026/0099-02的报告 提交至 报告审核」。<br>' +
-          '<strong>交互逻辑：</strong>报告记录操作列点「日志」打开（叠在记录弹窗之上）；点遮罩或 × 关闭，记录弹窗仍保留。',
+          content: '<strong>需求逻辑：</strong>单份/整单报告的流转动作可追溯（谁在哪个节点提交/退回）。<br>' +
+          '<strong>展示规则：</strong>时间轴蓝圈 + 时间 + 报告编号标签 + 文案；按时间倒序；可按报告筛选。<br>' +
+          '<strong>交互逻辑：</strong>与上方节点进度同弹窗，不再叠第二层「报告操作日志」弹窗。',
           tag: '报告列表'
         },
       ] });

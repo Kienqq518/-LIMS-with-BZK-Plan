@@ -151,67 +151,52 @@
     </div>
   </div>
 
-  <!-- ============ 报告记录弹窗 ============ -->
-  <div id="reportModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40">
-    <div class="w-[900px] max-w-[94vw] rounded-lg bg-white shadow-xl" data-annotate="pv-report-modal">
+  <!-- ============ 报告记录弹窗：节点进度 + 操作日志同屏 ============ -->
+  <div id="reportModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40 p-4">
+    <div class="flex max-h-[92vh] w-[960px] max-w-[94vw] flex-col rounded-lg bg-white shadow-xl" data-annotate="pv-report-modal">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
-        <h3 class="text-base font-medium text-slate-800">报告记录</h3>
+        <div>
+          <h3 class="text-base font-medium text-slate-800">报告记录</h3>
+          <p class="mt-0.5 text-xs text-slate-500">委托 SC2026/0212 · 共 1 份报告</p>
+        </div>
         <button onclick="closeReport()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
       </div>
-      <div class="px-6 py-5">
-        <table class="w-full border-collapse text-left text-sm">
-          <thead>
-            <tr class="text-slate-500">
-              <th class="whitespace-nowrap px-3 py-2 font-medium">序号</th>
-              <th class="px-3 py-2 font-medium">报告编号</th>
-              <th class="px-3 py-2 font-medium">编制</th>
-              <th class="px-3 py-2 font-medium">审核</th>
-              <th class="px-3 py-2 font-medium">签发</th>
-              <th class="px-3 py-2 font-medium">处理</th>
-              <th class="px-3 py-2 font-medium">收费审批</th>
-              <th class="px-3 py-2 font-medium">发放</th>
-              <th class="px-3 py-2 font-medium">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="border-t border-slate-100 align-top text-slate-600">
-              <td class="px-3 py-3">1</td>
-              <td class="px-3 py-3">SC2026/0212-01</td>
-              <td class="px-3 py-3">admin<br><span class="text-xs text-slate-400">2026年07月08日</span></td>
-              <td class="px-3 py-3">admin<br><span class="text-xs text-slate-400">2026年07月08日</span></td>
-              <td class="px-3 py-3">admin<br><span class="text-xs text-slate-400">2026年07月08日</span></td>
-              <td class="px-3 py-3"></td>
-              <td class="px-3 py-3"></td>
-              <td class="px-3 py-3"></td>
-              <td class="px-3 py-3"><button onclick="openLog()" class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">日志</button></td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="mt-4 flex justify-end gap-1 text-sm text-slate-500">
-          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-left"></i></button>
-          <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
-          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============ 报告操作日志弹窗（叠加在报告记录之上） ============ -->
-  <div id="logModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
-    <div class="w-[640px] max-w-[92vw] rounded-lg bg-white shadow-xl">
-      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
-        <h3 class="text-base font-medium text-slate-800">报告操作日志</h3>
-        <button onclick="closeLog()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
-      </div>
-      <div class="px-6 py-5">
-        <div id="logList" class="space-y-5">
-          <!-- 日志时间轴由 JS 使用 Mock 数据渲染 -->
-        </div>
-        <div class="mt-5 flex justify-center gap-1 text-sm text-slate-500">
-          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-left"></i></button>
-          <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
-          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
-        </div>
+      <div class="flex-1 space-y-5 overflow-auto px-6 py-5">
+        <section>
+          <h4 class="mb-2 text-sm font-medium text-slate-700">节点进度</h4>
+          <div class="overflow-x-auto rounded border border-slate-200">
+            <table class="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr class="bg-slate-100 text-slate-600">
+                  <th class="whitespace-nowrap border-b border-slate-200 px-3 py-2 font-medium">序号</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">报告编号</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">编制</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">审核</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">签发</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">处理</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">收费审批</th>
+                  <th class="border-b border-slate-200 px-3 py-2 font-medium">发放</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="align-top text-slate-600">
+                  <td class="border-b border-slate-100 px-3 py-3">1</td>
+                  <td class="border-b border-slate-100 px-3 py-3 font-medium text-slate-800">SC2026/0212-01</td>
+                  <td class="border-b border-slate-100 px-3 py-3">admin<br><span class="text-xs text-slate-400">2026年07月08日</span></td>
+                  <td class="border-b border-slate-100 px-3 py-3">admin<br><span class="text-xs text-slate-400">2026年07月08日</span></td>
+                  <td class="border-b border-slate-100 px-3 py-3">admin<br><span class="text-xs text-slate-400">2026年07月08日</span></td>
+                  <td class="border-b border-slate-100 px-3 py-3 text-slate-300">—</td>
+                  <td class="border-b border-slate-100 px-3 py-3 text-slate-300">—</td>
+                  <td class="border-b border-slate-100 px-3 py-3 text-slate-300">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section class="border-t border-slate-100 pt-4">
+          <h4 class="mb-3 text-sm font-medium text-slate-700">操作日志</h4>
+          <div id="logList" class="max-h-[36vh] space-y-4 overflow-y-auto"></div>
+        </section>
       </div>
     </div>
   </div>
@@ -352,18 +337,18 @@
       box.innerHTML = logData.map(function (item) {
         return '<div class="relative border-l-2 border-slate-200 pl-5">' +
           '<span class="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-blue-500 bg-white"></span>' +
-          '<div class="text-sm text-slate-500">' + item.time + '</div>' +
-          '<div class="mt-1 text-sm text-slate-700">' + item.text + '</div></div>';
+          '<div class="flex flex-wrap items-center gap-2 text-sm text-slate-500">' +
+          '<span>' + item.time + '</span>' +
+          '<span class="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">SC2026/0212-01</span>' +
+          '</div>' +
+          '<div class="mt-1 text-sm leading-6 text-slate-700">' + item.text + '</div></div>';
       }).join('');
     })();
 
     // ================= 交互逻辑 =================
-    // 报告记录弹窗开关
+    // 报告记录弹窗开关（节点进度 + 操作日志同屏，不再叠「日志」弹窗）
     function openReport() { show('reportModal'); }
     function closeReport() { hide('reportModal'); }
-    // 报告操作日志弹窗开关
-    function openLog() { show('logModal'); }
-    function closeLog() { hide('logModal'); }
     // 签署链接弹窗开关
     function openSign() { show('signModal'); }
     function closeSign() { hide('signModal'); }
@@ -423,7 +408,7 @@
     }
 
     // 点击遮罩层关闭对应弹窗
-    ['reportModal', 'logModal', 'signModal', 'flowModal'].forEach(function (id) {
+    ['reportModal', 'signModal', 'flowModal'].forEach(function (id) {
       document.getElementById(id).addEventListener('click', function (e) {
         if (e.target === this) hide(id);
       });
@@ -456,7 +441,7 @@
           title: '报告记录入口',
           content: '<strong>需求逻辑：</strong>列表上就地查看该委托下各报告的节点签署留痕。<br>' +
             '<strong>展示规则：</strong>独立「报告」列；仅当该委托已有报告时显示蓝色「报告」按钮，否则「-」。<br>' +
-            '<strong>交互逻辑：</strong>点击打开「报告记录」弹窗；弹窗内可再进「报告操作日志」。',
+            '<strong>交互逻辑：</strong>点击打开「报告记录」弹窗（节点进度 + 操作日志同屏）。',
           tag: '委托预览'
         },
         {
@@ -474,22 +459,22 @@
           id: 'pv-report',
           selector: '[data-annotate="pv-report-modal"]',
           position: 'bottom-right',
-          title: '报告记录（节点签署留痕）',
+          title: '报告记录（节点进度 + 操作日志同屏）',
           wide: true,
-          content: '<strong>需求逻辑：</strong>一份报告从编制到发放经过多个节点，列表页要能就地核对每个节点是谁签的、什么时候签的，不必逐份打开报告文件。<br>' +
-          '<strong>展示规则：</strong>列为序号、报告编号、编制、审核、签发、处理、收费审批、发放、操作；单元格为「签署人 + 时间」，未发生的节点留空；底部带分页。<br>' +
-          '<strong>交互逻辑：</strong>操作列「日志」打开该报告的报告操作日志；点遮罩或右上角 × 关闭。数据来源与委托详情页「报告文件 / 报告发放记录表」一致。',
+          content: '<strong>需求逻辑：</strong>一份报告从编制到发放经过多个节点，打开「报告记录」就要同时看到节点签署留痕与流转操作日志，不再二次点「日志」。<br>' +
+          '<strong>展示规则：</strong>上半「节点进度」表；下半「操作日志」时间轴（时间 + 文案，倒序）。<br>' +
+          '<strong>交互逻辑：</strong>点遮罩或 × 关闭。数据来源与委托详情页「报告文件 / 报告发放记录表」一致。',
           tag: '委托预览'
         },
         {
           id: 'pv-log',
           selector: '#logList',
-          position: 'bottom-right',
-          title: '报告操作日志',
+          position: 'top-right',
+          title: '操作日志（嵌入报告记录）',
           wide: true,
-          content: '<strong>需求逻辑：</strong>报告的每一次流转（提交、审核、签发、发放）都要留可追溯的操作痕迹，用于事后定责。<br>' +
-          '<strong>展示规则：</strong>竖向时间轴，每条为「时间 + 谁 在 哪个环节 把 报告编号 XXX 提交至 下一环节」，按时间倒序。<br>' +
-          '<strong>交互逻辑：</strong>从「报告记录」弹窗的「日志」进入；只读，不可编辑删除。',
+          content: '<strong>需求逻辑：</strong>报告每一次流转都要留可追溯痕迹。<br>' +
+          '<strong>展示规则：</strong>竖向时间轴：「时间 + 谁在哪个环节把报告提交至下一环节」。<br>' +
+          '<strong>交互逻辑：</strong>与节点进度同弹窗展示；只读。',
           tag: '委托预览'
         },
         {
