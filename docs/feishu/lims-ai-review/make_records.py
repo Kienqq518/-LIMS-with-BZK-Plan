@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
+"""规则台账种子写入。优先读 ledger_seed.json（已含 L1–L4 / Ln-a–d）；
+若只改下方 R 元组，会按 level_map.json 补级别字段后写出。
+
+注意：对已有 Base 重复执行会新增记录，勿盲目重跑。
+"""
 import json, subprocess, os, sys
 ENV = {**os.environ, "LARKSUITE_CLI_NO_UPDATE_NOTIFIER":"1", "LARKSUITE_CLI_NO_SKILLS_NOTIFIER":"1"}
 meta = json.load(open("docs/feishu/lims-ai-review/base.json", encoding="utf-8"))
 BASE = meta["base"]["base_token"]; TABLE = meta["table"]["id"]
+LEVEL_MAP = json.load(open("docs/feishu/lims-ai-review/level_map.json", encoding="utf-8"))
+THEME = LEVEL_MAP["theme"]; RULE_SUB = LEVEL_MAP["rule_to_sublevel"]; LEVEL_OF = LEVEL_MAP["level_of"]
 G = "通用"; W = "电网物资"; T = "安全工器具"
 R = [  # (id, 组, 类别, 判定式, 所需字段, 标准依据, 严重度, 领域, 负责人)
  ("A01-1","A01","A 数据完整性","nonempty(sample_id) && match(sample_id, 编号规则)",["抽样单号"],"LIMS 编号规则 / 抽检细则","严重",G,"产品"),
@@ -51,15 +58,45 @@ R = [  # (id, 组, 类别, 判定式, 所需字段, 标准依据, 严重度, 领
  ("C02-4","C02","C 格式规范性","pages == 1..N continuous",["报告模板版本"],"报告模板","提示",G,"产品"),
  ("C02-5","C02","C 格式规范性","nonempty(tester, reviewer, approver)",["签名位"],"CNAS-CL01 7.8","严重",G,"产品"),
 ]
+# 占位：补齐空的 Ln 桶（L3-c/d、L4-a/b/d）；L4-c 已有 B03-3
+PLACEHOLDERS = [
+ ("L3C-1","L3C","A 数据完整性","method_used == method_of(cited_standard)",["检测方法"],"标准指定方法 / 方法库","一般",G,"领域顾问","L3-c"),
+ ("L3D-1","L3D","A 数据完整性","mandatory_items(standard) ⊆ report_items",["实测值"],"标准强制项清单","严重",G,"领域顾问","L3-d"),
+ ("L4A-1","L4A","B 逻辑一致性","hash(report_values) == hash(raw_record) && ts_ok",["实测值"],"原始记录 / 设备日志","严重",G,"后端","L4-a"),
+ ("L4B-1","L4B","B 逻辑一致性","tester in qualified_personnel(items)",["检测人员"],"人员资质库","严重",G,"领域顾问","L4-b"),
+ ("L4D-1","L4D","C 格式规范性","nonempty(trace_code) && verify(trace_code)",["报告模板版本"],"报告透明度 / 溯源码","一般",G,"产品","L4-d"),
+]
+
+def enrich(rec, sub):
+  rec["级别"] = LEVEL_OF[sub]
+  rec["子级"] = sub
+  rec["子级主题"] = THEME[sub]
+  return rec
+
 assert len(R) == 45, len(R)
-recs = [{"规则ID":i,"规则组":g,"类别":c,"判定式":f,"所需字段":fl,"标准依据":st,
-         "严重度":sv,"适用领域":d.split(","),"状态":"待审核员确认","版本":"v0.1","负责人":o,
-         "备注":"判定式由 3.2.1 描述推导，待领域顾问校准"} for i,g,c,f,fl,st,sv,d,o in R]
+recs = []
+for i,g,c,f,fl,st,sv,d,o in R:
+  sub = RULE_SUB[i]
+  recs.append(enrich({
+    "规则ID":i,"规则组":g,"类别":c,"判定式":f,"所需字段":fl,"标准依据":st,
+    "严重度":sv,"适用领域":d.split(","),"状态":"待审核员确认","版本":"v0.2","负责人":o,
+    "备注":"判定式由 3.2.1 描述推导，待领域顾问校准；已挂 L1–L4 / Ln-a–d",
+  }, sub))
+for i,g,c,f,fl,st,sv,d,o,sub in PLACEHOLDERS:
+  recs.append(enrich({
+    "规则ID":i,"规则组":g,"类别":c,"判定式":f,"所需字段":fl,"标准依据":st,
+    "严重度":sv,"适用领域":d.split(","),"状态":"待审核员确认","版本":"v0.2","负责人":o,
+    "备注":f"占位：{sub} {THEME[sub]}；MVP 不消费，分期启用",
+  }, sub))
+
+assert len(recs) == 50, len(recs)
 json.dump({"create_records":recs}, open("docs/feishu/lims-ai-review/ledger_seed.json","w",encoding="utf-8"), ensure_ascii=False, indent=1)
-p = subprocess.run(["lark-cli","base","+record-batch-create","--base-token",BASE,"--table-id",TABLE,
-                    "--json",json.dumps({"create_records":recs},ensure_ascii=False),"--as","user"],
-                   capture_output=True, text=True, env=ENV)
-out = json.loads(p.stdout) if p.stdout.strip() else {}
-print("created:", len(out.get("data",{}).get("records",[]) or out.get("data",{}).get("record_id_list",[]) or []),
-      "| ok:", out.get("ok"), "| err:", str(out.get("error"))[:200], p.stderr[:200])
+print("wrote ledger_seed.json", len(recs), "— dry seed only; live Base 已按级别更新，勿重复 batch-create")
+if "--push" in sys.argv:
+  p = subprocess.run(["lark-cli","base","+record-batch-create","--base-token",BASE,"--table-id",TABLE,
+                      "--json",json.dumps({"create_records":recs},ensure_ascii=False),"--as","user"],
+                     capture_output=True, text=True, env=ENV)
+  out = json.loads(p.stdout) if p.stdout.strip() else {}
+  print("created:", len(out.get("data",{}).get("records",[]) or out.get("data",{}).get("record_id_list",[]) or []),
+        "| ok:", out.get("ok"), "| err:", str(out.get("error"))[:200], p.stderr[:200])
 print("BASE", BASE, "TABLE", TABLE)

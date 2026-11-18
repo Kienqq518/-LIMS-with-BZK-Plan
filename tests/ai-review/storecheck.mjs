@@ -23,7 +23,7 @@ const data = await p.evaluate(() => {
     categories: window.AiReviewStore.getCategories(),
     bindings: window.AiReviewStore.getBindings(),
     reports: window.AiReviewStore.getReports(),
-    storageKey: typeof localStorage !== 'undefined' && localStorage.getItem('lims.aiReview.v1') ? 'lims.aiReview.v1' : null,
+    storageKey: typeof localStorage !== 'undefined' && localStorage.getItem('lims.aiReview.v2') ? 'lims.aiReview.v2' : null,
   };
 });
 
@@ -43,7 +43,7 @@ if (!data.ok) {
   const hasNullCat = data.reports.some((r) => r.category_code === null);
   out.push((bizTypes.length === 5 ? '✅' : '❌') + ' reports 覆盖 5 种 biz_type: ' + bizTypes.join(' '));
   out.push((hasNullCat ? '✅' : '❌') + ' 至少一条 category_code=null');
-  out.push((data.storageKey === 'lims.aiReview.v1' ? '✅' : '❌') + ' localStorage 键 lims.aiReview.v1');
+  out.push((data.storageKey === 'lims.aiReview.v2' ? '✅' : '❌') + ' localStorage 键 lims.aiReview.v2');
 }
 
 console.log(out.join('\n'));

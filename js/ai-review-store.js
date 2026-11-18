@@ -2,17 +2,18 @@
  * AI 审查 Mock Store（M1 原型 · 7 张表 localStorage）
  */
 (function (global) {
-  var STORAGE_KEY = 'lims.aiReview.v1';
+  var STORAGE_KEY = 'lims.aiReview.v2';
 
+  // level / sublevel 与飞书规则台账 L1–L4 × Ln-a–d 对齐（M1 通用集 8 条）
   var DEFAULT_RULES = [
-    { id: 'A01-1', group: 'A01', category: 'A', name: '样品编号必填且符合编号规则', expr: 'nonempty(sample_no) && match(sample_no)', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
-    { id: 'A01-6', group: 'A01', category: 'A', name: '检测标准号必须带年号', expr: 'has_year(test_standard)', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
-    { id: 'A02-1', group: 'A02', category: 'A', name: '委托检测项目都有对应实测结果', expr: 'entrust ⊆ result_params', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
-    { id: 'B01-1', group: 'B01', category: 'B', name: '关键日期先后', expr: 'receive <= test <= report', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
-    { id: 'B01-2', group: 'B01', category: 'B', name: '设备校准有效期覆盖检测日期', expr: 'calib_from <= test <= calib_to', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
-    { id: 'B03-1', group: 'B03', category: 'B', name: '报告引用标准号等于实际检测标准', expr: 'cited == test_standard', severity: '一般', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
-    { id: 'C02-5', group: 'C02', category: 'C', name: '检测/审核/批准签名位齐全', expr: 'signatures complete', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
-    { id: 'C01-4', group: 'C01', category: 'C', name: '计量单位与参数匹配', expr: 'units allowed', severity: '一般', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
+    { id: 'A01-1', group: 'A01', category: 'A', level: 'L1', sublevel: 'L1-a', subtheme: '编号', name: '样品编号必填且符合编号规则', expr: 'nonempty(sample_no) && match(sample_no)', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
+    { id: 'A01-6', group: 'A01', category: 'A', level: 'L3', sublevel: 'L3-a', subtheme: '标准现行有效', name: '检测标准号必须带年号', expr: 'has_year(test_standard)', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
+    { id: 'A02-1', group: 'A02', category: 'A', level: 'L2', sublevel: 'L2-b', subtheme: '委托项↔结果', name: '委托检测项目都有对应实测结果', expr: 'entrust ⊆ result_params', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
+    { id: 'B01-1', group: 'B01', category: 'B', level: 'L2', sublevel: 'L2-a', subtheme: '日期链', name: '关键日期先后', expr: 'receive <= test <= report', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
+    { id: 'B01-2', group: 'B01', category: 'B', level: 'L2', sublevel: 'L2-c', subtheme: '设备校准覆盖', name: '设备校准有效期覆盖检测日期', expr: 'calib_from <= test <= calib_to', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
+    { id: 'B03-1', group: 'B03', category: 'B', level: 'L3', sublevel: 'L3-a', subtheme: '标准现行有效', name: '报告引用标准号等于实际检测标准', expr: 'cited == test_standard', severity: '一般', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
+    { id: 'C02-5', group: 'C02', category: 'C', level: 'L1', sublevel: 'L1-b', subtheme: '签名', name: '检测/审核/批准签名位齐全', expr: 'signatures complete', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
+    { id: 'C01-4', group: 'C01', category: 'C', level: 'L1', sublevel: 'L1-d', subtheme: '单位格式', name: '计量单位与参数匹配', expr: 'units allowed', severity: '一般', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
   ];
 
   var DEFAULT_CATEGORIES = [
