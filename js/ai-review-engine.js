@@ -8,14 +8,14 @@
 
   function ruleMeta(id) {
     var map = {
-      'A01-1': { group: 'A01', category: 'A 数据完整性', severity: '严重' },
-      'A01-6': { group: 'A01', category: 'A 数据完整性', severity: '严重' },
-      'A02-1': { group: 'A02', category: 'A 数据完整性', severity: '严重' },
-      'B01-1': { group: 'B01', category: 'B 逻辑一致性', severity: '严重' },
-      'B01-2': { group: 'B01', category: 'B 逻辑一致性', severity: '严重' },
-      'B03-1': { group: 'B03', category: 'B 逻辑一致性', severity: '一般' },
-      'C02-5': { group: 'C02', category: 'C 格式规范性', severity: '严重' },
-      'C01-4': { group: 'C01', category: 'C 格式规范性', severity: '一般' },
+      'A01-1': { group: 'L1-a', category: '编号', severity: '严重' },
+      'A01-6': { group: 'L3-a', category: '标准现行有效', severity: '严重' },
+      'A02-1': { group: 'L2-b', category: '委托项↔结果', severity: '严重' },
+      'B01-1': { group: 'L2-a', category: '日期链', severity: '严重' },
+      'B01-2': { group: 'L2-c', category: '设备校准覆盖', severity: '严重' },
+      'B03-1': { group: 'L3-a', category: '标准现行有效', severity: '一般' },
+      'C02-5': { group: 'L1-b', category: '签名', severity: '严重' },
+      'C01-4': { group: 'L1-d', category: '单位与格式', severity: '一般' },
     };
     return map[id] || { group: '', category: '', severity: '一般' };
   }
