@@ -15,6 +15,56 @@
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     .return-detail { font-size: 12px; line-height: 1.5; color: #64748b; white-space: pre-line; }
+    /* 编制 · 报告列表弹窗：卡片 + 退回时间轴（多次退回追加，不覆盖） */
+    #compileListModal .compile-report-card {
+      border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;
+      overflow: hidden;
+    }
+    #compileListModal .compile-report-card.is-ai-return {
+      border-color: #fecaca;
+      background: linear-gradient(180deg, #fff7f7 0%, #fff 48%);
+      box-shadow: inset 3px 0 0 #ef4444;
+    }
+    #compileListModal .compile-report-meta {
+      display: grid; gap: 0.65rem 1rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    @media (min-width: 900px) {
+      #compileListModal .compile-report-meta {
+        grid-template-columns: 1.1fr 1.4fr 0.9fr 0.7fr 0.7fr;
+      }
+    }
+    #compileListModal .compile-meta-label {
+      display: block; font-size: 11px; color: #94a3b8; margin-bottom: 2px;
+    }
+    #compileListModal .compile-returns {
+      border-top: 1px dashed #e2e8f0; background: #f8fafc;
+      padding: 0.75rem 1rem 0.9rem;
+    }
+    #compileListModal .compile-returns-head {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 0.5rem; margin-bottom: 0.65rem;
+    }
+    #compileListModal .return-timeline { position: relative; margin: 0; padding: 0; list-style: none; }
+    #compileListModal .return-timeline > li {
+      position: relative; padding: 0 0 0.85rem 1.15rem;
+      border-left: 2px solid #e2e8f0; margin-left: 0.35rem;
+    }
+    #compileListModal .return-timeline > li:last-child { padding-bottom: 0; border-left-color: transparent; }
+    #compileListModal .return-timeline > li::before {
+      content: ''; position: absolute; left: -5px; top: 0.35rem;
+      width: 8px; height: 8px; border-radius: 9999px;
+      background: #fff; border: 2px solid #94a3b8;
+    }
+    #compileListModal .return-timeline > li.is-latest::before { border-color: #ef4444; background: #fecaca; }
+    #compileListModal .return-timeline > li.is-ai::before { border-color: #f97316; background: #ffedd5; }
+    #compileListModal .return-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      border-radius: 4px; padding: 1px 6px; font-size: 11px; font-weight: 600;
+      background: #fff; border: 1px solid #e2e8f0; color: #475569;
+    }
+    #compileListModal .return-chip.is-ai { border-color: #fdba74; color: #c2410c; background: #fff7ed; }
+    #compileListModal .return-chip.is-latest { border-color: #fca5a5; color: #b91c1c; background: #fef2f2; }
     #return-toast {
       position: fixed; top: 24px; right: 24px; z-index: 9999;
       display: flex; align-items: center; gap: 8px;
@@ -187,38 +237,24 @@
     </div>
   </div>
 
-  <!-- 报告列表弹窗（编制） -->
+  <!-- 报告列表弹窗（编制）：卡片列表 + 退回时间轴（多次追加，不覆盖） -->
   <div id="compileListModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-    <div class="flex max-h-[92vh] w-[1100px] max-w-full flex-col rounded-lg bg-white shadow-xl">
-      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
-        <h3 class="text-base font-medium text-slate-800">报告列表</h3>
-        <button type="button" onclick="closeCompileListModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
-      </div>
-      <div class="flex-1 overflow-auto px-6 py-4">
-        <table class="w-full min-w-[980px] border-collapse text-left text-sm">
-          <thead>
-            <tr class="bg-slate-100 text-slate-600">
-              <th class="border border-slate-200 px-2 py-2 w-10"><input type="checkbox" id="compileCheckAll" onchange="toggleCompileCheckAll(this.checked)" /></th>
-              <th class="border border-slate-200 px-3 py-2 font-medium w-[72px] whitespace-nowrap">序号</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">报告编号</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">样品编号</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">报告名称</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">生成时间</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">审核意见</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">签发意见</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium w-36">退回详情</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium w-24">操作</th>
-            </tr>
-          </thead>
-          <tbody id="compileListBody"></tbody>
-        </table>
-        <div class="mt-3 flex items-center justify-end gap-2 text-sm text-slate-500">
-          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
-          <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
-          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50">2</button>
-          <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 hover:bg-slate-50"><i class="fa fa-angle-right"></i></button>
+    <div class="flex max-h-[92vh] w-[960px] max-w-full flex-col rounded-lg bg-white shadow-xl" data-annotate="compile-list-modal">
+      <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-6 py-3">
+        <div>
+          <h3 class="text-base font-medium text-slate-800">报告列表</h3>
+          <p id="compileListSubtitle" class="mt-0.5 text-xs text-slate-500"></p>
         </div>
+        <button type="button" onclick="closeCompileListModal()" class="text-slate-400 hover:text-slate-600" aria-label="关闭"><i class="fa fa-times"></i></button>
       </div>
+      <div class="flex items-center justify-between gap-3 border-b border-slate-50 bg-slate-50/80 px-6 py-2 text-xs text-slate-500">
+        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" id="compileCheckAll" onchange="toggleCompileCheckAll(this.checked)" />
+          <span>全选本页</span>
+        </label>
+        <span>退回记录按时间倒序追加，历史原因保留不覆盖</span>
+      </div>
+      <div id="compileListBody" class="flex-1 space-y-3 overflow-auto px-6 py-4"></div>
       <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
         <button type="button" onclick="closeCompileListModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
         <button type="button" onclick="confirmCompile()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white" data-annotate="compile-confirm">编制</button>
@@ -315,7 +351,7 @@
           aiAutoReturn: false,
           compile: { user: 'admin', date: '2026年09月02日' },
           audit: null, sign: null, process: null, fee: null, issue: null,
-          returnDetail: '—',
+          returns: [],
           logs: [
             { time: '2026-09-02 16:00:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-01的报告 提交至 报告审核' }
           ]
@@ -330,7 +366,7 @@
           aiAutoReturn: false,
           compile: { user: 'admin', date: '2026年09月02日' },
           audit: null, sign: null, process: null, fee: null, issue: null,
-          returnDetail: '—',
+          returns: [],
           logs: [
             { time: '2026-09-02 15:05:00', text: 'admin 在 报告编制 生成 报告编号为SC2026/0238-02的报告' }
           ]
@@ -346,9 +382,18 @@
           compile: { user: 'admin', date: '2026年09月02日' },
           audit: { user: 'AI', date: '2026年09月03日', opinion: 'AI 预审不通过' },
           sign: null, process: null, fee: null, issue: null,
-          returnDetail: '退回节点：报告审核（AI 自动退回）\n退回原因：C02-5 检测/审核/批准签名位不完整\n退回人：AI 审核引擎\n退回时间：2026-09-03 10:15:00',
+          /* returns 按时间倒序追加；新退回写入数组头部，历史原因保留 */
+          returns: [
+            { node: '报告审核', by: 'AI 审核引擎', time: '2026-09-03 10:15:00', reason: 'C02-5 检测/审核/批准签名位不完整', kind: 'ai' },
+            { node: '报告审核', by: '李审核', time: '2026-09-03 09:05:00', reason: '签名页签章位置不符模板，需按机构模板重排', kind: 'manual' },
+            { node: '报告审核', by: 'admin', time: '2026-09-02 16:20:00', reason: '数据填写不完整（缺环境温湿度）', kind: 'manual' }
+          ],
           logs: [
             { time: '2026-09-03 10:15:00', text: 'AI 审核引擎 在 报告审核 将 报告编号为SC2026/0238-03的报告 自动退回至 报告编制（严重项）' },
+            { time: '2026-09-03 09:40:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-03的报告 再次提交至 报告审核' },
+            { time: '2026-09-03 09:05:00', text: '李审核 在 报告审核 将 报告编号为SC2026/0238-03的报告 退回至 报告编制' },
+            { time: '2026-09-02 16:45:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-03的报告 再次提交至 报告审核' },
+            { time: '2026-09-02 16:20:00', text: 'admin 在 报告审核 将 报告编号为SC2026/0238-03的报告 退回至 报告编制' },
             { time: '2026-09-02 15:50:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-03的报告 提交至 报告审核' }
           ]
         }
@@ -364,7 +409,9 @@
           compile: { user: 'admin', date: '2026年07月17日' },
           audit: { user: 'admin', date: '2026年07月17日', opinion: '审核不通过' },
           sign: null, process: null, fee: null, issue: null,
-          returnDetail: '退回节点：报告审核\n退回原因：数据填写不完整\n退回人：admin\n退回时间：2026-07-17 15:00:00',
+          returns: [
+            { node: '报告审核', by: 'admin', time: '2026-07-17 15:00:00', reason: '数据填写不完整', kind: 'manual' }
+          ],
           logs: [
             { time: '2026-07-17 15:00:00', text: 'admin 在 报告审核 将 报告编号为SC2026/0099-01的报告 退回至 报告编制' },
             { time: '2026-07-17 14:45:10', text: 'admin 在 报告编制 将 报告编号为SC2026/0099-01的报告 提交至 报告审核' }
@@ -379,7 +426,7 @@
           inApproval: true,
           compile: { user: 'admin', date: '2026年07月16日' },
           audit: null, sign: null, process: null, fee: null, issue: null,
-          returnDetail: '—',
+          returns: [],
           logs: [
             { time: '2026-07-16 10:25:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0099-02的报告 提交至 报告审核' }
           ]
@@ -395,7 +442,7 @@
           inApproval: false,
           compile: { user: '自动出报', date: '2026年02月25日' },
           audit: null, sign: null, process: null, fee: null, issue: null,
-          returnDetail: '—',
+          returns: [],
           logs: [
             { time: '2026-02-25 09:10:00', text: '自动出报 在 报告编制 生成 报告编号为SC2026/02240101-01的报告' }
           ]
@@ -411,7 +458,7 @@
           inApproval: false,
           compile: { user: '张..', date: '2025年07月16日' },
           audit: null, sign: null, process: null, fee: null, issue: null,
-          returnDetail: '—',
+          returns: [],
           logs: [
             { time: '2025-07-16 16:00:00', text: '张.. 在 报告编制 生成 报告编号为SCZN202508/0007-01的报告' }
           ]
@@ -427,7 +474,7 @@
           inApproval: false,
           compile: { user: '赵..', date: '2025年07月15日' },
           audit: null, sign: null, process: null, fee: null, issue: null,
-          returnDetail: '—',
+          returns: [],
           logs: [
             { time: '2025-07-15 11:20:00', text: '赵.. 在 报告编制 生成 报告编号为SCZN202508/0006-01的报告' }
           ]
@@ -443,7 +490,7 @@
           inApproval: false,
           compile: { user: '陈..', date: '2025年07月14日' },
           audit: null, sign: null, process: null, fee: null, issue: null,
-          returnDetail: '—',
+          returns: [],
           logs: [
             { time: '2025-07-14 15:40:00', text: '陈.. 在 报告编制 生成 报告编号为SCZN202508/0005-01的报告' }
           ]
@@ -649,42 +696,94 @@
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
+    function reportReturns(row) {
+      if (row.returns && row.returns.length) return row.returns.slice();
+      return [];
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderReturnTimeline(returns) {
+      if (!returns.length) {
+        return '<div class="px-4 pb-3 text-xs text-slate-400">暂无退回记录</div>';
+      }
+      var total = returns.length;
+      var items = returns.map(function (r, idx) {
+        var n = total - idx; // 第 N 次（倒序展示时最新=最大序号）
+        var isLatest = idx === 0;
+        var isAi = r.kind === 'ai';
+        var liCls = (isLatest ? 'is-latest ' : '') + (isAi ? 'is-ai' : '');
+        var chips = '<span class="return-chip' + (isLatest ? ' is-latest' : '') + '">第 ' + n + ' 次</span> ' +
+          '<span class="return-chip' + (isAi ? ' is-ai' : '') + '">' + escapeHtml(r.node) + (isAi ? ' · AI 自动退回' : '') + '</span>';
+        return '<li class="' + liCls + '">' +
+          '<div class="mb-1 flex flex-wrap items-center gap-1.5">' + chips + '</div>' +
+          '<div class="text-sm leading-6 text-slate-800"><span class="text-slate-500">原因</span> · ' + escapeHtml(r.reason) + '</div>' +
+          '<div class="mt-0.5 text-xs text-slate-500">' +
+          '<span>退回人 ' + escapeHtml(r.by) + '</span>' +
+          '<span class="mx-1.5 text-slate-300">·</span>' +
+          '<span>' + escapeHtml(r.time) + '</span></div></li>';
+      }).join('');
+      return '<div class="compile-returns" data-annotate="compile-returns">' +
+        '<div class="compile-returns-head">' +
+        '<div class="text-sm font-medium text-slate-700">退回记录 <span class="font-normal text-slate-500">· 共 ' + total + ' 次</span></div>' +
+        '<div class="text-[11px] text-slate-400">新到旧 · 追加不覆盖</div></div>' +
+        '<ul class="return-timeline">' + items + '</ul></div>';
+    }
+
     function renderCompileList(code) {
       var list = reportsOf(code);
       var body = document.getElementById('compileListBody');
+      var sub = document.getElementById('compileListSubtitle');
+      var returnedCount = list.reduce(function (n, r) { return n + (reportReturns(r).length ? 1 : 0); }, 0);
+      if (sub) {
+        sub.textContent = code
+          ? ('委托 ' + code + ' · 共 ' + list.length + ' 份报告' + (returnedCount ? (' · ' + returnedCount + ' 份有退回') : ''))
+          : '';
+      }
       if (!list.length) {
-        body.innerHTML = '<tr><td colspan="10" class="border border-slate-200 px-3 py-6 text-center text-slate-400">该委托暂无报告</td></tr>';
+        body.innerHTML = '<div class="rounded border border-dashed border-slate-200 px-3 py-10 text-center text-slate-400">该委托暂无报告</div>';
         return;
       }
       var aiMap = aiReturnedReportNos();
       body.innerHTML = list.map(function (row, i) {
-        var samples = row.sampleNos.join('<br>');
+        var returns = reportReturns(row);
         var auditOpinion = opinionText(row.audit, row.inApproval && row.node === '报告审核');
         var signOpinion = opinionText(row.sign, row.inApproval && row.node === '报告签发');
         var aiHit = isAiAutoReturnReport(row);
         var aiMeta = aiMap[row.reportNo];
-        var trCls = aiHit ? 'hover:bg-red-50/90 bg-gradient-to-r from-red-50/90 via-white to-white' : 'hover:bg-slate-50';
-        var reportNoCell = '<div class="flex flex-wrap items-center gap-2">' +
-          '<span class="font-medium text-slate-800">' + row.reportNo + '</span>' +
-          (aiHit ? aiReturnPillHtml() : '') +
-          '</div>';
+        var cardCls = 'compile-report-card' + (aiHit ? ' is-ai-return' : '');
+        var titleBits = '<span class="text-xs text-slate-400 mr-2">#' + (i + 1) + '</span>' +
+          '<span class="font-medium text-slate-800">' + escapeHtml(row.reportNo) + '</span>' +
+          (aiHit ? ' ' + aiReturnPillHtml() : '') +
+          (returns.length ? ' <span class="return-chip' + (aiHit ? ' is-ai' : ' is-latest') + '">退回 ' + returns.length + ' 次</span>' : '');
+        var warn = '';
         if (aiHit && aiMeta && aiMeta.reasons && aiMeta.reasons[0]) {
-          reportNoCell += '<div class="mt-1 text-[11px] text-red-600/90"><i class="fa fa-warning"></i> ' +
-            aiMeta.reasons[0].rule_id + ' ' + aiMeta.reasons[0].message + '</div>';
+          warn = '<div class="mt-1 text-[11px] text-red-600/90"><i class="fa fa-warning"></i> ' +
+            escapeHtml(aiMeta.reasons[0].rule_id + ' ' + aiMeta.reasons[0].message) + '</div>';
         }
-        return '<tr class="' + trCls + '"' + (aiHit ? ' data-ai-return="1"' : '') + '>' +
-          '<td class="border border-slate-200 px-2 py-2 text-center"><input type="checkbox" class="compile-row-check" data-id="' + row.id + '" ' + (aiHit || i === 0 ? 'checked' : '') + ' /></td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + reportNoCell + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2 text-xs leading-5">' + samples + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="return false;">' + row.reportName + '</a></td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + row.createdAt + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + auditOpinion + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + signOpinion + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2"><div class="return-detail">' + row.returnDetail + '</div></td>' +
-          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' +
-          '<button class="text-red-500 hover:underline" onclick="alert(\'删除（原型演示）\')"><i class="fa fa-trash-o"></i></button> ' +
-          '<button class="ml-2 text-orange-500 hover:underline" onclick="alert(\'退回（原型演示）\')"><i class="fa fa-reply"></i></button></td></tr>';
+        return '<article class="' + cardCls + '"' + (aiHit ? ' data-ai-return="1"' : '') + '>' +
+          '<div class="flex items-start gap-3 px-4 py-3">' +
+          '<input type="checkbox" class="compile-row-check mt-1" data-id="' + row.id + '" ' + (aiHit || returns.length || i === 0 ? 'checked' : '') + ' />' +
+          '<div class="min-w-0 flex-1">' +
+          '<div class="flex flex-wrap items-start justify-between gap-2">' +
+          '<div><div class="flex flex-wrap items-center gap-1.5">' + titleBits + '</div>' + warn + '</div>' +
+          '<div class="flex flex-shrink-0 items-center gap-3 text-sm">' +
+          '<button type="button" class="text-red-500 hover:underline" onclick="alert(\'删除（原型演示）\')"><i class="fa fa-trash-o"></i> 删除</button>' +
+          '<button type="button" class="text-orange-500 hover:underline" onclick="alert(\'单份退回（原型演示）：写入 returns 数组头部，不覆盖历史\')"><i class="fa fa-reply"></i> 退回</button>' +
+          '</div></div>' +
+          '<div class="compile-report-meta mt-3 text-sm text-slate-700">' +
+          '<div><span class="compile-meta-label">样品编号</span><div class="text-xs leading-5">' + row.sampleNos.map(escapeHtml).join('<br>') + '</div></div>' +
+          '<div><span class="compile-meta-label">报告名称</span><a href="#" class="text-blue-600 hover:underline" onclick="return false;">' + escapeHtml(row.reportName) + '</a></div>' +
+          '<div><span class="compile-meta-label">生成时间</span>' + escapeHtml(row.createdAt) + '</div>' +
+          '<div><span class="compile-meta-label">审核意见</span>' + auditOpinion + '</div>' +
+          '<div><span class="compile-meta-label">签发意见</span>' + signOpinion + '</div>' +
+          '</div></div></div>' +
+          (returns.length ? renderReturnTimeline(returns) : '') +
+          '</article>';
       }).join('');
     }
 
@@ -965,7 +1064,10 @@
         { id: 'ai-returned', selector: '[data-annotate="ai-returned"]', position: 'bottom', title: 'AI 审核不通过自动退回', content: '<strong>需求逻辑：</strong>报告流转到「报告审核」时自动跑 AI 预审，命中严重项的报告不进人工审核、直接自动退回「报告编制」，编制人需在本环节优先处理。<br>' +
             '<strong>展示规则：</strong>固定高度红色提示区（内部滚动），<strong>一行一个委托任务</strong>：委托编号、客户/样品、本单下被退回报告摘要与「去修订」；下方主查询列表<strong>同步展示</strong>这些委托（委托编号旁带 AI 退回徽标）。无退回时整条隐藏。<br>' +
             '<strong>交互逻辑：</strong>数据与「报告审核」页同源；点「编制」弹窗中 AI 退回的报告在编号旁显示渐变「AI 自动退回」标签与规则摘要。演示 SC2026/0238 / 0238-03（C02-5）。', tag: '报告编制' },
-        { id: 'compile-ai-tag', selector: '[data-ai-return="1"]', position: 'left', title: '编制列表 · AI 自动退回标识', content: '<strong>展示规则：</strong>命中 AI 严重项自动退回的报告：行背景淡红渐变，报告编号下挂「AI 自动退回」胶囊标签与规则摘要；默认勾选便于优先修订。<br><strong>交互逻辑：</strong>与顶部提示条、主列表委托行同源。', tag: '报告列表' },
+        { id: 'compile-ai-tag', selector: '[data-ai-return="1"]', position: 'left', title: '编制列表 · AI 自动退回标识', content: '<strong>展示规则：</strong>命中 AI 严重项自动退回的报告：卡片左边红条 + 淡红底，「AI 自动退回」胶囊与规则摘要；默认勾选便于优先修订。<br><strong>交互逻辑：</strong>与顶部提示条、主列表委托行同源。', tag: '报告列表' },
+        { id: 'compile-returns', selector: '[data-annotate="compile-returns"]', position: 'bottom', title: '退回记录（追加不覆盖）', content: '<strong>需求逻辑：</strong>同一份报告可能被退回多次；每次退回的节点、退回人、时间、原因都必须留存，新退回不得覆盖旧原因。<br>' +
+            '<strong>展示规则：</strong>卡片下方「退回记录」时间轴，按时间倒序；每条含「第 N 次」、节点（AI 自动退回单独标注）、原因、退回人、时间；最新一条红点高亮。<br>' +
+            '<strong>交互逻辑：</strong>数据为 returns[] 追加写入；演示 SC2026/0238-03 共 3 次退回。', tag: '报告列表' },
         { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '<strong>需求逻辑：</strong>报告列表是编制入口；编制发现问题可直接退回上一环节「数据审核」修正后重提。<br>' +
             '<strong>展示规则：</strong>操作列：「报告生成」「编制」「退回」。<br>' +
             '<strong>交互逻辑：</strong>「报告生成」跳转报告编制编辑页；「编制」弹出报告列表；「退回」见独立批注。AI 预审入口在侧边栏「报告审核 / AI 审核工作台」。', tag: '报告编制' },
@@ -978,9 +1080,9 @@
         { id: 'report-gen-link', selector: '[data-annotate="report-generate"]', position: 'left', title: '报告生成', content: '<strong>需求逻辑：</strong>演示要能一键走到完整生成流程，因此给一个默认委托入口。<br>' +
             '<strong>展示规则：</strong>「报告生成」链接，演示委托 SCZN202508/0009 · 实壁塑料电缆导管 PVC-C。<br>' +
             '<strong>交互逻辑：</strong>点击进入报告编制编辑页；换其它委托从委托列表进入。', tag: '报告编制' },
-        { id: 'compile-modal', selector: '[data-annotate="compile-confirm"]', position: 'left', title: '编制确认', content: '<strong>需求逻辑：</strong>一次可能要多份报告同时编制，先勾选再进编辑器，避免误改；列表中的审核/签发意见与退回详情必须与「报告记录」弹窗进度一致。<br>' +
-            '<strong>展示规则：</strong>弹窗列出该委托下报告：编号、试样、名称、生成时间、审核意见、签发意见、退回详情；意见取值与报告记录同源（未发生 — / 审批中 / 审核不通过等）。<br>' +
-            '<strong>交互逻辑：</strong>勾选后点「编制」进入 Word 在线编辑（原型演示），关闭弹窗不改变报告状态。', tag: '报告列表' },
+        { id: 'compile-modal', selector: '[data-annotate="compile-list-modal"]', position: 'left', title: '编制 · 报告列表弹窗', content: '<strong>需求逻辑：</strong>一次可能要多份报告同时编制，先勾选再进编辑器；有退回的报告要把历次退回原因摊开看清，方便对照修订。<br>' +
+            '<strong>展示规则：</strong>卡片列表：勾选 + 编号/样品/名称/生成时间/审核·签发意见；有退回的卡片展开「退回记录」时间轴（追加不覆盖）。<br>' +
+            '<strong>交互逻辑：</strong>勾选后点「编制」进入 Word 在线编辑（原型演示）；关闭弹窗不改变报告状态。与「报告记录」节点进度同源。', tag: '报告列表' },
         // 透明检测延至明年：列已隐藏，对应批注暂不挂载（col-transparency / rl-level）
         {
           id: 'rl-record',
