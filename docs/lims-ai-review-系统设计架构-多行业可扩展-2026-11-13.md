@@ -220,6 +220,20 @@ LLM 低置信 / 冲突 → 需复核
 
 ---
 
+## 6.6 数据飞轮（对应飞书 §5.7）
+
+闭环：**审核 → 人工裁决 → 标注（正常 / 误报 / 漏报）→ 按 `industry_code` 分桶案例库 → 规则 / 提示词改进 → 再审核**。学习旁路不进入当次判定主路径；行业样本隔离，避免电网污染化学。
+
+- **Phase 1（M1–M3）**：只建采集通道（只写不消费）——`ai_review_feedback` / `ai_review_cases`、双入口写回流、按规则/按包采纳率与误报看板。
+- **Phase 2（M5 起）**：按行业消费案例——提示词 / 小模型评估、规则阈值与包策略灰度。
+
+细粒度交互图：
+
+- 源文件：[`docs/feishu/LIMS-AI-Review-5.7-数据飞轮设计.excalidraw`](../feishu/LIMS-AI-Review-5.7-数据飞轮设计.excalidraw)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=13HfG4tfmDUS-q5Fz6WIV,znZGr_R20KNqqf33uiXBtw)
+
+---
+
 ## 7. 与 LIMS 的集成契约
 
 ### 7.1 触发
