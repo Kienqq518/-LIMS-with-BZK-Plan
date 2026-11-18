@@ -44,7 +44,7 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=Y9y0nSBJs1Vlksx2M_gS_,ExMQ0lUjtJyXhOAbsnaiQQ)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=ZHxX9OUJvUkcir7wlqJcz,ifD7iL2eMAki3HG9iZzsLA)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b LIMS数据层 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
 **第1层模块分组（勿读成五格流水线）**：A 业务主链（编制→审核→签发）｜B AI 统览入口（工作台）｜C 配置入口（规则/行业包台账，虚线，不进当次触发）。**触发汇聚**两项并列进第2层：进入「报告审核」系统内事件/回调（主）、人工重审。产品为 LIMS 内嵌能力，**不做**外部轮询降级。  
@@ -203,7 +203,7 @@ LLM 低置信 / 冲突 → 需复核
 端到端设计流图（触发 → 门禁 → Snapshot∥Pack → RuleEngine → 三态 → 落库展示 → 人工闭环 → cases 旁路）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw`](../feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw)
-- 在线打开：[https://excalidraw.com/#json=1OmzrWjJLIWBf_jIYxT6Z,yX_ri_v1bltmeKRZS_UpPw](https://excalidraw.com/#json=1OmzrWjJLIWBf_jIYxT6Z,yX_ri_v1bltmeKRZS_UpPw)
+- 在线打开：[https://excalidraw.com/#json=LbzrVYy4WpbcpnbUcLVOf,6GA6GZlYAABg-_i1JooHrw)
 
 与本节 §6–§7 口径一致：系统内事件触发、人工重审、幂等键 `report_id+revision`、三态门控、AI 不自动签发、feedback→cases 学习旁路。
 
