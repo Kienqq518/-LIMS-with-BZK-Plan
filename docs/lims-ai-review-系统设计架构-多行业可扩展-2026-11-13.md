@@ -44,13 +44,15 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=35qGNWfshKNhZP6Y8EWoE,CHQqw6lP9ent7JoOojsyuw)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=cZ-Yw0nz0PeZwMmcHnWaG,wk-f6Bw-cRmxx5tdOE3KOA)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b LIMS数据层 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
 **第1层模块分组（勿读成五格流水线）**：A 业务主链（编制→审核→签发）｜B AI 统览入口（工作台）｜C 配置入口（规则/行业包台账，虚线，不进当次触发）。**触发汇聚**两项并列进第2层：进入「报告审核」系统内事件/回调（主）、人工重审。产品为 LIMS 内嵌能力，**不做**外部轮询降级。  
 **布局说明**：主栏通栏 **1 → 2 → 3a → 4**；右侧 **3b LIMS数据层 / 3c 知识组装**。每层一色（靛蓝 / 琥珀 / 绿 / 深蓝 / 青）；**只画层间箭头**（层内模块用文案标明顺序，不互挂箭头）。3c 的「品类绑定 + 标准/限值库」包在 **Industry Pack** 模块内。
 
 **层间交互（图上仅这些箭头）**：1→2 触发；2→3a 调度执行；3a→4 落库；4→2 反馈（虚线）；2→1 回传界面（虚线，三态结论/建议退回）；3b→3a 取数；3c→3a 依据；3c→2 装载规则集（虚线）。层内顺序用标题文案表达，不画模块间箭头。
+
+**第4层模块阅读顺序：**配置域 ①行业包→②包产物，③品类→④绑定→⑤规则；运行域 ①结果→②问题→③反馈→④案例（学习旁路）。  
 
 **第 3 层 vs 第 4 层：**
 - **第 4 层 = AI 审核自有库**（`ai_review_*` 表），不是 LIMS 业务库；LIMS 主数据只读、不回写。
@@ -203,7 +205,7 @@ LLM 低置信 / 冲突 → 需复核
 端到端设计流图（触发 → 门禁 → 规范快照∥规则装载 → RuleEngine → 三态 → 落库展示 → 人工闭环 → cases 旁路）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw`](../feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw)
-- 在线打开：[https://excalidraw.com/#json=t2Ogt_90TvqY8Nw3oytZl,pVuZ4BFTxkSB5gVRe1Gtag)
+- 在线打开：[https://excalidraw.com/#json=1agMayFNnI0eXfyH_5qv-,JNEMHt2V-B9lZ9TCUce_7g)
 
 与本节 §6–§7 口径一致：系统内事件触发、人工重审、幂等键 `report_id+revision`、三态门控、AI 不自动签发、feedback→cases 学习旁路。
 
@@ -252,12 +254,14 @@ LLM 低置信 / 冲突 → 需复核
 保留 M1：`rules / results / issues / feedback / cases / categories / bindings`。关系见架构总览图第 4 层：
 
 ```
-配置域：industry_packs ─1:N→ pack_artifacts
-        industry_packs ─scope→ rules
-        categories ─1:N→ bindings ─N:1→ rules
+配置域（阅读顺序 ①→⑤）：
+  ① industry_packs ─1:N→ ② pack_artifacts（标准/限值/术语/映射）
+  ① industry_packs ─scope虚线→ ⑤ rules
+  ③ categories ─1:N→ ④ bindings ─N:1→ ⑤ rules
 
-运行域：results ─1:N→ issues ─(rule_id)→ rules
-        issues ─→ feedback ─→ cases（学习旁路）
+运行域（阅读顺序 ①→④）：
+  ① results ─1:N→ ② issues ─(rule_id)→ ⑤ rules
+  ② issues → ③ feedback ─旁路→ ④ cases（学习，不进当次判定）
 ```
 
 **新增 / 强化：**
