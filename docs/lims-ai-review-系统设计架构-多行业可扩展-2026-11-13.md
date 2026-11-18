@@ -44,7 +44,7 @@
 细粒度交互图（推荐）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-系统架构总览.excalidraw`](../feishu/LIMS-AI-Review-系统架构总览.excalidraw)
-- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=ZHxX9OUJvUkcir7wlqJcz,ifD7iL2eMAki3HG9iZzsLA)
+- 在线打开：[Excalidraw 分享链接](https://excalidraw.com/#json=35qGNWfshKNhZP6Y8EWoE,CHQqw6lP9ent7JoOojsyuw)
 
 分层要点：① 用户交互层（嵌入现有 LIMS）→ ② Orchestrator（鉴权/PackResolver/调度/三态聚合）→ ③a 引擎 · ③b LIMS数据层 · ③c 行业包 → ④ 审核数据域（自写、不回写 LIMS 主数据）。  
 **第1层模块分组（勿读成五格流水线）**：A 业务主链（编制→审核→签发）｜B AI 统览入口（工作台）｜C 配置入口（规则/行业包台账，虚线，不进当次触发）。**触发汇聚**两项并列进第2层：进入「报告审核」系统内事件/回调（主）、人工重审。产品为 LIMS 内嵌能力，**不做**外部轮询降级。  
@@ -200,10 +200,10 @@ LLM 低置信 / 冲突 → 需复核
 
 ## 6.5 AI 审核工作流（对应飞书 §2.5）
 
-端到端设计流图（触发 → 门禁 → Snapshot∥Pack → RuleEngine → 三态 → 落库展示 → 人工闭环 → cases 旁路）：
+端到端设计流图（触发 → 门禁 → 规范快照∥规则装载 → RuleEngine → 三态 → 落库展示 → 人工闭环 → cases 旁路）：
 
 - 源文件：[`docs/feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw`](../feishu/LIMS-AI-Review-2.5-AI审核工作流.excalidraw)
-- 在线打开：[https://excalidraw.com/#json=LbzrVYy4WpbcpnbUcLVOf,6GA6GZlYAABg-_i1JooHrw)
+- 在线打开：[https://excalidraw.com/#json=t2Ogt_90TvqY8Nw3oytZl,pVuZ4BFTxkSB5gVRe1Gtag)
 
 与本节 §6–§7 口径一致：系统内事件触发、人工重审、幂等键 `report_id+revision`、三态门控、AI 不自动签发、feedback→cases 学习旁路。
 
@@ -229,7 +229,9 @@ LLM 低置信 / 冲突 → 需复核
 | 项目结果 | entrust_items[], result_params[], values[], units[] |
 | 标准 | test_standard, cited_standard |
 | 设备人员 | devices[].calib_from/to, signatures{tester,reviewer,approver} |
-| 扩展 | `ext`（行业包自定义，化学浓度/汽车扭矩等放这里） |
+| 扩展 | `ext`（extension，扩展袋） |
+
+**`ext` 是什么：** Canonical Snapshot 里给「行业特有、核心字段装不下」的数据留的扩展对象。电网/化学/汽车共用同一套核心字段；化学浓度、汽车扭矩等差异放进 `ext`，再靠行业包的模板映射读写。这样核心 schema 保持稳定，换行业不必改引擎表结构。
 
 行业特有字段进 `ext` + 模板映射，**不污染核心 schema**。
 
