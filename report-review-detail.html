@@ -61,8 +61,8 @@
       .wb-main.is-right-only .wb-center, .wb-main.is-center-only .wb-right { display: none; }
     }
 
-    .roster-row { border: 1px solid transparent; border-radius: 12px; background: rgba(255,255,255,.45); }
-    .roster-row:hover { background: rgba(255,255,255,.75); }
+    .roster-row { border: 1px solid rgba(20,60,154,.08); border-radius: 10px; background: #fff; }
+    .roster-row:hover { background: #f8fafc; border-color: rgba(20,60,154,.18); }
     .sum-grid { display: grid; grid-template-columns: 48px minmax(0,1fr); gap: 4px 12px; align-items: start; }
     .sum-grid .k { color: #64748b; }
     .sum-grid .v { color: #1e293b; font-weight: 500; }
@@ -76,7 +76,8 @@
     .fb-banner.back { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
     .fb-banner.need { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
     .policy-sw { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 2px 10px 2px 8px; font-size: 12px; color: #475569; }
-    .preview-frame { width: 100%; flex: 1 1 auto; min-height: 0; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+    .preview-frame { width: 100%; height: 100%; flex: 1 1 auto; min-height: 0; border: 0; border-radius: 8px; background: #fff; }
+    #info-body:has(.preview-frame) { overflow: hidden; }
     .rule-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; min-width: 56px; }
     .log-who { display: inline-flex; align-items: center; gap: 4px; color: #334155; font-weight: 500; }
 
@@ -161,8 +162,9 @@
     <div class="wb-shell">
       <!-- 左：统观 + 操作日志 -->
       <aside class="wb-left">
-        <section class="glass flex flex-col" style="min-height:0;flex:0 0 auto;max-height:52%">
-          <div id="roster-summary" class="px-3 pt-3 pb-2 text-xs text-slate-500"></div>
+        <section class="glass flex flex-col" style="min-height:0;flex:0 0 auto;max-height:58%">
+          <div class="flex items-center gap-2 border-b border-white/50 px-3 py-1.5 text-xs font-medium text-slate-500"><i class="fa fa-files-o" style="color:var(--brand)"></i>报告列表 <span id="roster-count" class="font-normal text-slate-400"></span></div>
+          <div id="roster-summary" class="px-3 pt-1.5 pb-1 text-xs text-slate-500"></div>
           <div id="roster-list" class="overflow-y-auto px-2 pb-2" style="min-height:0" data-annotate="rv-roster"></div>
         </section>
         <section class="glass flex flex-1 flex-col" style="min-height:0" data-annotate="rv-log">
@@ -182,11 +184,10 @@
               <div class="flex items-center gap-2">
                 <span id="ai-round" class="chip bg-slate-100 text-slate-500 mono"></span>
                 <button id="btn-rerun" type="button" class="rounded-lg border px-2.5 py-1 text-xs" style="border-color:var(--brand);color:var(--brand)"><i class="fa fa-refresh mr-1"></i>重跑 AI 审核</button>
-                <button id="btn-expand-center" type="button" class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i><span>展开</span></button>
+                <button id="btn-expand-center" type="button" class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i><span data-split-label>展开</span></button>
               </div>
             </div>
             <div id="signoff-banner" class="hidden border-b border-amber-200/60 bg-amber-50/70 px-4 py-2 text-xs text-amber-800"></div>
-            <div id="ai-rounds" class="hidden border-b border-white/50 px-4 py-1.5"></div>
             <div class="flex-1 overflow-y-auto px-4 py-3" style="min-height:0">
               <!-- 综合结论置顶 -->
               <div id="ai-summary" class="mb-3 rounded-xl border px-4 py-3 text-xs leading-6" style="border-color:rgba(20,60,154,.2);background:linear-gradient(120deg,rgba(46,91,214,.1),rgba(91,141,239,.04))"></div>
@@ -196,6 +197,7 @@
                 <div id="ai-progress-list" class="space-y-1 text-xs"></div>
               </div>
               <div id="ai-diff" class="hidden mb-3 rounded-xl border border-slate-200 bg-white/60 px-3 py-2 text-xs"></div>
+              <div id="ai-rounds" class="hidden mb-3"></div>
               <div id="ai-issues" class="space-y-3"></div>
               <div id="ai-notices"></div>
             </div>
@@ -222,7 +224,7 @@
                 <button class="info-tab border-b-2 border-transparent px-2.5 py-1.5 text-slate-500 active" data-panel="preview">报告预览</button>
                 <button class="info-tab border-b-2 border-transparent px-2.5 py-1.5 text-slate-500" data-panel="recv">收样信息</button>
                 <button class="info-tab border-b-2 border-transparent px-2.5 py-1.5 text-slate-500" data-panel="detect">检测信息</button>
-                <button id="btn-expand-right" type="button" class="ml-auto rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i><span>展开</span></button>
+                <button id="btn-expand-right" type="button" class="ml-auto rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i><span data-split-label>展开</span></button>
               </div>
               <div id="info-body" class="flex-1 overflow-y-auto p-3 text-sm" style="min-height:0"></div>
             </section>
@@ -302,7 +304,7 @@
     // 报告「业务状态」（以是否需操作为主视觉）
     function stateMeta(rep) {
       if (rep.disposition) return { label: '已' + rep.disposition.final, cls: 'bg-emerald-100 text-emerald-700', need: false };
-      if (rep.state === '自动退回编制') return { label: '已自动退回编制', cls: 'bg-red-100 text-red-700', need: false };
+      if (rep.state === '自动退回编制' && ReportReviewMock.getPolicy().autoReturnOnSevere) return { label: '已自动退回编制', cls: 'bg-red-100 text-red-700', need: false };
       if (rep.state === '签发退回待复核') return { label: '签发退回 · 待复核', cls: 'bg-amber-100 text-amber-800', need: true };
       return { label: '待处置', cls: 'bg-amber-100 text-amber-800', need: true };
     }
@@ -312,10 +314,12 @@
       var counts = { 待处置: 0, 签发退回: 0, 自动退回: 0, 已处置: 0 };
       var rows = entrust.reports.map(function (rep) {
         var r = currentResult(rep); var sm = stateMeta(rep);
-        if (rep.disposition) counts['已处置']++; else if (rep.state === '自动退回编制') counts['自动退回']++;
-        else if (rep.state === '签发退回待复核') counts['签发退回']++; else counts['待处置']++;
+        if (rep.disposition) counts['已处置']++;
+        else if (rep.state === '自动退回编制' && ReportReviewMock.getPolicy().autoReturnOnSevere) counts['自动退回']++;
+        else if (rep.state === '签发退回待复核') counts['签发退回']++;
+        else counts['待处置']++;
         var cur = ReportReviewMock.currentRound(rep);
-        return '<button type="button" class="roster-row ' + (rep.id === selectedId ? 'active' : '') + ' mb-1.5 flex w-full flex-col gap-1.5 px-3 py-2.5 text-left" data-report-id="' + rep.id + '" data-conclusion="' + r.conclusion + '" data-state="' + esc(rep.state) + '">' +
+        return '<button type="button" class="roster-row ' + (rep.id === selectedId ? 'active' : '') + ' mb-1 flex w-full flex-col gap-1 px-2.5 py-1.5 text-left" data-report-id="' + rep.id + '" data-conclusion="' + r.conclusion + '" data-state="' + esc(rep.state) + '">' +
           '<div class="flex items-center justify-between gap-2">' +
             '<span class="text-sm font-semibold text-slate-800 mono">' + esc(rep.reportNo) + '</span>' +
             '<span class="state-chip chip ' + sm.cls + (sm.need ? ' need-action' : '') + '">' + (sm.need ? '<i class="fa fa-bell-o"></i>' : '') + sm.label + '</span>' +
@@ -327,7 +331,14 @@
         '</button>';
       }).join('');
       $('roster-list').innerHTML = rows;
-      $('roster-summary').innerHTML = '本委托共 <b class="text-slate-700 mono">' + entrust.reports.length + '</b> 份报告 · 待处置 <b class="text-amber-600 mono">' + counts['待处置'] + '</b> · 签发退回 <b class="text-amber-600 mono">' + counts['签发退回'] + '</b> · 自动退回 <b class="text-red-600 mono">' + counts['自动退回'] + '</b> · 已处置 <b class="text-emerald-600 mono">' + counts['已处置'] + '</b>';
+      $('roster-count').textContent = '· ' + entrust.reports.length + ' 份';
+      $('roster-summary').innerHTML =
+        '<div class="flex flex-wrap gap-1">' +
+          '<span class="chip bg-amber-50 text-amber-700">待处置 ' + counts['待处置'] + '</span>' +
+          '<span class="chip bg-amber-50 text-amber-800">签发退回 ' + counts['签发退回'] + '</span>' +
+          '<span class="chip bg-red-50 text-red-700">自动退回 ' + counts['自动退回'] + '</span>' +
+          '<span class="chip bg-emerald-50 text-emerald-700">已处置 ' + counts['已处置'] + '</span>' +
+        '</div>';
       document.querySelectorAll('.roster-row').forEach(function (b) { b.addEventListener('click', function () { select(b.getAttribute('data-report-id'), true); }); });
     }
 
@@ -441,7 +452,10 @@
           '<span class="k">结论</span><span class="v">' + esc(r.conclusion) + '</span>' +
           (diffText ? '<div class="full"><span class="k">对比</span><span class="v">' + esc(diffText) + '</span></div>' : '') +
           '<div class="full"><span class="k">建议</span><span class="v">' + esc(summaryAdvice(r)) + '</span></div>' +
-          '<div class="full"><span class="k">口径</span><span class="v text-slate-500 font-normal">严重项 → 不通过；仅一般项 → 需复核；全部通过 → 通过</span></div>' +
+          '<div class="full"><span class="k">口径</span><span class="v flex flex-wrap gap-1 font-normal">' +
+            '<span class="chip bg-red-50 text-red-700">严重 → 不通过</span>' +
+            '<span class="chip bg-amber-50 text-amber-700">仅一般 → 需复核</span>' +
+            '<span class="chip bg-emerald-50 text-emerald-700">全过 → 通过</span></span></div>' +
         '</div>';
     }
     function renderRoundTabs(report) {
@@ -453,7 +467,7 @@
         tabs.push('<button type="button" class="round-tab' + (i === cur ? ' is-on' : '') + '" data-round="' + i + '">第 ' + (i + 1) + ' 轮 · ' + esc(rounds[i].revision) + '</button>');
       }
       box.classList.remove('hidden');
-      box.innerHTML = '<div class="round-tabs">' + tabs.join('') + '</div>';
+      box.innerHTML = '<div class="mb-1 text-[11px] text-slate-400">审核轮次（最新在左）</div><div class="round-tabs">' + tabs.join('') + '</div>';
       box.querySelectorAll('.round-tab').forEach(function (btn) {
         btn.addEventListener('click', function () {
           RT[report.id].roundIndex = parseInt(btn.getAttribute('data-round'), 10);
@@ -682,8 +696,11 @@
       if (mode === 'right') m.classList.add('is-right-only');
       function setBtn(id, on) {
         var b = $(id); if (!b) return;
-        b.querySelector('span').textContent = on ? '还原' : '展开';
-        b.querySelector('i').className = 'fa ' + (on ? 'fa-compress' : 'fa-expand') + ' mr-1';
+        var lab = b.querySelector('[data-split-label]') || b.querySelector('span');
+        if (lab) lab.textContent = on ? '还原' : '展开';
+        var ic = b.querySelector('i');
+        if (ic) ic.className = 'fa ' + (on ? 'fa-compress' : 'fa-expand') + ' mr-1';
+        b.setAttribute('title', on ? '还原为左右 1:1' : (id === 'btn-expand-right' ? '展开文件区，隐藏审核结果' : '展开审核结果，隐藏文件区'));
       }
       setBtn('btn-expand-center', mode === 'center');
       setBtn('btn-expand-right', mode === 'right');
