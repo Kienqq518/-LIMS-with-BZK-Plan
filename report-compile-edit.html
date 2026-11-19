@@ -344,12 +344,13 @@
         <button type="button" onclick="closeWbRecord()" class="text-slate-400 hover:text-slate-600" aria-label="关闭"><i class="fa fa-times"></i></button>
       </div>
       <div class="rr-body">
-        <div class="mb-3 flex items-center justify-end">
+        <div class="mb-3 flex items-center justify-end gap-3">
           <span class="audit-legend">
             <span><i class="lg-dot lg-pass"></i>流转</span>
             <span><i class="lg-dot lg-reject"></i>退回</span>
             <span><i class="lg-dot lg-pending"></i>当前</span>
           </span>
+          <button type="button" data-log-order-btn class="text-xs text-blue-600 hover:underline" onclick="toggleLogOrder()">时间正序</button>
         </div>
         <div id="wbRecordList"></div>
       </div>
@@ -434,55 +435,137 @@
       ]
     };
 
-    var SAMPLE_GROUPS = [
-      {
-        id: 'g-pvc-c',
-        templateKey: 'pvc-c',
-        name: '实壁塑料电缆导管',
-        model: 'PVC-C',
-        marking: 'DS 150*8*600 SN12 PVC-C DL/T 802.3-2023',
-        inspectCategory: '出厂检验',
-        qty: 3,
-        unit: '根',
-        manufacturer: 'xxx',
-        mfgAddress: 'xxxx',
-        mfgOrigin: 'xxxxx',
-        remark: 'xxxxx',
-        category: '电力物资类',
-        categoryPath: ['电力物资类', 'WZ电网物资'],
-        tests: '颜色外观|尺寸检查|密度|压扁试验|维卡软化温度|纵向回缩率',
-        specimens: [
-          { id: 's1', specimenId: 'SCZN202508/0009-0101', checked: false },
-          { id: 's2', specimenId: 'SCZN202508/0009-0102', checked: false },
-          { id: 's3', specimenId: 'SCZN202508/0009-0103', checked: false }
-        ]
-      }
-    ];
-
-    var reportFiles = [
-      {
-        id: 1, reportNo: 'BGSCZN2025080009-001', specimenIds: ['SCZN202508/0009-0101'],
-        fileName: '实壁塑料电缆导管-0101检测报告.docx', createdAt: '2026-07-17 10:00', modifiedAt: '2026-07-17 10:00',
-        node: '报告审核', statusLabel: '审批中', statusTone: 'pending',
-        timeline: [
-          { time: '2026-07-17 10:00:00', node: '报告编制', actor: 'admin', status: '生成报告', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
-          { time: '2026-07-17 10:20:00', node: '报告编制', actor: 'admin', status: '提交至报告审核', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
-          { time: '', node: '报告审核', actor: '', status: '审批中', tone: 'pending', statusTone: 'pending', icon: 'fa-clock-o', pending: true }
-        ]
+    var WORKBENCH_BY_ENTRUST = {
+      'SCZN202508/0009': {
+        groups: [
+          {
+            id: 'g-pvc-c',
+            templateKey: 'pvc-c',
+            name: '实壁塑料电缆导管',
+            model: 'PVC-C',
+            marking: 'DS 150*8*600 SN12 PVC-C DL/T 802.3-2023',
+            inspectCategory: '出厂检验',
+            qty: 3,
+            unit: '根',
+            manufacturer: 'xxx',
+            mfgAddress: 'xxxx',
+            mfgOrigin: 'xxxxx',
+            remark: 'xxxxx',
+            category: '电力物资类',
+            categoryPath: ['电力物资类', 'WZ电网物资'],
+            tests: '颜色外观|尺寸检查|密度|压扁试验|维卡软化温度|纵向回缩率',
+            specimens: [
+              { id: 's1', specimenId: 'SCZN202508/0009-0101', checked: false },
+              { id: 's2', specimenId: 'SCZN202508/0009-0102', checked: false },
+              { id: 's3', specimenId: 'SCZN202508/0009-0103', checked: false }
+            ]
+          }
+        ],
+        reports: [
+          {
+            id: 1, reportNo: 'BGSCZN2025080009-001', specimenIds: ['SCZN202508/0009-0101'],
+            fileName: '实壁塑料电缆导管-0101检测报告.docx', createdAt: '2026-07-17 10:00', modifiedAt: '2026-07-17 10:00',
+            node: '报告审核', statusLabel: '审批中', statusTone: 'pending',
+            timeline: [
+              { time: '2026-07-17 10:00:00', node: '报告编制', actor: 'admin', status: '生成报告', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+              { time: '2026-07-17 10:20:00', node: '报告编制', actor: 'admin', status: '提交至报告审核', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+              { time: '', node: '报告审核', actor: '', status: '审批中', tone: 'pending', statusTone: 'pending', icon: 'fa-clock-o', pending: true }
+            ]
+          },
+          {
+            id: 2, reportNo: 'BGSCZN2025080009-002', specimenIds: ['SCZN202508/0009-0102'],
+            fileName: '实壁塑料电缆导管-0102检测报告.docx', createdAt: '2026-07-17 11:30', modifiedAt: '2026-07-17 14:05',
+            node: '报告编制', statusLabel: '已退回·待修订', statusTone: 'reject',
+            timeline: [
+              { time: '2026-07-17 11:30:00', node: '报告编制', actor: 'admin', status: '生成报告', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+              { time: '2026-07-17 11:50:00', node: '报告编制', actor: 'admin', status: '提交至报告审核', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+              { time: '2026-07-17 13:40:00', node: '报告审核', actor: '李审核', status: '审批拒绝', tone: 'reject', statusTone: 'reject', icon: 'fa-minus-circle', opinionKicker: '退回至报告编制', opinion: '签名页签章位置不符模板，需按机构模板重排。' },
+              { time: '', node: '报告编制', actor: 'admin', status: '编制中', tone: 'pending', statusTone: 'pending', icon: 'fa-pencil', pending: true }
+            ]
+          }
+        ],
+        nextId: 3
       },
-      {
-        id: 2, reportNo: 'BGSCZN2025080009-002', specimenIds: ['SCZN202508/0009-0102'],
-        fileName: '实壁塑料电缆导管-0102检测报告.docx', createdAt: '2026-07-17 11:30', modifiedAt: '2026-07-17 14:05',
-        node: '报告编制', statusLabel: '已退回·待修订', statusTone: 'reject',
-        timeline: [
-          { time: '2026-07-17 11:30:00', node: '报告编制', actor: 'admin', status: '生成报告', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
-          { time: '2026-07-17 11:50:00', node: '报告编制', actor: 'admin', status: '提交至报告审核', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
-          { time: '2026-07-17 13:40:00', node: '报告审核', actor: '李审核', status: '审批拒绝', tone: 'reject', statusTone: 'reject', icon: 'fa-minus-circle', opinionKicker: '退回至报告编制', opinion: '签名页签章位置不符模板，需按机构模板重排。' },
-          { time: '', node: '报告编制', actor: 'admin', status: '编制中', tone: 'pending', statusTone: 'pending', icon: 'fa-pencil', pending: true }
-        ]
+      'SC2026/0238': {
+        groups: [
+          {
+            id: 'g-cable-0238',
+            templateKey: 'pvc-c',
+            name: '10kV3芯电力电缆',
+            model: 'YJV22-8.7/15kV',
+            marking: 'YJV22-8.7/15 3×240 GB/T 12706.1-2020',
+            inspectCategory: '型式试验',
+            qty: 4,
+            unit: '根',
+            manufacturer: '杭州数蚕电缆',
+            mfgAddress: '杭州市西湖区',
+            mfgOrigin: '杭州',
+            remark: 'AI 预审演示委托',
+            category: '电力物资类',
+            categoryPath: ['电力物资类', 'WZ电网物资'],
+            tests: '导体直流电阻|绝缘厚度|绝缘电阻|局部放电|工频耐压',
+            specimens: [
+              { id: 'c1', specimenId: 'SC2026/0238-0101', checked: false },
+              { id: 'c2', specimenId: 'SC2026/0238-0102', checked: false },
+              { id: 'c3', specimenId: 'SC2026/0238-0103', checked: false },
+              { id: 'c4', specimenId: 'SC2026/0238-0104', checked: false }
+            ]
+          }
+        ],
+        reports: [
+          {
+            id: 61, reportNo: 'SC2026/0238-01', specimenIds: ['SC2026/0238-0101'],
+            fileName: 'SC2026-0238-01检测报告.docx', createdAt: '2026-09-02 14:20', modifiedAt: '2026-09-03 09:10',
+            node: '报告签发', statusLabel: '签发中', statusTone: 'pending',
+            timeline: [
+              { time: '2026-09-02 14:20:00', node: '报告编制', actor: 'admin', status: '生成报告', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+              { time: '2026-09-02 16:00:00', node: '报告编制', actor: 'admin', status: '提交至报告审核', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+              { time: '2026-09-02 16:12:00', node: '报告审核', actor: 'AI 审核引擎', status: '预审通过', tone: 'pass', statusTone: 'pass', icon: 'fa-check-circle' },
+              { time: '2026-09-03 09:10:00', node: '报告审核', actor: '李审核', status: '审批通过', tone: 'pass', statusTone: 'pass', icon: 'fa-check-circle' },
+              { time: '', node: '报告签发', actor: '', status: '审批中', tone: 'pending', statusTone: 'pending', icon: 'fa-clock-o', pending: true }
+            ]
+          },
+          {
+            id: 62, reportNo: 'SC2026/0238-02', specimenIds: ['SC2026/0238-0102'],
+            fileName: 'SC2026-0238-02检测报告.docx', createdAt: '2026-09-02 15:05', modifiedAt: '2026-09-03 11:05',
+            node: '报告编制', statusLabel: '已退回·待修订', statusTone: 'reject',
+            timeline: [
+              { time: '2026-09-02 15:05:00', node: '报告编制', actor: 'admin', status: '生成报告', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+              { time: '2026-09-02 15:40:00', node: '报告编制', actor: 'admin', status: '提交至报告审核', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+              { time: '2026-09-03 09:20:00', node: '报告审核', actor: 'AI 审核引擎', status: '需人工复核', tone: 'pass', statusTone: 'pending', icon: 'fa-exclamation-circle', opinion: 'L3-a-2 报告引用标准号与实际检测标准不一致；L1-d-1 存在计量单位与参数不匹配' },
+              { time: '2026-09-03 11:05:00', node: '报告审核', actor: '李审核', status: '审批拒绝', tone: 'reject', statusTone: 'reject', icon: 'fa-minus-circle', opinionKicker: '退回至报告编制', opinion: '签名页签章位置不符模板，需按机构模板重排。' },
+              { time: '', node: '报告编制', actor: 'admin', status: '编制中', tone: 'pending', statusTone: 'pending', icon: 'fa-pencil', pending: true }
+            ]
+          },
+          {
+            id: 63, reportNo: 'SC2026/0238-03', specimenIds: ['SC2026/0238-0103'],
+            fileName: 'SC2026-0238-03检测报告.docx', createdAt: '2026-09-02 15:40', modifiedAt: '2026-09-03 10:15',
+            node: '报告编制', statusLabel: 'AI退回·待修订', statusTone: 'reject',
+            timeline: [
+              { time: '2026-09-02 15:40:00', node: '报告编制', actor: 'admin', status: '生成报告', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+              { time: '2026-09-02 15:50:00', node: '报告编制', actor: 'admin', status: '提交至报告审核', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+              { time: '2026-09-03 10:15:00', node: '报告审核', actor: 'AI 审核引擎', status: '自动退回', tone: 'reject', statusTone: 'reject', icon: 'fa-bolt', opinionKicker: '退回至报告编制（严重项）', opinion: 'L1-b-1 检测/审核/批准签名位不完整' },
+              { time: '', node: '报告编制', actor: 'admin', status: '编制中', tone: 'pending', statusTone: 'pending', icon: 'fa-pencil', pending: true }
+            ]
+          },
+          {
+            id: 64, reportNo: 'SC2026/0238-04', specimenIds: ['SC2026/0238-0104'],
+            fileName: 'SC2026-0238-04检测报告.docx', createdAt: '2026-09-03 14:20', modifiedAt: '2026-09-03 14:20',
+            node: '报告编制', statusLabel: '编制中', statusTone: 'pending',
+            timeline: [
+              { time: '2026-09-03 14:20:00', node: '报告编制', actor: 'admin', status: '生成报告', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+              { time: '', node: '报告编制', actor: 'admin', status: '编制中', tone: 'pending', statusTone: 'pending', icon: 'fa-pencil', pending: true }
+            ]
+          }
+        ],
+        nextId: 65
       }
-    ];
-    var reportFileNextId = 3;
+    };
+
+    var wbPack = WORKBENCH_BY_ENTRUST[ENTRUST_CODE] || WORKBENCH_BY_ENTRUST['SCZN202508/0009'];
+    var SAMPLE_GROUPS = wbPack.groups;
+    var reportFiles = wbPack.reports;
+    var reportFileNextId = wbPack.nextId;
     var modalSelectedVariants = {};
 
     function escapeHtml(s) {
@@ -771,12 +854,14 @@
     function renderReportSummary() {
       var box = document.getElementById('reportSummary');
       if (box) {
-        var pending = reportFiles.filter(function (r) { return r.statusTone === 'pending'; }).length;
+        var compiling = reportFiles.filter(function (r) { return r.node === '报告编制' && r.statusTone !== 'reject'; }).length;
         var reject = reportFiles.filter(function (r) { return r.statusTone === 'reject'; }).length;
+        var later = reportFiles.filter(function (r) { return r.node !== '报告编制'; }).length;
         var remain = pendingSpecimens().length;
         var parts = ['共 <span class="count-strong">' + reportFiles.length + '</span> 份报告'];
         if (reject) parts.push('<span class="text-red-600">已退回 ' + reject + '</span>');
-        if (pending) parts.push('<span class="text-amber-600">审批中 ' + pending + '</span>');
+        if (compiling) parts.push('<span class="text-amber-600">编制中 ' + compiling + '</span>');
+        if (later) parts.push('<span class="text-amber-600">后续节点 ' + later + '</span>');
         parts.push('待生成试样 <span class="count-strong">' + remain + '</span>');
         box.innerHTML = parts.join(' · ');
       }
@@ -869,12 +954,55 @@
     }
 
     var wbRecordHideTimer = null;
+    var wbOpenId = null;
+    var LOG_ORDER_KEY = 'lims-report-log-order';
+
+    function getLogOrder() {
+      try { return localStorage.getItem(LOG_ORDER_KEY) === 'desc' ? 'desc' : 'asc'; } catch (e) { return 'asc'; }
+    }
+    function setLogOrder(order) {
+      try { localStorage.setItem(LOG_ORDER_KEY, order === 'desc' ? 'desc' : 'asc'); } catch (e) { /* ignore */ }
+    }
+    function syncLogOrderButtons() {
+      var desc = getLogOrder() === 'desc';
+      document.querySelectorAll('[data-log-order-btn]').forEach(function (btn) {
+        btn.innerHTML = desc
+          ? '<i class="fa fa-sort-amount-desc"></i> 时间倒序'
+          : '<i class="fa fa-sort-amount-asc"></i> 时间正序';
+        btn.setAttribute('title', desc ? '当前最新在上。点击改为时间正序（从上往下递增）' : '当前从上往下时间递增。点击改为时间倒序');
+      });
+    }
+    function sortTimeline(items) {
+      var list = (items || []).slice();
+      var desc = getLogOrder() === 'desc';
+      list.sort(function (a, b) {
+        var ap = !!a.pending;
+        var bp = !!b.pending;
+        if (ap !== bp) return ap ? (desc ? -1 : 1) : (desc ? 1 : -1);
+        var at = a.time || '';
+        var bt = b.time || '';
+        if (at === bt) return 0;
+        if (desc) return at < bt ? 1 : -1;
+        return at < bt ? -1 : 1;
+      });
+      return list;
+    }
+    function toggleLogOrder() {
+      setLogOrder(getLogOrder() === 'asc' ? 'desc' : 'asc');
+      syncLogOrderButtons();
+      if (wbOpenId != null) {
+        var row = reportFiles.filter(function (r) { return r.id === wbOpenId; })[0];
+        if (row) document.getElementById('wbRecordList').innerHTML = renderWbTimeline(row.timeline || []);
+      }
+    }
 
     function openWbRecord(id) {
       var row = reportFiles.filter(function (r) { return r.id === id; })[0];
       if (!row) return;
+      wbOpenId = id;
       var sub = document.getElementById('wbRecordSubtitle');
       if (sub) sub.textContent = row.reportNo + ' · ' + row.fileName;
+      syncLogOrderButtons();
       document.getElementById('wbRecordList').innerHTML = renderWbTimeline(row.timeline || []);
       var drawer = document.getElementById('wbRecordDrawer');
       clearTimeout(wbRecordHideTimer);
@@ -890,6 +1018,7 @@
     }
 
     function renderWbTimeline(items) {
+      items = sortTimeline(items);
       if (!items.length) return '<p class="py-6 text-center text-sm text-slate-400">暂无流转记录</p>';
       return '<ol class="audit-tl">' + items.map(function (item) {
         var person = item.actor
@@ -1052,7 +1181,7 @@
             title: '报告文件（本委托报告总览）',
             wide: true,
             content: '<strong>需求逻辑：</strong>把「这个委托有几份报告、各停在哪个节点、要不要我处理」集中到一张表。<br>' +
-            '<strong>展示规则：</strong>右上角汇总共几份、已退回、审批中、待生成试样。每行含状态 chip、报告编号、试样、文件、时间、独立「报告记录」列。<br>' +
+            '<strong>展示规则：</strong>右上角汇总共几份、已退回、编制中、后续节点、待生成试样。演示 SC2026/0238 四份报告：签发中 / 人工退回 / AI 自动退回 / 刚生成待编制。<br>' +
             '<strong>交互逻辑：</strong>「编辑报告」改 Word（仅当前节点在报告编制时可点）；「编制完成」二次确认后提交到报告审核；「查看」打开该报告流转抽屉。已进入后续节点的行，编辑与编制完成置灰。',
             tag: '编制工作台'
           },
@@ -1073,8 +1202,8 @@
             title: '报告记录（抽屉）',
             wide: true,
             content: '<strong>需求逻辑：</strong>看单份报告的流转留痕不必跳页，就地从右侧抽屉展开。<br>' +
-            '<strong>展示规则：</strong>按时间正序的审批时间轴，已完成实心点（蓝=流转、红=退回），当前节点空心黄点收尾；退回原因写在灰色意见条。<br>' +
-            '<strong>交互逻辑：</strong>由「报告记录」列的「查看」打开；点遮罩或关闭收回，不改数据。',
+            '<strong>展示规则：</strong>审批时间轴默认从上往下时间递增，可切倒序；选择写入浏览器，所有报告记录共用。<br>' +
+            '<strong>交互逻辑：</strong>由「报告记录」列的「查看」打开；点「时间正序 / 时间倒序」立刻重排。点遮罩或关闭收回，不改数据。',
             tag: '编制工作台'
           },
           {

@@ -103,7 +103,7 @@
     .report-list-table td[data-col-key="操作"],
     .report-list-table th.report-list-ops-col,
     .report-list-table td.report-list-ops-cell {
-      min-width: 15.5rem; width: 15.5rem; max-width: 15.5rem;
+      min-width: 10rem; width: 10rem; max-width: 10rem;
       box-sizing: border-box; vertical-align: middle;
     }
     .report-list-table td.cc-fz-r,
@@ -117,7 +117,7 @@
       background-color: #fef2f2 !important;
     }
     .report-list-table .report-list-ops {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.65rem;
+      display: flex; flex-wrap: nowrap; align-items: center; gap: 0.35rem 0.55rem;
       line-height: 1.5;
     }
     .report-list-table .report-list-ops > * { flex-shrink: 0; white-space: nowrap; }
@@ -401,6 +401,7 @@
                 <span><i class="lg-dot lg-reject"></i>退回</span>
                 <span><i class="lg-dot lg-pending"></i>当前</span>
               </span>
+              <button type="button" data-log-order-btn class="ml-1 text-xs text-blue-600 hover:underline" onclick="toggleLogOrder()">时间正序</button>
             </div>
             <div id="reportLogFilter" class="flex flex-wrap items-center gap-1.5"></div>
           </div>
@@ -449,14 +450,18 @@
           sampleNos: ['SC2026/0238-0101'],
           reportName: 'SC2026-0238-01检测报告.docx',
           createdAt: '2026-09-02 14:20:00',
-          node: '报告审核',
+          node: '报告签发',
           inApproval: true,
           aiAutoReturn: false,
           compile: { user: 'admin', date: '2026年09月02日' },
-          audit: null, sign: null, process: null, fee: null, issue: null,
+          audit: { user: '李审核', date: '2026年09月03日', opinion: '审核通过' },
+          sign: null, process: null, fee: null, issue: null,
           returns: [],
           logs: [
-            { time: '2026-09-02 16:00:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-01的报告 提交至 报告审核' }
+            { time: '2026-09-02 14:20:00', text: 'admin 在 报告编制 生成 报告编号为SC2026/0238-01的报告' },
+            { time: '2026-09-02 16:00:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-01的报告 提交至 报告审核' },
+            { time: '2026-09-02 16:12:00', text: 'AI 审核引擎 在 报告审核 将 报告编号为SC2026/0238-01的报告 判定为通过' },
+            { time: '2026-09-03 09:10:00', text: '李审核 在 报告审核 将 报告编号为SC2026/0238-01的报告 提交至 报告签发' }
           ]
         },
         {
@@ -497,8 +502,24 @@
             { node: '报告审核', by: 'AI 审核引擎', time: '2026-09-03 10:15:00', reason: 'L1-b-1 检测/审核/批准签名位不完整', kind: 'ai' }
           ],
           logs: [
-            { time: '2026-09-03 10:15:00', text: 'AI 审核引擎 在 报告审核 将 报告编号为SC2026/0238-03的报告 自动退回至 报告编制（严重项）' },
-            { time: '2026-09-02 15:50:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-03的报告 提交至 报告审核' }
+            { time: '2026-09-02 15:40:00', text: 'admin 在 报告编制 生成 报告编号为SC2026/0238-03的报告' },
+            { time: '2026-09-02 15:50:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-03的报告 提交至 报告审核' },
+            { time: '2026-09-03 10:15:00', text: 'AI 审核引擎 在 报告审核 将 报告编号为SC2026/0238-03的报告 自动退回至 报告编制（严重项）' }
+          ]
+        },
+        {
+          id: 64, reportNo: 'SC2026/0238-04',
+          sampleNos: ['SC2026/0238-0104'],
+          reportName: 'SC2026-0238-04检测报告.docx',
+          createdAt: '2026-09-03 14:20:00',
+          node: '报告编制',
+          inApproval: false,
+          aiAutoReturn: false,
+          compile: { user: 'admin', date: '2026年09月03日' },
+          audit: null, sign: null, process: null, fee: null, issue: null,
+          returns: [],
+          logs: [
+            { time: '2026-09-03 14:20:00', text: 'admin 在 报告编制 生成 报告编号为SC2026/0238-04的报告' }
           ]
         }
       ],
@@ -967,9 +988,13 @@
         return { node: node, actor: actor, tone: 'pass', status: '生成报告', statusTone: 'muted', icon: 'fa-pencil-square-o', opinionKicker: '', opinion: '' };
       }
       if (parsed.verb === '判定为') {
+        var passed = parsed.target === '通过';
         return {
-          node: node, actor: actor, tone: 'pass', status: parsed.target || '需人工复核', statusTone: 'pending',
-          icon: 'fa-exclamation-circle', opinionKicker: '', opinion: extraReason || ''
+          node: node, actor: actor, tone: 'pass',
+          status: parsed.target || '需人工复核',
+          statusTone: passed ? 'pass' : 'pending',
+          icon: passed ? 'fa-check-circle' : 'fa-exclamation-circle',
+          opinionKicker: '', opinion: extraReason || ''
         };
       }
       if (parsed.verb === '自动退回至') {
@@ -1040,7 +1065,7 @@
             opinionKicker: '',
             opinion: ''
           });
-        } else if (row.node === '报告编制' && reportWasReturned(row)) {
+        } else if (row.node === '报告编制') {
           items.push({
             time: '',
             reportNo: row.reportNo,
@@ -1058,10 +1083,35 @@
         }
       });
       items.sort(function (a, b) {
-        if (a.pending !== b.pending) return a.pending ? 1 : -1;
-        return a.time < b.time ? -1 : (a.time > b.time ? 1 : 0);
+        var desc = getLogOrder() === 'desc';
+        if (a.pending !== b.pending) return a.pending ? (desc ? -1 : 1) : (desc ? 1 : -1);
+        if (a.time === b.time) return 0;
+        if (desc) return a.time < b.time ? 1 : -1;
+        return a.time < b.time ? -1 : 1;
       });
       return items;
+    }
+
+    var LOG_ORDER_KEY = 'lims-report-log-order';
+    function getLogOrder() {
+      try { return localStorage.getItem(LOG_ORDER_KEY) === 'desc' ? 'desc' : 'asc'; } catch (e) { return 'asc'; }
+    }
+    function setLogOrder(order) {
+      try { localStorage.setItem(LOG_ORDER_KEY, order === 'desc' ? 'desc' : 'asc'); } catch (e) { /* ignore */ }
+    }
+    function syncLogOrderButtons() {
+      var desc = getLogOrder() === 'desc';
+      document.querySelectorAll('[data-log-order-btn]').forEach(function (btn) {
+        btn.innerHTML = desc
+          ? '<i class="fa fa-sort-amount-desc"></i> 时间倒序'
+          : '<i class="fa fa-sort-amount-asc"></i> 时间正序';
+        btn.setAttribute('title', desc ? '当前最新在上。点击改为时间正序（从上往下递增）' : '当前从上往下时间递增。点击改为时间倒序');
+      });
+    }
+    function toggleLogOrder() {
+      setLogOrder(getLogOrder() === 'asc' ? 'desc' : 'asc');
+      syncLogOrderButtons();
+      if (activeEntrustCode) renderMergedReportLogs(activeEntrustCode);
     }
 
     function auditAvatarColor(name) {
@@ -1214,6 +1264,7 @@
       activeEntrustCode = code || '';
       activeReportLogFilter = 'all';
       renderReportRecordList(activeEntrustCode);
+      syncLogOrderButtons();
       var modal = document.getElementById('reportRecordModal');
       clearTimeout(reportRecordHideTimer);
       modal.classList.remove('hidden');
@@ -1364,7 +1415,7 @@
             '<strong>交互逻辑：</strong>「去处理」进入编制工作台（补生成、编辑已有报告、看记录）；「退回」见独立批注。不能对单份报告从编制退回数据审核。', tag: '报告编制' },
         { id: 'report-return', selector: '[data-annotate="report-return"]', position: 'left', title: '退回（整单，后续节点置灰）', content: '<strong>需求逻辑：</strong>退回只能按整个委托打回「数据审核」，不能单份报告退。若该委托下任意报告已经离开「报告编制」（报告审核及之后），再退会把后续流程一并打乱，因此退回置灰。<br>' +
             '<strong>展示规则：</strong>可退时为橙色「退回」；不可退时按钮置灰，鼠标悬停说明是哪些报告、停在哪个节点。<br>' +
-            '<strong>交互逻辑：</strong>全部报告仍在「报告编制」→ 弹出「退回原因」。任一报告已到后续节点 → 按钮不可点。演示：SC2026/0238 因 0238-01 在报告审核而置灰；SC2026/0099 因 0099-02 在报告审核而置灰。', tag: '报告编制' },
+            '<strong>交互逻辑：</strong>全部报告仍在「报告编制」→ 弹出「退回原因」。任一报告已到后续节点 → 按钮不可点。演示：SC2026/0238 因 0238-01 在报告签发而置灰；SC2026/0099 因 0099-02 在报告审核而置灰。', tag: '报告编制' },
         { id: 'report-handle-link', selector: '[data-annotate="report-handle"]', position: 'left', title: '去处理', content: '<strong>需求逻辑：</strong>一份委托下可能同时有待生成试样、待修订报告和审批中的报告，只开一扇门进编制工作台。<br>' +
             '<strong>展示规则：</strong>操作列「去处理」，演示委托 SCZN202508/0009。<br>' +
             '<strong>交互逻辑：</strong>点击进入编制工作台；报告记录、编辑、补生成都在工作台内。', tag: '报告编制' },
@@ -1379,8 +1430,8 @@
           title: '报告记录（节点进度 + 操作日志同屏）',
           wide: true,
           content: '<strong>需求逻辑：</strong>打开「报告记录」就要同时看到节点签署留痕与流转过程，从右侧抽屉展开，不挡左侧列表。<br>' +
-          '<strong>展示规则：</strong>上半「节点进度」表；下半操作日志按时间正序。已完成步骤为实心色点（蓝=流转，红=退回）；当前步骤为空心黄点，收在时间轴末尾：回到「报告编制」的显示「编制中」，仍在后续节点的显示「审批中」。筛选为「全部」时标题旁用完整报告编号。<br>' +
-          '<strong>交互逻辑：</strong>默认展示该委托全部日志；点表格行或芯片筛选对应报告。关闭不改数据。',
+          '<strong>展示规则：</strong>上半「节点进度」表；下半操作日志默认时间正序（从上往下递增），可切倒序。已完成步骤为实心色点（蓝=流转，红=退回）；当前步骤为空心黄点。筛选为「全部」时标题旁用完整报告编号。<br>' +
+          '<strong>交互逻辑：</strong>默认展示该委托全部日志；点表格行或芯片筛选对应报告。时间顺序点一次即写入浏览器，所有报告记录共用，下次打开仍用这个顺序。',
           tag: '报告列表'
         },
         {
@@ -1390,7 +1441,7 @@
           title: '操作日志（嵌入报告记录）',
           wide: true,
           content: '<strong>需求逻辑：</strong>单份/整单报告的流转动作可追溯（谁在哪个节点提交/退回、意见是什么）。<br>' +
-          '<strong>展示规则：</strong>审批时间轴按时间正序，当前步骤以空心黄点收尾。已完成：蓝=生成/提交/审批通过/需人工复核，红=审批拒绝/自动退回。回到编制的当前步为「编制中」，停在后续节点的当前步为「审批中」。退回原因与「需人工复核」命中项写在灰色意见条。多报告同屏时标题旁用完整报告编号。<br>' +
+          '<strong>展示规则：</strong>审批时间轴默认正序，可切倒序，选择会记住。已完成：蓝=生成/提交/审批通过/需人工复核，红=审批拒绝/自动退回。当前步空心黄点。多报告同屏时标题旁用完整报告编号。<br>' +
           '<strong>交互逻辑：</strong>与上方节点进度同一抽屉。点行或芯片只筛日志，不改数据。',
           tag: '报告列表'
         },
