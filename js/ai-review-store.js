@@ -2,7 +2,7 @@
  * AI 审查 Mock Store（M1 原型 · 7 张表 localStorage）
  */
 (function (global) {
-  var STORAGE_KEY = 'lims.aiReview.v4';
+  var STORAGE_KEY = 'lims.aiReview.v5';
 
   // 与飞书规则台账对齐：规则 ID = Ln-x-n；级别 L1–L4 × 规则组 Ln-a–d × 类别（§2.3 审什么）
   var DEFAULT_RULES = [
@@ -13,7 +13,7 @@
     { id: 'L2-c-1', group: 'L2-c', category: '设备校准覆盖', level: 'L2', name: '设备校准有效期覆盖检测日期', expr: 'calib_from <= test <= calib_to', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
     { id: 'L3-a-2', group: 'L3-a', category: '标准现行有效', level: 'L3', name: '报告引用标准号等于实际检测标准', expr: 'cited == test_standard', severity: '一般', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
     { id: 'L1-b-1', group: 'L1-b', category: '签名', level: 'L1', name: '检测/审核/批准签名位齐全', expr: 'signatures complete', severity: '严重', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
-    { id: 'L1-d-4', group: 'L1-d', category: '单位与格式', level: 'L1', name: '计量单位与参数匹配', expr: 'units allowed', severity: '一般', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
+    { id: 'L1-d-1', group: 'L1-d', category: '单位与格式', level: 'L1', name: '计量单位与参数匹配', expr: 'unit_matches_param(实测结果, 计量单位)', severity: '一般', is_universal: true, param_schema: {}, enabled: true, status: '待审核员确认' },
   ];
 
   var DEFAULT_CATEGORIES = [

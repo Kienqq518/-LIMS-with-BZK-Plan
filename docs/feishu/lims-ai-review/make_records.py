@@ -1,118 +1,849 @@
 # -*- coding: utf-8 -*-
-"""规则台账种子写入。
+"""规则台账种子写入（对齐飞书 §2.3「审什么」）。
 
-表设计（飞书 §2.3「审什么」）：
-  - 级别：L1 基础形式 / L2 数据逻辑 / L3 合规对齐 / L4 溯源验证
-  - 规则组：Ln-a/b/c/d
-  - 类别：审什么主题名，与规则组一一对应
-  - 规则ID：Ln-x-n（如 L1-a-1），不再使用 A01-1 / B01-1 / C02-5
+字段口径：
+  - 所需字段：§2.3 审什么检查点数据项
+  - 判定式 / 标准依据 / 严重度 / 适用领域：与所需字段同步按审什么重写
+  - 规则ID：Ln-x-n
 
-注意：对已有 Base 重复执行会新增记录，勿盲目重跑（加 --push 才会写库）。
+注意：对已有 Base 重复 --push 会新增记录；日常只写 ledger_seed.json。
 """
 import json, subprocess, os, sys
-ENV = {**os.environ, "LARKSUITE_CLI_NO_UPDATE_NOTIFIER":"1", "LARKSUITE_CLI_NO_SKILLS_NOTIFIER":"1"}
-meta = json.load(open("docs/feishu/lims-ai-review/base.json", encoding="utf-8"))
-BASE = meta["base"]["base_token"]; TABLE = meta["table"]["id"]
-LEVEL_MAP = json.load(open("docs/feishu/lims-ai-review/level_map.json", encoding="utf-8"))
-THEME = LEVEL_MAP["theme"]; LEVEL_OF = LEVEL_MAP["level_of"]
-G = "通用"; W = "电网物资"; T = "安全工器具"
+ENV={**os.environ,"LARKSUITE_CLI_NO_UPDATE_NOTIFIER":"1","LARKSUITE_CLI_NO_SKILLS_NOTIFIER":"1"}
+meta=json.load(open("docs/feishu/lims-ai-review/base.json",encoding="utf-8"))
+BASE=meta["base"]["base_token"]; TABLE=meta["table"]["id"]
+LEVEL_MAP=json.load(open("docs/feishu/lims-ai-review/level_map.json",encoding="utf-8"))
+THEME=LEVEL_MAP["theme"]; LEVEL_OF=LEVEL_MAP["level_of"]
+GROUP={f"L{n}-{s}":(n-1)*4+i+1 for n in range(1,5) for i,s in enumerate("abcd")}
+LEVEL_N={"L1 基础形式":1,"L2 数据逻辑":2,"L3 合规对齐":3,"L4 溯源验证":4}
 
-# (规则ID, 判定式, 所需字段, 标准依据, 严重度, 领域, 负责人)
-R = [
- ("L1-a-1","nonempty(sample_id) && match(sample_id, 编号规则)",["抽样单号"],"LIMS 编号规则 / 抽检细则","严重",G,"产品"),
- ("L1-a-2","match(report_id, 编号规则)",["报告模板版本"],"LIMS 编号规则","一般",G,"产品"),
- ("L1-b-1","nonempty(tester, reviewer, approver)",["签名位"],"CNAS-CL01 7.8","严重",G,"产品"),
- ("L1-b-2","logo_used && signatory in authorized_scope",["资质认定范围表"],"CNAS-CL01 7.8 / CMA","严重",G,"产品"),
- ("L1-c-1","nonempty(sample_name) && nonempty(spec_model)",["规格型号"],"GB/T 1231 规格标记 / 委托单","严重",W+","+T,"产品"),
- ("L1-c-2","nonempty(client) && nonempty(manufacturer) && nonempty(batch_no)",["炉（批）号"],"抽检细则","一般",G,"产品"),
- ("L1-c-3","nonempty(sampling_date, receive_date, sample_ticket, heat_no)",["抽样单号","炉（批）号"],"抽检细则","严重",G,"产品"),
- ("L1-c-4","nonempty(sample_status) && nonempty(seal_state)",["封样状态"],"抽检细则","一般",W,"产品"),
- ("L1-c-5","nonempty(raw_record)",["实测值"],"CMA 资质认定评审要求","严重",G,"后端"),
- ("L1-c-6","nonempty(device_no, device_range)",["试验设备编号与量程"],"GB/T 228.1 / GB/T 1231","一般",W,"后端"),
- ("L1-c-7","nonempty(test_date, tester)",["检测人员"],"CMA 资质认定评审要求","一般",G,"后端"),
- ("L1-c-8","if sensitive(items) then nonempty(temp, humidity)",["环境温湿度"],"GB/T 228.1 室温要求","轻微",W,"后端"),
- ("L1-c-9","all_required_sections_present(照片, 抽样单, 原始记录)",["报告模板版本"],"报告模板","一般",W,"产品"),
- ("L1-c-10","pages == 1..N continuous",["报告模板版本"],"报告模板","提示",G,"产品"),
- ("L1-d-1","sig_figs(value) == required_sig_figs(param)",["实测值"],"GB/T 8170-2008","轻微",G,"产品"),
- ("L1-d-2","rounding_interval(value) == standard_interval(param)",["实测值"],"GB/T 8170 / GB/T 228.1","轻微",W,"产品"),
- ("L1-d-3","decimals(values) consistent within one table",["实测值"],"报告模板","提示",G,"产品"),
- ("L1-d-4","unit in {MPa,kN,HRC,μm,kV,mA} && unit matches param",["实测值"],"报告模板","一般",G,"产品"),
- ("L1-d-5","round_mode == GB8170",["实测值"],"GB/T 8170-2008","轻微",G,"产品"),
- ("L2-a-1","sampling_date <= receive_date <= test_date <= report_date",["抽样单号"],"抽检细则","严重",G,"领域顾问"),
- ("L2-a-2","(test_date - receive_date) <= limit_period",["复检仲裁时效"],"抽检细则","一般",G,"领域顾问"),
- ("L2-a-3","report_date >= raw_record_date",["报告模板版本"],"CMA 评审要求","一般",G,"领域顾问"),
- ("L2-b-1","set(entrust_items) ⊆ set(result.params)",["实测值"],"委托单","严重",G,"后端"),
- ("L2-c-1","calib_from <= test_date <= calib_to",["设备校准有效期"],"计量法","严重",G,"领域顾问"),
- ("L2-c-2","cert_expire(device) >= test_date",["设备校准有效期"],"计量法 / JJG 检定规程","严重",G,"领域顾问"),
- ("L2-d-1","count(torque_samples) >= 8",["平行测定值组数"],"GB/T 1231-2010","严重",W,"领域顾问"),
- ("L2-d-2","count(tensile_specimens) >= 2",["平行测定值组数"],"GB/T 228.1-2021","一般",W,"领域顾问"),
- ("L2-d-3","nonempty(heat_no, sampling_position)",["炉（批）号"],"GB/T 228.1 取样位置","一般",W,"领域顾问"),
- ("L2-d-4","exists(crm_check)  # 硬度块 / 扭矩标准件 / 成分 CRM",["CRM或标准块核查"],"GB/T 3098.1 / CNAS-CL01 7.7","一般",W,"领域顾问"),
- ("L2-d-5","if deviation_exceeded then exists(recheck) && nonempty(disposition)",["复检仲裁时效"],"GB/T 1231 / 抽检细则","提示",W+","+G,"领域顾问"),
- ("L2-d-6","months(last_test_date, now) <= cycle(type)  # 手套/靴 6，杆/验电器 12",["上次预防性试验日期"],"DL/T 976-2017 / 企业工器具管理规定","严重",T,"领域顾问"),
- ("L2-d-7","A、Z in grade_band(强度等级)",["实测值","规格型号"],"GB/T 228.1","提示",W,"领域顾问"),
- ("L2-d-8","HRC in band(Rm)  # 硬度-强度换算区间",["实测值"],"GB/T 3098.1","一般",W,"领域顾问"),
- ("L2-d-9","loading_rate in allowed_band(method)",["试验设备编号与量程"],"GB/T 228.1","一般",W,"领域顾问"),
- ("L2-d-10","verify(stress == force / nominal_area)",["实测值"],"GB/T 228.1","严重",W,"领域顾问"),
- ("L2-d-11","cited_device == used_device",["试验设备编号与量程"],"原始记录","一般",G,"领域顾问"),
- ("L3-a-1","nonempty(test_standard) && has_year(test_standard)",["标准号年号"],"GB/T / DL/T 标准清单","严重",G,"产品"),
- ("L3-a-2","cited_std == test_standard",["标准号年号"],"报告模板","一般",G,"领域顾问"),
- ("L3-a-3","judgment uses limit_of(cited_version)",["标准号年号","标准限值"],"GB/T / DL/T 标准清单","严重",G,"领域顾问"),
- ("L3-b-1","Rm >= limit_min(Rm) && Rm > Rp0.2",["实测值","标准限值"],"GB/T 3098.1 / GB/T 228.1","严重",W,"领域顾问"),
- ("L3-b-2","0.110 <= mean(T) <= 0.150 && std(T) <= 0.0074",["实测值","标准限值","平行测定值组数"],"GB/T 1231-2010","严重",W,"领域顾问"),
- ("L3-b-3","P >= P_min(grade, spec)",["实测值","标准限值","规格型号"],"GB/T 1231-2010","严重",W,"领域顾问"),
- ("L3-b-4","no_breakdown && I_leak <= limit(type) && hold_time >= 60s",["实测值","标准限值","规格型号"],"DL/T 976-2017 / GB/T 17622","严重",T,"领域顾问"),
- ("L3-b-5","min(measure_points) >= lower_limit  # 镀层/尺寸/形位",["实测值","标准限值"],"GB/T 12346 / GB/T 9793","一般",W,"领域顾问"),
+FIELD_OPTS=[
+  "样品编号",
+  "报告编号",
+  "签名位",
+  "签章与骑缝章",
+  "委托方信息",
+  "受检方信息",
+  "采样日期",
+  "检测日期",
+  "报告日期",
+  "报告章节结构",
+  "样品信息章节",
+  "检测依据章节",
+  "检测设备章节",
+  "测试结果章节",
+  "结论章节",
+  "备注章节",
+  "计量单位",
+  "模板格式参数",
+  "正文文本",
+  "委托检测项目",
+  "实测结果",
+  "平行/重复测定值",
+  "设备校准有效期",
+  "设备量程",
+  "规格型号",
+  "衍生计算值",
+  "判定结论",
+  "引用标准号",
+  "标准年号版本",
+  "标准适用范围",
+  "标准限值",
+  "检测方法",
+  "强制检测项清单",
+  "原始记录哈希",
+  "原始记录时间戳",
+  "人员资质",
+  "CMA资质范围",
+  "透明度溯源码",
+  "校准证书编号"
 ]
 
-PLACEHOLDERS = [
- ("L3-c-1","method_used == method_of(cited_standard)",["检测方法"],"标准指定方法 / 方法库","一般",G,"领域顾问"),
- ("L3-d-1","mandatory_items(standard) ⊆ report_items",["实测值"],"标准强制项清单","严重",G,"领域顾问"),
- ("L4-a-1","hash(report_values) == hash(raw_record) && ts_ok",["实测值"],"原始记录 / 设备日志","严重",G,"后端"),
- ("L4-b-1","tester in qualified_personnel(items)",["检测人员"],"人员资质库","严重",G,"领域顾问"),
- ("L4-c-1","method in CMA_scope",["资质认定范围表","检测方法"],"CMA 资质认定附表","严重",G,"领域顾问"),
- ("L4-d-1","nonempty(trace_code) && verify(trace_code)",["报告模板版本"],"报告透明度 / 溯源码","一般",G,"产品"),
+# (规则ID, 判定式, 所需字段, 标准依据, 严重度, 适用领域, 是否通用, 备注)
+RULES=[
+  [
+    "L1-a-1",
+    "nonempty(sample_no) && match(sample_no, 编号规则)",
+    [
+      "样品编号"
+    ],
+    "§2.3 基础信息完整 · LIMS 编号规则",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·编号：样品编号编码规则符合性"
+  ],
+  [
+    "L1-a-2",
+    "nonempty(report_no) && match(report_no, 编号规则)",
+    [
+      "报告编号"
+    ],
+    "§2.3 基础信息完整 · LIMS 编号规则",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·编号：报告编号编码规则符合性"
+  ],
+  [
+    "L1-b-1",
+    "nonempty(tester, reviewer, approver)",
+    [
+      "签名位"
+    ],
+    "§2.3 文档格式规范 · CNAS-CL01 7.8",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·签名：检测/审核/批准签名位齐全"
+  ],
+  [
+    "L1-b-2",
+    "seal_position_ok(template) && cross_page_seal_ok(template)",
+    [
+      "签章与骑缝章",
+      "模板格式参数"
+    ],
+    "§2.3 文档格式规范 · 机构统一模板",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·签名：签章、骑缝章位置符合模板，无遗漏/错位"
+  ],
+  [
+    "L1-c-1",
+    "nonempty(client)",
+    [
+      "委托方信息"
+    ],
+    "§2.3 基础信息完整",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·字段齐全：委托方信息完整准确"
+  ],
+  [
+    "L1-c-2",
+    "nonempty(inspected_party)",
+    [
+      "受检方信息"
+    ],
+    "§2.3 基础信息完整",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·字段齐全：受检方信息完整准确"
+  ],
+  [
+    "L1-c-3",
+    "section_present(样品信息) && order_ok(报告章节结构)",
+    [
+      "样品信息章节",
+      "报告章节结构"
+    ],
+    "§2.3 文档结构合规",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·字段齐全：样品信息章节必备且顺序正确"
+  ],
+  [
+    "L1-c-4",
+    "section_present(检测依据)",
+    [
+      "检测依据章节",
+      "报告章节结构"
+    ],
+    "§2.3 文档结构合规",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·字段齐全：检测依据章节必备"
+  ],
+  [
+    "L1-c-5",
+    "section_present(检测设备)",
+    [
+      "检测设备章节",
+      "报告章节结构"
+    ],
+    "§2.3 文档结构合规",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·字段齐全：检测设备章节必备"
+  ],
+  [
+    "L1-c-6",
+    "section_present(测试结果)",
+    [
+      "测试结果章节",
+      "报告章节结构"
+    ],
+    "§2.3 文档结构合规",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·字段齐全：测试结果章节必备"
+  ],
+  [
+    "L1-c-7",
+    "section_present(结论)",
+    [
+      "结论章节",
+      "报告章节结构"
+    ],
+    "§2.3 文档结构合规",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·字段齐全：结论章节必备"
+  ],
+  [
+    "L1-c-8",
+    "dates_present(sampling, test, report) && date_format_unified(...)",
+    [
+      "采样日期",
+      "检测日期",
+      "报告日期"
+    ],
+    "§2.3 基础信息完整",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·字段齐全：采样/检测/报告日期齐全且格式统一"
+  ],
+  [
+    "L1-c-9",
+    "no_missing_or_duplicate_sections(报告章节结构)",
+    [
+      "报告章节结构",
+      "模板格式参数"
+    ],
+    "§2.3 文档结构合规 · 机构统一模板",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·字段齐全：无章节缺失、错序或重复"
+  ],
+  [
+    "L1-c-10",
+    "remark_slot_available(备注)",
+    [
+      "备注章节"
+    ],
+    "§2.3 文档结构合规",
+    "提示",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·字段齐全：备注等辅助章节位可用（非强制内容）"
+  ],
+  [
+    "L1-d-1",
+    "unit_matches_param(实测结果, 计量单位)",
+    [
+      "计量单位",
+      "实测结果"
+    ],
+    "§2.3 单位/格式 · 报告模板",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·单位与格式：计量单位与参数匹配"
+  ],
+  [
+    "L1-d-2",
+    "sig_figs_and_rounding_ok(实测结果)",
+    [
+      "实测结果",
+      "计量单位"
+    ],
+    "§2.3 格式 · GB/T 8170",
+    "轻微",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·单位与格式：有效数字与修约符合规范"
+  ],
+  [
+    "L1-d-3",
+    "decimals_consistent_in_table(实测结果)",
+    [
+      "实测结果"
+    ],
+    "§2.3 格式规范性",
+    "提示",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·单位与格式：同一结果表小数位一致"
+  ],
+  [
+    "L1-d-4",
+    "template_format_match(字体, 字号, 行距)",
+    [
+      "模板格式参数"
+    ],
+    "§2.3 文档格式规范 · 机构统一模板",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·单位与格式：字体/字号/行距与模板一致"
+  ],
+  [
+    "L1-d-5",
+    "no_basic_text_errors(正文文本)",
+    [
+      "正文文本"
+    ],
+    "§2.3 基础文字错误",
+    "轻微",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·单位与格式：无明显错别字、标点错误、重复段落"
+  ],
+  [
+    "L2-a-1",
+    "sampling_date <= receive_or_test_date <= test_date <= report_date",
+    [
+      "采样日期",
+      "检测日期",
+      "报告日期"
+    ],
+    "§2.3 日期链 · LIMS 结构化数据",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·日期链：关键日期先后正确"
+  ],
+  [
+    "L2-a-2",
+    "(test_date - receive_date) <= allowed_period",
+    [
+      "检测日期",
+      "报告日期"
+    ],
+    "§2.3 日期链 · 委托/细则时限",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·日期链：检测周期未超允许时限"
+  ],
+  [
+    "L2-a-3",
+    "report_date >= raw_record_timestamp",
+    [
+      "报告日期",
+      "原始记录时间戳"
+    ],
+    "§2.3 日期链",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·日期链：报告日期不早于原始记录时间戳"
+  ],
+  [
+    "L2-b-1",
+    "set(委托检测项目) ⊆ set(实测结果.params)",
+    [
+      "委托检测项目",
+      "实测结果"
+    ],
+    "§2.3 委托项↔结果 · 委托单",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·委托项↔结果：委托项均有对应实测结果"
+  ],
+  [
+    "L2-c-1",
+    "calib_from <= test_date <= calib_to",
+    [
+      "设备校准有效期",
+      "检测日期"
+    ],
+    "§2.3 设备校准覆盖 · 计量法",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·设备校准覆盖：校准有效期覆盖检测日期"
+  ],
+  [
+    "L2-c-2",
+    "nonempty(校准证书编号) && cert_valid_on(test_date)",
+    [
+      "校准证书编号",
+      "设备校准有效期",
+      "检测日期"
+    ],
+    "§2.3 流程合规性 · JJG 检定规程",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·设备校准覆盖：校准证书可查且在有效期内"
+  ],
+  [
+    "L2-d-1",
+    "parallel_deviation_within_control(平行测定值)",
+    [
+      "平行/重复测定值",
+      "实测结果"
+    ],
+    "§2.3 数值逻辑合规 · 机构内控",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·内部勾稽：平行/重复测定偏差在允许范围"
+  ],
+  [
+    "L2-d-2",
+    "no_abnormal_spike(实测结果, threshold=0.5)",
+    [
+      "实测结果"
+    ],
+    "§2.3 数值逻辑合规",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·内部勾稽：监测异常跳变（如相对均值偏差过大）"
+  ],
+  [
+    "L2-d-3",
+    "verify_mean_and_sum(衍生计算值, 实测结果)",
+    [
+      "衍生计算值",
+      "实测结果"
+    ],
+    "§2.3 计算准确性",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·内部勾稽：汇总/平均值计算正确"
+  ],
+  [
+    "L2-d-4",
+    "verify_rsd_or_error_metrics(衍生计算值, 平行测定值)",
+    [
+      "衍生计算值",
+      "平行/重复测定值"
+    ],
+    "§2.3 计算准确性",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·内部勾稽：RSD 等误差指标计算正确"
+  ],
+  [
+    "L2-d-5",
+    "spec_matches_test_items(规格型号, 委托检测项目)",
+    [
+      "规格型号",
+      "委托检测项目"
+    ],
+    "§2.3 关联一致性",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·内部勾稽：样品规格/型号与检测项目匹配"
+  ],
+  [
+    "L2-d-6",
+    "device_range_covers_result(设备量程, 实测结果)",
+    [
+      "设备量程",
+      "实测结果"
+    ],
+    "§2.3 关联一致性",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·内部勾稽：设备量程覆盖实测值"
+  ],
+  [
+    "L2-d-7",
+    "conclusion_consistent_with_results(实测结果, 标准限值, 判定结论)",
+    [
+      "实测结果",
+      "标准限值",
+      "判定结论"
+    ],
+    "§2.3 结论逻辑连贯",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·内部勾稽：测试结果与结论无逻辑矛盾"
+  ],
+  [
+    "L2-d-8",
+    "value_in_plausible_range(实测结果, 规格型号)",
+    [
+      "实测结果",
+      "规格型号"
+    ],
+    "§2.3 数值合理性",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·内部勾稽：实测值处于该类样品常规合理范围"
+  ],
+  [
+    "L2-d-9",
+    "lod_loq_derivation_ok(衍生计算值)",
+    [
+      "衍生计算值",
+      "实测结果"
+    ],
+    "§2.3 计算准确性",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·内部勾稽：检出限/定量限推导合理"
+  ],
+  [
+    "L2-d-10",
+    "cited_device == used_device",
+    [
+      "检测设备章节",
+      "实测结果"
+    ],
+    "§2.3 关联一致性 · 原始记录",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·内部勾稽：报告引用设备与实际使用设备一致"
+  ],
+  [
+    "L2-d-11",
+    "industry_pack_crosscheck(实测结果, 规格型号)",
+    [
+      "实测结果",
+      "规格型号",
+      "判定结论"
+    ],
+    "§2.3 内部勾稽 · 行业包勾稽（MVP 电网）",
+    "一般",
+    [
+      "电网物资",
+      "安全工器具"
+    ],
+    "品类专属",
+    "审什么·内部勾稽：行业特有勾稽（进包；MVP 电网/工器具）"
+  ],
+  [
+    "L3-a-1",
+    "nonempty(cited_standard) && has_year(cited_standard)",
+    [
+      "引用标准号",
+      "标准年号版本"
+    ],
+    "§2.3 标准有效性 · 标准清单",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·标准现行有效：引用标准现行可识别且带年号"
+  ],
+  [
+    "L3-a-2",
+    "cited_standard == test_standard",
+    [
+      "引用标准号",
+      "检测依据章节"
+    ],
+    "§2.3 标准有效性",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·标准现行有效：报告引用标准与实际检测标准一致"
+  ],
+  [
+    "L3-a-3",
+    "sample_type_in_standard_scope(样品信息, 标准适用范围)",
+    [
+      "标准适用范围",
+      "样品信息章节",
+      "引用标准号"
+    ],
+    "§2.3 标准适配性",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·标准现行有效：样品类型与标准适用范围匹配"
+  ],
+  [
+    "L3-b-1",
+    "limit_judgment_correct(实测结果, 标准限值, 判定结论)",
+    [
+      "实测结果",
+      "标准限值",
+      "判定结论"
+    ],
+    "§2.3 限值符合性",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·限值符合：实测对比合格线/阈值判定正确"
+  ],
+  [
+    "L3-b-2",
+    "within_allowed_tolerance(实测结果, 标准限值, 平行测定值)",
+    [
+      "实测结果",
+      "标准限值",
+      "平行/重复测定值"
+    ],
+    "§2.3 限值符合性 · 允许偏差",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·限值符合：结果在允许偏差内"
+  ],
+  [
+    "L3-b-3",
+    "exceedance_marked_fail(实测结果, 标准限值, 判定结论)",
+    [
+      "实测结果",
+      "标准限值",
+      "判定结论"
+    ],
+    "§2.3 限值符合性",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·限值符合：超标须判定不合格并标注，禁止达标判不合格"
+  ],
+  [
+    "L3-b-4",
+    "tool_voltage_leak_hold_ok(实测结果, 标准限值, 规格型号)",
+    [
+      "实测结果",
+      "标准限值",
+      "规格型号"
+    ],
+    "§2.3 限值符合性 · DL/T 976 / GB/T 17622（MVP）",
+    "严重",
+    [
+      "安全工器具"
+    ],
+    "品类专属",
+    "审什么·限值符合：工器具耐压/泄漏/保持时间限值（MVP）"
+  ],
+  [
+    "L3-b-5",
+    "material_strength_or_dimension_limit_ok(实测结果, 标准限值, 规格型号)",
+    [
+      "实测结果",
+      "标准限值",
+      "规格型号"
+    ],
+    "§2.3 限值符合性 · 电网物资限值表（MVP）",
+    "一般",
+    [
+      "电网物资"
+    ],
+    "品类专属",
+    "审什么·限值符合：材料强度/尺寸等限值（MVP 电网）"
+  ],
+  [
+    "L3-c-1",
+    "method_used == method_of(cited_standard)",
+    [
+      "检测方法",
+      "引用标准号"
+    ],
+    "§2.3 检测方法一致性 · 方法库",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·方法完整性：采用方法与标准指定方法一致（占位/浅做）"
+  ],
+  [
+    "L3-d-1",
+    "mandatory_items(standard_or_entrust) ⊆ report_items",
+    [
+      "强制检测项清单",
+      "委托检测项目",
+      "实测结果"
+    ],
+    "§2.3 检测项目完整性",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·项目完整性：强制检测项无遗漏（占位/浅做）"
+  ],
+  [
+    "L4-a-1",
+    "hash(report_values) == hash(raw_record) && timestamp_ok",
+    [
+      "原始记录哈希",
+      "原始记录时间戳",
+      "实测结果"
+    ],
+    "§2.3 原始数据溯源 · 设备日志/LIMS",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·原始记录哈希/时间戳：与原始记录一致、未篡改（预留）"
+  ],
+  [
+    "L4-b-1",
+    "tester in qualified_personnel(委托检测项目)",
+    [
+      "人员资质",
+      "委托检测项目",
+      "签名位"
+    ],
+    "§2.3 流程合规性 · 人员资质库",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·人员资质：检测人员具备对应项目资质（预留）"
+  ],
+  [
+    "L4-c-1",
+    "items_within_CMA_scope(委托检测项目, 检测方法)",
+    [
+      "CMA资质范围",
+      "委托检测项目",
+      "检测方法"
+    ],
+    "§2.3 资质合规性 · CMA 附表",
+    "严重",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·CMA 范围：检测项目均在资质覆盖内"
+  ],
+  [
+    "L4-d-1",
+    "nonempty(trace_code) && verify(trace_code)",
+    [
+      "透明度溯源码"
+    ],
+    "§2.3 透明度溯源 · 报告透明度",
+    "一般",
+    [
+      "通用"
+    ],
+    "通用",
+    "审什么·透明度溯源码：溯源码可核验（预留）"
+  ]
 ]
 
-def pack(rule_id, expr, fields, std, sev, domain, owner):
-  grp = rule_id.rsplit("-", 1)[0]
-  # L3-c/d、L4-a/b/d 为空桶占位；L4-c-1 为现行规则
-  is_ph = rule_id in ("L3-c-1", "L3-d-1", "L4-a-1", "L4-b-1", "L4-d-1")
+def sort_key(rid, univ):
+  g=rid.rsplit("-",1)[0]; seq=int(rid.rsplit("-",1)[1]); u=0 if univ=="通用" else 1
+  return LEVEL_N[LEVEL_OF[g]]*100000+GROUP[g]*1000+u*100+seq
+
+def pack(row):
+  rid,expr,fields,basis,sev,domains,univ,note=row
+  g=rid.rsplit("-",1)[0]
+  for f in fields:
+    assert f in FIELD_OPTS, (rid,f)
   return {
-    "规则ID": rule_id,
-    "规则组": grp,
-    "类别": THEME[grp],
-    "级别": LEVEL_OF[grp],
-    "判定式": expr,
-    "所需字段": fields,
-    "标准依据": std,
-    "严重度": sev,
-    "适用领域": domain.split(","),
-    "状态": "待审核员确认",
-    "版本": "v0.4",
-    "负责人": owner,
-    "备注": (
-      f"占位：{grp} {THEME[grp]}；MVP 不消费，分期启用"
-      if is_ph
-      else "判定式由 3.2.1 描述推导，待领域顾问校准；规则 ID = Ln-x-n"
-    ),
+    "规则ID":rid,"规则组":g,"类别":THEME[g],"级别":LEVEL_OF[g],
+    "判定式":expr,"所需字段":fields,"标准依据":basis,"严重度":sev,
+    "适用领域":domains,"是否通用":univ,"状态":"待审核员确认","版本":"v0.5",
+    "负责人":"产品" if g.startswith("L1") else ("后端" if g in ("L2-b","L4-a") else "领域顾问"),
+    "备注":note,"排序号":sort_key(rid,univ),
   }
 
-assert len(R) == 44, len(R)
-assert len(PLACEHOLDERS) == 6, len(PLACEHOLDERS)
-recs = [pack(*row) for row in R] + [pack(*row) for row in PLACEHOLDERS]
-assert len(recs) == 50, len(recs)
-# uniqueness
-ids = [r["规则ID"] for r in recs]
-assert len(ids) == len(set(ids)), "duplicate rule ids"
-
+assert len(RULES)==50
+recs=[pack(r) for r in RULES]
+recs.sort(key=lambda x:x["排序号"])
 json.dump({"create_records":recs}, open("docs/feishu/lims-ai-review/ledger_seed.json","w",encoding="utf-8"), ensure_ascii=False, indent=1)
-print("wrote ledger_seed.json", len(recs), "— dry seed only; live Base 已改 Ln-x-n，勿重复 batch-create")
+print("wrote ledger_seed.json", len(recs))
 if "--push" in sys.argv:
-  p = subprocess.run(["lark-cli","base","+record-batch-create","--base-token",BASE,"--table-id",TABLE,
-                      "--json",json.dumps({"create_records":recs},ensure_ascii=False),"--as","user"],
-                     capture_output=True, text=True, env=ENV)
-  out = json.loads(p.stdout) if p.stdout.strip() else {}
-  print("created:", len(out.get("data",{}).get("records",[]) or out.get("data",{}).get("record_id_list",[]) or []),
-        "| ok:", out.get("ok"), "| err:", str(out.get("error"))[:200], p.stderr[:200])
+  p=subprocess.run(["lark-cli","base","+record-batch-create","--base-token",BASE,"--table-id",TABLE,
+                    "--json",json.dumps({"create_records":recs},ensure_ascii=False),"--as","user"],
+                   capture_output=True,text=True,env=ENV)
+  out=json.loads(p.stdout) if p.stdout.strip() else {}
+  print("created ok:", out.get("ok"), "err:", str(out.get("error"))[:200])
 print("BASE", BASE, "TABLE", TABLE)

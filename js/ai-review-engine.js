@@ -15,7 +15,7 @@
       'L2-c-1': { group: 'L2-c', category: '设备校准覆盖', severity: '严重' },
       'L3-a-2': { group: 'L3-a', category: '标准现行有效', severity: '一般' },
       'L1-b-1': { group: 'L1-b', category: '签名', severity: '严重' },
-      'L1-d-4': { group: 'L1-d', category: '单位与格式', severity: '一般' },
+      'L1-d-1': { group: 'L1-d', category: '单位与格式', severity: '一般' },
     };
     return map[id] || { group: '', category: '', severity: '一般' };
   }
@@ -75,7 +75,7 @@
       var sig = report.signatures || {};
       passed = nonempty(sig.tester) && nonempty(sig.reviewer) && nonempty(sig.approver);
       if (!passed) message = '检测/审核/批准签名位不完整';
-    } else if (ruleId === 'L1-d-4') {
+    } else if (ruleId === 'L1-d-1') {
       var units = report.units || [];
       if (!units.length) {
         passed = true;

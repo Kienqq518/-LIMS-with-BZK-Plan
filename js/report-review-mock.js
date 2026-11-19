@@ -47,7 +47,7 @@
         baseReport({
           id: 'rr-0238-02', reportNo: 'SC2026/0238-02', reportName: 'SC2026-0238-02检测报告.docx',
           sampleNos: ['SC2026/0238-0102'], sample_no: 'SC2026-0239',
-          // 命中「一般」：引用标准号与实检标准不一致(L3-a-2) + 计量单位越界(L1-d-4) → 需复核
+          // 命中「一般」：引用标准号与实检标准不一致(L3-a-2) + 计量单位越界(L1-d-1) → 需复核
           cited_standard: 'GB/T 12706.1-2008',
           units: [{ param: '导体直流电阻', unit: 'kgf·m' }],
         }),
@@ -79,7 +79,7 @@
           id: 'rr-0200-01', reportNo: 'SC2026/0200-01', reportName: 'SC2026-0200-01检测报告.docx',
           sampleNos: ['SC2026/0200-0101'], sample_no: 'SC2026-0200',
           category_code: null,
-          // 命中「一般」：计量单位越界(L1-d-4) → 需复核（同时演示未配置品类提示）
+          // 命中「一般」：计量单位越界(L1-d-1) → 需复核（同时演示未配置品类提示）
           units: [{ param: '绝缘电阻', unit: 'GΩ' }],
         }),
       ],
