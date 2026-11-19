@@ -25,7 +25,7 @@ FIELD_OPTS=[
   "委托方信息",
   "受检方信息",
   "接收日期",
-  "采样日期",
+  "抽样日期",
   "检测日期",
   "报告日期",
   "报告章节结构",
@@ -227,7 +227,7 @@ RULES=[
     "dates_present(receive, activity, report) && sampling_date_if_critical(...) && date_format_unified(...)",
     [
       "接收日期",
-      "采样日期",
+      "抽样日期",
       "检测日期",
       "报告日期"
     ],
@@ -344,7 +344,8 @@ RULES=[
     "L2-a-1",
     "sampling_date <= receive_or_test_date <= test_date <= report_date",
     [
-      "采样日期",
+      "抽样日期",
+      "接收日期",
       "检测日期",
       "报告日期"
     ],
