@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json, os, subprocess, sys
+from pathlib import Path
 ENV={**os.environ,"LARKSUITE_CLI_NO_UPDATE_NOTIFIER":"1","LARKSUITE_CLI_NO_SKILLS_NOTIFIER":"1"}
 meta=json.load(open("docs/feishu/lims-ai-review/base.json",encoding="utf-8"))
 BASE=meta["base"]["base_token"]; RULE_TBL=meta["table"]["id"]
@@ -82,6 +83,8 @@ BIND_ID=bd.get("data",{}).get("table",{}).get("id") or bd.get("data",{}).get("ta
 r=run(["lark-cli","base","+record-batch-create","--base-token",BASE,"--table-id",BIND_ID,"--as","user",
        "--json",json.dumps({"create_records":rows},ensure_ascii=False)])
 print("bindings created:", r.get("ok"), "| rows:", len(rows))
+# 关联展示列（品类名称 / 级别 / 类别 / 所需字段 / 备注）见 enrich_bind_lookups.py
+subprocess.check_call([sys.executable, str(Path(__file__).resolve().parent / "enrich_bind_lookups.py")], env=ENV)
 for f in [TXT("param_schema"),{"type":"select","name":"是否通用","multiple":False,"options":[{"name":"通用","hue":"Gray"},{"name":"品类专属","hue":"Blue"}]}]:
     run(["lark-cli","base","+field-create","--base-token",BASE,"--table-id",RULE_TBL,"--as","user","--json",json.dumps(f,ensure_ascii=False)])
 print("SPEC_IDS", json.dumps(SPEC), "UNIV_N", len(UNIV))
