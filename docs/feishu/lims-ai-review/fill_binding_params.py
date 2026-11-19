@@ -30,6 +30,10 @@ VERSION = "v0.6.1"
 # (参数覆盖 JSON 字符串, 品类标准依据)
 FILL: dict[tuple[str, str], tuple[str, str]] = {
     # —— 高强度螺栓连接副 ——
+    ("CAT-BOLT", "L2-d-1"): (
+        '{"parallel_count":8,"std_max":0.0074,"note":"扭矩系数多样本；以GB/T 1231为准"}',
+        "GB/T 1231（扭矩系数样本组数/标准差）；GB/T 228.1（拉伸试件）",
+    ),
     ("CAT-BOLT", "L2-d-11"): (
         '{"pack":"grid_fastener","checks":["Rm_vs_grade","torque_coeff_band","hardness_band"]}',
         "GB/T 3098.1；GB/T 1231；GB/T 228.1（螺栓强度/扭矩系数/硬度勾稽）",
@@ -48,6 +52,10 @@ FILL: dict[tuple[str, str], tuple[str, str]] = {
         "DL/T 976-2017；GB/T 17622（耐压、泄漏电流、保持时间）",
     ),
     # —— 电力电缆 ——
+    ("CAT-CABLE", "L2-d-1"): (
+        '{"parallel_count":"按抽样盘数/试样","note":"按批抽样多样本，非化学平行双样"}',
+        "GB/T 12706 抽样与试样规定（待顾问确认组数）",
+    ),
     ("CAT-CABLE", "L2-d-11"): (
         '{"pack":"power_cable","checks":["R20_corr","thickness_min_multi_point"]}',
         "GB/T 12706；GB/T 3956；GB/T 3048.4（电阻换算/厚度勾稽）",
@@ -57,6 +65,10 @@ FILL: dict[tuple[str, str], tuple[str, str]] = {
         "GB/T 12706（绝缘/护套厚度等限值）；GB/T 3956（导体电阻）",
     ),
     # —— 电缆保护管 ——
+    ("CAT-CONDUIT", "L2-d-1"): (
+        '{"parallel_count":"按产品标准试样数","note":"力学性能多样本；待顾问确认"}',
+        "相关产品标准试样数量要求（待顾问确认）",
+    ),
     ("CAT-CONDUIT", "L2-d-11"): (
         '{"pack":"cable_conduit","checks":["ring_stiffness","impact","dimension"]}',
         "GB/T 9647（环刚度，示例）；相关产品标准（待顾问确认）",
@@ -75,6 +87,10 @@ FILL: dict[tuple[str, str], tuple[str, str]] = {
         "GB 6095 / GB/T 6096（整体静态负荷等；待顾问确认）",
     ),
     # —— 导线 / 金具 ——
+    ("CAT-CON-WIRE", "L2-d-1"): (
+        '{"parallel_count":3,"note":"握着力等常要求多件试样；待顾问确认"}',
+        "相关金具/导线试验标准试样数量（待顾问确认）",
+    ),
     ("CAT-CON-WIRE", "L2-d-11"): (
         '{"pack":"conductor_fitting","checks":["grip_strength","dimension"]}',
         "GB/T 2314 等金具/导线相关标准（握着力等勾稽，待顾问确认）",
@@ -83,6 +99,7 @@ FILL: dict[tuple[str, str], tuple[str, str]] = {
         '{"lower_map":{"握着力":"按型号","尺寸":"按图纸"},"points":3}',
         "GB/T 2314 / 产品图样限值（待顾问确认）",
     ),
+    # 安全工器具（手套/安全带）不绑 L2-d-1：逐只试验，无平行组数概念
 }
 
 
