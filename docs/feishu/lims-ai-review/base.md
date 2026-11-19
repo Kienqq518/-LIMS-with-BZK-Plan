@@ -12,7 +12,7 @@
     - L2：L2-a 日期链 · L2-b 委托项↔结果 · L2-c 设备校准覆盖 · L2-d 内部勾稽
     - L3：L3-a 标准现行有效 · L3-b 限值符合 · L3-c 方法完整性 · L3-d 项目完整性
     - L4：L4-a 原始记录哈希/时间戳 · L4-b 人员资质 · L4-c CMA 范围 · L4-d 透明度溯源码
-- 视图: 表格（默认）· 按状态 · 待确认 · **按级别**（group 级别→规则组）
+- 视图: 表格（默认）· 按状态 · 待确认 · **按级别**（group 级别→规则组）；统一按字段 **`排序号`** 升序（级别 L1→L4 → 规则组 a→d → 通用优先于品类专属 → 组内序号）
 - 种子：`ledger_seed.json`；生成器 `make_records.py`；映射表 `level_map.json`
 - 品类表 table_id: `tblv1BS7q0eMrAYu`（6 行）；绑定表 table_id: `tbldbfHOuYsh9dLn`（51 行 = 3 品类 × 17 专属规则）
 - 3.3 时间轴画板 token（T10 重渲染后）: `MyxDwabVGhVXi0byjurcaDf5nvh`，源文件 `timeline.svg` / 生成器 `make_timeline.py`
