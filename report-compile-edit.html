@@ -119,7 +119,7 @@
 
   <div class="border-b border-slate-200 bg-white px-4">
     <div class="flex gap-4">
-      <div class="sub-tab active" data-panel="detect" data-annotate="tab-detect">检测信息</div>
+      <div class="sub-tab active" data-panel="detect" data-annotate="tab-detect">编制工作台</div>
       <div class="sub-tab" data-panel="entrust" data-annotate="tab-entrust">委托信息</div>
       <div class="sub-tab" data-panel="sample" data-annotate="tab-sample">样品信息</div>
       <div class="sub-tab" data-panel="raw" data-annotate="tab-raw">原始记录</div>
@@ -162,6 +162,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">报告</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">生成时间</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">修改时间</th>
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium" data-annotate="col-wb-record">报告记录</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
             </tr>
           </thead>
@@ -381,6 +382,23 @@
       <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
         <button type="button" onclick="closeGenerateModal()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
         <button type="button" onclick="confirmGenerate()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white" data-annotate="confirm-generate">确认生成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编制完成二次确认 -->
+  <div id="finishCompileModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-[480px] max-w-full rounded-lg bg-white shadow-xl" data-annotate="finish-compile">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <h3 class="text-base font-medium text-slate-800">编制完成确认</h3>
+        <button type="button" onclick="closeFinishCompile()" class="text-slate-400 hover:text-slate-600" aria-label="关闭"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="px-6 py-4 text-sm text-slate-600">
+        <p id="finishCompileText">确认编制完成后，本报告将提交至「报告审核」。提交后当前节点不可再编辑。</p>
+      </div>
+      <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
+        <button type="button" onclick="closeFinishCompile()" class="rounded border border-slate-300 px-5 py-1.5 text-sm text-slate-600">取消</button>
+        <button type="button" onclick="confirmFinishCompile()" class="rounded bg-blue-600 px-6 py-1.5 text-sm text-white">确认提交</button>
       </div>
     </div>
   </div>
@@ -672,13 +690,21 @@
         String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
       files.forEach(function (f) {
+        var id = reportFileNextId++;
         reportFiles.unshift({
-          id: reportFileNextId++,
-          reportNo: 'BG' + ENTRUST_CODE.replace(/\//g, '') + '-' + String(reportFileNextId).padStart(3, '0'),
+          id: id,
+          reportNo: 'BG' + ENTRUST_CODE.replace(/\//g, '') + '-' + String(id).padStart(3, '0'),
           specimenIds: f.specimenIds,
           fileName: f.fileName,
           createdAt: ts,
-          modifiedAt: ts
+          modifiedAt: ts,
+          node: '报告编制',
+          statusLabel: '编制中',
+          statusTone: 'pending',
+          timeline: [
+            { time: ts + ':00', node: '报告编制', actor: 'admin', status: '生成报告', tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o' },
+            { time: '', node: '报告编制', actor: 'admin', status: '编制中', tone: 'pending', statusTone: 'pending', icon: 'fa-pencil', pending: true }
+          ]
         });
       });
 
@@ -702,16 +728,19 @@
       var tbody = document.getElementById('reportFileBody');
       renderReportSummary();
       if (!reportFiles.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="border border-slate-200 px-3 py-6 text-center text-slate-400">暂无报告，请勾选剩余试样后生成</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="border border-slate-200 px-3 py-6 text-center text-slate-400">暂无报告，请勾选剩余试样后生成</td></tr>';
         return;
       }
       tbody.innerHTML = reportFiles.map(function (row, i) {
         var spec = row.specimenIds.length > 1 ? row.specimenIds.join('、') : (row.specimenIds[0] || '—');
         var editable = canEditReport(row);
         var editLink = editable
-          ? '<a href="#" class="rpt-link" onclick="editReport(' + row.id + ');return false;"><i class="fa fa-pencil"></i> 编制</a>'
-          : '<span class="text-slate-300" title="报告已提交审核，当前节点不可编制"><i class="fa fa-pencil"></i> 编制</span>';
-        return '<tr class="hover:bg-slate-50">' +
+          ? '<a href="#" class="rpt-link" onclick="editReport(' + row.id + ');return false;"><i class="fa fa-pencil-square-o"></i> 编辑报告</a>'
+          : '<span class="text-slate-300" title="报告已提交审核，当前节点不可编辑"><i class="fa fa-pencil-square-o"></i> 编辑报告</span>';
+        var finishLink = editable
+          ? '<a href="#" class="rpt-link" onclick="openFinishCompile(' + row.id + ');return false;"><i class="fa fa-check"></i> 编制完成</a>'
+          : '<span class="text-slate-300" title="报告已提交审核"><i class="fa fa-check"></i> 编制完成</span>';
+        return '<tr class="hover:bg-slate-50" data-report-id="' + row.id + '">' +
           '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + escapeHtml(row.reportNo) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + escapeHtml(spec) + '</td>' +
@@ -719,11 +748,12 @@
           '<td class="border border-slate-200 px-3 py-2"><a href="#" class="rpt-link" onclick="return false;">' + escapeHtml(row.fileName) + '</a></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.createdAt + '</td>' +
           '<td class="border border-slate-200 px-3 py-2" id="modTime-' + row.id + '">' + row.modifiedAt + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' +
+          '<a href="#" class="rpt-link" onclick="openWbRecord(' + row.id + ');return false;"><i class="fa fa-eye"></i> 查看</a>' +
+          '</td>' +
           '<td class="border border-slate-200 px-3 py-2 rpt-act">' +
           editLink +
-          '<a href="#" class="rpt-link" onclick="openWbRecord(' + row.id + ');return false;"><i class="fa fa-history"></i> 记录</a>' +
-          '<a href="#" class="rpt-link" onclick="addReportImage(' + row.id + ');return false;"><i class="fa fa-picture-o"></i> 图片</a>' +
-          '<a href="#" class="rpt-link" onclick="exportPdf(' + row.id + ');return false;"><i class="fa fa-file-pdf-o"></i> PDF</a>' +
+          finishLink +
           '</td></tr>';
       }).join('');
     }
@@ -767,7 +797,58 @@
 
     function editReport(id) {
       var row = reportFiles.filter(function (r) { return r.id === id; })[0];
-      alert('打开 Word 在线编制（原型演示）：' + (row ? row.fileName : ''));
+      if (row && !canEditReport(row)) { alert('报告已提交审核，当前节点不可编辑'); return; }
+      alert('打开 Word 在线编辑报告（原型演示）：' + (row ? row.fileName : ''));
+    }
+
+    var finishCompileId = null;
+
+    function nowStamp() {
+      var now = new Date();
+      return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+    }
+
+    function openFinishCompile(id) {
+      var row = reportFiles.filter(function (r) { return r.id === id; })[0];
+      if (!row) return;
+      if (!canEditReport(row)) { alert('报告已提交审核'); return; }
+      finishCompileId = id;
+      document.getElementById('finishCompileText').textContent =
+        '确认将「' + row.reportNo + '」编制完成并提交至「报告审核」？提交后当前节点不可再编辑。';
+      var modal = document.getElementById('finishCompileModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeFinishCompile() {
+      finishCompileId = null;
+      var modal = document.getElementById('finishCompileModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function confirmFinishCompile() {
+      var row = reportFiles.filter(function (r) { return r.id === finishCompileId; })[0];
+      if (!row) { closeFinishCompile(); return; }
+      var ts = nowStamp();
+      row.node = '报告审核';
+      row.statusLabel = '审批中';
+      row.statusTone = 'pending';
+      row.modifiedAt = ts.slice(0, 16);
+      var timeline = row.timeline || [];
+      if (timeline.length && timeline[timeline.length - 1].pending) timeline.pop();
+      timeline.push({
+        time: ts, node: '报告编制', actor: 'admin', status: '提交至报告审核',
+        tone: 'pass', statusTone: 'muted', icon: 'fa-pencil-square-o'
+      });
+      timeline.push({
+        time: '', node: '报告审核', actor: '', status: '审批中',
+        tone: 'pending', statusTone: 'pending', icon: 'fa-clock-o', pending: true
+      });
+      row.timeline = timeline;
+      closeFinishCompile();
+      renderReportFiles();
     }
 
     function auditAvatarColor(name) {
@@ -865,11 +946,11 @@
             id: 'rc-tab-detect',
             selector: '[data-annotate="tab-detect"]',
             position: 'bottom',
-            title: '检测信息',
-            content: '<strong>需求逻辑：</strong>报告生成的第一步是确定「本次给哪些试样出报告」，因此进入「报告生成编辑」默认停在本 Tab；样品信息只读，唯一可操作的是试样勾选。<br>' +
-            '<strong>展示规则：</strong>Tab 名「检测信息」，其下按样品组展开：只读样品信息块 + 试样勾选表；本 Tab 不提供任何字段编辑控件。<br>' +
-            '<strong>交互逻辑：</strong>切换 Tab 不丢已勾选状态；勾选结果是「生成报告」的唯一输入，未勾选时生成按钮不可用。',
-            tag: '检测信息'
+            title: '编制工作台',
+            content: '<strong>需求逻辑：</strong>本页是该委托的报告工作台：勾选剩余试样生成报告、编辑已有报告、提交到报告审核、查看流转记录，都在这个 Tab 完成。<br>' +
+            '<strong>展示规则：</strong>Tab 名「编制工作台」，其下按样品组展开：只读样品信息块 + 试样勾选表 + 新建/补充报告 + 报告文件总览。<br>' +
+            '<strong>交互逻辑：</strong>切换 Tab 不丢已勾选状态；勾选结果是「生成报告」的唯一输入。',
+            tag: '编制工作台'
           },
           {
             id: 'rc-tab-entrust',
@@ -910,7 +991,7 @@
             content: '<strong>需求逻辑：</strong>报告以「样品名称(型号)」为单位产出，分组边界必须与委托收样的样品分组一致，避免一份报告混装不同型号。<br>' +
             '<strong>展示规则：</strong>按样品名称(型号)分组，每组含只读「样品信息」与该组试样勾选表；导出方式不在这里配置，放在点「生成报告」后的确认弹窗。<br>' +
             '<strong>交互逻辑：</strong>各组勾选互不影响；至少一个组有勾选才能生成报告。',
-            tag: '检测信息'
+            tag: '编制工作台'
           },
           {
             id: 'rc-sample-group',
@@ -921,7 +1002,7 @@
             content: '<strong>需求逻辑：</strong>编制阶段不允许改样品数据：报告内容必须与委托登记、收样结果一致，改动只能走委托变更。<br>' +
             '<strong>展示规则：</strong>展示样品名称、型号、产品标识、检测类别、数量、厂家等委托收样信息，全部只读。<br>' +
             '<strong>交互逻辑：</strong>要改字段回委托变更（基本信息变更 / 样品修改变更），变更生效后本页重新取数。',
-            tag: '检测信息'
+            tag: '编制工作台'
           },
           {
             id: 'rc-product-mark',
@@ -931,7 +1012,7 @@
             content: '<strong>需求逻辑：</strong>报告正文要写产品标识，取值口径与「样品数据」的产品标记一致，不由编制员手填。<br>' +
             '<strong>展示规则：</strong>展示产品标记的实际值；该样品开关关闭或未配规则时显示「未配置规则」；标记规则里取不到值的段显示「/」。<br>' +
             '<strong>交互逻辑：</strong>只读；规格参数在样品收样或委托确认阶段补填后，产品标记自动重算并同步到报告正文。',
-            tag: '检测信息'
+            tag: '编制工作台'
           },
           {
             id: 'rc-pick-all',
@@ -941,7 +1022,7 @@
             content: '<strong>需求逻辑：</strong>一组试样常常全部参与出报告，逐个勾选太慢。<br>' +
             '<strong>展示规则：</strong>试样勾选表表头的复选框。<br>' +
             '<strong>交互逻辑：</strong>只勾选本组里还没出报告的试样；已经生成报告的试样保持置灰，不会被全选带上。本组全部已生成时，这个勾选本身也置灰。',
-            tag: '检测信息'
+            tag: '编制工作台'
           },
           {
             id: 'rc-specimen-table',
@@ -952,7 +1033,7 @@
             content: '<strong>需求逻辑：</strong>生成范围以「试样」为单位，而不是以样品或试验项为单位。<br>' +
             '<strong>展示规则：</strong>每行一个样品编号。已出现在下方「报告文件」里的试样：复选框不可勾选，整行置灰，悬停说明对应报告编号。<br>' +
             '<strong>交互逻辑：</strong>只能勾选还没出报告的试样。新生成的试样立刻置灰，避免同一试样再出一份。',
-            tag: '检测信息'
+            tag: '编制工作台'
           },
           {
             id: 'rc-generate-row',
@@ -961,8 +1042,8 @@
             title: '新建 / 补充报告',
             content: '<strong>需求逻辑：</strong>报告生成阶段常常只出了一部分试样的报告，剩下的还要补生成，所以生成入口要一直在，并说明还剩哪些试样。<br>' +
             '<strong>展示规则：</strong>提示文案列出未出报告的试样；全部试样都已生成时，「生成报告」按钮置灰。<br>' +
-            '<strong>交互逻辑：</strong>在上方「检测信息」勾选剩余试样 → 点「生成报告」→ 确认弹窗选导出方式/模版变体 → 产出 Word 并写入下方报告文件，新覆盖的试样随即置灰。',
-            tag: '检测信息'
+            '<strong>交互逻辑：</strong>在上方试样表勾选剩余试样 → 点「生成报告」→ 确认弹窗选导出方式/模版变体 → 产出 Word 并写入下方报告文件，新覆盖的试样随即置灰。',
+            tag: '编制工作台'
           },
           {
             id: 'rc-files',
@@ -970,10 +1051,20 @@
             position: 'top-left',
             title: '报告文件（本委托报告总览）',
             wide: true,
-            content: '<strong>需求逻辑：</strong>把「这个委托有几份报告、各停在哪个节点、要不要我处理」集中到一张表，不必再回列表页用「报告记录 / 编制」三个入口分别看。<br>' +
-            '<strong>展示规则：</strong>右上角汇总共几份、已退回、审批中、待生成试样。每行含状态 chip（审批中 / 已退回·待修订 / 已签发）与报告编号、试样、文件、时间。<br>' +
-            '<strong>交互逻辑：</strong>行内「编制」改 Word（仅当前节点在报告编制时可点）、「记录」看流转时间轴、「图片」走 PageOffice 补图、「PDF」单独导出。',
-            tag: '检测信息'
+            content: '<strong>需求逻辑：</strong>把「这个委托有几份报告、各停在哪个节点、要不要我处理」集中到一张表。<br>' +
+            '<strong>展示规则：</strong>右上角汇总共几份、已退回、审批中、待生成试样。每行含状态 chip、报告编号、试样、文件、时间、独立「报告记录」列。<br>' +
+            '<strong>交互逻辑：</strong>「编辑报告」改 Word（仅当前节点在报告编制时可点）；「编制完成」二次确认后提交到报告审核；「查看」打开该报告流转抽屉。已进入后续节点的行，编辑与编制完成置灰。',
+            tag: '编制工作台'
+          },
+          {
+            id: 'rc-wb-record-col',
+            selector: '[data-annotate="col-wb-record"]',
+            position: 'top',
+            title: '报告记录',
+            content: '<strong>需求逻辑：</strong>流转记录是只读信息，从操作里拆出来单独一列，避免和编辑/提交混在一起。<br>' +
+            '<strong>展示规则：</strong>每行一个「查看」链接，带眼睛图标。<br>' +
+            '<strong>交互逻辑：</strong>打开右侧抽屉，看这一份报告的时间轴。',
+            tag: '编制工作台'
           },
           {
             id: 'rc-wb-record',
@@ -983,8 +1074,18 @@
             wide: true,
             content: '<strong>需求逻辑：</strong>看单份报告的流转留痕不必跳页，就地从右侧抽屉展开。<br>' +
             '<strong>展示规则：</strong>按时间正序的审批时间轴，已完成实心点（蓝=流转、红=退回），当前节点空心黄点收尾；退回原因写在灰色意见条。<br>' +
-            '<strong>交互逻辑：</strong>由报告文件行的「记录」打开；点遮罩或关闭收回，不改数据。',
-            tag: '检测信息'
+            '<strong>交互逻辑：</strong>由「报告记录」列的「查看」打开；点遮罩或关闭收回，不改数据。',
+            tag: '编制工作台'
+          },
+          {
+            id: 'rc-finish-compile',
+            selector: '[data-annotate="finish-compile"]',
+            position: 'bottom',
+            title: '编制完成确认',
+            content: '<strong>需求逻辑：</strong>编制完成是把这份报告从「报告编制」交到「报告审核」，动作不可撤销，要二次确认。<br>' +
+            '<strong>展示规则：</strong>弹窗写明报告编号和去向节点。<br>' +
+            '<strong>交互逻辑：</strong>确认后状态变为审批中，编辑与编制完成置灰，时间轴末尾补「审批中」空心黄点。',
+            tag: '编制工作台'
           },
           {
             id: 'rc-modal-export',
@@ -995,7 +1096,7 @@
             content: '<strong>需求逻辑：</strong>不同业务线的报告粒度不同，默认值取「业务流程配置 › 报告设置」的解析结果，但允许本次生成前临时改。<br>' +
             '<strong>展示规则：</strong>两个单选项：「单种样品一份报告」（全部勾选试样 → 1 份）与「单个样品一份报告」（每个试样各 1 份），预填默认值。<br>' +
             '<strong>交互逻辑：</strong>切换选项时弹窗底部的预览份数实时更新；确认后按所选粒度产出。',
-            tag: '检测信息'
+            tag: '编制工作台'
           },
           {
             id: 'rc-modal-variant',
@@ -1006,7 +1107,7 @@
             content: '<strong>需求逻辑：</strong>同一型号可能维护多个模版变体，默认用「模板管理 › 报告模版」里设为默认的变体，特殊需求可本次改选。<br>' +
             '<strong>展示规则：</strong>预填该型号的默认变体（isDefault）；多型号委托时按型号分组展示，各组独立选择。<br>' +
             '<strong>交互逻辑：</strong>改选只影响本型号分组的产出文件。',
-            tag: '检测信息'
+            tag: '编制工作台'
           },
           {
             id: 'rc-modal-preview',
@@ -1016,7 +1117,7 @@
             content: '<strong>需求逻辑：</strong>生成前要让编制员知道会产出几份文件，避免事后发现多生成或漏生成。<br>' +
             '<strong>展示规则：</strong>实时展示「将生成 N 份」。<br>' +
             '<strong>交互逻辑：</strong>N 随勾选试样数、导出方式、模版变体即时重算。',
-            tag: '检测信息'
+            tag: '编制工作台'
           },
           {
             id: 'rc-confirm',
@@ -1026,7 +1127,7 @@
             content: '<strong>需求逻辑：</strong>生成前必须校验模版，避免产出缺内容的报告。<br>' +
             '<strong>展示规则：</strong>「生成报告确认」弹窗底部的「确认生成」按钮。<br>' +
             '<strong>交互逻辑：</strong>点击后校验各涉及型号是否都有启用的模版变体：缺模版则阻断并提示缺哪一个；校验通过才生成 Word 报告并写入下方「报告文件」列表。',
-            tag: '检测信息'
+            tag: '编制工作台'
           }
         ]
       });

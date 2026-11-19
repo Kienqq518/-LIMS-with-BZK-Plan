@@ -9,7 +9,7 @@ const p = await b.newPage();
 p.on('pageerror', (e) => err.push('pageerror: ' + e.message));
 p.on('dialog', (d) => d.accept());
 
-// 报告编制：操作列含报告生成/退回，表头表体列数一致
+// 报告编制：操作列含「去处理」/退回，表头表体列数一致
 await p.goto(BASE + '/report-list.html', { waitUntil: 'load' });
 await p.waitForTimeout(400);
 const rlAlign = await p.evaluate(() => {
@@ -19,7 +19,8 @@ const rlAlign = await p.evaluate(() => {
   const tr = document.querySelector('#tableBody tr');
   if (!tr || tr.cells.length !== thCount) return false;
   const ops = tr.cells[tr.cells.length - 1];
-  return /报告生成/.test(ops.textContent || '') && /退回/.test(ops.textContent || '');
+  const text = ops.textContent || '';
+  return /去处理/.test(text) && /退回/.test(text) && !/报告生成/.test(text) && !/\b编制\b/.test(text);
 });
 out.push((rlAlign ? '✅' : '❌') + ' 报告编制列表列对齐与操作列');
 const rlAi = await p.evaluate(() => {
@@ -28,11 +29,16 @@ const rlAi = await p.evaluate(() => {
   return scroll && getComputedStyle(scroll).maxHeight !== 'none' && row238;
 });
 out.push((rlAi ? '✅' : '❌') + ' 报告编制 AI 退回区滚动且主表含退回委托');
-await p.evaluate(() => { if (typeof openCompileListModal === 'function') openCompileListModal('SC2026/0238'); });
-await p.waitForTimeout(300);
-const pill = await p.locator('#compileListBody [data-ai-return="1"] .ai-return-pill').count();
-out.push((pill >= 1 ? '✅' : '❌') + ' 编制弹窗 AI 退回标签: ' + pill);
-await p.evaluate(() => { if (typeof closeCompileListModal === 'function') closeCompileListModal(); });
+const handleHref = await p.evaluate(() => {
+  const a = document.querySelector('#tableBody a[href*="report-compile-edit.html"]');
+  return a && /去处理/.test(a.textContent || '') && /entrust=/.test(a.getAttribute('href') || '');
+});
+out.push((handleHref ? '✅' : '❌') + ' 去处理进入编制工作台');
+const noRecordCol = await p.evaluate(() => {
+  const ths = [...document.querySelectorAll('table.report-list-table thead th')].map((th) => th.textContent.replace(/\s+/g, ' ').trim());
+  return !ths.includes('报告记录');
+});
+out.push((noRecordCol ? '✅' : '❌') + ' 主列表不再单独列报告记录');
 
 // 委托预览：独立「报告」+「操作」列，表头表体对齐
 await p.goto(BASE + '/entrust-preview.html', { waitUntil: 'load' });

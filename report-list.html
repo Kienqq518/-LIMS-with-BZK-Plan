@@ -292,7 +292,6 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">优先等级</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium" data-annotate="col-record">报告记录</th>
               <!-- 透明检测延至明年：列暂时隐藏，相关弹窗与逻辑保留便于恢复 -->
               <th class="hidden border border-slate-200 px-3 py-2 font-medium" data-annotate="col-transparency">透明度等级 / 溯源</th>
               <th class="report-list-ops-col border border-slate-200 px-3 py-2 font-medium whitespace-nowrap" data-annotate="report-ops">操作</th>
@@ -781,9 +780,7 @@
       var data = list || ROWS;
       document.getElementById('tableBody').innerHTML = data.map(function (row, i) {
         var trCls = row.aiReturnedHighlight ? 'ai-return-row' : 'hover:bg-slate-50';
-        var genLink = row.demo
-          ? '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline" data-annotate="report-generate"><i class="fa fa-pencil mr-1"></i>报告生成</a>'
-          : '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline"><i class="fa fa-pencil mr-1"></i>报告生成</a>';
+        var handleLink = '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline"' + (row.demo ? ' data-annotate="report-handle"' : '') + '><i class="fa fa-pencil mr-1"></i>去处理</a>';
         var codeCell = '<div class="entrust-code-stack">' +
           '<a href="entrust-detail.html?code=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline">' + row.code + '</a>' +
           (row.aiReturnedHighlight ? aiReturnPillHtml() : '') +
@@ -799,11 +796,9 @@
           '<td class="border border-slate-200 px-3 py-2">' + (row.priority || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (row.sales || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.compiler + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="openReportRecordModal(\'' + row.code + '\');return false;">报告记录</a></td>' +
           '<td class="hidden border border-slate-200 px-3 py-2 whitespace-nowrap">' + transparencyCell(row) + '</td>' +
           '<td class="report-list-ops-cell border border-slate-200 px-3 py-2">' +
-            '<div class="report-list-ops">' + genLink +
-            '<a href="#" class="text-blue-600 hover:underline" onclick="openCompileListModal(\'' + row.code + '\');return false;">编制</a>' +
+            '<div class="report-list-ops">' + handleLink +
             returnButtonHtml(row) +
             '</div></td></tr>';
       }).join('');
@@ -1349,7 +1344,7 @@
           '<span class="ai-line-main text-slate-700" title="' + ent.entrustCode + ' · ' + ent.customer + ' · ' + ent.sample + '">' +
           '<b>' + ent.entrustCode + '</b>（' + ent.customer + ' · ' + ent.sample + '）— ' + brief +
           '</span>' +
-          '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(ent.entrustCode) + '" class="flex-shrink-0 text-blue-600 hover:underline">去修订</a>' +
+          '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(ent.entrustCode) + '" class="flex-shrink-0 text-blue-600 hover:underline">去处理</a>' +
           '</div>';
       }).join('');
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
@@ -1358,24 +1353,21 @@
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({ annotations: [
         { id: 'ai-returned', selector: '[data-annotate="ai-returned"]', position: 'bottom', title: 'AI 审核不通过自动退回', content: '<strong>需求逻辑：</strong>报告流转到「报告审核」时自动跑 AI 预审，命中严重项的报告不进人工审核、直接自动退回「报告编制」，编制人需在本环节优先处理。<br>' +
-            '<strong>展示规则：</strong>固定高度红色提示区（内部滚动），<strong>一行一个委托任务</strong>：委托编号、客户/样品、本单下被退回报告摘要与「去修订」；下方主查询列表<strong>同步展示</strong>这些委托（委托编号旁带 AI 退回徽标）。无退回时整条隐藏。<br>' +
-            '<strong>交互逻辑：</strong>数据与「报告审核」页同源；点「编制」弹窗中 AI 退回的报告在编号旁显示渐变「AI 自动退回」标签与规则摘要。演示 SC2026/0238 / 0238-03（L1-b-1）。', tag: '报告编制' },
+            '<strong>展示规则：</strong>固定高度红色提示区（内部滚动），<strong>一行一个委托任务</strong>：委托编号、客户/样品、本单下被退回报告摘要与「去处理」；下方主查询列表<strong>同步展示</strong>这些委托（委托编号旁带 AI 退回徽标）。无退回时整条隐藏。<br>' +
+            '<strong>交互逻辑：</strong>数据与「报告审核」页同源；点「去处理」进入编制工作台修订。演示 SC2026/0238 / 0238-03（L1-b-1）。', tag: '报告编制' },
         { id: 'compile-ai-tag', selector: '[data-ai-return="1"]', position: 'left', title: '编制列表 · AI 自动退回标识', content: '<strong>展示规则：</strong>命中 AI 严重项自动退回的报告：卡片左边红条 + 淡红底，「AI 自动退回」胶囊与规则摘要；默认勾选便于优先修订。<br><strong>交互逻辑：</strong>与顶部提示条、主列表委托行同源。', tag: '报告列表' },
         { id: 'compile-returns', selector: '[data-annotate="compile-returns"]', position: 'bottom', title: '退回记录（追加不覆盖）', content: '<strong>需求逻辑：</strong>同一份报告可能被退回多次；每次退回的节点、退回人、时间、原因都必须留存，新退回不得覆盖旧原因。<br>' +
             '<strong>展示规则：</strong>卡片下方「退回记录」时间轴，按时间倒序；每条含「第 N 次」、节点（AI 自动退回单独标注）、原因、退回人、时间；最新一条红点高亮。<br>' +
             '<strong>交互逻辑：</strong>数据为 returns[] 追加写入。演示：SC2026/0238-03 仅 AI 严重项自动退回 1 次；SC2026/0238-02 为 AI「需人工复核」后由李审核退回 1 次。', tag: '报告列表' },
-        { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '<strong>需求逻辑：</strong>主列表按委托任务操作：生成新报告、进入已有报告编制、或把整单退回数据审核。<br>' +
-            '<strong>展示规则：</strong>操作列：「报告生成」「编制」「退回」。<br>' +
-            '<strong>交互逻辑：</strong>「报告生成」进入「报告生成编辑」；「编制」弹出「报告编制」；「退回」见独立批注。不能对单份报告从编制退回数据审核。', tag: '报告编制' },
+        { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '<strong>需求逻辑：</strong>生成、编制、看记录都在同一份委托的工作台里完成，列表只留一个入口，避免三扇门各看一半。<br>' +
+            '<strong>展示规则：</strong>操作列：「去处理」「退回」。<br>' +
+            '<strong>交互逻辑：</strong>「去处理」进入编制工作台（补生成、编辑已有报告、看记录）；「退回」见独立批注。不能对单份报告从编制退回数据审核。', tag: '报告编制' },
         { id: 'report-return', selector: '[data-annotate="report-return"]', position: 'left', title: '退回（整单，后续节点置灰）', content: '<strong>需求逻辑：</strong>退回只能按整个委托打回「数据审核」，不能单份报告退。若该委托下任意报告已经离开「报告编制」（报告审核及之后），再退会把后续流程一并打乱，因此退回置灰。<br>' +
             '<strong>展示规则：</strong>可退时为橙色「退回」；不可退时按钮置灰，鼠标悬停说明是哪些报告、停在哪个节点。<br>' +
             '<strong>交互逻辑：</strong>全部报告仍在「报告编制」→ 弹出「退回原因」。任一报告已到后续节点 → 按钮不可点。演示：SC2026/0238 因 0238-01 在报告审核而置灰；SC2026/0099 因 0099-02 在报告审核而置灰。', tag: '报告编制' },
-        { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>列表上要能看到每份报告卡在哪个节点、以及流转过程。<br>' +
-            '<strong>展示规则：</strong>「报告记录」链接，打开右侧抽屉：上半节点进度、下半操作日志。<br>' +
-            '<strong>交互逻辑：</strong>按当前委托打开；演示 SC2026/0238 / SC2026/0099。', tag: '报告编制' },
-        { id: 'report-gen-link', selector: '[data-annotate="report-generate"]', position: 'left', title: '报告生成', content: '<strong>需求逻辑：</strong>演示要能一键走到完整生成流程，因此给一个默认委托入口。<br>' +
-            '<strong>展示规则：</strong>「报告生成」链接，演示委托 SCZN202508/0009 · 实壁塑料电缆导管 PVC-C。<br>' +
-            '<strong>交互逻辑：</strong>点击进入「报告生成编辑」；换其它委托从委托列表进入。', tag: '报告编制' },
+        { id: 'report-handle-link', selector: '[data-annotate="report-handle"]', position: 'left', title: '去处理', content: '<strong>需求逻辑：</strong>一份委托下可能同时有待生成试样、待修订报告和审批中的报告，只开一扇门进编制工作台。<br>' +
+            '<strong>展示规则：</strong>操作列「去处理」，演示委托 SCZN202508/0009。<br>' +
+            '<strong>交互逻辑：</strong>点击进入编制工作台；报告记录、编辑、补生成都在工作台内。', tag: '报告编制' },
         { id: 'compile-modal', selector: '[data-annotate="compile-list-modal"]', position: 'left', title: '编制 · 报告编制弹窗', content: '<strong>需求逻辑：</strong>一次可能要多份报告同时编制，先勾选再进编辑器；有退回的报告要把历次退回原因摊开看清。<br>' +
             '<strong>展示规则：</strong>标题为「报告编制」。卡片含勾选、编号、样品、名称、生成时间、审核·签发意见；有退回的卡片展开退回记录。不再提供单份「退回」。<br>' +
             '<strong>交互逻辑：</strong>勾选后点「编制」进入 Word 在线编辑（原型演示）。整单退回只在主列表操作。', tag: '报告编制' },
