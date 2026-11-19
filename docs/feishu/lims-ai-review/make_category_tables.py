@@ -25,20 +25,25 @@ run(["lark-cli","base","+record-batch-create","--base-token",BASE,"--table-id",C
      json.dumps({"create_records":[{"category_code":c,"品类名称":n,"来源":"LIMS","是否已配绑定":b,
        "同步时间":"2026-11-06","备注":"编码为占位，待 Week 1 用 LIMS 实际物料分类码替换" if b=="否" else "编码为占位，待 Week 1 用 LIMS 实际物料分类码替换"} for c,n,b in cats]},ensure_ascii=False)])
 
-# ---- 2. 品类规则绑定表 ----
-UNIV=[f"A01-{i}" for i in range(1,7)]+[f"A02-{i}" for i in range(1,5)]+["A03-1"]+[f"B01-{i}" for i in (1,2,4,5)]+\
-     [f"B03-{i}" for i in range(1,5)]+[f"C01-{i}" for i in (1,3,4,5)]+[f"C02-{i}" for i in range(1,6)]
-SPEC=["A02-5","A03-2","A03-3","A03-4","A03-5","A03-6","B01-3"]+[f"B02-{i}" for i in range(1,10)]+["C01-2"]
+# ---- 2. 品类规则绑定表（规则 ID = Ln-x-n；下方 legacy 键经 O2N 映射）----
+_cm = json.load(open("docs/feishu/lims-ai-review/category_meta.json", encoding="utf-8"))
+O2N = _cm.get("legacy_id_map") or json.load(open("docs/feishu/lims-ai-review/level_map.json", encoding="utf-8"))["legacy_id_map"]
+def _rid(x): return O2N.get(x, x)
+UNIV=[_rid(x) for x in (
+  [f"A01-{i}" for i in range(1,7)]+[f"A02-{i}" for i in range(1,5)]+["A03-1"]+[f"B01-{i}" for i in (1,2,4,5)]+
+  [f"B03-{i}" for i in range(1,5)]+[f"C01-{i}" for i in (1,3,4,5)]+[f"C02-{i}" for i in range(1,6)])]
+SPEC=[_rid(x) for x in (["A02-5","A03-2","A03-3","A03-4","A03-5","A03-6","B01-3"]+[f"B02-{i}" for i in range(1,10)]+["C01-2"])]
 assert len(UNIV)==28 and len(SPEC)==17, (len(UNIV),len(SPEC))
-PARAM={"A02-5":'{"sensitive_items":"list"}',"A03-2":'{"parallel_count":"int","std_max":"float"}',
+_PARAM_LEGACY={"A02-5":'{"sensitive_items":"list"}',"A03-2":'{"parallel_count":"int","std_max":"float"}',
  "A03-3":'{"tensile_specimens":"int"}',"A03-4":'{"traceability_field":"enum(heat_no|reel_no|batch_no|segment_no)"}',
  "A03-5":'{"crm_types":"list"}',"A03-6":'{"recheck_rule":"enum(double_sample|stop_and_scrap)"}',
  "B01-3":'{"cycle_months":"int"}',"B02-1":'{"limit_ref":"enum"}',"B02-3":'{"t_min":"float","t_max":"float","std_max":"float"}',
  "B02-4":'{"p_min_map":"map(grade,spec)"}',"B02-5":'{"hrc_band":"map(grade)"}',
  "B02-6":'{"voltage":"float","leak_limit":"map(type)","hold_min":"int"}',"B02-7":'{"lower_map":"map(param)","points":"int"}',
  "B02-8":'{"rate_band":"map(method)"}',"B02-9":'{"formula":"enum(stress|resistance_corr)"}',"C01-2":'{"interval_map":"map(param)"}'}
-# (启用, 参数覆盖, 严重度覆盖, 标准依据)
-M={"CAT-BOLT":{"A02-5":(1,'{"sensitive_items":["拉伸","扭矩系数"]}',"","GB/T 228.1"),"A03-2":(1,'{"parallel_count":8,"std_max":0.0074}',"","GB/T 1231-2010"),
+PARAM={_rid(k):v for k,v in _PARAM_LEGACY.items()}
+# (启用, 参数覆盖, 严重度覆盖, 标准依据) — 键先用旧 ID，写入前映射
+_M_LEGACY={"CAT-BOLT":{"A02-5":(1,'{"sensitive_items":["拉伸","扭矩系数"]}',"","GB/T 228.1"),"A03-2":(1,'{"parallel_count":8,"std_max":0.0074}',"","GB/T 1231-2010"),
  "A03-3":(1,'{"tensile_specimens":2}',"","GB/T 228.1-2021"),"A03-4":(1,'{"traceability_field":"heat_no"}',"","抽检细则"),
  "A03-5":(1,'{"crm_types":["标准硬度块","扭矩系数标准件"]}',"","GB/T 3098.1"),"A03-6":(1,'{"recheck_rule":"double_sample"}',"","GB/T 1231"),
  "B01-3":(0,"","",""),"B02-1":(1,'{"limit_ref":"GB/T 3098.1 10.9 级 Rm"}',"","GB/T 3098.1"),"B02-2":(0,"","",""),
@@ -59,13 +64,16 @@ M={"CAT-BOLT":{"A02-5":(1,'{"sensitive_items":["拉伸","扭矩系数"]}',"","GB
  "B02-6":(1,'{"voltage":"按型号","leak_limit":"含局部放电量限值","hold_min":5}','严重',"GB/T 12706 / GB/T 3048.12"),
  "B02-7":(1,'{"lower_map":"绝缘/护套厚度","points":"多点取最小值"}',"","GB/T 12706"),"B02-8":(0,"","",""),
  "B02-9":(1,'{"formula":"resistance_corr_20C"}',"","GB/T 3956 / GB/T 3048.4"),"C01-2":(1,'{"interval_map":"电阻 0.01 Ω；厚度 0.1 mm"}',"","GB/T 8170")}}
+M={cc:{_rid(k):v for k,v in mp.items()} for cc,mp in _M_LEGACY.items()}
 rows=[]
+_SPEC_LEGACY=["A02-5","A03-2","A03-3","A03-4","A03-5","A03-6","B01-3"]+[f"B02-{i}" for i in range(1,10)]+["C01-2"]
 for cc in ["CAT-BOLT","CAT-GLOVE","CAT-CABLE"]:
-    for rid in SPEC:
+    for old in _SPEC_LEGACY:
+        rid=_rid(old)
         en,ov,sv,ref=M[cc].get(rid,(0,"","",""))
         rows.append({"绑定ID":f"BLT-{cc}-{rid}","category_code":cc,"rule_id":rid,"启用":"是" if en else "否",
                      "参数覆盖":ov,"严重度覆盖":sv or "不覆盖","标准依据":ref,
-                     "状态":"待审核员确认","版本":"v0.1"})
+                     "状态":"待审核员确认","版本":"v0.4"})
 assert len(rows)==51, len(rows)
 bd=T("品类规则绑定",[TXT("绑定ID"),TXT("category_code"),TXT("rule_id"),SEL("启用",["是","否"]),
    TXT("参数覆盖"),SEL("严重度覆盖",["严重","一般","轻微","提示","不覆盖"]),TXT("标准依据"),

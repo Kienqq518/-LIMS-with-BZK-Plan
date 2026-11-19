@@ -55,7 +55,7 @@
     function detailText(item) {
       var ev = item.evidence || {};
       if (ev.skipped) return '校验口径：收样 ≤ 检测 ≤ 报告；本报告' + ev.skipped + '，已跳过该项并转数据完整性提示。';
-      if (item.rule_id === 'B01-1' && ev.receive_date) return '校验口径：收样(' + ev.receive_date + ') ≤ 检测(' + ev.test_date + ') ≤ 报告(' + ev.report_date + ')，实际日期先后不满足。';
+      if (item.rule_id === 'L2-a-1' && ev.receive_date) return '校验口径：收样(' + ev.receive_date + ') ≤ 检测(' + ev.test_date + ') ≤ 报告(' + ev.report_date + ')，实际日期先后不满足。';
       if (ev && Object.keys(ev).length) return '命中依据：' + esc(JSON.stringify(ev));
       return '已按规则口径对该报告字段逐项校验' + (item.severity ? '（严重度：' + item.severity + '）' : '') + '，结论见上。';
     }

@@ -17,4 +17,4 @@
 - 品类表 table_id: `tblv1BS7q0eMrAYu`（6 行）；绑定表 table_id: `tbldbfHOuYsh9dLn`（51 行 = 3 品类 × 17 专属规则）
 - 3.3 时间轴画板 token（T10 重渲染后）: `MyxDwabVGhVXi0byjurcaDf5nvh`，源文件 `timeline.svg` / 生成器 `make_timeline.py`
 
-> 说明：规则 ID（`A01-1` 等）仍作引擎/绑定稳定键；**浏览与分期只看级别 / 规则组 / 类别**。L3-c、L3-d、L4-a/b/d 为占位规则（ID `L3C-1` / `L3D-1` / `L4A-1` / `L4B-1` / `L4D-1`），MVP 默认不消费。
+> 说明：规则 ID 统一为 **`Ln-x-n`**（如 `L1-a-1`、`L2-b-1`），与规则组对齐；已废弃 `A01-1` / `B01-1` / `C02-5` 等旧编号（见 `level_map.json` → `legacy_id_map`）。L3-c、L3-d、L4-a/b/d 为占位规则（`L3-c-1` / `L3-d-1` / `L4-a-1` / `L4-b-1` / `L4-d-1`），MVP 默认不消费。

@@ -17,7 +17,7 @@ THEMES = [
 ]
 LEVELS = ["L1 基础形式","L2 数据逻辑","L3 合规对齐","L4 溯源验证"]
 fields = [
- {"type":"text","name":"规则ID","description":"稳定键如 A01-1；引擎/绑定用。浏览维度看「级别 / 规则组 / 类别」"},
+ {"type":"text","name":"规则ID","description":"稳定键 Ln-x-n（如 L1-a-1）；引擎/绑定用。浏览维度看「级别 / 规则组 / 类别」"},
  {"type":"select","name":"级别","multiple":False,"description":"四级审核范围（飞书 §2.3）",
   "options":[{"name":n} for n in LEVELS]},
  {"type":"select","name":"规则组","multiple":False,"description":"Ln-a/b/c/d：级别下「审什么」各类别的规则组编码",

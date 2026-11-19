@@ -8,14 +8,14 @@
 
   function ruleMeta(id) {
     var map = {
-      'A01-1': { group: 'L1-a', category: '编号', severity: '严重' },
-      'A01-6': { group: 'L3-a', category: '标准现行有效', severity: '严重' },
-      'A02-1': { group: 'L2-b', category: '委托项↔结果', severity: '严重' },
-      'B01-1': { group: 'L2-a', category: '日期链', severity: '严重' },
-      'B01-2': { group: 'L2-c', category: '设备校准覆盖', severity: '严重' },
-      'B03-1': { group: 'L3-a', category: '标准现行有效', severity: '一般' },
-      'C02-5': { group: 'L1-b', category: '签名', severity: '严重' },
-      'C01-4': { group: 'L1-d', category: '单位与格式', severity: '一般' },
+      'L1-a-1': { group: 'L1-a', category: '编号', severity: '严重' },
+      'L3-a-1': { group: 'L3-a', category: '标准现行有效', severity: '严重' },
+      'L2-b-1': { group: 'L2-b', category: '委托项↔结果', severity: '严重' },
+      'L2-a-1': { group: 'L2-a', category: '日期链', severity: '严重' },
+      'L2-c-1': { group: 'L2-c', category: '设备校准覆盖', severity: '严重' },
+      'L3-a-2': { group: 'L3-a', category: '标准现行有效', severity: '一般' },
+      'L1-b-1': { group: 'L1-b', category: '签名', severity: '严重' },
+      'L1-d-4': { group: 'L1-d', category: '单位与格式', severity: '一般' },
     };
     return map[id] || { group: '', category: '', severity: '一般' };
   }
@@ -30,13 +30,13 @@
     var message = '通过';
     var evidence = {};
 
-    if (ruleId === 'A01-1') {
+    if (ruleId === 'L1-a-1') {
       passed = nonempty(report.sample_no) && SAMPLE_NO_RE.test(String(report.sample_no).trim());
       if (!passed) message = '样品编号为空或不符合编号规则';
-    } else if (ruleId === 'A01-6') {
+    } else if (ruleId === 'L3-a-1') {
       passed = nonempty(report.test_standard) && YEAR_RE.test(String(report.test_standard).trim());
       if (!passed) message = '检测标准号必须带年号';
-    } else if (ruleId === 'A02-1') {
+    } else if (ruleId === 'L2-b-1') {
       var ent = report.entrust_items || [];
       var res = report.result_params || [];
       if (!ent.length) {
@@ -47,7 +47,7 @@
         });
       }
       if (!passed) message = '存在委托检测项目无对应实测结果';
-    } else if (ruleId === 'B01-1') {
+    } else if (ruleId === 'L2-a-1') {
       var rd = report.receive_date;
       var td = report.test_date;
       var rpd = report.report_date;
@@ -62,20 +62,20 @@
         message = '关键日期先后错误：应收样 ≤ 检测 ≤ 报告';
         evidence = { receive_date: rd, test_date: td, report_date: rpd };
       }
-    } else if (ruleId === 'B01-2') {
+    } else if (ruleId === 'L2-c-1') {
       var cf = report.device_calib_from;
       var ct = report.device_calib_to;
       var tdt = report.test_date;
       passed = nonempty(cf) && nonempty(ct) && nonempty(tdt) && cf <= tdt && tdt <= ct;
       if (!passed) message = '设备校准有效期未覆盖检测日期';
-    } else if (ruleId === 'B03-1') {
+    } else if (ruleId === 'L3-a-2') {
       passed = String(report.cited_standard) === String(report.test_standard);
       if (!passed) message = '报告引用标准号与实际检测标准不一致';
-    } else if (ruleId === 'C02-5') {
+    } else if (ruleId === 'L1-b-1') {
       var sig = report.signatures || {};
       passed = nonempty(sig.tester) && nonempty(sig.reviewer) && nonempty(sig.approver);
       if (!passed) message = '检测/审核/批准签名位不完整';
-    } else if (ruleId === 'C01-4') {
+    } else if (ruleId === 'L1-d-4') {
       var units = report.units || [];
       if (!units.length) {
         passed = true;

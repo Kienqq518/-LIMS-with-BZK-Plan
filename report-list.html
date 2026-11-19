@@ -384,7 +384,7 @@
           sign: null, process: null, fee: null, issue: null,
           /* returns 按时间倒序追加；新退回写入数组头部，历史原因保留 */
           returns: [
-            { node: '报告审核', by: 'AI 审核引擎', time: '2026-09-03 10:15:00', reason: 'C02-5 检测/审核/批准签名位不完整', kind: 'ai' },
+            { node: '报告审核', by: 'AI 审核引擎', time: '2026-09-03 10:15:00', reason: 'L1-b-1 检测/审核/批准签名位不完整', kind: 'ai' },
             { node: '报告审核', by: '李审核', time: '2026-09-03 09:05:00', reason: '签名页签章位置不符模板，需按机构模板重排', kind: 'manual' },
             { node: '报告审核', by: 'admin', time: '2026-09-02 16:20:00', reason: '数据填写不完整（缺环境温湿度）', kind: 'manual' }
           ],
@@ -1063,7 +1063,7 @@
       PrototypeAnnotation.init({ annotations: [
         { id: 'ai-returned', selector: '[data-annotate="ai-returned"]', position: 'bottom', title: 'AI 审核不通过自动退回', content: '<strong>需求逻辑：</strong>报告流转到「报告审核」时自动跑 AI 预审，命中严重项的报告不进人工审核、直接自动退回「报告编制」，编制人需在本环节优先处理。<br>' +
             '<strong>展示规则：</strong>固定高度红色提示区（内部滚动），<strong>一行一个委托任务</strong>：委托编号、客户/样品、本单下被退回报告摘要与「去修订」；下方主查询列表<strong>同步展示</strong>这些委托（委托编号旁带 AI 退回徽标）。无退回时整条隐藏。<br>' +
-            '<strong>交互逻辑：</strong>数据与「报告审核」页同源；点「编制」弹窗中 AI 退回的报告在编号旁显示渐变「AI 自动退回」标签与规则摘要。演示 SC2026/0238 / 0238-03（C02-5）。', tag: '报告编制' },
+            '<strong>交互逻辑：</strong>数据与「报告审核」页同源；点「编制」弹窗中 AI 退回的报告在编号旁显示渐变「AI 自动退回」标签与规则摘要。演示 SC2026/0238 / 0238-03（L1-b-1）。', tag: '报告编制' },
         { id: 'compile-ai-tag', selector: '[data-ai-return="1"]', position: 'left', title: '编制列表 · AI 自动退回标识', content: '<strong>展示规则：</strong>命中 AI 严重项自动退回的报告：卡片左边红条 + 淡红底，「AI 自动退回」胶囊与规则摘要；默认勾选便于优先修订。<br><strong>交互逻辑：</strong>与顶部提示条、主列表委托行同源。', tag: '报告列表' },
         { id: 'compile-returns', selector: '[data-annotate="compile-returns"]', position: 'bottom', title: '退回记录（追加不覆盖）', content: '<strong>需求逻辑：</strong>同一份报告可能被退回多次；每次退回的节点、退回人、时间、原因都必须留存，新退回不得覆盖旧原因。<br>' +
             '<strong>展示规则：</strong>卡片下方「退回记录」时间轴，按时间倒序；每条含「第 N 次」、节点（AI 自动退回单独标注）、原因、退回人、时间；最新一条红点高亮。<br>' +
