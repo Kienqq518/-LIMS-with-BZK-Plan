@@ -139,9 +139,9 @@
       display: inline-block; width: 9px; height: 9px; border-radius: 999px; box-sizing: border-box;
       border: 2px solid; background: #fff; vertical-align: -1px;
     }
-    #reportRecordModal .lg-pass { border-color: #3b82f6; }
-    #reportRecordModal .lg-reject { border-color: #ef4444; }
-    #reportRecordModal .lg-pending { border-color: #f59e0b; }
+    #reportRecordModal .lg-pass { border-color: #3b82f6; background: #3b82f6; }
+    #reportRecordModal .lg-reject { border-color: #ef4444; background: #ef4444; }
+    #reportRecordModal .lg-pending { border-color: #f59e0b; background: #fff; }
     #reportRecordModal .audit-log-scroll { max-height: 420px; overflow-y: auto; padding-right: 4px; }
     #reportRecordModal .audit-tl { list-style: none; margin: 0; padding: 2px 2px 0 0; }
     #reportRecordModal .audit-tl-item {
@@ -156,8 +156,10 @@
     #reportRecordModal .audit-dot {
       position: relative; z-index: 1; display: block;
       width: 16px; height: 16px; margin: 2px auto 0; box-sizing: border-box;
-      border-radius: 999px; border: 2px solid var(--audit-dot, #3b82f6); background: #fff;
+      border-radius: 999px; border: 2px solid var(--audit-dot, #3b82f6);
+      background: var(--audit-dot, #3b82f6);
     }
+    #reportRecordModal .audit-tl-item.is-pending .audit-dot { background: #fff; }
     #reportRecordModal .audit-tl-item.is-pass { --audit-rail: #3b82f6; --audit-dot: #3b82f6; }
     #reportRecordModal .audit-tl-item.is-reject { --audit-rail: #ef4444; --audit-dot: #ef4444; }
     #reportRecordModal .audit-tl-item.is-pending { --audit-rail: #f59e0b; --audit-dot: #f59e0b; }
@@ -174,8 +176,9 @@
       flex-shrink: 0; font-size: 13px; color: #64748b; font-variant-numeric: tabular-nums;
     }
     #reportRecordModal .audit-no {
-      display: inline-flex; align-items: center; border-radius: 999px;
-      background: #f1f5f9; padding: 1px 8px; font-size: 12px; font-weight: 400; color: #475569;
+      display: inline-flex; align-items: center; flex-shrink: 0; white-space: nowrap;
+      border-radius: 999px; background: #f1f5f9; padding: 1px 8px;
+      font-size: 12px; font-weight: 400; color: #475569; font-variant-numeric: tabular-nums;
     }
     #reportRecordModal .audit-row {
       display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 8px;
@@ -447,9 +450,16 @@
           inApproval: false,
           aiAutoReturn: false,
           compile: { user: 'admin', date: '2026年09月02日' },
-          audit: null, sign: null, process: null, fee: null, issue: null,
-          returns: [],
+          audit: { user: '李审核', date: '2026年09月03日', opinion: '审核不通过' },
+          sign: null, process: null, fee: null, issue: null,
+          /* AI 仅命中一般项 → 需人工复核；人工审核后再退回编制 */
+          returns: [
+            { node: '报告审核', by: '李审核', time: '2026-09-03 11:05:00', reason: '签名页签章位置不符模板，需按机构模板重排', kind: 'manual' }
+          ],
           logs: [
+            { time: '2026-09-03 11:05:00', text: '李审核 在 报告审核 将 报告编号为SC2026/0238-02的报告 退回至 报告编制' },
+            { time: '2026-09-03 09:20:00', text: 'AI 审核引擎 在 报告审核 将 报告编号为SC2026/0238-02的报告 判定为需人工复核', reason: 'L3-a-2 报告引用标准号与实际检测标准不一致；L1-d-1 存在计量单位与参数不匹配' },
+            { time: '2026-09-02 15:40:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-02的报告 提交至 报告审核' },
             { time: '2026-09-02 15:05:00', text: 'admin 在 报告编制 生成 报告编号为SC2026/0238-02的报告' }
           ]
         },
@@ -464,18 +474,12 @@
           compile: { user: 'admin', date: '2026年09月02日' },
           audit: { user: 'AI', date: '2026年09月03日', opinion: 'AI 预审不通过' },
           sign: null, process: null, fee: null, issue: null,
-          /* returns 按时间倒序追加；新退回写入数组头部，历史原因保留 */
+          /* 严重项只走 AI 自动退回，不再叠人工退回 */
           returns: [
-            { node: '报告审核', by: 'AI 审核引擎', time: '2026-09-03 10:15:00', reason: 'L1-b-1 检测/审核/批准签名位不完整', kind: 'ai' },
-            { node: '报告审核', by: '李审核', time: '2026-09-03 09:05:00', reason: '签名页签章位置不符模板，需按机构模板重排', kind: 'manual' },
-            { node: '报告审核', by: 'admin', time: '2026-09-02 16:20:00', reason: '数据填写不完整（缺环境温湿度）', kind: 'manual' }
+            { node: '报告审核', by: 'AI 审核引擎', time: '2026-09-03 10:15:00', reason: 'L1-b-1 检测/审核/批准签名位不完整', kind: 'ai' }
           ],
           logs: [
             { time: '2026-09-03 10:15:00', text: 'AI 审核引擎 在 报告审核 将 报告编号为SC2026/0238-03的报告 自动退回至 报告编制（严重项）' },
-            { time: '2026-09-03 09:40:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-03的报告 再次提交至 报告审核' },
-            { time: '2026-09-03 09:05:00', text: '李审核 在 报告审核 将 报告编号为SC2026/0238-03的报告 退回至 报告编制' },
-            { time: '2026-09-02 16:45:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-03的报告 再次提交至 报告审核' },
-            { time: '2026-09-02 16:20:00', text: 'admin 在 报告审核 将 报告编号为SC2026/0238-03的报告 退回至 报告编制' },
             { time: '2026-09-02 15:50:00', text: 'admin 在 报告编制 将 报告编号为SC2026/0238-03的报告 提交至 报告审核' }
           ]
         }
@@ -899,6 +903,10 @@
       if (gen) {
         return { actor: gen[1].trim(), node: gen[2].trim(), verb: '生成', target: '', note: '' };
       }
+      var judge = String(text || '').match(/^(.+?)\s+在\s+(\S+)\s+将\s+报告编号为(\S+?)的报告\s+判定为(.+)$/);
+      if (judge) {
+        return { actor: judge[1].trim(), node: judge[2].trim(), verb: '判定为', target: judge[4].trim(), note: '' };
+      }
       return { actor: '', node: '操作记录', verb: '', target: '', note: '', raw: String(text || '') };
     }
 
@@ -914,13 +922,19 @@
       return '';
     }
 
-    function presentReportLog(parsed, row, time) {
+    function presentReportLog(parsed, row, time, extraReason) {
       var actor = parsed.actor || '';
       var node = parsed.node || '操作记录';
       var blank = { node: node, actor: actor, tone: 'pass', status: '操作记录', statusTone: 'muted', icon: 'fa-circle-o', opinionKicker: '', opinion: parsed.raw || '' };
       if (parsed.raw) return blank;
       if (parsed.verb === '生成') {
         return { node: node, actor: actor, tone: 'pass', status: '生成报告', statusTone: 'muted', icon: 'fa-pencil-square-o', opinionKicker: '', opinion: '' };
+      }
+      if (parsed.verb === '判定为') {
+        return {
+          node: node, actor: actor, tone: 'pass', status: parsed.target || '需人工复核', statusTone: 'pending',
+          icon: 'fa-exclamation-circle', opinionKicker: '', opinion: extraReason || ''
+        };
       }
       if (parsed.verb === '自动退回至') {
         return {
@@ -950,8 +964,7 @@
     }
 
     function reportNoChip(reportNo) {
-      var parts = String(reportNo || '').split('/');
-      return parts[parts.length - 1] || reportNo;
+      return String(reportNo || '');
     }
 
     function collectEntrustLogs(code, filterId) {
@@ -960,7 +973,7 @@
       list.forEach(function (row) {
         if (filterId !== 'all' && row.id !== filterId) return;
         (row.logs || []).forEach(function (log) {
-          var view = presentReportLog(parseReportLogText(log.text), row, log.time);
+          var view = presentReportLog(parseReportLogText(log.text), row, log.time, log.reason || '');
           items.push({
             time: log.time,
             reportNo: row.reportNo,
@@ -1291,7 +1304,7 @@
         { id: 'compile-ai-tag', selector: '[data-ai-return="1"]', position: 'left', title: '编制列表 · AI 自动退回标识', content: '<strong>展示规则：</strong>命中 AI 严重项自动退回的报告：卡片左边红条 + 淡红底，「AI 自动退回」胶囊与规则摘要；默认勾选便于优先修订。<br><strong>交互逻辑：</strong>与顶部提示条、主列表委托行同源。', tag: '报告列表' },
         { id: 'compile-returns', selector: '[data-annotate="compile-returns"]', position: 'bottom', title: '退回记录（追加不覆盖）', content: '<strong>需求逻辑：</strong>同一份报告可能被退回多次；每次退回的节点、退回人、时间、原因都必须留存，新退回不得覆盖旧原因。<br>' +
             '<strong>展示规则：</strong>卡片下方「退回记录」时间轴，按时间倒序；每条含「第 N 次」、节点（AI 自动退回单独标注）、原因、退回人、时间；最新一条红点高亮。<br>' +
-            '<strong>交互逻辑：</strong>数据为 returns[] 追加写入；演示 SC2026/0238-03 共 3 次退回。', tag: '报告列表' },
+            '<strong>交互逻辑：</strong>数据为 returns[] 追加写入。演示：SC2026/0238-03 仅 AI 严重项自动退回 1 次；SC2026/0238-02 为 AI「需人工复核」后由李审核退回 1 次。', tag: '报告列表' },
         { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '<strong>需求逻辑：</strong>报告列表是编制入口；编制发现问题可直接退回上一环节「数据审核」修正后重提。<br>' +
             '<strong>展示规则：</strong>操作列：「报告生成」「编制」「退回」。<br>' +
             '<strong>交互逻辑：</strong>「报告生成」跳转报告编制编辑页；「编制」弹出报告列表；「退回」见独立批注。AI 预审入口在侧边栏「报告审核 / AI 审核工作台」。', tag: '报告编制' },
@@ -1315,7 +1328,7 @@
           title: '报告记录（节点进度 + 操作日志同屏）',
           wide: true,
           content: '<strong>需求逻辑：</strong>打开「报告记录」就要同时看到节点签署留痕与流转操作日志，不再二次点「日志」。<br>' +
-          '<strong>展示规则：</strong>上半「节点进度」表（序号、报告编号、编制→发放）；下半「操作日志」为审批时间轴：色点区分流转（蓝）/退回（红）/审批中（黄），每条为「节点 + 时间 / 处理人头像 / 右侧状态」，退回原因放在灰色意见条。筛选为「全部」时标题旁带报告编号；单份报告不重复编号。<br>' +
+          '<strong>展示规则：</strong>上半「节点进度」表（序号、报告编号、编制→发放）；下半「操作日志」为审批时间轴：已完成步骤为实心色点（蓝=流转，红=退回），正在执行的「审批中」保持空心黄点。每条为「节点 + 时间 / 处理人头像 / 右侧状态」，退回或复核原因放在灰色意见条。筛选为「全部」时标题旁展示完整报告编号；单份报告不重复编号。<br>' +
           '<strong>交互逻辑：</strong>默认展示该委托全部日志；点表格行或芯片筛选对应报告日志；仍在审批中的报告在时间轴顶部补一条「审批中」。关闭不改数据。与编制列表同源。',
           tag: '报告列表'
         },
@@ -1326,7 +1339,7 @@
           title: '操作日志（嵌入报告记录）',
           wide: true,
           content: '<strong>需求逻辑：</strong>单份/整单报告的流转动作可追溯（谁在哪个节点提交/退回、意见是什么）。<br>' +
-          '<strong>展示规则：</strong>审批时间轴，按时间倒序。左侧空心色点连线：蓝=生成/提交/审批通过，红=审批拒绝/自动退回，黄=当前审批中。右侧状态对应「生成报告」「提交至…」「再次提交至…」「审批通过」「审批拒绝」「自动退回」「审批中」。退回类在灰色意见条写出退回节点和原因（原因取自 returns[]，按时间与退回人匹配）。<br>' +
+          '<strong>展示规则：</strong>审批时间轴，按时间倒序。已完成步骤为实心色点：蓝=生成/提交/审批通过/需人工复核，红=审批拒绝/自动退回；正在执行的「审批中」为空心黄点。右侧状态对应「生成报告」「提交至…」「再次提交至…」「需人工复核」「审批通过」「审批拒绝」「自动退回」「审批中」。退回类在灰色意见条写出退回节点和原因（原因取自 returns[]，按时间与退回人匹配）；「需人工复核」的意见条写命中的一般项。多报告同屏时标题旁用完整报告编号。<br>' +
           '<strong>交互逻辑：</strong>与上方节点进度同弹窗，不再叠第二层「报告操作日志」弹窗。点行或芯片只筛日志，不改数据。',
           tag: '报告列表'
         },
