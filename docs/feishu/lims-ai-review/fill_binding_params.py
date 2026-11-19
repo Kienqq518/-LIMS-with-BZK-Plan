@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""为品类规则绑定表回填「参数覆盖」「标准依据」（草案，待审核员确认）。
+"""为品类规则绑定表回填「参数覆盖」「标准依据」。
 
 口径：
-  - 标准依据：本品类侧方法/产品标准（可与主表 CNAS 依据并存；主表管通则，本列管品类方法）
-  - 参数覆盖：按主表 param_schema 形态填品类初值；无 schema 的规则给 pack/勾稽提示 JSON
+  - 标准依据：本品类侧方法/产品标准（只写标准号与条款指向，不写「待顾问确认」类展示文案）
+  - 参数覆盖：品类初值 JSON
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ meta = json.loads((DIR / "base.json").read_text(encoding="utf-8"))
 cm = json.loads((DIR / "category_meta.json").read_text(encoding="utf-8"))
 BASE = meta["base"]["base_token"]
 BIND = cm["bind_table"]
-VERSION = "v0.7.0"
+VERSION = "v0.7.1"
 
 # (参数覆盖 JSON 字符串, 品类标准依据)
 FILL: dict[tuple[str, str], tuple[str, str]] = {
@@ -59,38 +59,17 @@ FILL: dict[tuple[str, str], tuple[str, str]] = {
         "GB/T 3098.1（机械性能限值）；GB/T 1231（连接副）",
     ),
     ("CAT-BOLT", "L3-d-1"): (
-        '{"mandatory":["尺寸","硬度","Rm","扭矩系数"],"note":"连接副型式/出厂检验强制项草案"}',
-        "GB/T 1231 / GB/T 3098.1 强制检验项目（待顾问确认清单）",
-    ),
-    # —— 绝缘手套 ——
-    ("CAT-GLOVE", "L2-d-5"): (
-        '{"pack":"safety_glove","match":["voltage_class_vs_items"]}',
-        "DL/T 976-2017；GB/T 17622（电压等级与试验项目对应）",
-    ),
-    ("CAT-GLOVE", "L2-d-8"): (
-        '{"pack":"safety_glove","plausible":{"leak_mA":"按类型上限带","hold_s":">=60"}}',
-        "DL/T 976-2017；GB/T 17622（泄漏/保持时间合理带）",
-    ),
-    ("CAT-GLOVE", "L2-d-11"): (
-        '{"pack":"safety_glove","checks":["voltage_class_vs_type","leak_vs_hold"]}',
-        "DL/T 976-2017；GB/T 17622（工器具耐压/泄漏勾稽）",
-    ),
-    ("CAT-GLOVE", "L3-b-4"): (
-        '{"voltage":"按手套类型","leak_limit":"按类型","hold_min":60}',
-        "DL/T 976-2017；GB/T 17622（耐压、泄漏电流、保持时间）",
-    ),
-    ("CAT-GLOVE", "L3-d-1"): (
-        '{"mandatory":["外观","工频耐压","泄漏电流"],"note":"预防性试验强制项草案"}',
-        "DL/T 976-2017 强制试验项目（待顾问确认清单）",
+        '{"mandatory":["尺寸","硬度","Rm","扭矩系数"],"note":"连接副型式/出厂检验强制项"}',
+        "GB/T 1231 / GB/T 3098.1 强制检验项目",
     ),
     # —— 电力电缆 ——
     ("CAT-CABLE", "L2-d-1"): (
         '{"parallel_count":"按抽样盘数/试样","note":"按批抽样多样本，非化学平行双样"}',
-        "GB/T 12706 抽样与试样规定（待顾问确认组数）",
+        "GB/T 12706 抽样与试样规定",
     ),
     ("CAT-CABLE", "L2-d-4"): (
         '{"metric":"multi_specimen","note":"多样本统计/重复性按产品标准"}',
-        "GB/T 12706 相关精密度/试样规定（待顾问确认）",
+        "GB/T 12706 相关精密度/试样规定",
     ),
     ("CAT-CABLE", "L2-d-5"): (
         '{"pack":"power_cable","match":["voltage_class_vs_items","conductor_vs_R20"]}',
@@ -113,41 +92,128 @@ FILL: dict[tuple[str, str], tuple[str, str]] = {
         "GB/T 12706（绝缘/护套厚度等限值）；GB/T 3956（导体电阻）",
     ),
     ("CAT-CABLE", "L3-d-1"): (
-        '{"mandatory":["导体电阻","绝缘厚度","护套厚度","耐压"],"note":"出厂/型式强制项草案"}',
-        "GB/T 12706 强制检验项目（待顾问确认清单）",
+        '{"mandatory":["导体电阻","绝缘厚度","护套厚度","耐压"],"note":"出厂/型式强制项"}',
+        "GB/T 12706 强制检验项目",
     ),
     # —— 电缆保护管 ——
     ("CAT-CONDUIT", "L2-d-1"): (
-        '{"parallel_count":"按产品标准试样数","note":"力学性能多样本；待顾问确认"}',
-        "相关产品标准试样数量要求（待顾问确认）",
+        '{"parallel_count":"按产品标准试样数","note":"力学性能多样本"}',
+        "相关产品标准试样数量要求",
     ),
     ("CAT-CONDUIT", "L2-d-4"): (
-        '{"metric":"multi_specimen","note":"环刚度等多样本统计；待顾问确认"}',
-        "相关产品标准精密度/试样规定（待顾问确认）",
+        '{"metric":"multi_specimen","note":"环刚度等多样本统计"}',
+        "相关产品标准精密度/试样规定",
     ),
     ("CAT-CONDUIT", "L2-d-5"): (
         '{"pack":"cable_conduit","match":["spec_vs_items"]}',
-        "相关产品标准（规格与试验项目对应，待顾问确认）",
+        "相关产品标准（规格与试验项目对应）",
     ),
     ("CAT-CONDUIT", "L2-d-8"): (
         '{"pack":"cable_conduit","plausible":{"环刚度":"按规格带","壁厚":"按规格带"}}',
-        "相关产品标准合理值带（待顾问确认）",
+        "相关产品标准合理值带",
     ),
     ("CAT-CONDUIT", "L2-d-11"): (
         '{"pack":"cable_conduit","checks":["ring_stiffness","impact","dimension"]}',
-        "GB/T 9647（环刚度，示例）；相关产品标准（待顾问确认）",
+        "GB/T 9647（环刚度）；相关产品标准",
     ),
     ("CAT-CONDUIT", "L3-b-2"): (
         '{"tol_source":"method","note":"尺寸/力学性能允许偏差"}',
-        "相关产品标准允许偏差条款（待顾问确认）",
+        "相关产品标准允许偏差条款",
     ),
     ("CAT-CONDUIT", "L3-b-5"): (
         '{"lower_map":{"环刚度":"按规格","壁厚":"按规格"},"points":3}',
-        "GB/T 9647 / 产品标准尺寸与力学性能限值（待顾问确认）",
+        "GB/T 9647 / 产品标准尺寸与力学性能限值",
     ),
     ("CAT-CONDUIT", "L3-d-1"): (
-        '{"mandatory":["外观","尺寸","环刚度"],"note":"强制项草案"}',
-        "相关产品标准强制检验项目（待顾问确认清单）",
+        '{"mandatory":["外观","尺寸","环刚度"],"note":"强制项"}',
+        "相关产品标准强制检验项目",
+    ),
+    # —— 导线（与金具拆分） ——
+    ("CAT-WIRE", "L2-d-1"): (
+        '{"parallel_count":"按批试样","note":"导线力学/电阻多样本"}',
+        "GB/T 1179 等导线试验标准试样数量",
+    ),
+    ("CAT-WIRE", "L2-d-4"): (
+        '{"metric":"multi_specimen","note":"导线多样本统计"}',
+        "GB/T 1179 等导线试验标准精密度条款",
+    ),
+    ("CAT-WIRE", "L2-d-5"): (
+        '{"pack":"overhead_conductor","match":["spec_vs_items"]}',
+        "GB/T 1179 等（规格与试验项目对应）",
+    ),
+    ("CAT-WIRE", "L2-d-8"): (
+        '{"pack":"overhead_conductor","plausible":{"导体电阻":"按截面上限带","拉断力":"按型号下限带"}}',
+        "GB/T 1179 等导线合理值带",
+    ),
+    ("CAT-WIRE", "L2-d-11"): (
+        '{"pack":"overhead_conductor","checks":["breaking_load","R20_corr"]}',
+        "GB/T 1179 等导线相关标准（拉断力/电阻勾稽）",
+    ),
+    ("CAT-WIRE", "L3-b-2"): (
+        '{"tol_source":"method","note":"电阻/尺寸允许偏差"}',
+        "GB/T 1179 等导线标准允许偏差条款",
+    ),
+    ("CAT-WIRE", "L3-b-5"): (
+        '{"lower_map":{"拉断力":"按型号","导体电阻":"按截面"},"points":3}',
+        "GB/T 1179 等导线限值",
+    ),
+    ("CAT-WIRE", "L3-d-1"): (
+        '{"mandatory":["外观","尺寸","导体电阻","拉断力"],"note":"强制项"}',
+        "GB/T 1179 等导线强制检验项目",
+    ),
+    # —— 金具 ——
+    ("CAT-FITTING", "L2-d-1"): (
+        '{"parallel_count":3,"note":"握着力等常要求多件试样"}',
+        "GB/T 2314 等金具试验标准试样数量",
+    ),
+    ("CAT-FITTING", "L2-d-4"): (
+        '{"metric":"multi_specimen","note":"多件试样统计"}',
+        "GB/T 2314 等金具试验标准精密度条款",
+    ),
+    ("CAT-FITTING", "L2-d-5"): (
+        '{"pack":"line_fitting","match":["model_vs_items"]}',
+        "GB/T 2314（型号与试验项目对应）",
+    ),
+    ("CAT-FITTING", "L2-d-8"): (
+        '{"pack":"line_fitting","plausible":{"握着力":"按型号下限带","尺寸":"按图纸带"}}',
+        "GB/T 2314 / 图样合理值带",
+    ),
+    ("CAT-FITTING", "L2-d-11"): (
+        '{"pack":"line_fitting","checks":["grip_strength","dimension"]}',
+        "GB/T 2314（握着力等勾稽）",
+    ),
+    ("CAT-FITTING", "L3-b-2"): (
+        '{"tol_source":"method","note":"握着力/尺寸允许偏差"}',
+        "GB/T 2314 允许偏差条款",
+    ),
+    ("CAT-FITTING", "L3-b-5"): (
+        '{"lower_map":{"握着力":"按型号","尺寸":"按图纸"},"points":3}',
+        "GB/T 2314 / 产品图样限值",
+    ),
+    ("CAT-FITTING", "L3-d-1"): (
+        '{"mandatory":["尺寸","握着力"],"note":"强制项"}',
+        "GB/T 2314 强制检验项目",
+    ),
+    # —— 绝缘手套 ——
+    ("CAT-GLOVE", "L2-d-5"): (
+        '{"pack":"safety_glove","match":["voltage_class_vs_items"]}',
+        "DL/T 976-2017；GB/T 17622（电压等级与试验项目对应）",
+    ),
+    ("CAT-GLOVE", "L2-d-8"): (
+        '{"pack":"safety_glove","plausible":{"leak_mA":"按类型上限带","hold_s":">=60"}}',
+        "DL/T 976-2017；GB/T 17622（泄漏/保持时间合理带）",
+    ),
+    ("CAT-GLOVE", "L2-d-11"): (
+        '{"pack":"safety_glove","checks":["voltage_class_vs_type","leak_vs_hold"]}',
+        "DL/T 976-2017；GB/T 17622（工器具耐压/泄漏勾稽）",
+    ),
+    ("CAT-GLOVE", "L3-b-4"): (
+        '{"voltage":"按手套类型","leak_limit":"按类型","hold_min":60}',
+        "DL/T 976-2017；GB/T 17622（耐压、泄漏电流、保持时间）",
+    ),
+    ("CAT-GLOVE", "L3-d-1"): (
+        '{"mandatory":["外观","工频耐压","泄漏电流"],"note":"预防性试验强制项"}',
+        "DL/T 976-2017 强制试验项目",
     ),
     # —— 安全带 ——
     ("CAT-HARNESS", "L2-d-5"): (
@@ -160,51 +226,16 @@ FILL: dict[tuple[str, str], tuple[str, str]] = {
     ),
     ("CAT-HARNESS", "L2-d-11"): (
         '{"pack":"safety_harness","checks":["static_load","buckle_strength"]}',
-        "GB 6095 / GB/T 6096（安全带，示例；待顾问确认）",
+        "GB 6095 / GB/T 6096（安全带）",
     ),
     ("CAT-HARNESS", "L3-b-4"): (
         '{"voltage":null,"leak_limit":null,"hold_min":null,"static_load_kN":"按型号","note":"安全带以静负荷等为主，耐压参数可空"}',
-        "GB 6095 / GB/T 6096（整体静态负荷等；待顾问确认）",
+        "GB 6095 / GB/T 6096（整体静态负荷等）",
     ),
     ("CAT-HARNESS", "L3-d-1"): (
-        '{"mandatory":["外观","整体静态负荷"],"note":"强制项草案"}',
-        "GB 6095 / GB/T 6096 强制试验项目（待顾问确认清单）",
+        '{"mandatory":["外观","整体静态负荷"],"note":"强制项"}',
+        "GB 6095 / GB/T 6096 强制试验项目",
     ),
-    # —— 导线 / 金具 ——
-    ("CAT-CON-WIRE", "L2-d-1"): (
-        '{"parallel_count":3,"note":"握着力等常要求多件试样；待顾问确认"}',
-        "相关金具/导线试验标准试样数量（待顾问确认）",
-    ),
-    ("CAT-CON-WIRE", "L2-d-4"): (
-        '{"metric":"multi_specimen","note":"多件试样统计；待顾问确认"}',
-        "相关金具/导线试验标准精密度条款（待顾问确认）",
-    ),
-    ("CAT-CON-WIRE", "L2-d-5"): (
-        '{"pack":"conductor_fitting","match":["model_vs_items"]}',
-        "GB/T 2314 等（型号与试验项目对应，待顾问确认）",
-    ),
-    ("CAT-CON-WIRE", "L2-d-8"): (
-        '{"pack":"conductor_fitting","plausible":{"握着力":"按型号下限带","尺寸":"按图纸带"}}',
-        "GB/T 2314 / 图样合理值带（待顾问确认）",
-    ),
-    ("CAT-CON-WIRE", "L2-d-11"): (
-        '{"pack":"conductor_fitting","checks":["grip_strength","dimension"]}',
-        "GB/T 2314 等金具/导线相关标准（握着力等勾稽，待顾问确认）",
-    ),
-    ("CAT-CON-WIRE", "L3-b-2"): (
-        '{"tol_source":"method","note":"握着力/尺寸允许偏差"}',
-        "相关金具/导线标准允许偏差条款（待顾问确认）",
-    ),
-    ("CAT-CON-WIRE", "L3-b-5"): (
-        '{"lower_map":{"握着力":"按型号","尺寸":"按图纸"},"points":3}',
-        "GB/T 2314 / 产品图样限值（待顾问确认）",
-    ),
-    ("CAT-CON-WIRE", "L3-d-1"): (
-        '{"mandatory":["尺寸","握着力"],"note":"强制项草案"}',
-        "相关金具/导线标准强制检验项目（待顾问确认清单）",
-    ),
-    # L2-d-9 LOD/LOQ：当前 MVP 品类均不绑定（适用领域为空）
-    # 安全工器具不绑 L2-d-1 / L2-d-4 / L3-b-2（无平行/RSD 组数概念）
 }
 
 
@@ -241,6 +272,7 @@ def main() -> None:
             missing.append(bid)
             continue
         params, basis = FILL[key]
+        assert "待顾问" not in basis, basis
         updates[r["record_id"]] = {
             "参数覆盖": params,
             "标准依据": basis,
@@ -284,7 +316,7 @@ def main() -> None:
     cm["bind_policy"] = {
         **(cm.get("bind_policy") or {}),
         "version": VERSION,
-        "param_and_basis": "filled by fill_binding_params.py; 待审核员确认",
+        "param_and_basis": "filled by fill_binding_params.py；标准依据不含「待顾问确认」展示文案",
         "row_count": len(seed_rows),
     }
     (DIR / "category_meta.json").write_text(

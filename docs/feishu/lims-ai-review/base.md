@@ -9,8 +9,8 @@
 | 表 | table_id | 内容 |
 | --- | --- | --- |
 | **审核规则** | `tblwz7D6MQVvm3Da` | **仅通用领域**规则（40 行）：`是否通用=通用`，`适用领域=通用` |
-| **品类** | `tblv1BS7q0eMrAYu` | 6 个 MVP 品类 |
-| **品类规则绑定** | `tbldbfHOuYsh9dLn` | **特定领域专属规则定义 + 品类绑定**（42 行）；含「领域」列 |
+| **品类** | `tblv1BS7q0eMrAYu` | 7 个 MVP 品类（导线 / 金具已拆分） |
+| **品类规则绑定** | `tbldbfHOuYsh9dLn` | **特定领域专属规则定义 + 品类绑定**（50 行）；含「领域」「排序号」 |
 
 ### 审核规则
 
@@ -20,13 +20,14 @@
 
 ### 品类规则绑定
 
-- **列序（表格视图）**：`绑定ID` → `category_code` → **`领域`** → `品类名称` → `rule_id` → `启用` → `级别` → `类别` → `所需字段` → `参数覆盖` → `备注` → `标准依据` → `状态` → `版本` → `判定式` → `严重度`
-  - 「领域」插在「品类名称」前；其余相对顺序未改；`判定式`/`严重度` 追加在末尾（专属规则定义落本表）
-- `品类名称`：Lookup←品类；其余专属规则字段为**存储列**（不再回指审核规则）
-- `标准依据`：品类方法/产品标准；`参数覆盖`：品类参数草案（`fill_binding_params.py`）
+- **列序（表格视图）**：`绑定ID` → `category_code` → **`领域`** → `品类名称` → `rule_id` → `启用` → `级别` → `类别` → `所需字段` → `参数覆盖` → `备注` → `标准依据` → `状态` → `版本` → `判定式` → `严重度` → `排序号`
+  - 「领域」插在「品类名称」前；视图按 **领域分组**（电网物资 → 安全工器具）+ **排序号** 升序
+  - 品类顺序：螺栓 → 电缆 → 保护管 → 导线 → 金具 → 手套 → 安全带
+- `品类名称`：Lookup←品类；其余专属规则字段为**存储列**
+- `标准依据`：品类方法/产品标准（**不含**「待顾问确认」类展示文案）；`参数覆盖`：品类参数草案（`fill_binding_params.py`）
 - 「启用」默认「是」，由实验室/客户确认
-- 种子：`specialty_seed.json`（定义）+ `binding_seed.json`（绑定行）
-- 迁移/重建：`migrate_specialty_to_binding.py` / `rebuild_bindings.py`
+- 种子：`specialty_seed.json` + `binding_seed.json`
+- 脚本：`migrate_specialty_to_binding.py` / `rebuild_bindings.py` / `reorder_bindings_view.py`
 - 审计：`audit-universal-vs-specialty.md`
 
 > L2-d-9（LOD/LOQ）适用领域为空，MVP 不建绑定行，仅留在 `specialty_seed.json`。

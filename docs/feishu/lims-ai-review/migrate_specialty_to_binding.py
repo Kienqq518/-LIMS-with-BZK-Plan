@@ -38,7 +38,8 @@ CAT_DOMAIN = {
     "CAT-BOLT": "电网物资",
     "CAT-CABLE": "电网物资",
     "CAT-CONDUIT": "电网物资",
-    "CAT-CON-WIRE": "电网物资",
+    "CAT-WIRE": "电网物资",
+    "CAT-FITTING": "电网物资",
     "CAT-GLOVE": "安全工器具",
     "CAT-HARNESS": "安全工器具",
 }

@@ -34,12 +34,13 @@ BASE = meta["base"]["base_token"]
 BIND = cm["bind_table"]
 CAT = cm["cat_table"]
 
-# 品类 → 适用领域（与审核规则「适用领域」对齐）
+# 品类 → 适用领域（与绑定表「领域」对齐；导线/金具已拆分）
 CAT_DOMAIN = {
     "CAT-BOLT": "电网物资",
     "CAT-CABLE": "电网物资",
     "CAT-CONDUIT": "电网物资",
-    "CAT-CON-WIRE": "电网物资",
+    "CAT-WIRE": "电网物资",
+    "CAT-FITTING": "电网物资",
     "CAT-GLOVE": "安全工器具",
     "CAT-HARNESS": "安全工器具",
 }
