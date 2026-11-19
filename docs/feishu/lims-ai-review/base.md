@@ -20,4 +20,5 @@
 
 > 说明：规则 ID 统一为 **`Ln-x-n`**（如 `L1-a-1`、`L2-b-1`），与规则组对齐；已废弃 `A01-1` / `B01-1` / `C02-5` 等旧编号（见 `level_map.json` → `legacy_id_map`）。L3-c、L3-d、L4-a/b/d 为占位规则（`L3-c-1` / `L3-d-1` / `L4-a-1` / `L4-b-1` / `L4-d-1`），MVP 默认不消费。
 
-- 标准对照附录：[`appendix-rule-standard-basis.md`](./appendix-rule-standard-basis.md)（审什么/所需字段/出处/原文，对齐 v0.5.4）
+- 标准对照附录：[`appendix-rule-standard-basis.md`](./appendix-rule-standard-basis.md)（检查意图/所需字段/出处/原文，对齐 v0.5.4）
+  - 飞书云文档：https://bcng1log8i8v.feishu.cn/docx/CKf8dNcAJoptCpxyImFcsd9wnmc （`lark-cli docs +create` 自本地 md 导入）
