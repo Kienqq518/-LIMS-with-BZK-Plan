@@ -20,6 +20,13 @@
     .sample-group-title { font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 12px; }
     .specimen-tests { font-size: 12px; color: #64748b; line-height: 1.6; }
     .pick-all-row { margin: 12px 0; font-size: 13px; }
+    tr.specimen-reported td,
+    tr.specimen-reported .specimen-tests { color: #94a3b8; background: #e8edf4; }
+    tr.specimen-reported .specimen-check-wrap { display: inline-flex; cursor: not-allowed; }
+    tr.specimen-reported .specimen-check { pointer-events: none; }
+    .pick-all-row.is-locked,
+    .pick-all-row.is-locked label { color: #94a3b8; cursor: not-allowed; }
+    .pick-all-row.is-locked input { pointer-events: none; }
     .info-table, .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .info-table td, .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; vertical-align: top; }
     .info-table .lbl { width: 12%; background: #f8fafc; color: #64748b; white-space: nowrap; }
@@ -325,8 +332,8 @@
         categoryPath: ['电力物资类', 'WZ电网物资'],
         tests: '颜色外观|尺寸检查|密度|压扁试验|维卡软化温度|纵向回缩率',
         specimens: [
-          { id: 's1', specimenId: 'SCZN202508/0009-0101', checked: true },
-          { id: 's2', specimenId: 'SCZN202508/0009-0102', checked: true },
+          { id: 's1', specimenId: 'SCZN202508/0009-0101', checked: false },
+          { id: 's2', specimenId: 'SCZN202508/0009-0102', checked: false },
           { id: 's3', specimenId: 'SCZN202508/0009-0103', checked: false }
         ]
       }
@@ -339,12 +346,35 @@
     var reportFileNextId = 3;
     var modalSelectedVariants = {};
 
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function reportsCovering(specimenId) {
+      return reportFiles.filter(function (row) {
+        return (row.specimenIds || []).indexOf(specimenId) >= 0;
+      });
+    }
+
+    function reportedTip(covered) {
+      var nos = covered.map(function (row) { return row.reportNo; }).join('、');
+      return '该试样已生成报告（' + nos + '），不能再次勾选';
+    }
+
     function renderSampleGroups() {
       var annotateFlags = { group: false, pickAll: false, table: false };
       var html = SAMPLE_GROUPS.map(function (group) {
         var rows = group.specimens.map(function (sp) {
-          return '<tr class="hover:bg-slate-50">' +
-            '<td class="border border-slate-200 px-3 py-2"><input type="checkbox" class="specimen-check" data-group="' + group.id + '" data-id="' + sp.id + '" ' + (sp.checked ? 'checked' : '') + ' onchange="onSpecimenCheckChange()" /></td>' +
+          var covered = reportsCovering(sp.specimenId);
+          var locked = covered.length > 0;
+          var tip = locked ? reportedTip(covered) : '';
+          var box = locked
+            ? '<span class="specimen-check-wrap" title="' + escapeHtml(tip) + '"><input type="checkbox" class="specimen-check" disabled aria-disabled="true" data-group="' + group.id + '" data-id="' + sp.id + '" /></span>'
+            : '<input type="checkbox" class="specimen-check" data-group="' + group.id + '" data-id="' + sp.id + '" ' + (sp.checked ? 'checked' : '') + ' onchange="onSpecimenCheckChange()" />';
+          return '<tr class="' + (locked ? 'specimen-reported' : 'hover:bg-slate-50') + '"' + (locked ? ' title="' + escapeHtml(tip) + '"' : '') + '>' +
+            '<td class="border border-slate-200 px-3 py-2">' + box + '</td>' +
             '<td class="border border-slate-200 px-3 py-2">' + sp.specimenId + '</td>' +
             '<td class="border border-slate-200 px-3 py-2 specimen-tests">' + group.tests + '</td></tr>';
         }).join('');
@@ -389,7 +419,7 @@
       SAMPLE_GROUPS.forEach(function (group) {
         group.specimens.forEach(function (sp) {
           var el = document.querySelector('.specimen-check[data-group="' + group.id + '"][data-id="' + sp.id + '"]');
-          if (el && el.checked) {
+          if (el && el.checked && !el.disabled) {
             result.push({
               id: sp.id,
               specimenId: sp.specimenId,
@@ -418,20 +448,43 @@
     }
 
     function toggleGroupAll(groupId, checked) {
-      document.querySelectorAll('.specimen-check[data-group="' + groupId + '"]').forEach(function (el) { el.checked = checked; });
+      document.querySelectorAll('.specimen-check[data-group="' + groupId + '"]').forEach(function (el) {
+        if (el.disabled) return;
+        el.checked = checked;
+      });
       onSpecimenCheckChange();
     }
 
     function syncGroupCheckAll(groupId) {
-      var boxes = document.querySelectorAll('.specimen-check[data-group="' + groupId + '"]');
-      var all = boxes.length && Array.prototype.every.call(boxes, function (b) { return b.checked; });
+      var boxes = Array.prototype.filter.call(
+        document.querySelectorAll('.specimen-check[data-group="' + groupId + '"]'),
+        function (b) { return !b.disabled; }
+      );
       var master = document.querySelector('.group-check-all[data-group="' + groupId + '"]');
-      if (master) master.checked = all;
+      if (!master) return;
+      var row = master.closest('.pick-all-row');
+      if (!boxes.length) {
+        master.checked = false;
+        master.disabled = true;
+        if (row) {
+          row.classList.add('is-locked');
+          row.title = '本组试样均已生成报告，不能再勾选';
+        }
+        return;
+      }
+      master.disabled = false;
+      if (row) {
+        row.classList.remove('is-locked');
+        row.removeAttribute('title');
+      }
+      master.checked = boxes.every(function (b) { return b.checked; });
     }
 
     function openGenerateModal() {
+      var selectable = document.querySelectorAll('.specimen-check:not(:disabled)');
+      if (!selectable.length) { alert('试样均已生成报告，没有可再生成的试样'); return; }
       var checked = getCheckedSpecimens();
-      if (!checked.length) { alert('请至少勾选一个试样'); return; }
+      if (!checked.length) { alert('请至少勾选一个尚未生成报告的试样'); return; }
       document.getElementById('modalCheckedCount').textContent = String(checked.length);
 
       var exportMode = resolveDefaultExportMode(checked);
@@ -509,6 +562,7 @@
       });
 
       renderReportFiles();
+      renderSampleGroups();
       closeGenerateModal();
       alert('已生成 ' + files.length + ' 份报告（原型演示）');
     }
@@ -637,7 +691,7 @@
             title: '勾选全部',
             content: '<strong>需求逻辑：</strong>一组试样常常全部参与出报告，逐个勾选太慢。<br>' +
             '<strong>展示规则：</strong>试样勾选表表头的复选框。<br>' +
-            '<strong>交互逻辑：</strong>点一下全选本组试样，再点全不选；只作用于当前样品组，不影响其它组。',
+            '<strong>交互逻辑：</strong>只勾选本组里还没出报告的试样；已经生成报告的试样保持置灰，不会被全选带上。本组全部已生成时，这个勾选本身也置灰。',
             tag: '检测信息'
           },
           {
@@ -647,8 +701,8 @@
             title: '试样勾选表',
             wide: true,
             content: '<strong>需求逻辑：</strong>生成范围以「试样」为单位，而不是以样品或试验项为单位。<br>' +
-            '<strong>展示规则：</strong>每行对应一个样品编号及其检测项目列表。<br>' +
-            '<strong>交互逻辑：</strong>勾选本次参与生成的试样；至少勾选 1 个试样方可点「生成报告」。',
+            '<strong>展示规则：</strong>每行一个样品编号。已出现在下方「报告文件」里的试样：复选框不可勾选，整行置灰，悬停说明对应报告编号。<br>' +
+            '<strong>交互逻辑：</strong>只能勾选还没出报告的试样。新生成的试样立刻置灰，避免同一试样再出一份。',
             tag: '检测信息'
           },
           {
