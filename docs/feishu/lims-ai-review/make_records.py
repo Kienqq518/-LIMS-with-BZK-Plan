@@ -2,8 +2,8 @@
 """规则台账种子写入（对齐飞书 §2.3「审什么」）。
 
 字段口径：
-  - 所需字段：§2.3 审什么检查点数据项
-  - 判定式 / 标准依据 / 严重度 / 适用领域：与所需字段同步按审什么重写
+  - 所需字段 / 判定式 / 严重度 / 适用领域：按 §2.3「审什么」检查点组织
+  - 标准依据：CNAS-CL01 / ISO/IEC 17025、RB/T 214（CMA）等规范条款（不引用内部文档）
   - 规则ID：Ln-x-n
 
 注意：对已有 Base 重复 --push 会新增记录；日常只写 ledger_seed.json。
@@ -818,15 +818,45 @@ RULES=[
   ]
 ]
 
-assert len(RULES)==50
-recs=[pack(r) for r in RULES]
-recs.sort(key=lambda x:x["排序号"])
-json.dump({"create_records":recs}, open("docs/feishu/lims-ai-review/ledger_seed.json","w",encoding="utf-8"), ensure_ascii=False, indent=1)
+def sort_key(rid, univ):
+  g = rid.rsplit("-", 1)[0]
+  seq = int(rid.rsplit("-", 1)[1])
+  u = 0 if univ == "通用" else 1
+  return LEVEL_N[LEVEL_OF[g]] * 100000 + GROUP[g] * 1000 + u * 100 + seq
+
+def pack(row):
+  rid, expr, fields, basis, sev, domains, univ, note = row
+  g = rid.rsplit("-", 1)[0]
+  for f in fields:
+    assert f in FIELD_OPTS, (rid, f)
+  assert "§2.3" not in basis and "2.3" not in basis, (rid, basis)
+  return {
+    "规则ID": rid,
+    "规则组": g,
+    "类别": THEME[g],
+    "级别": LEVEL_OF[g],
+    "判定式": expr,
+    "所需字段": fields,
+    "标准依据": basis,
+    "严重度": sev,
+    "适用领域": domains,
+    "是否通用": univ,
+    "状态": "待审核员确认",
+    "版本": "v0.5.1",
+    "负责人": "产品" if g.startswith("L1") else ("后端" if g in ("L2-b", "L4-a") else "领域顾问"),
+    "备注": note,
+    "排序号": sort_key(rid, univ),
+  }
+
+assert len(RULES) == 50
+recs = [pack(r) for r in RULES]
+recs.sort(key=lambda x: x["排序号"])
+json.dump({"create_records": recs}, open("docs/feishu/lims-ai-review/ledger_seed.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print("wrote ledger_seed.json", len(recs))
 if "--push" in sys.argv:
-  p=subprocess.run(["lark-cli","base","+record-batch-create","--base-token",BASE,"--table-id",TABLE,
-                    "--json",json.dumps({"create_records":recs},ensure_ascii=False),"--as","user"],
-                   capture_output=True,text=True,env=ENV)
-  out=json.loads(p.stdout) if p.stdout.strip() else {}
+  p = subprocess.run(["lark-cli", "base", "+record-batch-create", "--base-token", BASE, "--table-id", TABLE,
+                      "--json", json.dumps({"create_records": recs}, ensure_ascii=False), "--as", "user"],
+                     capture_output=True, text=True, env=ENV)
+  out = json.loads(p.stdout) if p.stdout.strip() else {}
   print("created ok:", out.get("ok"), "err:", str(out.get("error"))[:200])
 print("BASE", BASE, "TABLE", TABLE)
