@@ -6,7 +6,7 @@
   - 删除「严重度覆盖」：严重度只以审核规则主表为准。
   - 「启用」默认「是」，状态「待审核员确认」——由实验室/客户按实际项目决定是否关掉；
     脚本不按旧矩阵擅自停用。
-  - 仅对「已配绑定」品类 × 适用领域匹配的专属规则建行。
+  - 对品类表全部品类 × 适用领域匹配的专属规则建行；建完后将该品类「是否已配绑定」置为「是」。
 
 用法：
   python3 docs/feishu/lims-ai-review/rebuild_bindings.py
@@ -135,21 +135,16 @@ def update_enabled_description() -> None:
     print("启用 description", up.get("ok"), up.get("error") or "")
 
 
-def build_rows() -> list[dict]:
+def build_rows(existing_binding_ids: set[str] | None = None) -> tuple[list[dict], list[str], list[str]]:
     ledger = json.loads((DIR / "ledger_seed.json").read_text(encoding="utf-8"))["create_records"]
     spec = [r for r in ledger if r.get("是否通用") == "品类专属"]
     cats = list_records(CAT)
-    configured = []
-    for c in cats:
-        code = c.get("category_code")
-        flag = c.get("是否已配绑定")
-        if isinstance(flag, list):
-            flag = flag[0] if flag else ""
-        if flag == "是" and code:
-            configured.append(code)
+    # 全部品类都建专属绑定（不再只限「是否已配绑定=是」）
+    all_codes = [c.get("category_code") for c in cats if c.get("category_code")]
+    existing_binding_ids = existing_binding_ids or set()
 
     rows = []
-    for cc in configured:
+    for cc in all_codes:
         domain = CAT_DOMAIN.get(cc)
         if not domain:
             print("WARN no domain for", cc)
@@ -159,9 +154,12 @@ def build_rows() -> list[dict]:
             if domain not in domains and "通用" not in domains:
                 continue
             rid = rule["规则ID"]
+            bid = f"BLT-{cc}-{rid}"
+            if bid in existing_binding_ids:
+                continue
             rows.append(
                 {
-                    "绑定ID": f"BLT-{cc}-{rid}",
+                    "绑定ID": bid,
                     "category_code": cc,
                     "rule_id": rid,
                     "启用": "是",  # 默认开；实验室/客户可关
@@ -171,7 +169,33 @@ def build_rows() -> list[dict]:
                     "版本": VERSION,
                 }
             )
-    return rows, [r["规则ID"] for r in spec], configured
+    return rows, [r["规则ID"] for r in spec], all_codes
+
+
+def mark_categories_configured(codes: list[str]) -> None:
+    cats = list_records(CAT)
+    updates = {}
+    for c in cats:
+        code = c.get("category_code")
+        rid = c.get("record_id")
+        if not rid or code not in codes:
+            continue
+        flag = c.get("是否已配绑定")
+        if isinstance(flag, list):
+            flag = flag[0] if flag else ""
+        if flag != "是":
+            updates[rid] = {"是否已配绑定": ["是"]}
+    if not updates:
+        print("categories already marked 已配绑定")
+        return
+    out = run(
+        [
+            "lark-cli", "base", "+record-batch-update",
+            "--base-token", BASE, "--table-id", CAT, "--as", "user",
+            "--json", json.dumps({"update_records": updates}, ensure_ascii=False),
+        ]
+    )
+    print("mark 是否已配绑定=是", len(updates), out.get("ok"), out.get("error") or "")
 
 
 def create_rows(rows: list[dict]) -> None:
@@ -188,44 +212,77 @@ def create_rows(rows: list[dict]) -> None:
 
 
 def main() -> None:
+    full_reset = "--reset" in sys.argv
     drop_severity_override()
     update_enabled_description()
-    delete_all_bindings()
-    rows, spec_ids, configured = build_rows()
-    print("configured cats", configured)
+    existing = list_records(BIND)
+    existing_ids = {r.get("绑定ID") for r in existing if r.get("绑定ID")}
+    if full_reset:
+        delete_all_bindings()
+        existing_ids = set()
+    rows, spec_ids, all_codes = build_rows(existing_ids)
+    print("all cats", all_codes)
     print("spec rules", spec_ids)
-    print("new rows", len(rows))
+    print("new rows to create", len(rows))
     for r in rows:
         print(" ", r["绑定ID"])
-    create_rows(rows)
+    if rows:
+        create_rows(rows)
+    mark_categories_configured(all_codes)
+
+    # full snapshot = existing kept + newly created desired set
+    desired = []
+    ledger = json.loads((DIR / "ledger_seed.json").read_text(encoding="utf-8"))["create_records"]
+    spec = [r for r in ledger if r.get("是否通用") == "品类专属"]
+    for cc in all_codes:
+        domain = CAT_DOMAIN.get(cc)
+        if not domain:
+            continue
+        for rule in spec:
+            domains = rule.get("适用领域") or []
+            if domain not in domains and "通用" not in domains:
+                continue
+            rid = rule["规则ID"]
+            desired.append(
+                {
+                    "绑定ID": f"BLT-{cc}-{rid}",
+                    "category_code": cc,
+                    "rule_id": rid,
+                    "启用": "是",
+                    "参数覆盖": "",
+                    "标准依据": "",
+                    "状态": "待审核员确认",
+                    "版本": VERSION,
+                }
+            )
 
     cm["SPEC"] = spec_ids
     cm["UNIV"] = [
         r["规则ID"]
-        for r in json.loads((DIR / "ledger_seed.json").read_text(encoding="utf-8"))["create_records"]
+        for r in ledger
         if r.get("是否通用") == "通用"
     ]
-    cm["PARAM"] = {}  # 参数改由顾问按品类填写，不再灌旧 A02/B02 矩阵
+    cm["PARAM"] = {}
     cm["bind_policy"] = {
         "version": VERSION,
         "only_specialty": True,
         "severity_from": "审核规则主表（无严重度覆盖列）",
         "enabled_default": "是",
         "enabled_owner": "实验室/客户按项目实际确认",
-        "row_count": len(rows),
-        "configured_categories": configured,
+        "row_count": len(desired),
+        "configured_categories": all_codes,
     }
     (DIR / "category_meta.json").write_text(
         json.dumps(cm, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
-
-    # local seed snapshot
-    seed = {"create_records": rows, "policy": cm["bind_policy"]}
     (DIR / "binding_seed.json").write_text(
-        json.dumps(seed, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+        json.dumps({"create_records": desired, "policy": cm["bind_policy"]}, ensure_ascii=False, indent=1)
+        + "\n",
+        encoding="utf-8",
     )
-    print("wrote category_meta.json + binding_seed.json")
+    print("wrote category_meta.json + binding_seed.json; desired", len(desired))
 
 
 if __name__ == "__main__":
     main()
+
