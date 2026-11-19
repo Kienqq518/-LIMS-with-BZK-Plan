@@ -45,6 +45,17 @@
       .sheet { box-shadow: none; margin: 0; }
     }
     @page { size: A4; margin: 0; }
+    html.embed, html.embed body { background: #fff; height: 100%; }
+    html.embed body { margin: 0; overflow: auto; }
+    html.embed .toolbar { display: none !important; }
+    html.embed .sheet {
+      width: 100%; min-height: 0; margin: 0; padding: 12px 14px 16px;
+      box-shadow: none; box-sizing: border-box;
+    }
+    html.embed .org { font-size: 16px; letter-spacing: .12em; }
+    html.embed .doc-title { font-size: 22px; margin: 12px 0 8px; letter-spacing: .18em; }
+    html.embed .qr-box { width: 22mm; top: 10px; right: 10px; }
+    html.embed .qr-box img { width: 20mm; height: 20mm; }
   </style>
 </head>
 <body>
@@ -65,6 +76,7 @@
       var params = new URLSearchParams(location.search);
       var code = (params.get('code') || '').trim();
       var pages = document.getElementById('pages');
+      if (params.get('embed') === '1') document.documentElement.classList.add('embed');
 
       function esc(s) {
         return String(s == null ? '' : s)

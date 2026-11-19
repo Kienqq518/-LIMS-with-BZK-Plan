@@ -756,12 +756,14 @@
     var dw = docWidth();
     var availW = Math.max(320, window.innerWidth - dw - PAD * 2);
     var availH = Math.max(240, window.innerHeight - PAD * 2);
+    // 三种比例都铺满左侧可用宽度；舞台条占 36px，不再因高度约束把画布收窄留出右空白。
     var sw = availW;
-    var sh = Math.round(sw * r[1] / r[0]);
-    if (sh > availH) { sh = availH; sw = Math.round(sh * r[0] / r[1]); }
+    var sFit = sw / DESIGN_W;
+    var contentH = Math.round(stage.designH * sFit);
+    var sh = Math.min(availH, contentH + BAR_H);
     host.style.width = sw + 'px';
     host.style.height = sh + 'px';
-    host.style.left = Math.round((window.innerWidth - dw - sw) / 2) + 'px';
+    host.style.left = PAD + 'px';
     host.style.top = Math.round((window.innerHeight - sh) / 2) + 'px';
 
     var viewW = sw;
@@ -778,7 +780,7 @@
       sc.style.width = (DESIGN_W - sideW) + 'px';
       sc.style.height = (stage.designH - headH) + 'px';
     }
-    var s = Math.min(1, viewW / DESIGN_W, viewH / stage.designH);   // 只有自适应一种缩放
+    var s = viewW / DESIGN_W;   // 铺满舞台宽度；高度已按设计比算出 contentH
     stage.scale = s;
     var root = document.documentElement;
     root.style.setProperty('--pa-scale', String(s));
