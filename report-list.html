@@ -206,6 +206,25 @@
     #reportRecordModal .audit-opinion-kicker { font-size: 12px; line-height: 1.5; color: #64748b; }
     #reportRecordModal .audit-opinion-text { margin-top: 2px; font-size: 13px; line-height: 1.55; color: #4b5563; }
     #reportRecordModal .audit-opinion-kicker:last-child { margin: 0; font-size: 13px; color: #4b5563; }
+    #reportRecordModal.rr-mask {
+      position: fixed; inset: 0; z-index: 50; background: rgba(15, 23, 42, .45);
+    }
+    #reportRecordModal.rr-mask.hidden { display: none; }
+    #reportRecordModal .rr-panel {
+      position: fixed; top: 0; right: 0; bottom: 0; z-index: 51;
+      width: min(1120px, 96vw); background: #fff;
+      box-shadow: -8px 0 28px rgba(15, 23, 42, .16);
+      display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .22s ease;
+    }
+    #reportRecordModal.open .rr-panel { transform: translateX(0); }
+    #reportRecordModal .rr-body { flex: 1; overflow: auto; }
+    #reportRecordModal .audit-log-scroll { max-height: none; overflow: visible; }
+    .report-return-wrap { display: inline-flex; cursor: not-allowed; }
+    .report-return-btn.is-disabled {
+      border: 0; background: transparent; padding: 0; color: #94a3b8;
+      cursor: not-allowed; pointer-events: none;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700" data-cat-col="off">
@@ -320,7 +339,7 @@
     <div class="flex max-h-[92vh] w-[960px] max-w-full flex-col rounded-lg bg-white shadow-xl" data-annotate="compile-list-modal">
       <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-6 py-3">
         <div>
-          <h3 class="text-base font-medium text-slate-800">报告列表</h3>
+          <h3 class="text-base font-medium text-slate-800">报告编制</h3>
           <p id="compileListSubtitle" class="mt-0.5 text-xs text-slate-500"></p>
         </div>
         <button type="button" onclick="closeCompileListModal()" class="text-slate-400 hover:text-slate-600" aria-label="关闭"><i class="fa fa-times"></i></button>
@@ -340,17 +359,17 @@
     </div>
   </div>
 
-  <!-- 报告记录弹窗：节点进度 + 操作日志同屏（不再二次弹「日志」） -->
-  <div id="reportRecordModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-    <div class="flex max-h-[92vh] w-[1040px] max-w-full flex-col rounded-lg bg-white shadow-xl" data-annotate="rl-record-merged">
+  <!-- 报告记录：右侧抽屉（节点进度 + 操作日志） -->
+  <div id="reportRecordModal" class="rr-mask hidden">
+    <aside class="rr-panel" data-annotate="rl-record-merged" onclick="event.stopPropagation()">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
         <div>
           <h3 class="text-base font-medium text-slate-800">报告记录</h3>
           <p id="reportRecordSubtitle" class="mt-0.5 text-xs text-slate-500"></p>
         </div>
-        <button type="button" onclick="closeReportRecordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+        <button type="button" onclick="closeReportRecordModal()" class="text-slate-400 hover:text-slate-600" aria-label="关闭"><i class="fa fa-times"></i></button>
       </div>
-      <div class="flex-1 space-y-5 overflow-auto px-6 py-4">
+      <div class="rr-body space-y-5 px-6 py-4">
         <section>
           <div class="mb-2 flex items-center justify-between">
             <h4 class="text-sm font-medium text-slate-700">节点进度</h4>
@@ -381,7 +400,7 @@
               <span class="audit-legend">
                 <span><i class="lg-dot lg-pass"></i>流转</span>
                 <span><i class="lg-dot lg-reject"></i>退回</span>
-                <span><i class="lg-dot lg-pending"></i>审批中</span>
+                <span><i class="lg-dot lg-pending"></i>当前</span>
               </span>
             </div>
             <div id="reportLogFilter" class="flex flex-wrap items-center gap-1.5"></div>
@@ -389,7 +408,7 @@
           <div id="reportLogList" class="audit-log-scroll"></div>
         </section>
       </div>
-    </div>
+    </aside>
   </div>
 
   <!-- 透明度等级选择弹窗 -->
@@ -746,6 +765,17 @@
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
+    function returnButtonHtml(row) {
+      var blocked = reportsPastCompile(row.code);
+      if (!blocked.length) {
+        return '<button type="button" data-annotate="report-return" class="text-orange-500 hover:underline" onclick="openReturnModal(' + row.id + ')"><i class="fa fa-reply"></i> 退回</button>';
+      }
+      var names = blocked.map(function (r) { return r.reportNo + '（' + (r.node || '后续节点') + '）'; }).join('、');
+      var tip = '该委托已有报告流转到「报告编制」之后：' + names + '。退回会把整个委托打回「数据审核」，因此不能退。';
+      return '<span class="report-return-wrap" data-annotate="report-return" title="' + escapeHtml(tip) + '">' +
+        '<button type="button" class="report-return-btn is-disabled" disabled aria-disabled="true"><i class="fa fa-reply"></i> 退回</button></span>';
+    }
+
     function renderTable(list) {
       ensureAiReturnedEntrustsInRows();
       var data = list || ROWS;
@@ -774,7 +804,7 @@
           '<td class="report-list-ops-cell border border-slate-200 px-3 py-2">' +
             '<div class="report-list-ops">' + genLink +
             '<a href="#" class="text-blue-600 hover:underline" onclick="openCompileListModal(\'' + row.code + '\');return false;">编制</a>' +
-            '<button type="button" data-annotate="report-return" class="text-orange-500 hover:underline" onclick="openReturnModal(' + row.id + ')"><i class="fa fa-reply"></i> 退回</button>' +
+            returnButtonHtml(row) +
             '</div></td></tr>';
       }).join('');
       document.getElementById('totalText').textContent = '共 ' + data.length + ' 条';
@@ -859,7 +889,6 @@
           '<div><div class="flex flex-wrap items-center gap-1.5">' + titleBits + '</div>' + warn + '</div>' +
           '<div class="flex flex-shrink-0 items-center gap-3 text-sm">' +
           '<button type="button" class="text-red-500 hover:underline" onclick="alert(\'删除（原型演示）\')"><i class="fa fa-trash-o"></i> 删除</button>' +
-          '<button type="button" class="text-orange-500 hover:underline" onclick="alert(\'单份退回（原型演示）：写入 returns 数组头部，不覆盖历史\')"><i class="fa fa-reply"></i> 退回</button>' +
           '</div></div>' +
           '<div class="compile-report-meta mt-3 text-sm text-slate-700">' +
           '<div><span class="compile-meta-label">样品编号</span><div class="text-xs leading-5">' + row.sampleNos.map(escapeHtml).join('<br>') + '</div></div>' +
@@ -887,6 +916,18 @@
     }
 
     var AUDIT_FORWARD_NODES = { '报告审核': 1, '报告签发': 1, '报告处理': 1, '收费审批': 1, '报告发放': 1 };
+    var NODES_AFTER_COMPILE = { '报告审核': 1, '报告签发': 1, '报告处理': 1, '收费审批': 1, '报告发放': 1, '任务归档': 1, '任务完成': 1 };
+
+    function reportWasReturned(row) {
+      if (row.returns && row.returns.length) return true;
+      return (row.logs || []).some(function (log) { return /退回至/.test(log.text || ''); });
+    }
+
+    function reportsPastCompile(code) {
+      return reportsOf(code).filter(function (row) {
+        return row.inApproval || !!NODES_AFTER_COMPILE[row.node];
+      });
+    }
 
     function parseReportLogText(text) {
       var flow = String(text || '').match(/^(.+?)\s+在\s+(\S+)\s+将\s+报告编号为(\S+?)的报告\s+(自动退回至|再次提交至|提交至|退回至)\s+(\S+?)(?:（([^）]+)）)?$/);
@@ -989,13 +1030,13 @@
             opinion: view.opinion
           });
         });
-        if (row.inApproval) {
+        if (row.inApproval || NODES_AFTER_COMPILE[row.node]) {
           items.push({
             time: '',
             reportNo: row.reportNo,
             reportId: row.id,
             pending: true,
-            node: row.node || '审批',
+            node: row.node || '报告审核',
             actor: '',
             tone: 'pending',
             status: '审批中',
@@ -1004,11 +1045,26 @@
             opinionKicker: '',
             opinion: ''
           });
+        } else if (row.node === '报告编制' && reportWasReturned(row)) {
+          items.push({
+            time: '',
+            reportNo: row.reportNo,
+            reportId: row.id,
+            pending: true,
+            node: '报告编制',
+            actor: (row.compile && row.compile.user) || '',
+            tone: 'pending',
+            status: '编制中',
+            statusTone: 'pending',
+            icon: 'fa-pencil',
+            opinionKicker: '',
+            opinion: ''
+          });
         }
       });
       items.sort(function (a, b) {
-        if (a.pending !== b.pending) return a.pending ? -1 : 1;
-        return a.time < b.time ? 1 : (a.time > b.time ? -1 : 0);
+        if (a.pending !== b.pending) return a.pending ? 1 : -1;
+        return a.time < b.time ? -1 : (a.time > b.time ? 1 : 0);
       });
       return items;
     }
@@ -1157,20 +1213,24 @@
       alert('已打开 Word 在线编制（原型演示），共 ' + n + ' 份报告');
     }
 
+    var reportRecordHideTimer = null;
+
     function openReportRecordModal(code) {
       activeEntrustCode = code || '';
       activeReportLogFilter = 'all';
       renderReportRecordList(activeEntrustCode);
       var modal = document.getElementById('reportRecordModal');
+      clearTimeout(reportRecordHideTimer);
       modal.classList.remove('hidden');
-      modal.classList.add('flex');
+      requestAnimationFrame(function () { modal.classList.add('open'); });
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
     function closeReportRecordModal() {
       var modal = document.getElementById('reportRecordModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
+      modal.classList.remove('open');
+      clearTimeout(reportRecordHideTimer);
+      reportRecordHideTimer = setTimeout(function () { modal.classList.add('hidden'); }, 220);
     }
 
     document.getElementById('reportRecordModal').addEventListener('click', function (e) {
@@ -1192,7 +1252,7 @@
 
     function showReturnBlockedToast() {
       var el = document.getElementById('return-toast');
-      document.getElementById('return-toast-msg').textContent = '还有报告正在审批中,无法退回!';
+      document.getElementById('return-toast-msg').textContent = '该委托已有报告流转到「报告编制」之后，整单不能退回数据审核';
       el.classList.add('show');
       clearTimeout(showReturnBlockedToast._t);
       showReturnBlockedToast._t = setTimeout(function () { el.classList.remove('show'); }, 2800);
@@ -1204,8 +1264,7 @@
         if (ROWS[i].id === rowId) { row = ROWS[i]; break; }
       }
       if (!row) return;
-      // 一单生成多份报告：若已有报告编制完成并流转到下一审批节点，整单禁止退回（与报告列表/报告记录同源）
-      if (hasReportInApproval(row.code)) {
+      if (reportsPastCompile(row.code).length) {
         showReturnBlockedToast();
         return;
       }
@@ -1305,21 +1364,21 @@
         { id: 'compile-returns', selector: '[data-annotate="compile-returns"]', position: 'bottom', title: '退回记录（追加不覆盖）', content: '<strong>需求逻辑：</strong>同一份报告可能被退回多次；每次退回的节点、退回人、时间、原因都必须留存，新退回不得覆盖旧原因。<br>' +
             '<strong>展示规则：</strong>卡片下方「退回记录」时间轴，按时间倒序；每条含「第 N 次」、节点（AI 自动退回单独标注）、原因、退回人、时间；最新一条红点高亮。<br>' +
             '<strong>交互逻辑：</strong>数据为 returns[] 追加写入。演示：SC2026/0238-03 仅 AI 严重项自动退回 1 次；SC2026/0238-02 为 AI「需人工复核」后由李审核退回 1 次。', tag: '报告列表' },
-        { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '<strong>需求逻辑：</strong>报告列表是编制入口；编制发现问题可直接退回上一环节「数据审核」修正后重提。<br>' +
+        { id: 'report-list-ops', selector: '[data-annotate="report-ops"]', position: 'top-left', title: '操作', content: '<strong>需求逻辑：</strong>主列表按委托任务操作：生成新报告、进入已有报告编制、或把整单退回数据审核。<br>' +
             '<strong>展示规则：</strong>操作列：「报告生成」「编制」「退回」。<br>' +
-            '<strong>交互逻辑：</strong>「报告生成」跳转报告编制编辑页；「编制」弹出报告列表；「退回」见独立批注。AI 预审入口在侧边栏「报告审核 / AI 审核工作台」。', tag: '报告编制' },
-        { id: 'report-return', selector: '[data-annotate="report-return"]', position: 'left', title: '退回（整单，受多报告审批约束）', content: '<strong>需求逻辑：</strong>编制发现问题可把委托整单退回「数据审核」；但一单可能生成多份报告，若其中已有报告编制完成并流转到下一节点（报告审核等），再退回会把已在审批中的报告一并打乱，因此此时禁止退回。<br>' +
-            '<strong>展示规则：</strong>操作列橙色「退回」；拦截时右上角错误提示「还有报告正在审批中,无法退回!」。<br>' +
-            '<strong>交互逻辑：</strong>① 该委托下全部报告仍停在编制节点 → 弹出「退回原因」（必填），确认后行离开本列表，流程回到「数据审核」。② 任一报告已进入下一审批节点 → 不打开弹窗，仅提示「还有报告正在审批中,无法退回!」。演示：委托 SC2026/0099 已有报告在审批中，点退回即见拦截。', tag: '报告编制' },
-        { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>报告要经过编制、审核、签发、发放多个节点，列表页要能直接看到每份报告卡在哪个节点、谁签的，以及流转操作日志，避免再点一次「日志」。<br>' +
-            '<strong>展示规则：</strong>「报告记录」列/链接；弹窗上半「节点进度」、下半「操作日志」同屏。<br>' +
+            '<strong>交互逻辑：</strong>「报告生成」进入「报告生成编辑」；「编制」弹出「报告编制」；「退回」见独立批注。不能对单份报告从编制退回数据审核。', tag: '报告编制' },
+        { id: 'report-return', selector: '[data-annotate="report-return"]', position: 'left', title: '退回（整单，后续节点置灰）', content: '<strong>需求逻辑：</strong>退回只能按整个委托打回「数据审核」，不能单份报告退。若该委托下任意报告已经离开「报告编制」（报告审核及之后），再退会把后续流程一并打乱，因此退回置灰。<br>' +
+            '<strong>展示规则：</strong>可退时为橙色「退回」；不可退时按钮置灰，鼠标悬停说明是哪些报告、停在哪个节点。<br>' +
+            '<strong>交互逻辑：</strong>全部报告仍在「报告编制」→ 弹出「退回原因」。任一报告已到后续节点 → 按钮不可点。演示：SC2026/0238 因 0238-01 在报告审核而置灰；SC2026/0099 因 0099-02 在报告审核而置灰。', tag: '报告编制' },
+        { id: 'report-col-record', selector: '[data-annotate="col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>列表上要能看到每份报告卡在哪个节点、以及流转过程。<br>' +
+            '<strong>展示规则：</strong>「报告记录」链接，打开右侧抽屉：上半节点进度、下半操作日志。<br>' +
             '<strong>交互逻辑：</strong>按当前委托打开；演示 SC2026/0238 / SC2026/0099。', tag: '报告编制' },
         { id: 'report-gen-link', selector: '[data-annotate="report-generate"]', position: 'left', title: '报告生成', content: '<strong>需求逻辑：</strong>演示要能一键走到完整生成流程，因此给一个默认委托入口。<br>' +
             '<strong>展示规则：</strong>「报告生成」链接，演示委托 SCZN202508/0009 · 实壁塑料电缆导管 PVC-C。<br>' +
-            '<strong>交互逻辑：</strong>点击进入报告编制编辑页；换其它委托从委托列表进入。', tag: '报告编制' },
-        { id: 'compile-modal', selector: '[data-annotate="compile-list-modal"]', position: 'left', title: '编制 · 报告列表弹窗', content: '<strong>需求逻辑：</strong>一次可能要多份报告同时编制，先勾选再进编辑器；有退回的报告要把历次退回原因摊开看清，方便对照修订。<br>' +
-            '<strong>展示规则：</strong>卡片列表：勾选 + 编号/样品/名称/生成时间/审核·签发意见；有退回的卡片展开「退回记录」时间轴（追加不覆盖）。<br>' +
-            '<strong>交互逻辑：</strong>勾选后点「编制」进入 Word 在线编辑（原型演示）；关闭弹窗不改变报告状态。与「报告记录」节点进度同源。', tag: '报告列表' },
+            '<strong>交互逻辑：</strong>点击进入「报告生成编辑」；换其它委托从委托列表进入。', tag: '报告编制' },
+        { id: 'compile-modal', selector: '[data-annotate="compile-list-modal"]', position: 'left', title: '编制 · 报告编制弹窗', content: '<strong>需求逻辑：</strong>一次可能要多份报告同时编制，先勾选再进编辑器；有退回的报告要把历次退回原因摊开看清。<br>' +
+            '<strong>展示规则：</strong>标题为「报告编制」。卡片含勾选、编号、样品、名称、生成时间、审核·签发意见；有退回的卡片展开退回记录。不再提供单份「退回」。<br>' +
+            '<strong>交互逻辑：</strong>勾选后点「编制」进入 Word 在线编辑（原型演示）。整单退回只在主列表操作。', tag: '报告编制' },
         // 透明检测延至明年：列已隐藏，对应批注暂不挂载（col-transparency / rl-level）
         {
           id: 'rl-record',
@@ -1327,9 +1386,9 @@
           position: 'bottom-right',
           title: '报告记录（节点进度 + 操作日志同屏）',
           wide: true,
-          content: '<strong>需求逻辑：</strong>打开「报告记录」就要同时看到节点签署留痕与流转操作日志，不再二次点「日志」。<br>' +
-          '<strong>展示规则：</strong>上半「节点进度」表（序号、报告编号、编制→发放）；下半「操作日志」为审批时间轴：已完成步骤为实心色点（蓝=流转，红=退回），正在执行的「审批中」保持空心黄点。每条为「节点 + 时间 / 处理人头像 / 右侧状态」，退回或复核原因放在灰色意见条。筛选为「全部」时标题旁展示完整报告编号；单份报告不重复编号。<br>' +
-          '<strong>交互逻辑：</strong>默认展示该委托全部日志；点表格行或芯片筛选对应报告日志；仍在审批中的报告在时间轴顶部补一条「审批中」。关闭不改数据。与编制列表同源。',
+          content: '<strong>需求逻辑：</strong>打开「报告记录」就要同时看到节点签署留痕与流转过程，从右侧抽屉展开，不挡左侧列表。<br>' +
+          '<strong>展示规则：</strong>上半「节点进度」表；下半操作日志按时间正序。已完成步骤为实心色点（蓝=流转，红=退回）；当前步骤为空心黄点，收在时间轴末尾：回到「报告编制」的显示「编制中」，仍在后续节点的显示「审批中」。筛选为「全部」时标题旁用完整报告编号。<br>' +
+          '<strong>交互逻辑：</strong>默认展示该委托全部日志；点表格行或芯片筛选对应报告。关闭不改数据。',
           tag: '报告列表'
         },
         {
@@ -1339,8 +1398,8 @@
           title: '操作日志（嵌入报告记录）',
           wide: true,
           content: '<strong>需求逻辑：</strong>单份/整单报告的流转动作可追溯（谁在哪个节点提交/退回、意见是什么）。<br>' +
-          '<strong>展示规则：</strong>审批时间轴，按时间倒序。已完成步骤为实心色点：蓝=生成/提交/审批通过/需人工复核，红=审批拒绝/自动退回；正在执行的「审批中」为空心黄点。右侧状态对应「生成报告」「提交至…」「再次提交至…」「需人工复核」「审批通过」「审批拒绝」「自动退回」「审批中」。退回类在灰色意见条写出退回节点和原因（原因取自 returns[]，按时间与退回人匹配）；「需人工复核」的意见条写命中的一般项。多报告同屏时标题旁用完整报告编号。<br>' +
-          '<strong>交互逻辑：</strong>与上方节点进度同弹窗，不再叠第二层「报告操作日志」弹窗。点行或芯片只筛日志，不改数据。',
+          '<strong>展示规则：</strong>审批时间轴按时间正序，当前步骤以空心黄点收尾。已完成：蓝=生成/提交/审批通过/需人工复核，红=审批拒绝/自动退回。回到编制的当前步为「编制中」，停在后续节点的当前步为「审批中」。退回原因与「需人工复核」命中项写在灰色意见条。多报告同屏时标题旁用完整报告编号。<br>' +
+          '<strong>交互逻辑：</strong>与上方节点进度同一抽屉。点行或芯片只筛日志，不改数据。',
           tag: '报告列表'
         },
       ] });

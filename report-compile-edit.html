@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>报告编制编辑 - 智慧实验室</title>
+  <title>报告生成编辑 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <link rel="stylesheet" href="css/ui-baseline.css" />
@@ -20,6 +20,14 @@
     .sample-group-title { font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 12px; }
     .specimen-tests { font-size: 12px; color: #64748b; line-height: 1.6; }
     .pick-all-row { margin: 12px 0; font-size: 13px; }
+    .info-table, .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .info-table td, .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; vertical-align: top; }
+    .info-table .lbl { width: 12%; background: #f8fafc; color: #64748b; white-space: nowrap; }
+    .info-table .val { color: #334155; }
+    .data-table th { background: #f1f5f9; color: #475569; font-weight: 500; }
+    .sec-title { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; font-weight: 600; color: #1e293b; }
+    .sec-bar { width: 4px; height: 14px; border-radius: 2px; background: #3b82f6; flex-shrink: 0; }
+    .recv-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; background: #fff; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -28,19 +36,22 @@
     <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
     <a href="report-list.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">报告编制</a>
     <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
-      报告编制编辑
+      报告生成编辑
       <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
     </span>
   </div>
 
   <div class="border-b border-slate-200 bg-white px-4">
     <div class="flex gap-4">
-      <div class="sub-tab active" data-annotate="tab-detect">检测信息</div>
-      <div class="sub-tab">委托信息</div>
+      <div class="sub-tab active" data-panel="detect" data-annotate="tab-detect">检测信息</div>
+      <div class="sub-tab" data-panel="entrust" data-annotate="tab-entrust">委托信息</div>
+      <div class="sub-tab" data-panel="sample" data-annotate="tab-sample">样品信息</div>
+      <div class="sub-tab" data-panel="raw" data-annotate="tab-raw">原始记录</div>
     </div>
   </div>
 
-  <div class="p-4 space-y-4">
+  <div class="p-4">
+  <div class="gen-panel space-y-4" data-panel="detect">
     <!-- 按样品分组：选取检测信息 -->
     <div class="rounded bg-white p-4 shadow-sm" data-annotate="pick-detect-info">
       <div class="mb-3 text-sm font-medium text-slate-700">选取检测信息</div>
@@ -72,6 +83,167 @@
         </table>
       </div>
     </div>
+  </div>
+
+  <div class="gen-panel hidden space-y-4" data-panel="entrust" data-annotate="panel-entrust">
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="sec-title"><span class="sec-bar"></span>合同信息</h2>
+      <table class="info-table">
+        <tr><td class="lbl">合同编号</td><td class="val">HT-2025-0816</td><td class="lbl">合同名称</td><td class="val">实壁塑料电缆导管检测合同</td><td class="lbl">签订时间</td><td class="val">2025-08-16</td></tr>
+        <tr><td class="lbl">服务年限</td><td class="val">1 年</td><td class="lbl">中标价</td><td class="val">/</td><td class="lbl">合同样品</td><td class="val">实壁塑料电缆导管 PVC-C</td></tr>
+        <tr><td class="lbl">合同备注</td><td class="val" colspan="5">按 DL/T 802.3-2023 出厂检验，报告一式两份。</td></tr>
+      </table>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="sec-title"><span class="sec-bar"></span>委托信息</h2>
+      <table class="info-table">
+        <tr><td class="lbl">委托编号</td><td class="val" data-bind="code">SCZN202508/0009</td><td class="lbl">任务类型</td><td class="val">材料（电线电缆、金具、金属材料类）</td><td class="lbl">优先等级</td><td class="val">常规</td></tr>
+        <tr><td class="lbl">检测类型</td><td class="val">常规</td><td class="lbl">检测类别</td><td class="val">出厂检验</td><td class="lbl">委托单位</td><td class="val">国网某某供电公司</td></tr>
+        <tr><td class="lbl">地址</td><td class="val">杭州市西湖区文三路</td><td class="lbl">邮政编码</td><td class="val">310000</td><td class="lbl">联系人</td><td class="val">李工</td></tr>
+        <tr><td class="lbl">联系方式</td><td class="val">13900001111</td><td class="lbl">签约地点</td><td class="val">杭州</td><td class="lbl">检测中心</td><td class="val">应敏科技有限公司</td></tr>
+        <tr><td class="lbl">受理日期</td><td class="val">2025-08-16</td><td class="lbl">客户要求完成日期</td><td class="val">2025-08-28</td><td class="lbl">要求检测完成天数</td><td class="val">7</td></tr>
+        <tr><td class="lbl">要求检测完成时间</td><td class="val">2025-08-25</td><td class="lbl">编制人</td><td class="val">admin</td><td class="lbl"></td><td class="val"></td></tr>
+      </table>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="sec-title"><span class="sec-bar"></span>付款信息</h2>
+      <table class="info-table">
+        <tr><td class="lbl">样品检测总价(元)</td><td class="val">3600</td><td class="lbl">实际费用(元)</td><td class="val">3600</td><td class="lbl">折扣率(%)</td><td class="val">0</td></tr>
+        <tr><td class="lbl">付款方式</td><td class="val">对公转账</td><td class="lbl">付款单位</td><td class="val">国网某某供电公司</td><td class="lbl">业务备注</td><td class="val">费用随报告一起结算</td></tr>
+      </table>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="sec-title"><span class="sec-bar"></span>报告信息</h2>
+      <table class="info-table">
+        <tr><td class="lbl">报告传送方式</td><td class="val">邮寄</td><td class="lbl">报告资质</td><td class="val">CNAS CMA</td><td class="lbl">报告描述</td><td class="val">按试样各出一份，未勾选试样不出报告</td></tr>
+        <tr><td class="lbl">结果方式</td><td class="val">判定</td><td class="lbl">报告语言</td><td class="val">中文</td><td class="lbl">份数</td><td class="val">2</td></tr>
+      </table>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="sec-title"><span class="sec-bar"></span>委托单文件</h2>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[640px]">
+          <thead><tr><th class="w-12">序号</th><th>WORD文件</th><th>PDF文件</th><th>生成时间</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="return false;"><i class="fa fa-file-word-o"></i> <span data-bind="code">SCZN202508/0009</span>-委托单.docx</a></td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="return false;"><i class="fa fa-file-pdf-o"></i> <span data-bind="code">SCZN202508/0009</span>-委托单.pdf</a></td>
+              <td>2025-08-16 09:12</td>
+              <td><button type="button" class="text-blue-600 hover:underline" onclick="alert('查看委托单（原型）')">查看</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="sec-title"><span class="sec-bar"></span>收费通知单</h2>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[560px]">
+          <thead><tr><th class="w-12">序号</th><th>收费通知单</th><th>金额(元)</th><th>生成时间</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="return false;"><i class="fa fa-file-pdf-o"></i> <span data-bind="code">SCZN202508/0009</span>-收费通知单.pdf</a></td>
+              <td>3600</td>
+              <td>2025-08-16 09:20</td>
+              <td><button type="button" class="text-blue-600 hover:underline" onclick="alert('查看收费通知单（原型）')">查看</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="gen-panel hidden space-y-4" data-panel="sample" data-annotate="panel-sample">
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="sec-title"><span class="sec-bar"></span>收样信息</h2>
+      <div class="recv-card">
+        <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <span class="font-medium text-slate-800">第 1 次收样</span>
+          <span class="text-slate-500">收样人 admin</span>
+          <span class="text-slate-500">2025-08-16 10:05</span>
+          <span class="text-slate-500">送样人 李工 · 13900001111</span>
+          <span class="text-slate-500">存放 A-03</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="data-table min-w-[720px]">
+            <thead><tr><th class="w-12">序号</th><th>样品编号</th><th>样品名称</th><th>型号</th><th>数量</th><th>外观</th><th>照片</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>SCZN202508/0009-0101</td><td>实壁塑料电缆导管</td><td>PVC-C</td><td>1 根</td><td>完好</td><td><span class="inline-flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-slate-400"><i class="fa fa-picture-o"></i></span></td></tr>
+              <tr><td>2</td><td>SCZN202508/0009-0102</td><td>实壁塑料电缆导管</td><td>PVC-C</td><td>1 根</td><td>完好</td><td><span class="inline-flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-slate-400"><i class="fa fa-picture-o"></i></span></td></tr>
+              <tr><td>3</td><td>SCZN202508/0009-0103</td><td>实壁塑料电缆导管</td><td>PVC-C</td><td>1 根</td><td>表面轻微划痕</td><td><span class="inline-flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-slate-400"><i class="fa fa-picture-o"></i></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <section class="rounded bg-white p-4 shadow-sm">
+      <h2 class="sec-title"><span class="sec-bar"></span>还样记录</h2>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[880px]">
+          <thead><tr><th class="w-12">序号</th><th>样品名称(数量)</th><th>还样人</th><th>日期</th><th>还样退库确认表</th><th>退样申请表</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>实壁塑料电缆导管(2)</td>
+              <td>admin</td>
+              <td>2025-08-20</td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="return false;"><i class="fa fa-paperclip"></i> SCZN202508-0009还样退库确认表.docx</a></td>
+              <td class="text-slate-400">—</td>
+              <td><button type="button" class="rounded bg-blue-600 px-2.5 py-1 text-xs text-white" onclick="alert('导出本条还样文件（原型）')">导出</button></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>实壁塑料电缆导管(1)</td>
+              <td class="text-slate-400">/</td>
+              <td class="text-slate-400">/</td>
+              <td class="text-slate-400">—</td>
+              <td class="text-slate-400">留样，尚未还样</td>
+              <td class="text-slate-300">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="gen-panel hidden space-y-4" data-panel="raw" data-annotate="panel-raw">
+    <section class="rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="sec-title mb-0"><span class="sec-bar"></span>原始记录单</h2>
+        <a href="test-record.html" class="text-sm text-blue-600 hover:underline">跳转原始记录页面 <i class="fa fa-external-link"></i></a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="data-table min-w-[860px]">
+          <thead><tr><th class="w-12">序号</th><th>原始记录名称</th><th>覆盖样品</th><th>生成模式</th><th>生成时间</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="return false;"><i class="fa fa-file-word-o"></i> SCZN202508-0009-0101原始记录.docx</a></td>
+              <td>SCZN202508/0009-0101</td><td>按试样</td><td>2025-08-18 16:40</td>
+              <td><span class="text-emerald-600">有效</span></td>
+              <td><button type="button" class="text-blue-600 hover:underline" onclick="alert('查看原始记录单（原型）')">查看</button></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="return false;"><i class="fa fa-file-word-o"></i> SCZN202508-0009-0102原始记录.docx</a></td>
+              <td>SCZN202508/0009-0102</td><td>按试样</td><td>2025-08-18 16:42</td>
+              <td><span class="text-emerald-600">有效</span></td>
+              <td><button type="button" class="text-blue-600 hover:underline" onclick="alert('查看原始记录单（原型）')">查看</button></td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td><a href="#" class="text-blue-600 hover:underline" onclick="return false;"><i class="fa fa-file-word-o"></i> SCZN202508-0009-0103原始记录.docx</a></td>
+              <td>SCZN202508/0009-0103</td><td>按试样</td><td>2025-08-18 16:44</td>
+              <td><span class="text-emerald-600">有效</span></td>
+              <td><button type="button" class="text-blue-600 hover:underline" onclick="alert('查看原始记录单（原型）')">查看</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
   </div>
 
   <!-- 生成确认弹窗 -->
@@ -109,6 +281,16 @@
   <script src="js/prototype-annotation.js"></script>
   <script>
     var ENTRUST_CODE = new URLSearchParams(location.search).get('entrust') || 'SCZN202508/0009';
+    document.querySelectorAll('[data-bind="code"]').forEach(function (el) { el.textContent = ENTRUST_CODE; });
+    document.querySelectorAll('.sub-tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var key = tab.getAttribute('data-panel');
+        document.querySelectorAll('.sub-tab').forEach(function (t) { t.classList.toggle('active', t === tab); });
+        document.querySelectorAll('.gen-panel').forEach(function (p) {
+          p.classList.toggle('hidden', p.getAttribute('data-panel') !== key);
+        });
+      });
+    });
 
     var REPORT_EXPORT_RULES = [
       { id: 1, bindType: 'category', bindTarget: '电力物资类', modeKey: 'specimen-each' },
@@ -381,10 +563,40 @@
             selector: '[data-annotate="tab-detect"]',
             position: 'bottom',
             title: '检测信息',
-            content: '<strong>需求逻辑：</strong>报告编制的第一步是确定「本次给哪些试样出报告」，因此进入页面默认停在本 Tab；样品信息只读，唯一可操作的是试样勾选。<br>' +
+            content: '<strong>需求逻辑：</strong>报告生成的第一步是确定「本次给哪些试样出报告」，因此进入「报告生成编辑」默认停在本 Tab；样品信息只读，唯一可操作的是试样勾选。<br>' +
             '<strong>展示规则：</strong>Tab 名「检测信息」，其下按样品组展开：只读样品信息块 + 试样勾选表；本 Tab 不提供任何字段编辑控件。<br>' +
             '<strong>交互逻辑：</strong>切换 Tab 不丢已勾选状态；勾选结果是「生成报告」的唯一输入，未勾选时生成按钮不可用。',
             tag: '检测信息'
+          },
+          {
+            id: 'rc-tab-entrust',
+            selector: '[data-annotate="tab-entrust"]',
+            position: 'bottom',
+            title: '委托信息',
+            content: '<strong>需求逻辑：</strong>生成报告时要能回看合同、委托、付款和已有文件，避免编制员另开委托详情。<br>' +
+            '<strong>展示规则：</strong>只读区块：合同信息、委托信息、付款信息、报告信息、委托单文件、收费通知单。<br>' +
+            '<strong>交互逻辑：</strong>文件名可点，原型内仅提示查看，不改数据。',
+            tag: '委托信息'
+          },
+          {
+            id: 'rc-tab-sample',
+            selector: '[data-annotate="tab-sample"]',
+            position: 'bottom',
+            title: '样品信息',
+            content: '<strong>需求逻辑：</strong>出报告前要核对样品是否已收、哪些已还。<br>' +
+            '<strong>展示规则：</strong>收样信息按收样批次展示样品编号、外观和照片；还样记录列出还样人、日期和确认表。<br>' +
+            '<strong>交互逻辑：</strong>只读。留样未还的行日期与还样人为「/」。',
+            tag: '样品信息'
+          },
+          {
+            id: 'rc-tab-raw',
+            selector: '[data-annotate="tab-raw"]',
+            position: 'bottom',
+            title: '原始记录',
+            content: '<strong>需求逻辑：</strong>报告内容要能对上原始记录单，生成页就地查看，不必先回检测页。<br>' +
+            '<strong>展示规则：</strong>按试样列出原始记录名称、覆盖样品、生成模式、时间和有效状态。<br>' +
+            '<strong>交互逻辑：</strong>「查看」为原型提示；「跳转原始记录页面」进入原始记录维护页。',
+            tag: '原始记录'
           },
           {
             id: 'rc-pick-detect',
