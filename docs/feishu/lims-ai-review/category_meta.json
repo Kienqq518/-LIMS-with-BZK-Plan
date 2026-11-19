@@ -374,14 +374,12 @@
     "L4D-1": "L4-d-1"
   },
   "bind_enrichment": {
+    "领域": "select 存于绑定表（视图中位于品类名称前）",
     "品类名称": "lookup←品类.品类名称 via category_code",
-    "级别": "lookup←审核规则.级别 via rule_id=规则ID",
-    "类别": "lookup←审核规则.类别 via rule_id=规则ID",
-    "所需字段": "formula←审核规则.所需字段 via rule_id=规则ID",
-    "备注": "formula←审核规则.备注 via rule_id=规则ID"
+    "级别/类别/所需字段/备注/判定式/严重度": "专属规则定义存于绑定表（不再回指审核规则）"
   },
   "bind_policy": {
-    "version": "v0.6.2",
+    "version": "v0.7.0",
     "only_specialty": true,
     "severity_from": "审核规则主表（无严重度覆盖列）",
     "enabled_default": "是",
@@ -395,6 +393,14 @@
       "CAT-HARNESS",
       "CAT-CON-WIRE"
     ],
-    "param_and_basis": "filled by fill_binding_params.py; 待审核员确认"
+    "param_and_basis": "filled by fill_binding_params.py; 待审核员确认",
+    "rule_defs_on": "品类规则绑定表（审核规则表仅通用）",
+    "domain_column": "领域（视图中位于品类名称前）"
+  },
+  "split_policy": {
+    "version": "v0.7.0",
+    "审核规则": "仅通用领域（是否通用=通用，适用领域=通用）",
+    "品类规则绑定": "特定领域专属规则定义 + 品类绑定；含领域列（在品类名称前）",
+    "L2-d-9": "适用领域空，MVP 不建绑定行，仅存 specialty_seed"
   }
 }

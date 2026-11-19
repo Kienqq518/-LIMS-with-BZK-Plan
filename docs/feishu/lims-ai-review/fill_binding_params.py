@@ -25,7 +25,7 @@ meta = json.loads((DIR / "base.json").read_text(encoding="utf-8"))
 cm = json.loads((DIR / "category_meta.json").read_text(encoding="utf-8"))
 BASE = meta["base"]["base_token"]
 BIND = cm["bind_table"]
-VERSION = "v0.6.2"
+VERSION = "v0.7.0"
 
 # (参数覆盖 JSON 字符串, 品类标准依据)
 FILL: dict[tuple[str, str], tuple[str, str]] = {

@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 """为「品类规则绑定」表补齐关联展示列（幂等）。
 
-- 品类名称：Lookup ← 品类.品类名称（按 category_code）
-- 级别 / 类别：Lookup ← 审核规则（按 rule_id = 规则ID）
-- 所需字段 / 备注：Formula ← 审核规则（按 rule_id = 规则ID）
+v0.7+：专属规则定义已落在绑定表；审核规则表仅含通用。
+本脚本只保证：
+  - 品类名称：Lookup ← 品类.品类名称（按 category_code）
+
+级别/类别/所需字段/备注/判定式/严重度/领域 均为绑定表存储列，
+由 migrate_specialty_to_binding.py / rebuild_bindings.py 写入。
 
 用法：
   python3 docs/feishu/lims-ai-review/enrich_bind_lookups.py
@@ -57,45 +60,6 @@ LOOKUPS = [
         },
         "aggregate": "raw_value",
     },
-    {
-        "name": "级别",
-        "type": "lookup",
-        "description": "按 rule_id 关联「审核规则」.规则ID",
-        "from": "审核规则",
-        "select": "级别",
-        "where": {
-            "logic": "and",
-            "conditions": [["规则ID", "==", {"type": "field_ref", "field": "rule_id"}]],
-        },
-        "aggregate": "raw_value",
-    },
-    {
-        "name": "类别",
-        "type": "lookup",
-        "description": "按 rule_id 关联「审核规则」.规则ID",
-        "from": "审核规则",
-        "select": "类别",
-        "where": {
-            "logic": "and",
-            "conditions": [["规则ID", "==", {"type": "field_ref", "field": "rule_id"}]],
-        },
-        "aggregate": "raw_value",
-    },
-]
-
-FORMULAS = [
-    {
-        "name": "所需字段",
-        "type": "formula",
-        "description": "按 rule_id 关联审核规则.所需字段",
-        "expression": 'ARRAYJOIN([审核规则].FILTER(CurrentValue.[规则ID] = [rule_id]).[所需字段].LISTCOMBINE(), "、")',
-    },
-    {
-        "name": "备注",
-        "type": "formula",
-        "description": "按 rule_id 关联审核规则.备注（检查意图）",
-        "expression": "FIRST([审核规则].FILTER(CurrentValue.[规则ID] = [rule_id]).[备注].LISTCOMBINE())",
-    },
 ]
 
 
@@ -126,15 +90,13 @@ def ensure_field(spec: dict, have: dict[str, dict]) -> None:
 
 def main() -> None:
     have = existing_fields()
-    for spec in LOOKUPS + FORMULAS:
+    for spec in LOOKUPS:
         ensure_field(spec, have)
-        have = existing_fields()  # refresh after create/delete
+        have = existing_fields()
     cm["bind_enrichment"] = {
+        "领域": "select 存于绑定表（视图中位于品类名称前）",
         "品类名称": "lookup←品类.品类名称 via category_code",
-        "级别": "lookup←审核规则.级别 via rule_id=规则ID",
-        "类别": "lookup←审核规则.类别 via rule_id=规则ID",
-        "所需字段": "formula←审核规则.所需字段 via rule_id=规则ID",
-        "备注": "formula←审核规则.备注 via rule_id=规则ID",
+        "级别/类别/所需字段/备注/判定式/严重度": "专属规则定义存于绑定表（不再回指审核规则）",
     }
     (DIR / "category_meta.json").write_text(
         json.dumps(cm, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

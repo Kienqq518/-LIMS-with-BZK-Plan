@@ -792,8 +792,13 @@ def push_feishu() -> None:
     print("field-update", json.loads(up.stdout).get("ok"))
 
     update_records = {}
+    skipped_specialty = []
     for row in RULE_ROWS:
         rid, expr, fields, basis, sev, domains, univ, note = row
+        # 审核规则表只保留通用领域；品类专属改由绑定表承载
+        if univ != "通用" or domains != ["通用"]:
+            skipped_specialty.append(rid)
+            continue
         rec_id = id_by_rid.get(rid)
         if not rec_id:
             print("MISSING record", rid)
@@ -808,6 +813,8 @@ def push_feishu() -> None:
             "备注": note,
             "版本": VERSION,
         }
+    if skipped_specialty:
+        print("skip specialty (bound table owns defs)", skipped_specialty)
     # batch in chunks of 20
     items = list(update_records.items())
     for i in range(0, len(items), 20):

@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 """重洗「品类规则绑定」表。
 
-口径（与产品约定对齐）：
-  - 只绑定主表「是否通用=品类专属」的规则；通用规则不进绑定表。
-  - 删除「严重度覆盖」：严重度只以审核规则主表为准。
-  - 「启用」默认「是」，状态「待审核员确认」——由实验室/客户按实际项目决定是否关掉；
-    脚本不按旧矩阵擅自停用。
-  - 对品类表全部品类 × 适用领域匹配的专属规则建行；建完后将该品类「是否已配绑定」置为「是」。
+口径（与产品约定对齐，v0.7+）：
+  - 审核规则表仅含通用领域规则；特定领域专属规则定义落在本表。
+  - 按 specialty_seed（或 ledger 中品类专属）× 品类领域匹配建行；含「领域」列。
+  - 「启用」默认「是」，由实验室/客户确认；脚本不擅自停用。
+  - 建完后将该品类「是否已配绑定」置为「是」。
 
 用法：
   python3 docs/feishu/lims-ai-review/rebuild_bindings.py
+  python3 docs/feishu/lims-ai-review/rebuild_bindings.py --reset
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ ENV = {
     "LARKSUITE_CLI_NO_UPDATE_NOTIFIER": "1",
     "LARKSUITE_CLI_NO_SKILLS_NOTIFIER": "1",
 }
-VERSION = "v0.6.0"
+VERSION = "v0.7.0"
 
 meta = json.loads((DIR / "base.json").read_text(encoding="utf-8"))
 cm = json.loads((DIR / "category_meta.json").read_text(encoding="utf-8"))
@@ -117,9 +117,9 @@ def update_enabled_description() -> None:
         "type": "select",
         "multiple": False,
         "description": (
-            "本品类是否执行该「品类专属」规则。默认「是」；"
+            "本品类是否执行该专属规则。默认「是」；"
             "由实验室/客户按项目与方法实际情况确认后可改为「否」。"
-            "通用规则不进本表，始终按主表执行。"
+            "审核规则表仅含通用领域规则；特定领域专属规则定义与绑定均在本表。"
         ),
         "options": field.get("options") or [{"name": "是"}, {"name": "否"}],
     }
@@ -135,9 +135,17 @@ def update_enabled_description() -> None:
     print("启用 description", up.get("ok"), up.get("error") or "")
 
 
-def build_rows(existing_binding_ids: set[str] | None = None) -> tuple[list[dict], list[str], list[str]]:
+def load_specialty() -> list[dict]:
+    """专属规则定义：优先 specialty_seed；否则从 ledger 筛品类专属。"""
+    sp = DIR / "specialty_seed.json"
+    if sp.exists():
+        return json.loads(sp.read_text(encoding="utf-8"))["create_records"]
     ledger = json.loads((DIR / "ledger_seed.json").read_text(encoding="utf-8"))["create_records"]
-    spec = [r for r in ledger if r.get("是否通用") == "品类专属"]
+    return [r for r in ledger if r.get("是否通用") == "品类专属"]
+
+
+def build_rows(existing_binding_ids: set[str] | None = None) -> tuple[list[dict], list[str], list[str]]:
+    spec = load_specialty()
     cats = list_records(CAT)
     # 全部品类都建专属绑定（不再只限「是否已配绑定=是」）
     all_codes = [c.get("category_code") for c in cats if c.get("category_code")]
@@ -157,14 +165,23 @@ def build_rows(existing_binding_ids: set[str] | None = None) -> tuple[list[dict]
             bid = f"BLT-{cc}-{rid}"
             if bid in existing_binding_ids:
                 continue
+            fields = rule.get("所需字段") or []
+            fields_txt = "、".join(fields) if isinstance(fields, list) else str(fields)
             rows.append(
                 {
                     "绑定ID": bid,
                     "category_code": cc,
+                    "领域": domain,
                     "rule_id": rid,
                     "启用": "是",  # 默认开；实验室/客户可关
+                    "级别": rule.get("级别"),
+                    "类别": rule.get("类别"),
+                    "所需字段": fields_txt,
+                    "备注": rule.get("备注") or "",
+                    "判定式": rule.get("判定式") or "",
+                    "严重度": rule.get("严重度"),
                     "参数覆盖": "",  # 待顾问按方法标准填写
-                    "标准依据": "",  # 品类侧方法依据待填；严重度看主表
+                    "标准依据": "",  # 品类侧方法依据待填
                     "状态": "待审核员确认",
                     "版本": VERSION,
                 }
@@ -232,8 +249,8 @@ def main() -> None:
 
     # full snapshot = existing kept + newly created desired set
     desired = []
+    spec = load_specialty()
     ledger = json.loads((DIR / "ledger_seed.json").read_text(encoding="utf-8"))["create_records"]
-    spec = [r for r in ledger if r.get("是否通用") == "品类专属"]
     for cc in all_codes:
         domain = CAT_DOMAIN.get(cc)
         if not domain:
@@ -243,12 +260,21 @@ def main() -> None:
             if domain not in domains and "通用" not in domains:
                 continue
             rid = rule["规则ID"]
+            fields = rule.get("所需字段") or []
+            fields_txt = "、".join(fields) if isinstance(fields, list) else str(fields)
             desired.append(
                 {
                     "绑定ID": f"BLT-{cc}-{rid}",
                     "category_code": cc,
+                    "领域": domain,
                     "rule_id": rid,
                     "启用": "是",
+                    "级别": rule.get("级别"),
+                    "类别": rule.get("类别"),
+                    "所需字段": fields_txt,
+                    "备注": rule.get("备注") or "",
+                    "判定式": rule.get("判定式") or "",
+                    "严重度": rule.get("严重度"),
                     "参数覆盖": "",
                     "标准依据": "",
                     "状态": "待审核员确认",
@@ -266,7 +292,9 @@ def main() -> None:
     cm["bind_policy"] = {
         "version": VERSION,
         "only_specialty": True,
-        "severity_from": "审核规则主表（无严重度覆盖列）",
+        "rule_defs_on": "品类规则绑定表（审核规则表仅通用）",
+        "domain_column": "领域（视图中位于品类名称前）",
+        "severity_from": "绑定表「严重度」列（无严重度覆盖）",
         "enabled_default": "是",
         "enabled_owner": "实验室/客户按项目实际确认",
         "row_count": len(desired),

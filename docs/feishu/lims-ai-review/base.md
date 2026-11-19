@@ -1,29 +1,40 @@
 # 规则台账 Base
 
 - base_token: `B2WHb25XVaCPinskfxKcr0J0npt`
-- table_id: `tblwz7D6MQVvm3Da`（表名 审核规则）
 - URL: https://bcng1log8i8v.feishu.cn/base/B2WHb25XVaCPinskfxKcr0J0npt
-- 记录数: **50**（含 L3-c/d、L4-a/b/d 占位），状态全部「待审核员确认」；版本 **v0.5.4**
-- **表设计**（按级别/规则组组织，**已移除 A/B/C**；检查意图以规范为准，不以内部 §2.3 为权威）：
-  - `级别`：L1 基础形式 / L2 数据逻辑 / L3 合规对齐 / L4 溯源验证
-  - `规则组`：Ln-a/b/c/d（级别下的类别编码）
-  - `类别`：主题名，与规则组一一对应
-  - `所需字段` / `判定式` / `严重度` / `适用领域`：可执行检查点；**`标准依据`** 以 CNAS-CL01 / 17025 条款为主，**末尾统一附** `CMA：RB/T 214-2017 对应章；《检验检测机构资质认定管理办法》（范围/标志）`（详见附录）；`备注` 为检查意图
-    - L1：L1-a 编号 · L1-b 签名 · L1-c 字段齐全 · L1-d 单位与格式
-    - L2：L2-a 日期链 · L2-b 委托项↔结果 · L2-c 设备校准覆盖 · L2-d 内部勾稽
-    - L3：L3-a 标准现行有效 · L3-b 限值符合 · L3-c 方法完整性 · L3-d 项目完整性
-    - L4：L4-a 原始记录哈希/时间戳 · L4-b 人员资质 · L4-c CMA 范围 · L4-d 透明度溯源码
-- 视图: 表格（默认）· 按状态 · 待确认 · **按级别**（group 级别→规则组）；统一按字段 **`排序号`** 升序（级别 L1→L4 → 规则组 a→d → 通用优先于品类专属 → 组内序号）
-- 种子：`ledger_seed.json`；生成器 `make_records.py`；映射表 `level_map.json`
-- 品类表 table_id: `tblv1BS7q0eMrAYu`（6 行，均已配绑定）；绑定表 table_id: `tbldbfHOuYsh9dLn`（**42 行**；见 `binding_seed.json` / `rebuild_bindings.py`；审计见 `audit-universal-vs-specialty.md`）
-  - 绑定口径：只挂主表「是否通用=品类专属」；**通用规则不进绑定表**。无「严重度覆盖」（严重度以主表为准）。「启用」默认「是」，由实验室/客户按项目实际确认。
-  - 平行/RSD/允许偏差（L2-d-1/4、L3-b-2）仅挂电网物资；LOD/LOQ（L2-d-9）适用领域为空、当前不绑任何品类。
-  - 「参数覆盖」「标准依据」已按品类灌入 MVP 草案（`fill_binding_params.py`），状态仍为待审核员确认；主表标准依据管 CNAS/CMA 通则，绑定表标准依据管品类方法/产品标准。
-  - 关联展示列：`品类名称`（Lookup←品类）、`级别`/`类别`（Lookup←审核规则）、`所需字段`/`备注`（Formula←审核规则）；`enrich_bind_lookups.py`
-- 3.3 时间轴画板 token（T10 重渲染后）: `MyxDwabVGhVXi0byjurcaDf5nvh`，源文件 `timeline.svg` / 生成器 `make_timeline.py`
+- 版本 **v0.7.0**
 
-> 说明：规则 ID 统一为 **`Ln-x-n`**（如 `L1-a-1`、`L2-b-1`），与规则组对齐；已废弃 `A01-1` / `B01-1` / `C02-5` 等旧编号（见 `level_map.json` → `legacy_id_map`）。L3-c、L3-d、L4-a/b/d 为占位规则（`L3-c-1` / `L3-d-1` / `L4-a-1` / `L4-b-1` / `L4-d-1`），MVP 默认不消费。
+## 表分工（v0.7）
 
-- 标准对照附录：[`appendix-rule-standard-basis.md`](./appendix-rule-standard-basis.md)（审什么/所需字段/出处/原文，对齐 v0.5.4）
+| 表 | table_id | 内容 |
+| --- | --- | --- |
+| **审核规则** | `tblwz7D6MQVvm3Da` | **仅通用领域**规则（40 行）：`是否通用=通用`，`适用领域=通用` |
+| **品类** | `tblv1BS7q0eMrAYu` | 6 个 MVP 品类 |
+| **品类规则绑定** | `tbldbfHOuYsh9dLn` | **特定领域专属规则定义 + 品类绑定**（42 行）；含「领域」列 |
+
+### 审核规则
+
+- 级别 / 规则组 / 类别 / 所需字段 / 判定式 / 严重度 / 适用领域(=通用) / 标准依据(CNAS+CMA 尾注) / 备注
+- 视图按 `排序号`；种子：`universal_seed.json`（全量仍见 `ledger_seed.json`）
+- 生成器：`make_records.py` / `sync_rules_basis.py`（`--push-feishu` 只更新通用行）
+
+### 品类规则绑定
+
+- **列序（表格视图）**：`绑定ID` → `category_code` → **`领域`** → `品类名称` → `rule_id` → `启用` → `级别` → `类别` → `所需字段` → `参数覆盖` → `备注` → `标准依据` → `状态` → `版本` → `判定式` → `严重度`
+  - 「领域」插在「品类名称」前；其余相对顺序未改；`判定式`/`严重度` 追加在末尾（专属规则定义落本表）
+- `品类名称`：Lookup←品类；其余专属规则字段为**存储列**（不再回指审核规则）
+- `标准依据`：品类方法/产品标准；`参数覆盖`：品类参数草案（`fill_binding_params.py`）
+- 「启用」默认「是」，由实验室/客户确认
+- 种子：`specialty_seed.json`（定义）+ `binding_seed.json`（绑定行）
+- 迁移/重建：`migrate_specialty_to_binding.py` / `rebuild_bindings.py`
+- 审计：`audit-universal-vs-specialty.md`
+
+> L2-d-9（LOD/LOQ）适用领域为空，MVP 不建绑定行，仅留在 `specialty_seed.json`。
+
+## 其它
+
+- 规则 ID：`Ln-x-n`；旧 A/B/C 编号见 `level_map.json`
+- 标准对照附录：[`appendix-rule-standard-basis.md`](./appendix-rule-standard-basis.md)
   - 飞书云文档：https://bcng1log8i8v.feishu.cn/docx/CKf8dNcAJoptCpxyImFcsd9wnmc
-  - 亦已作为 **附录 B** 插入产品规划文：https://bcng1log8i8v.feishu.cn/docx/NmYVdjPO9oswaoxyHsDcQNu2nKh （`lark-cli docs +create` 自本地 md 导入）
+  - 附录 B：https://bcng1log8i8v.feishu.cn/docx/NmYVdjPO9oswaoxyHsDcQNu2nKh
+- 3.3 时间轴画板：`MyxDwabVGhVXi0byjurcaDf5nvh`（`timeline.svg` / `make_timeline.py`）
