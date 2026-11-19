@@ -15,7 +15,7 @@
     - L4：L4-a 原始记录哈希/时间戳 · L4-b 人员资质 · L4-c CMA 范围 · L4-d 透明度溯源码
 - 视图: 表格（默认）· 按状态 · 待确认 · **按级别**（group 级别→规则组）；统一按字段 **`排序号`** 升序（级别 L1→L4 → 规则组 a→d → 通用优先于品类专属 → 组内序号）
 - 种子：`ledger_seed.json`；生成器 `make_records.py`；映射表 `level_map.json`
-- 品类表 table_id: `tblv1BS7q0eMrAYu`（6 行，均已配绑定）；绑定表 table_id: `tbldbfHOuYsh9dLn`（**12 行** = 6 品类 × 适用领域匹配的「品类专属」规则；见 `binding_seed.json` / `rebuild_bindings.py`）
+- 品类表 table_id: `tblv1BS7q0eMrAYu`（6 行，均已配绑定）；绑定表 table_id: `tbldbfHOuYsh9dLn`（**16 行**；L2-d-1 仅挂电网物资品类；见 `binding_seed.json` / `rebuild_bindings.py`）
   - 绑定口径：只挂主表「是否通用=品类专属」；**通用规则不进绑定表**。无「严重度覆盖」（严重度以主表为准）。「启用」默认「是」，由实验室/客户按项目实际确认。
   - 「参数覆盖」「标准依据」已按品类灌入 MVP 草案（`fill_binding_params.py`），状态仍为待审核员确认；主表标准依据管 CNAS/CMA 通则，绑定表标准依据管品类方法/产品标准。
   - 关联展示列：`品类名称`（Lookup←品类）、`级别`/`类别`（Lookup←审核规则）、`所需字段`/`备注`（Formula←审核规则）；`enrich_bind_lookups.py`
