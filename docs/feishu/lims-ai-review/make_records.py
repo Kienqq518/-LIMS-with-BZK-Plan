@@ -24,6 +24,7 @@ FIELD_OPTS=[
   "签章与骑缝章",
   "委托方信息",
   "受检方信息",
+  "接收日期",
   "采样日期",
   "检测日期",
   "报告日期",
@@ -223,19 +224,20 @@ RULES=[
   ],
   [
     "L1-c-8",
-    "dates_present(sampling, test, report) && date_format_unified(...)",
+    "dates_present(receive, activity, report) && sampling_date_if_critical(...) && date_format_unified(...)",
     [
+      "接收日期",
       "采样日期",
       "检测日期",
       "报告日期"
     ],
-    "CNAS-CL01:2018 7.4 / 7.8.2（采样、检测、报告日期）；ISO/IEC 17025:2017 7.4、7.8.2",
+    "CNAS-CL01:2018 7.8.2.1 h/i/j（接收日期、关键抽样日期、活动实施日期、报告发布日期）；必要时 7.8.5 a；ISO/IEC 17025:2017 同款",
     "严重",
     [
       "通用"
     ],
     "通用",
-    "审什么·字段齐全：采样/检测/报告日期齐全且格式统一"
+    "字段齐全：报告须含接收/活动实施/发布日期；结果有效性或应用至关重要时含抽样日期，格式统一"
   ],
   [
     "L1-c-9",
@@ -842,7 +844,7 @@ def pack(row):
     "适用领域": domains,
     "是否通用": univ,
     "状态": "待审核员确认",
-    "版本": "v0.5.1",
+    "版本": "v0.5.2",
     "负责人": "产品" if g.startswith("L1") else ("后端" if g in ("L2-b", "L4-a") else "领域顾问"),
     "备注": note,
     "排序号": sort_key(rid, univ),
