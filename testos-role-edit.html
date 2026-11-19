@@ -19,6 +19,11 @@
     .perm-check { display: inline-flex; align-items: center; gap: 4px; margin-right: 16px; margin-bottom: 4px; cursor: pointer; }
     .perm-check input { accent-color: #2563eb; }
     .perm-check .cond-tag { font-size:11px; color: #d97706; margin-left: 2px; }
+    .perm-checks { display: flex; flex-wrap: wrap; align-items: center; }
+    .perm-unit { display: inline-flex; align-items: center; margin-right: 12px; margin-bottom: 4px; }
+    .perm-unit .perm-check { margin-right: 4px; margin-bottom: 0; }
+    .perm-nested-wrap { flex-basis: 100%; display: flex; flex-wrap: wrap; padding: 2px 0 4px 20px; }
+    .perm-caret { font-size: 12px; color: #94a3b8; cursor: pointer; user-select: none; width: 12px; text-align: center; }
     .req { color: #ef4444; }
     .perm-group td { background: #f1f5f9; font-weight: 600; color: #334155; cursor: pointer; user-select: none; }
     .perm-group.phase2 td { color: #94a3b8; }
@@ -75,7 +80,7 @@
           <label class="flex cursor-pointer items-center gap-1.5 text-slate-600">
             <input id="applyPerm" type="checkbox" checked class="accent-blue-600" /> 应用
           </label>
-          <button type="button" onclick="toggleExpandAll()" class="text-slate-500 hover:text-blue-600">
+          <button type="button" id="btnExpandAll" onclick="toggleExpandAll()" class="text-slate-500 hover:text-blue-600">
             <i class="fa fa-arrows-alt"></i> 展开
           </button>
           <label class="flex cursor-pointer items-center gap-1.5 text-slate-600">
@@ -106,6 +111,7 @@
   </main>
 
   <script src="js/testos-app-permissions.js"></script>
+  <script src="js/testos-wuzi-permissions.js"></script>
   <script src="js/testos-header.js"></script>
   <script>
     var params = new URLSearchParams(window.location.search);
@@ -118,7 +124,6 @@
 
     var modules = [
       'testos底座',
-      '实验室业务管理系统',
       'LIMS检测标准库',
       '实验室物资业务管理系统',
       WEB_DATA_MODULE,
@@ -140,6 +145,7 @@
       { type: 'item', object: '系统设置', perms: ['系统参数', '操作日志', '登录日志', '关于我们'], checked: [true, true, true, true] }
     ];
     modulePermissions[APP_DATA_MODULE] = TestOSAppPermissions.clone();
+    modulePermissions['实验室物资业务管理系统'] = TestOSWuziPermissions.clone();
 
     var defaultPermissions = [
       { type: 'item', object: '工作台', perms: ['查看', '导出'], checked: [true, true] },
@@ -150,6 +156,8 @@
     var currentModule = WEB_DATA_MODULE;
     var permState = {};
     var groupExpanded = {};
+    var nestedExpanded = {};
+    var nestedOpen = {};
 
     function initPage() {
       document.getElementById('backLink').href = backUrl;
@@ -195,6 +203,108 @@
       renderPermTable();
     }
 
+    function nestedKey(ri, ni) {
+      return currentModule + ':' + ri + ':' + ni;
+    }
+
+    function findNestedIndex(row, permName) {
+      if (!row.nested) return -1;
+      for (var i = 0; i < row.nested.length; i++) {
+        if (row.nested[i].object === permName) return i;
+      }
+      return -1;
+    }
+
+    function moduleHasNested() {
+      var rows = permState[currentModule] || [];
+      return rows.some(function (r) { return r.nested && r.nested.length; });
+    }
+
+    function isNestedShown(ri, ni) {
+      if (nestedExpanded[currentModule]) return true;
+      return !!nestedOpen[nestedKey(ri, ni)];
+    }
+
+    function anyNestedShown() {
+      var rows = permState[currentModule] || [];
+      for (var ri = 0; ri < rows.length; ri++) {
+        if (!rows[ri].nested) continue;
+        for (var ni = 0; ni < rows[ri].nested.length; ni++) {
+          if (isNestedShown(ri, ni)) return true;
+        }
+      }
+      return false;
+    }
+
+    function updateExpandButton() {
+      var btn = document.getElementById('btnExpandAll');
+      if (!btn) return;
+      if (moduleHasNested() && anyNestedShown()) {
+        btn.innerHTML = '<i class="fa fa-compress"></i> 收起';
+      } else {
+        btn.innerHTML = '<i class="fa fa-arrows-alt"></i> 展开';
+      }
+    }
+
+    function clearNestedOpenForModule() {
+      Object.keys(nestedOpen).forEach(function (k) {
+        if (k.indexOf(currentModule + ':') === 0) delete nestedOpen[k];
+      });
+    }
+
+    function toggleNested(ri, ni, ev) {
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+      if (nestedExpanded[currentModule]) {
+        nestedExpanded[currentModule] = false;
+        var rows = permState[currentModule] || [];
+        rows.forEach(function (r, rii) {
+          if (!r.nested) return;
+          r.nested.forEach(function (_, nii) {
+            nestedOpen[nestedKey(rii, nii)] = !(rii === ri && nii === ni);
+          });
+        });
+      } else {
+        var k = nestedKey(ri, ni);
+        nestedOpen[k] = !nestedOpen[k];
+      }
+      renderPermTable();
+    }
+
+    function collectChecks(row) {
+      var list = (row.checked || []).slice();
+      if (row.nested) {
+        row.nested.forEach(function (n) {
+          list = list.concat(n.checked || []);
+        });
+      }
+      return list;
+    }
+
+    function renderCheck(ri, pi, name, checked, nestedIdx) {
+      var caret = '';
+      if (nestedIdx >= 0) {
+        caret = '<i class="fa ' + (isNestedShown(ri, nestedIdx) ? 'fa-caret-down' : 'fa-caret-right') +
+          ' perm-caret" onclick="toggleNested(' + ri + ',' + nestedIdx + ',event)"></i>';
+      }
+      return '<span class="perm-unit">' +
+        '<label class="perm-check">' +
+        '<input type="checkbox" data-row="' + ri + '" data-perm="' + pi + '"' +
+        (checked ? ' checked' : '') +
+        ' onchange="onPermChange(' + ri + ',' + pi + ',this.checked)" />' +
+        '<span>' + name + '</span></label>' + caret +
+        '</span>';
+    }
+
+    function renderNestedCheck(ri, ni, npi, name, checked) {
+      return '<label class="perm-check">' +
+        '<input type="checkbox"' + (checked ? ' checked' : '') +
+        ' onchange="onNestedPermChange(' + ri + ',' + ni + ',' + npi + ',this.checked)" />' +
+        '<span>' + name + '</span></label>';
+    }
+
     function getActiveGroup(rows, ri) {
       for (var i = ri - 1; i >= 0; i--) {
         if (rows[i].type === 'group') return rows[i].name;
@@ -232,21 +342,30 @@
         var groupName = getActiveGroup(rows, ri);
         if (groupName && isGroupCollapsed(groupName)) return;
 
+        var permHtml = '<div class="perm-checks">';
+        row.perms.forEach(function (p, pi) {
+          var ni = findNestedIndex(row, p);
+          var condHint = row.conditional && /条件/.test(p) ? '<span class="cond-tag" title="业务规则门控，非 RBAC 本身">条件</span>' : '';
+          permHtml += renderCheck(ri, pi, p, row.checked[pi], ni) + condHint;
+        });
+        if (row.nested) {
+          row.nested.forEach(function (n, ni) {
+            if (!isNestedShown(ri, ni)) return;
+            permHtml += '<div class="perm-nested-wrap">';
+            n.perms.forEach(function (np, npi) {
+              permHtml += renderNestedCheck(ri, ni, npi, np, n.checked[npi]);
+            });
+            permHtml += '</div>';
+          });
+        }
+        permHtml += '</div>';
+
         html += '<tr class="perm-item' + (groupName ? ' child' : '') + '" data-row="' + ri + '">' +
           '<td class="font-medium text-slate-700">' +
             row.object +
             (row.phase2 ? ' <span class="text-xs text-slate-400">（二期）</span>' : '') +
           '</td>' +
-          '<td>' +
-            row.perms.map(function (p, pi) {
-              var condHint = row.conditional && /条件/.test(p) ? '<span class="cond-tag" title="业务规则门控，非 RBAC 本身">条件</span>' : '';
-              return '<label class="perm-check">' +
-                '<input type="checkbox" data-row="' + ri + '" data-perm="' + pi + '"' +
-                (row.checked[pi] ? ' checked' : '') +
-                ' onchange="onPermChange(' + ri + ',' + pi + ',this.checked)" />' +
-                '<span>' + p + '</span>' + condHint + '</label>';
-            }).join('') +
-          '</td>' +
+          '<td>' + permHtml + '</td>' +
           '<td class="text-center">' +
             '<input type="checkbox" class="row-select-all accent-blue-600" data-row="' + ri + '"' +
             getRowCheckState(row) +
@@ -257,6 +376,7 @@
 
       document.getElementById('permBody').innerHTML = html;
       updateGlobalSelectAll();
+      updateExpandButton();
     }
 
     function toggleGroup(name) {
@@ -265,8 +385,9 @@
     }
 
     function getRowCheckState(row) {
-      var all = row.checked.every(Boolean);
-      var some = row.checked.some(Boolean);
+      var checks = collectChecks(row);
+      var all = checks.every(Boolean);
+      var some = checks.some(Boolean);
       if (all) return ' checked';
       if (some) return ' data-indeterminate="true"';
       return '';
@@ -284,8 +405,20 @@
       setTimeout(applyIndeterminate, 0);
     }
 
+    function onNestedPermChange(rowIdx, nestedIdx, permIdx, checked) {
+      permState[currentModule][rowIdx].nested[nestedIdx].checked[permIdx] = checked;
+      renderPermTable();
+      setTimeout(applyIndeterminate, 0);
+    }
+
     function toggleRowAll(rowIdx, checked) {
-      permState[currentModule][rowIdx].checked = permState[currentModule][rowIdx].checked.map(function () { return checked; });
+      var row = permState[currentModule][rowIdx];
+      row.checked = row.checked.map(function () { return checked; });
+      if (row.nested) {
+        row.nested.forEach(function (n) {
+          n.checked = n.checked.map(function () { return checked; });
+        });
+      }
       renderPermTable();
     }
 
@@ -293,6 +426,11 @@
       permState[currentModule].forEach(function (row) {
         if (row.type === 'item') {
           row.checked = row.checked.map(function () { return checked; });
+          if (row.nested) {
+            row.nested.forEach(function (n) {
+              n.checked = n.checked.map(function () { return checked; });
+            });
+          }
         }
       });
       renderPermTable();
@@ -308,13 +446,20 @@
         document.getElementById('selectAllPerm').checked = false;
         return;
       }
-      var allChecked = rows.every(function (r) { return r.checked.every(Boolean); });
+      var allChecked = rows.every(function (r) { return collectChecks(r).every(Boolean); });
       document.getElementById('selectAllPerm').checked = allChecked;
       setTimeout(applyIndeterminate, 0);
     }
 
     function toggleExpandAll() {
       var rows = permState[currentModule] || [];
+      if (moduleHasNested()) {
+        var next = !anyNestedShown();
+        nestedExpanded[currentModule] = next;
+        clearNestedOpenForModule();
+        renderPermTable();
+        return;
+      }
       var groups = rows.filter(function (r) { return r.type === 'group'; });
       if (!groups.length) {
         alert('原型演示：当前应用无分组权限');
