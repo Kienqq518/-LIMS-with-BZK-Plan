@@ -21,7 +21,7 @@ ENV = {
     "LARKSUITE_CLI_NO_UPDATE_NOTIFIER": "1",
     "LARKSUITE_CLI_NO_SKILLS_NOTIFIER": "1",
 }
-VERSION = "v0.5.3"
+VERSION = "v0.5.4"
 
 # ---------------------------------------------------------------------------
 # 条款原文摘录（CNAS-CL01:2018 ≡ ISO/IEC 17025:2017；另附 CMA 相关）
@@ -201,10 +201,12 @@ CLAUSES: dict[str, dict] = {
     },
     "CMA-RB214": {
         "cite": "RB/T 214-2017《检验检测机构资质认定能力评价 检验检测机构通用要求》；《检验检测机构资质认定管理办法》",
-        "title": "CMA 资质认定通用要求",
+        "title": "CMA 资质认定通用要求（范围/标志 + 与 17025 对应章）",
         "text": (
-            "资质认定要求检验检测机构在批准的能力范围内开展活动；人员能力、方法、设备、报告签发等应满足 RB/T 214 及资质认定证书附表范围。"
-            "报告使用 CMA 标志应符合资质认定相关规定。细则以现行有效版本及证书附表为准。"
+            "RB/T 214-2017 条款结构与 ISO/IEC 17025 / CNAS-CL01 基本对应（如 6.2 人员、6.4 设备、6.5 计量溯源、"
+            "7.1 合同评审、7.2 方法、7.4 样品处置、7.5 技术记录、7.7 结果有效性、7.8 报告结果、8.3 文件控制、8.4 记录控制）。\n"
+            "《检验检测机构资质认定管理办法》规范资质认定及 CMA 标志使用；检验检测活动应在批准的能力范围（证书附表）内开展。"
+            "细则以现行有效版本及证书附表为准。"
         ),
     },
     "METHOD-MVP": {
@@ -253,7 +255,7 @@ RULES = [
    ["CL01-7.8.1", "CL01-7.8.2"]],
   ["L1-b-2", "seal_position_ok(template) && cross_page_seal_ok(template)",
    ["签章与骑缝章", "模板格式参数"],
-   "资质认定用章/CMA 标志使用要求；实验室质量手册报告签章控制（CL01 未单列骑缝章）",
+   "实验室质量手册报告签章控制（CL01 未单列骑缝章）",
    "严重", ["通用"], "通用",
    "公章/检验检测专用章、骑缝章及受控模板规定的签章位置完整、无错位遗漏",
    ["LAB-QM-SEAL", "CMA-RB214"]],
@@ -470,7 +472,7 @@ RULES = [
    ["CL01-7.2", "CL01-7.8.2"]],
   ["L3-a-3", "sample_type_in_standard_scope(样品信息, 标准适用范围)",
    ["标准适用范围", "样品信息章节", "引用标准号"],
-   "CNAS-CL01:2018 7.2.1.1（使用适当的方法）；RB/T 214 方法要求",
+   "CNAS-CL01:2018 7.2.1.1（使用适当的方法）",
    "严重", ["通用"], "通用",
    "样品类型落在所用方法/标准适用范围内",
    ["CL01-7.2", "CMA-RB214"]],
@@ -527,13 +529,13 @@ RULES = [
    ["CL01-7.5", "CL01-8.4"]],
   ["L4-b-1", "tester in qualified_personnel(委托检测项目)",
    ["人员资质", "委托检测项目", "签名位"],
-   "CNAS-CL01:2018 6.2（人员能力与授权）；RB/T 214-2017 6.2",
+   "CNAS-CL01:2018 6.2（人员能力与授权）",
    "严重", ["通用"], "通用",
    "检测/授权签字人员具备对应项目能力与授权（预留）",
    ["CL01-6.2", "CMA-RB214"]],
   ["L4-c-1", "items_within_CMA_scope(委托检测项目, 检测方法)",
    ["CMA资质范围", "委托检测项目", "检测方法"],
-   "《检验检测机构资质认定管理办法》；RB/T 214-2017；资质认定证书能力附表",
+   "资质认定证书能力附表（批准范围）",
    "严重", ["通用"], "通用",
    "检测项目与方法均在 CMA 批准能力范围内",
    ["CMA-RB214"]],
@@ -546,8 +548,84 @@ RULES = [
 ]
 # fmt: on
 
-APPENDIX_KEYS = [r[8] for r in RULES]
-RULE_ROWS = [r[:8] for r in RULES]
+
+def _rbt_chapters(keys: list[str], rid: str) -> list[str]:
+    """Map CL01 clause keys -> RB/T 214 chapter numbers (structure对齐 17025)."""
+    order = []
+    seen = set()
+    key_map = {
+        "CL01-6.2": "6.2",
+        "CL01-6.4": "6.4",
+        "CL01-6.5": "6.5",
+        "CL01-7.1": "7.1",
+        "CL01-7.2": "7.2",
+        "CL01-7.3": "7.3",
+        "CL01-7.4": "7.4",
+        "CL01-7.5": "7.5",
+        "CL01-7.7": "7.7",
+        "CL01-7.8.1": "7.8",
+        "CL01-7.8.2": "7.8",
+        "CL01-7.8.3": "7.8",
+        "CL01-7.8.5": "7.8",
+        "CL01-7.8.6": "7.8",
+        "CL01-7.11": "7.11",
+        "CL01-8.3": "8.3",
+        "CL01-8.4": "8.4",
+        "LAB-QM-SEAL": "7.8",
+        "METHOD-MVP": "7.8",
+        "GBT-8170": "7.8",
+    }
+    for k in keys:
+        ch = key_map.get(k)
+        if ch and ch not in seen:
+            seen.add(ch)
+            order.append(ch)
+    if rid == "L4-c-1" and not order:
+        return []  # 范围专条，尾注单独写
+    if not order:
+        order = ["7.8"]
+    return order
+
+
+def _cma_tail(rid: str, keys: list[str]) -> str:
+    chapters = _rbt_chapters(keys, rid)
+    if rid == "L4-c-1":
+        return "CMA：RB/T 214-2017；《检验检测机构资质认定管理办法》及证书能力附表（范围）"
+    if rid == "L1-b-2":
+        return "CMA：RB/T 214-2017 7.8；《检验检测机构资质认定管理办法》（CMA 标志/专用章）"
+    ch = "、".join(chapters) if chapters else "（通则）"
+    # 范围/标志：多数规则适用时提示；范围专检仍以 L4-c 为主
+    return f"CMA：RB/T 214-2017 {ch}；《检验检测机构资质认定管理办法》（范围/标志，适用时）"
+
+
+def _strip_old_cma(basis: str) -> str:
+    # drop previous appended CMA： tails / mid-line RB-only clutter already cleaned in source
+    if "；CMA：" in basis:
+        basis = basis.split("；CMA：")[0]
+    if basis.startswith("CMA："):
+        return ""
+    return basis.rstrip("；。 ")
+
+
+# 统一在标准依据末尾追加 CMA 对应章 + 管理办法；附录 keys 确保含 CMA-RB214
+_PROCESSED = []
+_APPENDIX_KEYS = []
+for _row in RULES:
+    _keys = list(_row[8])
+    if "CMA-RB214" not in _keys:
+        _keys.append("CMA-RB214")
+    _basis = _strip_old_cma(_row[3])
+    _tail = _cma_tail(_row[0], _row[8])
+    if _basis:
+        _basis = f"{_basis}；{_tail}"
+    else:
+        _basis = _tail
+    _PROCESSED.append([_row[0], _row[1], _row[2], _basis, _row[4], _row[5], _row[6], _row[7]])
+    _APPENDIX_KEYS.append(_keys)
+
+APPENDIX_KEYS = _APPENDIX_KEYS
+RULE_ROWS = _PROCESSED
+assert len(RULE_ROWS) == 50 and len(APPENDIX_KEYS) == 50
 
 
 def rewrite_make_records() -> None:
@@ -578,14 +656,13 @@ def rewrite_make_records() -> None:
     )
     if n != 1:
         raise SystemExit(f"failed to rewrite RULES block (n={n})")
-    new = new.replace('"版本": "v0.5.2"', f'"版本": "{VERSION}"')
-    new = new.replace('"版本": "v0.5.1"', f'"版本": "{VERSION}"')
+    new = re.sub(r'"版本": "v0\.5\.\d+"', f'"版本": "{VERSION}"', new)
     # soften header: 备注不再强调 §2.3 权威
     new = re.sub(
         r"字段口径：\n.*?规则ID：Ln-x-n",
         "字段口径：\n"
         "  - 所需字段 / 判定式 / 严重度 / 适用领域：以可执行检查点为准\n"
-        "  - 标准依据：CNAS-CL01 / ISO/IEC 17025、RB/T 214（CMA）等规范条款（不引用内部 §2.3）\n"
+        "  - 标准依据：CNAS-CL01 / ISO/IEC 17025 为主；末尾统一附 CMA：RB/T 214 对应章 + 管理办法（范围/标志）\n"
         "  - 备注：检查意图说明（可偏离旧「审什么」表述）\n"
         "  - 规则ID：Ln-x-n",
         new,
@@ -601,7 +678,7 @@ def write_appendix() -> Path:
         "# 附录：审核规则 × 所需字段 × 标准出处与原文",
         "",
         "> 依据主源：**CNAS-CL01:2018**（等同采用 **ISO/IEC 17025:2017**）。",
-        "> CMA 相关：**RB/T 214-2017**、《检验检测机构资质认定管理办法》及证书附表。",
+        "> 每条台账「标准依据」末尾统一附：**CMA：RB/T 214-2017 对应章** + **《检验检测机构资质认定管理办法》（范围/标志，适用时）**。",
         "> 方法限值类以报告引用的现行有效方法/产品标准为准。",
         ">",
         f"> 与规则台账版本 **{VERSION}** 对齐；备注列表达检查意图，不以内部 §2.3 为权威依据。",
@@ -609,6 +686,7 @@ def write_appendix() -> Path:
         "## 使用说明",
         "",
         "- **所需字段**须能支撑判定式，并在下列「标准出处」中找得到对应要求（或明确标注为实验室程序/非 7.8.2 强制项）。",
+        "- RB/T 214 章条号与 CL01/17025 基本对应；CMA **范围**与 **标志**以管理办法及证书附表为准。",
         "- 条款原文为摘录，实施以正式出版文本为准。",
         "",
         "---",
@@ -758,7 +836,7 @@ def update_base_md() -> None:
 
 
 def main() -> None:
-    assert len(RULES) == 50, len(RULES)
+    assert len(RULE_ROWS) == 50, len(RULE_ROWS)
     rewrite_make_records()
     app = write_appendix()
     write_seed_via_make_records()
