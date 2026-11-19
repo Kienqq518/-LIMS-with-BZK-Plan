@@ -3,12 +3,12 @@
 - base_token: `B2WHb25XVaCPinskfxKcr0J0npt`
 - table_id: `tblwz7D6MQVvm3Da`（表名 审核规则）
 - URL: https://bcng1log8i8v.feishu.cn/base/B2WHb25XVaCPinskfxKcr0J0npt
-- 记录数: **50**（含 L3-c/d、L4-a/b/d 占位），状态全部「待审核员确认」；版本 **v0.5.1**
-- **表设计**（对齐飞书 §2.3「审什么」，**已移除 A/B/C**）：
+- 记录数: **50**（含 L3-c/d、L4-a/b/d 占位），状态全部「待审核员确认」；版本 **v0.5.3**
+- **表设计**（按级别/规则组组织，**已移除 A/B/C**；检查意图以规范为准，不以内部 §2.3 为权威）：
   - `级别`：L1 基础形式 / L2 数据逻辑 / L3 合规对齐 / L4 溯源验证
   - `规则组`：Ln-a/b/c/d（级别下的类别编码）
-  - `类别`：审什么主题名，与规则组一一对应
-  - `所需字段` / `判定式` / `严重度` / `适用领域`：按 §2.3「审什么」检查点组织；**`标准依据` 引用 CNAS-CL01 / ISO/IEC 17025、RB/T 214（CMA）等规范条款**（不引用内部文档章节号）
+  - `类别`：主题名，与规则组一一对应
+  - `所需字段` / `判定式` / `严重度` / `适用领域`：可执行检查点；**`标准依据` 须对应 CNAS-CL01 / ISO/IEC 17025、RB/T 214（CMA）等条款**（详见附录）；`备注` 为检查意图
     - L1：L1-a 编号 · L1-b 签名 · L1-c 字段齐全 · L1-d 单位与格式
     - L2：L2-a 日期链 · L2-b 委托项↔结果 · L2-c 设备校准覆盖 · L2-d 内部勾稽
     - L3：L3-a 标准现行有效 · L3-b 限值符合 · L3-c 方法完整性 · L3-d 项目完整性
@@ -19,3 +19,5 @@
 - 3.3 时间轴画板 token（T10 重渲染后）: `MyxDwabVGhVXi0byjurcaDf5nvh`，源文件 `timeline.svg` / 生成器 `make_timeline.py`
 
 > 说明：规则 ID 统一为 **`Ln-x-n`**（如 `L1-a-1`、`L2-b-1`），与规则组对齐；已废弃 `A01-1` / `B01-1` / `C02-5` 等旧编号（见 `level_map.json` → `legacy_id_map`）。L3-c、L3-d、L4-a/b/d 为占位规则（`L3-c-1` / `L3-d-1` / `L4-a-1` / `L4-b-1` / `L4-d-1`），MVP 默认不消费。
+
+- 标准对照附录：[`appendix-rule-standard-basis.md`](./appendix-rule-standard-basis.md)（审什么/所需字段/出处/原文，对齐 v0.5.3）
