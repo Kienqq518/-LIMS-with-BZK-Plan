@@ -281,6 +281,10 @@ def main() -> None:
         encoding="utf-8",
     )
     print("wrote category_meta.json + binding_seed.json; desired", len(desired))
+    # 回填参数覆盖 / 品类标准依据
+    subprocess.check_call(
+        [sys.executable, str(DIR / "fill_binding_params.py")], env=ENV, cwd=ROOT
+    )
 
 
 if __name__ == "__main__":

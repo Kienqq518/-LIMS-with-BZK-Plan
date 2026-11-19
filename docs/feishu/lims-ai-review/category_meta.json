@@ -55,7 +55,94 @@
     "L4-c-1",
     "L4-d-1"
   ],
-  "PARAM": {},
+  "PARAM": {
+    "CAT-BOLT:L2-d-11": {
+      "pack": "grid_fastener",
+      "checks": [
+        "Rm_vs_grade",
+        "torque_coeff_band",
+        "hardness_band"
+      ]
+    },
+    "CAT-BOLT:L3-b-5": {
+      "lower_map": {
+        "Rm": "按等级",
+        "A": "按等级"
+      },
+      "points": 3,
+      "hrc_band": "10.9级示例 HRC32-39"
+    },
+    "CAT-GLOVE:L2-d-11": {
+      "pack": "safety_glove",
+      "checks": [
+        "voltage_class_vs_type",
+        "leak_vs_hold"
+      ]
+    },
+    "CAT-GLOVE:L3-b-4": {
+      "voltage": "按手套类型",
+      "leak_limit": "按类型",
+      "hold_min": 60
+    },
+    "CAT-CABLE:L2-d-11": {
+      "pack": "power_cable",
+      "checks": [
+        "R20_corr",
+        "thickness_min_multi_point"
+      ]
+    },
+    "CAT-CABLE:L3-b-5": {
+      "lower_map": {
+        "绝缘厚度": "标准最小值",
+        "护套厚度": "标准最小值"
+      },
+      "points": "多点取最小",
+      "ref_temp_C": 20
+    },
+    "CAT-CONDUIT:L2-d-11": {
+      "pack": "cable_conduit",
+      "checks": [
+        "ring_stiffness",
+        "impact",
+        "dimension"
+      ]
+    },
+    "CAT-CONDUIT:L3-b-5": {
+      "lower_map": {
+        "环刚度": "按规格",
+        "壁厚": "按规格"
+      },
+      "points": 3
+    },
+    "CAT-HARNESS:L2-d-11": {
+      "pack": "safety_harness",
+      "checks": [
+        "static_load",
+        "buckle_strength"
+      ]
+    },
+    "CAT-HARNESS:L3-b-4": {
+      "voltage": null,
+      "leak_limit": null,
+      "hold_min": null,
+      "static_load_kN": "按型号",
+      "note": "安全带以静负荷等为主，耐压参数可空"
+    },
+    "CAT-CON-WIRE:L2-d-11": {
+      "pack": "conductor_fitting",
+      "checks": [
+        "grip_strength",
+        "dimension"
+      ]
+    },
+    "CAT-CON-WIRE:L3-b-5": {
+      "lower_map": {
+        "握着力": "按型号",
+        "尺寸": "按图纸"
+      },
+      "points": 3
+    }
+  },
   "legacy_id_map": {
     "A01-1": "L1-a-1",
     "C02-1": "L1-a-2",
@@ -116,7 +203,7 @@
     "备注": "formula←审核规则.备注 via rule_id=规则ID"
   },
   "bind_policy": {
-    "version": "v0.6.0",
+    "version": "v0.6.1",
     "only_specialty": true,
     "severity_from": "审核规则主表（无严重度覆盖列）",
     "enabled_default": "是",
@@ -129,6 +216,7 @@
       "CAT-CONDUIT",
       "CAT-HARNESS",
       "CAT-CON-WIRE"
-    ]
+    ],
+    "param_and_basis": "filled by fill_binding_params.py; 待审核员确认"
   }
 }
