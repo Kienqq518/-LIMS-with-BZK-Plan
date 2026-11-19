@@ -79,42 +79,71 @@ out.push((auditLinks >= 1 && /审核/.test(auditBtnText || '') ? '✅' : '❌') 
 const ccTrigger = await p.locator('#cc-trigger').count();
 out.push((ccTrigger === 1 ? '✅' : '❌') + ' 报告审核列表列配置入口 #cc-trigger');
 
-// 审核详情页：SC2026/0238 三份报告命中 通过 / 需复核 / 不通过
+// 审核工作台：SC2026/0238 — 委托概览默认折叠 + 4 份报告统观
 await p.goto(BASE + '/report-review-detail.html?code=SC2026/0238', { waitUntil: 'load' });
-await p.waitForTimeout(400);
-const cards = await p.locator('.report-card').count();
-const pass = await p.locator('.report-card[data-conclusion="通过"]').count();
-const review = await p.locator('.report-card[data-conclusion="需复核"]').count();
-const fail = await p.locator('.report-card[data-conclusion="不通过"]').count();
-out.push((cards === 3 && pass === 1 && review === 1 && fail === 1 ? '✅' : '❌') + ` 三态结论 卡片=${cards} 通过=${pass} 需复核=${review} 不通过=${fail}`);
+await p.waitForTimeout(1000);
+const ovCollapsed = await p.locator('#ov-body').evaluate((el) => el.classList.contains('hidden'));
+out.push((ovCollapsed ? '✅' : '❌') + ' 委托概览默认折叠');
+const rosterRows = await p.locator('.roster-row').count();
+out.push((rosterRows === 4 ? '✅' : '❌') + ` 报告统观区 4 行: ${rosterRows}`);
 
-// 不通过卡片无人工处置区（已被 AI 自动退回）
-const failCard = p.locator('.report-card[data-conclusion="不通过"]');
-const failHasManual = await failCard.locator('button.btn-exec').count();
-out.push((failHasManual === 0 ? '✅' : '❌') + ' 不通过卡片无人工处置按钮');
+// 默认选中第一份（01）→ AI 结论=通过
+const firstConclusion = await p.locator('#ai-conclusion').getAttribute('data-conclusion');
+out.push((firstConclusion === '通过' ? '✅' : '❌') + ` 默认选中报告 AI 结论: ${firstConclusion}`);
 
-// 需复核：选「同意退回」出现退回原因且已预填
-const reviewCard = p.locator('.report-card[data-conclusion="需复核"]');
-await reviewCard.locator('input[value="return"]').check();
+// 选中 02（需复核·第二轮）→ 结论=需复核 + 差异区可见 + 已解决含 L1-d-1
+await p.locator('.roster-row[data-report-id="rr-0238-02"]').click();
+await p.waitForTimeout(1000);
+const c02 = await p.locator('#ai-conclusion').getAttribute('data-conclusion');
+const diffVisible = await p.locator('#ai-diff').isVisible();
+const resolvedText = await p.locator('#ai-diff .diff-resolved').textContent().catch(() => '');
+const roundText = await p.locator('#ai-round').textContent();
+out.push((c02 === '需复核' && diffVisible && /L1-d-1/.test(resolvedText || '') && /第 2 轮/.test(roundText || '') ? '✅' : '❌') + ` 02 需复核+多轮差异(已解决含L1-d-1): ${c02} round=${/第 2 轮/.test(roundText || '')}`);
+
+// 问题清单同时含「通用」与「品类专属」规则
+const scopeUniversal = await p.locator('.rule-item[data-scope="通用"]').count();
+const scopeCategory = await p.locator('.rule-item[data-scope^="品类专属"]').count();
+out.push((scopeUniversal > 0 && scopeCategory > 0 ? '✅' : '❌') + ` 规则项标通用/品类专属: 通用=${scopeUniversal} 品类=${scopeCategory}`);
+
+// AI 综合结论存在
+const summaryText = await p.locator('#ai-summary').textContent();
+out.push((/AI 综合结论/.test(summaryText || '') ? '✅' : '❌') + ' AI 归纳综合结论');
+
+// 需复核退回：一键填入 AI 结论 → 执行 → 写入 feedback
+await p.locator('#manual-feedback input[value="return"]').check();
 await p.waitForTimeout(150);
-const reasonVisible = await reviewCard.locator('.return-reason-wrap').isVisible();
-const reasonVal = await reviewCard.locator('.return-reason').inputValue();
-out.push((reasonVisible && /AI 预审命中/.test(reasonVal) ? '✅' : '❌') + ' 需复核退回原因预填');
-
-// 执行退回 → 写入 feedback（含标注）
-await reviewCard.locator('button.btn-exec').click();
+await p.locator('#btn-oneclick-reason').click();
+const reasonVal = await p.locator('#return-reason').inputValue();
+out.push((reasonVal && reasonVal.length > 0 ? '✅' : '❌') + ' 退回原因一键填入 AI 结论');
+await p.locator('#manual-feedback button.btn-exec').click();
 await p.waitForTimeout(200);
 const fb = await p.evaluate(() => window.AiReviewStore.getFeedback());
 const retFb = fb.find((f) => f.final_conclusion === '退回报告编制');
 out.push((retFb && retFb.agree_ai === true && Array.isArray(retFb.item_labels) ? '✅' : '❌') + ' 退回处置写入 feedback(含标注)');
 
-// 通过卡片：执行通过
-const passCard = p.locator('.report-card[data-conclusion="通过"]');
-await passCard.locator('input[value="agree"]').check();
-await passCard.locator('button.btn-exec').click();
+// 03 不通过：默认策略=自动退回 → 无人工处置按钮
+await p.locator('.roster-row[data-report-id="rr-0238-03"]').click();
+await p.waitForTimeout(1000);
+const c03 = await p.locator('#ai-conclusion').getAttribute('data-conclusion');
+const autoNoBtn = await p.locator('#manual-feedback button.btn-exec').count();
+out.push((c03 === '不通过' && autoNoBtn === 0 ? '✅' : '❌') + ` 03 不通过自动退回(无处置按钮): ${c03} btn=${autoNoBtn}`);
+
+// 切换策略开关 → 不通过出现人工覆盖入口
+await p.locator('#policy-toggle').click();
 await p.waitForTimeout(200);
-const cases = await p.evaluate(() => window.AiReviewStore.getCases());
-out.push((cases.some((c) => c.final_conclusion === '通过') ? '✅' : '❌') + ' 通过处置沉淀案例');
+const policyAuto = await p.locator('#policy-toggle').getAttribute('data-auto');
+const overrideBtn = await p.locator('#manual-feedback button.btn-exec').count();
+out.push((policyAuto === '0' && overrideBtn >= 1 ? '✅' : '❌') + ` 策略开关切换出现人工覆盖: auto=${policyAuto} btn=${overrideBtn}`);
+await p.locator('#policy-toggle').click(); // 复位
+
+// 04 签发退回：提示条可见 + 重跑追加一轮
+await p.locator('.roster-row[data-report-id="rr-0238-04"]').click();
+await p.waitForTimeout(1000);
+const signoffVisible = await p.locator('#signoff-banner').isVisible();
+await p.locator('#btn-rerun').click();
+await p.waitForTimeout(1000);
+const rerunRound = await p.locator('#ai-round').textContent();
+out.push((signoffVisible && /第 2 轮/.test(rerunRound || '') ? '✅' : '❌') + ` 04 签发退回提示+重跑追加轮次: signoff=${signoffVisible} ${/第 2 轮/.test(rerunRound || '')}`);
 
 // 报告编制页：AI 不通过自动退回横幅可见
 await p.goto(BASE + '/report-list.html', { waitUntil: 'load' });
