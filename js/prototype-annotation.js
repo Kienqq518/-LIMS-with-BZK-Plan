@@ -122,11 +122,15 @@
     '.pa-stage-btn:focus-visible { outline: 2px solid #1e40af; outline-offset: 1px; }',
     '.pa-stage-btn.is-active { border-color: #fb923c; background: #ffedd5; color: #c2410c; font-weight: 600; }',
     /* 外壳导航（侧边栏 + 顶栏）克隆进画布：菜单栏属于原型的一部分 */
-    '.pa-chrome { position: absolute; inset: 0; z-index: 2; pointer-events: none; }',
+    '.pa-chrome { position: absolute; inset: 0; z-index: 40; pointer-events: none; }',
     '.pa-chrome > * { pointer-events: auto; }',
+    /* 克隆顶栏时个人信息/消息面板的样式脚本可能还没加载，必须先藏起来，否则会摊在表头上 */
+    '.pa-chrome .pa-user-pop:not(.open), .pa-chrome .pa-msg-panel:not(.open) { display: none !important; }',
+    '.pa-chrome .pa-user-pop.open { display: flex !important; z-index: 130; }',
+    '.pa-chrome .pa-msg-panel.open { display: flex !important; z-index: 120; }',
     // 与 index.html 外壳一致：侧边栏从画布顶端一直通到底，顶栏只占右侧内容列的宽度。
     // 之前是「顶栏横跨全宽 + 侧边栏从顶栏下方开始」，看起来像顶栏压住了菜单栏，和真系统不一样。
-    '.pa-chrome-head { position: absolute; left: ' + SIDE_W + 'px; right: 0; top: 0; }',
+    '.pa-chrome-head { position: absolute; left: ' + SIDE_W + 'px; right: 0; top: 0; overflow: visible; z-index: 41; }',
     '.pa-chrome-side { position: absolute; left: 0; top: 0; bottom: 0; width: ' + SIDE_W + 'px; }',
     '.pa-chrome-side > aside { height: 100%; }',
     '.pa-chrome .submenu { max-height: 0; overflow: hidden; transition: max-height .3s ease; }',
@@ -548,6 +552,9 @@
     sideBox.className = 'pa-chrome-side';
     headBox.appendChild(stripIds(head.cloneNode(true)));
     sideBox.appendChild(stripIds(side.cloneNode(true)));
+    wrap.querySelectorAll('.pa-user-pop, .pa-msg-panel').forEach(function (el) {
+      el.classList.remove('open');
+    });
     wrap.appendChild(headBox);
     wrap.appendChild(sideBox);
     cv.insertBefore(wrap, cv.firstChild);
