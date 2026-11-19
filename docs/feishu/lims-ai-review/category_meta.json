@@ -3,9 +3,15 @@
   "bind_table": "tbldbfHOuYsh9dLn",
   "SPEC": [
     "L2-d-1",
+    "L2-d-4",
+    "L2-d-5",
+    "L2-d-8",
+    "L2-d-9",
     "L2-d-11",
+    "L3-b-2",
     "L3-b-4",
-    "L3-b-5"
+    "L3-b-5",
+    "L3-d-1"
   ],
   "UNIV": [
     "L1-a-1",
@@ -35,21 +41,15 @@
     "L2-c-2",
     "L2-d-2",
     "L2-d-3",
-    "L2-d-4",
-    "L2-d-5",
     "L2-d-6",
     "L2-d-7",
-    "L2-d-8",
-    "L2-d-9",
     "L2-d-10",
     "L3-a-1",
     "L3-a-2",
     "L3-a-3",
     "L3-b-1",
-    "L3-b-2",
     "L3-b-3",
     "L3-c-1",
-    "L3-d-1",
     "L4-a-1",
     "L4-b-1",
     "L4-c-1",
@@ -61,6 +61,26 @@
       "std_max": 0.0074,
       "note": "扭矩系数多样本；以GB/T 1231为准"
     },
+    "CAT-BOLT:L2-d-4": {
+      "metric": "std_or_rsd",
+      "std_max": 0.0074,
+      "note": "扭矩系数样本标准差/RSD"
+    },
+    "CAT-BOLT:L2-d-5": {
+      "pack": "grid_fastener",
+      "match": [
+        "grade_vs_items",
+        "size_vs_items"
+      ]
+    },
+    "CAT-BOLT:L2-d-8": {
+      "pack": "grid_fastener",
+      "plausible": {
+        "Rm": "按等级",
+        "K": "0.11-0.15典型带",
+        "HRC": "按等级"
+      }
+    },
     "CAT-BOLT:L2-d-11": {
       "pack": "grid_fastener",
       "checks": [
@@ -69,6 +89,10 @@
         "hardness_band"
       ]
     },
+    "CAT-BOLT:L3-b-2": {
+      "tol_source": "method",
+      "note": "方法允许偏差/重复性；多样本时适用"
+    },
     "CAT-BOLT:L3-b-5": {
       "lower_map": {
         "Rm": "按等级",
@@ -76,6 +100,28 @@
       },
       "points": 3,
       "hrc_band": "10.9级示例 HRC32-39"
+    },
+    "CAT-BOLT:L3-d-1": {
+      "mandatory": [
+        "尺寸",
+        "硬度",
+        "Rm",
+        "扭矩系数"
+      ],
+      "note": "连接副型式/出厂检验强制项草案"
+    },
+    "CAT-GLOVE:L2-d-5": {
+      "pack": "safety_glove",
+      "match": [
+        "voltage_class_vs_items"
+      ]
+    },
+    "CAT-GLOVE:L2-d-8": {
+      "pack": "safety_glove",
+      "plausible": {
+        "leak_mA": "按类型上限带",
+        "hold_s": ">=60"
+      }
     },
     "CAT-GLOVE:L2-d-11": {
       "pack": "safety_glove",
@@ -89,9 +135,35 @@
       "leak_limit": "按类型",
       "hold_min": 60
     },
+    "CAT-GLOVE:L3-d-1": {
+      "mandatory": [
+        "外观",
+        "工频耐压",
+        "泄漏电流"
+      ],
+      "note": "预防性试验强制项草案"
+    },
     "CAT-CABLE:L2-d-1": {
       "parallel_count": "按抽样盘数/试样",
       "note": "按批抽样多样本，非化学平行双样"
+    },
+    "CAT-CABLE:L2-d-4": {
+      "metric": "multi_specimen",
+      "note": "多样本统计/重复性按产品标准"
+    },
+    "CAT-CABLE:L2-d-5": {
+      "pack": "power_cable",
+      "match": [
+        "voltage_class_vs_items",
+        "conductor_vs_R20"
+      ]
+    },
+    "CAT-CABLE:L2-d-8": {
+      "pack": "power_cable",
+      "plausible": {
+        "R20": "按截面上限带",
+        "绝缘厚度": ">=标准最小值"
+      }
     },
     "CAT-CABLE:L2-d-11": {
       "pack": "power_cable",
@@ -99,6 +171,10 @@
         "R20_corr",
         "thickness_min_multi_point"
       ]
+    },
+    "CAT-CABLE:L3-b-2": {
+      "tol_source": "method",
+      "note": "尺寸/电阻等方法允许偏差"
     },
     "CAT-CABLE:L3-b-5": {
       "lower_map": {
@@ -108,9 +184,35 @@
       "points": "多点取最小",
       "ref_temp_C": 20
     },
+    "CAT-CABLE:L3-d-1": {
+      "mandatory": [
+        "导体电阻",
+        "绝缘厚度",
+        "护套厚度",
+        "耐压"
+      ],
+      "note": "出厂/型式强制项草案"
+    },
     "CAT-CONDUIT:L2-d-1": {
       "parallel_count": "按产品标准试样数",
       "note": "力学性能多样本；待顾问确认"
+    },
+    "CAT-CONDUIT:L2-d-4": {
+      "metric": "multi_specimen",
+      "note": "环刚度等多样本统计；待顾问确认"
+    },
+    "CAT-CONDUIT:L2-d-5": {
+      "pack": "cable_conduit",
+      "match": [
+        "spec_vs_items"
+      ]
+    },
+    "CAT-CONDUIT:L2-d-8": {
+      "pack": "cable_conduit",
+      "plausible": {
+        "环刚度": "按规格带",
+        "壁厚": "按规格带"
+      }
     },
     "CAT-CONDUIT:L2-d-11": {
       "pack": "cable_conduit",
@@ -120,12 +222,36 @@
         "dimension"
       ]
     },
+    "CAT-CONDUIT:L3-b-2": {
+      "tol_source": "method",
+      "note": "尺寸/力学性能允许偏差"
+    },
     "CAT-CONDUIT:L3-b-5": {
       "lower_map": {
         "环刚度": "按规格",
         "壁厚": "按规格"
       },
       "points": 3
+    },
+    "CAT-CONDUIT:L3-d-1": {
+      "mandatory": [
+        "外观",
+        "尺寸",
+        "环刚度"
+      ],
+      "note": "强制项草案"
+    },
+    "CAT-HARNESS:L2-d-5": {
+      "pack": "safety_harness",
+      "match": [
+        "model_vs_items"
+      ]
+    },
+    "CAT-HARNESS:L2-d-8": {
+      "pack": "safety_harness",
+      "plausible": {
+        "static_load_kN": "按型号下限带"
+      }
     },
     "CAT-HARNESS:L2-d-11": {
       "pack": "safety_harness",
@@ -141,9 +267,33 @@
       "static_load_kN": "按型号",
       "note": "安全带以静负荷等为主，耐压参数可空"
     },
+    "CAT-HARNESS:L3-d-1": {
+      "mandatory": [
+        "外观",
+        "整体静态负荷"
+      ],
+      "note": "强制项草案"
+    },
     "CAT-CON-WIRE:L2-d-1": {
       "parallel_count": 3,
       "note": "握着力等常要求多件试样；待顾问确认"
+    },
+    "CAT-CON-WIRE:L2-d-4": {
+      "metric": "multi_specimen",
+      "note": "多件试样统计；待顾问确认"
+    },
+    "CAT-CON-WIRE:L2-d-5": {
+      "pack": "conductor_fitting",
+      "match": [
+        "model_vs_items"
+      ]
+    },
+    "CAT-CON-WIRE:L2-d-8": {
+      "pack": "conductor_fitting",
+      "plausible": {
+        "握着力": "按型号下限带",
+        "尺寸": "按图纸带"
+      }
     },
     "CAT-CON-WIRE:L2-d-11": {
       "pack": "conductor_fitting",
@@ -152,12 +302,23 @@
         "dimension"
       ]
     },
+    "CAT-CON-WIRE:L3-b-2": {
+      "tol_source": "method",
+      "note": "握着力/尺寸允许偏差"
+    },
     "CAT-CON-WIRE:L3-b-5": {
       "lower_map": {
         "握着力": "按型号",
         "尺寸": "按图纸"
       },
       "points": 3
+    },
+    "CAT-CON-WIRE:L3-d-1": {
+      "mandatory": [
+        "尺寸",
+        "握着力"
+      ],
+      "note": "强制项草案"
     }
   },
   "legacy_id_map": {
@@ -220,12 +381,12 @@
     "备注": "formula←审核规则.备注 via rule_id=规则ID"
   },
   "bind_policy": {
-    "version": "v0.6.1",
+    "version": "v0.6.2",
     "only_specialty": true,
     "severity_from": "审核规则主表（无严重度覆盖列）",
     "enabled_default": "是",
     "enabled_owner": "实验室/客户按项目实际确认",
-    "row_count": 16,
+    "row_count": 42,
     "configured_categories": [
       "CAT-BOLT",
       "CAT-GLOVE",
