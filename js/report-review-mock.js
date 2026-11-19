@@ -150,41 +150,66 @@
     return s;
   }
 
-  // 收样 / 检测 / 原始记录 / 标准与作业指导书（0238 共享，演示「一项多标准」）
+  // 导体直流电阻 挂 2 个标准（演示一项多标准）
+  var STD_DCR = [
+    { no: 'GB/T 3048.4-2007', name: '电线电缆电性能试验方法 第4部分：导体直流电阻试验', file: 'GB_T_3048.4-2007.pdf' },
+    { no: 'GB/T 12706.1-2020', name: '额定电压1kV到35kV挤包绝缘电力电缆 第1部分（限值依据）', file: 'GB_T_12706.1-2020.pdf' },
+  ];
+  var STD_INS = [{ no: 'GB/T 2951.11-2008', name: '电缆绝缘和护套材料通用试验方法 第11部分：厚度测量', file: 'GB_T_2951.11-2008.pdf' }];
+
+  // 收样信息：以「单次收样」为单位（支持多次）；每次含样品规格 / 数量 / 图片 / 送样信息
   var CABLE_RECEIVE = {
-    times: [{ no: 1, receiver: 'admin', at: '2026-08-28 10:05', samples: ['SC2026/0238-0101（10kV3芯电力电缆·主样）'] }],
-  };
-  var CABLE_DETECT = {
-    items: [
-      { name: '导体直流电阻', standard: 'GB/T 3048.4-2007', method: '电桥法', tester: '李明', testDate: '2026-09-01', device: 'QJ36 直流电桥', calibFrom: '2026-01-01', calibTo: '2026-12-31' },
-      { name: '绝缘厚度', standard: 'GB/T 2951.11-2008', method: '投影仪测量', tester: '李明', testDate: '2026-09-01', device: 'JX-200 投影仪', calibFrom: '2026-01-01', calibTo: '2026-12-31' },
+    times: [
+      {
+        no: 1, date: '2026-08-28 10:05', receiver: '赵工', status: '完好', sender: '王工', sendWay: '自送', senderPhone: '13867120018',
+        note: '客户要求优先安排导体电阻；样品附合格证复印件。',
+        images: [{ label: '样品全貌' }, { label: '规格标签' }],
+        samples: [{
+          sampleNo: 'SC2026/0238-0101', productMark: 'YJV-8.7/10 1×120', model: 'YJV', category: '委托试验', qty: '1 根', factory: '远东电缆',
+          specs: [{ k: '导体标称截面积(mm²)', v: '120' }, { k: '额定电压(kV)', v: '8.7/10' }, { k: '芯数', v: '单芯' }, { k: '绝缘', v: 'XLPE' }],
+        }],
+      },
+      {
+        no: 2, date: '2026-08-29 09:20', receiver: '赵工', status: '完好', sender: '王工', sendWay: '快递', senderPhone: '13867120018',
+        note: '补样一段用于绝缘厚度复测。',
+        images: [{ label: '样品全貌' }],
+        samples: [{
+          sampleNo: 'SC2026/0238-0101-B', productMark: 'YJV-8.7/10 1×120', model: 'YJV', category: '委托试验', qty: '1 段', factory: '远东电缆',
+          specs: [{ k: '导体标称截面积(mm²)', v: '120' }, { k: '额定电压(kV)', v: '8.7/10' }],
+        }],
+      },
     ],
   };
-  var CABLE_RAW = [
-    { name: 'SC2026-0238-0101导体电阻原始记录.docx', samples: 'SC2026/0238-0101', mode: '模板生成', at: '2026-09-01 15:20' },
-    { name: 'SC2026-0238-0101绝缘厚度原始记录.docx', samples: 'SC2026/0238-0101', mode: '模板生成', at: '2026-09-01 16:02' },
-  ];
-  var CABLE_STANDARDS = [
-    {
-      item: '导体直流电阻',
-      standards: [
-        { no: 'GB/T 3048.4-2007', name: '电线电缆电性能试验方法 第4部分：导体直流电阻试验', file: 'GB_T_3048.4-2007.pdf' },
-        { no: 'GB/T 12706.1-2020', name: '额定电压1kV到35kV挤包绝缘电力电缆 第1部分（限值依据）', file: 'GB_T_12706.1-2020.pdf' },
+
+  // 检测信息：以「样品」为单位，列每个样品的试验项及结论；每个试验项挂 原始记录 / 标准 / 作业指导书
+  var CABLE_DETECT = {
+    samples: [{
+      sampleNo: 'SC2026/0238-0101', productMark: 'YJV-8.7/10 1×120', model: 'YJV', category: '委托试验', qty: '1 组', factory: '远东电缆',
+      items: [
+        {
+          name: '导体直流电阻', std: 'GB/T 3048.4-2007', review: '已复审', result: '合格', method: '电桥法', tester: '李明', date: '2026-09-01',
+          device: 'QJ36 直流电桥', calib: '2026-01-01 ~ 2026-12-31',
+          standards: STD_DCR, sops: [{ no: 'SOP-DL-012', name: '导体直流电阻测量作业指导书', file: 'SOP-DL-012.docx' }],
+          raws: [{ name: 'SC2026-0238-0101导体电阻原始记录.docx', at: '2026-09-01 15:20' }],
+        },
+        {
+          name: '绝缘厚度', std: 'GB/T 2951.11-2008', review: '已完成', result: '合格', method: '投影仪测量', tester: '李明', date: '2026-09-01',
+          device: 'JX-200 投影仪', calib: '2026-01-01 ~ 2026-12-31',
+          standards: STD_INS, sops: [{ no: 'SOP-DL-003', name: '绝缘厚度投影测量作业指导书', file: 'SOP-DL-003.docx' }],
+          raws: [{ name: 'SC2026-0238-0101绝缘厚度原始记录.docx', at: '2026-09-01 16:02' }],
+        },
+        {
+          name: '老化前绝缘机械性能', std: 'GB/T 2951.11-2008', review: '已复审', result: '合格', method: '拉力试验', tester: '周敏', date: '2026-09-01',
+          device: 'LD26504 力学试验机', calib: '2026-02-01 ~ 2027-01-31',
+          standards: STD_INS, sops: [{ no: 'SOP-DL-021', name: '绝缘机械性能试验作业指导书', file: 'SOP-DL-021.docx' }],
+          raws: [{ name: 'SC2026-0238-0101机械性能原始记录.docx', at: '2026-09-01 16:40' }],
+        },
       ],
-      sops: [{ no: 'SOP-DL-012', name: '导体直流电阻测量作业指导书', file: 'SOP-DL-012.docx' }],
-    },
-    {
-      item: '绝缘厚度',
-      standards: [{ no: 'GB/T 2951.11-2008', name: '电缆绝缘和护套材料通用试验方法 第11部分：厚度测量', file: 'GB_T_2951.11-2008.pdf' }],
-      sops: [{ no: 'SOP-DL-003', name: '绝缘厚度投影测量作业指导书', file: 'SOP-DL-003.docx' }],
-    },
-  ];
+    }],
+  };
 
   function cableInfo(extra) {
-    var o = {
-      receive: CABLE_RECEIVE, detect: CABLE_DETECT, rawRecords: CABLE_RAW, standards: CABLE_STANDARDS,
-      ruleVersion: '规则集 v1', packVersion: 'power_grid 包 v0.1',
-    };
+    var o = { receive: CABLE_RECEIVE, detect: CABLE_DETECT, traceCode: 'R3a2K' };
     for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) o[k] = extra[k];
     return o;
   }
@@ -210,7 +235,8 @@
             { at: '2026-09-02 17:30', node: '报告生成', text: '系统生成报告 SC2026/0238-01', tone: 'default' },
             { at: '2026-09-03 08:50', node: '报告编制', text: 'admin 提交至报告审核', tone: 'default' },
             { at: '2026-09-03 09:10', node: 'AI审核', text: 'AI 预审结论：通过（V1.0）', tone: 'success' },
-            { at: '2026-09-03 10:20', node: '报告审核', text: '李审核 人工审核通过', tone: 'success' },
+            { at: '2026-09-03 10:20', node: '报告审核', text: '李审核 人工审核通过，提交至报告签发', tone: 'success' },
+            { at: '2026-09-03 10:20', node: '报告签发', text: '等待授权签字人签发', tone: 'pending' },
           ],
         },
         // 02：AI 需复核，编制退回后重审（两轮，带差异）
