@@ -230,11 +230,13 @@ def rebuild_bindings() -> None:
             fields = rule.get("所需字段") or []
             fields_txt = "、".join(fields) if isinstance(fields, list) else str(fields)
             sort_no = cat_sort * 100 + rule_seq(rid)
+            group = rule.get("规则组") or rid.rsplit("-", 1)[0]
             create_rows.append(
                 {
                     "绑定ID": f"BLT-{code}-{rid}",
                     "category_code": code,
                     "领域": domain,
+                    "规则组": group,
                     "rule_id": rid,
                     "启用": "是",
                     "级别": rule.get("级别"),

@@ -52,6 +52,7 @@ VISIBLE_MAIN = [
     "category_code",
     "领域",
     "品类名称",
+    "规则组",
     "rule_id",
     "启用",
     "级别",
@@ -285,8 +286,10 @@ def backfill_binding_defs(spec: list[dict]) -> None:
             fields_txt = "、".join(fields)
         else:
             fields_txt = str(fields)
+        group = rule.get("规则组") or (rule["规则ID"].rsplit("-", 1)[0])
         updates[r["record_id"]] = {
             "领域": [domain] if domain else [],
+            "规则组": [group],
             "级别": [rule["级别"]] if not isinstance(rule["级别"], list) else rule["级别"],
             "类别": [rule["类别"]] if not isinstance(rule["类别"], list) else rule["类别"],
             "所需字段": fields_txt,

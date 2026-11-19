@@ -168,11 +168,13 @@ def build_rows(existing_binding_ids: set[str] | None = None) -> tuple[list[dict]
                 continue
             fields = rule.get("所需字段") or []
             fields_txt = "、".join(fields) if isinstance(fields, list) else str(fields)
+            group = rule.get("规则组") or rid.rsplit("-", 1)[0]
             rows.append(
                 {
                     "绑定ID": bid,
                     "category_code": cc,
                     "领域": domain,
+                    "规则组": group,
                     "rule_id": rid,
                     "启用": "是",  # 默认开；实验室/客户可关
                     "级别": rule.get("级别"),
@@ -263,11 +265,13 @@ def main() -> None:
             rid = rule["规则ID"]
             fields = rule.get("所需字段") or []
             fields_txt = "、".join(fields) if isinstance(fields, list) else str(fields)
+            group = rule.get("规则组") or rid.rsplit("-", 1)[0]
             desired.append(
                 {
                     "绑定ID": f"BLT-{cc}-{rid}",
                     "category_code": cc,
                     "领域": domain,
+                    "规则组": group,
                     "rule_id": rid,
                     "启用": "是",
                     "级别": rule.get("级别"),
