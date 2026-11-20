@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { BASE } from './_env.mjs';
+import { BASE, SHOT_DIR } from './_env.mjs';
 
 const out = [];
 const err = [];
@@ -95,10 +95,16 @@ out.push((ovCollapsed ? '✅' : '❌') + ' 委托概览默认折叠');
 const needTabOn = await p.locator('#roster-tabs .roster-tab[data-tab="need"]').evaluate((el) => el.classList.contains('is-on'));
 const rosterRowsNeed = await p.locator('.roster-row').count();
 out.push((needTabOn && rosterRowsNeed === 3 ? '✅' : '❌') + ` 默认待审核 Tab 3 行: ${rosterRowsNeed}`);
+const needChips = await p.locator('#roster-summary .roster-filter').evaluateAll((els) => els.map((el) => el.getAttribute('data-filter')));
+out.push((needChips.join(',') === '待处置,签发退回,审核中,异常' ? '✅' : '❌') + ` 待审核标签: ${needChips.join('/')}`);
+await p.screenshot({ path: SHOT_DIR + '/roster-need-chips.png' });
 await p.locator('#roster-tabs .roster-tab[data-tab="left"]').click();
 await p.waitForTimeout(150);
 const rosterRowsLeft = await p.locator('.roster-row').count();
 out.push((rosterRowsLeft === 2 ? '✅' : '❌') + ` 其他流程 Tab 2 行: ${rosterRowsLeft}`);
+const leftChips = await p.locator('#roster-summary .roster-filter').evaluateAll((els) => els.map((el) => el.getAttribute('data-filter')));
+out.push((leftChips.join(',') === '自动退回,已处置' ? '✅' : '❌') + ` 其他流程标签: ${leftChips.join('/')}`);
+await p.screenshot({ path: SHOT_DIR + '/roster-left-chips.png' });
 await p.locator('#roster-tabs .roster-tab[data-tab="need"]').click();
 await p.waitForTimeout(150);
 await p.locator('.roster-filter[data-filter="签发退回"]').click();
@@ -164,7 +170,16 @@ await p.locator('.roster-row[data-report-id="rr-0238-03"]').click();
 await p.waitForTimeout(1000);
 const c03 = await p.locator('#ai-conclusion').getAttribute('data-conclusion');
 const autoNoBtn = await p.locator('#manual-feedback button.btn-exec').count();
+const rerun03 = await p.locator('#btn-rerun').isDisabled();
 out.push((c03 === '不通过' && autoNoBtn === 0 ? '✅' : '❌') + ` 03 不通过自动退回(无处置按钮): ${c03} btn=${autoNoBtn}`);
+out.push((rerun03 ? '✅' : '❌') + ' 其他流程报告重跑 AI 置灰');
+await p.locator('.roster-row[data-report-id="rr-0238-01"]').click();
+await p.waitForTimeout(200);
+const rerun01 = await p.locator('#btn-rerun').isDisabled();
+out.push((rerun01 ? '✅' : '❌') + ' 已处置报告重跑 AI 置灰');
+await p.screenshot({ path: SHOT_DIR + '/roster-left-rerun-disabled.png' });
+await p.locator('.roster-row[data-report-id="rr-0238-03"]').click();
+await p.waitForTimeout(200);
 
 // 切换策略开关 → 不通过出现人工覆盖入口；不同意 AI 只出调优备注
 await p.locator('#policy-toggle').click();
