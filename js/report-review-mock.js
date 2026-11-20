@@ -494,6 +494,21 @@
         conductor_resistance: 0.531, conductor_resistance_limit: 0.524,
       }),
       hits: '一般 3 项（引用标准年号 / 计量单位 / 电阻限值）',
+      trigger: '进入报告审核', snapshotHash: 'd4e5f6-v1', compiler: 'admin',
+      sampleNos: ['SC2026/0238-0102'],
+      file: { word: 'SC2026-0238-02检测报告.docx', pdf: 'SC2026-0238-02检测报告.pdf', at: '2026-09-03 10:50' },
+      labels: {
+        'L3-a-2': { label: '正常', note: '', submitted: true },
+        'L1-d-1': { label: '误报', note: '单位写 kgf·m 为录入笔误，实测单位为 Ω。', submitted: true },
+        'PG-CABLE-01': { label: '正常', note: '', submitted: true },
+      },
+      log: [
+        { at: '2026-09-02 17:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-02', tone: 'default' },
+        { at: '2026-09-03 10:40', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
+        { at: '2026-09-03 11:00', node: 'AI审核', by: '系统', text: '预审结论：需复核（V1.0，命中 3 项一般）', tone: 'warn' },
+        { at: '2026-09-03 15:30', node: '报告审核', by: '李审核', text: '退回报告编制。原因：引用标准/单位/电阻限值需核', tone: 'danger' },
+        { at: '2026-09-03 16:10', node: '报告编制', by: 'admin', text: '删除本份报告，准备重新生成', tone: 'danger' },
+      ],
     },
     {
       id: 'arch-0190-01', reportNo: 'SC2026/0190-01', revision: 'V1.0',
@@ -505,6 +520,16 @@
       durationSec: 12, round: 1,
       snapshot: cableSnap({ sample_no: 'SC2026-0190' }),
       hits: '未命中',
+      trigger: '进入报告审核', snapshotHash: 's0190a', compiler: 'admin',
+      sampleNos: ['SC2026/0190-0101'],
+      file: { word: 'SC2026-0190-01检测报告.docx', pdf: 'SC2026-0190-01检测报告.pdf', at: '2026-09-02 14:10' },
+      labels: {},
+      log: [
+        { at: '2026-09-02 13:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0190-01', tone: 'default' },
+        { at: '2026-09-02 14:20', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
+        { at: '2026-09-02 15:10', node: '报告审核', by: '李审核', text: '同意 AI，提交签发', tone: 'success' },
+        { at: '2026-09-02 16:40', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
+      ],
     },
     {
       id: 'arch-0188-01', reportNo: 'SC2026/0188-01', revision: 'V1.2',
@@ -516,6 +541,57 @@
       durationSec: 26, round: 2,
       snapshot: cableSnap({ sample_no: 'SC2026-0188', category_code: null, category_name: '' }),
       hits: '一般 1 项（未配置品类仅跑通用集）',
+      trigger: '编制修改后重审', snapshotHash: 's0188c', compiler: 'admin',
+      sampleNos: ['SC2026/0188-0101'],
+      file: { word: 'SC2026-0188-01检测报告.docx', pdf: 'SC2026-0188-01检测报告.pdf', at: '2026-09-01 09:20' },
+      labels: { 'L3-a-2': { label: '漏报', note: '未配置品类，通用集未覆盖盖板专属限值。', submitted: true } },
+      log: [
+        { at: '2026-09-01 09:00', node: '报告生成', by: '系统', text: '生成报告 SC2026/0188-01', tone: 'default' },
+        { at: '2026-09-01 09:40', node: 'AI审核', by: '系统', text: '预审结论：需复核（未配置品类）', tone: 'warn' },
+        { at: '2026-09-03 18:00', node: '报告审核', by: '李审核', text: '覆盖 AI，人工通过', tone: 'success' },
+        { at: '2026-09-03 18:20', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
+        { at: '2026-09-04 11:00', node: '报告发放', by: '系统', text: '报告已发放给委托方', tone: 'success' },
+      ],
+    },
+  ];
+
+  // 排队序列：尚未领取 / 正在执行的 AI 任务（与过程中已出结论的报告分开）
+  var QUEUE = [
+    {
+      id: 'q-0240-01', reportNo: 'SC2026/0240-01', revision: 'V1.0', deleted: false,
+      entrust: 'SC2026/0240', customer: '远东电缆股份有限公司', sample: '8.7/10kV 电力电缆',
+      pack: '电力电缆', bizNode: '报告审核', aiTask: '排队', conclusion: '审核中',
+      human: '待处置', agreeAi: null, caseSettled: false,
+      at: '2026-09-08 09:40', archivedAt: '', signedAt: '',
+      durationSec: 0, round: 1, live: false, queuePos: 1, waitSec: 25, etaSec: 40,
+      trigger: '进入报告审核', snapshotHash: 'q0240a', compiler: 'admin',
+      sampleNos: ['SC2026/0240-0101'],
+      file: { word: 'SC2026-0240-01检测报告.docx', pdf: 'SC2026-0240-01检测报告.pdf', at: '2026-09-08 09:38' },
+      snapshot: cableSnap({ sample_no: 'SC2026-0240' }),
+      hits: '排队中，尚未出结论',
+      log: [
+        { at: '2026-09-08 09:20', node: '报告生成', by: '系统', text: '生成报告 SC2026/0240-01', tone: 'default' },
+        { at: '2026-09-08 09:38', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
+        { at: '2026-09-08 09:40', node: 'AI审核', by: '系统', text: '已进入排队序列，前方 1 份任务', tone: 'pending' },
+      ],
+    },
+    {
+      id: 'q-0241-01', reportNo: 'SC2026/0241-01', revision: 'V1.0', deleted: false,
+      entrust: 'SC2026/0241', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆',
+      pack: '电力电缆', bizNode: '报告审核', aiTask: '排队', conclusion: '审核中',
+      human: '待处置', agreeAi: null, caseSettled: false,
+      at: '2026-09-08 09:48', archivedAt: '', signedAt: '',
+      durationSec: 0, round: 1, live: false, queuePos: 2, waitSec: 8, etaSec: 95,
+      trigger: '进入报告审核', snapshotHash: 'q0241a', compiler: 'admin',
+      sampleNos: ['SC2026/0241-0101'],
+      file: { word: 'SC2026-0241-01检测报告.docx', pdf: 'SC2026-0241-01检测报告.pdf', at: '2026-09-08 09:47' },
+      snapshot: cableSnap({ sample_no: 'SC2026-0241' }),
+      hits: '排队中，尚未出结论',
+      log: [
+        { at: '2026-09-08 09:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0241-01', tone: 'default' },
+        { at: '2026-09-08 09:47', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
+        { at: '2026-09-08 09:48', node: 'AI审核', by: '系统', text: '已进入排队序列，前方 2 份任务', tone: 'pending' },
+      ],
     },
   ];
 
@@ -545,6 +621,7 @@
       ent.reports.forEach(function (rep) {
         var r = (rep.aiRun === 'running') ? { conclusion: '审核中' } : (rep.aiRun === 'error' ? { conclusion: '异常' } : evalReport(rep));
         var cur = currentRound(rep);
+        var running = rep.aiRun === 'running';
         rows.push({
           id: rep.id, reportNo: rep.reportNo, revision: cur.revision, deleted: false,
           entrust: ent.code, customer: ent.customer, sample: ent.sample,
@@ -552,8 +629,11 @@
           bizNode: bizBucket(rep), aiTask: taskState(rep), conclusion: r.conclusion,
           human: humanState(rep, r.conclusion), agreeAi: rep.disposition ? !!rep.disposition.agreeAi : null,
           caseSettled: !!rep.disposition, at: cur.at, archivedAt: '', signedAt: '',
-          durationSec: 14, round: rep.rounds.length, live: true, report: rep, entrustObj: ent,
-          hits: r.failed && r.failed.length ? (r.severe.length ? '严重 ' + r.severe.length + ' 项' : '一般 ' + r.review.length + ' 项') : '未命中',
+          durationSec: running ? 48 : 14, round: rep.rounds.length, live: true, report: rep, entrustObj: ent,
+          hits: r.failed && r.failed.length ? (r.severe.length ? '严重 ' + r.severe.length + ' 项' : '一般 ' + r.review.length + ' 项') : (running ? '正在执行规则' : '未命中'),
+          snapshot: cur.snapshot, trigger: cur.trigger, snapshotHash: rep.snapshotHash,
+          file: rep.file, compiler: ent.compiler, sampleNos: rep.sampleNos, log: rep.log || [],
+          labels: {}, queuePos: running ? 0 : null, waitSec: running ? 48 : 0, etaSec: running ? 12 : 0,
         });
       });
     });
@@ -572,15 +652,69 @@
     return d >= from && d <= t;
   }
 
+  function ymd(d) {
+    var m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+  }
+  function md(d) {
+    var m = d.getMonth() + 1, day = d.getDate();
+    return (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+  }
+  function tagKind(row, kind) {
+    row.kind = kind;
+    return row;
+  }
+  function chartSeries(all, pass, review, fail) {
+    var slices = [
+      { key: '通过', n: pass.length, color: '#059669' },
+      { key: '需复核', n: review.length, color: '#d97706' },
+      { key: '不通过', n: fail.length, color: '#dc2626' },
+    ];
+    var t = new Date(PANEL_TODAY + 'T00:00:00');
+    var trend = [];
+    for (var i = 6; i >= 0; i--) {
+      var d = new Date(t.getTime() - i * 86400000);
+      var key = ymd(d);
+      var n = all.filter(function (r) { return String(r.at).slice(0, 10) === key; }).length;
+      trend.push({ day: key, label: md(d), n: n });
+    }
+    var hits = {};
+    all.forEach(function (row) {
+      if (row.aiTask === '排队' || row.aiTask === '审核中') return;
+      var snap = row.snapshot;
+      if (!snap && row.report) snap = currentRound(row.report).snapshot;
+      if (!snap) return;
+      var res = evalSnapshot(snap, !!snap.category_code);
+      (res.failed || []).forEach(function (it) {
+        hits[it.name] = (hits[it.name] || 0) + 1;
+      });
+    });
+    var rules = Object.keys(hits).map(function (k) { return { name: k, n: hits[k] }; })
+      .sort(function (a, b) { return b.n - a.n; }).slice(0, 5);
+    return { slices: slices, trend: trend, rules: rules };
+  }
+
   function getPanelDataset(range) {
     range = range || '7天';
-    var process = livePanelRows().filter(function (row) {
+    var live = livePanelRows();
+    var queueLive = live.filter(function (row) {
+      return (row.aiTask === '审核中' || row.aiTask === '排队') && inWindow(row.at, range);
+    }).map(function (row) { return tagKind(row, 'queue'); });
+    var process = live.filter(function (row) {
+      return row.aiTask !== '审核中' && row.aiTask !== '排队' && inWindow(row.at, range);
+    }).map(function (row) { return tagKind(row, 'process'); });
+    var queueSeed = QUEUE.filter(function (row) {
       return inWindow(row.at, range);
+    }).map(function (row) { return tagKind(row, 'queue'); });
+    var queue = queueSeed.concat(queueLive).sort(function (a, b) {
+      var pa = a.queuePos == null ? 99 : a.queuePos;
+      var pb = b.queuePos == null ? 99 : b.queuePos;
+      return pa - pb;
     });
     var archive = ARCHIVES.filter(function (row) {
       return inWindow(row.archivedAt || row.at, range);
-    });
-    var all = process.concat(archive);
+    }).map(function (row) { return tagKind(row, 'archive'); });
+    var all = queue.concat(process, archive);
     var triggered = all.length;
     var concluded = all.filter(function (r) { return r.conclusion === '通过' || r.conclusion === '需复核' || r.conclusion === '不通过'; });
     var success = all.filter(function (r) { return r.aiTask === '成功'; });
@@ -590,10 +724,12 @@
     var decided = all.filter(function (r) { return r.human === '已同意' || r.human === '已覆盖'; });
     var agree = decided.filter(function (r) { return r.human === '已同意' || r.agreeAi === true; });
     var abnormal = all.filter(function (r) { return r.aiTask === '异常暂停' || r.conclusion === '异常'; });
+    var queued = all.filter(function (r) { return r.aiTask === '排队'; });
+    var running = all.filter(function (r) { return r.aiTask === '审核中'; });
     function pct(n, d) { return d ? Math.round((n / d) * 100) + '%' : '—'; }
     return {
       today: PANEL_TODAY, range: range,
-      process: process, archive: archive,
+      queue: queue, process: process, archive: archive,
       kpi: {
         reports: triggered,
         closeRate: pct(success.length, triggered),
@@ -602,9 +738,23 @@
         failRate: pct(fail.length, concluded.length),
         adoptRate: pct(agree.length, decided.length),
         errorRate: pct(abnormal.length, triggered),
-        counts: { success: success.length, pass: pass.length, review: review.length, fail: fail.length, decided: decided.length, agree: agree.length, abnormal: abnormal.length, concluded: concluded.length },
+        counts: {
+          success: success.length, pass: pass.length, review: review.length, fail: fail.length,
+          decided: decided.length, agree: agree.length, abnormal: abnormal.length, concluded: concluded.length,
+          queue: queued.length, running: running.length,
+        },
       },
+      charts: chartSeries(all, pass, review, fail),
     };
+  }
+
+  function findPanelRow(id) {
+    var ds = getPanelDataset('全部');
+    var lists = [ds.queue, ds.process, ds.archive];
+    for (var i = 0; i < lists.length; i++) {
+      for (var j = 0; j < lists[i].length; j++) if (lists[i][j].id === id) return lists[i][j];
+    }
+    return null;
   }
 
   // 供「报告编制」页展示：被 AI 判不通过（严重）的报告（跨页同源）
@@ -625,6 +775,7 @@
   global.ReportReviewMock = {
     ENTRUSTS: ENTRUSTS,
     ARCHIVES: ARCHIVES,
+    QUEUE: QUEUE,
     PANEL_TODAY: PANEL_TODAY,
     getEntrust: getEntrust,
     evalReport: evalReport,
@@ -636,6 +787,7 @@
     needsHuman: needsHuman,
     failRunningReport: failRunningReport,
     getPanelDataset: getPanelDataset,
+    findPanelRow: findPanelRow,
     getPolicy: function () { return POLICY; },
     setAutoReturn: function (v) { POLICY.autoReturnOnSevere = !!v; },
     CONCLUSION_META: {
