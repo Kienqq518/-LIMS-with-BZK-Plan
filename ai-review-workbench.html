@@ -42,6 +42,34 @@
     .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: #fff; }
     .seg button { padding: 4px 12px; font-size: 12px; color: #64748b; }
     .seg button.is-on { background: var(--brand); color: #fff; font-weight: 600; }
+    .grain-select, .year-btn, .year-reset {
+      display: inline-flex; align-items: center; gap: 6px; height: 28px;
+      border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;
+      padding: 0 10px; font-size: 12px; color: #334155;
+    }
+    .grain-select { appearance: none; padding-right: 22px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394a3b8'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+    .year-btn i, .year-reset i { color: #64748b; }
+    .year-reset { width: 28px; padding: 0; justify-content: center; }
+    .year-pop {
+      position: absolute; z-index: 50; right: 0; top: calc(100% + 6px); width: 280px;
+      background: #fff; border-radius: 12px; box-shadow: 0 16px 40px rgba(15,23,42,.16);
+      border: 1px solid #e2e8f0; padding: 10px 12px;
+    }
+    .year-pop .hd { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 8px; }
+    .year-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 4px; }
+    .year-grid button { padding: 7px 0; border-radius: 8px; font-size: 12px; color: #334155; }
+    .year-grid button:hover { background: #f1f5f9; }
+    .year-grid button.is-on { color: #2563eb; font-weight: 700; }
+    .vol-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; font-size: 11px; color: #64748b; }
+    .vol-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+    .vol-legend i.line { height: 2px; width: 14px; border-radius: 99px; vertical-align: 3px; }
+    .kpi-mid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr); gap: 12px; flex: 1; min-height: 0; }
+    .kpi-mid-left { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 8px; min-width: 0; min-height: 0; }
+    .kpi-mid-right { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: 0; }
+    .kpi-bot { display: grid; grid-template-columns: minmax(0, 1.4fr) 210px; gap: 12px; min-height: 0; }
+    .kpi-bot .rules-col, .kpi-bot .sev-col { min-width: 0; overflow: hidden; }
+    #chart-sev svg { width: 78px; height: 78px; flex-shrink: 0; }
+    #chart-concl svg { width: 92px; height: 92px; flex-shrink: 0; }
     .ai-chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 5px; border: 1px solid; background: #fff; padding: 1px 7px 1px 5px; font-size: 11px; font-weight: 600; }
     .ai-chip .ai-mark { font-size: 9px; font-weight: 800; padding: 0 4px; border-radius: 3px; color: #fff; }
     .ai-pass { color: #047857; border-color: #6ee7b7; } .ai-pass .ai-mark { background: #059669; }
@@ -54,7 +82,7 @@
     .panel-grid {
       display: grid; gap: 12px; height: 100%; min-height: 0;
       grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.72fr) minmax(0, 1fr);
-      grid-template-rows: minmax(0, 1.55fr) minmax(210px, 0.92fr);
+      grid-template-rows: minmax(0, 1.7fr) minmax(220px, 0.95fr);
     }
     #blk-kpi { grid-column: 1 / 3; grid-row: 1; }
     #blk-pending { grid-column: 3; grid-row: 1; }
@@ -88,7 +116,7 @@
 
     <div class="flex-1 overflow-hidden p-3" style="min-height:0">
       <div class="panel-grid">
-        <section id="blk-kpi" class="glass flex min-h-0 flex-col overflow-hidden px-4 py-3" data-annotate="ap-kpi">
+        <section id="blk-kpi" class="glass flex min-h-0 flex-col overflow-auto px-4 py-3" data-annotate="ap-kpi">
           <div class="mb-2 flex items-center justify-between gap-3" style="flex-wrap:nowrap">
             <div class="min-w-0 truncate text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-line-chart mr-1"></i>窗口 KPI
               <span class="ml-2 text-xs font-normal text-slate-400">业务日 <span id="kpi-today" class="mono"></span></span></div>
@@ -99,21 +127,29 @@
               <button type="button" data-range="全部">全部</button>
             </div>
           </div>
-          <div id="kpi-row" class="grid gap-2" style="grid-template-columns:repeat(5,minmax(0,1fr))"></div>
-          <div class="mt-3 grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden md:grid-cols-[minmax(0,1.2fr)_minmax(180px,.7fr)]">
-            <div class="flex min-h-0 flex-col">
-              <div class="mb-1 text-xs font-semibold text-slate-600">AI 审核结论三态分布</div>
-              <div id="chart-concl" class="flex flex-1 items-center gap-3"></div>
+          <div id="kpi-row" class="grid gap-2" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div>
+          <div class="kpi-mid mt-3 overflow-hidden">
+            <div class="kpi-mid-left">
+              <div id="chart-done" class="flex min-h-0"></div>
+              <div class="flex min-h-0 min-w-0 flex-col">
+                <div class="mb-1 text-xs font-semibold text-slate-600">AI 审核结论三态分布</div>
+                <div id="chart-concl" class="flex flex-1 items-center gap-2 overflow-hidden"></div>
+              </div>
             </div>
-            <div class="flex min-h-0 flex-col">
-              <div class="mb-1 text-xs font-semibold text-slate-600">AI 审核平均时长</div>
-              <div id="chart-avg" class="flex flex-1 items-center"></div>
+            <div class="kpi-mid-right">
+              <div id="chart-avg" class="flex min-h-0"></div>
+              <div id="chart-adopt" class="flex min-h-0"></div>
             </div>
           </div>
-          <div class="mt-2 min-h-0" data-annotate="ap-rules">
-            <div class="mb-1 text-xs font-semibold text-slate-600">规则命中不通过 TOP</div>
-            <div id="chart-rules"></div>
-            <div id="chart-sev" class="mt-2"></div>
+          <div class="kpi-bot mt-2" data-annotate="ap-rules">
+            <div class="rules-col">
+              <div class="mb-1 text-xs font-semibold text-slate-600">规则命中不通过 TOP</div>
+              <div id="chart-rules"></div>
+            </div>
+            <div class="sev-col">
+              <div class="mb-1 text-xs font-semibold text-slate-600">不通过项严重度</div>
+              <div id="chart-sev" class="flex items-center gap-2 overflow-hidden"></div>
+            </div>
           </div>
         </section>
 
@@ -122,22 +158,29 @@
             <div class="text-sm font-semibold" style="color:var(--brand)">过程中 · 待处理 <span id="n-pending" class="text-xs font-normal text-slate-400"></span></div>
           </div>
           <div id="pending-marquee" class="marquee flex-1 px-2 py-2" style="min-height:0"></div>
-          <div class="border-t border-white/50 px-4 py-2">
+          <div class="flex-shrink-0 border-t border-white/50 px-4 py-2">
             <div class="mb-1.5 flex items-center justify-between text-xs font-semibold text-red-600"><span><i class="fa fa-exclamation-triangle mr-1"></i>审核异常</span><span id="n-ex" class="font-normal text-slate-400"></span></div>
-            <div id="ex-marquee" class="marquee" style="height:88px"></div>
+            <div id="ex-marquee" class="marquee" style="height:168px;min-height:168px"></div>
           </div>
         </section>
 
         <section id="blk-trend" class="glass flex min-h-0 flex-col overflow-hidden px-4 py-3" data-annotate="ap-trend">
           <div class="mb-1 flex items-center justify-between gap-2">
             <div class="text-sm font-semibold" style="color:var(--brand)">审核任务量走势</div>
-            <div id="grain-seg" class="seg flex-shrink-0">
-              <button type="button" data-grain="年">年</button>
-              <button type="button" data-grain="季">季</button>
-              <button type="button" data-grain="月" class="is-on">月</button>
+            <div class="relative flex flex-shrink-0 items-center gap-1.5">
+              <select id="grain-select" class="grain-select" aria-label="粒度">
+                <option value="年">年度</option>
+                <option value="季">季度</option>
+                <option value="月" selected>月度</option>
+              </select>
+              <span id="year-from-wrap" class="hidden"><button type="button" id="year-from" class="year-btn" data-pick="from"><i class="fa fa-calendar-o"></i><span>2020</span></button></span>
+              <span id="year-to-label" class="hidden text-xs text-slate-400">至</span>
+              <button type="button" id="year-to" class="year-btn" data-pick="to"><i class="fa fa-calendar-o"></i><span>2026</span></button>
+              <button type="button" id="year-reset" class="year-reset" title="重置时间范围"><i class="fa fa-refresh"></i></button>
+              <div id="year-pop" class="year-pop hidden" role="listbox"></div>
             </div>
           </div>
-          <div id="chart-volume" class="flex-1"></div>
+          <div id="chart-volume" class="min-h-0 flex-1"></div>
         </section>
 
         <section id="blk-archive" class="glass flex min-h-0 flex-col overflow-hidden px-4 py-3" data-annotate="ap-archive">
@@ -165,7 +208,7 @@
     AiReviewStore.reset();
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
     function $(id) { return document.getElementById(id); }
-    var state = { range: '7天', grain: '月', ds: null, simDone: 0, simOver: false };
+    var state = { range: '7天', grain: '月', year: 2026, yearFrom: 2020, yearTo: 2026, yearPick: 'to', ds: null, simDone: 0, simOver: false };
 
     function tone(c) { return c === '通过' ? 'pass' : (c === '需复核' ? 'warn' : (c === '审核中' ? 'run' : 'fail')); }
     function aiChip(c) { return '<span class="ai-chip ai-' + tone(c) + '"><span class="ai-mark">AI</span>' + esc(c) + '</span>'; }
@@ -178,7 +221,7 @@
       return '<div class="kpi rounded-xl border border-white/70 bg-white/70 px-3 py-2" data-kpi="' + id + '"><div class="text-[11px] text-slate-400">' + esc(label) + '</div><div class="n">' + esc(value) + '</div><div class="text-[11px] text-slate-400">' + esc(hint || '') + '</div></div>';
     }
     function popKpis() {
-      document.querySelectorAll('#kpi-row .kpi').forEach(function (el) {
+      document.querySelectorAll('[data-kpi]').forEach(function (el) {
         el.classList.remove('pop');
         void el.offsetWidth;
         el.classList.add('pop');
@@ -204,13 +247,21 @@
       $('kpi-row').innerHTML =
         kpiCard('audits', '审核次数', k.audits, '窗口内触发的 AI 任务') +
         kpiCard('success', '成功率', k.closeRate, '成功 ' + k.successN + ' 次') +
-        kpiCard('error', '异常率', k.errorRate, '异常 ' + k.errorN + ' 次') +
-        kpiCard('done', '已完成报告', k.done, '已出三态结论') +
-        kpiCard('adopt', '人工采纳率', k.adoptRate, '同意 AI / 同意+覆盖');
+        kpiCard('error', '异常率', k.errorRate, '异常 ' + k.errorN + ' 次');
+      $('chart-done').innerHTML =
+        '<div class="kpi flex w-full flex-col justify-center rounded-xl border border-white/70 bg-white/70 px-3 py-2" data-kpi="done">' +
+        '<div class="text-[11px] text-slate-400">已完成报告数量</div>' +
+        '<div class="n mt-1 text-2xl">' + esc(k.done) + '</div>' +
+        '<div class="text-[11px] text-slate-400">已出三态结论</div></div>';
+      $('chart-adopt').innerHTML =
+        '<div class="kpi flex w-full flex-col justify-center rounded-xl bg-gradient-to-br from-sky-50 to-white px-3 py-3" data-kpi="adopt">' +
+        '<div class="text-[11px] text-slate-400">人工采纳率</div>' +
+        '<div class="mt-1 text-2xl font-bold" style="color:var(--brand)">' + esc(k.adoptRate) + '</div>' +
+        '<div class="mt-1 text-[11px] text-slate-400">同意 AI / 同意+覆盖</div></div>';
     }
-    function donutHtml(slices) {
+    function donutHtml(slices, caption) {
       var total = slices.reduce(function (s, x) { return s + x.n; }, 0);
-      if (!total) return '<div class="py-4 text-center text-xs text-slate-400">窗口内尚无三态结论</div>';
+      if (!total) return '<div class="py-4 text-center text-xs text-slate-400">窗口内尚无数据</div>';
       var r = 38, c = 2 * Math.PI * r, acc = 0;
       var rings = slices.map(function (s) {
         var frac = s.n / total;
@@ -224,7 +275,7 @@
       return '<svg width="100" height="100" viewBox="0 0 100 100" aria-hidden="true">' +
         '<circle cx="50" cy="50" r="38" fill="none" stroke="#eef2ff" stroke-width="12"></circle>' + rings +
         '<text x="50" y="48" text-anchor="middle" font-size="16" font-weight="700" fill="#143C9A">' + total + '</text>' +
-        '<text x="50" y="64" text-anchor="middle" font-size="10" fill="#64748b">已出结论</text></svg>' +
+        '<text x="50" y="64" text-anchor="middle" font-size="10" fill="#64748b">' + esc(caption || '已出结论') + '</text></svg>' +
         '<div class="flex-1 space-y-1.5">' + legend + '</div>';
     }
     function avgHtml(sec) {
@@ -237,40 +288,54 @@
       if (!rules.length) return '<div class="text-xs text-slate-400">窗口内无命中项</div>';
       var max = Math.max.apply(null, rules.map(function (r) { return r.n; }));
       return '<div class="space-y-1.5">' + rules.map(function (r) {
-        var pct = Math.round((r.n / max) * 100);
+        var pct = Math.round((r.n / max) * 82);
         return '<div><div class="mb-0.5 flex items-center justify-between text-xs"><span class="truncate text-slate-600">' + esc(r.name) + '</span><b class="ml-2">' + r.n + '</b></div>' +
           '<div class="hbar"><span style="width:' + pct + '%"></span></div></div>';
       }).join('') + '</div>';
     }
-    function sevHtml(fs) {
-      var keys = ['严重', '一般', '轻微'];
-      var colors = { 严重: '#dc2626', 一般: '#d97706', 轻微: '#64748b' };
-      return '<div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">不通过项严重度' + keys.map(function (k) {
-        return '<span class="chip" style="background:' + colors[k] + '1a;color:' + colors[k] + '">' + k + ' ' + (fs.n[k] || 0) + ' · ' + (fs.pct[k] || '0%') + '</span>';
-      }).join('') + '</div>';
-    }
     function volumeHtml(points) {
-      if (!points.length) return '<div class="py-6 text-center text-xs text-slate-400">窗口内无任务量</div>';
-      var w = 320, h = 120, pad = 22;
-      if (points.length === 1) {
-        return '<div class="flex h-full flex-col items-center justify-center"><div class="text-3xl font-bold" style="color:var(--brand)">' + points[0].n + '</div><div class="mt-1 text-xs text-slate-400">' + esc(points[0].label) + ' · 窗口内任务量</div></div>';
-      }
+      if (!points.length) return '<div class="py-6 text-center text-xs text-slate-400">所选时间范围无任务量</div>';
+      var w = 420, h = 148, padL = 28, padR = 36, padT = 12, padB = 22;
+      var innerW = w - padL - padR, innerH = h - padT - padB;
       var max = Math.max.apply(null, points.map(function (p) { return p.n; }).concat([1]));
+      var n = points.length;
+      var gw = innerW / n;
+      var bw = Math.max(4, Math.min(14, gw * 0.28));
+      var bars = points.map(function (p, i) {
+        var cx = padL + gw * i + gw / 2;
+        var h1 = (p.n / max) * innerH;
+        var h2 = (p.done / max) * innerH;
+        var y1 = padT + innerH - h1;
+        var y2 = padT + innerH - h2;
+        return '<rect x="' + (cx - bw - 1).toFixed(1) + '" y="' + y1.toFixed(1) + '" width="' + bw + '" height="' + h1.toFixed(1) + '" fill="#64748b" rx="1"></rect>' +
+          '<rect x="' + (cx + 1).toFixed(1) + '" y="' + y2.toFixed(1) + '" width="' + bw + '" height="' + h2.toFixed(1) + '" fill="#7dd3fc" rx="1"></rect>';
+      }).join('');
       var coords = points.map(function (p, i) {
-        var x = pad + (points.length === 1 ? (w - pad * 2) / 2 : i * (w - pad * 2) / (points.length - 1));
-        var y = h - pad - (p.n / max) * (h - pad * 2);
+        var x = padL + gw * i + gw / 2;
+        var y = padT + innerH - (p.rate / 100) * innerH;
         return { x: x, y: y, p: p };
       });
       var line = coords.map(function (c, i) { return (i ? 'L' : 'M') + c.x.toFixed(1) + ',' + c.y.toFixed(1); }).join(' ');
       var dots = coords.map(function (c) {
-        return '<circle cx="' + c.x.toFixed(1) + '" cy="' + c.y.toFixed(1) + '" r="3.5" fill="#143C9A"></circle>' +
-          '<text x="' + c.x.toFixed(1) + '" y="' + (c.y - 8) + '" text-anchor="middle" font-size="10" fill="#334155">' + c.p.n + '</text>';
+        return '<circle cx="' + c.x.toFixed(1) + '" cy="' + c.y.toFixed(1) + '" r="2.6" fill="#10b981"></circle>';
       }).join('');
       var labels = coords.map(function (c) {
         return '<text x="' + c.x.toFixed(1) + '" y="' + (h - 6) + '" text-anchor="middle" font-size="10" fill="#64748b">' + esc(c.p.label) + '</text>';
       }).join('');
-      return '<svg viewBox="0 0 ' + w + ' ' + h + '" class="h-full w-full" preserveAspectRatio="none">' +
-        '<path d="' + line + '" fill="none" stroke="#2E5BD6" stroke-width="2"></path>' + dots + labels + '</svg>';
+      var ticks = [0, 0.5, 1].map(function (f) {
+        var y = padT + innerH * (1 - f);
+        var left = Math.round(max * f);
+        var right = Math.round(100 * f) + '%';
+        return '<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (w - padR) + '" y2="' + y.toFixed(1) + '" stroke="#eef2ff"></line>' +
+          '<text x="' + (padL - 4) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end" font-size="9" fill="#94a3b8">' + left + '</text>' +
+          '<text x="' + (w - padR + 4) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="start" font-size="9" fill="#94a3b8">' + right + '</text>';
+      }).join('');
+      return '<div class="flex h-full min-h-0 flex-col">' +
+        '<svg viewBox="0 0 ' + w + ' ' + h + '" class="min-h-0 w-full flex-1">' + ticks + bars +
+        '<path d="' + line + '" fill="none" stroke="#10b981" stroke-width="2"></path>' + dots + labels + '</svg>' +
+        '<div class="vol-legend mt-1"><span><i style="background:#64748b"></i>审核任务总数</span>' +
+        '<span><i style="background:#7dd3fc"></i>已完成任务</span>' +
+        '<span><i class="line" style="background:#10b981"></i>完成率</span></div></div>';
     }
     function pendingCard(row) {
       return '<a class="mb-1.5 block rounded-xl border border-slate-100 bg-white px-3 py-2 hover:border-blue-200" href="ai-review-snapshot.html?id=' + encodeURIComponent(row.id) + '&kind=process">' +
@@ -312,11 +377,22 @@
         }
       }, 3200);
     }
+    function catLines(cats) {
+      if (!(cats && cats.length)) return '<div class="mt-2 text-[11px] text-slate-400">暂无大类明细</div>';
+      return '<div class="mt-2 space-y-1">' + cats.map(function (c) {
+        return '<div class="flex items-center justify-between text-[11px]"><span class="truncate text-slate-500">' + esc(c.name) + '</span><b class="ml-2 text-slate-700">' + c.n + '</b></div>';
+      }).join('') + '</div>';
+    }
     function archiveHtml(st) {
-      return '<div class="grid w-full grid-cols-2 gap-2">' +
-        '<div class="rounded-xl bg-emerald-50 px-3 py-3"><div class="text-[11px] text-emerald-700">已签发 / 已发放</div><div class="mt-1 text-2xl font-bold text-emerald-800">' + st.signed + '</div></div>' +
-        '<div class="rounded-xl bg-slate-100 px-3 py-3"><div class="text-[11px] text-slate-500">已删除</div><div class="mt-1 text-2xl font-bold text-slate-800">' + st.deleted + '</div></div>' +
-        '<div class="col-span-2 text-xs text-slate-400">合计 ' + st.total + ' 份 · 点右上角进入归档名单</div></div>';
+      return '<div class="grid h-full w-full grid-cols-2 gap-2">' +
+        '<div class="flex min-h-0 flex-col overflow-hidden rounded-xl bg-emerald-50 px-3 py-3">' +
+          '<div class="text-[11px] text-emerald-700">已签发 / 已发放</div>' +
+          '<div class="mt-1 text-2xl font-bold text-emerald-800">' + st.signed + '</div>' +
+          '<div class="min-h-0 flex-1 overflow-auto">' + catLines(st.signedCats) + '</div></div>' +
+        '<div class="flex min-h-0 flex-col overflow-hidden rounded-xl bg-slate-100 px-3 py-3">' +
+          '<div class="text-[11px] text-slate-500">已删除</div>' +
+          '<div class="mt-1 text-2xl font-bold text-slate-800">' + st.deleted + '</div>' +
+          '<div class="min-h-0 flex-1 overflow-auto">' + catLines(st.deletedCats) + '</div></div></div>';
     }
 
     var queueJobs = [];
@@ -365,14 +441,45 @@
       if (!state.simOver) setTimeout(tickQueue, 2200);
     }
 
+    function currentVolume() {
+      return ReportReviewMock.getVolumeSeries({
+        grain: state.grain, year: state.year, yearFrom: state.yearFrom, yearTo: state.yearTo,
+      });
+    }
+    function syncYearToolbar() {
+      var yearly = state.grain === '年';
+      $('year-from-wrap').classList.toggle('hidden', !yearly);
+      $('year-to-label').classList.toggle('hidden', !yearly);
+      $('year-from').querySelector('span').textContent = state.yearFrom;
+      $('year-to').querySelector('span').textContent = yearly ? state.yearTo : state.year;
+      $('grain-select').value = state.grain;
+    }
+    function renderVolume() {
+      syncYearToolbar();
+      $('chart-volume').innerHTML = volumeHtml(currentVolume());
+    }
+    function closeYearPop() { $('year-pop').classList.add('hidden'); }
+    function openYearPop(which) {
+      state.yearPick = which;
+      var cur = which === 'from' ? state.yearFrom : (state.grain === '年' ? state.yearTo : state.year);
+      var min = ReportReviewMock.VOLUME_YEARS.min, max = ReportReviewMock.VOLUME_YEARS.max;
+      var cells = '';
+      for (var y = min; y <= max; y++) {
+        cells += '<button type="button" data-year="' + y + '"' + (y === cur ? ' class="is-on"' : '') + '>' + y + '</button>';
+      }
+      $('year-pop').innerHTML =
+        '<div class="hd"><span class="text-slate-300">«</span><span>' + min + ' 年 – ' + max + ' 年</span><span class="text-slate-300">»</span></div>' +
+        '<div class="year-grid">' + cells + '</div>';
+      $('year-pop').classList.remove('hidden');
+    }
     function renderAll() {
       state.ds = ReportReviewMock.getPanelDataset(state.range);
       renderKpi(state.ds);
-      $('chart-concl').innerHTML = donutHtml(state.ds.charts.slices);
+      $('chart-concl').innerHTML = donutHtml(state.ds.charts.slices, '已出结论');
       $('chart-avg').innerHTML = avgHtml(state.ds.kpi.avgDurationSec);
       $('chart-rules').innerHTML = rulesHtml(state.ds.charts.rules);
-      $('chart-sev').innerHTML = sevHtml(state.ds.charts.failSev);
-      $('chart-volume').innerHTML = volumeHtml(state.ds.charts.volume[state.grain] || []);
+      $('chart-sev').innerHTML = donutHtml(state.ds.charts.failSev.slices || [], '不通过项');
+      renderVolume();
       $('archive-stats').innerHTML = archiveHtml(state.ds.archiveStats);
       var pending = state.ds.pending || [];
       $('n-pending').textContent = pending.length + ' 份';
@@ -388,12 +495,31 @@
       [].forEach.call($('range-seg').querySelectorAll('button'), function (x) { x.classList.toggle('is-on', x === b); });
       renderAll();
     });
-    $('grain-seg').addEventListener('click', function (e) {
-      var b = e.target.closest('button[data-grain]'); if (!b) return;
-      state.grain = b.getAttribute('data-grain');
-      [].forEach.call($('grain-seg').querySelectorAll('button'), function (x) { x.classList.toggle('is-on', x === b); });
-      $('chart-volume').innerHTML = volumeHtml(state.ds.charts.volume[state.grain] || []);
+    $('grain-select').addEventListener('change', function () {
+      state.grain = $('grain-select').value;
+      closeYearPop();
+      renderVolume();
     });
+    $('year-from').addEventListener('click', function (e) { e.stopPropagation(); openYearPop('from'); });
+    $('year-to').addEventListener('click', function (e) { e.stopPropagation(); openYearPop('to'); });
+    $('year-reset').addEventListener('click', function () {
+      state.year = 2026; state.yearFrom = 2020; state.yearTo = 2026;
+      closeYearPop();
+      renderVolume();
+    });
+    $('year-pop').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var b = e.target.closest('button[data-year]'); if (!b) return;
+      var y = Number(b.getAttribute('data-year'));
+      if (state.grain === '年') {
+        if (state.yearPick === 'from') state.yearFrom = y; else state.yearTo = y;
+      } else {
+        state.year = y;
+      }
+      closeYearPop();
+      renderVolume();
+    });
+    document.addEventListener('click', closeYearPop);
 
     renderAll();
     seedQueue(state.ds);
@@ -402,11 +528,11 @@
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({ annotations: [
-        { id: 'ap-kpi', selector: '[data-annotate="ap-kpi"]', position: 'bottom', title: '窗口 KPI', content: '右上角切近 7 天 / 30 天 / 本月 / 全部。五张卡：审核次数、成功率（及次数）、异常率（及次数）、已完成报告、人工采纳率。下层为三态饼图与平均时长，再下层为不通过规则 TOP 与严重度占比。', tag: 'AI面板' },
+        { id: 'ap-kpi', selector: '[data-annotate="ap-kpi"]', position: 'bottom', title: '窗口 KPI', content: '第一层三张卡：审核次数、成功率、异常率。第二层左侧为已完成报告数量与三态饼图，右侧为平均耗时与人工采纳率。第三层左侧规则命中不通过 TOP，右侧不通过项严重度饼图。', tag: 'AI面板' },
         { id: 'ap-range', selector: '[data-annotate="ap-range"]', position: 'bottom', title: '日期范围', content: '业务日锚定 2026-09-08。', tag: 'AI面板' },
-        { id: 'ap-pending', selector: '[data-annotate="ap-pending"]', position: 'left', title: '过程中待处理', content: '上下轮播待处理报告，点击进入审核快照；快照可返回本面板或点「人工处置」进报告审核。下方为审核异常轮播，点击进报告审核去人工重跑。', tag: 'AI面板' },
-        { id: 'ap-trend', selector: '[data-annotate="ap-trend"]', position: 'top', title: '审核任务量走势', content: '按当前日期范围汇总，右上角切年 / 季 / 月。', tag: 'AI面板' },
-        { id: 'ap-archive', selector: '[data-annotate="ap-archive"]', position: 'top', title: '已归档数据', content: '已签发与已删除数量。标题右侧箭头进入归档名单。', tag: 'AI面板' },
+        { id: 'ap-pending', selector: '[data-annotate="ap-pending"]', position: 'left', title: '过程中待处理', content: '上下轮播待处理报告，点击进入审核快照；快照可返回本面板或点「人工处置」进报告审核。下方审核异常区可同时露出两条，点击进报告审核去人工重跑。', tag: 'AI面板' },
+        { id: 'ap-trend', selector: '[data-annotate="ap-trend"]', position: 'top', title: '审核任务量走势', content: '右上角切年度 / 季度 / 月度。年度可选起止年；季度、月度选单个年份。柱为任务总数与已完成，绿线为完成率。', tag: 'AI面板' },
+        { id: 'ap-archive', selector: '[data-annotate="ap-archive"]', position: 'top', title: '已归档数据', content: '已签发与已删除数量，卡片内按样品大类列出份数。标题右侧箭头进入归档名单。', tag: 'AI面板' },
         { id: 'ap-queue', selector: '[data-annotate="ap-queue"]', position: 'left', title: '排队中', content: '演示 3 份任务依次领取、出结论；每完成一份，左侧 KPI 会跳动。3 份完成后显示本轮完毕。', tag: 'AI面板' },
       ] });
     }

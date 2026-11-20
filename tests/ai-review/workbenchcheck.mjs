@@ -17,7 +17,10 @@ const liability = await p.locator('#ai-liability').count();
 out.push((liability === 0 ? '✅' : '❌') + ' 不展示入口说明条');
 
 const kpiN = await p.locator('#kpi-row .kpi').count();
-out.push((kpiN === 5 ? '✅' : '❌') + ' 五张 KPI: ' + kpiN);
+out.push((kpiN === 3 ? '✅' : '❌') + ' 第一层三张 KPI: ' + kpiN);
+const doneCard = await p.locator('#chart-done [data-kpi="done"]').count();
+const adoptCard = await p.locator('#chart-adopt [data-kpi="adopt"]').count();
+out.push((doneCard === 1 && adoptCard === 1 ? '✅' : '❌') + ' 已完成报告卡 + 人工采纳率卡');
 
 const blocks = await p.evaluate(() => ['blk-kpi', 'blk-pending', 'blk-trend', 'blk-archive', 'blk-queue'].every((id) => !!document.getElementById(id)));
 out.push((blocks ? '✅' : '❌') + ' 五块布局容器');
@@ -26,22 +29,26 @@ const charts = await p.evaluate(() => ({
   concl: !!document.querySelector('#chart-concl svg'),
   avg: /秒|分/.test(document.querySelector('#chart-avg')?.textContent || ''),
   rules: (document.querySelector('#chart-rules')?.textContent || '').length > 0,
-  sev: /严重/.test(document.querySelector('#chart-sev')?.textContent || ''),
-  vol: !!document.querySelector('#chart-volume svg') || /\d/.test(document.querySelector('#chart-volume')?.textContent || ''),
+  sev: !!document.querySelector('#chart-sev svg') && /严重/.test(document.querySelector('#chart-sev')?.textContent || ''),
+  vol: !!document.querySelector('#chart-volume svg') && /审核任务总数/.test(document.querySelector('#chart-volume')?.textContent || ''),
+  grain: document.querySelector('#grain-select')?.value === '月',
 }));
-out.push((charts.concl && charts.avg && charts.rules && charts.sev && charts.vol ? '✅' : '❌') + ' 饼图/时长/规则TOP/严重度/走势');
+out.push((charts.concl && charts.avg && charts.rules && charts.sev && charts.vol && charts.grain ? '✅' : '❌') + ' 饼图/时长/规则TOP/严重度饼图/走势选择器');
 
 const noDrawer = await p.locator('#detail-panel').count();
 out.push((noDrawer === 0 ? '✅' : '❌') + ' 不再使用侧栏快照抽屉');
 
 const pendingN = await p.locator('#pending-marquee a').count();
-out.push((pendingN >= 1 ? '✅' : '❌') + ' 待处理轮播有行: ' + pendingN);
+out.push((pendingN >= 5 ? '✅' : '❌') + ' 待处理轮播至少 5 行: ' + pendingN);
 
 const exN = await p.locator('#ex-marquee a').count();
-out.push((exN >= 1 ? '✅' : '❌') + ' 审核异常轮播有行: ' + exN);
+const exH = await p.locator('#ex-marquee').evaluate((el) => el.clientHeight);
+out.push((exN >= 2 && exH >= 160 ? '✅' : '❌') + ` 审核异常至少 2 条且高度可露两条: n=${exN} h=${Math.round(exH)}`);
 
 const qCards = await p.locator('#queue-viz .q-card').count();
 out.push((qCards === 3 ? '✅' : '❌') + ' 排队模拟 3 份: ' + qCards);
+const archCats = await p.locator('#archive-stats').textContent();
+out.push((/电力电缆/.test(archCats || '') && /绝缘手套|安全带|螺栓|保护管|盖板/.test(archCats || '') ? '✅' : '❌') + ' 归档卡片含样品大类明细');
 
 await p.screenshot({ path: SHOT_DIR + '/panel-five-blocks.png', fullPage: true });
 
@@ -93,9 +100,23 @@ await p.locator('#range-seg button[data-range="全部"]').click();
 await p.waitForTimeout(150);
 const kpiAll = await p.locator('#kpi-row .kpi').first().textContent();
 out.push((/\d/.test(kpiAll || '') ? '✅' : '❌') + ' 全部窗口 KPI 仍有数字');
-await p.locator('#grain-seg button[data-grain="年"]').click();
+await p.selectOption('#grain-select', '年');
 await p.waitForTimeout(80);
-out.push(((await p.locator('#chart-volume svg').count()) === 1 ? '✅' : '❌') + ' 按年切换走势图');
+const yearFromVisible = await p.locator('#year-from-wrap').evaluate((el) => !el.classList.contains('hidden'));
+const yearLabels = await p.locator('#chart-volume').textContent();
+out.push((yearFromVisible && /2020年/.test(yearLabels || '') && /2026年/.test(yearLabels || '') ? '✅' : '❌') + ' 年度模式含起止年与多年柱');
+await p.locator('#year-to').click();
+await p.waitForTimeout(80);
+const popYears = await p.locator('#year-pop button[data-year]').count();
+out.push((popYears >= 8 ? '✅' : '❌') + ' 年份选择面板: ' + popYears);
+await p.locator('#year-pop button[data-year="2024"]').click();
+await p.waitForTimeout(80);
+const to2024 = await p.locator('#year-to span').textContent();
+out.push((to2024 === '2024' ? '✅' : '❌') + ' 选择截止年 2024');
+await p.selectOption('#grain-select', '季');
+await p.waitForTimeout(80);
+const qText = await p.locator('#chart-volume').textContent();
+out.push((/Q1/.test(qText || '') && /Q3/.test(qText || '') ? '✅' : '❌') + ' 季度模式展示当年已过季度');
 
 await p.goto(BASE + '/ai-review-workbench.html', { waitUntil: 'load' });
 await p.waitForTimeout(2500);

@@ -445,6 +445,81 @@
         ],
       }],
     },
+    {
+      code: 'SC2026/0242', contract: '/', customer: '贵州送变电有限公司', sample: '绝缘手套 10kV',
+      sendDate: '2026-09-04', requireDate: '2026-09-09', acceptDate: '2026-09-04',
+      priority: '常规', status: '报告审核', compiler: 'admin',
+      contractInfo: { frame: '否', contractNo: '/', signPlace: '贵阳', signDate: '2026-09-03', center: '应敏科技有限公司' },
+      payInfo: { total: 960, actual: 960, discount: 0, way: '对公转账', payer: '贵州送变电有限公司', note: '/' },
+      reportInfo: { send: '邮寄', qualify: 'CNAS CMA', desc: '按试样各出一份', resultMode: '判定', lang: '中文', copies: 2 },
+      reports: [{
+        id: 'rr-0242-01', reportNo: 'SC2026/0242-01', reportName: 'SC2026-0242-01检测报告.docx',
+        sampleNos: ['SC2026/0242-0101'], categoryBound: false, state: '待处置',
+        snapshotHash: 't0242a', file: { word: 'SC2026-0242-01检测报告.docx', pdf: 'SC2026-0242-01检测报告.pdf', at: '2026-09-05 10:20' },
+        info: cableInfo({ packVersion: '未配置行业包' }),
+        rounds: [{
+          revision: 'V1.0', trigger: '进入报告审核', at: '2026-09-05 10:28',
+          snapshot: cableSnap({ sample_no: 'SC2026-0242', category_code: 'CAT-GLOVE', category_name: '绝缘手套' }),
+        }],
+        disposition: null,
+        log: [
+          { at: '2026-09-05 09:50', node: '报告生成', by: '系统', text: '生成报告 SC2026/0242-01', tone: 'default' },
+          { at: '2026-09-05 10:28', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
+        ],
+      }],
+    },
+    {
+      code: 'SC2026/0243', contract: '/', customer: '遵义供电局', sample: '全身式安全带',
+      sendDate: '2026-09-05', requireDate: '2026-09-10', acceptDate: '2026-09-05',
+      priority: '加急', status: '报告审核', compiler: 'admin',
+      contractInfo: { frame: '否', contractNo: '/', signPlace: '遵义', signDate: '2026-09-04', center: '应敏科技有限公司' },
+      payInfo: { total: 1280, actual: 1280, discount: 0, way: '对公转账', payer: '遵义供电局', note: '/' },
+      reportInfo: { send: '自取', qualify: 'CMA', desc: '按试样各出一份', resultMode: '判定', lang: '中文', copies: 1 },
+      reports: [{
+        id: 'rr-0243-01', reportNo: 'SC2026/0243-01', reportName: 'SC2026-0243-01检测报告.docx',
+        sampleNos: ['SC2026/0243-0101'], categoryBound: false, state: '待处置',
+        snapshotHash: 't0243a', file: { word: 'SC2026-0243-01检测报告.docx', pdf: 'SC2026-0243-01检测报告.pdf', at: '2026-09-06 11:05' },
+        info: cableInfo({ packVersion: '未配置行业包' }),
+        rounds: [{
+          revision: 'V1.0', trigger: '进入报告审核', at: '2026-09-06 11:12',
+          snapshot: cableSnap({
+            sample_no: 'SC2026-0243', category_code: 'CAT-BELT', category_name: '安全带',
+            cited_standard: 'GB/T 6095-2021',
+          }),
+        }],
+        disposition: null,
+        log: [
+          { at: '2026-09-06 10:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0243-01', tone: 'default' },
+          { at: '2026-09-06 11:12', node: 'AI审核', by: '系统', text: '预审结论：需复核（V1.0，引用标准需核）', tone: 'warn' },
+        ],
+      }],
+    },
+    {
+      code: 'SC2026/0244', contract: '/', customer: '安顺供电局', sample: '高强度螺栓连接副',
+      sendDate: '2026-09-06', requireDate: '2026-09-11', acceptDate: '2026-09-06',
+      priority: '常规', status: '报告审核', compiler: 'admin',
+      contractInfo: { frame: '否', contractNo: '/', signPlace: '安顺', signDate: '2026-09-05', center: '应敏科技有限公司' },
+      payInfo: { total: 2100, actual: 2100, discount: 0, way: '对公转账', payer: '安顺供电局', note: '/' },
+      reportInfo: { send: '邮寄', qualify: 'CNAS CMA', desc: '按试样各出一份', resultMode: '判定', lang: '中文', copies: 2 },
+      reports: [{
+        id: 'rr-0244-01', reportNo: 'SC2026/0244-01', reportName: 'SC2026-0244-01检测报告.docx',
+        sampleNos: ['SC2026/0244-0101'], categoryBound: false, state: '待处置',
+        snapshotHash: 't0244a', file: { word: 'SC2026-0244-01检测报告.docx', pdf: 'SC2026-0244-01检测报告.pdf', at: '2026-09-07 08:50' },
+        info: cableInfo({ packVersion: '未配置行业包' }),
+        rounds: [{
+          revision: 'V1.0', trigger: '进入报告审核', at: '2026-09-07 09:02',
+          snapshot: cableSnap({
+            sample_no: 'SC2026-0244', category_code: 'CAT-BOLT', category_name: '高强度螺栓连接副',
+            units: [{ param: '扭矩系数', unit: 'N·m' }],
+          }),
+        }],
+        disposition: null,
+        log: [
+          { at: '2026-09-07 08:20', node: '报告生成', by: '系统', text: '生成报告 SC2026/0244-01', tone: 'default' },
+          { at: '2026-09-07 09:02', node: 'AI审核', by: '系统', text: '预审结论：需复核（V1.0，计量单位需核）', tone: 'warn' },
+        ],
+      }],
+    },
   ];
 
   function getEntrust(code) {
@@ -535,7 +610,7 @@
       id: 'arch-0188-01', reportNo: 'SC2026/0188-01', revision: 'V1.2',
       deleted: false,
       entrust: 'SC2026/0188', customer: '智载科技', sample: '复合绝缘盖板',
-      pack: '未配置行业包', bizNode: '已发放', aiTask: '成功', conclusion: '需复核',
+      pack: '复合绝缘盖板', bizNode: '已发放', aiTask: '成功', conclusion: '需复核',
       human: '已覆盖', agreeAi: false, caseSettled: true,
       at: '2026-09-01 09:40', archivedAt: '2026-09-04 11:00', signedAt: '2026-09-03 18:20',
       durationSec: 26, round: 2,
@@ -551,6 +626,85 @@
         { at: '2026-09-03 18:00', node: '报告审核', by: '李审核', text: '覆盖 AI，人工通过', tone: 'success' },
         { at: '2026-09-03 18:20', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
         { at: '2026-09-04 11:00', node: '报告发放', by: '系统', text: '报告已发放给委托方', tone: 'success' },
+      ],
+    },
+    {
+      id: 'arch-0175-01', reportNo: 'SC2026/0175-01', revision: 'V1.0',
+      deleted: false,
+      entrust: 'SC2026/0175', customer: '贵州送变电有限公司', sample: '绝缘手套 10kV',
+      pack: '绝缘手套', bizNode: '已签发', aiTask: '成功', conclusion: '通过',
+      human: '已同意', agreeAi: true, caseSettled: true,
+      at: '2026-09-03 13:10', archivedAt: '2026-09-04 09:40', signedAt: '2026-09-04 09:40',
+      durationSec: 11, round: 1,
+      snapshot: cableSnap({ sample_no: 'SC2026-0175', category_code: 'CAT-GLOVE', category_name: '绝缘手套' }),
+      hits: '未命中', trigger: '进入报告审核', snapshotHash: 's0175a', compiler: 'admin',
+      sampleNos: ['SC2026/0175-0101'],
+      file: { word: 'SC2026-0175-01检测报告.docx', pdf: 'SC2026-0175-01检测报告.pdf', at: '2026-09-03 13:00' },
+      labels: {},
+      log: [
+        { at: '2026-09-03 12:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0175-01', tone: 'default' },
+        { at: '2026-09-03 13:10', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
+        { at: '2026-09-04 09:40', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
+      ],
+    },
+    {
+      id: 'arch-0166-01', reportNo: 'SC2026/0166-01', revision: 'V1.0',
+      deleted: false,
+      entrust: 'SC2026/0166', customer: '遵义供电局', sample: '全身式安全带',
+      pack: '安全带', bizNode: '已发放', aiTask: '成功', conclusion: '通过',
+      human: '已同意', agreeAi: true, caseSettled: true,
+      at: '2026-09-01 15:20', archivedAt: '2026-09-05 10:00', signedAt: '2026-09-04 17:10',
+      durationSec: 9, round: 1,
+      snapshot: cableSnap({ sample_no: 'SC2026-0166', category_code: 'CAT-BELT', category_name: '安全带' }),
+      hits: '未命中', trigger: '进入报告审核', snapshotHash: 's0166a', compiler: 'admin',
+      sampleNos: ['SC2026/0166-0101'],
+      file: { word: 'SC2026-0166-01检测报告.docx', pdf: 'SC2026-0166-01检测报告.pdf', at: '2026-09-01 15:10' },
+      labels: {},
+      log: [
+        { at: '2026-09-01 14:50', node: '报告生成', by: '系统', text: '生成报告 SC2026/0166-01', tone: 'default' },
+        { at: '2026-09-01 15:20', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
+        { at: '2026-09-04 17:10', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
+        { at: '2026-09-05 10:00', node: '报告发放', by: '系统', text: '报告已发放给委托方', tone: 'success' },
+      ],
+    },
+    {
+      id: 'arch-0150-01', reportNo: 'SC2026/0150-01', revision: 'V1.1',
+      deleted: false,
+      entrust: 'SC2026/0150', customer: '安顺供电局', sample: '高强度螺栓连接副',
+      pack: '高强度螺栓连接副', bizNode: '已签发', aiTask: '成功', conclusion: '需复核',
+      human: '已覆盖', agreeAi: false, caseSettled: true,
+      at: '2026-08-28 11:00', archivedAt: '2026-09-03 16:20', signedAt: '2026-09-03 16:20',
+      durationSec: 22, round: 2,
+      snapshot: cableSnap({ sample_no: 'SC2026-0150', category_code: 'CAT-BOLT', category_name: '高强度螺栓连接副' }),
+      hits: '一般 1 项（计量单位）', trigger: '编制修改后重审', snapshotHash: 's0150b', compiler: 'admin',
+      sampleNos: ['SC2026/0150-0101'],
+      file: { word: 'SC2026-0150-01检测报告.docx', pdf: 'SC2026-0150-01检测报告.pdf', at: '2026-08-28 10:50' },
+      labels: { 'L1-d-1': { label: '误报', note: '扭矩单位写法与字典别名一致。', submitted: true } },
+      log: [
+        { at: '2026-08-28 10:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0150-01', tone: 'default' },
+        { at: '2026-08-28 11:00', node: 'AI审核', by: '系统', text: '预审结论：需复核', tone: 'warn' },
+        { at: '2026-09-03 16:00', node: '报告审核', by: '李审核', text: '覆盖 AI，人工通过', tone: 'success' },
+        { at: '2026-09-03 16:20', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
+      ],
+    },
+    {
+      id: 'arch-0142-01', reportNo: 'SC2026/0142-01', revision: 'V1.0',
+      deleted: true, deletedAt: '2026-09-06 14:30',
+      deletedReason: '委托方撤回本份样品，删除已生成报告。',
+      entrust: 'SC2026/0142', customer: '远东电缆股份有限公司', sample: 'MPP 电缆保护管',
+      pack: '电缆保护管', bizNode: '已删除', aiTask: '成功', conclusion: '需复核',
+      human: '已退回编制', agreeAi: true, caseSettled: true,
+      at: '2026-09-05 09:30', archivedAt: '2026-09-06 14:30', signedAt: '',
+      durationSec: 15, round: 1,
+      snapshot: cableSnap({ sample_no: 'SC2026-0142', category_code: 'CAT-PIPE', category_name: '电缆保护管' }),
+      hits: '一般 1 项（未配置品类专属限值）', trigger: '进入报告审核', snapshotHash: 's0142a', compiler: 'admin',
+      sampleNos: ['SC2026/0142-0101'],
+      file: { word: 'SC2026-0142-01检测报告.docx', pdf: 'SC2026-0142-01检测报告.pdf', at: '2026-09-05 09:20' },
+      labels: {},
+      log: [
+        { at: '2026-09-05 09:00', node: '报告生成', by: '系统', text: '生成报告 SC2026/0142-01', tone: 'default' },
+        { at: '2026-09-05 09:30', node: 'AI审核', by: '系统', text: '预审结论：需复核', tone: 'warn' },
+        { at: '2026-09-06 14:30', node: '报告编制', by: 'admin', text: '委托方撤回，删除本份报告', tone: 'danger' },
       ],
     },
   ];
@@ -625,7 +779,7 @@
         rows.push({
           id: rep.id, reportNo: rep.reportNo, revision: cur.revision, deleted: false,
           entrust: ent.code, customer: ent.customer, sample: ent.sample,
-          pack: rep.categoryBound ? '电力电缆' : '未配置行业包',
+          pack: (cur.snapshot && cur.snapshot.category_name) || (rep.categoryBound ? '电力电缆' : '未配置行业包'),
           bizNode: bizBucket(rep), aiTask: taskState(rep), conclusion: r.conclusion,
           human: humanState(rep, r.conclusion), agreeAi: rep.disposition ? !!rep.disposition.agreeAi : null,
           caseSettled: !!rep.disposition, at: cur.at, archivedAt: '', signedAt: '',
@@ -681,32 +835,102 @@
       at: '2026-09-06 11:08', live: true, kind: 'exception',
       error: { code: 'RULE_PACK_LOAD', message: '行业包规则加载失败，任务已暂停。' },
     },
+    {
+      id: 'ex-0235-01', reportNo: 'SC2026/0235-01', revision: 'V1.0', deleted: false,
+      entrust: 'SC2026/0238', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆',
+      pack: '电力电缆', bizNode: '报告审核', aiTask: '异常暂停', conclusion: '异常',
+      human: '待处置', agreeAi: null, caseSettled: false,
+      at: '2026-09-08 08:16', live: true, kind: 'exception',
+      error: { code: 'SNAPSHOT_HASH', message: '报告快照哈希校验失败，任务已暂停。' },
+    },
   ];
 
-  var VOLUME_SEED = [
-    { at: '2025-11-18', n: 3 }, { at: '2025-12-20', n: 5 },
-    { at: '2026-01-16', n: 4 }, { at: '2026-02-12', n: 6 }, { at: '2026-03-09', n: 5 },
-    { at: '2026-04-14', n: 7 }, { at: '2026-05-11', n: 8 }, { at: '2026-06-10', n: 3 },
-    { at: '2026-07-08', n: 6 }, { at: '2026-08-13', n: 9 },
-  ];
+  function buildVolumeSeed() {
+    var out = [];
+    for (var y = 2020; y <= 2026; y++) {
+      var lastM = y === 2026 ? 9 : 12;
+      for (var m = 1; m <= lastM; m++) {
+        var season = [0, -8, -18, 6, 14, 28, 42, 58, 72, 88, 40, -6][m - 1];
+        var n = 36 + (y - 2020) * 22 + m * 9 + season + ((y * 3 + m * 5) % 11);
+        var maturity = Math.min(0.93, 0.05 + (y - 2020) * 0.12 + m * 0.018);
+        if (y <= 2022) maturity = Math.min(0.16, 0.02 + (y - 2020) * 0.05);
+        var done = Math.round(n * maturity);
+        var day = 8 + ((m * 3) % 17);
+        out.push({
+          at: y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day,
+          n: n,
+          done: done,
+        });
+      }
+    }
+    return out;
+  }
+  var VOLUME_SEED = buildVolumeSeed();
+  var VOLUME_YEARS = { min: 2020, max: 2029 };
 
   function grainKey(iso, grain) {
     var d = new Date(String(iso).slice(0, 10) + 'T00:00:00');
     var y = d.getFullYear();
     var m = d.getMonth() + 1;
     if (grain === '年') return String(y);
-    if (grain === '季') return y + ' Q' + (Math.floor((m - 1) / 3) + 1);
+    if (grain === '季') return y + '-Q' + (Math.floor((m - 1) / 3) + 1);
     return y + '-' + (m < 10 ? '0' : '') + m;
   }
-  function bucketVolume(points, grain) {
+  function volumeLabel(key, grain) {
+    if (grain === '年') return key + '年';
+    if (grain === '季') {
+      var q = key.split('-Q')[1];
+      return 'Q' + q;
+    }
+    var m = Number(String(key).slice(5, 7));
+    return m + '月';
+  }
+  function emptyBuckets(grain, yearFrom, yearTo, year) {
+    var keys = [];
+    var today = new Date(PANEL_TODAY + 'T00:00:00');
+    var ty = today.getFullYear();
+    var tm = today.getMonth() + 1;
+    if (grain === '年') {
+      var a = Math.min(yearFrom, yearTo), b = Math.max(yearFrom, yearTo);
+      for (var y = a; y <= b; y++) keys.push(String(y));
+    } else if (grain === '季') {
+      var lastQ = year < ty ? 4 : (year > ty ? 0 : Math.ceil(tm / 3));
+      for (var q = 1; q <= lastQ; q++) keys.push(year + '-Q' + q);
+    } else {
+      var lastM = year < ty ? 12 : (year > ty ? 0 : tm);
+      for (var m = 1; m <= lastM; m++) keys.push(year + '-' + (m < 10 ? '0' : '') + m);
+    }
+    return keys;
+  }
+  function bucketVolume(points, grain, yearFrom, yearTo, year) {
+    var keys = emptyBuckets(grain, yearFrom, yearTo, year);
     var map = {};
-    var order = [];
+    keys.forEach(function (k) { map[k] = { n: 0, done: 0 }; });
     points.forEach(function (p) {
       var k = grainKey(p.at, grain);
-      if (!map[k]) { map[k] = 0; order.push(k); }
-      map[k] += p.n;
+      if (!map[k]) return;
+      map[k].n += Number(p.n) || 0;
+      map[k].done += Number(p.done != null ? p.done : p.n) || 0;
     });
-    return order.map(function (k) { return { label: k, n: map[k] }; });
+    return keys.map(function (k) {
+      var n = map[k].n, done = map[k].done;
+      return {
+        key: k,
+        label: volumeLabel(k, grain),
+        n: n,
+        done: done,
+        rate: n ? Math.round((done / n) * 100) : 0,
+      };
+    });
+  }
+  function getVolumeSeries(opts) {
+    opts = opts || {};
+    var grain = opts.grain || '月';
+    var year = Number(opts.year) || 2026;
+    var yearFrom = Number(opts.yearFrom) || 2020;
+    var yearTo = Number(opts.yearTo) || 2026;
+    if (yearFrom > yearTo) { var tmp = yearFrom; yearFrom = yearTo; yearTo = tmp; }
+    return bucketVolume(VOLUME_SEED, grain, yearFrom, yearTo, year);
   }
   function chartSeries(all, pass, review, fail) {
     var sliceTotal = pass.length + review.length + fail.length;
@@ -741,11 +965,17 @@
     });
     var sevTotal = sev['严重'] + sev['一般'] + sev['轻微'];
     function svp(k) { return sevTotal ? Math.round((sev[k] / sevTotal) * 100) + '%' : '0%'; }
+    var sevColors = { 严重: '#dc2626', 一般: '#d97706', 轻微: '#94a3b8' };
     var rules = Object.keys(hits).map(function (k) { return { name: k, n: hits[k] }; })
       .sort(function (a, b) { return b.n - a.n; }).slice(0, 5);
     return {
       slices: slices, trend: trend, rules: rules,
-      failSev: { n: sev, pct: { 严重: svp('严重'), 一般: svp('一般'), 轻微: svp('轻微') }, total: sevTotal },
+      failSev: {
+        n: sev, pct: { 严重: svp('严重'), 一般: svp('一般'), 轻微: svp('轻微') }, total: sevTotal,
+        slices: ['严重', '一般', '轻微'].map(function (k) {
+          return { key: k, n: sev[k] || 0, pct: svp(k), color: sevColors[k] };
+        }),
+      },
     };
   }
 
@@ -789,19 +1019,25 @@
     });
     var signed = archive.filter(function (r) { return !r.deleted; });
     var deleted = archive.filter(function (r) { return r.deleted; });
+    function byCat(rows) {
+      var map = {};
+      rows.forEach(function (r) {
+        var k = r.pack || (r.snapshot && r.snapshot.category_name) || '未分类';
+        map[k] = (map[k] || 0) + 1;
+      });
+      return Object.keys(map).sort(function (a, b) { return map[b] - map[a]; })
+        .map(function (k) { return { name: k, n: map[k] }; });
+    }
     var durRows = success.filter(function (r) { return r.durationSec > 0; });
     var avgDurationSec = durRows.length
       ? Math.round(durRows.reduce(function (s, r) { return s + r.durationSec; }, 0) / durRows.length)
       : 0;
-    var volPoints = VOLUME_SEED.filter(function (p) { return inWindow(p.at, range); }).concat(
-      all.map(function (r) { return { at: r.at, n: 1 }; })
-    );
     function pct(n, d) { return d ? Math.round((n / d) * 100) + '%' : '—'; }
     var charts = chartSeries(all, pass, review, fail);
     charts.volume = {
-      年: bucketVolume(volPoints, '年'),
-      季: bucketVolume(volPoints, '季'),
-      月: bucketVolume(volPoints, '月'),
+      年: getVolumeSeries({ grain: '年', yearFrom: 2020, yearTo: 2026 }),
+      季: getVolumeSeries({ grain: '季', year: 2026 }),
+      月: getVolumeSeries({ grain: '月', year: 2026 }),
     };
     return {
       today: PANEL_TODAY, range: range,
@@ -826,7 +1062,10 @@
         },
       },
       charts: charts,
-      archiveStats: { total: archive.length, signed: signed.length, deleted: deleted.length },
+      archiveStats: {
+        total: archive.length, signed: signed.length, deleted: deleted.length,
+        signedCats: byCat(signed), deletedCats: byCat(deleted),
+      },
     };
   }
 
@@ -870,6 +1109,8 @@
     needsHuman: needsHuman,
     failRunningReport: failRunningReport,
     getPanelDataset: getPanelDataset,
+    getVolumeSeries: getVolumeSeries,
+    VOLUME_YEARS: VOLUME_YEARS,
     findPanelRow: findPanelRow,
     getPolicy: function () { return POLICY; },
     setAutoReturn: function (v) { POLICY.autoReturnOnSevere = !!v; },
