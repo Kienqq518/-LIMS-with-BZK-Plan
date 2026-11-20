@@ -111,14 +111,20 @@
     .round-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
     .round-tab { flex-shrink: 0; border: 1px solid var(--line); background: #fff; color: #64748b; border-radius: 999px; padding: 3px 10px; font-size: 11px; }
     .round-tab.is-on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
-    .fb-banner { border-radius: 12px; padding: 10px 14px; font-size: 13px; font-weight: 600; }
-    .fb-banner.idle { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
-    .fb-banner.back { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-    .fb-banner.need { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .fb-chip { font-weight: 600; }
+    .fb-chip.idle, .action-chip.idle { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .fb-chip.back, .action-chip.back { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .fb-chip.need, .action-chip.need { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .action-chip { font-weight: 600; white-space: nowrap; }
     .policy-sw { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 2px 10px 2px 8px; font-size: 12px; color: #475569; }
     .preview-frame { width: 100%; height: 100%; flex: 1 1 auto; min-height: 0; border: 0; border-radius: 8px; background: #fff; }
     #info-body:has(.preview-frame) { overflow: hidden; }
-    .rule-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; min-width: 56px; }
+    .rule-item { padding: 5px 10px; }
+    .rule-head { display: flex; align-items: center; gap: 8px; cursor: pointer; min-height: 28px; }
+    .rule-cat { flex: 0 0 4.75rem; text-align: right; }
+    .rule-name { flex: 1 1 auto; min-width: 0; font-size: 13px; font-weight: 600; color: #1e293b; line-height: 1.35; }
+    .rule-end { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
+    .rule-chevron { color: #94a3b8; font-size: 12px; width: 14px; text-align: center; }
     .log-who { display: inline-flex; align-items: center; gap: 4px; color: #334155; font-weight: 500; }
 
     /* 操作日志时间轴（参考报告编制模块 audit-tl 彩色样式） */
@@ -141,7 +147,7 @@
     @keyframes pulseA { 0%,100%{ box-shadow: 0 0 0 0 rgba(245,158,11,.5);} 50%{ box-shadow: 0 0 0 5px rgba(245,158,11,0);} }
 
     /* 规则项：以规则名为主体，按通过与否整条变色 */
-    .rule-item { border-radius: 12px; border: 1px solid var(--line); padding: 10px 12px; transition: all .18s; }
+    .rule-item { border-radius: 12px; border: 1px solid var(--line); transition: all .18s; }
     .rule-item.r-pass { background: linear-gradient(90deg, rgba(16,185,129,.09), rgba(16,185,129,.02)); border-color: rgba(16,185,129,.30); border-left: 4px solid #10b981; }
     .rule-item.r-warn { background: linear-gradient(90deg, rgba(245,158,11,.12), rgba(245,158,11,.03)); border-color: rgba(245,158,11,.38); border-left: 4px solid #f59e0b; }
     .rule-item.r-sev  { background: linear-gradient(90deg, rgba(239,68,68,.12), rgba(239,68,68,.03)); border-color: rgba(239,68,68,.40); border-left: 4px solid #ef4444; }
@@ -217,14 +223,12 @@
         <div class="wb-scroll">
           <!-- 中：AI 审核结果 -->
           <section class="wb-center glass flex flex-col" style="min-height:0" data-annotate="rv-ai">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/50 px-4 py-2.5">
-              <div class="flex items-center gap-2 text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-magic"></i>AI 审核结果
+            <div class="flex flex-wrap items-center gap-2 border-b border-white/50 px-4 py-2.5">
+              <div class="flex min-w-0 items-center gap-2 text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-magic"></i>AI 审核结果
                 <span id="ai-report-no" class="text-xs font-normal text-slate-400 mono"></span></div>
-              <div class="flex items-center gap-2">
-                <span id="ai-round" class="chip bg-slate-100 text-slate-500 mono"></span>
-                <button id="btn-rerun" type="button" class="rounded-lg border px-2.5 py-1 text-xs" style="border-color:var(--brand);color:var(--brand)"><i class="fa fa-refresh mr-1"></i>重跑 AI 审核</button>
-                <button id="btn-expand-center" type="button" class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i><span data-split-label>展开</span></button>
-              </div>
+              <span id="ai-round" class="chip action-chip bg-slate-100 text-slate-500"></span>
+              <button id="btn-rerun" type="button" class="ml-auto rounded-lg border px-2.5 py-1 text-xs" style="border-color:var(--brand);color:var(--brand)"><i class="fa fa-refresh mr-1"></i>重跑 AI 审核</button>
+              <button id="btn-expand-center" type="button" class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i><span data-split-label>展开</span></button>
             </div>
             <div id="signoff-banner" class="hidden border-b border-amber-200/60 bg-amber-50/70 px-4 py-2 text-xs text-amber-800"></div>
             <div class="flex-1 overflow-y-auto px-4 py-3" style="min-height:0">
@@ -235,8 +239,8 @@
                 <div class="mb-1.5 text-xs" style="color:var(--brand)"><i class="fa fa-spinner fa-spin mr-1"></i>AI 正在逐条执行审核规则…</div>
                 <div id="ai-progress-list" class="space-y-1 text-xs"></div>
               </div>
+              <div id="ai-rounds" class="hidden mb-2"></div>
               <div id="ai-diff" class="hidden mb-3 rounded-xl border border-slate-200 bg-white/60 px-3 py-2 text-xs"></div>
-              <div id="ai-rounds" class="hidden mb-3"></div>
               <div id="ai-issues" class="space-y-3"></div>
               <div id="ai-notices"></div>
             </div>
@@ -248,9 +252,12 @@
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
                   <div class="text-xs text-slate-400">报告文件</div>
-                  <a href="#" id="rp-file" onclick="openPageOffice(this.textContent);return false;" class="block truncate text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-file-word-o mr-1"></i></a>
+                  <div class="mt-0.5 flex min-w-0 items-center gap-2">
+                    <a href="#" id="rp-file" onclick="openPageOffice(this.textContent);return false;" class="truncate text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-file-word-o mr-1"></i></a>
+                    <span id="rp-version" class="chip brand-grad text-white mono flex-shrink-0">V1.0</span>
+                  </div>
                 </div>
-                <span id="rp-version" class="chip brand-grad text-white mono flex-shrink-0">V1.0</span>
+                <button id="btn-expand-right" type="button" class="flex-shrink-0 rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i><span data-split-label>展开</span></button>
               </div>
               <div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
                 <span>编制人 <b class="text-slate-700" id="rp-compiler"></b></span>
@@ -263,7 +270,6 @@
                 <button class="info-tab border-b-2 border-transparent px-2.5 py-1.5 text-slate-500 active" data-panel="preview">报告预览</button>
                 <button class="info-tab border-b-2 border-transparent px-2.5 py-1.5 text-slate-500" data-panel="recv">收样信息</button>
                 <button class="info-tab border-b-2 border-transparent px-2.5 py-1.5 text-slate-500" data-panel="detect">检测信息</button>
-                <button id="btn-expand-right" type="button" class="ml-auto rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i><span data-split-label>展开</span></button>
               </div>
               <div id="info-body" class="flex-1 overflow-y-auto p-3 text-sm" style="min-height:0"></div>
             </section>
@@ -275,12 +281,12 @@
           <div class="flex items-center gap-2 border-b border-white/50 px-4 py-2 text-sm font-semibold" style="color:var(--brand)">
             <i class="fa fa-gavel"></i>人工处置
             <span id="fb-report" class="text-xs font-normal text-slate-400 mono"></span>
-            <button id="policy-toggle" type="button" data-auto="1" class="policy-sw ml-auto" title="原型演示：严重项是否自动退回编制">
+            <span id="fb-action" class="chip fb-chip hidden"></span>
+            <button id="policy-toggle" type="button" data-annotate="rv-policy" data-auto="1" class="policy-sw ml-auto" title="严重项命中后是否自动退回编制">
               <i class="fa fa-toggle-on" style="color:var(--brand)"></i>自动退回：开
             </button>
           </div>
-          <div id="fb-status" class="px-4 pt-3"></div>
-          <div id="manual-feedback" class="px-4 pb-3 pt-2"></div>
+          <div id="manual-feedback" class="px-4 py-2"></div>
         </section>
       </div>
     </div>
@@ -430,28 +436,25 @@
     function ruleItemHtml(it, snap, report) {
       var cls = it.passed ? 'r-pass' : (it.severity === '严重' ? 'r-sev' : 'r-warn');
       var lb = labelState(report, it.rule_id);
-      var locked = !!lb.submitted;
       var showNote = lb.label === '误报' || lb.label === '漏报';
       return '<div class="rule-item ' + cls + '" data-rule-id="' + it.rule_id + '" data-scope="' + esc(it.scope) + '" data-severity="' + esc(it.severity) + '" data-passed="' + it.passed + '">' +
-        '<div class="flex items-start justify-between gap-3">' +
-          '<div class="min-w-0"><p class="text-sm font-semibold text-slate-800">' + esc(it.name) + '</p>' +
-            '<div class="mt-1 flex flex-wrap items-center gap-1.5">' +
-              '<span class="chip bg-slate-100 text-slate-500">' + esc(it.category || '') + '</span>' + scopeChip(it.scope) + sevHint(it) +
-            '</div></div>' +
-          '<div class="rule-side">' + sevChip(it) +
-            '<button type="button" class="toggle-detail text-xs hover:underline" style="color:var(--brand)">展开</button></div>' +
+        '<div class="rule-head">' +
+          '<span class="rule-cat"><span class="chip bg-slate-100 text-slate-500">' + esc(it.category || '') + '</span></span>' +
+          '<span class="rule-name">' + esc(it.name) + '</span>' +
+          scopeChip(it.scope) + sevHint(it) +
+          '<span class="rule-end">' + sevChip(it) + '<i class="fa fa-angle-down rule-chevron"></i></span>' +
         '</div>' +
-        '<div class="item-detail mt-2 hidden rounded-lg bg-white/70 px-3 py-2 text-xs text-slate-600">' +
+        '<div class="item-detail mt-1.5 hidden rounded-lg bg-white/70 px-3 py-2 text-xs text-slate-600">' +
           '<div><b>证据：</b>' + esc(evidenceText(it, snap)) + '</div>' +
           (!it.passed && it.advice ? '<div class="mt-1"><b>建议：</b>' + esc(it.advice) + '</div>' : '') +
           '<div class="mt-2 flex flex-wrap items-center gap-1 border-t border-slate-100 pt-2">' +
             '<span class="text-slate-500" title="' + ReportReviewMock.LABEL_NOTE + '"><i class="fa fa-tag"></i> 标注</span>' +
-            '<select class="item-label rounded border border-slate-300 px-1.5 py-0.5 text-xs" data-rule="' + it.rule_id + '"' + (locked ? ' disabled' : '') + '>' +
+            '<select class="item-label rounded border border-slate-300 px-1.5 py-0.5 text-xs" data-rule="' + it.rule_id + '">' +
               ['正常', '误报', '漏报'].map(function (opt) { return '<option' + (lb.label === opt ? ' selected' : '') + '>' + opt + '</option>'; }).join('') +
             '</select>' +
             '<span class="label-note-wrap flex-1 items-center gap-1" style="display:' + (showNote ? 'inline-flex' : 'none') + '">' +
-              '<input class="label-note flex-1 rounded border border-slate-300 px-2 py-0.5 text-xs" placeholder="请输入 误报/漏报 备注（供 AI 学习）" value="' + esc(lb.note) + '"' + (locked ? ' disabled' : '') + ' />' +
-              '<button type="button" class="label-note-save rounded px-2 py-0.5 text-xs text-white" style="background:var(--brand)"' + (locked ? ' disabled' : '') + '>' + (locked ? '已提交' : '提交') + '</button>' +
+              '<input class="label-note flex-1 rounded border border-slate-300 px-2 py-0.5 text-xs" placeholder="误报/漏报备注（可再次修改，供 AI 学习）" value="' + esc(lb.note) + '" />' +
+              '<button type="button" class="label-note-save rounded px-2 py-0.5 text-xs text-white" style="background:var(--brand)">' + (lb.submitted ? '保存' : '提交') + '</button>' +
             '</span>' +
           '</div>' +
         '</div>' +
@@ -466,7 +469,7 @@
         var hit = map[k].filter(function (i) { return !i.passed; }).length;
         return '<div class="lvl-region"><div class="mb-2 flex items-center gap-2"><span class="lvl-badge">' + k + ' ' + levelName(k) + '</span>' +
           '<span class="text-xs text-slate-400">' + map[k].length + ' 项' + (hit ? ' · <span class="text-amber-600">命中 ' + hit + '</span>' : ' · 全部通过') + '</span></div>' +
-          '<div class="space-y-2">' + map[k].map(function (it) { return ruleItemHtml(it, snap, report0); }).join('') + '</div></div>';
+          '<div class="space-y-1">' + map[k].map(function (it) { return ruleItemHtml(it, snap, report0); }).join('') + '</div></div>';
       }).join('');
     }
     function diffHtml(diff) {
@@ -522,7 +525,7 @@
         tabs.push('<button type="button" class="round-tab' + (i === cur ? ' is-on' : '') + '" data-round="' + i + '">第 ' + (i + 1) + ' 轮 · ' + esc(rounds[i].revision) + '</button>');
       }
       box.classList.remove('hidden');
-      box.innerHTML = '<div class="mb-1 text-[11px] text-slate-400">审核轮次（最新在左）</div><div class="round-tabs">' + tabs.join('') + '</div>';
+      box.innerHTML = '<div class="round-tabs">' + tabs.join('') + '</div>';
       box.querySelectorAll('.round-tab').forEach(function (btn) {
         btn.addEventListener('click', function () {
           RT[report.id].roundIndex = parseInt(btn.getAttribute('data-round'), 10);
@@ -532,11 +535,24 @@
       });
     }
 
+    function actionStatus(report) {
+      var r = currentResult(report);
+      if (report.disposition) return { kind: 'idle', text: '已进入报告审核，无需操作' };
+      if (r.conclusion === '不通过' && ReportReviewMock.getPolicy().autoReturnOnSevere && !(report.signOff && report.signOff.returned)) {
+        return { kind: 'back', text: '已退回报告编制，无需操作' };
+      }
+      return { kind: 'need', text: '需要执行人工审核' };
+    }
+    function paintActionChip(el, st, prefix) {
+      if (!el) return;
+      el.className = 'chip action-chip ' + st.kind;
+      el.innerHTML = (prefix ? esc(prefix) + ' · ' : '') + (st.kind === 'need' ? '<i class="fa fa-bell mr-1"></i>' : '') + esc(st.text);
+    }
     function renderAi(report) {
       report0 = report;
       var idx = curIndex(report); var r = resultAt(report, idx); var cur = roundsOf(report)[idx]; var snap = cur.snapshot;
       $('ai-report-no').textContent = '· ' + report.reportNo;
-      $('ai-round').textContent = '第 ' + (idx + 1) + ' 轮 · ' + cur.revision + ' · ' + cur.trigger;
+      paintActionChip($('ai-round'), actionStatus(report), '第 ' + (idx + 1) + ' 轮 · ' + cur.revision);
 
       if (report.signOff && report.signOff.returned) {
         $('signoff-banner').classList.remove('hidden');
@@ -551,8 +567,14 @@
       $('ai-issues').innerHTML = groupByLevel(r.items, snap);
       $('ai-notices').innerHTML = (r.notices || []).length ? '<div class="mt-2 text-xs text-amber-700">' + r.notices.map(function (n) { return '<div><i class="fa fa-info-circle mr-1"></i>' + n.code + '：' + esc(n.message) + '</div>'; }).join('') + '</div>' : '';
 
-      document.querySelectorAll('#ai-issues .toggle-detail').forEach(function (btn) {
-        btn.addEventListener('click', function () { var dd = btn.closest('.rule-item').querySelector('.item-detail'); dd.classList.toggle('hidden'); btn.textContent = dd.classList.contains('hidden') ? '展开' : '收起'; });
+      document.querySelectorAll('#ai-issues .rule-head').forEach(function (head) {
+        head.addEventListener('click', function () {
+          var item = head.closest('.rule-item');
+          var dd = item.querySelector('.item-detail');
+          var open = dd.classList.toggle('hidden') === false;
+          var ch = item.querySelector('.rule-chevron');
+          if (ch) ch.className = 'fa ' + (open ? 'fa-angle-up' : 'fa-angle-down') + ' rule-chevron';
+        });
       });
       document.querySelectorAll('#ai-issues .item-label').forEach(function (sel) {
         sel.addEventListener('change', function () {
@@ -561,15 +583,15 @@
         });
       });
       document.querySelectorAll('#ai-issues .label-note-save').forEach(function (b) {
-        b.addEventListener('click', function () {
-          if (b.disabled) return;
+        b.addEventListener('click', function (ev) {
+          ev.stopPropagation();
           var wrap = b.closest('.label-note-wrap');
           var ipt = wrap.querySelector('.label-note');
           var sel = b.closest('.item-detail').querySelector('.item-label');
           if (!ipt.value.trim()) { alert('请填写备注'); return; }
           if (!RT[report.id].labels) RT[report.id].labels = {};
           RT[report.id].labels[sel.getAttribute('data-rule')] = { label: sel.value, note: ipt.value.trim(), submitted: true };
-          sel.disabled = true; ipt.disabled = true; b.disabled = true; b.textContent = '已提交';
+          b.textContent = '已保存';
         });
       });
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
@@ -588,15 +610,29 @@
 
     // ---------- 人工反馈 ----------
     function reasonBox() {
-      return '<div class="return-reason-wrap mt-3 hidden">' +
+      return '<div class="return-reason-wrap mt-2 hidden">' +
         '<div class="mb-1 flex items-center justify-between"><label class="text-xs text-slate-500"><span class="text-red-500">*</span> 退回原因</label>' +
         '<button type="button" id="btn-oneclick-reason" class="text-xs hover:underline" style="color:var(--brand)"><i class="fa fa-magic mr-1"></i>一键填入 AI 审核结论</button></div>' +
         '<textarea id="return-reason" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500" rows="2" placeholder="可点右上「一键填入 AI 审核结论」后再编辑"></textarea></div>';
     }
-    function bindCommon(report, triggerVal, alwaysReason) {
+    function tuneBox() {
+      return '<div class="ai-tune-wrap mt-2 hidden">' +
+        '<label class="mb-1 block text-xs text-slate-400">标注（选填，仅用于 AI 调优，不对上下游展示）</label>' +
+        '<textarea id="ai-tune-note" class="w-full rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" rows="2" placeholder="可说明为何不同意 AI，供模型学习"></textarea></div>';
+    }
+    function bindCommon(report, triggerVal, alwaysReason, disagreeVal) {
+      function sync() {
+        var choice = document.querySelector('#manual-feedback input[name="choice"]:checked');
+        var val = choice ? choice.value : '';
+        var w = document.querySelector('.return-reason-wrap');
+        if (w) w.classList.toggle('hidden', alwaysReason ? false : (val !== triggerVal));
+        var t = document.querySelector('.ai-tune-wrap');
+        if (t) t.classList.toggle('hidden', !disagreeVal || val !== disagreeVal);
+      }
       document.querySelectorAll('#manual-feedback input[name="choice"]').forEach(function (ipt) {
-        ipt.addEventListener('change', function () { var w = document.querySelector('.return-reason-wrap'); if (w) w.classList.toggle('hidden', alwaysReason ? false : (ipt.value !== triggerVal)); });
+        ipt.addEventListener('change', sync);
       });
+      sync();
       var oc = $('btn-oneclick-reason'); if (oc) oc.addEventListener('click', function () { var ta = $('return-reason'); ta.value = summaryAdvice(currentResult(report)); ta.focus(); });
     }
     function syncPolicyToggle() {
@@ -610,20 +646,25 @@
       pt.addEventListener('click', function () {
         ReportReviewMock.setAutoReturn(!ReportReviewMock.getPolicy().autoReturnOnSevere);
         syncPolicyToggle();
-        var rep = getSelected(); if (rep) { renderFeedback(rep); renderRoster(); }
+        var rep = getSelected(); if (rep) { renderAi(rep); renderFeedback(rep); renderRoster(); }
       });
     }
     function setFbStatus(kind, html) {
-      var box = $('fb-status');
+      var box = $('fb-action');
       if (!html) { box.innerHTML = ''; box.classList.add('hidden'); return; }
       box.classList.remove('hidden');
-      box.innerHTML = '<div class="fb-banner ' + kind + '">' + html + '</div>';
+      box.className = 'chip fb-chip ' + kind;
+      box.innerHTML = html;
     }
 
     function renderFeedback(report) {
       var box = $('manual-feedback'); var r = currentResult(report);
       $('fb-report').textContent = '· ' + report.reportNo;
       syncPolicyToggle();
+      paintActionChip($('ai-round'), actionStatus(report), (function () {
+        var idx = curIndex(report); var cur = roundsOf(report)[idx];
+        return '第 ' + (idx + 1) + ' 轮 · ' + cur.revision;
+      })());
 
       if (report.disposition) {
         setFbStatus('idle', '<i class="fa fa-check-circle mr-1"></i>已进入报告审核，无需操作');
@@ -632,37 +673,41 @@
       }
       if (r.conclusion === '不通过' && ReportReviewMock.getPolicy().autoReturnOnSevere && !(report.signOff && report.signOff.returned)) {
         setFbStatus('back', '<i class="fa fa-undo mr-1"></i>已退回报告编制，无需操作');
-        box.innerHTML = '<div class="text-xs text-slate-500">命中严重项，已按行业包策略自动退回。<a href="report-list.html" class="underline" style="color:var(--brand)">前往报告编制</a> · 演示人工覆盖请把右上「自动退回」切为「关」。</div>';
+        box.innerHTML = '<div class="text-xs text-slate-500">命中严重项，已按行业包策略自动退回。<a href="report-list.html" class="underline" style="color:var(--brand)">前往报告编制</a></div>';
         return;
       }
       setFbStatus('need', '<i class="fa fa-bell mr-1"></i>需要执行人工审核');
       if (report.signOff && report.signOff.returned) {
-        box.innerHTML = (report.lastDisposition ? '<div class="mb-2 rounded-lg bg-white/60 px-3 py-1.5 text-xs text-slate-500"><i class="fa fa-bookmark-o mr-1"></i>上次人工处置：' + esc(report.lastDisposition.final) + '（' + esc(report.lastDisposition.by) + '）· ' + esc(report.lastDisposition.note) + '</div>' : '') +
-          '<p class="mb-1 text-xs text-slate-500">签发退回复核：请结合退回意见与（可选）重跑结果处置。</p>' +
-          '<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm"><label class="flex items-start gap-2"><input type="radio" name="choice" value="pass" class="mt-1"/><span>审核通过 —— 重新提交报告签发</span></label>' +
-          '<label class="flex items-start gap-2"><input type="radio" name="choice" value="return" class="mt-1"/><span>退回报告编制 —— 需填写退回原因</span></label></div>' + reasonBox() +
-          '<div class="mt-3 flex items-center gap-3"><button type="button" class="btn-exec btn-brand rounded-lg px-4 py-1.5 text-sm">执行</button><span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行</span></div>';
+        box.innerHTML =
+          '<div class="mb-1.5 text-[11px] leading-5 text-slate-400">' +
+            (report.lastDisposition ? '上次处置 ' + esc(report.lastDisposition.final) + '（' + esc(report.lastDisposition.by) + '）' + (report.lastDisposition.note ? ' · ' + esc(report.lastDisposition.note) : '') + '；' : '') +
+            '签发退回后请结合上方意见处置。' +
+          '</div>' +
+          '<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm"><label class="flex items-start gap-2"><input type="radio" name="choice" value="pass" class="mt-1" checked/><span>审核通过 —— 重新提交报告签发</span></label>' +
+          '<label class="flex items-start gap-2"><input type="radio" name="choice" value="return" class="mt-1"/><span>退回报告编制 —— 需填写退回原因</span></label></div>' + tuneBox() + reasonBox() +
+          '<div class="mt-2 flex items-center gap-3"><button type="button" class="btn-exec btn-brand rounded-lg px-4 py-1.5 text-sm">执行</button><span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行</span></div>';
         bindCommon(report, 'return'); box.querySelector('.btn-exec').addEventListener('click', function () { execChoice(report, { returnVal: 'return', passFinal: '通过', returnFinal: '退回报告编制' }); });
         return;
       }
       if (r.conclusion === '不通过') {
         box.innerHTML =
-          '<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm"><label class="flex items-start gap-2"><input type="radio" name="choice" value="return" class="mt-1"/><span>同意 AI —— 退回报告编制</span></label>' +
-          '<label class="flex items-start gap-2"><input type="radio" name="choice" value="pass" class="mt-1"/><span>人工覆盖 —— 仍判定通过（覆盖严重项）</span></label></div>' + reasonBox() +
-          '<div class="mt-3 flex items-center gap-3"><button type="button" class="btn-exec btn-brand rounded-lg px-4 py-1.5 text-sm">执行</button><span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行</span></div>';
-        bindCommon(report, 'return', true); box.querySelector('.btn-exec').addEventListener('click', function () { execChoice(report, { returnVal: 'return', passFinal: '人工覆盖通过', returnFinal: '退回报告编制', reasonRequiredAlways: true }); });
+          '<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm"><label class="flex items-start gap-2"><input type="radio" name="choice" value="return" class="mt-1" checked/><span>同意 AI —— 退回报告编制</span></label>' +
+          '<label class="flex items-start gap-2"><input type="radio" name="choice" value="pass" class="mt-1"/><span>不同意 AI —— 人工覆盖通过</span></label></div>' + tuneBox() + reasonBox() +
+          '<div class="mt-2 flex items-center gap-3"><button type="button" class="btn-exec btn-brand rounded-lg px-4 py-1.5 text-sm">执行</button><span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行</span></div>';
+        bindCommon(report, 'return', true, 'pass'); box.querySelector('.btn-exec').addEventListener('click', function () { execChoice(report, { returnVal: 'return', passFinal: '人工覆盖通过', returnFinal: '退回报告编制', reasonRequiredAlways: true }); });
         return;
       }
       if (r.conclusion === '需复核') {
-        box.innerHTML = '<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm"><label class="flex items-start gap-2"><input type="radio" name="choice" value="return" class="mt-1"/><span>同意 AI —— 退回报告编制</span></label>' +
-          '<label class="flex items-start gap-2"><input type="radio" name="choice" value="pass" class="mt-1"/><span>不同意 AI —— 直接人工审核通过</span></label></div>' + reasonBox() +
-          '<div class="mt-3 flex items-center gap-3"><button type="button" class="btn-exec btn-brand rounded-lg px-4 py-1.5 text-sm">执行</button><span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行</span></div>';
-        bindCommon(report, 'return'); box.querySelector('.btn-exec').addEventListener('click', function () { execChoice(report, { returnVal: 'return', passFinal: '通过', returnFinal: '退回报告编制' }); });
+        box.innerHTML = '<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm"><label class="flex items-start gap-2"><input type="radio" name="choice" value="return" class="mt-1" checked/><span>同意 AI —— 退回报告编制</span></label>' +
+          '<label class="flex items-start gap-2"><input type="radio" name="choice" value="pass" class="mt-1"/><span>不同意 AI —— 直接人工审核通过</span></label></div>' + tuneBox() + reasonBox() +
+          '<div class="mt-2 flex items-center gap-3"><button type="button" class="btn-exec btn-brand rounded-lg px-4 py-1.5 text-sm">执行</button><span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行</span></div>';
+        bindCommon(report, 'return', false, 'pass'); box.querySelector('.btn-exec').addEventListener('click', function () { execChoice(report, { returnVal: 'return', passFinal: '通过', returnFinal: '退回报告编制' }); });
         return;
       }
-      box.innerHTML = '<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm"><label class="flex items-start gap-2"><input type="radio" name="choice" value="pass" class="mt-1"/><span>同意 AI 审核结果 —— 执行<b>通过</b></span></label>' +
-        '<label class="flex items-start gap-2"><input type="radio" name="choice" value="passDis" class="mt-1"/><span>不同意 AI —— 仍由人工执行<b>通过</b></span></label></div>' +
-        '<div class="mt-3 flex items-center gap-3"><button type="button" class="btn-exec rounded-lg px-4 py-1.5 text-sm text-white" style="background:linear-gradient(120deg,#059669,#10b981)">执行通过</button><span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行</span></div>';
+      box.innerHTML = '<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm"><label class="flex items-start gap-2"><input type="radio" name="choice" value="pass" class="mt-1" checked/><span>同意 AI 审核结果 —— 执行<b>通过</b></span></label>' +
+        '<label class="flex items-start gap-2"><input type="radio" name="choice" value="passDis" class="mt-1"/><span>不同意 AI —— 仍由人工执行<b>通过</b></span></label></div>' + tuneBox() +
+        '<div class="mt-2 flex items-center gap-3"><button type="button" class="btn-exec rounded-lg px-4 py-1.5 text-sm text-white" style="background:linear-gradient(120deg,#059669,#10b981)">执行通过</button><span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行</span></div>';
+      bindCommon(report, 'return', false, 'passDis');
       box.querySelector('.btn-exec').addEventListener('click', function () { execChoice(report, { passFinal: '通过' }); });
     }
 
@@ -683,13 +728,27 @@
     }
 
     // ---------- 右侧信息 ----------
+    function rawDetailHtml(it) {
+      var d = it.rawDetail || {};
+      var rows = d.rows || [{ k: '实测值', v: '见原始记录' }];
+      return '<div class="mb-1 font-medium text-slate-600">试验项「' + esc(it.name) + '」原始记录</div>' +
+        (d.condition ? '<div class="mb-1 text-slate-400">试验条件：' + esc(d.condition) + '</div>' : '') +
+        '<table class="w-full border-collapse text-xs"><thead><tr class="bg-slate-50 text-slate-500"><th class="border border-slate-200 px-2 py-1 text-left">项目</th><th class="border border-slate-200 px-2 py-1 text-left">结果</th></tr></thead><tbody>' +
+        rows.map(function (row) { return '<tr><td class="border border-slate-200 px-2 py-1">' + esc(row.k) + '</td><td class="border border-slate-200 px-2 py-1">' + esc(row.v) + '</td></tr>'; }).join('') +
+        '</tbody></table>' +
+        '<div class="mt-1 text-slate-400">记录人员 ' + esc(it.recorder || it.tester) + ' · 记录时间 ' + esc(it.recordedAt || it.date) + '</div>';
+    }
     function infoPanel(report, panel) {
       var info = report.info || {};
       if (panel === 'recv') {
         var rc = info.receive || { times: [] };
-        return rc.times.map(function (t) {
-          return '<div class="glass-sm mb-3 p-3">' +
-            '<div class="mb-2 flex items-center justify-between"><span class="font-semibold text-slate-700">第 ' + t.no + ' 次收样</span><span class="chip bg-emerald-100 text-emerald-700">' + esc(t.status) + '</span></div>' +
+        return rc.times.map(function (t, idx) {
+          return '<div class="recv-panel glass-sm mb-3">' +
+            '<button type="button" class="recv-toggle flex w-full items-center justify-between gap-2 px-3 py-2 text-left">' +
+              '<span class="font-semibold text-slate-700">第 ' + t.no + ' 次收样</span>' +
+              '<span class="flex items-center gap-2"><span class="chip bg-emerald-100 text-emerald-700">' + esc(t.status) + '</span><i class="fa ' + (idx === 0 ? 'fa-angle-up' : 'fa-angle-down') + ' text-slate-400"></i></span>' +
+            '</button>' +
+            '<div class="recv-body border-t border-slate-100 px-3 pb-3 pt-2' + (idx === 0 ? '' : ' hidden') + '">' +
             '<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-500"><div>本次收样 <span class="mono text-slate-700">' + esc(t.date) + '</span></div><div>收样人 <b class="text-slate-700">' + esc(t.receiver) + '</b></div><div>送样人 <b class="text-slate-700">' + esc(t.sender) + '</b></div><div>送样方式 ' + esc(t.sendWay) + '</div><div>送样人电话 <span class="mono">' + esc(t.senderPhone) + '</span></div></div>' +
             '<div class="mt-1 text-xs text-slate-500">备注：' + esc(t.note) + '</div>' +
             t.samples.map(function (sp) {
@@ -699,7 +758,7 @@
                   sp.specs.map(function (s) { return '<div>' + esc(s.k) + ' <b class="text-slate-700">' + esc(s.v) + '</b></div>'; }).join('') + '</div></div>';
             }).join('') +
             '<div class="mt-2 flex gap-2">' + t.images.map(function (im) { return '<div class="flex h-16 w-20 flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-[10px] text-slate-400"><i class="fa fa-image mb-0.5"></i>' + esc(im.label) + '</div>'; }).join('') + '</div>' +
-          '</div>';
+            '</div></div>';
         }).join('') || '<div class="text-slate-400">无收样信息</div>';
       }
       if (panel === 'detect') {
@@ -717,10 +776,16 @@
                   '<span class="flex flex-shrink-0 items-center gap-1"><span class="chip bg-slate-100 text-slate-500">' + esc(it.review) + '</span><span class="chip ' + rc + '">' + esc(it.result) + '</span><i class="fa fa-angle-down text-slate-400"></i></span>' +
                 '</button>' +
                 '<div class="detect-body hidden border-t border-slate-100 px-2.5 py-2 text-xs text-slate-500">' +
-                  '<div class="grid grid-cols-2 gap-x-4 gap-y-0.5"><div>检测方法 ' + esc(it.method) + '</div><div>检测人 ' + esc(it.tester) + '</div><div>检测日期 <span class="mono">' + esc(it.date) + '</span></div><div>设备 ' + esc(it.device) + '</div><div class="col-span-2">校准有效期 <span class="mono">' + esc(it.calib) + '</span></div></div>' +
+                  '<div class="grid grid-cols-2 gap-x-4 gap-y-0.5"><div class="col-span-2">试验过程 ' + esc(it.process || it.method) + '</div><div class="col-span-2">标准要求 ' + esc(it.requirement || it.std) + '</div><div>检测员 <b class="text-slate-700">' + esc(it.tester) + '</b></div><div>检测日期 <span class="mono">' + esc(it.date) + '</span></div><div>设备 ' + esc(it.device) + '</div><div>校准有效期 <span class="mono">' + esc(it.calib) + '</span></div></div>' +
                   '<div class="mt-2"><span class="text-slate-400">标准文件' + (it.standards.length > 1 ? '（关联 ' + it.standards.length + ' 个）' : '') + '：</span>' + it.standards.map(function (s) { return '<a href="#" onclick="openPageOffice(\'' + esc(s.no) + '\');return false;" class="ml-1 underline" style="color:var(--brand)">' + esc(s.no) + '</a>'; }).join('') + '</div>' +
                   '<div class="mt-1"><span class="text-slate-400">作业指导书：</span>' + it.sops.map(function (s) { return '<a href="#" onclick="openPageOffice(\'' + esc(s.name) + '\');return false;" class="ml-1 underline" style="color:var(--brand)"><i class="fa fa-file-text-o mr-0.5"></i>' + esc(s.no) + '</a>'; }).join('') + '</div>' +
-                  '<div class="mt-1"><span class="text-slate-400">原始记录单：</span>' + it.raws.map(function (s) { return '<a href="#" onclick="openPageOffice(\'' + esc(s.name) + '\');return false;" class="ml-1 underline" style="color:var(--brand)"><i class="fa fa-file-word-o mr-0.5"></i>' + esc(s.name) + '</a>'; }).join('') + '</div>' +
+                  '<div class="mt-1"><span class="text-slate-400">原始记录单：</span>' + it.raws.map(function (s) {
+                    return '<a href="#" onclick="openPageOffice(\'' + esc(s.name) + '\');return false;" class="ml-1 underline" style="color:var(--brand)"><i class="fa fa-file-word-o mr-0.5"></i>' + esc(s.name) + '</a>';
+                  }).join('') +
+                    '<span class="ml-3">记录人员 <b class="text-slate-700">' + esc(it.recorder || it.tester) + '</b></span>' +
+                    '<span class="ml-3">记录时间 <span class="mono">' + esc(it.recordedAt || (it.raws[0] && it.raws[0].at) || it.date) + '</span></span>' +
+                    '<button type="button" class="raw-toggle ml-2 text-xs hover:underline" style="color:var(--brand)">原始记录详情 <i class="fa fa-angle-down"></i></button></div>' +
+                  '<div class="raw-detail mt-2 hidden rounded-lg border border-dashed border-slate-200 bg-white/80 px-2 py-2">' + rawDetailHtml(it) + '</div>' +
                 '</div></div>';
             }).join('') + '</div>';
         }).join('') || '<div class="text-slate-400">无检测信息</div>';
@@ -738,10 +803,27 @@
       $('rp-version-prev').textContent = idx > 0 ? ('上一版 ' + roundsOf(report)[idx - 1].revision) : '首版';
       var active = document.querySelector('.info-tab.active'); var panel = active ? active.getAttribute('data-panel') : 'preview';
       $('info-body').innerHTML = infoPanel(report, panel);
-      bindDetectToggles();
+      bindInfoToggles();
     }
-    function bindDetectToggles() {
+    function bindInfoToggles() {
       document.querySelectorAll('.detect-item').forEach(function (b) { b.addEventListener('click', function () { var body = b.nextElementSibling; body.classList.toggle('hidden'); var ic = b.querySelector('.fa-angle-down,.fa-angle-up'); if (ic) ic.className = 'fa ' + (body.classList.contains('hidden') ? 'fa-angle-down' : 'fa-angle-up') + ' text-slate-400'; }); });
+      document.querySelectorAll('.recv-toggle').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var body = b.parentNode.querySelector('.recv-body');
+          var open = body.classList.toggle('hidden') === false;
+          var ic = b.querySelector('.fa-angle-down,.fa-angle-up');
+          if (ic) ic.className = 'fa ' + (open ? 'fa-angle-up' : 'fa-angle-down') + ' text-slate-400';
+        });
+      });
+      document.querySelectorAll('.raw-toggle').forEach(function (b) {
+        b.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          var detail = b.closest('.detect-body').querySelector('.raw-detail');
+          var open = detail.classList.toggle('hidden') === false;
+          var ic = b.querySelector('i');
+          if (ic) ic.className = 'fa ' + (open ? 'fa-angle-up' : 'fa-angle-down');
+        });
+      });
     }
     function setSplit(mode) {
       splitMode = mode;
@@ -764,7 +846,7 @@
       document.querySelectorAll('.info-tab').forEach(function (b) {
         b.addEventListener('click', function () {
           document.querySelectorAll('.info-tab').forEach(function (x) { x.classList.remove('active'); });
-          b.classList.add('active'); $('info-body').innerHTML = infoPanel(getSelected(), b.getAttribute('data-panel')); bindDetectToggles();
+          b.classList.add('active'); $('info-body').innerHTML = infoPanel(getSelected(), b.getAttribute('data-panel')); bindInfoToggles();
         });
       });
       $('btn-expand-right').addEventListener('click', function () { setSplit(splitMode === 'right' ? 'split' : 'right'); });
@@ -798,10 +880,11 @@
           { id: 'rv-overview', selector: '[data-annotate="rv-overview"]', position: 'bottom', title: '委托概览（默认折叠）', content: '<strong>需求逻辑：</strong>审核以委托为单位，顶部一小块承载整条委托信息，默认收起。<br><strong>展示规则：</strong>收起时一行摘要；展开后「合同/委托/付款/报告信息」四小 tab。', tag: '报告审核' },
           { id: 'rv-roster', selector: '[data-annotate="rv-roster"]', position: 'right', title: '报告统观区（以是否需操作为主视觉）', content: '<strong>需求逻辑：</strong>审核人需一眼看出哪些报告需操作。<br><strong>展示规则：</strong>每行上方=业务状态（待处置/签发退回/自动退回/已处置，需操作的带脉冲提醒），下方=版本 + AI 结论；不展示试样编号。', tag: '报告审核' },
           { id: 'rv-log', selector: '[data-annotate="rv-log"]', position: 'right', title: '操作日志', content: '<strong>需求逻辑：</strong>审核前看清流转留痕，尤其签发退回。<br><strong>展示规则：</strong>彩色时间轴；节点、人员、内容分开展示。01 展示至「等待报告签发」。', tag: '报告审核' },
-          { id: 'rv-ai', selector: '[data-annotate="rv-ai"]', position: 'left', title: 'AI 审核结果', content: '<strong>展示规则：</strong>综合结论右上角盖章式结论；品类用标签；校验/命中/建议写成一段话。判定口径以标题旁问号悬停 + 卡片底部完整提示。规则通过/不通过在条右侧，展开在其下；通过项不展示建议。多轮时用胶囊切换，最新一轮在最左。<br><strong>交互逻辑：</strong>标注误报/漏报需填备注，提交后不可再改。', tag: '报告审核' },
-          { id: 'rv-manual', selector: '[data-annotate="rv-manual"]', position: 'top', title: '人工处置（固定底栏）', content: '<strong>需求逻辑：</strong>人工处置是必操作区，固定于底部、跨中右等宽、不随滚动。<br><strong>展示规则：</strong>标题色与 AI 审核结果一致；自动退回开关在标题行。01 已进入审核无需操作；03 自动退回无需操作；02/04 突出需要执行人工审核。', tag: '报告审核' },
-          { id: 'rv-file', selector: '[data-annotate="rv-file"]', position: 'left', title: '报告文件', content: '<strong>展示规则：</strong>报告文件名（点击 PageOffice 预览）+ 版本号 + 编制人 + 编制时间。PDF 于报告签发后生成，故此处不展示 PDF。', tag: '报告审核' },
-          { id: 'rv-info', selector: '[data-annotate="rv-info"]', position: 'left', title: '报告预览 / 收样 / 检测', content: '<strong>展示规则：</strong>默认「报告预览」嵌入透明检测系统报告并适配预览区；「收样信息」以单次收样为单位；「检测信息」以样品为单位列试验项。<br><strong>交互逻辑：</strong>中栏与右栏初始 1:1；各自「展开」隐藏另一侧，「还原」回到 1:1。', tag: '报告审核' },
+          { id: 'rv-ai', selector: '[data-annotate="rv-ai"]', position: 'left', title: 'AI 审核结果', content: '<strong>展示规则：</strong>标题行芯片突出处置状态（01 无需操作 / 03 自动退回无需操作 / 02·04 需人工审核）。综合结论右上角盖章；规则条：分类在左、名称对齐、范围在右、通过结论+箭头在最右，整行可展开。多轮胶囊在差异区上方。<br><strong>交互逻辑：</strong>标注误报/漏报需填备注，提交后仍可再改。', tag: '报告审核' },
+          { id: 'rv-manual', selector: '[data-annotate="rv-manual"]', position: 'top', title: '人工处置（固定底栏）', content: '<strong>需求逻辑：</strong>人工处置是必操作区，固定于底部。<br><strong>展示规则：</strong>处置状态芯片在标题「人工处置」右侧。02 默认同意 AI；04 默认审核通过；不同意 AI 时出现选填调优备注。', tag: '报告审核' },
+          { id: 'rv-policy', selector: '[data-annotate="rv-policy"]', position: 'top', title: '自动退回开关', content: '<strong>需求逻辑：</strong>行业包策略：AI 命中<strong>严重项</strong>时，是否不经人工直接退回报告编制。<br><strong>展示规则：</strong>开=03 类不通过报告自动退回，标题显示「已退回报告编制，无需操作」，无人工按钮。关=出现「同意 AI / 不同意 AI」入口，默认同意 AI（退回），不同意则可人工覆盖并通过选填备注供模型学习。签发退回的 04 不受此开关影响。', tag: '报告审核' },
+          { id: 'rv-file', selector: '[data-annotate="rv-file"]', position: 'left', title: '报告文件', content: '<strong>展示规则：</strong>文件名旁紧跟版本号；右上角「展开」隐藏审核区。PDF 于报告签发后生成，故此处不展示 PDF。', tag: '报告审核' },
+          { id: 'rv-info', selector: '[data-annotate="rv-info"]', position: 'left', title: '报告预览 / 收样 / 检测', content: '<strong>展示规则：</strong>收样按次做成可收起面板。检测项展开后为试验过程、标准要求、检测员；原始记录单旁有记录人员/时间，并可展开原始记录详情。', tag: '报告审核' },
         ] });
       }
     }
