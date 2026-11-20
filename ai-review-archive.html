@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>已归档报告 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <script src="js/ai-review-store.js"></script>
+  <script src="js/ai-review-engine.js"></script>
+  <script src="js/report-review-mock.js"></script>
+  <style>
+    :root { --brand: #143C9A; --glass: rgba(255,255,255,.88); --line: rgba(20,60,154,.12); --ink: #1e2a44; }
+    html, body { height: 100%; }
+    body {
+      color: var(--ink);
+      font-family: "Inter", -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      background: linear-gradient(180deg, #fafbfc 0%, #f5f6f8 100%);
+    }
+    .mono { font-family: "Roboto Mono", ui-monospace, monospace; }
+    .glass { background: var(--glass); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.65); box-shadow: 0 8px 30px rgba(20,60,154,.08); border-radius: 16px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 9px; font-size: 11px; }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: #fff; }
+    .seg button { padding: 4px 12px; font-size: 12px; color: #64748b; }
+    .seg button.is-on { background: var(--brand); color: #fff; font-weight: 600; }
+    .ai-chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 5px; border: 1px solid; background: #fff; padding: 1px 7px 1px 5px; font-size: 11px; font-weight: 600; }
+    .ai-chip .ai-mark { font-size: 9px; font-weight: 800; padding: 0 4px; border-radius: 3px; color: #fff; }
+    .ai-pass { color: #047857; border-color: #6ee7b7; } .ai-pass .ai-mark { background: #059669; }
+    .ai-warn { color: #b45309; border-color: #fcd34d; } .ai-warn .ai-mark { background: #d97706; }
+    .ai-fail { color: #b91c1c; border-color: #fca5a5; } .ai-fail .ai-mark { background: #dc2626; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; color: #64748b; font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+    td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: #f8fafc; }
+  </style>
+</head>
+<body>
+  <div class="flex h-screen flex-col overflow-hidden">
+    <div id="pageTabs" class="flex flex-shrink-0 items-center gap-1 overflow-x-auto border-b border-white/50 bg-white/60 px-4 pt-2 text-sm whitespace-nowrap backdrop-blur" data-close-target="ai-review-workbench.html">
+      <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+      <a href="ai-review-workbench.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">AI报告审核面板</a>
+      <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-white/60 bg-white/80 px-3 py-1.5" style="color:var(--brand)">
+        已归档报告
+        <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+      </span>
+    </div>
+    <div class="flex flex-1 flex-col gap-3 overflow-hidden p-3">
+      <section class="glass flex items-center justify-between px-4 py-3">
+        <div>
+          <div class="text-sm font-semibold" style="color:var(--brand)">已归档报告</div>
+          <div class="text-xs text-slate-400">已签发 / 已发放 / 已删除。点行查看当时 AI 审核快照。</div>
+        </div>
+        <div id="kind-seg" class="seg">
+          <button type="button" data-kind="全部" class="is-on">全部</button>
+          <button type="button" data-kind="已签发">已签发</button>
+          <button type="button" data-kind="已删除">已删除</button>
+        </div>
+      </section>
+      <section class="glass flex-1 overflow-auto">
+        <table>
+          <thead><tr><th>报告编号</th><th>委托 / 客户</th><th>AI 结论</th><th>人工</th><th>签发 / 删除</th><th>业务节点</th></tr></thead>
+          <tbody id="archive-body"></tbody>
+        </table>
+        <div id="archive-empty" class="hidden px-3 py-10 text-center text-sm text-slate-400">窗口内无归档</div>
+      </section>
+    </div>
+  </div>
+  <script src="js/tab-bar.js"></script>
+  <script>
+    AiReviewStore.reset();
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+    function tone(c) { return c === '通过' ? 'pass' : (c === '需复核' ? 'warn' : 'fail'); }
+    function aiChip(c) { return '<span class="ai-chip ai-' + tone(c) + '"><span class="ai-mark">AI</span>' + esc(c) + '</span>'; }
+    var kind = '全部';
+    function render() {
+      var rows = ReportReviewMock.getPanelDataset('全部').archive || [];
+      if (kind === '已删除') rows = rows.filter(function (r) { return r.deleted; });
+      if (kind === '已签发') rows = rows.filter(function (r) { return !r.deleted; });
+      var body = document.getElementById('archive-body');
+      var empty = document.getElementById('archive-empty');
+      if (!rows.length) { body.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+      body.innerHTML = rows.map(function (r) {
+        var when = r.deleted ? ('删除 ' + (r.deletedAt || r.archivedAt || '—')) : ('签发 ' + (r.signedAt || r.archivedAt || '—'));
+        return '<tr class="row-card" data-id="' + esc(r.id) + '"><td class="mono font-semibold">' + esc(r.reportNo) + ' · ' + esc(r.revision) + (r.deleted ? ' <span class="chip bg-slate-800 text-white">已删除</span>' : '') + '</td><td>' + esc(r.entrust) + '<div class="text-[11px] text-slate-400">' + esc(r.customer) + '</div></td><td>' + aiChip(r.conclusion) + '</td><td>' + esc(r.human) + '</td><td>' + esc(when) + '</td><td>' + esc(r.bizNode) + '</td></tr>';
+      }).join('');
+      [].forEach.call(body.querySelectorAll('tr'), function (tr) {
+        tr.addEventListener('click', function () {
+          location.href = 'ai-review-snapshot.html?id=' + encodeURIComponent(tr.getAttribute('data-id')) + '&kind=archive&from=archive';
+        });
+      });
+    }
+    document.getElementById('kind-seg').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-kind]'); if (!b) return;
+      kind = b.getAttribute('data-kind');
+      [].forEach.call(document.querySelectorAll('#kind-seg button'), function (x) { x.classList.toggle('is-on', x === b); });
+      render();
+    });
+    render();
+  </script>
+  <script src="js/current-user.js?v=3" defer></script>
+  <script src="js/user-profile.js?v=8" defer></script>
+  <script src="js/message-store.js?v=4" defer></script>
+  <script src="js/message-center.js?v=4" defer></script>
+  <script src="js/ui-a11y.js" defer></script>
+</body>
+</html>

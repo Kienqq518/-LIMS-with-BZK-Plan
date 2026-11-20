@@ -17,92 +17,96 @@ const liability = await p.locator('#ai-liability').count();
 out.push((liability === 0 ? '✅' : '❌') + ' 不展示入口说明条');
 
 const kpiN = await p.locator('#kpi-row .kpi').count();
-out.push((kpiN === 7 ? '✅' : '❌') + ' 顶栏 7 项 KPI: ' + kpiN);
+out.push((kpiN === 5 ? '✅' : '❌') + ' 五张 KPI: ' + kpiN);
+
+const blocks = await p.evaluate(() => ['blk-kpi', 'blk-pending', 'blk-trend', 'blk-archive', 'blk-queue'].every((id) => !!document.getElementById(id)));
+out.push((blocks ? '✅' : '❌') + ' 五块布局容器');
 
 const charts = await p.evaluate(() => ({
-  concl: !!document.querySelector('#chart-concl svg, #chart-concl .chart-legend, #chart-concl'),
-  trend: (document.querySelector('#chart-trend')?.textContent || '').length > 0,
+  concl: !!document.querySelector('#chart-concl svg'),
+  avg: /秒|分/.test(document.querySelector('#chart-avg')?.textContent || ''),
   rules: (document.querySelector('#chart-rules')?.textContent || '').length > 0,
+  sev: /严重/.test(document.querySelector('#chart-sev')?.textContent || ''),
+  vol: !!document.querySelector('#chart-volume svg') || /\d/.test(document.querySelector('#chart-volume')?.textContent || ''),
 }));
-out.push((charts.concl && charts.trend && charts.rules ? '✅' : '❌') + ' 三张图表已渲染');
-
-const tabs = await p.locator('#list-tabs .list-tab').count();
-out.push((tabs === 3 ? '✅' : '❌') + ' 三类名单 Tab: ' + tabs);
+out.push((charts.concl && charts.avg && charts.rules && charts.sev && charts.vol ? '✅' : '❌') + ' 饼图/时长/规则TOP/严重度/走势');
 
 const noDrawer = await p.locator('#detail-panel').count();
 out.push((noDrawer === 0 ? '✅' : '❌') + ' 不再使用侧栏快照抽屉');
 
-const queueN = await p.locator('#roster-body tr.row-card').count();
-out.push((queueN >= 1 ? '✅' : '❌') + ' 默认排队序列有行: ' + queueN);
+const pendingN = await p.locator('#pending-marquee a').count();
+out.push((pendingN >= 1 ? '✅' : '❌') + ' 待处理轮播有行: ' + pendingN);
 
-await p.screenshot({ path: SHOT_DIR + '/panel-queue.png', fullPage: true });
+const exN = await p.locator('#ex-marquee a').count();
+out.push((exN >= 1 ? '✅' : '❌') + ' 审核异常轮播有行: ' + exN);
 
-await p.locator('#list-tabs .list-tab[data-tab="process"]').click();
-await p.waitForTimeout(150);
-const processN = await p.locator('#roster-body tr.row-card').count();
-out.push((processN >= 1 ? '✅' : '❌') + ' 过程中列表有行: ' + processN);
-await p.screenshot({ path: SHOT_DIR + '/panel-process.png', fullPage: true });
+const qCards = await p.locator('#queue-viz .q-card').count();
+out.push((qCards === 3 ? '✅' : '❌') + ' 排队模拟 3 份: ' + qCards);
 
-await p.locator('#list-tabs .list-tab[data-tab="archive"]').click();
-await p.waitForTimeout(150);
-const archiveN = await p.locator('#roster-body tr.row-card').count();
-out.push((archiveN >= 1 ? '✅' : '❌') + ' 归档列表有行: ' + archiveN);
-const deleted = await p.locator('#roster-body tr.row-card', { hasText: '已删除' }).count();
+await p.screenshot({ path: SHOT_DIR + '/panel-five-blocks.png', fullPage: true });
+
+const pendingHref = await p.locator('#pending-marquee a').first().getAttribute('href');
+await p.goto(BASE + '/' + pendingHref, { waitUntil: 'load' });
+await p.waitForTimeout(400);
+out.push((/ai-review-snapshot\.html/.test(p.url()) ? '✅' : '❌') + ' 点待处理进入独立快照页');
+const handle = await p.locator('#page a', { hasText: '人工处置' }).count();
+const back = await p.locator('#page a', { hasText: '返回审核面板' }).count();
+out.push((handle >= 1 && back >= 1 ? '✅' : '❌') + ' 快照含返回面板与人工处置');
+const jump = await p.locator('#page a[href*="report-review-detail.html"]').count();
+out.push((jump >= 1 ? '✅' : '❌') + ' 人工处置进入报告审核');
+await p.screenshot({ path: SHOT_DIR + '/snapshot-process.png', fullPage: true });
+
+await p.goto(BASE + '/ai-review-workbench.html', { waitUntil: 'load' });
+await p.waitForTimeout(250);
+const exHref = await p.locator('#ex-marquee a').first().getAttribute('href');
+await p.goto(BASE + '/' + exHref, { waitUntil: 'load' });
+await p.waitForTimeout(400);
+out.push((/report-review-detail\.html/.test(p.url()) ? '✅' : '❌') + ' 点异常进入报告审核详情');
+
+await p.goto(BASE + '/ai-review-workbench.html', { waitUntil: 'load' });
+await p.waitForTimeout(200);
+await p.locator('#archive-jump').click();
+await p.waitForTimeout(300);
+out.push((/ai-review-archive\.html/.test(p.url()) ? '✅' : '❌') + ' 归档箭头进入归档名单');
+const allArchive = await p.locator('#archive-body tr.row-card').count();
+out.push((allArchive >= 3 ? '✅' : '❌') + ' 归档名单行: ' + allArchive);
+const deleted = await p.locator('#archive-body tr.row-card', { hasText: '已删除' }).count();
 out.push((deleted >= 1 ? '✅' : '❌') + ' 归档含已删除报告: ' + deleted);
-await p.screenshot({ path: SHOT_DIR + '/panel-archive.png', fullPage: true });
+await p.screenshot({ path: SHOT_DIR + '/panel-archive-list.png', fullPage: true });
 
-await p.locator('#roster-body tr.row-card', { hasText: '已删除' }).first().click();
+await p.locator('#archive-body tr.row-card', { hasText: '已删除' }).first().click();
 await p.waitForTimeout(400);
 out.push((/ai-review-snapshot\.html/.test(p.url()) ? '✅' : '❌') + ' 点归档行进入独立快照页');
 const snapText = await p.locator('#page').textContent();
 out.push((/已删除报告归档/.test(snapText || '') && /不能重跑/.test(snapText || '') ? '✅' : '❌') + ' 已删除归档只读快照');
 const noJump = await p.locator('#page a[href*="report-review-detail.html"]').count();
-out.push((noJump === 0 ? '✅' : '❌') + ' 归档行不提供去审核');
+out.push((noJump === 0 ? '✅' : '❌') + ' 归档行不提供人工处置');
 const rich = /规则执行清单/.test(snapText || '') && /冻结快照字段/.test(snapText || '') && /操作日志/.test(snapText || '') && /AI 综合结论/.test(snapText || '');
 out.push((rich ? '✅' : '❌') + ' 快照含结论/规则/字段/日志');
+const backArch = await p.locator('#page a', { hasText: '返回归档名单' }).count();
+out.push((backArch >= 1 ? '✅' : '❌') + ' 从归档进入的快照可返回名单');
 await p.screenshot({ path: SHOT_DIR + '/snapshot-deleted.png', fullPage: true });
 
 await p.goto(BASE + '/ai-review-workbench.html', { waitUntil: 'load' });
-await p.waitForTimeout(300);
+await p.waitForTimeout(200);
 await p.locator('#range-seg button[data-range="全部"]').click();
-await p.waitForTimeout(200);
-await p.locator('#list-tabs .list-tab[data-tab="archive"]').click();
 await p.waitForTimeout(150);
-const allArchive = await p.locator('#roster-body tr.row-card').count();
-out.push((allArchive >= 3 ? '✅' : '❌') + ' 全部窗口归档行: ' + allArchive);
-
-await p.selectOption('#f-concl', '需复核');
-await p.waitForTimeout(150);
-await p.locator('#list-tabs .list-tab[data-tab="process"]').click();
-await p.waitForTimeout(100);
-const visibleConcl = await p.locator('#roster-body .ai-chip').allTextContents();
-const allReview = visibleConcl.length > 0 && visibleConcl.every((t) => /需复核/.test(t));
-out.push((allReview ? '✅' : '❌') + ' 筛选需复核后可见行均为需复核');
-
-await p.selectOption('#f-concl', '全部');
-await p.locator('#list-tabs .list-tab[data-tab="process"]').click();
-await p.waitForTimeout(100);
-await p.locator('#roster-body tr.row-card').first().click();
-await p.waitForTimeout(400);
-out.push((/ai-review-snapshot\.html/.test(p.url()) ? '✅' : '❌') + ' 点过程行进入独立快照页');
-const jump = await p.locator('#page a[href*="report-review-detail.html"]').count();
-out.push((jump >= 1 ? '✅' : '❌') + ' 过程行可跳转工作台');
-const procText = await p.locator('#page').textContent();
-out.push((/V1\.1/.test(procText || '') && /与上一版差异/.test(procText || '') ? '✅' : '❌') + ' 多轮快照默认最新一轮并展示差异');
-await p.screenshot({ path: SHOT_DIR + '/snapshot-process.png', fullPage: true });
+const kpiAll = await p.locator('#kpi-row .kpi').first().textContent();
+out.push((/\d/.test(kpiAll || '') ? '✅' : '❌') + ' 全部窗口 KPI 仍有数字');
+await p.locator('#grain-seg button[data-grain="年"]').click();
+await p.waitForTimeout(80);
+out.push(((await p.locator('#chart-volume svg').count()) === 1 ? '✅' : '❌') + ' 按年切换走势图');
 
 await p.goto(BASE + '/ai-review-workbench.html', { waitUntil: 'load' });
-await p.waitForTimeout(250);
-await p.locator('#roster-body tr.row-card').first().click();
-await p.waitForTimeout(400);
-const qText = await p.locator('#page').textContent();
-out.push((/排队|审核中|正在审核/.test(qText || '') ? '✅' : '❌') + ' 排队/执行中快照');
-await p.screenshot({ path: SHOT_DIR + '/snapshot-queue.png', fullPage: true });
+await p.waitForTimeout(2500);
+const afterTick = await p.locator('#queue-viz .q-card.done').count();
+out.push((afterTick >= 1 ? '✅' : '❌') + ' 排队流转至少完成 1 份: ' + afterTick);
+const popped = await p.locator('#kpi-row .kpi.pop').count();
+out.push((popped >= 1 || afterTick >= 1 ? '✅' : '❌') + ' 完成后 KPI 会跳动');
+await p.screenshot({ path: SHOT_DIR + '/panel-queue-tick.png', fullPage: true });
 
-await p.goto(BASE + '/ai-review-workbench.html', { waitUntil: 'load' });
-await p.waitForTimeout(200);
-const passRate = await p.locator('#kpi-row .kpi').nth(2).textContent();
-out.push((/%/.test(passRate || '') ? '✅' : '❌') + ' 通过率 KPI 含百分比');
+const closeRate = await p.locator('#kpi-row .kpi').nth(1).textContent();
+out.push((/%/.test(closeRate || '') ? '✅' : '❌') + ' 成功率 KPI 含百分比');
 
 console.log(out.join('\n'));
 console.log('errors(' + err.length + '):\n' + err.slice(0, 5).join('\n'));

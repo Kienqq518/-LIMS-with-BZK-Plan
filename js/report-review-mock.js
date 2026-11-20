@@ -664,11 +664,57 @@
     row.kind = kind;
     return row;
   }
+  var EXCEPTIONS = [
+    {
+      id: 'ex-0239-01', reportNo: 'SC2026/0239-01', revision: 'V1.0', deleted: false,
+      entrust: 'SC2026/0238', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆',
+      pack: '电力电缆', bizNode: '报告审核', aiTask: '异常暂停', conclusion: '异常',
+      human: '待处置', agreeAi: null, caseSettled: false,
+      at: '2026-09-07 16:22', live: true, kind: 'exception',
+      error: { code: 'ENGINE_TIMEOUT', message: '规则引擎在 L2 数据逻辑阶段超时，任务已暂停。' },
+    },
+    {
+      id: 'ex-0237-01', reportNo: 'SC2026/0237-01', revision: 'V1.0', deleted: false,
+      entrust: 'SC2026/0238', customer: '远东电缆股份有限公司', sample: '8.7/10kV 电力电缆',
+      pack: '电力电缆', bizNode: '报告审核', aiTask: '异常暂停', conclusion: '异常',
+      human: '待处置', agreeAi: null, caseSettled: false,
+      at: '2026-09-06 11:08', live: true, kind: 'exception',
+      error: { code: 'RULE_PACK_LOAD', message: '行业包规则加载失败，任务已暂停。' },
+    },
+  ];
+
+  var VOLUME_SEED = [
+    { at: '2025-11-18', n: 3 }, { at: '2025-12-20', n: 5 },
+    { at: '2026-01-16', n: 4 }, { at: '2026-02-12', n: 6 }, { at: '2026-03-09', n: 5 },
+    { at: '2026-04-14', n: 7 }, { at: '2026-05-11', n: 8 }, { at: '2026-06-10', n: 3 },
+    { at: '2026-07-08', n: 6 }, { at: '2026-08-13', n: 9 },
+  ];
+
+  function grainKey(iso, grain) {
+    var d = new Date(String(iso).slice(0, 10) + 'T00:00:00');
+    var y = d.getFullYear();
+    var m = d.getMonth() + 1;
+    if (grain === '年') return String(y);
+    if (grain === '季') return y + ' Q' + (Math.floor((m - 1) / 3) + 1);
+    return y + '-' + (m < 10 ? '0' : '') + m;
+  }
+  function bucketVolume(points, grain) {
+    var map = {};
+    var order = [];
+    points.forEach(function (p) {
+      var k = grainKey(p.at, grain);
+      if (!map[k]) { map[k] = 0; order.push(k); }
+      map[k] += p.n;
+    });
+    return order.map(function (k) { return { label: k, n: map[k] }; });
+  }
   function chartSeries(all, pass, review, fail) {
+    var sliceTotal = pass.length + review.length + fail.length;
+    function spct(n) { return sliceTotal ? Math.round((n / sliceTotal) * 100) + '%' : '0%'; }
     var slices = [
-      { key: '通过', n: pass.length, color: '#059669' },
-      { key: '需复核', n: review.length, color: '#d97706' },
-      { key: '不通过', n: fail.length, color: '#dc2626' },
+      { key: '通过', n: pass.length, pct: spct(pass.length), color: '#059669' },
+      { key: '需复核', n: review.length, pct: spct(review.length), color: '#d97706' },
+      { key: '不通过', n: fail.length, pct: spct(fail.length), color: '#dc2626' },
     ];
     var t = new Date(PANEL_TODAY + 'T00:00:00');
     var trend = [];
@@ -679,6 +725,7 @@
       trend.push({ day: key, label: md(d), n: n });
     }
     var hits = {};
+    var sev = { 严重: 0, 一般: 0, 轻微: 0 };
     all.forEach(function (row) {
       if (row.aiTask === '排队' || row.aiTask === '审核中') return;
       var snap = row.snapshot;
@@ -687,11 +734,19 @@
       var res = evalSnapshot(snap, !!snap.category_code);
       (res.failed || []).forEach(function (it) {
         hits[it.name] = (hits[it.name] || 0) + 1;
+        if (it.severity === '严重') sev['严重']++;
+        else if (it.severity === '轻微' || it.severity === '提示') sev['轻微']++;
+        else sev['一般']++;
       });
     });
+    var sevTotal = sev['严重'] + sev['一般'] + sev['轻微'];
+    function svp(k) { return sevTotal ? Math.round((sev[k] / sevTotal) * 100) + '%' : '0%'; }
     var rules = Object.keys(hits).map(function (k) { return { name: k, n: hits[k] }; })
       .sort(function (a, b) { return b.n - a.n; }).slice(0, 5);
-    return { slices: slices, trend: trend, rules: rules };
+    return {
+      slices: slices, trend: trend, rules: rules,
+      failSev: { n: sev, pct: { 严重: svp('严重'), 一般: svp('一般'), 轻微: svp('轻微') }, total: sevTotal },
+    };
   }
 
   function getPanelDataset(range) {
@@ -726,31 +781,58 @@
     var abnormal = all.filter(function (r) { return r.aiTask === '异常暂停' || r.conclusion === '异常'; });
     var queued = all.filter(function (r) { return r.aiTask === '排队'; });
     var running = all.filter(function (r) { return r.aiTask === '审核中'; });
+    var exceptions = EXCEPTIONS.filter(function (row) {
+      return inWindow(row.at, range);
+    }).map(function (row) { return tagKind(row, 'exception'); });
+    var pending = process.filter(function (r) {
+      return r.human === '待处置';
+    });
+    var signed = archive.filter(function (r) { return !r.deleted; });
+    var deleted = archive.filter(function (r) { return r.deleted; });
+    var durRows = success.filter(function (r) { return r.durationSec > 0; });
+    var avgDurationSec = durRows.length
+      ? Math.round(durRows.reduce(function (s, r) { return s + r.durationSec; }, 0) / durRows.length)
+      : 0;
+    var volPoints = VOLUME_SEED.filter(function (p) { return inWindow(p.at, range); }).concat(
+      all.map(function (r) { return { at: r.at, n: 1 }; })
+    );
     function pct(n, d) { return d ? Math.round((n / d) * 100) + '%' : '—'; }
+    var charts = chartSeries(all, pass, review, fail);
+    charts.volume = {
+      年: bucketVolume(volPoints, '年'),
+      季: bucketVolume(volPoints, '季'),
+      月: bucketVolume(volPoints, '月'),
+    };
     return {
       today: PANEL_TODAY, range: range,
       queue: queue, process: process, archive: archive,
+      pending: pending, exceptions: exceptions,
       kpi: {
         reports: triggered,
-        closeRate: pct(success.length, triggered),
+        audits: triggered + exceptions.length,
+        closeRate: pct(success.length, triggered + exceptions.length),
         passRate: pct(pass.length, concluded.length),
         reviewRate: pct(review.length, concluded.length),
         failRate: pct(fail.length, concluded.length),
         adoptRate: pct(agree.length, decided.length),
-        errorRate: pct(abnormal.length, triggered),
+        errorRate: pct(abnormal.length + exceptions.length, triggered + exceptions.length),
+        auditN: triggered + exceptions.length,
+        avgDurationSec: avgDurationSec,
         counts: {
           success: success.length, pass: pass.length, review: review.length, fail: fail.length,
-          decided: decided.length, agree: agree.length, abnormal: abnormal.length, concluded: concluded.length,
-          queue: queued.length, running: running.length,
+          decided: decided.length, agree: agree.length,
+          abnormal: abnormal.length + exceptions.length, concluded: concluded.length,
+          queue: queued.length, running: running.length, done: concluded.length,
         },
       },
-      charts: chartSeries(all, pass, review, fail),
+      charts: charts,
+      archiveStats: { total: archive.length, signed: signed.length, deleted: deleted.length },
     };
   }
 
   function findPanelRow(id) {
     var ds = getPanelDataset('全部');
-    var lists = [ds.queue, ds.process, ds.archive];
+    var lists = [ds.queue, ds.process, ds.archive, ds.exceptions];
     for (var i = 0; i < lists.length; i++) {
       for (var j = 0; j < lists[i].length; j++) if (lists[i][j].id === id) return lists[i][j];
     }
@@ -776,6 +858,7 @@
     ENTRUSTS: ENTRUSTS,
     ARCHIVES: ARCHIVES,
     QUEUE: QUEUE,
+    EXCEPTIONS: EXCEPTIONS,
     PANEL_TODAY: PANEL_TODAY,
     getEntrust: getEntrust,
     evalReport: evalReport,

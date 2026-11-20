@@ -280,8 +280,11 @@
       var prev = (!pending && roundIndex > 0) ? ReportReviewMock.evalSnapshot(rounds[roundIndex - 1].snapshot, !!rounds[roundIndex - 1].snapshot.category_code) : null;
       var diff = (res && prev) ? ReportReviewMock.diffRounds(prev, res) : null;
       var readonly = row.kind === 'archive' || row.deleted;
-      var jump = (row.live && row.entrust && !readonly)
-        ? '<a class="inline-flex rounded-lg px-3 py-1.5 text-xs text-white" style="background:var(--brand)" href="report-review-detail.html?code=' + encodeURIComponent(row.entrust) + '">去审核工作台</a>'
+      var from = QP.get('from');
+      var backHref = from === 'archive' ? 'ai-review-archive.html' : 'ai-review-workbench.html';
+      var backLabel = from === 'archive' ? '返回归档名单' : '返回审核面板';
+      var jump = (row.live && row.entrust && !readonly && !pending)
+        ? '<a class="inline-flex rounded-lg px-3 py-1.5 text-xs text-white" style="background:var(--brand)" href="report-review-detail.html?code=' + encodeURIComponent(row.entrust) + '">人工处置</a>'
         : '';
       var banner = '';
       if (row.deleted) {
@@ -341,7 +344,7 @@
             aiChip(pending ? '审核中' : res.conclusion) + taskChip(row.aiTask) + humanChip(row.human) + '</div>' +
             '<div class="mt-1 text-xs text-slate-500">' + esc(row.entrust) + ' · ' + esc(row.customer) + ' · ' + esc(row.sample) + ' · 行业包 ' + esc(row.pack) + '</div></div>' +
           '<div class="flex flex-wrap items-center gap-2">' +
-            '<a class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600" href="ai-review-workbench.html">返回审核面板</a>' + jump +
+            '<a class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600" href="' + backHref + '">' + esc(backLabel) + '</a>' + jump +
           '</div></div>' +
         (banner || '') +
         '<div class="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)]">' +
@@ -396,7 +399,7 @@
       if (!paInited && window.PrototypeAnnotation && PrototypeAnnotation.init) {
         paInited = true;
         PrototypeAnnotation.init({ annotations: [
-          { id: 'sn-head', selector: '[data-annotate="sn-head"]', position: 'bottom', title: '独立快照页', content: '从面板三类名单点进。过程中可跳转审核工作台；归档 / 已删除 / 排队只读。', tag: '快照' },
+          { id: 'sn-head', selector: '[data-annotate="sn-head"]', position: 'bottom', title: '独立快照页', content: '从面板待处理点进。可返回审核面板；过程中报告可点「人工处置」进入报告审核。归档 / 已删除只读。', tag: '快照' },
           { id: 'sn-ai', selector: '[data-annotate="sn-ai"]', position: 'bottom', title: '综合结论', content: '已出结论显示印章与叙述；排队显示排队位；审核中显示 L1–L3 进度。多轮可切版本看差异。', tag: '快照' },
           { id: 'sn-rules', selector: '[data-annotate="sn-rules"]', position: 'right', title: '全量规则', content: '按 L1/L2/L3 分组展示全部规则，不只失败项。点开看证据、建议与当时标注。', tag: '快照' },
           { id: 'sn-meta', selector: '[data-annotate="sn-meta"]', position: 'left', title: '身份与冻结字段', content: '任务三层状态（任务态 / AI 结论 / 人工）与提交瞬间的规范快照字段。', tag: '快照' },
