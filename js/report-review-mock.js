@@ -191,20 +191,48 @@
           process: '试样在 20℃ 恒温后，采用双臂电桥测量导体直流电阻，读取三次取平均。',
           requirement: '导体直流电阻 ≤ 0.524 Ω/km（GB/T 12706.1-2020）。',
           recorder: '李明', recordedAt: '2026-09-01 15:20',
-          device: 'QJ36 直流电桥', calib: '2026-01-01 ~ 2026-12-31',
+          device: '直流电阻测试装置系统（无人化）', calib: '2026-01-01 ~ 2026-12-31',
           standards: STD_DCR, sops: [{ no: 'SOP-DL-012', name: '导体直流电阻测量作业指导书', file: 'SOP-DL-012.docx' }],
           raws: [{ name: 'SC2026-0238-0101导体电阻原始记录.docx', at: '2026-09-01 15:20' }],
-          rawDetail: { condition: '20.0℃ / 相对湿度 52%', rows: [{ k: '第1次', v: '0.519 Ω/km' }, { k: '第2次', v: '0.521 Ω/km' }, { k: '第3次', v: '0.520 Ω/km' }, { k: '平均值', v: '0.520 Ω/km' }, { k: '限值', v: '≤ 0.524 Ω/km' }] },
+          equipment: {
+            name: '直流电阻测试装置系统（无人化）', no: 'YM-MYH-01', model: 'YWZLG-100',
+            collect: '无人化直连采集', calibStatus: '正常', lastCalib: '2026-01-08',
+            calibFrom: '2026-01-01', calibTo: '2026-12-31', precision: '±0.05%',
+          },
+          groups: [
+            { key: 'nom', title: '标称值', cols: ['导体直流电阻限值 R₂₀,max(Ω/km)'] },
+            { key: 'mea', title: '测量值', cols: ['试样长度 L(mm)', '正向电阻 Rfwd(μΩ)', '反向电阻 Rrev(μΩ)', '平均电阻 Ravg(μΩ)', '温度(℃)', '湿度(%RH)', '气压(kPa)', '设备试验前状态', '设备试验后状态'] },
+            { key: 'calc', title: '计算值', cols: ['20℃导体直流电阻 R₂₀(Ω/km)'] },
+          ],
+          phases: [
+            { name: '红', conclusion: '合格', rows: [{ '试样编号': 'SC2026-0238-0101-01', '导体直流电阻限值 R₂₀,max(Ω/km)': '≤ 0.524', '试样长度 L(mm)': '1000', '正向电阻 Rfwd(μΩ)': '519.2', '反向电阻 Rrev(μΩ)': '520.8', '平均电阻 Ravg(μΩ)': '520.0', '温度(℃)': '20.0', '湿度(%RH)': '52', '气压(kPa)': '101.2', '设备试验前状态': '正常', '设备试验后状态': '正常', '20℃导体直流电阻 R₂₀(Ω/km)': '0.520' }] },
+            { name: '黄', conclusion: '合格', rows: [{ '试样编号': 'SC2026-0238-0101-02', '导体直流电阻限值 R₂₀,max(Ω/km)': '≤ 0.524', '试样长度 L(mm)': '1000', '正向电阻 Rfwd(μΩ)': '517.4', '反向电阻 Rrev(μΩ)': '518.6', '平均电阻 Ravg(μΩ)': '518.0', '温度(℃)': '20.1', '湿度(%RH)': '52', '气压(kPa)': '101.2', '设备试验前状态': '正常', '设备试验后状态': '正常', '20℃导体直流电阻 R₂₀(Ω/km)': '0.518' }] },
+            { name: '绿', conclusion: '合格', rows: [{ '试样编号': 'SC2026-0238-0101-03', '导体直流电阻限值 R₂₀,max(Ω/km)': '≤ 0.524', '试样长度 L(mm)': '1000', '正向电阻 Rfwd(μΩ)': '521.0', '反向电阻 Rrev(μΩ)': '521.8', '平均电阻 Ravg(μΩ)': '521.4', '温度(℃)': '20.0', '湿度(%RH)': '52', '气压(kPa)': '101.2', '设备试验前状态': '正常', '设备试验后状态': '正常', '20℃导体直流电阻 R₂₀(Ω/km)': '0.521' }] },
+          ],
         },
         {
           name: '绝缘厚度', std: 'GB/T 2951.11-2008', review: '已完成', result: '合格', method: '投影仪测量', tester: '李明', date: '2026-09-01',
           process: '沿绝缘圆周均布 6 点，投影仪读取厚度，取最小点判定。',
           requirement: '绝缘最薄点 ≥ 标称厚度的 90%，且平均值 ≥ 标称厚度。',
           recorder: '李明', recordedAt: '2026-09-01 16:02',
-          device: 'JX-200 投影仪', calib: '2026-01-01 ~ 2026-12-31',
+          device: '全自动绝缘厚度测试仪（无人化）', calib: '2026-01-01 ~ 2026-12-31',
           standards: STD_INS, sops: [{ no: 'SOP-DL-003', name: '绝缘厚度投影测量作业指导书', file: 'SOP-DL-003.docx' }],
           raws: [{ name: 'SC2026-0238-0101绝缘厚度原始记录.docx', at: '2026-09-01 16:02' }],
-          rawDetail: { condition: '室温 23℃', rows: [{ k: '点1–6 最小', v: '3.42 mm' }, { k: '平均值', v: '3.58 mm' }, { k: '标称厚度', v: '3.4 mm' }] },
+          equipment: {
+            name: '全自动绝缘厚度测试仪（无人化）', no: 'YM-MYH-02', model: 'YWG-1F',
+            collect: '无人化直连采集', calibStatus: '正常', lastCalib: '2026-01-10',
+            calibFrom: '2026-01-01', calibTo: '2026-12-31', precision: '±0.01 mm',
+          },
+          groups: [
+            { key: 'nom', title: '标称值', cols: ['标称绝缘厚度(mm)', '最小厚度标称值 90%(mm)', '偏心率标称值(%)'] },
+            { key: 'mea', title: '测量值', cols: ['测点1(mm)', '测点2(mm)', '测点3(mm)', '测点4(mm)', '测点5(mm)', '测点6(mm)', '温度(℃)', '湿度(%RH)', '设备试验前状态', '设备试验后状态'] },
+            { key: 'calc', title: '计算值', cols: ['绝缘最小厚度(mm)', '绝缘平均厚度(mm)', '偏心(mm)'] },
+          ],
+          phases: [
+            { name: '红', conclusion: '合格', rows: [{ '试样编号': 'SC2026-0238-0101-25', '标称绝缘厚度(mm)': '≥ 4.5', '最小厚度标称值 90%(mm)': '≥ 3.95', '偏心率标称值(%)': '< 10', '测点1(mm)': '4.62', '测点2(mm)': '4.58', '测点3(mm)': '4.71', '测点4(mm)': '4.55', '测点5(mm)': '4.66', '测点6(mm)': '4.60', '温度(℃)': '23.0', '湿度(%RH)': '51', '设备试验前状态': '正常', '设备试验后状态': '正常', '绝缘最小厚度(mm)': '4.55', '绝缘平均厚度(mm)': '4.62', '偏心(mm)': '0.08' }] },
+            { name: '黄', conclusion: '合格', rows: [{ '试样编号': 'SC2026-0238-0101-26', '标称绝缘厚度(mm)': '≥ 4.5', '最小厚度标称值 90%(mm)': '≥ 3.95', '偏心率标称值(%)': '< 10', '测点1(mm)': '4.70', '测点2(mm)': '4.64', '测点3(mm)': '4.68', '测点4(mm)': '4.59', '测点5(mm)': '4.73', '测点6(mm)': '4.61', '温度(℃)': '23.0', '湿度(%RH)': '51', '设备试验前状态': '正常', '设备试验后状态': '正常', '绝缘最小厚度(mm)': '4.59', '绝缘平均厚度(mm)': '4.66', '偏心(mm)': '0.07' }] },
+            { name: '绿', conclusion: '合格', rows: [{ '试样编号': 'SC2026-0238-0101-27', '标称绝缘厚度(mm)': '≥ 4.5', '最小厚度标称值 90%(mm)': '≥ 3.95', '偏心率标称值(%)': '< 10', '测点1(mm)': '4.57', '测点2(mm)': '4.63', '测点3(mm)': '4.69', '测点4(mm)': '4.54', '测点5(mm)': '4.60', '测点6(mm)': '4.66', '温度(℃)': '23.1', '湿度(%RH)': '51', '设备试验前状态': '正常', '设备试验后状态': '正常', '绝缘最小厚度(mm)': '4.54', '绝缘平均厚度(mm)': '4.61', '偏心(mm)': '0.08' }] },
+          ],
         },
         {
           name: '老化前绝缘机械性能', std: 'GB/T 2951.11-2008', review: '已复审', result: '合格', method: '拉力试验', tester: '周敏', date: '2026-09-01',
@@ -214,7 +242,39 @@
           device: 'LD26504 力学试验机', calib: '2026-02-01 ~ 2027-01-31',
           standards: STD_INS, sops: [{ no: 'SOP-DL-021', name: '绝缘机械性能试验作业指导书', file: 'SOP-DL-021.docx' }],
           raws: [{ name: 'SC2026-0238-0101机械性能原始记录.docx', at: '2026-09-01 16:40' }],
-          rawDetail: { condition: '拉伸速度 250 mm/min', rows: [{ k: '抗张强度', v: '14.8 MPa' }, { k: '断裂伸长率', v: '280 %' }] },
+          equipment: {
+            name: '微机控制电子万能试验机', no: 'YM-LD-04', model: 'LD26504',
+            collect: '设备直连采集', calibStatus: '正常', lastCalib: '2026-02-03',
+            calibFrom: '2026-02-01', calibTo: '2027-01-31', precision: '±0.5%',
+          },
+          groups: [
+            { key: 'nom', title: '标称值', cols: ['抗张强度最小值 σ_min(N/mm²)', '断裂伸长率最小值 ε_min(%)'] },
+            { key: 'mea', title: '测量值', cols: ['码码', '试样原始标距 L₀(mm)', '试样最小宽度 W(mm)', '试样最小厚度 t(mm)', '试样截面积 A₀(mm²)', '断裂最大力 F(N)', '断裂时标距 L(mm)', '温度(℃)', '湿度(%RH)', '设备试验前状态', '设备试验后状态'] },
+            { key: 'calc', title: '计算值', cols: ['抗张强度 σ(MPa)', '抗张强度中间值 σ_med(MPa)', '断裂伸长率 ε(%)', '断裂伸长率中间值 ε_med(%)'] },
+          ],
+          phases: [
+            {
+              name: '红', conclusion: '合格', rows: [
+                { '试样编号': 'SC2026-0238-0101-28', '码码': '0264A1', '抗张强度最小值 σ_min(N/mm²)': '≥ 12.5', '断裂伸长率最小值 ε_min(%)': '≥ 200', '试样原始标距 L₀(mm)': '20', '试样最小宽度 W(mm)': '4', '试样最小厚度 t(mm)': '1', '试样截面积 A₀(mm²)': '4.00', '断裂最大力 F(N)': '99.399', '断裂时标距 L(mm)': '170.24', '温度(℃)': '23.0', '湿度(%RH)': '50', '设备试验前状态': '正常', '设备试验后状态': '正常', '抗张强度 σ(MPa)': '24.8', '抗张强度中间值 σ_med(MPa)': '21.5', '断裂伸长率 ε(%)': '851.2', '断裂伸长率中间值 ε_med(%)': '808.7' },
+                { '试样编号': 'SC2026-0238-0101-29', '码码': '0264A2', '抗张强度最小值 σ_min(N/mm²)': '≥ 12.5', '断裂伸长率最小值 ε_min(%)': '≥ 200', '试样原始标距 L₀(mm)': '20', '试样最小宽度 W(mm)': '4', '试样最小厚度 t(mm)': '1', '试样截面积 A₀(mm²)': '4.00', '断裂最大力 F(N)': '85.835', '断裂时标距 L(mm)': '161.74', '温度(℃)': '23.0', '湿度(%RH)': '50', '设备试验前状态': '正常', '设备试验后状态': '正常', '抗张强度 σ(MPa)': '21.5', '抗张强度中间值 σ_med(MPa)': '21.5', '断裂伸长率 ε(%)': '808.7', '断裂伸长率中间值 ε_med(%)': '808.7' },
+                { '试样编号': 'SC2026-0238-0101-30', '码码': '0264A3', '抗张强度最小值 σ_min(N/mm²)': '≥ 12.5', '断裂伸长率最小值 ε_min(%)': '≥ 200', '试样原始标距 L₀(mm)': '20', '试样最小宽度 W(mm)': '4', '试样最小厚度 t(mm)': '1', '试样截面积 A₀(mm²)': '4.00', '断裂最大力 F(N)': '83.640', '断裂时标距 L(mm)': '173.34', '温度(℃)': '23.0', '湿度(%RH)': '50', '设备试验前状态': '正常', '设备试验后状态': '正常', '抗张强度 σ(MPa)': '20.9', '抗张强度中间值 σ_med(MPa)': '21.5', '断裂伸长率 ε(%)': '866.7', '断裂伸长率中间值 ε_med(%)': '808.7' },
+              ],
+            },
+            {
+              name: '黄', conclusion: '合格', rows: [
+                { '试样编号': 'SC2026-0238-0101-33', '码码': '/', '抗张强度最小值 σ_min(N/mm²)': '≥ 12.5', '断裂伸长率最小值 ε_min(%)': '≥ 200', '试样原始标距 L₀(mm)': '/', '试样最小宽度 W(mm)': '/', '试样最小厚度 t(mm)': '/', '试样截面积 A₀(mm²)': '/', '断裂最大力 F(N)': '/', '断裂时标距 L(mm)': '/', '温度(℃)': '/', '湿度(%RH)': '/', '设备试验前状态': '/', '设备试验后状态': '/', '抗张强度 σ(MPa)': '/', '抗张强度中间值 σ_med(MPa)': '/', '断裂伸长率 ε(%)': '/', '断裂伸长率中间值 ε_med(%)': '/' },
+                { '试样编号': 'SC2026-0238-0101-34', '码码': '/', '抗张强度最小值 σ_min(N/mm²)': '≥ 12.5', '断裂伸长率最小值 ε_min(%)': '≥ 200', '试样原始标距 L₀(mm)': '/', '试样最小宽度 W(mm)': '/', '试样最小厚度 t(mm)': '/', '试样截面积 A₀(mm²)': '/', '断裂最大力 F(N)': '/', '断裂时标距 L(mm)': '/', '温度(℃)': '/', '湿度(%RH)': '/', '设备试验前状态': '/', '设备试验后状态': '/', '抗张强度 σ(MPa)': '/', '抗张强度中间值 σ_med(MPa)': '/', '断裂伸长率 ε(%)': '/', '断裂伸长率中间值 ε_med(%)': '/' },
+                { '试样编号': 'SC2026-0238-0101-35', '码码': '/', '抗张强度最小值 σ_min(N/mm²)': '≥ 12.5', '断裂伸长率最小值 ε_min(%)': '≥ 200', '试样原始标距 L₀(mm)': '/', '试样最小宽度 W(mm)': '/', '试样最小厚度 t(mm)': '/', '试样截面积 A₀(mm²)': '/', '断裂最大力 F(N)': '/', '断裂时标距 L(mm)': '/', '温度(℃)': '/', '湿度(%RH)': '/', '设备试验前状态': '/', '设备试验后状态': '/', '抗张强度 σ(MPa)': '/', '抗张强度中间值 σ_med(MPa)': '/', '断裂伸长率 ε(%)': '/', '断裂伸长率中间值 ε_med(%)': '/' },
+              ],
+            },
+            {
+              name: '绿', conclusion: '合格', rows: [
+                { '试样编号': 'SC2026-0238-0101-38', '码码': '/', '抗张强度最小值 σ_min(N/mm²)': '≥ 12.5', '断裂伸长率最小值 ε_min(%)': '≥ 200', '试样原始标距 L₀(mm)': '/', '试样最小宽度 W(mm)': '/', '试样最小厚度 t(mm)': '/', '试样截面积 A₀(mm²)': '/', '断裂最大力 F(N)': '/', '断裂时标距 L(mm)': '/', '温度(℃)': '/', '湿度(%RH)': '/', '设备试验前状态': '/', '设备试验后状态': '/', '抗张强度 σ(MPa)': '/', '抗张强度中间值 σ_med(MPa)': '/', '断裂伸长率 ε(%)': '/', '断裂伸长率中间值 ε_med(%)': '/' },
+                { '试样编号': 'SC2026-0238-0101-39', '码码': '/', '抗张强度最小值 σ_min(N/mm²)': '≥ 12.5', '断裂伸长率最小值 ε_min(%)': '≥ 200', '试样原始标距 L₀(mm)': '/', '试样最小宽度 W(mm)': '/', '试样最小厚度 t(mm)': '/', '试样截面积 A₀(mm²)': '/', '断裂最大力 F(N)': '/', '断裂时标距 L(mm)': '/', '温度(℃)': '/', '湿度(%RH)': '/', '设备试验前状态': '/', '设备试验后状态': '/', '抗张强度 σ(MPa)': '/', '抗张强度中间值 σ_med(MPa)': '/', '断裂伸长率 ε(%)': '/', '断裂伸长率中间值 ε_med(%)': '/' },
+                { '试样编号': 'SC2026-0238-0101-40', '码码': '/', '抗张强度最小值 σ_min(N/mm²)': '≥ 12.5', '断裂伸长率最小值 ε_min(%)': '≥ 200', '试样原始标距 L₀(mm)': '/', '试样最小宽度 W(mm)': '/', '试样最小厚度 t(mm)': '/', '试样截面积 A₀(mm²)': '/', '断裂最大力 F(N)': '/', '断裂时标距 L(mm)': '/', '温度(℃)': '/', '湿度(%RH)': '/', '设备试验前状态': '/', '设备试验后状态': '/', '抗张强度 σ(MPa)': '/', '抗张强度中间值 σ_med(MPa)': '/', '断裂伸长率 ε(%)': '/', '断裂伸长率中间值 ε_med(%)': '/' },
+              ],
+            },
+          ],
         },
       ],
     }],
@@ -325,7 +385,7 @@
             { at: '2026-09-05 09:16', node: '报告审核', by: '系统', text: '退回至报告审核，待复核（不自动重跑 AI）', tone: 'warn' },
           ],
         },
-        // 05：AI 正在审核（加载中，不产出结论）
+        // 05：AI 正在审核 → 超时后落入异常暂停（原 05/06 合并到同一份报告）
         {
           id: 'rr-0238-05', reportNo: 'SC2026/0238-05', reportName: 'SC2026-0238-05检测报告.docx',
           sampleNos: ['SC2026/0238-0105'], categoryBound: true, state: 'AI审核中',
@@ -338,22 +398,6 @@
             { at: '2026-09-06 08:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-05', tone: 'default' },
             { at: '2026-09-06 09:10', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
             { at: '2026-09-06 09:12', node: 'AI审核', by: '系统', text: '正在逐条执行审核规则…', tone: 'pending' },
-          ],
-        },
-        // 06：AI 审核异常暂停
-        {
-          id: 'rr-0238-06', reportNo: 'SC2026/0238-06', reportName: 'SC2026-0238-06检测报告.docx',
-          sampleNos: ['SC2026/0238-0106'], categoryBound: true, state: 'AI审核异常',
-          aiRun: 'error',
-          aiError: { code: 'ENGINE_TIMEOUT', message: '规则引擎在 L2 数据逻辑阶段超时，任务已暂停。可重试 AI，或转人工审核。' },
-          snapshotHash: 'r8s9t0', file: { word: 'SC2026-0238-06检测报告.docx', pdf: 'SC2026-0238-06检测报告.pdf', at: '2026-09-06 10:05' },
-          info: cableInfo(),
-          rounds: [{ revision: 'V1.0', trigger: '进入报告审核', at: '2026-09-06 10:08', snapshot: cableSnap({ sample_no: 'SC2026-0243' }) }],
-          disposition: null,
-          log: [
-            { at: '2026-09-06 09:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-06', tone: 'default' },
-            { at: '2026-09-06 10:05', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
-            { at: '2026-09-06 10:08', node: 'AI审核', by: '系统', text: '审核异常暂停：ENGINE_TIMEOUT（L2 数据逻辑超时）', tone: 'danger' },
           ],
         },
       ],
@@ -408,6 +452,161 @@
     return null;
   }
 
+  // 本节点仍需出现在「待审核」组：未离开报告审核（含审核中/异常、签发退回）。
+  // 自动退回开启时，已退回编制的报告归入「已离开本节点」。
+  function needsHuman(rep) {
+    if (!rep) return false;
+    if (rep.disposition) return false;
+    if (rep.state === '自动退回编制' && POLICY.autoReturnOnSevere) return false;
+    return true;
+  }
+
+  function failRunningReport(rep, at) {
+    if (!rep || rep.aiRun !== 'running') return false;
+    rep.aiRun = 'error';
+    rep.state = 'AI审核异常';
+    rep.aiError = { code: 'ENGINE_TIMEOUT', message: '规则引擎在 L2 数据逻辑阶段超时，任务已暂停。可重试 AI，或转人工审核。' };
+    (rep.log || (rep.log = [])).push({
+      at: at || '2026-09-06 09:16', node: 'AI审核', by: '系统',
+      text: '审核异常暂停：ENGINE_TIMEOUT（L2 数据逻辑超时）', tone: 'danger',
+    });
+    return true;
+  }
+
+  // 面板业务日：让默认「近 7 天」能罩住 0238 演示簇
+  var PANEL_TODAY = '2026-09-08';
+
+  // 归档留档（含「退回编制后删除、重新出报告」的旧版 AI 结果）
+  var ARCHIVES = [
+    {
+      id: 'arch-0238-02-v1', reportNo: 'SC2026/0238-02', revision: 'V1.0',
+      deleted: true, deletedAt: '2026-09-03 16:10',
+      deletedReason: '退回报告编制后删除本份报告，重新生成 V1.1 再提交审核。',
+      entrust: 'SC2026/0238', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆',
+      pack: '电力电缆', bizNode: '已删除', aiTask: '成功', conclusion: '需复核',
+      human: '已退回编制', agreeAi: true, caseSettled: true,
+      at: '2026-09-03 11:00', archivedAt: '2026-09-03 16:10', signedAt: '',
+      durationSec: 18, round: 1,
+      snapshot: cableSnap({
+        sample_no: 'SC2026-0239',
+        cited_standard: 'GB/T 12706.1-2008',
+        units: [{ param: '导体直流电阻', unit: 'kgf·m' }],
+        conductor_resistance: 0.531, conductor_resistance_limit: 0.524,
+      }),
+      hits: '一般 3 项（引用标准年号 / 计量单位 / 电阻限值）',
+    },
+    {
+      id: 'arch-0190-01', reportNo: 'SC2026/0190-01', revision: 'V1.0',
+      deleted: false,
+      entrust: 'SC2026/0190', customer: '远东电缆股份有限公司', sample: '8.7/10kV 电力电缆',
+      pack: '电力电缆', bizNode: '已签发', aiTask: '成功', conclusion: '通过',
+      human: '已同意', agreeAi: true, caseSettled: true,
+      at: '2026-09-02 14:20', archivedAt: '2026-09-02 16:40', signedAt: '2026-09-02 16:40',
+      durationSec: 12, round: 1,
+      snapshot: cableSnap({ sample_no: 'SC2026-0190' }),
+      hits: '未命中',
+    },
+    {
+      id: 'arch-0188-01', reportNo: 'SC2026/0188-01', revision: 'V1.2',
+      deleted: false,
+      entrust: 'SC2026/0188', customer: '智载科技', sample: '复合绝缘盖板',
+      pack: '未配置行业包', bizNode: '已发放', aiTask: '成功', conclusion: '需复核',
+      human: '已覆盖', agreeAi: false, caseSettled: true,
+      at: '2026-09-01 09:40', archivedAt: '2026-09-04 11:00', signedAt: '2026-09-03 18:20',
+      durationSec: 26, round: 2,
+      snapshot: cableSnap({ sample_no: 'SC2026-0188', category_code: null, category_name: '' }),
+      hits: '一般 1 项（未配置品类仅跑通用集）',
+    },
+  ];
+
+  function bizBucket(rep) {
+    if (rep.disposition) return '签发中';
+    if (rep.state === '自动退回编制' && POLICY.autoReturnOnSevere) return '已退回编制';
+    if (rep.signOff && rep.signOff.returned) return '报告审核';
+    if (rep.aiRun === 'running') return '报告审核';
+    if (rep.aiRun === 'error') return '报告审核';
+    return '报告审核';
+  }
+  function taskState(rep) {
+    if (rep.aiRun === 'running') return '审核中';
+    if (rep.aiRun === 'error') return '异常暂停';
+    return '成功';
+  }
+  function humanState(rep, conclusion) {
+    if (rep.disposition) return rep.disposition.agreeAi === false ? '已覆盖' : '已同意';
+    if (rep.state === '自动退回编制' && POLICY.autoReturnOnSevere) return '自动退回编制';
+    if (rep.aiRun) return '待处置';
+    return '待处置';
+  }
+
+  function livePanelRows() {
+    var rows = [];
+    ENTRUSTS.forEach(function (ent) {
+      ent.reports.forEach(function (rep) {
+        var r = (rep.aiRun === 'running') ? { conclusion: '审核中' } : (rep.aiRun === 'error' ? { conclusion: '异常' } : evalReport(rep));
+        var cur = currentRound(rep);
+        rows.push({
+          id: rep.id, reportNo: rep.reportNo, revision: cur.revision, deleted: false,
+          entrust: ent.code, customer: ent.customer, sample: ent.sample,
+          pack: rep.categoryBound ? '电力电缆' : '未配置行业包',
+          bizNode: bizBucket(rep), aiTask: taskState(rep), conclusion: r.conclusion,
+          human: humanState(rep, r.conclusion), agreeAi: rep.disposition ? !!rep.disposition.agreeAi : null,
+          caseSettled: !!rep.disposition, at: cur.at, archivedAt: '', signedAt: '',
+          durationSec: 14, round: rep.rounds.length, live: true, report: rep, entrustObj: ent,
+          hits: r.failed && r.failed.length ? (r.severe.length ? '严重 ' + r.severe.length + ' 项' : '一般 ' + r.review.length + ' 项') : '未命中',
+        });
+      });
+    });
+    return rows;
+  }
+
+  function inWindow(isoDate, range) {
+    var day = String(isoDate || '').slice(0, 10);
+    if (!day) return false;
+    if (range === '全部') return true;
+    var t = new Date(PANEL_TODAY + 'T00:00:00');
+    var d = new Date(day + 'T00:00:00');
+    if (range === '本月') return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth();
+    var days = range === '30天' ? 30 : 7;
+    var from = new Date(t.getTime() - (days - 1) * 86400000);
+    return d >= from && d <= t;
+  }
+
+  function getPanelDataset(range) {
+    range = range || '7天';
+    var process = livePanelRows().filter(function (row) {
+      return inWindow(row.at, range);
+    });
+    var archive = ARCHIVES.filter(function (row) {
+      return inWindow(row.archivedAt || row.at, range);
+    });
+    var all = process.concat(archive);
+    var triggered = all.length;
+    var concluded = all.filter(function (r) { return r.conclusion === '通过' || r.conclusion === '需复核' || r.conclusion === '不通过'; });
+    var success = all.filter(function (r) { return r.aiTask === '成功'; });
+    var pass = concluded.filter(function (r) { return r.conclusion === '通过'; });
+    var review = concluded.filter(function (r) { return r.conclusion === '需复核'; });
+    var fail = concluded.filter(function (r) { return r.conclusion === '不通过'; });
+    var decided = all.filter(function (r) { return r.human === '已同意' || r.human === '已覆盖'; });
+    var agree = decided.filter(function (r) { return r.human === '已同意' || r.agreeAi === true; });
+    var abnormal = all.filter(function (r) { return r.aiTask === '异常暂停' || r.conclusion === '异常'; });
+    function pct(n, d) { return d ? Math.round((n / d) * 100) + '%' : '—'; }
+    return {
+      today: PANEL_TODAY, range: range,
+      process: process, archive: archive,
+      kpi: {
+        reports: triggered,
+        closeRate: pct(success.length, triggered),
+        passRate: pct(pass.length, concluded.length),
+        reviewRate: pct(review.length, concluded.length),
+        failRate: pct(fail.length, concluded.length),
+        adoptRate: pct(agree.length, decided.length),
+        errorRate: pct(abnormal.length, triggered),
+        counts: { success: success.length, pass: pass.length, review: review.length, fail: fail.length, decided: decided.length, agree: agree.length, abnormal: abnormal.length, concluded: concluded.length },
+      },
+    };
+  }
+
   // 供「报告编制」页展示：被 AI 判不通过（严重）的报告（跨页同源）
   function aiReturnedReports() {
     var out = [];
@@ -425,6 +624,8 @@
 
   global.ReportReviewMock = {
     ENTRUSTS: ENTRUSTS,
+    ARCHIVES: ARCHIVES,
+    PANEL_TODAY: PANEL_TODAY,
     getEntrust: getEntrust,
     evalReport: evalReport,
     evalRound: evalRound,
@@ -432,6 +633,9 @@
     diffRounds: diffRounds,
     currentRound: currentRound,
     aiReturnedReports: aiReturnedReports,
+    needsHuman: needsHuman,
+    failRunningReport: failRunningReport,
+    getPanelDataset: getPanelDataset,
     getPolicy: function () { return POLICY; },
     setAutoReturn: function (v) { POLICY.autoReturnOnSevere = !!v; },
     CONCLUSION_META: {

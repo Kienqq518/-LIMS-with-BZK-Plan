@@ -105,10 +105,23 @@
       box-shadow: 0 10px 24px rgba(15,23,42,.12); white-space: normal;
     }
     .sum-tip:hover .sum-tip-pop, .sum-tip:focus .sum-tip-pop, .sum-tip:focus-within .sum-tip-pop { display: block; }
-    .sum-kaliber {
-      margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(20,60,154,.16);
-      font-size: 11px; line-height: 1.7; color: #64748b;
-    }
+    .roster-ghead { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: .04em; padding: 8px 6px 4px; }
+    .roster-ghead .n { font-weight: 500; color: #94a3b8; }
+    .eq-card { border: 1px solid rgba(20,60,154,.12); border-radius: 10px; background: linear-gradient(180deg,#fff,#f8fafc); padding: 10px 12px; }
+    .eq-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px 12px; }
+    .eq-grid .eq-k { color: #94a3b8; font-size: 11px; }
+    .eq-grid .eq-v { color: #1e293b; font-weight: 600; }
+    .raw-card { border: 1px solid rgba(20,60,154,.12); border-radius: 10px; background: #fff; }
+    .phase-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+    .phase-tab { border: 1px solid var(--line); background: #fff; color: #475569; border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+    .phase-tab.is-on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .phase-tab .ph-conc { margin-left: 6px; font-size: 10px; opacity: .9; }
+    .fg-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .fg-table th, .fg-table td { border: 1px solid #e2e8f0; padding: 4px 6px; white-space: nowrap; }
+    .fg-table th.g-nom { background: #eff6ff; color: #1d4ed8; }
+    .fg-table th.g-mea { background: #f0fdf4; color: #047857; }
+    .fg-table th.g-calc { background: #fff7ed; color: #c2410c; }
+    .fg-table td.conc-ok { color: #047857; font-weight: 600; }
     #info-body { display: flex; flex-direction: column; }
     .round-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
     .round-tab { flex-shrink: 0; border: 1px solid var(--line); background: #fff; color: #64748b; border-radius: 999px; padding: 3px 10px; font-size: 11px; }
@@ -124,7 +137,7 @@
     #info-body:has(.preview-frame) { overflow: hidden; }
     .rule-item { padding: 5px 10px; }
     .rule-head { display: flex; align-items: center; gap: 8px; cursor: pointer; min-height: 28px; }
-    .rule-cat { flex: 0 0 4.75rem; text-align: right; }
+    .rule-cat { flex: 0 0 4.75rem; text-align: left; }
     .rule-name { flex: 1 1 auto; min-width: 0; font-size: 13px; font-weight: 600; color: #1e293b; line-height: 1.35; }
     .rule-end { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
     .rule-chevron { color: #94a3b8; font-size: 12px; width: 14px; text-align: center; }
@@ -226,12 +239,16 @@
         <div class="wb-scroll">
           <!-- 中：AI 审核结果 -->
           <section class="wb-center glass flex flex-col" style="min-height:0" data-annotate="rv-ai">
-            <div class="flex flex-wrap items-center gap-2 border-b border-white/50 px-4 py-2.5">
-              <div class="flex min-w-0 items-center gap-2 text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-magic"></i>AI 审核结果
-                <span id="ai-report-no" class="text-xs font-normal text-slate-400 mono"></span></div>
-              <span id="ai-round" class="chip action-chip bg-slate-100 text-slate-500"></span>
-              <button id="btn-rerun" type="button" class="ml-auto rounded-lg border px-2.5 py-1 text-xs" style="border-color:var(--brand);color:var(--brand)"><i class="fa fa-refresh mr-1"></i>重跑 AI 审核</button>
-              <button id="btn-expand-center" type="button" class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i><span data-split-label>展开</span></button>
+            <div class="border-b border-white/50 px-4 py-2">
+              <div class="flex items-center gap-2">
+                <div class="flex min-w-0 items-center gap-2 text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-magic"></i>AI 审核结果
+                  <span id="ai-report-no" class="text-xs font-normal text-slate-400 mono"></span></div>
+                <button id="btn-rerun" type="button" class="ml-auto rounded-lg border px-2.5 py-1 text-xs" style="border-color:var(--brand);color:var(--brand)"><i class="fa fa-refresh mr-1"></i>重跑 AI 审核</button>
+                <button id="btn-expand-center" type="button" class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i><span data-split-label>展开</span></button>
+              </div>
+              <div class="mt-1.5 flex items-center">
+                <span id="ai-round" class="chip action-chip bg-slate-100 text-slate-500"></span>
+              </div>
             </div>
             <div id="signoff-banner" class="hidden border-b border-amber-200/60 bg-amber-50/70 px-4 py-2 text-xs text-amber-800"></div>
             <div class="flex-1 overflow-y-auto px-4 py-3" style="min-height:0">
@@ -371,34 +388,45 @@
       return { label: '待处置', cls: 'bg-amber-100 text-amber-800', need: true };
     }
 
+    function needsHuman(rep) { return ReportReviewMock.needsHuman(rep); }
+    function rosterCard(rep) {
+      var r = currentResult(rep); var sm = stateMeta(rep);
+      var cur = ReportReviewMock.currentRound(rep);
+      return '<button type="button" class="roster-row ' + (rep.id === selectedId ? 'active' : '') + ' mb-1 flex w-full flex-col gap-1 px-2.5 py-1.5 text-left" data-report-id="' + rep.id + '" data-conclusion="' + r.conclusion + '" data-state="' + esc(rep.state) + '" data-need="' + (needsHuman(rep) ? '1' : '0') + '">' +
+        '<div class="flex items-center justify-between gap-2">' +
+          '<span class="text-sm font-semibold text-slate-800 mono">' + esc(rep.reportNo) + '</span>' +
+          '<span class="state-chip chip ' + sm.cls + (sm.need ? ' need-action' : '') + '">' + (sm.need ? '<i class="fa fa-bell-o"></i>' : '') + sm.label + '</span>' +
+        '</div>' +
+        '<div class="flex items-center justify-between gap-2 text-xs text-slate-400">' +
+          '<span class="mono">版本 ' + esc(cur.revision) + '</span>' +
+          aiChip(r.conclusion) +
+        '</div>' +
+      '</button>';
+    }
     // ---------- 统观区 ----------
     function renderRoster() {
       var counts = { 待处置: 0, 签发退回: 0, 自动退回: 0, 已处置: 0, 审核中: 0, 异常: 0 };
-      var rows = entrust.reports.map(function (rep) {
-        var r = currentResult(rep); var sm = stateMeta(rep);
+      var need = []; var left = [];
+      entrust.reports.forEach(function (rep) {
         if (rep.aiRun === 'running') counts['审核中']++;
         else if (rep.aiRun === 'error') counts['异常']++;
         else if (rep.disposition) counts['已处置']++;
         else if (rep.state === '自动退回编制' && ReportReviewMock.getPolicy().autoReturnOnSevere) counts['自动退回']++;
         else if (rep.state === '签发退回待复核') counts['签发退回']++;
         else counts['待处置']++;
-        var cur = ReportReviewMock.currentRound(rep);
-        return '<button type="button" class="roster-row ' + (rep.id === selectedId ? 'active' : '') + ' mb-1 flex w-full flex-col gap-1 px-2.5 py-1.5 text-left" data-report-id="' + rep.id + '" data-conclusion="' + r.conclusion + '" data-state="' + esc(rep.state) + '">' +
-          '<div class="flex items-center justify-between gap-2">' +
-            '<span class="text-sm font-semibold text-slate-800 mono">' + esc(rep.reportNo) + '</span>' +
-            '<span class="state-chip chip ' + sm.cls + (sm.need ? ' need-action' : '') + '">' + (sm.need ? '<i class="fa fa-bell-o"></i>' : '') + sm.label + '</span>' +
-          '</div>' +
-          '<div class="flex items-center justify-between gap-2 text-xs text-slate-400">' +
-            '<span class="mono">版本 ' + esc(cur.revision) + '</span>' +
-            aiChip(r.conclusion) +
-          '</div>' +
-        '</button>';
-      }).join('');
-      $('roster-list').innerHTML = rows;
+        (needsHuman(rep) ? need : left).push(rep);
+      });
+      function emptyHint(t) { return '<div class="px-2 py-2 text-xs text-slate-400">' + t + '</div>'; }
+      $('roster-list').innerHTML =
+        '<div class="roster-ghead" data-group="need">本节点待审核 <span class="n">· ' + need.length + '</span></div>' +
+        (need.length ? need.map(rosterCard).join('') : emptyHint('暂无待审核报告')) +
+        '<div class="roster-ghead" data-group="left">已离开本节点 <span class="n">· ' + left.length + '</span></div>' +
+        (left.length ? left.map(rosterCard).join('') : emptyHint('暂无已流转 / 已退回报告'));
       $('roster-count').textContent = '· ' + entrust.reports.length + ' 份';
       $('roster-summary').innerHTML =
         '<div class="flex flex-wrap gap-1">' +
-          '<span class="chip bg-amber-50 text-amber-700">待处置 ' + counts['待处置'] + '</span>' +
+          '<span class="chip bg-amber-50 text-amber-700">待审核 ' + need.length + '</span>' +
+          '<span class="chip bg-slate-100 text-slate-600">已离开 ' + left.length + '</span>' +
           '<span class="chip bg-amber-50 text-amber-800">签发退回 ' + counts['签发退回'] + '</span>' +
           '<span class="chip bg-red-50 text-red-700">自动退回 ' + counts['自动退回'] + '</span>' +
           '<span class="chip bg-emerald-50 text-emerald-700">已处置 ' + counts['已处置'] + '</span>' +
@@ -626,10 +654,27 @@
           if (ch) ch.className = 'fa ' + (open ? 'fa-angle-up' : 'fa-angle-down') + ' rule-chevron';
         });
       });
+      function paintLabelBtn(b, sel, ipt) {
+        var lb = labelState(report, sel.getAttribute('data-rule'));
+        if (!lb.submitted) { b.textContent = '提交'; return; }
+        var dirty = (sel.value !== lb.label) || ((ipt.value || '').trim() !== (lb.note || ''));
+        b.textContent = dirty ? '再次提交' : '已保存';
+      }
       document.querySelectorAll('#ai-issues .item-label').forEach(function (sel) {
         sel.addEventListener('change', function () {
           var wrap = sel.closest('.item-detail').querySelector('.label-note-wrap');
           wrap.style.display = (sel.value === '误报' || sel.value === '漏报') ? 'inline-flex' : 'none';
+          var ipt = wrap.querySelector('.label-note');
+          var b = wrap.querySelector('.label-note-save');
+          if (b) paintLabelBtn(b, sel, ipt);
+        });
+      });
+      document.querySelectorAll('#ai-issues .label-note').forEach(function (ipt) {
+        ipt.addEventListener('input', function () {
+          var wrap = ipt.closest('.label-note-wrap');
+          var sel = ipt.closest('.item-detail').querySelector('.item-label');
+          var b = wrap.querySelector('.label-note-save');
+          if (b) paintLabelBtn(b, sel, ipt);
         });
       });
       document.querySelectorAll('#ai-issues .label-note-save').forEach(function (b) {
@@ -689,7 +734,7 @@
         var choice = document.querySelector('#manual-feedback input[name="choice"]:checked');
         var val = choice ? choice.value : '';
         var w = document.querySelector('.return-reason-wrap');
-        if (w) w.classList.toggle('hidden', alwaysReason ? false : (val !== triggerVal));
+        if (w) w.classList.toggle('hidden', val !== triggerVal);
         var t = document.querySelector('.ai-tune-wrap');
         if (t) t.classList.toggle('hidden', !disagreeVal || val !== disagreeVal);
       }
@@ -704,6 +749,13 @@
       var pt = $('policy-toggle'); if (!pt) return;
       pt.setAttribute('data-auto', auto ? '1' : '0');
       pt.innerHTML = '<i class="fa fa-toggle-' + (auto ? 'on' : 'off') + '" style="color:' + (auto ? 'var(--brand)' : '#94a3b8') + '"></i>自动退回：' + (auto ? '开' : '关');
+      var rep = getSelected();
+      var show = false;
+      if (rep && !rep.aiRun) {
+        var r = currentResult(rep);
+        show = r.conclusion === '不通过';
+      }
+      pt.classList.toggle('hidden', !show);
     }
     function bindPolicy() {
       var pt = $('policy-toggle'); if (!pt) return;
@@ -778,7 +830,7 @@
           '<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm"><label class="flex items-start gap-2"><input type="radio" name="choice" value="return" class="mt-1" checked/><span>同意 AI —— 退回报告编制</span></label>' +
           '<label class="flex items-start gap-2"><input type="radio" name="choice" value="pass" class="mt-1"/><span>不同意 AI —— 人工覆盖通过</span></label></div>' + tuneBox() + reasonBox() +
           '<div class="mt-2 flex items-center gap-3"><button type="button" class="btn-exec btn-brand rounded-lg px-4 py-1.5 text-sm">执行</button><span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行</span></div>';
-        bindCommon(report, 'return', true, 'pass'); box.querySelector('.btn-exec').addEventListener('click', function () { execChoice(report, { returnVal: 'return', passFinal: '人工覆盖通过', returnFinal: '退回报告编制', reasonRequiredAlways: true }); });
+        bindCommon(report, 'return', false, 'pass'); box.querySelector('.btn-exec').addEventListener('click', function () { execChoice(report, { returnVal: 'return', passFinal: '人工覆盖通过', returnFinal: '退回报告编制' }); });
         return;
       }
       if (r.conclusion === '需复核') {
@@ -795,14 +847,17 @@
       box.querySelector('.btn-exec').addEventListener('click', function () { execChoice(report, { passFinal: '通过' }); });
     }
 
-    function collectLabels() { return Array.prototype.map.call(document.querySelectorAll('.item-label'), function (sel) { var note = sel.closest('.item-detail') ? (sel.closest('.item-detail').querySelector('.label-note') || {}).value : ''; return { rule_id: sel.getAttribute('data-rule'), label: sel.value, note: note || '' }; }); }
+    function collectSavedLabels(report) {
+      var map = (RT[report.id] && RT[report.id].labels) || {};
+      return Object.keys(map).map(function (id) { return { rule_id: id, label: map[id].label, note: map[id].note || '' }; });
+    }
     function execChoice(report, cfg) {
       var choice = document.querySelector('#manual-feedback input[name="choice"]:checked');
       if (!choice && cfg.passFinal && !cfg.returnVal) choice = { value: 'pass' };
       if (!choice) { alert('请先选择处置方式'); return; }
       var isReturn = choice.value === (cfg.returnVal || 'return'); var reason = '';
-      if (isReturn || cfg.reasonRequiredAlways) { var ta = $('return-reason'); reason = ta ? ta.value.trim() : ''; if (!reason) { alert('请填写原因'); return; } }
-      var r = currentResult(report); var final = isReturn ? (cfg.returnFinal || '退回报告编制') : (cfg.passFinal || '通过'); var labels = collectLabels();
+      if (isReturn) { var ta = $('return-reason'); reason = ta ? ta.value.trim() : ''; if (!reason) { alert('请填写原因'); return; } }
+      var r = currentResult(report); var final = isReturn ? (cfg.returnFinal || '退回报告编制') : (cfg.passFinal || '通过'); var labels = collectSavedLabels(report);
       AiReviewStore.saveFeedback({ report_id: report.id, entrust_code: CODE, ai_conclusion: r.conclusion, final_conclusion: final, agree_ai: isReturn ? true : (choice.value === 'pass' && r.conclusion !== '通过' ? false : true), return_reason: reason, item_labels: labels, at: new Date().toISOString() });
       AiReviewStore.appendCase({ case_id: 'case-rv-' + report.id + '-' + Date.now(), report_id: report.id, entrust_code: CODE, ai_conclusion: r.conclusion, final_conclusion: final, item_labels: labels, created_at: new Date().toISOString() });
       var btn = $('manual-feedback').querySelector('.btn-exec'); if (btn) btn.disabled = true;
@@ -812,15 +867,65 @@
     }
 
     // ---------- 右侧信息 ----------
-    function rawDetailHtml(it) {
-      var d = it.rawDetail || {};
-      var rows = d.rows || [{ k: '实测值', v: '见原始记录' }];
-      return '<div class="mb-1 font-medium text-slate-600">试验项「' + esc(it.name) + '」原始记录</div>' +
-        (d.condition ? '<div class="mb-1 text-slate-400">试验条件：' + esc(d.condition) + '</div>' : '') +
-        '<table class="w-full border-collapse text-xs"><thead><tr class="bg-slate-50 text-slate-500"><th class="border border-slate-200 px-2 py-1 text-left">项目</th><th class="border border-slate-200 px-2 py-1 text-left">结果</th></tr></thead><tbody>' +
-        rows.map(function (row) { return '<tr><td class="border border-slate-200 px-2 py-1">' + esc(row.k) + '</td><td class="border border-slate-200 px-2 py-1">' + esc(row.v) + '</td></tr>'; }).join('') +
-        '</tbody></table>' +
-        '<div class="mt-1 text-slate-400">记录人员 ' + esc(it.recorder || it.tester) + ' · 记录时间 ' + esc(it.recordedAt || it.date) + '</div>';
+    function equipmentCard(eq) {
+      if (!eq) return '';
+      function cell(k, v) { return '<div><div class="eq-k">' + esc(k) + '</div><div class="eq-v">' + esc(v || '—') + '</div></div>'; }
+      return '<div class="eq-card mt-2">' +
+        '<div class="mb-1.5 flex items-center justify-between gap-2"><span class="text-xs font-semibold text-slate-600"><i class="fa fa-cogs mr-1" style="color:var(--brand)"></i>试验设备</span>' +
+          '<span class="chip ' + (eq.calibStatus === '正常' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700') + '">' + esc(eq.calibStatus || '—') + '</span></div>' +
+        '<div class="mb-2 text-sm font-semibold text-slate-800">' + esc(eq.name) + '</div>' +
+        '<div class="eq-grid">' +
+          cell('设备编号', eq.no) + cell('型号', eq.model) + cell('采集方式', eq.collect) + cell('设备精度', eq.precision) +
+          cell('上次校准', eq.lastCalib) + cell('校准有效期', (eq.calibFrom || '') + ' ~ ' + (eq.calibTo || '')) +
+        '</div></div>';
+    }
+    function groupedTable(it, phase) {
+      var groups = it.groups || [];
+      var rows = (phase && phase.rows) || [];
+      var gCls = { nom: 'g-nom', mea: 'g-mea', calc: 'g-calc' };
+      var head1 = '<th rowspan="2" class="bg-slate-50 text-slate-500">试样编号</th>';
+      var head2 = '';
+      groups.forEach(function (g) {
+        head1 += '<th class="' + gCls[g.key] + '" colspan="' + g.cols.length + '">' + esc(g.title) + '</th>';
+        g.cols.forEach(function (c) { head2 += '<th class="' + gCls[g.key] + '">' + esc(c) + '</th>'; });
+      });
+      head1 += '<th rowspan="2" class="bg-slate-50 text-slate-500">结论</th>';
+      var body = rows.map(function (row) {
+        var tds = '<td class="mono">' + esc(row['试样编号'] || '—') + '</td>';
+        groups.forEach(function (g) {
+          g.cols.forEach(function (c) { tds += '<td>' + esc(row[c] == null || row[c] === '' ? '/' : row[c]) + '</td>'; });
+        });
+        tds += '<td class="conc-ok">' + esc(phase.conclusion || '—') + '</td>';
+        return '<tr>' + tds + '</tr>';
+      }).join('');
+      return '<div class="overflow-x-auto"><table class="fg-table"><thead><tr>' + head1 + '</tr><tr>' + head2 + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+    }
+    function phaseBlock(it) {
+      if (!it.phases || !it.phases.length) return '';
+      var tabs = it.phases.map(function (ph, i) {
+        return '<button type="button" class="phase-tab' + (i === 0 ? ' is-on' : '') + '" data-phase="' + i + '">' + esc(ph.name) +
+          '<span class="ph-conc">' + esc(ph.conclusion || '') + '</span></button>';
+      }).join('');
+      var panes = it.phases.map(function (ph, i) {
+        return '<div class="phase-pane mt-2' + (i === 0 ? '' : ' hidden') + '" data-phase="' + i + '">' + groupedTable(it, ph) + '</div>';
+      }).join('');
+      return '<div class="mt-2"><div class="mb-1 text-[11px] text-slate-400">按相别查看（每相独立结论）</div><div class="phase-tabs">' + tabs + '</div>' + panes + '</div>';
+    }
+    function rawRecordCard(it) {
+      return '<div class="raw-card mt-2">' +
+        '<div class="flex items-start justify-between gap-2 px-3 py-2">' +
+          '<div class="min-w-0"><div class="text-[11px] text-slate-400">原始记录单</div>' +
+            (it.raws || []).map(function (s) {
+              return '<a href="#" onclick="openPageOffice(\'' + esc(s.name) + '\');return false;" class="mt-0.5 inline-block truncate underline" style="color:var(--brand)"><i class="fa fa-file-word-o mr-0.5"></i>' + esc(s.name) + '</a>';
+            }).join('') +
+          '</div>' +
+          '<div class="flex-shrink-0 text-right text-[11px] text-slate-500"><div>记录人员 <b class="text-slate-700">' + esc(it.recorder || it.tester) + '</b></div>' +
+            '<div class="mono">记录时间 ' + esc(it.recordedAt || (it.raws && it.raws[0] && it.raws[0].at) || it.date) + '</div></div>' +
+        '</div>' +
+        '<div class="border-t border-slate-100 px-3 py-2">' +
+          '<button type="button" class="raw-toggle text-xs hover:underline" style="color:var(--brand)">展开原始记录详情 <i class="fa fa-angle-down"></i></button>' +
+          '<div class="raw-detail mt-2 hidden">' + phaseBlock(it) + '</div>' +
+        '</div></div>';
     }
     function infoPanel(report, panel) {
       var info = report.info || {};
@@ -856,20 +961,18 @@
               var rc = it.result === '合格' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
               return '<div class="mb-1.5 rounded-lg border border-slate-100 bg-white/70">' +
                 '<button type="button" class="detect-item flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left">' +
-                  '<span class="min-w-0"><span class="text-sm text-slate-700">' + esc(it.name) + '</span><span class="ml-2 text-[11px] text-slate-400 mono">' + esc(it.std) + '</span></span>' +
+                  '<span class="flex min-w-0 flex-wrap items-center gap-1.5"><span class="text-sm text-slate-700">' + esc(it.name) + '</span>' +
+                    '<span class="chip bg-slate-100 text-slate-600">检测员 ' + esc(it.tester) + '</span>' +
+                    '<span class="chip bg-slate-100 text-slate-600 mono">检测时间 ' + esc(it.date) + '</span></span>' +
                   '<span class="flex flex-shrink-0 items-center gap-1"><span class="chip bg-slate-100 text-slate-500">' + esc(it.review) + '</span><span class="chip ' + rc + '">' + esc(it.result) + '</span><i class="fa fa-angle-down text-slate-400"></i></span>' +
                 '</button>' +
                 '<div class="detect-body hidden border-t border-slate-100 px-2.5 py-2 text-xs text-slate-500">' +
-                  '<div class="grid grid-cols-2 gap-x-4 gap-y-0.5"><div class="col-span-2">试验过程 ' + esc(it.process || it.method) + '</div><div class="col-span-2">标准要求 ' + esc(it.requirement || it.std) + '</div><div>检测员 <b class="text-slate-700">' + esc(it.tester) + '</b></div><div>检测日期 <span class="mono">' + esc(it.date) + '</span></div><div>设备 ' + esc(it.device) + '</div><div>校准有效期 <span class="mono">' + esc(it.calib) + '</span></div></div>' +
+                  '<div>试验过程 ' + esc(it.process || it.method) + '</div>' +
+                  '<div class="mt-0.5">标准要求 ' + esc(it.requirement || it.std) + '</div>' +
                   '<div class="mt-2"><span class="text-slate-400">标准文件' + (it.standards.length > 1 ? '（关联 ' + it.standards.length + ' 个）' : '') + '：</span>' + it.standards.map(function (s) { return '<a href="#" onclick="openPageOffice(\'' + esc(s.no) + '\');return false;" class="ml-1 underline" style="color:var(--brand)">' + esc(s.no) + '</a>'; }).join('') + '</div>' +
                   '<div class="mt-1"><span class="text-slate-400">作业指导书：</span>' + it.sops.map(function (s) { return '<a href="#" onclick="openPageOffice(\'' + esc(s.name) + '\');return false;" class="ml-1 underline" style="color:var(--brand)"><i class="fa fa-file-text-o mr-0.5"></i>' + esc(s.no) + '</a>'; }).join('') + '</div>' +
-                  '<div class="mt-1"><span class="text-slate-400">原始记录单：</span>' + it.raws.map(function (s) {
-                    return '<a href="#" onclick="openPageOffice(\'' + esc(s.name) + '\');return false;" class="ml-1 underline" style="color:var(--brand)"><i class="fa fa-file-word-o mr-0.5"></i>' + esc(s.name) + '</a>';
-                  }).join('') +
-                    '<span class="ml-3">记录人员 <b class="text-slate-700">' + esc(it.recorder || it.tester) + '</b></span>' +
-                    '<span class="ml-3">记录时间 <span class="mono">' + esc(it.recordedAt || (it.raws[0] && it.raws[0].at) || it.date) + '</span></span>' +
-                    '<button type="button" class="raw-toggle ml-2 text-xs hover:underline" style="color:var(--brand)">原始记录详情 <i class="fa fa-angle-down"></i></button></div>' +
-                  '<div class="raw-detail mt-2 hidden rounded-lg border border-dashed border-slate-200 bg-white/80 px-2 py-2">' + rawDetailHtml(it) + '</div>' +
+                  equipmentCard(it.equipment) +
+                  rawRecordCard(it) +
                 '</div></div>';
             }).join('') + '</div>';
         }).join('') || '<div class="text-slate-400">无检测信息</div>';
@@ -902,10 +1005,20 @@
       document.querySelectorAll('.raw-toggle').forEach(function (b) {
         b.addEventListener('click', function (ev) {
           ev.stopPropagation();
-          var detail = b.closest('.detect-body').querySelector('.raw-detail');
+          var detail = b.closest('.raw-card').querySelector('.raw-detail');
           var open = detail.classList.toggle('hidden') === false;
           var ic = b.querySelector('i');
           if (ic) ic.className = 'fa ' + (open ? 'fa-angle-up' : 'fa-angle-down');
+          b.childNodes[0].textContent = open ? '收起原始记录详情 ' : '展开原始记录详情 ';
+        });
+      });
+      document.querySelectorAll('.phase-tab').forEach(function (b) {
+        b.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          var card = b.closest('.raw-card') || b.closest('.detect-body');
+          var i = b.getAttribute('data-phase');
+          card.querySelectorAll('.phase-tab').forEach(function (x) { x.classList.toggle('is-on', x === b); });
+          card.querySelectorAll('.phase-pane').forEach(function (p) { p.classList.toggle('hidden', p.getAttribute('data-phase') !== i); });
         });
       });
     }
@@ -940,6 +1053,7 @@
     // ---------- 选择 / 重跑 ----------
     function select(id, animate) {
       selectedId = id; var report = getSelected();
+      armRunningTimeout(report);
       renderRoster(); renderLog(report); renderAi(report); renderFeedback(report); renderInfo(report);
       if (animate) playProgress(report);
     }
@@ -953,22 +1067,32 @@
       });
     }
 
+    function armRunningTimeout(report) {
+      if (!report || report.aiRun !== 'running' || report._timeoutArmed) return;
+      report._timeoutArmed = true;
+      setTimeout(function () {
+        if (!ReportReviewMock.failRunningReport(report, new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-'))) return;
+        if (selectedId === report.id) { renderAi(report); renderFeedback(report); renderLog(report); }
+        renderRoster();
+      }, 2200);
+    }
     function boot() {
       if (!entrust) { document.getElementById('wb-page').innerHTML = '<div class="glass p-6 text-slate-500">未找到委托 ' + esc(CODE) + '</div>'; return; }
       entrust.reports.forEach(function (rep) { RT[rep.id] = { rounds: rep.rounds.slice(), roundIndex: rep.rounds.length - 1, labels: {} }; });
       initOverview(); initInfoTabs(); initRerun(); bindPolicy(); syncPolicyToggle();
-      select(entrust.reports[0].id, true);
+      var firstNeed = entrust.reports.filter(needsHuman)[0] || entrust.reports[0];
+      select(firstNeed.id, true);
 
       if (window.PrototypeAnnotation) {
         PrototypeAnnotation.init({ annotations: [
           { id: 'rv-overview', selector: '[data-annotate="rv-overview"]', position: 'bottom', title: '委托概览（默认折叠）', content: '<strong>需求逻辑：</strong>审核以委托为单位，顶部一小块承载整条委托信息，默认收起。<br><strong>展示规则：</strong>收起时一行摘要；展开后「合同/委托/付款/报告信息」四小 tab。', tag: '报告审核' },
-          { id: 'rv-roster', selector: '[data-annotate="rv-roster"]', position: 'right', title: '报告统观区（以是否需操作为主视觉）', content: '<strong>需求逻辑：</strong>审核人需一眼看出哪些报告需操作。<br><strong>展示规则：</strong>每行上方=业务状态（待处置/签发退回/自动退回/已处置，需操作的带脉冲提醒），下方=版本 + AI 结论；不展示试样编号。', tag: '报告审核' },
+          { id: 'rv-roster', selector: '[data-annotate="rv-roster"]', position: 'right', title: '报告列表分两组', content: '<strong>需求逻辑：</strong>工作台展示该委托下全部报告，但操作与否必须一眼分开。<br><strong>展示规则：</strong>上组=本节点待审核（待处置 / 签发退回 / 审核中 / 异常；自动退回关闭时的严重项也在此）；下组=已离开本节点（已流转签发，以及自动退回开启时已退回编制的报告）。进入工作台默认选中上组第一份。', tag: '报告审核' },
           { id: 'rv-log', selector: '[data-annotate="rv-log"]', position: 'right', title: '操作日志', content: '<strong>需求逻辑：</strong>审核前看清流转留痕，尤其签发退回。<br><strong>展示规则：</strong>彩色时间轴；节点、人员、内容分开展示。01 展示至「等待报告签发」。', tag: '报告审核' },
-          { id: 'rv-ai', selector: '[data-annotate="rv-ai"]', position: 'left', title: 'AI 审核结果', content: '<strong>展示规则：</strong>标题行芯片突出处置状态（01 无需操作 / 03 自动退回无需操作 / 02·04 需人工审核）。综合结论右上角盖章；规则条：分类在左、名称对齐、范围在右、通过结论+箭头在最右，整行可展开。多轮胶囊在差异区上方。<br><strong>交互逻辑：</strong>标注误报/漏报需填备注，提交后仍可再改。', tag: '报告审核' },
-          { id: 'rv-manual', selector: '[data-annotate="rv-manual"]', position: 'top', title: '人工处置（固定底栏）', content: '<strong>需求逻辑：</strong>人工处置是必操作区，固定于底部。<br><strong>展示规则：</strong>处置状态芯片在标题「人工处置」右侧。02 默认同意 AI；04 默认审核通过；不同意 AI 时出现选填调优备注。', tag: '报告审核' },
-          { id: 'rv-policy', selector: '[data-annotate="rv-policy"]', position: 'top', title: '自动退回开关', content: '<strong>需求逻辑：</strong>行业包策略：AI 命中<strong>严重项</strong>时，是否不经人工直接退回报告编制。<br><strong>展示规则：</strong>开=03 类不通过报告自动退回，标题显示「已退回报告编制，无需操作」，无人工按钮。关=出现「同意 AI / 不同意 AI」入口，默认同意 AI（退回），不同意则可人工覆盖并通过选填备注供模型学习。签发退回的 04 不受此开关影响。', tag: '报告审核' },
+          { id: 'rv-ai', selector: '[data-annotate="rv-ai"]', position: 'left', title: 'AI 审核结果', content: '<strong>展示规则：</strong>第一行右上角固定「展开/还原」；处置状态芯片放第二行。规则分类标签左对齐。标注提交与处置执行拆开：误报/漏报备注单独提交，再次编辑后按钮变为「再次提交」。', tag: '报告审核' },
+          { id: 'rv-manual', selector: '[data-annotate="rv-manual"]', position: 'top', title: '人工处置（固定底栏）', content: '<strong>需求逻辑：</strong>人工处置是必操作区，固定于底部。<br><strong>展示规则：</strong>不同意 AI 只出调优备注，退回原因仅在「同意退回」时出现。自动退回开关仅当本报告 AI 结论为「不通过」时显示。', tag: '报告审核' },
+          { id: 'rv-policy', selector: '[data-annotate="rv-policy"]', position: 'top', title: '自动退回开关', content: '<strong>需求逻辑：</strong>系统级配置，以<strong>重跑当时</strong>是否开启为准。关后人工覆盖往下走，后续节点驳回不会自动重跑。<br><strong>展示规则：</strong>仅 AI 不通过的报告显示此开关。', tag: '报告审核' },
           { id: 'rv-file', selector: '[data-annotate="rv-file"]', position: 'left', title: '报告文件', content: '<strong>展示规则：</strong>文件名旁紧跟版本号；右上角「展开」隐藏审核区。PDF 于报告签发后生成，故此处不展示 PDF。', tag: '报告审核' },
-          { id: 'rv-info', selector: '[data-annotate="rv-info"]', position: 'left', title: '报告预览 / 收样 / 检测', content: '<strong>展示规则：</strong>收样按次做成可收起面板。检测项展开后为试验过程、标准要求、检测员；原始记录单旁有记录人员/时间，并可展开原始记录详情。', tag: '报告审核' },
+          { id: 'rv-info', selector: '[data-annotate="rv-info"]', position: 'left', title: '报告预览 / 收样 / 检测', content: '<strong>展示规则：</strong>试验项名称右侧用标签展示检测员与检测时间；设备单独成卡；原始记录单独立一行，记录人员/时间在右上角。原始记录按标称值 / 测量值 / 计算值分区，有相别时用胶囊切换，每相一份结论。', tag: '报告审核' },
         ] });
       }
     }

@@ -70,12 +70,12 @@ const erAlign = await p.evaluate(() => {
 });
 out.push((erAlign ? '✅' : '❌') + ' 委托登记列表列对齐（操作列含编辑删除）');
 
-// 报告审核主查询页：操作列为「审核」，无旧 AI 链接
+// 报告审核主查询页：操作列为「去审核」，无旧 AI 链接
 await p.goto(BASE + '/report-review.html', { waitUntil: 'load' });
 await p.waitForTimeout(300);
 const auditLinks = await p.locator('#tableBody a[href*="report-review-detail.html"]').count();
 const auditBtnText = await p.locator('#tableBody a[href*="report-review-detail.html"]').first().textContent();
-out.push((auditLinks >= 1 && /审核/.test(auditBtnText || '') ? '✅' : '❌') + ' 报告审核列表「审核」入口: ' + auditLinks);
+out.push((auditLinks >= 1 && /去审核/.test(auditBtnText || '') ? '✅' : '❌') + ' 报告审核列表「去审核」入口: ' + auditLinks);
 const ccTrigger = await p.locator('#cc-trigger').count();
 out.push((ccTrigger === 1 ? '✅' : '❌') + ' 报告审核列表列配置入口 #cc-trigger');
 await p.locator('#tableBody a[data-record]').first().click();
@@ -93,13 +93,26 @@ await p.waitForTimeout(1000);
 const ovCollapsed = await p.locator('#ov-body').evaluate((el) => el.classList.contains('hidden'));
 out.push((ovCollapsed ? '✅' : '❌') + ' 委托概览默认折叠');
 const rosterRows = await p.locator('.roster-row').count();
-out.push((rosterRows === 6 ? '✅' : '❌') + ` 报告统观区 6 行: ${rosterRows}`);
+out.push((rosterRows === 5 ? '✅' : '❌') + ` 报告统观区 5 行: ${rosterRows}`);
+const needGroup = await p.locator('.roster-ghead[data-group="need"]').count();
+const leftGroup = await p.locator('.roster-ghead[data-group="left"]').count();
+out.push((needGroup === 1 && leftGroup === 1 ? '✅' : '❌') + ' 左侧报告列表分待审核 / 已离开两组');
 const kaliberFooter = await p.locator('.sum-kaliber').count();
 out.push((kaliberFooter === 0 ? '✅' : '❌') + ' 判定口径仅保留 tips、不在卡片底部重复');
 
-// 默认选中第一份（01）→ AI 结论=通过
+// 默认选中本节点待审核第一份（02）→ AI 结论=需复核
 const firstConclusion = await p.locator('#ai-conclusion').getAttribute('data-conclusion');
-out.push((firstConclusion === '通过' ? '✅' : '❌') + ` 默认选中报告 AI 结论: ${firstConclusion}`);
+const defaultId = await p.locator('.roster-row.active').getAttribute('data-report-id');
+out.push((firstConclusion === '需复核' && defaultId === 'rr-0238-02' ? '✅' : '❌') + ` 默认选中待审核报告: ${defaultId} ${firstConclusion}`);
+const expandOnRow1 = await p.evaluate(() => {
+  const btn = document.getElementById('btn-expand-center');
+  const chip = document.getElementById('ai-round');
+  if (!btn || !chip) return false;
+  return btn.getBoundingClientRect().top + 8 < chip.getBoundingClientRect().top;
+});
+out.push((expandOnRow1 ? '✅' : '❌') + ' 展开在第一行、状态芯片在第二行');
+const policyHiddenOn02 = await p.locator('#policy-toggle').evaluate((el) => el.classList.contains('hidden'));
+out.push((policyHiddenOn02 ? '✅' : '❌') + ' 需复核时不显示自动退回开关');
 
 // 选中 02（需复核·第二轮）→ 结论=需复核 + 差异区可见 + 已解决含 L1-d-1
 await p.locator('.roster-row[data-report-id="rr-0238-02"]').click();
@@ -138,12 +151,20 @@ const c03 = await p.locator('#ai-conclusion').getAttribute('data-conclusion');
 const autoNoBtn = await p.locator('#manual-feedback button.btn-exec').count();
 out.push((c03 === '不通过' && autoNoBtn === 0 ? '✅' : '❌') + ` 03 不通过自动退回(无处置按钮): ${c03} btn=${autoNoBtn}`);
 
-// 切换策略开关 → 不通过出现人工覆盖入口
+// 切换策略开关 → 不通过出现人工覆盖入口；不同意 AI 只出调优备注
 await p.locator('#policy-toggle').click();
 await p.waitForTimeout(200);
 const policyAuto = await p.locator('#policy-toggle').getAttribute('data-auto');
 const overrideBtn = await p.locator('#manual-feedback button.btn-exec').count();
 out.push((policyAuto === '0' && overrideBtn >= 1 ? '✅' : '❌') + ` 策略开关切换出现人工覆盖: auto=${policyAuto} btn=${overrideBtn}`);
+const policyOn03 = await p.locator('#policy-toggle').evaluate((el) => !el.classList.contains('hidden'));
+await p.locator('#manual-feedback input[value="pass"]').check();
+await p.waitForTimeout(100);
+const disagreeBoxes = await p.evaluate(() => ({
+  tune: !document.querySelector('.ai-tune-wrap')?.classList.contains('hidden'),
+  reason: !document.querySelector('.return-reason-wrap')?.classList.contains('hidden'),
+}));
+out.push((policyOn03 && disagreeBoxes.tune && !disagreeBoxes.reason ? '✅' : '❌') + ` 03 不同意仅调优备注: tune=${disagreeBoxes.tune} reason=${disagreeBoxes.reason} policy=${policyOn03}`);
 await p.locator('#policy-toggle').click(); // 复位
 
 // 04 签发退回：提示条可见 + 重跑追加一轮
@@ -160,10 +181,45 @@ await p.waitForTimeout(400);
 const run05 = await p.locator('#ai-round').textContent();
 const prog05 = await p.locator('#ai-progress').isVisible();
 out.push((/AI 正在审核/.test(run05 || '') && prog05 ? '✅' : '❌') + ' 05 AI 审核中加载态');
-await p.locator('.roster-row[data-report-id="rr-0238-06"]').click();
-await p.waitForTimeout(400);
-const err06 = await p.locator('#ai-summary').textContent();
-out.push((/AI 审核异常暂停/.test(err06 || '') && /ENGINE_TIMEOUT/.test(err06 || '') ? '✅' : '❌') + ' 06 AI 审核异常暂停');
+await p.waitForTimeout(2500);
+const err05 = await p.locator('#ai-summary').textContent();
+out.push((/AI 审核异常暂停/.test(err05 || '') && /ENGINE_TIMEOUT/.test(err05 || '') ? '✅' : '❌') + ' 05 超时落入审核异常暂停');
+
+// 检测信息：试验名旁无标准号，设备卡 + 相别胶囊
+await p.locator('.roster-row[data-report-id="rr-0238-02"]').click();
+await p.waitForTimeout(300);
+await p.locator('.info-tab[data-panel="detect"]').click();
+await p.waitForTimeout(200);
+await p.locator('.detect-item').first().click();
+await p.waitForTimeout(150);
+const detectUi = await p.evaluate(() => {
+  const head = document.querySelector('.detect-item');
+  const body = document.querySelector('.detect-body');
+  if (!head || !body) return { ok: false };
+  const headText = head.textContent || '';
+  return {
+    ok: true,
+    noStd: !/GB\/T 3048/.test(headText),
+    testerTag: /检测员/.test(headText),
+    eq: !!body.querySelector('.eq-card'),
+    raw: !!body.querySelector('.raw-card'),
+  };
+});
+await p.locator('.raw-toggle').first().click();
+await p.waitForTimeout(100);
+const phases = await p.locator('.phase-tab').count();
+out.push((detectUi.ok && detectUi.noStd && detectUi.testerTag && detectUi.eq && detectUi.raw && phases >= 3 ? '✅' : '❌') + ` 检测信息分区/相别: phases=${phases} ${JSON.stringify(detectUi)}`);
+
+// 标注再次编辑后按钮变为「再次提交」
+await p.locator('#ai-issues .rule-head').first().click();
+await p.waitForTimeout(80);
+await p.locator('#ai-issues .item-label').first().selectOption('误报');
+await p.locator('#ai-issues .label-note').first().fill('首轮备注');
+await p.locator('#ai-issues .label-note-save').first().click();
+const savedTxt = await p.locator('#ai-issues .label-note-save').first().textContent();
+await p.locator('#ai-issues .label-note').first().fill('改过的备注');
+const againTxt = await p.locator('#ai-issues .label-note-save').first().textContent();
+out.push((savedTxt === '已保存' && againTxt === '再次提交' ? '✅' : '❌') + ` 标注再次提交: ${savedTxt} → ${againTxt}`);
 
 // 报告编制页：AI 不通过自动退回横幅可见
 await p.goto(BASE + '/report-list.html', { waitUntil: 'load' });

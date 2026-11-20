@@ -323,7 +323,7 @@
           '<td class="border border-slate-200 px-3 py-2">' + row.status + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.compiler + '</td>' +
           '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" data-record="' + encodeURIComponent(row.code) + '" onclick="openRvRecord(decodeURIComponent(this.getAttribute(\'data-record\')));return false;"><i class="fa fa-file-text-o mr-1"></i>报告记录</a></td>' +
-          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap"><a data-annotate="rv-audit-btn" href="report-review-detail.html?code=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline"><i class="fa fa-gavel mr-1"></i>审核</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap"><a data-annotate="rv-audit-btn" href="report-review-detail.html?code=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline"><i class="fa fa-gavel mr-1"></i>去审核</a></td>' +
           '</tr>';
       }).join('');
       document.getElementById('totalText').textContent = '共 ' + data.length + ' 条';
@@ -360,9 +360,9 @@
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({ annotations: [
-        { id: 'rv-audit-btn', selector: '[data-annotate="rv-audit-btn"]', position: 'left', title: '审核入口', content: '<strong>需求逻辑：</strong>报告审核是报告编制完成后的下一环节；操作列入口由原「编辑」改为「审核」，并叠加 AI 预审。审核以「委托」为单位进入。<br>' +
-            '<strong>展示规则：</strong>蓝色「审核」链接。<br>' +
-            '<strong>交互逻辑：</strong>跳转 report-review-detail.html?code=委托编号。演示委托 SC2026/0238 含三份报告，分别命中 AI 通过 / 需复核 / 不通过三种结论。', tag: '报告审核' },
+        { id: 'rv-audit-btn', selector: '[data-annotate="rv-audit-btn"]', position: 'left', title: '去审核', content: '<strong>需求逻辑：</strong>抽屉只用来先看各份报告状态，不直接处置。要处理请进工作台。<br>' +
+            '<strong>展示规则：</strong>操作列蓝色「去审核」。<br>' +
+            '<strong>交互逻辑：</strong>跳转 report-review-detail.html?code=委托编号，默认选中本节点待审核的第一份报告。', tag: '报告审核' },
         { id: 'rv-col-record', selector: '[data-annotate="rv-col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>审核前可先看该委托下各份报告的状态与流转留痕。<br>' +
             '<strong>展示规则：</strong>右侧抽屉：上方为报告列表（状态 + AI 结论），下方为所选报告的操作日志时间轴（流转 / 退回 / 当前）。<br>' +
             '<strong>交互逻辑：</strong>点击「报告记录」打开抽屉；点某份报告切换日志；点「时间倒序」切换排序。', tag: '报告审核' },

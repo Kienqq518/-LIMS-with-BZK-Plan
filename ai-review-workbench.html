@@ -6,271 +6,285 @@
   <title>AI报告审核面板 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&display=swap" />
   <link rel="stylesheet" href="css/ui-baseline.css" />
   <script src="js/ai-review-store.js"></script>
   <script src="js/ai-review-engine.js"></script>
+  <script src="js/report-review-mock.js"></script>
+  <style>
+    :root {
+      --brand: #143C9A; --brand-2: #2E5BD6; --brand-3: #5B8DEF;
+      --glass: rgba(255,255,255,.88); --line: rgba(20,60,154,.12); --ink: #1e2a44;
+    }
+    html, body { height: 100%; }
+    body {
+      color: var(--ink);
+      font-family: "Inter", -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      background:
+        radial-gradient(1100px 520px at 12% -8%, rgba(46,91,214,.05), transparent 62%),
+        radial-gradient(900px 500px at 98% 4%, rgba(91,141,239,.04), transparent 58%),
+        linear-gradient(180deg, #fafbfc 0%, #f5f6f8 100%);
+      background-attachment: fixed;
+    }
+    .mono { font-family: "Roboto Mono", ui-monospace, monospace; }
+    .glass { background: var(--glass); backdrop-filter: blur(14px) saturate(1.3);
+      border: 1px solid rgba(255,255,255,.65); box-shadow: 0 8px 30px rgba(20,60,154,.08); border-radius: 16px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 9px; font-size: 11px; line-height: 1.6; }
+    .kpi { min-width: 0; }
+    .kpi .n { font-size: 22px; font-weight: 700; color: var(--brand); line-height: 1.1; }
+    .row-card { border: 1px solid rgba(20,60,154,.08); border-radius: 10px; background: #fff; }
+    .row-card:hover { border-color: rgba(20,60,154,.22); background: #f8fafc; }
+    .row-card.active { box-shadow: inset 3px 0 0 var(--brand); background: linear-gradient(90deg, rgba(20,60,154,.08), transparent); }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: #fff; }
+    .seg button { padding: 4px 12px; font-size: 12px; color: #64748b; }
+    .seg button.is-on { background: var(--brand); color: #fff; font-weight: 600; }
+    .ai-chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 5px; border: 1px solid; background: #fff; padding: 1px 7px 1px 5px; font-size: 11px; font-weight: 600; }
+    .ai-chip .ai-mark { font-size: 9px; font-weight: 800; padding: 0 4px; border-radius: 3px; color: #fff; }
+    .ai-pass { color: #047857; border-color: #6ee7b7; } .ai-pass .ai-mark { background: #059669; }
+    .ai-warn { color: #b45309; border-color: #fcd34d; } .ai-warn .ai-mark { background: #d97706; }
+    .ai-fail { color: #b91c1c; border-color: #fca5a5; } .ai-fail .ai-mark { background: #dc2626; }
+    .ai-run { color: #1d4ed8; border-color: #93c5fd; } .ai-run .ai-mark { background: #2563eb; }
+  </style>
 </head>
-<body class="bg-slate-100 text-slate-700">
+<body class="text-slate-700">
 
-  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
-    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
-    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
-      AI报告审核面板
-      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
-    </span>
-  </div>
-
-  <div class="p-4 space-y-4">
-    <div id="ai-liability" class="rounded border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">
-      AI 只输出预审意见与问题清单，最终签发由授权签字人确认。
+  <div class="flex h-screen flex-col overflow-hidden">
+    <div id="pageTabs" class="flex flex-shrink-0 items-center gap-1 overflow-x-auto border-b border-white/50 bg-white/60 px-4 pt-2 text-sm whitespace-nowrap backdrop-blur" data-close-target="dashboard.html">
+      <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+      <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-white/60 bg-white/80 px-3 py-1.5" style="color:var(--brand)">
+        AI报告审核面板
+        <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+      </span>
     </div>
 
-    <div class="flex flex-wrap items-center gap-3">
-      <button id="btn-run-all" type="button" class="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">
-        <i class="fa fa-play"></i> 全部跑一遍
-      </button>
-      <label class="text-sm text-slate-600">结论筛选
-        <select id="filter-conclusion" class="ml-1 rounded border border-slate-300 px-2 py-1 text-sm">
-          <option value="全部">全部</option>
-          <option value="通过">通过</option>
-          <option value="通过待确认">通过待确认</option>
-          <option value="不通过">不通过</option>
-        </select>
-      </label>
-      <label class="text-sm text-slate-600">严重度
-        <select id="filter-severity" class="ml-1 rounded border border-slate-300 px-2 py-1 text-sm">
-          <option value="全部">全部</option>
-          <option value="严重">严重</option>
-          <option value="一般">一般</option>
-        </select>
-      </label>
-      <button id="tab-board" type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-white">问题看板</button>
-      <button id="tab-stats" type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-white">统计仪表盘</button>
-    </div>
-
-    <div id="panel-main" class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <div class="lg:col-span-2 rounded bg-white p-4 shadow-sm overflow-x-auto">
-        <table id="result-table" class="w-full text-sm">
-          <thead><tr class="border-b text-slate-500">
-            <th class="py-2 text-left">报告编号</th><th>业务类型</th><th>品类</th><th>结论</th><th>命中</th>
-          </tr></thead>
-          <tbody id="result-body"></tbody>
-        </table>
+    <div class="flex flex-1 flex-col gap-3 overflow-hidden p-3" style="min-height:0">
+      <div id="ai-liability" class="flex items-center gap-2 rounded-xl border border-white/60 bg-white/55 px-4 py-2 text-sm backdrop-blur" style="color:var(--brand)">
+        <i class="fa fa-shield"></i>
+        <span>入口 A · 跨委托统览。AI 只产出预审意见与问题清单，最终核准与签发由授权签字人确认；已删除报告的历史 AI 结果在「归档」中只读留档，不能重跑、不能改标注。</span>
       </div>
-      <div id="detail-panel" class="hidden rounded bg-white p-4 shadow-sm">
-        <h3 class="mb-2 font-medium text-slate-800">逐条处置</h3>
-        <div id="issue-list" class="space-y-3 max-h-96 overflow-y-auto"></div>
-        <div class="mt-3 space-y-2">
-          <label class="text-xs text-slate-500">总结论覆盖（可选）</label>
-          <select id="override-conclusion" class="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-sm">
-            <option value="">保持 AI 结论</option>
-            <option value="通过">通过</option>
-            <option value="通过待确认">通过待确认</option>
-            <option value="不通过">不通过</option>
-          </select>
-          <input id="override-reason" class="w-full rounded border border-slate-200 px-2 py-1 text-xs" placeholder="覆盖总结论时必填理由" />
-          <label class="text-xs text-slate-500">案例标注</label>
-          <select id="case-label" class="w-full rounded border border-slate-300 px-2 py-1 text-sm">
-            <option value="正常">正常</option>
-            <option value="误报">误报</option>
-            <option value="漏报">漏报</option>
-          </select>
+
+      <section class="glass px-4 py-3" data-annotate="ap-kpi">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div class="text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-line-chart mr-1"></i>窗口 KPI
+            <span class="ml-2 text-xs font-normal text-slate-400">业务日 <span id="kpi-today" class="mono"></span> · 闭环目标 ≥ 95%</span></div>
+          <div id="range-seg" class="seg" data-annotate="ap-range">
+            <button type="button" data-range="7天" class="is-on">近 7 天</button>
+            <button type="button" data-range="30天">近 30 天</button>
+            <button type="button" data-range="本月">本月</button>
+            <button type="button" data-range="全部">全部</button>
+          </div>
         </div>
-        <button id="btn-settle" type="button" class="mt-3 w-full rounded bg-emerald-600 px-3 py-2 text-sm text-white hover:bg-emerald-700">完成处置并沉淀案例</button>
-      </div>
-    </div>
+        <div id="kpi-row" class="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7"></div>
+      </section>
 
-    <div id="board-panel" class="hidden rounded bg-white p-4 shadow-sm">
-      <h3 class="mb-2 font-medium">问题看板（按规则聚合）</h3>
-      <div id="board-content" class="text-sm text-slate-600"></div>
-    </div>
-    <div id="stats-panel" class="hidden rounded bg-white p-4 shadow-sm">
-      <p class="text-sm">通过率：<span id="stat-pass-rate" class="font-semibold text-slate-800">—</span></p>
-      <div id="stats-breakdown" class="mt-2 text-sm text-slate-600"></div>
+      <div class="flex flex-wrap items-center gap-2 px-1 text-sm" data-annotate="ap-filter">
+        <label class="text-slate-500">行业包
+          <select id="f-pack" class="ml-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm">
+            <option value="全部">全部</option>
+            <option value="电力电缆">电力电缆</option>
+            <option value="未配置行业包">未配置行业包</option>
+          </select>
+        </label>
+        <label class="text-slate-500">结论
+          <select id="f-concl" class="ml-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm">
+            <option value="全部">全部</option>
+            <option value="通过">通过</option>
+            <option value="需复核">需复核</option>
+            <option value="不通过">不通过</option>
+            <option value="审核中">审核中</option>
+            <option value="异常">异常</option>
+          </select>
+        </label>
+        <label class="text-slate-500">任务态
+          <select id="f-task" class="ml-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm">
+            <option value="全部">全部</option>
+            <option value="审核中">审核中</option>
+            <option value="成功">成功</option>
+            <option value="异常暂停">异常暂停</option>
+          </select>
+        </label>
+        <span class="ml-auto text-xs text-slate-400">任务态 / AI 结论 / 人工处置 / 业务节点分开展示。AI 没有「已签发」态。</span>
+      </div>
+
+      <div class="flex min-h-0 flex-1 gap-3">
+        <section class="glass flex min-h-0 min-w-0 flex-1 flex-col" data-annotate="ap-process">
+          <div class="flex items-center justify-between border-b border-white/50 px-4 py-2 text-sm font-semibold" style="color:var(--brand)">
+            <span><i class="fa fa-spinner mr-1"></i>过程中 · 未签发</span>
+            <span id="process-count" class="text-xs font-normal text-slate-400"></span>
+          </div>
+          <div id="process-list" class="flex-1 overflow-y-auto p-2" style="min-height:0"></div>
+        </section>
+        <section class="glass flex min-h-0 min-w-0 flex-1 flex-col" data-annotate="ap-archive">
+          <div class="flex items-center justify-between border-b border-white/50 px-4 py-2 text-sm font-semibold" style="color:var(--brand)">
+            <span><i class="fa fa-archive mr-1"></i>归档 · 已签发 / 已删除</span>
+            <span id="archive-count" class="text-xs font-normal text-slate-400"></span>
+          </div>
+          <div id="archive-list" class="flex-1 overflow-y-auto p-2" style="min-height:0"></div>
+        </section>
+        <aside id="detail-panel" class="glass hidden min-h-0 w-[340px] flex-shrink-0 flex-col overflow-hidden" data-annotate="ap-detail">
+          <div class="flex items-center justify-between border-b border-white/50 px-4 py-2">
+            <div class="text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-file-text-o mr-1"></i>审核快照</div>
+            <button type="button" id="detail-close" class="text-slate-400 hover:text-slate-600"><i class="fa fa-times"></i></button>
+          </div>
+          <div id="detail-body" class="flex-1 overflow-y-auto px-4 py-3 text-sm" style="min-height:0"></div>
+        </aside>
+      </div>
     </div>
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/prototype-annotation.js"></script>
   <script>
-    var wbState = { results: {}, activeReportId: null, dispositions: {} };
+    AiReviewStore.reset();
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+    function $(id) { return document.getElementById(id); }
 
-    function runAll() {
-      AiReviewStore.reset();
-      wbState.results = {};
-      wbState.dispositions = {};
-      var rules = AiReviewStore.getRules();
-      var cats = AiReviewStore.getCategories();
-      var binds = AiReviewStore.getBindings();
-      AiReviewStore.getReports().forEach(function (rep) {
-        var res = AiReviewEngine.run(rep, rules, cats, binds);
-        AiReviewStore.saveResult(res);
-        wbState.results[rep.id] = { report: rep, result: res };
-      });
-      renderTable();
-      renderBoard();
-      renderStats();
+    var state = { range: '7天', pack: '全部', concl: '全部', task: '全部', active: null, ds: null };
+
+    function tone(c) { return c === '通过' ? 'pass' : (c === '需复核' ? 'warn' : (c === '审核中' ? 'run' : 'fail')); }
+    function aiChip(c) { return '<span class="ai-chip ai-' + tone(c) + '"><span class="ai-mark">AI</span>' + esc(c) + '</span>'; }
+    function taskChip(t) {
+      var cls = t === '成功' ? 'bg-emerald-50 text-emerald-700' : (t === '审核中' ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700');
+      return '<span class="chip ' + cls + '">任务 ' + esc(t) + '</span>';
+    }
+    function humanChip(h) {
+      var cls = /同意|覆盖/.test(h) ? 'bg-slate-100 text-slate-600' : (/自动退回/.test(h) ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800');
+      return '<span class="chip ' + cls + '">' + esc(h) + '</span>';
     }
 
-    function catLabel(rep) {
-      if (!rep.category_code) return '未配置品类 <span class="text-amber-600 text-xs">CAT-UNCAT-01</span>';
-      return rep.category_name || rep.category_code;
-    }
-
-    function passesFilter(repId) {
-      var item = wbState.results[repId];
-      if (!item) return false;
-      var concl = item.result.conclusion;
-      var fc = document.getElementById('filter-conclusion').value;
-      var fs = document.getElementById('filter-severity').value;
-      if (fc !== '全部' && concl !== fc) return false;
-      if (fs !== '全部') {
-        var hasSev = item.result.issues.some(function (i) { return i.severity === fs; });
-        if (fs === '严重' || fs === '一般') {
-          if (concl === '通过') return false;
-          if (!hasSev) return false;
-        }
-      }
+    function passFilter(row) {
+      if (state.pack !== '全部' && row.pack !== state.pack) return false;
+      if (state.concl !== '全部' && row.conclusion !== state.concl) return false;
+      if (state.task !== '全部' && row.aiTask !== state.task) return false;
       return true;
     }
+    function rankProcess(row) {
+      if (row.aiTask === '异常暂停' || row.conclusion === '异常') return 0;
+      if (row.human === '待处置' && (row.conclusion === '不通过' || row.conclusion === '需复核')) return 1;
+      if (row.aiTask === '审核中') return 2;
+      if (row.human === '待处置') return 3;
+      return 4;
+    }
 
-    function renderTable() {
-      var tbody = document.getElementById('result-body');
-      tbody.innerHTML = '';
-      Object.keys(wbState.results).forEach(function (rid) {
-        if (!passesFilter(rid)) return;
-        var item = wbState.results[rid];
-        var tr = document.createElement('tr');
-        tr.setAttribute('data-report-id', rid);
-        tr.className = 'border-b cursor-pointer hover:bg-slate-50';
-        var hit = item.result.issues.length;
-        tr.innerHTML =
-          '<td class="py-2">' + (item.report.report_no || rid) + '</td>' +
-          '<td class="text-center">' + item.report.biz_type + '</td>' +
-          '<td class="text-xs">' + catLabel(item.report) + '</td>' +
-          '<td class="text-center concl font-medium">' + item.result.conclusion + '</td>' +
-          '<td class="text-center hit-count" data-count="' + hit + '">' + hit + '</td>';
-        tr.onclick = function () { openDetail(rid); };
-        tbody.appendChild(tr);
+    function kpiCard(label, value, hint) {
+      return '<div class="kpi rounded-xl border border-white/70 bg-white/70 px-3 py-2"><div class="text-[11px] text-slate-400">' + esc(label) + '</div><div class="n">' + esc(value) + '</div><div class="text-[11px] text-slate-400">' + esc(hint || '') + '</div></div>';
+    }
+    function renderKpi(ds) {
+      $('kpi-today').textContent = ds.today;
+      var k = ds.kpi;
+      $('kpi-row').innerHTML =
+        kpiCard('AI 审核报告数', k.reports, '含进行中 / 失败 / 已删除归档') +
+        kpiCard('闭环成功率', k.closeRate, '已出三态 / 已触发') +
+        kpiCard('通过率', k.passRate, 'AI 通过 / 已出结论') +
+        kpiCard('需复核率', k.reviewRate, '三态占比') +
+        kpiCard('不通过率', k.failRate, '三态占比') +
+        kpiCard('人工采纳率', k.adoptRate, '同意 AI / 同意+覆盖') +
+        kpiCard('异常率', k.errorRate, '超时 / 失败任务');
+    }
+
+    function rowHtml(row, kind) {
+      var del = row.deleted ? '<span class="chip bg-slate-800 text-white">已删除</span>' : '';
+      var extra = kind === 'archive'
+        ? '<span class="text-[11px] text-slate-400">' + (row.deleted ? ('删除 ' + esc(row.deletedAt)) : ('签发 ' + esc(row.signedAt || row.archivedAt || '—'))) + '</span>'
+        : '<span class="text-[11px] text-slate-400">' + esc(row.bizNode) + ' · 第 ' + row.round + ' 轮</span>';
+      return '<button type="button" class="row-card mb-1.5 flex w-full flex-col gap-1 px-3 py-2 text-left" data-id="' + esc(row.id) + '" data-kind="' + kind + '">' +
+        '<div class="flex items-center justify-between gap-2"><span class="font-semibold text-slate-800 mono">' + esc(row.reportNo) + ' · ' + esc(row.revision) + '</span>' + del + '</div>' +
+        '<div class="text-xs text-slate-500">' + esc(row.entrust) + ' · ' + esc(row.customer) + '</div>' +
+        '<div class="flex flex-wrap items-center gap-1.5">' + taskChip(row.aiTask) + aiChip(row.conclusion) + humanChip(row.human) + extra + '</div>' +
+      '</button>';
+    }
+
+    function renderLists() {
+      state.ds = ReportReviewMock.getPanelDataset(state.range);
+      renderKpi(state.ds);
+      var process = state.ds.process.filter(passFilter).slice().sort(function (a, b) { return rankProcess(a) - rankProcess(b); });
+      var archive = state.ds.archive.filter(passFilter).slice().sort(function (a, b) {
+        if (a.deleted !== b.deleted) return a.deleted ? -1 : 1;
+        return String(b.archivedAt || b.at).localeCompare(String(a.archivedAt || a.at));
+      });
+      $('process-count').textContent = process.length + ' 份';
+      $('archive-count').textContent = archive.length + ' 份';
+      $('process-list').innerHTML = process.length ? process.map(function (r) { return rowHtml(r, 'process'); }).join('') : '<div class="px-3 py-8 text-center text-sm text-slate-400">窗口内无过程中任务</div>';
+      $('archive-list').innerHTML = archive.length ? archive.map(function (r) { return rowHtml(r, 'archive'); }).join('') : '<div class="px-3 py-8 text-center text-sm text-slate-400">窗口内无归档</div>';
+      document.querySelectorAll('.row-card').forEach(function (b) {
+        if (state.active && b.getAttribute('data-id') === state.active.id) b.classList.add('active');
+        b.addEventListener('click', function () { openDetail(b.getAttribute('data-id'), b.getAttribute('data-kind')); });
       });
     }
 
-    function openDetail(rid) {
-      wbState.activeReportId = rid;
-      wbState.dispositions = {};
-      var item = wbState.results[rid];
-      var panel = document.getElementById('detail-panel');
+    function findRow(id, kind) {
+      var list = kind === 'archive' ? state.ds.archive : state.ds.process;
+      for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+      return null;
+    }
+    function openDetail(id, kind) {
+      var row = findRow(id, kind);
+      if (!row) return;
+      state.active = { id: id, kind: kind };
+      document.querySelectorAll('.row-card').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-id') === id); });
+      var panel = $('detail-panel');
       panel.classList.remove('hidden');
-      document.getElementById('override-conclusion').value = '';
-      document.getElementById('override-reason').value = '';
-      document.getElementById('case-label').value = '正常';
-      var list = document.getElementById('issue-list');
-      list.innerHTML = '';
-      item.result.issues.forEach(function (iss) {
-        var div = document.createElement('div');
-        div.className = 'issue rounded border border-slate-200 p-2';
-        div.setAttribute('data-rule-id', iss.rule_id);
-        div.innerHTML =
-          '<div class="font-medium text-slate-700">' + iss.rule_id + ' · ' + iss.severity + '</div>' +
-          '<p class="text-xs text-slate-500 mt-1">' + iss.message + '</p>' +
-          '<input class="override-reason mt-2 w-full rounded border border-slate-200 px-2 py-1 text-xs" placeholder="覆盖理由（覆盖时必填）" />' +
-          '<div class="mt-2 flex gap-2">' +
-          '<button type="button" data-action="接受" class="rounded bg-slate-100 px-2 py-1 text-xs">接受</button>' +
-          '<button type="button" data-action="覆盖" class="rounded bg-amber-100 px-2 py-1 text-xs">覆盖</button>' +
-          '</div>';
-        div.querySelectorAll('button').forEach(function (btn) {
-          btn.onclick = function (e) {
-            e.stopPropagation();
-            var action = btn.getAttribute('data-action');
-            var reason = div.querySelector('.override-reason').value.trim();
-            if (action === '覆盖' && !reason) { alert('覆盖须填写理由'); return; }
-            wbState.dispositions[iss.rule_id] = { rule_id: iss.rule_id, action: action, reason: reason || '' };
-            div.style.borderColor = '#34d399';
-          };
-        });
-        list.appendChild(div);
-      });
-      if (!item.result.issues.length) {
-        list.innerHTML = '<p class="text-sm text-slate-500">无命中项，可直接完成处置。</p>';
-      }
+      panel.classList.add('flex');
+      var r = null;
+      if (row.snapshot) r = ReportReviewMock.evalSnapshot(row.snapshot, !!row.snapshot.category_code);
+      else if (row.report && !row.report.aiRun) r = ReportReviewMock.evalReport(row.report);
+      var items = (r && r.items) ? r.items.filter(function (it) { return !it.passed; }) : [];
+      var readonly = kind === 'archive';
+      var jump = (!readonly && row.live) ? '<a class="btn-brand inline-flex rounded-lg px-3 py-1.5 text-xs text-white" href="report-review-detail.html?code=' + encodeURIComponent(row.entrust) + '">去审核工作台</a>' : '';
+      var delNote = row.deleted ? '<div class="mb-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600"><b>已删除报告归档。</b>' + esc(row.deletedReason || '退回编制后删除，重新生成新报告。') + ' 当时 AI 结论与问题清单只读保留。</div>' : '';
+      $('detail-body').innerHTML =
+        '<div class="mb-2 flex flex-wrap items-center gap-1.5">' + aiChip(row.conclusion) + taskChip(row.aiTask) + humanChip(row.human) +
+          (row.deleted ? '<span class="chip bg-slate-800 text-white">已删除</span>' : '') + '</div>' +
+        '<div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-500">' +
+          '<div>报告 <b class="text-slate-800 mono">' + esc(row.reportNo) + '</b></div>' +
+          '<div>版本 ' + esc(row.revision) + '</div>' +
+          '<div>委托 ' + esc(row.entrust) + '</div>' +
+          '<div>行业包 ' + esc(row.pack) + '</div>' +
+          '<div>业务节点 ' + esc(row.bizNode) + '</div>' +
+          '<div>轮次 第 ' + row.round + ' 轮</div>' +
+          '<div>触发 ' + esc(row.at) + '</div>' +
+          '<div>' + (row.deleted ? ('删除 ' + esc(row.deletedAt)) : ('签发 ' + esc(row.signedAt || '—'))) + '</div>' +
+        '</div>' +
+        delNote +
+        '<div class="mt-3 text-xs font-medium text-slate-600">命中摘要</div>' +
+        '<div class="mt-1 text-xs text-slate-500">' + esc(row.hits || '未命中') + '</div>' +
+        '<div class="mt-2 space-y-1">' + (items.length ? items.map(function (it) {
+          return '<div class="rounded-lg border border-slate-100 bg-white/70 px-2 py-1.5 text-xs"><b>' + esc(it.name) + '</b> · ' + esc(it.severity) + '<div class="text-slate-500">' + esc(it.message) + '</div></div>';
+        }).join('') : '<div class="text-xs text-slate-400">无失败项</div>') + '</div>' +
+        '<div class="mt-3 text-[11px] text-slate-400">' + (readonly ? '归档只读：不能重跑、不能改标注。学习旁路只在处置当时写一次。' : '过程中任务请进入报告审核工作台处置。') + '</div>' +
+        '<div class="mt-3">' + jump + '</div>';
     }
 
-    function renderBoard() {
-      var agg = {};
-      Object.keys(wbState.results).forEach(function (rid) {
-        wbState.results[rid].result.issues.forEach(function (i) {
-          var k = i.rule_id + ' (' + i.severity + ')';
-          agg[k] = (agg[k] || 0) + 1;
-        });
+    $('range-seg').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-range]'); if (!b) return;
+      state.range = b.getAttribute('data-range');
+      [].forEach.call($('range-seg').querySelectorAll('button'), function (x) { x.classList.toggle('is-on', x === b); });
+      renderLists();
+    });
+    ['f-pack', 'f-concl', 'f-task'].forEach(function (id) {
+      $(id).addEventListener('change', function () {
+        state.pack = $('f-pack').value; state.concl = $('f-concl').value; state.task = $('f-task').value;
+        renderLists();
       });
-      var html = Object.keys(agg).sort().map(function (k) { return k + '：' + agg[k]; }).join('<br>');
-      document.getElementById('board-content').innerHTML = html || '暂无命中';
+    });
+    $('detail-close').addEventListener('click', function () {
+      state.active = null; $('detail-panel').classList.add('hidden'); $('detail-panel').classList.remove('flex');
+      document.querySelectorAll('.row-card').forEach(function (b) { b.classList.remove('active'); });
+    });
+
+    renderLists();
+
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({ annotations: [
+        { id: 'ap-kpi', selector: '[data-annotate="ap-kpi"]', position: 'bottom', title: '窗口 KPI', content: '<strong>需求逻辑：</strong>入口 A 看全系统 AI 任务健康度，不替代审核工作台。<br><strong>展示规则：</strong>默认近 7 天（可切 30 天 / 本月 / 全部）。报告数含进行中、失败与已删除归档。闭环成功率 = 已出三态 / 已触发。', tag: 'AI面板' },
+        { id: 'ap-range', selector: '[data-annotate="ap-range"]', position: 'bottom', title: '时间窗口', content: '业务日锚定演示日 2026-09-08，使近 7 天能罩住 0238 簇。', tag: 'AI面板' },
+        { id: 'ap-filter', selector: '[data-annotate="ap-filter"]', position: 'bottom', title: '同一套筛选', content: '过程列与归档列共用行业包 / 结论 / 任务态筛选。任务态与 AI 结论、人工处置、业务节点拆开。', tag: 'AI面板' },
+        { id: 'ap-process', selector: '[data-annotate="ap-process"]', position: 'right', title: '过程中（未签发）', content: '<strong>展示规则：</strong>编制已提交、签发未完成。排序：异常 → 待处置（不通过/需复核）→ 审核中 → 待确认通过。点行打开快照，可跳转报告审核工作台。', tag: 'AI面板' },
+        { id: 'ap-archive', selector: '[data-annotate="ap-archive"]', position: 'left', title: '归档（含已删除）', content: '<strong>需求逻辑：</strong>退回编制后可能删掉报告再重新生成，旧报告的 AI 审核必须能在归档里找到。<br><strong>展示规则：</strong>已签发 / 已发放 / 已删除。点行只看当时快照，不能重跑、不能改标注。0238-02 V1.0 为已删除归档样例。', tag: 'AI面板' },
+        { id: 'ap-detail', selector: '[data-annotate="ap-detail"]', position: 'left', title: '审核快照', content: '过程行可「去审核工作台」。归档行只读，已删除报告保留当时结论与命中项。', tag: 'AI面板' },
+      ] });
     }
-
-    function renderStats() {
-      var total = 0, pass = 0, counts = { 通过: 0, 通过待确认: 0, 不通过: 0 };
-      Object.keys(wbState.results).forEach(function (rid) {
-        total++;
-        var c = wbState.results[rid].result.conclusion;
-        counts[c] = (counts[c] || 0) + 1;
-        if (c === '通过') pass++;
-      });
-      var pct = total ? Math.round((pass / total) * 100) : 0;
-      document.getElementById('stat-pass-rate').textContent = pct + '%（' + pass + '/' + total + '）';
-      document.getElementById('stats-breakdown').innerHTML =
-        '通过 ' + (counts['通过'] || 0) + ' · 通过待确认 ' + (counts['通过待确认'] || 0) + ' · 不通过 ' + (counts['不通过'] || 0);
-    }
-
-    document.getElementById('btn-run-all').onclick = runAll;
-    document.getElementById('filter-conclusion').onchange = renderTable;
-    document.getElementById('filter-severity').onchange = renderTable;
-    document.getElementById('tab-board').onclick = function () {
-      document.getElementById('board-panel').classList.toggle('hidden');
-      document.getElementById('stats-panel').classList.add('hidden');
-      renderBoard();
-    };
-    document.getElementById('tab-stats').onclick = function () {
-      document.getElementById('stats-panel').classList.toggle('hidden');
-      document.getElementById('board-panel').classList.add('hidden');
-      renderStats();
-    };
-
-    document.getElementById('btn-settle').onclick = function () {
-      if (!wbState.activeReportId) return;
-      var item = wbState.results[wbState.activeReportId];
-      var override = document.getElementById('override-conclusion').value;
-      var overrideReason = document.getElementById('override-reason').value.trim();
-      var isOverride = override && override !== item.result.conclusion;
-      if (isOverride && !overrideReason) { alert('覆盖总结论须填写理由'); return; }
-      var finalConclusion = override || item.result.conclusion;
-      var label = document.getElementById('case-label').value;
-      var dispositions = Object.keys(wbState.dispositions).map(function (k) { return wbState.dispositions[k]; });
-      AiReviewStore.saveFeedback({
-        report_id: wbState.activeReportId,
-        ai_conclusion: item.result.conclusion,
-        final_conclusion: finalConclusion,
-        override_conclusion: isOverride ? override : '',
-        override_reason: isOverride ? overrideReason : '',
-        dispositions: dispositions,
-        at: new Date().toISOString(),
-      });
-      AiReviewStore.appendCase({
-        case_id: 'case-' + Date.now(),
-        report_id: wbState.activeReportId,
-        report_snapshot: item.report,
-        biz_type: item.report.biz_type,
-        ai_conclusion: item.result.conclusion,
-        ai_issues: item.result.issues,
-        dispositions: dispositions,
-        final_conclusion: finalConclusion,
-        override_conclusion: isOverride ? override : '',
-        override_reason: isOverride ? overrideReason : '',
-        label: label,
-        created_at: new Date().toISOString(),
-      });
-      alert('已沉淀案例（原型）');
-    };
-
-    AiReviewStore.reset();
   </script>
   <script src="js/current-user.js?v=3" defer></script>
   <script src="js/user-profile.js?v=8" defer></script>
