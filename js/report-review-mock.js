@@ -302,6 +302,17 @@
           snapshotHash: 'a1b2c3', file: { word: 'SC2026-0238-01检测报告.docx', pdf: 'SC2026-0238-01检测报告.pdf', at: '2026-09-03 09:05' },
           info: cableInfo(),
           rounds: [{ revision: 'V1.0', trigger: '进入报告审核', at: '2026-09-03 09:10', snapshot: cableSnap({ sample_no: 'SC2026-0238' }) }],
+          labels: {
+            'L1-a-1': { label: '正常', note: '', submitted: true },
+            'L1-b-1': { label: '正常', note: '', submitted: true },
+            'L1-d-1': { label: '正常', note: '', submitted: true },
+            'L2-a-1': { label: '正常', note: '', submitted: true },
+            'L2-b-1': { label: '正常', note: '', submitted: true },
+            'L2-c-1': { label: '正常', note: '', submitted: true },
+            'L3-a-1': { label: '正常', note: '', submitted: true },
+            'L3-a-2': { label: '正常', note: '', submitted: true },
+            'PG-CABLE-01': { label: '正常', note: '', submitted: true },
+          },
           disposition: { final: '通过', agreeAi: true, at: '2026-09-03 10:20', by: '李审核', note: '同意 AI（通过），标注均为正常' },
           log: [
             { at: '2026-09-02 17:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-01', tone: 'default' },
@@ -337,6 +348,10 @@
               }),
             },
           ],
+          labels: {
+            'L3-a-2': { label: '正常', note: '引用标准年号仍待编制核，暂标正常。', submitted: true },
+            'L1-d-1': { label: '误报', note: '单位已改为 Ω，上一轮误报已关闭。', submitted: true },
+          },
           disposition: null,
           log: [
             { at: '2026-09-02 17:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-02', tone: 'default' },
@@ -373,6 +388,11 @@
           info: cableInfo(),
           signOff: { returned: true, by: '周签发', at: '2026-09-05 09:15', opinion: '结论页检测结论措辞与检测数据口径不一致，退回报告审核核实后再签发。' },
           lastDisposition: { final: '通过', agreeAi: true, by: '李审核', at: '2026-09-03 10:05', note: '同意 AI（通过），各通过项标注=正常' },
+          labels: {
+            'L1-a-1': { label: '正常', note: '', submitted: true },
+            'L3-a-2': { label: '正常', note: '', submitted: true },
+            'PG-CABLE-01': { label: '正常', note: '', submitted: true },
+          },
           rounds: [{ revision: 'V1.0', trigger: '进入报告审核', at: '2026-09-03 09:45', snapshot: cableSnap({ sample_no: 'SC2026-0241' }) }],
           disposition: null,
           log: [
@@ -787,7 +807,11 @@
           hits: r.failed && r.failed.length ? (r.severe.length ? '严重 ' + r.severe.length + ' 项' : '一般 ' + r.review.length + ' 项') : (running ? '正在执行规则' : '未命中'),
           snapshot: cur.snapshot, trigger: cur.trigger, snapshotHash: rep.snapshotHash,
           file: rep.file, compiler: ent.compiler, sampleNos: rep.sampleNos, log: rep.log || [],
-          labels: {}, queuePos: running ? 0 : null, waitSec: running ? 48 : 0, etaSec: running ? 12 : 0,
+          labels: rep.labels || {},
+          info: rep.info || null,
+          disposition: rep.disposition || null,
+          lastDisposition: rep.lastDisposition || null,
+          queuePos: running ? 0 : null, waitSec: running ? 48 : 0, etaSec: running ? 12 : 0,
         });
       });
     });

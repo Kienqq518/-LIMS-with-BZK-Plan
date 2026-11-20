@@ -89,6 +89,16 @@
     .queue-board { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
     .queue-board .cell { border-radius: 10px; background: #f8fafc; padding: 10px 12px; }
     .queue-board .n { font-size: 20px; font-weight: 700; color: var(--brand); }
+    .snap-grid {
+      display: grid; gap: 12px; align-items: stretch;
+      grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.15fr) minmax(280px, 1fr);
+    }
+    .snap-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+    .info-tab { border-bottom: 2px solid transparent; }
+    .info-tab.active { border-bottom-color: var(--brand); color: var(--brand); font-weight: 600; }
+    .preview-frame { width: 100%; height: 100%; min-height: 360px; border: 0; border-radius: 8px; background: #fff; }
+    .lb-chip { font-size: 10px; }
+    @media (max-width: 1180px) { .snap-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body class="text-slate-700">
@@ -172,10 +182,14 @@
     function labelOf(row, ruleId) {
       return (row.labels && row.labels[ruleId]) || { label: '', note: '' };
     }
+    function labelChip(lb) {
+      if (!lb || !lb.label) return '<span class="chip lb-chip bg-slate-50 text-slate-400">未标注</span>';
+      var cls = lb.label === '误报' ? 'bg-amber-50 text-amber-700' : (lb.label === '漏报' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700');
+      return '<span class="chip lb-chip ' + cls + '">标注 ' + esc(lb.label) + '</span>';
+    }
     function ruleItemHtml(it, snap, row, pending) {
       var cls = pending ? 'r-pend' : (it.passed ? 'r-pass' : (it.severity === '严重' ? 'r-sev' : 'r-warn'));
       var lb = labelOf(row, it.rule_id);
-      var lbHtml = lb.label ? '<span class="chip bg-slate-100 text-slate-600">标注 ' + esc(lb.label) + '</span>' : '';
       var open = !pending && !it.passed;
       return '<div class="rule-item ' + cls + '">' +
         '<div class="rule-head">' +
@@ -183,13 +197,15 @@
           '<span class="rule-name">' + esc(it.name) + '</span>' +
           '<span class="chip bg-slate-50 text-slate-500">' + esc(it.scope || '通用') + '</span>' +
           (it.passed || pending ? '' : (it.severity === '严重' ? '<span class="chip bg-red-50 text-red-600">严重</span>' : '<span class="chip bg-amber-50 text-amber-700">一般</span>')) +
+          labelChip(lb) +
           '<span class="rule-end">' + (pending ? '<span class="chip bg-blue-50 text-blue-700">待执行</span>' : '<span class="chip ' + (it.passed ? 'bg-emerald-50 text-emerald-700' : 'bg-white text-slate-600') + '">' + (it.passed ? '通过' : '命中') + '</span>') +
           '<i class="fa ' + (open ? 'fa-angle-up' : 'fa-angle-down') + ' rule-chevron"></i></span></div>' +
         '<div class="item-detail mt-1.5 ' + (open ? '' : 'hidden') + ' rounded-lg bg-white/70 px-3 py-2 text-xs text-slate-600">' +
           '<div><b>证据：</b>' + esc(pending ? '排队 / 执行中，结论尚未写入。' : evidenceText(it, snap)) + '</div>' +
           (!pending && !it.passed && it.advice ? '<div class="mt-1"><b>建议：</b>' + esc(it.advice) + '</div>' : '') +
-          (lbHtml ? '<div class="mt-1 flex flex-wrap items-center gap-1">' + lbHtml + (lb.note ? '<span class="text-slate-500">' + esc(lb.note) + '</span>' : '') + '</div>' : '') +
-          '<div class="mt-1 text-[11px] text-slate-400">规则 ' + esc(it.rule_id) + ' · 快照只读，不能改标注、不能重跑。</div>' +
+          '<div class="mt-1 flex flex-wrap items-center gap-1"><b>人工标注：</b>' + labelChip(lb) +
+            (lb && lb.note ? '<span class="text-slate-500">' + esc(lb.note) + '</span>' : (lb && lb.label ? '' : '<span class="text-slate-400">当时未填写标注。</span>')) + '</div>' +
+          '<div class="mt-1 text-[11px] text-slate-400">规则 ' + esc(it.rule_id) + ' · 快照只读，不能改标注、不能重跑。标注仅用于模型学习，不对上下游展示。</div>' +
         '</div></div>';
     }
     function levelName(k) { return { L1: '基础形式', L2: '数据逻辑', L3: '合规对齐', L4: '溯源验证' }[k] || k; }
@@ -225,29 +241,50 @@
           '<div class="text-xs text-slate-700">' + esc(ev.text) + '</div></div></li>';
       }).join('') + '</ol>';
     }
-    function snapFields(snap) {
-      if (!snap) return '<div class="text-xs text-slate-400">无冻结快照字段</div>';
-      var sig = snap.signatures || {};
-      var units = (snap.units || []).map(function (u) { return u.param + '→' + u.unit; }).join('、') || '—';
-      var rows = [
-        ['样品编号', snap.sample_no],
-        ['品类', snap.category_name || '未配置'],
-        ['收样日期', snap.receive_date],
-        ['检测日期', snap.test_date],
-        ['报告日期', snap.report_date],
-        ['检测标准', snap.test_standard],
-        ['引用标准', snap.cited_standard],
-        ['校准有效期', (snap.device_calib_from || '—') + ' ~ ' + (snap.device_calib_to || '—')],
-        ['签名·检测', sig.tester || '缺'],
-        ['签名·审核', sig.reviewer || '缺'],
-        ['签名·批准', sig.approver || '缺'],
-        ['计量单位', units],
-        ['导体电阻', snap.conductor_resistance == null ? '—' : (snap.conductor_resistance + ' / 限值 ' + snap.conductor_resistance_limit + ' Ω/km')],
-        ['委托项', (snap.entrust_items || []).join('、') || '—'],
-      ];
-      return '<div class="kv">' + rows.map(function (r) {
-        return '<div class="k">' + esc(r[0]) + '</div><div class="v">' + esc(r[1]) + '</div>';
-      }).join('') + '</div>';
+    function humanResultHtml(row) {
+      var d = row.disposition || row.lastDisposition || (row.report && (row.report.disposition || row.report.lastDisposition));
+      if (row.deleted) {
+        return '<div class="text-sm text-slate-700">当时人工：' + esc(row.human || '—') +
+          (row.deletedReason ? '<div class="mt-1 text-xs text-slate-500">' + esc(row.deletedReason) + '</div>' : '') + '</div>';
+      }
+      if (!d && row.human === '待处置') return '<div class="text-sm text-slate-500">尚未人工处置。</div>';
+      if (!d && /自动退回/.test(row.human || '')) return '<div class="text-sm text-slate-700">按策略自动退回报告编制，无人工覆盖。</div>';
+      if (!d) {
+        return '<div class="kv"><div class="k">人工状态</div><div class="v">' + esc(row.human || '—') + '</div></div>';
+      }
+      return '<div class="kv">' +
+        '<div class="k">处置结论</div><div class="v">' + esc(d.final || row.human || '—') + '</div>' +
+        '<div class="k">是否同意 AI</div><div class="v">' + (d.agreeAi ? '同意' : '覆盖 / 不同意') + '</div>' +
+        '<div class="k">处置人</div><div class="v">' + esc(d.by || '—') + '</div>' +
+        '<div class="k">处置时间</div><div class="v">' + esc(d.at || '—') + '</div>' +
+        '<div class="k">备注</div><div class="v">' + esc(d.note || '—') + '</div></div>';
+    }
+    function infoPanelHtml(row, panel) {
+      var info = row.info || (row.report && row.report.info) || {};
+      if (panel === 'recv') {
+        var times = (info.receive && info.receive.times) || [];
+        if (!times.length) return '<div class="text-slate-400">无收样信息</div>';
+        return times.map(function (t) {
+          return '<div class="mb-3 rounded-xl border border-slate-100 bg-white/70 p-3 text-xs">' +
+            '<div class="font-semibold text-slate-700">第 ' + t.no + ' 次收样 · ' + esc(t.date) + '</div>' +
+            '<div class="mt-1 text-slate-500">收样人 ' + esc(t.receiver) + ' · 送样人 ' + esc(t.sender) + ' · ' + esc(t.sendWay) + '</div>' +
+            '<div class="mt-1 text-slate-500">备注：' + esc(t.note || '—') + '</div></div>';
+        }).join('');
+      }
+      if (panel === 'detect') {
+        var samples = (info.detect && info.detect.samples) || [];
+        if (!samples.length) return '<div class="text-slate-400">无检测信息</div>';
+        return samples.map(function (sp) {
+          return '<div class="mb-3 rounded-xl border border-slate-100 bg-white/70 p-3">' +
+            '<div class="mono text-sm font-semibold text-slate-700">' + esc(sp.sampleNo) + '</div>' +
+            '<div class="mt-1 text-xs text-slate-500">' + esc(sp.productMark) + ' · ' + esc(sp.factory) + '</div>' +
+            (sp.items || []).map(function (it) {
+              return '<div class="mt-2 flex items-center justify-between text-xs"><span>' + esc(it.name) + '</span><span class="chip ' + (it.result === '合格' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700') + '">' + esc(it.result) + '</span></div>';
+            }).join('') + '</div>';
+        }).join('');
+      }
+      var code = info.traceCode || 'R3a2K';
+      return '<div class="flex h-full min-h-0 flex-col"><iframe src="transparent-demo/report-preview.html?code=' + encodeURIComponent(code) + '&embed=1" class="preview-frame" title="报告预览"></iframe></div>';
     }
     function diffHtml(diff) {
       if (!diff) return '';
@@ -347,20 +384,8 @@
             '<a class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600" href="' + backHref + '">' + esc(backLabel) + '</a>' + jump +
           '</div></div>' +
         (banner || '') +
-        '<div class="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)]">' +
-          '<div class="flex flex-col gap-3">' +
-            '<section class="glass relative px-4 py-3" id="ai-summary" data-annotate="sn-ai">' + stamp +
-              '<div class="mb-2 text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-lightbulb-o mr-1"></i>AI 综合结论</div>' +
-              queueBoard + progress + roundTabs +
-              '<p class="sum-body">' + esc(narrative) + '</p>' +
-              (diff ? '<div class="mt-3">' + diffHtml(diff) + '</div>' : '') +
-            '</section>' +
-            '<section class="glass" data-annotate="sn-rules">' +
-              '<div class="border-b border-white/50 px-4 py-2 text-sm font-semibold" style="color:var(--brand)">规则执行清单</div>' +
-              '<div id="rule-list" class="space-y-2 p-3">' + issues + '</div>' +
-            '</section>' +
-          '</div>' +
-          '<div class="flex flex-col gap-3">' +
+        '<div class="snap-grid">' +
+          '<div class="snap-col">' +
             '<section class="glass px-4 py-3" data-annotate="sn-meta">' +
               '<div class="mb-2 text-sm font-semibold" style="color:var(--brand)">身份与任务</div>' +
               '<div class="kv">' +
@@ -377,14 +402,44 @@
                 '<div class="k">归档时间</div><div class="v">' + esc(when) + '</div>' +
               '</div>' +
             '</section>' +
-            '<section class="glass px-4 py-3">' +
-              '<div class="mb-2 text-sm font-semibold" style="color:var(--brand)">冻结快照字段</div>' +
-              snapFields(snap) +
-            '</section>' +
-            '<section class="glass px-4 py-3" data-annotate="sn-log">' +
+            '<section class="glass flex-1 px-4 py-3" data-annotate="sn-log">' +
               '<div class="mb-2 text-sm font-semibold" style="color:var(--brand)">操作日志</div>' +
               logHtml(row.log || (row.report && row.report.log) || []) +
-              '<div class="mt-3 text-[11px] text-slate-400">' + (readonly ? '归档只读：不能重跑、不能改标注。' : (pending ? '排队 / 执行中的快照只读，结论写入后可在过程名单中继续处置。' : '过程中任务请进入报告审核工作台处置。')) + '</div>' +
+              '<div class="mt-3 text-[11px] text-slate-400">' + (readonly ? '归档只读：不能重跑、不能改标注。' : (pending ? '排队 / 执行中的快照只读。' : '过程中任务请进入报告审核工作台处置。')) + '</div>' +
+            '</section>' +
+          '</div>' +
+          '<div class="snap-col">' +
+            '<section class="glass relative px-4 py-3" id="ai-summary" data-annotate="sn-ai">' + stamp +
+              '<div class="mb-2 text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-lightbulb-o mr-1"></i>AI 综合结论</div>' +
+              queueBoard + progress + roundTabs +
+              '<p class="sum-body">' + esc(narrative) + '</p>' +
+              (diff ? '<div class="mt-3">' + diffHtml(diff) + '</div>' : '') +
+            '</section>' +
+            '<section class="glass" data-annotate="sn-rules">' +
+              '<div class="border-b border-white/50 px-4 py-2 text-sm font-semibold" style="color:var(--brand)">规则执行清单</div>' +
+              '<div id="rule-list" class="space-y-2 p-3">' + issues + '</div>' +
+            '</section>' +
+            '<section class="glass px-4 py-3" data-annotate="sn-human">' +
+              '<div class="mb-2 text-sm font-semibold" style="color:var(--brand)">当时人工处置结果</div>' +
+              humanResultHtml(row) +
+            '</section>' +
+          '</div>' +
+          '<div class="snap-col" data-annotate="sn-preview">' +
+            '<section class="glass px-4 py-3">' +
+              '<div class="flex items-start justify-between gap-2">' +
+                '<div class="min-w-0"><div class="text-xs text-slate-400">报告文件</div>' +
+                  '<div class="mt-0.5 truncate text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-file-word-o mr-1"></i>' + esc(file.word || row.reportNo) + '</div></div>' +
+                '<span class="chip brand-grad bg-blue-700 text-white mono flex-shrink-0">' + esc(cur.revision) + '</span></div>' +
+              '<div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">' +
+                '<span>编制人 <b class="text-slate-700">' + esc(row.compiler || 'admin') + '</b></span>' +
+                '<span>编制时间 <span class="mono">' + esc((file && file.at) || cur.at || '—') + '</span></span></div>' +
+            '</section>' +
+            '<section class="glass flex min-h-0 flex-1 flex-col">' +
+              '<div class="flex items-center gap-1 border-b border-white/50 px-2 pt-2 text-xs whitespace-nowrap">' +
+                '<button type="button" class="info-tab active px-2.5 py-1.5 text-slate-500" data-panel="preview">报告预览</button>' +
+                '<button type="button" class="info-tab px-2.5 py-1.5 text-slate-500" data-panel="recv">收样信息</button>' +
+                '<button type="button" class="info-tab px-2.5 py-1.5 text-slate-500" data-panel="detect">检测信息</button></div>' +
+              '<div id="info-body" class="flex-1 overflow-auto p-3 text-sm" style="min-height:0">' + infoPanelHtml(row, 'preview') + '</div>' +
             '</section>' +
           '</div>' +
         '</div></div>';
@@ -396,14 +451,21 @@
           render();
         });
       });
+      document.querySelectorAll('.info-tab').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.info-tab').forEach(function (x) { x.classList.toggle('active', x === btn); });
+          $('info-body').innerHTML = infoPanelHtml(row, btn.getAttribute('data-panel'));
+        });
+      });
       if (!paInited && window.PrototypeAnnotation && PrototypeAnnotation.init) {
         paInited = true;
         PrototypeAnnotation.init({ annotations: [
-          { id: 'sn-head', selector: '[data-annotate="sn-head"]', position: 'bottom', title: '独立快照页', content: '从面板待处理点进。可返回审核面板；过程中报告可点「人工处置」进入报告审核。归档 / 已删除只读。', tag: '快照' },
-          { id: 'sn-ai', selector: '[data-annotate="sn-ai"]', position: 'bottom', title: '综合结论', content: '已出结论显示印章与叙述；排队显示排队位；审核中显示 L1–L3 进度。多轮可切版本看差异。', tag: '快照' },
-          { id: 'sn-rules', selector: '[data-annotate="sn-rules"]', position: 'right', title: '全量规则', content: '按 L1/L2/L3 分组展示全部规则，不只失败项。点开看证据、建议与当时标注。', tag: '快照' },
-          { id: 'sn-meta', selector: '[data-annotate="sn-meta"]', position: 'left', title: '身份与冻结字段', content: '任务三层状态（任务态 / AI 结论 / 人工）与提交瞬间的规范快照字段。', tag: '快照' },
-          { id: 'sn-log', selector: '[data-annotate="sn-log"]', position: 'left', title: '操作日志', content: '从生成、编制提交、AI 结论到签发/删除的时间轴。', tag: '快照' },
+          { id: 'sn-head', selector: '[data-annotate="sn-head"]', position: 'bottom', title: '独立快照页', content: '从已归档名单点进。可返回归档名单；过程中报告若从其他入口进入，可点「人工处置」进报告审核。', tag: '快照' },
+          { id: 'sn-ai', selector: '[data-annotate="sn-ai"]', position: 'bottom', title: '综合结论', content: '中间栏：已出结论显示印章与叙述；规则执行清单含当时人工标注；下方为当时人工处置结果。', tag: '快照' },
+          { id: 'sn-rules', selector: '[data-annotate="sn-rules"]', position: 'right', title: '全量规则', content: '按 L1/L2/L3 分组。每条规则保留当时人工标注（正常 / 误报 / 漏报）。', tag: '快照' },
+          { id: 'sn-meta', selector: '[data-annotate="sn-meta"]', position: 'right', title: '身份与任务', content: '左侧展示委托 / 样品 / 任务三层状态。', tag: '快照' },
+          { id: 'sn-log', selector: '[data-annotate="sn-log"]', position: 'right', title: '操作日志', content: '从生成、编制提交、AI 结论到签发/删除的时间轴。', tag: '快照' },
+          { id: 'sn-preview', selector: '[data-annotate="sn-preview"]', position: 'left', title: '报告预览', content: '对齐报告审核工作台右侧：报告文件 + 预览 / 收样信息 / 检测信息。', tag: '快照' },
         ] });
       }
     }

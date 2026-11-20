@@ -18,6 +18,8 @@ out.push((liability === 0 ? '✅' : '❌') + ' 不展示入口说明条');
 
 const kpiN = await p.locator('#kpi-row .kpi').count();
 out.push((kpiN === 3 ? '✅' : '❌') + ' 第一层三张 KPI: ' + kpiN);
+const kpiH = await p.locator('#kpi-row .kpi').first().evaluate((el) => el.clientHeight);
+out.push((kpiH >= 130 ? '✅' : '❌') + ' 第一层 KPI 卡高度: ' + kpiH);
 const doneCard = await p.locator('#chart-done [data-kpi="done"]').count();
 const adoptCard = await p.locator('#chart-adopt [data-kpi="adopt"]').count();
 out.push((doneCard === 1 && adoptCard === 1 ? '✅' : '❌') + ' 已完成报告卡 + 人工采纳率卡');
@@ -52,16 +54,12 @@ out.push((/电力电缆/.test(archCats || '') && /绝缘手套|安全带|螺栓|
 
 await p.screenshot({ path: SHOT_DIR + '/panel-five-blocks.png', fullPage: true });
 
-const pendingHref = await p.locator('#pending-marquee a').first().getAttribute('href');
+const pendingHref = await p.locator('#pending-marquee a.go-handle').first().getAttribute('href');
+out.push((/report-review-detail\.html/.test(pendingHref || '') ? '✅' : '❌') + ' 待处理「去处置」指向报告审核工作台');
 await p.goto(BASE + '/' + pendingHref, { waitUntil: 'load' });
 await p.waitForTimeout(400);
-out.push((/ai-review-snapshot\.html/.test(p.url()) ? '✅' : '❌') + ' 点待处理进入独立快照页');
-const handle = await p.locator('#page a', { hasText: '人工处置' }).count();
-const back = await p.locator('#page a', { hasText: '返回审核面板' }).count();
-out.push((handle >= 1 && back >= 1 ? '✅' : '❌') + ' 快照含返回面板与人工处置');
-const jump = await p.locator('#page a[href*="report-review-detail.html"]').count();
-out.push((jump >= 1 ? '✅' : '❌') + ' 人工处置进入报告审核');
-await p.screenshot({ path: SHOT_DIR + '/snapshot-process.png', fullPage: true });
+out.push((/report-review-detail\.html/.test(p.url()) ? '✅' : '❌') + ' 点去处置进入报告审核工作台');
+await p.screenshot({ path: SHOT_DIR + '/pending-to-detail.png', fullPage: true });
 
 await p.goto(BASE + '/ai-review-workbench.html', { waitUntil: 'load' });
 await p.waitForTimeout(250);
@@ -75,6 +73,8 @@ await p.waitForTimeout(200);
 await p.locator('#archive-jump').click();
 await p.waitForTimeout(300);
 out.push((/ai-review-archive\.html/.test(p.url()) ? '✅' : '❌') + ' 归档箭头进入归档名单');
+const yearDefault = await p.locator('#year-filter').inputValue();
+out.push((yearDefault === '2026' ? '✅' : '❌') + ' 归档时间范围默认当年: ' + yearDefault);
 const allArchive = await p.locator('#archive-body tr.row-card').count();
 out.push((allArchive >= 3 ? '✅' : '❌') + ' 归档名单行: ' + allArchive);
 const deleted = await p.locator('#archive-body tr.row-card', { hasText: '已删除' }).count();
@@ -88,8 +88,10 @@ const snapText = await p.locator('#page').textContent();
 out.push((/已删除报告归档/.test(snapText || '') && /不能重跑/.test(snapText || '') ? '✅' : '❌') + ' 已删除归档只读快照');
 const noJump = await p.locator('#page a[href*="report-review-detail.html"]').count();
 out.push((noJump === 0 ? '✅' : '❌') + ' 归档行不提供人工处置');
-const rich = /规则执行清单/.test(snapText || '') && /冻结快照字段/.test(snapText || '') && /操作日志/.test(snapText || '') && /AI 综合结论/.test(snapText || '');
-out.push((rich ? '✅' : '❌') + ' 快照含结论/规则/字段/日志');
+const rich = /规则执行清单/.test(snapText || '') && /操作日志/.test(snapText || '') && /AI 综合结论/.test(snapText || '') && /当时人工处置结果/.test(snapText || '') && /报告预览/.test(snapText || '');
+out.push((rich ? '✅' : '❌') + ' 快照含结论/规则/日志/处置/预览');
+out.push((!/冻结快照字段/.test(snapText || '') ? '✅' : '❌') + ' 快照已去掉冻结快照字段');
+out.push((/人工标注/.test(snapText || '') || /标注 /.test(snapText || '') ? '✅' : '❌') + ' 规则清单含人工标注');
 const backArch = await p.locator('#page a', { hasText: '返回归档名单' }).count();
 out.push((backArch >= 1 ? '✅' : '❌') + ' 从归档进入的快照可返回名单');
 await p.screenshot({ path: SHOT_DIR + '/snapshot-deleted.png', fullPage: true });
@@ -117,6 +119,12 @@ await p.selectOption('#grain-select', '季');
 await p.waitForTimeout(80);
 const qText = await p.locator('#chart-volume').textContent();
 out.push((/Q1/.test(qText || '') && /Q3/.test(qText || '') ? '✅' : '❌') + ' 季度模式展示当年已过季度');
+const hit = p.locator('#chart-volume .vol-hit').first();
+await hit.hover();
+await p.waitForTimeout(80);
+const tip = await p.locator('#vol-tip').textContent();
+const tipHidden = await p.locator('#vol-tip').evaluate((el) => el.classList.contains('hidden'));
+out.push((!tipHidden && /审核任务总数/.test(tip || '') && /完成率/.test(tip || '') ? '✅' : '❌') + ' 走势图 hover 显示具体值');
 
 await p.goto(BASE + '/ai-review-workbench.html', { waitUntil: 'load' });
 await p.waitForTimeout(2500);

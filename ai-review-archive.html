@@ -54,10 +54,20 @@
           <div class="text-sm font-semibold" style="color:var(--brand)">已归档报告</div>
           <div class="text-xs text-slate-400">已签发 / 已发放 / 已删除。点行查看当时 AI 审核快照。</div>
         </div>
-        <div id="kind-seg" class="seg">
-          <button type="button" data-kind="全部" class="is-on">全部</button>
-          <button type="button" data-kind="已签发">已签发</button>
-          <button type="button" data-kind="已删除">已删除</button>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="flex items-center gap-1.5 text-xs text-slate-500">时间范围
+            <select id="year-filter" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm text-slate-700">
+              <option value="2026" selected>2026 年</option>
+              <option value="2025">2025 年</option>
+              <option value="2024">2024 年</option>
+              <option value="全部">全部年份</option>
+            </select>
+          </label>
+          <div id="kind-seg" class="seg">
+            <button type="button" data-kind="全部" class="is-on">全部</button>
+            <button type="button" data-kind="已签发">已签发</button>
+            <button type="button" data-kind="已删除">已删除</button>
+          </div>
         </div>
       </section>
       <section class="glass flex-1 overflow-auto">
@@ -76,8 +86,14 @@
     function tone(c) { return c === '通过' ? 'pass' : (c === '需复核' ? 'warn' : 'fail'); }
     function aiChip(c) { return '<span class="ai-chip ai-' + tone(c) + '"><span class="ai-mark">AI</span>' + esc(c) + '</span>'; }
     var kind = '全部';
+    var year = String(new Date(ReportReviewMock.PANEL_TODAY + 'T00:00:00').getFullYear());
+    function rowYear(r) {
+      var day = String(r.archivedAt || r.signedAt || r.at || '').slice(0, 4);
+      return day;
+    }
     function render() {
       var rows = ReportReviewMock.getPanelDataset('全部').archive || [];
+      if (year !== '全部') rows = rows.filter(function (r) { return rowYear(r) === year; });
       if (kind === '已删除') rows = rows.filter(function (r) { return r.deleted; });
       if (kind === '已签发') rows = rows.filter(function (r) { return !r.deleted; });
       var body = document.getElementById('archive-body');
@@ -100,6 +116,11 @@
       [].forEach.call(document.querySelectorAll('#kind-seg button'), function (x) { x.classList.toggle('is-on', x === b); });
       render();
     });
+    document.getElementById('year-filter').addEventListener('change', function () {
+      year = document.getElementById('year-filter').value;
+      render();
+    });
+    document.getElementById('year-filter').value = year;
     render();
   </script>
   <script src="js/current-user.js?v=3" defer></script>
