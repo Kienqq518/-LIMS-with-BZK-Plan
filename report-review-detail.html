@@ -105,8 +105,11 @@
       box-shadow: 0 10px 24px rgba(15,23,42,.12); white-space: normal;
     }
     .sum-tip:hover .sum-tip-pop, .sum-tip:focus .sum-tip-pop, .sum-tip:focus-within .sum-tip-pop { display: block; }
-    .roster-ghead { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: .04em; padding: 8px 6px 4px; }
-    .roster-ghead .n { font-weight: 500; color: #94a3b8; }
+    .roster-tabs { display: inline-flex; margin-left: auto; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    .roster-tab { padding: 3px 10px; font-size: 11px; color: #64748b; }
+    .roster-tab.is-on { background: var(--brand); color: #fff; font-weight: 600; }
+    .roster-filter { cursor: pointer; border: 1px solid transparent; }
+    .roster-filter.is-on { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); font-weight: 600; }
     .eq-card { border: 1px solid rgba(20,60,154,.12); border-radius: 10px; background: linear-gradient(180deg,#fff,#f8fafc); padding: 10px 12px; }
     .eq-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px 12px; }
     .eq-grid .eq-k { color: #94a3b8; font-size: 11px; }
@@ -121,7 +124,7 @@
     .fg-table th.g-nom { background: #eff6ff; color: #1d4ed8; }
     .fg-table th.g-mea { background: #f0fdf4; color: #047857; }
     .fg-table th.g-calc { background: #fff7ed; color: #c2410c; }
-    .fg-table td.conc-ok { color: #047857; font-weight: 600; }
+    .fg-table td.conc-ok { color: #047857; font-weight: 600; vertical-align: middle; text-align: center; }
     #info-body { display: flex; flex-direction: column; }
     .round-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
     .round-tab { flex-shrink: 0; border: 1px solid var(--line); background: #fff; color: #64748b; border-radius: 999px; padding: 3px 10px; font-size: 11px; }
@@ -224,7 +227,13 @@
       <!-- 左：统观 + 操作日志 -->
       <aside class="wb-left">
         <section class="glass flex flex-col" style="min-height:0;flex:0 0 auto;max-height:58%">
-          <div class="flex items-center gap-2 border-b border-white/50 px-3 py-1.5 text-xs font-medium text-slate-500"><i class="fa fa-files-o" style="color:var(--brand)"></i>报告列表 <span id="roster-count" class="font-normal text-slate-400"></span></div>
+          <div class="flex items-center gap-2 border-b border-white/50 px-3 py-1.5 text-xs font-medium text-slate-500">
+            <i class="fa fa-files-o" style="color:var(--brand)"></i>报告列表
+            <div id="roster-tabs" class="roster-tabs">
+              <button type="button" class="roster-tab is-on" data-tab="need">待审核 <span id="tab-need-n" class="font-normal opacity-80"></span></button>
+              <button type="button" class="roster-tab" data-tab="left">其他流程 <span id="tab-left-n" class="font-normal opacity-80"></span></button>
+            </div>
+          </div>
           <div id="roster-summary" class="px-3 pt-1.5 pb-1 text-xs text-slate-500"></div>
           <div id="roster-list" class="overflow-y-auto px-2 pb-2" style="min-height:0" data-annotate="rv-roster"></div>
         </section>
@@ -328,6 +337,8 @@
     var selectedId = null;
     var report0 = null;
     var splitMode = 'split';
+    var rosterTab = 'need';
+    var rosterFilter = {};
 
     // ---------- 委托概览 ----------
     function row(label, val) { return '<div><span class="text-slate-400">' + label + '：</span><span class="text-slate-700">' + esc(val) + '</span></div>'; }
@@ -389,10 +400,18 @@
     }
 
     function needsHuman(rep) { return ReportReviewMock.needsHuman(rep); }
+    function reportBucket(rep) {
+      if (rep.aiRun === 'running') return '审核中';
+      if (rep.aiRun === 'error') return '异常';
+      if (rep.disposition) return '已处置';
+      if (rep.state === '自动退回编制' && ReportReviewMock.getPolicy().autoReturnOnSevere) return '自动退回';
+      if (rep.state === '签发退回待复核') return '签发退回';
+      return '待处置';
+    }
     function rosterCard(rep) {
       var r = currentResult(rep); var sm = stateMeta(rep);
       var cur = ReportReviewMock.currentRound(rep);
-      return '<button type="button" class="roster-row ' + (rep.id === selectedId ? 'active' : '') + ' mb-1 flex w-full flex-col gap-1 px-2.5 py-1.5 text-left" data-report-id="' + rep.id + '" data-conclusion="' + r.conclusion + '" data-state="' + esc(rep.state) + '" data-need="' + (needsHuman(rep) ? '1' : '0') + '">' +
+      return '<button type="button" class="roster-row ' + (rep.id === selectedId ? 'active' : '') + ' mb-1 flex w-full flex-col gap-1 px-2.5 py-1.5 text-left" data-report-id="' + rep.id + '" data-conclusion="' + r.conclusion + '" data-state="' + esc(rep.state) + '" data-need="' + (needsHuman(rep) ? '1' : '0') + '" data-bucket="' + reportBucket(rep) + '">' +
         '<div class="flex items-center justify-between gap-2">' +
           '<span class="text-sm font-semibold text-slate-800 mono">' + esc(rep.reportNo) + '</span>' +
           '<span class="state-chip chip ' + sm.cls + (sm.need ? ' need-action' : '') + '">' + (sm.need ? '<i class="fa fa-bell-o"></i>' : '') + sm.label + '</span>' +
@@ -408,32 +427,57 @@
       var counts = { 待处置: 0, 签发退回: 0, 自动退回: 0, 已处置: 0, 审核中: 0, 异常: 0 };
       var need = []; var left = [];
       entrust.reports.forEach(function (rep) {
-        if (rep.aiRun === 'running') counts['审核中']++;
-        else if (rep.aiRun === 'error') counts['异常']++;
-        else if (rep.disposition) counts['已处置']++;
-        else if (rep.state === '自动退回编制' && ReportReviewMock.getPolicy().autoReturnOnSevere) counts['自动退回']++;
-        else if (rep.state === '签发退回待复核') counts['签发退回']++;
-        else counts['待处置']++;
+        counts[reportBucket(rep)]++;
         (needsHuman(rep) ? need : left).push(rep);
       });
-      function emptyHint(t) { return '<div class="px-2 py-2 text-xs text-slate-400">' + t + '</div>'; }
-      $('roster-list').innerHTML =
-        '<div class="roster-ghead" data-group="need">本节点待审核 <span class="n">· ' + need.length + '</span></div>' +
-        (need.length ? need.map(rosterCard).join('') : emptyHint('暂无待审核报告')) +
-        '<div class="roster-ghead" data-group="left">已离开本节点 <span class="n">· ' + left.length + '</span></div>' +
-        (left.length ? left.map(rosterCard).join('') : emptyHint('暂无已流转 / 已退回报告'));
-      $('roster-count').textContent = '· ' + entrust.reports.length + ' 份';
-      $('roster-summary').innerHTML =
-        '<div class="flex flex-wrap gap-1">' +
-          '<span class="chip bg-amber-50 text-amber-700">待审核 ' + need.length + '</span>' +
-          '<span class="chip bg-slate-100 text-slate-600">已离开 ' + left.length + '</span>' +
-          '<span class="chip bg-amber-50 text-amber-800">签发退回 ' + counts['签发退回'] + '</span>' +
-          '<span class="chip bg-red-50 text-red-700">自动退回 ' + counts['自动退回'] + '</span>' +
-          '<span class="chip bg-emerald-50 text-emerald-700">已处置 ' + counts['已处置'] + '</span>' +
-          '<span class="chip bg-blue-50 text-blue-700">审核中 ' + counts['审核中'] + '</span>' +
-          '<span class="chip bg-red-50 text-red-700">异常 ' + counts['异常'] + '</span>' +
-        '</div>';
+      var pool = rosterTab === 'left' ? left : need;
+      var keys = Object.keys(rosterFilter);
+      var shown = keys.length ? pool.filter(function (rep) { return rosterFilter[reportBucket(rep)]; }) : pool;
+      function emptyHint(t) { return '<div class="px-2 py-3 text-center text-xs text-slate-400">' + t + '</div>'; }
+      $('roster-list').innerHTML = shown.length ? shown.map(rosterCard).join('') : emptyHint(keys.length ? '没有符合筛选的报告' : (rosterTab === 'left' ? '暂无其他流程报告' : '暂无待审核报告'));
+      var nNeed = $('tab-need-n'); var nLeft = $('tab-left-n');
+      if (nNeed) nNeed.textContent = String(need.length);
+      if (nLeft) nLeft.textContent = String(left.length);
+      document.querySelectorAll('#roster-tabs .roster-tab').forEach(function (b) {
+        b.classList.toggle('is-on', b.getAttribute('data-tab') === rosterTab);
+      });
+      var chipMeta = [
+        ['待处置', 'bg-amber-50 text-amber-700'],
+        ['签发退回', 'bg-amber-50 text-amber-800'],
+        ['自动退回', 'bg-red-50 text-red-700'],
+        ['已处置', 'bg-emerald-50 text-emerald-700'],
+        ['审核中', 'bg-blue-50 text-blue-700'],
+        ['异常', 'bg-red-50 text-red-700'],
+      ];
+      $('roster-summary').innerHTML = '<div class="flex flex-wrap gap-1">' + chipMeta.map(function (c) {
+        var on = rosterFilter[c[0]] ? ' is-on' : '';
+        return '<button type="button" class="roster-filter chip ' + c[1] + on + '" data-filter="' + c[0] + '">' + c[0] + ' ' + counts[c[0]] + '</button>';
+      }).join('') + '</div>';
       document.querySelectorAll('.roster-row').forEach(function (b) { b.addEventListener('click', function () { select(b.getAttribute('data-report-id'), true); }); });
+    }
+    function bindRosterChrome() {
+      $('roster-tabs').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-tab]'); if (!b) return;
+        var tab = b.getAttribute('data-tab');
+        if (tab === rosterTab) return;
+        rosterTab = tab;
+        rosterFilter = {};
+        renderRoster();
+      });
+      $('roster-summary').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-filter]'); if (!b) return;
+        var k = b.getAttribute('data-filter');
+        if (rosterFilter[k]) { delete rosterFilter[k]; renderRoster(); return; }
+        rosterFilter[k] = true;
+        var inNeed = 0, inLeft = 0;
+        entrust.reports.forEach(function (rep) {
+          if (reportBucket(rep) !== k) return;
+          if (needsHuman(rep)) inNeed++; else inLeft++;
+        });
+        if (rosterTab === 'need' && !inNeed && inLeft) rosterTab = 'left';
+        if (rosterTab === 'left' && !inLeft && inNeed) rosterTab = 'need';
+        renderRoster();
+      });
     }
 
     // ---------- 操作日志 ----------
@@ -890,12 +934,12 @@
         g.cols.forEach(function (c) { head2 += '<th class="' + gCls[g.key] + '">' + esc(c) + '</th>'; });
       });
       head1 += '<th rowspan="2" class="bg-slate-50 text-slate-500">结论</th>';
-      var body = rows.map(function (row) {
+      var body = rows.map(function (row, i) {
         var tds = '<td class="mono">' + esc(row['试样编号'] || '—') + '</td>';
         groups.forEach(function (g) {
           g.cols.forEach(function (c) { tds += '<td>' + esc(row[c] == null || row[c] === '' ? '/' : row[c]) + '</td>'; });
         });
-        tds += '<td class="conc-ok">' + esc(phase.conclusion || '—') + '</td>';
+        if (i === 0) tds += '<td class="conc-ok" rowspan="' + Math.max(rows.length, 1) + '">' + esc(phase.conclusion || '—') + '</td>';
         return '<tr>' + tds + '</tr>';
       }).join('');
       return '<div class="overflow-x-auto"><table class="fg-table"><thead><tr>' + head1 + '</tr><tr>' + head2 + '</tr></thead><tbody>' + body + '</tbody></table></div>';
@@ -909,7 +953,7 @@
       var panes = it.phases.map(function (ph, i) {
         return '<div class="phase-pane mt-2' + (i === 0 ? '' : ' hidden') + '" data-phase="' + i + '">' + groupedTable(it, ph) + '</div>';
       }).join('');
-      return '<div class="mt-2"><div class="mb-1 text-[11px] text-slate-400">按相别查看（每相独立结论）</div><div class="phase-tabs">' + tabs + '</div>' + panes + '</div>';
+      return '<div class="mt-2"><div class="phase-tabs">' + tabs + '</div>' + panes + '</div>';
     }
     function rawRecordCard(it) {
       return '<div class="raw-card mt-2">' +
@@ -1079,14 +1123,14 @@
     function boot() {
       if (!entrust) { document.getElementById('wb-page').innerHTML = '<div class="glass p-6 text-slate-500">未找到委托 ' + esc(CODE) + '</div>'; return; }
       entrust.reports.forEach(function (rep) { RT[rep.id] = { rounds: rep.rounds.slice(), roundIndex: rep.rounds.length - 1, labels: {} }; });
-      initOverview(); initInfoTabs(); initRerun(); bindPolicy(); syncPolicyToggle();
+      initOverview(); initInfoTabs(); initRerun(); bindPolicy(); bindRosterChrome(); syncPolicyToggle();
       var firstNeed = entrust.reports.filter(needsHuman)[0] || entrust.reports[0];
       select(firstNeed.id, true);
 
       if (window.PrototypeAnnotation) {
         PrototypeAnnotation.init({ annotations: [
           { id: 'rv-overview', selector: '[data-annotate="rv-overview"]', position: 'bottom', title: '委托概览（默认折叠）', content: '<strong>需求逻辑：</strong>审核以委托为单位，顶部一小块承载整条委托信息，默认收起。<br><strong>展示规则：</strong>收起时一行摘要；展开后「合同/委托/付款/报告信息」四小 tab。', tag: '报告审核' },
-          { id: 'rv-roster', selector: '[data-annotate="rv-roster"]', position: 'right', title: '报告列表分两组', content: '<strong>需求逻辑：</strong>工作台展示该委托下全部报告，但操作与否必须一眼分开。<br><strong>展示规则：</strong>上组=本节点待审核（待处置 / 签发退回 / 审核中 / 异常；自动退回关闭时的严重项也在此）；下组=已离开本节点（已流转签发，以及自动退回开启时已退回编制的报告）。进入工作台默认选中上组第一份。', tag: '报告审核' },
+          { id: 'rv-roster', selector: '[data-annotate="rv-roster"]', position: 'right', title: '待审核 / 其他流程', content: '<strong>需求逻辑：</strong>工作台展示该委托下全部报告，但操作与否必须一眼分开。<br><strong>展示规则：</strong>顶部 Tab 默认「待审核」（待处置 / 签发退回 / 审核中 / 异常）；「其他流程」放已流转签发以及自动退回开启时已退回编制的报告。下方标签点选即筛选，再点取消。进入工作台默认待审核 Tab，并选中该组第一份。', tag: '报告审核' },
           { id: 'rv-log', selector: '[data-annotate="rv-log"]', position: 'right', title: '操作日志', content: '<strong>需求逻辑：</strong>审核前看清流转留痕，尤其签发退回。<br><strong>展示规则：</strong>彩色时间轴；节点、人员、内容分开展示。01 展示至「等待报告签发」。', tag: '报告审核' },
           { id: 'rv-ai', selector: '[data-annotate="rv-ai"]', position: 'left', title: 'AI 审核结果', content: '<strong>展示规则：</strong>第一行右上角固定「展开/还原」；处置状态芯片放第二行。规则分类标签左对齐。标注提交与处置执行拆开：误报/漏报备注单独提交，再次编辑后按钮变为「再次提交」。', tag: '报告审核' },
           { id: 'rv-manual', selector: '[data-annotate="rv-manual"]', position: 'top', title: '人工处置（固定底栏）', content: '<strong>需求逻辑：</strong>人工处置是必操作区，固定于底部。<br><strong>展示规则：</strong>不同意 AI 只出调优备注，退回原因仅在「同意退回」时出现。自动退回开关仅当本报告 AI 结论为「不通过」时显示。', tag: '报告审核' },

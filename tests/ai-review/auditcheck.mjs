@@ -92,11 +92,24 @@ await p.goto(BASE + '/report-review-detail.html?code=SC2026/0238', { waitUntil: 
 await p.waitForTimeout(1000);
 const ovCollapsed = await p.locator('#ov-body').evaluate((el) => el.classList.contains('hidden'));
 out.push((ovCollapsed ? '✅' : '❌') + ' 委托概览默认折叠');
-const rosterRows = await p.locator('.roster-row').count();
-out.push((rosterRows === 5 ? '✅' : '❌') + ` 报告统观区 5 行: ${rosterRows}`);
-const needGroup = await p.locator('.roster-ghead[data-group="need"]').count();
-const leftGroup = await p.locator('.roster-ghead[data-group="left"]').count();
-out.push((needGroup === 1 && leftGroup === 1 ? '✅' : '❌') + ' 左侧报告列表分待审核 / 已离开两组');
+const needTabOn = await p.locator('#roster-tabs .roster-tab[data-tab="need"]').evaluate((el) => el.classList.contains('is-on'));
+const rosterRowsNeed = await p.locator('.roster-row').count();
+out.push((needTabOn && rosterRowsNeed === 3 ? '✅' : '❌') + ` 默认待审核 Tab 3 行: ${rosterRowsNeed}`);
+await p.locator('#roster-tabs .roster-tab[data-tab="left"]').click();
+await p.waitForTimeout(150);
+const rosterRowsLeft = await p.locator('.roster-row').count();
+out.push((rosterRowsLeft === 2 ? '✅' : '❌') + ` 其他流程 Tab 2 行: ${rosterRowsLeft}`);
+await p.locator('#roster-tabs .roster-tab[data-tab="need"]').click();
+await p.waitForTimeout(150);
+await p.locator('.roster-filter[data-filter="签发退回"]').click();
+await p.waitForTimeout(120);
+const filtered = await p.locator('.roster-row').count();
+const filteredId = await p.locator('.roster-row').first().getAttribute('data-report-id');
+out.push((filtered === 1 && filteredId === 'rr-0238-04' ? '✅' : '❌') + ` 标签筛选签发退回: ${filtered} ${filteredId}`);
+await p.locator('.roster-filter[data-filter="签发退回"]').click();
+await p.waitForTimeout(120);
+const unfiltered = await p.locator('.roster-row').count();
+out.push((unfiltered === 3 ? '✅' : '❌') + ` 再点标签取消筛选: ${unfiltered}`);
 const kaliberFooter = await p.locator('.sum-kaliber').count();
 out.push((kaliberFooter === 0 ? '✅' : '❌') + ' 判定口径仅保留 tips、不在卡片底部重复');
 
@@ -145,6 +158,8 @@ const retFb = fb.find((f) => f.final_conclusion === '退回报告编制');
 out.push((retFb && retFb.agree_ai === true && Array.isArray(retFb.item_labels) ? '✅' : '❌') + ' 退回处置写入 feedback(含标注)');
 
 // 03 不通过：默认策略=自动退回 → 无人工处置按钮
+await p.locator('#roster-tabs .roster-tab[data-tab="left"]').click();
+await p.waitForTimeout(120);
 await p.locator('.roster-row[data-report-id="rr-0238-03"]').click();
 await p.waitForTimeout(1000);
 const c03 = await p.locator('#ai-conclusion').getAttribute('data-conclusion');
@@ -168,6 +183,8 @@ out.push((policyOn03 && disagreeBoxes.tune && !disagreeBoxes.reason ? '✅' : '�
 await p.locator('#policy-toggle').click(); // 复位
 
 // 04 签发退回：提示条可见 + 重跑追加一轮
+await p.locator('#roster-tabs .roster-tab[data-tab="need"]').click();
+await p.waitForTimeout(120);
 await p.locator('.roster-row[data-report-id="rr-0238-04"]').click();
 await p.waitForTimeout(1000);
 const signoffVisible = await p.locator('#signoff-banner').isVisible();
@@ -208,7 +225,20 @@ const detectUi = await p.evaluate(() => {
 await p.locator('.raw-toggle').first().click();
 await p.waitForTimeout(100);
 const phases = await p.locator('.phase-tab').count();
-out.push((detectUi.ok && detectUi.noStd && detectUi.testerTag && detectUi.eq && detectUi.raw && phases >= 3 ? '✅' : '❌') + ` 检测信息分区/相别: phases=${phases} ${JSON.stringify(detectUi)}`);
+const noPhaseHint = await p.evaluate(() => /按相别查看/.test(document.getElementById('info-body')?.textContent || ''));
+out.push((detectUi.ok && detectUi.noStd && detectUi.testerTag && detectUi.eq && detectUi.raw && phases >= 3 && !noPhaseHint ? '✅' : '❌') + ` 检测信息分区/相别: phases=${phases} ${JSON.stringify(detectUi)}`);
+await p.locator('.detect-item').nth(2).click();
+await p.waitForTimeout(120);
+await p.locator('.detect-body').nth(2).locator('.raw-toggle').click();
+await p.waitForTimeout(120);
+const mechConc = await p.evaluate(() => {
+  const body = document.querySelectorAll('.detect-body')[2];
+  const pane = body && (body.querySelector('.phase-pane:not(.hidden)') || body);
+  const cells = pane ? pane.querySelectorAll('td.conc-ok') : [];
+  const rs = cells[0] ? Number(cells[0].getAttribute('rowspan') || '1') : 0;
+  return { n: cells.length, rs: rs };
+});
+out.push((mechConc.n === 1 && mechConc.rs >= 3 ? '✅' : '❌') + ` 相别多行结论合并: n=${mechConc.n} rowspan=${mechConc.rs}`);
 
 // 标注再次编辑后按钮变为「再次提交」
 await p.locator('#ai-issues .rule-head').first().click();

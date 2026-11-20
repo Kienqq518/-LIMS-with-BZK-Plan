@@ -12,8 +12,8 @@ p.on('dialog', (d) => d.accept());
 await p.goto(BASE + '/ai-review-workbench.html', { waitUntil: 'load' });
 await p.waitForTimeout(400);
 
-const liability = await p.locator('#ai-liability').textContent();
-out.push((/授权签字人/.test(liability || '') ? '✅' : '❌') + ' 责任边界文案');
+const liability = await p.locator('#ai-liability').count();
+out.push((liability === 0 ? '✅' : '❌') + ' 不展示入口说明条');
 
 const kpiN = await p.locator('#kpi-row .kpi').count();
 out.push((kpiN === 7 ? '✅' : '❌') + ' 顶栏 7 项 KPI: ' + kpiN);
