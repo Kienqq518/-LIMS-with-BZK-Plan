@@ -325,6 +325,37 @@
             { at: '2026-09-05 09:16', node: '报告审核', by: '系统', text: '退回至报告审核，待复核（不自动重跑 AI）', tone: 'warn' },
           ],
         },
+        // 05：AI 正在审核（加载中，不产出结论）
+        {
+          id: 'rr-0238-05', reportNo: 'SC2026/0238-05', reportName: 'SC2026-0238-05检测报告.docx',
+          sampleNos: ['SC2026/0238-0105'], categoryBound: true, state: 'AI审核中',
+          aiRun: 'running',
+          snapshotHash: 'n5p6q7', file: { word: 'SC2026-0238-05检测报告.docx', pdf: 'SC2026-0238-05检测报告.pdf', at: '2026-09-06 09:10' },
+          info: cableInfo(),
+          rounds: [{ revision: 'V1.0', trigger: '进入报告审核', at: '2026-09-06 09:12', snapshot: cableSnap({ sample_no: 'SC2026-0242' }) }],
+          disposition: null,
+          log: [
+            { at: '2026-09-06 08:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-05', tone: 'default' },
+            { at: '2026-09-06 09:10', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
+            { at: '2026-09-06 09:12', node: 'AI审核', by: '系统', text: '正在逐条执行审核规则…', tone: 'pending' },
+          ],
+        },
+        // 06：AI 审核异常暂停
+        {
+          id: 'rr-0238-06', reportNo: 'SC2026/0238-06', reportName: 'SC2026-0238-06检测报告.docx',
+          sampleNos: ['SC2026/0238-0106'], categoryBound: true, state: 'AI审核异常',
+          aiRun: 'error',
+          aiError: { code: 'ENGINE_TIMEOUT', message: '规则引擎在 L2 数据逻辑阶段超时，任务已暂停。可重试 AI，或转人工审核。' },
+          snapshotHash: 'r8s9t0', file: { word: 'SC2026-0238-06检测报告.docx', pdf: 'SC2026-0238-06检测报告.pdf', at: '2026-09-06 10:05' },
+          info: cableInfo(),
+          rounds: [{ revision: 'V1.0', trigger: '进入报告审核', at: '2026-09-06 10:08', snapshot: cableSnap({ sample_no: 'SC2026-0243' }) }],
+          disposition: null,
+          log: [
+            { at: '2026-09-06 09:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-06', tone: 'default' },
+            { at: '2026-09-06 10:05', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
+            { at: '2026-09-06 10:08', node: 'AI审核', by: '系统', text: '审核异常暂停：ENGINE_TIMEOUT（L2 数据逻辑超时）', tone: 'danger' },
+          ],
+        },
       ],
     },
     {
@@ -382,6 +413,7 @@
     var out = [];
     ENTRUSTS.forEach(function (ent) {
       ent.reports.forEach(function (rep) {
+        if (rep.aiRun) return;
         var r = evalReport(rep);
         if (r.conclusion === '不通过') {
           out.push({ entrustCode: ent.code, customer: ent.customer, sample: ent.sample, reportNo: rep.reportNo, reasons: r.severe });
@@ -406,6 +438,8 @@
       '通过': { cls: 'bg-emerald-100 text-emerald-700', icon: 'fa-check-circle' },
       '需复核': { cls: 'bg-amber-100 text-amber-700', icon: 'fa-exclamation-circle' },
       '不通过': { cls: 'bg-red-100 text-red-700', icon: 'fa-times-circle' },
+      '审核中': { cls: 'bg-blue-100 text-blue-700', icon: 'fa-spinner' },
+      '异常': { cls: 'bg-red-100 text-red-700', icon: 'fa-exclamation-triangle' },
     },
     LABEL_NOTE: '标注仅用于 AI 模型持续学习优化，不对上下游人员展示',
   };

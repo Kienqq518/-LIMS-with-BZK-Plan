@@ -78,6 +78,14 @@ const auditBtnText = await p.locator('#tableBody a[href*="report-review-detail.h
 out.push((auditLinks >= 1 && /审核/.test(auditBtnText || '') ? '✅' : '❌') + ' 报告审核列表「审核」入口: ' + auditLinks);
 const ccTrigger = await p.locator('#cc-trigger').count();
 out.push((ccTrigger === 1 ? '✅' : '❌') + ' 报告审核列表列配置入口 #cc-trigger');
+await p.locator('#tableBody a[data-record]').first().click();
+await p.waitForTimeout(300);
+const drawerOpen = await p.locator('#rvRecordDrawer.open').count();
+const drawerCards = await p.locator('#rvRecordRoster .rv-rep-card').count();
+const drawerLog = await p.locator('#rvRecordLog .audit-tl-item').count();
+out.push((drawerOpen === 1 && drawerCards >= 4 && drawerLog >= 1 ? '✅' : '❌') + ` 报告记录抽屉: open=${drawerOpen} cards=${drawerCards} logs=${drawerLog}`);
+await p.locator('#rvRecordDrawer button[aria-label="关闭"]').click();
+await p.waitForTimeout(250);
 
 // 审核工作台：SC2026/0238 — 委托概览默认折叠 + 4 份报告统观
 await p.goto(BASE + '/report-review-detail.html?code=SC2026/0238', { waitUntil: 'load' });
@@ -85,7 +93,9 @@ await p.waitForTimeout(1000);
 const ovCollapsed = await p.locator('#ov-body').evaluate((el) => el.classList.contains('hidden'));
 out.push((ovCollapsed ? '✅' : '❌') + ' 委托概览默认折叠');
 const rosterRows = await p.locator('.roster-row').count();
-out.push((rosterRows === 4 ? '✅' : '❌') + ` 报告统观区 4 行: ${rosterRows}`);
+out.push((rosterRows === 6 ? '✅' : '❌') + ` 报告统观区 6 行: ${rosterRows}`);
+const kaliberFooter = await p.locator('.sum-kaliber').count();
+out.push((kaliberFooter === 0 ? '✅' : '❌') + ' 判定口径仅保留 tips、不在卡片底部重复');
 
 // 默认选中第一份（01）→ AI 结论=通过
 const firstConclusion = await p.locator('#ai-conclusion').getAttribute('data-conclusion');
@@ -144,6 +154,16 @@ await p.locator('#btn-rerun').click();
 await p.waitForTimeout(1000);
 const rerunRound = await p.locator('#ai-round').textContent();
 out.push((signoffVisible && /第 2 轮/.test(rerunRound || '') ? '✅' : '❌') + ` 04 签发退回提示+重跑追加轮次: signoff=${signoffVisible} ${/第 2 轮/.test(rerunRound || '')}`);
+
+await p.locator('.roster-row[data-report-id="rr-0238-05"]').click();
+await p.waitForTimeout(400);
+const run05 = await p.locator('#ai-round').textContent();
+const prog05 = await p.locator('#ai-progress').isVisible();
+out.push((/AI 正在审核/.test(run05 || '') && prog05 ? '✅' : '❌') + ' 05 AI 审核中加载态');
+await p.locator('.roster-row[data-report-id="rr-0238-06"]').click();
+await p.waitForTimeout(400);
+const err06 = await p.locator('#ai-summary').textContent();
+out.push((/AI 审核异常暂停/.test(err06 || '') && /ENGINE_TIMEOUT/.test(err06 || '') ? '✅' : '❌') + ' 06 AI 审核异常暂停');
 
 // 报告编制页：AI 不通过自动退回横幅可见
 await p.goto(BASE + '/report-list.html', { waitUntil: 'load' });

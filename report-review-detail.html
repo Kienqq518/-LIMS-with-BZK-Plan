@@ -80,6 +80,8 @@
     .ai-chip.ai-warn .ai-mark { background: #d97706; }
     .ai-chip.ai-fail { color: #b91c1c; border-color: #fca5a5; }
     .ai-chip.ai-fail .ai-mark { background: #dc2626; }
+    .ai-chip.ai-run { color: #1d4ed8; border-color: #93c5fd; }
+    .ai-chip.ai-run .ai-mark { background: #2563eb; }
     #ai-summary { position: relative; overflow: visible; }
     .sum-stamp {
       position: absolute; top: 10px; right: 10px;
@@ -115,6 +117,7 @@
     .fb-chip.idle, .action-chip.idle { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
     .fb-chip.back, .action-chip.back { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
     .fb-chip.need, .action-chip.need { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .fb-chip.run, .action-chip.run { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
     .action-chip { font-weight: 600; white-space: nowrap; }
     .policy-sw { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 2px 10px 2px 8px; font-size: 12px; color: #475569; }
     .preview-frame { width: 100%; height: 100%; flex: 1 1 auto; min-height: 0; border: 0; border-radius: 8px; background: #fff; }
@@ -341,11 +344,18 @@
     function roundsOf(r) { return RT[r.id].rounds; }
     function curIndex(r) { return RT[r.id].roundIndex; }
     function resultAt(r, i) { return ReportReviewMock.evalRound(r, roundsOf(r)[i]); }
-    function currentResult(r) { return resultAt(r, curIndex(r)); }
+    function emptyResult(conclusion) {
+      return { conclusion: conclusion, items: [], passed: [], failed: [], severe: [], review: [], notices: [], summary: { total: 0, universal: 0, category: 0, failed: 0 } };
+    }
+    function currentResult(r) {
+      if (r.aiRun === 'running') return emptyResult('审核中');
+      if (r.aiRun === 'error') return emptyResult('异常');
+      return resultAt(r, curIndex(r));
+    }
     function getSelected() { for (var i = 0; i < entrust.reports.length; i++) if (entrust.reports[i].id === selectedId) return entrust.reports[i]; return null; }
 
     function badge(c, small) { var m = ReportReviewMock.CONCLUSION_META[c]; return '<span class="chip ' + m.cls + ' ' + (small ? '' : 'text-sm px-3 py-1') + '"><i class="fa ' + m.icon + '"></i>' + c + '</span>'; }
-    function aiTone(c) { return c === '通过' ? 'pass' : (c === '需复核' ? 'warn' : 'fail'); }
+    function aiTone(c) { return c === '通过' ? 'pass' : (c === '需复核' ? 'warn' : (c === '审核中' ? 'run' : (c === '异常' ? 'fail' : 'fail'))); }
     function aiChip(c) {
       return '<span class="ai-chip ai-' + aiTone(c) + '"><span class="ai-mark">AI</span>' + esc(c) + '</span>';
     }
@@ -353,6 +363,8 @@
 
     // 报告「业务状态」（以是否需操作为主视觉）
     function stateMeta(rep) {
+      if (rep.aiRun === 'running') return { label: 'AI 审核中', cls: 'bg-blue-100 text-blue-700', need: false };
+      if (rep.aiRun === 'error') return { label: 'AI 审核异常', cls: 'bg-red-100 text-red-700', need: true };
       if (rep.disposition) return { label: '已' + rep.disposition.final, cls: 'bg-emerald-100 text-emerald-700', need: false };
       if (rep.state === '自动退回编制' && ReportReviewMock.getPolicy().autoReturnOnSevere) return { label: '已自动退回编制', cls: 'bg-red-100 text-red-700', need: false };
       if (rep.state === '签发退回待复核') return { label: '签发退回 · 待复核', cls: 'bg-amber-100 text-amber-800', need: true };
@@ -361,10 +373,12 @@
 
     // ---------- 统观区 ----------
     function renderRoster() {
-      var counts = { 待处置: 0, 签发退回: 0, 自动退回: 0, 已处置: 0 };
+      var counts = { 待处置: 0, 签发退回: 0, 自动退回: 0, 已处置: 0, 审核中: 0, 异常: 0 };
       var rows = entrust.reports.map(function (rep) {
         var r = currentResult(rep); var sm = stateMeta(rep);
-        if (rep.disposition) counts['已处置']++;
+        if (rep.aiRun === 'running') counts['审核中']++;
+        else if (rep.aiRun === 'error') counts['异常']++;
+        else if (rep.disposition) counts['已处置']++;
         else if (rep.state === '自动退回编制' && ReportReviewMock.getPolicy().autoReturnOnSevere) counts['自动退回']++;
         else if (rep.state === '签发退回待复核') counts['签发退回']++;
         else counts['待处置']++;
@@ -388,6 +402,8 @@
           '<span class="chip bg-amber-50 text-amber-800">签发退回 ' + counts['签发退回'] + '</span>' +
           '<span class="chip bg-red-50 text-red-700">自动退回 ' + counts['自动退回'] + '</span>' +
           '<span class="chip bg-emerald-50 text-emerald-700">已处置 ' + counts['已处置'] + '</span>' +
+          '<span class="chip bg-blue-50 text-blue-700">审核中 ' + counts['审核中'] + '</span>' +
+          '<span class="chip bg-red-50 text-red-700">异常 ' + counts['异常'] + '</span>' +
         '</div>';
       document.querySelectorAll('.roster-row').forEach(function (b) { b.addEventListener('click', function () { select(b.getAttribute('data-report-id'), true); }); });
     }
@@ -513,8 +529,7 @@
             '<span class="sum-tip-pop">' + esc(KALIBER) + '</span></span>' +
         '</div>' +
         '<div class="mb-2"><span class="chip" style="background:rgba(20,60,154,.08);color:var(--brand)"><i class="fa fa-tags"></i>' + esc(cat) + '</span></div>' +
-        '<p class="sum-body">' + esc(summaryNarrative(r, diffText)) + '</p>' +
-        '<div class="sum-kaliber"><i class="fa fa-info-circle mr-1"></i>' + esc(KALIBER) + '</div>';
+        '<p class="sum-body">' + esc(summaryNarrative(r, diffText)) + '</p>';
     }
     function renderRoundTabs(report) {
       var box = $('ai-rounds');
@@ -537,6 +552,8 @@
 
     function actionStatus(report) {
       var r = currentResult(report);
+      if (report.aiRun === 'running') return { kind: 'run', text: 'AI 正在审核，无需操作' };
+      if (report.aiRun === 'error') return { kind: 'need', text: 'AI 审核异常，需要处理' };
       if (report.disposition) return { kind: 'idle', text: '已进入报告审核，无需操作' };
       if (r.conclusion === '不通过' && ReportReviewMock.getPolicy().autoReturnOnSevere && !(report.signOff && report.signOff.returned)) {
         return { kind: 'back', text: '已退回报告编制，无需操作' };
@@ -550,9 +567,42 @@
     }
     function renderAi(report) {
       report0 = report;
-      var idx = curIndex(report); var r = resultAt(report, idx); var cur = roundsOf(report)[idx]; var snap = cur.snapshot;
+      var idx = curIndex(report); var cur = roundsOf(report)[idx]; var snap = cur.snapshot;
       $('ai-report-no').textContent = '· ' + report.reportNo;
       paintActionChip($('ai-round'), actionStatus(report), '第 ' + (idx + 1) + ' 轮 · ' + cur.revision);
+      var rerunBtn = $('btn-rerun');
+      if (rerunBtn) rerunBtn.disabled = !!(report.aiRun);
+
+      if (report.aiRun === 'running') {
+        $('signoff-banner').classList.add('hidden');
+        $('ai-summary').innerHTML = '<div class="flex items-center gap-2 font-semibold" style="color:var(--brand)"><i class="fa fa-spinner fa-spin"></i>AI 正在审核</div><p class="sum-body mt-2">已提交规范快照，正在逐条执行 L1–L3 规则，完成后会给出三态结论。期间无需人工操作。</p>';
+        $('ai-diff').classList.add('hidden'); $('ai-rounds').classList.add('hidden');
+        $('ai-issues').innerHTML = ''; $('ai-notices').innerHTML = '';
+        playProgress(report);
+        if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+        return;
+      }
+      if (report.aiRun === 'error') {
+        var err = report.aiError || { code: 'UNKNOWN', message: 'AI 审核异常暂停。' };
+        $('signoff-banner').classList.add('hidden');
+        $('ai-summary').innerHTML = '<span data-conclusion="异常" id="ai-conclusion"></span>' +
+          '<div class="sum-stamp fail" aria-hidden="true"><i class="fa fa-exclamation-triangle"></i>异常</div>' +
+          '<div class="mb-2 font-semibold text-red-700"><i class="fa fa-exclamation-triangle mr-1"></i>AI 审核异常暂停</div>' +
+          '<p class="sum-body">' + esc(err.code) + '：' + esc(err.message) + '</p>' +
+          '<button type="button" id="btn-retry-ai" class="mt-3 rounded-lg border px-3 py-1.5 text-sm" style="border-color:var(--brand);color:var(--brand)"><i class="fa fa-refresh mr-1"></i>重试 AI 审核</button>';
+        $('ai-diff').classList.add('hidden'); $('ai-rounds').classList.add('hidden');
+        $('ai-issues').innerHTML = ''; $('ai-notices').innerHTML = '';
+        $('ai-progress').classList.add('hidden');
+        var rb = $('btn-retry-ai');
+        if (rb) rb.addEventListener('click', function () {
+          report.aiRun = null; report.state = '待处置';
+          var rt = RT[report.id]; rt.roundIndex = rt.rounds.length - 1;
+          renderAi(report); renderFeedback(report); renderRoster(); playProgress(report);
+        });
+        if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+        return;
+      }
+      var r = resultAt(report, idx);
 
       if (report.signOff && report.signOff.returned) {
         $('signoff-banner').classList.remove('hidden');
@@ -597,12 +647,26 @@
       if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
 
+    var progToken = 0;
     function playProgress(report) {
-      var r = currentResult(report); var list = r.items;
-      $('ai-progress').classList.remove('hidden'); $('ai-issues').classList.add('opacity-40');
+      var token = ++progToken;
+      if (report.aiRun === 'error') { $('ai-progress').classList.add('hidden'); $('ai-issues').classList.remove('opacity-40'); return; }
+      var running = report.aiRun === 'running';
+      var list = running
+        ? [{ name: 'L1 基础形式' }, { name: 'L2 数据逻辑' }, { name: 'L3 合规对齐' }, { name: '品类专属规则' }]
+        : currentResult(report).items;
+      $('ai-progress').classList.remove('hidden');
+      if (!running) $('ai-issues').classList.add('opacity-40');
       $('ai-progress-list').innerHTML = list.map(function (it) { return '<div class="prog-rule flex items-center justify-between"><span class="text-slate-600">' + esc(it.name) + '</span><span class="st st-run">检查中…</span></div>'; }).join('');
       var nodes = Array.prototype.slice.call($('ai-progress-list').querySelectorAll('.prog-rule')); var i = 0;
       (function step() {
+        if (token !== progToken) return;
+        if (running) {
+          if (i >= nodes.length) i = 0;
+          nodes.forEach(function (n, k) { var st = n.querySelector('.st'); st.textContent = k === i ? '检查中…' : '排队'; st.className = 'st ' + (k === i ? 'st-run' : ''); });
+          i++; setTimeout(step, 700);
+          return;
+        }
         if (i >= nodes.length) { setTimeout(function () { $('ai-progress').classList.add('hidden'); $('ai-issues').classList.remove('opacity-40'); }, 180); return; }
         var it = list[i]; var st = nodes[i].querySelector('.st'); st.textContent = it.passed ? '✓ 通过' : ('✗ ' + it.severity); st.className = 'st ' + (it.passed ? 'st-pass' : 'st-fail'); i++; setTimeout(step, 70);
       })();
@@ -666,6 +730,26 @@
         return '第 ' + (idx + 1) + ' 轮 · ' + cur.revision;
       })());
 
+      if (report.aiRun === 'running') {
+        setFbStatus('run', '<i class="fa fa-spinner fa-spin mr-1"></i>AI 正在审核，无需操作');
+        box.innerHTML = '<div class="text-xs text-slate-500">引擎执行中，完成后才会开放人工处置。可在左侧切到其他报告继续处理。</div>';
+        return;
+      }
+      if (report.aiRun === 'error') {
+        setFbStatus('need', '<i class="fa fa-bell mr-1"></i>AI 审核异常，需要处理');
+        box.innerHTML = '<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm"><label class="flex items-start gap-2"><input type="radio" name="choice" value="retry" class="mt-1" checked/><span>重试 AI 审核</span></label>' +
+          '<label class="flex items-start gap-2"><input type="radio" name="choice" value="pass" class="mt-1"/><span>转人工审核 —— 跳过 AI 结论</span></label></div>' +
+          '<div class="mt-2 flex items-center gap-3"><button type="button" class="btn-exec btn-brand rounded-lg px-4 py-1.5 text-sm">执行</button><span class="exec-done hidden text-sm text-emerald-600"><i class="fa fa-check"></i> 已执行</span></div>';
+        box.querySelector('.btn-exec').addEventListener('click', function () {
+          var choice = document.querySelector('#manual-feedback input[name="choice"]:checked');
+          if (choice && choice.value === 'retry') {
+            var rb = $('btn-retry-ai'); if (rb) rb.click(); else { report.aiRun = null; report.state = '待处置'; renderAi(report); renderFeedback(report); renderRoster(); playProgress(report); }
+            return;
+          }
+          execChoice(report, { passFinal: '通过' });
+        });
+        return;
+      }
       if (report.disposition) {
         setFbStatus('idle', '<i class="fa fa-check-circle mr-1"></i>已进入报告审核，无需操作');
         box.innerHTML = '<div class="text-xs text-slate-500">已处置：' + esc(report.disposition.final) + '（' + esc(report.disposition.by) + ' · ' + esc(report.disposition.at) + '） · ' + esc(report.disposition.note) + '</div>';

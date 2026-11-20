@@ -14,6 +14,57 @@
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
+
+    #rvRecordDrawer.rr-mask { position: fixed; inset: 0; z-index: 60; background: rgba(15, 23, 42, .45); }
+    #rvRecordDrawer.rr-mask.hidden { display: none; }
+    #rvRecordDrawer .rr-panel {
+      position: fixed; top: 0; right: 0; bottom: 0; z-index: 61;
+      width: min(680px, 96vw); background: #fff;
+      box-shadow: -8px 0 28px rgba(15, 23, 42, .16);
+      display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .22s ease;
+    }
+    #rvRecordDrawer.open .rr-panel { transform: translateX(0); }
+    #rvRecordDrawer .rr-body { flex: 1; overflow: auto; padding: 16px 24px; }
+    #rvRecordDrawer .audit-tl { list-style: none; margin: 0; padding: 2px 2px 0 0; }
+    #rvRecordDrawer .audit-tl-item { display: grid; grid-template-columns: 20px 1fr; gap: 12px; }
+    #rvRecordDrawer .audit-rail { position: relative; }
+    #rvRecordDrawer .audit-rail::after {
+      content: ""; position: absolute; left: 50%; top: 20px; bottom: 0; width: 2px;
+      transform: translateX(-50%); background: var(--audit-rail, #3b82f6);
+    }
+    #rvRecordDrawer .audit-tl-item:last-child .audit-rail::after { display: none; }
+    #rvRecordDrawer .audit-dot {
+      position: relative; z-index: 1; display: block;
+      width: 16px; height: 16px; margin: 2px auto 0; box-sizing: border-box;
+      border-radius: 999px; border: 2px solid var(--audit-dot, #3b82f6);
+      background: var(--audit-dot, #3b82f6);
+    }
+    #rvRecordDrawer .audit-tl-item.is-pending .audit-dot { background: #fff; }
+    #rvRecordDrawer .audit-tl-item.is-pass { --audit-rail: #3b82f6; --audit-dot: #3b82f6; }
+    #rvRecordDrawer .audit-tl-item.is-reject { --audit-rail: #ef4444; --audit-dot: #ef4444; }
+    #rvRecordDrawer .audit-tl-item.is-pending { --audit-rail: #f59e0b; --audit-dot: #f59e0b; }
+    #rvRecordDrawer .audit-main { min-width: 0; padding: 0 0 20px; }
+    #rvRecordDrawer .audit-tl-item:last-child .audit-main { padding-bottom: 2px; }
+    #rvRecordDrawer .audit-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    #rvRecordDrawer .audit-title { font-size: 14px; font-weight: 500; color: #1e293b; }
+    #rvRecordDrawer .audit-time { flex-shrink: 0; font-size: 12px; color: #94a3b8; }
+    #rvRecordDrawer .audit-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 6px; }
+    #rvRecordDrawer .audit-person { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: #334155; }
+    #rvRecordDrawer .audit-avatar { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 999px; color: #fff; font-size: 11px; }
+    #rvRecordDrawer .audit-status { flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 500; }
+    #rvRecordDrawer .audit-status.is-muted { color: #64748b; }
+    #rvRecordDrawer .audit-status.is-pass { color: #16a34a; }
+    #rvRecordDrawer .audit-status.is-reject { color: #dc2626; }
+    #rvRecordDrawer .audit-status.is-pending { color: #d97706; }
+    #rvRecordDrawer .audit-legend { display: flex; gap: 14px; font-size: 12px; color: #94a3b8; }
+    #rvRecordDrawer .audit-legend span { display: inline-flex; align-items: center; gap: 4px; }
+    #rvRecordDrawer .lg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 999px; border: 2px solid #3b82f6; box-sizing: border-box; }
+    #rvRecordDrawer .lg-pass { border-color: #3b82f6; background: #3b82f6; }
+    #rvRecordDrawer .lg-reject { border-color: #ef4444; background: #ef4444; }
+    #rvRecordDrawer .lg-pending { border-color: #f59e0b; background: #fff; }
+    .rv-rep-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; text-align: left; background: #fff; width: 100%; }
+    .rv-rep-card.is-on { border-color: #143C9A; box-shadow: inset 3px 0 0 #143C9A; background: linear-gradient(90deg, rgba(20,60,154,.08), #fff); }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -102,12 +153,153 @@
     </div>
   </div>
 
+  <div id="rvRecordDrawer" class="rr-mask hidden" onclick="closeRvRecord()">
+    <aside class="rr-panel" data-annotate="rv-record-drawer" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3">
+        <div>
+          <h3 class="text-base font-medium text-slate-800">报告记录</h3>
+          <p id="rvRecordSubtitle" class="mt-0.5 text-xs text-slate-500"></p>
+        </div>
+        <button type="button" onclick="closeRvRecord()" class="text-slate-400 hover:text-slate-600" aria-label="关闭"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="rr-body">
+        <div class="mb-4">
+          <div class="mb-2 flex items-center justify-between text-sm">
+            <span class="font-medium text-slate-700"><i class="fa fa-files-o mr-1 text-blue-600"></i>报告列表 <span id="rvRecordCount" class="font-normal text-slate-400"></span></span>
+            <span id="rvRecordSummary" class="text-xs text-slate-400"></span>
+          </div>
+          <div id="rvRecordRoster" class="space-y-2"></div>
+        </div>
+        <div class="border-t border-slate-100 pt-4">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h4 class="text-sm font-medium text-slate-700">操作日志 <span id="rvLogReport" class="font-normal text-slate-400"></span></h4>
+              <span class="audit-legend">
+                <span><i class="lg-dot lg-pass"></i>流转</span>
+                <span><i class="lg-dot lg-reject"></i>退回</span>
+                <span><i class="lg-dot lg-pending"></i>当前</span>
+              </span>
+            </div>
+            <button type="button" id="rvLogOrderBtn" class="text-xs text-blue-600 hover:underline">时间倒序</button>
+          </div>
+          <div id="rvRecordLog"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
   <script src="js/tab-bar.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     AiReviewStore.reset();
     var ROWS = ReportReviewMock.ENTRUSTS.slice();
+    var rvOpen = { code: '', reportId: '', order: 'desc' };
+    var rvHideTimer = null;
+
+    function rvEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+    function rvAvatarColor(name) {
+      if (!name) return '#94a3b8';
+      if (name.indexOf('AI') === 0 || name === '系统') return '#6366f1';
+      var palette = ['#0d9488', '#38bdf8', '#34d399', '#a78bfa', '#f472b6', '#3b82f6', '#f59e0b', '#14b8a6'];
+      var n = 0; for (var i = 0; i < name.length; i++) n = (n * 33 + name.charCodeAt(i)) >>> 0;
+      return palette[n % palette.length];
+    }
+    function rvAvatarMark(name) {
+      if (!name) return '';
+      if (name.indexOf('AI') === 0 || name === '系统') return '<i class="fa fa-bolt"></i>';
+      var ch = String(name).charAt(0);
+      return rvEsc(ch);
+    }
+    function rvTone(log) {
+      if (log.tone === 'danger') return 'reject';
+      if (log.tone === 'pending' || log.tone === 'warn') return 'pending';
+      return 'pass';
+    }
+    function rvStatus(log) {
+      var t = log.text || '';
+      if (/异常|超时/.test(t)) return { text: '异常暂停', icon: 'fa-exclamation-triangle', tone: 'reject' };
+      if (/正在/.test(t)) return { text: '审核中', icon: 'fa-clock-o', tone: 'pending' };
+      if (/签发退回|自动退回|退回报告/.test(t)) return { text: '退回', icon: 'fa-undo', tone: 'reject' };
+      if (/预审结论：通过|人工审核通过/.test(t)) return { text: /预审/.test(t) ? '预审通过' : '审批通过', icon: 'fa-check-circle', tone: 'pass' };
+      if (/预审结论：需复核/.test(t)) return { text: '预审需复核', icon: 'fa-exclamation-circle', tone: 'pending' };
+      if (/预审结论：不通过/.test(t)) return { text: '预审不通过', icon: 'fa-times-circle', tone: 'reject' };
+      if (/等待.*签发/.test(t)) return { text: '审批中', icon: 'fa-clock-o', tone: 'pending' };
+      if (/提交至报告审核/.test(t)) return { text: '提交至报告审核', icon: 'fa-check-square-o', tone: 'muted' };
+      if (/生成报告/.test(t)) return { text: '生成报告', icon: 'fa-check-square-o', tone: 'muted' };
+      return { text: t, icon: 'fa-circle-o', tone: 'muted' };
+    }
+    function rvStateChip(rep) {
+      if (rep.aiRun === 'running') return '<span class="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">AI 审核中</span>';
+      if (rep.aiRun === 'error') return '<span class="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700">AI 审核异常</span>';
+      if (rep.disposition) return '<span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">已' + rvEsc(rep.disposition.final) + '</span>';
+      if (rep.state === '自动退回编制') return '<span class="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700">已自动退回编制</span>';
+      if (rep.state === '签发退回待复核') return '<span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800">签发退回 · 待复核</span>';
+      return '<span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800">待处置</span>';
+    }
+    function rvAiChip(rep) {
+      if (rep.aiRun === 'running') return '<span class="rounded border border-blue-200 px-1.5 py-0.5 text-[11px] text-blue-700">AI 审核中</span>';
+      if (rep.aiRun === 'error') return '<span class="rounded border border-red-200 px-1.5 py-0.5 text-[11px] text-red-700">AI 异常</span>';
+      var r = ReportReviewMock.evalReport(rep);
+      var cls = r.conclusion === '通过' ? 'border-emerald-200 text-emerald-700' : (r.conclusion === '需复核' ? 'border-amber-200 text-amber-700' : 'border-red-200 text-red-700');
+      return '<span class="rounded border px-1.5 py-0.5 text-[11px] ' + cls + '">AI ' + rvEsc(r.conclusion) + '</span>';
+    }
+    function rvRenderRoster(ent) {
+      document.getElementById('rvRecordCount').textContent = '· ' + ent.reports.length + ' 份';
+      document.getElementById('rvRecordRoster').innerHTML = ent.reports.map(function (rep) {
+        return '<button type="button" class="rv-rep-card' + (rep.id === rvOpen.reportId ? ' is-on' : '') + '" data-rid="' + rvEsc(rep.id) + '">' +
+          '<div class="flex items-center justify-between gap-2"><span class="font-semibold text-slate-800">' + rvEsc(rep.reportNo) + '</span>' + rvStateChip(rep) + '</div>' +
+          '<div class="mt-1 flex items-center justify-between text-xs text-slate-400"><span>版本 ' + rvEsc((rep.rounds[rep.rounds.length - 1] || {}).revision || 'V1.0') + '</span>' + rvAiChip(rep) + '</div>' +
+          '</button>';
+      }).join('');
+      document.querySelectorAll('#rvRecordRoster .rv-rep-card').forEach(function (b) {
+        b.addEventListener('click', function () { rvOpen.reportId = b.getAttribute('data-rid'); rvPaintLog(ent); rvRenderRoster(ent); });
+      });
+    }
+    function rvPaintLog(ent) {
+      var rep = ent.reports.filter(function (r) { return r.id === rvOpen.reportId; })[0] || ent.reports[0];
+      if (!rep) { document.getElementById('rvRecordLog').innerHTML = '<p class="py-6 text-center text-sm text-slate-400">暂无流转记录</p>'; return; }
+      document.getElementById('rvLogReport').textContent = '· ' + rep.reportNo;
+      document.getElementById('rvRecordSubtitle').textContent = rep.reportNo + ' · ' + (rep.file && rep.file.word ? rep.file.word : '');
+      var logs = (rep.log || []).slice();
+      logs.sort(function (a, b) { return rvOpen.order === 'desc' ? (a.at < b.at ? 1 : -1) : (a.at < b.at ? -1 : 1); });
+      document.getElementById('rvLogOrderBtn').textContent = rvOpen.order === 'desc' ? '时间倒序' : '时间正序';
+      document.getElementById('rvRecordLog').innerHTML = '<ol class="audit-tl">' + logs.map(function (log) {
+        var tone = rvTone(log); var st = rvStatus(log);
+        var pending = tone === 'pending';
+        var person = '<span class="audit-person"><span class="audit-avatar" style="background:' + rvAvatarColor(log.by) + '">' + rvAvatarMark(log.by) + '</span>' + rvEsc(log.by || '系统') + '</span>';
+        var status = '<span class="audit-status is-' + st.tone + '"><i class="fa ' + st.icon + '"></i>' + rvEsc(st.text) + '</span>';
+        var time = log.at ? '<time class="audit-time">' + rvEsc(log.at) + (log.at.length < 19 ? ':00' : '') + '</time>' : '';
+        var headRight = (pending && log.tone === 'pending' && !/预审/.test(log.text || '')) ? status : time;
+        var second = (pending && log.tone === 'pending' && !/预审/.test(log.text || '')) ? '' : ('<div class="audit-row">' + person + status + '</div>');
+        return '<li class="audit-tl-item is-' + tone + (pending ? ' is-pending' : '') + '"><div class="audit-rail" aria-hidden="true"><span class="audit-dot"></span></div>' +
+          '<div class="audit-main"><div class="audit-head"><div class="audit-title">' + rvEsc(log.node) + '</div>' + headRight + '</div>' + second + '</div></li>';
+      }).join('') + '</ol>';
+    }
+    function openRvRecord(code) {
+      var ent = ReportReviewMock.getEntrust(code);
+      if (!ent) { alert('未找到委托 ' + code); return; }
+      rvOpen.code = code;
+      rvOpen.reportId = ent.reports[0] ? ent.reports[0].id : '';
+      document.getElementById('rvRecordSubtitle').textContent = code + ' · ' + (ent.reports[0] && ent.reports[0].file ? ent.reports[0].file.word : '');
+      rvRenderRoster(ent); rvPaintLog(ent);
+      var drawer = document.getElementById('rvRecordDrawer');
+      clearTimeout(rvHideTimer);
+      drawer.classList.remove('hidden');
+      requestAnimationFrame(function () { drawer.classList.add('open'); });
+      if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
+    }
+    function closeRvRecord() {
+      var drawer = document.getElementById('rvRecordDrawer');
+      drawer.classList.remove('open');
+      clearTimeout(rvHideTimer);
+      rvHideTimer = setTimeout(function () { drawer.classList.add('hidden'); }, 220);
+    }
+    document.getElementById('rvLogOrderBtn').addEventListener('click', function () {
+      rvOpen.order = rvOpen.order === 'desc' ? 'asc' : 'desc';
+      var ent = ReportReviewMock.getEntrust(rvOpen.code);
+      if (ent) rvPaintLog(ent);
+    });
 
     function frameText(row) {
       return (row.contract && row.contract !== '/') ? '是' : '否';
@@ -130,7 +322,7 @@
           '<td class="border border-slate-200 px-3 py-2">' + row.priority + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.status + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.compiler + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="return false;"><i class="fa fa-file-text-o mr-1"></i>报告记录</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" data-record="' + encodeURIComponent(row.code) + '" onclick="openRvRecord(decodeURIComponent(this.getAttribute(\'data-record\')));return false;"><i class="fa fa-file-text-o mr-1"></i>报告记录</a></td>' +
           '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap"><a data-annotate="rv-audit-btn" href="report-review-detail.html?code=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline"><i class="fa fa-gavel mr-1"></i>审核</a></td>' +
           '</tr>';
       }).join('');
@@ -171,9 +363,10 @@
         { id: 'rv-audit-btn', selector: '[data-annotate="rv-audit-btn"]', position: 'left', title: '审核入口', content: '<strong>需求逻辑：</strong>报告审核是报告编制完成后的下一环节；操作列入口由原「编辑」改为「审核」，并叠加 AI 预审。审核以「委托」为单位进入。<br>' +
             '<strong>展示规则：</strong>蓝色「审核」链接。<br>' +
             '<strong>交互逻辑：</strong>跳转 report-review-detail.html?code=委托编号。演示委托 SC2026/0238 含三份报告，分别命中 AI 通过 / 需复核 / 不通过三种结论。', tag: '报告审核' },
-        { id: 'rv-col-record', selector: '[data-annotate="rv-col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>审核前可先看该委托下报告的节点留痕。<br>' +
-            '<strong>展示规则：</strong>「报告记录」链接（与报告编制页同源，原型中为占位）。<br>' +
-            '<strong>交互逻辑：</strong>点击打开报告记录（本页原型暂作占位，不弹窗）。', tag: '报告审核' },
+        { id: 'rv-col-record', selector: '[data-annotate="rv-col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>审核前可先看该委托下各份报告的状态与流转留痕。<br>' +
+            '<strong>展示规则：</strong>右侧抽屉：上方为报告列表（状态 + AI 结论），下方为所选报告的操作日志时间轴（流转 / 退回 / 当前）。<br>' +
+            '<strong>交互逻辑：</strong>点击「报告记录」打开抽屉；点某份报告切换日志；点「时间倒序」切换排序。', tag: '报告审核' },
+        { id: 'rv-record-drawer', selector: '[data-annotate="rv-record-drawer"]', position: 'left', title: '报告记录抽屉', content: '<strong>展示规则：</strong>时间轴样式与报告编制「报告记录」一致：节点名、人员头像、右侧状态。默认时间倒序。', tag: '报告审核' },
       ] });
     }
   </script>
