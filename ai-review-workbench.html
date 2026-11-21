@@ -35,14 +35,14 @@
     .kpi .n { font-size: 28px; font-weight: 700; color: var(--brand); line-height: 1.1; }
     #kpi-row {
       display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
-      flex: 0.62 0 auto; min-height: 148px;
+      flex: 0 0 auto;
     }
     #kpi-row .kpi {
-      min-height: 140px; padding: 20px 22px;
+      min-height: 88px; padding: 12px 18px 14px;
     }
     #kpi-row .kpi .lbl { font-size: 13px; color: #64748b; }
-    #kpi-row .kpi .n { font-size: 40px; letter-spacing: -0.03em; margin-top: 10px; }
-    #kpi-row .kpi .hint { margin-top: 8px; font-size: 12px; color: #94a3b8; }
+    #kpi-row .kpi .n { font-size: 32px; letter-spacing: -0.03em; margin-top: 6px; }
+    #kpi-row .kpi .hint { margin-top: 4px; font-size: 12px; color: #94a3b8; }
     .mod { border: 1px solid var(--line); background: #fff; border-radius: 12px; }
     .kpi.pop { animation: kpiPop .55s ease; }
     @keyframes kpiPop {
@@ -74,14 +74,13 @@
     .vol-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; font-size: 11px; color: #64748b; }
     .vol-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
     .vol-legend i.line { height: 2px; width: 14px; border-radius: 99px; vertical-align: 3px; }
-    .kpi-mid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr); gap: 12px; flex: 1; min-height: 0; }
-    .kpi-mid-left { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 8px; min-width: 0; min-height: 0; }
-    .kpi-mid-right { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: 0; }
+    .kpi-mid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, 1fr); gap: 12px; flex: 1; min-height: 128px; }
+    .kpi-mid-right { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; }
     .kpi-bot { display: grid; grid-template-columns: minmax(0, 1.4fr) 210px; gap: 12px; min-height: 0; }
     .kpi-bot .rules-col, .kpi-bot .sev-col { min-width: 0; overflow: hidden; }
     #chart-sev svg { width: 72px; height: 72px; flex-shrink: 0; }
-    #chart-concl { min-height: 0; }
-    #chart-concl svg { width: 76px; height: 76px; flex-shrink: 0; }
+    #chart-concl { min-height: 104px; }
+    #chart-concl svg { width: 96px; height: 96px; flex-shrink: 0; }
     .concl-title { text-align: left; }
     .concl-row { display: grid; grid-template-columns: 10px minmax(0,1fr) auto auto; gap: 8px; align-items: center; }
     .concl-bar { height: 6px; border-radius: 99px; background: #eef2ff; overflow: hidden; }
@@ -153,15 +152,13 @@
             </div>
           </div>
           <div id="kpi-row"></div>
-          <div class="kpi-mid mt-3 overflow-hidden">
-            <div class="kpi-mid-left">
-              <div id="chart-done" class="flex min-h-0"></div>
-              <div class="mod flex min-h-0 min-w-0 flex-col px-3 py-2">
-                <div class="concl-title mb-2 text-xs font-semibold text-slate-600">AI 审核结论三态分布</div>
-                <div id="chart-concl" class="flex min-h-0 flex-1 items-center gap-3 overflow-hidden"></div>
-              </div>
+          <div class="kpi-mid mt-3">
+            <div class="mod flex min-h-0 min-w-0 flex-col px-3 py-2">
+              <div class="concl-title mb-2 text-xs font-semibold text-slate-600">AI 审核结论三态分布</div>
+              <div id="chart-concl" class="flex min-h-0 flex-1 items-center gap-3"></div>
             </div>
             <div class="kpi-mid-right">
+              <div id="chart-done" class="flex min-h-0"></div>
               <div id="chart-avg" class="flex min-h-0"></div>
               <div id="chart-adopt" class="flex min-h-0"></div>
             </div>
@@ -276,13 +273,11 @@
       $('chart-done').innerHTML =
         '<div class="kpi mod flex w-full flex-col justify-center px-3 py-3" data-kpi="done">' +
         '<div class="text-[11px] text-slate-400">已完成报告数量</div>' +
-        '<div class="n mt-1 text-2xl">' + esc(k.done) + '</div>' +
-        '<div class="text-[11px] text-slate-400">已出三态结论</div></div>';
+        '<div class="n mt-1 text-2xl">' + esc(k.done) + '</div></div>';
       $('chart-adopt').innerHTML =
         '<div class="kpi mod flex w-full flex-col justify-center px-3 py-3" data-kpi="adopt">' +
         '<div class="text-[11px] text-slate-400">人工采纳率</div>' +
-        '<div class="mt-1 text-2xl font-bold" style="color:var(--brand)">' + esc(k.adoptRate) + '</div>' +
-        '<div class="mt-1 text-[11px] text-slate-400">同意 AI / 同意+覆盖</div></div>';
+        '<div class="mt-1 text-2xl font-bold" style="color:var(--brand)">' + esc(k.adoptRate) + '</div></div>';
     }
     function donutHtml(slices, caption) {
       var total = slices.reduce(function (s, x) { return s + x.n; }, 0);
@@ -313,8 +308,7 @@
     function avgHtml(sec) {
       return '<div class="mod flex h-full w-full flex-col justify-center px-3 py-3">' +
         '<div class="text-[11px] text-slate-400">已成功任务平均耗时</div>' +
-        '<div class="mt-1 text-2xl font-bold" style="color:var(--brand)">' + esc(waitText(sec)) + '</div>' +
-        '<div class="mt-1 text-[11px] text-slate-400">引擎领取到写出三态</div></div>';
+        '<div class="mt-1 text-2xl font-bold" style="color:var(--brand)">' + esc(waitText(sec)) + '</div></div>';
     }
     function rulesHtml(rules) {
       if (!rules.length) return '<div class="text-xs text-slate-400">窗口内无命中项</div>';
@@ -599,7 +593,7 @@
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({ annotations: [
-        { id: 'ap-kpi', selector: '[data-annotate="ap-kpi"]', position: 'bottom', title: '窗口 KPI', content: '第一层三张卡：审核次数、成功率、异常率。第二层左侧为已完成报告数量与三态饼图，右侧为平均耗时与人工采纳率。第三层左侧规则命中不通过 TOP，右侧不通过项严重度饼图。', tag: 'AI面板' },
+        { id: 'ap-kpi', selector: '[data-annotate="ap-kpi"]', position: 'bottom', title: '窗口 KPI', content: '第一层三张卡：审核次数、成功率、异常率。第二层左侧为 AI 审核结论三态分布，右侧为已完成报告数量、已成功任务平均耗时、人工采纳率。第三层左侧规则命中不通过 TOP，右侧不通过项严重度饼图。', tag: 'AI面板' },
         { id: 'ap-range', selector: '[data-annotate="ap-range"]', position: 'bottom', title: '日期范围', content: '业务日锚定 2026-09-08。', tag: 'AI面板' },
         { id: 'ap-pending', selector: '[data-annotate="ap-pending"]', position: 'left', title: '过程中待处理', content: '每行提供「去处置」，直接进入报告审核工作台。下方审核异常区可同时露出两条，点击进报告审核去人工重跑。已归档名单才进入 AI 审核快照。', tag: 'AI面板' },
         { id: 'ap-trend', selector: '[data-annotate="ap-trend"]', position: 'top', title: '审核任务量走势', content: '右上角切年度 / 季度 / 月度。年度可选起止年；季度、月度选单个年份。柱为任务总数与已完成，绿线为完成率。', tag: 'AI面板' },

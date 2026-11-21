@@ -19,10 +19,27 @@ out.push((liability === 0 ? '✅' : '❌') + ' 不展示入口说明条');
 const kpiN = await p.locator('#kpi-row .kpi').count();
 out.push((kpiN === 3 ? '✅' : '❌') + ' 第一层三张 KPI: ' + kpiN);
 const kpiH = await p.locator('#kpi-row .kpi').first().evaluate((el) => el.clientHeight);
-out.push((kpiH >= 130 ? '✅' : '❌') + ' 第一层 KPI 卡高度: ' + kpiH);
+out.push((kpiH >= 80 && kpiH <= 120 ? '✅' : '❌') + ' 第一层 KPI 卡高度压低: ' + kpiH);
 const doneCard = await p.locator('#chart-done [data-kpi="done"]').count();
 const adoptCard = await p.locator('#chart-adopt [data-kpi="adopt"]').count();
 out.push((doneCard === 1 && adoptCard === 1 ? '✅' : '❌') + ' 已完成报告卡 + 人工采纳率卡');
+const midLayout = await p.evaluate(() => {
+  const done = document.getElementById('chart-done')?.getBoundingClientRect();
+  const avg = document.getElementById('chart-avg')?.getBoundingClientRect();
+  const pie = document.getElementById('chart-concl');
+  const svg = pie?.querySelector('svg');
+  const hints = (document.getElementById('chart-avg')?.textContent || '') + (document.getElementById('chart-adopt')?.textContent || '');
+  return {
+    doneLeftOfAvg: !!(done && avg && done.right <= avg.left + 2 && Math.abs(done.top - avg.top) < 24),
+    pieFit: !!(svg && pie && svg.clientHeight >= 90 && svg.clientHeight <= pie.clientHeight + 2),
+    svgH: svg ? svg.clientHeight : 0,
+    boxH: pie ? pie.clientHeight : 0,
+    noHints: !/引擎领取到写出三态/.test(hints) && !/同意 AI \/ 同意\+覆盖/.test(hints),
+  };
+});
+out.push((midLayout.doneLeftOfAvg ? '✅' : '❌') + ' 已完成报告数量在平均耗时左侧');
+out.push((midLayout.pieFit ? '✅' : '❌') + ` 三态饼图完整显示: svg=${midLayout.svgH} box=${midLayout.boxH}`);
+out.push((midLayout.noHints ? '✅' : '❌') + ' 去掉耗时/采纳率说明文案');
 
 const blocks = await p.evaluate(() => ['blk-kpi', 'blk-pending', 'blk-trend', 'blk-archive', 'blk-queue'].every((id) => !!document.getElementById(id)));
 out.push((blocks ? '✅' : '❌') + ' 五块布局容器');
