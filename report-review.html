@@ -79,7 +79,7 @@
 
   <div class="p-4">
     <div class="rounded bg-white p-4 shadow-sm">
-      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
+      <div class="ui-search-grid grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
         <div class="flex items-center gap-2">
           <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label>
           <input id="f_code" type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
@@ -104,6 +104,12 @@
           <input id="f_sample" type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
         </div>
         <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品大类</label>
+          <select id="f_cat" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">请选择样品大类</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
           <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托受理日期</label>
           <div class="flex flex-1 items-center gap-1">
             <input id="f_from" type="text" placeholder="开始日期" class="w-full rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
@@ -111,7 +117,7 @@
             <input id="f_to" type="text" placeholder="结束日期" class="w-full rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
           </div>
         </div>
-        <div class="flex items-center gap-2 xl:col-span-2 xl:justify-end">
+        <div class="flex items-center gap-2 ui-search-actions">
           <button onclick="doSearch()" class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>
           <button onclick="doReset()" class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i>重置</button>
         </div>
@@ -120,7 +126,7 @@
 
     <div class="mt-4 rounded bg-white p-4 shadow-sm">
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[1400px] border-collapse text-left text-sm">
+        <table class="w-full min-w-[1680px] border-collapse text-left text-sm">
           <thead>
             <tr class="bg-slate-100 text-slate-600">
               <th class="border border-slate-200 px-3 py-2 font-medium w-[72px] whitespace-nowrap">序号</th>
@@ -128,6 +134,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium whitespace-nowrap" data-annotate="rv-col-cat">样品大类</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">要求完成日期</th>
@@ -306,6 +313,23 @@
     function frameText(row) {
       return (row.contract && row.contract !== '/') ? '是' : '否';
     }
+    function catOf(sample) {
+      var st = window.SampleDataStore;
+      if (!st || !st.catLabelOfNames) return '—';
+      return st.catLabelOfNames(sample) || '—';
+    }
+    (function fillCatOptions() {
+      var sel = document.getElementById('f_cat');
+      if (!sel || sel.options.length > 1) return;
+      var st = window.SampleDataStore;
+      var labels = st && st.CAT_LABELS
+        ? Object.keys(st.CAT_LABELS).map(function (k) { return st.CAT_LABELS[k]; })
+        : ['电力物资类', '安全工器具类', '环境检测', '工程检测'];
+      labels.forEach(function (c) {
+        var o = document.createElement('option');
+        o.value = c; o.textContent = c; sel.appendChild(o);
+      });
+    })();
 
     function renderTable(list) {
       var data = list || ROWS;
@@ -316,6 +340,7 @@
           '<td class="border border-slate-200 px-3 py-2">' + row.contract + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.customer + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + catOf(row.sample) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.sendDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.requireDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.requireDate + '</td>' +
@@ -339,12 +364,14 @@
       var unit = document.getElementById('f_unit').value.trim();
       var sample = document.getElementById('f_sample').value.trim();
       var frame = document.getElementById('f_frame').value;
+      var cat = (document.getElementById('f_cat') && document.getElementById('f_cat').value) || '';
       var filtered = ROWS.filter(function (r) {
         if (code && r.code.indexOf(code) < 0) return false;
         if (contract && String(r.contract).indexOf(contract) < 0) return false;
         if (unit && r.customer.indexOf(unit) < 0) return false;
         if (sample && r.sample.indexOf(sample) < 0) return false;
         if (frame && frameText(r) !== frame) return false;
+        if (cat && catOf(r.sample) !== cat) return false;
         return true;
       });
       renderTable(filtered);
@@ -355,6 +382,7 @@
         document.getElementById(id).value = '';
       });
       document.getElementById('f_frame').value = '';
+      if (document.getElementById('f_cat')) document.getElementById('f_cat').value = '';
       renderTable();
     }
 
@@ -362,6 +390,9 @@
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({ annotations: [
+        { id: 'rv-col-cat', selector: '[data-annotate="rv-col-cat"]', position: 'top', title: '样品大类列', content: '<strong>需求逻辑：</strong>审核名单要和大类筛选对得上，列必须跟在样品名称后面，并进入列配置。<br>' +
+            '<strong>展示规则：</strong>表头「样品名称」后一列；按样品名推导大类（电力物资 / 安全工器具 / 环境 / 工程）。<br>' +
+            '<strong>交互逻辑：</strong>列配置可排序、显隐；查询区「样品大类」下拉按该列过滤。', tag: '报告审核' },
         { id: 'rv-audit-btn', selector: '[data-annotate="rv-audit-btn"]', position: 'left', title: '去审核', content: '<strong>需求逻辑：</strong>抽屉只用来先看各份报告状态，不直接处置。要处理请进工作台。<br>' +
             '<strong>展示规则：</strong>操作列蓝色「去审核」。<br>' +
             '<strong>交互逻辑：</strong>跳转 report-review-detail.html?code=委托编号，默认选中本节点待审核的第一份报告。', tag: '报告审核' },

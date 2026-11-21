@@ -56,16 +56,16 @@
   function opsHtml(stage, row) {
     var m = META[stage];
     if (m.kind === 'edit') {
-      return '<a class="text-blue-600 hover:underline" href="' + m.href + '?code=' + encodeURIComponent(row.code) + '"><i class="fa fa-pencil mr-1"></i>' + m.action + '</a>';
+      return '<a class="text-blue-600 hover:underline" data-annotate="flow-open" href="' + m.href + '?code=' + encodeURIComponent(row.code) + '"><i class="fa fa-pencil mr-1"></i>' + m.action + '</a>';
     }
     if (m.kind === 'view') {
-      return '<a class="text-blue-600 hover:underline" href="#" data-ship="' + esc(row.code) + '"><i class="fa fa-eye mr-1"></i>查看</a>';
+      return '<a class="text-blue-600 hover:underline" data-annotate="flow-open" href="#" data-ship="' + esc(row.code) + '"><i class="fa fa-eye mr-1"></i>查看</a>';
     }
     if (m.kind === 'archive') {
-      return '<button type="button" class="text-emerald-600 hover:underline" data-pass="' + esc(row.code) + '"><i class="fa fa-check-circle-o mr-1"></i>归档</button>' +
-        ' <button type="button" class="ml-1 text-orange-500 hover:underline" data-back="' + esc(row.code) + '"><i class="fa fa-undo mr-1"></i>退回</button>';
+      return '<span data-annotate="flow-open"><button type="button" class="text-emerald-600 hover:underline" data-pass="' + esc(row.code) + '"><i class="fa fa-check-circle-o mr-1"></i>归档</button>' +
+        ' <button type="button" class="ml-1 text-orange-500 hover:underline" data-back="' + esc(row.code) + '"><i class="fa fa-undo mr-1"></i>退回</button></span>';
     }
-    return '<button type="button" class="text-blue-600 hover:underline" data-open="' + esc(row.code) + '"><i class="fa fa-list-alt mr-1"></i>' + m.action + '</button>';
+    return '<button type="button" class="text-blue-600 hover:underline" data-annotate="flow-open" data-open="' + esc(row.code) + '"><i class="fa fa-list-alt mr-1"></i>' + m.action + '</button>';
   }
 
   function tableHtml(stage, list) {
@@ -146,8 +146,57 @@
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.no) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank">' + esc(r.name) + '</a></td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.at) + '</td>' +
-        '<td class="border border-slate-200 px-3 py-2 text-slate-400">—</td></tr>';
+        '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank">预览</a></td></tr>';
     }).join('');
+  }
+
+  function reportsTable(task, withCheck) {
+    return '<table class="w-full border-collapse text-left text-sm" data-no-col-config data-annotate="flow-rep-table"><thead><tr class="bg-slate-50 text-slate-600">' +
+      (withCheck ? '<th class="border border-slate-200 px-3 py-2 w-10 text-center"><input type="checkbox" id="check-all" checked /></th>' : '') +
+      '<th class="border border-slate-200 px-3 py-2">序号</th><th class="border border-slate-200 px-3 py-2">报告编号</th><th class="border border-slate-200 px-3 py-2">报告名称</th>' +
+      '<th class="border border-slate-200 px-3 py-2">生成时间</th><th class="border border-slate-200 px-3 py-2">操作</th></tr></thead><tbody>' +
+      reportRows(task, withCheck) + '</tbody></table>';
+  }
+
+  function checkedCount() {
+    return document.querySelectorAll('#flow-modal .rep-check:checked').length;
+  }
+
+  function syncModalPass() {
+    var btn = document.querySelector('#flow-modal [data-modal-pass]');
+    if (!btn) return;
+    var boxes = document.querySelectorAll('#flow-modal .rep-check');
+    if (!boxes.length) return;
+    var n = checkedCount();
+    var needShip = btn.getAttribute('data-need-ship') === '1';
+    var hasShip = btn.getAttribute('data-has-ship') === '1';
+    var ok = n > 0 && (!needShip || hasShip);
+    btn.disabled = !ok;
+    btn.classList.toggle('opacity-50', !ok);
+    btn.classList.toggle('cursor-not-allowed', !ok);
+    btn.title = n < 1 ? '请勾选至少一份报告' : (needShip && !hasShip ? '请先填写发放信息' : '');
+    var all = document.getElementById('check-all');
+    if (all) all.checked = n === boxes.length && n > 0;
+  }
+
+  function bindChecks() {
+    var all = document.getElementById('check-all');
+    var boxes = document.querySelectorAll('#flow-modal .rep-check');
+    if (all) {
+      all.addEventListener('change', function () {
+        [].forEach.call(boxes, function (c) { c.checked = all.checked; });
+        syncModalPass();
+      });
+    }
+    [].forEach.call(boxes, function (c) {
+      c.addEventListener('change', syncModalPass);
+    });
+    syncModalPass();
+  }
+
+  function stepChip(n, label, on) {
+    return '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs ' +
+      (on ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500') + '">' + n + ' ' + label + '</span>';
   }
 
   function shipRecordsHtml(task, opts) {
@@ -169,7 +218,7 @@
           '<td class="border border-slate-200 px-3 py-2">' + esc(ship.address) + '</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.contact) + '</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.phone) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + esc(ship.date) + '</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.note || '') + '</td>' +
           opCell + '</tr>'
-        : '<tr><td colspan="9" class="border border-slate-200 px-3 py-6 text-center text-slate-400">尚未填写发放地址</td></tr>') +
+        : '<tr><td colspan="9" class="border border-slate-200 px-3 py-6 text-center text-slate-400">尚未填写发放信息</td></tr>') +
       '</tbody></table></div>';
   }
 
@@ -188,23 +237,59 @@
     var task = ReportFlowStore.get(code); if (!task) return;
     var m = META[stage];
     var isIssue = stage === '报告发放';
-    var shipHtml = isIssue ? '<div class="mt-4">' + shipRecordsHtml(task, { readonly: false }) + '</div>' : '';
-    openModal(
-      '<div class="flex items-center justify-between border-b border-slate-100 px-5 py-3"><h3 class="text-base font-medium text-slate-800">报告列表</h3>' +
-      '<button type="button" class="text-slate-400 hover:text-slate-600" id="flow-modal-x"><i class="fa fa-times"></i></button></div>' +
+    var withCheck = m.kind === 'modal' || isIssue;
+    var title = isIssue ? '报告发放' : (m.kind === 'modal' ? stage : '报告列表');
+    var nRep = (task.reports || []).length;
+    var head =
+      '<div class="flex items-center justify-between border-b border-slate-100 px-5 py-3"><h3 class="text-base font-medium text-slate-800">' + esc(title) + '</h3>' +
+      '<button type="button" class="text-slate-400 hover:text-slate-600" id="flow-modal-x"><i class="fa fa-times"></i></button></div>';
+    var footCancel = '<button type="button" class="rounded border border-slate-300 px-4 py-1.5 text-sm" id="flow-cancel">取消</button>' +
+      '<button type="button" class="rounded border border-slate-300 px-4 py-1.5 text-sm" data-modal-back="' + esc(code) + '">退回</button>';
+    if (isIssue) {
+      var hasShip = !!task.ship;
+      openModal(head +
+        '<div class="flex-1 overflow-auto p-5">' +
+        '<div class="mb-4 flex flex-wrap items-center gap-2" data-annotate="flow-issue-steps">' +
+        stepChip('1', '勾选待发放报告', true) +
+        '<i class="fa fa-angle-right text-slate-300"></i>' +
+        stepChip('2', '填写发放信息', hasShip) +
+        '<i class="fa fa-angle-right text-slate-300"></i>' +
+        stepChip('3', '发放通过', false) +
+        '</div>' +
+        '<div class="mb-1 flex items-center justify-between" data-annotate="flow-issue-check">' +
+        '<div class="text-sm font-medium text-slate-700">一、勾选待发放报告 <span class="font-normal text-slate-400">共 ' + nRep + ' 份</span></div></div>' +
+        reportsTable(task, true) +
+        '<div class="mt-5" data-annotate="flow-issue-addr">' +
+        '<div class="mb-2 flex items-center justify-between">' +
+        '<div class="text-sm font-medium text-slate-700">二、填写发放信息</div>' +
+        (hasShip
+          ? '<button type="button" class="text-sm text-blue-600 hover:underline" data-addr="' + esc(code) + '">修改发放信息</button>'
+          : '<button type="button" class="rounded bg-blue-600 px-3 py-1 text-sm text-white" data-addr="' + esc(code) + '">填写发放信息</button>') +
+        '</div>' +
+        shipRecordsHtml(task, { readonly: false, hideTitle: true }) +
+        '</div></div>' +
+        '<div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3" data-annotate="flow-issue-foot">' +
+        footCancel +
+        (hasShip
+          ? '<button type="button" class="rounded border border-blue-300 px-4 py-1.5 text-sm text-blue-600" data-addr="' + esc(code) + '">修改发放信息</button>'
+          : '<button type="button" class="rounded border border-blue-300 px-4 py-1.5 text-sm text-blue-600" data-addr="' + esc(code) + '">填写发放信息</button>') +
+        '<button type="button" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" data-modal-pass="' + esc(code) + '" data-need-ship="1" data-has-ship="' + (hasShip ? '1' : '0') + '">发放通过</button>' +
+        '</div>'
+      );
+      bindChecks();
+      return;
+    }
+    openModal(head +
       '<div class="flex-1 overflow-auto p-5">' +
-      '<table class="w-full border-collapse text-left text-sm"><thead><tr class="bg-slate-50 text-slate-600">' +
-      (isIssue ? '<th class="border border-slate-200 px-3 py-2 w-10"><input type="checkbox" id="check-all" checked /></th>' : '') +
-      '<th class="border border-slate-200 px-3 py-2">序号</th><th class="border border-slate-200 px-3 py-2">报告编号</th><th class="border border-slate-200 px-3 py-2">报告名称</th>' +
-      '<th class="border border-slate-200 px-3 py-2">生成时间</th><th class="border border-slate-200 px-3 py-2">操作</th></tr></thead><tbody>' +
-      reportRows(task, isIssue) + '</tbody></table>' + shipHtml + '</div>' +
+      '<div class="mb-2 text-sm text-slate-500">本任务共 <b class="text-slate-700">' + nRep + '</b> 份报告，勾选后' + (stage === '收费审批' ? '审批' : '处理') + '。</div>' +
+      reportsTable(task, withCheck) +
+      '</div>' +
       '<div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">' +
-      '<button type="button" class="rounded border border-slate-300 px-4 py-1.5 text-sm" id="flow-cancel">' + (stage === '任务完成' ? '关闭' : '取消') + '</button>' +
-      (stage === '任务完成' ? '' : '<button type="button" class="rounded border border-slate-300 px-4 py-1.5 text-sm" data-modal-back="' + esc(code) + '">退回</button>') +
+      footCancel +
       (m.pass ? '<button type="button" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" data-modal-pass="' + esc(code) + '">' + m.pass + '</button>' : '') +
-      (isIssue ? '<button type="button" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white" data-addr="' + esc(code) + '">填写地址</button>' : '') +
       '</div>'
     );
+    if (withCheck) bindChecks();
   }
 
   function openAddr(code) {
@@ -244,6 +329,82 @@
     setTimeout(function () { t.classList.add('hidden'); }, 1600);
   }
 
+  function flowAnnotations(stage) {
+    var list = [
+      {
+        id: 'flow-search', selector: '.ui-search-grid', position: 'bottom', title: '查询条件（样品大类在样品名称后）',
+        content: '<strong>需求逻辑：</strong>签发到任务完成各名单字段口径与报告审核对齐，按委托 / 合同 / 客户 / 样品 / 样品大类筛任务，避免各节点各做一套条件。<br>' +
+          '<strong>展示规则：</strong>样品大类下拉跟在样品名称后面；查询、重置钉在第二行最右。<br>' +
+          '<strong>交互逻辑：</strong>查询按当前节点过滤；重置清空条件并刷新本节点名单。',
+        tag: stage
+      },
+      {
+        id: 'flow-record', selector: '#flow-root thead th:nth-last-child(2), #flow-root [data-record]', position: 'top', title: '报告记录',
+        content: '<strong>需求逻辑：</strong>签发之后仍要能看该委托下各份报告的流转留痕，不必退回编制或审核页。<br>' +
+          '<strong>展示规则：</strong>名单「报告记录」列；任务完成右侧冻结「报告记录 + 发放记录」。<br>' +
+          '<strong>交互逻辑：</strong>点击打开右侧抽屉（节点进度 + 操作日志），与编制 / 审核同一套。',
+        tag: stage
+      },
+      {
+        id: 'flow-open', selector: '[data-annotate="flow-open"]', position: 'left', title: META[stage].action,
+        content: stage === '报告签发'
+          ? '<strong>需求逻辑：</strong>授权签字人必须进工作台看报告文件、收样与检测信息后再签发，不能在名单上直接点通过。<br><strong>展示规则：</strong>操作列「去签发」。<br><strong>交互逻辑：</strong>进入签发工作台（report-sign-edit.html?code=委托编号），默认选中本单待签发报告。'
+          : stage === '报告处理'
+            ? '<strong>需求逻辑：</strong>一份委托常对应多份报告，处理时要先勾选本批要过的报告再点处理通过。<br><strong>展示规则：</strong>操作列「处理」，弹窗标题「报告处理」，报告列表带勾选（默认全选）。<br><strong>交互逻辑：</strong>至少勾选一份才能处理通过；退回须填原因，整单退回上一节点（报告签发）。'
+            : stage === '收费审批'
+              ? '<strong>需求逻辑：</strong>财务按报告收费，一张委托多份报告时要能勾选本批审批范围。<br><strong>展示规则：</strong>操作列「审批」，弹窗标题「收费审批」，多报告 + 勾选。<br><strong>交互逻辑：</strong>至少勾选一份才能审批通过；退回须填原因，退回报告处理。'
+              : stage === '报告发放'
+                ? '<strong>需求逻辑：</strong>发放必须按「勾选报告 → 填写发放信息 → 发放通过」走，先过再填地址会丢件。<br><strong>展示规则：</strong>操作列「发放」。<br><strong>交互逻辑：</strong>打开发放弹窗，见弹窗内三步动线批注。'
+                : stage === '任务归档'
+                  ? '<strong>需求逻辑：</strong>发放完成后归档入库，异常单可退回发放。<br><strong>展示规则：</strong>操作列同时提供「归档」「退回」，不再单列「任务归档」字段。<br><strong>交互逻辑：</strong>归档进任务完成；退回须填原因。'
+                  : '<strong>需求逻辑：</strong>任务完成后名单只读，发放记录要能回看快递信息。<br><strong>展示规则：</strong>末列改为「发放记录」，与报告记录一起右侧冻结。<br><strong>交互逻辑：</strong>「查看」打开发放记录弹窗（只读）；「报告记录」仍开抽屉。',
+        tag: stage
+      }
+    ];
+    if (stage === '报告处理' || stage === '收费审批') {
+      list.push({
+        id: 'flow-rep-table', selector: '#flow-modal [data-annotate="flow-rep-table"]', position: 'top', title: '多报告勾选',
+        content: '<strong>需求逻辑：</strong>一张委托任务常有多份报告，处理 / 收费不能默认只出一份，否则会漏单。<br>' +
+          '<strong>展示规则：</strong>弹窗内报告列表带勾选列、表头全选；演示任务 mock 2～3 份报告。<br>' +
+          '<strong>交互逻辑：</strong>默认全选；取消到 0 份时通过按钮置灰；点通过只代表本批已勾选报告完成本节点（原型按整单流转）。',
+        tag: stage
+      });
+    }
+    if (stage === '报告发放') {
+      list.push(
+        {
+          id: 'flow-issue-steps', selector: '[data-annotate="flow-issue-steps"]', position: 'bottom', title: '发放三步动线',
+          content: '<strong>需求逻辑：</strong>先确认发哪些报告，再写快递信息，最后发放通过；顺序反了会把没填地址的报告发出去。<br>' +
+            '<strong>展示规则：</strong>顶部步骤条：①勾选待发放报告 → ②填写发放信息 → ③发放通过。已填地址时第 2 步点亮。<br>' +
+            '<strong>交互逻辑：</strong>未勾选或未填发放信息时「发放通过」置灰；填完地址返回本弹窗后再点通过。',
+          tag: '报告发放'
+        },
+        {
+          id: 'flow-issue-check', selector: '[data-annotate="flow-issue-check"]', position: 'top', title: '勾选待发放报告',
+          content: '<strong>需求逻辑：</strong>一份委托可能分批发，必须能勾选本批要寄出的报告。<br>' +
+            '<strong>展示规则：</strong>报告列表带勾选、全选；可预览报告文件。<br>' +
+            '<strong>交互逻辑：</strong>默认全选；取消后通过按钮不可点。',
+          tag: '报告发放'
+        },
+        {
+          id: 'flow-issue-addr', selector: '[data-annotate="flow-issue-addr"]', position: 'top', title: '填写发放信息',
+          content: '<strong>需求逻辑：</strong>快递公司、单号、地址、联系人、电话、发放日期是出库依据，必须在发放通过前落库。<br>' +
+            '<strong>展示规则：</strong>未填时空表 +「填写发放信息」；已填展示记录，可修改 / 删除。<br>' +
+            '<strong>交互逻辑：</strong>点填写进入表单（联系人、联系方式、发放日期必填）；确认后回到发放弹窗，第 2 步点亮。',
+          tag: '报告发放'
+        },
+        {
+          id: 'flow-issue-foot', selector: '[data-annotate="flow-issue-foot"]', position: 'top', title: '发放通过',
+          content: '<strong>需求逻辑：</strong>通过即进入任务归档，必须同时满足：已勾选报告、已填写发放信息。<br>' +
+            '<strong>展示规则：</strong>按钮顺序为取消 → 退回 → 填写/修改发放信息 → 发放通过，与动线一致。<br>' +
+            '<strong>交互逻辑：</strong>条件不满足时通过按钮置灰并悬停说明原因；退回须填原因，退回收费审批。',
+          tag: '报告发放'
+        }
+      );
+    }
+    return list;
+  }
+
   function mount(opts) {
     var stage = opts.stage;
     var root = document.getElementById('flow-root');
@@ -267,8 +428,12 @@
       };
       document.getElementById('btn-reset').onclick = function () { paint(); };
       if (global.ColumnConfig && typeof ColumnConfig.refresh === 'function') ColumnConfig.refresh();
+      if (global.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
     }
     paint();
+    if (global.PrototypeAnnotation && PrototypeAnnotation.init) {
+      PrototypeAnnotation.init({ annotations: flowAnnotations(stage) });
+    }
     document.addEventListener('click', function (e) {
       var open = e.target.closest('[data-open]');
       var passBtn = e.target.closest('[data-pass]');
@@ -315,7 +480,9 @@
       if (p) {
         var code = p.getAttribute('data-modal-pass');
         var task = ReportFlowStore.get(code);
-        if (stage === '报告发放' && task && !task.ship) { alert('请先填写发放地址'); return; }
+        var boxes = document.querySelectorAll('#flow-modal .rep-check');
+        if (boxes.length && checkedCount() < 1) { alert('请勾选至少一份报告'); return; }
+        if (stage === '报告发放' && task && !task.ship) { alert('请先填写发放信息'); return; }
         ReportFlowStore.pass(code);
         toast(META[stage].pass + '，已进入「' + ReportFlowStore.nextOf(stage) + '」');
         closeModal(); paint();

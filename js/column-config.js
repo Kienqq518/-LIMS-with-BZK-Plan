@@ -61,6 +61,9 @@
 
   var table = null, cols = [], order = [], hidden = {}, panel = null, applying = false;
   var tbodyObs = null, docObs = null, listenersBound = false, rebindTimer = null;
+  var quietUntil = 0;
+  function hush(ms) { quietUntil = Date.now() + (ms || 200); }
+  function isQuiet() { return applying || Date.now() < quietUntil; }
 
   /* ===== 固定列（横向滚动不动、列配置里不可隐藏 / 不可调序） =====
    * 按列名认，不按位置认：以前是「可见列的头两列 + 末列」，
@@ -191,15 +194,37 @@
   }
 
     function tagBodyCells() {
+    var hr = headRow();
+    var thKeys = hr ? [].slice.call(hr.children).map(function (th) { return th.getAttribute('data-col-key') || ''; }) : [];
     [].slice.call(table.tBodies).forEach(function (tb) {
       [].slice.call(tb.rows).forEach(function (tr) {
         if (tr.cells.length === 1 && tr.cells[0].colSpan > 1) return;   // 空态行
         if (tr.cells.length !== cols.length) return;                   // 等「样品大类」补齐单元格再打标，避免操作列错位
-        [].slice.call(tr.cells).forEach(function (td, i) {
-          if (cols[i]) td.setAttribute('data-col-key', cols[i].key);
+        var cells = [].slice.call(tr.cells);
+        var tagged = cells.filter(function (td) { return td.getAttribute('data-col-key'); }).length;
+        if (tagged === cells.length) return;                           // 已打标（含列已重排），禁止按位置重打，否则主表会闪
+        if (tagged === 0) {
+          cells.forEach(function (td, i) {
+            if (cols[i]) td.setAttribute('data-col-key', cols[i].key);
+          });
+          return;
+        }
+        // 中途注入新列：表头与表体当前顺序一致，只给还没 key 的格子打标
+        cells.forEach(function (td, i) {
+          if (!td.getAttribute('data-col-key') && thKeys[i]) td.setAttribute('data-col-key', thKeys[i]);
         });
       });
     });
+  }
+
+  function unlabeledHeadCount(tbl) {
+    var t = tbl || table;
+    if (!t) return 0;
+    var hr = t.querySelector('thead tr') || t.querySelector('tr');
+    if (!hr) return 0;
+    return [].slice.call(hr.children).filter(function (th) {
+      return !(th.getAttribute('data-col-key') || '').trim();
+    }).length;
   }
 
   function visibleKeys() {
@@ -209,6 +234,14 @@
   function apply() {
     if (!table || applying) return;
     applying = true;
+    if (tbodyObs) { try { tbodyObs.disconnect(); } catch (e) { /* ignore */ } }
+    // 运行中若注入了新列（如样品大类），补进 cols/order，避免无 data-col-key 的 th 被 appendChild 甩到最左
+    var prevN = cols.length;
+    collectCols();
+    if (cols.length !== prevN) {
+      order = mergeOrder(order, cols.map(function (c) { return c.key; }));
+      tagBodyCells();
+    }
     // 固定列不可隐藏、不可挪位：先清掉历史草稿里对它们的隐藏与乱序
     PIN_LOCK_LABELS.forEach(function (lb) {
       var k = keyOfLabel(lb);
@@ -247,6 +280,8 @@
     moveTriggerIfHidden();
     applyStickyColumns();
     applying = false;
+    hush(220);
+    observeTbody();
   }
   function cssEsc(v) { return String(v).replace(/"/g, '\\"'); }
 
@@ -576,9 +611,10 @@
     if (!global.MutationObserver || !table || !table.tBodies[0]) return;
     if (tbodyObs) { try { tbodyObs.disconnect(); } catch (e) { /* ignore */ } }
     tbodyObs = new MutationObserver(function () {
-      if (applying) return;
+      if (isQuiet()) return;
       clearTimeout(rebindTimer);
       rebindTimer = setTimeout(function () {
+        if (isQuiet()) return;
         if (!table || !doc.contains(table)) { rebind(); return; }
         collectCols(); tagBodyCells(); apply();
       }, 16);
@@ -619,11 +655,15 @@
   function observeDoc() {
     if (docObs || !global.MutationObserver || !doc.body) return;
     docObs = new MutationObserver(function () {
-      if (applying) return;
+      if (isQuiet()) return;
       clearTimeout(rebindTimer);
       rebindTimer = setTimeout(function () {
+        if (isQuiet()) return;
         var next = findTable();
-        if (next && (!table || !doc.contains(table) || next !== table || !triggerOn(next))) rebind();
+        if (!next) return;
+        var headChanged = unlabeledHeadCount(next) > 0 ||
+          (table && next === table && next.querySelectorAll('thead th').length !== cols.length);
+        if (!table || !doc.contains(table) || next !== table || !triggerOn(next) || headChanged) rebind();
       }, 40);
     });
     docObs.observe(doc.body, { childList: true, subtree: true });

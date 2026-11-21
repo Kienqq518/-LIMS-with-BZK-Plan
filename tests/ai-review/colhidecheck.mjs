@@ -6,6 +6,9 @@ const err = [];
 const b = await chromium.launch({ channel: 'chrome' });
 const p = await b.newPage();
 p.setViewportSize({ width: 1440, height: 900 });
+await p.addInitScript(() => {
+  try { localStorage.setItem('lims-prototype-annotation-enabled', '0'); } catch (e) { /* ignore */ }
+});
 p.on('pageerror', (e) => err.push('pageerror: ' + e.message));
 
 await p.goto(BASE + '/report-sign.html', { waitUntil: 'domcontentloaded' });
@@ -77,7 +80,7 @@ function judge(label, info, expectHidden) {
 
 await p.goto(BASE + '/report-sign.html', { waitUntil: 'load' });
 await p.waitForTimeout(350);
-await p.locator('#cc-trigger').click();
+await p.evaluate(() => { var b = document.getElementById('cc-trigger'); if (b) b.click(); });
 await p.waitForTimeout(150);
 await p.evaluate(() => window.ColumnConfig._toggle('合同编号', false));
 await p.waitForTimeout(250);

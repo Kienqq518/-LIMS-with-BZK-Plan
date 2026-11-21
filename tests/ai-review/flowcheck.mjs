@@ -65,24 +65,30 @@ out.push((/report-sign\.html/.test(p.url()) ? '✅' : '❌') + ' 签发通过回
 
 await p.goto(BASE + '/report-process.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
-await p.locator('[data-open]').first().click();
+out.push(((await p.locator('[data-annotate="flow-open"]').count()) >= 1 ? '✅' : '❌') + ' 处理名单挂需求批注');
+await p.locator('tr', { hasText: 'SC2026/0439' }).locator('[data-open]').click();
 await p.waitForTimeout(150);
 out.push((await p.locator('#flow-modal button[data-modal-pass]').textContent() === '处理通过' ? '✅' : '❌') + ' 处理弹窗处理通过');
+out.push(((await p.locator('#flow-modal .rep-check').count()) >= 2 ? '✅' : '❌') + ' 处理弹窗多报告勾选 ' + (await p.locator('#flow-modal .rep-check').count()));
+out.push(((await p.locator('#flow-modal #check-all').count()) === 1 ? '✅' : '❌') + ' 处理弹窗全选');
 await p.locator('#flow-modal button[data-modal-pass]').click();
 await p.waitForTimeout(200);
 
 await p.goto(BASE + '/report-fee.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
-await p.locator('[data-open]').first().click();
+await p.locator('tr', { hasText: 'SC2026/0175' }).locator('[data-open]').click();
 await p.waitForTimeout(150);
 out.push((/审批通过/.test(await p.locator('#flow-modal').textContent()) ? '✅' : '❌') + ' 收费审批弹窗审批通过');
+out.push(((await p.locator('#flow-modal .rep-check').count()) >= 2 ? '✅' : '❌') + ' 收费弹窗多报告勾选 ' + (await p.locator('#flow-modal .rep-check').count()));
 await p.locator('#flow-cancel').click();
 
 await p.goto(BASE + '/report-issue.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
 await p.locator('[data-open]').first().click();
 await p.waitForTimeout(150);
-out.push((/填写地址/.test(await p.locator('#flow-modal').textContent()) && /发放通过/.test(await p.locator('#flow-modal').textContent()) ? '✅' : '❌') + ' 发放弹窗含地址与发放通过');
+const issueTxt = await p.locator('#flow-modal').textContent();
+out.push((/勾选待发放报告/.test(issueTxt) && /填写发放信息/.test(issueTxt) && /发放通过/.test(issueTxt) ? '✅' : '❌') + ' 发放弹窗三步动线');
+out.push(((await p.locator('#flow-modal .rep-check').count()) >= 2 ? '✅' : '❌') + ' 发放弹窗多报告勾选');
 await p.locator('#flow-modal [data-addr]').first().click();
 await p.waitForTimeout(120);
 out.push((/填写报告发放信息/.test(await p.locator('#flow-modal').textContent()) ? '✅' : '❌') + ' 填写发放信息');
@@ -187,7 +193,17 @@ out.push(((await p.locator('#body tr').count()) >= 1 ? '✅' : '❌') + ' 检测
 out.push((/样品大类/.test(await p.locator('thead').textContent() || '') ? '✅' : '❌') + ' 原始记录名单有样品大类列');
 await p.goto(BASE + '/report-review.html', { waitUntil: 'load' });
 await p.waitForTimeout(280);
-out.push((/样品大类/.test(await p.locator('thead').textContent() || '') ? '✅' : '❌') + ' 报告审核名单有样品大类列');
+const rvHead = await p.locator('thead tr').first().locator('th').allTextContents();
+const rvCat = rvHead.findIndex((t) => t.trim() === '样品大类');
+const rvName = rvHead.findIndex((t) => t.trim() === '样品名称');
+out.push((/样品大类/.test(rvHead.join('')) ? '✅' : '❌') + ' 报告审核名单有样品大类列');
+out.push((rvName >= 0 && rvCat === rvName + 1 ? '✅' : '❌') + ' 报告审核样品大类在样品名称后 ' + JSON.stringify({ rvName, rvCat, first: rvHead[0] }));
+await p.evaluate(() => { var b = document.getElementById('cc-trigger'); if (b) b.click(); });
+await p.waitForTimeout(200);
+const panelTxt = await p.locator('#cc-panel').textContent();
+out.push((/样品大类/.test(panelTxt || '') ? '✅' : '❌') + ' 报告审核列配置含样品大类');
+await p.evaluate(() => { if (window.ColumnConfig) ColumnConfig._close(true); });
+await p.waitForTimeout(120);
 await p.goto(BASE + '/task-complete.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
 out.push((/样品大类/.test(await p.locator('#flow-root thead').textContent() || '') ? '✅' : '❌') + ' 任务完成名单有样品大类列');
@@ -221,6 +237,36 @@ await p.waitForTimeout(180);
 await p.locator('[data-open]').first().click();
 await p.waitForTimeout(150);
 await p.screenshot({ path: SHOT_DIR + '/flow-issue-modal.png' });
+
+await p.goto(BASE + '/report-sign.html', { waitUntil: 'load' });
+await p.waitForTimeout(250);
+out.push(((await p.locator('[data-annotate="flow-open"]').count()) >= 1 ? '✅' : '❌') + ' 签发名单挂需求批注');
+await p.evaluate(() => { var b = document.getElementById('cc-trigger'); if (b) b.click(); });
+await p.waitForTimeout(180);
+const beforeMove = await p.evaluate(() => {
+  const keys = [...document.querySelectorAll('#flow-root thead th')].map((th) => th.getAttribute('data-col-key'));
+  return { keys, unitIdx: keys.indexOf('客户单位'), catN: keys.filter((k) => k === '样品大类').length };
+});
+await p.evaluate(() => { if (window.ColumnConfig) ColumnConfig._move('客户单位', 1); });
+await p.waitForTimeout(400);
+const afterMove = await p.evaluate(() => {
+  const keys = [...document.querySelectorAll('#flow-root thead th')].map((th) => th.getAttribute('data-col-key'));
+  const labels = [...document.querySelectorAll('#flow-root thead th')].map((th) => (th.textContent || '').replace(/\s+/g, ' ').trim());
+  return {
+    keys,
+    unique: new Set(keys).size === keys.length,
+    first: labels[0].indexOf('序号') === 0,
+    last: /操作/.test(labels[labels.length - 1]),
+    catN: keys.filter((k) => k === '样品大类').length,
+    unitIdx: keys.indexOf('客户单位')
+  };
+});
+out.push((afterMove.unique && afterMove.first && afterMove.last && afterMove.keys.length === beforeMove.keys.length && afterMove.catN === 1 ? '✅' : '❌') + ' 移动列后不闪且列不乱 ' + JSON.stringify(afterMove));
+out.push((afterMove.unitIdx === beforeMove.unitIdx + 1 ? '✅' : '❌') + ' 客户单位下移生效');
+const href3 = await p.locator('#flow-root a[href*="report-sign-edit.html"]').first().getAttribute('href');
+await p.goto(BASE + '/' + href3, { waitUntil: 'load' });
+await p.waitForTimeout(200);
+out.push(((await p.locator('[data-annotate="sg-action"]').count()) === 1 ? '✅' : '❌') + ' 签发工作台挂需求批注');
 
 console.log(out.join('\n'));
 console.log('errors(' + err.length + '):\n' + err.slice(0, 5).join('\n'));

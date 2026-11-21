@@ -187,7 +187,25 @@
   <script src="js/report-info-panel.js"></script>
   <script src="js/report-sign-workbench.js"></script>
   <script src="js/prototype-annotation.js"></script>
-  <script>ReportSignWorkbench.boot();</script>
+  <script>
+    ReportSignWorkbench.boot();
+    if (window.PrototypeAnnotation) {
+      PrototypeAnnotation.init({ annotations: [
+        { id: 'sg-overview', selector: '[data-annotate="sg-overview"]', position: 'bottom', title: '任务概览',
+          content: '<strong>需求逻辑：</strong>签发前先确认这是哪张委托、客户/样品、几份报告、节点状态，避免签错单。<br><strong>展示规则：</strong>摘要行含委托号、客户、样品、报告份数、受理/要求完成日期、状态；展开后为合同 / 委托 / 付款 / 报告四个 Tab（与审核工作台对齐）。<br><strong>交互逻辑：</strong>点标题行展开/收起；切 Tab 只换概览内容，不换当前报告。', tag: '报告签发' },
+        { id: 'sg-roster', selector: '[data-annotate="sg-roster"]', position: 'right', title: '待签发名单',
+          content: '<strong>需求逻辑：</strong>授权签字人一次可能签发同一委托下多份报告，左侧名单用来切换当前份。<br><strong>展示规则：</strong>卡片展示报告编号、版本、状态；当前份高亮。<br><strong>交互逻辑：</strong>点击切换中间预览、操作日志与底部签发处置对象。', tag: '报告签发' },
+        { id: 'sg-log', selector: '[data-annotate="sg-log"]', position: 'right', title: '操作日志',
+          content: '<strong>需求逻辑：</strong>签发前要能看到编制提交、AI 预审、人工审核的留痕。<br><strong>展示规则：</strong>当前报告的流转时间轴。<br><strong>交互逻辑：</strong>只读；随左侧名单切换。', tag: '报告签发' },
+        { id: 'sg-file', selector: '[data-annotate="sg-file"]', position: 'bottom', title: '报告文件',
+          content: '<strong>需求逻辑：</strong>签发看的是报告正文，不在本页做 AI 核对。<br><strong>展示规则：</strong>报告文件名、版本、编制人、编制时间；点击文件名打开预览。<br><strong>交互逻辑：</strong>预览在下方「报告预览」Tab，不再单独展开按钮。', tag: '报告签发' },
+        { id: 'sg-info', selector: '[data-annotate="sg-info"]', position: 'top', title: '报告预览 / 收样 / 检测',
+          content: '<strong>需求逻辑：</strong>签字人对照报告正文、收样信息、检测数据后再决定通过或退回。<br><strong>展示规则：</strong>三个 Tab：报告预览、收样信息、检测信息。<br><strong>交互逻辑：</strong>切 Tab 不改当前报告；预览为报告 PDF/正文示意。', tag: '报告签发' },
+        { id: 'sg-action', selector: '[data-annotate="sg-action"]', position: 'top', title: '签发处置',
+          content: '<strong>需求逻辑：</strong>通过进入报告处理；退回必须写原因，打回报告审核。<br><strong>展示规则：</strong>退回原因输入框 + 退回 + 签发通过。<br><strong>交互逻辑：</strong>退回时空原因拦截；签发通过后回到签发名单。', tag: '报告签发' }
+      ] });
+    }
+  </script>
   <script src="js/current-user.js?v=3" defer></script>
   <script src="js/user-profile.js?v=8" defer></script>
   <script src="js/message-store.js?v=4" defer></script>
