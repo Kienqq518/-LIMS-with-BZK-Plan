@@ -104,10 +104,8 @@
       var isAi = kind === 'AI';
       var liCls = (idx === 0 ? 'is-latest ' : '') + (isAi ? 'is-ai' : '');
       var from = r.from || r.node || '';
-      var to = r.to || '';
       var chips = '<span class="ret-chip' + (idx === 0 ? ' is-latest' : '') + '">第 ' + n + ' 次</span> ' +
         (from ? '<span class="ret-chip">来源 ' + esc(from) + '</span> ' : '') +
-        (to ? '<span class="ret-chip">退回至 ' + esc(to) + '</span> ' : '') +
         '<span class="ret-chip' + (isAi ? ' is-ai' : '') + '">' + esc(kind) + '</span>';
       return '<li class="' + liCls + '">' +
         '<div class="mb-1 flex flex-wrap items-center gap-1.5">' + chips + '</div>' +
@@ -119,8 +117,7 @@
     }).join('');
     return '<div class="ret-tl" data-annotate="compile-returns">' +
       '<div class="ret-tl-head">' +
-      '<div class="text-sm font-medium text-slate-700">退回记录 <span class="font-normal text-slate-500">· 共 ' + total + ' 次</span></div>' +
-      '<div class="text-[11px] text-slate-400">新到旧 · 追加不覆盖</div></div>' +
+      '<div class="text-sm font-medium text-slate-700">退回记录 <span class="font-normal text-slate-500">· 共 ' + total + ' 次</span></div></div>' +
       '<ul class="ret-timeline">' + items + '</ul></div>';
   }
 

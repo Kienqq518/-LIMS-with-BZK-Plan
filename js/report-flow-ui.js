@@ -151,7 +151,7 @@
     }
     return r.word || r.name;
   }
-  function reportRows(task, withCheck) {
+  function reportRows(task, withCheck, issueMode) {
     return (task.reports || []).map(function (r, i) {
       var fname = displayReportName(task, r);
       var issued = !!r.issued;
@@ -164,22 +164,27 @@
           ? '<td class="border border-slate-200 px-3 py-2 text-center text-xs text-slate-400">已发放</td>'
           : '<td class="border border-slate-200 px-3 py-2 text-center"><input type="checkbox" class="rep-check" checked data-id="' + esc(r.id) + '" /></td>';
       }
+      var opCell = issueMode
+        ? (issued
+          ? '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="#" data-view-ship>查看发放记录</a></td>'
+          : '<td class="border border-slate-200 px-3 py-2"></td>')
+        : '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank">预览</a></td>';
       return '<tr class="' + (issued ? 'bg-slate-50 text-slate-400' : '') + '">' +
         checkCell +
         '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.no) + retTag + '</td>' +
         '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank"><i class="fa ' + fileIcon(fname) + ' mr-1"></i>' + esc(fname) + '</a></td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.at) + '</td>' +
-        '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank">预览</a></td></tr>';
+        opCell + '</tr>';
     }).join('');
   }
 
-  function reportsTable(task, withCheck) {
+  function reportsTable(task, withCheck, issueMode) {
     return '<table class="w-full border-collapse text-left text-sm" data-no-col-config data-annotate="flow-rep-table"><thead><tr class="bg-slate-50 text-slate-600">' +
       (withCheck ? '<th class="border border-slate-200 px-3 py-2 w-10 text-center"><input type="checkbox" id="check-all" checked /></th>' : '') +
       '<th class="border border-slate-200 px-3 py-2">序号</th><th class="border border-slate-200 px-3 py-2">报告编号</th><th class="border border-slate-200 px-3 py-2">报告名称</th>' +
       '<th class="border border-slate-200 px-3 py-2">生成时间</th><th class="border border-slate-200 px-3 py-2">操作</th></tr></thead><tbody>' +
-      reportRows(task, withCheck) + '</tbody></table>';
+      reportRows(task, withCheck, issueMode) + '</tbody></table>';
   }
 
   function checkedCount() {
@@ -283,7 +288,7 @@
         '</div>' +
         '<div class="mb-1 flex items-center justify-between" data-annotate="flow-issue-check">' +
         '<div class="text-sm font-medium text-slate-700">一、勾选待发放报告 <span class="font-normal text-slate-400">共 ' + nRep + ' 份</span></div></div>' +
-        reportsTable(task, true) +
+        reportsTable(task, true, true) +
         '<div class="mt-5" data-annotate="flow-issue-addr">' +
         '<div class="mb-2 flex items-center justify-between">' +
         '<div class="text-sm font-medium text-slate-700">二、填写发放信息</div>' +
@@ -404,9 +409,9 @@
         },
         {
           id: 'flow-issue-check', selector: '[data-annotate="flow-issue-check"]', position: 'top', title: '勾选待发放报告',
-          content: '<strong>需求逻辑：</strong>一份委托可能分批发，必须能勾选本批要寄出的报告。<br>' +
-            '<strong>展示规则：</strong>报告列表带勾选、全选；可预览报告文件。<br>' +
-            '<strong>交互逻辑：</strong>默认全选；取消后通过按钮不可点。',
+          content: '<strong>需求逻辑：</strong>一份委托可能分批发，必须能勾选本批要寄出的报告；已发放的才能回看发放记录。<br>' +
+            '<strong>展示规则：</strong>报告列表带勾选、全选；已发放行操作列「查看发放记录」，未发放不展示查看按钮。报告名称仍可点开 PDF。<br>' +
+            '<strong>交互逻辑：</strong>默认全选；取消后通过按钮不可点。点「查看发放记录」定位到本弹窗发放信息。',
           tag: '报告发放'
         },
         {
@@ -511,6 +516,18 @@
       var ab = e.target.closest('[data-addr-back]');
       var s = e.target.closest('[data-save-ship]');
       var d = e.target.closest('[data-del-ship]');
+      var vs = e.target.closest('[data-view-ship]');
+      if (vs) {
+        e.preventDefault();
+        var box = document.querySelector('#flow-modal [data-annotate="flow-issue-addr"]');
+        if (box) {
+          box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          box.classList.add('ring-2', 'ring-blue-400', 'rounded');
+          setTimeout(function () {
+            box.classList.remove('ring-2', 'ring-blue-400', 'rounded');
+          }, 1400);
+        }
+      }
       if (p) {
         var code = p.getAttribute('data-modal-pass');
         var task = ReportFlowStore.get(code);

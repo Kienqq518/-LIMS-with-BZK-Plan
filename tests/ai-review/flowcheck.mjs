@@ -322,6 +322,26 @@ if (await checks.count() >= 2) {
 }
 const afterIssue = await p.locator('#flow-root tbody tr').count();
 out.push((afterIssue >= beforeIssue ? '✅' : '❌') + ' 分批发后任务仍留在发放名单 ' + beforeIssue + '→' + afterIssue);
+await p.locator('tr', { hasText: 'SC2026/0447' }).locator('[data-open]').click();
+await p.waitForTimeout(150);
+const issuedOp = ((await p.locator('#flow-modal tbody tr', { hasText: '已发放' }).first().locator('td').last().textContent()) || '').trim();
+const unissuedOp = ((await p.locator('#flow-modal tbody tr').filter({ has: p.locator('.rep-check') }).first().locator('td').last().textContent()) || '').trim();
+out.push((/查看发放记录/.test(issuedOp) && !/预览/.test(issuedOp) ? '✅' : '❌') + ' 已发放显示查看发放记录');
+out.push((unissuedOp === '' && !/预览/.test(unissuedOp) && !/查看/.test(unissuedOp) ? '✅' : '❌') + ' 未发放不展示查看按钮');
+await p.locator('#flow-modal-x').click();
+await p.waitForTimeout(80);
+
+await p.goto(BASE + '/entrust-register.html', { waitUntil: 'load' });
+await p.waitForTimeout(200);
+if (await p.locator('[data-ret-detail]').count()) {
+  await p.locator('[data-ret-detail]').first().click();
+  await p.waitForTimeout(150);
+  const retHtml = (await p.locator('#ret-modal').innerHTML()) || '';
+  out.push((/退回详情/.test(retHtml) && !/退回至 /.test(retHtml) && !/新到旧/.test(retHtml) ? '✅' : '❌') + ' 退回弹窗去掉退回至与新到旧');
+  out.push((/来源 /.test(retHtml) ? '✅' : '❌') + ' 退回弹窗仍显示来源');
+} else {
+  out.push('❌ 委托登记没有退回详情入口');
+}
 
 console.log(out.join('\n'));
 console.log('errors(' + err.length + '):\n' + err.slice(0, 5).join('\n'));
