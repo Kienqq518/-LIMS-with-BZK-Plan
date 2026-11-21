@@ -12,6 +12,7 @@
   <script src="js/ai-review-store.js"></script>
   <script src="js/ai-review-engine.js"></script>
   <script src="js/report-review-mock.js"></script>
+  <script src="js/report-flow-store.js"></script>
   <style>
     :root {
       --brand: #143C9A; --brand-2: #2E5BD6; --brand-3: #5B8DEF;
@@ -900,7 +901,24 @@
       var btn = $('manual-feedback').querySelector('.btn-exec'); if (btn) btn.disabled = true;
       $('manual-feedback').querySelectorAll('input,select,textarea').forEach(function (el) { el.disabled = true; });
       var done = $('manual-feedback').querySelector('.exec-done'); if (done) done.classList.remove('hidden');
-      alert('已执行：' + final + (reason ? '\n原因：' + reason : ''));
+      if (!isReturn && window.ReportFlowStore && ReportFlowStore.acceptFromReview) {
+        var reps = (entrust.reports || []).map(function (rep) {
+          var no = String(rep.reportNo || CODE).replace(/\//g, '-');
+          return {
+            id: no, no: no,
+            name: rep.reportName || (no + '检测报告.docx'),
+            pdf: (rep.file && rep.file.pdf) || (no + '检测报告.pdf'),
+            at: (rep.file && rep.file.at) || ''
+          };
+        });
+        ReportFlowStore.acceptFromReview({
+          code: CODE, customer: entrust.customer, sample: entrust.sample,
+          sendDate: entrust.sendDate, requireDate: entrust.requireDate, acceptDate: entrust.acceptDate,
+          compiler: entrust.compiler, reports: reps,
+          records: [{ name: (entrust.sample || CODE) + '试验记录单.docx', at: entrust.acceptDate ? (entrust.acceptDate + ' 15:00:00') : '' }]
+        });
+      }
+      alert('已执行：' + final + (reason ? '\n原因：' + reason : '') + (isReturn ? '' : '\n任务已进入「报告签发」。'));
     }
 
     // ---------- 右侧信息 ----------

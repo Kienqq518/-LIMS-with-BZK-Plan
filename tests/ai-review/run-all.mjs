@@ -22,6 +22,7 @@ const SUITES = [
   ['auditcheck', '报告审核页自动触发'],
   ['rulescheck', '规则配置页'],
   ['navcheck', '入口挂载'],
+  ['flowcheck', '签发到任务完成'],
 ];
 const list = only ? SUITES.filter(([n]) => only.split(',').includes(n)) : SUITES;
 

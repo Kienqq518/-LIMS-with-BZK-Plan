@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>报告签发编辑 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="report-sign.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="report-sign.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">报告签发</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      报告签发编辑
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div class="p-4 pb-24">
+    <div class="mb-3 text-sm font-medium text-slate-600">样品及对应检测信息</div>
+    <div class="mb-4 overflow-x-auto rounded bg-white shadow-sm">
+      <table class="w-full border-collapse text-left text-sm">
+        <thead>
+          <tr class="bg-slate-50 text-slate-600">
+            <th class="border border-slate-200 px-3 py-2 w-16">序号</th>
+            <th class="border border-slate-200 px-3 py-2">样品名称</th>
+            <th class="border border-slate-200 px-3 py-2">客户单位</th>
+            <th class="border border-slate-200 px-3 py-2">委托编号</th>
+          </tr>
+        </thead>
+        <tbody id="sample-body"></tbody>
+      </table>
+    </div>
+    <div class="rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <div class="text-sm text-slate-700">报告文件：<button type="button" class="text-blue-600 hover:underline" id="btn-upload">上传PDF报告</button></div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-50 text-slate-600">
+              <th class="w-10 border border-slate-200 px-3 py-2"><input type="checkbox" /></th>
+              <th class="border border-slate-200 px-3 py-2">序号</th>
+              <th class="border border-slate-200 px-3 py-2">报告名称</th>
+              <th class="border border-slate-200 px-3 py-2">PDF报告</th>
+              <th class="border border-slate-200 px-3 py-2">生成时间</th>
+              <th class="border border-slate-200 px-3 py-2">操作</th>
+            </tr>
+          </thead>
+          <tbody id="file-body"></tbody>
+        </table>
+      </div>
+      <div class="mt-3 flex justify-end text-sm text-slate-500">
+        <button type="button" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled>&lt;</button>
+        <button type="button" class="mx-1 flex h-7 w-7 items-center justify-center rounded bg-blue-500 text-white">1</button>
+        <button type="button" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled>&gt;</button>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 text-sm font-medium text-slate-700">原始记录表:</div>
+      <table class="w-full border-collapse text-left text-sm">
+        <thead>
+          <tr class="bg-slate-50 text-slate-600">
+            <th class="border border-slate-200 px-3 py-2">序号</th>
+            <th class="border border-slate-200 px-3 py-2">原始记录名称</th>
+            <th class="border border-slate-200 px-3 py-2">生成时间</th>
+          </tr>
+        </thead>
+        <tbody id="raw-body"></tbody>
+      </table>
+      <div class="mt-3 flex justify-end text-sm text-slate-500">
+        <button type="button" class="flex h-7 w-7 items-center justify-center rounded bg-blue-500 text-white">1</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed bottom-0 left-0 right-0 flex justify-center gap-3 border-t border-slate-200 bg-white py-3">
+    <button type="button" id="btn-back" class="rounded bg-amber-500 px-6 py-2 text-sm text-white hover:bg-amber-600">退回</button>
+    <button type="button" id="btn-pass" class="rounded bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-700">签发通过</button>
+  </div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/report-flow-store.js"></script>
+  <script>
+    function q(k) {
+      var m = location.search.match(new RegExp('[?&]' + k + '=([^&]*)'));
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]; }); }
+    var code = q('code');
+    var task = ReportFlowStore.get(code);
+    if (!task) {
+      document.getElementById('sample-body').innerHTML = '<tr><td colspan="4" class="px-3 py-6 text-center text-slate-400">未找到委托 ' + esc(code) + '</td></tr>';
+      document.getElementById('file-body').innerHTML = '<tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">未找到委托 ' + esc(code) + '</td></tr>';
+    } else {
+      document.getElementById('sample-body').innerHTML = '<tr>' +
+        '<td class="border border-slate-200 px-3 py-2">1</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(task.sample) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(task.customer) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(task.code) + '</td></tr>';
+      document.getElementById('file-body').innerHTML = (task.reports || []).map(function (r, i) {
+        return '<tr>' +
+          '<td class="border border-slate-200 px-3 py-2 text-center"><input type="checkbox" /></td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2"><i class="fa fa-pencil text-slate-400"></i> <a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(code) + '" target="_blank">' + esc(r.name) + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="#">' + esc(r.pdf) + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + esc(r.at) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2"><button type="button" class="rounded bg-blue-500 px-3 py-1 text-xs text-white">修改pdf报告</button></td></tr>';
+      }).join('');
+      document.getElementById('raw-body').innerHTML = (task.records || []).map(function (r, i) {
+        return '<tr><td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2"><i class="fa fa-pencil text-slate-400"></i> <a class="text-blue-600 hover:underline" href="test-record.html?code=' + encodeURIComponent(code) + '">' + esc(r.name) + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + esc(r.at) + '</td></tr>';
+      }).join('') || '<tr><td colspan="3" class="px-3 py-6 text-center text-slate-400">无原始记录</td></tr>';
+    }
+    document.getElementById('btn-upload').onclick = function () { alert('原型：选择本地 PDF 后挂到本份报告。'); };
+    document.getElementById('btn-back').onclick = function () {
+      var reason = prompt('请填写退回原因（将退回报告审核）', '');
+      if (reason == null) return;
+      if (task) ReportFlowStore.back(task.code, reason);
+      alert('已退回报告审核');
+      location.href = 'report-sign.html';
+    };
+    document.getElementById('btn-pass').onclick = function () {
+      if (!task) return;
+      ReportFlowStore.pass(task.code, '签发通过');
+      alert('签发通过，任务进入报告处理');
+      location.href = 'report-sign.html';
+    };
+  </script>
+  <script src="js/current-user.js?v=3" defer></script>
+  <script src="js/user-profile.js?v=8" defer></script>
+  <script src="js/message-store.js?v=4" defer></script>
+  <script src="js/message-center.js?v=4" defer></script>
+  <script src="js/ui-a11y.js" defer></script>
+</body>
+</html>
