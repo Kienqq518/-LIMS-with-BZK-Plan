@@ -3,134 +3,226 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>报告签发编辑 - 智慧实验室</title>
+  <title>报告签发工作台 - 智慧实验室</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&display=swap" />
   <link rel="stylesheet" href="css/ui-baseline.css" />
+  <style>
+    :root {
+      --brand: #143C9A; --brand-2: #2E5BD6; --brand-3: #5B8DEF;
+      --glass: rgba(255,255,255,.88);
+      --line: rgba(20,60,154,.12); --ink: #1e2a44;
+    }
+    html, body { height: 100%; }
+    body {
+      color: var(--ink);
+      font-family: "Inter", -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      background:
+        radial-gradient(1100px 520px at 12% -8%, rgba(46,91,214,.05), transparent 62%),
+        radial-gradient(900px 500px at 98% 4%, rgba(91,141,239,.04), transparent 58%),
+        linear-gradient(180deg, #fafbfc 0%, #f5f6f8 100%);
+      background-attachment: fixed;
+    }
+    .mono { font-family: "Roboto Mono", ui-monospace, monospace; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(20,60,154,.28); border-radius: 6px; }
+    .glass { background: var(--glass); backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3);
+      border: 1px solid rgba(255,255,255,.65); box-shadow: 0 8px 30px rgba(20,60,154,.08), inset 0 1px 0 rgba(255,255,255,.6); border-radius: 16px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 9px; font-size: 11px; line-height: 1.6; }
+    .wb-shell { display: flex; gap: 12px; flex: 1 1 auto; min-height: 0; }
+    .wb-left { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+    .wb-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+    .wb-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; gap: 12px; padding-bottom: 4px; }
+    .wb-center, .wb-right { flex: 1 1 0; min-width: 0; }
+    .wb-right { display: flex; flex-direction: column; gap: 12px; }
+    .wb-main.is-right-only .wb-center { display: none; }
+    .wb-main.is-center-only .wb-right { display: none; }
+    .wb-feedback { flex-shrink: 0; margin-top: 12px; }
+    @media (max-width: 1180px) {
+      .wb-scroll { flex-direction: column; overflow-y: auto; }
+      .wb-center, .wb-right { width: 100%; flex: 1 1 auto; }
+    }
+    .roster-row { border: 1px solid rgba(20,60,154,.08); border-radius: 10px; background: #fff; }
+    .roster-row:hover { background: #f8fafc; border-color: rgba(20,60,154,.18); }
+    .roster-row.active { background: linear-gradient(90deg, rgba(20,60,154,.10), rgba(20,60,154,0)); box-shadow: inset 3px 0 0 var(--brand); }
+    .sum-stamp {
+      position: absolute; top: 10px; right: 10px;
+      display: inline-flex; align-items: center;
+      font-size: 18px; font-weight: 800; letter-spacing: .16em;
+      border: 2.5px solid currentColor; border-radius: 8px;
+      padding: 6px 12px; transform: rotate(-10deg);
+      pointer-events: none; line-height: 1; white-space: nowrap;
+    }
+    .sum-stamp.pass { color: #059669; background: rgba(236,253,245,.92); }
+    .sum-stamp.warn { color: #d97706; background: rgba(255,251,235,.94); }
+    .sum-stamp.fail { color: #dc2626; background: rgba(254,242,242,.94); }
+    .sum-body { color: #334155; font-size: 12px; line-height: 1.8; padding-right: 96px; }
+    .rule-item { border-radius: 12px; border: 1px solid var(--line); }
+    .rule-item.r-pass, .gate-toggle.r-pass { background: linear-gradient(90deg, rgba(16,185,129,.09), rgba(16,185,129,.02)); border-color: rgba(16,185,129,.30); }
+    .rule-item.r-warn, .gate-toggle.r-warn { background: linear-gradient(90deg, rgba(245,158,11,.12), rgba(245,158,11,.03)); border-color: rgba(245,158,11,.38); }
+    .rule-item.r-sev, .gate-toggle.r-sev { background: linear-gradient(90deg, rgba(239,68,68,.12), rgba(239,68,68,.03)); border-color: rgba(239,68,68,.40); }
+    .rule-item.r-pass, .gate-toggle.r-pass { border-left: 4px solid #10b981; }
+    .rule-item.r-warn, .gate-toggle.r-warn { border-left: 4px solid #f59e0b; }
+    .rule-item.r-sev, .gate-toggle.r-sev { border-left: 4px solid #ef4444; }
+    .preview-frame { width: 100%; height: 100%; min-height: 280px; border: 0; border-radius: 8px; background: #fff; }
+    .audit-tl { list-style: none; margin: 0; padding: 0; }
+    .audit-tl-item { display: grid; grid-template-columns: 18px minmax(0,1fr); column-gap: 12px; }
+    .audit-rail { position: relative; }
+    .audit-rail::after { content: ""; position: absolute; left: 50%; top: 18px; bottom: 0; width: 2px; transform: translateX(-50%); background: var(--rail, #cbd5e1); }
+    .audit-tl-item:last-child .audit-rail::after { display: none; }
+    .audit-dot { position: relative; z-index: 1; display: block; width: 14px; height: 14px; margin: 3px auto 0; box-sizing: border-box; border-radius: 999px; border: 2px solid var(--dot, #94a3b8); background: var(--dot, #94a3b8); }
+    .audit-tl-item.tone-success { --rail:#10b981; --dot:#10b981; }
+    .audit-tl-item.tone-warn { --rail:#f59e0b; --dot:#f59e0b; }
+    .audit-tl-item.tone-danger { --rail:#ef4444; --dot:#ef4444; }
+    .audit-tl-item.tone-pending { --rail:#f59e0b; --dot:#fff; }
+    .audit-main { min-width: 0; padding: 0 0 16px; }
+    .btn-brand { background: linear-gradient(120deg, var(--brand), var(--brand-2)); color: #fff; box-shadow: 0 6px 18px rgba(20,60,154,.30); }
+    .btn-brand:hover { box-shadow: 0 8px 26px rgba(20,60,154,.42); }
+    .btn-brand:disabled { filter: grayscale(.4) opacity(.55); box-shadow: none; cursor: not-allowed; }
+    .roster-tabs { display: inline-flex; margin-left: auto; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    .roster-tab { padding: 3px 10px; font-size: 11px; color: #64748b; }
+    .roster-tab.is-on { background: var(--brand); color: #fff; font-weight: 600; }
+  </style>
 </head>
-<body class="bg-slate-100 text-slate-700">
-  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="report-sign.html">
-    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
-    <a href="report-sign.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">报告签发</a>
-    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
-      报告签发编辑
-      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
-    </span>
-  </div>
-
-  <div class="p-4 pb-24">
-    <div class="mb-3 text-sm font-medium text-slate-600">样品及对应检测信息</div>
-    <div class="mb-4 overflow-x-auto rounded bg-white shadow-sm">
-      <table class="w-full border-collapse text-left text-sm">
-        <thead>
-          <tr class="bg-slate-50 text-slate-600">
-            <th class="border border-slate-200 px-3 py-2 w-16">序号</th>
-            <th class="border border-slate-200 px-3 py-2">样品名称</th>
-            <th class="border border-slate-200 px-3 py-2">客户单位</th>
-            <th class="border border-slate-200 px-3 py-2">委托编号</th>
-          </tr>
-        </thead>
-        <tbody id="sample-body"></tbody>
-      </table>
-    </div>
-    <div class="rounded bg-white p-4 shadow-sm">
-      <div class="mb-3 flex items-center justify-between">
-        <div class="text-sm text-slate-700">报告文件：<button type="button" class="text-blue-600 hover:underline" id="btn-upload">上传PDF报告</button></div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-left text-sm">
-          <thead>
-            <tr class="bg-slate-50 text-slate-600">
-              <th class="w-10 border border-slate-200 px-3 py-2"><input type="checkbox" /></th>
-              <th class="border border-slate-200 px-3 py-2">序号</th>
-              <th class="border border-slate-200 px-3 py-2">报告名称</th>
-              <th class="border border-slate-200 px-3 py-2">PDF报告</th>
-              <th class="border border-slate-200 px-3 py-2">生成时间</th>
-              <th class="border border-slate-200 px-3 py-2">操作</th>
-            </tr>
-          </thead>
-          <tbody id="file-body"></tbody>
-        </table>
-      </div>
-      <div class="mt-3 flex justify-end text-sm text-slate-500">
-        <button type="button" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled>&lt;</button>
-        <button type="button" class="mx-1 flex h-7 w-7 items-center justify-center rounded bg-blue-500 text-white">1</button>
-        <button type="button" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled>&gt;</button>
-      </div>
+<body>
+  <div class="flex h-screen flex-col overflow-hidden">
+    <div id="pageTabs" class="flex flex-shrink-0 items-center gap-1 overflow-x-auto border-b border-white/50 bg-white/60 px-4 pt-2 text-sm whitespace-nowrap backdrop-blur" data-close-target="report-sign.html">
+      <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+      <a href="report-sign.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">报告签发</a>
+      <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-white/60 bg-white/80 px-3 py-1.5" style="color:var(--brand)">
+        报告签发工作台
+        <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+      </span>
     </div>
 
-    <div class="mt-4 rounded bg-white p-4 shadow-sm">
-      <div class="mb-3 text-sm font-medium text-slate-700">原始记录表:</div>
-      <table class="w-full border-collapse text-left text-sm">
-        <thead>
-          <tr class="bg-slate-50 text-slate-600">
-            <th class="border border-slate-200 px-3 py-2">序号</th>
-            <th class="border border-slate-200 px-3 py-2">原始记录名称</th>
-            <th class="border border-slate-200 px-3 py-2">生成时间</th>
-          </tr>
-        </thead>
-        <tbody id="raw-body"></tbody>
-      </table>
-      <div class="mt-3 flex justify-end text-sm text-slate-500">
-        <button type="button" class="flex h-7 w-7 items-center justify-center rounded bg-blue-500 text-white">1</button>
+    <div id="wb-page" class="flex flex-1 flex-col gap-3 overflow-hidden p-3" style="min-height:0">
+      <div class="flex items-center gap-2 rounded-xl border border-white/60 bg-white/55 px-4 py-2 text-sm backdrop-blur" style="color:var(--brand)">
+        <i class="fa fa-shield"></i>
+        <span>签发看数据可追溯、结论有依据、资质不越界。系统预检阻断项一票否决，锁定「签发通过」。</span>
+      </div>
+
+      <section class="glass" data-annotate="sg-overview">
+        <button id="ov-toggle" type="button" class="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left">
+          <span class="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+            <span class="font-semibold" style="color:var(--brand)"><i class="fa fa-folder-open-o mr-1"></i><span id="ov-code" class="mono"></span></span>
+            <span class="text-slate-500" id="ov-customer"></span>
+            <span class="text-slate-500" id="ov-sample"></span>
+            <span class="text-slate-500">报告 <b class="text-slate-700 mono" id="ov-count"></b> 份</span>
+            <span class="text-slate-500">受理 <span id="ov-accept" class="mono"></span></span>
+            <span class="text-slate-500">要求完成 <span id="ov-require" class="mono"></span></span>
+            <span class="chip bg-blue-50 text-blue-700" id="ov-status"></span>
+            <span id="ov-gate"></span>
+          </span>
+          <span class="flex items-center gap-1 text-xs" style="color:var(--brand)"><span id="ov-toggle-text">展开</span><i id="ov-chevron" class="fa fa-angle-down"></i></span>
+        </button>
+        <div id="ov-body" class="hidden border-t border-white/50 px-4 pb-3 pt-2 text-sm text-slate-600">
+          对照左侧名单切换委托。中间看报告结论与样品—记录—报告是否一致；右侧按五组检查项过门禁。红灯必须退回，不能特批签发。
+        </div>
+      </section>
+
+      <div class="wb-shell">
+        <aside class="wb-left">
+          <section class="glass flex flex-col" style="min-height:0;flex:0 0 auto;max-height:58%">
+            <div class="flex items-center gap-2 border-b border-white/50 px-3 py-1.5 text-xs font-medium text-slate-500">
+              <i class="fa fa-files-o" style="color:var(--brand)"></i>待签发
+              <div class="roster-tabs">
+                <button type="button" class="roster-tab is-on">待签发 <span id="tab-need-n" class="font-normal opacity-80">0</span></button>
+              </div>
+            </div>
+            <div id="roster-summary" class="px-3 pt-1.5 pb-1 text-xs text-slate-500"></div>
+            <div id="roster-list" class="overflow-y-auto px-2 pb-2" style="min-height:0" data-annotate="sg-roster"></div>
+          </section>
+          <section class="glass flex flex-1 flex-col" style="min-height:0" data-annotate="sg-log">
+            <div class="flex items-center gap-2 border-b border-white/50 px-3 py-2 text-xs font-medium text-slate-500"><i class="fa fa-history" style="color:var(--brand)"></i>操作日志 <span id="log-report" class="text-slate-400 mono"></span></div>
+            <div id="log-list" class="flex-1 overflow-y-auto px-3 py-3 text-xs" style="min-height:0"></div>
+          </section>
+        </aside>
+
+        <div class="wb-main" id="wb-main">
+          <div class="wb-scroll">
+            <section class="wb-center glass flex flex-col" style="min-height:0" data-annotate="sg-report">
+              <div class="border-b border-white/50 px-4 py-2">
+                <div class="flex items-center gap-2">
+                  <div class="flex min-w-0 items-center gap-2 text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-file-text-o"></i>报告与结论
+                    <span id="rp-no" class="text-xs font-normal text-slate-400 mono"></span></div>
+                  <button id="btn-expand-center" type="button" class="ml-auto rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i>展开</button>
+                </div>
+                <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                  <span>编制人 <b class="text-slate-700" id="rp-compiler"></b></span>
+                  <span>生成 <span class="mono" id="rp-at"></span></span>
+                  <a href="#" id="rp-file" class="truncate font-medium" style="color:var(--brand)"></a>
+                </div>
+              </div>
+              <div class="flex-1 overflow-y-auto px-4 py-3" style="min-height:0">
+                <div id="ai-summary" class="relative mb-3 rounded-xl border px-4 py-3" style="border-color:rgba(20,60,154,.2);background:linear-gradient(120deg,rgba(46,91,214,.1),rgba(91,141,239,.04))">
+                  <span id="sign-stamp" class="sum-stamp pass">可签发</span>
+                  <div id="sign-summary"></div>
+                </div>
+                <div class="mb-3 text-xs font-medium text-slate-500">样品 · 委托 · 原始记录 · 报告对照</div>
+                <div class="mb-3 overflow-x-auto rounded-xl border border-slate-200">
+                  <table class="w-full border-collapse text-left text-xs">
+                    <thead>
+                      <tr class="bg-slate-50 text-slate-500">
+                        <th class="border border-slate-200 px-2 py-1.5">字段</th>
+                        <th class="border border-slate-200 px-2 py-1.5">委托</th>
+                        <th class="border border-slate-200 px-2 py-1.5">样品</th>
+                        <th class="border border-slate-200 px-2 py-1.5">原始记录</th>
+                        <th class="border border-slate-200 px-2 py-1.5">报告</th>
+                      </tr>
+                    </thead>
+                    <tbody id="spine-body"></tbody>
+                  </table>
+                </div>
+                <div class="mb-2 flex items-center justify-between text-xs text-slate-500">
+                  <span>原始记录 <span id="raw-name"></span></span>
+                  <span class="mono" id="raw-at"></span>
+                </div>
+                <div class="overflow-hidden rounded-xl border border-slate-200" style="height:320px">
+                  <iframe id="report-preview" class="preview-frame" title="报告预览" src="about:blank"></iframe>
+                </div>
+              </div>
+            </section>
+
+            <div class="wb-right">
+              <section class="glass flex flex-1 flex-col" style="min-height:0" data-annotate="sg-gate">
+                <div class="flex items-center gap-2 border-b border-white/50 px-3 py-2 text-sm font-semibold" style="color:var(--brand)">
+                  <i class="fa fa-check-square-o"></i>签发检查
+                  <button id="btn-expand-right" type="button" class="ml-auto rounded-md border border-slate-300 px-2 py-1 text-xs font-normal text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i>展开</button>
+                </div>
+                <div id="gate-counts" class="flex flex-wrap gap-1 px-3 pt-2"></div>
+                <div id="gate-list" class="flex-1 overflow-y-auto px-3 py-2" style="min-height:0"></div>
+              </section>
+            </div>
+          </div>
+
+          <section class="wb-feedback glass" data-annotate="sg-action">
+            <div class="flex items-center gap-2 border-b border-white/50 px-4 py-2 text-sm font-semibold" style="color:var(--brand)">
+              <i class="fa fa-gavel"></i>签发处置
+              <span id="fb-report" class="text-xs font-normal text-slate-400 mono"></span>
+              <span id="fb-stamp"></span>
+            </div>
+            <div class="flex flex-wrap items-end gap-3 px-4 py-3">
+              <label class="min-w-[220px] flex-1 text-xs text-slate-500">退回原因
+                <input id="fb-reason" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 outline-none focus:border-blue-500" placeholder="退回报告审核时必填" />
+              </label>
+              <button type="button" id="btn-back" class="rounded-lg bg-amber-500 px-5 py-2 text-sm text-white hover:bg-amber-600">退回</button>
+              <button type="button" id="btn-pass" class="btn-brand rounded-lg px-5 py-2 text-sm">签发通过</button>
+            </div>
+            <p id="lock-hint" class="hidden px-4 pb-3 text-xs text-red-600"></p>
+          </section>
+        </div>
       </div>
     </div>
-  </div>
-
-  <div class="fixed bottom-0 left-0 right-0 flex justify-center gap-3 border-t border-slate-200 bg-white py-3">
-    <button type="button" id="btn-back" class="rounded bg-amber-500 px-6 py-2 text-sm text-white hover:bg-amber-600">退回</button>
-    <button type="button" id="btn-pass" class="rounded bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-700">签发通过</button>
   </div>
 
   <script src="js/tab-bar.js"></script>
   <script src="js/report-flow-store.js"></script>
-  <script>
-    function q(k) {
-      var m = location.search.match(new RegExp('[?&]' + k + '=([^&]*)'));
-      return m ? decodeURIComponent(m[1]) : '';
-    }
-    function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]; }); }
-    var code = q('code');
-    var task = ReportFlowStore.get(code);
-    if (!task) {
-      document.getElementById('sample-body').innerHTML = '<tr><td colspan="4" class="px-3 py-6 text-center text-slate-400">未找到委托 ' + esc(code) + '</td></tr>';
-      document.getElementById('file-body').innerHTML = '<tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">未找到委托 ' + esc(code) + '</td></tr>';
-    } else {
-      document.getElementById('sample-body').innerHTML = '<tr>' +
-        '<td class="border border-slate-200 px-3 py-2">1</td>' +
-        '<td class="border border-slate-200 px-3 py-2">' + esc(task.sample) + '</td>' +
-        '<td class="border border-slate-200 px-3 py-2">' + esc(task.customer) + '</td>' +
-        '<td class="border border-slate-200 px-3 py-2">' + esc(task.code) + '</td></tr>';
-      document.getElementById('file-body').innerHTML = (task.reports || []).map(function (r, i) {
-        return '<tr>' +
-          '<td class="border border-slate-200 px-3 py-2 text-center"><input type="checkbox" /></td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2"><i class="fa fa-pencil text-slate-400"></i> <a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(code) + '" target="_blank">' + esc(r.name) + '</a></td>' +
-          '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="#">' + esc(r.pdf) + '</a></td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + esc(r.at) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2"><button type="button" class="rounded bg-blue-500 px-3 py-1 text-xs text-white">修改pdf报告</button></td></tr>';
-      }).join('');
-      document.getElementById('raw-body').innerHTML = (task.records || []).map(function (r, i) {
-        return '<tr><td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2"><i class="fa fa-pencil text-slate-400"></i> <a class="text-blue-600 hover:underline" href="test-record.html?code=' + encodeURIComponent(code) + '">' + esc(r.name) + '</a></td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + esc(r.at) + '</td></tr>';
-      }).join('') || '<tr><td colspan="3" class="px-3 py-6 text-center text-slate-400">无原始记录</td></tr>';
-    }
-    document.getElementById('btn-upload').onclick = function () { alert('原型：选择本地 PDF 后挂到本份报告。'); };
-    document.getElementById('btn-back').onclick = function () {
-      var reason = prompt('请填写退回原因（将退回报告审核）', '');
-      if (reason == null) return;
-      if (task) ReportFlowStore.back(task.code, reason);
-      alert('已退回报告审核');
-      location.href = 'report-sign.html';
-    };
-    document.getElementById('btn-pass').onclick = function () {
-      if (!task) return;
-      ReportFlowStore.pass(task.code, '签发通过');
-      alert('签发通过，任务进入报告处理');
-      location.href = 'report-sign.html';
-    };
-  </script>
+  <script src="js/report-sign-gate.js"></script>
+  <script src="js/report-sign-workbench.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>ReportSignWorkbench.boot();</script>
   <script src="js/current-user.js?v=3" defer></script>
   <script src="js/user-profile.js?v=8" defer></script>
   <script src="js/message-store.js?v=4" defer></script>
