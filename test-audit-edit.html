@@ -164,6 +164,8 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/return-store.js"></script>
+  <script src="js/return-ui.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     var params = new URLSearchParams(location.search);
@@ -275,8 +277,12 @@
       groups.forEach(function (g, gi) {
         html += '<section class="test-group">';
         html += '<div class="test-group-header">';
-        html += '<div class="group-title">' + g.title + '</div>';
-        html += '<div class="group-tester">检测员：<strong>' + (g.tester || defaultTester || '—') + '</strong></div>';
+        html += '<div class="group-title">' + g.title + (window.ReturnUI ? ReturnUI.itemMark(entrustCode, g.title) : '') + '</div>';
+        html += '<div class="group-tester">' +
+          (window.ReturnUI
+            ? ReturnUI.testerMeta(entrustCode, g.title, g.tester || defaultTester, g.detectTime)
+            : ('检测员：<strong>' + (g.tester || defaultTester || '—') + '</strong>')) +
+          '</div>';
         html += '</div>';
         html += '<div class="overflow-x-auto">';
         html += '<table class="audit-table min-w-full"><thead><tr>';

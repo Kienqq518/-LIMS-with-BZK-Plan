@@ -69,6 +69,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">是否制备</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">任务进度</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">退回详情</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
             </tr>
           </thead>
@@ -148,6 +149,8 @@
   <script src="js/sample-data-store.js"></script>
   <script src="js/entrust-mock.js"></script>
   <script src="js/sample-cat-filter.js"></script>
+  <script src="js/return-store.js"></script>
+  <script src="js/return-ui.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/current-user.js?v=3"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -190,17 +193,20 @@
 
     function renderTable() {
       document.getElementById('tableBody').innerHTML = listData.map(function (item, i) {
+        var codeLink = '<a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a>';
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (window.ReturnUI ? ReturnUI.codeWithTag(item.code, '样品制备', codeLink) : codeLink) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5"><span class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700">' + item.needPrepare + '</span></td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.progress + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+          (window.ReturnUI ? ReturnUI.detailTd(item.code, '样品制备') : '<td class="border border-slate-200 px-3 py-2.5 text-slate-400">—</td>') +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
             '<button onclick="openPrepareModal(' + i + ')" class="text-blue-600 hover:underline" data-annotate="prepare-btn"><i class="fa fa-edit"></i> 编辑</button>' +
+            '<button onclick="window.ReturnUI&&ReturnUI.openCollect({from:\'样品制备\',to:\'费用审核\',code:\'' + item.code + '\'})" class="ml-3 text-orange-500 hover:underline"><i class="fa fa-reply"></i> 退回</button>' +
           '</td></tr>';
       }).join('');
     }
@@ -256,6 +262,7 @@
 
     document.getElementById('prepareModal').addEventListener('click', function (e) { if (e.target === this) closePrepareModal(); });
     renderTable();
+    if (window.ReturnUI) ReturnUI.mountBanner('样品制备');
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({

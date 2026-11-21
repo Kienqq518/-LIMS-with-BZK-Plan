@@ -32,7 +32,7 @@
     <div class="mt-4 rounded bg-white p-4 shadow-sm overflow-x-auto">
       <table class="w-full min-w-[1400px] border-collapse text-sm">
         <thead><tr class="bg-slate-100 text-slate-600">
-          <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">序号</th><th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th><th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th><th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th><th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th><th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th><th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th><th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th><th class="border border-slate-200 px-3 py-2 font-medium">先收费</th><th class="border border-slate-200 px-3 py-2 font-medium">优先等级</th><th class="border border-slate-200 px-3 py-2 font-medium">任务状态</th><th class="border border-slate-200 px-3 py-2 font-medium">编制人</th><th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+          <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">序号</th><th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th><th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th><th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th><th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th><th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th><th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th><th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th><th class="border border-slate-200 px-3 py-2 font-medium">先收费</th><th class="border border-slate-200 px-3 py-2 font-medium">优先等级</th><th class="border border-slate-200 px-3 py-2 font-medium">任务状态</th><th class="border border-slate-200 px-3 py-2 font-medium">编制人</th><th class="border border-slate-200 px-3 py-2 font-medium">退回详情</th><th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
         </tr></thead>
         <tbody id="tableBody"></tbody>
       </table>
@@ -44,6 +44,8 @@
   <script src="js/sample-data-store.js"></script>
   <script src="js/entrust-mock.js"></script>
   <script src="js/sample-cat-filter.js"></script>
+  <script src="js/return-store.js"></script>
+  <script src="js/return-ui.js"></script>
   <script src="js/column-config.js"></script>
   <script>
     var data = [
@@ -56,8 +58,10 @@
     // 受理日期已按全年铺排，页面里再写死 5-6 月就会和详情页两张皮
     EntrustMock.enrich(data, { arriveDate: 'sendDate' });
     document.getElementById('tableBody').innerHTML = data.map(function(d,i){
-      return '<tr class="hover:bg-slate-50"><td class="border border-slate-200 px-3 py-2.5">'+(i+1)+'</td><td class="border border-slate-200 px-3 py-2.5"><a href="fee-audit-edit.html?code='+d.code+'" class="text-blue-600 hover:underline">'+d.code+'</a></td><td class="border border-slate-200 px-3 py-2.5 text-center">/</td><td class="border border-slate-200 px-3 py-2.5">'+d.customer+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.sample+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.sendDate+'</td><td class="border border-slate-200 px-3 py-2.5"></td><td class="border border-slate-200 px-3 py-2.5">'+d.acceptDate+'</td><td class="border border-slate-200 px-3 py-2.5"><span class="rounded border border-green-200 bg-green-50 px-2 py-0.5 text-xs text-green-600">否</span></td><td class="border border-slate-200 px-3 py-2.5">常规</td><td class="border border-slate-200 px-3 py-2.5">费用审核</td><td class="border border-slate-200 px-3 py-2.5">admin</td><td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="fee-audit-edit.html?code='+d.code+'" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</a><button class="ml-3 text-green-600 hover:underline"><i class="fa fa-check-circle"></i> 通过</button><button class="ml-3 text-orange-500 hover:underline"><i class="fa fa-reply"></i> 退回</button></td></tr>';
+      var codeLink = '<a href="fee-audit-edit.html?code='+d.code+'" class="text-blue-600 hover:underline">'+d.code+'</a>';
+      return '<tr class="hover:bg-slate-50"><td class="border border-slate-200 px-3 py-2.5">'+(i+1)+'</td><td class="border border-slate-200 px-3 py-2.5">'+(window.ReturnUI?ReturnUI.codeWithTag(d.code,'费用审核',codeLink):codeLink)+'</td><td class="border border-slate-200 px-3 py-2.5 text-center">/</td><td class="border border-slate-200 px-3 py-2.5">'+d.customer+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.sample+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.sendDate+'</td><td class="border border-slate-200 px-3 py-2.5"></td><td class="border border-slate-200 px-3 py-2.5">'+d.acceptDate+'</td><td class="border border-slate-200 px-3 py-2.5"><span class="rounded border border-green-200 bg-green-50 px-2 py-0.5 text-xs text-green-600">否</span></td><td class="border border-slate-200 px-3 py-2.5">常规</td><td class="border border-slate-200 px-3 py-2.5">费用审核</td><td class="border border-slate-200 px-3 py-2.5">admin</td>'+(window.ReturnUI?ReturnUI.detailTd(d.code,'费用审核'):'<td class="border border-slate-200 px-3 py-2.5 text-slate-400">—</td>')+'<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="fee-audit-edit.html?code='+d.code+'" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</a><button class="ml-3 text-green-600 hover:underline"><i class="fa fa-check-circle"></i> 通过</button><button class="ml-3 text-orange-500 hover:underline" onclick="window.ReturnUI&&ReturnUI.openCollect({from:\'费用审核\',to:\'委托确认\',code:\''+d.code+'\'})"><i class="fa fa-reply"></i> 退回</button></td></tr>';
     }).join('');
+    if (window.ReturnUI) ReturnUI.mountBanner('费用审核');
   </script>
   <script src="js/current-user.js?v=3" defer></script>
   <script src="js/user-profile.js?v=7" defer></script>

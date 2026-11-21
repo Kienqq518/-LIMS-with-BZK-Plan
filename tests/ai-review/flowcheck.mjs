@@ -94,6 +94,10 @@ const issueTxt = await p.locator('#flow-modal').textContent();
 out.push((/勾选待发放报告/.test(issueTxt) && /填写发放信息/.test(issueTxt) && /发放通过/.test(issueTxt) ? '✅' : '❌') + ' 发放弹窗三步动线');
 out.push(((await p.locator('#flow-modal .rep-check').count()) >= 2 ? '✅' : '❌') + ' 发放弹窗多报告勾选');
 out.push((/\.pdf/.test(issueTxt) && !/检测报告\.docx/.test(issueTxt) ? '✅' : '❌') + ' 发放弹窗报告为 PDF');
+const issueFoot = await p.locator('#flow-modal [data-annotate="flow-issue-foot"]').textContent();
+out.push((/发放通过/.test(issueFoot) && !/填写发放信息/.test(issueFoot) && !/修改发放信息/.test(issueFoot) ? '✅' : '❌') + ' 发放底栏去掉填写/修改发放信息');
+const filledAddr = /修改发放信息/.test(issueTxt);
+out.push((filledAddr ? '❌' : '✅') + ' 已填地址后不再出现修改发放信息按钮');
 await p.locator('#flow-modal [data-addr]').first().click();
 await p.waitForTimeout(120);
 out.push((/填写报告发放信息/.test(await p.locator('#flow-modal').textContent()) ? '✅' : '❌') + ' 填写发放信息');
@@ -196,8 +200,19 @@ await p.goto(BASE + '/original-record-list.html', { waitUntil: 'load' });
 await p.waitForTimeout(280);
 out.push(((await p.locator('#body tr').count()) >= 1 ? '✅' : '❌') + ' 检测管理原始记录名单');
 out.push((/样品大类/.test(await p.locator('thead').textContent() || '') ? '✅' : '❌') + ' 原始记录名单有样品大类列');
+await p.goto(BASE + '/report-list.html', { waitUntil: 'load' });
+await p.waitForTimeout(280);
+const listHead = await p.locator('thead tr').first().locator('th').allTextContents();
+const listCat = listHead.findIndex((t) => t.trim() === '样品大类');
+const listName = listHead.findIndex((t) => t.trim() === '样品名称');
+out.push((/样品大类/.test(listHead.join('')) ? '✅' : '❌') + ' 报告编制名单有样品大类列');
+out.push((listName >= 0 && listCat === listName + 1 ? '✅' : '❌') + ' 报告编制样品大类在样品名称后 ' + JSON.stringify({ listName, listCat }));
+out.push((await p.locator('[data-annotate="rv-col-cat"]').count() === 0 ? '✅' : '❌') + ' 编制页无样品大类批注卡片');
+
 await p.goto(BASE + '/report-review.html', { waitUntil: 'load' });
 await p.waitForTimeout(280);
+out.push((await p.locator('[data-annotate="rv-col-cat"]').count() === 0 ? '✅' : '❌') + ' 审核页去掉样品大类批注卡片');
+out.push((/退回/.test(await p.locator('tbody').first().textContent() || '') ? '✅' : '❌') + ' 审核名单有签发退回标签');
 const rvHead = await p.locator('thead tr').first().locator('th').allTextContents();
 const rvCat = rvHead.findIndex((t) => t.trim() === '样品大类');
 const rvName = rvHead.findIndex((t) => t.trim() === '样品名称');
@@ -272,6 +287,41 @@ const href3 = await p.locator('#flow-root a[href*="report-sign-edit.html"]').fir
 await p.goto(BASE + '/' + href3, { waitUntil: 'load' });
 await p.waitForTimeout(200);
 out.push(((await p.locator('[data-annotate="sg-action"]').count()) === 1 ? '✅' : '❌') + ' 签发工作台挂需求批注');
+
+await p.goto(BASE + '/fee-audit-edit.html', { waitUntil: 'load' });
+await p.waitForTimeout(200);
+const feeHead = await p.locator('.fee-table thead').first().textContent();
+out.push((/样品单价/.test(feeHead) && /样品总价/.test(feeHead) ? '✅' : '❌') + ' 费用审核编辑有样品单价/总价列');
+
+await p.goto(BASE + '/entrust-register.html', { waitUntil: 'load' });
+await p.waitForTimeout(250);
+out.push((/退回详情/.test(await p.locator('thead').textContent() || '') ? '✅' : '❌') + ' 委托登记有退回详情列');
+out.push((/退回/.test(await p.locator('#registerTableBody').textContent() || '') ? '✅' : '❌') + ' 委托登记有退回标签');
+
+await p.goto(BASE + '/test-detect-edit.html?code=SC2026/0052', { waitUntil: 'load' });
+await p.waitForTimeout(280);
+const detHead = await p.locator('.test-group-header').first().textContent();
+out.push((/检测员/.test(detHead) && /检测时间/.test(detHead) ? '✅' : '❌') + ' 试验项表头有检测员和检测时间');
+out.push((/退回/.test(detHead) ? '✅' : '❌') + ' 试验项名称后有退回标签');
+
+await p.goto(BASE + '/change-apply.html', { waitUntil: 'load' });
+await p.waitForTimeout(200);
+out.push((/变更申请/.test(await p.locator('#tableBody').textContent() || '') && !/>\s*编辑\s*</.test(await p.locator('#tableBody').innerHTML()) ? '✅' : '❌') + ' 变更申请操作列改为变更申请');
+out.push((/审批未通过/.test(await p.locator('#tableBody').textContent() || '') ? '✅' : '❌') + ' 变更申请有审批未通过标签');
+
+await p.goto(BASE + '/report-issue.html', { waitUntil: 'load' });
+await p.waitForTimeout(200);
+const beforeIssue = await p.locator('#flow-root tbody tr').count();
+await p.locator('tr', { hasText: 'SC2026/0447' }).locator('[data-open]').click();
+await p.waitForTimeout(150);
+const checks = p.locator('#flow-modal .rep-check');
+if (await checks.count() >= 2) {
+  await checks.nth(1).uncheck();
+  await p.locator('#flow-modal [data-modal-pass]').click();
+  await p.waitForTimeout(250);
+}
+const afterIssue = await p.locator('#flow-root tbody tr').count();
+out.push((afterIssue >= beforeIssue ? '✅' : '❌') + ' 分批发后任务仍留在发放名单 ' + beforeIssue + '→' + afterIssue);
 
 console.log(out.join('\n'));
 console.log('errors(' + err.length + '):\n' + err.slice(0, 5).join('\n'));

@@ -56,6 +56,7 @@
             <th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th>
             <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
             <th class="border border-slate-200 px-3 py-2 font-medium">业务员</th>
+            <th class="border border-slate-200 px-3 py-2 font-medium">退回详情</th>
             <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
           </tr></thead>
           <tbody id="registerTableBody"></tbody>
@@ -130,6 +131,8 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/sample-cat-filter.js"></script>
+  <script src="js/return-store.js"></script>
+  <script src="js/return-ui.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
@@ -165,9 +168,10 @@
     function renderTable() {
       document.getElementById('registerTableBody').innerHTML = registerData.map(function (item, i) {
         var cat = catByKey(item.cat);
+        var codeLink = '<a href="entrust-create.html?mode=edit&amp;code=' + encodeURIComponent(item.code) + '&amp;cat=' + item.cat + '" class="text-blue-600 hover:underline">' + item.code + '</a>';
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-create.html?mode=edit&amp;code=' + encodeURIComponent(item.code) + '&amp;cat=' + item.cat + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (window.ReturnUI ? ReturnUI.codeWithTag(item.code, '委托登记', codeLink) : codeLink) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (cat ? cat.name : '') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
@@ -175,6 +179,7 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + item.date + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.salesman + '</td>' +
+          (window.ReturnUI ? ReturnUI.detailTd(item.code, '委托登记') : '<td class="border border-slate-200 px-3 py-2.5 text-slate-400">—</td>') +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
             '<a href="entrust-create.html?mode=edit&amp;code=' + encodeURIComponent(item.code) + '&amp;cat=' + item.cat + '" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 编辑</a>' +
             '<button class="ml-3 text-red-500 hover:underline"><i class="fa fa-trash-o"></i> 删除</button>' +
@@ -290,6 +295,7 @@
 
     fillCatSelects();
     renderTable();
+    if (window.ReturnUI) ReturnUI.mountBanner('委托登记');
 
     PrototypeAnnotation.init({
       annotations: [

@@ -129,11 +129,12 @@
     $('log-list').innerHTML = logs.length
       ? '<ul class="audit-tl">' + logs.map(function (e) {
         var tone = e.tone === 'success' ? 'tone-success' : (e.tone === 'danger' ? 'tone-danger' : (e.tone === 'pending' ? 'tone-pending' : 'tone-warn'));
+        var line = global.ReturnUI ? ReturnUI.logLine(e) : { text: e.text || '', extra: '' };
         return '<li class="audit-tl-item ' + tone + '"><div class="audit-rail"><span class="audit-dot"></span></div>' +
           '<div class="audit-main"><div class="flex items-baseline justify-between gap-2">' +
             '<span class="font-medium text-slate-700">' + esc(e.node) + '</span>' +
             '<time class="text-[11px] text-slate-400">' + esc(e.at) + '</time></div>' +
-            '<div class="mt-1 text-slate-500">' + esc(e.by) + ' · ' + esc(e.text) + '</div></div></li>';
+            '<div class="mt-1 text-slate-500">' + esc(e.by) + ' · ' + esc(line.text) + '</div>' + (line.extra || '') + '</div></li>';
       }).join('') + '</ul>'
       : '<p class="text-slate-400">暂无操作日志</p>';
   }
@@ -171,6 +172,8 @@
     renderLog(task);
     renderInfo(task);
     renderActions(task);
+    var strip = $('sign-return-strip');
+    if (strip && global.ReturnUI) strip.innerHTML = ReturnUI.stripHtml(code, '报告签发');
   }
 
   function bindChrome() {
@@ -215,8 +218,8 @@
       var task = ReportFlowStore.get(state.code);
       if (!task) return;
       var reason = ($('fb-reason').value || '').trim();
-      if (!reason) { $('fb-reason').focus(); alert('退回须填写原因'); return; }
-      ReportFlowStore.back(task.code, reason);
+      if (!reason) { $('fb-reason').focus(); return; }
+      ReportFlowStore.back(task.code, reason, { to: '报告审核' });
       location.href = 'report-sign.html';
     });
     $('btn-pass').addEventListener('click', function () {

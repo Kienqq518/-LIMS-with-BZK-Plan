@@ -58,6 +58,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">检测状态</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">退回详情</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
             </tr>
           </thead>
@@ -97,6 +98,8 @@
   <script src="js/sample-data-store.js"></script>
   <script src="js/entrust-mock.js"></script>
   <script src="js/sample-cat-filter.js"></script>
+  <script src="js/return-store.js"></script>
+  <script src="js/return-ui.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
@@ -129,16 +132,18 @@
         var ops = item.canReceive
           ? '<button onclick="openReceiveModal(' + i + ')" class="text-blue-600 hover:underline font-medium" data-annotate="receive-btn"><i class="fa fa-check"></i> 接收</button>'
           : '<a href="test-detect-edit.html?code=' + encodeURIComponent(item.code) + '&customer=' + encodeURIComponent(item.customer) + '&sample=' + encodeURIComponent(item.sample) + '" class="text-blue-600 hover:underline"><i class="fa fa-edit"></i> 编辑</a>';
-        ops += '<button onclick="alert(\'退回（原型演示）\')" class="ml-3 text-blue-600 hover:underline"><i class="fa fa-reply"></i> 退回</button>';
+        ops += '<button onclick="window.ReturnUI&&ReturnUI.openCollect({from:\'试验检测\',to:\'试样分发\',code:\'' + item.code + '\'})" class="ml-3 text-blue-600 hover:underline"><i class="fa fa-reply"></i> 退回</button>';
+        var codeLink = '<a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a>';
         return '<tr class="hover:bg-slate-50">' +
           '<td class="border border-slate-200 px-3 py-2.5">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2.5"><a href="entrust-detail.html?code=' + encodeURIComponent(item.code) + '" class="text-blue-600 hover:underline">' + item.code + '</a></td>' +
+          '<td class="border border-slate-200 px-3 py-2.5">' + (window.ReturnUI ? ReturnUI.codeWithTag(item.code, '试验检测', codeLink) : codeLink) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 text-center">' + item.contract + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.customer + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.sample + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.sendDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5 ' + statusClass(item.status) + '">' + item.status + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
+          (window.ReturnUI ? ReturnUI.detailTd(item.code, '试验检测') : '<td class="border border-slate-200 px-3 py-2.5 text-slate-400">—</td>') +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' + ops + '</td></tr>';
       }).join('');
     }
@@ -180,6 +185,7 @@
 
     document.getElementById('receiveModal').addEventListener('click', function (e) { if (e.target === this) closeReceiveModal(); });
     renderTable();
+    if (window.ReturnUI) ReturnUI.mountBanner('试验检测');
 
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({

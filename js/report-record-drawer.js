@@ -143,7 +143,10 @@
     document.getElementById('flowRecordSummary').textContent = task.customer || '';
     document.getElementById('flowRecordRoster').innerHTML = reps.map(function (rep) {
       return '<button type="button" class="rr-rep-card' + (rep.id === state.reportId ? ' is-on' : '') + '" data-rid="' + esc(rep.id) + '">' +
-        '<div class="flex items-center justify-between gap-2"><span class="font-semibold text-slate-800">' + esc(rep.no || rep.id) + '</span>' + stateChip(task) + '</div>' +
+        '<div class="flex items-center justify-between gap-2"><span class="font-semibold text-slate-800">' + esc(rep.no || rep.id) +
+        ((task.returns && task.returns.length) || (global.ReturnStore && ReturnStore.listByCode(task.code).length)
+          ? (global.ReturnUI ? ReturnUI.tagHtml() : '') : '') +
+        '</span>' + stateChip(task) + '</div>' +
         '<div class="mt-1 flex items-center justify-between text-xs text-slate-400"><span><i class="fa ' + (/\.pdf$/i.test(rep.name || '') ? 'fa-file-pdf-o' : 'fa-file-word-o') + ' mr-1"></i>' + esc(rep.name || '') + '</span><span>' + esc(rep.at || '') + '</span></div>' +
         '</button>';
     }).join('') || '<p class="py-4 text-center text-sm text-slate-400">暂无报告文件</p>';
@@ -173,13 +176,15 @@
     }
     document.getElementById('flowRecordLog').innerHTML = '<ol class="audit-tl">' + logs.map(function (log) {
       var tone = toneOf(log);
+      var line = global.ReturnUI ? ReturnUI.logLine(log) : { text: log.text || '', extra: '', isRet: tone === 'reject' };
       var st = logStatus(log);
+      if (line.isRet) { st.text = '退回'; st.icon = 'fa-undo'; st.tone = 'reject'; tone = 'reject'; }
       var pending = tone === 'pending';
       var person = '<span class="audit-person"><span class="audit-avatar" style="background:' + avatarColor(log.by) + '">' + avatarMark(log.by) + '</span>' + esc(log.by || '系统') + '</span>';
       var status = '<span class="audit-status is-' + st.tone + '"><i class="fa ' + st.icon + '"></i>' + esc(st.text) + '</span>';
       var time = log.at ? '<time class="audit-time">' + esc(log.at) + (log.at.length < 19 ? ':00' : '') + '</time>' : '';
       var headRight = (pending && log.tone === 'pending') ? status : time;
-      var second = (pending && log.tone === 'pending') ? '' : ('<div class="audit-row">' + person + status + '</div>');
+      var second = (pending && log.tone === 'pending') ? '' : ('<div class="audit-row">' + person + status + '</div>' + (line.extra || ''));
       return '<li class="audit-tl-item is-' + tone + (pending ? ' is-pending' : '') + '"><div class="audit-rail" aria-hidden="true"><span class="audit-dot"></span></div>' +
         '<div class="audit-main"><div class="audit-head"><div class="audit-title">' + esc(log.node) + '</div>' + headRight + '</div>' + second + '</div></li>';
     }).join('') + '</ol>';

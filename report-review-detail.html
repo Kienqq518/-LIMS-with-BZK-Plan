@@ -262,6 +262,7 @@
               </div>
             </div>
             <div id="signoff-banner" class="hidden border-b border-amber-200/60 bg-amber-50/70 px-4 py-2 text-xs text-amber-800"></div>
+            <div id="review-return-strip" class="px-4 pt-2"></div>
             <div class="flex-1 overflow-y-auto px-4 py-3" style="min-height:0">
               <!-- 综合结论置顶 -->
               <div id="ai-summary" class="mb-3 rounded-xl border px-4 py-3" style="border-color:rgba(20,60,154,.2);background:linear-gradient(120deg,rgba(46,91,214,.1),rgba(91,141,239,.04))"></div>
@@ -325,6 +326,8 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/return-store.js"></script>
+  <script src="js/return-ui.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     AiReviewStore.reset();
@@ -719,6 +722,9 @@
         $('signoff-banner').classList.remove('hidden');
         $('signoff-banner').innerHTML = '<i class="fa fa-undo mr-1"></i>本报告由报告签发退回（' + esc(report.signOff.by) + ' · ' + esc(report.signOff.at) + '）。退回意见：' + esc(report.signOff.opinion) + '<br>已退回至报告审核，<b>未自动重跑 AI</b>；下方为上次 AI 结果与人工标注，如需可点「重跑 AI 审核」。';
       } else { $('signoff-banner').classList.add('hidden'); }
+      if ($('review-return-strip') && window.ReturnUI) {
+        $('review-return-strip').innerHTML = ReturnUI.stripHtml(CODE, '报告审核');
+      }
 
       var diff = idx > 0 ? ReportReviewMock.diffRounds(resultAt(report, idx - 1), r) : null;
       var d = diffHtml(diff);

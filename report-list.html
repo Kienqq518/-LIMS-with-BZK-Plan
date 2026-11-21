@@ -227,7 +227,7 @@
     }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-700" data-cat-col="off">
+<body class="bg-slate-100 text-slate-700">
 
   <div id="return-toast" role="alert"><i class="fa fa-times-circle icon"></i><span id="return-toast-msg"></span></div>
 
@@ -249,6 +249,12 @@
         <div class="flex items-center gap-2">
           <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
           <input id="f_sample" type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品大类</label>
+          <select id="f_cat" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">请选择样品大类</option>
+          </select>
         </div>
         <div class="flex items-center gap-2">
           <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">是否关联框架合同</label>
@@ -287,6 +293,7 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">合同编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">委托单位</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium whitespace-nowrap">样品大类</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">优先等级</th>
@@ -433,6 +440,8 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/sample-cat-filter.js"></script>
+  <script src="js/return-store.js"></script>
+  <script src="js/return-ui.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script src="js/short-link-qr.js"></script>
@@ -477,7 +486,7 @@
           sign: null, process: null, fee: null, issue: null,
           /* AI 仅命中一般项 → 需人工复核；人工审核后再退回编制 */
           returns: [
-            { node: '报告审核', by: '李审核', time: '2026-09-03 11:05:00', reason: '签名页签章位置不符模板，需按机构模板重排', kind: 'manual' }
+            { from: '报告审核', to: '报告编制', by: '李审核', time: '2026-09-03 11:05:00', reason: '签名页签章位置不符模板，需按机构模板重排', kind: '人工' }
           ],
           logs: [
             { time: '2026-09-03 11:05:00', text: '李审核 在 报告审核 将 报告编号为SC2026/0238-02的报告 退回至 报告编制' },
@@ -499,7 +508,7 @@
           sign: null, process: null, fee: null, issue: null,
           /* 严重项只走 AI 自动退回，不再叠人工退回 */
           returns: [
-            { node: '报告审核', by: 'AI 审核引擎', time: '2026-09-03 10:15:00', reason: 'L1-b-1 检测/审核/批准签名位不完整', kind: 'ai' }
+            { from: '报告审核', to: '报告编制', by: 'AI 审核引擎', time: '2026-09-03 10:15:00', reason: 'L1-b-1 检测/审核/批准签名位不完整', kind: 'AI' }
           ],
           logs: [
             { time: '2026-09-02 15:40:00', text: 'admin 在 报告编制 生成 报告编号为SC2026/0238-03的报告' },
@@ -535,7 +544,7 @@
           audit: { user: 'admin', date: '2026年07月17日', opinion: '审核不通过' },
           sign: null, process: null, fee: null, issue: null,
           returns: [
-            { node: '报告审核', by: 'admin', time: '2026-07-17 15:00:00', reason: '数据填写不完整', kind: 'manual' }
+            { from: '报告审核', to: '报告编制', by: 'admin', time: '2026-07-17 15:00:00', reason: '数据填写不完整', kind: '人工' }
           ],
           logs: [
             { time: '2026-07-17 15:00:00', text: 'admin 在 报告审核 将 报告编号为SC2026/0099-01的报告 退回至 报告编制' },
@@ -802,16 +811,16 @@
       document.getElementById('tableBody').innerHTML = data.map(function (row, i) {
         var trCls = row.aiReturnedHighlight ? 'ai-return-row' : 'hover:bg-slate-50';
         var handleLink = '<a href="report-compile-edit.html?entrust=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline"' + (row.demo ? ' data-annotate="report-handle"' : '') + '><i class="fa fa-pencil mr-1"></i>去处理</a>';
-        var codeCell = '<div class="entrust-code-stack">' +
-          '<a href="entrust-detail.html?code=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline">' + row.code + '</a>' +
-          (row.aiReturnedHighlight ? aiReturnPillHtml() : '') +
-          '</div>';
+        var codeLink = '<a href="entrust-detail.html?code=' + encodeURIComponent(row.code) + '" class="text-blue-600 hover:underline">' + row.code + '</a>' +
+          (row.aiReturnedHighlight ? aiReturnPillHtml() : '');
+        var codeCell = (window.ReturnUI ? ReturnUI.codeWithTag(row.code, '报告编制', codeLink) : '<div class="entrust-code-stack">' + codeLink + '</div>');
         return '<tr class="' + trCls + '">' +
           '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + codeCell + '</td>' +
           '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" onclick="return false;">' + row.contract + '</a></td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.unit + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.sample + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + catOf(row.sample) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + row.acceptDate + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (row.dueDate || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + (row.priority || '—') + '</td>' +
@@ -839,18 +848,25 @@
         .replace(/"/g, '&quot;');
     }
 
+    function catOf(sample) {
+      var st = window.SampleDataStore;
+      if (!st || !st.catLabelOfNames) return '—';
+      return st.catLabelOfNames(sample) || '—';
+    }
+
     function renderReturnTimeline(returns) {
+      if (window.ReturnUI) return ReturnUI.timelineHtml(returns || []);
       if (!returns.length) {
         return '<div class="px-4 pb-3 text-xs text-slate-400">暂无退回记录</div>';
       }
       var total = returns.length;
       var items = returns.map(function (r, idx) {
-        var n = total - idx; // 第 N 次（倒序展示时最新=最大序号）
+        var n = total - idx;
         var isLatest = idx === 0;
-        var isAi = r.kind === 'ai';
+        var isAi = r.kind === 'AI' || r.kind === 'ai';
         var liCls = (isLatest ? 'is-latest ' : '') + (isAi ? 'is-ai' : '');
         var chips = '<span class="return-chip' + (isLatest ? ' is-latest' : '') + '">第 ' + n + ' 次</span> ' +
-          '<span class="return-chip' + (isAi ? ' is-ai' : '') + '">' + escapeHtml(r.node) + (isAi ? ' · AI 自动退回' : '') + '</span>';
+          '<span class="return-chip' + (isAi ? ' is-ai' : '') + '">' + escapeHtml(r.from || r.node) + (isAi ? ' · AI 自动退回' : '') + '</span>';
         return '<li class="' + liCls + '">' +
           '<div class="mb-1 flex flex-wrap items-center gap-1.5">' + chips + '</div>' +
           '<div class="text-sm leading-6 text-slate-800"><span class="text-slate-500">原因</span> · ' + escapeHtml(r.reason) + '</div>' +
@@ -1324,10 +1340,7 @@
     }
     function confirmReturn() {
       var reason = document.getElementById('returnReason').value.trim();
-      if (!reason) {
-        alert('请填写退回原因');
-        return;
-      }
+      if (!reason) return;
       if (returnRowId == null) return;
       var idx = -1;
       for (var i = 0; i < ROWS.length; i++) {
@@ -1335,10 +1348,12 @@
       }
       if (idx < 0) { closeReturnModal(); return; }
       var row = ROWS[idx];
+      if (window.ReturnStore) {
+        ReturnStore.push({ code: row.code, from: '报告编制', to: '数据审核', reason: reason, kind: '人工' });
+      }
       ROWS.splice(idx, 1);
       closeReturnModal();
       renderTable();
-      alert('已将 ' + row.code + ' 退回至「数据审核」\n原因：' + reason);
     }
 
     document.getElementById('returnModal').addEventListener('click', function (e) {
@@ -1348,9 +1363,11 @@
     function doSearch() {
       var code = document.getElementById('f_code').value.trim();
       var sample = document.getElementById('f_sample').value.trim();
+      var cat = (document.getElementById('f_cat') && document.getElementById('f_cat').value) || '';
       var filtered = ROWS.filter(function (r) {
         if (code && r.code.indexOf(code) < 0) return false;
         if (sample && r.sample.indexOf(sample) < 0) return false;
+        if (cat && catOf(r.sample) !== cat) return false;
         return true;
       });
       renderTable(filtered);
@@ -1362,11 +1379,26 @@
       document.getElementById('f_frame').value = '';
       document.getElementById('f_contract').value = '';
       document.getElementById('f_unit').value = '';
+      if (document.getElementById('f_cat')) document.getElementById('f_cat').value = '';
       renderTable();
     }
 
+    (function fillCatOptions() {
+      var sel = document.getElementById('f_cat');
+      if (!sel || sel.options.length > 1) return;
+      var st = window.SampleDataStore;
+      var labels = st && st.CAT_LABELS
+        ? Object.keys(st.CAT_LABELS).map(function (k) { return st.CAT_LABELS[k]; })
+        : ['电力物资类', '安全工器具类', '环境检测', '工程检测'];
+      labels.forEach(function (c) {
+        var o = document.createElement('option');
+        o.value = c; o.textContent = c; sel.appendChild(o);
+      });
+    })();
+
     renderTable();
     renderAiReturnedBanner();
+    if (window.ReturnUI) ReturnUI.mountBanner('报告编制');
 
     // AI 审核不通过自动退回：报告审核阶段命中严重项的报告会被 AI 退回本环节（报告编制），此处置顶提示（与报告审核页同源）
     function renderAiReturnedBanner() {

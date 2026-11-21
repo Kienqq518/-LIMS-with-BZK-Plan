@@ -400,6 +400,8 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/return-store.js"></script>
+  <script src="js/return-ui.js"></script>
   <script src="js/record-export.js"></script>
   <script src="js/original-record-version.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -610,8 +612,11 @@
           html += '<span class="sample-tag">' + sample.name + '</span>';
           html += '<span class="divider">/</span>';
           html += '<span>' + g.title + '</span>';
+          html += (window.ReturnUI ? ReturnUI.itemMark(entrustCode, g.title) : '');
           html += '</div>';
-          html += '<div class="group-meta">已完成 ' + doneCount + ' / ' + g.rows.length + '</div>';
+          html += '<div class="group-meta">' +
+            (window.ReturnUI ? ReturnUI.testerMeta(entrustCode, g.title, g.tester, g.detectTime) + '<span class="mx-2 text-slate-300">|</span>' : '') +
+            '已完成 ' + doneCount + ' / ' + g.rows.length + '</div>';
           html += '</div>';
           html += '<div class="test-group-body overflow-x-auto">';
           html += '<table class="detect-table min-w-full"><thead><tr>';

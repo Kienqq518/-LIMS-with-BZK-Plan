@@ -146,6 +146,8 @@
   <script src="js/sample-data-store.js"></script>
   <script src="js/entrust-mock.js"></script>
   <script src="js/sample-cat-filter.js"></script>
+  <script src="js/return-store.js"></script>
+  <script src="js/return-ui.js"></script>
   <script src="js/column-config.js"></script>
   <script>
     var STAGE = '组内审核';
@@ -231,19 +233,20 @@
     }
 
     function openReturnModal(index) {
+      var item = filtered[index];
+      if (window.ReturnUI) {
+        ReturnUI.openCollect({ from: '组内审核', to: '试验检测', code: item.code });
+        return;
+      }
       returnIndex = index;
-      document.getElementById('returnCode').textContent = filtered[index].code;
+      document.getElementById('returnCode').textContent = item.code;
       document.getElementById('returnReason').value = '';
       showModal('returnModal');
     }
     function closeReturnModal() { hideModal('returnModal'); }
     function confirmReturn() {
       var reason = document.getElementById('returnReason').value.trim();
-      if (!reason) {
-        alert('请填写退回原因');
-        return;
-      }
-      alert('已退回 ' + filtered[returnIndex].code + '（原型演示）');
+      if (!reason) return;
       closeReturnModal();
     }
 

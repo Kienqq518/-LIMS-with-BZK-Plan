@@ -3,7 +3,7 @@
  * 编制 / 审核通过后进入本链；状态落 localStorage，刷新不丢。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-report-flow-v5';
+  var STORAGE_KEY = 'lims-report-flow-v6';
   var ORDER = ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   var SIGNED = ['报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   function isSigned(status) { return SIGNED.indexOf(status) >= 0; }
@@ -89,6 +89,7 @@
       reports: o.reports || reports(o.code, 1, o.at || (o.acceptDate + ' 13:30:00')),
       records: o.records || recs(o.code, [o.sample + '试验记录单.docx'], o.at || (o.acceptDate + ' 13:30:00')),
       ship: o.ship || null,
+      returns: o.returns || [],
       logs: (o.logs && o.logs.length) ? o.logs : historyLogs(o.status, o.acceptDate)
     });
   }
@@ -111,7 +112,8 @@
     row({ code: 'SC2026/0190', customer: '远东电缆股份有限公司', sample: '8.7/10kV 电力电缆',
       sendDate: '2026-09-02', requireDate: '2026-09-12', acceptDate: '2026-09-02',
       status: '报告处理', at: '2026-09-02 16:40:00',
-      reports: reports('SC2026/0190', 2, '2026-09-02 16:40:00') }),
+      reports: reports('SC2026/0190', 2, '2026-09-02 16:40:00'),
+      returns: [{ from: '收费审批', to: '报告处理', by: '赵财务', time: '2026-11-10 09:40', reason: '处理范围与收费清单不一致，请重新勾选后再收费。', kind: '人工' }] }),
     row({ code: 'SC2026/0175', customer: '贵州送变电有限公司', sample: '绝缘手套 10kV',
       sendDate: '2026-09-03', requireDate: '2026-09-12', acceptDate: '2026-09-03',
       status: '收费审批', at: '2026-09-04 09:40:00',
@@ -119,7 +121,8 @@
     row({ code: 'SC2026/0285', customer: '安顺供电局', sample: '高强度螺栓连接副',
       sendDate: '2026-08-27', requireDate: '2026-09-05', acceptDate: '2026-08-27',
       status: '收费审批', at: '2026-08-27 16:10:00',
-      reports: reports('SC2026/0285', 2, '2026-08-27 16:10:00') }),
+      reports: reports('SC2026/0285', 2, '2026-08-27 16:10:00'),
+      returns: [{ from: '报告发放', to: '收费审批', by: '孙发放', time: '2026-11-09 14:18', reason: '收费未结清，暂不能发放，退回收费审批。', kind: '人工' }] }),
     row({ code: 'SC2026/0447', contract: 'HT2026-0447', customer: '杭州数蚕智能科技有限公司', sample: '安全带',
       sendDate: '2026-11-12', requireDate: '2026-11-20', acceptDate: '2026-11-12',
       status: '报告发放', at: '2026-11-12 13:27:35',
@@ -128,13 +131,15 @@
     row({ code: 'SC2026/0166', customer: '遵义供电局', sample: '全身式安全带',
       sendDate: '2026-09-01', requireDate: '2026-09-10', acceptDate: '2026-09-01',
       status: '报告发放', at: '2026-09-05 10:00:00',
-      reports: reports('SC2026/0166', 3, '2026-09-05 10:00:00') }),
+      reports: reports('SC2026/0166', 3, '2026-09-05 10:00:00'),
+      returns: [{ from: '任务归档', to: '报告发放', by: 'admin', time: '2026-11-08 11:02', reason: '快递单号填写错误，退回发放更正。', kind: '人工' }] }),
     row({ code: 'SC2026/0390', contract: 'HT2026-0390', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆',
       sendDate: '2026-10-15', requireDate: '2026-10-25', acceptDate: '2026-10-15',
       status: '任务归档' }),
     row({ code: 'SC2026/0242', customer: '贵州送变电有限公司', sample: '绝缘手套 10kV',
       sendDate: '2026-09-07', requireDate: '2026-09-14', acceptDate: '2026-09-07',
-      status: '任务归档' }),
+      status: '任务归档',
+      returns: [{ from: '任务完成', to: '任务归档', by: '系统', time: '2026-11-07 17:30', reason: '归档材料缺扫描件，系统退回补档。', kind: '系统' }] }),
     row({ code: 'SC2026/0235', customer: '安顺供电局', sample: '混凝土抗压试块',
       sendDate: '2026-07-14', requireDate: '2026-07-22', acceptDate: '2026-07-14',
       status: '任务归档' }),
@@ -208,22 +213,52 @@
     save(rows);
     return true;
   }
-  function back(code, reason) {
+  function back(code, reason, extra) {
+    extra = extra || {};
     var t = get(code); if (!t) return false;
-    var pv = prevOf(t.status);
+    var from = t.status;
+    var prev = prevOf(from);
+    var to = extra.to || prev || '报告审核';
+    var rec = {
+      from: from, to: to, by: extra.by || ACTOR[from] || 'admin',
+      time: stamp(), reason: reason || '', kind: extra.kind || '人工'
+    };
+    t.returns = t.returns || [];
+    t.returns.push(rec);
     t.logs.push({
-      at: stamp(), node: t.status, by: ACTOR[t.status] || 'admin',
-      text: '退回' + (reason ? '：' + reason : ''), tone: 'danger',
-      reason: reason || '', target: pv || '报告审核'
+      at: rec.time, node: from, by: rec.by,
+      text: '退回至' + to, tone: 'danger',
+      reason: rec.reason, target: to
     });
-    if (!pv) {
-      t.status = '已退回审核';
-    } else {
-      t.status = pv;
+    if (global.ReturnStore) {
+      global.ReturnStore.push({
+        code: t.code, from: rec.from, to: rec.to, by: rec.by,
+        time: rec.time, reason: rec.reason, kind: rec.kind
+      });
     }
+    t.status = prev ? to : '已退回审核';
     syncReportFiles(t);
     save(rows);
     return true;
+  }
+  function issue(code, ids) {
+    var t = get(code); if (!t) return false;
+    ids = (ids || []).map(String);
+    (t.reports || []).forEach(function (r) {
+      if (ids.indexOf(String(r.id)) >= 0) r.issued = true;
+    });
+    var left = (t.reports || []).filter(function (r) { return !r.issued; });
+    t.logs.push({
+      at: stamp(), node: t.status, by: ACTOR[t.status] || 'admin',
+      text: '发放通过 ' + ids.length + ' 份报告' + (left.length ? '（本单仍有 ' + left.length + ' 份待发放）' : '，进入任务归档'),
+      tone: 'success', issuedIds: ids
+    });
+    if (!left.length) {
+      var nx = nextOf(t.status);
+      if (nx) t.status = nx;
+    }
+    save(rows);
+    return { remaining: left.length };
   }
   function setShip(code, ship) {
     var t = get(code); if (!t) return false;
@@ -273,7 +308,7 @@
   global.ReportFlowStore = {
     ORDER: ORDER, STORAGE_KEY: STORAGE_KEY, SIGNED: SIGNED,
     isSigned: isSigned, syncReportFiles: syncReportFiles,
-    list: list, get: get, pass: pass, back: back, setShip: setShip, removeShip: removeShip,
+    list: list, get: get, pass: pass, back: back, issue: issue, setShip: setShip, removeShip: removeShip,
     acceptFromReview: acceptFromReview, reset: reset,
     all: function () { return rows; },
     nextOf: nextOf, prevOf: prevOf

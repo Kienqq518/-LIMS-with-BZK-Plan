@@ -337,6 +337,8 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/return-store.js"></script>
+  <script src="js/return-ui.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -847,6 +849,10 @@
         return;
       }
       currentIndex = index;
+      if (window.ReturnUI) {
+        ReturnUI.openCollect({ from: '样品收样', to: '委托登记', code: it.code });
+        return;
+      }
       document.getElementById('returnModalTitle').textContent = receiveData[index].code + '-退回';
       document.getElementById('returnReason').value = '';
       showModal('returnModal');
@@ -856,11 +862,12 @@
 
     // 退回仍按委托整单，不拆到样品
     function confirmReturn() {
-      if (!document.getElementById('returnReason').value.trim()) {
-        alert('请输入退回原因');
-        return;
+      var reason = document.getElementById('returnReason').value.trim();
+      if (!reason) return;
+      var it = receiveData[currentIndex];
+      if (window.ReturnStore && it) {
+        ReturnStore.push({ code: it.code, from: '样品收样', to: '委托登记', reason: reason, kind: '人工' });
       }
-      alert('退回成功（原型演示）');
       closeReturnModal();
     }
 
