@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>数蚕 LIMS 实验室业务管理系统</title>
+<style>
+  @font-face { font-family: "Noto Sans SC"; src: url("fonts/noto-sc-400.woff2") format("woff2"); font-weight: 400; font-display: block; }
+  @font-face { font-family: "Noto Sans SC"; src: url("fonts/noto-sc-500.woff2") format("woff2"); font-weight: 500; font-display: block; }
+  @font-face { font-family: "Noto Sans SC"; src: url("fonts/noto-sc-700.woff2") format("woff2"); font-weight: 700; font-display: block; }
+  @font-face { font-family: "Jakarta"; src: url("fonts/jakarta-500.woff2") format("woff2"); font-weight: 500; font-display: block; }
+  @font-face { font-family: "Jakarta"; src: url("fonts/jakarta-600.woff2") format("woff2"); font-weight: 600; font-display: block; }
+  @font-face { font-family: "Jakarta"; src: url("fonts/jakarta-700.woff2") format("woff2"); font-weight: 700; font-display: block; }
+
+  :root {
+    --ink: #1A2744;
+    --muted: #66758C;
+    --blue: #3A6AF2;
+    --paper: #F5F7FB;
+    --line: #E4EAF2;
+    --ok: #1C8A4E;
+    --bad: #D24B45;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #E7EDF4; color: var(--ink); font-family: "Noto Sans SC", sans-serif; font-weight: 400; color-scheme: light; }
+  .page { width: 1680px; height: 1050px; position: relative; overflow: hidden; background: var(--paper); }
+  .topbar { position: absolute; z-index: 4; left: 72px; right: 72px; top: 32px; display: flex; align-items: center; gap: 22px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+  .brand img { width: 30px; height: 30px; display: block; }
+  .brand em { font-style: normal; font-family: Jakarta, sans-serif; font-weight: 600; color: var(--muted); font-size: 14px; letter-spacing: 0.08em; }
+  .topbar nav { margin-left: auto; display: flex; gap: 28px; color: #8B98AA; font-size: 15px; }
+  .ghost { border: 1px solid #D5DEE8; background: #fff; color: var(--ink); border-radius: 10px; padding: 8px 16px; font-size: 14px; font-weight: 700; }
+  .idx { margin-left: auto; font-family: Jakarta, sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.16em; color: #93A0B3; }
+  .copy { position: absolute; z-index: 3; left: 72px; top: 168px; width: 560px; }
+  .kicker { margin: 0 0 14px; color: var(--blue); font-weight: 700; font-size: 13px; letter-spacing: 0.14em; }
+  h1 { margin: 0; font-family: Jakarta, sans-serif; font-weight: 700; font-size: 108px; line-height: 0.9; letter-spacing: -0.055em; }
+  .subh { margin: 14px 0 0; font-size: 32px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; }
+  h2 { margin: 0; font-size: 42px; line-height: 1.18; font-weight: 700; letter-spacing: -0.035em; }
+  .lead { margin: 16px 0 0; color: var(--muted); font-size: 16px; line-height: 1.7; }
+  .btn { display: inline-flex; margin-top: 26px; background: var(--blue); color: #fff; font-weight: 700; font-size: 15px; line-height: 1; padding: 14px 18px; border-radius: 10px; }
+  .points { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 12px; }
+  .points li { display: grid; grid-template-columns: 18px 1fr; gap: 10px; align-items: start; }
+  .points .mk { width: 16px; height: 16px; margin-top: 3px; border-radius: 50%; background: #E7EEFF; position: relative; }
+  .points .mk::after { content: ""; position: absolute; left: 4px; top: 5px; width: 7px; height: 4px; border-left: 1.6px solid var(--blue); border-bottom: 1.6px solid var(--blue); transform: rotate(-45deg); }
+  .points b { display: block; font-size: 15px; line-height: 1.45; font-weight: 700; }
+  .points span { display: block; margin-top: 2px; color: var(--muted); font-size: 13.5px; line-height: 1.55; font-weight: 400; }
+  .points.dense { gap: 8px; margin-top: 18px; }
+  .visual { position: absolute; z-index: 1; right: 0; top: 0; width: 980px; height: 1050px; }
+  .visual svg { display: block; }
+  .page.wide .copy { right: 80px; width: auto; top: 140px; }
+  .page.stage .visual { width: 1680px; }
+  .page.stage .copy { width: 520px; top: 132px; }
+
+  .pain-grid { margin-top: 42px; display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 72px; row-gap: 46px; }
+  .pain-grid .n { margin: 0 0 8px; font-family: Jakarta, sans-serif; font-weight: 700; font-size: 26px; letter-spacing: -0.04em; }
+  .pain-grid h3 { margin: 0 0 10px; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .pain-grid p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.7; }
+
+  .groups { margin-top: 28px; display: grid; gap: 22px; }
+  .groups h3 { margin: 0 0 10px; font-size: 13px; letter-spacing: 0.12em; color: var(--blue); font-weight: 700; }
+  .fn-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; }
+  .fn-row article { border-top: 1px solid var(--line); padding-top: 10px; }
+  .fn-row .no { font-family: Jakarta, sans-serif; font-size: 12px; letter-spacing: 0.14em; color: #93A0B3; font-weight: 600; }
+  .fn-row h4 { margin: 4px 0 6px; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+  .fn-row p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+
+  .fo { width: 100%; height: 100%; box-sizing: border-box; padding: 32px; }
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 18px 36px rgba(28, 48, 90, 0.09), 0 1px 2px rgba(28, 48, 90, 0.04); overflow: hidden; color: var(--ink); font-family: "Noto Sans SC", sans-serif; }
+  .card.plain { background: transparent; box-shadow: none; overflow: visible; }
+  .cabinet { height: 100%; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .cab-screen { background: #1A2744; color: #fff; border-radius: 8px; font-family: Jakarta, sans-serif; font-weight: 700; text-align: center; padding: 12px 0; letter-spacing: 0.06em; }
+  .cab-glass { flex: 1; background: #F4F7FB; border: 1px solid #E4EAF2; border-radius: 8px; }
+  .cab-stripe { height: 6px; border-radius: 99px; background: var(--blue); }
+  .screen { height: 100%; padding: 14px 14px 12px; display: flex; flex-direction: column; }
+  .screen-top { display: flex; justify-content: space-between; align-items: center; font-family: Jakarta, sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+  .screen-top i { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); display: block; }
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 36px; margin: 12px 0 8px; }
+  .bars i { width: 8px; border-radius: 2px; background: var(--blue); display: block; }
+  .bars i:nth-child(1) { height: 14px; opacity: 0.28; }
+  .bars i:nth-child(2) { height: 24px; opacity: 0.5; }
+  .bars i:nth-child(3) { height: 18px; opacity: 0.75; }
+  .bars i:nth-child(4) { height: 32px; }
+  .mini-row { height: 6px; border-radius: 99px; background: #E7EDF5; margin-top: 7px; }
+  .mini-row.short { width: 62%; }
+  .chip-center { height: 100%; display: flex; align-items: center; justify-content: center; font-family: Jakarta, sans-serif; font-weight: 700; color: var(--blue); letter-spacing: -0.03em; }
+  .people { height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .people i { width: 18px; height: 18px; border-radius: 50%; background: #E7EEFF; display: block; box-shadow: 0 10px 0 -2px #F4F7FB; }
+  .people i.mid { width: 26px; height: 26px; background: var(--blue); }
+  .tagblue { height: 100%; display: flex; align-items: center; justify-content: center; background: var(--blue); color: #fff; font-weight: 700; font-size: 13px; border-radius: 16px; padding: 0 12px; text-align: center; line-height: 1.35; }
+  .chip-label { height: 100%; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-weight: 700; font-size: 14px; }
+  .chip-label em { font-style: normal; font-family: Jakarta, sans-serif; color: var(--blue); font-size: 12px; letter-spacing: 0.06em; }
+  .sheet { height: 100%; padding: 14px 14px 12px; }
+  .sheet-h { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+  .s-mark { width: 18px; height: 18px; border-radius: 50%; border: 1.6px solid var(--blue); color: var(--blue); font-family: Jakarta, sans-serif; font-style: normal; font-size: 11px; display: grid; place-items: center; font-weight: 700; }
+  .fx { background: var(--blue); color: #fff; border-radius: 7px; padding: 4px 8px; font-size: 12px; font-weight: 700; font-family: Jakarta, "Noto Sans SC", sans-serif; }
+  .sheet table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+  .sheet td { padding: 5px 2px; border-bottom: 1px solid #EEF2F7; }
+  .sheet td.r { text-align: right; font-weight: 700; }
+  .ok { color: var(--ok); }
+  .bad { color: var(--bad); }
+  tr.hot td { background: #FDECEC; }
+  .tog { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin: 7px 0; }
+  .tog i { width: 28px; height: 16px; border-radius: 99px; background: #E3E9F2; position: relative; display: block; }
+  .tog.on i { background: var(--blue); }
+  .tog i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+  .tog.on i::after { left: 14px; }
+  .sel { margin-top: 4px; background: #F4F7FB; border-radius: 8px; padding: 6px 8px; font-size: 12px; color: var(--muted); }
+  .lock { display: inline-flex; margin-top: 8px; background: #E7EEFF; color: var(--blue); font-size: 12px; font-weight: 700; border-radius: 99px; padding: 3px 8px; }
+  .th td { color: var(--muted); font-weight: 500; }
+  .board { height: 100%; padding: 16px 16px 12px; }
+  .board-h { font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; }
+  .board-h em { font-style: normal; color: #93A0B3; font-weight: 500; font-size: 12px; }
+  .kpis4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+  .kpis4 b { display: block; font-family: Jakarta, sans-serif; font-size: 26px; letter-spacing: -0.04em; line-height: 1; }
+  .kpis4 span { color: var(--muted); font-size: 12px; }
+  .trackbar { height: 6px; background: #E7EDF5; border-radius: 99px; margin: 6px 0 10px; }
+  .trackbar i { display: block; width: 62%; height: 100%; background: var(--blue); border-radius: 99px; }
+  .job { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-top: 1px solid #EEF2F7; }
+  .job span { color: var(--muted); }
+  .warn { color: var(--bad); font-size: 12px; font-weight: 700; }
+  .steps { display: flex; gap: 6px; margin: 8px 0 10px; }
+  .steps span { flex: 1; text-align: center; background: #F4F7FB; border-radius: 8px; padding: 6px 0; font-size: 12px; font-weight: 700; }
+  .kv { display: flex; gap: 8px; font-size: 12.5px; padding: 3px 0; align-items: center; }
+  .kv i { width: 18px; font-style: normal; color: var(--blue); font-weight: 700; }
+  .searchline { font-weight: 700; font-size: 14px; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .report { height: 100%; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+  .report .seal { width: 48px; height: 48px; border-radius: 50%; border: 1.6px solid var(--blue); color: var(--blue); display: grid; place-items: center; font-size: 12px; font-weight: 700; transform: rotate(-8deg); margin-left: auto; }
+  .report b { font-size: 18px; letter-spacing: -0.03em; }
+  .report span, .record span { color: var(--muted); font-size: 12px; }
+  .record { height: 100%; padding: 14px; }
+  .record b, .side b { display: block; margin-bottom: 8px; font-size: 14px; }
+  .record div, .side div { padding: 6px 0; border-top: 1px solid #EEF2F7; font-size: 13px; }
+  .phone { height: 100%; padding: 16px 14px; border-radius: 28px; }
+  .notch { width: 46px; height: 5px; border-radius: 99px; background: #E7EDF5; margin: 0 auto 12px; }
+  .phone b { display: block; font-size: 15px; margin-bottom: 8px; }
+  .statp { margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .statp strong { display: block; color: var(--ink); font-size: 15px; }
+  .marks { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: transparent; box-shadow: none; }
+  .ma { border: 2px solid #E24B4B; color: #E24B4B; font-family: Jakarta, sans-serif; font-weight: 700; letter-spacing: 0.08em; border-radius: 8px; padding: 4px 10px; font-size: 18px; }
+  .cnas { font-family: Jakarta, sans-serif; font-weight: 700; color: #23408F; letter-spacing: 0.04em; font-size: 20px; }
+  .ilac { font-size: 11px; letter-spacing: 0.08em; color: #23408F; border: 1px dashed #9AADD6; border-radius: 99px; padding: 4px 8px; }
+  .mini-title { font-weight: 700; font-size: 15px; margin: 0 0 6px; }
+  .mini-body { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .cost { height: 100%; padding: 12px 14px; }
+  .arrowcap { font-family: Jakarta, sans-serif; font-weight: 700; color: var(--blue); font-size: 18px; height: 100%; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<section class="page" id="p1">
+  <header class="topbar">
+    <div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div>
+    <nav><span>痛点</span><span>优势</span><span>功能</span><span>价值</span></nav>
+    <div class="ghost">电缆实验室</div>
+  </header>
+  <div class="copy">
+    <p class="kicker">电缆厂实验室</p>
+    <h1>LIMS</h1>
+    <p class="subh">实验室业务管理系统</p>
+    <p class="lead">驱动电缆生产质量数字化，<br>实现从原材料入库到成品出厂的全流程质量闭环。</p>
+    <div class="btn">全流程质量闭环</div>
+    <ul class="points">
+      <li><i class="mk"></i><b>质检流程标准化，严控质量红线</b></li>
+      <li><i class="mk"></i><b>数据直采，检测效率倍增</b></li>
+      <li><i class="mk"></i><b>生产数据资产化，实现质量追溯</b></li>
+      <li><i class="mk"></i><b>敏捷服务，加速生产流转</b></li>
+      <li><i class="mk"></i><b>轻量化部署，助力车间快速数字化</b></li>
+    </ul>
+  </div>
+  <div class="visual" id="v1"></div>
+</section>
+
+<section class="page wide" id="p2">
+  <header class="topbar">
+    <div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div>
+    <div class="idx">02 / 13</div>
+  </header>
+  <div class="copy">
+    <p class="kicker">现状</p>
+    <h2>现状和痛点</h2>
+    <p class="lead">仪器已经数显。记录、判定、放行和追溯，很多仍靠人。</p>
+    <div class="pain-grid">
+      <article><p class="n">01</p><h3>信息孤岛，数据断层</h3><p>仪器已是数显，很多厂仍人工读数、填写纸质原始记录。纸质难查，容易涂改、丢失。线已经在挤塑，检验申请还在路上；结果出来还要手工录入 ERP 才能出库。</p></article>
+      <article><p class="n">02</p><h3>人工重复劳动多，效率低</h3><p>检验员大量时间花在抄数、算绝缘厚度平均值，再录入电脑做表。每批出货都要质量证明书，定制订单手工做表容易错填、漏填。</p></article>
+      <article><p class="n">03</p><h3>数据可信度与防篡改</h3><p>国网、南网招标对质量追溯要求极高。数据全靠人工录入，就有被润色的可能。赶进度时“先放行、后补测”，没有强制流程。</p></article>
+      <article><p class="n">04</p><h3>仪器设备管理混乱</h3><p>高压发生器、老化试验箱又多又贵。检定、校准没有系统提醒，过了有效期还在用。数据也看不出某批绝缘料的规律偏差，或哪台挤塑机厚度波动大。</p></article>
+      <article><p class="n">05</p><h3>检验员流失，经验断层</h3><p>感官判断、复杂制样靠老师傅。人一离职，新人没有知识库，检测标准执行不统一。岗位琐碎重复，人也难留住。</p></article>
+      <article><p class="n">06</p><h3>反馈慢，制约生产</h3><p>首检结果不能实时回到车间。质量一偏，往往等整盘做完才发现，整盘报废。原材料价格高的时候，这种事后检验非常贵。</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="p3">
+  <header class="topbar"><div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div><div class="idx">03 / 13</div></header>
+  <div class="copy">
+    <p class="kicker">优势 01</p>
+    <h2>内置标准库<br>结果实时自动判定</h2>
+    <p class="lead">国家、行业、企业标准放进同一套引擎。录入之后当场比对，厚度和电阻按公式自算。</p>
+    <ul class="points">
+      <li><i class="mk"></i><div><b>多维标准库管理</b><span>内置 GB/T、IEC、UL 及企业标准，复杂标准体系可以维护、可以更新。</span></div></li>
+      <li><i class="mk"></i><div><b>智能合格判定</b><span>录入后实时比对，超标项自动判不合格，减少人工判断偏差。</span></div></li>
+      <li><i class="mk"></i><div><b>复杂公式自计算</b><span>导体电阻温度换算、厚度平均值按模型计算，数据自行修约。</span></div></li>
+    </ul>
+  </div>
+  <div class="visual" id="v3"></div>
+</section>
+
+<section class="page" id="p4">
+  <header class="topbar"><div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div><div class="idx">04 / 13</div></header>
+  <div class="copy">
+    <p class="kicker">优势 02</p>
+    <h2>设备数据直采<br>防篡改的数据底座</h2>
+    <p class="lead">打通仪器。采集、计算、判定一次走完，原始数从设备直传到系统。</p>
+    <ul class="points">
+      <li><i class="mk"></i><div><b>全场景设备互联</b><span>串口、蓝牙、图像识别，覆盖精密仪器，也覆盖要改造的老设备。</span></div></li>
+      <li><i class="mk"></i><div><b>数据源头防篡改</b><span>原始数据直传，全程留痕，不给人工改数留空档。</span></div></li>
+      <li><i class="mk"></i><div><b>结果闭环即出单</b><span>回传即完成判定。采、算、判、出一次完成，不再本地二改。</span></div></li>
+    </ul>
+  </div>
+  <div class="visual" id="v4"></div>
+</section>
+
+<section class="page" id="p5">
+  <header class="topbar"><div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div><div class="idx">05 / 13</div></header>
+  <div class="copy">
+    <p class="kicker">优势 03</p>
+    <h2>可视化模版<br>按客户格式出单</h2>
+    <p class="lead">零代码、所见即所得。检验原始记录和报告，按客户现在的格式交付。</p>
+    <ul class="points">
+      <li><i class="mk"></i><div><b>原生模版交付</b><span>对齐客户现有记录和报告，上线就能用。</span></div></li>
+      <li><i class="mk"></i><div><b>所见即所得配置</b><span>字段和排版自己调，不写代码也能改。</span></div></li>
+      <li><i class="mk"></i><div><b>授人以渔</b><span>配置培训之后，新增产品或标准变更，客户可以自己维护。</span></div></li>
+    </ul>
+  </div>
+  <div class="visual" id="v5"></div>
+</section>
+
+<section class="page" id="p6">
+  <header class="topbar"><div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div><div class="idx">06 / 13</div></header>
+  <div class="copy">
+    <p class="kicker">优势 04</p>
+    <h2>全链路溯源<br>从原材料到成品</h2>
+    <p class="lead">用批次号或条码，把这根电缆和人、机、料、法、环绑在一起。抽样、送接样、检测到留样，一条线可回放。</p>
+    <ul class="points">
+      <li><i class="mk"></i><div><b>人机料法环追溯</b><span>看得到原料批次、生产设备、检测人员和试验环境。</span></div></li>
+      <li><i class="mk"></i><div><b>样品流转闭环</b><span>扫码即记录。从抽样到留样处理，流转不再靠记忆。</span></div></li>
+    </ul>
+  </div>
+  <div class="visual" id="v6"></div>
+</section>
+
+<section class="page" id="p7">
+  <header class="topbar"><div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div><div class="idx">07 / 13</div></header>
+  <div class="copy">
+    <p class="kicker">优势 05</p>
+    <h2>对齐 CNAS / CMA<br>管理体系</h2>
+    <p class="lead">按 ISO/IEC 17025 的结构，把人、机、料、法、环放进系统。<br>数据保持原始、防篡改，并且可追溯。</p>
+    <ul class="points dense">
+      <li><i class="mk"></i><div><b>人员授权</b><span>只有授权人员能签对应项目。检测前核对培训和允许操作名单。</span></div></li>
+      <li><i class="mk"></i><div><b>设备管理与溯源</b><span>校准计划到期前提醒。过期自动锁定，不能拿来检测。</span></div></li>
+      <li><i class="mk"></i><div><b>标准版本管理</b><span>只用现行受控版本。旧版归档，不能用于新检测。</span></div></li>
+      <li><i class="mk"></i><div><b>记录留痕</b><span>谁改、何时、改前改后、原因都留下。判定保存后，普通账号不能私自改。</span></div></li>
+      <li><i class="mk"></i><div><b>样品流转</b><span>进实验室即生成唯一编号。流转和检测都有记录。</span></div></li>
+      <li><i class="mk"></i><div><b>报告与授权</b><span>报告带认可标识，在线电子签章，满足电子记录追溯。</span></div></li>
+      <li><i class="mk"></i><div><b>数据灾备</b><span>定期备份，避免软硬件故障导致数据丢失。</span></div></li>
+      <li><i class="mk"></i><div><b>权限分级</b><span>管理员、质量负责人、技术负责人、检测员、监督员分开授权。</span></div></li>
+    </ul>
+  </div>
+  <div class="visual" id="v7"></div>
+</section>
+
+<section class="page" id="p8">
+  <header class="topbar"><div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div><div class="idx">08 / 13</div></header>
+  <div class="copy">
+    <p class="kicker">优势 06</p>
+    <h2>可视化大屏<br>质量与交付一目了然</h2>
+    <p class="lead">从待检到出库，每一批的质量和进度放在同一块看板上。下面的数字是界面示意。</p>
+    <ul class="points">
+      <li><i class="mk"></i><div><b>智能任务路由</b><span>自动指派工序，检测和流转不用再手工传单。</span></div></li>
+      <li><i class="mk"></i><div><b>提前预警</b><span>检测时效实时看，过期风险先亮出来。</span></div></li>
+      <li><i class="mk"></i><div><b>多维度看板</b><span>待检、在检、合格、不合格同时可见，管理和检测看的是同一块屏。</span></div></li>
+    </ul>
+  </div>
+  <div class="visual" id="v8"></div>
+</section>
+
+<section class="page" id="p9">
+  <header class="topbar"><div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div><div class="idx">09 / 13</div></header>
+  <div class="copy">
+    <p class="kicker">优势 07</p>
+    <h2>开放接口<br>接通 ERP 与 MES</h2>
+    <p class="lead">用标准 API 把生产指令和质量结果接成一条闭环，不再在系统之间抄一遍。</p>
+    <ul class="points">
+      <li><i class="mk"></i><div><b>与 ERP 深度交互</b><span>入库检验申请自动同步。合格之后，放行指令反写回去。</span></div></li>
+      <li><i class="mk"></i><div><b>与 MES 实时联动</b><span>巡检异常立刻通知，可下发停机或调整，避免整批做完才发现。</span></div></li>
+    </ul>
+  </div>
+  <div class="visual" id="v9"></div>
+</section>
+
+<section class="page" id="p10">
+  <header class="topbar"><div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div><div class="idx">10 / 13</div></header>
+  <div class="copy">
+    <p class="kicker">优势 08</p>
+    <h2>全端协同<br>移动实验室</h2>
+    <p class="lead">Web 与移动端覆盖同一套任务、记录和报告。现场录入，办公室审核，手机上能查到刚出的结果。</p>
+    <ul class="points">
+      <li><i class="mk"></i><div><b>Web 办公中枢</b><span>审核、配置和报表放在一处。</span></div></li>
+      <li><i class="mk"></i><div><b>App 现场作业</b><span>扫码登记，现场录入，不用再抄一遍。</span></div></li>
+      <li><i class="mk"></i><div><b>实时查阅推送</b><span>报告生成即推送，手机上可以核验。</span></div></li>
+    </ul>
+  </div>
+  <div class="visual" id="v10"></div>
+</section>
+
+<section class="page stage" id="p11">
+  <header class="topbar"><div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div><div class="idx">11 / 13</div></header>
+  <div class="copy">
+    <p class="kicker">优势 09</p>
+    <h2>高性价比部署<br>持续跟着法规走</h2>
+    <p class="lead">为电缆厂准备的“标准化 + 定制化”。试错成本压低，标准一变，系统继续维护。</p>
+  </div>
+  <div class="visual" id="v11"></div>
+</section>
+
+<section class="page wide" id="p12">
+  <header class="topbar"><div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div><div class="idx">12 / 13</div></header>
+  <div class="copy">
+    <p class="kicker">功能模块</p>
+    <h2>十二项功能，覆盖实验室日常</h2>
+    <div class="groups">
+      <div>
+        <h3>全生命周期闭环管理</h3>
+        <div class="fn-row">
+          <article><div class="no">01</div><h4>样品全生命周期</h4><p>接收、登记、发样、检测、还样，直到存储或销毁，每一步都有记录。</p></article>
+          <article><div class="no">02</div><h4>标签与合格证模版</h4><p>二维码和编码内容可定制。扫码调出样品全信息，配合移动端记录流转。</p></article>
+          <article><div class="no">03</div><h4>检测流程自定义</h4><p>委托登记、试验检测、报告处理可勾选、可调序，系统流程跟着实际走。</p></article>
+        </div>
+      </div>
+      <div>
+        <h3>自动化检测与高效协同</h3>
+        <div class="fn-row">
+          <article><div class="no">04</div><h4>数据自动化采集</h4><p>直连主流设备，或用协议、蓝牙、图像识别，让老设备把数回传上来。</p></article>
+          <article><div class="no">05</div><h4>数据采集 APP</h4><p>任务一键接收，现场采集，逾期任务自动提醒。</p></article>
+          <article><div class="no">06</div><h4>模版可视化配置</h4><p>原始记录和检测报告的字段点配完成。需求变更不靠二次开发。</p></article>
+        </div>
+      </div>
+      <div>
+        <h3>智能报告与审批签发</h3>
+        <div class="fn-row">
+          <article><div class="no">07</div><h4>报告自动判定</h4><p>按预设标准校核结果，自动判定，生成规范化报告。</p></article>
+          <article><div class="no">08</div><h4>CMA 电子签章</h4><p>电子签名与 CMA 签章在线完成，报告不用等纸质流转。</p></article>
+          <article><div class="no">09</div><h4>移动端在线审批</h4><p>手机上发起和处理审批，办公室不在现场也能签发。</p></article>
+        </div>
+      </div>
+      <div>
+        <h3>全维管控，稳健运营</h3>
+        <div class="fn-row">
+          <article><div class="no">10</div><h4>移动端全业务查询</h4><p>任务进度、样品流转和最终报告，手机或小程序随时可查。</p></article>
+          <article><div class="no">11</div><h4>校准与逾期预警</h4><p>设备校准状态沿链路管理。逾期自动预警，避免过期设备继续出数。</p></article>
+          <article><div class="no">12</div><h4>通用权限管控</h4><p>用户、角色、部门、菜单级授权。各岗位在自己的工作台里协作。</p></article>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="p13">
+  <header class="topbar"><div class="brand"><img src="../../assets/brochure/logo-shucan.png" alt="" /><b>数蚕</b><em>LIMS</em></div><div class="idx">13 / 13</div></header>
+  <div class="copy">
+    <p class="kicker">产品价值</p>
+    <h2>流程、效率<br>数据与交付</h2>
+    <p class="lead">让实验室的流程、效率、数据与交付，实现数字化闭环管理。</p>
+    <ul class="points">
+      <li><i class="mk"></i><div><b>流程合规，筑牢质量防线</b><span>关键节点强制校验。全链路电子签名与审计追踪，让合规变成每一步的默认动作。</span></div></li>
+      <li><i class="mk"></i><div><b>提质增效，告别重复劳动</b><span>收样、分派、检测、原始记录和报告模版闭环流转。设备直连之后，整体交付效率提升 30% 以上。</span></div></li>
+      <li><i class="mk"></i><div><b>数据资产化，驱动决策</b><span>检测数据、客户和业务记录统一归档。驾驶舱看运营指标，判断有处可查。</span></div></li>
+      <li><i class="mk"></i><div><b>轻量交付，支撑迭代</b><span>部署快，路径清楚。业务变了可以扩展，不用推倒重来。</span></div></li>
+    </ul>
+  </div>
+  <div class="visual" id="v13"></div>
+</section>
+
+<script>
+const COS = Math.cos(Math.PI / 6);
+function P(x, y, z) { return [(x - y) * COS, (x + y) * 0.5 - z]; }
+function sub(a, b) { return [a[0] - b[0], a[1] - b[1]]; }
+function add(a, b) { return [a[0] + b[0], a[1] + b[1]]; }
+function mul(a, s) { return [a[0] * s, a[1] * s]; }
+function vlen(a) { return Math.hypot(a[0], a[1]); }
+function norm(a) { const l = vlen(a) || 1; return [a[0] / l, a[1] / l]; }
+function roundPoly(pts, r, fill, stroke, sw) {
+  const n = pts.length;
+  let d = "";
+  for (let i = 0; i < n; i++) {
+    const prev = pts[(i - 1 + n) % n];
+    const cur = pts[i];
+    const next = pts[(i + 1) % n];
+    const rr = Math.min(r, vlen(sub(prev, cur)) / 2.6, vlen(sub(next, cur)) / 2.6);
+    const a = add(cur, mul(norm(sub(prev, cur)), rr));
+    const b = add(cur, mul(norm(sub(next, cur)), rr));
+    d += (i ? "L" : "M") + a[0].toFixed(1) + " " + a[1].toFixed(1);
+    d += "Q" + cur[0].toFixed(1) + " " + cur[1].toFixed(1) + " " + b[0].toFixed(1) + " " + b[1].toFixed(1);
+  }
+  const st = stroke ? ` stroke="${stroke}" stroke-width="${sw || 1}"` : "";
+  return `<path d="${d}Z" fill="${fill}"${st} stroke-linejoin="round"/>`;
+}
+function Scene() { this.g = []; this.c = []; this.s = []; this.b = []; this.cards = []; }
+Scene.prototype.html = function () { return this.g.join("") + this.c.join("") + this.s.join("") + this.b.join("") + this.cards.join(""); };
+function ground(sc) {
+  let o = "";
+  const step = 78;
+  for (let i = -8; i <= 12; i++) {
+    const a = P(i * step, -520, 0), b = P(i * step, 860, 0);
+    const c = P(-520, i * step, 0), d = P(860, i * step, 0);
+    o += `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="rgba(176,192,214,0.32)" stroke-width="1"/>`;
+    o += `<line x1="${c[0].toFixed(1)}" y1="${c[1].toFixed(1)}" x2="${d[0].toFixed(1)}" y2="${d[1].toFixed(1)}" stroke="rgba(176,192,214,0.32)" stroke-width="1"/>`;
+  }
+  sc.g.push(o);
+}
+function conduit(sc, x1, y1, x2, y2, hot) {
+  const a = P(x1, y1, 4), b = P(x2, y2, 4);
+  const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2 - 8;
+  const d = `M${a[0].toFixed(1)} ${a[1].toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
+  sc.c.push(`<path d="${d}" fill="none" stroke="#E6EDF5" stroke-width="14" stroke-linecap="round"/>`);
+  if (hot) sc.c.push(`<path d="${d}" fill="none" stroke="#3A6AF2" stroke-width="2.5" stroke-linecap="round"/>`);
+}
+function box(sc, x, y, z, w, d, h, col) {
+  col = col || {};
+  const top = col.top || "#FFFFFF";
+  const front = col.front || "#F5F8FC";
+  const side = col.side || "#E6EDF6";
+  const A = (dx, dy, dz) => P(x + dx, y + dy, z + dz);
+  const g = P(x + w / 2, y + d / 2, 0);
+  const rx = (w + d) * 0.36;
+  sc.s.push(`<ellipse cx="${g[0].toFixed(1)}" cy="${(g[1] + 6).toFixed(1)}" rx="${rx.toFixed(1)}" ry="${(rx * 0.4).toFixed(1)}" fill="rgba(32,52,96,0.065)"/>`);
+  const r = col.r == null ? 7 : col.r;
+  sc.b.push(roundPoly([A(0, d, 0), A(w, d, 0), A(w, d, h), A(0, d, h)], Math.min(r, 5), front));
+  sc.b.push(roundPoly([A(w, 0, 0), A(w, d, 0), A(w, d, h), A(w, 0, h)], Math.min(r, 5), side));
+  sc.b.push(roundPoly([A(0, 0, h), A(w, 0, h), A(w, d, h), A(0, d, h)], r, top, "#E3EAF3", 1));
+}
+function cardAt(sc, sx, sy, w, h, html, cls) {
+  const pad = 32;
+  sc.cards.push(`<foreignObject x="${(sx - w / 2 - pad).toFixed(1)}" y="${(sy - h / 2 - pad).toFixed(1)}" width="${w + pad * 2}" height="${h + pad * 2}"><div xmlns="http://www.w3.org/1999/xhtml" class="fo"><div class="card ${cls || ""}" style="width:${w}px;height:${h}px">${html}</div></div></foreignObject>`);
+}
+function link(sc, x1, y1, x2, y2, hot) {
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2 + 20;
+  const d = `M${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`;
+  sc.c.push(`<path d="${d}" fill="none" stroke="#D7E0EC" stroke-width="14" stroke-linecap="round"/>`);
+  if (hot) sc.c.push(`<path d="${d}" fill="none" stroke="#3A6AF2" stroke-width="2.6" stroke-linecap="round"/>`);
+}
+function plinth(sc, sx, sy, w) {
+  sc.b.push(`<g transform="translate(${sx} ${sy})"><ellipse cx="0" cy="26" rx="${(w * 0.5).toFixed(1)}" ry="14" fill="rgba(32,52,96,0.07)"/><g transform="skewX(-18) scale(1,0.56)"><rect x="${(-w / 2).toFixed(1)}" y="-30" width="${w}" height="58" rx="16" fill="#FFFFFF" stroke="#E1E8F2"/></g></g>`);
+}
+function poly(sc, pts, fill) { sc.b.push(roundPoly(pts, 1.2, fill)); }
+function mount(id, inner, opt) {
+  opt = opt || {};
+  const w = opt.w || 980, h = opt.h || 1050;
+  const ox = opt.ox == null ? 470 : opt.ox;
+  const oy = opt.oy == null ? 500 : opt.oy;
+  const fid = "fade" + id;
+  const fade = opt.fade ? `<rect width="${opt.fade}" height="${h}" fill="url(#${fid})"/>` : "";
+  document.getElementById(id).innerHTML =
+    `<svg class="scene" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
+      <defs><linearGradient id="${fid}" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#F5F7FB"/><stop offset="0.78" stop-color="#F5F7FB"/><stop offset="1" stop-color="#F5F7FB" stop-opacity="0"/>
+      </linearGradient></defs>
+      <g transform="translate(${ox} ${oy})">${inner}</g>${fade}</svg>`;
+}
+function building(sc, x, y) {
+  box(sc, x, y, 0, 132, 96, 12);
+  box(sc, x + 22, y + 18, 12, 78, 58, 84);
+  const fy = y + 18 + 58;
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      const wx = x + 36 + col * 20;
+      const wz = 30 + row * 22;
+      poly(sc, [P(wx, fy, wz), P(wx + 11, fy, wz), P(wx + 11, fy, wz + 12), P(wx, fy, wz + 12)], (row + col) % 2 ? "#D9E4FF" : "#3A6AF2");
+    }
+  }
+  const t1 = P(x + 108, y + 30, 40), t2 = P(x + 122, y + 40, 52);
+  sc.b.push(`<g>
+    <rect x="${t1[0] - 4}" y="${t1[1] - 26}" width="8" height="26" rx="2" fill="#EAF0FF" stroke="#D5E2FF"/>
+    <rect x="${t1[0] - 4}" y="${t1[1] - 12}" width="8" height="12" fill="#3A6AF2"/>
+    <rect x="${t2[0] - 4}" y="${t2[1] - 32}" width="8" height="32" rx="2" fill="#EAF0FF" stroke="#D5E2FF"/>
+    <rect x="${t2[0] - 4}" y="${t2[1] - 14}" width="8" height="14" fill="#8EAEFF"/>
+  </g>`);
+}
+function globe(sc, x, y, z, r) {
+  const p = P(x, y, z);
+  sc.cards.push(`<g>
+    <ellipse cx="${p[0]}" cy="${p[1] + 8}" rx="${r * 0.9}" ry="${r * 0.28}" fill="rgba(32,52,96,0.06)"/>
+    <circle cx="${p[0]}" cy="${p[1]}" r="${r}" fill="#F7F9FC" stroke="#E1E8F2"/>
+    <ellipse cx="${p[0]}" cy="${p[1]}" rx="${r * 0.92}" ry="${r * 0.36}" fill="none" stroke="#D5DEE8"/>
+    <ellipse cx="${p[0]}" cy="${p[1]}" rx="${r * 0.38}" ry="${r * 0.92}" fill="none" stroke="#D5DEE8"/>
+    <circle cx="${p[0] - r * 0.15}" cy="${p[1] + 2}" r="${r * 0.14}" fill="#3A6AF2"/>
+  </g>`);
+}
+function cube(sc, x, y, letter) {
+  box(sc, x, y, 0, 64, 64, 10);
+  box(sc, x + 8, y + 8, 10, 48, 48, 44, { top: "#EAF0FF", front: "#F3F6FF", side: "#D9E4FF", r: 6 });
+  const p = P(x + 32, y + 32, 60);
+  sc.cards.push(`<text x="${p[0]}" y="${(p[1] + 6).toFixed(1)}" text-anchor="middle" font-family="Jakarta, Noto Sans SC, sans-serif" font-size="20" font-weight="700" fill="#3A6AF2">${letter}</text>`);
+}
+function machine(sc, x, y) {
+  box(sc, x, y, 0, 118, 86, 168, { top: "#F7F9FC" });
+  const fy = y + 86;
+  poly(sc, [P(x + 10, fy, 46), P(x + 108, fy, 46), P(x + 108, fy, 54), P(x + 10, fy, 54)], "#3A6AF2");
+  poly(sc, [P(x + 30, fy, 118), P(x + 88, fy, 118), P(x + 88, fy, 146), P(x + 30, fy, 146)], "#1A2744");
+  const c = P(x + 59, fy, 132);
+  sc.b.push(`<text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" text-anchor="middle" fill="#FFFFFF" font-family="Jakarta, sans-serif" font-size="12" font-weight="700">12.48</text>`);
+  poly(sc, [P(x + 22, fy, 62), P(x + 96, fy, 62), P(x + 96, fy, 104), P(x + 22, fy, 104)], "#F5F8FC");
+  poly(sc, [P(x + 22, fy, 62), P(x + 96, fy, 62), P(x + 96, fy, 104), P(x + 22, fy, 104)], "none");
+}
+const LIMSscreen = `<div class="screen"><div class="screen-top"><b>LIMS</b><i></i></div><div class="bars"><i></i><i></i><i></i><i></i></div><div class="mini-row"></div><div class="mini-row short"></div></div>`;
+const chartSvg = `<div class="screen"><svg viewBox="0 0 120 70" width="120" height="70" aria-hidden="true"><path d="M4 52 C 22 50, 28 34, 44 32 S 68 44, 82 24 110 14 116 12" fill="none" stroke="#3A6AF2" stroke-width="2.4" stroke-linecap="round"/><path d="M4 52 C 22 50, 28 34, 44 32 S 68 44, 82 24 110 14 116 12 V 66 H 4 Z" fill="#3A6AF2" opacity="0.1"/></svg></div>`;
+const wave = `<svg viewBox="0 0 220 52" width="220" height="52" aria-hidden="true"><path d="M2 34 C 18 34, 24 18, 36 20 S 52 36, 66 30 84 16, 100 22 124 38, 142 28 168 12, 188 16 210 20, 218 14" fill="none" stroke="#3A6AF2" stroke-width="2.2" stroke-linecap="round"/></svg>`;
+
+function tower(sc, sx, sy) {
+  sc.b.push(`<g transform="translate(${sx} ${sy})">
+    <ellipse cx="30" cy="46" rx="62" ry="14" fill="rgba(32,52,96,0.06)"/>
+    <rect x="-4" y="-36" width="58" height="74" rx="8" fill="#FFFFFF" stroke="#E1E8F2"/>
+    ${[0,1,2].map(r => [0,1,2].map(c => `<rect x="${6+c*16}" y="${-24+r*18}" width="10" height="10" rx="2" fill="${(r+c)%2?'#D9E4FF':'#3A6AF2'}"/>`).join("")).join("")}
+    <rect x="60" y="-8" width="9" height="28" rx="3" fill="#EAF0FF" stroke="#D5E2FF"/>
+    <rect x="60" y="6" width="9" height="14" fill="#3A6AF2"/>
+    <rect x="72" y="-18" width="9" height="38" rx="3" fill="#EAF0FF" stroke="#D5E2FF"/>
+    <rect x="72" y="2" width="9" height="18" fill="#8EAEFF"/>
+  </g>`);
+}
+function disc(sc, sx, sy, r) {
+  sc.b.push(`<g transform="translate(${sx} ${sy})">
+    <ellipse cy="${(r*0.72).toFixed(1)}" rx="${(r*0.95).toFixed(1)}" ry="${(r*0.28).toFixed(1)}" fill="rgba(32,52,96,0.06)"/>
+    <circle r="${r}" fill="#F7F9FC" stroke="#D5DEE8" stroke-width="1.4"/>
+    <ellipse rx="${(r*0.9).toFixed(1)}" ry="${(r*0.34).toFixed(1)}" fill="none" stroke="#D5DEE8"/>
+    <ellipse rx="${(r*0.34).toFixed(1)}" ry="${(r*0.9).toFixed(1)}" fill="none" stroke="#D5DEE8"/>
+    <circle cx="${(-r*0.18).toFixed(1)}" cy="3" r="${(r*0.14).toFixed(1)}" fill="#3A6AF2"/>
+  </g>`);
+}
+function cable(sc, sx, sy) {
+  sc.b.push(`<g transform="translate(${sx} ${sy})">
+    <ellipse cy="34" rx="92" ry="14" fill="rgba(32,52,96,0.06)"/>
+    <rect x="-86" y="-22" width="196" height="48" rx="24" fill="#2C3444"/>
+    <circle cx="-36" cy="2" r="15" fill="#C9854A"/><circle cx="2" cy="2" r="15" fill="#C9854A"/><circle cx="40" cy="2" r="15" fill="#C9854A"/>
+    <circle cx="-36" cy="2" r="6" fill="#F3E6D4"/><circle cx="2" cy="2" r="6" fill="#F3E6D4"/><circle cx="40" cy="2" r="6" fill="#F3E6D4"/>
+    <rect x="58" y="-14" width="48" height="30" rx="4" fill="#FFFFFF"/>
+    <path d="M66 -4 h32 M66 2 h32 M66 8 h20" stroke="#1A2744" stroke-width="1.5" stroke-linecap="round"/>
+  </g>`);
+}
+function pyramid(sc, sx, sy) {
+  const layers = [[220,"#FFFFFF"],[168,"#E7EEFF"],[116,"#C5D4FF"],[70,"#3A6AF2"]];
+  layers.forEach((L, i) => {
+    const y = sy + 36 - i * 30;
+    sc.b.push(`<g transform="translate(${sx} ${y})"><ellipse cy="18" rx="${L[0]*0.48}" ry="12" fill="rgba(32,52,96,${i===0?0.07:0.03})"/><g transform="skewX(-16) scale(1,0.5)"><rect x="${-L[0]/2}" y="-22" width="${L[0]}" height="36" rx="12" fill="${L[1]}" stroke="${i===3?'#2E58D6':'#E1E8F2'}"/></g></g>`);
+  });
+}
+
+function cover() {
+  const sc = new Scene();
+  ground(sc);
+  link(sc, 10, -10, -10, 120, true);
+  link(sc, 20, -20, 180, -90);
+  link(sc, 30, 10, 190, 70);
+  link(sc, -10, 0, 70, 120);
+  link(sc, -20, -10, -160, 70);
+  link(sc, -30, -20, -170, -50);
+  plinth(sc, 16, 55, 200);
+  plinth(sc, 230, -50, 150);
+  plinth(sc, 220, 95, 120);
+  plinth(sc, -70, 185, 130);
+  plinth(sc, -176, 10, 130);
+  tower(sc, -100, 128);
+  disc(sc, -250, 112, 26);
+  cardAt(sc, -176, -58, 124, 90, `<div class="screen"><div class="mini-row"></div><div class="mini-row short"></div><div class="mini-row"></div><div class="mini-row short"></div></div>`);
+  cardAt(sc, 230, -120, 146, 100, chartSvg);
+  cardAt(sc, 220, 36, 108, 76, `<div class="people"><i></i><i class="mid"></i><i></i></div>`);
+  cardAt(sc, 150, 158, 72, 72, `<div class="chip-center" style="font-size:22px">检</div>`);
+  cardAt(sc, 16, -36, 188, 132, LIMSscreen);
+  cardAt(sc, -220, 48, 100, 38, `<div class="chip-center">TestOS</div>`);
+  return sc.html();
+}
+function adv1() {
+  const sc = new Scene();
+  ground(sc);
+  plinth(sc, 40, 90, 360);
+  cardAt(sc, 20, 10, 268, 248, `<div class="sheet"><div class="sheet-h"><b>表格设置</b><i class="s-mark">S</i></div><div class="fx">fx = 平均(绝缘厚度)</div><table><tr><td>01</td><td>导体电阻</td><td class="r ok">合格</td></tr><tr><td>02</td><td>绝缘平均厚度</td><td class="r ok">合格</td></tr><tr class="hot"><td>03</td><td>拉伸强度</td><td class="r bad">不合格</td></tr><tr><td>05</td><td>修约规则</td><td class="r">四舍五入</td></tr></table></div>`);
+  cardAt(sc, 292, -28, 214, 176, `<div class="sheet"><div class="sheet-h"><b>数值公式计算</b></div><div class="tog"><span>计算平均值</span><i></i></div><div class="tog"><span>保留小数位置</span><i></i></div><div class="tog on"><span>修约规则</span><i></i></div><div class="sel">四舍五入</div></div>`);
+  cardAt(sc, 36, -156, 236, 46, `<div class="tagblue">可根据结果自动判断是否合格</div>`);
+  cardAt(sc, 286, 148, 168, 96, `<div class="screen"><b style="font-size:13px">自动判定</b><svg viewBox="0 0 140 46" width="140" height="46"><path d="M4 34 C 24 34, 30 18, 48 18 S 78 32, 96 16 128 10 136 8" fill="none" stroke="#3A6AF2" stroke-width="2.3" stroke-linecap="round"/></svg></div>`);
+  return sc.html();
+}
+function adv2() {
+  const sc = new Scene();
+  ground(sc);
+  plinth(sc, -10, 130, 160);
+  cardAt(sc, -10, -10, 156, 248, `<div class="cabinet"><div class="cab-screen">12.48</div><div class="cab-glass"></div><div class="cab-stripe"></div></div>`);
+  cardAt(sc, -200, -130, 150, 44, `<div class="chip-label"><em>01</em>设备直采</div>`);
+  cardAt(sc, -210, -48, 150, 44, `<div class="chip-label"><em>02</em>串口取数</div>`);
+  cardAt(sc, -206, 34, 150, 44, `<div class="chip-label"><em>03</em>图像识别</div>`);
+  cardAt(sc, -180, 116, 150, 44, `<div class="chip-label"><em>04</em>蓝牙连接</div>`);
+  link(sc, 78, -4, 150, -4, true);
+  cardAt(sc, 268, 8, 256, 196, `<div class="sheet"><div class="sheet-h"><b>电缆检测数据</b><i class="s-mark">S</i></div><table><tr class="th"><td>设备名称</td><td>状态</td><td>采集结果</td></tr><tr><td>电缆测试</td><td>采集中</td><td>等待回传</td></tr></table><div class="lock">防篡改</div>${wave}</div>`);
+  return sc.html();
+}
+function adv3() {
+  const sc = new Scene();
+  ground(sc);
+  plinth(sc, -40, 120, 340);
+  cardAt(sc, -168, 8, 176, 188, `<div class="record"><b>原始记录</b><div>导体电阻</div><div>绝缘厚度</div><div>拉伸强度</div><span class="note">自定义模版</span></div>`);
+  cardAt(sc, 52, -8, 196, 210, `<div class="report"><div class="seal">报告</div><b>8.7/10kV</b><span>电力电缆检测报告</span><div class="mini-row"></div><div class="mini-row short"></div><div class="mini-row"></div></div>`);
+  cardAt(sc, 248, -150, 168, 92, `<div class="sheet"><b class="mini-title">在线预览</b><div class="mini-row"></div><div class="mini-row short"></div><p class="note">按客户模版</p></div>`);
+  cardAt(sc, 236, 140, 156, 52, `<div class="chip-center">一键导出</div>`);
+  return sc.html();
+}
+function adv4() {
+  const sc = new Scene();
+  ground(sc);
+  cardAt(sc, -50, 10, 292, 268, `<div class="sheet"><div class="searchline">输入批次号，查全过程</div><div class="steps"><span>抽样</span><span>收样</span><span>检测</span><span>报告</span></div><div class="kv"><i>人</i>检测员 A</div><div class="kv"><i>机</i>直流电阻测试仪</div><div class="kv"><i>料</i>铜杆 CU-2026-031</div><div class="kv"><i>法</i>GB/T 12706.2</div><div class="kv"><i>环</i>23.5°C · 60%RH</div><p class="note">示意数据</p></div>`);
+  cable(sc, 268, 78);
+  cardAt(sc, 300, -168, 168, 64, `<div class="sheet"><b class="mini-title">5C2026/01910</b><p class="note">批次码可回溯</p></div>`);
+  return sc.html();
+}
+function adv5() {
+  const sc = new Scene();
+  ground(sc);
+  plinth(sc, 70, 120, 240);
+  disc(sc, 70, 10, 108);
+  cardAt(sc, 70, 6, 132, 138, `<div class="marks"><div class="ma">MA</div><div class="cnas">CNAS</div><div class="ilac">ilac-MRA</div></div>`, "plain");
+  return sc.html();
+}
+function adv6() {
+  const sc = new Scene();
+  ground(sc);
+  plinth(sc, 90, 150, 320);
+  cardAt(sc, 90, -10, 360, 268, `<div class="board"><div class="board-h">指挥中心<em>示意</em></div><div class="kpis4"><div><b>12</b><span>待检</span></div><div><b>8</b><span>在检</span></div><div><b class="bad">12</b><span>不合格</span></div><div><b class="ok">16</b><span>合格</span></div></div><div class="note">今日检验进度</div><div class="trackbar"><i></i></div><div class="warn">超时预警</div><div class="job"><b>CU-2026-031</b><span>挤塑</span></div><div class="job"><b>YJV22-050</b><span>出厂检验</span></div></div>`);
+  return sc.html();
+}
+function adv7() {
+  const sc = new Scene();
+  ground(sc);
+  plinth(sc, -170, 80, 140);
+  plinth(sc, 40, 80, 130);
+  plinth(sc, 240, 80, 150);
+  link(sc, -90, 10, -20, 10, true);
+  link(sc, 110, 10, 170, 10, true);
+  cardAt(sc, -170, -20, 120, 84, `<div class="sheet"><b class="mini-title">工厂</b><p class="note">ERP 入库与放行</p></div>`);
+  cardAt(sc, 40, -24, 108, 84, `<div class="chip-center">API</div>`);
+  cardAt(sc, 240, -16, 128, 84, `<div class="sheet"><b class="mini-title">产线</b><p class="note">MES 停机与调整</p></div>`);
+  return sc.html();
+}
+function adv8() {
+  const sc = new Scene();
+  ground(sc);
+  plinth(sc, -40, 110, 240);
+  cardAt(sc, -50, -16, 250, 184, `<div class="sheet"><div class="sheet-h"><b>进度查询</b></div><div class="kv"><i>·</i>已收样</div><div class="kv"><i>·</i>检测中</div><div class="kv"><i>·</i>已出报告</div><p class="note">委托任务节点，实时可查</p></div>`);
+  cardAt(sc, 160, -6, 148, 236, `<div class="phone"><div class="notch"></div><b>报告查询</b><div class="mini-row"></div><div class="mini-row short"></div><div class="statp"><strong>已出报告</strong>手机端核验</div></div>`, "phone");
+  cardAt(sc, 328, 16, 148, 236, `<div class="phone"><div class="notch"></div><b>数据采集</b><div class="mini-row"></div><div class="statp"><strong>今日任务</strong>确认后上传</div></div>`, "phone");
+  cardAt(sc, 80, 168, 168, 40, `<div class="chip-center">数据实时互通</div>`);
+  return sc.html();
+}
+function adv9() {
+  const sc = new Scene();
+  ground(sc);
+  pyramid(sc, 60, 20);
+  cardAt(sc, -180, -150, 216, 108, `<div class="cost"><b class="mini-title">灵活双模部署</b><p class="mini-body">云端托管或本地私有化。云端免硬件，本地数据留在内网。</p></div>`);
+  cardAt(sc, 250, -168, 224, 108, `<div class="cost"><b class="mini-title">标准化 + 定制化</b><p class="mini-body">按电缆厂的交付方式来，缩短周期，也保留要改的部分。</p></div>`);
+  cardAt(sc, 268, 24, 216, 112, `<div class="cost"><b class="mini-title">行业工艺开箱即用</b><p class="mini-body">现行工艺标准和规范做在系统里，上线就贴着业务走。</p></div>`);
+  cardAt(sc, -190, 96, 216, 112, `<div class="cost"><b class="mini-title">阳光报价</b><p class="mini-body">功能和报价写清楚，不在项目中途加隐形费用。</p></div>`);
+  cardAt(sc, 50, 196, 220, 100, `<div class="cost"><b class="mini-title">随规迭代</b><p class="mini-body">国家标准和行业法规更新，系统继续维护。</p></div>`);
+  return sc.html();
+}
+function value() {
+  const sc = new Scene();
+  ground(sc);
+  const items = [["合规","关键节点强制校验"],["30%+","收样到报告的闭环"],["资产","检测与业务归档"],["轻量","快部署，可扩展"]];
+  items.forEach((it, i) => {
+    const x = (i % 2) * 200 - 30;
+    const y = Math.floor(i / 2) * 160 - 70;
+    plinth(sc, x, y + 70, 170);
+    cardAt(sc, x, y, 176, 104, `<div class="sheet"><b class="mini-title" style="font-family:Jakarta,Noto Sans SC,sans-serif;font-size:28px;letter-spacing:-0.04em">${it[0]}</b><p class="mini-body">${it[1]}</p></div>`);
+  });
+  return sc.html();
+}
+
+mount("v1", cover(), { ox: 500, oy: 500, fade: 80 });
+mount("v3", adv1(), { ox: 430, oy: 490 });
+mount("v4", adv2(), { ox: 420, oy: 500 });
+mount("v5", adv3(), { ox: 440, oy: 500 });
+mount("v6", adv4(), { ox: 400, oy: 480 });
+mount("v7", adv5(), { ox: 500, oy: 520 });
+mount("v8", adv6(), { ox: 420, oy: 530 });
+mount("v9", adv7(), { ox: 460, oy: 500 });
+mount("v10", adv8(), { ox: 400, oy: 470 });
+mount("v11", adv9(), { w: 1680, h: 1050, ox: 980, oy: 560, fade: 640 });
+mount("v13", value(), { ox: 430, oy: 480 });
+document.documentElement.dataset.ready = "1";
+</script>
+</body>
+</html>
