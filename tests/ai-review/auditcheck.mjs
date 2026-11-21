@@ -24,11 +24,16 @@ const rlAlign = await p.evaluate(() => {
 });
 out.push((rlAlign ? '✅' : '❌') + ' 报告编制列表列对齐与操作列');
 const rlAi = await p.evaluate(() => {
-  const scroll = document.getElementById('ai-returned-scroll');
+  const banner = document.querySelector('[data-ret-banner="报告编制"]');
+  const body = banner && banner.querySelector('.ret-banner-body');
   const row238 = [...document.querySelectorAll('#tableBody tr')].some((tr) => /SC2026\/0238/.test(tr.textContent || ''));
-  return scroll && getComputedStyle(scroll).maxHeight !== 'none' && row238;
+  const txt = banner ? (banner.textContent || '') : '';
+  return banner && body && getComputedStyle(body).maxHeight !== 'none' && row238 &&
+    /AI 自动退回/.test(txt) && /李审核/.test(txt);
 });
-out.push((rlAi ? '✅' : '❌') + ' 报告编制 AI 退回区滚动且主表含退回委托');
+out.push((rlAi ? '✅' : '❌') + ' 报告编制退回条幅合并 AI/人工且主表含退回委托');
+await p.setViewportSize({ width: 1440, height: 900 });
+await p.screenshot({ path: SHOT_DIR + '/compile-return-banner.png' });
 const handleHref = await p.evaluate(() => {
   const a = document.querySelector('#tableBody a[href*="report-compile-edit.html"]');
   return a && /去处理/.test(a.textContent || '') && /entrust=/.test(a.getAttribute('href') || '');
@@ -63,10 +68,10 @@ await p.goto(BASE + '/entrust-register.html', { waitUntil: 'load' });
 await p.waitForTimeout(300);
 const erAlign = await p.evaluate(() => {
   const tr = document.querySelector('#registerTableBody tr');
-  if (!tr || tr.cells.length !== 10) return false;
+  if (!tr || tr.cells.length !== 11) return false;
   const ths = document.querySelectorAll('thead th').length;
-  const ops = tr.cells[9];
-  return ths === 10 && /编辑/.test(ops.textContent || '') && tr.cells[0].textContent.trim() === '1';
+  const ops = tr.cells[10];
+  return ths === 11 && /编辑/.test(ops.textContent || '') && tr.cells[0].textContent.trim() === '1';
 });
 out.push((erAlign ? '✅' : '❌') + ' 委托登记列表列对齐（操作列含编辑删除）');
 
@@ -282,12 +287,13 @@ await p.locator('#ai-issues .label-note').first().fill('改过的备注');
 const againTxt = await p.locator('#ai-issues .label-note-save').first().textContent();
 out.push((savedTxt === '已保存' && againTxt === '再次提交' ? '✅' : '❌') + ` 标注再次提交: ${savedTxt} → ${againTxt}`);
 
-// 报告编制页：AI 不通过自动退回横幅可见
+// 报告编制页：人工退回与 AI 自动退回共用一条条幅
 await p.goto(BASE + '/report-list.html', { waitUntil: 'load' });
 await p.waitForTimeout(300);
-const bannerVisible = await p.locator('#ai-returned-banner').isVisible();
-const bannerText = await p.locator('#ai-returned-banner').textContent();
-out.push((bannerVisible && /SC2026\/0238-03/.test(bannerText || '') ? '✅' : '❌') + ' 报告编制页 AI 退回横幅');
+const bannerVisible = await p.locator('[data-ret-banner="报告编制"]').isVisible();
+const bannerText = await p.locator('[data-ret-banner="报告编制"]').textContent();
+const extraAiBanner = await p.locator('#ai-returned-banner').count();
+out.push((bannerVisible && extraAiBanner === 0 && /SC2026\/0238-03/.test(bannerText || '') && /AI 自动退回/.test(bannerText || '') && /李审核/.test(bannerText || '') ? '✅' : '❌') + ' 报告编制页退回条幅合并 AI 标记');
 
 console.log(out.join('\n'));
 console.log('errors(' + err.length + '):\n' + err.slice(0, 5).join('\n'));
