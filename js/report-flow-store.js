@@ -3,8 +3,43 @@
  * 编制 / 审核通过后进入本链；状态落 localStorage，刷新不丢。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-report-flow-v1';
+  var STORAGE_KEY = 'lims-report-flow-v2';
   var ORDER = ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
+  var ACTOR = {
+    '报告编制': 'admin', '报告审核': '李审核', '报告签发': '周签发',
+    '报告处理': '王处理', '收费审批': '赵财务', '报告发放': '孙发放',
+    '任务归档': 'admin', '任务完成': '系统'
+  };
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function addDays(iso, n) {
+    var p = String(iso || '2026-09-01').split('-');
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    d.setDate(d.getDate() + n);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function historyLogs(status, acceptDate) {
+    var d = acceptDate || '2026-09-01';
+    var logs = [
+      { at: d + ' 15:40', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
+      { at: d + ' 15:52', node: '报告审核', by: 'AI 审核引擎', text: '预审结论：通过', tone: 'success' },
+      { at: d + ' 16:20', node: '报告审核', by: '李审核', text: '人工审核通过，提交至报告签发', tone: 'success' }
+    ];
+    var idx = ORDER.indexOf(status);
+    for (var i = 0; i < ORDER.length; i++) {
+      var st = ORDER[i];
+      var at = addDays(d, i + 1) + ' 09:10';
+      if (i < idx) {
+        logs.push({ at: at, node: st, by: ACTOR[st], text: st.replace('报告', '').replace('任务', '') + '通过', tone: 'success' });
+      } else if (i === idx) {
+        logs.push({
+          at: at, node: st, by: '系统',
+          text: st === '任务完成' ? '任务完成' : ('等待' + st),
+          tone: st === '任务完成' ? 'success' : 'pending'
+        });
+      }
+    }
+    return logs;
+  }
 
   function reports(code, n, at) {
     n = n || 1;
@@ -32,17 +67,16 @@
       reports: o.reports || reports(o.code, 1, o.at || (o.acceptDate + ' 13:30:00')),
       records: o.records || recs(o.code, [o.sample + '试验记录单.docx'], o.at || (o.acceptDate + ' 13:30:00')),
       ship: o.ship || null,
-      logs: o.logs || []
+      logs: (o.logs && o.logs.length) ? o.logs : historyLogs(o.status, o.acceptDate)
     };
   }
 
   var SEED = [
-    row({ code: 'SC2026/0238', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆',
+    row({ code: 'SC2026/0238', contract: 'HT2026-0118', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆',
       sendDate: '2026-09-01', requireDate: '2026-09-10', acceptDate: '2026-09-01',
       status: '报告签发', at: '2026-09-03 10:20:00',
       reports: reports('SC2026/0238', 1, '2026-09-03 10:20:11'),
-      records: [{ name: 'SC2026023801导体电阻试验记录单.docx', at: '2026-09-01 15:20:08' }],
-      logs: [{ at: '2026-09-03 10:20', node: '报告审核', by: '李审核', text: '审核通过，提交报告签发' }] }),
+      records: [{ name: 'SC2026023801导体电阻试验记录单.docx', at: '2026-09-01 15:20:08' }] }),
     row({ code: 'SC2026/0256', customer: '远东电缆股份有限公司', sample: '8.7/10kV 电力电缆',
       sendDate: '2026-07-17', requireDate: '2026-07-28', acceptDate: '2026-07-17',
       status: '报告签发', at: '2026-07-17 13:33:21',
@@ -61,7 +95,7 @@
     row({ code: 'SC2026/0285', customer: '安顺供电局', sample: '高强度螺栓连接副',
       sendDate: '2026-08-27', requireDate: '2026-09-05', acceptDate: '2026-08-27',
       status: '收费审批', at: '2026-08-27 16:10:00' }),
-    row({ code: 'SC2026/0447', customer: '杭州数蚕智能科技有限公司', sample: '安全带',
+    row({ code: 'SC2026/0447', contract: 'HT2026-0447', customer: '杭州数蚕智能科技有限公司', sample: '安全带',
       sendDate: '2026-11-12', requireDate: '2026-11-20', acceptDate: '2026-11-12',
       status: '报告发放', at: '2026-11-12 13:27:35',
       reports: reports('SC2026/0447', 1, '2026-11-12 13:27:35'),
@@ -69,7 +103,7 @@
     row({ code: 'SC2026/0166', customer: '遵义供电局', sample: '全身式安全带',
       sendDate: '2026-09-01', requireDate: '2026-09-10', acceptDate: '2026-09-01',
       status: '报告发放', at: '2026-09-05 10:00:00' }),
-    row({ code: 'SC2026/0390', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆',
+    row({ code: 'SC2026/0390', contract: 'HT2026-0390', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆',
       sendDate: '2026-10-15', requireDate: '2026-10-25', acceptDate: '2026-10-15',
       status: '任务归档' }),
     row({ code: 'SC2026/0242', customer: '贵州送变电有限公司', sample: '绝缘手套 10kV',
@@ -81,7 +115,7 @@
     row({ code: 'SC2026/0228', customer: '远东电缆股份有限公司', sample: '电缆保护管',
       sendDate: '2026-07-08', requireDate: '2026-07-18', acceptDate: '2026-07-08',
       status: '任务归档' }),
-    row({ code: 'SC2026/0284', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆',
+    row({ code: 'SC2026/0284', contract: 'HT2026-0284', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆',
       sendDate: '2026-08-27', requireDate: '2026-09-05', acceptDate: '2026-08-27',
       status: '任务完成' }),
     row({ code: 'SC2026/0280', customer: '遵义供电局', sample: '安全帽',
@@ -133,7 +167,7 @@
   function pass(code, note) {
     var t = get(code); if (!t) return false;
     var nx = nextOf(t.status); if (!nx) return false;
-    t.logs.push({ at: stamp(), node: t.status, by: 'admin', text: note || ('已' + t.status.replace('报告', '').replace('任务', '') + '通过') });
+    t.logs.push({ at: stamp(), node: t.status, by: ACTOR[t.status] || 'admin', text: note || (t.status.replace('报告', '').replace('任务', '') + '通过'), tone: 'success' });
     t.status = nx;
     save(rows);
     return true;
@@ -141,7 +175,7 @@
   function back(code, reason) {
     var t = get(code); if (!t) return false;
     var pv = prevOf(t.status);
-    t.logs.push({ at: stamp(), node: t.status, by: 'admin', text: '退回' + (reason ? '：' + reason : '') });
+    t.logs.push({ at: stamp(), node: t.status, by: ACTOR[t.status] || 'admin', text: '退回' + (reason ? '：' + reason : ''), tone: 'danger' });
     if (!pv) {
       t.status = '已退回审核';
     } else {
@@ -176,16 +210,16 @@
         compiler: info.compiler || 'admin',
         status: '报告签发',
         reports: info.reports,
-        records: info.records,
-        logs: []
+        records: info.records
       });
       rows.unshift(t);
-    } else if (ORDER.indexOf(t.status) < 0) {
-      t.status = '报告签发';
+    } else {
+      if (ORDER.indexOf(t.status) < 0) t.status = '报告签发';
+      t.logs.push({ at: stamp(), node: '报告审核', by: '李审核', text: '审核通过，提交报告签发', tone: 'success' });
+      t.logs.push({ at: stamp(), node: '报告签发', by: '系统', text: '等待报告签发', tone: 'pending' });
     }
     if (info.reports) t.reports = info.reports;
     if (info.records) t.records = info.records;
-    t.logs.push({ at: stamp(), node: '报告审核', by: '李审核', text: '审核通过，提交报告签发' });
     save(rows);
     return t;
   }

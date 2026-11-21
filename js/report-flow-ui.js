@@ -35,24 +35,26 @@
     return '<div class="flex items-center gap-2"><label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">' + label + '</label>' + control + '</div>';
   }
 
+  function recLink(code) {
+    return '<a href="#" class="text-blue-600 hover:underline whitespace-nowrap" data-record="' + esc(code) + '"><i class="fa fa-file-text-o mr-1"></i>报告记录</a>';
+  }
   function opsHtml(stage, row) {
     var m = META[stage];
-    var rec = '<a href="#" class="text-blue-600 hover:underline" data-record="' + esc(row.code) + '"><i class="fa fa-file-text-o mr-1"></i>报告记录</a>';
     if (m.kind === 'edit') {
-      return rec + ' <a class="ml-2 text-blue-600 hover:underline" href="' + m.href + '?code=' + encodeURIComponent(row.code) + '"><i class="fa fa-pencil mr-1"></i>' + m.action + '</a>';
+      return '<a class="text-blue-600 hover:underline" href="' + m.href + '?code=' + encodeURIComponent(row.code) + '"><i class="fa fa-pencil mr-1"></i>' + m.action + '</a>';
     }
     if (m.kind === 'view') {
-      return rec + ' <a class="ml-2 text-blue-600 hover:underline" href="#" data-view="' + esc(row.code) + '"><i class="fa fa-eye mr-1"></i>查看</a>';
+      return '<a class="text-blue-600 hover:underline" href="#" data-record="' + esc(row.code) + '"><i class="fa fa-eye mr-1"></i>查看</a>';
     }
     if (m.kind === 'archive') {
-      return rec + ' <button type="button" class="ml-2 text-emerald-600 hover:underline" data-pass="' + esc(row.code) + '"><i class="fa fa-check-circle-o mr-1"></i>归档</button>' +
+      return '<button type="button" class="text-emerald-600 hover:underline" data-pass="' + esc(row.code) + '"><i class="fa fa-check-circle-o mr-1"></i>归档</button>' +
         ' <button type="button" class="ml-1 text-orange-500 hover:underline" data-back="' + esc(row.code) + '"><i class="fa fa-undo mr-1"></i>退回</button>';
     }
-    return rec + ' <button type="button" class="ml-2 text-blue-600 hover:underline" data-open="' + esc(row.code) + '"><i class="fa fa-list-alt mr-1"></i>' + m.action + '</button>';
+    return '<button type="button" class="text-blue-600 hover:underline" data-open="' + esc(row.code) + '"><i class="fa fa-list-alt mr-1"></i>' + m.action + '</button>';
   }
 
   function tableHtml(stage, list) {
-    var extraHead = stage === '任务归档' ? '<th class="border border-slate-200 px-3 py-2 font-medium">任务归档</th>' : '';
+    var colN = stage === '任务归档' ? 15 : 14;
     var body = list.map(function (r, i) {
       var extra = stage === '任务归档'
         ? '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" data-record="' + esc(r.code) + '">查看</a></td>'
@@ -60,28 +62,38 @@
       return '<tr class="hover:bg-slate-50">' +
         '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(r.code) + '">' + esc(r.code) + '</a></td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(r.contract) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(r.customer) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(r.sample) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.sendDate) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.requireDate) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.acceptDate) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2"><span class="rounded border border-green-200 bg-green-50 px-2 py-0.5 text-xs text-green-600">' + esc(r.prepaid) + '</span></td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.priority) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.status) + '</td>' +
-        '<td class="border border-slate-200 px-3 py-2">' + esc(r.compiler) + '</td>' + extra +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(r.compiler) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + recLink(r.code) + '</td>' + extra +
         '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + opsHtml(stage, r) + '</td></tr>';
     }).join('');
-    if (!list.length) body = '<tr><td colspan="12" class="border border-slate-200 px-3 py-10 text-center text-sm text-slate-400">当前节点暂无任务</td></tr>';
-    return '<div class="mt-4 rounded bg-white p-4 shadow-sm"><div class="overflow-x-auto"><table class="w-full min-w-[1280px] border-collapse text-left text-sm">' +
+    if (!list.length) body = '<tr><td colspan="' + colN + '" class="border border-slate-200 px-3 py-10 text-center text-sm text-slate-400">当前节点暂无任务</td></tr>';
+    var extraHead = stage === '任务归档'
+      ? '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">任务归档</th>' : '';
+    return '<div class="mt-4 rounded bg-white p-4 shadow-sm"><div class="overflow-x-auto"><table class="w-full border-collapse text-left text-sm" style="min-width:' + (stage === '任务归档' ? '1680' : '1540') + 'px">' +
       '<thead><tr class="bg-slate-100 text-slate-600">' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium w-[72px]">序号</th>' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">送样时间</th>' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">客户要求完成日期</th>' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">委托受理日期</th>' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">先收费</th>' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">优先等级</th>' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">任务状态</th>' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>' + extraHead +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">操作</th></tr></thead><tbody>' + body + '</tbody></table></div>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium w-[72px]" style="white-space:nowrap">序号</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">委托编号</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">合同编号</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">客户单位</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">样品名称</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">送样时间</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">客户要求完成日期</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">委托受理日期</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">先收费</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">优先等级</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">任务状态</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">编制人</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">报告记录</th>' + extraHead +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">操作</th></tr></thead><tbody>' + body + '</tbody></table></div>' +
       '<div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500"><span>共 ' + list.length + ' 条</span>' +
       '<button type="button" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>' +
       '<button type="button" class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>' +
@@ -210,10 +222,12 @@
         var code = document.getElementById('f_code').value.trim();
         var unit = document.getElementById('f_unit').value.trim();
         var sample = document.getElementById('f_sample').value.trim();
+        var contract = document.getElementById('f_contract').value.trim();
         paint(ReportFlowStore.list(stage).filter(function (r) {
           if (code && r.code.indexOf(code) < 0) return false;
           if (unit && r.customer.indexOf(unit) < 0) return false;
           if (sample && r.sample.indexOf(sample) < 0) return false;
+          if (contract && (r.contract || '').indexOf(contract) < 0) return false;
           return true;
         }));
       };
@@ -222,12 +236,10 @@
     paint();
     document.addEventListener('click', function (e) {
       var open = e.target.closest('[data-open]');
-      var view = e.target.closest('[data-view]');
       var passBtn = e.target.closest('[data-pass]');
       var backBtn = e.target.closest('[data-back]');
       var rec = e.target.closest('[data-record]');
       if (open) { e.preventDefault(); openHandleModal(stage, open.getAttribute('data-open')); }
-      if (view) { e.preventDefault(); openHandleModal(stage, view.getAttribute('data-view')); }
       if (passBtn) {
         e.preventDefault();
         if (confirm('确认将该任务归档并进入任务完成？')) {
@@ -242,9 +254,11 @@
         ReportFlowStore.back(backBtn.getAttribute('data-back'), reason);
         toast('已退回上一节点'); paint();
       }
-      if (rec && !e.target.closest('[data-open],[data-view],[data-pass],[data-back]')) {
+      if (rec && !e.target.closest('[data-open],[data-pass],[data-back]')) {
         e.preventDefault();
-        var t = ReportFlowStore.get(rec.getAttribute('data-record'));
+        var code = rec.getAttribute('data-record');
+        if (global.ReportRecordDrawer && ReportRecordDrawer.open(code)) return;
+        var t = ReportFlowStore.get(code);
         alert((t && t.logs && t.logs.length)
           ? t.logs.map(function (l) { return l.at + '  ' + l.node + '  ' + l.by + '  ' + l.text; }).join('\n')
           : '暂无流转记录');
