@@ -24,6 +24,7 @@ const SUITES = [
   ['navcheck', '入口挂载'],
   ['flowcheck', '签发到任务完成'],
   ['opcolcheck', '名单操作列可见'],
+  ['colhidecheck', '隐藏列后名单不塌'],
 ];
 const list = only ? SUITES.filter(([n]) => only.split(',').includes(n)) : SUITES;
 

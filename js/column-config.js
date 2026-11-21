@@ -53,8 +53,10 @@
     '.cc-fz-r { box-shadow: inset 1px 0 0 #e5e7eb; white-space: nowrap; }',
     '[data-cc-scroll="1"] .cc-fz-r { box-shadow: inset 1px 0 0 #e5e7eb, -10px 0 10px -10px rgba(15,23,42,.28); }',
     'tr:hover > .cc-fz { background-color: #f8fafc; }',
-    /* sticky 右列会被表格算法挤成几十像素，操作按钮看起来像「消失」；按内容定宽并停在表尾 */
-    'th.cc-op, td.cc-op { white-space: nowrap; }'
+    /* sticky 右列会被表格算法挤成几十像素，操作按钮看起来像「消失」；按内容定宽并停在表尾。
+       width:1% 把余量让给中间列，避免隐藏某列后余量全灌进「操作」把其它列挤成 0。 */
+    'th.cc-op, td.cc-op { white-space: nowrap; }',
+    'th.cc-op { width: 1%; }'
   ].join('\n');
 
   var table = null, cols = [], order = [], hidden = {}, panel = null, applying = false;
@@ -212,6 +214,9 @@
       if (k) delete hidden[k];
     });
     order = enforcePins(order);
+    // 先按内容量宽再隐藏：display:none + width:100% 时 Chrome 会把余量灌进「操作」，
+    // 其它列被挤成 0，名单上只剩「去签发」（报告签发隐藏合同编号即如此）。
+    var nat = snapshotNaturalWidths();
     // 表头
     var hr = headRow();
     [].slice.call(hr.children).forEach(function (th) {
@@ -237,6 +242,7 @@
         });
       });
     });
+    lockVisibleMins(nat);
     moveTriggerIfHidden();
     applyStickyColumns();
     applying = false;
@@ -273,7 +279,60 @@
     return { leftKeys: leftKeys, rightKey: rightKey };
   }
   /* sticky 右列会被表格算法收成内容最小宽（约 48px），「操作」看起来像消失。
-     先 nowrap 再按 scrollWidth 定 min-width；th 用 width:1% 把余量让给中间列，操作贴在表尾。 */
+     先 nowrap 再按内容定 min-width；th 用 width:1% 把余量让给中间列，操作贴在表尾。
+     量宽时把 table 收成 max-content，避免 width:100% 的余量算进 scrollWidth。 */
+  function clearInlineColSize(c) {
+    c.style.minWidth = '';
+    c.style.width = '';
+  }
+  function snapshotNaturalWidths() {
+    if (!table) return {};
+    var hr = headRow();
+    if (!hr) return {};
+    [].slice.call(hr.children).forEach(function (th) { th.style.display = ''; });
+    [].slice.call(table.tBodies).forEach(function (tb) {
+      [].slice.call(tb.rows).forEach(function (tr) {
+        if (tr.cells.length === 1 && tr.cells[0].colSpan > 1) return;
+        [].slice.call(tr.cells).forEach(function (td) { td.style.display = ''; });
+      });
+    });
+    [].forEach.call(table.querySelectorAll('[data-col-key]'), clearInlineColSize);
+    var prevW = table.style.width, prevMin = table.style.minWidth;
+    table.style.width = 'max-content';
+    table.style.minWidth = '0px';
+    void table.offsetWidth;
+    var nat = {};
+    [].slice.call(hr.children).forEach(function (th) {
+      var k = th.getAttribute('data-col-key');
+      if (!k) return;
+      nat[k] = Math.max(40, Math.ceil(th.getBoundingClientRect().width));
+    });
+    table.style.width = prevW;
+    table.style.minWidth = prevMin;
+    return nat;
+  }
+  function lockVisibleMins(nat) {
+    if (!table) return;
+    nat = nat || {};
+    var sets = stickySets();
+    var sum = 0;
+    order.forEach(function (k) {
+      if (hidden[k]) return;
+      var w = nat[k] || 40;
+      if (sets.rightKey && k === sets.rightKey) w = Math.max(w, 112);
+      sum += w;
+      [].forEach.call(table.querySelectorAll('[data-col-key="' + cssEsc(k) + '"]'), function (c) {
+        c.style.minWidth = w + 'px';
+        if (sets.rightKey && k === sets.rightKey) {
+          c.classList.add('cc-op');
+          c.style.whiteSpace = 'nowrap';
+          if (c.tagName === 'TH') c.style.width = '1%';
+        }
+      });
+    });
+    table.style.minWidth = sum + 'px';
+    table.style.width = '100%';
+  }
   function sizeRightColumn(key) {
     if (!table) return;
     [].forEach.call(table.querySelectorAll('.cc-op'), function (c) {
@@ -285,27 +344,32 @@
     });
     if (!key) return;
     var cells = table.querySelectorAll('[data-col-key="' + cssEsc(key) + '"]');
+    var prevW = table.style.width, prevMin = table.style.minWidth;
+    table.style.width = 'max-content';
+    table.style.minWidth = '0px';
     var w = 0;
     [].forEach.call(cells, function (c) {
       c.classList.add('cc-op');
       c.style.whiteSpace = 'nowrap';
       c.style.minWidth = '0px';
-      c.style.width = 'auto';
+      c.style.width = c.tagName === 'TH' ? '1%' : 'auto';
       w = Math.max(w, c.scrollWidth);
     });
     w = Math.max(w + 10, 112);
     [].forEach.call(cells, function (c) {
       c.style.whiteSpace = 'nowrap';
       c.style.minWidth = w + 'px';
-      if (c.tagName === 'TH') c.style.width = w + 'px';
+      if (c.tagName === 'TH') c.style.width = '1%';
     });
+    table.style.width = prevW || '100%';
+    table.style.minWidth = prevMin;
   }
   function applyStickyColumns() {
     if (!table) return;
-    table.style.width = '100%';
     var hr = headRow();
     var sets = stickySets();
     if (sets.rightKey) sizeRightColumn(sets.rightKey);
+    if (!table.style.width) table.style.width = '100%';
     // 表格列数太少就不冻结，避免左右两块叠在一起
     var enough = order.filter(function (k) { return !hidden[k]; }).length > 4;
     var host = scrollHost();
@@ -573,7 +637,9 @@
     init: boot,
     _toggle: function (k, on) {
       if (isHideLockKey(k)) { apply(); renderList(panel.querySelector('#cc-kw').value); return; }
-      if (on) delete hidden[k]; else hidden[k] = 1; apply();
+      if (on) delete hidden[k]; else hidden[k] = 1;
+      apply();
+      if (panel) renderList(panel.querySelector('#cc-kw').value);
     },
     _search: function (v) { renderList(v); },
     _reset: function () { order = cols.map(function (c) { return c.key; }); hidden = {}; apply(); renderList(panel.querySelector('#cc-kw').value); },
