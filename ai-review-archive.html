@@ -62,6 +62,26 @@
               <option value="2024">2024 年</option>
               <option value="全部">全部年份</option>
             </select>
+            <select id="month-filter" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm text-slate-700">
+              <option value="全部" selected>全部月份</option>
+              <option value="01">1 月</option>
+              <option value="02">2 月</option>
+              <option value="03">3 月</option>
+              <option value="04">4 月</option>
+              <option value="05">5 月</option>
+              <option value="06">6 月</option>
+              <option value="07">7 月</option>
+              <option value="08">8 月</option>
+              <option value="09">9 月</option>
+              <option value="10">10 月</option>
+              <option value="11">11 月</option>
+              <option value="12">12 月</option>
+            </select>
+          </label>
+          <label class="flex items-center gap-1.5 text-xs text-slate-500">样品大类
+            <select id="cat-filter" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm text-slate-700">
+              <option value="全部" selected>全部大类</option>
+            </select>
           </label>
           <div id="kind-seg" class="seg">
             <button type="button" data-kind="全部" class="is-on">全部</button>
@@ -72,7 +92,7 @@
       </section>
       <section class="glass flex-1 overflow-auto">
         <table>
-          <thead><tr><th>报告编号</th><th>委托 / 客户</th><th>AI 结论</th><th>人工</th><th>签发 / 删除</th><th>业务节点</th></tr></thead>
+          <thead><tr><th>报告编号</th><th>委托 / 客户</th><th>样品大类</th><th>AI 结论</th><th>人工</th><th>签发 / 删除</th><th>业务节点</th></tr></thead>
           <tbody id="archive-body"></tbody>
         </table>
         <div id="archive-empty" class="hidden px-3 py-10 text-center text-sm text-slate-400">窗口内无归档</div>
@@ -87,13 +107,16 @@
     function aiChip(c) { return '<span class="ai-chip ai-' + tone(c) + '"><span class="ai-mark">AI</span>' + esc(c) + '</span>'; }
     var kind = '全部';
     var year = String(new Date(ReportReviewMock.PANEL_TODAY + 'T00:00:00').getFullYear());
-    function rowYear(r) {
-      var day = String(r.archivedAt || r.signedAt || r.at || '').slice(0, 4);
-      return day;
+    var month = '全部';
+    var cat = '全部';
+    function rowStamp(r) {
+      return String(r.archivedAt || r.signedAt || r.at || '');
     }
     function render() {
       var rows = ReportReviewMock.getPanelDataset('全部').archive || [];
-      if (year !== '全部') rows = rows.filter(function (r) { return rowYear(r) === year; });
+      if (year !== '全部') rows = rows.filter(function (r) { return rowStamp(r).slice(0, 4) === year; });
+      if (month !== '全部') rows = rows.filter(function (r) { return rowStamp(r).slice(5, 7) === month; });
+      if (cat !== '全部') rows = rows.filter(function (r) { return (r.majorCat || '') === cat; });
       if (kind === '已删除') rows = rows.filter(function (r) { return r.deleted; });
       if (kind === '已签发') rows = rows.filter(function (r) { return !r.deleted; });
       var body = document.getElementById('archive-body');
@@ -102,7 +125,7 @@
       empty.classList.add('hidden');
       body.innerHTML = rows.map(function (r) {
         var when = r.deleted ? ('删除 ' + (r.deletedAt || r.archivedAt || '—')) : ('签发 ' + (r.signedAt || r.archivedAt || '—'));
-        return '<tr class="row-card" data-id="' + esc(r.id) + '"><td class="mono font-semibold">' + esc(r.reportNo) + ' · ' + esc(r.revision) + (r.deleted ? ' <span class="chip bg-slate-800 text-white">已删除</span>' : '') + '</td><td>' + esc(r.entrust) + '<div class="text-[11px] text-slate-400">' + esc(r.customer) + '</div></td><td>' + aiChip(r.conclusion) + '</td><td>' + esc(r.human) + '</td><td>' + esc(when) + '</td><td>' + esc(r.bizNode) + '</td></tr>';
+        return '<tr class="row-card" data-id="' + esc(r.id) + '"><td class="mono font-semibold">' + esc(r.reportNo) + ' · ' + esc(r.revision) + (r.deleted ? ' <span class="chip bg-slate-800 text-white">已删除</span>' : '') + '</td><td>' + esc(r.entrust) + '<div class="text-[11px] text-slate-400">' + esc(r.customer) + '</div></td><td>' + esc(r.majorCat || '—') + '</td><td>' + aiChip(r.conclusion) + '</td><td>' + esc(r.human) + '</td><td>' + esc(when) + '</td><td>' + esc(r.bizNode) + '</td></tr>';
       }).join('');
       [].forEach.call(body.querySelectorAll('tr'), function (tr) {
         tr.addEventListener('click', function () {
@@ -120,7 +143,23 @@
       year = document.getElementById('year-filter').value;
       render();
     });
+    document.getElementById('month-filter').addEventListener('change', function () {
+      month = document.getElementById('month-filter').value;
+      render();
+    });
+    document.getElementById('cat-filter').addEventListener('change', function () {
+      cat = document.getElementById('cat-filter').value;
+      render();
+    });
     document.getElementById('year-filter').value = year;
+    document.getElementById('month-filter').value = month;
+    var catSel = document.getElementById('cat-filter');
+    (ReportReviewMock.SAMPLE_MAJOR_CATS || []).forEach(function (name) {
+      var opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      catSel.appendChild(opt);
+    });
+    catSel.value = cat;
     render();
   </script>
   <script src="js/current-user.js?v=3" defer></script>
