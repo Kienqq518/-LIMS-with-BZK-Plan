@@ -78,13 +78,47 @@ await p.waitForTimeout(200);
 
 await p.goto(BASE + '/task-complete.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
-const viewN = await p.locator('#flow-root a[data-record]').filter({ hasText: '查看' }).count();
-out.push((viewN >= 1 ? '✅' : '❌') + ' 任务完成只读查看');
-await p.locator('#flow-root a[data-record]').filter({ hasText: '查看' }).first().click();
+out.push((/发放记录/.test(await p.locator('#flow-root thead').textContent()) ? '✅' : '❌') + ' 任务完成末列发放记录');
+const viewN = await p.locator('#flow-root a[data-ship]').filter({ hasText: '查看' }).count();
+out.push((viewN >= 1 ? '✅' : '❌') + ' 任务完成发放记录查看');
+await p.locator('#flow-root a[data-ship]').filter({ hasText: '查看' }).first().click();
 await p.waitForTimeout(280);
-out.push((await p.locator('#flowRecordDrawer').evaluate((el) => el && el.classList.contains('open')) ? '✅' : '❌') + ' 完成查看打开报告记录抽屉');
+const shipModal = await p.locator('#flow-modal').textContent();
+out.push((/报告发放记录/.test(shipModal) && /快递公司/.test(shipModal) && /快递单号/.test(shipModal) && /联系人/.test(shipModal) ? '✅' : '❌') + ' 查看打开发放阶段发放记录');
+out.push((await p.evaluate(() => {
+  var el = document.getElementById('flowRecordDrawer');
+  return !!(el && el.classList.contains('open') && !el.classList.contains('hidden'));
+}) ? '❌' : '✅') + ' 查看不打开报告记录抽屉');
+await p.screenshot({ path: SHOT_DIR + '/flow-complete-ship.png' });
+await p.locator('#flow-cancel').click();
+await p.waitForTimeout(150);
+await p.locator('#flow-root [data-record]').first().click();
+await p.waitForTimeout(250);
+out.push((await p.locator('#flowRecordDrawer').evaluate((el) => el && el.classList.contains('open')) ? '✅' : '❌') + ' 报告记录仍开抽屉');
 await p.locator('#flowRecordClose').click();
 await p.waitForTimeout(200);
+
+const reportLists = [
+  ['/report-list.html', '报告编制'],
+  ['/report-review.html', '报告审核'],
+  ['/report-sign.html', '报告签发'],
+  ['/report-process.html', '报告处理'],
+  ['/report-fee.html', '收费审批'],
+  ['/report-issue.html', '报告发放'],
+  ['/task-archive.html', '任务归档'],
+  ['/task-complete.html', '任务完成']
+];
+for (const [href, name] of reportLists) {
+  await p.goto(BASE + href, { waitUntil: 'load' });
+  await p.waitForTimeout(280);
+  const n = await p.locator('#cc-trigger').count();
+  out.push((n === 1 ? '✅' : '❌') + ' ' + name + ' 操作列配置入口');
+}
+await p.goto(BASE + '/report-sign.html', { waitUntil: 'load' });
+await p.waitForTimeout(200);
+await p.locator('#btn-search').click();
+await p.waitForTimeout(250);
+out.push((await p.locator('#cc-trigger').count() === 1 ? '✅' : '❌') + ' 查询后列配置仍在');
 
 await p.goto(BASE + '/original-record-list.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);

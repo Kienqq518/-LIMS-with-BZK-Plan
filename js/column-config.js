@@ -58,6 +58,7 @@
   ].join('\n');
 
   var table = null, cols = [], order = [], hidden = {}, panel = null, applying = false;
+  var tbodyObs = null, docObs = null, listenersBound = false, rebindTimer = null;
 
   /* ===== 固定列（横向滚动不动、列配置里不可隐藏 / 不可调序） =====
    * 按列名认，不按位置认：以前是「可见列的头两列 + 末列」，
@@ -65,8 +66,8 @@
    * 末列若不是「操作」（例如是「备注」），也会被误钉住。 */
   var PIN_LEFT_LABELS = ['勾选', '序号', '委托编号'];   // 左侧钉住的一组（勾选列存在就一起钉，否则会被滚走）
   var PIN_STICKY_LABELS = ['序号', '委托编号'];         // 至少要命中一个才启用左侧冻结
-  var PIN_RIGHT_LABELS = ['操作', '操作记录'];          // 右侧钉住：名单操作列 / 还样「操作记录」
-  var PIN_LOCK_LABELS = ['序号', '委托编号', '操作', '操作记录'];
+  var PIN_RIGHT_LABELS = ['操作', '操作记录', '发放记录']; // 右侧钉住：名单操作列 / 还样「操作记录」/ 任务完成「发放记录」
+  var PIN_LOCK_LABELS = ['序号', '委托编号', '操作', '操作记录', '发放记录'];
 
   function labelOfKey(k) {
     for (var i = 0; i < cols.length; i++) { if (cols[i].key === k) return cols[i].label; }
@@ -377,16 +378,20 @@
   }
 
   function injectTrigger() {
-    if (doc.getElementById('cc-trigger')) return;
-    var btn = doc.createElement('button');
+    if (!table) return;
+    var btn = doc.getElementById('cc-trigger');
+    if (btn && !table.contains(btn)) { btn.remove(); btn = null; }
+    if (btn) return;
+    btn = doc.createElement('button');
     btn.type = 'button';
     btn.id = 'cc-trigger';
     btn.className = 'cc-trigger';
     btn.title = '列配置（排序 / 是否展示）';
     btn.innerHTML = '<i class="fa fa-bars"></i>';
     btn.onclick = function (e) { e.stopPropagation(); openPanel(btn); };
-    var lastTh = headRow().children[headRow().children.length - 1];
-    lastTh.appendChild(btn);
+    var hr = headRow();
+    if (!hr || !hr.children.length) return;
+    hr.children[hr.children.length - 1].appendChild(btn);
   }
 
   function draftFromCurrent() { return { order: order.slice(), hidden: JSON.parse(JSON.stringify(hidden)) }; }
@@ -492,38 +497,75 @@
     panel.addEventListener('click', function (e) { e.stopPropagation(); });
   }
 
+  function observeTbody() {
+    if (!global.MutationObserver || !table || !table.tBodies[0]) return;
+    if (tbodyObs) { try { tbodyObs.disconnect(); } catch (e) { /* ignore */ } }
+    tbodyObs = new MutationObserver(function () {
+      if (applying) return;
+      clearTimeout(rebindTimer);
+      rebindTimer = setTimeout(function () {
+        if (!table || !doc.contains(table)) { rebind(); return; }
+        collectCols(); tagBodyCells(); apply();
+      }, 16);
+    });
+    tbodyObs.observe(table.tBodies[0], { childList: true, subtree: true });
+  }
+
+  function triggerOn(tbl) {
+    var btn = doc.getElementById('cc-trigger');
+    return !!(tbl && btn && tbl.contains(btn));
+  }
+
+  function rebind() {
+    var next = findTable();
+    if (!next) return;
+    if (!(table === next && triggerOn(next))) {
+      table = next;
+      sourceOrder = null;
+      cols = [];
+      collectCols();
+      tagBodyCells();
+      var all = cols.map(function (c) { return c.key; });
+      var cfg = loadCfg();
+      order = mergeOrder(cfg && cfg.order, all);
+      hidden = {};
+      (cfg && cfg.hidden ? cfg.hidden : []).forEach(function (k) { hidden[k] = 1; });
+      if (!panel) buildPanel();
+      injectTrigger();
+    } else {
+      collectCols();
+      tagBodyCells();
+    }
+    apply();
+    observeTbody();
+    if (global.PrototypeAnnotation && global.PrototypeAnnotation.refresh) global.PrototypeAnnotation.refresh();
+  }
+
+  function observeDoc() {
+    if (docObs || !global.MutationObserver || !doc.body) return;
+    docObs = new MutationObserver(function () {
+      if (applying) return;
+      clearTimeout(rebindTimer);
+      rebindTimer = setTimeout(function () {
+        var next = findTable();
+        if (next && (!table || !doc.contains(table) || next !== table || !triggerOn(next))) rebind();
+      }, 40);
+    });
+    docObs.observe(doc.body, { childList: true, subtree: true });
+  }
+
   function boot() {
     if (!doc.getElementById(STYLE_ID)) {
       var st = doc.createElement('style');
       st.id = STYLE_ID; st.textContent = css; doc.head.appendChild(st);
     }
-    table = findTable();
-    if (!table) return;
-    collectCols();
-    tagBodyCells();
-    var all = cols.map(function (c) { return c.key; });
-    var cfg = loadCfg();
-    order = mergeOrder(cfg && cfg.order, all);
-    hidden = {};
-    (cfg && cfg.hidden ? cfg.hidden : []).forEach(function (k) { hidden[k] = 1; });
-    buildPanel();
-    injectTrigger();
-    apply();
-    // 入口注入后再刷一次批注，保证「列配置」这条内置批注能定位到 ☰ 入口
-    if (global.PrototypeAnnotation && global.PrototypeAnnotation.refresh) global.PrototypeAnnotation.refresh();
-    // 表格由页面脚本重绘时，重新打标并套用列配置
-    if (global.MutationObserver && table.tBodies[0]) {
-      var obsTimer = null;
-      new MutationObserver(function () {
-        if (applying) return;
-        clearTimeout(obsTimer);
-        obsTimer = setTimeout(function () {
-          collectCols(); tagBodyCells(); apply();
-        }, 16);
-      }).observe(table.tBodies[0], { childList: true, subtree: true });
+    if (!listenersBound) {
+      listenersBound = true;
+      doc.addEventListener('click', function () { if (panel && panel.classList.contains('open')) closePanel(true); });
+      global.addEventListener('resize', function () { applyStickyColumns(); });
     }
-    doc.addEventListener('click', function () { if (panel && panel.classList.contains('open')) closePanel(true); });
-    global.addEventListener('resize', function () { applyStickyColumns(); });
+    observeDoc();
+    rebind();
   }
 
   global.ColumnConfig = {
@@ -544,7 +586,7 @@
       renderList(panel.querySelector('#cc-kw').value);
     },
     _close: function () { closePanel(true); },
-    refresh: function () { if (table) { collectCols(); tagBodyCells(); apply(); } },
+    refresh: function () { boot(); },
     refreshSticky: function () { applyStickyColumns(); }
   };
 

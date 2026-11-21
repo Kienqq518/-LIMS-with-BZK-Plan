@@ -3,7 +3,7 @@
  * 编制 / 审核通过后进入本链；状态落 localStorage，刷新不丢。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-report-flow-v2';
+  var STORAGE_KEY = 'lims-report-flow-v3';
   var ORDER = ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   var ACTOR = {
     '报告编制': 'admin', '报告审核': '李审核', '报告签发': '周签发',
@@ -117,13 +117,16 @@
       status: '任务归档' }),
     row({ code: 'SC2026/0284', contract: 'HT2026-0284', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆',
       sendDate: '2026-08-27', requireDate: '2026-09-05', acceptDate: '2026-08-27',
-      status: '任务完成' }),
+      status: '任务完成',
+      ship: { company: '顺丰快递', tracking: 'SF284019283', address: '杭州市西湖区文三路159号东部软件园2号楼402室', contact: '张三', phone: '18888888888', date: '2026-09-06', note: '' } }),
     row({ code: 'SC2026/0280', customer: '遵义供电局', sample: '安全帽',
       sendDate: '2026-08-17', requireDate: '2026-08-27', acceptDate: '2026-08-17',
-      status: '任务完成' }),
+      status: '任务完成',
+      ship: { company: '中通快递', tracking: 'ZT280118822', address: '遵义市汇川区南京路18号', contact: '李四', phone: '13900001111', date: '2026-08-28', note: '工作日送达' } }),
     row({ code: 'SC2026/0073', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆',
       sendDate: '2026-06-10', requireDate: '2026-07-23', acceptDate: '2026-06-10',
-      status: '任务完成' })
+      status: '任务完成',
+      ship: { company: 'EMS', tracking: 'EMS07300991', address: '杭州市西湖区文三路159号东部软件园2号楼402室', contact: '张三', phone: '18888888888', date: '2026-07-24', note: '' } })
   ];
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }

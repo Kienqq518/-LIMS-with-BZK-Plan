@@ -44,7 +44,7 @@
       return '<a class="text-blue-600 hover:underline" href="' + m.href + '?code=' + encodeURIComponent(row.code) + '"><i class="fa fa-pencil mr-1"></i>' + m.action + '</a>';
     }
     if (m.kind === 'view') {
-      return '<a class="text-blue-600 hover:underline" href="#" data-record="' + esc(row.code) + '"><i class="fa fa-eye mr-1"></i>查看</a>';
+      return '<a class="text-blue-600 hover:underline" href="#" data-ship="' + esc(row.code) + '"><i class="fa fa-eye mr-1"></i>查看</a>';
     }
     if (m.kind === 'archive') {
       return '<button type="button" class="text-emerald-600 hover:underline" data-pass="' + esc(row.code) + '"><i class="fa fa-check-circle-o mr-1"></i>归档</button>' +
@@ -78,6 +78,7 @@
     if (!list.length) body = '<tr><td colspan="' + colN + '" class="border border-slate-200 px-3 py-10 text-center text-sm text-slate-400">当前节点暂无任务</td></tr>';
     var extraHead = stage === '任务归档'
       ? '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">任务归档</th>' : '';
+    var opsHead = stage === '任务完成' ? '发放记录' : '操作';
     return '<div class="mt-4 rounded bg-white p-4 shadow-sm"><div class="overflow-x-auto"><table class="w-full border-collapse text-left text-sm" style="min-width:' + (stage === '任务归档' ? '1680' : '1540') + 'px">' +
       '<thead><tr class="bg-slate-100 text-slate-600">' +
       '<th class="border border-slate-200 px-3 py-2 font-medium w-[72px]" style="white-space:nowrap">序号</th>' +
@@ -93,7 +94,7 @@
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">任务状态</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">编制人</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">报告记录</th>' + extraHead +
-      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap;width:1%">操作</th></tr></thead><tbody>' + body + '</tbody></table></div>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap;width:1%">' + opsHead + '</th></tr></thead><tbody>' + body + '</tbody></table></div>' +
       '<div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500"><span>共 ' + list.length + ' 条</span>' +
       '<button type="button" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>' +
       '<button type="button" class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>' +
@@ -137,26 +138,45 @@
     }).join('');
   }
 
+  function shipRecordsHtml(task, opts) {
+    opts = opts || {};
+    var readonly = !!opts.readonly;
+    var code = task.code;
+    var ship = task.ship;
+    var opCell = readonly
+      ? '<td class="border border-slate-200 px-3 py-2 text-slate-400">—</td>'
+      : '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap"><button type="button" class="text-blue-600" data-addr="' + esc(code) + '">编辑</button> <button type="button" class="ml-2 text-red-500" data-del-ship="' + esc(code) + '">删除</button></td>';
+    var title = opts.hideTitle ? '' : '<div class="text-sm font-medium text-slate-700">报告发放记录</div>';
+    return title +
+      '<div class="' + (opts.hideTitle ? '' : 'mt-2 ') + 'overflow-x-auto"><table class="w-full min-w-[920px] border-collapse text-left text-sm" data-no-col-config><thead><tr class="bg-slate-50 text-slate-600">' +
+      '<th class="whitespace-nowrap border border-slate-200 px-3 py-2">序号</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">快递公司</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">快递单号</th>' +
+      '<th class="whitespace-nowrap border border-slate-200 px-3 py-2">地址</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">联系人</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">联系方式</th>' +
+      '<th class="whitespace-nowrap border border-slate-200 px-3 py-2">发放日期</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">备注</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">操作</th></tr></thead><tbody>' +
+      (ship
+        ? '<tr><td class="border border-slate-200 px-3 py-2">1</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.company) + '</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.tracking) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + esc(ship.address) + '</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.contact) + '</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.phone) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + esc(ship.date) + '</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.note || '') + '</td>' +
+          opCell + '</tr>'
+        : '<tr><td colspan="9" class="border border-slate-200 px-3 py-6 text-center text-slate-400">尚未填写发放地址</td></tr>') +
+      '</tbody></table></div>';
+  }
+
+  function openShipRecord(code) {
+    var task = ReportFlowStore.get(code); if (!task) return;
+    openModal(
+      '<div class="flex items-center justify-between border-b border-slate-100 px-5 py-3"><h3 class="text-base font-medium text-slate-800">报告发放记录</h3>' +
+      '<button type="button" class="text-slate-400 hover:text-slate-600" id="flow-modal-x"><i class="fa fa-times"></i></button></div>' +
+      '<div class="flex-1 overflow-auto p-5">' + shipRecordsHtml(task, { readonly: true, hideTitle: true }) + '</div>' +
+      '<div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">' +
+      '<button type="button" class="rounded border border-slate-300 px-4 py-1.5 text-sm" id="flow-cancel">关闭</button></div>'
+    );
+  }
+
   function openHandleModal(stage, code) {
     var task = ReportFlowStore.get(code); if (!task) return;
     var m = META[stage];
     var isIssue = stage === '报告发放';
-    var ship = task.ship;
-    var shipHtml = '';
-    if (isIssue) {
-      shipHtml = '<div class="mt-4 text-sm font-medium text-slate-700">报告发放记录</div>' +
-        '<div class="mt-2 overflow-x-auto"><table class="w-full min-w-[920px] border-collapse text-left text-sm"><thead><tr class="bg-slate-50 text-slate-600">' +
-        '<th class="whitespace-nowrap border border-slate-200 px-3 py-2">序号</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">快递公司</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">快递单号</th>' +
-        '<th class="whitespace-nowrap border border-slate-200 px-3 py-2">地址</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">联系人</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">联系方式</th>' +
-        '<th class="whitespace-nowrap border border-slate-200 px-3 py-2">发放日期</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">备注</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">操作</th></tr></thead><tbody>' +
-        (ship
-          ? '<tr><td class="border border-slate-200 px-3 py-2">1</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.company) + '</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.tracking) + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2">' + esc(ship.address) + '</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.contact) + '</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.phone) + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2">' + esc(ship.date) + '</td><td class="border border-slate-200 px-3 py-2">' + esc(ship.note || '') + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap"><button type="button" class="text-blue-600" data-addr="' + esc(code) + '">编辑</button> <button type="button" class="ml-2 text-red-500" data-del-ship="' + esc(code) + '">删除</button></td></tr>'
-          : '<tr><td colspan="9" class="border border-slate-200 px-3 py-6 text-center text-slate-400">尚未填写发放地址</td></tr>') +
-        '</tbody></table></div>';
-    }
+    var shipHtml = isIssue ? '<div class="mt-4">' + shipRecordsHtml(task, { readonly: false }) + '</div>' : '';
     openModal(
       '<div class="flex items-center justify-between border-b border-slate-100 px-5 py-3"><h3 class="text-base font-medium text-slate-800">报告列表</h3>' +
       '<button type="button" class="text-slate-400 hover:text-slate-600" id="flow-modal-x"><i class="fa fa-times"></i></button></div>' +
@@ -232,6 +252,7 @@
         }));
       };
       document.getElementById('btn-reset').onclick = function () { paint(); };
+      if (global.ColumnConfig && typeof ColumnConfig.refresh === 'function') ColumnConfig.refresh();
     }
     paint();
     document.addEventListener('click', function (e) {
@@ -239,6 +260,7 @@
       var passBtn = e.target.closest('[data-pass]');
       var backBtn = e.target.closest('[data-back]');
       var rec = e.target.closest('[data-record]');
+      var shipBtn = e.target.closest('[data-ship]');
       if (open) { e.preventDefault(); openHandleModal(stage, open.getAttribute('data-open')); }
       if (passBtn) {
         e.preventDefault();
@@ -254,7 +276,11 @@
         ReportFlowStore.back(backBtn.getAttribute('data-back'), reason);
         toast('已退回上一节点'); paint();
       }
-      if (rec && !e.target.closest('[data-open],[data-pass],[data-back]')) {
+      if (shipBtn) {
+        e.preventDefault();
+        openShipRecord(shipBtn.getAttribute('data-ship'));
+      }
+      if (rec && !e.target.closest('[data-open],[data-pass],[data-back],[data-ship]')) {
         e.preventDefault();
         var code = rec.getAttribute('data-record');
         if (global.ReportRecordDrawer && ReportRecordDrawer.open(code)) return;

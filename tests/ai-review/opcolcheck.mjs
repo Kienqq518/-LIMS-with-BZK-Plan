@@ -6,7 +6,8 @@ const pages = [
   ['/sample-prepare.html', '编辑'],
   ['/sample-dispatch.html', '发样'],
   ['/sample-return-confirm.html', '还样记录'],
-  ['/report-sign.html', '去签发']
+  ['/report-sign.html', '去签发'],
+  ['/task-complete.html', '查看']
 ];
 
 const out = [];
@@ -31,7 +32,7 @@ for (const [href, action] of pages) {
     const td = lastTd.getBoundingClientRect();
     const head = (lastTh.textContent || '').replace(/\s+/g, ' ').trim();
     const body = (lastTd.textContent || '').replace(/\s+/g, ' ').trim();
-    const headOk = /操作/.test(head);
+    const headOk = /操作|发放记录/.test(head);
     const bodyOk = body.indexOf(actionText) >= 0;
     const wideOk = lastTh.offsetWidth >= 100 && lastTd.offsetWidth >= 88;
     const visOk = td.right <= wr.right + 2 && td.left >= wr.left - 2 && lastTd.offsetWidth > 8;
