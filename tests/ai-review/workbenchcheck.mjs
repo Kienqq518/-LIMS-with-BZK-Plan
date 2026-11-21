@@ -20,26 +20,36 @@ const kpiN = await p.locator('#kpi-row .kpi').count();
 out.push((kpiN === 3 ? '✅' : '❌') + ' 第一层三张 KPI: ' + kpiN);
 const kpiH = await p.locator('#kpi-row .kpi').first().evaluate((el) => el.clientHeight);
 out.push((kpiH >= 80 && kpiH <= 120 ? '✅' : '❌') + ' 第一层 KPI 卡高度压低: ' + kpiH);
-const doneCard = await p.locator('#chart-done [data-kpi="done"]').count();
+const doneCard = await p.locator('#kpi-row [data-kpi="done"]').count();
 const adoptCard = await p.locator('#chart-adopt [data-kpi="adopt"]').count();
-out.push((doneCard === 1 && adoptCard === 1 ? '✅' : '❌') + ' 已完成报告卡 + 人工采纳率卡');
+out.push((doneCard === 1 && adoptCard === 1 ? '✅' : '❌') + ' 已完成报告卡在顶栏 + 人工采纳率卡');
 const midLayout = await p.evaluate(() => {
-  const done = document.getElementById('chart-done')?.getBoundingClientRect();
+  const row = [...document.querySelectorAll('#kpi-row .kpi')].map((el) => el.getAttribute('data-kpi'));
   const avg = document.getElementById('chart-avg')?.getBoundingClientRect();
+  const adopt = document.getElementById('chart-adopt')?.getBoundingClientRect();
   const pie = document.getElementById('chart-concl');
   const svg = pie?.querySelector('svg');
-  const hints = (document.getElementById('chart-avg')?.textContent || '') + (document.getElementById('chart-adopt')?.textContent || '');
+  const doneN = (document.querySelector('#kpi-row [data-kpi="done"] .n')?.textContent || '').trim();
+  const pieN = (pie?.querySelector('text')?.textContent || '').trim();
+  const caps = (document.getElementById('chart-avg')?.textContent || '') + (document.getElementById('chart-adopt')?.textContent || '');
   return {
-    doneLeftOfAvg: !!(done && avg && done.right <= avg.left + 2 && Math.abs(done.top - avg.top) < 24),
+    order: row,
+    noError: row.indexOf('error') < 0 && !/异常率/.test(document.getElementById('kpi-row')?.textContent || ''),
+    twoMid: !!(avg && adopt && avg.right <= adopt.left + 2),
     pieFit: !!(svg && pie && svg.clientHeight >= 90 && svg.clientHeight <= pie.clientHeight + 2),
     svgH: svg ? svg.clientHeight : 0,
     boxH: pie ? pie.clientHeight : 0,
-    noHints: !/引擎领取到写出三态/.test(hints) && !/同意 AI \/ 同意\+覆盖/.test(hints),
+    pieMatch: doneN !== '' && doneN === pieN,
+    doneN, pieN,
+    noCaps: !/参照 60 秒/.test(caps) && !/已处置样本/.test(caps) && !/次审核/.test(caps),
   };
 });
-out.push((midLayout.doneLeftOfAvg ? '✅' : '❌') + ' 已完成报告数量在平均耗时左侧');
+out.push((midLayout.order[0] === 'audits' && midLayout.order[1] === 'done' && midLayout.order[2] === 'success' ? '✅' : '❌') + ' 顶栏顺序 审核次数/已完成/成功率: ' + midLayout.order.join(','));
+out.push((midLayout.noError ? '✅' : '❌') + ' 顶栏已去掉异常率');
+out.push((midLayout.twoMid ? '✅' : '❌') + ' 第二层右侧仅耗时与采纳率');
 out.push((midLayout.pieFit ? '✅' : '❌') + ` 三态饼图完整显示: svg=${midLayout.svgH} box=${midLayout.boxH}`);
-out.push((midLayout.noHints ? '✅' : '❌') + ' 去掉耗时/采纳率说明文案');
+out.push((midLayout.pieMatch ? '✅' : '❌') + ` 三态合计=已完成报告数量: pie=${midLayout.pieN} done=${midLayout.doneN}`);
+out.push((midLayout.noCaps ? '✅' : '❌') + ' 去掉三张卡底部小字');
 
 const blocks = await p.evaluate(() => ['blk-kpi', 'blk-pending', 'blk-trend', 'blk-archive', 'blk-queue'].every((id) => !!document.getElementById(id)));
 out.push((blocks ? '✅' : '❌') + ' 五块布局容器');
@@ -168,8 +178,14 @@ const popped = await p.locator('#kpi-row .kpi.pop').count();
 out.push((popped >= 1 || afterTick >= 1 ? '✅' : '❌') + ' 完成后 KPI 会跳动');
 await p.screenshot({ path: SHOT_DIR + '/panel-queue-tick.png', fullPage: true });
 
-const closeRate = await p.locator('#kpi-row .kpi').nth(1).textContent();
+const closeRate = await p.locator('#kpi-row [data-kpi="success"]').textContent();
 out.push((/%/.test(closeRate || '') ? '✅' : '❌') + ' 成功率 KPI 含百分比');
+const pieAfter = await p.evaluate(() => {
+  const doneN = (document.querySelector('#kpi-row [data-kpi="done"] .n')?.textContent || '').trim();
+  const pieN = (document.querySelector('#chart-concl text')?.textContent || '').trim();
+  return doneN !== '' && doneN === pieN;
+});
+out.push((pieAfter ? '✅' : '❌') + ' 排队跳动后三态合计仍等于已完成');
 
 console.log(out.join('\n'));
 console.log('errors(' + err.length + '):\n' + err.slice(0, 5).join('\n'));
