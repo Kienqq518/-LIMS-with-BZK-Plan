@@ -7,7 +7,7 @@
  */
 (function (global) {
   var doc = global.document;
-  var state = { table: null, tbody: null, nameIdx: -1, rows: [], filling: false };
+  var state = { table: null, tbody: null, nameIdx: -1, rows: [], filling: false, nativeCatCol: false };
 
   function catList() {
     var st = global.SampleDataStore;
@@ -59,7 +59,7 @@
 
   function fillRow(tr) {
     if (!state.table || !tr || !tr.cells) return;
-    if (pageHasMajorCatColumn()) return;                               // 原生列（如委托登记）不再插 td
+    if (state.nativeCatCol) return;                                   // 页面自己渲染的「样品大类」列，不再插 td
     var cells = tr.cells;
     if (state.nameIdx < 0 || cells.length === 0) return;
     if (cells.length === 1 && cells[0].colSpan > 1) return;          // 空态行
@@ -96,6 +96,7 @@
     if (hasOverlayText('th', '样品大类')) {
       // 页面自己已经写了「样品大类」列（如标签打印）：不再克隆注入，
       // 但状态照样要建起来，否则「样品大类」下拉选了值不会过滤行
+      state.nativeCatCol = true;
       state.tbody = state.table.tBodies[0];
       if (!state.tbody) return false;
       state.rows = [].slice.call(state.tbody.rows);

@@ -50,9 +50,11 @@
     'thead .cc-fz { z-index: 3; }',
     '.cc-fz-edge { box-shadow: inset -1px 0 0 #e5e7eb; }',
     '[data-cc-scroll="1"] .cc-fz-edge { box-shadow: inset -1px 0 0 #e5e7eb, 10px 0 10px -10px rgba(15,23,42,.28); }',
-    '.cc-fz-r { box-shadow: inset 1px 0 0 #e5e7eb; }',
+    '.cc-fz-r { box-shadow: inset 1px 0 0 #e5e7eb; white-space: nowrap; }',
     '[data-cc-scroll="1"] .cc-fz-r { box-shadow: inset 1px 0 0 #e5e7eb, -10px 0 10px -10px rgba(15,23,42,.28); }',
-    'tr:hover > .cc-fz { background-color: #f8fafc; }'
+    'tr:hover > .cc-fz { background-color: #f8fafc; }',
+    /* sticky 右列会被表格算法挤成几十像素，操作按钮看起来像「消失」；按内容定宽并停在表尾 */
+    'th.cc-op, td.cc-op { white-space: nowrap; }'
   ].join('\n');
 
   var table = null, cols = [], order = [], hidden = {}, panel = null, applying = false;
@@ -63,8 +65,8 @@
    * 末列若不是「操作」（例如是「备注」），也会被误钉住。 */
   var PIN_LEFT_LABELS = ['勾选', '序号', '委托编号'];   // 左侧钉住的一组（勾选列存在就一起钉，否则会被滚走）
   var PIN_STICKY_LABELS = ['序号', '委托编号'];         // 至少要命中一个才启用左侧冻结
-  var PIN_RIGHT_LABEL = '操作';
-  var PIN_LOCK_LABELS = ['序号', '委托编号', '操作'];    // 这三列在面板里不可隐藏、不可调序
+  var PIN_RIGHT_LABELS = ['操作', '操作记录'];          // 右侧钉住：名单操作列 / 还样「操作记录」
+  var PIN_LOCK_LABELS = ['序号', '委托编号', '操作', '操作记录'];
 
   function labelOfKey(k) {
     for (var i = 0; i < cols.length; i++) { if (cols[i].key === k) return cols[i].label; }
@@ -74,9 +76,10 @@
     for (var i = 0; i < cols.length; i++) { if (cols[i].label === lb) return cols[i].key; }
     return null;
   }
+  function isRightLabel(lb) { return PIN_RIGHT_LABELS.indexOf(lb) >= 0; }
   function isLockKey(k) {
     var lb = labelOfKey(k);
-    return PIN_LEFT_LABELS.indexOf(lb) >= 0 || lb === PIN_RIGHT_LABEL;   // 位置锁：含勾选列
+    return PIN_LEFT_LABELS.indexOf(lb) >= 0 || isRightLabel(lb);   // 位置锁：含勾选列
   }
   function isHideLockKey(k) { return PIN_LOCK_LABELS.indexOf(labelOfKey(k)) >= 0; }  // 隐藏锁：三列
   /** 把固定列归位：勾选/序号/委托编号在最左，操作在最右，其余列保持当前相对顺序 */
@@ -86,8 +89,10 @@
       var k = keyOfLabel(lb);
       if (k && list.indexOf(k) >= 0) head.push(k);
     });
-    var op = keyOfLabel(PIN_RIGHT_LABEL);
-    if (op && list.indexOf(op) >= 0) tail.push(op);
+    PIN_RIGHT_LABELS.forEach(function (lb) {
+      var k = keyOfLabel(lb);
+      if (k && list.indexOf(k) >= 0) tail.push(k);
+    });
     var rest = list.filter(function (k) { return head.indexOf(k) < 0 && tail.indexOf(k) < 0; });
     return head.concat(rest, tail);
   }
@@ -181,10 +186,11 @@
     }
   }
 
-  function tagBodyCells() {
+    function tagBodyCells() {
     [].slice.call(table.tBodies).forEach(function (tb) {
       [].slice.call(tb.rows).forEach(function (tr) {
         if (tr.cells.length === 1 && tr.cells[0].colSpan > 1) return;   // 空态行
+        if (tr.cells.length !== cols.length) return;                   // 等「样品大类」补齐单元格再打标，避免操作列错位
         [].slice.call(tr.cells).forEach(function (td, i) {
           if (cols[i]) td.setAttribute('data-col-key', cols[i].key);
         });
@@ -259,18 +265,50 @@
     if (!hasSticky) leftKeys = vis.slice(0, 2);
     var rightKey = null;
     for (var j = vis.length - 1; j >= 0; j--) {
-      if (labelOfKey(vis[j]) === PIN_RIGHT_LABEL) { rightKey = vis[j]; break; }
+      if (isRightLabel(labelOfKey(vis[j]))) { rightKey = vis[j]; break; }
     }
     // 没有「操作」列的表退回末列，保持旧行为
     if (!rightKey && vis.length > 2) rightKey = vis[vis.length - 1];
     return { leftKeys: leftKeys, rightKey: rightKey };
   }
+  /* sticky 右列会被表格算法收成内容最小宽（约 48px），「操作」看起来像消失。
+     先 nowrap 再按 scrollWidth 定 min-width；th 用 width:1% 把余量让给中间列，操作贴在表尾。 */
+  function sizeRightColumn(key) {
+    if (!table) return;
+    [].forEach.call(table.querySelectorAll('.cc-op'), function (c) {
+      if (c.getAttribute('data-col-key') === key) return;
+      c.classList.remove('cc-op');
+      c.style.whiteSpace = '';
+      c.style.minWidth = '';
+      c.style.width = '';
+    });
+    if (!key) return;
+    var cells = table.querySelectorAll('[data-col-key="' + cssEsc(key) + '"]');
+    var w = 0;
+    [].forEach.call(cells, function (c) {
+      c.classList.add('cc-op');
+      c.style.whiteSpace = 'nowrap';
+      c.style.minWidth = '0px';
+      c.style.width = 'auto';
+      w = Math.max(w, c.scrollWidth);
+    });
+    w = Math.max(w + 10, 112);
+    [].forEach.call(cells, function (c) {
+      c.style.whiteSpace = 'nowrap';
+      c.style.minWidth = w + 'px';
+      if (c.tagName === 'TH') c.style.width = w + 'px';
+    });
+  }
   function applyStickyColumns() {
     if (!table) return;
+    table.style.width = '100%';
     var hr = headRow();
     var sets = stickySets();
+    if (sets.rightKey) sizeRightColumn(sets.rightKey);
     // 表格列数太少就不冻结，避免左右两块叠在一起
     var enough = order.filter(function (k) { return !hidden[k]; }).length > 4;
+    var host = scrollHost();
+    var overflowing = host && host !== global && host.scrollWidth > host.clientWidth + 2;
     // 先算左侧偏移（按当前实际渲染宽度累加）
     var lefts = {}, acc = 0;
     sets.leftKeys.forEach(function (k) {
@@ -295,7 +333,7 @@
           cell.style.left = lefts[k] + 'px';
           cell.style.backgroundColor = bg;
           if (k === sets.leftKeys[sets.leftKeys.length - 1]) cell.classList.add('cc-fz-edge');
-        } else if (sets.rightKey && k === sets.rightKey) {
+        } else if (overflowing && sets.rightKey && k === sets.rightKey) {
           cell.classList.add('cc-fz', 'cc-fz-r');
           cell.style.right = '0px';
           cell.style.backgroundColor = bg;
@@ -475,10 +513,14 @@
     if (global.PrototypeAnnotation && global.PrototypeAnnotation.refresh) global.PrototypeAnnotation.refresh();
     // 表格由页面脚本重绘时，重新打标并套用列配置
     if (global.MutationObserver && table.tBodies[0]) {
+      var obsTimer = null;
       new MutationObserver(function () {
         if (applying) return;
-        collectCols(); tagBodyCells(); apply();
-      }).observe(table.tBodies[0], { childList: true });
+        clearTimeout(obsTimer);
+        obsTimer = setTimeout(function () {
+          collectCols(); tagBodyCells(); apply();
+        }, 16);
+      }).observe(table.tBodies[0], { childList: true, subtree: true });
     }
     doc.addEventListener('click', function () { if (panel && panel.classList.contains('open')) closePanel(true); });
     global.addEventListener('resize', function () { applyStickyColumns(); });

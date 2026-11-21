@@ -93,7 +93,7 @@
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">任务状态</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">编制人</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">报告记录</th>' + extraHead +
-      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">操作</th></tr></thead><tbody>' + body + '</tbody></table></div>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap;width:1%">操作</th></tr></thead><tbody>' + body + '</tbody></table></div>' +
       '<div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500"><span>共 ' + list.length + ' 条</span>' +
       '<button type="button" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>' +
       '<button type="button" class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>' +
