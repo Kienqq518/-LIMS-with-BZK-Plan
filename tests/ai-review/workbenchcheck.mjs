@@ -19,7 +19,7 @@ out.push((liability === 0 ? '✅' : '❌') + ' 不展示入口说明条');
 const kpiN = await p.locator('#kpi-row .kpi').count();
 out.push((kpiN === 3 ? '✅' : '❌') + ' 第一层三张 KPI: ' + kpiN);
 const kpiH = await p.locator('#kpi-row .kpi').first().evaluate((el) => el.clientHeight);
-out.push((kpiH >= 80 && kpiH <= 120 ? '✅' : '❌') + ' 第一层 KPI 卡高度压低: ' + kpiH);
+out.push((kpiH >= 110 && kpiH <= 140 ? '✅' : '❌') + ' 第一层 KPI 卡加高: ' + kpiH);
 const doneCard = await p.locator('#kpi-row [data-kpi="done"]').count();
 const adoptCard = await p.locator('#chart-adopt [data-kpi="adopt"]').count();
 out.push((doneCard === 1 && adoptCard === 1 ? '✅' : '❌') + ' 已完成报告卡在顶栏 + 人工采纳率卡');
