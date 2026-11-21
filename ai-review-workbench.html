@@ -75,7 +75,34 @@
     .vol-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
     .vol-legend i.line { height: 2px; width: 14px; border-radius: 99px; vertical-align: 3px; }
     .kpi-mid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, 1fr); gap: 12px; flex: 1; min-height: 128px; }
-    .kpi-mid-right { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+    .kpi-mid-right { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; min-width: 0; }
+    .stat-tile {
+      display: flex; flex-direction: column; justify-content: space-between;
+      width: 100%; height: 100%; min-width: 0; min-height: 0;
+      padding: 10px 12px 11px; border-radius: 12px;
+      background: #fff; border: 1px solid var(--line);
+      box-shadow: 0 1px 3px rgba(20,60,154,.07);
+    }
+    .stat-tile.is-done { background: linear-gradient(180deg, #ecfdf5 0%, #fff 42%); border-color: #a7f3d0; }
+    .stat-tile.is-avg { background: linear-gradient(180deg, #eff6ff 0%, #fff 42%); border-color: #bfdbfe; }
+    .stat-tile.is-adopt { background: linear-gradient(180deg, #eef2ff 0%, #fff 42%); border-color: #c7d2fe; }
+    .stat-tile .ico {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; font-size: 13px;
+    }
+    .stat-tile .lbl {
+      min-width: 0; font-size: 12px; font-weight: 600; color: #334155;
+      line-height: 1.35; text-wrap: balance; word-break: keep-all; overflow-wrap: break-word;
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+    }
+    .stat-tile .n { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-top: 8px; }
+    .stat-tile.is-done .n { color: #047857; }
+    .stat-tile.is-avg .n { color: var(--brand); }
+    .stat-tile.is-adopt .n { color: #4338ca; }
+    .stat-tile .n .unit { margin-left: 2px; font-size: 12px; font-weight: 600; color: #64748b; letter-spacing: 0; }
+    .stat-meter { height: 6px; margin-top: 8px; border-radius: 99px; background: #e2e8f0; overflow: hidden; }
+    .stat-meter > i { display: block; height: 100%; border-radius: 99px; }
+    .stat-cap { margin-top: 6px; font-size: 11px; color: #475569; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .kpi-bot { display: grid; grid-template-columns: minmax(0, 1.4fr) 210px; gap: 12px; min-height: 0; }
     .kpi-bot .rules-col, .kpi-bot .sev-col { min-width: 0; overflow: hidden; }
     #chart-sev svg { width: 72px; height: 72px; flex-shrink: 0; }
@@ -242,6 +269,23 @@
     function kpiCard(id, label, value, hint) {
       return '<div class="kpi mod flex h-full flex-col justify-center" data-kpi="' + id + '"><div class="lbl">' + esc(label) + '</div><div class="n">' + esc(value) + '</div><div class="hint">' + esc(hint || '') + '</div></div>';
     }
+    function statLabel(s) {
+      var map = {
+        '已完成报告数量': '已完成报告<wbr>数量',
+        '已成功任务平均耗时': '已成功任务<wbr>平均耗时'
+      };
+      return map[s] || esc(s);
+    }
+    function statTile(opt) {
+      var pct = Math.max(0, Math.min(100, Number(opt.meterPct) || 0));
+      return '<div class="stat-tile kpi is-' + opt.tone + '" data-kpi="' + opt.id + '" role="group" aria-label="' + esc(opt.label) + ' ' + esc(opt.value) + (opt.unit ? opt.unit : '') + '，' + esc(opt.caption || '') + '" title="' + esc(opt.label) + '">' +
+        '<div class="min-w-0">' +
+          '<span class="ico" aria-hidden="true" style="background:' + opt.icoBg + ';color:' + opt.icoFg + '"><i class="fa ' + opt.icon + '"></i></span>' +
+          '<div class="lbl mt-2">' + statLabel(opt.label) + '</div></div>' +
+        '<div class="n">' + esc(opt.value) + (opt.unit ? '<span class="unit">' + esc(opt.unit) + '</span>' : '') + '</div>' +
+        '<div class="stat-meter" aria-hidden="true"><i style="width:' + pct + '%;background:' + opt.meterColor + '"></i></div>' +
+        '<div class="stat-cap">' + esc(opt.caption || '') + '</div></div>';
+    }
     function popKpis() {
       document.querySelectorAll('[data-kpi]').forEach(function (el) {
         el.classList.remove('pop');
@@ -270,14 +314,32 @@
         kpiCard('audits', '审核次数', k.audits, '窗口内触发的 AI 任务') +
         kpiCard('success', '成功率', k.closeRate, '成功 ' + k.successN + ' 次') +
         kpiCard('error', '异常率', k.errorRate, '异常 ' + k.errorN + ' 次');
-      $('chart-done').innerHTML =
-        '<div class="kpi mod flex w-full flex-col justify-center px-3 py-3" data-kpi="done">' +
-        '<div class="text-[11px] text-slate-400">已完成报告数量</div>' +
-        '<div class="n mt-1 text-2xl">' + esc(k.done) + '</div></div>';
-      $('chart-adopt').innerHTML =
-        '<div class="kpi mod flex w-full flex-col justify-center px-3 py-3" data-kpi="adopt">' +
-        '<div class="text-[11px] text-slate-400">人工采纳率</div>' +
-        '<div class="mt-1 text-2xl font-bold" style="color:var(--brand)">' + esc(k.adoptRate) + '</div></div>';
+      var adoptPct = parseInt(k.adoptRate, 10);
+      if (isNaN(adoptPct)) adoptPct = 0;
+      var durSec = Number(k.avgDurationSec) || 0;
+      var durPct = Math.round(Math.max(8, Math.min(100, (1 - durSec / 60) * 100)));
+      $('chart-done').innerHTML = statTile({
+        id: 'done', tone: 'done', icon: 'fa-check-circle',
+        icoBg: '#d1fae5', icoFg: '#047857',
+        label: '已完成报告数量', value: k.done,
+        meterPct: k.audits ? Math.round((k.done / k.audits) * 100) : 0,
+        meterColor: '#059669',
+        caption: k.audits ? (k.done + ' / ' + k.audits + ' 次审核') : '尚无审核'
+      });
+      $('chart-avg').innerHTML = statTile({
+        id: 'avg', tone: 'avg', icon: 'fa-clock-o',
+        icoBg: '#dbeafe', icoFg: '#1d4ed8',
+        label: '已成功任务平均耗时', value: waitText(durSec),
+        meterPct: durPct, meterColor: durSec <= 20 ? '#2563eb' : '#d97706',
+        caption: durSec ? '参照 60 秒' : '尚无耗时'
+      });
+      $('chart-adopt').innerHTML = statTile({
+        id: 'adopt', tone: 'adopt', icon: 'fa-thumbs-up',
+        icoBg: '#e0e7ff', icoFg: '#4338ca',
+        label: '人工采纳率', value: k.adoptRate,
+        meterPct: adoptPct, meterColor: '#4f46e5',
+        caption: '已处置样本'
+      });
     }
     function donutHtml(slices, caption) {
       var total = slices.reduce(function (s, x) { return s + x.n; }, 0);
@@ -304,11 +366,6 @@
         '<text x="50" y="48" text-anchor="middle" font-size="18" font-weight="700" fill="#143C9A">' + total + '</text>' +
         '<text x="50" y="64" text-anchor="middle" font-size="9" fill="#64748b">' + esc(caption || '已出结论') + '</text></svg>' +
         '<div class="flex min-w-0 flex-1 flex-col justify-center gap-2">' + legend + '</div>';
-    }
-    function avgHtml(sec) {
-      return '<div class="mod flex h-full w-full flex-col justify-center px-3 py-3">' +
-        '<div class="text-[11px] text-slate-400">已成功任务平均耗时</div>' +
-        '<div class="mt-1 text-2xl font-bold" style="color:var(--brand)">' + esc(waitText(sec)) + '</div></div>';
     }
     function rulesHtml(rules) {
       if (!rules.length) return '<div class="text-xs text-slate-400">窗口内无命中项</div>';
@@ -541,7 +598,6 @@
       state.ds = ReportReviewMock.getPanelDataset(state.range);
       renderKpi(state.ds);
       $('chart-concl').innerHTML = donutHtml(state.ds.charts.slices, '已出结论');
-      $('chart-avg').innerHTML = avgHtml(state.ds.kpi.avgDurationSec);
       $('chart-rules').innerHTML = rulesHtml(state.ds.charts.rules);
       $('chart-sev').innerHTML = donutHtml(state.ds.charts.failSev.slices || [], '不通过项');
       renderVolume();
