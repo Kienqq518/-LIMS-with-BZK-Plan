@@ -194,8 +194,12 @@
     var prevEl = document.getElementById('rp-version-prev');
     var body = document.getElementById('info-body');
     if (fileEl) {
-      fileEl.innerHTML = '<i class="fa fa-file-word-o mr-1"></i>' + esc((report.file && report.file.word) || report.reportName || '检测报告.docx');
-      fileEl.onclick = function (e) { e.preventDefault(); openPageOffice((report.file && report.file.word) || report.reportName); };
+      var signed = task && global.ReportFlowStore && ReportFlowStore.isSigned && ReportFlowStore.isSigned(task.status);
+      var fname = signed
+        ? ((report.file && report.file.pdf) || String((report.file && report.file.word) || report.reportName || '检测报告.docx').replace(/\.docx$/i, '.pdf'))
+        : ((report.file && report.file.word) || report.reportName || '检测报告.docx');
+      fileEl.innerHTML = '<i class="fa ' + (signed ? 'fa-file-pdf-o' : 'fa-file-word-o') + ' mr-1"></i>' + esc(fname);
+      fileEl.onclick = function (e) { e.preventDefault(); openPageOffice(fname); };
     }
     if (verEl) verEl.textContent = cur.revision || 'V1.0';
     if (compEl) compEl.textContent = report.compiler || task.compiler || 'admin';

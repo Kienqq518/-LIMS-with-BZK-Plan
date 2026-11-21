@@ -3,8 +3,26 @@
  * 编制 / 审核通过后进入本链；状态落 localStorage，刷新不丢。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-report-flow-v4';
+  var STORAGE_KEY = 'lims-report-flow-v5';
   var ORDER = ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
+  var SIGNED = ['报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
+  function isSigned(status) { return SIGNED.indexOf(status) >= 0; }
+  function stemOf(r) {
+    var no = r && (r.no || r.id);
+    if (no) return String(no).replace(/\//g, '-');
+    return String((r && r.name) || '检测报告').replace(/检测报告\.(docx|pdf)$/i, '').replace(/\.(docx|pdf)$/i, '') || '检测报告';
+  }
+  function syncReportFiles(t) {
+    if (!t || !t.reports) return t;
+    var signed = isSigned(t.status);
+    t.reports.forEach(function (r) {
+      var stem = stemOf(r);
+      r.word = r.word || (stem + '检测报告.docx');
+      r.pdf = r.pdf || (stem + '检测报告.pdf');
+      r.name = signed ? r.pdf : r.word;
+    });
+    return t;
+  }
   var ACTOR = {
     '报告编制': 'admin', '报告审核': '李审核', '报告签发': '周签发',
     '报告处理': '王处理', '收费审批': '赵财务', '报告发放': '孙发放',
@@ -47,7 +65,11 @@
     for (var i = 1; i <= n; i++) {
       var no = code.replace('/', '-') + '-' + String(i).padStart(2, '0');
       out.push({
-        id: no, no: no, name: no + '检测报告.docx', pdf: no + '检测报告.pdf', at: at
+        id: no, no: no,
+        word: no + '检测报告.docx',
+        pdf: no + '检测报告.pdf',
+        name: no + '检测报告.docx',
+        at: at
       });
     }
     return out;
@@ -58,7 +80,7 @@
     });
   }
   function row(o) {
-    return {
+    return syncReportFiles({
       code: o.code, contract: o.contract || '/', customer: o.customer, sample: o.sample,
       sendDate: o.sendDate, requireDate: o.requireDate, acceptDate: o.acceptDate,
       prepaid: o.prepaid || '否', priority: o.priority || '常规', compiler: o.compiler || 'admin',
@@ -68,7 +90,7 @@
       records: o.records || recs(o.code, [o.sample + '试验记录单.docx'], o.at || (o.acceptDate + ' 13:30:00')),
       ship: o.ship || null,
       logs: (o.logs && o.logs.length) ? o.logs : historyLogs(o.status, o.acceptDate)
-    };
+    });
   }
 
   var SEED = [
@@ -140,7 +162,10 @@
       var raw = global.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         var saved = JSON.parse(raw);
-        if (saved && saved.rows && saved.rows.length) return saved.rows;
+        if (saved && saved.rows && saved.rows.length) {
+          saved.rows.forEach(syncReportFiles);
+          return saved.rows;
+        }
       }
     } catch (e) { /* ignore */ }
     return clone(SEED);
@@ -174,20 +199,29 @@
   function pass(code, note) {
     var t = get(code); if (!t) return false;
     var nx = nextOf(t.status); if (!nx) return false;
-    t.logs.push({ at: stamp(), node: t.status, by: ACTOR[t.status] || 'admin', text: note || (t.status.replace('报告', '').replace('任务', '') + '通过'), tone: 'success' });
+    var from = t.status;
+    var text = note || (from.replace('报告', '').replace('任务', '') + '通过');
+    if (from === '报告签发' && !note) text = '签发通过，已生成 PDF 报告';
+    t.logs.push({ at: stamp(), node: from, by: ACTOR[from] || 'admin', text: text, tone: 'success' });
     t.status = nx;
+    syncReportFiles(t);
     save(rows);
     return true;
   }
   function back(code, reason) {
     var t = get(code); if (!t) return false;
     var pv = prevOf(t.status);
-    t.logs.push({ at: stamp(), node: t.status, by: ACTOR[t.status] || 'admin', text: '退回' + (reason ? '：' + reason : ''), tone: 'danger' });
+    t.logs.push({
+      at: stamp(), node: t.status, by: ACTOR[t.status] || 'admin',
+      text: '退回' + (reason ? '：' + reason : ''), tone: 'danger',
+      reason: reason || '', target: pv || '报告审核'
+    });
     if (!pv) {
       t.status = '已退回审核';
     } else {
       t.status = pv;
     }
+    syncReportFiles(t);
     save(rows);
     return true;
   }
@@ -237,7 +271,8 @@
   }
 
   global.ReportFlowStore = {
-    ORDER: ORDER, STORAGE_KEY: STORAGE_KEY,
+    ORDER: ORDER, STORAGE_KEY: STORAGE_KEY, SIGNED: SIGNED,
+    isSigned: isSigned, syncReportFiles: syncReportFiles,
     list: list, get: get, pass: pass, back: back, setShip: setShip, removeShip: removeShip,
     acceptFromReview: acceptFromReview, reset: reset,
     all: function () { return rows; },

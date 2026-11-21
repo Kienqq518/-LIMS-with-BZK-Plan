@@ -144,7 +144,7 @@
     document.getElementById('flowRecordRoster').innerHTML = reps.map(function (rep) {
       return '<button type="button" class="rr-rep-card' + (rep.id === state.reportId ? ' is-on' : '') + '" data-rid="' + esc(rep.id) + '">' +
         '<div class="flex items-center justify-between gap-2"><span class="font-semibold text-slate-800">' + esc(rep.no || rep.id) + '</span>' + stateChip(task) + '</div>' +
-        '<div class="mt-1 flex items-center justify-between text-xs text-slate-400"><span>' + esc(rep.name || '') + '</span><span>' + esc(rep.at || '') + '</span></div>' +
+        '<div class="mt-1 flex items-center justify-between text-xs text-slate-400"><span><i class="fa ' + (/\.pdf$/i.test(rep.name || '') ? 'fa-file-pdf-o' : 'fa-file-word-o') + ' mr-1"></i>' + esc(rep.name || '') + '</span><span>' + esc(rep.at || '') + '</span></div>' +
         '</button>';
     }).join('') || '<p class="py-4 text-center text-sm text-slate-400">暂无报告文件</p>';
     document.querySelectorAll('#flowRecordRoster .rr-rep-card').forEach(function (b) {

@@ -138,13 +138,23 @@
     el.classList.remove('flex');
   }
 
+  function fileIcon(name) {
+    return /\.pdf$/i.test(name || '') ? 'fa-file-pdf-o' : 'fa-file-word-o';
+  }
+  function displayReportName(task, r) {
+    if (global.ReportFlowStore && ReportFlowStore.isSigned && ReportFlowStore.isSigned(task.status)) {
+      return r.pdf || (r.name || '').replace(/\.docx$/i, '.pdf') || r.name;
+    }
+    return r.word || r.name;
+  }
   function reportRows(task, withCheck) {
     return (task.reports || []).map(function (r, i) {
+      var fname = displayReportName(task, r);
       return '<tr>' +
         (withCheck ? '<td class="border border-slate-200 px-3 py-2 text-center"><input type="checkbox" class="rep-check" checked data-id="' + esc(r.id) + '" /></td>' : '') +
         '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.no) + '</td>' +
-        '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank">' + esc(r.name) + '</a></td>' +
+        '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank"><i class="fa ' + fileIcon(fname) + ' mr-1"></i>' + esc(fname) + '</a></td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.at) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank">预览</a></td></tr>';
     }).join('');
@@ -348,7 +358,7 @@
       {
         id: 'flow-open', selector: '[data-annotate="flow-open"]', position: 'left', title: META[stage].action,
         content: stage === '报告签发'
-          ? '<strong>需求逻辑：</strong>授权签字人必须进工作台看报告文件、收样与检测信息后再签发，不能在名单上直接点通过。<br><strong>展示规则：</strong>操作列「去签发」。<br><strong>交互逻辑：</strong>进入签发工作台（report-sign-edit.html?code=委托编号），默认选中本单待签发报告。'
+          ? '<strong>需求逻辑：</strong>授权签字人必须进工作台看报告文件、收样与检测信息后再签发，不能在名单上直接点通过。<br><strong>展示规则：</strong>操作列「去签发」。签发前报告文件为 Word（.docx）；签发通过后系统才生成 PDF，后续处理 / 收费 / 发放 / 归档 / 完成都只展示 PDF。<br><strong>交互逻辑：</strong>进入签发工作台（report-sign-edit.html?code=委托编号），默认选中本单待签发报告。签发通过进入报告处理并生成 PDF；退回须填原因，打回报告审核（仍为 Word，便于修订）。'
           : stage === '报告处理'
             ? '<strong>需求逻辑：</strong>一份委托常对应多份报告，处理时要先勾选本批要过的报告再点处理通过。<br><strong>展示规则：</strong>操作列「处理」，弹窗标题「报告处理」，报告列表带勾选（默认全选）。<br><strong>交互逻辑：</strong>至少勾选一份才能处理通过；退回须填原因，整单退回上一节点（报告签发）。'
             : stage === '收费审批'
@@ -364,8 +374,8 @@
     if (stage === '报告处理' || stage === '收费审批') {
       list.push({
         id: 'flow-rep-table', selector: '#flow-modal [data-annotate="flow-rep-table"]', position: 'top', title: '多报告勾选',
-        content: '<strong>需求逻辑：</strong>一张委托任务常有多份报告，处理 / 收费不能默认只出一份，否则会漏单。<br>' +
-          '<strong>展示规则：</strong>弹窗内报告列表带勾选列、表头全选；演示任务 mock 2～3 份报告。<br>' +
+        content: '<strong>需求逻辑：</strong>一张委托任务常有多份报告，处理 / 收费不能默认只出一份，否则会漏单。签发后正式文件已是 PDF，本节点不再给 Word。<br>' +
+          '<strong>展示规则：</strong>弹窗内报告列表带勾选列、表头全选；报告名称带 PDF 图标与 .pdf 后缀；演示任务 mock 2～3 份报告。<br>' +
           '<strong>交互逻辑：</strong>默认全选；取消到 0 份时通过按钮置灰；点通过只代表本批已勾选报告完成本节点（原型按整单流转）。',
         tag: stage
       });
