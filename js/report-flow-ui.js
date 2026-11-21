@@ -15,6 +15,20 @@
     '任务完成': { action: '查看', pass: '', kind: 'view' }
   };
 
+  function catOf(sample) {
+    var st = global.SampleDataStore;
+    if (!st || !st.catLabelOfNames) return '—';
+    return st.catLabelOfNames(sample) || '—';
+  }
+  function catOptions() {
+    var st = global.SampleDataStore;
+    var labels = st && st.CAT_LABELS
+      ? Object.keys(st.CAT_LABELS).map(function (k) { return st.CAT_LABELS[k]; })
+      : ['电力物资类', '安全工器具类', '环境检测', '工程检测'];
+    return '<option value="">请选择样品大类</option>' + labels.map(function (c) {
+      return '<option value="' + esc(c) + '">' + esc(c) + '</option>';
+    }).join('');
+  }
   function searchHtml() {
     return '<div class="rounded bg-white p-4 shadow-sm">' +
       '<div class="ui-search-grid grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">' +
@@ -23,6 +37,7 @@
       field('合同编号', '<input id="f_contract" type="text" placeholder="请输入框架合同编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />') +
       field('客户单位', '<input id="f_unit" type="text" placeholder="请输入委托单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />') +
       field('样品名称', '<input id="f_sample" type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />') +
+      field('样品大类', '<select id="f_cat" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">' + catOptions() + '</select>') +
       '<div class="flex items-center gap-2"><label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托受理日期</label>' +
       '<div class="flex flex-1 items-center gap-1"><input id="f_from" type="text" placeholder="开始日期" class="w-full rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /><span class="text-slate-400">—</span>' +
       '<input id="f_to" type="text" placeholder="结束日期" class="w-full rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div></div>' +
@@ -54,7 +69,7 @@
   }
 
   function tableHtml(stage, list) {
-    var colN = 14;
+    var colN = 15;
     var body = list.map(function (r, i) {
       return '<tr class="hover:bg-slate-50">' +
         '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
@@ -62,6 +77,7 @@
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.contract) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.customer) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.sample) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(catOf(r.sample)) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.sendDate) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.requireDate) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.acceptDate) + '</td>' +
@@ -74,13 +90,14 @@
     }).join('');
     if (!list.length) body = '<tr><td colspan="' + colN + '" class="border border-slate-200 px-3 py-10 text-center text-sm text-slate-400">当前节点暂无任务</td></tr>';
     var opsHead = stage === '任务完成' ? '发放记录' : '操作';
-    return '<div class="mt-4 rounded bg-white p-4 shadow-sm"><div class="overflow-x-auto"><table class="w-full border-collapse text-left text-sm" style="min-width:1540px">' +
+    return '<div class="mt-4 rounded bg-white p-4 shadow-sm"><div class="overflow-x-auto"><table class="w-full border-collapse text-left text-sm" style="min-width:1680px">' +
       '<thead><tr class="bg-slate-100 text-slate-600">' +
       '<th class="border border-slate-200 px-3 py-2 font-medium w-[72px]" style="white-space:nowrap">序号</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">委托编号</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">合同编号</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">客户单位</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">样品名称</th>' +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">样品大类</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">送样时间</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">客户要求完成日期</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">委托受理日期</th>' +
@@ -238,11 +255,13 @@
         var unit = document.getElementById('f_unit').value.trim();
         var sample = document.getElementById('f_sample').value.trim();
         var contract = document.getElementById('f_contract').value.trim();
+        var cat = (document.getElementById('f_cat') && document.getElementById('f_cat').value) || '';
         paint(ReportFlowStore.list(stage).filter(function (r) {
           if (code && r.code.indexOf(code) < 0) return false;
           if (unit && r.customer.indexOf(unit) < 0) return false;
           if (sample && r.sample.indexOf(sample) < 0) return false;
           if (contract && (r.contract || '').indexOf(contract) < 0) return false;
+          if (cat && catOf(r.sample) !== cat) return false;
           return true;
         }));
       };

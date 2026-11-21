@@ -21,7 +21,7 @@ await p.waitForTimeout(250);
 const signN = await p.locator('#flow-root tbody tr').count();
 out.push((signN >= 1 ? '✅' : '❌') + ' 签发名单有任务: ' + signN);
 const signHead = await p.locator('#flow-root thead').textContent();
-out.push((/合同编号/.test(signHead) && /客户单位/.test(signHead) && /样品名称/.test(signHead) && /报告记录/.test(signHead) && !/要求完成日期/.test(signHead.replace('客户要求完成日期', '')) ? '✅' : '❌') + ' 名单列与审核对齐');
+out.push((/合同编号/.test(signHead) && /客户单位/.test(signHead) && /样品名称/.test(signHead) && /样品大类/.test(signHead) && /报告记录/.test(signHead) && !/要求完成日期/.test(signHead.replace('客户要求完成日期', '')) ? '✅' : '❌') + ' 名单列与审核对齐');
 const recBefore = dialogs.length;
 await p.locator('#flow-root [data-record]').first().click();
 await p.waitForTimeout(280);
@@ -41,6 +41,16 @@ const signBody = await p.locator('body').textContent();
 out.push((/签发工作台/.test(signBody) && /报告预览/.test(signBody) && /收样信息/.test(signBody) ? '✅' : '❌') + ' 去签发进入签发工作台');
 out.push(((await p.locator('#roster-list [data-code]').count()) >= 2 ? '✅' : '❌') + ' 左侧待签发名单');
 out.push((/报告文件/.test(signBody) && /检测信息/.test(signBody) && !/签发检查/.test(signBody) ? '✅' : '❌') + ' 中间为报告预览非 AI 检查');
+out.push(((await p.locator('#btn-expand-info').count()) === 0 ? '✅' : '❌') + ' 报告文件区无展开按钮');
+await p.locator('#ov-toggle').click();
+await p.waitForTimeout(150);
+out.push(((await p.locator('.ov-tab').count()) === 4 && /合同信息/.test(signBody) && /付款信息/.test(signBody) && /报告信息/.test(signBody) ? '✅' : '❌') + ' 概览含合同/委托/付款/报告 Tab');
+await p.locator('.ov-tab[data-tab="contract"]').click();
+await p.waitForTimeout(120);
+out.push((/合同附件/.test(await p.locator('#ov-panel').textContent() || '') ? '✅' : '❌') + ' 合同信息 Tab 含附件');
+await p.locator('.ov-tab[data-tab="pay"]').click();
+await p.waitForTimeout(120);
+out.push((/收费通知单/.test(await p.locator('#ov-panel').textContent() || '') ? '✅' : '❌') + ' 付款信息 Tab 含通知单');
 out.push((await p.locator('#btn-pass').isEnabled() ? '✅' : '❌') + ' 可签发任务按钮可用');
 await p.locator('#roster-list [data-code="SC2026/0256"]').click();
 await p.waitForTimeout(220);
@@ -80,7 +90,7 @@ out.push((/填写报告发放信息/.test(await p.locator('#flow-modal').textCon
 await p.goto(BASE + '/task-archive.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
 out.push(((await p.locator('[data-pass]').count()) >= 1 && (await p.locator('[data-back]').count()) >= 1 ? '✅' : '❌') + ' 任务归档有归档/退回');
-out.push((/报告记录/.test(await p.locator('#flow-root thead').textContent()) && !/任务归档/.test(await p.locator('#flow-root thead').textContent()) ? '✅' : '❌') + ' 归档名单去掉任务归档列');
+out.push((/报告记录/.test(await p.locator('#flow-root thead').textContent()) && /样品大类/.test(await p.locator('#flow-root thead').textContent()) && !/任务归档/.test(await p.locator('#flow-root thead').textContent()) ? '✅' : '❌') + ' 归档名单去掉任务归档列');
 await p.locator('#flow-root a[data-record]').first().click();
 await p.waitForTimeout(280);
 out.push((await p.locator('#flowRecordDrawer').evaluate((el) => el && el.classList.contains('open')) ? '✅' : '❌') + ' 归档查看打开报告记录抽屉');
@@ -172,8 +182,15 @@ for (const [href, name] of searchPages) {
 }
 
 await p.goto(BASE + '/original-record-list.html', { waitUntil: 'load' });
-await p.waitForTimeout(200);
+await p.waitForTimeout(280);
 out.push(((await p.locator('#body tr').count()) >= 1 ? '✅' : '❌') + ' 检测管理原始记录名单');
+out.push((/样品大类/.test(await p.locator('thead').textContent() || '') ? '✅' : '❌') + ' 原始记录名单有样品大类列');
+await p.goto(BASE + '/report-review.html', { waitUntil: 'load' });
+await p.waitForTimeout(280);
+out.push((/样品大类/.test(await p.locator('thead').textContent() || '') ? '✅' : '❌') + ' 报告审核名单有样品大类列');
+await p.goto(BASE + '/task-complete.html', { waitUntil: 'load' });
+await p.waitForTimeout(200);
+out.push((/样品大类/.test(await p.locator('#flow-root thead').textContent() || '') ? '✅' : '❌') + ' 任务完成名单有样品大类列');
 
 const shots = [
   ['/report-sign.html', 'flow-sign.png'],

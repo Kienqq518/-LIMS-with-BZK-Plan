@@ -14,7 +14,7 @@
     return m ? decodeURIComponent(m[1]) : '';
   }
 
-  var state = { code: '', panel: 'preview', expand: false };
+  var state = { code: '', panel: 'preview', ovTab: 'entrust' };
 
   function list() { return ReportFlowStore.list('报告签发'); }
 
@@ -24,6 +24,71 @@
     history.replaceState({}, '', url);
   }
 
+  function ovRow(label, val) {
+    return '<div><span class="text-slate-400">' + label + '：</span><span class="text-slate-700">' + esc(val) + '</span></div>';
+  }
+  function ovFileIcon(type) { return type === 'word' ? 'fa-file-word-o' : 'fa-file-pdf-o'; }
+  function ovAttach(title, files, extraHead) {
+    extraHead = extraHead || '';
+    return '<div class="mt-3 border-t border-white/50 pt-2">' +
+      '<div class="mb-1.5 text-xs font-medium text-slate-500"><i class="fa fa-paperclip mr-1"></i>' + esc(title) + '</div>' +
+      '<div class="overflow-x-auto"><table class="w-full min-w-[480px] border-collapse text-left text-xs">' +
+      '<thead><tr class="text-slate-400">' +
+      '<th class="w-10 py-1 font-medium">序号</th><th class="py-1 font-medium">' + esc(title) + '</th>' + extraHead +
+      '<th class="py-1 font-medium">生成时间</th><th class="w-14 py-1 font-medium">操作</th></tr></thead><tbody>' +
+      files.map(function (f, i) {
+        return '<tr class="text-slate-600">' +
+          '<td class="py-1">' + (i + 1) + '</td>' +
+          '<td class="py-1"><a href="#" class="ov-file hover:underline" style="color:var(--brand)" data-file="' + esc(f.name) + '"><i class="fa ' + ovFileIcon(f.type) + ' mr-1"></i>' + esc(f.name) + '</a></td>' +
+          (f.amount != null ? '<td class="py-1">' + esc(f.amount) + '</td>' : '') +
+          '<td class="py-1 mono">' + esc(f.at) + '</td>' +
+          '<td class="py-1"><button type="button" class="ov-file text-blue-600 hover:underline" data-file="' + esc(f.name) + '">查看</button></td></tr>';
+      }).join('') +
+      '</tbody></table></div></div>';
+  }
+  function overviewSrc(task) {
+    var e = null;
+    try { e = global.ReportReviewMock && ReportReviewMock.getEntrust(task.code); } catch (err) { e = null; }
+    if (e) return e;
+    return {
+      code: task.code, customer: task.customer, sample: task.sample,
+      acceptDate: task.acceptDate, requireDate: task.requireDate, sendDate: task.sendDate,
+      compiler: task.compiler, status: task.status, priority: task.priority,
+      contractInfo: {
+        frame: (task.contract && task.contract !== '/') ? '是' : '否',
+        contractNo: task.contract || '/', signPlace: '—', signDate: task.acceptDate || '—', center: '应敏科技有限公司'
+      },
+      payInfo: { total: '—', actual: '—', discount: '—', way: '—', payer: task.customer || '—', note: '/' },
+      reportInfo: { send: '—', qualify: '—', desc: '—', resultMode: '—', lang: '中文', copies: (task.reports || []).length }
+    };
+  }
+  function ovPanel(task, tab) {
+    var e = overviewSrc(task);
+    var html;
+    if (tab === 'contract') {
+      var c = e.contractInfo || {};
+      var cNo = (c.contractNo && c.contractNo !== '/') ? c.contractNo : e.code.replace('/', '-');
+      html = '<div class="grid grid-cols-2 gap-x-6 gap-y-1.5 md:grid-cols-3">' + ovRow('是否框架合同', c.frame) + ovRow('合同编号', c.contractNo) + ovRow('签约地点', c.signPlace) + ovRow('签约日期', c.signDate) + ovRow('检测中心', c.center) + '</div>';
+      html += ovAttach('合同附件', [{ name: cNo + '-合同.pdf', type: 'pdf', at: (c.signDate || e.acceptDate || '') + ' 10:00' }]);
+      return html;
+    }
+    if (tab === 'pay') {
+      var p = e.payInfo || {};
+      html = '<div class="grid grid-cols-2 gap-x-6 gap-y-1.5 md:grid-cols-3">' + ovRow('样品检测总价(元)', p.total) + ovRow('实际费用(元)', p.actual) + ovRow('折扣率(%)', p.discount) + ovRow('付款方式', p.way) + ovRow('付款单位', p.payer) + ovRow('业务备注', p.note) + '</div>';
+      html += ovAttach('收费通知单', [{ name: e.code + '-收费通知单.pdf', type: 'pdf', at: (e.acceptDate || '') + ' 09:20', amount: p.actual }], '<th class="py-1 font-medium">金额(元)</th>');
+      return html;
+    }
+    if (tab === 'report') {
+      var r = e.reportInfo || {};
+      return '<div class="grid grid-cols-2 gap-x-6 gap-y-1.5 md:grid-cols-3">' + ovRow('报告传送方式', r.send) + ovRow('报告资质', r.qualify) + ovRow('结果方式', r.resultMode) + ovRow('报告语言', r.lang) + ovRow('份数', r.copies) + ovRow('报告描述', r.desc) + '</div>';
+    }
+    html = '<div class="grid grid-cols-2 gap-x-6 gap-y-1.5 md:grid-cols-3">' + ovRow('委托编号', task.code || e.code) + ovRow('客户单位', task.customer || e.customer) + ovRow('样品名称', task.sample || e.sample) + ovRow('优先等级', task.priority || e.priority) + ovRow('送样时间', task.sendDate || e.sendDate) + ovRow('要求完成', task.requireDate || e.requireDate) + ovRow('受理日期', task.acceptDate || e.acceptDate) + ovRow('编制人', task.compiler || e.compiler) + ovRow('任务状态', task.status || e.status) + '</div>';
+    html += ovAttach('检测委托书', [
+      { name: e.code + '-检测委托书.docx', type: 'word', at: (e.acceptDate || '') + ' 09:12' },
+      { name: e.code + '-检测委托书.pdf', type: 'pdf', at: (e.acceptDate || '') + ' 09:12' }
+    ]);
+    return html;
+  }
   function renderOverview(task) {
     $('ov-code').textContent = task.code;
     $('ov-customer').textContent = task.customer;
@@ -32,6 +97,7 @@
     $('ov-accept').textContent = task.acceptDate || '—';
     $('ov-require').textContent = task.requireDate || '—';
     $('ov-status').textContent = task.status;
+    if ($('ov-panel')) $('ov-panel').innerHTML = ovPanel(task, state.ovTab);
   }
 
   function rosterCard(task) {
@@ -113,14 +179,29 @@
       $('ov-toggle-text').textContent = open ? '收起' : '展开';
       $('ov-chevron').className = 'fa fa-angle-' + (open ? 'up' : 'down');
     });
-    $('btn-expand-info').addEventListener('click', function () {
-      state.expand = !state.expand;
-      document.querySelector('.wb-left').classList.toggle('hidden', state.expand);
-      var lab = $('btn-expand-info').querySelector('[data-split-label]');
-      if (lab) lab.textContent = state.expand ? '还原' : '展开';
-      var ic = $('btn-expand-info').querySelector('i');
-      if (ic) ic.className = 'fa ' + (state.expand ? 'fa-compress' : 'fa-expand') + ' mr-1';
+    document.querySelectorAll('.ov-tab').forEach(function (b) {
+      b.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        document.querySelectorAll('.ov-tab').forEach(function (x) {
+          x.className = 'ov-tab rounded-lg px-3 py-1 text-slate-500';
+          x.removeAttribute('style');
+        });
+        b.className = 'ov-tab rounded-lg px-3 py-1';
+        b.setAttribute('style', 'background:rgba(20,60,154,.08);color:var(--brand)');
+        state.ovTab = b.getAttribute('data-tab');
+        var task = ReportFlowStore.get(state.code);
+        if (task && $('ov-panel')) $('ov-panel').innerHTML = ovPanel(task, state.ovTab);
+      });
     });
+    if ($('ov-panel')) {
+      $('ov-panel').addEventListener('click', function (ev) {
+        var a = ev.target.closest('.ov-file');
+        if (!a) return;
+        ev.preventDefault();
+        if (global.ReportInfoPanel && ReportInfoPanel.openPageOffice) ReportInfoPanel.openPageOffice(a.getAttribute('data-file'));
+        else alert('PageOffice 插件预览：' + a.getAttribute('data-file') + '（原型占位）');
+      });
+    }
     document.querySelectorAll('.info-tab').forEach(function (b) {
       b.addEventListener('click', function () {
         document.querySelectorAll('.info-tab').forEach(function (x) { x.classList.remove('active'); });
