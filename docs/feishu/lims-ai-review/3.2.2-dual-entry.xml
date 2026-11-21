@@ -1,0 +1,215 @@
+<callout emoji="💡" background-color="light-blue">
+<p><b>本节补充口径：</b>以下为原型仓已落地的双入口详细设计（对齐 2026-11 评审稿与现行页面）。两入口<b>并行直读</b>运行域 <code>ai_review_*</code>，报告页<b>不经过</b>工作台中转。与 §2.5 ⑥⑦、§3.2.1 三态聚合一致：AI 只出预审意见，<b>永不自动签发</b>。</p>
+</callout>
+
+<h4>3.2.2.1 双入口原则与页面映射</h4>
+<p>产品是 LIMS <b>内嵌能力</b>，审核员不必离开主流程即可看到结论；管理员 / 质控同时需要一份跨委托的统览。因此做成<b>同一数据源、两种场景</b>，而不是两套系统：</p>
+<ul>
+<li><b>入口 B · 嵌入主流程：</b>报告审核待办页 → 报告审核工作台。只看<b>本委托</b>下各份报告，完成当次人工处置。</li>
+<li><b>入口 A · 统览：</b>AI 报告审核面板 → 已归档名单 → AI 审核快照。跨委托看 KPI / 待处理 / 异常 / 排队，点「去处置」仍跳回入口 B 工作台。</li>
+</ul>
+<table>
+  <colgroup><col width="160"/><col width="280"/><col width="360"/></colgroup>
+  <thead>
+    <tr>
+      <th background-color="light-gray"><p>角色</p></th>
+      <th background-color="light-gray"><p>原型页面</p></th>
+      <th background-color="light-gray"><p>职责</p></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><p>入口 B 待办</p></td>
+      <td><p><code>report-review.html</code></p></td>
+      <td><p>主查询、样品大类筛选、退回标签、报告记录抽屉；操作列「去审核」进工作台</p></td>
+    </tr>
+    <tr>
+      <td><p>入口 B 工作台</p></td>
+      <td><p><code>report-review-detail.html?code=委托编号</code></p></td>
+      <td><p>委托概览 + 报告列表 + AI 结果 + 报告预览 + 固定人工处置底栏</p></td>
+    </tr>
+    <tr>
+      <td><p>入口 A 统览</p></td>
+      <td><p><code>ai-review-workbench.html</code></p></td>
+      <td><p>窗口 KPI、待处理/异常、任务量走势、已归档、排队演示</p></td>
+    </tr>
+    <tr>
+      <td><p>入口 A 归档</p></td>
+      <td><p><code>ai-review-archive.html</code> → <code>ai-review-snapshot.html</code></p></td>
+      <td><p>已签发 / 已发放 / 已删除名单；点行只读当时 AI 快照（含被删旧版）</p></td>
+    </tr>
+  </tbody>
+</table>
+<callout emoji="❗" background-color="light-orange">
+<p><b>红线：</b>卡片与面板都只读运行域，不互相转发；引擎禁止私自改报告状态；退回走 LIMS 既有流程（原型写入 <code>returns[]</code> / <code>ReportFlowStore</code>）；标注（正常 / 误报 / 漏报）只进学习旁路，不对上下游业务展示。</p>
+</callout>
+
+<h4>3.2.2.2 入口 B：报告审核待办页（进工作台前）</h4>
+<p><b>需求逻辑：</b>审核以<b>委托</b>为待办粒度。进工作台前先看清：本节点有哪些委托、各份报告的 AI 结论与流转、是否被签发退回。抽屉只用来预览，不直接处置。</p>
+<ul>
+<li><b>主查询：</b>委托编号 / 是否框架合同 / 合同编号 / 客户单位 / 样品名称 / <b>样品大类</b>（下拉联动）/ 委托受理日期；查询 + 重置。</li>
+<li><b>主表列：</b>序号、委托编号、合同编号、客户单位、样品名称、<b>样品大类</b>、送样时间、客户要求完成日期、要求完成日期、委托受理日期、先收费、优先等级、任务状态、编制人、<b>报告记录</b>、<b>退回详情</b>、操作。</li>
+<li><b>退回标签：</b>委托编号旁挂「退回」标签（来源节点含签发 / 处理等上一节点）；顶部条展示本节点被退回待办；「退回详情」列「查看」弹窗展示统一组件「退回记录」（第 N 次、来源节点、退回至、原因、人、时间）。数据结构 <code>returns[] = { from, to, by, time, reason, kind }</code>，<code>kind ∈ 人工 / AI / 系统</code>，<b>只追加不覆盖</b>。</li>
+<li><b>报告记录抽屉：</b>上方该委托全部报告卡片（状态芯片 + AI 三态芯片 + 签发退回标签）；下方所选报告操作日志时间轴（流转蓝 / 退回红 / 当前橙）。AI 预审结论与人工处置分开展示；退回原因<b>单独一行</b>，不和「通过」拼成一句。默认时间倒序，可切正序。</li>
+<li><b>操作列「去审核」：</b>跳转 <code>report-review-detail.html?code=委托编号</code>，默认待审核 Tab 并选中该组第一份报告。</li>
+</ul>
+<p>报告卡片状态芯片（进工作台前即可见）：</p>
+<table>
+  <colgroup><col width="180"/><col width="420"/></colgroup>
+  <thead>
+    <tr>
+      <th background-color="light-gray"><p>状态</p></th>
+      <th background-color="light-gray"><p>含义</p></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td background-color="light-yellow"><p>待处置</p></td>
+      <td><p>AI 已出三态，等待人工审核</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-blue"><p>AI 审核中</p></td>
+      <td><p>引擎执行中，无需操作</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-red"><p>AI 审核异常</p></td>
+      <td><p>超时 / 引擎失败，需重试或转人工</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-orange"><p>签发退回 · 待复核</p></td>
+      <td><p>签发节点退回本节点；<b>未自动重跑 AI</b></p></td>
+    </tr>
+    <tr>
+      <td background-color="light-red"><p>已自动退回编制</p></td>
+      <td><p>命中严重项且行业包自动退回策略开启</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-green"><p>已处置（通过 / 退回…）</p></td>
+      <td><p>人工已执行，离开本节点待办</p></td>
+    </tr>
+  </tbody>
+</table>
+
+<h4>3.2.2.3 入口 B：报告审核工作台（动手前再看一遍）</h4>
+<p>布局四块：<b>顶</b>委托概览（默认折叠）→ <b>左</b>报告列表 + 操作日志 → <b>中</b>AI 审核结果 → <b>右</b>报告文件 / 预览 / 收样 / 检测 → <b>底</b>人工处置固定栏（跨中+右，不随滚动）。中区与右区可「展开 / 还原」互斥放大。</p>
+
+<p><b>1）委托概览</b></p>
+<ul>
+<li>收起：一行摘要（委托编号、客户、样品、报告份数、受理、要求完成、任务状态）。</li>
+<li>展开：合同信息 / 委托信息 / 付款信息 / 报告信息 四个小 Tab；合同下挂合同附件，委托下挂检测委托书，付款下挂收费通知单，均可查看。</li>
+</ul>
+
+<p><b>2）报告列表（待审核 / 其他流程）</b></p>
+<p>工作台展示该委托下<b>全部</b>报告，但「能否操作」必须一眼分开：</p>
+<ul>
+<li><b>待审核 Tab：</b>待处置 / 签发退回 / 审核中 / 异常。进入工作台默认此 Tab，并选中该组第一份。</li>
+<li><b>其他流程 Tab：</b>自动退回 / 已处置。本组「重跑 AI 审核」置灰（已离开本节点）。</li>
+<li>点选状态标签即筛选，再点取消。当前任务旁挂退回记录条（签发退回意见 + 统一退回组件）。</li>
+</ul>
+
+<p><b>3）AI 审核结果</b></p>
+<ul>
+<li><b>综合结论置顶：</b>三态印章（通过 / 需复核 / 不通过）+ 品类芯片 + 自然语言综述。判定口径：命中任一<b>严重</b> → 不通过；仅命中<b>一般</b> → 需复核；全部通过 → 通过（可含提示）。未配置品类只跑通用集并出 <code>CAT-UNCAT-01</code> 提示，<b>不阻断签发</b>。</li>
+<li><b>问题清单：</b>按 L1 / L2 / L3（及品类专属）分区。每条：规则 ID、名称、严重度、证据、处置建议。点击展开详情。</li>
+<li><b>逐条标注与处置拆开：</b>每条可标 正常 / 误报 / 漏报；误报 / 漏报须填备注并单独「提交」。再次编辑后按钮变为「再次提交」。标注<b>不驱动</b>底栏执行。</li>
+<li><b>多轮差异：</b>一份报告可经历编制退回重审 / 签发后退回后重跑。幂等键 <code>report_id + revision</code>（如 V1.0 / V1.1）。多轮时出「第 N 轮 · 版本」Tab，并对比上一版：已解决 / 新命中 / 仍存在。</li>
+<li><b>重跑 AI：</b>仅待审核组可点；已离开本节点置灰。签发退回<b>不自动重跑</b>，需审核员显式点重跑。重跑当时读取行业包 <code>policy.autoReturnOnSevere</code>。</li>
+<li><b>执行中 / 异常：</b>执行中展示 L1→L2→L3→品类专属进度，底栏关闭处置；异常给出错误码（原型 <code>ENGINE_TIMEOUT</code>），可「重试 AI」或「转人工审核」。</li>
+</ul>
+
+<p><b>4）报告文件与预览</b></p>
+<ul>
+<li>文件名旁紧跟版本号；PDF 于签发后生成，本节点不展示 PDF。</li>
+<li>右侧 Tab：报告预览 / 收样信息 / 检测信息。试验项名称右侧展示检测员与检测时间；设备单独成卡；原始记录单独立一行。原始记录按标称值 / 测量值 / 计算值分区，有相别时胶囊切换。</li>
+</ul>
+
+<h4>3.2.2.4 入口 A：AI 报告审核面板（统览）</h4>
+<p><b>需求逻辑：</b>质控 / 管理员不进单份委托也能看见全系统积压、异常、命中热点。面板<b>不做处置</b>，点「去处置」一律落到入口 B 工作台。已归档才进只读快照，避免把过程中结果当终态。</p>
+<p>五块布局（原型 <code>ai-review-workbench.html</code>）：</p>
+<ol>
+<li><b>窗口 KPI：</b>第一层三张卡——审核次数、已完成报告数量、成功率。已完成数量与「三态分布」中心合计相同（通过 + 需复核 + 不通过）。第二层左：三态分布；右：已成功任务平均耗时、人工采纳率。第三层左：规则命中不通过 TOP；右：不通过项严重度饼图。日期范围：近 7 天 / 近 30 天 / 本月 / 全部（业务日锚定原型 2026-09-08）。</li>
+<li><b>过程中 · 待处理：</b>每行「去处置」直达 <code>report-review-detail.html</code>。下方<b>审核异常</b>区同时露出两条，点击进工作台人工重跑 / 转人工。</li>
+<li><b>审核任务量走势：</b>右上角切年度 / 季度 / 月度。年度可选起止年；季、月选单个年份。柱为任务总数与已完成，线为完成率。</li>
+<li><b>已归档数据：</b>已签发与已删除数量，按样品大类列份数。标题箭头进入归档名单（年 / 月筛选）。点行打开当时 AI 审核快照（含「退回编制后删除、重新出报告」的旧版结果）。</li>
+<li><b>排队中：</b>演示任务依次领取、出结论；每完成一份，左侧 KPI 跳动。排队 / 执行中<b>不出三态</b>。</li>
+</ol>
+
+<h4>3.2.2.5 人工处置矩阵（采集统一）</h4>
+<p>人工处置是必操作区，<b>固定底栏</b>。不同意 AI 只出「调优备注」（选填，仅学习）；<b>退回原因仅在选择退回时出现</b>，必填。支持「一键填入 AI 审核结论」后再编辑。去掉无原因 confirm / alert 占位。签发工作台若保留底栏，也写入同一 <code>returns[]</code>。</p>
+<p><b>自动退回开关</b>（对应行业包 <code>pack.policy.autoReturnOnSevere</code>）：仅当本报告 AI 结论为「不通过」时显示。以<b>重跑当时</b>是否开启为准——关后人工覆盖往下走，后续节点驳回不会自动重跑 AI。</p>
+<table>
+  <colgroup><col width="150"/><col width="220"/><col width="180"/><col width="250"/></colgroup>
+  <thead>
+    <tr>
+      <th background-color="light-gray"><p>当前态</p></th>
+      <th background-color="light-gray"><p>底栏选项</p></th>
+      <th background-color="light-gray"><p>必填</p></th>
+      <th background-color="light-gray"><p>执行后</p></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td background-color="light-green"><p>AI 通过</p></td>
+      <td><p>同意 AI → 通过；不同意 AI → 仍人工通过</p></td>
+      <td><p>覆盖时可选调优备注</p></td>
+      <td><p>进入「报告签发」</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-yellow"><p>AI 需复核</p></td>
+      <td><p>同意 AI → 退回编制；不同意 AI → 人工通过</p></td>
+      <td><p>退回原因必填</p></td>
+      <td><p>退回编制，或进入签发</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-red"><p>AI 不通过 + 自动退回开</p></td>
+      <td><p>无人工覆盖入口</p></td>
+      <td><p>—</p></td>
+      <td><p>已退回报告编制；kind=AI</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-red"><p>AI 不通过 + 自动退回关</p></td>
+      <td><p>同意 AI → 退回；不同意 → 覆盖通过</p></td>
+      <td><p>退回原因必填；覆盖可选调优</p></td>
+      <td><p>退回编制或进入签发</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-orange"><p>签发退回待复核</p></td>
+      <td><p>审核通过 → 重新提交签发；退回编制</p></td>
+      <td><p>退回原因必填；未自动重跑 AI</p></td>
+      <td><p>回到签发，或退回编制</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-red"><p>AI 异常</p></td>
+      <td><p>重试 AI；转人工审核（跳过 AI）</p></td>
+      <td><p>—</p></td>
+      <td><p>重跑或进入签发</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-blue"><p>AI 审核中</p></td>
+      <td><p>不开放处置</p></td>
+      <td><p>—</p></td>
+      <td><p>可切到同委托其他报告继续处理</p></td>
+    </tr>
+    <tr>
+      <td background-color="light-gray"><p>已处置 / 已自动退回</p></td>
+      <td><p>只读回放上次结论、人、时间、意见</p></td>
+      <td><p>—</p></td>
+      <td><p>无需操作</p></td>
+    </tr>
+  </tbody>
+</table>
+<p>采集弹窗约定（全链路退回节点一律如此，本工作台底栏等价实现）：<b>目标节点只读、原因必填</b>。写入：</p>
+<ul>
+<li><code>ai_review_feedback</code>：<code>ai_conclusion / final_conclusion / agree_ai / return_reason / item_labels / at</code>（覆盖必留痕）。</li>
+<li><code>ai_review_cases</code>：报告快照 + AI 结论 + 人工处置 + 标注；append-only，M1 只写不消费。</li>
+<li>退回事件追加 <code>returns[]</code>；<code>ReportFlowStore.logs</code> 拆出独立 <code>reason</code> 字段，不把原因拼进 <code>text</code>。</li>
+</ul>
+
+<h4>3.2.2.6 统一展示组件「退回记录」挂载点</h4>
+<p>与编制页时间轴同构：第 N 次、来源节点、退回至、原因、人、时间。三个位置都要看见，避免进工作台才发现是退回件：</p>
+<ol>
+<li><b>被退回的待办页顶部条</b>（入口 B 主查询，进工作台前）。</li>
+<li><b>工作台 / 弹窗里当前任务旁</b>（动手前再看一遍；签发退回额外展示签发意见，并明示未自动重跑 AI）。</li>
+<li><b>报告记录 / 操作日志</b>（红点退回；原因单独一行）。</li>
+</ol>
+<p>入口 A 的待处理 / 异常列表同样带 AI 三态芯片，点「去处置」落到入口 B 同一工作台，保证双入口所见结论一致。</p>
