@@ -38,16 +38,16 @@ out.push((/report-sign-edit\.html/.test(signHref || '') ? '✅' : '❌') + ' 去
 await p.goto(BASE + '/' + signHref, { waitUntil: 'load' });
 await p.waitForTimeout(250);
 const signBody = await p.locator('body').textContent();
-out.push((/签发工作台/.test(signBody) && /签发检查/.test(signBody) ? '✅' : '❌') + ' 去签发进入签发工作台');
+out.push((/签发工作台/.test(signBody) && /报告预览/.test(signBody) && /收样信息/.test(signBody) ? '✅' : '❌') + ' 去签发进入签发工作台');
 out.push(((await p.locator('#roster-list [data-code]').count()) >= 2 ? '✅' : '❌') + ' 左侧待签发名单');
-out.push((/委托与合同/.test(signBody) && /样品信息/.test(signBody) && /检测过程/.test(signBody) ? '✅' : '❌') + ' 右侧五组签发检查');
+out.push((/报告文件/.test(signBody) && /检测信息/.test(signBody) && !/签发检查/.test(signBody) ? '✅' : '❌') + ' 中间为报告预览非 AI 检查');
 out.push((await p.locator('#btn-pass').isEnabled() ? '✅' : '❌') + ' 可签发任务按钮可用');
 await p.locator('#roster-list [data-code="SC2026/0256"]').click();
 await p.waitForTimeout(220);
-out.push((/不可签发/.test(await p.locator('#sign-stamp').textContent()) && await p.locator('#btn-pass').isDisabled() ? '✅' : '❌') + ' 切换到阻断任务即锁定');
+out.push((await p.locator('#btn-pass').isEnabled() ? '✅' : '❌') + ' 切换任务仍可签发');
 await p.locator('#roster-list [data-code="SC2026/0238"]').click();
 await p.waitForTimeout(200);
-out.push((await p.locator('#btn-pass').isEnabled() ? '✅' : '❌') + ' 切回可签发任务解锁');
+out.push(((await p.locator('#rp-file').textContent() || '').indexOf('检测报告') >= 0 ? '✅' : '❌') + ' 展示报告文件名');
 await p.screenshot({ path: SHOT_DIR + '/flow-sign-workbench.png' });
 await p.locator('#btn-pass').click();
 await p.waitForTimeout(200);
@@ -80,8 +80,8 @@ out.push((/填写报告发放信息/.test(await p.locator('#flow-modal').textCon
 await p.goto(BASE + '/task-archive.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
 out.push(((await p.locator('[data-pass]').count()) >= 1 && (await p.locator('[data-back]').count()) >= 1 ? '✅' : '❌') + ' 任务归档有归档/退回');
-out.push((/任务归档/.test(await p.locator('#flow-root thead').textContent()) ? '✅' : '❌') + ' 归档名单含任务归档列');
-await p.locator('#flow-root a[data-record]').filter({ hasText: '查看' }).first().click();
+out.push((/报告记录/.test(await p.locator('#flow-root thead').textContent()) && !/任务归档/.test(await p.locator('#flow-root thead').textContent()) ? '✅' : '❌') + ' 归档名单去掉任务归档列');
+await p.locator('#flow-root a[data-record]').first().click();
 await p.waitForTimeout(280);
 out.push((await p.locator('#flowRecordDrawer').evaluate((el) => el && el.classList.contains('open')) ? '✅' : '❌') + ' 归档查看打开报告记录抽屉');
 await p.locator('#flowRecordClose').click();
@@ -90,6 +90,15 @@ await p.waitForTimeout(200);
 await p.goto(BASE + '/task-complete.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
 out.push((/发放记录/.test(await p.locator('#flow-root thead').textContent()) ? '✅' : '❌') + ' 任务完成末列发放记录');
+const stickyRight = await p.evaluate(() => {
+  const rec = document.querySelector('#flow-root thead th[data-col-key="报告记录"]');
+  const ship = document.querySelector('#flow-root thead th[data-col-key="发放记录"]');
+  if (!rec || !ship) return { ok: false };
+  const rs = getComputedStyle(rec).position;
+  const ss = getComputedStyle(ship).position;
+  return { ok: rec.classList.contains('cc-fz') && ship.classList.contains('cc-fz') && rs === 'sticky' && ss === 'sticky', recW: Math.round(rec.getBoundingClientRect().width), shipW: Math.round(ship.getBoundingClientRect().width) };
+});
+out.push((stickyRight.ok ? '✅' : '❌') + ' 任务完成报告记录与发放记录冻结 ' + JSON.stringify(stickyRight));
 const viewN = await p.locator('#flow-root a[data-ship]').filter({ hasText: '查看' }).count();
 out.push((viewN >= 1 ? '✅' : '❌') + ' 任务完成发放记录查看');
 await p.locator('#flow-root a[data-ship]').filter({ hasText: '查看' }).first().click();
@@ -131,6 +140,37 @@ await p.locator('#btn-search').click();
 await p.waitForTimeout(250);
 out.push((await p.locator('#cc-trigger').count() === 1 ? '✅' : '❌') + ' 查询后列配置仍在');
 
+async function searchOnRow2Right(href) {
+  await p.goto(BASE + href, { waitUntil: 'load' });
+  await p.waitForTimeout(280);
+  return p.evaluate(() => {
+    const wrap = document.querySelector('.ui-search-actions')
+      || [...document.querySelectorAll('button')].find((b) => /查询/.test(b.textContent || ''))?.parentElement;
+    if (!wrap) return { ok: false, why: 'missing' };
+    const host = wrap.closest('.ui-search-grid') || wrap.parentElement;
+    const box = host.getBoundingClientRect();
+    const w = wrap.getBoundingClientRect();
+    const fields = [...host.children].filter((el) => el !== wrap && !el.classList.contains('ui-search-actions'));
+    const row1 = fields.length ? Math.min(...fields.map((el) => el.getBoundingClientRect().top)) : box.top;
+    return {
+      ok: w.top > row1 + 6 && w.right > box.right - 56,
+      top: Math.round(w.top), row1: Math.round(row1), rightGap: Math.round(box.right - w.right)
+    };
+  });
+}
+const searchPages = [
+  ['/entrust-confirm.html', '委托确认'],
+  ['/report-sign.html', '报告签发'],
+  ['/report-review.html', '报告审核'],
+  ['/task-complete.html', '任务完成'],
+  ['/entrust-register.html', '委托登记'],
+  ['/category-mgmt.html', '样品大类']
+];
+for (const [href, name] of searchPages) {
+  const pos = await searchOnRow2Right(href);
+  out.push((pos.ok ? '✅' : '❌') + ' ' + name + '查询按钮在筛选右侧 ' + JSON.stringify(pos));
+}
+
 await p.goto(BASE + '/original-record-list.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
 out.push(((await p.locator('#body tr').count()) >= 1 ? '✅' : '❌') + ' 检测管理原始记录名单');
@@ -155,8 +195,8 @@ const href2 = await p.locator('#flow-root a[href*="report-sign-edit.html"]').fir
 await p.goto(BASE + '/' + href2, { waitUntil: 'load' });
 await p.waitForTimeout(200);
 const wbBody = await p.locator('body').textContent();
-out.push((/签发检查/.test(wbBody) && /签发处置/.test(wbBody) ? '✅' : '❌') + ' 签发工作台含检查门禁');
-out.push((await p.locator('#btn-pass').isDisabled() && /不可签发|已锁定/.test(wbBody) ? '✅' : '❌') + ' 阻断任务锁定签发');
+out.push((/报告预览/.test(wbBody) && /签发处置/.test(wbBody) ? '✅' : '❌') + ' 签发工作台含报告预览');
+out.push((await p.locator('#btn-pass').isEnabled() ? '✅' : '❌') + ' 签发按钮可用');
 await p.screenshot({ path: SHOT_DIR + '/flow-sign-edit.png', fullPage: false });
 await p.screenshot({ path: SHOT_DIR + '/flow-sign-blocked.png', fullPage: false });
 await p.goto(BASE + '/report-issue.html', { waitUntil: 'load' });

@@ -80,6 +80,24 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 .ui-table-scroll::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, .45); border-radius: 4px; }
 .ui-table-scroll:focus-visible { outline: 2px solid var(--color-ring); outline-offset: -2px; }
 
+/* 查询 / 重置：宽屏钉在筛选栅格最右列；字段填不满首行时再落到第二行 */
+@media (min-width: 1280px) {
+  .ui-search-grid > .ui-search-actions {
+    justify-self: stretch;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .ui-search-grid.xl\:grid-cols-2 > .ui-search-actions { grid-column: 2; }
+  .ui-search-grid.xl\:grid-cols-3 > .ui-search-actions { grid-column: 3; }
+  .ui-search-grid.xl\:grid-cols-4 > .ui-search-actions { grid-column: 4; }
+  .ui-search-grid.xl\:grid-cols-5 > .ui-search-actions { grid-column: 5; }
+  .ui-search-grid.xl\:grid-cols-6 > .ui-search-actions { grid-column: 6; }
+  .ui-search-grid > .ui-search-actions.ui-search-row2 { grid-row: 2; }
+}
+
 /* ---------- 6. 选中态 / 滚动条一致性 ---------- */
 ::selection { background: #dbeafe; color: #1e3a8a; }
 

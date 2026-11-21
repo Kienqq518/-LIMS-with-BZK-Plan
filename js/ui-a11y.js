@@ -133,9 +133,93 @@
     });
   }
 
+  function isQueryBtn(b) { return /查询/.test((b.textContent || '').replace(/\s+/g, '')); }
+  function isResetBtn(b) { return /重置/.test((b.textContent || '').replace(/\s+/g, '')); }
+  function xlCols(el) {
+    var cls = String((el && el.className) || '');
+    var m = cls.match(/xl:grid-cols-(\d+)/);
+    if (m) return parseInt(m[1], 10);
+    m = cls.match(/(?:^|\s)grid-cols-(\d+)/);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+  function isFlex(el) {
+    try { return /flex/.test(global.getComputedStyle(el).display); } catch (e) { return false; }
+  }
+  function onlyActionButtons(el) {
+    var kids = [].filter.call(el.children, function (n) { return n.nodeType === 1; });
+    if (!kids.length) return false;
+    return kids.every(function (n) {
+      return n.tagName === 'BUTTON' && (isQueryBtn(n) || isResetBtn(n));
+    });
+  }
+  function siblingReset(host, q) {
+    return [].filter.call(host.children, function (n) {
+      return n !== q && n.tagName === 'BUTTON' && isResetBtn(n);
+    })[0] || null;
+  }
+  function wrapFlexActions(host, q) {
+    var reset = siblingReset(host, q);
+    if (!reset) return null;
+    var box = document.createElement('div');
+    box.className = 'ui-search-actions flex w-full items-center justify-end gap-2';
+    host.insertBefore(box, q);
+    box.appendChild(q);
+    box.appendChild(reset);
+    return box;
+  }
+  function pinSearchWrap(wrap, grid, cols) {
+    wrap.className = String(wrap.className || '')
+      .replace(/\S*col-span-\S*/g, '')
+      .replace(/\S*col-start-\S*/g, '')
+      .replace(/\S*justify-end\S*/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    wrap.classList.add('ui-search-actions', 'flex', 'items-center', 'gap-2');
+    grid.classList.add('ui-search-grid');
+    var nFields = [].filter.call(grid.children, function (n) {
+      return n !== wrap && n.nodeType === 1;
+    }).length;
+    if (nFields < cols) wrap.classList.add('ui-search-row2');
+    else wrap.classList.remove('ui-search-row2');
+  }
+  function fixSearchActions(root) {
+    var btns = root.querySelectorAll('button');
+    [].forEach.call(btns, function (q) {
+      if (!isQueryBtn(q) || q.dataset.uiSearchDone) return;
+      if (/sky-500/.test(q.className || '')) return;
+      var host = q.parentElement;
+      if (!host) return;
+      if (xlCols(host) >= 2 && siblingReset(host, q)) {
+        host = wrapFlexActions(host, q);
+        if (!host) return;
+      }
+      var wrap = q.parentElement;
+      if (!wrap) return;
+      if (![].some.call(wrap.querySelectorAll('button'), isResetBtn)) return;
+      var grid = wrap.parentElement;
+      if (grid && xlCols(grid) >= 2) {
+        q.dataset.uiSearchDone = '1';
+        pinSearchWrap(wrap, grid, xlCols(grid));
+        return;
+      }
+      if (onlyActionButtons(wrap) && grid && isFlex(grid)) {
+        q.dataset.uiSearchDone = '1';
+        wrap.classList.add('ui-search-actions', 'flex', 'w-full', 'items-center', 'justify-end', 'gap-2');
+        wrap.style.flexBasis = '100%';
+        return;
+      }
+      if (isFlex(wrap) && siblingReset(wrap, q)) {
+        var fieldN = [].filter.call(wrap.children, function (n) { return n.tagName !== 'BUTTON'; }).length;
+        if (fieldN < 1) return;
+        q.dataset.uiSearchDone = '1';
+        wrapFlexActions(wrap, q);
+      }
+    });
+  }
+
   function process(root) {
     if (!root || !root.querySelectorAll) return;
-    try { fixIcons(root); fixTitleOnly(root); fixTables(root); fixClickable(root); } catch (e) { /* 原型页，静默 */ }
+    try { fixIcons(root); fixTitleOnly(root); fixTables(root); fixClickable(root); fixSearchActions(root); } catch (e) { /* 原型页，静默 */ }
   }
 
   function notifyParentCloseChromePopovers() {

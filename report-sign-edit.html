@@ -34,39 +34,31 @@
     .wb-shell { display: flex; gap: 12px; flex: 1 1 auto; min-height: 0; }
     .wb-left { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
     .wb-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
-    .wb-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; gap: 12px; padding-bottom: 4px; }
-    .wb-center, .wb-right { flex: 1 1 0; min-width: 0; }
-    .wb-right { display: flex; flex-direction: column; gap: 12px; }
-    .wb-main.is-right-only .wb-center { display: none; }
-    .wb-main.is-center-only .wb-right { display: none; }
+    .wb-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 4px; }
     .wb-feedback { flex-shrink: 0; margin-top: 12px; }
-    @media (max-width: 1180px) {
-      .wb-scroll { flex-direction: column; overflow-y: auto; }
-      .wb-center, .wb-right { width: 100%; flex: 1 1 auto; }
-    }
+    .glass-sm { background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,.6); box-shadow: 0 4px 16px rgba(20,60,154,.06); border-radius: 12px; }
+    .brand-grad { background: linear-gradient(120deg, var(--brand) 0%, var(--brand-2) 70%, var(--brand-3) 120%); }
+    .info-tab.active { color: var(--brand); border-color: var(--brand); font-weight: 600; }
+    .eq-card { border: 1px solid rgba(20,60,154,.12); border-radius: 10px; background: linear-gradient(180deg,#fff,#f8fafc); padding: 10px 12px; }
+    .eq-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px 12px; }
+    .eq-grid .eq-k { color: #94a3b8; font-size: 11px; }
+    .eq-grid .eq-v { color: #1e293b; font-weight: 600; }
+    .raw-card { border: 1px solid rgba(20,60,154,.12); border-radius: 10px; background: #fff; }
+    .phase-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+    .phase-tab { border: 1px solid var(--line); background: #fff; color: #475569; border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+    .phase-tab.is-on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .phase-tab .ph-conc { margin-left: 6px; font-size: 10px; opacity: .9; }
+    .fg-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .fg-table th, .fg-table td { border: 1px solid #e2e8f0; padding: 4px 6px; white-space: nowrap; }
+    .fg-table th.g-nom { background: #eff6ff; color: #1d4ed8; }
+    .fg-table th.g-mea { background: #f0fdf4; color: #047857; }
+    .fg-table th.g-calc { background: #fff7ed; color: #c2410c; }
+    .fg-table td.conc-ok { color: #047857; font-weight: 600; vertical-align: middle; text-align: center; }
     .roster-row { border: 1px solid rgba(20,60,154,.08); border-radius: 10px; background: #fff; }
     .roster-row:hover { background: #f8fafc; border-color: rgba(20,60,154,.18); }
     .roster-row.active { background: linear-gradient(90deg, rgba(20,60,154,.10), rgba(20,60,154,0)); box-shadow: inset 3px 0 0 var(--brand); }
-    .sum-stamp {
-      position: absolute; top: 10px; right: 10px;
-      display: inline-flex; align-items: center;
-      font-size: 18px; font-weight: 800; letter-spacing: .16em;
-      border: 2.5px solid currentColor; border-radius: 8px;
-      padding: 6px 12px; transform: rotate(-10deg);
-      pointer-events: none; line-height: 1; white-space: nowrap;
-    }
-    .sum-stamp.pass { color: #059669; background: rgba(236,253,245,.92); }
-    .sum-stamp.warn { color: #d97706; background: rgba(255,251,235,.94); }
-    .sum-stamp.fail { color: #dc2626; background: rgba(254,242,242,.94); }
-    .sum-body { color: #334155; font-size: 12px; line-height: 1.8; padding-right: 96px; }
-    .rule-item { border-radius: 12px; border: 1px solid var(--line); }
-    .rule-item.r-pass, .gate-toggle.r-pass { background: linear-gradient(90deg, rgba(16,185,129,.09), rgba(16,185,129,.02)); border-color: rgba(16,185,129,.30); }
-    .rule-item.r-warn, .gate-toggle.r-warn { background: linear-gradient(90deg, rgba(245,158,11,.12), rgba(245,158,11,.03)); border-color: rgba(245,158,11,.38); }
-    .rule-item.r-sev, .gate-toggle.r-sev { background: linear-gradient(90deg, rgba(239,68,68,.12), rgba(239,68,68,.03)); border-color: rgba(239,68,68,.40); }
-    .rule-item.r-pass, .gate-toggle.r-pass { border-left: 4px solid #10b981; }
-    .rule-item.r-warn, .gate-toggle.r-warn { border-left: 4px solid #f59e0b; }
-    .rule-item.r-sev, .gate-toggle.r-sev { border-left: 4px solid #ef4444; }
-    .preview-frame { width: 100%; height: 100%; min-height: 280px; border: 0; border-radius: 8px; background: #fff; }
+    .preview-frame { width: 100%; height: 100%; min-height: 420px; border: 0; border-radius: 8px; background: #fff; }
     .audit-tl { list-style: none; margin: 0; padding: 0; }
     .audit-tl-item { display: grid; grid-template-columns: 18px minmax(0,1fr); column-gap: 12px; }
     .audit-rail { position: relative; }
@@ -99,8 +91,8 @@
 
     <div id="wb-page" class="flex flex-1 flex-col gap-3 overflow-hidden p-3" style="min-height:0">
       <div class="flex items-center gap-2 rounded-xl border border-white/60 bg-white/55 px-4 py-2 text-sm backdrop-blur" style="color:var(--brand)">
-        <i class="fa fa-shield"></i>
-        <span>签发看数据可追溯、结论有依据、资质不越界。系统预检阻断项一票否决，锁定「签发通过」。</span>
+        <i class="fa fa-file-text-o"></i>
+        <span>授权签字人查看报告文件、收样与检测信息后签发。退回须填写原因。</span>
       </div>
 
       <section class="glass" data-annotate="sg-overview">
@@ -113,12 +105,11 @@
             <span class="text-slate-500">受理 <span id="ov-accept" class="mono"></span></span>
             <span class="text-slate-500">要求完成 <span id="ov-require" class="mono"></span></span>
             <span class="chip bg-blue-50 text-blue-700" id="ov-status"></span>
-            <span id="ov-gate"></span>
           </span>
           <span class="flex items-center gap-1 text-xs" style="color:var(--brand)"><span id="ov-toggle-text">展开</span><i id="ov-chevron" class="fa fa-angle-down"></i></span>
         </button>
         <div id="ov-body" class="hidden border-t border-white/50 px-4 pb-3 pt-2 text-sm text-slate-600">
-          对照左侧名单切换委托。中间看报告结论与样品—记录—报告是否一致；右侧按五组检查项过门禁。红灯必须退回，不能特批签发。
+          对照左侧名单切换委托。中间查看报告文件、报告预览、收样信息与检测信息后，在底栏签发或退回。
         </div>
       </section>
 
@@ -142,66 +133,37 @@
 
         <div class="wb-main" id="wb-main">
           <div class="wb-scroll">
-            <section class="wb-center glass flex flex-col" style="min-height:0" data-annotate="sg-report">
-              <div class="border-b border-white/50 px-4 py-2">
-                <div class="flex items-center gap-2">
-                  <div class="flex min-w-0 items-center gap-2 text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-file-text-o"></i>报告与结论
-                    <span id="rp-no" class="text-xs font-normal text-slate-400 mono"></span></div>
-                  <button id="btn-expand-center" type="button" class="ml-auto rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i>展开</button>
+            <section class="glass px-4 py-3" data-annotate="sg-file">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="text-xs text-slate-400">报告文件</div>
+                  <div class="mt-0.5 flex min-w-0 items-center gap-2">
+                    <a href="#" id="rp-file" class="truncate text-sm font-semibold" style="color:var(--brand)"><i class="fa fa-file-word-o mr-1"></i></a>
+                    <span id="rp-version" class="chip brand-grad text-white mono flex-shrink-0">V1.0</span>
+                  </div>
                 </div>
-                <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                  <span>编制人 <b class="text-slate-700" id="rp-compiler"></b></span>
-                  <span>生成 <span class="mono" id="rp-at"></span></span>
-                  <a href="#" id="rp-file" class="truncate font-medium" style="color:var(--brand)"></a>
-                </div>
+                <button id="btn-expand-info" type="button" class="flex-shrink-0 rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i><span data-split-label>展开</span></button>
               </div>
-              <div class="flex-1 overflow-y-auto px-4 py-3" style="min-height:0">
-                <div id="ai-summary" class="relative mb-3 rounded-xl border px-4 py-3" style="border-color:rgba(20,60,154,.2);background:linear-gradient(120deg,rgba(46,91,214,.1),rgba(91,141,239,.04))">
-                  <span id="sign-stamp" class="sum-stamp pass">可签发</span>
-                  <div id="sign-summary"></div>
-                </div>
-                <div class="mb-3 text-xs font-medium text-slate-500">样品 · 委托 · 原始记录 · 报告对照</div>
-                <div class="mb-3 overflow-x-auto rounded-xl border border-slate-200">
-                  <table class="w-full border-collapse text-left text-xs">
-                    <thead>
-                      <tr class="bg-slate-50 text-slate-500">
-                        <th class="border border-slate-200 px-2 py-1.5">字段</th>
-                        <th class="border border-slate-200 px-2 py-1.5">委托</th>
-                        <th class="border border-slate-200 px-2 py-1.5">样品</th>
-                        <th class="border border-slate-200 px-2 py-1.5">原始记录</th>
-                        <th class="border border-slate-200 px-2 py-1.5">报告</th>
-                      </tr>
-                    </thead>
-                    <tbody id="spine-body"></tbody>
-                  </table>
-                </div>
-                <div class="mb-2 flex items-center justify-between text-xs text-slate-500">
-                  <span>原始记录 <span id="raw-name"></span></span>
-                  <span class="mono" id="raw-at"></span>
-                </div>
-                <div class="overflow-hidden rounded-xl border border-slate-200" style="height:320px">
-                  <iframe id="report-preview" class="preview-frame" title="报告预览" src="about:blank"></iframe>
-                </div>
+              <div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
+                <span>编制人 <b class="text-slate-700" id="rp-compiler"></b></span>
+                <span>编制时间 <span class="mono" id="rp-compiletime"></span></span>
+                <span id="rp-version-prev" class="text-slate-400"></span>
               </div>
             </section>
-
-            <div class="wb-right">
-              <section class="glass flex flex-1 flex-col" style="min-height:0" data-annotate="sg-gate">
-                <div class="flex items-center gap-2 border-b border-white/50 px-3 py-2 text-sm font-semibold" style="color:var(--brand)">
-                  <i class="fa fa-check-square-o"></i>签发检查
-                  <button id="btn-expand-right" type="button" class="ml-auto rounded-md border border-slate-300 px-2 py-1 text-xs font-normal text-slate-600 hover:bg-white/60"><i class="fa fa-expand mr-1"></i>展开</button>
-                </div>
-                <div id="gate-counts" class="flex flex-wrap gap-1 px-3 pt-2"></div>
-                <div id="gate-list" class="flex-1 overflow-y-auto px-3 py-2" style="min-height:0"></div>
-              </section>
-            </div>
+            <section class="glass flex flex-1 flex-col" style="min-height:0" data-annotate="sg-info">
+              <div class="flex items-center gap-1 border-b border-white/50 px-2 pt-2 text-xs whitespace-nowrap">
+                <button type="button" class="info-tab active border-b-2 border-transparent px-2.5 py-1.5 text-slate-500" data-panel="preview">报告预览</button>
+                <button type="button" class="info-tab border-b-2 border-transparent px-2.5 py-1.5 text-slate-500" data-panel="recv">收样信息</button>
+                <button type="button" class="info-tab border-b-2 border-transparent px-2.5 py-1.5 text-slate-500" data-panel="detect">检测信息</button>
+              </div>
+              <div id="info-body" class="flex-1 overflow-y-auto p-3 text-sm" style="min-height:0"></div>
+            </section>
           </div>
 
           <section class="wb-feedback glass" data-annotate="sg-action">
             <div class="flex items-center gap-2 border-b border-white/50 px-4 py-2 text-sm font-semibold" style="color:var(--brand)">
               <i class="fa fa-gavel"></i>签发处置
               <span id="fb-report" class="text-xs font-normal text-slate-400 mono"></span>
-              <span id="fb-stamp"></span>
             </div>
             <div class="flex flex-wrap items-end gap-3 px-4 py-3">
               <label class="min-w-[220px] flex-1 text-xs text-slate-500">退回原因
@@ -210,7 +172,6 @@
               <button type="button" id="btn-back" class="rounded-lg bg-amber-500 px-5 py-2 text-sm text-white hover:bg-amber-600">退回</button>
               <button type="button" id="btn-pass" class="btn-brand rounded-lg px-5 py-2 text-sm">签发通过</button>
             </div>
-            <p id="lock-hint" class="hidden px-4 pb-3 text-xs text-red-600"></p>
           </section>
         </div>
       </div>
@@ -219,7 +180,8 @@
 
   <script src="js/tab-bar.js"></script>
   <script src="js/report-flow-store.js"></script>
-  <script src="js/report-sign-gate.js"></script>
+  <script src="js/report-review-mock.js"></script>
+  <script src="js/report-info-panel.js"></script>
   <script src="js/report-sign-workbench.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>ReportSignWorkbench.boot();</script>

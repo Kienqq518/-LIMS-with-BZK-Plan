@@ -17,7 +17,7 @@
 
   function searchHtml() {
     return '<div class="rounded bg-white p-4 shadow-sm">' +
-      '<div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">' +
+      '<div class="ui-search-grid grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">' +
       field('委托编号', '<input id="f_code" type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />') +
       field('是否关联框架合同', '<select id="f_frame" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"><option value="">请选择是否关联</option><option>是</option><option>否</option></select>') +
       field('合同编号', '<input id="f_contract" type="text" placeholder="请输入框架合同编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />') +
@@ -26,7 +26,7 @@
       '<div class="flex items-center gap-2"><label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托受理日期</label>' +
       '<div class="flex flex-1 items-center gap-1"><input id="f_from" type="text" placeholder="开始日期" class="w-full rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /><span class="text-slate-400">—</span>' +
       '<input id="f_to" type="text" placeholder="结束日期" class="w-full rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" /></div></div>' +
-      '<div class="flex items-center gap-2 xl:col-span-2 xl:justify-end">' +
+      '<div class="flex items-center gap-2 ui-search-actions">' +
       '<button type="button" id="btn-search" class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>' +
       '<button type="button" id="btn-reset" class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i>重置</button>' +
       '</div></div></div>';
@@ -54,11 +54,8 @@
   }
 
   function tableHtml(stage, list) {
-    var colN = stage === '任务归档' ? 15 : 14;
+    var colN = 14;
     var body = list.map(function (r, i) {
-      var extra = stage === '任务归档'
-        ? '<td class="border border-slate-200 px-3 py-2"><a href="#" class="text-blue-600 hover:underline" data-record="' + esc(r.code) + '">查看</a></td>'
-        : '';
       return '<tr class="hover:bg-slate-50">' +
         '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(r.code) + '">' + esc(r.code) + '</a></td>' +
@@ -72,14 +69,12 @@
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.priority) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.status) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' + esc(r.compiler) + '</td>' +
-        '<td class="border border-slate-200 px-3 py-2">' + recLink(r.code) + '</td>' + extra +
+        '<td class="border border-slate-200 px-3 py-2">' + recLink(r.code) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + opsHtml(stage, r) + '</td></tr>';
     }).join('');
     if (!list.length) body = '<tr><td colspan="' + colN + '" class="border border-slate-200 px-3 py-10 text-center text-sm text-slate-400">当前节点暂无任务</td></tr>';
-    var extraHead = stage === '任务归档'
-      ? '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">任务归档</th>' : '';
     var opsHead = stage === '任务完成' ? '发放记录' : '操作';
-    return '<div class="mt-4 rounded bg-white p-4 shadow-sm"><div class="overflow-x-auto"><table class="w-full border-collapse text-left text-sm" style="min-width:' + (stage === '任务归档' ? '1680' : '1540') + 'px">' +
+    return '<div class="mt-4 rounded bg-white p-4 shadow-sm"><div class="overflow-x-auto"><table class="w-full border-collapse text-left text-sm" style="min-width:1540px">' +
       '<thead><tr class="bg-slate-100 text-slate-600">' +
       '<th class="border border-slate-200 px-3 py-2 font-medium w-[72px]" style="white-space:nowrap">序号</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">委托编号</th>' +
@@ -93,7 +88,7 @@
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">优先等级</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">任务状态</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">编制人</th>' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">报告记录</th>' + extraHead +
+      '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap">报告记录</th>' +
       '<th class="border border-slate-200 px-3 py-2 font-medium" style="white-space:nowrap;width:1%">' + opsHead + '</th></tr></thead><tbody>' + body + '</tbody></table></div>' +
       '<div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500"><span>共 ' + list.length + ' 条</span>' +
       '<button type="button" class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>' +

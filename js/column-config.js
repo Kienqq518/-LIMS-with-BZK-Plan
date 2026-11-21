@@ -69,6 +69,7 @@
   var PIN_LEFT_LABELS = ['勾选', '序号', '委托编号'];   // 左侧钉住的一组（勾选列存在就一起钉，否则会被滚走）
   var PIN_STICKY_LABELS = ['序号', '委托编号'];         // 至少要命中一个才启用左侧冻结
   var PIN_RIGHT_LABELS = ['操作', '操作记录', '发放记录']; // 右侧钉住：名单操作列 / 还样「操作记录」/ 任务完成「发放记录」
+  var STICKY_RIGHT_LABELS = ['报告记录', '操作', '操作记录', '发放记录']; // 从右连续冻结（任务完成：报告记录+发放记录）
   var PIN_LOCK_LABELS = ['序号', '委托编号', '操作', '操作记录', '发放记录'];
 
   function labelOfKey(k) {
@@ -270,13 +271,14 @@
     var hasSticky = leftKeys.some(function (k) { return PIN_STICKY_LABELS.indexOf(labelOfKey(k)) >= 0; });
     // 表里没有「序号 / 委托编号」（如人员、设备、字典类台账）时，退回按位置钉住头两列，别把原有的冻结弄丢
     if (!hasSticky) leftKeys = vis.slice(0, 2);
-    var rightKey = null;
+    var rightKeys = [];
     for (var j = vis.length - 1; j >= 0; j--) {
-      if (isRightLabel(labelOfKey(vis[j]))) { rightKey = vis[j]; break; }
+      if (STICKY_RIGHT_LABELS.indexOf(labelOfKey(vis[j])) >= 0) rightKeys.unshift(vis[j]);
+      else break;
     }
-    // 没有「操作」列的表退回末列，保持旧行为
-    if (!rightKey && vis.length > 2) rightKey = vis[vis.length - 1];
-    return { leftKeys: leftKeys, rightKey: rightKey };
+    // 没有「操作 / 发放记录」等表退回末列，保持旧行为
+    if (!rightKeys.length && vis.length > 2) rightKeys = [vis[vis.length - 1]];
+    return { leftKeys: leftKeys, rightKeys: rightKeys, rightKey: rightKeys.length ? rightKeys[rightKeys.length - 1] : null };
   }
   /* sticky 右列会被表格算法收成内容最小宽（约 48px），「操作」看起来像消失。
      先 nowrap 再按内容定 min-width；th 用 width:1% 把余量让给中间列，操作贴在表尾。
@@ -382,6 +384,13 @@
       lefts[k] = acc;
       acc += th.getBoundingClientRect().width;
     });
+    var rights = {}, racc = 0;
+    for (var ri = (sets.rightKeys || []).length - 1; ri >= 0; ri--) {
+      var rk = sets.rightKeys[ri];
+      var rth = hr.querySelector('[data-col-key="' + cssEsc(rk) + '"]');
+      rights[rk] = racc;
+      racc += rth ? rth.getBoundingClientRect().width : 0;
+    }
     var rows = [].slice.call(hr.parentNode.querySelectorAll('tr'));
     rows = rows.concat([].slice.call(table.tBodies).reduce(function (a, tb) { return a.concat([].slice.call(tb.rows)); }, []));
     rows.forEach(function (tr) {
@@ -398,10 +407,12 @@
           cell.style.left = lefts[k] + 'px';
           cell.style.backgroundColor = bg;
           if (k === sets.leftKeys[sets.leftKeys.length - 1]) cell.classList.add('cc-fz-edge');
-        } else if (overflowing && sets.rightKey && k === sets.rightKey) {
-          cell.classList.add('cc-fz', 'cc-fz-r');
-          cell.style.right = '0px';
+        } else if (overflowing && sets.rightKeys && sets.rightKeys.indexOf(k) >= 0) {
+          cell.classList.add('cc-fz');
+          cell.style.right = (rights[k] || 0) + 'px';
           cell.style.backgroundColor = bg;
+          cell.style.zIndex = String((cell.tagName === 'TH' ? 4 : 2) + sets.rightKeys.indexOf(k));
+          if (k === sets.rightKeys[0]) cell.classList.add('cc-fz-r');
         }
       });
     });
