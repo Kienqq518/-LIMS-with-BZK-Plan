@@ -28,8 +28,11 @@ const rlAi = await p.evaluate(() => {
   const body = banner && banner.querySelector('.ret-banner-body');
   const row238 = [...document.querySelectorAll('#tableBody tr')].some((tr) => /SC2026\/0238/.test(tr.textContent || ''));
   const txt = banner ? (banner.textContent || '') : '';
+  const cards = banner ? banner.querySelectorAll('.ret-banner-card').length : 0;
   return banner && body && getComputedStyle(body).maxHeight !== 'none' && row238 &&
-    /AI 自动退回/.test(txt) && /李审核/.test(txt);
+    /AI 自动退回/.test(txt) && /李审核/.test(txt) &&
+    /SC2026\/0238-02/.test(txt) && /SC2026\/0238-03/.test(txt) &&
+    /2 份报告退回/.test(txt) && cards >= 2;
 });
 out.push((rlAi ? '✅' : '❌') + ' 报告编制退回条幅合并 AI/人工且主表含退回委托');
 await p.setViewportSize({ width: 1440, height: 900 });

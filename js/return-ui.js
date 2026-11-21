@@ -10,13 +10,19 @@
     '.ret-code-stack{display:flex;flex-wrap:wrap;align-items:center;gap:4px}',
     '.ret-banner{margin-top:1rem;border:1px solid #fecaca;background:#fef2f2;border-radius:6px;box-shadow:0 1px 2px rgba(15,23,42,.04)}',
     '.ret-banner-head{padding:8px 16px;border-bottom:1px solid #fecaca;font-size:13px;font-weight:600;color:#b91c1c}',
-    '.ret-banner-body{max-height:7.25rem;overflow-y:auto;padding:8px 16px 10px;font-size:13px;color:#7f1d1d}',
-    '.ret-banner-group{padding:6px 0;border-bottom:1px dashed #fecaca}',
-    '.ret-banner-group:last-child{border-bottom:0}',
+    '.ret-banner-body{max-height:16.5rem;overflow-y:auto;padding:10px 16px 12px;font-size:13px;color:#7f1d1d}',
+    '.ret-banner-group{padding:2px 0 8px;border-bottom:1px dashed #fecaca}',
+    '.ret-banner-group:last-child{border-bottom:0;padding-bottom:0}',
     '.ret-banner-code{display:flex;align-items:center;gap:8px;margin-bottom:2px}',
+    '.ret-banner-count{font-size:12px;font-weight:500;color:#be123c}',
     '.ret-banner-go{margin-left:auto;flex-shrink:0;color:#2563eb;font-size:13px}',
     '.ret-banner-go:hover{text-decoration:underline}',
-    '.ret-banner-item{padding:2px 0}',
+    '.ret-banner-card{background:#fff;border:1px solid #fecaca;border-left:3px solid #ef4444;border-radius:6px;padding:8px 10px;margin-top:8px}',
+    '.ret-banner-card.is-ai{border-color:#fdba74;border-left-color:#f97316;background:#fffbf5}',
+    '.ret-banner-card-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:4px}',
+    '.ret-banner-report{font-weight:700;color:#9f1239;font-size:13px}',
+    '.ret-banner-meta{font-size:12px;color:#9f1239;line-height:1.5}',
+    '.ret-banner-reason{margin-top:4px;font-size:12px;line-height:1.55;color:#7f1d1d}',
     '.ret-ai-pill{display:inline-flex;align-items:center;gap:3px;margin-right:6px;padding:1px 7px;border-radius:9999px;border:1px solid #f87171;background:linear-gradient(90deg,#fef2f2,#fff7ed);font-size:10px;font-weight:600;letter-spacing:.02em;color:#b91c1c;vertical-align:middle;white-space:nowrap}',
     '.ret-strip{margin-bottom:12px;border:1px solid #fecaca;background:#fff7f7;border-radius:8px;padding:10px 14px}',
     '.ret-tl{border:1px dashed #e2e8f0;background:#f8fafc;padding:.75rem 1rem .9rem;border-radius:8px}',
@@ -248,15 +254,19 @@
           ? '<a class="ret-banner-go" href="report-compile-edit.html?entrust=' + encodeURIComponent(g.code) + '">去处理</a>'
           : '';
         var items = g.recs.map(function (r) {
-          var isAi = st.normKind(r.kind) === 'AI';
-          var pill = isAi ? aiPillHtml() : '';
-          var report = r.reportNo ? ' · ' + esc(r.reportNo) : '';
-          return '<div class="ret-banner-item' + (isAi ? ' is-ai' : '') + '">' +
-            pill + '从「' + esc(r.from) + '」退回 · ' + esc(r.by) + ' · ' + esc(r.time) + report +
-            '<div class="mt-0.5 text-xs">原因：' + esc(r.reason) + '</div></div>';
+          var kind = st.normKind(r.kind);
+          var isAi = kind === 'AI';
+          var report = r.reportNo ? '<span class="ret-banner-report">' + esc(r.reportNo) + '</span>' : '';
+          var kindChip = isAi ? aiPillHtml() : '<span class="ret-chip">' + esc(kind) + '</span>';
+          return '<div class="ret-banner-card' + (isAi ? ' is-ai' : '') + '">' +
+            '<div class="ret-banner-card-head">' + report + kindChip + '</div>' +
+            '<div class="ret-banner-meta">从「' + esc(r.from) + '」退回 · ' + esc(r.by) + ' · ' + esc(r.time) + '</div>' +
+            '<div class="ret-banner-reason">原因：' + esc(r.reason) + '</div></div>';
         }).join('');
+        var nRep = g.recs.length;
+        var count = nRep > 1 ? '<span class="ret-banner-count">' + nRep + ' 份报告退回</span>' : '';
         return '<div class="ret-banner-group">' +
-          '<div class="ret-banner-code"><b>' + esc(g.code) + '</b>' + handle + '</div>' +
+          '<div class="ret-banner-code"><b>' + esc(g.code) + '</b>' + count + handle + '</div>' +
           items + '</div>';
       }).join('') + '</div></div>';
   }

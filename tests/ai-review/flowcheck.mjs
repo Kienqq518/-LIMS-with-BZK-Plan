@@ -218,6 +218,7 @@ const rvCat = rvHead.findIndex((t) => t.trim() === '样品大类');
 const rvName = rvHead.findIndex((t) => t.trim() === '样品名称');
 out.push((/样品大类/.test(rvHead.join('')) ? '✅' : '❌') + ' 报告审核名单有样品大类列');
 out.push((rvName >= 0 && rvCat === rvName + 1 ? '✅' : '❌') + ' 报告审核样品大类在样品名称后 ' + JSON.stringify({ rvName, rvCat, first: rvHead[0] }));
+out.push((/报告记录/.test(rvHead.join('')) && !/退回详情/.test(rvHead.join('')) ? '✅' : '❌') + ' 报告审核名单去掉退回详情列');
 await p.evaluate(() => { var b = document.getElementById('cc-trigger'); if (b) b.click(); });
 await p.waitForTimeout(200);
 const panelTxt = await p.locator('#cc-panel').textContent();
