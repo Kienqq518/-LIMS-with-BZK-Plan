@@ -87,7 +87,6 @@
               <th class="border border-slate-200 px-3 py-2 font-medium">任务进度</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">检测员</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">编制人</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">退回详情</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
             </tr>
           </thead>
@@ -137,7 +136,7 @@
           title: '组内审核不承接退回',
           wide: true,
           content: '<strong>需求逻辑：</strong>数据审核不通过时直接退回试验检测，不经过组内审核，所以本组待办不会出现「被退回」的任务。<br>' +
-          '<strong>展示规则：</strong>委托编号旁不打退回标签；退回详情列为「—」。组内审核只作为发起退回的一方，把问题打回试验检测。<br>' +
+          '<strong>展示规则：</strong>委托编号旁不打退回标签，名单不设退回详情列。组内审核只作为发起退回的一方，把问题打回试验检测。<br>' +
           '<strong>交互逻辑：</strong>点「退回」把本单退到试验检测；点「审核」进编辑页复核数据，页上无退回条幅、无试样行退回标。',
           tag: '组内审核'
         },
@@ -200,7 +199,6 @@
           '<td class="border border-slate-200 px-3 py-2.5">' + item.progress + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.tester + '</td>' +
           '<td class="border border-slate-200 px-3 py-2.5">' + item.editor + '</td>' +
-          (window.ReturnUI ? ReturnUI.detailTd(item.code, STAGE) : '<td class="border border-slate-200 px-3 py-2.5 text-slate-400">—</td>') +
           '<td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap">' +
             '<a href="' + editUrl(item) + '" class="text-blue-600 hover:underline"><i class="fa fa-pencil"></i> 审核</a>' +
             '<button onclick="openReturnModal(' + i + ')" class="ml-3 text-orange-500 hover:underline"><i class="fa fa-reply"></i> 退回</button>' +
