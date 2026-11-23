@@ -3,7 +3,7 @@
  * 编制 / 审核通过后进入本链；状态落 localStorage，刷新不丢。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-report-flow-v6';
+  var STORAGE_KEY = 'lims-report-flow-v7';
   var ORDER = ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   var SIGNED = ['报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   function isSigned(status) { return SIGNED.indexOf(status) >= 0; }
@@ -95,6 +95,19 @@
   }
 
   var SEED = [
+    row({ code: 'SC2026/0312', contract: 'HT2026-0312', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆',
+      sendDate: '2026-10-08', requireDate: '2026-10-18', acceptDate: '2026-10-08',
+      status: '报告签发', at: '2026-10-12 09:20:00',
+      reports: reports('SC2026/0312', 2, '2026-10-12 09:20:00'),
+      returns: [{ from: '报告处理', to: '报告签发', by: '王处理', time: '2026-11-20 14:30', reason: '签发章位置与机构授权范围不符，退回签发重新核验。', kind: '人工', reportNo: 'SC2026/0312-01' }],
+      logs: [
+        { at: '2026-10-08 15:40', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
+        { at: '2026-10-08 15:52', node: '报告审核', by: 'AI 审核引擎', text: '预审结论：通过', tone: 'success' },
+        { at: '2026-10-08 16:20', node: '报告审核', by: '李审核', text: '人工审核通过，提交至报告签发', tone: 'success' },
+        { at: '2026-10-09 09:10', node: '报告签发', by: '周签发', text: '签发通过，已生成 PDF 报告', tone: 'success' },
+        { at: '2026-10-10 09:10', node: '报告处理', by: '王处理', text: '退回至报告签发', tone: 'danger', reason: '签发章位置与机构授权范围不符，退回签发重新核验。', target: '报告签发' },
+        { at: '2026-11-20 14:30', node: '报告签发', by: '系统', text: '等待报告签发', tone: 'pending' }
+      ] }),
     row({ code: 'SC2026/0238', contract: 'HT2026-0118', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆',
       sendDate: '2026-09-01', requireDate: '2026-09-10', acceptDate: '2026-09-01',
       status: '报告签发', at: '2026-09-03 10:20:00',
@@ -126,12 +139,18 @@
     row({ code: 'SC2026/0447', contract: 'HT2026-0447', customer: '杭州数蚕智能科技有限公司', sample: '安全带',
       sendDate: '2026-11-12', requireDate: '2026-11-20', acceptDate: '2026-11-12',
       status: '报告发放', at: '2026-11-12 13:27:35',
-      reports: reports('SC2026/0447', 2, '2026-11-12 13:27:35'),
+      reports: (function () {
+        var reps = reports('SC2026/0447', 2, '2026-11-12 13:27:35');
+        reps[0].issued = true;
+        reps[0].ship = { company: '顺丰快递', tracking: 'SF456781111', address: '杭州市西湖区文三路159号东部软件园2号楼402室', contact: '张三', phone: '18888888888', date: '2026-11-21', note: '' };
+        return reps;
+      })(),
       ship: { company: '顺丰快递', tracking: 'SF456781111', address: '杭州市西湖区文三路159号东部软件园2号楼402室', contact: '张三', phone: '18888888888', date: '2026-11-21', note: '' } }),
     row({ code: 'SC2026/0166', customer: '遵义供电局', sample: '全身式安全带',
       sendDate: '2026-09-01', requireDate: '2026-09-10', acceptDate: '2026-09-01',
       status: '报告发放', at: '2026-09-05 10:00:00',
       reports: reports('SC2026/0166', 3, '2026-09-05 10:00:00'),
+      ship: { company: '中通快递', tracking: 'ZT16600991', address: '遵义市汇川区南京路18号', contact: '李四', phone: '13900001111', date: '2026-11-21', note: '' },
       returns: [{ from: '任务归档', to: '报告发放', by: 'admin', time: '2026-11-08 11:02', reason: '快递单号填写错误，退回发放更正。', kind: '人工' }] }),
     row({ code: 'SC2026/0390', contract: 'HT2026-0390', customer: '杭州数蚕智能科技有限公司', sample: '绝缘操作杆',
       sendDate: '2026-10-15', requireDate: '2026-10-25', acceptDate: '2026-10-15',
@@ -244,8 +263,12 @@
   function issue(code, ids) {
     var t = get(code); if (!t) return false;
     ids = (ids || []).map(String);
+    var snap = t.ship ? clone(t.ship) : null;
     (t.reports || []).forEach(function (r) {
-      if (ids.indexOf(String(r.id)) >= 0) r.issued = true;
+      if (ids.indexOf(String(r.id)) >= 0) {
+        r.issued = true;
+        if (snap) r.ship = clone(snap);
+      }
     });
     var left = (t.reports || []).filter(function (r) { return !r.issued; });
     t.logs.push({

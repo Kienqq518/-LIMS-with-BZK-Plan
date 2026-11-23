@@ -130,16 +130,67 @@
     return el;
   }
   function openModal(html) {
+    closeShipLayer();
     var el = modalShell();
     document.getElementById('flow-modal-panel').innerHTML = html;
     el.classList.remove('hidden');
     el.classList.add('flex');
   }
   function closeModal() {
+    closeShipLayer();
     var el = document.getElementById('flow-modal');
     if (!el) return;
     el.classList.add('hidden');
     el.classList.remove('flex');
+  }
+
+  function closeShipLayer() {
+    var el = document.getElementById('flow-ship-layer');
+    if (!el) return;
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+  }
+  function shipLayer() {
+    var el = document.getElementById('flow-ship-layer');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'flow-ship-layer';
+      el.className = 'fixed inset-0 z-[80] hidden items-center justify-center bg-slate-900/45 p-4';
+      el.addEventListener('click', function (e) {
+        if (e.target === el || e.target.closest('[data-ship-close]')) closeShipLayer();
+      });
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  function openReportShip(code, reportId) {
+    var task = ReportFlowStore.get(code); if (!task) return;
+    var r = (task.reports || []).filter(function (x) { return String(x.id) === String(reportId); })[0];
+    var ship = (r && r.ship) || (task && task.ship) || null;
+    var title = '报告发放记录' + (r && r.no ? ' · ' + esc(r.no) : '');
+    var body = ship
+      ? '<table class="w-full min-w-[820px] border-collapse text-left text-sm" data-no-col-config><thead><tr class="bg-slate-50 text-slate-600">' +
+        '<th class="whitespace-nowrap border border-slate-200 px-3 py-2">快递公司</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">快递单号</th>' +
+        '<th class="whitespace-nowrap border border-slate-200 px-3 py-2">地址</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">联系人</th>' +
+        '<th class="whitespace-nowrap border border-slate-200 px-3 py-2">联系方式</th><th class="whitespace-nowrap border border-slate-200 px-3 py-2">发放日期</th>' +
+        '<th class="whitespace-nowrap border border-slate-200 px-3 py-2">备注</th></tr></thead><tbody><tr>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(ship.company) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(ship.tracking) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(ship.address) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(ship.contact) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(ship.phone) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(ship.date) + '</td>' +
+        '<td class="border border-slate-200 px-3 py-2">' + esc(ship.note || '') + '</td></tr></tbody></table>'
+      : '<div class="py-8 text-center text-sm text-slate-400">暂无该报告的发放记录</div>';
+    var el = shipLayer();
+    el.innerHTML = '<div class="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">' +
+      '<div class="flex items-center justify-between border-b border-slate-100 px-5 py-3"><h3 class="text-base font-medium text-slate-800">' + title + '</h3>' +
+      '<button type="button" class="text-slate-400 hover:text-slate-600" data-ship-close><i class="fa fa-times"></i></button></div>' +
+      '<div class="flex-1 overflow-auto p-5">' + body + '</div>' +
+      '<div class="flex justify-end border-t border-slate-100 px-5 py-3">' +
+      '<button type="button" class="rounded border border-slate-300 px-4 py-1.5 text-sm" data-ship-close>关闭</button></div></div>';
+    el.classList.remove('hidden');
+    el.classList.add('flex');
   }
 
   function fileIcon(name) {
@@ -161,12 +212,12 @@
       var checkCell = '';
       if (withCheck) {
         checkCell = issued
-          ? '<td class="border border-slate-200 px-3 py-2 text-center text-xs text-slate-400">已发放</td>'
+          ? '<td class="border border-slate-200 px-3 py-2 text-center"><input type="checkbox" checked disabled title="已发放，不可再勾选" class="cursor-not-allowed opacity-50" /></td>'
           : '<td class="border border-slate-200 px-3 py-2 text-center"><input type="checkbox" class="rep-check" checked data-id="' + esc(r.id) + '" /></td>';
       }
       var opCell = issueMode
         ? (issued
-          ? '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="#" data-view-ship>查看发放记录</a></td>'
+          ? '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="#" data-view-ship data-code="' + esc(task.code) + '" data-id="' + esc(r.id) + '">查看发放记录</a></td>'
           : '<td class="border border-slate-200 px-3 py-2"></td>')
         : '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank">预览</a></td>';
       return '<tr class="' + (issued ? 'bg-slate-50 text-slate-400' : '') + '">' +
@@ -409,16 +460,16 @@
         },
         {
           id: 'flow-issue-check', selector: '[data-annotate="flow-issue-check"]', position: 'top', title: '勾选待发放报告',
-          content: '<strong>需求逻辑：</strong>一份委托可能分批发，必须能勾选本批要寄出的报告；已发放的才能回看发放记录。<br>' +
-            '<strong>展示规则：</strong>报告列表带勾选、全选；已发放行操作列「查看发放记录」，未发放不展示查看按钮。报告名称仍可点开 PDF。<br>' +
-            '<strong>交互逻辑：</strong>默认全选；取消后通过按钮不可点。点「查看发放记录」定位到本弹窗发放信息。',
+          content: '<strong>需求逻辑：</strong>一份委托可能分批发，必须能勾选本批要寄出的报告；已发放的不能再勾，只能回看当时的发放记录。<br>' +
+            '<strong>展示规则：</strong>已发放行勾选框勾上但禁用；操作列「查看发放记录」。未发放可勾选，不展示查看按钮。<br>' +
+            '<strong>交互逻辑：</strong>点「查看发放记录」弹出只读发放记录，不改动下方本次待发地址。',
           tag: '报告发放'
         },
         {
           id: 'flow-issue-addr', selector: '[data-annotate="flow-issue-addr"]', position: 'top', title: '填写发放信息',
-          content: '<strong>需求逻辑：</strong>快递公司、单号、地址、联系人、电话、发放日期是出库依据，必须在发放通过前落库。<br>' +
-            '<strong>展示规则：</strong>未填时空表 + 表格上方蓝色「填写发放信息」；已填展示记录，用表格内「编辑 / 删除」，不再单独放「修改发放信息」。<br>' +
-            '<strong>交互逻辑：</strong>点填写进入表单（联系人、联系方式、发放日期必填）；确认后回到发放弹窗，第 2 步点亮。',
+          content: '<strong>需求逻辑：</strong>下方地址是「本批还要再发」时关联的寄送信息，和已发报告的历史记录分开。<br>' +
+            '<strong>展示规则：</strong>未填时空表 + 蓝色「填写发放信息」；已填可编辑 / 删除后重新添加。<br>' +
+            '<strong>交互逻辑：</strong>发放通过时把当前地址快照到本批勾选的报告上；删的是待发地址，不影响已发报告的查看记录。',
           tag: '报告发放'
         },
         {
@@ -457,7 +508,6 @@
       document.getElementById('btn-reset').onclick = function () { paint(); };
       if (global.ColumnConfig && typeof ColumnConfig.refresh === 'function') ColumnConfig.refresh();
       if (global.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
-      if (global.ReturnUI) ReturnUI.mountBanner(stage, root.querySelector('.rounded.bg-white.p-4.shadow-sm'));
     }
     paint();
     if (global.PrototypeAnnotation && PrototypeAnnotation.init) {
@@ -519,14 +569,8 @@
       var vs = e.target.closest('[data-view-ship]');
       if (vs) {
         e.preventDefault();
-        var box = document.querySelector('#flow-modal [data-annotate="flow-issue-addr"]');
-        if (box) {
-          box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          box.classList.add('ring-2', 'ring-blue-400', 'rounded');
-          setTimeout(function () {
-            box.classList.remove('ring-2', 'ring-blue-400', 'rounded');
-          }, 1400);
-        }
+        e.stopPropagation();
+        openReportShip(vs.getAttribute('data-code'), vs.getAttribute('data-id'));
       }
       if (p) {
         var code = p.getAttribute('data-modal-pass');
@@ -565,9 +609,9 @@
       if (a) openAddr(a.getAttribute('data-addr'));
       if (ab) openHandleModal(stage, ab.getAttribute('data-addr-back'));
       if (d) {
-        if (!confirm('确认删除该发放记录？')) return;
+        if (!confirm('确认删除该发放信息？删除后需重新填写才能继续发放，已发出报告的发放记录不受影响。')) return;
         ReportFlowStore.removeShip(d.getAttribute('data-del-ship'));
-        toast('已删除发放记录');
+        toast('已删除发放信息');
         openHandleModal(stage, d.getAttribute('data-del-ship'));
       }
       if (s) {

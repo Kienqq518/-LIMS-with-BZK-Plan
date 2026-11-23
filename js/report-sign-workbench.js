@@ -102,9 +102,11 @@
 
   function rosterCard(task) {
     var active = task.code === state.code ? ' active' : '';
+    var rec = global.ReturnStore ? ReturnStore.latestFor(task.code, '报告签发') : null;
+    var tag = rec && global.ReturnUI ? ReturnUI.tagHtml({ title: rec.reason || '' }) : '';
     return '<button type="button" class="roster-row' + active + ' mb-1 flex w-full flex-col gap-1 px-2.5 py-1.5 text-left" data-code="' + esc(task.code) + '">' +
       '<div class="flex items-center justify-between gap-2">' +
-        '<span class="text-sm font-semibold text-slate-800 mono">' + esc(task.code) + '</span>' +
+        '<span class="flex min-w-0 items-center text-sm font-semibold text-slate-800 mono">' + esc(task.code) + tag + '</span>' +
         '<span class="chip bg-blue-50 text-blue-700">待签发</span>' +
       '</div>' +
       '<div class="truncate text-xs text-slate-400">' + esc(task.sample) + '</div>' +

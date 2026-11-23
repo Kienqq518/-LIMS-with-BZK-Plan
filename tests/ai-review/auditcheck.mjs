@@ -30,11 +30,11 @@ const rlAi = await p.evaluate(() => {
   const txt = banner ? (banner.textContent || '') : '';
   const cards = banner ? banner.querySelectorAll('.ret-banner-card').length : 0;
   return banner && body && getComputedStyle(body).maxHeight !== 'none' && row238 &&
-    /AI 自动退回/.test(txt) && /李审核/.test(txt) &&
-    /SC2026\/0238-02/.test(txt) && /SC2026\/0238-03/.test(txt) &&
-    /2 份报告退回/.test(txt) && cards >= 2;
+    /AI 自动退回/.test(txt) && !/李审核/.test(txt) &&
+    !/SC2026\/0238-02/.test(txt) && /SC2026\/0238-03/.test(txt) &&
+    cards === 1;
 });
-out.push((rlAi ? '✅' : '❌') + ' 报告编制退回条幅合并 AI/人工且主表含退回委托');
+out.push((rlAi ? '✅' : '❌') + ' 报告编制条幅仅展示 AI 自动退回');
 await p.setViewportSize({ width: 1440, height: 900 });
 await p.screenshot({ path: SHOT_DIR + '/compile-return-banner.png' });
 const handleHref = await p.evaluate(() => {
@@ -296,7 +296,13 @@ await p.waitForTimeout(300);
 const bannerVisible = await p.locator('[data-ret-banner="报告编制"]').isVisible();
 const bannerText = await p.locator('[data-ret-banner="报告编制"]').textContent();
 const extraAiBanner = await p.locator('#ai-returned-banner').count();
-out.push((bannerVisible && extraAiBanner === 0 && /SC2026\/0238-03/.test(bannerText || '') && /AI 自动退回/.test(bannerText || '') && /李审核/.test(bannerText || '') ? '✅' : '❌') + ' 报告编制页退回条幅合并 AI 标记');
+out.push((bannerVisible && extraAiBanner === 0 && /SC2026\/0238-03/.test(bannerText || '') && /AI 自动退回/.test(bannerText || '') && !/李审核/.test(bannerText || '') && !/SC2026\/0238-02/.test(bannerText || '') ? '✅' : '❌') + ' 报告编制页条幅仅 AI 自动退回');
+await p.goto(BASE + '/report-review.html', { waitUntil: 'load' });
+await p.waitForTimeout(200);
+out.push(((await p.locator('[data-ret-banner]').count()) === 0 ? '✅' : '❌') + ' 报告审核无顶部退回条幅');
+await p.goto(BASE + '/entrust-register.html', { waitUntil: 'load' });
+await p.waitForTimeout(200);
+out.push(((await p.locator('[data-ret-banner]').count()) === 0 ? '✅' : '❌') + ' 委托登记无顶部退回条幅');
 
 console.log(out.join('\n'));
 console.log('errors(' + err.length + '):\n' + err.slice(0, 5).join('\n'));
