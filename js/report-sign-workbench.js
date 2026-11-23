@@ -127,9 +127,10 @@
 
   function renderLog(task) {
     $('log-report').textContent = '· ' + task.code;
-    var logs = task.logs || [];
+    var logs = global.AuditLog ? AuditLog.present(task.logs || [], 'asc') : (task.logs || []);
     $('log-list').innerHTML = logs.length
       ? '<ul class="audit-tl">' + logs.map(function (e) {
+        if (e.hop) return AuditLog.hopHtml(e);
         var tone = e.tone === 'success' ? 'tone-success' : (e.tone === 'danger' ? 'tone-danger' : (e.tone === 'pending' ? 'tone-pending' : 'tone-warn'));
         var line = global.ReturnUI ? ReturnUI.logLine(e) : { text: e.text || '', extra: '' };
         return '<li class="audit-tl-item ' + tone + '"><div class="audit-rail"><span class="audit-dot"></span></div>' +

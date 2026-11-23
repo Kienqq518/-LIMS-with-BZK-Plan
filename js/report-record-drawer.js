@@ -167,14 +167,16 @@
     var rep = (task.reports || []).filter(function (r) { return r.id === state.reportId; })[0] || (task.reports || [])[0];
     document.getElementById('flowLogReport').textContent = rep ? '· ' + (rep.no || rep.id) : '';
     document.getElementById('flowRecordSubtitle').textContent = (rep ? (rep.no || '') + ' · ' : '') + (task.code || '');
-    var logs = (task.logs || []).slice();
-    logs.sort(function (a, b) { return state.order === 'desc' ? (a.at < b.at ? 1 : -1) : (a.at < b.at ? -1 : 1); });
+    var logs = global.AuditLog
+      ? AuditLog.present(task.logs || [], state.order)
+      : (task.logs || []).slice().sort(function (a, b) { return state.order === 'desc' ? (a.at < b.at ? 1 : -1) : (a.at < b.at ? -1 : 1); });
     document.getElementById('flowLogOrderBtn').textContent = state.order === 'desc' ? '时间倒序' : '时间正序';
     if (!logs.length) {
       document.getElementById('flowRecordLog').innerHTML = '<p class="py-6 text-center text-sm text-slate-400">暂无流转记录</p>';
       return;
     }
     document.getElementById('flowRecordLog').innerHTML = '<ol class="audit-tl">' + logs.map(function (log) {
+      if (log.hop) return AuditLog.hopHtml(log);
       var tone = toneOf(log);
       var line = global.ReturnUI ? ReturnUI.logLine(log) : { text: log.text || '', extra: '', isRet: tone === 'reject' };
       var st = logStatus(log);

@@ -12,6 +12,7 @@
   <script src="js/ai-review-store.js"></script>
   <script src="js/ai-review-engine.js"></script>
   <script src="js/report-review-mock.js"></script>
+  <script src="js/audit-log.js"></script>
   <style>
     :root {
       --brand: #143C9A; --brand-2: #2E5BD6; --brand-3: #5B8DEF;
@@ -234,7 +235,9 @@
     }
     function logHtml(log) {
       if (!log || !log.length) return '<div class="text-xs text-slate-400">暂无操作日志</div>';
-      return '<ol class="audit-tl">' + log.map(function (ev) {
+      var rows = window.AuditLog ? AuditLog.present(log, 'asc') : log;
+      return '<ol class="audit-tl">' + rows.map(function (ev) {
+        if (ev.hop) return AuditLog.hopHtml(ev);
         var tone = ev.tone || 'default';
         return '<li class="audit-tl-item tone-' + tone + '"><div class="audit-rail"><span class="audit-dot"></span></div>' +
           '<div class="audit-main"><div class="text-[11px] text-slate-400">' + esc(ev.at) + ' · ' + esc(ev.node) + ' · ' + esc(ev.by) + '</div>' +
@@ -464,7 +467,7 @@
           { id: 'sn-ai', selector: '[data-annotate="sn-ai"]', position: 'bottom', title: '综合结论', content: '中间栏：已出结论显示印章与叙述；规则执行清单含当时人工标注；下方为当时人工处置结果。', tag: '快照' },
           { id: 'sn-rules', selector: '[data-annotate="sn-rules"]', position: 'right', title: '全量规则', content: '按 L1/L2/L3 分组。每条规则保留当时人工标注（正常 / 误报 / 漏报）。', tag: '快照' },
           { id: 'sn-meta', selector: '[data-annotate="sn-meta"]', position: 'right', title: '身份与任务', content: '左侧展示委托 / 样品 / 任务三层状态。', tag: '快照' },
-          { id: 'sn-log', selector: '[data-annotate="sn-log"]', position: 'right', title: '操作日志', content: '从生成、编制提交、AI 结论到签发/删除的时间轴。', tag: '快照' },
+          { id: 'sn-log', selector: '[data-annotate="sn-log"]', position: 'right', title: '操作日志', content: '从生成、编制提交、AI 结论到签发/删除的时间轴。系统在节点之间的自动推进不单独占点，只标出从哪一节点到哪一节点。', tag: '快照' },
           { id: 'sn-preview', selector: '[data-annotate="sn-preview"]', position: 'left', title: '报告预览', content: '对齐报告审核工作台右侧：报告文件 + 预览 / 收样信息 / 检测信息。', tag: '快照' },
         ] });
       }

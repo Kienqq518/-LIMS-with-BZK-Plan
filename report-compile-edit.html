@@ -405,6 +405,7 @@
   </div>
 
   <script src="js/tab-bar.js"></script>
+  <script src="js/audit-log.js"></script>
   <script src="js/report-export.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
@@ -1019,8 +1020,10 @@
 
     function renderWbTimeline(items) {
       items = sortTimeline(items);
+      if (window.AuditLog) items = AuditLog.present(items, getLogOrder());
       if (!items.length) return '<p class="py-6 text-center text-sm text-slate-400">暂无流转记录</p>';
       return '<ol class="audit-tl">' + items.map(function (item) {
+        if (item.hop) return AuditLog.hopHtml(item);
         var person = item.actor
           ? '<span class="audit-person"><span class="audit-avatar" style="background:' + auditAvatarColor(item.actor) + '">' + auditAvatarMark(item.actor) + '</span>' + escapeHtml(item.actor) + '</span>'
           : '';
@@ -1202,7 +1205,7 @@
             title: '报告记录（抽屉）',
             wide: true,
             content: '<strong>需求逻辑：</strong>看单份报告的流转留痕不必跳页，就地从右侧抽屉展开。<br>' +
-            '<strong>展示规则：</strong>审批时间轴默认从上往下时间递增，可切倒序；选择写入浏览器，所有报告记录共用。<br>' +
+            '<strong>展示规则：</strong>审批时间轴默认从上往下时间递增，可切倒序；选择写入浏览器，所有报告记录共用。系统在节点之间的自动推进不单独占点，只标出从哪一节点到哪一节点。<br>' +
             '<strong>交互逻辑：</strong>由「报告记录」列的「查看」打开；点「时间正序 / 时间倒序」立刻重排。点遮罩或关闭收回，不改数据。',
             tag: '编制工作台'
           },

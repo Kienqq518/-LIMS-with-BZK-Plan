@@ -200,6 +200,7 @@
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/return-store.js"></script>
   <script src="js/return-ui.js"></script>
+  <script src="js/audit-log.js"></script>
   <script src="js/report-flow-store.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -286,10 +287,12 @@
       if (!rep) { document.getElementById('rvRecordLog').innerHTML = '<p class="py-6 text-center text-sm text-slate-400">暂无流转记录</p>'; return; }
       document.getElementById('rvLogReport').textContent = '· ' + rep.reportNo;
       document.getElementById('rvRecordSubtitle').textContent = rep.reportNo + ' · ' + (rep.file && rep.file.word ? rep.file.word : '');
-      var logs = (rep.log || []).slice();
-      logs.sort(function (a, b) { return rvOpen.order === 'desc' ? (a.at < b.at ? 1 : -1) : (a.at < b.at ? -1 : 1); });
+      var logs = window.AuditLog
+        ? AuditLog.present(rep.log || [], rvOpen.order)
+        : (rep.log || []).slice().sort(function (a, b) { return rvOpen.order === 'desc' ? (a.at < b.at ? 1 : -1) : (a.at < b.at ? -1 : 1); });
       document.getElementById('rvLogOrderBtn').textContent = rvOpen.order === 'desc' ? '时间倒序' : '时间正序';
       document.getElementById('rvRecordLog').innerHTML = '<ol class="audit-tl">' + logs.map(function (log) {
+        if (log.hop) return AuditLog.hopHtml(log);
         var tone = rvTone(log); var st = rvStatus(log);
         var line = window.ReturnUI ? ReturnUI.logLine(log) : { extra: '', isRet: false };
         if (line.isRet) { st.text = '退回'; st.icon = 'fa-undo'; st.tone = 'reject'; tone = 'reject'; }
@@ -415,7 +418,7 @@
         { id: 'rv-col-record', selector: '[data-annotate="rv-col-record"]', position: 'top', title: '报告记录', content: '<strong>需求逻辑：</strong>审核前可先看该委托下各份报告的状态与流转留痕；退回原因已在报告记录里，名单不再单列退回详情。<br>' +
             '<strong>展示规则：</strong>右侧抽屉：上方为报告列表（状态 + AI 结论），下方为所选报告的操作日志时间轴（流转 / 退回 / 当前）。<br>' +
             '<strong>交互逻辑：</strong>点击「报告记录」打开抽屉；点某份报告切换日志；点「时间倒序」切换排序。', tag: '报告审核' },
-        { id: 'rv-record-drawer', selector: '[data-annotate="rv-record-drawer"]', position: 'left', title: '报告记录抽屉', content: '<strong>展示规则：</strong>时间轴样式与报告编制「报告记录」一致：节点名、人员头像、右侧状态。默认时间倒序。', tag: '报告审核' },
+        { id: 'rv-record-drawer', selector: '[data-annotate="rv-record-drawer"]', position: 'left', title: '报告记录抽屉', content: '<strong>展示规则：</strong>时间轴样式与报告编制「报告记录」一致：节点名、人员头像、右侧状态。系统把报告从上一节点推进到下一节点时，不再单独占一个点，只在两点之间标出「上一节点 → 下一节点」。AI 预审、报告生成仍是事件点。默认时间倒序。', tag: '报告审核' },
       ] });
     }
   </script>

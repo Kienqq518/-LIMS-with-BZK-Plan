@@ -426,6 +426,7 @@
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/return-store.js"></script>
   <script src="js/return-ui.js"></script>
+  <script src="js/audit-log.js"></script>
   <script src="js/column-config.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script src="js/short-link-qr.js"></script>
@@ -1168,12 +1169,14 @@
     function renderMergedReportLogs(code) {
       var box = document.getElementById('reportLogList');
       var logs = collectEntrustLogs(code, activeReportLogFilter);
+      if (window.AuditLog) logs = AuditLog.present(logs, getLogOrder());
       if (!logs.length) {
         box.innerHTML = '<p class="py-6 text-center text-sm text-slate-400">暂无操作日志</p>';
         return;
       }
       var showNo = activeReportLogFilter === 'all';
       box.innerHTML = '<ol class="audit-tl">' + logs.map(function (item) {
+        if (item.hop) return AuditLog.hopHtml(item);
         var person = item.actor
           ? '<span class="audit-person"><span class="audit-avatar" style="background:' + auditAvatarColor(item.actor) + '">' + auditAvatarMark(item.actor) + '</span>' + escapeHtml(item.actor) + '</span>'
           : '';
@@ -1422,7 +1425,7 @@
           title: '操作日志（嵌入报告记录）',
           wide: true,
           content: '<strong>需求逻辑：</strong>单份/整单报告的流转动作可追溯（谁在哪个节点提交/退回、意见是什么）。<br>' +
-          '<strong>展示规则：</strong>审批时间轴默认正序，可切倒序，选择会记住。已完成：蓝=生成/提交/审批通过/需人工复核，红=审批拒绝/自动退回。当前步空心黄点。多报告同屏时标题旁用完整报告编号。<br>' +
+          '<strong>展示规则：</strong>审批时间轴默认正序，可切倒序，选择会记住。已完成：蓝=生成/提交/审批通过/需人工复核，红=审批拒绝/自动退回。当前步空心黄点。系统在节点之间的自动推进不单独占点，只标出「上一节点 → 下一节点」。多报告同屏时标题旁用完整报告编号。<br>' +
           '<strong>交互逻辑：</strong>与上方节点进度同一抽屉。点行或芯片只筛日志，不改数据。',
           tag: '报告列表'
         },

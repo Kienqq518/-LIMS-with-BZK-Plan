@@ -328,6 +328,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/return-store.js"></script>
   <script src="js/return-ui.js"></script>
+  <script src="js/audit-log.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     AiReviewStore.reset();
@@ -521,7 +522,9 @@
     // ---------- 操作日志 ----------
     function renderLog(report) {
       $('log-report').textContent = '· ' + report.reportNo;
-      $('log-list').innerHTML = '<ul class="audit-tl">' + (report.log || []).map(function (e) {
+      var logs = window.AuditLog ? AuditLog.present(report.log || [], 'asc') : (report.log || []);
+      $('log-list').innerHTML = '<ul class="audit-tl">' + logs.map(function (e) {
+        if (e.hop) return AuditLog.hopHtml(e);
         return '<li class="audit-tl-item tone-' + (e.tone || 'default') + '"><div class="audit-rail"><span class="audit-dot"></span></div>' +
           '<div class="audit-main"><div class="flex items-baseline justify-between gap-2"><span class="font-medium text-slate-700">' + esc(e.node) + '</span><span class="text-[11px] text-slate-400 mono">' + esc(e.at) + '</span></div>' +
           '<div class="mt-0.5 log-who"><i class="fa fa-user-o text-slate-400"></i>' + esc(e.by || '系统') + '</div>' +
@@ -1195,7 +1198,7 @@
         PrototypeAnnotation.init({ annotations: [
           { id: 'rv-overview', selector: '[data-annotate="rv-overview"]', position: 'bottom', title: '委托概览（默认折叠）', content: '<strong>需求逻辑：</strong>审核以委托为单位，顶部一小块承载整条委托信息，默认收起。<br><strong>展示规则：</strong>收起时一行摘要；展开后「合同/委托/付款/报告信息」四小 tab。合同信息下挂合同附件，委托信息下挂检测委托书，付款信息下挂收费通知单，均可查看。', tag: '报告审核' },
           { id: 'rv-roster', selector: '[data-annotate="rv-roster"]', position: 'right', title: '待审核 / 其他流程', content: '<strong>需求逻辑：</strong>工作台展示该委托下全部报告，但操作与否必须一眼分开。<br><strong>展示规则：</strong>「待审核」下方标签仅 待处置 / 签发退回 / 审核中 / 异常；「其他流程」仅 自动退回 / 已处置。其他流程报告的「重跑 AI 审核」置灰。点选标签即筛选，再点取消。进入工作台默认待审核 Tab，并选中该组第一份。', tag: '报告审核' },
-          { id: 'rv-log', selector: '[data-annotate="rv-log"]', position: 'right', title: '操作日志', content: '<strong>需求逻辑：</strong>审核前看清流转留痕，尤其签发退回。<br><strong>展示规则：</strong>彩色时间轴；节点、人员、内容分开展示。01 展示至「等待报告签发」。', tag: '报告审核' },
+          { id: 'rv-log', selector: '[data-annotate="rv-log"]', position: 'right', title: '操作日志', content: '<strong>需求逻辑：</strong>审核前看清流转留痕，尤其签发退回。<br><strong>展示规则：</strong>彩色时间轴；节点、人员、内容分开展示。系统自动推进不单独占点，只标出从哪一节点到哪一节点。01 展示至「等待报告签发」。', tag: '报告审核' },
           { id: 'rv-ai', selector: '[data-annotate="rv-ai"]', position: 'left', title: 'AI 审核结果', content: '<strong>展示规则：</strong>第一行右上角固定「展开/还原」；处置状态芯片放第二行。规则分类标签左对齐。标注提交与处置执行拆开：误报/漏报备注单独提交，再次编辑后按钮变为「再次提交」。', tag: '报告审核' },
           { id: 'rv-manual', selector: '[data-annotate="rv-manual"]', position: 'top', title: '人工处置（固定底栏）', content: '<strong>需求逻辑：</strong>人工处置是必操作区，固定于底部。<br><strong>展示规则：</strong>不同意 AI 只出调优备注，退回原因仅在「同意退回」时出现。自动退回开关仅当本报告 AI 结论为「不通过」时显示。', tag: '报告审核' },
           { id: 'rv-policy', selector: '[data-annotate="rv-policy"]', position: 'top', title: '自动退回开关', content: '<strong>需求逻辑：</strong>系统级配置，以<strong>重跑当时</strong>是否开启为准。关后人工覆盖往下走，后续节点驳回不会自动重跑。<br><strong>展示规则：</strong>仅 AI 不通过的报告显示此开关。', tag: '报告审核' },
