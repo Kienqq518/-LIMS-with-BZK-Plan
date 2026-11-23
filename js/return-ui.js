@@ -245,7 +245,8 @@
             by: t.tester || r.by,
             time: t.time || r.time,
             reason: t.reason || r.reason,
-            tester: t.tester || r.tester
+            tester: t.tester || r.tester,
+            role: t.role || r.role || ''
           });
         });
       } else {
@@ -271,7 +272,7 @@
         (from ? '<span class="ret-chip">来源 ' + esc(from) + '</span> ' : '') +
         (r.sample ? '<span class="ret-chip">样品 ' + esc(r.sample) + '</span> ' : '') +
         (r.reportNo ? '<span class="ret-chip">报告 ' + esc(r.reportNo) + '</span> ' : '') +
-        (r.tester ? '<span class="ret-chip">检测员 ' + esc(r.tester) + '</span> ' : '') +
+        (r.role && r.tester ? '<span class="ret-chip">' + esc(r.role) + ' ' + esc(r.tester) + '</span> ' : (r.role ? '<span class="ret-chip">' + esc(r.role) + '</span> ' : (r.tester ? '<span class="ret-chip">检测员 ' + esc(r.tester) + '</span> ' : ''))) +
         '<span class="ret-chip' + (isAi ? ' is-ai' : '') + '">' + esc(kind) + '</span>';
       return '<li class="' + liCls + '">' +
         '<div class="mb-1 flex flex-wrap items-center gap-1.5">' + chips + '</div>' +

@@ -3,7 +3,7 @@
  * { from, to, by, time, reason, kind }  kind = 人工 / AI / 系统
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-returns-v12';
+  var STORAGE_KEY = 'lims-returns-v13';
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
   function now() {
@@ -32,19 +32,20 @@
     { code: 'SC2026/0057', from: '样品制备', to: '费用审核', by: '张三', time: '2026-11-15 14:22', reason: '制样发现收费项目漏项，退回费用审核补录。', kind: '人工' },
     { code: 'SC2026/0167', from: '样品发样', to: '样品制备', by: '孙发样', time: '2026-11-14 10:05', reason: '试样标识与制备记录对不上，请重新制备贴标。', kind: '人工' },
     {
-      code: 'SC2026/0088', from: '试样分发', to: '样品发样', by: '李四', time: '2026-11-13 16:05',
-      reason: '安全绳实到数量少 1 条，无法按任务领样。', kind: '人工',
+      code: 'SC2026/0088', from: '试样分发', to: '样品发样', by: '赵领导', time: '2026-11-13 16:40',
+      reason: '本批试样未按委托范围备齐，请样品员补发后再分发。', kind: '人工',
       testers: [
-        { tester: '潘哲宁', time: '2026-11-13 15:30', reason: '领样人与发样记录不符，请重新发样。' },
-        { tester: '李四', time: '2026-11-13 16:05', reason: '安全绳实到数量少 1 条，无法按任务领样。' }
+        { tester: '周主任', role: '实验室主任', time: '2026-11-13 15:30', reason: '发样数量与分发任务不符，请样品员核对后重新发样。' },
+        { tester: '陈部长', role: '检测部部长', time: '2026-11-13 16:05', reason: '样品标识与分发清单不一致，退回样品员更正。' },
+        { tester: '赵领导', role: '领导', time: '2026-11-13 16:40', reason: '本批试样未按委托范围备齐，请样品员补发后再分发。' }
       ]
     },
     {
       code: 'SC2026/0085', from: '试验检测', to: '试样分发', by: '潘哲宁', time: '2026-11-18 10:20',
       reason: '试样编号与任务单不符，请重新分发。', kind: '人工',
       testers: [
-        { tester: '潘哲宁', time: '2026-11-18 10:20', reason: '试样编号与任务单不符，请重新分发。' },
-        { tester: '李四', time: '2026-11-18 11:05', reason: '领样数量不足，缺 2 件。' }
+        { tester: '潘哲宁', role: '检测员', time: '2026-11-18 10:20', reason: '试样编号与任务单不符，请重新分发。' },
+        { tester: '李四', role: '检测员', time: '2026-11-18 11:05', reason: '领样数量不足，缺 2 件。' }
       ]
     },
     {
