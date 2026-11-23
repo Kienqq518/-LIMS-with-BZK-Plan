@@ -35,7 +35,23 @@
   </div>
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
+  <script>
+    PrototypeAnnotation.init({
+      annotations: [{
+        id: 'change-rejected-tag',
+        selector: '.ret-tag-fail',
+        position: 'bottom',
+        title: '审批未通过标签',
+        wide: true,
+        content: '<strong>需求逻辑：</strong>审批驳回后任务回到变更申请名单，必须让申请人立刻看到哪些单被驳回，点进去能看到不通过的变更内容和驳回原因。<br>' +
+          '<strong>展示规则：</strong>未通过的委托排在名单前面，委托编号旁打橙色「审批未通过」标签。演示：SC2026/0069、SC2026/0066。<br>' +
+          '<strong>交互逻辑：</strong>点委托编号或「变更申请」进入详情，顶部展示驳回原因，变更记录状态为「不通过」。',
+        tag: '变更申请'
+      }]
+    });
+  </script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/return-store.js"></script>
   <script src="js/return-ui.js"></script>
@@ -47,11 +63,13 @@
     var rows=[]; for(var i=0;i<15;i++){ rows.push({code:'SC2026/'+(String(71-i).padStart(4,'0')),customer:customers[i%4],sample:samples[i%6],acceptDate:'2026-06-'+String(10-i%9).padStart(2,'0'),progress:progress[i%6]}); }
     rows[2].changeRejected = true;
     rows[5].changeRejected = true;
+    if (window.EntrustMock) EntrustMock.enrich(rows);
     rows.sort(function(a,b){ return (b.changeRejected?1:0) - (a.changeRejected?1:0); });
     document.getElementById('tableBody').innerHTML=rows.map(function(d,i){
       var fail = d.changeRejected ? (window.ReturnUI ? ReturnUI.tagHtml({label:'审批未通过', fail:true, title:'变更审批未通过，请重新提交申请'}) : '<span class="ret-tag ret-tag-fail">审批未通过</span>') : '';
       return '<tr class="hover:bg-slate-50"><td class="border border-slate-200 px-3 py-2.5">'+(i+1)+'</td><td class="border border-slate-200 px-3 py-2.5"><a href="change-apply-edit.html?code='+d.code+'" class="text-blue-600 hover:underline">'+d.code+'</a>'+fail+'</td><td class="border border-slate-200 px-3 py-2.5 text-center">/</td><td class="border border-slate-200 px-3 py-2.5">'+d.customer+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.sample+'</td><td class="border border-slate-200 px-3 py-2.5">'+d.acceptDate+'</td><td class="border border-slate-200 px-3 py-2.5"></td><td class="border border-slate-200 px-3 py-2.5">'+d.progress+'</td><td class="border border-slate-200 px-3 py-2.5">admin</td><td class="border border-slate-200 px-3 py-2.5">梁倩</td><td class="border border-slate-200 px-3 py-2.5 whitespace-nowrap"><a href="change-apply-edit.html?code='+d.code+'" class="text-blue-600 hover:underline"><i class="fa fa-file-text-o"></i> 变更申请</a><button class="ml-3 text-red-500 hover:underline"><i class="fa fa-trash-o"></i> 删除委托</button></td></tr>';
     }).join('');
+    if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
   </script>
   <script src="js/current-user.js?v=3" defer></script>
   <script src="js/user-profile.js?v=7" defer></script>

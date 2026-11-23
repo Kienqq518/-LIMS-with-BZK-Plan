@@ -16,6 +16,15 @@
     <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">委托变更编辑<i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i></span>
   </div>
   <div class="space-y-4 p-4">
+    <div id="rejectBanner" class="hidden rounded border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+      <div class="flex items-start gap-2">
+        <i class="fa fa-exclamation-circle mt-0.5"></i>
+        <div>
+          <div class="font-medium">变更审批未通过</div>
+          <div class="mt-1">驳回原因：<span id="rejectReasonText">—</span></div>
+        </div>
+      </div>
+    </div>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>合同信息</h2>
       <div class="form-grid">
         <div class="form-item"><label>合同编号</label><select><option value="">请选择</option></select></div>
@@ -28,12 +37,12 @@
     </section>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息</h2>
       <div class="form-grid">
-        <div class="form-item"><label><span class="req">*</span> 委托编号</label><input type="text" readonly class="bg-slate-50" value="SC2026/0071" /></div>
+        <div class="form-item"><label><span class="req">*</span> 委托编号</label><input id="f_code" type="text" readonly class="bg-slate-50" value="SC2026/0071" /></div>
         <div class="form-item"><label><span class="req">*</span> 任务类型</label><select><option value="electrical">电气（输配电类）</option><option value="electrical_lv">电气（低压电器类）</option><option value="electrical_ee">电气（电工电子产品类）</option><option value="electrical_seismic">电气（抗震检测类）</option><option value="material_safety">材料（安全工器具类）</option><option value="material_cable">材料（电线电缆、金具、金属材料类）</option></select></div>
         <div class="form-item"><label><span class="req">*</span> 优先等级</label><select><option>常规</option></select></div>
         <div class="form-item"><label>检测类型</label><select><option>常规</option></select></div>
         <div class="form-item"><label>检测类别</label><select><option>例行试验</option></select></div>
-        <div class="form-item"><label><span class="req">*</span> 客户单位</label><select><option>宇宙设想有限公司</option></select></div>
+        <div class="form-item"><label><span class="req">*</span> 客户单位</label><select id="f_customer"><option>宇宙设想有限公司</option></select></div>
         <div class="form-item"><label>客户地址</label><input type="text" value="福州市鼓楼区五四路158号环球广场" /></div>
         <div class="form-item"><label>客户邮政编码</label><input type="text" value="350000" /></div>
         <div class="form-item"><label><span class="req">*</span> 客户联系人</label><input type="text" value="张三" /></div>
@@ -84,14 +93,76 @@
     </section>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>委托信息变更记录</h2>
       <table class="data-table min-w-[900px]"><thead><tr><th class="whitespace-nowrap">序号</th><th>变更类型</th><th>变更内容</th><th>操作人</th><th>变更时间</th><th>变更原因</th><th>驳回原因</th><th>状态</th></tr></thead>
-      <tbody><tr><td>1</td><td><span class="chg-type chg-type--modify">修改</span></td><td class="max-w-md text-xs">客户要求完成日期 从 2026-06-20 修改为 2026-06-11</td><td>admin</td><td>2026-06-10</td><td>客户催办</td><td></td><td><span class="text-green-600">通过</span></td></tr></tbody></table>
+      <tbody id="infoChangeBody"><tr><td>1</td><td><span class="chg-type chg-type--modify">修改</span></td><td class="max-w-md text-xs">客户要求完成日期 从 2026-06-20 修改为 2026-06-11</td><td>admin</td><td>2026-06-10</td><td>客户催办</td><td></td><td><span class="text-green-600">通过</span></td></tr></tbody></table>
     </section>
     <section class="rounded bg-white p-4 shadow-sm"><h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><span class="h-4 w-1 rounded bg-blue-500"></span>样品信息变更记录</h2>
       <table class="data-table min-w-[900px]"><thead><tr><th class="whitespace-nowrap">序号</th><th>变更类型</th><th>变更内容</th><th>操作人</th><th>变更时间</th><th>变更原因</th><th>驳回原因</th><th>状态</th></tr></thead>
-      <tbody><tr><td>1</td><td><span class="chg-type chg-type--add">新增</span></td><td class="max-w-md text-xs">新增样品「安全带」，数量1，单价118</td><td>admin</td><td>2026-06-10</td><td>补充检测</td><td></td><td><span class="text-green-600">通过</span></td></tr></tbody></table>
+      <tbody id="sampleChangeBody"><tr><td>1</td><td><span class="chg-type chg-type--add">新增</span></td><td class="max-w-md text-xs">新增样品「安全带」，数量1，单价118</td><td>admin</td><td>2026-06-10</td><td>补充检测</td><td></td><td><span class="text-green-600">通过</span></td></tr></tbody></table>
     </section>
   </div>
+  <script src="js/tab-bar.js"></script>
+  <script src="js/sample-data-store.js"></script>
+  <script src="js/entrust-mock.js"></script>
+  <script src="js/prototype-annotation.js"></script>
   <script>
+    var REJECTED = {
+      'SC2026/0069': {
+        reason: '客户要求完成日期早于合同约定工期，且未附客户书面确认，请补充材料后重新提交。',
+        info: [
+          { type: 'modify', content: '客户要求完成日期 从 2026-06-20 修改为 2026-05-10', by: 'admin', time: '2026-06-08', why: '客户口头催办', reject: '完成日期早于合同约定，缺书面确认', status: '不通过' }
+        ],
+        samples: [
+          { type: 'add', content: '新增样品「绝缘斗臂车-t」，数量 1，单价 860', by: 'admin', time: '2026-06-08', why: '现场增补检测', reject: '该样品不在原合同检测范围内', status: '不通过' }
+        ]
+      },
+      'SC2026/0066': {
+        reason: '样品清单删减后与已出具报告范围冲突，请核对后再申请。',
+        info: [
+          { type: 'modify', content: '报告传送方式 从 邮寄 修改为 自取', by: 'admin', time: '2026-06-12', why: '客户改自取', reject: '', status: '通过' }
+        ],
+        samples: [
+          { type: 'del', content: '删除样品「10kV旁路作业设备」，数量 1', by: 'admin', time: '2026-06-12', why: '客户取消该项', reject: '该项已进入报告签发，不能删除', status: '不通过' }
+        ]
+      }
+    };
+
+    function typeHtml(t) {
+      if (t === 'add') return '<span class="chg-type chg-type--add">新增</span>';
+      if (t === 'del') return '<span class="chg-type chg-type--del">删除</span>';
+      return '<span class="chg-type chg-type--modify">修改</span>';
+    }
+    function statusHtml(s) {
+      if (s === '不通过') return '<span class="text-red-600 font-medium">不通过</span>';
+      if (s === '待审批') return '<span class="text-orange-600">待审批</span>';
+      return '<span class="text-green-600">通过</span>';
+    }
+    function rowsHtml(list) {
+      return (list || []).map(function (r, i) {
+        return '<tr><td>' + (i + 1) + '</td><td>' + typeHtml(r.type) + '</td>' +
+          '<td class="max-w-md text-xs">' + r.content + '</td><td>' + r.by + '</td><td>' + r.time + '</td>' +
+          '<td>' + (r.why || '') + '</td><td class="text-xs text-red-600">' + (r.reject || '') + '</td>' +
+          '<td>' + statusHtml(r.status) + '</td></tr>';
+      }).join('');
+    }
+
+    var params = new URLSearchParams(location.search);
+    var code = params.get('code') || 'SC2026/0071';
+    var mock = window.EntrustMock ? EntrustMock.get(code) : null;
+    var fCode = document.getElementById('f_code');
+    if (fCode) fCode.value = code;
+    if (mock) {
+      var cust = document.getElementById('f_customer');
+      if (cust) cust.innerHTML = '<option selected>' + mock.customer + '</option>';
+    }
+    var rejected = REJECTED[code];
+    if (rejected) {
+      var banner = document.getElementById('rejectBanner');
+      banner.classList.remove('hidden');
+      document.getElementById('rejectReasonText').textContent = rejected.reason;
+      document.getElementById('infoChangeBody').innerHTML = rowsHtml(rejected.info);
+      document.getElementById('sampleChangeBody').innerHTML = rowsHtml(rejected.samples);
+    }
+
     PrototypeAnnotation.init({
       annotations: [
         {
@@ -107,12 +178,21 @@
             '与「样品收样」弹窗、委托详情收样信息、标签 / 合格证打印页同一口径。<br>' +
             '<strong>交互逻辑：</strong>标签 / 证面上仍是一个「型号规格」字段，由这两段按「型号/分类 + 规格」空格拼接生成。',
           tag: '变更申请'
+        },
+        {
+          id: 'change-rejected-mock',
+          selector: '#rejectBanner',
+          position: 'bottom',
+          title: '审批未通过：详情展示驳回数据',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>名单上「审批未通过」的委托，点进详情必须能看到被驳回的变更内容和驳回原因，不能仍展示已通过的记录，否则申请人不知道改什么。<br>' +
+            '<strong>展示规则：</strong>顶部橙色条展示驳回原因；「委托信息变更记录 / 样品信息变更记录」状态为「不通过」，驳回原因列有文案。演示：SC2026/0069、SC2026/0066。<br>' +
+            '<strong>交互逻辑：</strong>申请人按驳回意见改完后再次「基本信息变更提交」。未驳回的委托仍显示通过记录。',
+          tag: '变更申请'
         }
       ]
     });
   </script>
-  <script src="js/tab-bar.js"></script>
-  <script src="js/prototype-annotation.js"></script>
   <script src="js/current-user.js?v=3" defer></script>
   <script src="js/user-profile.js?v=7" defer></script>
   <script src="js/message-store.js?v=4" defer></script>

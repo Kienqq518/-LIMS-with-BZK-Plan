@@ -95,6 +95,34 @@
     return null;
   }
 
+  // 分页 / 页脚不能跟表格一起横滚：把 overflow-x-auto 收到「只包住 table」
+  function isolateTableScroll(root) {
+    var hosts = (root.querySelectorAll ? root.querySelectorAll('.overflow-x-auto') : []);
+    if (root.classList && root.classList.contains('overflow-x-auto')) {
+      hosts = [root].concat([].slice.call(hosts));
+    }
+    [].forEach.call(hosts, function (host) {
+      if (!host || host.id === 'pageTabs' || host.dataset.uiScrollIsolated) return;
+      if (host.closest && host.closest('#pageTabs')) return;
+      var tb = null;
+      for (var i = 0; i < host.children.length; i++) {
+        if (host.children[i].tagName === 'TABLE') { tb = host.children[i]; break; }
+      }
+      if (!tb) return;
+      var extras = [].filter.call(host.children, function (n) { return n !== tb; });
+      if (!extras.length) { host.dataset.uiScrollIsolated = '1'; return; }
+      var wrap = document.createElement('div');
+      wrap.className = 'overflow-x-auto ui-table-scroll';
+      wrap.dataset.uiScrollIsolated = '1';
+      wrap.setAttribute('role', 'region');
+      wrap.setAttribute('aria-label', '可横向滚动的表格');
+      host.insertBefore(wrap, tb);
+      wrap.appendChild(tb);
+      host.classList.remove('overflow-x-auto');
+      host.dataset.uiScrollIsolated = '1';
+    });
+  }
+
   // 表格在窄容器里被裁掉而不是可滚动，是这批后台页最常见的响应式问题
   function fixTables(root) {
     var tables = root.querySelectorAll('table');
@@ -219,7 +247,7 @@
 
   function process(root) {
     if (!root || !root.querySelectorAll) return;
-    try { fixIcons(root); fixTitleOnly(root); fixTables(root); fixClickable(root); fixSearchActions(root); } catch (e) { /* 原型页，静默 */ }
+    try { isolateTableScroll(root); fixIcons(root); fixTitleOnly(root); fixTables(root); fixClickable(root); fixSearchActions(root); } catch (e) { /* 原型页，静默 */ }
   }
 
   function notifyParentCloseChromePopovers() {

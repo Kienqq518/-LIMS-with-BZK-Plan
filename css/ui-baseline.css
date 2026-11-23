@@ -74,7 +74,18 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 
 /* ---------- 5. 表格横向溢出（ux: Table Handling / Horizontal Scroll） ----------
    由 js/ui-a11y.js 在实际溢出的表格外层挂 .ui-table-scroll。 */
-.ui-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+html { overflow-x: hidden; max-width: 100%; }
+body { max-width: 100%; }
+#pageTabs {
+  position: sticky;
+  top: 0;
+  z-index: 45;
+  width: 100%;
+  max-width: 100%;
+  flex-shrink: 0;
+  background: #fff;
+}
+.ui-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
 .ui-table-scroll > table { min-width: 100%; }
 .ui-table-scroll::-webkit-scrollbar { height: 8px; }
 .ui-table-scroll::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, .45); border-radius: 4px; }

@@ -3,7 +3,7 @@
  * { from, to, by, time, reason, kind }  kind = 人工 / AI / 系统
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-returns-v3';
+  var STORAGE_KEY = 'lims-returns-v4';
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
   function now() {
@@ -49,6 +49,15 @@
       code: 'SC2026/0062', from: '数据审核', to: '组内审核', by: '李数据', time: '2026-11-11 09:40',
       reason: '交流耐压原始记录结论与审核意见不一致。', kind: '人工',
       item: '交流耐压试验', tester: '潘哲宁', detectTime: '2026-11-11 09:10'
+    },
+    {
+      code: 'SC2026/0060', from: '数据审核', to: '组内审核', by: '李数据', time: '2026-11-19 15:22',
+      reason: '抗弯试验原始记录缺检测员签字，退回组内复核补签。', kind: '人工',
+      item: '抗弯动负荷试验', tester: '李四', detectTime: '2026-11-19 14:50'
+    },
+    {
+      code: 'SC2026/0055', from: '报告编制', to: '数据审核', by: '王编制', time: '2026-11-20 10:08',
+      reason: '绝缘毯外观结论与数据审核意见不一致，请数据审核复核后重新出具。', kind: '人工'
     },
     { code: 'SC2026/0238', from: '报告审核', to: '报告编制', by: '李审核', time: '2026-09-03 11:05', reason: '签名页签章位置不符模板，需按机构模板重排。', kind: '人工', reportNo: 'SC2026/0238-02' },
     { code: 'SC2026/0238', from: '报告审核', to: '报告编制', by: 'AI 审核引擎', time: '2026-09-03 10:15', reason: 'L1-b-1 检测/审核/批准签名位不完整', kind: 'AI', reportNo: 'SC2026/0238-03' },

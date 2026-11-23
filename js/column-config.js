@@ -169,7 +169,9 @@
   function collectCols() {
     var seen = {};
     var list = [].slice.call(headRow().children).map(function (th, i) {
-      var label = (th.textContent || '').replace(/\s+/g, ' ').trim();
+      var clone = th.cloneNode(true);
+      [].forEach.call(clone.querySelectorAll('#cc-trigger, .cc-trigger, .sort-icon, button, i.fa'), function (n) { n.remove(); });
+      var label = (clone.textContent || '').replace(/\s+/g, ' ').trim();
       var base = label || (th.querySelector('input[type=checkbox]') ? '勾选' : '列' + (i + 1));
       // 列身份优先取表头显式声明的 data-col-key：这样只改列名时，用户此前保存的
       // 列顺序与显隐（按 key 存）不会因改名而失效；面板里仍显示新的列名。
@@ -694,7 +696,16 @@
     },
     _search: function (v) { renderList(v); },
     _reset: function () { order = cols.map(function (c) { return c.key; }); hidden = {}; apply(); renderList(panel.querySelector('#cc-kw').value); },
-    _save: function () { saveCfg({ order: order, hidden: Object.keys(hidden) }); panel.classList.remove('open'); apply(); },
+    _save: function () {
+      order = enforcePins(order);
+      PIN_LOCK_LABELS.forEach(function (lb) {
+        var k = keyOfLabel(lb);
+        if (k) delete hidden[k];
+      });
+      saveCfg({ order: order.slice(), hidden: Object.keys(hidden) });
+      if (panel) panel.classList.remove('open');
+      apply();
+    },
     _move: function (k, dir) {
       var i = order.indexOf(k), j = i + dir;
       if (i < 0 || j < 0 || j >= order.length || isLockKey(k) || isLockKey(order[j])) return;

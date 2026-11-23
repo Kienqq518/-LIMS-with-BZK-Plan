@@ -345,6 +345,50 @@ await p.goto(BASE + '/change-apply.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
 out.push((/变更申请/.test(await p.locator('#tableBody').textContent() || '') && !/>\s*编辑\s*</.test(await p.locator('#tableBody').innerHTML()) ? '✅' : '❌') + ' 变更申请操作列改为变更申请');
 out.push((/审批未通过/.test(await p.locator('#tableBody').textContent() || '') ? '✅' : '❌') + ' 变更申请有审批未通过标签');
+const tabPos = await p.evaluate(() => {
+  const el = document.getElementById('pageTabs');
+  return el ? getComputedStyle(el).position : '';
+});
+out.push((tabPos === 'sticky' ? '✅' : '❌') + ' 页签栏 sticky 固定');
+const pagerInScroll = await p.evaluate(() => {
+  const pager = [...document.querySelectorAll('span,div')].find((n) => /^共\s*\d+\s*条/.test((n.textContent || '').trim()));
+  if (!pager) return 'missing';
+  const ox = pager.closest('.overflow-x-auto, .ui-table-scroll');
+  return ox && ox.querySelector('table') ? 'inside' : 'outside';
+});
+out.push((pagerInScroll === 'outside' ? '✅' : '❌') + ' 分页不在表格横滚容器内 ' + pagerInScroll);
+
+await p.evaluate(() => { try { localStorage.removeItem('lims.columnConfig.change-apply'); } catch (e) {} });
+await p.reload({ waitUntil: 'load' });
+await p.waitForTimeout(350);
+await p.evaluate(() => {
+  if (window.ColumnConfig) {
+    window.ColumnConfig._toggle('合同编号', false);
+    window.ColumnConfig._save();
+  }
+});
+await p.reload({ waitUntil: 'load' });
+await p.waitForTimeout(400);
+const hiddenAfter = await p.evaluate(() => {
+  const th = [...document.querySelectorAll('thead th')].find((n) => (n.getAttribute('data-col-key') || n.textContent || '').indexOf('合同编号') >= 0);
+  return th ? (th.style.display || getComputedStyle(th).display) : 'missing';
+});
+out.push((hiddenAfter === 'none' ? '✅' : '❌') + ' 列配置保存后刷新仍隐藏合同编号 ' + hiddenAfter);
+
+await p.goto(BASE + '/change-apply-edit.html?code=SC2026/0069', { waitUntil: 'load' });
+await p.waitForTimeout(200);
+const rejTxt = (await p.locator('body').textContent()) || '';
+out.push((/审批未通过/.test(rejTxt) && /不通过/.test(rejTxt) && /客户要求完成日期早于合同约定/.test(rejTxt) ? '✅' : '❌') + ' 审批未通过详情展示驳回数据');
+
+await p.goto(BASE + '/group-audit.html', { waitUntil: 'load' });
+await p.waitForTimeout(250);
+const gTxt = (await p.locator('#tableBody').textContent()) || '';
+out.push((/SC2026\/0062/.test(gTxt) && /退回/.test(gTxt) && /查看/.test(gTxt) ? '✅' : '❌') + ' 组内审核名单有退回标签和详情');
+
+await p.goto(BASE + '/data-audit.html', { waitUntil: 'load' });
+await p.waitForTimeout(250);
+const daTxt = (await p.locator('#tableBody').textContent()) || '';
+out.push((/SC2026\/0055/.test(daTxt) && /退回/.test(daTxt) && /查看/.test(daTxt) ? '✅' : '❌') + ' 数据审核名单有退回标签和详情');
 
 await p.goto(BASE + '/report-issue.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
