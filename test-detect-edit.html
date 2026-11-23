@@ -13,44 +13,149 @@
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
 
-    .sample-tab {
-      display: inline-flex;
-      align-items: center;
-      padding: 6px 16px;
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
-      background: #fff;
-      color: #64748b;
-      font-size: 13px;
-      cursor: pointer;
-      transition: border-color .15s, color .15s, background .15s;
-    }
-    .sample-tab:hover { border-color: #93c5fd; color: #2563eb; }
-    .sample-tab.active {
-      border-color: #2563eb;
-      color: #2563eb;
-      background: #eff6ff;
-      font-weight: 500;
-    }
+    .detect-page { display: flex; flex-direction: column; gap: 12px; }
 
-    /* 层级：样品大类 → 试验项分组 → 数据表 */
-    .test-group {
-      margin-bottom: 20px;
-      border: 1px solid #e2e8f0;
+    .detect-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin: 0;
+      padding: 10px 14px;
+      border: 1px solid #dbeafe;
       border-radius: 8px;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .detect-notice > i { margin-top: 3px; color: #2563eb; flex-shrink: 0; }
+
+    .sample-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
       background: #fff;
       box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
       overflow: hidden;
     }
+    .sample-card-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #fff;
+    }
+    .sample-tabs, .sample-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .sample-tab {
+      display: inline-flex;
+      align-items: center;
+      height: 32px;
+      padding: 0 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #fff;
+      color: #475569;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s, box-shadow .15s;
+    }
+    .sample-tab:hover { border-color: #93c5fd; color: #1d4ed8; background: #f8fafc; }
+    .sample-tab.active {
+      border-color: #2563eb;
+      color: #1d4ed8;
+      background: #eff6ff;
+      font-weight: 600;
+    }
+    .btn-line, .btn-solid {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .btn-line {
+      border: 1px solid #2563eb;
+      background: #fff;
+      color: #1d4ed8;
+    }
+    .btn-line:hover { background: #eff6ff; }
+    .btn-solid {
+      border: 1px solid #2563eb;
+      background: #2563eb;
+      color: #fff;
+    }
+    .btn-solid:hover { background: #1d4ed8; }
+    .sample-note {
+      margin: 0;
+      padding: 10px 16px;
+      border-top: 1px solid #f1f5f9;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    .sample-note-k {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 0 6px;
+      border-radius: 3px;
+      background: #ffedd5;
+      color: #c2410c;
+      font-weight: 600;
+      line-height: 18px;
+    }
+    .return-slot:empty { display: none; }
+    .return-slot:not(:empty) { padding: 12px 16px; }
+    .return-slot .ret-strip { margin: 0; }
+    .sample-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-top: 1px solid #e2e8f0;
+      background: #fff;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .sample-meta strong { color: #334155; font-weight: 600; }
+    .sample-meta-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: #cbd5e1;
+    }
+
+    /* 层级：样品大类 → 试验项分组 → 数据表 */
+    .test-group {
+      margin-bottom: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+      overflow: hidden;
+    }
+    .test-group:last-child { margin-bottom: 0; }
     .test-group-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 12px 16px;
-      background: linear-gradient(90deg, #f1f5f9 0%, #f8fafc 100%);
+      padding: 11px 16px;
+      background: #f8fafc;
       border-bottom: 1px solid #e2e8f0;
-      border-left: 4px solid #2563eb;
+      border-left: 3px solid #2563eb;
     }
     .test-group-header .group-title {
       display: flex;
@@ -85,7 +190,7 @@
 
     .detect-table { width: 100%; border-collapse: collapse; font-size: 12px; }
     .detect-table th, .detect-table td {
-      border: 1px solid #e2e8f0;
+      border: 1px solid #eef2f6;
       padding: 8px 10px;
       text-align: center;
       white-space: nowrap;
@@ -96,8 +201,21 @@
       color: #64748b;
       font-weight: 500;
     }
-    .detect-table tbody tr:nth-child(even) { background: #fafbfc; }
-    .detect-table tbody tr:hover { background: #f1f5f9; }
+    .detect-table tbody tr:nth-child(even) { background: #fcfdfe; }
+    .detect-table tbody tr:hover { background: #f8fafc; }
+    .equip-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 8px;
+      border: 1px solid #bfdbfe;
+      border-radius: 4px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .equip-chip:hover { background: #dbeafe; }
 
     .status-done {
       display: inline-flex;
@@ -127,8 +245,18 @@
       border-radius: 50%;
       background: #3b82f6;
     }
-    .concl-pass { color: #15803d; font-weight: 500; }
-    .concl-fail { color: #dc2626; font-weight: 500; }
+    .concl-pass, .concl-fail {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 20px;
+    }
+    .concl-pass { background: #ecfdf5; color: #047857; }
+    .concl-fail { background: #fef2f2; color: #b91c1c; }
 
     .pager {
       display: flex;
@@ -254,44 +382,37 @@
     </span>
   </div>
 
-  <div class="p-4">
-    <!-- 提示条 -->
-    <div class="mb-3 flex flex-wrap items-start justify-between gap-3 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800" data-annotate="or-sim-retest">
-      <div class="flex items-start gap-2">
-        <i class="fa fa-info-circle mt-0.5 flex-shrink-0"></i>
-        <span>您好！完成所有试验项的检测并导出原始记录单后，该样品才能顺利流转到下一个环节。退回后更改检测结果会使覆盖范围内已导出记录单立刻失效。</span>
-      </div>
-      <button type="button" class="shrink-0 rounded border border-blue-300 bg-white px-2.5 py-1 text-xs text-blue-700 hover:bg-blue-50" onclick="simulateRecordInvalidate()">
-        模拟：退回-更改检测结果（交流耐压）
-      </button>
+  <div class="detect-page p-4">
+    <div class="detect-notice" data-annotate="or-sim-retest">
+      <i class="fa fa-info-circle" aria-hidden="true"></i>
+      <span>您好！完成所有试验项的检测并导出原始记录单后，该样品才能顺利流转到下一个环节。退回后更改检测结果会使覆盖范围内已导出记录单立刻失效。</span>
     </div>
 
-    <!-- 样品页签 + 操作 -->
-    <div class="mb-3 rounded bg-white px-4 py-3 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-2" id="sampleTabs"></div>
-        <div class="flex flex-wrap items-center gap-2">
-          <button type="button" onclick="openExportDrawer()" class="rounded border border-blue-600 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50" data-annotate="export-manage">
-            <i class="fa fa-download"></i> 导出管理
+    <section class="sample-card">
+      <div class="sample-card-head">
+        <div class="sample-tabs" id="sampleTabs"></div>
+        <div class="sample-actions">
+          <button type="button" onclick="openExportDrawer()" class="btn-line" data-annotate="export-manage">
+            <i class="fa fa-download" aria-hidden="true"></i> 导出管理
           </button>
-          <button type="button" onclick="openTaskSheetModal()" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700" data-annotate="task-sheet">
-            <i class="fa fa-file-text-o"></i> 产品检测通知书
+          <button type="button" onclick="openTaskSheetModal()" class="btn-solid" data-annotate="task-sheet">
+            <i class="fa fa-file-text-o" aria-hidden="true"></i> 产品检测通知书
           </button>
         </div>
       </div>
-      <p class="mt-3 text-sm text-slate-600">
-        <span class="font-medium text-slate-700">注：</span>
+      <p class="sample-note">
+        <span class="sample-note-k">注</span>
         将鼠标悬浮在 <i class="fa fa-question-circle text-orange-500" title="不合格原因"></i> 图标上，可查看不合格原因；
         被退回的试样行会打「退回」标签（有相别时整相一起退回）；将鼠标悬浮在 <i class="fa fa-exclamation-circle text-orange-500" title="退回原因"></i> 图标上，可查看退回原因
       </p>
-      <div class="mt-2 text-xs text-slate-400">
-        委托编号：<span id="entrustCode" class="text-slate-600">—</span>
-        <span class="mx-2 text-slate-300">|</span>
-        客户单位：<span id="customerName" class="text-slate-600">—</span>
+      <div id="returnStripSlot" class="return-slot"></div>
+      <div class="sample-meta">
+        <span>委托编号 <strong id="entrustCode">—</strong></span>
+        <span class="sample-meta-dot" aria-hidden="true"></span>
+        <span>客户单位 <strong id="customerName">—</strong></span>
       </div>
-    </div>
+    </section>
 
-    <!-- 各样品对应的试验项面板 -->
     <div id="panels"></div>
   </div>
 
@@ -580,7 +701,7 @@
 
     function cellHtml(col, value, sampleName, groupTitle) {
       if (col === '试验设备') {
-        return '<button onclick="alert(\'选择设备（原型演示）\')" class="rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-blue-600 hover:bg-blue-100">' + (value || '设备') + '</button>';
+        return '<button type="button" onclick="alert(\'选择设备（原型演示）\')" class="equip-chip">' + (value || '设备') + '</button>';
       }
       if (col === '结论') return conclHtml(value);
       if (col === '状态') return statusHtml(value);
@@ -656,8 +777,9 @@
             html += '</tr>';
           });
           html += '</tbody></table>';
+          html += '</div>';
           html += pagerHtml(g.rows.length);
-          html += '</div></section>';
+          html += '</section>';
         });
         html += '</div>';
       });
@@ -1136,18 +1258,6 @@
       };
     }
 
-    function simulateRecordInvalidate() {
-      if (!window.OriginalRecordVersion) return;
-      var n = OriginalRecordVersion.invalidateByCoverage({
-        specimenIds: [OriginalRecordVersion.SPEC_A],
-        testNames: ['交流耐压'],
-        reason: OriginalRecordVersion.formatChangeNote('retest')
-      });
-      var go = confirm((n ? ('已立刻将 ' + n + ' 份原始记录单标为已失效。') : '没有仍有效且覆盖该范围的记录单。') +
-        '\n\n是否打开原始记录页查看？');
-      if (go) location.href = 'test-record.html';
-    }
-
     function exportPreviewRow(idx) {
       var file = exportPreviewFiles[idx];
       if (!file || file.status !== 'ready') return;
@@ -1254,10 +1364,10 @@
     });
     bindExportBoardEvents();
 
-    var infoBar = document.querySelector('[data-annotate="or-sim-retest"]');
-    if (infoBar && window.ReturnUI) {
+    var stripSlot = document.getElementById('returnStripSlot');
+    if (stripSlot && window.ReturnUI) {
       var strip = ReturnUI.stripHtml(entrustCode, '试验检测');
-      if (strip) infoBar.insertAdjacentHTML('afterend', strip);
+      if (strip) stripSlot.innerHTML = strip;
     }
 
     renderTabs();
@@ -1284,7 +1394,7 @@
           wide: true,
           content: '<strong>需求逻辑：</strong>一组样品可有 10 条试样数据同屏；组内审核或数据审核只打回不合格的那几条，已通过的行不必重测。数据审核退回直接到本环节，不经过组内审核。<br>' +
           '<strong>展示规则：</strong>被退回的试样行浅红底，试样编号旁打「退回」标签；试验项标题仍打项级标签。无相别时只标命中的试样编号。<br>' +
-          '<strong>交互逻辑：</strong>顶部条幅列出样品 / 范围（芯片含来源节点）。演示：SC2026/0052 操作杆 02、07（组内审核）；SC2026/0060 抗弯第 4 条（数据审核）。',
+          '<strong>交互逻辑：</strong>样品页内的退回记录列出样品 / 范围（芯片含来源节点），放在注释之下、委托编号之上。演示：SC2026/0052 操作杆 02、07（组内审核）；SC2026/0060 抗弯第 4 条（数据审核）。',
           tag: '试验检测'
         },
         {
@@ -1304,8 +1414,8 @@
           position: 'bottom',
           title: '退回记录条幅',
           wide: true,
-          content: '<strong>需求逻辑：</strong>检测员进编辑页先看清本单被谁、从哪退回了哪些试样 / 相别，条幅高度固定以免把试验表顶出首屏。来源可以是组内审核，也可以是数据审核。<br>' +
-          '<strong>展示规则：</strong>条幅固定 152px，内部滚动。每条含次数、来源、样品、原因、范围（试样编号或「相别 ×（整相）」）。<br>' +
+          content: '<strong>需求逻辑：</strong>检测员在样品页里、动手改数前看清本单被谁、从哪退回了哪些试样 / 相别。条幅高度固定，避免把试验表顶出首屏。来源可以是组内审核，也可以是数据审核。<br>' +
+          '<strong>展示规则：</strong>条幅放在样品页注释之下、委托编号与客户单位之上；固定 152px，内部滚动。每条含次数、来源、样品、原因、范围（试样编号或「相别 ×（整相）」）。<br>' +
           '<strong>交互逻辑：</strong>演示 SC2026/0052（组内审核两条）与 SC2026/0062（数据审核硬梯整相）。',
           tag: '试验检测'
         },
@@ -1322,9 +1432,9 @@
           id: 'or-sim-retest',
           selector: '[data-annotate="or-sim-retest"]',
           position: 'bottom-left',
-          title: '退回-更改检测结果',
+          title: '退回后改数即失效',
           wide: true,
-          content: '<strong>需求逻辑：</strong>试验检测改数属于标准流程外的「退回-更改检测结果」。按文件身份覆盖范围立刻打失效，<strong>不查</strong>占位符清单。标准流程内首次回填核校人走 03-05 升版，不打失效。<br><strong>展示规则：</strong>提示条说明改数会立刻失效；历史说明记为「退回-更改检测结果」。<br><strong>交互逻辑：</strong>本按钮为原型模拟：立刻给覆盖「交流耐压」的当前有效记录单打标，可跳转原始记录页查看。数据改回不自动摘标。',
+          content: '<strong>需求逻辑：</strong>试验检测改数属于标准流程外的「退回-更改检测结果」。按文件身份覆盖范围立刻打失效，<strong>不查</strong>占位符清单。标准流程内首次回填核校人走 03-05 升版，不打失效。<br><strong>展示规则：</strong>页顶提示说明：完成检测并导出后样品才能流转；退回后更改检测结果会使覆盖范围内已导出记录单立刻失效。历史说明记为「退回-更改检测结果」。<br><strong>交互逻辑：</strong>数据改回不自动摘标。',
           tag: '原始记录'
         },
         {
