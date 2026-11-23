@@ -40,18 +40,6 @@
       <div class="entrust-facts mt-2" id="sampleMeta"></div>
     </div>
 
-    <div class="mb-3 flex flex-wrap items-center gap-2 rounded border border-amber-100 bg-amber-50 px-4 py-2 text-xs text-amber-800" data-annotate="or-demo-bar">
-      <span class="font-medium">演示即时打标（写入历史「说明」）：</span>
-      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateRetest()">退回-更改检测结果</button>
-      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateDataEdit()">退回-改数（外观尺寸）</button>
-      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateDeleteB()">变更-删除样品</button>
-      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateDeleteTest()">变更-删除试验项</button>
-      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateChangeTest()">变更-增加/删除试验项</button>
-      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateReviewer()">退回-重新分配试验员</button>
-      <button type="button" class="rounded border border-amber-300 bg-white px-2 py-1 hover:bg-amber-50" onclick="OriginalRecordUI.simulateEntrustInfo()">变更-变更基本委托信息</button>
-      <button type="button" class="rounded border border-slate-300 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50" onclick="OriginalRecordUI.resetDemo()">重置演示数据</button>
-    </div>
-
     <div class="mb-4 flex gap-1 border-b border-slate-200 bg-white px-4 pt-2 text-sm">
       <span class="rounded-t border border-b-0 border-slate-200 bg-white px-4 py-2 text-blue-600">绝缘操作杆</span>
     </div>
@@ -143,7 +131,6 @@
       PrototypeAnnotation.init({
         annotations: [
           { id: 'or-export-manage', selector: '[data-annotate="or-export-manage"]', position: 'bottom-left', title: '导出管理', wide: true, content: '<strong>需求逻辑：</strong>原始记录单必须人工导出。导出时冻结当时模版占位符清单（多模版拼接取并集）和字段值到该次 snapshot。<br><strong>展示规则：</strong>与已有<strong>文件身份</strong>（生成模式+试样集合+试验项）相同则升主版本；不同则新开一行。已失效同身份提示「将重新生成并解除失效」。<br><strong>交互逻辑：</strong>打开与试验检测页同一套「记录单导出详情」抽屉。模版换版不在此打失效，只影响下一次导出的 snapshot。', tag: '原始记录' },
-          { id: 'or-demo-bar', selector: '[data-annotate="or-demo-bar"]', position: 'bottom-left', title: '即时打标', wide: true, content: '<strong>需求逻辑：</strong>导出之后，标准流程外动作立刻打标，不等下次导出、不等打开页面再算。占位符只约束委托/样品印单基本信息；试验结果、删样、改试验、重新分配试验员按覆盖范围，不查占位符。标准流程内（如数据审核首次回填核校人）走 03-05 自动升版，不打失效。<br><strong>展示规则：</strong>说明列记操作动作：变更-变更基本委托信息：xxx；变更-样品修改变更：xxx；变更-删除样品；变更-删除试验项：xxx；变更-增加试验项：xxx；退回-更改检测结果；退回-重新分配试验员。<br><strong>交互逻辑：</strong>本条按钮为原型模拟。委托基本信息仅当该字段在该次导出 snapshot.usedFields 内才打失效（付款方式等不在清单内则不打）。数据改回不自动摘标。', tag: '失效' },
           { id: 'or-table', selector: '[data-annotate="or-table"]', position: 'top-left', title: '原始记录表', wide: true, content: '<strong>需求逻辑：</strong>每个文件身份只展示当前版；与委托详情同一套列和操作。<br><strong>展示规则：</strong>列：序号、名称（已失效红标）、覆盖样品、生成模式、生成时间、状态（有效/已失效，原因 hover）、操作。文件名不带版本后缀。<br><strong>交互逻辑：</strong>失效行可「重新生成」：原范围仍在则升主版本并摘标；试样已删则弹出取消 / 跳转 / 确认导出剩余。批量下载只含状态=有效的当前版。', tag: '原始记录' },
           { id: 'or-history-note', selector: '[data-annotate="or-history-note"]', position: 'top-left', title: '历史说明列', wide: true, content: '<strong>需求逻辑：</strong>原始记录单全部由用户点击导出，不是系统自动生成，故不设「来源」列，也不写「系统导出」。<br><strong>展示规则：</strong>首次导出说明为空（显示 —）。之后为导致上一版失效的操作动作：变更-变更基本委托信息：xxx；变更-样品修改变更：xxx；变更-删除样品；变更-删除试验项：xxx；变更-增加试验项：xxx；退回-更改检测结果；退回-重新分配试验员。委托/样品基本信息仅当该字段在该次导出占位符快照内才记这条原因。<br><strong>交互逻辑：</strong>当前版已失效尚未重导时，说明直接展示该失效原因；点「重新生成」成功后写入新版本说明，旧版保留其生成时的说明。历史仅在线查看，不下载、不回滚。', tag: '历史' },
           { id: 'or-regen', selector: '[data-annotate="or-regen"]', position: 'top-left', title: '重新生成', wide: true, content: '<strong>需求逻辑：</strong>摘标只能靠按原文件身份重新导出成功；数据改回或换模版都不自动摘标。<br><strong>展示规则：</strong>仅当前版「已失效」行显示橙色「重新生成」。<br><strong>交互逻辑：</strong>原试样仍在则升主版本并摘标，说明写入导致上一版失效的操作动作；原范围做不到则弹出「无法按原范围重导」。校验不通过则保持已失效。', tag: '失效' },
