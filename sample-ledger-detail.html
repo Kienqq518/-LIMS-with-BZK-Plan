@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>样品台账详情 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .st { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+    .st-wait { background: #eff6ff; color: #2563eb; }
+    .st-run { background: #fff7ed; color: #c2410c; }
+    .st-ok { background: #dcfce7; color: #15803d; }
+    .st-ng { background: #fef2f2; color: #b91c1c; }
+    .st-exp { background: #f1f5f9; color: #475569; }
+    .due-over { color: #dc2626; font-weight: 600; }
+    .due-soon { color: #d97706; font-weight: 600; }
+    .info-table { width: 100%; border-collapse: collapse; }
+    .info-table td { border: 1px solid #e5e7eb; padding: 8px 12px; font-size: 13px; vertical-align: top; }
+    .info-table .lbl { background: #f8fafc; color: #64748b; white-space: nowrap; width: 130px; }
+    .info-table .val { color: #334155; }
+    .block-card { border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+    .block-h { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 14px; font-weight: 600; color: #1e293b; }
+    .timeline-item { position: relative; border-left: 2px solid #e2e8f0; padding-left: 20px; padding-bottom: 18px; }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .timeline-item::before { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #3b82f6; background: #fff; }
+    .timeline-item.is-pending { opacity: .45; }
+    .timeline-item.is-pending::before { border-color: #cbd5e1; }
+    .timeline-item.is-run::before { border-color: #ea580c; background: #ffedd5; }
+    .timeline-item.is-back::before { border-color: #ea580c; background: #ea580c; }
+    .back-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #fff7ed; color: #c2410c; font-size: 11px; line-height: 16px; }
+    .xor-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #eff6ff; color: #1d4ed8; font-size: 11px; line-height: 16px; }
+    .step { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; color: #94a3b8; }
+    .step.done { color: #334155; }
+    .step.cur { color: #1d4ed8; font-weight: 600; }
+    .step i { width: 16px; text-align: center; }
+    .bar { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+    .bar > span { display: block; height: 100%; background: #2563eb; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="sample-ledger.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <a href="sample-ledger.html" class="cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">样品台账</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      样品详情
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div id="noPerm" class="hidden p-4">
+    <div class="rounded bg-white p-10 text-center shadow-sm">
+      <i class="fa fa-lock mb-3 text-3xl text-slate-300"></i>
+      <p class="text-sm text-slate-600">当前角色没有「样品台账」页面权限，无法查看样品详情。</p>
+      <p id="noPermWho" class="mt-1 text-xs text-slate-400"></p>
+    </div>
+  </div>
+
+  <div id="mainWrap" class="hidden p-4 space-y-4"></div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/web-perms.js"></script>
+  <script src="js/sample-data-store.js"></script>
+  <script src="js/sample-ledger-store.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    (function () {
+      if (window.WebPerms && !WebPerms.can('样品台账')) {
+        document.getElementById('noPerm').classList.remove('hidden');
+        var role = WebPerms.current();
+        document.getElementById('noPermWho').textContent = '当前登录角色：' + role.name + '（' + role.desc + '）';
+        return;
+      }
+      var L = window.SampleLedger;
+      var no = new URLSearchParams(location.search).get('no') || '';
+      var s = L.get(no);
+      var wrap = document.getElementById('mainWrap');
+      wrap.classList.remove('hidden');
+
+      function esc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
+        });
+      }
+      function statusClass(st) {
+        if (st === '合格') return 'st st-ok';
+        if (st === '不合格') return 'st st-ng';
+        if (st === '检测中') return 'st st-run';
+        if (st === '已过期') return 'st st-exp';
+        return 'st st-wait';
+      }
+      function dueHtml(due, status) {
+        var u = L.dueUrgency(due, status);
+        if (u.tone === 'overdue') return '<span class="due-over">' + esc(due) + ' · ' + esc(u.text) + '</span>';
+        if (u.tone === 'soon') return '<span class="due-soon">' + esc(due) + ' · ' + esc(u.text) + '</span>';
+        return esc(due);
+      }
+      if (!s) {
+        wrap.innerHTML = '<div class="rounded bg-white p-10 text-center shadow-sm">' +
+          '<p class="text-sm text-slate-600">找不到样品 ' + esc(no || '（未传编号）') + '。</p>' +
+          '<a href="sample-ledger.html" class="mt-4 inline-block rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">返回样品台账</a></div>';
+        return;
+      }
+
+      var flow = L.currentFlow(s);
+      var node = L.flowLabel(flow);
+      var taskName = L.TASK_STEPS[s.taskStep - 1] || '—';
+      var doneN = s.tests.filter(function (t) { return t.state === '已完成'; }).length;
+      var pct = s.tests.length ? Math.round(doneN / s.tests.length * 100) : 0;
+      var cat = (window.SampleDataStore && SampleDataStore.catLabelOfNames(s.name)) || '—';
+      var xorCopy = s.afterReturn === 'keep' ? '还样后走留样，不出现退样' : (s.afterReturn === 'client' ? '还样后走退样，不出现留样' : '尚未还样，留样 / 退样都不出现');
+
+      function kv(label, val) {
+        return '<td class="lbl">' + esc(label) + '</td><td class="val">' + val + '</td>';
+      }
+      function statusHtml() {
+        if (s.status === '合格') {
+          return '<a class="' + statusClass(s.status) + '" href="cert-print-single.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.status) + '</a>';
+        }
+        return '<span class="' + statusClass(s.status) + '">' + esc(s.status) + '</span>';
+      }
+      function testState(t) {
+        if (t.result === '不合格') return '<span class="st st-ng">不合格</span>';
+        if (t.result === '合格') return '<span class="st st-ok">合格</span>';
+        if (t.state === '检测中') return '<span class="st st-run">检测中</span>';
+        return '<span class="st st-wait">' + esc(t.state) + '</span>';
+      }
+      function reportHref() {
+        if (!s.reportNo) return '';
+        if (s.reportStatus === '审核中') return 'report-review.html';
+        return 'report-compile-edit.html?entrust=' + encodeURIComponent(s.code);
+      }
+
+      wrap.innerHTML =
+        '<div class="rounded bg-white p-4 shadow-sm">' +
+          '<div class="flex flex-wrap items-start justify-between gap-3">' +
+            '<div>' +
+              '<a href="sample-ledger.html" class="text-sm text-blue-600 hover:underline"><i class="fa fa-arrow-left"></i> 返回样品台账</a>' +
+              '<h1 class="mt-2 text-lg font-semibold text-slate-800">' + esc(s.sampleNo) + '　' + esc(s.name) + ' ' + statusHtml() + '</h1>' +
+              '<p class="mt-1 text-sm text-slate-500">委托编号 <a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.code) + '</a>' +
+                '　当前任务节点 <button type="button" id="toggleSteps" class="text-blue-600 hover:underline" data-annotate="ledger-task">' + esc(taskName) + '</button></p>' +
+            '</div>' +
+            '<p class="text-xs text-slate-400">只读台账，不能在此收样、发样、领样、还样、退样或改判。</p>' +
+          '</div>' +
+          '<div id="taskSteps" class="mt-3 hidden grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">' +
+            L.TASK_STEPS.map(function (name, i) {
+              var n = i + 1;
+              var cls = n < s.taskStep ? 'step done' : (n === s.taskStep ? 'step cur' : 'step');
+              var icon = n < s.taskStep ? 'fa-check-circle text-emerald-500' : (n === s.taskStep ? 'fa-circle text-blue-600' : 'fa-circle-o');
+              var tag = n === s.taskStep ? ' <span class="st st-wait">当前</span>' : '';
+              return '<div class="' + cls + '"><i class="fa ' + icon + '"></i>' + n + '. ' + esc(name) + tag + '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+
+        '<section class="block-card">' +
+          '<div class="block-h">委托信息</div>' +
+          '<div class="p-3"><table class="info-table"><tbody>' +
+            '<tr>' + kv('委托编号', '<a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.code) + '</a>') + kv('委托日期', esc(s.orderDate)) + '</tr>' +
+            '<tr>' + kv('委托单位', esc(s.customer)) + kv('任务类型', esc(s.taskType)) + '</tr>' +
+            '<tr>' + kv('要求检测日期', dueHtml(s.due, s.status)) + kv('样品大类', esc(cat)) + '</tr>' +
+          '</tbody></table></div>' +
+        '</section>' +
+
+        '<section class="block-card">' +
+          '<div class="block-h">样品信息</div>' +
+          '<div class="p-3"><table class="info-table"><tbody>' +
+            '<tr>' + kv('样品编号', esc(s.sampleNo)) + kv('产品标记', esc(s.mark || '—')) + '</tr>' +
+            '<tr>' + kv('型号 / 分类', esc(s.model || '—')) + kv('规格', esc(s.spec || '—')) + '</tr>' +
+            '<tr>' + kv('检测类别', esc(s.category)) + kv('数量', esc(s.qty)) + '</tr>' +
+            '<tr>' + kv('生产厂家', esc(s.plant)) + kv('下次再检日期', esc(s.recheckAt || '—')) + '</tr>' +
+          '</tbody></table></div>' +
+        '</section>' +
+
+        '<section class="block-card" data-annotate="ledger-xor">' +
+          '<div class="block-h">流转台账 <span class="text-xs font-normal text-slate-400">' + esc(xorCopy) + '</span></div>' +
+          '<div class="px-6 py-4">' +
+            (s.ledger || []).map(function (row) {
+              var cls = 'timeline-item';
+              if (row.state === '未开始') cls += ' is-pending';
+              if (row.state === '进行中') cls += ' is-run';
+              if (row.direction === 'back') cls += ' is-back';
+              var tags = '';
+              if (row.direction === 'back') tags += '<span class="back-tag">回退</span>';
+              if (row.name === '留样' || row.name === '退样') tags += '<span class="xor-tag">还样后二选一</span>';
+              var spec = row.specimen ? '<p class="mt-1 text-xs text-slate-400">试样 ' + esc(row.specimen) + '</p>' : '';
+              return '<div class="' + cls + '">' +
+                '<p class="text-sm font-medium text-slate-800">' + esc(row.name) + tags +
+                  ' <span class="ml-2 text-xs font-normal text-slate-400">' + esc(row.state) + '</span></p>' +
+                '<p class="mt-1 text-xs text-slate-500">' + esc(row.who) + ' · ' + esc(row.place) + (row.time ? ' · ' + esc(row.time) : '') + '</p>' +
+                '<p class="mt-1 text-xs text-slate-400">' + esc(row.note) + '</p>' + spec +
+              '</div>';
+            }).join('') +
+          '</div>' +
+        '</section>' +
+
+        '<section class="block-card">' +
+          '<div class="block-h">检测进度 <span class="text-xs font-normal text-slate-400">' + doneN + '/' + s.tests.length + '</span></div>' +
+          '<div class="p-4 space-y-3">' +
+            '<div class="bar"><span style="width:' + pct + '%"></span></div>' +
+            '<table class="w-full border-collapse text-left text-sm"><thead><tr class="bg-slate-50 text-slate-500">' +
+              '<th class="border border-slate-200 px-3 py-2 font-medium">试验项</th>' +
+              '<th class="border border-slate-200 px-3 py-2 font-medium">检测员</th>' +
+              '<th class="border border-slate-200 px-3 py-2 font-medium">状态</th>' +
+              '<th class="border border-slate-200 px-3 py-2 font-medium">完成时间</th>' +
+              '<th class="border border-slate-200 px-3 py-2 font-medium">说明</th>' +
+            '</tr></thead><tbody>' +
+            s.tests.map(function (t) {
+              return '<tr><td class="border border-slate-200 px-3 py-2">' + esc(t.name) + '</td>' +
+                '<td class="border border-slate-200 px-3 py-2">' + esc(t.owner) + '</td>' +
+                '<td class="border border-slate-200 px-3 py-2">' + testState(t) + '</td>' +
+                '<td class="border border-slate-200 px-3 py-2">' + esc(t.finishedAt || '—') + '</td>' +
+                '<td class="border border-slate-200 px-3 py-2">' + esc(t.remark || '—') + '</td></tr>';
+            }).join('') +
+            '</tbody></table>' +
+          '</div>' +
+        '</section>' +
+
+        '<section class="block-card">' +
+          '<div class="block-h">检测结果</div>' +
+          '<div class="p-4 text-sm text-slate-600">' + esc(L.resultCopy(s)) +
+            (s.status === '合格' ? ' <a class="text-blue-600 hover:underline" href="cert-print-single.html?code=' + encodeURIComponent(s.code) + '">打开合格证</a>' : '') +
+          '</div>' +
+        '</section>' +
+
+        '<section class="block-card">' +
+          '<div class="block-h">原始记录</div>' +
+          '<div class="p-4">' +
+            (function () {
+              var recs = L.recordsOf(s);
+              if (!recs.length) return '<p class="text-sm text-slate-400">尚无已完成试验，未生成原始记录。</p>';
+              return '<table class="w-full border-collapse text-left text-sm"><thead><tr class="bg-slate-50 text-slate-500">' +
+                '<th class="border border-slate-200 px-3 py-2 font-medium">记录单</th>' +
+                '<th class="border border-slate-200 px-3 py-2 font-medium">试验项</th>' +
+                '<th class="border border-slate-200 px-3 py-2 font-medium">生成时间</th>' +
+                '<th class="border border-slate-200 px-3 py-2 font-medium">操作</th></tr></thead><tbody>' +
+                recs.map(function (r) {
+                  return '<tr><td class="border border-slate-200 px-3 py-2">' + esc(r.name) + '</td>' +
+                    '<td class="border border-slate-200 px-3 py-2">' + esc(r.item) + '</td>' +
+                    '<td class="border border-slate-200 px-3 py-2">' + esc(r.time) + '</td>' +
+                    '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="original-record-list.html">查看</a></td></tr>';
+                }).join('') + '</tbody></table>';
+            })() +
+          '</div>' +
+        '</section>' +
+
+        '<section class="block-card">' +
+          '<div class="block-h">报告</div>' +
+          '<div class="p-4 text-sm">' +
+            (s.reportNo
+              ? ('报告编号 <a class="text-blue-600 hover:underline" href="' + reportHref() + '">' + esc(s.reportNo) + '</a>　状态 ' + esc(s.reportStatus))
+              : '<span class="text-slate-400">该样品尚未生成报告。</span>') +
+          '</div>' +
+        '</section>';
+
+      document.getElementById('toggleSteps').addEventListener('click', function () {
+        document.getElementById('taskSteps').classList.toggle('hidden');
+      });
+
+      if (window.PrototypeAnnotation) {
+        PrototypeAnnotation.init({
+          annotations: [
+            {
+              id: 'ledger-task', selector: '[data-annotate="ledger-task"]', position: 'bottom-left', tag: '样品台账',
+              title: '委托任务 18 步',
+              content: '<strong>需求逻辑：</strong>页首当前节点是委托任务进度，不是样品实物路径。<br>' +
+                '<strong>交互逻辑：</strong>点当前节点展开 18 步：已过打勾，当前标「当前」，未到灰色。只读。'
+            },
+            {
+              id: 'ledger-xor', selector: '[data-annotate="ledger-xor"]', position: 'top-left', wide: true, tag: '样品台账',
+              title: '还样后留样或退样二选一',
+              content: '<strong>需求逻辑：</strong>样品实物路径在还样之后只能走留样或退样，不能两条都走。<br>' +
+                '<strong>展示规则：</strong>正向：委托登记 → 收样 → 制备（发生才写）→ 发样 → 领样 → 检测 → 还样，然后<strong>留样或退样二选一</strong>。未还样则两条都不出现。未发生步骤灰色排在后面。回退橙色标「回退」。'
+            }
+          ]
+        });
+      }
+    })();
+  </script>
+  <script src="js/ui-a11y.js" defer></script>
+</body>
+</html>
