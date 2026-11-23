@@ -18,76 +18,120 @@
   </div>
   <div class="p-4">
     <div class="rounded bg-white p-4 shadow-sm">
-      <div class="flex flex-wrap items-end gap-3">
-        <label class="flex items-center gap-2 text-sm">委托编号
-          <input id="f_code" class="rounded border border-slate-300 px-3 py-1.5 text-sm" placeholder="请输入委托编号" />
-        </label>
-        <label class="flex items-center gap-2 text-sm">样品名称
-          <input id="f_sample" class="rounded border border-slate-300 px-3 py-1.5 text-sm" placeholder="请输入样品名称" />
-        </label>
-        <button type="button" id="btn-search" class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white">查询</button>
-        <button type="button" id="btn-reset" class="rounded border border-slate-300 px-4 py-1.5 text-sm">重置</button>
+      <div class="grid grid-cols-1 items-center gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-3">
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label>
+          <input id="f_code" class="min-w-0 flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入委托编号" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
+          <input id="f_sample" class="min-w-0 flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入样品名称" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托单位</label>
+          <input id="f_customer" class="min-w-0 flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" placeholder="请输入委托单位" />
+        </div>
+        <div class="flex items-center gap-2 md:col-span-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">收样时间</label>
+          <input id="f_from" type="date" class="min-w-0 flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+          <span class="text-slate-400">~</span>
+          <input id="f_to" type="date" class="min-w-0 flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center justify-end gap-2">
+          <button type="button" id="btn-search" class="inline-flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white"><i class="fa fa-search"></i> 查询</button>
+          <button type="button" id="btn-reset" class="inline-flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm"><i class="fa fa-refresh"></i> 重置</button>
+        </div>
       </div>
     </div>
     <div class="mt-4 rounded bg-white p-4 shadow-sm">
-      <p class="mb-3 text-xs text-slate-400">试验数据只读。点「查看」进入该委托的原始记录详情，可导出或重新生成。</p>
-      <table class="w-full border-collapse text-left text-sm">
-        <thead>
-          <tr class="bg-slate-100 text-slate-600">
-            <th class="border border-slate-200 px-3 py-2">序号</th>
-            <th class="border border-slate-200 px-3 py-2">委托编号</th>
-            <th class="border border-slate-200 px-3 py-2">样品名称</th>
-            <th class="border border-slate-200 px-3 py-2">原始记录名称</th>
-            <th class="border border-slate-200 px-3 py-2">生成时间</th>
-            <th class="border border-slate-200 px-3 py-2">当前节点</th>
-            <th class="border border-slate-200 px-3 py-2">操作</th>
-          </tr>
-        </thead>
-        <tbody id="body"></tbody>
-      </table>
+      <p class="mb-3 text-xs text-slate-400">试验数据只读。点「查看」进入该委托的原始记录详情，可导出或重新生成。操作列右侧可调整列顺序和显示。</p>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1100px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">委托单位</th>
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">收样时间</th>
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">原始记录名称</th>
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">生成时间</th>
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">当前节点</th>
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="body"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-end text-sm text-slate-500"><span id="totalText">共 0 条</span></div>
     </div>
   </div>
   <script src="js/tab-bar.js"></script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/sample-cat-filter.js"></script>
   <script src="js/report-flow-store.js"></script>
+  <script src="js/column-config.js"></script>
   <script>
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]; }); }
     function rows() {
       var out = [];
       ReportFlowStore.all().forEach(function (t) {
         (t.records || []).forEach(function (r) {
-          out.push({ code: t.code, sample: t.sample, name: r.name, at: r.at, status: t.status });
+          out.push({
+            code: t.code,
+            sample: t.sample,
+            customer: t.customer || '',
+            received: String(t.sendDate || t.acceptDate || '').slice(0, 10),
+            name: r.name,
+            at: r.at,
+            status: t.status
+          });
         });
       });
-      out.push({ code: 'SC2026/0073', sample: '绝缘操作杆', name: '绝缘操作杆—交流耐压试验记录', at: '2026-06-10 15:12:00', status: '试验检测' });
+      if (!out.some(function (r) { return r.code === 'SC2026/0073'; })) {
+        out.unshift({
+          code: 'SC2026/0073', sample: '绝缘操作杆', customer: '杭州数蚕智能科技有限公司',
+          received: '2026-07-08', name: '绝缘操作杆—交流耐压试验记录', at: '2026-06-10 15:12:00', status: '试验检测'
+        });
+      }
       return out;
     }
+    function val(id) { return (document.getElementById(id).value || '').trim(); }
+    function filtered() {
+      var code = val('f_code'), sample = val('f_sample'), customer = val('f_customer');
+      var from = val('f_from'), to = val('f_to');
+      return ALL.filter(function (r) {
+        if (code && r.code.indexOf(code) < 0) return false;
+        if (sample && (r.sample || '').indexOf(sample) < 0) return false;
+        if (customer && (r.customer || '').indexOf(customer) < 0) return false;
+        if ((from || to) && !r.received) return false;
+        if (from && r.received < from) return false;
+        if (to && r.received > to) return false;
+        return true;
+      });
+    }
     function paint(list) {
-      document.getElementById('body').innerHTML = list.map(function (r, i) {
+      var body = document.getElementById('body');
+      body.innerHTML = list.length ? list.map(function (r, i) {
         return '<tr class="hover:bg-slate-50"><td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + esc(r.code) + '</td>' +
+          '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(r.code) + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + esc(r.sample) + '</td>' +
+          '<td class="border border-slate-200 px-3 py-2">' + esc(r.customer || '—') + '</td>' +
+          '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(r.received || '—') + '</td>' +
           '<td class="border border-slate-200 px-3 py-2">' + esc(r.name) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + esc(r.at) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + esc(r.status) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="test-record.html?code=' + encodeURIComponent(r.code) + '">查看</a></td></tr>';
-      }).join('');
+          '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(r.at) + '</td>' +
+          '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(r.status) + '</td>' +
+          '<td class="whitespace-nowrap border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="test-record.html?code=' + encodeURIComponent(r.code) + '">查看</a></td></tr>';
+      }).join('') : '<tr><td colspan="10" class="border border-slate-200 px-3 py-8 text-center text-slate-400">无匹配记录</td></tr>';
+      document.getElementById('totalText').textContent = '共 ' + list.length + ' 条';
     }
     var ALL = rows();
     paint(ALL);
-    document.getElementById('btn-search').onclick = function () {
-      var c = document.getElementById('f_code').value.trim();
-      var s = document.getElementById('f_sample').value.trim();
-      paint(ALL.filter(function (r) {
-        if (c && r.code.indexOf(c) < 0) return false;
-        if (s && r.sample.indexOf(s) < 0) return false;
-        return true;
-      }));
-    };
+    document.getElementById('btn-search').onclick = function () { paint(filtered()); };
     document.getElementById('btn-reset').onclick = function () {
-      document.getElementById('f_code').value = '';
-      document.getElementById('f_sample').value = '';
+      ['f_code', 'f_sample', 'f_customer', 'f_from', 'f_to'].forEach(function (id) {
+        document.getElementById(id).value = '';
+      });
       paint(ALL);
     };
   </script>
