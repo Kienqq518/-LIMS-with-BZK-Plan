@@ -315,7 +315,7 @@
           },
           disposition: { final: '通过', agreeAi: true, at: '2026-09-03 10:20', by: '李审核', note: '同意 AI（通过），标注均为正常' },
           log: [
-            { at: '2026-09-02 17:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-01', tone: 'default' },
+            { at: '2026-09-02 17:30', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0238-01', tone: 'default' },
             { at: '2026-09-03 08:50', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
             { at: '2026-09-03 09:10', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
             { at: '2026-09-03 10:20', node: '报告审核', by: '李审核', text: '人工审核通过，提交至报告签发', tone: 'success' },
@@ -354,7 +354,7 @@
           },
           disposition: null,
           log: [
-            { at: '2026-09-02 17:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-02', tone: 'default' },
+            { at: '2026-09-02 17:30', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0238-02', tone: 'default' },
             { at: '2026-09-03 10:40', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
             { at: '2026-09-03 11:00', node: 'AI审核', by: '系统', text: '预审结论：需复核（V1.0，命中 3 项一般）', tone: 'warn' },
             { at: '2026-09-03 15:30', node: '报告审核', by: '李审核', text: '退回报告编制。原因：引用标准/单位/电阻限值需核', tone: 'danger' },
@@ -374,7 +374,7 @@
           }],
           disposition: null,
           log: [
-            { at: '2026-09-02 17:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-03', tone: 'default' },
+            { at: '2026-09-02 17:30', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0238-03', tone: 'default' },
             { at: '2026-09-03 11:20', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
             { at: '2026-09-03 11:35', node: 'AI审核', by: '系统', text: '预审结论：不通过（V1.0，命中严重项 L1-b-1）', tone: 'danger' },
             { at: '2026-09-03 11:35', node: '报告编制', by: '系统', text: '按策略自动退回报告编制', tone: 'danger' },
@@ -396,7 +396,7 @@
           rounds: [{ revision: 'V1.0', trigger: '进入报告审核', at: '2026-09-03 09:45', snapshot: cableSnap({ sample_no: 'SC2026-0241' }) }],
           disposition: null,
           log: [
-            { at: '2026-09-02 17:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-04', tone: 'default' },
+            { at: '2026-09-02 17:30', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0238-04', tone: 'default' },
             { at: '2026-09-03 09:30', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
             { at: '2026-09-03 09:45', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
             { at: '2026-09-03 10:05', node: '报告审核', by: '李审核', text: '人工审核通过', tone: 'success' },
@@ -415,7 +415,7 @@
           rounds: [{ revision: 'V1.0', trigger: '进入报告审核', at: '2026-09-06 09:12', snapshot: cableSnap({ sample_no: 'SC2026-0242' }) }],
           disposition: null,
           log: [
-            { at: '2026-09-06 08:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-05', tone: 'default' },
+            { at: '2026-09-06 08:40', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0238-05', tone: 'default' },
             { at: '2026-09-06 09:10', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
             { at: '2026-09-06 09:12', node: 'AI审核', by: '系统', text: '正在逐条执行审核规则…', tone: 'pending' },
           ],
@@ -437,7 +437,7 @@
         rounds: [{ revision: 'V1.0', trigger: '进入报告审核', at: '2026-09-01 16:10', snapshot: cableSnap({ sample_no: 'SC2026-0231' }) }],
         disposition: null,
         log: [
-          { at: '2026-09-01 15:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0231-01', tone: 'default' },
+          { at: '2026-09-01 15:40', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0231-01', tone: 'default' },
           { at: '2026-09-01 16:10', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
         ],
       }],
@@ -460,7 +460,7 @@
         }],
         disposition: null,
         log: [
-          { at: '2026-06-10 15:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0200-01', tone: 'default' },
+          { at: '2026-06-10 15:40', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0200-01', tone: 'default' },
           { at: '2026-06-10 16:10', node: 'AI审核', by: '系统', text: '预审结论：需复核（V1.0，未配置品类仅跑通用集）', tone: 'warn' },
         ],
       }],
@@ -483,7 +483,7 @@
         }],
         disposition: null,
         log: [
-          { at: '2026-09-05 09:50', node: '报告生成', by: '系统', text: '生成报告 SC2026/0242-01', tone: 'default' },
+          { at: '2026-09-05 09:50', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0242-01', tone: 'default' },
           { at: '2026-09-05 10:28', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
         ],
       }],
@@ -509,7 +509,7 @@
         }],
         disposition: null,
         log: [
-          { at: '2026-09-06 10:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0243-01', tone: 'default' },
+          { at: '2026-09-06 10:40', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0243-01', tone: 'default' },
           { at: '2026-09-06 11:12', node: 'AI审核', by: '系统', text: '预审结论：需复核（V1.0，引用标准需核）', tone: 'warn' },
         ],
       }],
@@ -535,7 +535,7 @@
         }],
         disposition: null,
         log: [
-          { at: '2026-09-07 08:20', node: '报告生成', by: '系统', text: '生成报告 SC2026/0244-01', tone: 'default' },
+          { at: '2026-09-07 08:20', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0244-01', tone: 'default' },
           { at: '2026-09-07 09:02', node: 'AI审核', by: '系统', text: '预审结论：需复核（V1.0，计量单位需核）', tone: 'warn' },
         ],
       }],
@@ -598,7 +598,7 @@
         'PG-CABLE-01': { label: '正常', note: '', submitted: true },
       },
       log: [
-        { at: '2026-09-02 17:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0238-02', tone: 'default' },
+        { at: '2026-09-02 17:30', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0238-02', tone: 'default' },
         { at: '2026-09-03 10:40', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
         { at: '2026-09-03 11:00', node: 'AI审核', by: '系统', text: '预审结论：需复核（V1.0，命中 3 项一般）', tone: 'warn' },
         { at: '2026-09-03 15:30', node: '报告审核', by: '李审核', text: '退回报告编制。原因：引用标准/单位/电阻限值需核', tone: 'danger' },
@@ -620,7 +620,7 @@
       file: { word: 'SC2026-0190-01检测报告.docx', pdf: 'SC2026-0190-01检测报告.pdf', at: '2026-09-02 14:10' },
       labels: {},
       log: [
-        { at: '2026-09-02 13:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0190-01', tone: 'default' },
+        { at: '2026-09-02 13:40', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0190-01', tone: 'default' },
         { at: '2026-09-02 14:20', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
         { at: '2026-09-02 15:10', node: '报告审核', by: '李审核', text: '同意 AI，提交签发', tone: 'success' },
         { at: '2026-09-02 16:40', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
@@ -641,7 +641,7 @@
       file: { word: 'SC2026-0188-01检测报告.docx', pdf: 'SC2026-0188-01检测报告.pdf', at: '2026-09-01 09:20' },
       labels: { 'L3-a-2': { label: '漏报', note: '未配置品类，通用集未覆盖盖板专属限值。', submitted: true } },
       log: [
-        { at: '2026-09-01 09:00', node: '报告生成', by: '系统', text: '生成报告 SC2026/0188-01', tone: 'default' },
+        { at: '2026-09-01 09:00', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0188-01', tone: 'default' },
         { at: '2026-09-01 09:40', node: 'AI审核', by: '系统', text: '预审结论：需复核（未配置品类）', tone: 'warn' },
         { at: '2026-09-03 18:00', node: '报告审核', by: '李审核', text: '覆盖 AI，人工通过', tone: 'success' },
         { at: '2026-09-03 18:20', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
@@ -662,7 +662,7 @@
       file: { word: 'SC2026-0175-01检测报告.docx', pdf: 'SC2026-0175-01检测报告.pdf', at: '2026-09-03 13:00' },
       labels: {},
       log: [
-        { at: '2026-09-03 12:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0175-01', tone: 'default' },
+        { at: '2026-09-03 12:40', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0175-01', tone: 'default' },
         { at: '2026-09-03 13:10', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
         { at: '2026-09-04 09:40', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
       ],
@@ -681,7 +681,7 @@
       file: { word: 'SC2026-0166-01检测报告.docx', pdf: 'SC2026-0166-01检测报告.pdf', at: '2026-09-01 15:10' },
       labels: {},
       log: [
-        { at: '2026-09-01 14:50', node: '报告生成', by: '系统', text: '生成报告 SC2026/0166-01', tone: 'default' },
+        { at: '2026-09-01 14:50', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0166-01', tone: 'default' },
         { at: '2026-09-01 15:20', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
         { at: '2026-09-04 17:10', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
         { at: '2026-09-05 10:00', node: '报告发放', by: '系统', text: '报告已发放给委托方', tone: 'success' },
@@ -701,7 +701,7 @@
       file: { word: 'SC2026-0150-01检测报告.docx', pdf: 'SC2026-0150-01检测报告.pdf', at: '2026-08-28 10:50' },
       labels: { 'L1-d-1': { label: '误报', note: '扭矩单位写法与字典别名一致。', submitted: true } },
       log: [
-        { at: '2026-08-28 10:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0150-01', tone: 'default' },
+        { at: '2026-08-28 10:30', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0150-01', tone: 'default' },
         { at: '2026-08-28 11:00', node: 'AI审核', by: '系统', text: '预审结论：需复核', tone: 'warn' },
         { at: '2026-09-03 16:00', node: '报告审核', by: '李审核', text: '覆盖 AI，人工通过', tone: 'success' },
         { at: '2026-09-03 16:20', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
@@ -722,7 +722,7 @@
       file: { word: 'SC2026-0142-01检测报告.docx', pdf: 'SC2026-0142-01检测报告.pdf', at: '2026-09-05 09:20' },
       labels: {},
       log: [
-        { at: '2026-09-05 09:00', node: '报告生成', by: '系统', text: '生成报告 SC2026/0142-01', tone: 'default' },
+        { at: '2026-09-05 09:00', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0142-01', tone: 'default' },
         { at: '2026-09-05 09:30', node: 'AI审核', by: '系统', text: '预审结论：需复核', tone: 'warn' },
         { at: '2026-09-06 14:30', node: '报告编制', by: 'admin', text: '委托方撤回，删除本份报告', tone: 'danger' },
       ],
@@ -741,7 +741,7 @@
       file: { word: 'SC2026-0128-01检测报告.docx', pdf: 'SC2026-0128-01检测报告.pdf', at: '2026-08-16 10:10' },
       labels: {},
       log: [
-        { at: '2026-08-16 10:00', node: '报告生成', by: '系统', text: '生成报告 SC2026/0128-01', tone: 'default' },
+        { at: '2026-08-16 10:00', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0128-01', tone: 'default' },
         { at: '2026-08-16 10:20', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
         { at: '2026-08-18 15:00', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
       ],
@@ -760,7 +760,7 @@
       file: { word: 'SC2026-0136-01检测报告.docx', pdf: 'SC2026-0136-01检测报告.pdf', at: '2026-09-06 11:00' },
       labels: {},
       log: [
-        { at: '2026-09-06 10:40', node: '报告生成', by: '系统', text: '生成报告 SC2026/0136-01', tone: 'default' },
+        { at: '2026-09-06 10:40', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0136-01', tone: 'default' },
         { at: '2026-09-06 11:10', node: 'AI审核', by: '系统', text: '预审结论：通过（V1.0）', tone: 'success' },
         { at: '2026-09-07 09:40', node: '报告签发', by: '周签发', text: '已签发', tone: 'success' },
         { at: '2026-09-07 11:20', node: '报告发放', by: '系统', text: '报告已发放给委托方', tone: 'success' },
@@ -783,7 +783,7 @@
       snapshot: cableSnap({ sample_no: 'SC2026-0240' }),
       hits: '排队中，尚未出结论',
       log: [
-        { at: '2026-09-08 09:20', node: '报告生成', by: '系统', text: '生成报告 SC2026/0240-01', tone: 'default' },
+        { at: '2026-09-08 09:20', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0240-01', tone: 'default' },
         { at: '2026-09-08 09:38', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
         { at: '2026-09-08 09:40', node: 'AI审核', by: '系统', text: '已进入排队序列，前方 1 份任务', tone: 'pending' },
       ],
@@ -801,7 +801,7 @@
       snapshot: cableSnap({ sample_no: 'SC2026-0241' }),
       hits: '排队中，尚未出结论',
       log: [
-        { at: '2026-09-08 09:30', node: '报告生成', by: '系统', text: '生成报告 SC2026/0241-01', tone: 'default' },
+        { at: '2026-09-08 09:30', node: '报告生成', by: 'admin', text: '生成报告 SC2026/0241-01', tone: 'default' },
         { at: '2026-09-08 09:47', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
         { at: '2026-09-08 09:48', node: 'AI审核', by: '系统', text: '已进入排队序列，前方 2 份任务', tone: 'pending' },
       ],
