@@ -344,7 +344,17 @@
     [].slice.call(hr.children).forEach(function (th) {
       var k = th.getAttribute('data-col-key');
       if (!k) return;
-      nat[k] = Math.max(40, Math.ceil(th.getBoundingClientRect().width));
+      nat[k] = Math.max(40, Math.ceil(th.getBoundingClientRect().width), th.scrollWidth);
+    });
+    [].slice.call(table.tBodies).forEach(function (tb) {
+      [].slice.call(tb.rows).forEach(function (tr) {
+        if (tr.cells.length === 1 && tr.cells[0].colSpan > 1) return;
+        [].slice.call(tr.cells).forEach(function (td) {
+          var k = td.getAttribute('data-col-key');
+          if (!k) return;
+          nat[k] = Math.max(nat[k] || 40, Math.ceil(td.getBoundingClientRect().width), td.scrollWidth);
+        });
+      });
     });
     table.style.width = prevW;
     table.style.minWidth = prevMin;
@@ -358,6 +368,7 @@
     order.forEach(function (k) {
       if (hidden[k]) return;
       var w = nat[k] || 40;
+      if (labelOfKey(k) === '委托编号') w = Math.max(w, 196);
       if (sets.rightKey && k === sets.rightKey) w = Math.max(w, 112);
       sum += w;
       [].forEach.call(table.querySelectorAll('[data-col-key="' + cssEsc(k) + '"]'), function (c) {

@@ -3,7 +3,7 @@
  * { from, to, by, time, reason, kind }  kind = 人工 / AI / 系统
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-returns-v4';
+  var STORAGE_KEY = 'lims-returns-v5';
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
   function now() {
@@ -57,7 +57,8 @@
     },
     {
       code: 'SC2026/0055', from: '报告编制', to: '数据审核', by: '王编制', time: '2026-11-20 10:08',
-      reason: '绝缘毯外观结论与数据审核意见不一致，请数据审核复核后重新出具。', kind: '人工'
+      reason: '绝缘毯外观结论与数据审核意见不一致，请数据审核复核后重新出具。', kind: '人工',
+      item: '外观及尺寸', tester: '张三', detectTime: '2026-11-20 09:30'
     },
     { code: 'SC2026/0238', from: '报告审核', to: '报告编制', by: '李审核', time: '2026-09-03 11:05', reason: '签名页签章位置不符模板，需按机构模板重排。', kind: '人工', reportNo: 'SC2026/0238-02' },
     { code: 'SC2026/0238', from: '报告审核', to: '报告编制', by: 'AI 审核引擎', time: '2026-09-03 10:15', reason: 'L1-b-1 检测/审核/批准签名位不完整', kind: 'AI', reportNo: 'SC2026/0238-03' },

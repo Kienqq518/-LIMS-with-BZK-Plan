@@ -35,6 +35,12 @@
   }
 
   function opsHtml(file) {
+    if (file.staticDemo) {
+      var extra = file.invalid ? '\\n状态：已失效\\n原因：' + esc(file.invalidReason || '') : '\\n状态：有效';
+      return '<button type="button" class="or-btn or-btn-primary" onclick="alert(\'在线查看「' +
+        esc(file.fileName) + '」' + extra + '\\n（原型，与委托详情页一致）\')">查看</button>' +
+        '<button type="button" class="or-btn" onclick="alert(\'查看历史（原型，与委托详情 / 原始记录页一致）\')">查看历史</button>';
+    }
     var html = '<button type="button" class="or-btn or-btn-primary" onclick="OriginalRecordUI.viewFile(\'' +
       esc(file.id) + '\')">查看</button>';
     html += '<button type="button" class="or-btn" onclick="OriginalRecordUI.openHistory(\'' +
@@ -57,6 +63,31 @@
       '<td>' + statusHtml(file) + '</td>' +
       '<td class="whitespace-nowrap or-ops">' + opsHtml(file) + '</td>' +
       '</tr>';
+  }
+
+  function paintStatic(tbody, files) {
+    ensureStyles();
+    if (typeof tbody === 'string') tbody = document.getElementById(tbody);
+    if (!tbody) return;
+    files = (files || []).map(function (f, i) {
+      var row = {
+        id: f.id || ('static-' + i),
+        fileName: f.fileName || '',
+        specimenIds: f.specimenIds || [],
+        modeKey: f.modeKey || 'model-each',
+        createdAt: f.createdAt || '',
+        invalid: !!f.invalid,
+        invalidReason: f.invalidReason || '',
+        identityKey: f.identityKey || ('static|' + i),
+        staticDemo: true
+      };
+      return row;
+    });
+    if (!files.length) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-box" style="padding:20px 0;text-align:center;color:#94a3b8">暂无原始记录单</div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = files.map(rowHtml).join('');
   }
 
   function renderTable(tbody) {
@@ -585,6 +616,7 @@
 
   global.OriginalRecordUI = {
     mount: mount,
+    paintStatic: paintStatic,
     renderTable: renderTable,
     renderAll: renderAll,
     viewFile: viewFile,

@@ -9,11 +9,15 @@
     '.ret-warn{margin-left:0;color:#f97316;font-size:14px;vertical-align:middle}',
     '.ret-warn-wrap{display:inline-flex;align-items:center;margin-left:6px;cursor:help;vertical-align:middle;outline:none}',
     '.ret-warn-wrap:focus{outline:2px solid #fdba74;outline-offset:2px;border-radius:9999px}',
-    '#ret-warn-tip{position:fixed;z-index:10050;display:none;max-width:320px;padding:8px 10px;border-radius:6px;background:#1e293b;color:#fff;font-size:12px;line-height:1.55;box-shadow:0 8px 24px rgba(15,23,42,.28);pointer-events:none;white-space:pre-wrap;word-break:break-word}',
+    '#ret-warn-tip{position:fixed;z-index:10050;display:none;max-width:280px;min-width:208px;padding:10px 12px;border-radius:8px;background:#1e293b;color:#fff;font-size:12px;line-height:1.55;box-shadow:0 8px 24px rgba(15,23,42,.28);pointer-events:none;white-space:normal;word-break:break-word}',
     '#ret-warn-tip.is-on{display:block}',
     '#ret-warn-tip::after{content:"";position:absolute;left:var(--arrow-left,50%);bottom:-6px;width:0;height:0;margin-left:-6px;border:6px solid transparent;border-top-color:#1e293b;border-bottom-width:0}',
     '#ret-warn-tip.is-below::after{bottom:auto;top:-6px;border-top-width:0;border-top-color:transparent;border-bottom-width:6px;border-bottom-color:#1e293b}',
-    '.ret-code-stack{display:flex;flex-wrap:wrap;align-items:center;gap:4px}',
+    '#ret-warn-tip .ret-tip-reason{font-size:12px;line-height:1.7;color:#fff}',
+    '#ret-warn-tip .ret-tip-meta{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.16);display:grid;grid-template-columns:3.5em 1fr;column-gap:8px;row-gap:4px;font-size:11px;line-height:1.5}',
+    '#ret-warn-tip .ret-tip-k{color:#94a3b8;white-space:nowrap}',
+    '#ret-warn-tip .ret-tip-v{color:#e2e8f0}',
+    '.ret-code-stack{display:inline-flex;flex-wrap:nowrap;align-items:center;gap:4px;white-space:nowrap}',
     '.ret-banner{margin-top:1rem;border:1px solid #f3c4c4;background:#fff7f7;border-radius:8px;box-shadow:0 1px 2px rgba(15,23,42,.04)}',
     '.ret-banner-head{padding:9px 16px;border-bottom:1px solid #f3c4c4;font-size:13px;font-weight:600;color:#b91c1c;background:#fdecec}',
     '.ret-banner-body{max-height:11.5rem;overflow-y:auto;padding:12px 16px 14px;font-size:13px;color:#7f1d1d}',
@@ -73,10 +77,36 @@
       (title ? ' title="' + esc(title) + '"' : ' title="报告审核 AI 预审命中严重项，已自动退回编制"') +
       '><i class="fa fa-bolt"></i>AI 自动退回</span>';
   }
-  function warnIcon(reason) {
-    if (!reason) return '';
-    return '<span class="ret-warn-wrap" tabindex="0" data-reason="' + esc(reason) + '" aria-label="退回原因">' +
+  function warnIcon(reason, rec) {
+    rec = rec || {};
+    var reasonText = rec.reason || reason || '';
+    if (!reasonText) return '';
+    var payload = JSON.stringify({
+      reason: reasonText,
+      by: rec.by || '',
+      time: rec.time || '',
+      from: rec.from || '',
+      kind: rec.kind || ''
+    });
+    return '<span class="ret-warn-wrap" tabindex="0" data-ret-tip="' + esc(payload) + '" data-reason="' + esc(reasonText) + '" aria-label="退回原因">' +
       '<i class="fa fa-exclamation-circle ret-warn" aria-hidden="true"></i></span>';
+  }
+  function parseTip(wrap) {
+    var raw = wrap && wrap.getAttribute('data-ret-tip');
+    if (raw) {
+      try { return JSON.parse(raw); } catch (e) { /* fall through */ }
+    }
+    return { reason: (wrap && wrap.getAttribute('data-reason')) || '' };
+  }
+  function tipHtml(d) {
+    d = d || {};
+    var rows = '';
+    if (d.from) rows += '<span class="ret-tip-k">来源</span><span class="ret-tip-v">' + esc(d.from) + '</span>';
+    if (d.by) rows += '<span class="ret-tip-k">退回人</span><span class="ret-tip-v">' + esc(d.by) + '</span>';
+    if (d.time) rows += '<span class="ret-tip-k">时间</span><span class="ret-tip-v">' + esc(d.time) + '</span>';
+    if (d.kind) rows += '<span class="ret-tip-k">类型</span><span class="ret-tip-v">' + esc(d.kind) + '</span>';
+    return '<div class="ret-tip-reason">' + esc(d.reason || '') + '</div>' +
+      (rows ? '<div class="ret-tip-meta">' + rows + '</div>' : '');
   }
   function warnTipEl() {
     var el = document.getElementById('ret-warn-tip');
@@ -95,7 +125,7 @@
     if (!wrap) return;
     ensureCss();
     var el = warnTipEl();
-    el.textContent = wrap.getAttribute('data-reason') || '';
+    el.innerHTML = tipHtml(parseTip(wrap));
     el.classList.add('is-on');
     el.classList.remove('is-below');
     var r = wrap.getBoundingClientRect();
@@ -375,7 +405,7 @@
     var recs = st.listByItem(code, item);
     if (!recs.length) return '';
     var r = recs[0];
-    return tagHtml({ title: r.reason }) + warnIcon(r.reason + '（' + r.by + ' · ' + r.time + '）');
+    return tagHtml({ title: r.reason }) + warnIcon(r.reason, r);
   }
   function testerMeta(code, item, fallbackTester, fallbackTime) {
     var st = store();

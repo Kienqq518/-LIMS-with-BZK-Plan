@@ -319,7 +319,7 @@ if (await warnWrap.count()) {
   await p.waitForTimeout(80);
   const tipTxt = (await p.locator('#ret-warn-tip').textContent()) || '';
   const tipOn = await p.locator('#ret-warn-tip.is-on').count();
-  out.push((tipOn && /交流耐压试验值与原始记录不一致/.test(tipTxt) ? '✅' : '❌') + ' 感叹号 hover 气泡展示退回原因');
+  out.push((tipOn && /交流耐压试验值与原始记录不一致/.test(tipTxt) && /退回人/.test(tipTxt) && /王审核/.test(tipTxt) && /时间/.test(tipTxt) ? '✅' : '❌') + ' 感叹号 hover 气泡分行展示原因和退回人');
   await p.screenshot({ path: SHOT_DIR + '/detect-warn-tip.png' });
 }
 const detHeads = await p.locator('.detect-table').first().locator('thead th').allTextContents();
@@ -340,6 +340,14 @@ const dataHeads = await p.locator('.audit-table').nth(1).locator('thead th').all
 const dConcl = dataHeads.indexOf('结论');
 const dStatus = dataHeads.indexOf('状态');
 out.push((dConcl >= 0 && dStatus === dConcl + 1 ? '✅' : '❌') + ' 数据审核结论列在状态列前');
+
+await p.goto(BASE + '/test-audit-edit.html?type=data&code=SC2026/0055&sample=' + encodeURIComponent('绝缘毯') + '&tester=' + encodeURIComponent('张三'), { waitUntil: 'load' });
+await p.waitForTimeout(280);
+const d55 = (await p.locator('body').textContent()) || '';
+out.push((/外观及尺寸/.test(d55) && /退回/.test(d55) && /绝缘毯外观结论/.test(d55) ? '✅' : '❌') + ' 数据审核0055详情有退回试验项');
+const orHead = (await p.locator('[data-annotate="audit-or-table"] thead').textContent()) || '';
+out.push((/覆盖样品/.test(orHead) && /生成模式/.test(orHead) && /状态/.test(orHead) && /操作/.test(orHead) ? '✅' : '❌') + ' 审核页原始记录表与委托详情列对齐');
+out.push((/SC2026\/0055-外观及尺寸-原始记录/.test(d55) ? '✅' : '❌') + ' 0055原始记录按试验项出文件');
 
 await p.goto(BASE + '/change-apply.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
@@ -384,6 +392,15 @@ await p.goto(BASE + '/group-audit.html', { waitUntil: 'load' });
 await p.waitForTimeout(250);
 const gTxt = (await p.locator('#tableBody').textContent()) || '';
 out.push((/SC2026\/0062/.test(gTxt) && /退回/.test(gTxt) && /查看/.test(gTxt) ? '✅' : '❌') + ' 组内审核名单有退回标签和详情');
+const tagWrap = await p.evaluate(() => {
+  const row = [...document.querySelectorAll('#tableBody tr')].find((tr) => /SC2026\/0060/.test(tr.textContent || ''));
+  if (!row) return 'missing';
+  const stack = row.querySelector('.ret-code-stack');
+  if (!stack) return 'no-stack';
+  const wrap = getComputedStyle(stack).flexWrap;
+  return (wrap === 'nowrap' && stack.scrollHeight < 40) ? 'nowrap' : wrap + ':' + stack.scrollHeight;
+});
+out.push((tagWrap === 'nowrap' ? '✅' : '❌') + ' 组内审核退回标签与编号同一行 ' + tagWrap);
 
 await p.goto(BASE + '/data-audit.html', { waitUntil: 'load' });
 await p.waitForTimeout(250);
