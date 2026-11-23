@@ -3,7 +3,7 @@
  * 编制 / 审核通过后进入本链；状态落 localStorage，刷新不丢。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-report-flow-v10';
+  var STORAGE_KEY = 'lims-report-flow-v11';
   var ORDER = ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   var SIGNED = ['报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   function isSigned(status) { return SIGNED.indexOf(status) >= 0; }
@@ -93,8 +93,15 @@
       logs: (o.logs && o.logs.length) ? o.logs : historyLogs(o.status, o.acceptDate)
     });
     (out.returns || []).forEach(function (rec) {
-      var dup = (out.logs || []).some(function (l) { return l.reason === rec.reason && l.at === rec.time; });
-      if (dup) return;
+      var hit = (out.logs || []).filter(function (l) {
+        if (rec.reason && l.reason && l.reason === rec.reason && (l.by === rec.by || l.node === rec.from)) return true;
+        return rec.time && l.at === rec.time && l.by === rec.by && l.node === rec.from;
+      })[0];
+      if (hit) {
+        if (!hit.reportNo && rec.reportNo) hit.reportNo = rec.reportNo;
+        if (!hit.target && rec.to) hit.target = rec.to;
+        return;
+      }
       out.logs.push({
         at: rec.time, node: rec.from, by: rec.by,
         text: '退回至' + rec.to + (rec.reportNo ? ' · ' + rec.reportNo : ''),
@@ -115,7 +122,6 @@
         { at: '2026-10-08 15:52', node: '报告审核', by: 'AI 审核引擎', text: '预审结论：通过', tone: 'success' },
         { at: '2026-10-08 16:20', node: '报告审核', by: '李审核', text: '人工审核通过，提交至报告签发', tone: 'success' },
         { at: '2026-10-09 09:10', node: '报告签发', by: '周签发', text: '签发通过，已生成 PDF 报告', tone: 'success' },
-        { at: '2026-10-10 09:10', node: '报告处理', by: '王处理', text: '退回至报告签发', tone: 'danger', reason: '签发章位置与机构授权范围不符，退回签发重新核验。', target: '报告签发' },
         { at: '2026-11-20 14:30', node: '报告签发', by: '系统', text: '等待报告签发', tone: 'pending' }
       ] }),
     row({ code: 'SC2026/0238', contract: 'HT2026-0118', customer: '杭州数蚕智能科技有限公司', sample: '10kV3芯电力电缆',
