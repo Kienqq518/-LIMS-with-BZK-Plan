@@ -12,7 +12,7 @@
     '报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'
   ];
   var SPINE = ['委托登记', '收样', '制备', '发样', '领样', '检测', '还样'];
-  var LIST_FILTERS = ['全部', '待收样', '检测中', '已检测', '合格', '不合格', '过期'];
+  var LIST_FILTERS = ['待收样', '检测中', '已检测', '合格', '不合格', '已过期'];
   var PHASES = ['委托登记', '收样', '发样', '领样', '检测中', '检测完成', '待退样', '留库', '退回客户'];
   var FLOW_NODES = ['委托登记', '收样', '制备', '发样', '领样', '检测中', '还样', '留样', '退样', '退回发样'];
   var QUERY_SORTS = [
@@ -228,8 +228,8 @@
   function dueUrgency(due, status) {
     if (status === '合格' || status === '不合格') return { tone: 'normal', days: 0, text: '' };
     var left = dueOffset(due);
-    if (left < 0) return { tone: 'overdue', days: Math.max(1, -left), text: '已逾期 ' + Math.max(1, -left) + ' 天' };
-    if (left <= 2) return { tone: 'soon', days: left, text: '剩' + left + '天' };
+    if (left < 0) return { tone: 'overdue', days: Math.max(1, -left), text: '' };
+    if (left <= 2) return { tone: 'soon', days: left, text: '' };
     return { tone: 'normal', days: left, text: '' };
   }
 
@@ -270,7 +270,7 @@
     if (filter === '待收样') return !isReceived(s);
     if (filter === '检测中') return s.status === '检测中';
     if (filter === '已检测') return s.status === '合格' || s.status === '不合格';
-    if (filter === '过期') return s.status === '已过期';
+    if (filter === '过期' || filter === '已过期') return s.status === '已过期';
     return s.status === filter;
   }
 
@@ -309,12 +309,19 @@
     if (q.customer && s.customer.indexOf(q.customer.trim()) < 0) return false;
     var date = q.dateKind === 'receive' ? s.receivedAt : s.orderDate;
     if (!inRange(date, q.from || '', q.to || '')) return false;
-    if (q.node && flowLabel(currentFlow(s)) !== q.node) return false;
+    var nodes = q.nodes;
+    if (!nodes && q.node) nodes = Array.isArray(q.node) ? q.node : [q.node];
+    if (nodes && nodes.length) {
+      var cur = flowLabel(currentFlow(s));
+      var hit = false;
+      for (var i = 0; i < nodes.length; i++) { if (nodes[i] && nodes[i] === cur) { hit = true; break; } }
+      if (!hit) return false;
+    }
     if (q.result && s.status !== q.result) return false;
     if (q.timeliness === '逾期' && dueUrgency(s.due, s.status).tone !== 'overdue') return false;
     if (q.timeliness === '未逾期' && dueUrgency(s.due, s.status).tone === 'overdue') return false;
     if (q.phase && !matchesPhase(s, q.phase)) return false;
-    if (!matchesListFilter(s, q.chip)) return false;
+    if (!matchesListFilter(s, q.status || q.chip)) return false;
     return true;
   }
 
