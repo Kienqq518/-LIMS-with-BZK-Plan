@@ -3,7 +3,7 @@
  * { from, to, by, time, reason, kind }  kind = 人工 / AI / 系统
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-returns-v6';
+  var STORAGE_KEY = 'lims-returns-v8';
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
   function now() {
@@ -43,17 +43,35 @@
     {
       code: 'SC2026/0052', from: '组内审核', to: '试验检测', by: '王审核', time: '2026-11-12 16:10',
       reason: '交流耐压试验值与原始记录不一致，请复核后重填。', kind: '人工',
-      item: '交流耐压试验', tester: '潘哲宁', detectTime: '2026-11-12 15:40'
+      item: '交流耐压试验', sample: '绝缘操作杆', tester: '潘哲宁', detectTime: '2026-11-12 15:40',
+      rows: [
+        { specimen: 'SC2026/00520102-01', phase: '' },
+        { specimen: 'SC2026/00520107-01', phase: '' }
+      ]
     },
     {
-      code: 'SC2026/0062', from: '数据审核', to: '组内审核', by: '李数据', time: '2026-11-11 09:40',
+      code: 'SC2026/0052', from: '组内审核', to: '试验检测', by: '王审核', time: '2026-11-12 16:28',
+      reason: '红相局部放电超标，整相退回复测。', kind: '人工',
+      item: '交流耐压试验', sample: '绝缘横担', tester: '潘哲宁', detectTime: '2026-11-12 16:05',
+      rows: [
+        { specimen: 'SC2026/00520302-02', phase: '红' }
+      ]
+    },
+    {
+      code: 'SC2026/0062', from: '数据审核', to: '试验检测', by: '李数据', time: '2026-11-11 09:40',
       reason: '交流耐压原始记录结论与审核意见不一致。', kind: '人工',
-      item: '交流耐压试验', tester: '潘哲宁', detectTime: '2026-11-11 09:10'
+      item: '交流耐压试验', sample: '绝缘硬梯', tester: '潘哲宁', detectTime: '2026-11-11 09:10',
+      rows: [
+        { specimen: 'SC2026/00620202-02', phase: '红' }
+      ]
     },
     {
-      code: 'SC2026/0060', from: '数据审核', to: '组内审核', by: '李数据', time: '2026-11-19 15:22',
-      reason: '抗弯试验原始记录缺检测员签字，退回组内复核补签。', kind: '人工',
-      item: '抗弯动负荷试验', tester: '李四', detectTime: '2026-11-19 14:50'
+      code: 'SC2026/0060', from: '数据审核', to: '试验检测', by: '李数据', time: '2026-11-19 15:22',
+      reason: '抗弯试验原始记录缺检测员签字，退回试验检测复核补签。', kind: '人工',
+      item: '抗弯动负荷试验', sample: '绝缘操作杆', tester: '李四', detectTime: '2026-11-19 14:50',
+      rows: [
+        { specimen: 'SC2026/00600104-03', phase: '' }
+      ]
     },
     {
       code: 'SC2026/0055', from: '报告编制', to: '数据审核', by: '王编制', time: '2026-11-20 10:08',
@@ -84,6 +102,19 @@
 
   var items = load();
 
+  function normalizeRows(rows) {
+    if (!rows || !rows.length) return null;
+    return rows.map(function (row) {
+      if (typeof row === 'string') return { specimen: row, phase: '' };
+      return { specimen: (row && row.specimen) || '', phase: (row && row.phase) || '' };
+    });
+  }
+  function rowsOf(rec) {
+    if (!rec) return [];
+    if (rec.rows && rec.rows.length) return rec.rows;
+    if (rec.specimen) return [{ specimen: rec.specimen, phase: rec.phase || '' }];
+    return [];
+  }
   function normalize(entry) {
     if (!entry) return null;
     return {
@@ -97,9 +128,13 @@
       kind: normKind(entry.kind),
       testers: entry.testers || null,
       item: entry.item || '',
+      sample: entry.sample || '',
       tester: entry.tester || '',
       detectTime: entry.detectTime || '',
-      reportNo: entry.reportNo || ''
+      reportNo: entry.reportNo || '',
+      specimen: entry.specimen || '',
+      phase: entry.phase || '',
+      rows: normalizeRows(entry.rows)
     };
   }
 
@@ -126,12 +161,24 @@
     var list = listByTo(to, code);
     return list[0] || null;
   }
-  function listByItem(code, item) {
+  function listByItem(code, item, sample) {
     return items.filter(function (r) {
       if (r.code !== code || !r.item) return false;
+      if (sample && r.sample && r.sample !== sample) return false;
       if (!item) return true;
       return r.item === item || String(item).indexOf(r.item) >= 0 || String(r.item).indexOf(item) >= 0;
     }).sort(function (a, b) { return a.time < b.time ? 1 : -1; });
+  }
+  function rowAffected(code, opts) {
+    opts = opts || {};
+    return listByItem(code, opts.item || '', opts.sample || '').some(function (r) {
+      var rows = rowsOf(r);
+      if (!rows.length) return false;
+      return rows.some(function (row) {
+        if (row.phase) return !!opts.phase && row.phase === opts.phase;
+        return !!opts.specimen && row.specimen === opts.specimen;
+      });
+    });
   }
   function codesAt(to) {
     var map = {};
@@ -149,6 +196,8 @@
     listByCode: listByCode,
     latestFor: latestFor,
     listByItem: listByItem,
+    rowsOf: rowsOf,
+    rowAffected: rowAffected,
     codesAt: codesAt,
     all: function () { return items; },
     reset: function () { items = clone(SEED); save(items); return items; }

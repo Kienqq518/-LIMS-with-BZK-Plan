@@ -42,12 +42,13 @@
 </thead>
 <tbody>
 <tr><td vertical-align="top"><p>数据形态</p></td><td vertical-align="top"><p>统一 <code>returns[]</code>，每次退回追加一条，禁止覆盖旧记录</p></td></tr>
-<tr><td vertical-align="top"><p>记录字段</p></td><td vertical-align="top"><p>必有：<code>code / from / to / by / time / reason / kind</code>；可选：<code>reportNo / item / tester / testers[]</code></p></td></tr>
+<tr><td vertical-align="top"><p>记录字段</p></td><td vertical-align="top"><p>必有：<code>code / from / to / by / time / reason / kind</code>；可选：<code>reportNo / item / sample / tester / testers[] / rows[{specimen,phase}]</code></p></td></tr>
 <tr><td vertical-align="top"><p>kind</p></td><td vertical-align="top"><p>仅三种：人工、AI、系统。AI 用于报告审核严重项自动退回编制；系统用于自动打回（不含任务完成→归档）</p></td></tr>
-<tr><td vertical-align="top"><p>退回粒度</p></td><td vertical-align="top"><p>默认整单退上一节点。报告编制及之后可挂 <code>reportNo</code>，条幅 / 时间轴按报告拆开展示，任务仍按委托走</p></td></tr>
-<tr><td vertical-align="top"><p>退回方向</p></td><td vertical-align="top"><p>只能退上一节点，不能跨级、不能自选任意历史节点。任务完成不能退回任务归档</p></td></tr>
+<tr><td vertical-align="top"><p>退回粒度</p></td><td vertical-align="top"><p>默认整单退上一节点。报告编制→数据审核必须整单。组内审核→试验检测、数据审核→试验检测可按<b>单条试样数据</b>退回（数据审核<b>跳过组内审核</b>，组内审核不承接退回）。若该试验项有相别，同一样品编号下某一相只要有一条退回，则<b>整相退回</b>。报告编制及之后可挂 <code>reportNo</code></p></td></tr>
+<tr><td vertical-align="top"><p>退回方向</p></td><td vertical-align="top"><p>只能退上一节点，不能跨级、不能自选任意历史节点。例外：数据审核不通过时直接退回试验检测，跳过组内审核。任务完成不能退回任务归档</p></td></tr>
 <tr><td vertical-align="top"><p>原因</p></td><td vertical-align="top"><p>必填。空原因不允许确认</p></td></tr>
 <tr><td vertical-align="top"><p>编制页条幅</p></td><td vertical-align="top"><p>查询表上方红框<b>只展示 AI 自动退回</b>。按报告一张卡片：编号、AI 标签、从「来源节点」退回 · 时间同一行，右侧「去处理」。高度随内容增高，达到最大高度后内部滚动</p></td></tr>
+<tr><td vertical-align="top"><p>审核/检测编辑页条幅</p></td><td vertical-align="top"><p>数据审核、试验检测编辑页顶部退回条幅高度固定（152px），内部上下滚动。组内审核编辑页不挂条幅（本环节不承接退回）</p></td></tr>
 <tr><td vertical-align="top"><p>其他待办页条幅</p></td><td vertical-align="top"><p>主查询表上方<b>不</b>再放退回红框。退回信息走名单标签 / 退回详情 / 报告记录</p></td></tr>
 <tr><td vertical-align="top"><p>多报告条幅</p></td><td vertical-align="top"><p>同一委托多份 AI 自动退回时，委托号下按报告分行；每份卡片都有「去处理」</p></td></tr>
 <tr><td vertical-align="top"><p>名单「退回」标签</p></td><td vertical-align="top"><p>该委托在本节点有退回记录则出现在委托编号旁，编号与标签同一行不换行；悬停展示来源与原因。任务归档、任务完成不挂</p></td></tr>
@@ -55,7 +56,7 @@
 <tr><td vertical-align="top"><p>报告审核名单</p></td><td vertical-align="top"><p><b>不</b>再单列退回详情。退回留痕走「报告记录」抽屉</p></td></tr>
 <tr><td vertical-align="top"><p>退回详情弹窗</p></td><td vertical-align="top"><p>时间轴新到旧。芯片只保留「第 N 次 / 来源 {from} / 人工|AI|系统」。去掉「退回至 {to}」和「新到旧 · 追加不覆盖」</p></td></tr>
 <tr><td vertical-align="top"><p>编制列表退回按钮</p></td><td vertical-align="top"><p>任一报告已离开「报告编制」（审核及之后）则整单退回置灰，避免打乱后续流程</p></td></tr>
-<tr><td vertical-align="top"><p>试验检测</p></td><td vertical-align="top"><p>可挂到试验项：名称后打退回标签，旁附感叹号。悬停气泡上行写原因全文，下方用来源 / 退回人 / 时间 / 类型分行对齐，不把人与时间括在原因后面。试样分发 testers[] 每人一个时间轴节点，不用表格</p></td></tr>
+<tr><td vertical-align="top"><p>试验检测 / 组内审核详情</p></td><td vertical-align="top"><p>试验检测接收组内审核与数据审核的行级退回：试样行浅红底 + 「退回」标签；有相别则该相全部试样打标。顶部条幅固定 152px 内部滚动。组内审核<b>不承接退回</b>，编辑页无条幅、无试样退回标</p></td></tr>
 </tbody>
 </table>
 <h6>数据模型</h6>
@@ -76,10 +77,10 @@
 <tr><td vertical-align="top"><p>by / time / reason</p></td><td vertical-align="top"><p>是</p></td><td vertical-align="top"><p>退回人、时间、原因。原因空则不允许确认</p></td></tr>
 <tr><td vertical-align="top"><p>kind</p></td><td vertical-align="top"><p>是</p></td><td vertical-align="top"><p>人工 / AI / 系统</p></td></tr>
 <tr><td vertical-align="top"><p>reportNo</p></td><td vertical-align="top"><p>报告环节</p></td><td vertical-align="top"><p>如 SC2026/0238-03。条幅卡片标题、编制工作台卡片用</p></td></tr>
-<tr><td vertical-align="top"><p>item / tester / testers[]</p></td><td vertical-align="top"><p>试验环节</p></td><td vertical-align="top"><p>挂到试验项；试样分发 / 检测可附多名检测员各自原因</p></td></tr>
+<tr><td vertical-align="top"><p>item / sample / tester / testers[] / rows[]</p></td><td vertical-align="top"><p>试验环节</p></td><td vertical-align="top"><p>挂到试验项与样品；<code>rows[{specimen,phase}]</code> 为单条试样。phase 非空表示整相退回。试样分发 testers[] 每人一个时间轴节点</p></td></tr>
 </tbody>
 </table>
-<p>条幅、标签、详情弹窗、报告记录时间轴、编制工作台卡片，全部读这一份数据。演示种子含：SC2026/0209 委托确认→登记、SC2026/0238 审核人工退回 0238-02 + AI 自动退回 0238-03 编制、SC2026/0238 签发退回审核、SC2026/0312 处理退回签发、SC2026/0052 组内审核退回试验检测、SC2026/0062 / 0060 数据审核退回组内审核、SC2026/0055 报告编制退回数据审核等。<b>不含</b>任务完成→归档。</p>
+<p>条幅、标签、详情弹窗、报告记录时间轴、编制工作台卡片，全部读这一份数据。演示种子含：SC2026/0209 委托确认→登记、SC2026/0238 审核人工退回 0238-02 + AI 自动退回 0238-03 编制、SC2026/0238 签发退回审核、SC2026/0312 处理退回签发、SC2026/0052 组内审核退回试验检测、SC2026/0062 / 0060 数据审核退回试验检测、SC2026/0055 报告编制退回数据审核等。<b>不含</b>任务完成→归档。</p>
 <h6>采集（退回弹窗）</h6>
 <p>各环节操作列 / 弹窗底栏「退回」打开同一采集窗：</p>
 <ul>
@@ -131,10 +132,11 @@
 <p>报告审核 / 签发工作台当前任务旁也可挂退回条（strip），数据仍是该委托、该节点的 <code>returns[]</code>。</p>
 <h6>试验环节</h6>
 <ul>
-<li>可挂 <code>item</code>（试验项名称）。检测工作台该试验项标题后打退回标签，旁附感叹号。悬停气泡：上行原因全文；下方「来源 / 退回人 / 时间 / 类型」分行对齐。表头展示检测员、检测时间</li>
-<li>组内审核被数据审核退回时，原因落到对应试验项（演示：SC2026/0062 交流耐压、SC2026/0060 抗弯动负荷），编辑页试验项名称后打退回标签与感叹号气泡</li>
-<li>数据审核被报告编制退回时是该委托下全部报告一起打回，不是某一试验项。编辑页只在顶部时间轴展示整单退回（演示 SC2026/0055），试验项名称后不打退回标签，页头也不写「悬停感叹号查看退回原因」</li>
-<li>组内审核 / 数据审核主查询表同样打「退回」标签并保留「退回详情」列（演示：组内 SC2026/0062、0060；数据审核 SC2026/0055）。编号与标签同一行不换行，冻结的委托编号列加宽，避免挡住样品大类</li>
+<li>组内审核→试验检测、数据审核→试验检测可按<b>单条试样数据</b>退回。数据审核<b>跳过组内审核</b>，组内审核待办与编辑页不会出现被退回的数据。一组样品 10 条同屏时，已通过的行不打标。有相别时，同一样品编号下某一相只要有一条退回，则该相全部试样退回（演示：SC2026/0052 操作杆交流耐压 02、07 单条、横担红相整相，来源组内审核；SC2026/0062 硬梯交流耐压红相整相、SC2026/0060 抗弯第 4 条，来源数据审核）</li>
+<li>试验检测编辑页：试验项标题后打退回标签，被退回试样行浅红底、编号旁打标；有相别列红/黄/绿胶囊，整相退回加红圈。悬停气泡：上行原因全文；下方「来源 / 退回人 / 时间 / 类型」分行对齐。表头展示检测员、检测时间。组内审核编辑页无上述退回展示</li>
+<li>试验检测 / 数据审核编辑页顶部退回条幅<b>高度固定、内部滚动</b>。组内审核编辑页<b>不挂</b>退回条幅</li>
+<li>数据审核被报告编制退回时是该委托下全部报告一起打回，不是某一试验项。编辑页只在顶部定高条幅展示整单退回（演示 SC2026/0055），试验项名称后不打退回标签，页头也不写「悬停感叹号查看退回原因」</li>
+<li>数据审核主查询表打「退回」标签并保留「退回详情」列（演示 SC2026/0055）。组内审核主查询表<b>不</b>打退回标签（不承接退回）。试验检测名单对组内审核 / 数据审核打回来的任务打退回标签（演示 0052、0062、0060）</li>
 <li>组内审核 / 数据审核编辑页「原始记录表」列与委托详情 / 原始记录页一致：序号、原始记录名称、覆盖样品、生成模式、生成时间、状态、操作；按本单试验项各出一份文件</li>
 <li>试验检测名单上方不放退回红框；退回信息走试验项标签与「退回详情」列</li>
 </ul>
@@ -154,8 +156,10 @@
 <checkbox done="false">编制列表：委托下已有报告进入审核/签发后，「退回」置灰。</checkbox>
 <checkbox done="false">报告审核名单无「退回详情」列；「报告记录」抽屉能看到签发退回 / 审核退回。</checkbox>
 <checkbox done="false">任务归档名单委托编号旁无退回标签；任务完成不能退回归档。</checkbox>
-<checkbox done="false">试验检测：被退回试验项名称后有退回标签，并显示检测员与检测时间；名单上方无退回红框。</checkbox>
+<checkbox done="false">试验检测：被退回试验项名称后有退回标签，并显示检测员与检测时间；名单上方无退回红框。单条退回只标对应试样行；有相别时整相打标。</checkbox>
+<checkbox done="false">试验检测 / 数据审核编辑页顶部退回条幅高度固定，内容超出后内部滚动。组内审核编辑页无退回条幅。</checkbox>
+<checkbox done="false">试验检测 SC2026/0062 硬梯交流耐压红相整相打标（来源数据审核）；SC2026/0060 抗弯无相别只打第 4 条。组内审核详情与名单均无退回标。</checkbox>
 <checkbox done="false">感叹号悬停气泡上行是退回原因，下方分行展示来源 / 退回人 / 时间 / 类型，不把人与时间括在原因后面。</checkbox>
-<checkbox done="false">组内审核名单退回标签与委托编号同一行，不换行遮挡样品大类。</checkbox>
+<checkbox done="false">组内审核名单无退回标签；数据审核退回标签与委托编号同一行不换行。</checkbox>
 <checkbox done="false">数据审核 SC2026/0055 编辑页顶部有整单退回记录，试验项名称后无退回标签，页头无「悬停看退回原因」；原始记录表含覆盖样品 / 生成模式 / 状态 / 操作，与委托详情列一致。</checkbox>
 <checkbox done="false">同一委托连续退回两次，详情时间轴为 2 条，原因互不覆盖。</checkbox>

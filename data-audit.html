@@ -138,7 +138,7 @@
           wide: true,
           content: '<strong>需求逻辑：</strong>报告编制可以把整单打回数据审核，本名单必须能看出哪些是退回待重审的任务。<br>' +
           '<strong>展示规则：</strong>本节点有退回记录的委托（演示：SC2026/0055）在委托编号旁打红色「退回」标签，编号与标签同一行不换行。无记录的行不打标签。<br>' +
-          '<strong>交互逻辑：</strong>点「退回详情」查看时间轴；点「审核」进编辑页：顶部展示整单退回记录，试验项名称后不打退回标签（编制退回是该委托全部报告一起打回）；原始记录表与委托详情列对齐。',
+          '<strong>交互逻辑：</strong>点「退回详情」查看时间轴；点「审核」进编辑页：顶部定高条幅展示整单退回记录，试验项名称后不打退回标签（编制退回是该委托全部报告一起打回）；原始记录表与委托详情列对齐。',
           tag: '数据审核'
         },
         {
@@ -147,7 +147,7 @@
           position: 'bottom-right',
           title: '退回（原因必填）',
           wide: true,
-          content: '<strong>需求逻辑：</strong>本环节审核不通过时不直接改数据，而是把委托退回上一环节（组内审核）由经办人修正后重新提交；退回必须写明原因，作为退回留痕与责任依据。<br>' +
+          content: '<strong>需求逻辑：</strong>本环节审核不通过时不直接改数据，而是把委托退回试验检测由检测员修正后重新提交（跳过组内审核）；退回必须写明原因，作为退回留痕与责任依据。<br>' +
           '<strong>展示规则：</strong>正文提示「确认退回委托 <编号>？」，唯一必填项为「退回原因」多行文本框（红星标记）。<br>' +
           '<strong>交互逻辑：</strong>原因留空点「确认退回」→ 提示「请填写退回原因」且弹窗不关；填写后确认 → 写入 returns[] 并关闭弹窗；点「取消」或遮罩关闭。',
           tag: '数据审核'
@@ -250,7 +250,7 @@
     function openReturnModal(index) {
       var item = filtered[index];
       if (window.ReturnUI) {
-        ReturnUI.openCollect({ from: '数据审核', to: '组内审核', code: item.code });
+        ReturnUI.openCollect({ from: '数据审核', to: '试验检测', code: item.code });
         return;
       }
       returnIndex = index;

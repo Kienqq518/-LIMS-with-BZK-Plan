@@ -125,7 +125,7 @@
       </div>
       <p class="text-sm text-slate-600">
         <span class="font-medium text-slate-700">注：</span>
-        将鼠标悬浮在 <i class="fa fa-question-circle text-orange-500" title="不合格原因示例"></i> 图标上，可查看不合格原因<span id="retHint">；将鼠标悬浮在 <i class="fa fa-exclamation-circle text-orange-500" title="退回原因"></i> 图标上，可查看退回原因</span>。
+        将鼠标悬浮在 <i class="fa fa-question-circle text-orange-500" title="不合格原因示例"></i> 图标上，可查看不合格原因<span id="retHint">。</span>
       </p>
       <div class="mt-2 text-xs text-slate-400">
         委托编号：<span id="entrustCode" class="text-slate-600">—</span>
@@ -192,24 +192,21 @@
     document.getElementById('sampleTag').textContent = sampleShort;
     document.getElementById('entrustCode').textContent = entrustCode;
     document.getElementById('customerName').textContent = customer;
-    if (auditType === 'data') {
-      var retHint = document.getElementById('retHint');
-      if (retHint) retHint.remove();
-    }
+    var retHint = document.getElementById('retHint');
+    if (retHint) retHint.remove();
 
     function specimenId(seq) {
       var n = String(seq);
       if (n.length < 2) n = '0' + n;
       return entrustCode + '0101-' + n;
     }
-
     var groups = [
       {
         title: sampleShort + '—外观及尺寸',
         tester: defaultTester,
         columns: ['试样编号', '试验设备', '外观', '有效绝缘长度 / mm', '备注', '结论', '状态', '操作'],
         rows: [
-          { cells: [specimenId(1), '设备', '无缺陷', ' / ', '', '合格'], status: '待审核' }
+          { cells: [specimenId(1), '设备', '无缺陷', ' / ', '', '合格'], status: '待审核', specimen: specimenId(1) }
         ]
       },
       {
@@ -217,7 +214,7 @@
         tester: defaultTester,
         columns: ['试样编号', '试验设备', '电极间距离 / m', '标称值 / kV', '试验值 / kV', '时间 / min', '状态描述', '室温 / ℃', '气压 / hPa', '湿度 / %RH', '备注', '结论', '状态', '操作'],
         rows: [
-          { cells: [specimenId(2), '设备', '1', '2', '3', '4', '无异常', '5', '6', '7', '', '合格'], status: '待审核' }
+          { cells: [specimenId(2), '设备', '1', '2', '3', '4', '无异常', '5', '6', '7', '', '合格'], status: '待审核', specimen: specimenId(2) }
         ]
       },
       {
@@ -225,7 +222,7 @@
         tester: defaultTester,
         columns: ['试样编号', '试验设备', '标称值 / N', '试验值 / N', '时间 / min', '状态描述', '温度 / ℃', '气压 / hPa', '湿度 / %RH', '备注', '结论', '状态', '操作'],
         rows: [
-          { cells: [specimenId(3), '设备', '1000', '100', '1', '无异常', '1', '2', '3', '', '合格'], status: '待审核' }
+          { cells: [specimenId(3), '设备', '1000', '100', '1', '无异常', '1', '2', '3', '', '合格'], status: '待审核', specimen: specimenId(3) }
         ]
       }
     ];
@@ -235,7 +232,7 @@
         tester: defaultTester,
         columns: ['试样编号', '试验设备', '标称值 / N', '试验值 / N', '时间 / min', '状态描述', '温度 / ℃', '气压 / hPa', '湿度 / %RH', '备注', '结论', '状态', '操作'],
         rows: [
-          { cells: [specimenId(4), '设备', '2000', '1980', '1', '无异常', '23', '1013', '55', '', '合格'], status: '待审核' }
+          { cells: [specimenId(4), '设备', '2000', '1980', '1', '无异常', '23', '1013', '55', '', '合格'], status: '待审核', specimen: specimenId(4) }
         ]
       });
     }
@@ -248,10 +245,11 @@
     function recordFiles() {
       return groups.map(function (g, i) {
         var testName = (g.title.split('—')[1] || g.title).replace(/\s+/g, '');
-        var rec = window.ReturnStore ? (ReturnStore.listByItem(entrustCode, g.title)[0] || null) : null;
+        var rec = window.ReturnStore ? (ReturnStore.listByItem(entrustCode, g.title, sampleShort)[0] || null) : null;
+        var specIds = g.rows.map(function (row) { return row.specimen || (row.cells && row.cells[0]) || specimenId(i + 1); });
         return {
           fileName: entrustCode + '-' + testName + '-原始记录.docx',
-          specimenIds: [specimenId(i + 1)],
+          specimenIds: specIds,
           modeKey: 'model-each',
           createdAt: (rec && rec.detectTime) ? rec.detectTime + ':00' : (g.detectTime || '2026-11-12 15:40:00'),
           invalid: false,
@@ -266,7 +264,10 @@
       return status || '';
     }
 
-    function cellHtml(col, value) {
+    function cellHtml(col, value, hit) {
+      if (col === '相别') {
+        return window.ReturnUI ? ReturnUI.phaseChip(value, hit) : (value || '');
+      }
       if (col === '试验设备') {
         return '<button onclick="alert(\'查看设备（原型演示）\')" class="rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-blue-600 hover:bg-blue-100">' + (value || '设备') + '</button>';
       }
@@ -311,11 +312,10 @@
       groups.forEach(function (g, gi) {
         html += '<section class="test-group">';
         html += '<div class="test-group-header">';
-        html += '<div class="group-title">' + g.title +
-          (auditType !== 'data' && window.ReturnUI ? ReturnUI.itemMark(entrustCode, g.title) : '') + '</div>';
+        html += '<div class="group-title">' + g.title + '</div>';
         html += '<div class="group-tester">' +
           (window.ReturnUI
-            ? ReturnUI.testerMeta(entrustCode, g.title, g.tester || defaultTester, g.detectTime)
+            ? ReturnUI.testerMeta(entrustCode, g.title, g.tester || defaultTester, g.detectTime, sampleShort)
             : ('检测员：<strong>' + (g.tester || defaultTester || '—') + '</strong>')) +
           '</div>';
         html += '</div>';
@@ -365,7 +365,7 @@
 
     var nodeName = auditType === 'data' ? '数据审核' : '组内审核';
     var headCard = document.querySelector('.mb-3.rounded.bg-white');
-    if (headCard && window.ReturnUI) {
+    if (auditType === 'data' && headCard && window.ReturnUI) {
       var strip = ReturnUI.stripHtml(entrustCode, nodeName);
       if (strip) headCard.insertAdjacentHTML('afterend', strip);
     }
@@ -378,21 +378,21 @@
         position: 'bottom',
         title: '数据审核整单退回',
         wide: true,
-        content: '<strong>需求逻辑：</strong>数据审核待办里的退回只可能来自报告编制，且编制退回是该委托下全部报告一起打回，不是某一试验项。<br>' +
-        '<strong>展示规则：</strong>编辑页顶部时间轴展示整单退回原因（演示 SC2026/0055）。试验项名称后不打「退回」标签，页头也不再写「悬停感叹号查看退回原因」。<br>' +
+        content: '<strong>需求逻辑：</strong>数据审核待办里的退回只可能来自报告编制，且编制退回是该委托下全部报告一起打回，不是某一试验项。数据审核自己退回时直接打到试验检测，不经过组内审核。<br>' +
+        '<strong>展示规则：</strong>编辑页顶部条幅固定高度、内部滚动，展示整单退回原因（演示 SC2026/0055）。试验项名称后不打「退回」标签，页头也不再写「悬停感叹号查看退回原因」。<br>' +
         '<strong>交互逻辑：</strong>名单仍打退回标签；点「审核」进本页看顶部退回记录后继续复核数据。',
         tag: '数据审核'
       });
     } else {
       annotations.push({
-        id: 'audit-ret-item',
-        selector: '.ret-tag, .ret-warn-wrap',
+        id: 'group-audit-no-inbound',
+        selector: '.sample-tag, .mb-3.rounded.bg-white',
         position: 'bottom',
-        title: '组内审核退回试验项',
+        title: '组内审核不承接退回',
         wide: true,
-        content: '<strong>需求逻辑：</strong>数据审核可以把委托打回组内审核，原因落到对应试验项，编辑页必须能看见，不能只在名单打标签。<br>' +
-        '<strong>展示规则：</strong>试验项标题后打红色「退回」标签，旁附感叹号；悬停气泡分行展示原因、来源、退回人、时间。演示：SC2026/0062 交流耐压、SC2026/0060 抗弯动负荷。<br>' +
-        '<strong>交互逻辑：</strong>点名单「审核」带入委托编号后，本页按 item 匹配试验项；无退回记录的试验项不打标。',
+        content: '<strong>需求逻辑：</strong>数据审核不通过会直接退回试验检测，组内审核不会出现被退回的数据。<br>' +
+        '<strong>展示规则：</strong>本页无顶部退回条幅、试验项名称后不打退回标签、试样行不打退回标。<br>' +
+        '<strong>交互逻辑：</strong>组内审核只审核当前检测数据；若要把问题打回去，用底栏/名单「退回」退到试验检测。',
         tag: '组内审核'
       });
     }

@@ -282,7 +282,7 @@
       <p class="mt-3 text-sm text-slate-600">
         <span class="font-medium text-slate-700">注：</span>
         将鼠标悬浮在 <i class="fa fa-question-circle text-orange-500" title="不合格原因"></i> 图标上，可查看不合格原因；
-        将鼠标悬浮在 <i class="fa fa-info-circle text-blue-500" title="退回原因"></i> 图标上，可查看退回原因
+        被退回的试样行会打「退回」标签（有相别时整相一起退回）；将鼠标悬浮在 <i class="fa fa-exclamation-circle text-orange-500" title="退回原因"></i> 图标上，可查看退回原因
       </p>
       <div class="mt-2 text-xs text-slate-400">
         委托编号：<span id="entrustCode" class="text-slate-600">—</span>
@@ -438,7 +438,9 @@
               title: '交流耐压试验',
               columns: ['试样编号', '试验设备', '标称值/kV', '试验值/kV', '时间/min', '状态描述', '室温/℃', '气压/hPa', '湿度/%RH', '备注', '结论', '状态', '操作'],
               rows: specimenIdsForTest(entrustCode, '01', 1, 10).map(function (id, i) {
-                return [id, '设备', '45', String(10 + (i % 3)), '1', '无异常', '23', '1013', '55', '', '合格', '已完成'];
+                var n = i + 1;
+                var fail = n === 2 || n === 7;
+                return [id, '设备', '45', fail ? '38' : String(45 + (i % 3)), '1', fail ? '放电异常' : '无异常', '23', '1013', '55', fail ? '试验值偏低' : '', fail ? '不合格' : '合格', '已完成'];
               })
             },
             {
@@ -454,7 +456,9 @@
               title: '抗弯动负荷试验',
               columns: ['试样编号', '试验设备', '试样长度/m', '标称值/N', '试验值/N', '状态描述', '温度/℃', '气压/hPa', '湿度/%RH', '备注', '结论', '状态', '操作'],
               rows: specimenIdsForTest(entrustCode, '01', 3, 10).map(function (id, i) {
-                return [id, '设备', '1.5', '300', String(295 + i), '无异常', '23', '1013', '55', '', '合格', '已完成'];
+                var n = i + 1;
+                var fail = entrustCode === 'SC2026/0060' && n === 4;
+                return [id, '设备', '1.5', '300', fail ? '' : String(295 + i), fail ? '缺签字' : '无异常', '23', '1013', '55', fail ? '原始记录缺检测员签字' : '', fail ? '不合格' : '合格', '已完成'];
               })
             },
             {
@@ -485,9 +489,12 @@
             {
               key: 'l-ac',
               title: '交流耐压试验',
-              columns: ['试样编号', '试验设备', '电极间距离/m', '标称值/kV', '试验值/kV', '时间/min', '状态描述', '室温/℃', '气压/hPa', '湿度/%RH', '备注', '结论', '状态', '操作'],
-              rows: specimenIdsForTest(entrustCode, '02', 2, 10).map(function (id) {
-                return [id, '设备', '0.5', '45', '45', '1', '无异常', '23', '1013', '55', '', '合格', '已完成'];
+              columns: ['试样编号', '相别', '试验设备', '电极间距离/m', '标称值/kV', '试验值/kV', '时间/min', '状态描述', '室温/℃', '气压/hPa', '湿度/%RH', '备注', '结论', '状态', '操作'],
+              rows: specimenIdsForTest(entrustCode, '02', 2, 10).map(function (id, i) {
+                var n = i + 1;
+                var phase = n <= 4 ? '红' : n <= 7 ? '黄' : '绿';
+                var fail = entrustCode === 'SC2026/0062' && n === 2;
+                return [id, phase, '设备', '0.5', '45', fail ? '38' : '45', '1', fail ? '放电异常' : '无异常', '23', '1013', '55', fail ? '试验值偏低' : '', fail ? '不合格' : '合格', '已完成'];
               })
             },
             {
@@ -542,9 +549,12 @@
             {
               key: 'c-ac',
               title: '交流耐压试验',
-              columns: ['试样编号', '试验设备', '标称值/kV', '试验值/kV', '时间/min', '状态描述', '室温/℃', '气压/hPa', '湿度/%RH', '备注', '结论', '状态', '操作'],
-              rows: specimenIdsForTest(entrustCode, '03', 2, 8).map(function (id) {
-                return [id, '设备', '70', '70', '1', '无异常', '22', '1012', '58', '', '合格', '已完成'];
+              columns: ['试样编号', '相别', '试验设备', '标称值/kV', '试验值/kV', '时间/min', '状态描述', '室温/℃', '气压/hPa', '湿度/%RH', '备注', '结论', '状态', '操作'],
+              rows: specimenIdsForTest(entrustCode, '03', 2, 8).map(function (id, i) {
+                var n = i + 1;
+                var phase = n <= 3 ? '红' : n <= 6 ? '黄' : '绿';
+                var fail = n === 2;
+                return [id, phase, '设备', '70', fail ? '62' : '70', '1', fail ? '局部放电超标' : '无异常', '22', '1012', '58', fail ? '红相超标' : '', fail ? '不合格' : '合格', '已完成'];
               })
             }
           ]
@@ -552,7 +562,7 @@
       ]
     };
 
-    var activeSample = pageData.samples[0].id;
+    var activeSample = entrustCode === 'SC2026/0062' ? 'ladder' : pageData.samples[0].id;
 
     function statusHtml(text) {
       if (text === '已完成') return '<span class="status-done">已完成</span>';
@@ -612,21 +622,36 @@
           html += '<span class="sample-tag">' + sample.name + '</span>';
           html += '<span class="divider">/</span>';
           html += '<span>' + g.title + '</span>';
-          html += (window.ReturnUI ? ReturnUI.itemMark(entrustCode, g.title) : '');
+          html += (window.ReturnUI ? ReturnUI.itemMark(entrustCode, g.title, sample.name) : '');
           html += '</div>';
           html += '<div class="group-meta">' +
-            (window.ReturnUI ? ReturnUI.testerMeta(entrustCode, g.title, g.tester, g.detectTime) + '<span class="mx-2 text-slate-300">|</span>' : '') +
+            (window.ReturnUI ? ReturnUI.testerMeta(entrustCode, g.title, g.tester, g.detectTime, sample.name) + '<span class="mx-2 text-slate-300">|</span>' : '') +
             '已完成 ' + doneCount + ' / ' + g.rows.length + '</div>';
           html += '</div>';
           html += '<div class="test-group-body overflow-x-auto">';
           html += '<table class="detect-table min-w-full"><thead><tr>';
           g.columns.forEach(function (c) { html += '<th>' + c + '</th>'; });
           html += '</tr></thead><tbody>';
+          var specIdx = g.columns.indexOf('试样编号');
+          var phaseIdx = g.columns.indexOf('相别');
           g.rows.forEach(function (row) {
-            html += '<tr>';
+            var specimen = specIdx >= 0 ? row[specIdx] : '';
+            var phase = phaseIdx >= 0 ? row[phaseIdx] : '';
+            var hit = window.ReturnUI && ReturnUI.rowAffected(entrustCode, {
+              item: g.title, sample: sample.name, specimen: specimen, phase: phase
+            });
+            html += '<tr' + (hit ? ' class="ret-row" data-annotate="ret-row"' : '') + '>';
             g.columns.forEach(function (col, ci) {
               var val = ci < row.length ? row[ci] : '';
-              html += '<td>' + cellHtml(col, val, sample.name, g.title) + '</td>';
+              if (col === '试样编号') {
+                html += '<td>' + val + (hit && window.ReturnUI ? ReturnUI.rowMark(entrustCode, {
+                  item: g.title, sample: sample.name, specimen: specimen, phase: phase
+                }) : '') + '</td>';
+              } else if (col === '相别') {
+                html += '<td>' + (window.ReturnUI ? ReturnUI.phaseChip(val, hit) : val) + '</td>';
+              } else {
+                html += '<td>' + cellHtml(col, val, sample.name, g.title) + '</td>';
+              }
             });
             html += '</tr>';
           });
@@ -1229,6 +1254,12 @@
     });
     bindExportBoardEvents();
 
+    var infoBar = document.querySelector('[data-annotate="or-sim-retest"]');
+    if (infoBar && window.ReturnUI) {
+      var strip = ReturnUI.stripHtml(entrustCode, '试验检测');
+      if (strip) infoBar.insertAdjacentHTML('afterend', strip);
+    }
+
     renderTabs();
     renderPanels();
 
@@ -1240,9 +1271,42 @@
           position: 'bottom',
           title: '退回原因气泡',
           wide: true,
-          content: '<strong>需求逻辑：</strong>试验项被退回后，检测员要在标题旁立刻看到原因，但不能把原因、人、时间糊成一句。<br>' +
+          content: '<strong>需求逻辑：</strong>组内审核和数据审核都可以按单条试样数据退回试验检测（数据审核不经过组内审核）；检测员要立刻看到原因，但不能把原因、人、时间糊成一句。<br>' +
           '<strong>展示规则：</strong>感叹号悬停（或键盘聚焦）弹出深色气泡：上行是退回原因全文；下方用「来源 / 退回人 / 时间 / 类型」四行标签对齐。<br>' +
-          '<strong>交互逻辑：</strong>移出或失焦后关闭。演示：SC2026/0052 交流耐压。',
+          '<strong>交互逻辑：</strong>移出或失焦后关闭。演示：SC2026/0052 组内审核退操作杆；SC2026/0062 数据审核退硬梯。',
+          tag: '试验检测'
+        },
+        {
+          id: 'detect-row-return',
+          selector: '.ret-row',
+          position: 'bottom',
+          title: '单条数据退回',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>一组样品可有 10 条试样数据同屏；组内审核或数据审核只打回不合格的那几条，已通过的行不必重测。数据审核退回直接到本环节，不经过组内审核。<br>' +
+          '<strong>展示规则：</strong>被退回的试样行浅红底，试样编号旁打「退回」标签；试验项标题仍打项级标签。无相别时只标命中的试样编号。<br>' +
+          '<strong>交互逻辑：</strong>顶部条幅列出样品 / 范围（芯片含来源节点）。演示：SC2026/0052 操作杆 02、07（组内审核）；SC2026/0060 抗弯第 4 条（数据审核）。',
+          tag: '试验检测'
+        },
+        {
+          id: 'detect-phase-return',
+          selector: '.ret-phase.is-back',
+          position: 'bottom',
+          title: '整相退回',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>试验有相别时，同一样品编号下某一相只要有一条数据退回，整相都要退回，不能只改其中一条。<br>' +
+          '<strong>展示规则：</strong>相别列红 / 黄 / 绿胶囊；被整相退回的相别加红圈，该相全部试样行打退回。演示：0052 横担红相 3 条（组内审核）；0062 硬梯红相 4 条（数据审核）。<br>' +
+          '<strong>交互逻辑：</strong>切样品页签查看。黄相、绿相未退回，保持原状。',
+          tag: '试验检测'
+        },
+        {
+          id: 'detect-ret-strip',
+          selector: '[data-annotate="ret-strip"]',
+          position: 'bottom',
+          title: '退回记录条幅',
+          wide: true,
+          content: '<strong>需求逻辑：</strong>检测员进编辑页先看清本单被谁、从哪退回了哪些试样 / 相别，条幅高度固定以免把试验表顶出首屏。来源可以是组内审核，也可以是数据审核。<br>' +
+          '<strong>展示规则：</strong>条幅固定 152px，内部滚动。每条含次数、来源、样品、原因、范围（试样编号或「相别 ×（整相）」）。<br>' +
+          '<strong>交互逻辑：</strong>演示 SC2026/0052（组内审核两条）与 SC2026/0062（数据审核硬梯整相）。',
           tag: '试验检测'
         },
         {

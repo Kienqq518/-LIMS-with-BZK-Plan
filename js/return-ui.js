@@ -34,7 +34,18 @@
     '.ret-banner-meta{font-size:12px;font-weight:400;color:#9f1239;line-height:1.5;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '.ret-banner-reason{margin-top:4px;font-size:12px;line-height:1.55;color:#7f1d1d}',
     '.ret-ai-pill{display:inline-flex;align-items:center;gap:3px;margin-right:6px;padding:1px 7px;border-radius:9999px;border:1px solid #fda4af;background:#fff1f2;font-size:10px;font-weight:600;letter-spacing:.02em;color:#be123c;vertical-align:middle;white-space:nowrap}',
-    '.ret-strip{margin-bottom:12px;border:1px solid #fecaca;background:#fff7f7;border-radius:8px;padding:10px 14px}',
+    '.ret-strip{margin-bottom:12px;border:1px solid #fecaca;background:#fff7f7;border-radius:8px;box-sizing:border-box;height:152px;min-height:152px;max-height:152px;overflow:hidden;display:flex;flex-direction:column}',
+    '.ret-strip .ret-tl{flex:1;min-height:0;overflow-y:auto;border:none;background:transparent;padding:10px 14px;border-radius:0}',
+    '.ret-strip .ret-tl-head{position:sticky;top:0;z-index:1;background:#fff7f7;padding-bottom:6px}',
+    '.ret-row td{background:#fff7f7}',
+    '.detect-table tbody tr.ret-row,.detect-table tbody tr.ret-row:nth-child(even),.audit-table tbody tr.ret-row{background:#fff7f7}',
+    '.detect-table tbody tr.ret-row td,.audit-table tbody tr.ret-row td{background:#fff7f7}',
+    '.detect-table tbody tr.ret-row:hover,.audit-table tbody tr.ret-row:hover,.detect-table tbody tr.ret-row:hover td,.audit-table tbody tr.ret-row:hover td{background:#fee2e2}',
+    '.ret-phase{display:inline-flex;align-items:center;justify-content:center;min-width:1.6rem;padding:1px 7px;border-radius:9999px;font-size:11px;font-weight:600;line-height:1.4}',
+    '.ret-phase.is-red{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}',
+    '.ret-phase.is-yellow{background:#fffbeb;color:#b45309;border:1px solid #fde68a}',
+    '.ret-phase.is-green{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}',
+    '.ret-phase.is-back{box-shadow:0 0 0 1px #e11d48}',
     '.ret-tl{border:1px dashed #e2e8f0;background:#f8fafc;padding:.75rem 1rem .9rem;border-radius:8px}',
     '.ret-tl-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.65rem}',
     '.ret-timeline{position:relative;margin:0;padding:0;list-style:none}',
@@ -207,6 +218,18 @@
     return '<th class="border border-slate-200 px-3 py-2 font-medium whitespace-nowrap">退回详情</th>';
   }
 
+  function scopeLine(r) {
+    var st = store();
+    var rows = st && st.rowsOf ? st.rowsOf(r) : (r.rows || []);
+    var bits = [];
+    if (r.item) bits.push(r.item);
+    (rows || []).forEach(function (row) {
+      if (row.phase) bits.push('相别 ' + row.phase + '（整相）');
+      else if (row.specimen) bits.push(row.specimen);
+    });
+    if (!bits.length) return '';
+    return '<div class="mt-0.5 text-xs leading-5 text-slate-600">范围 · ' + esc(bits.join('；')) + '</div>';
+  }
   function expandTimeline(returns) {
     var out = [];
     (returns || []).forEach(function (r) {
@@ -246,11 +269,13 @@
       var from = r.from || r.node || '';
       var chips = '<span class="ret-chip' + (idx === 0 ? ' is-latest' : '') + '">第 ' + n + ' 次</span> ' +
         (from ? '<span class="ret-chip">来源 ' + esc(from) + '</span> ' : '') +
+        (r.sample ? '<span class="ret-chip">样品 ' + esc(r.sample) + '</span> ' : '') +
         (r.tester ? '<span class="ret-chip">检测员 ' + esc(r.tester) + '</span> ' : '') +
         '<span class="ret-chip' + (isAi ? ' is-ai' : '') + '">' + esc(kind) + '</span>';
       return '<li class="' + liCls + '">' +
         '<div class="mb-1 flex flex-wrap items-center gap-1.5">' + chips + '</div>' +
         '<div class="text-sm leading-6 text-slate-800"><span class="text-slate-500">原因</span> · ' + esc(r.reason || '—') + '</div>' +
+        scopeLine(r) +
         '<div class="mt-0.5 text-xs text-slate-500">' +
         '<span>退回人 ' + esc(r.by || '—') + '</span>' +
         '<span class="mx-1.5 text-slate-300">·</span>' +
@@ -335,7 +360,8 @@
       }
       var rec = {
         code: code, from: from, to: to, reason: reason, kind: opts.kind || '人工',
-        testers: opts.testers, item: opts.item, tester: opts.tester, reportNo: opts.reportNo
+        testers: opts.testers, item: opts.item, tester: opts.tester, reportNo: opts.reportNo,
+        sample: opts.sample, rows: opts.rows, specimen: opts.specimen, phase: opts.phase
       };
       if (opts.persist !== false && store()) rec = store().push(rec);
       closeModal();
@@ -396,20 +422,41 @@
   function stripHtml(code, node) {
     var recs = list(code, node);
     if (!recs.length) return '';
-    return '<div class="ret-strip">' + timelineHtml(recs) + '</div>';
+    return '<div class="ret-strip" data-annotate="ret-strip">' + timelineHtml(recs) + '</div>';
   }
 
-  function itemMark(code, item) {
+  function itemMark(code, item, sample) {
     var st = store();
     if (!st) return '';
-    var recs = st.listByItem(code, item);
+    var recs = st.listByItem(code, item, sample);
     if (!recs.length) return '';
     var r = recs[0];
     return tagHtml({ title: r.reason }) + warnIcon(r.reason, r);
   }
-  function testerMeta(code, item, fallbackTester, fallbackTime) {
+  function rowAffected(code, opts) {
     var st = store();
-    var rec = st ? (st.listByItem(code, item)[0] || st.latestFor(code, '试验检测')) : null;
+    return !!(st && st.rowAffected && st.rowAffected(code, opts || {}));
+  }
+  function rowMark(code, opts) {
+    opts = opts || {};
+    var st = store();
+    if (!st || !rowAffected(code, opts)) return '';
+    var recs = st.listByItem(code, opts.item || '', opts.sample || '');
+    var r = recs[0] || {};
+    return tagHtml({ title: r.reason || '该条数据已退回' }) + warnIcon(r.reason, r);
+  }
+  function phaseChip(phase, hit) {
+    if (!phase) return '';
+    var cls = 'ret-phase';
+    if (phase === '红') cls += ' is-red';
+    else if (phase === '黄') cls += ' is-yellow';
+    else if (phase === '绿') cls += ' is-green';
+    if (hit) cls += ' is-back';
+    return '<span class="' + cls + '"' + (hit ? ' title="该相别已整相退回"' : '') + '>' + esc(phase) + '</span>';
+  }
+  function testerMeta(code, item, fallbackTester, fallbackTime, sample) {
+    var st = store();
+    var rec = st ? (st.listByItem(code, item, sample)[0] || st.latestFor(code, '试验检测')) : null;
     var tester = (rec && rec.tester) || fallbackTester || '潘哲宁';
     var time = (rec && rec.detectTime) || fallbackTime || '2026-11-12 15:40';
     return '<span class="whitespace-nowrap">检测员 ' + esc(tester) + '</span>' +
@@ -453,6 +500,9 @@
     bannerHtml: bannerHtml,
     stripHtml: stripHtml,
     itemMark: itemMark,
+    rowMark: rowMark,
+    rowAffected: rowAffected,
+    phaseChip: phaseChip,
     testerMeta: testerMeta,
     logLine: logLine,
     latest: latest,

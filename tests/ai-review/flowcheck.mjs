@@ -326,6 +326,45 @@ const detHeads = await p.locator('.detect-table').first().locator('thead th').al
 const conclIdx = detHeads.indexOf('结论');
 const statusIdx = detHeads.indexOf('状态');
 out.push((conclIdx >= 0 && statusIdx === conclIdx + 1 ? '✅' : '❌') + ' 试验检测结论列在状态列前');
+const detStrip = await p.locator('.ret-strip').evaluate((el) => {
+  const s = getComputedStyle(el);
+  const inner = el.querySelector('.ret-tl');
+  const is = inner ? getComputedStyle(inner) : {};
+  return { h: s.height, minH: s.minHeight, maxH: s.maxHeight, overflow: s.overflowY, inner: is.overflowY || '' };
+}).catch(() => null);
+out.push((detStrip && detStrip.h === '152px' && detStrip.maxH === '152px' && detStrip.inner === 'auto' ? '✅' : '❌') + ' 试验检测条幅定高可滚动 ' + JSON.stringify(detStrip));
+const rodRet = await p.locator('#panel-rod .test-group').first().locator('tbody tr.ret-row').count();
+out.push((rodRet === 2 ? '✅' : '❌') + ' 操作杆交流耐压单条退回 2 行 ' + rodRet);
+await p.locator('.sample-tab', { hasText: '绝缘横担' }).click();
+await p.waitForTimeout(150);
+const armHeads = await p.locator('#panel-crossarm .test-group').nth(1).locator('thead th').allTextContents();
+out.push((armHeads.indexOf('相别') === 1 ? '✅' : '❌') + ' 横担交流耐压有相别列 ' + armHeads.join('/'));
+const armRet = await p.locator('#panel-crossarm .test-group').nth(1).locator('tbody tr.ret-row').count();
+out.push((armRet === 3 ? '✅' : '❌') + ' 横担红相整相退回 3 行 ' + armRet);
+const yellowHit = await p.evaluate(() => {
+  const table = document.querySelectorAll('#panel-crossarm .test-group')[1];
+  if (!table) return -1;
+  return [...table.querySelectorAll('tbody tr')].filter((tr) => /黄/.test(tr.textContent || '') && tr.classList.contains('ret-row')).length;
+});
+out.push((yellowHit === 0 ? '✅' : '❌') + ' 横担黄相未整相退回 ' + yellowHit);
+
+await p.goto(BASE + '/test-detect-edit.html?code=SC2026/0062', { waitUntil: 'load' });
+await p.waitForTimeout(280);
+const d62Strip = (await p.locator('.ret-strip').textContent()) || '';
+out.push((/数据审核/.test(d62Strip) && /绝缘硬梯/.test(d62Strip) && /相别 红/.test(d62Strip) ? '✅' : '❌') + ' 0062检测条幅来自数据审核整相');
+const ladderHeads = await p.locator('#panel-ladder .test-group').nth(1).locator('thead th').allTextContents();
+out.push((ladderHeads.indexOf('相别') === 1 ? '✅' : '❌') + ' 硬梯交流耐压有相别列');
+const ladderRet = await p.locator('#panel-ladder .test-group').nth(1).locator('tbody tr.ret-row').count();
+out.push((ladderRet === 4 ? '✅' : '❌') + ' 硬梯红相整相退回 4 行 ' + ladderRet);
+const g62Item = await p.locator('#panel-ladder .test-group').nth(1).locator('.group-title .ret-tag').count();
+out.push((g62Item >= 1 ? '✅' : '❌') + ' 硬梯交流耐压标题有退回标签');
+
+await p.goto(BASE + '/test-detect-edit.html?code=SC2026/0060', { waitUntil: 'load' });
+await p.waitForTimeout(250);
+const d60Strip = (await p.locator('.ret-strip').textContent()) || '';
+out.push((/数据审核/.test(d60Strip) && /抗弯/.test(d60Strip) ? '✅' : '❌') + ' 0060检测条幅来自数据审核单条');
+const dynRet = await p.locator('#panel-rod .test-group').nth(2).locator('tbody tr.ret-row').count();
+out.push((dynRet === 1 ? '✅' : '❌') + ' 操作杆抗弯无相别只退 1 行 ' + dynRet);
 
 await p.goto(BASE + '/test-audit-edit.html?type=group&code=SC2026/0052', { waitUntil: 'load' });
 await p.waitForTimeout(220);
@@ -333,6 +372,13 @@ const auditHeads = await p.locator('.audit-table').nth(1).locator('thead th').al
 const aConcl = auditHeads.indexOf('结论');
 const aStatus = auditHeads.indexOf('状态');
 out.push((aConcl >= 0 && aStatus === aConcl + 1 ? '✅' : '❌') + ' 组内审核结论列在状态列前');
+
+await p.goto(BASE + '/test-audit-edit.html?type=group&code=SC2026/0062', { waitUntil: 'load' });
+await p.waitForTimeout(250);
+const g62Body = (await p.locator('body').textContent()) || '';
+out.push(((await p.locator('.ret-strip').count()) === 0 ? '✅' : '❌') + ' 组内审核详情无退回条幅');
+out.push(((await p.locator('.ret-row, .test-group-header .ret-tag').count()) === 0 ? '✅' : '❌') + ' 组内审核详情无试样/试验项退回标');
+out.push((!/可查看退回原因/.test(g62Body) ? '✅' : '❌') + ' 组内审核详情无退回原因说明');
 
 await p.goto(BASE + '/test-audit-edit.html?type=data&code=SC2026/0062', { waitUntil: 'load' });
 await p.waitForTimeout(220);
@@ -345,6 +391,12 @@ await p.goto(BASE + '/test-audit-edit.html?type=data&code=SC2026/0055&sample=' +
 await p.waitForTimeout(280);
 const d55 = (await p.locator('body').textContent()) || '';
 out.push((/退回记录/.test(d55) && /绝缘毯外观结论/.test(d55) && /报告编制/.test(d55) ? '✅' : '❌') + ' 数据审核0055详情顶部有整单退回记录');
+const d55Strip = await p.locator('.ret-strip').evaluate((el) => {
+  const s = getComputedStyle(el);
+  const inner = el.querySelector('.ret-tl');
+  return { h: s.height, maxH: s.maxHeight, inner: inner ? getComputedStyle(inner).overflowY : '' };
+}).catch(() => null);
+out.push((d55Strip && d55Strip.h === '152px' && d55Strip.maxH === '152px' && d55Strip.inner === 'auto' ? '✅' : '❌') + ' 数据审核条幅定高可滚动 ' + JSON.stringify(d55Strip));
 const d55ItemTag = await p.locator('.test-group-header .ret-tag, .test-group-header .ret-warn-wrap').count();
 out.push((d55ItemTag === 0 ? '✅' : '❌') + ' 数据审核0055试验项名称后无退回标签 ' + d55ItemTag);
 out.push((!/可查看退回原因/.test(d55) && /可查看不合格原因/.test(d55) ? '✅' : '❌') + ' 数据审核详情去掉悬停看退回原因说明');
@@ -394,21 +446,28 @@ out.push((/审批未通过/.test(rejTxt) && /不通过/.test(rejTxt) && /客户�
 await p.goto(BASE + '/group-audit.html', { waitUntil: 'load' });
 await p.waitForTimeout(250);
 const gTxt = (await p.locator('#tableBody').textContent()) || '';
-out.push((/SC2026\/0062/.test(gTxt) && /退回/.test(gTxt) && /查看/.test(gTxt) ? '✅' : '❌') + ' 组内审核名单有退回标签和详情');
-const tagWrap = await p.evaluate(() => {
-  const row = [...document.querySelectorAll('#tableBody tr')].find((tr) => /SC2026\/0060/.test(tr.textContent || ''));
+out.push((/SC2026\/0062/.test(gTxt) ? '✅' : '❌') + ' 组内审核名单仍有 0062 待审任务');
+out.push(((await p.locator('#tableBody .ret-tag').count()) === 0 ? '✅' : '❌') + ' 组内审核名单无退回标签');
+
+await p.goto(BASE + '/test-detect.html', { waitUntil: 'load' });
+await p.waitForTimeout(250);
+const detList = (await p.locator('#tableBody').textContent()) || '';
+out.push((/SC2026\/0062/.test(detList) && /SC2026\/0060/.test(detList) ? '✅' : '❌') + ' 试验检测名单含数据审核退回委托');
+out.push(((await p.locator('#tableBody .ret-tag').count()) >= 2 ? '✅' : '❌') + ' 试验检测名单有退回标签');
+
+await p.goto(BASE + '/data-audit.html', { waitUntil: 'load' });
+await p.waitForTimeout(250);
+const daTxt = (await p.locator('#tableBody').textContent()) || '';
+out.push((/SC2026\/0055/.test(daTxt) && /退回/.test(daTxt) && /查看/.test(daTxt) ? '✅' : '❌') + ' 数据审核名单有退回标签和详情');
+const daWrap = await p.evaluate(() => {
+  const row = [...document.querySelectorAll('#tableBody tr')].find((tr) => /SC2026\/0055/.test(tr.textContent || ''));
   if (!row) return 'missing';
   const stack = row.querySelector('.ret-code-stack');
   if (!stack) return 'no-stack';
   const wrap = getComputedStyle(stack).flexWrap;
   return (wrap === 'nowrap' && stack.scrollHeight < 40) ? 'nowrap' : wrap + ':' + stack.scrollHeight;
 });
-out.push((tagWrap === 'nowrap' ? '✅' : '❌') + ' 组内审核退回标签与编号同一行 ' + tagWrap);
-
-await p.goto(BASE + '/data-audit.html', { waitUntil: 'load' });
-await p.waitForTimeout(250);
-const daTxt = (await p.locator('#tableBody').textContent()) || '';
-out.push((/SC2026\/0055/.test(daTxt) && /退回/.test(daTxt) && /查看/.test(daTxt) ? '✅' : '❌') + ' 数据审核名单有退回标签和详情');
+out.push((daWrap === 'nowrap' ? '✅' : '❌') + ' 数据审核退回标签与编号同一行 ' + daWrap);
 
 await p.goto(BASE + '/report-issue.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
