@@ -3,7 +3,7 @@
  * { from, to, by, time, reason, kind }  kind = 人工 / AI / 系统
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-returns-v8';
+  var STORAGE_KEY = 'lims-returns-v9';
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
   function now() {
@@ -50,11 +50,12 @@
       ]
     },
     {
-      code: 'SC2026/0052', from: '组内审核', to: '试验检测', by: '王审核', time: '2026-11-12 16:28',
-      reason: '红相局部放电超标，整相退回复测。', kind: '人工',
-      item: '交流耐压试验', sample: '绝缘横担', tester: '潘哲宁', detectTime: '2026-11-12 16:05',
+      code: 'SC2026/0052', from: '数据审核', to: '试验检测', by: '李数据', time: '2026-11-12 16:28',
+      reason: '交流耐压试验值低于标称值，请复核后重填。', kind: '人工',
+      item: '交流耐压试验', sample: '绝缘操作杆', tester: '潘哲宁', detectTime: '2026-11-12 15:40',
       rows: [
-        { specimen: 'SC2026/00520302-02', phase: '红' }
+        { specimen: 'SC2026/00520102-01', phase: '' },
+        { specimen: 'SC2026/00520107-01', phase: '' }
       ]
     },
     {

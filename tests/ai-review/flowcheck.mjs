@@ -320,7 +320,7 @@ if (await warnWrap.count()) {
   await p.waitForTimeout(80);
   const tipTxt = (await p.locator('#ret-warn-tip').textContent()) || '';
   const tipOn = await p.locator('#ret-warn-tip.is-on').count();
-  out.push((tipOn && /交流耐压试验值与原始记录不一致/.test(tipTxt) && /退回人/.test(tipTxt) && /王审核/.test(tipTxt) && /时间/.test(tipTxt) ? '✅' : '❌') + ' 感叹号 hover 气泡分行展示原因和退回人');
+  out.push((tipOn && /交流耐压试验值低于标称值/.test(tipTxt) && /来源/.test(tipTxt) && /数据审核/.test(tipTxt) && /退回人/.test(tipTxt) && /李数据/.test(tipTxt) && /时间/.test(tipTxt) ? '✅' : '❌') + ' 感叹号与条幅最新一次的原因和来源一致');
   await p.screenshot({ path: SHOT_DIR + '/detect-warn-tip.png' });
 }
 const detHeads = await p.locator('.detect-table').first().locator('thead th').allTextContents();
@@ -341,7 +341,9 @@ await p.waitForTimeout(150);
 const armHeads = await p.locator('#panel-crossarm .test-group').nth(1).locator('thead th').allTextContents();
 out.push((armHeads.indexOf('相别') === 1 ? '✅' : '❌') + ' 横担交流耐压有相别列 ' + armHeads.join('/'));
 const armRet = await p.locator('#panel-crossarm .test-group').nth(1).locator('tbody tr.ret-row').count();
-out.push((armRet === 3 ? '✅' : '❌') + ' 横担红相整相退回 3 行 ' + armRet);
+out.push((armRet === 0 ? '✅' : '❌') + ' 0052 操作杆无相别，横担不再整相退回 ' + armRet);
+const d52Strip = (await p.locator('.ret-strip').textContent()) || '';
+out.push((/第\s*2\s*次/.test(d52Strip) && /数据审核/.test(d52Strip) && /交流耐压试验值低于标称值/.test(d52Strip) && !/红相局部放电/.test(d52Strip) ? '✅' : '❌') + ' 0052 第二次退回来源为数据审核且原因不含相别');
 const yellowHit = await p.evaluate(() => {
   const table = document.querySelectorAll('#panel-crossarm .test-group')[1];
   if (!table) return -1;

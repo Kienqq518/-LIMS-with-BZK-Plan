@@ -449,8 +449,11 @@
     return tagHtml({ title: r.reason || '该条数据已退回' }) + warnIcon(r.reason, r);
   }
   function rowWarn(code, opts) {
-    var r = rowRecord(code, opts);
-    if (!r) return '';
+    var hit = rowRecord(code, opts);
+    if (!hit) return '';
+    var st = store();
+    var latest = st && st.latestFor ? st.latestFor(code, '试验检测') : null;
+    var r = latest || hit;
     return warnIcon(r.reason || '该条数据已退回', r);
   }
   function phaseChip(phase, hit) {
