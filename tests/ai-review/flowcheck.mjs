@@ -109,6 +109,7 @@ out.push((/填写报告发放信息/.test(await p.locator('#flow-modal').textCon
 await p.goto(BASE + '/task-archive.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
 out.push(((await p.locator('[data-pass]').count()) >= 1 && (await p.locator('[data-back]').count()) >= 1 ? '✅' : '❌') + ' 任务归档有归档/退回');
+out.push(((await p.locator('#flow-root .ret-tag').count()) === 0 ? '✅' : '❌') + ' 归档名单无退回标签');
 out.push((/报告记录/.test(await p.locator('#flow-root thead').textContent()) && /样品大类/.test(await p.locator('#flow-root thead').textContent()) && !/任务归档/.test(await p.locator('#flow-root thead').textContent()) ? '✅' : '❌') + ' 归档名单去掉任务归档列');
 await p.locator('#flow-root a[data-record]').first().click();
 await p.waitForTimeout(280);

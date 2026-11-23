@@ -39,7 +39,8 @@ const rlAi = await p.evaluate(() => {
     cards === 1 && goN === cards &&
     /从「报告审核」退回/.test(headTxt) && /2026-09-03 10:15/.test(headTxt) &&
     bodyStyle && (bodyStyle.overflowY === 'auto' || bodyStyle.overflowY === 'scroll') &&
-    parseFloat(bodyStyle.height) > 0;
+    bodyStyle.maxHeight !== 'none' && parseFloat(bodyStyle.maxHeight) > 0 &&
+    parseFloat(bodyStyle.height) <= parseFloat(bodyStyle.maxHeight) + 1;
 });
 out.push((rlAi ? '✅' : '❌') + ' 报告编制条幅仅展示 AI 自动退回');
 await p.setViewportSize({ width: 1440, height: 900 });

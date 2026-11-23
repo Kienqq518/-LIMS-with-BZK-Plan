@@ -3,7 +3,7 @@
  * { from, to, by, time, reason, kind }  kind = 人工 / AI / 系统
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-returns-v2';
+  var STORAGE_KEY = 'lims-returns-v3';
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
   function now() {
@@ -56,8 +56,7 @@
     { code: 'SC2026/0312', from: '报告处理', to: '报告签发', by: '王处理', time: '2026-11-20 14:30', reason: '签发章位置与机构授权范围不符，退回签发重新核验。', kind: '人工', reportNo: 'SC2026/0312-01' },
     { code: 'SC2026/0190', from: '收费审批', to: '报告处理', by: '赵财务', time: '2026-11-10 09:40', reason: '处理范围与收费清单不一致，请重新勾选后再收费。', kind: '人工' },
     { code: 'SC2026/0285', from: '报告发放', to: '收费审批', by: '孙发放', time: '2026-11-09 14:18', reason: '收费未结清，暂不能发放，退回收费审批。', kind: '人工' },
-    { code: 'SC2026/0166', from: '任务归档', to: '报告发放', by: 'admin', time: '2026-11-08 11:02', reason: '快递单号填写错误，退回发放更正。', kind: '人工' },
-    { code: 'SC2026/0242', from: '任务完成', to: '任务归档', by: '系统', time: '2026-11-07 17:30', reason: '归档材料缺扫描件，系统退回补档。', kind: '系统' }
+    { code: 'SC2026/0166', from: '任务归档', to: '报告发放', by: 'admin', time: '2026-11-08 11:02', reason: '快递单号填写错误，退回发放更正。', kind: '人工' }
   ];
 
   function load() {

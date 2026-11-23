@@ -74,7 +74,7 @@
       return '<tr class="hover:bg-slate-50">' +
         '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2">' +
-        (global.ReturnUI
+        (global.ReturnUI && stage !== '任务归档' && stage !== '任务完成'
           ? ReturnUI.codeWithTag(r.code, stage, '<a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(r.code) + '">' + esc(r.code) + '</a>')
           : '<a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(r.code) + '">' + esc(r.code) + '</a>') +
         '</td>' +
@@ -435,7 +435,7 @@
               : stage === '报告发放'
                 ? '<strong>需求逻辑：</strong>发放必须按「勾选报告 → 填写发放信息 → 发放通过」走，先过再填地址会丢件。<br><strong>展示规则：</strong>操作列「发放」。<br><strong>交互逻辑：</strong>打开发放弹窗，见弹窗内三步动线批注。'
                 : stage === '任务归档'
-                  ? '<strong>需求逻辑：</strong>发放完成后归档入库，异常单可退回发放。<br><strong>展示规则：</strong>操作列同时提供「归档」「退回」，不再单列「任务归档」字段。<br><strong>交互逻辑：</strong>归档进任务完成；退回须填原因。'
+                  ? '<strong>需求逻辑：</strong>发放完成后归档入库，异常单可退回发放。任务完成是终点，不能再退回归档，所以归档名单没有退回标签。<br><strong>展示规则：</strong>操作列同时提供「归档」「退回」，不再单列「任务归档」字段；委托编号旁不挂退回标签。<br><strong>交互逻辑：</strong>归档进任务完成；退回须填原因，退回报告发放。'
                   : '<strong>需求逻辑：</strong>任务完成后名单只读，发放记录要能回看快递信息。<br><strong>展示规则：</strong>末列改为「发放记录」，与报告记录一起右侧冻结。<br><strong>交互逻辑：</strong>「查看」打开发放记录弹窗（只读）；「报告记录」仍开抽屉。',
         tag: stage
       }

@@ -3,7 +3,7 @@
  * 编制 / 审核通过后进入本链；状态落 localStorage，刷新不丢。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-report-flow-v7';
+  var STORAGE_KEY = 'lims-report-flow-v8';
   var ORDER = ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   var SIGNED = ['报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   function isSigned(status) { return SIGNED.indexOf(status) >= 0; }
@@ -157,8 +157,7 @@
       status: '任务归档' }),
     row({ code: 'SC2026/0242', customer: '贵州送变电有限公司', sample: '绝缘手套 10kV',
       sendDate: '2026-09-07', requireDate: '2026-09-14', acceptDate: '2026-09-07',
-      status: '任务归档',
-      returns: [{ from: '任务完成', to: '任务归档', by: '系统', time: '2026-11-07 17:30', reason: '归档材料缺扫描件，系统退回补档。', kind: '系统' }] }),
+      status: '任务归档' }),
     row({ code: 'SC2026/0235', customer: '安顺供电局', sample: '混凝土抗压试块',
       sendDate: '2026-07-14', requireDate: '2026-07-22', acceptDate: '2026-07-14',
       status: '任务归档' }),
@@ -236,6 +235,7 @@
     extra = extra || {};
     var t = get(code); if (!t) return false;
     var from = t.status;
+    if (from === '任务完成') return false;
     var prev = prevOf(from);
     var to = extra.to || prev || '报告审核';
     var rec = {

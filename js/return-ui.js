@@ -10,7 +10,7 @@
     '.ret-code-stack{display:flex;flex-wrap:wrap;align-items:center;gap:4px}',
     '.ret-banner{margin-top:1rem;border:1px solid #f3c4c4;background:#fff7f7;border-radius:8px;box-shadow:0 1px 2px rgba(15,23,42,.04)}',
     '.ret-banner-head{padding:9px 16px;border-bottom:1px solid #f3c4c4;font-size:13px;font-weight:600;color:#b91c1c;background:#fdecec}',
-    '.ret-banner-body{height:11.5rem;overflow-y:auto;padding:12px 16px 14px;font-size:13px;color:#7f1d1d}',
+    '.ret-banner-body{max-height:11.5rem;overflow-y:auto;padding:12px 16px 14px;font-size:13px;color:#7f1d1d}',
     '.ret-banner-group{padding:0}',
     '.ret-banner-code{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:#9f1239}',
     '.ret-banner-count{font-size:12px;font-weight:500;color:#be123c}',
