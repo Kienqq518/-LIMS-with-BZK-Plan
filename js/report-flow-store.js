@@ -3,7 +3,7 @@
  * 编制 / 审核通过后进入本链；状态落 localStorage，刷新不丢。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-report-flow-v9';
+  var STORAGE_KEY = 'lims-report-flow-v10';
   var ORDER = ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   var SIGNED = ['报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   function isSigned(status) { return SIGNED.indexOf(status) >= 0; }
@@ -136,11 +136,15 @@
       sendDate: '2026-09-02', requireDate: '2026-09-12', acceptDate: '2026-09-02',
       status: '收费审批', at: '2026-09-02 16:40:00',
       reports: (function () {
-        var reps = reports('SC2026/0190', 2, '2026-09-02 16:40:00');
+        var reps = reports('SC2026/0190', 3, '2026-09-02 16:40:00');
         reps[0].stage = '报告处理';
+        reps[2].stage = '报告处理';
         return reps;
       })(),
-      returns: [{ from: '收费审批', to: '报告处理', by: '赵财务', time: '2026-11-10 09:40', reason: '处理范围与收费清单不一致，请重新勾选后再收费。', kind: '人工', reportNo: 'SC2026-0190-01' }] }),
+      returns: [
+        { from: '收费审批', to: '报告处理', by: '赵财务', time: '2026-11-10 09:40', reason: '处理范围与收费清单不一致，请重新勾选后再收费。', kind: '人工', reportNo: 'SC2026-0190-01' },
+        { from: '收费审批', to: '报告处理', by: '赵财务', time: '2026-11-10 11:15', reason: '检测项目收费漏计导体电阻，请补勾后再提交。', kind: '人工', reportNo: 'SC2026-0190-03' }
+      ] }),
     row({ code: 'SC2026/0175', customer: '贵州送变电有限公司', sample: '绝缘手套 10kV',
       sendDate: '2026-09-03', requireDate: '2026-09-12', acceptDate: '2026-09-03',
       status: '收费审批', at: '2026-09-04 09:40:00',
@@ -149,11 +153,15 @@
       sendDate: '2026-08-27', requireDate: '2026-09-05', acceptDate: '2026-08-27',
       status: '报告发放', at: '2026-08-27 16:10:00',
       reports: (function () {
-        var reps = reports('SC2026/0285', 2, '2026-08-27 16:10:00');
+        var reps = reports('SC2026/0285', 3, '2026-08-27 16:10:00');
         reps[0].stage = '收费审批';
+        reps[2].stage = '收费审批';
         return reps;
       })(),
-      returns: [{ from: '报告发放', to: '收费审批', by: '孙发放', time: '2026-11-09 14:18', reason: '收费未结清，暂不能发放，退回收费审批。', kind: '人工', reportNo: 'SC2026-0285-01' }] }),
+      returns: [
+        { from: '报告发放', to: '收费审批', by: '孙发放', time: '2026-11-09 14:18', reason: '收费未结清，暂不能发放，退回收费审批。', kind: '人工', reportNo: 'SC2026-0285-01' },
+        { from: '报告发放', to: '收费审批', by: '孙发放', time: '2026-11-09 15:02', reason: '发票抬头与委托单位不一致，请复核后再发放。', kind: '人工', reportNo: 'SC2026-0285-03' }
+      ] }),
     row({ code: 'SC2026/0447', contract: 'HT2026-0447', customer: '杭州数蚕智能科技有限公司', sample: '安全带',
       sendDate: '2026-11-12', requireDate: '2026-11-20', acceptDate: '2026-11-12',
       status: '报告发放', at: '2026-11-12 13:27:35',
