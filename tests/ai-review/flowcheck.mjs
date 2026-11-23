@@ -309,6 +309,37 @@ await p.waitForTimeout(280);
 const detHead = await p.locator('.test-group-header').first().textContent();
 out.push((/检测员/.test(detHead) && /检测时间/.test(detHead) ? '✅' : '❌') + ' 试验项表头有检测员和检测时间');
 out.push((/退回/.test(detHead) ? '✅' : '❌') + ' 试验项名称后有退回标签');
+const warnWrap = p.locator('.ret-warn-wrap').first();
+out.push(((await warnWrap.count()) ? '✅' : '❌') + ' 试验项退回旁有感叹号');
+if (await warnWrap.count()) {
+  await warnWrap.hover();
+  await warnWrap.evaluate((el) => {
+    el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, clientX: 1, clientY: 1 }));
+  });
+  await p.waitForTimeout(80);
+  const tipTxt = (await p.locator('#ret-warn-tip').textContent()) || '';
+  const tipOn = await p.locator('#ret-warn-tip.is-on').count();
+  out.push((tipOn && /交流耐压试验值与原始记录不一致/.test(tipTxt) ? '✅' : '❌') + ' 感叹号 hover 气泡展示退回原因');
+  await p.screenshot({ path: SHOT_DIR + '/detect-warn-tip.png' });
+}
+const detHeads = await p.locator('.detect-table').first().locator('thead th').allTextContents();
+const conclIdx = detHeads.indexOf('结论');
+const statusIdx = detHeads.indexOf('状态');
+out.push((conclIdx >= 0 && statusIdx === conclIdx + 1 ? '✅' : '❌') + ' 试验检测结论列在状态列前');
+
+await p.goto(BASE + '/test-audit-edit.html?type=group&code=SC2026/0052', { waitUntil: 'load' });
+await p.waitForTimeout(220);
+const auditHeads = await p.locator('.audit-table').nth(1).locator('thead th').allTextContents();
+const aConcl = auditHeads.indexOf('结论');
+const aStatus = auditHeads.indexOf('状态');
+out.push((aConcl >= 0 && aStatus === aConcl + 1 ? '✅' : '❌') + ' 组内审核结论列在状态列前');
+
+await p.goto(BASE + '/test-audit-edit.html?type=data&code=SC2026/0062', { waitUntil: 'load' });
+await p.waitForTimeout(220);
+const dataHeads = await p.locator('.audit-table').nth(1).locator('thead th').allTextContents();
+const dConcl = dataHeads.indexOf('结论');
+const dStatus = dataHeads.indexOf('状态');
+out.push((dConcl >= 0 && dStatus === dConcl + 1 ? '✅' : '❌') + ' 数据审核结论列在状态列前');
 
 await p.goto(BASE + '/change-apply.html', { waitUntil: 'load' });
 await p.waitForTimeout(200);
@@ -356,6 +387,22 @@ if (await p.locator('[data-ret-detail]').count()) {
   out.push((/来源 /.test(retHtml) ? '✅' : '❌') + ' 退回弹窗仍显示来源');
 } else {
   out.push('❌ 委托登记没有退回详情入口');
+}
+
+await p.goto(BASE + '/test-distribute.html', { waitUntil: 'load' });
+await p.waitForTimeout(220);
+const distRow = p.locator('tr', { hasText: 'SC2026/0085' });
+if (await distRow.count() && await distRow.locator('[data-ret-detail]').count()) {
+  await distRow.locator('[data-ret-detail]').first().click();
+  await p.waitForTimeout(150);
+  const distHtml = (await p.locator('#ret-modal').innerHTML()) || '';
+  const distTxt = (await p.locator('#ret-modal').textContent()) || '';
+  const nodes = await p.locator('#ret-modal .ret-timeline > li').count();
+  out.push((nodes >= 2 && /潘哲宁/.test(distTxt) && /李四/.test(distTxt) ? '✅' : '❌') + ' 试样分发 testers 各占一个时间轴节点');
+  out.push((!/<table[\s\S]*检测员[\s\S]*退回时间/.test(distHtml) ? '✅' : '❌') + ' 试样分发退回详情不用检测员表格');
+  await p.screenshot({ path: SHOT_DIR + '/distribute-return-nodes.png' });
+} else {
+  out.push('❌ 试样分发 SC2026/0085 没有退回详情入口');
 }
 
 console.log(out.join('\n'));

@@ -6,7 +6,13 @@
   var CSS = [
     '.ret-tag{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:600;line-height:1.4;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;vertical-align:middle;white-space:nowrap}',
     '.ret-tag-fail{background:#fff7ed;color:#c2410c;border-color:#fed7aa}',
-    '.ret-warn{margin-left:6px;color:#f97316;cursor:help;font-size:14px;vertical-align:middle}',
+    '.ret-warn{margin-left:0;color:#f97316;font-size:14px;vertical-align:middle}',
+    '.ret-warn-wrap{display:inline-flex;align-items:center;margin-left:6px;cursor:help;vertical-align:middle;outline:none}',
+    '.ret-warn-wrap:focus{outline:2px solid #fdba74;outline-offset:2px;border-radius:9999px}',
+    '#ret-warn-tip{position:fixed;z-index:10050;display:none;max-width:320px;padding:8px 10px;border-radius:6px;background:#1e293b;color:#fff;font-size:12px;line-height:1.55;box-shadow:0 8px 24px rgba(15,23,42,.28);pointer-events:none;white-space:pre-wrap;word-break:break-word}',
+    '#ret-warn-tip.is-on{display:block}',
+    '#ret-warn-tip::after{content:"";position:absolute;left:var(--arrow-left,50%);bottom:-6px;width:0;height:0;margin-left:-6px;border:6px solid transparent;border-top-color:#1e293b;border-bottom-width:0}',
+    '#ret-warn-tip.is-below::after{bottom:auto;top:-6px;border-top-width:0;border-top-color:transparent;border-bottom-width:6px;border-bottom-color:#1e293b}',
     '.ret-code-stack{display:flex;flex-wrap:wrap;align-items:center;gap:4px}',
     '.ret-banner{margin-top:1rem;border:1px solid #f3c4c4;background:#fff7f7;border-radius:8px;box-shadow:0 1px 2px rgba(15,23,42,.04)}',
     '.ret-banner-head{padding:9px 16px;border-bottom:1px solid #f3c4c4;font-size:13px;font-weight:600;color:#b91c1c;background:#fdecec}',
@@ -69,7 +75,80 @@
   }
   function warnIcon(reason) {
     if (!reason) return '';
-    return '<i class="fa fa-exclamation-circle ret-warn" title="' + esc(reason) + '"></i>';
+    return '<span class="ret-warn-wrap" tabindex="0" data-reason="' + esc(reason) + '" aria-label="退回原因">' +
+      '<i class="fa fa-exclamation-circle ret-warn" aria-hidden="true"></i></span>';
+  }
+  function warnTipEl() {
+    var el = document.getElementById('ret-warn-tip');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'ret-warn-tip';
+    el.setAttribute('role', 'tooltip');
+    document.body.appendChild(el);
+    return el;
+  }
+  function hideWarnTip() {
+    var el = document.getElementById('ret-warn-tip');
+    if (el) el.classList.remove('is-on', 'is-below');
+  }
+  function showWarnTip(wrap) {
+    if (!wrap) return;
+    ensureCss();
+    var el = warnTipEl();
+    el.textContent = wrap.getAttribute('data-reason') || '';
+    el.classList.add('is-on');
+    el.classList.remove('is-below');
+    var r = wrap.getBoundingClientRect();
+    var tw = el.offsetWidth;
+    var th = el.offsetHeight;
+    var left = r.left + r.width / 2 - tw / 2;
+    var top = r.top - th - 8;
+    var below = false;
+    if (top < 8) {
+      top = r.bottom + 8;
+      below = true;
+    }
+    if (left < 8) left = 8;
+    if (left + tw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - tw - 8);
+    if (top + th > window.innerHeight - 8 && !below) top = Math.max(8, window.innerHeight - th - 8);
+    el.style.left = Math.round(left) + 'px';
+    el.style.top = Math.round(top) + 'px';
+    el.classList.toggle('is-below', below);
+    var arrow = r.left + r.width / 2 - left;
+    el.style.setProperty('--arrow-left', Math.max(12, Math.min(tw - 12, arrow)) + 'px');
+  }
+  function bindWarnTips() {
+    if (document.documentElement.getAttribute('data-ret-warn-bound')) return;
+    document.documentElement.setAttribute('data-ret-warn-bound', '1');
+    var current = null;
+    function enter(e) {
+      var wrap = e.target.closest && e.target.closest('.ret-warn-wrap');
+      if (!wrap || wrap === current) return;
+      current = wrap;
+      showWarnTip(wrap);
+    }
+    function leave(e) {
+      var wrap = e.target.closest && e.target.closest('.ret-warn-wrap');
+      if (!wrap) return;
+      var rel = e.relatedTarget;
+      if (rel && wrap.contains(rel)) return;
+      if (current === wrap) current = null;
+      hideWarnTip();
+    }
+    document.addEventListener('pointerover', enter);
+    document.addEventListener('mouseover', enter);
+    document.addEventListener('pointerout', leave);
+    document.addEventListener('mouseout', leave);
+    document.addEventListener('focusin', function (e) {
+      var wrap = e.target.closest && e.target.closest('.ret-warn-wrap');
+      if (wrap) { current = wrap; showWarnTip(wrap); }
+    });
+    document.addEventListener('focusout', function (e) {
+      var wrap = e.target.closest && e.target.closest('.ret-warn-wrap');
+      if (wrap) { current = null; hideWarnTip(); }
+    });
+    window.addEventListener('scroll', hideWarnTip, true);
+    window.addEventListener('resize', hideWarnTip);
   }
   function latest(code, node) {
     var st = store();
@@ -98,8 +177,33 @@
     return '<th class="border border-slate-200 px-3 py-2 font-medium whitespace-nowrap">退回详情</th>';
   }
 
+  function expandTimeline(returns) {
+    var out = [];
+    (returns || []).forEach(function (r) {
+      var testers = r.testers;
+      if (testers && testers.length) {
+        testers.slice().sort(function (a, b) {
+          return String(b.time || '').localeCompare(String(a.time || ''));
+        }).forEach(function (t) {
+          out.push({
+            from: r.from,
+            to: r.to,
+            kind: r.kind,
+            by: t.tester || r.by,
+            time: t.time || r.time,
+            reason: t.reason || r.reason,
+            tester: t.tester || r.tester
+          });
+        });
+      } else {
+        out.push(r);
+      }
+    });
+    return out;
+  }
+
   function timelineHtml(returns) {
-    returns = (returns || []).slice();
+    returns = expandTimeline(returns);
     if (!returns.length) {
       return '<div class="ret-tl"><div class="text-xs text-slate-400">暂无退回记录</div></div>';
     }
@@ -112,6 +216,7 @@
       var from = r.from || r.node || '';
       var chips = '<span class="ret-chip' + (idx === 0 ? ' is-latest' : '') + '">第 ' + n + ' 次</span> ' +
         (from ? '<span class="ret-chip">来源 ' + esc(from) + '</span> ' : '') +
+        (r.tester ? '<span class="ret-chip">检测员 ' + esc(r.tester) + '</span> ' : '') +
         '<span class="ret-chip' + (isAi ? ' is-ai' : '') + '">' + esc(kind) + '</span>';
       return '<li class="' + liCls + '">' +
         '<div class="mb-1 flex flex-wrap items-center gap-1.5">' + chips + '</div>' +
@@ -127,28 +232,10 @@
       '<ul class="ret-timeline">' + items + '</ul></div>';
   }
 
-  function testersTable(rec) {
-    var rows = (rec.testers && rec.testers.length) ? rec.testers : [{ tester: rec.by, time: rec.time, reason: rec.reason }];
-    return '<table class="w-full border-collapse text-left text-sm"><thead><tr class="bg-slate-50 text-slate-600">' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">检测员</th>' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">退回时间</th>' +
-      '<th class="border border-slate-200 px-3 py-2 font-medium">退回原因</th></tr></thead><tbody>' +
-      rows.map(function (t) {
-        return '<tr><td class="border border-slate-200 px-3 py-2">' + esc(t.tester || '—') + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + esc(t.time || rec.time) + '</td>' +
-          '<td class="border border-slate-200 px-3 py-2">' + esc(t.reason || rec.reason || '—') + '</td></tr>';
-      }).join('') + '</tbody></table>';
-  }
-
   function detailBody(code, node) {
     var recs = list(code, node);
     if (!recs.length) return '<p class="px-6 py-8 text-center text-sm text-slate-400">暂无退回记录</p>';
-    var latestRec = recs[0];
-    var extra = '';
-    if (node === '试样分发' || (latestRec.testers && latestRec.testers.length)) {
-      extra = '<div class="px-6 pb-4">' + testersTable(latestRec) + '</div>';
-    }
-    return '<div class="px-6 py-4">' + timelineHtml(recs) + '</div>' + extra;
+    return '<div class="px-6 py-4">' + timelineHtml(recs) + '</div>';
   }
 
   function closeModal() {
@@ -319,6 +406,7 @@
   });
 
   ensureCss();
+  bindWarnTips();
 
   global.ReturnUI = {
     tagHtml: tagHtml,
