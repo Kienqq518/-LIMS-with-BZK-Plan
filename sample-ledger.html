@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>样品台账 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
+    .chip { border: 1px solid #e2e8f0; background: #fff; color: #475569; border-radius: 999px; padding: 3px 12px; font-size: 12px; cursor: pointer; }
+    .chip:hover { border-color: #93c5fd; color: #2563eb; }
+    .chip.on { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
+    .st { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+    .st-wait { background: #eff6ff; color: #2563eb; }
+    .st-run { background: #fff7ed; color: #c2410c; }
+    .st-ok { background: #dcfce7; color: #15803d; }
+    .st-ng { background: #fef2f2; color: #b91c1c; }
+    .st-exp { background: #f1f5f9; color: #475569; }
+    .due-over { color: #dc2626; font-weight: 600; }
+    .due-soon { color: #d97706; font-weight: 600; }
+    .back-tag { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px; background: #fff7ed; color: #c2410c; font-size: 11px; line-height: 16px; }
+    #toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(0,0,0,.76); color: #fff; padding: 8px 22px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+  <div id="pageTabs" class="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 pt-2 text-sm whitespace-nowrap" data-close-target="dashboard.html">
+    <a href="dashboard.html" class="tab-workbench cursor-pointer rounded-t px-3 py-1.5 text-slate-500 hover:text-slate-700">工作台</a>
+    <span class="tab-active flex items-center gap-2 rounded-t border border-b-0 border-slate-200 bg-white px-3 py-1.5 text-blue-600">
+      样品台账
+      <i class="tab-close fa fa-times-circle cursor-pointer text-xs text-slate-400 hover:text-slate-600"></i>
+    </span>
+  </div>
+
+  <div id="noPerm" class="hidden p-4">
+    <div class="rounded bg-white p-10 text-center shadow-sm">
+      <i class="fa fa-lock mb-3 text-3xl text-slate-300"></i>
+      <p class="text-sm text-slate-600">当前角色没有「样品台账」页面权限，无法查看样品全库台账。</p>
+      <p id="noPermWho" class="mt-1 text-xs text-slate-400"></p>
+      <a href="role-mgmt.html" class="mt-4 inline-block rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50">去「角色管理」看权限怎么勾</a>
+    </div>
+  </div>
+
+  <div id="mainWrap" class="p-4">
+    <div class="rounded bg-white p-4 shadow-sm" data-annotate="ledger-query">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">委托编号</label>
+          <input id="q_code" type="text" placeholder="请输入委托编号" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品编号</label>
+          <input id="q_no" type="text" placeholder="扫码枪或粘贴后回车" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" data-annotate="ledger-scan" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">样品名称</label>
+          <input id="q_name" type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">客户单位</label>
+          <input id="q_customer" type="text" placeholder="请输入客户单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">日期类型</label>
+          <select id="q_dateKind" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="order">委托日期</option>
+            <option value="receive">收样日期</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">日期范围</label>
+          <select id="q_preset" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">全部</option>
+            <option value="1m">近 1 个月</option>
+            <option value="3m">近 3 个月</option>
+            <option value="6m">近 6 个月</option>
+            <option value="thisYear">今年</option>
+            <option value="lastYear">去年</option>
+            <option value="prevYear">前年</option>
+            <option value="custom">自定义</option>
+          </select>
+        </div>
+        <div id="customDates" class="hidden items-center gap-2 xl:col-span-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">自定义区间</label>
+          <input id="q_from" type="date" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+          <span class="text-slate-400">~</span>
+          <input id="q_to" type="date" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">当前节点</label>
+          <select id="q_node" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"></select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">检测结果</label>
+          <select id="q_result" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">全部</option>
+            <option>合格</option>
+            <option>不合格</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">检测时效</label>
+          <select id="q_time" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">全部</option>
+            <option>未逾期</option>
+            <option>逾期</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2 xl:col-span-2 xl:justify-end">
+          <button type="button" onclick="doSearch()" class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>
+          <button type="button" onclick="doReset()" class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-refresh"></i>重置</button>
+          <button type="button" onclick="doExport()" class="flex items-center gap-1 rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"><i class="fa fa-download"></i>导出</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded bg-white p-4 shadow-sm">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div id="chips" class="flex flex-wrap gap-2" data-annotate="ledger-chips"></div>
+        <div class="flex items-center gap-2 text-sm">
+          <label class="text-slate-500">排序</label>
+          <select id="q_sort" class="rounded border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-blue-500"></select>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1280px] border-collapse text-left text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">序号</th>
+              <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">样品编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">样品大类</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">要求完成日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">当前节点</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测进度</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">存放位置</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <p id="emptyBox" class="hidden py-10 text-center text-sm text-slate-400">没有匹配的样品。请核对样品编号，或缩短委托号 / 名称 / 客户关键词。</p>
+      <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
+        <span id="totalText">共 0 条</span>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
+        <button class="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-white">1</button>
+        <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-right"></i></button>
+        <select class="rounded border border-slate-200 px-2 py-1"><option>50条/页</option></select>
+      </div>
+    </div>
+  </div>
+  <div id="toast"></div>
+
+  <script src="js/tab-bar.js"></script>
+  <script src="js/web-perms.js"></script>
+  <script src="js/sample-data-store.js"></script>
+  <script src="js/sample-ledger-store.js"></script>
+  <script src="js/sample-cat-filter.js"></script>
+  <script src="js/column-config.js"></script>
+  <script src="js/prototype-annotation.js"></script>
+  <script>
+    (function () {
+      if (window.WebPerms && !WebPerms.can('样品台账')) {
+        document.getElementById('mainWrap').classList.add('hidden');
+        document.getElementById('noPerm').classList.remove('hidden');
+        var role = WebPerms.current();
+        document.getElementById('noPermWho').textContent = '当前登录角色：' + role.name + '（' + role.desc + '）';
+        return;
+      }
+
+      var L = window.SampleLedger;
+      var chip = '全部';
+      var lastRows = [];
+
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
+        });
+      }
+      function pad(n) { return n < 10 ? '0' + n : '' + n; }
+      function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+      function addMonths(isoStr, n) {
+        var p = isoStr.split('-').map(Number);
+        var d = new Date(p[0], p[1] - 1, p[2]);
+        d.setMonth(d.getMonth() + n);
+        return iso(d);
+      }
+      function toast(msg) {
+        var el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        setTimeout(function () { el.classList.remove('show'); }, 1800);
+      }
+      function statusClass(st) {
+        if (st === '合格') return 'st st-ok';
+        if (st === '不合格') return 'st st-ng';
+        if (st === '检测中') return 'st st-run';
+        if (st === '已过期') return 'st st-exp';
+        return 'st st-wait';
+      }
+      function catOf(name) {
+        return (window.SampleDataStore && SampleDataStore.catLabelOfNames(name)) || '—';
+      }
+      function rangeFromPreset(id) {
+        var t = L.today();
+        var y = Number(t.slice(0, 4));
+        if (id === '1m') return { from: addMonths(t, -1), to: t };
+        if (id === '3m') return { from: addMonths(t, -3), to: t };
+        if (id === '6m') return { from: addMonths(t, -6), to: t };
+        if (id === 'thisYear') return { from: y + '-01-01', to: t };
+        if (id === 'lastYear') return { from: (y - 1) + '-01-01', to: (y - 1) + '-12-31' };
+        if (id === 'prevYear') return { from: (y - 2) + '-01-01', to: (y - 2) + '-12-31' };
+        return { from: '', to: '' };
+      }
+
+      function readForm() {
+        var preset = document.getElementById('q_preset').value;
+        var range = preset && preset !== 'custom' ? rangeFromPreset(preset) : {
+          from: document.getElementById('q_from').value,
+          to: document.getElementById('q_to').value
+        };
+        return {
+          code: document.getElementById('q_code').value,
+          sampleNo: document.getElementById('q_no').value,
+          name: document.getElementById('q_name').value,
+          customer: document.getElementById('q_customer').value,
+          dateKind: document.getElementById('q_dateKind').value,
+          preset: preset,
+          from: range.from,
+          to: range.to,
+          node: document.getElementById('q_node').value,
+          result: document.getElementById('q_result').value,
+          timeliness: document.getElementById('q_time').value,
+          chip: chip,
+          sort: document.getElementById('q_sort').value
+        };
+      }
+      function writeForm(q) {
+        q = q || {};
+        document.getElementById('q_code').value = q.code || '';
+        document.getElementById('q_no').value = q.sampleNo || '';
+        document.getElementById('q_name').value = q.name || '';
+        document.getElementById('q_customer').value = q.customer || '';
+        document.getElementById('q_dateKind').value = q.dateKind || 'order';
+        document.getElementById('q_preset').value = q.preset || '';
+        document.getElementById('q_from').value = q.from || '';
+        document.getElementById('q_to').value = q.to || '';
+        document.getElementById('q_node').value = q.node || '';
+        document.getElementById('q_result').value = q.result || '';
+        document.getElementById('q_time').value = q.timeliness || '';
+        document.getElementById('q_sort').value = q.sort || 'order-desc';
+        chip = q.chip || '全部';
+        toggleCustom();
+      }
+      function persist(extra) {
+        var q = readForm();
+        if (extra) Object.keys(extra).forEach(function (k) { q[k] = extra[k]; });
+        L.persistQuery(q);
+      }
+
+      function dueHtml(s) {
+        var u = L.dueUrgency(s.due, s.status);
+        if (u.tone === 'overdue') return '<span class="due-over">' + esc(s.due) + '<br>' + esc(u.text) + '</span>';
+        if (u.tone === 'soon') return '<span class="due-soon">' + esc(s.due) + '<br>' + esc(u.text) + '</span>';
+        return esc(s.due);
+      }
+      function statusHtml(s) {
+        var cls = statusClass(s.status);
+        if (s.status === '合格') {
+          return '<a class="' + cls + '" href="cert-print-single.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.status) + '</a>';
+        }
+        return '<span class="' + cls + '">' + esc(s.status) + '</span>';
+      }
+
+      window.renderTable = function renderTable() {
+        var q = readForm();
+        lastRows = L.query(q);
+        persist({ scrollY: window.scrollY || 0 });
+        var body = document.getElementById('tableBody');
+        var emptyBox = document.getElementById('emptyBox');
+        if (!lastRows.length) {
+          body.innerHTML = '';
+          emptyBox.classList.remove('hidden');
+          document.getElementById('totalText').textContent = '共 0 条';
+          if (window.ColumnConfig && ColumnConfig.refresh) ColumnConfig.refresh();
+          return;
+        }
+        emptyBox.classList.add('hidden');
+        body.innerHTML = lastRows.map(function (s, i) {
+          var flow = L.currentFlow(s);
+          var node = L.flowLabel(flow);
+          var back = flow.direction === 'back'
+            ? '<span class="back-tag">回退</span>'
+            : (L.hasBack(s) ? '<span class="back-tag">含回退</span>' : '');
+          return '<tr>' +
+            '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="sample-ledger-detail.html?no=' + encodeURIComponent(s.sampleNo) + '">' + esc(s.sampleNo) + '</a></td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.code) + '</a></td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(s.name) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2" data-cat-col>' + esc(catOf(s.name)) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(s.customer) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(s.orderDate) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + dueHtml(s) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(node) + back + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(L.progressText(s)) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + statusHtml(s) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(s.place) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="sample-ledger-detail.html?no=' + encodeURIComponent(s.sampleNo) + '">查看</a></td>' +
+            '</tr>';
+        }).join('');
+        document.getElementById('totalText').textContent = '共 ' + lastRows.length + ' 条';
+        if (window.ColumnConfig && ColumnConfig.refresh) ColumnConfig.refresh();
+        if (window.SampleCatFilter && SampleCatFilter.apply) SampleCatFilter.apply();
+      };
+
+      window.doSearch = function () { renderTable(); };
+      window.doReset = function () {
+        chip = '全部';
+        writeForm({ sort: 'order-desc' });
+        paintChips();
+        L.persistQuery({});
+        renderTable();
+      };
+      window.doExport = function () {
+        var rows = lastRows.length ? lastRows : L.query(readForm());
+        if (!rows.length) { toast('没有可导出的样品'); return; }
+        var lines = [['样品编号', '委托编号', '样品名称', '样品大类', '客户单位', '委托日期', '要求完成日期', '当前节点', '检测进度', '状态', '存放位置']];
+        rows.forEach(function (s) {
+          lines.push([s.sampleNo, s.code, s.name, catOf(s.name), s.customer, s.orderDate, s.due, L.flowLabel(L.currentFlow(s)), L.progressText(s), s.status, s.place]);
+        });
+        var csv = '\ufeff' + lines.map(function (r) {
+          return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(',');
+        }).join('\n');
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        a.download = '样品台账.csv';
+        a.click();
+        toast('已导出当前筛选结果 ' + rows.length + ' 条');
+      };
+
+      function paintChips() {
+        document.getElementById('chips').innerHTML = L.LIST_FILTERS.map(function (name) {
+          return '<button type="button" class="chip' + (name === chip ? ' on' : '') + '" data-chip="' + esc(name) + '">' + esc(name) + '</button>';
+        }).join('');
+      }
+      function toggleCustom() {
+        var custom = document.getElementById('q_preset').value === 'custom';
+        document.getElementById('customDates').classList.toggle('hidden', !custom);
+        document.getElementById('customDates').classList.toggle('flex', custom);
+      }
+
+      document.getElementById('q_node').innerHTML = '<option value="">全部</option>' + L.FLOW_NODES.map(function (n) {
+        return '<option>' + n + '</option>';
+      }).join('');
+      document.getElementById('q_sort').innerHTML = L.QUERY_SORTS.map(function (s) {
+        return '<option value="' + s.id + '">' + s.name + ' · ' + s.hint + '</option>';
+      }).join('');
+      document.getElementById('chips').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-chip]');
+        if (!btn) return;
+        chip = btn.getAttribute('data-chip');
+        paintChips();
+        renderTable();
+      });
+      document.getElementById('q_sort').addEventListener('change', renderTable);
+      document.getElementById('q_preset').addEventListener('change', toggleCustom);
+      document.getElementById('q_no').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
+      });
+      ['q_code', 'q_name', 'q_customer'].forEach(function (id) {
+        document.getElementById(id).addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') doSearch();
+        });
+      });
+
+      var saved = L.loadQuery();
+      var urlCode = new URLSearchParams(location.search).get('code') || '';
+      if (urlCode) saved.code = urlCode;
+      writeForm(saved);
+      paintChips();
+      renderTable();
+      if (saved.scrollY) window.scrollTo(0, saved.scrollY);
+
+      window.addEventListener('beforeunload', function () { persist({ scrollY: window.scrollY || 0 }); });
+
+      if (window.PrototypeAnnotation) {
+        PrototypeAnnotation.init({
+          annotations: [
+            {
+              id: 'ledger-query', selector: '[data-annotate="ledger-query"]', position: 'bottom-left', wide: true, tag: '样品台账',
+              title: '全库样品查询',
+              content: '<strong>需求逻辑：</strong>样品台账是样品管理的只读全库查询，一行一件样品，不替代收样 / 发样 / 还样 / 退样。<br>' +
+                '<strong>展示规则：</strong>条件与 App 样品查询对齐：委托编号、样品编号、样品名称、客户单位、样品大类、日期类型与范围、当前节点、检测结果、检测时效。<br>' +
+                '<strong>交互逻辑：</strong>查询条件与快捷标签、排序会写入 sessionStorage，从详情返回时原样还原。'
+            },
+            {
+              id: 'ledger-scan', selector: '[data-annotate="ledger-scan"]', position: 'bottom-left', tag: '样品台账',
+              title: '样品编号回车即查',
+              content: '<strong>需求逻辑：</strong>Web 不做相机扫码，样品编号框接收扫码枪或粘贴标签号。<br>' +
+                '<strong>交互逻辑：</strong>在样品编号框按回车等同点查询。'
+            },
+            {
+              id: 'ledger-chips', selector: '[data-annotate="ledger-chips"]', position: 'bottom-left', tag: '样品台账',
+              title: '快捷状态标签',
+              content: '<strong>展示规则：</strong>全部 / 待收样 / 检测中 / 已检测 / 合格 / 不合格 / 过期，与 App 一致，单选。「已检测」= 合格或不合格。'
+            }
+          ]
+        });
+      }
+    })();
+  </script>
+  <script src="js/ui-a11y.js" defer></script>
+</body>
+</html>

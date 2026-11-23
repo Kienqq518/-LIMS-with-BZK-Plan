@@ -73,7 +73,7 @@
   var PIN_STICKY_LABELS = ['序号', '委托编号'];         // 至少要命中一个才启用左侧冻结
   var PIN_RIGHT_LABELS = ['操作', '操作记录', '发放记录']; // 右侧钉住：名单操作列 / 还样「操作记录」/ 任务完成「发放记录」
   var STICKY_RIGHT_LABELS = ['报告记录', '操作', '操作记录', '发放记录']; // 从右连续冻结（任务完成：报告记录+发放记录）
-  var PIN_LOCK_LABELS = ['序号', '委托编号', '操作', '操作记录', '发放记录'];
+  var PIN_LOCK_LABELS = ['序号', '委托编号', '样品编号', '操作', '操作记录', '发放记录'];
 
   function labelOfKey(k) {
     for (var i = 0; i < cols.length; i++) { if (cols[i].key === k) return cols[i].label; }

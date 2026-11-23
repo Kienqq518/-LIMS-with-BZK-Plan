@@ -169,6 +169,7 @@
     var visible = 0;
     state.rows.forEach(function (tr) {
       if (!tr.cells || !tr.cells.length) return;
+      if (tr.cells.length === 1 && tr.cells[0].colSpan > 1) return;
       var cell = majorCatCell(tr);
       var cat = cell ? cell.textContent.trim() : '';
       var ok = !want || cat === want;

@@ -16,7 +16,7 @@
     ::-webkit-scrollbar-track { background: transparent; }
     /* 子菜单展开/折叠的过渡动画 */
     .submenu { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
-    .submenu.open { max-height: 500px; }
+    .submenu.open { max-height: 560px; }
     /* 菜单箭头旋转动画 */
     .menu-arrow { transition: transform .3s ease; }
     .menu-arrow.open { transform: rotate(90deg); }
@@ -94,6 +94,7 @@
             <a href="sample-return-apply.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">申请退样</a>
             <a href="sample-return-client.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">样品退样</a>
             <a href="cert-qualified-print.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60">合格打印</a>
+            <a href="sample-ledger.html" target="mainFrame" class="menu-link block py-2 pl-11 pr-4 transition-colors hover:bg-slate-700/60" data-perm="样品台账">样品台账</a>
           </div>
         </div>
 
@@ -289,6 +290,7 @@
     </div>
   </div>
 
+  <script src="js/web-perms.js"></script>
   <script>
     // 侧边栏交互逻辑（原生 JS）
     (function () {
@@ -360,6 +362,12 @@
       // 初始化：默认高亮“工作台”
       const active = nav.querySelector('.menu-link[data-active="true"]');
       if (active) active.classList.add('bg-slate-700', 'text-white');
+
+      if (window.WebPerms) {
+        nav.querySelectorAll('[data-perm]').forEach(function (link) {
+          if (!WebPerms.can(link.getAttribute('data-perm'))) link.classList.add('hidden');
+        });
+      }
     })();
   </script>
   <script src="js/current-user.js?v=3" defer></script>
