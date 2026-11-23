@@ -138,6 +138,7 @@
   }
   function closeModal() {
     closeShipLayer();
+    closeReturnLayer();
     var el = document.getElementById('flow-modal');
     if (!el) return;
     el.classList.add('hidden');
@@ -162,6 +163,40 @@
       document.body.appendChild(el);
     }
     return el;
+  }
+  function closeReturnLayer() {
+    var el = document.getElementById('flow-return-layer');
+    if (!el) return;
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+  }
+  function openReturnReason(code, reportId, stage, orderOnly) {
+    var task = ReportFlowStore.get(code); if (!task) return;
+    var report = (task.reports || []).filter(function (x) { return String(x.id) === String(reportId); })[0];
+    var hits = orderOnly || !report ? orderReturns(task, stage) : reportReturns(task, report, stage);
+    if (!hits.length && report) hits = orderReturns(task, stage);
+    var title = orderOnly || !report ? '退回原因 · 整单' : ('退回原因 · ' + esc(report.no || report.id));
+    var body = hits.length
+      ? '<div class="mb-3 text-sm text-slate-500">共 ' + hits.length + ' 次</div><div class="rounded-lg border border-rose-100 bg-rose-50 px-4 py-3">' + returnDetailHtml(hits) + '</div>'
+      : '<div class="py-8 text-center text-sm text-slate-400">暂无退回原因</div>';
+    var el = document.getElementById('flow-return-layer');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'flow-return-layer';
+      el.className = 'fixed inset-0 z-[80] hidden items-center justify-center bg-slate-900/45 p-4';
+      el.addEventListener('click', function (e) {
+        if (e.target === el || e.target.closest('[data-return-close]')) closeReturnLayer();
+      });
+      document.body.appendChild(el);
+    }
+    el.innerHTML = '<div class="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">' +
+      '<div class="flex items-center justify-between border-b border-slate-100 px-5 py-3"><h3 class="text-base font-medium text-slate-800">' + title + '</h3>' +
+      '<button type="button" class="text-slate-400 hover:text-slate-600" data-return-close><i class="fa fa-times"></i></button></div>' +
+      '<div class="flex-1 overflow-auto p-5">' + body + '</div>' +
+      '<div class="flex justify-end border-t border-slate-100 px-5 py-3">' +
+      '<button type="button" class="rounded border border-slate-300 px-4 py-1.5 text-sm" data-return-close>关闭</button></div></div>';
+    el.classList.remove('hidden');
+    el.classList.add('flex');
   }
   function openReportShip(code, reportId) {
     var task = ReportFlowStore.get(code); if (!task) return;
@@ -246,26 +281,24 @@
         '<div class="text-xs text-slate-500">退回人 ' + esc(r.by || '—') + ' · ' + esc(r.time || '') + '</div></div>';
     }).join('');
   }
-  function orderReturnNote(task, stage) {
-    var hits = orderReturns(task, stage);
-    if (!hits.length) return '';
-    return '<div class="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">' +
-      '<div class="mb-1 text-sm font-medium text-slate-700">整单退回 <span class="font-normal text-slate-500">· 共 ' + hits.length + ' 次</span></div>' +
-      returnDetailHtml(hits) + '</div>';
+  function returnReasonLink(task, reportId, orderOnly) {
+    return '<a class="text-blue-600 hover:underline" href="#" data-view-return data-code="' + esc(task.code) + '"' +
+      (orderOnly ? ' data-order="1"' : ' data-id="' + esc(reportId) + '"') + '>查看退回原因</a>';
   }
   function reportRows(task, withCheck, issueMode, stage) {
     var list = reportsOnStage(task, stage);
     var issued = list.filter(function (r) { return r.issued; });
     var open = list.filter(function (r) { return !r.issued; });
+    var orderHits = orderReturns(task, stage);
     open.sort(function (a, b) {
       return (reportReturns(task, b, stage).length ? 1 : 0) - (reportReturns(task, a, stage).length ? 1 : 0);
     });
     list = issued.concat(open);
-    var cols = (withCheck ? 1 : 0) + 5;
     return list.map(function (r, i) {
       var fname = displayReportName(task, r);
       var issuedRow = !!r.issued;
       var hits = reportReturns(task, r, stage);
+      var shared = !hits.length && orderHits.length;
       var retTag = (global.ReturnUI && hits.length)
         ? ReturnUI.tagHtml({ title: '从「' + (hits[0].from || '') + '」退回 · ' + (hits[0].reason || '') })
         : '';
@@ -275,30 +308,27 @@
           ? '<td class="border border-slate-200 px-3 py-2 text-center"><input type="checkbox" checked disabled title="已发放，不可再勾选" class="cursor-not-allowed opacity-50" /></td>'
           : '<td class="border border-slate-200 px-3 py-2 text-center"><input type="checkbox" class="rep-check" checked data-id="' + esc(r.id) + '" data-no="' + esc(r.no || r.id) + '" /></td>';
       }
-      var opCell = issueMode
-        ? (issuedRow
-          ? '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="#" data-view-ship data-code="' + esc(task.code) + '" data-id="' + esc(r.id) + '">查看发放记录</a></td>'
-          : '<td class="border border-slate-200 px-3 py-2"></td>')
-        : '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank">预览</a></td>';
-      var row = '<tr class="' + (issuedRow ? 'bg-slate-50 text-slate-400' : '') + '">' +
+      var ops = [];
+      if (!issueMode) {
+        ops.push('<a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank">预览</a>');
+      }
+      if (issueMode && issuedRow) {
+        ops.push('<a class="text-blue-600 hover:underline" href="#" data-view-ship data-code="' + esc(task.code) + '" data-id="' + esc(r.id) + '">查看发放记录</a>');
+      }
+      if (hits.length || shared) ops.push(returnReasonLink(task, r.id, !!shared));
+      var opCell = '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + ops.join('<span class="mx-1 text-slate-300">|</span>') + '</td>';
+      return '<tr class="' + (issuedRow ? 'bg-slate-50 text-slate-400' : '') + '">' +
         checkCell +
         '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
         '<td class="border border-slate-200 px-3 py-2 whitespace-nowrap">' + esc(r.no) + retTag + '</td>' +
         '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank"><i class="fa ' + fileIcon(fname) + ' mr-1"></i>' + esc(fname) + '</a></td>' +
         '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(r.at) + '</td>' +
         opCell + '</tr>';
-      if (!hits.length) return row;
-      return row + '<tr><td colspan="' + cols + '" class="border border-rose-100 bg-rose-50 px-3 py-2">' + returnDetailHtml(hits) + '</td></tr>';
     }).join('');
   }
 
   function reportsTable(task, withCheck, issueMode, stage) {
-    var returned = reportsOnStage(task, stage).filter(function (r) { return !r.issued && reportReturns(task, r, stage).length; }).length;
-    var hint = returned
-      ? '<div class="mb-2 text-sm text-slate-500">本节点有 <b class="text-rose-600">' + returned + '</b> 份被退回的报告，原因写在各自编号下面，互不共用。</div>'
-      : '';
-    return hint + orderReturnNote(task, stage) +
-      '<table class="w-full border-collapse text-left text-sm" data-no-col-config data-annotate="flow-rep-table"><thead><tr class="bg-slate-50 text-slate-600">' +
+    return '<table class="w-full border-collapse text-left text-sm" data-no-col-config data-annotate="flow-rep-table"><thead><tr class="bg-slate-50 text-slate-600">' +
       (withCheck ? '<th class="border border-slate-200 px-3 py-2 w-10 text-center"><input type="checkbox" id="check-all" checked /></th>' : '') +
       '<th class="border border-slate-200 px-3 py-2">序号</th><th class="border border-slate-200 px-3 py-2">报告编号</th><th class="border border-slate-200 px-3 py-2">报告名称</th>' +
       '<th class="border border-slate-200 px-3 py-2">生成时间</th><th class="border border-slate-200 px-3 py-2">操作</th></tr></thead><tbody>' +
@@ -513,7 +543,7 @@
       list.push({
         id: 'flow-rep-table', selector: '#flow-modal [data-annotate="flow-rep-table"]', position: 'top', title: '多报告勾选',
         content: '<strong>需求逻辑：</strong>一张委托任务常有多份报告，处理 / 收费不能默认只出一份，否则会漏单。签发后正式文件已是 PDF，本节点不再给 Word。<br>' +
-          '<strong>展示规则：</strong>弹窗内报告列表带勾选列、表头全选。被退回的报告排在前面，退回次数、来源和原因写在该报告下一行，多份报告各看各的，不再堆在弹窗顶部。没有报告编号的整单退回仍在列表上方展示一次。<br>' +
+          '<strong>展示规则：</strong>弹窗内报告列表带勾选列、表头全选。被退回的报告在操作列提供「查看退回原因」，点开后弹出该报告自己的退回记录。没有报告编号的整单退回，操作列同样是「查看退回原因」，弹出的是整单记录。<br>' +
           '<strong>交互逻辑：</strong>默认全选；取消到 0 份时通过按钮置灰。收费审批、报告发放的退回按勾选报告逐份退回，未勾选的留在本节点。',
         tag: stage
       });
@@ -636,6 +666,12 @@
       var s = e.target.closest('[data-save-ship]');
       var d = e.target.closest('[data-del-ship]');
       var vs = e.target.closest('[data-view-ship]');
+      var vr = e.target.closest('[data-view-return]');
+      if (vr) {
+        e.preventDefault();
+        e.stopPropagation();
+        openReturnReason(vr.getAttribute('data-code'), vr.getAttribute('data-id'), stage, vr.getAttribute('data-order') === '1');
+      }
       if (vs) {
         e.preventDefault();
         e.stopPropagation();
