@@ -29,10 +29,17 @@ const rlAi = await p.evaluate(() => {
   const row238 = [...document.querySelectorAll('#tableBody tr')].some((tr) => /SC2026\/0238/.test(tr.textContent || ''));
   const txt = banner ? (banner.textContent || '') : '';
   const cards = banner ? banner.querySelectorAll('.ret-banner-card').length : 0;
-  return banner && body && getComputedStyle(body).maxHeight !== 'none' && row238 &&
+  const goN = banner ? banner.querySelectorAll('.ret-banner-go').length : 0;
+  const head = banner && banner.querySelector('.ret-banner-card-head');
+  const headTxt = head ? (head.textContent || '') : '';
+  const bodyStyle = body ? getComputedStyle(body) : null;
+  return banner && body && row238 &&
     /AI 自动退回/.test(txt) && !/李审核/.test(txt) &&
     !/SC2026\/0238-02/.test(txt) && /SC2026\/0238-03/.test(txt) &&
-    cards === 1;
+    cards === 1 && goN === cards &&
+    /从「报告审核」退回/.test(headTxt) && /2026-09-03 10:15/.test(headTxt) &&
+    bodyStyle && (bodyStyle.overflowY === 'auto' || bodyStyle.overflowY === 'scroll') &&
+    parseFloat(bodyStyle.height) > 0;
 });
 out.push((rlAi ? '✅' : '❌') + ' 报告编制条幅仅展示 AI 自动退回');
 await p.setViewportSize({ width: 1440, height: 900 });
