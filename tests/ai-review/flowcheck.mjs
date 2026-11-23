@@ -14,7 +14,10 @@ await p.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
 await p.waitForTimeout(200);
 const menu = await p.locator('#sidebar, aside, .sidebar, body').first().evaluate(() => document.body.innerHTML);
 out.push((/report-sign\.html/.test(menu) && /report-process\.html/.test(menu) && /report-fee\.html/.test(menu) && /report-issue\.html/.test(menu) && /task-archive\.html/.test(menu) && /task-complete\.html/.test(menu) ? '✅' : '❌') + ' 报告管理菜单挂签发到完成');
-out.push((/original-record-list\.html/.test(menu) && !/data-placeholder\.html\?name=原始记录/.test(menu) ? '✅' : '❌') + ' 原始记录改挂检测管理');
+const testMenu = await p.locator('.menu-group', { has: p.locator('.menu-toggle', { hasText: '试验管理' }) }).locator('.submenu a').allTextContents();
+const detectMenu = await p.locator('.menu-group', { has: p.locator('.menu-toggle', { hasText: '检测管理' }) }).locator('.submenu a').allTextContents();
+out.push((testMenu.map((s) => s.trim()).includes('原始记录') && /original-record-list\.html/.test(menu) ? '✅' : '❌') + ' 原始记录挂在试验管理 ' + testMenu.join('/'));
+out.push((!detectMenu.map((s) => s.trim()).includes('原始记录') ? '✅' : '❌') + ' 检测管理不再挂原始记录');
 
 await p.goto(BASE + '/report-sign.html', { waitUntil: 'load' });
 await p.waitForTimeout(250);
@@ -203,7 +206,7 @@ for (const [href, name] of searchPages) {
 
 await p.goto(BASE + '/original-record-list.html', { waitUntil: 'load' });
 await p.waitForTimeout(280);
-out.push(((await p.locator('#body tr').count()) >= 1 ? '✅' : '❌') + ' 检测管理原始记录名单');
+out.push(((await p.locator('#body tr').count()) >= 1 ? '✅' : '❌') + ' 试验管理原始记录名单');
 out.push((/样品大类/.test(await p.locator('thead').textContent() || '') ? '✅' : '❌') + ' 原始记录名单有样品大类列');
 await p.goto(BASE + '/report-list.html', { waitUntil: 'load' });
 await p.waitForTimeout(280);
