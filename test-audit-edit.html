@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <link rel="stylesheet" href="css/ui-baseline.css" />
+  <link rel="stylesheet" href="css/detect-status.css" />
   <style>
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
@@ -127,11 +128,7 @@
         <span class="font-medium text-slate-700">注：</span>
         将鼠标悬浮在 <i class="fa fa-question-circle text-orange-500" title="不合格原因示例"></i> 图标上，可查看不合格原因<span id="retHint">。</span>
       </p>
-      <div class="mt-2 text-xs text-slate-400">
-        委托编号：<span id="entrustCode" class="text-slate-600">—</span>
-        <span class="mx-2 text-slate-300">|</span>
-        委托单位：<span id="customerName" class="text-slate-600">—</span>
-      </div>
+      <div class="entrust-facts mt-2" id="sampleMeta"></div>
     </div>
 
     <div id="groups"></div>
@@ -168,6 +165,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/return-store.js"></script>
   <script src="js/return-ui.js"></script>
+  <script src="js/detect-status.js"></script>
   <script src="js/original-record-version.js"></script>
   <script src="js/original-record-ui.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -190,8 +188,11 @@
     document.getElementById('listTab').textContent = listTitle;
     document.getElementById('editTabTitle').textContent = editTitle;
     document.getElementById('sampleTag').textContent = sampleShort;
-    document.getElementById('entrustCode').textContent = entrustCode;
-    document.getElementById('customerName').textContent = customer;
+    if (window.DetectStatus) {
+      document.getElementById('sampleMeta').innerHTML = DetectStatus.metaInner(entrustCode, sampleShort);
+    }
+    var baseStatus = auditType === 'data' ? '已审核' : '已完成';
+    var doneStatus = auditType === 'data' ? '已复审' : '已审核';
     var retHint = document.getElementById('retHint');
     if (retHint) retHint.remove();
 
@@ -206,7 +207,7 @@
         tester: defaultTester,
         columns: ['试样编号', '试验设备', '外观', '有效绝缘长度 / mm', '备注', '结论', '状态', '操作'],
         rows: [
-          { cells: [specimenId(1), '设备', '无缺陷', ' / ', '', '合格'], status: '待审核', specimen: specimenId(1) }
+          { cells: [specimenId(1), '设备', '无缺陷', ' / ', '', '合格'], status: baseStatus, specimen: specimenId(1) }
         ]
       },
       {
@@ -214,7 +215,7 @@
         tester: defaultTester,
         columns: ['试样编号', '试验设备', '电极间距离 / m', '标称值 / kV', '试验值 / kV', '时间 / min', '状态描述', '室温 / ℃', '气压 / hPa', '湿度 / %RH', '备注', '结论', '状态', '操作'],
         rows: [
-          { cells: [specimenId(2), '设备', '1', '2', '3', '4', '无异常', '5', '6', '7', '', '合格'], status: '待审核', specimen: specimenId(2) }
+          { cells: [specimenId(2), '设备', '1', '2', '3', '4', '无异常', '5', '6', '7', '', '合格'], status: baseStatus, specimen: specimenId(2) }
         ]
       },
       {
@@ -222,7 +223,7 @@
         tester: defaultTester,
         columns: ['试样编号', '试验设备', '标称值 / N', '试验值 / N', '时间 / min', '状态描述', '温度 / ℃', '气压 / hPa', '湿度 / %RH', '备注', '结论', '状态', '操作'],
         rows: [
-          { cells: [specimenId(3), '设备', '1000', '100', '1', '无异常', '1', '2', '3', '', '合格'], status: '待审核', specimen: specimenId(3) }
+          { cells: [specimenId(3), '设备', '1000', '100', '1', '无异常', '1', '2', '3', '', '合格'], status: baseStatus, specimen: specimenId(3) }
         ]
       }
     ];
@@ -232,14 +233,14 @@
         tester: defaultTester,
         columns: ['试样编号', '试验设备', '标称值 / N', '试验值 / N', '时间 / min', '状态描述', '温度 / ℃', '气压 / hPa', '湿度 / %RH', '备注', '结论', '状态', '操作'],
         rows: [
-          { cells: [specimenId(4), '设备', '2000', '1980', '1', '无异常', '23', '1013', '55', '', '合格'], status: '待审核', specimen: specimenId(4) }
+          { cells: [specimenId(4), '设备', '2000', '1980', '1', '无异常', '23', '1013', '55', '', '合格'], status: baseStatus, specimen: specimenId(4) }
         ]
       });
     }
     if (entrustCode === 'SC2026/0055') {
       groups[0].rows[0].cells[2] = '表面破损';
       groups[0].rows[0].cells[5] = '不合格';
-      groups[0].rows[0].status = '待审核';
+      groups[0].rows[0].status = baseStatus;
     }
 
     function recordFiles() {
@@ -259,9 +260,16 @@
     }
 
     function statusHtml(status) {
-      if (status === '已审核') return '<span class="status-audited">已审核</span>';
-      if (status === '待审核') return '<span class="status-pending">待审核</span>';
-      return status || '';
+      var text = status || baseStatus;
+      var extra = '';
+      if (text === '已退回' && window.ReturnUI) {
+        extra = ReturnUI.warnIcon('审核不通过', {
+          reason: '审核不通过',
+          from: auditType === 'data' ? '数据审核' : '组内审核',
+          kind: '人工'
+        });
+      }
+      return window.DetectStatus ? DetectStatus.statusTag(text, extra) : text;
     }
 
     function cellHtml(col, value, hit) {
@@ -281,14 +289,14 @@
     }
 
     function setRowStatus(groupIndex, rowIndex, pass) {
-      groups[groupIndex].rows[rowIndex].status = '已审核';
+      groups[groupIndex].rows[rowIndex].status = pass ? doneStatus : '已退回';
       groups[groupIndex].rows[rowIndex].pass = pass;
       renderGroups();
     }
 
     function batchGroup(groupIndex, pass) {
       groups[groupIndex].rows.forEach(function (row) {
-        row.status = '已审核';
+        row.status = pass ? doneStatus : '已退回';
         row.pass = pass;
       });
       renderGroups();
@@ -298,7 +306,7 @@
     function auditAll(pass) {
       groups.forEach(function (g) {
         g.rows.forEach(function (row) {
-          row.status = '已审核';
+          row.status = pass ? doneStatus : '已退回';
           row.pass = pass;
         });
       });

@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <link rel="stylesheet" href="css/ui-baseline.css" />
+  <link rel="stylesheet" href="css/detect-status.css" />
   <link rel="stylesheet" href="css/record-export-drawer.css" />
   <style>
     ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -406,11 +407,7 @@
         将鼠标悬浮在 <i class="fa fa-exclamation-circle text-orange-500" title="退回原因"></i> 图标上，可查看退回原因
       </p>
       <div id="returnStripSlot" class="return-slot"></div>
-      <div class="sample-meta">
-        <span>委托编号 <strong id="entrustCode">—</strong></span>
-        <span class="sample-meta-dot" aria-hidden="true"></span>
-        <span>客户单位 <strong id="customerName">—</strong></span>
-      </div>
+      <div class="sample-meta entrust-facts" id="sampleMeta"></div>
     </section>
 
     <div id="panels"></div>
@@ -523,6 +520,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/return-store.js"></script>
   <script src="js/return-ui.js"></script>
+  <script src="js/detect-status.js"></script>
   <script src="js/record-export.js"></script>
   <script src="js/original-record-version.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -531,8 +529,12 @@
     var entrustCode = params.get('code') || 'SC2026/0052';
     var customer = params.get('customer') || '杭州数蚕智能科技有限公司';
 
-    document.getElementById('entrustCode').textContent = entrustCode;
-    document.getElementById('customerName').textContent = customer;
+    function paintSampleMeta() {
+      var sample = null;
+      pageData.samples.forEach(function (s) { if (s.id === activeSample) sample = s; });
+      var el = document.getElementById('sampleMeta');
+      if (el && window.DetectStatus && sample) el.innerHTML = DetectStatus.metaInner(entrustCode, sample.name);
+    }
 
     function pad(n) { return n < 10 ? '0' + n : String(n); }
     /** 试样编号：{委托编号}{样品序号}{试样序号}-{试验序号}，-前末两位为试样自增，-后为试验序号 */
@@ -568,8 +570,9 @@
               key: 'appear',
               title: '外观及尺寸',
               columns: ['试样编号', '试验设备', '外观', '有效绝缘长度/m', '备注', '状态', '操作'],
-              rows: specimenIdsForTest(entrustCode, '01', 2, 10).map(function (id) {
-                return [id, '设备', '无缺陷', '1.2', '', '已完成'];
+              rows: specimenIdsForTest(entrustCode, '01', 2, 10).map(function (id, i) {
+                var drafting = i === 9;
+                return [id, '设备', drafting ? '' : '无缺陷', drafting ? '' : '1.2', '', drafting ? '检测中' : '已完成'];
               })
             },
             {
@@ -733,9 +736,16 @@
       pageData.samples.forEach(function (sample) {
         html += '<div class="space-y-0' + (sample.id === activeSample ? '' : ' panel-hidden') + '" id="panel-' + sample.id + '">';
         sample.groups.forEach(function (g) {
+          var specIdx0 = g.columns.indexOf('试样编号');
+          var phaseIdx0 = g.columns.indexOf('相别');
+          var statusIdx0 = g.columns.indexOf('状态');
           var doneCount = g.rows.filter(function (r) {
-            var idx = g.columns.indexOf('状态');
-            return idx >= 0 && r[idx] === '已完成';
+            var specimen0 = specIdx0 >= 0 ? r[specIdx0] : '';
+            var phase0 = phaseIdx0 >= 0 ? r[phaseIdx0] : '';
+            var returned = window.ReturnUI && ReturnUI.rowAffected(entrustCode, {
+              item: g.title, sample: sample.name, specimen: specimen0, phase: phase0
+            });
+            return !returned && statusIdx0 >= 0 && r[statusIdx0] === '已完成';
           }).length;
           html += '<section class="test-group">';
           html += '<div class="test-group-header">';
@@ -743,7 +753,6 @@
           html += '<span class="sample-tag">' + sample.name + '</span>';
           html += '<span class="divider">/</span>';
           html += '<span>' + g.title + '</span>';
-          html += (window.ReturnUI ? ReturnUI.itemMark(entrustCode, g.title, sample.name) : '');
           html += '</div>';
           html += '<div class="group-meta">' +
             (window.ReturnUI ? ReturnUI.testerMeta(entrustCode, g.title, g.tester, g.detectTime, sample.name) + '<span class="mx-2 text-slate-300">|</span>' : '') +
@@ -765,11 +774,15 @@
             g.columns.forEach(function (col, ci) {
               var val = ci < row.length ? row[ci] : '';
               if (col === '试样编号') {
-                html += '<td>' + val + (hit && window.ReturnUI ? ReturnUI.rowMark(entrustCode, {
-                  item: g.title, sample: sample.name, specimen: specimen, phase: phase
-                }) : '') + '</td>';
+                html += '<td>' + val + '</td>';
               } else if (col === '相别') {
                 html += '<td>' + (window.ReturnUI ? ReturnUI.phaseChip(val, hit) : val) + '</td>';
+              } else if (col === '状态') {
+                var shown = hit ? '已退回' : (val || '已完成');
+                var warn = hit && window.ReturnUI && ReturnUI.rowWarn ? ReturnUI.rowWarn(entrustCode, {
+                  item: g.title, sample: sample.name, specimen: specimen, phase: phase
+                }) : '';
+                html += '<td>' + (window.DetectStatus ? DetectStatus.statusTag(shown, warn) : shown) + '</td>';
               } else {
                 html += '<td>' + cellHtml(col, val, sample.name, g.title) + '</td>';
               }
@@ -788,6 +801,7 @@
 
     function switchSample(id) {
       activeSample = id;
+      paintSampleMeta();
       renderTabs();
       pageData.samples.forEach(function (s) {
         var el = document.getElementById('panel-' + s.id);
@@ -1372,6 +1386,7 @@
 
     renderTabs();
     renderPanels();
+    paintSampleMeta();
 
     PrototypeAnnotation.init({
       annotations: [
@@ -1393,7 +1408,7 @@
           title: '单条数据退回',
           wide: true,
           content: '<strong>需求逻辑：</strong>一组样品可有 10 条试样数据同屏；组内审核或数据审核只打回不合格的那几条，已通过的行不必重测。数据审核退回直接到本环节，不经过组内审核。<br>' +
-          '<strong>展示规则：</strong>被退回的试样行浅红底，试样编号旁打「退回」标签；试验项标题仍打项级标签。无相别时只标命中的试样编号。<br>' +
+          '<strong>展示规则：</strong>被退回的试样行浅红底，状态列打黄色「已退回」，感叹号在标签右侧；试样编号和试验项标题不再打红色退回标签。无相别时只标命中的试样行。<br>' +
           '<strong>交互逻辑：</strong>样品页内的退回记录列出样品 / 范围（芯片含来源节点），放在注释之下、委托编号之上。演示：SC2026/0052 操作杆 02、07（组内审核）；SC2026/0060 抗弯第 4 条（数据审核）。',
           tag: '试验检测'
         },

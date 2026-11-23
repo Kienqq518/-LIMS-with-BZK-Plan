@@ -437,13 +437,21 @@
     var st = store();
     return !!(st && st.rowAffected && st.rowAffected(code, opts || {}));
   }
-  function rowMark(code, opts) {
+  function rowRecord(code, opts) {
     opts = opts || {};
     var st = store();
-    if (!st || !rowAffected(code, opts)) return '';
-    var recs = st.listByItem(code, opts.item || '', opts.sample || '');
-    var r = recs[0] || {};
+    if (!st || !rowAffected(code, opts)) return null;
+    return st.listByItem(code, opts.item || '', opts.sample || '')[0] || {};
+  }
+  function rowMark(code, opts) {
+    var r = rowRecord(code, opts);
+    if (!r) return '';
     return tagHtml({ title: r.reason || '该条数据已退回' }) + warnIcon(r.reason, r);
+  }
+  function rowWarn(code, opts) {
+    var r = rowRecord(code, opts);
+    if (!r) return '';
+    return warnIcon(r.reason || '该条数据已退回', r);
   }
   function phaseChip(phase, hit) {
     if (!phase) return '';
@@ -501,6 +509,7 @@
     stripHtml: stripHtml,
     itemMark: itemMark,
     rowMark: rowMark,
+    rowWarn: rowWarn,
     rowAffected: rowAffected,
     phaseChip: phaseChip,
     testerMeta: testerMeta,

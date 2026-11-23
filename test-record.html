@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <link rel="stylesheet" href="css/ui-baseline.css" />
+  <link rel="stylesheet" href="css/detect-status.css" />
   <link rel="stylesheet" href="css/record-export-drawer.css" />
   <style>
     ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -36,11 +37,7 @@
           <i class="fa fa-download"></i> 导出管理
         </button>
       </div>
-      <div class="mt-2 text-xs text-slate-400">
-        委托编号：<span class="text-slate-600">SC2026/0073</span>
-        <span class="mx-2 text-slate-300">|</span>
-        客户单位：<span class="text-slate-600">杭州数蚕智能科技有限公司</span>
-      </div>
+      <div class="entrust-facts mt-2" id="sampleMeta"></div>
     </div>
 
     <div class="mb-3 flex flex-wrap items-center gap-2 rounded border border-amber-100 bg-amber-50 px-4 py-2 text-xs text-amber-800" data-annotate="or-demo-bar">
@@ -69,10 +66,10 @@
             </tr></thead>
             <tbody>
               <tr>
-                <td>SC2026/00730101-01</td><td>设备</td><td>45</td><td>10</td><td>11</td><td>无异常</td><td>合格</td><td>12</td><td>13</td><td>14</td><td></td><td>已完成</td>
+                <td>SC2026/00730101-01</td><td>设备</td><td>45</td><td>10</td><td>11</td><td>无异常</td><td>合格</td><td>12</td><td>13</td><td>14</td><td></td><td><span class="st-status"><span class="st-tag">已复审</span></span></td>
               </tr>
               <tr>
-                <td>SC2026/00730101-02</td><td>设备</td><td>45</td><td>12</td><td>11</td><td>无异常</td><td>合格</td><td>12</td><td>13</td><td>14</td><td></td><td>已完成</td>
+                <td>SC2026/00730101-02</td><td>设备</td><td>45</td><td>12</td><td>11</td><td>无异常</td><td>合格</td><td>12</td><td>13</td><td>14</td><td></td><td><span class="st-status"><span class="st-tag">已复审</span></span></td>
               </tr>
             </tbody>
           </table>
@@ -85,8 +82,8 @@
           <table class="record-table min-w-[800px]">
             <thead><tr><th>试样编号</th><th>试验设备</th><th>外观</th><th>有效绝缘长度/m</th><th>备注</th><th>状态</th></tr></thead>
             <tbody>
-              <tr><td>SC2026/00730101-01</td><td>设备</td><td>无缺陷</td><td>10</td><td></td><td>已完成</td></tr>
-              <tr><td>SC2026/00730101-02</td><td>设备</td><td>无缺陷</td><td>10</td><td></td><td>已完成</td></tr>
+              <tr><td>SC2026/00730101-01</td><td>设备</td><td>无缺陷</td><td>10</td><td></td><td><span class="st-status"><span class="st-tag">已复审</span></span></td></tr>
+              <tr><td>SC2026/00730101-02</td><td>设备</td><td>无缺陷</td><td>10</td><td></td><td><span class="st-status"><span class="st-tag">已复审</span></span></td></tr>
             </tbody>
           </table>
         </div>
@@ -98,8 +95,8 @@
           <table class="record-table min-w-[1200px]">
             <thead><tr><th>试样编号</th><th>试验设备</th><th>试样长度/m</th><th>标称值/N</th><th>试验值/N</th><th>时间/min</th><th>状态描述</th><th>结论</th><th>温度/℃</th><th>气压/hPa</th><th>湿度/%RH</th><th>备注</th><th>状态</th></tr></thead>
             <tbody>
-              <tr><td>SC2026/00730101-01</td><td>设备</td><td>10</td><td>100</td><td>11</td><td>12</td><td>无异常</td><td>合格</td><td>13</td><td>14</td><td>15</td><td></td><td>已完成</td></tr>
-              <tr><td>SC2026/00730101-02</td><td>设备</td><td>10</td><td>100</td><td>11</td><td>12</td><td>无异常</td><td>合格</td><td>13</td><td>14</td><td>15</td><td></td><td>已完成</td></tr>
+              <tr><td>SC2026/00730101-01</td><td>设备</td><td>10</td><td>100</td><td>11</td><td>12</td><td>无异常</td><td>合格</td><td>13</td><td>14</td><td>15</td><td></td><td><span class="st-status"><span class="st-tag">已复审</span></span></td></tr>
+              <tr><td>SC2026/00730101-02</td><td>设备</td><td>10</td><td>100</td><td>11</td><td>12</td><td>无异常</td><td>合格</td><td>13</td><td>14</td><td>15</td><td></td><td><span class="st-status"><span class="st-tag">已复审</span></span></td></tr>
             </tbody>
           </table>
         </div>
@@ -132,11 +129,15 @@
     </div>
   </div>
 
+  <script src="js/detect-status.js"></script>
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script src="js/original-record-version.js"></script>
   <script src="js/original-record-ui.js"></script>
   <script>
+    if (window.DetectStatus) {
+      document.getElementById('sampleMeta').innerHTML = DetectStatus.metaInner('SC2026/0073', '绝缘操作杆');
+    }
     OriginalRecordUI.mount();
     if (window.PrototypeAnnotation) {
       PrototypeAnnotation.init({

@@ -308,9 +308,10 @@ await p.goto(BASE + '/test-detect-edit.html?code=SC2026/0052', { waitUntil: 'loa
 await p.waitForTimeout(280);
 const detHead = await p.locator('.test-group-header').first().textContent();
 out.push((/检测员/.test(detHead) && /检测时间/.test(detHead) ? '✅' : '❌') + ' 试验项表头有检测员和检测时间');
-out.push((/退回/.test(detHead) ? '✅' : '❌') + ' 试验项名称后有退回标签');
-const warnWrap = p.locator('.ret-warn-wrap').first();
-out.push(((await warnWrap.count()) ? '✅' : '❌') + ' 试验项退回旁有感叹号');
+out.push(((await p.locator('.test-group-header .ret-tag').count()) === 0 ? '✅' : '❌') + ' 试验项名称后无退回标签');
+const warnWrap = p.locator('#panel-rod tr.ret-row .st-status .ret-warn-wrap').first();
+out.push(((await p.locator('#panel-rod tr.ret-row .st-tag.is-back').count()) >= 1 ? '✅' : '❌') + ' 退回行状态为黄色已退回');
+out.push(((await warnWrap.count()) ? '✅' : '❌') + ' 已退回标签右侧有感叹号');
 if (await warnWrap.count()) {
   await warnWrap.hover();
   await warnWrap.evaluate((el) => {
@@ -357,7 +358,7 @@ out.push((ladderHeads.indexOf('相别') === 1 ? '✅' : '❌') + ' 硬梯交流�
 const ladderRet = await p.locator('#panel-ladder .test-group').nth(1).locator('tbody tr.ret-row').count();
 out.push((ladderRet === 4 ? '✅' : '❌') + ' 硬梯红相整相退回 4 行 ' + ladderRet);
 const g62Item = await p.locator('#panel-ladder .test-group').nth(1).locator('.group-title .ret-tag').count();
-out.push((g62Item >= 1 ? '✅' : '❌') + ' 硬梯交流耐压标题有退回标签');
+out.push((g62Item === 0 ? '✅' : '❌') + ' 硬梯交流耐压标题无退回标签');
 
 await p.goto(BASE + '/test-detect-edit.html?code=SC2026/0060', { waitUntil: 'load' });
 await p.waitForTimeout(250);
