@@ -44,7 +44,7 @@
 <tr><td vertical-align="top"><p>费用审核</p></td><td vertical-align="top"><p>委托确认</p></td><td vertical-align="top"><p>上一节点。整单</p></td></tr>
 <tr><td vertical-align="top"><p>样品制备</p></td><td vertical-align="top"><p>费用审核</p></td><td vertical-align="top"><p>上一节点。整单</p></td></tr>
 <tr><td vertical-align="top"><p>样品发样</p></td><td vertical-align="top"><p>样品制备</p></td><td vertical-align="top"><p>上一节点。整单</p></td></tr>
-<tr><td vertical-align="top"><p>试样分发</p></td><td vertical-align="top"><p>样品发样</p></td><td vertical-align="top"><p>上一节点。整单。退回人是实验室主任、检测部部长或领导，退给样品员。多人退回时每人一条时间轴。SC2026/0088：周主任、陈部长、赵领导</p></td></tr>
+<tr><td vertical-align="top"><p>试样分发</p></td><td vertical-align="top"><p>样品发样</p></td><td vertical-align="top"><p>上一节点。整单。样品发样只发给一个人，退回详情只展示一次。退回人是实验室主任、检测部部长或领导，退给样品员。SC2026/0088：实验室主任周主任</p></td></tr>
 <tr><td vertical-align="top"><p>试验检测</p></td><td vertical-align="top"><p>试样分发</p></td><td vertical-align="top"><p>上一节点。整单。退回人是检测员，退给实验室主任、检测部部长或领导。SC2026/0085：检测员潘哲宁、李四</p></td></tr>
 <tr><td vertical-align="top"><p>组内审核</p></td><td vertical-align="top"><p>试验检测</p></td><td vertical-align="top"><p>上一节点。行级；有相别则整相</p></td></tr>
 <tr><td vertical-align="top"><p>数据审核</p></td><td vertical-align="top"><p>试验检测</p></td><td vertical-align="top"><p>允许路径，跳过组内审核。行级；有相别则整相</p></td></tr>
@@ -72,7 +72,7 @@
 <li>全链路只维护一份 <code>returns[]</code>。每次确认退回追加一条。查询按时间倒序（新在前）。禁止把原因写回任务主字段做覆盖。</li>
 <li>必有字段：<code>code</code>（委托编号）、<code>from</code>（发起节点）、<code>to</code>（目标节点）、<code>by</code>、<code>time</code>、<code>reason</code>、<code>kind</code>（人工 / AI / 系统）。</li>
 <li>报告环节字段：<code>reportNo</code>（如 SC2026/0238-03）。</li>
-<li>试验环节字段：<code>item / sample / tester / testers[] / rows[{specimen, phase}]</code>。<code>phase</code> 非空表示整相退回。<code>testers[]</code> 每人一个时间轴节点，并带岗位：试验检测退回试样分发时岗位是检测员；试样分发退回样品发样时岗位是实验室主任、检测部部长或领导。</li>
+<li>试验环节字段：<code>item / sample / tester / testers[] / rows[{specimen, phase}]</code>。<code>phase</code> 非空表示整相退回。试验检测退回试样分发时，<code>testers[]</code> 里每位检测员一个时间轴节点。试样分发退回样品发样只发过一个人，退回详情只展示一条。</li>
 <li>条幅、名单标签、退回详情弹窗、报告记录时间轴均读这一份数据。</li>
 </ul>
 <p><b>粒度</b></p>
