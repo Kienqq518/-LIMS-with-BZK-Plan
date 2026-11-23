@@ -309,9 +309,6 @@
           : '<td class="border border-slate-200 px-3 py-2 text-center"><input type="checkbox" class="rep-check" checked data-id="' + esc(r.id) + '" data-no="' + esc(r.no || r.id) + '" /></td>';
       }
       var ops = [];
-      if (!issueMode) {
-        ops.push('<a class="text-blue-600 hover:underline" href="transparent-demo/report-preview.html?code=' + encodeURIComponent(task.code) + '" target="_blank">预览</a>');
-      }
       if (issueMode && issuedRow) {
         ops.push('<a class="text-blue-600 hover:underline" href="#" data-view-ship data-code="' + esc(task.code) + '" data-id="' + esc(r.id) + '">查看发放记录</a>');
       }
