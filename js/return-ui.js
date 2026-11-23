@@ -203,7 +203,7 @@
   }
   function codeWithTag(code, node, innerHtml) {
     var rec = latest(code, node);
-    var tag = rec ? tagHtml({ title: '从「' + rec.from + '」退回 · ' + rec.reason }) : '';
+    var tag = rec ? tagHtml({ title: '从「' + rec.from + '」退回' + (rec.reportNo ? ' · ' + rec.reportNo : '') + ' · ' + rec.reason }) : '';
     return '<div class="ret-code-stack">' + innerHtml + tag + '</div>';
   }
   function detailTd(code, node) {
@@ -270,6 +270,7 @@
       var chips = '<span class="ret-chip' + (idx === 0 ? ' is-latest' : '') + '">第 ' + n + ' 次</span> ' +
         (from ? '<span class="ret-chip">来源 ' + esc(from) + '</span> ' : '') +
         (r.sample ? '<span class="ret-chip">样品 ' + esc(r.sample) + '</span> ' : '') +
+        (r.reportNo ? '<span class="ret-chip">报告 ' + esc(r.reportNo) + '</span> ' : '') +
         (r.tester ? '<span class="ret-chip">检测员 ' + esc(r.tester) + '</span> ' : '') +
         '<span class="ret-chip' + (isAi ? ' is-ai' : '') + '">' + esc(kind) + '</span>';
       return '<li class="' + liCls + '">' +
@@ -338,7 +339,9 @@
       '<h3 class="text-base font-medium text-slate-800">退回</h3>' +
       '<button type="button" class="text-slate-400 hover:text-slate-600" id="ret-x"><i class="fa fa-times"></i></button></div>' +
       '<div class="space-y-3 px-6 py-5 text-sm">' +
-      (code ? '<p class="text-slate-600">确认退回委托 <b>' + esc(code) + '</b>？</p>' : '') +
+      (opts.reportNos && opts.reportNos.length
+        ? '<p class="text-slate-600">按报告退回，本次 <b>' + opts.reportNos.map(esc).join('、') + '</b>。未勾选的报告留在「' + esc(from) + '」。</p>'
+        : (code ? '<p class="text-slate-600">确认退回委托 <b>' + esc(code) + '</b>？</p>' : '')) +
       '<div class="flex items-center gap-3"><label class="w-20 text-right text-slate-600">退回节点</label>' +
       '<input readonly class="flex-1 rounded border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600" value="' + esc(from) + ' → ' + esc(to) + '" /></div>' +
       '<div class="flex items-start gap-3"><label class="mt-2 w-20 text-right text-slate-600"><span class="text-red-500">*</span> 原因</label>' +

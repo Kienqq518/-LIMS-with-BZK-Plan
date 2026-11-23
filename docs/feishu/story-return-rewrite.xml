@@ -52,8 +52,8 @@
 <tr><td vertical-align="top"><p>报告审核</p></td><td vertical-align="top"><p>报告编制</p></td><td vertical-align="top"><p>上一节点。按报告编号。AI 自动退回进编制页红框；人工退回走编制名单标签</p></td></tr>
 <tr><td vertical-align="top"><p>报告签发</p></td><td vertical-align="top"><p>报告审核</p></td><td vertical-align="top"><p>上一节点。按报告编号</p></td></tr>
 <tr><td vertical-align="top"><p>报告处理</p></td><td vertical-align="top"><p>报告签发</p></td><td vertical-align="top"><p>上一节点。按报告编号</p></td></tr>
-<tr><td vertical-align="top"><p>收费审批</p></td><td vertical-align="top"><p>报告处理</p></td><td vertical-align="top"><p>上一节点。整单</p></td></tr>
-<tr><td vertical-align="top"><p>报告发放</p></td><td vertical-align="top"><p>收费审批</p></td><td vertical-align="top"><p>上一节点。整单</p></td></tr>
+<tr><td vertical-align="top"><p>收费审批</p></td><td vertical-align="top"><p>报告处理</p></td><td vertical-align="top"><p>上一节点。按报告编号。只退勾选的报告，未勾选的留在收费审批</p></td></tr>
+<tr><td vertical-align="top"><p>报告发放</p></td><td vertical-align="top"><p>收费审批</p></td><td vertical-align="top"><p>上一节点。按报告编号。只退勾选的报告，未勾选的留在报告发放</p></td></tr>
 <tr><td vertical-align="top"><p>任务归档</p></td><td vertical-align="top"><p>报告发放</p></td><td vertical-align="top"><p>上一节点。整单</p></td></tr>
 <tr><td vertical-align="top"><p>任务完成</p></td><td vertical-align="top"><p>—</p></td><td vertical-align="top"><p>无退回入口。退回任务归档不适用</p></td></tr>
 </tbody>
@@ -81,6 +81,7 @@
 <li>组内审核 → 试验检测、数据审核 → 试验检测：按单条试样数据退回。一组样品同屏时，未退回的行不打标。该试验项存在相别时，同一样品编号下某一相只要有一条退回，该相全部试样退回。</li>
 <li>组内审核不承接入站退回。数据审核的目标节点为试验检测，组内审核主查询页与编辑页不出现被退回数据。</li>
 <li>报告编制 → 数据审核：该委托下全部报告一并退回。数据审核编辑页按整单展示，试验项名称后不打退回标签。</li>
+<li>收费审批 → 报告处理、报告发放 → 收费审批：按报告退回。只退勾选的报告，每份报告一条记录并带 <code>reportNo</code>。未勾选的报告留在当前节点，同一委托可以同时出现在两个节点的名单上。</li>
 <li>报告编制及之后可挂 <code>reportNo</code>。</li>
 </ul>
 <p><b>主查询页</b></p>
@@ -134,7 +135,7 @@
 <p><b>原始记录表</b></p>
 <p>组内审核、数据审核编辑页「原始记录表」列与委托详情 / 原始记录页一致：序号、原始记录名称、覆盖样品、生成模式、生成时间、状态、操作；按本单试验项各出一份文件。</p>
 <p><b>演示数据</b></p>
-<p>SC2026/0209 委托确认 → 委托登记；SC2026/0238-02 报告审核人工退回编制；SC2026/0238-03 AI 自动退回编制；SC2026/0238-04 签发退回审核；SC2026/0312 处理退回签发；SC2026/0052 组内审核退回试验检测（操作杆交流耐压 02、07 单条，横担红相整相）；SC2026/0062 数据审核退回试验检测（硬梯交流耐压红相整相）；SC2026/0060 数据审核退回试验检测（抗弯第 4 条）；SC2026/0055 报告编制整单退回数据审核。任务完成 → 归档不适用。</p>
+<p>SC2026/0209 委托确认 → 委托登记；SC2026/0238-02 报告审核人工退回编制；SC2026/0238-03 AI 自动退回编制；SC2026/0238-04 签发退回审核；SC2026/0312 处理退回签发；SC2026/0190 收费审批只把报告 SC2026-0190-01 退回报告处理，另一份仍在收费审批；SC2026/0285 报告发放只把报告 SC2026-0285-01 退回收费审批，另一份仍在报告发放；SC2026/0052 组内审核退回试验检测（操作杆交流耐压 02、07 单条，横担红相整相）；SC2026/0062 数据审核退回试验检测（硬梯交流耐压红相整相）；SC2026/0060 数据审核退回试验检测（抗弯第 4 条）；SC2026/0055 报告编制整单退回数据审核。任务完成 → 归档不适用。</p>
 <h6>异常</h6>
 <ul>
 <li>原因为空：不可确认，焦点回到原因输入框，不落库。</li>
@@ -158,3 +159,4 @@
 <checkbox done="false">组内审核名单无退回标签；数据审核退回标签与委托编号同一行不换行。</checkbox>
 <checkbox done="false">数据审核 SC2026/0055 编辑页顶部有整单退回记录，试验项名称后无退回标签，页头无「悬停看退回原因」；原始记录表含覆盖样品 / 生成模式 / 状态 / 操作，与委托详情列一致。</checkbox>
 <checkbox done="false">同一委托连续退回两次，详情时间轴为 2 条，原因互不覆盖。</checkbox>
+<checkbox done="false">收费审批退回报告处理、报告发放退回收费审批按勾选的报告，不整单。未勾选的报告留在原节点。SC2026/0190 仅 SC2026-0190-01 在报告处理，另一份仍在收费审批；SC2026/0285 仅 SC2026-0285-01 在收费审批，另一份仍在报告发放。</checkbox>

@@ -3,7 +3,7 @@
  * 编制 / 审核通过后进入本链；状态落 localStorage，刷新不丢。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-report-flow-v8';
+  var STORAGE_KEY = 'lims-report-flow-v9';
   var ORDER = ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   var SIGNED = ['报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   function isSigned(status) { return SIGNED.indexOf(status) >= 0; }
@@ -80,7 +80,7 @@
     });
   }
   function row(o) {
-    return syncReportFiles({
+    var out = syncReportFiles({
       code: o.code, contract: o.contract || '/', customer: o.customer, sample: o.sample,
       sendDate: o.sendDate, requireDate: o.requireDate, acceptDate: o.acceptDate,
       prepaid: o.prepaid || '否', priority: o.priority || '常规', compiler: o.compiler || 'admin',
@@ -92,6 +92,16 @@
       returns: o.returns || [],
       logs: (o.logs && o.logs.length) ? o.logs : historyLogs(o.status, o.acceptDate)
     });
+    (out.returns || []).forEach(function (rec) {
+      var dup = (out.logs || []).some(function (l) { return l.reason === rec.reason && l.at === rec.time; });
+      if (dup) return;
+      out.logs.push({
+        at: rec.time, node: rec.from, by: rec.by,
+        text: '退回至' + rec.to + (rec.reportNo ? ' · ' + rec.reportNo : ''),
+        tone: 'danger', reason: rec.reason, target: rec.to, reportNo: rec.reportNo || ''
+      });
+    });
+    return out;
   }
 
   var SEED = [
@@ -124,18 +134,26 @@
       reports: reports('SC2026/0439', 3, '2026-11-09 14:46:45') }),
     row({ code: 'SC2026/0190', customer: '远东电缆股份有限公司', sample: '8.7/10kV 电力电缆',
       sendDate: '2026-09-02', requireDate: '2026-09-12', acceptDate: '2026-09-02',
-      status: '报告处理', at: '2026-09-02 16:40:00',
-      reports: reports('SC2026/0190', 2, '2026-09-02 16:40:00'),
-      returns: [{ from: '收费审批', to: '报告处理', by: '赵财务', time: '2026-11-10 09:40', reason: '处理范围与收费清单不一致，请重新勾选后再收费。', kind: '人工' }] }),
+      status: '收费审批', at: '2026-09-02 16:40:00',
+      reports: (function () {
+        var reps = reports('SC2026/0190', 2, '2026-09-02 16:40:00');
+        reps[0].stage = '报告处理';
+        return reps;
+      })(),
+      returns: [{ from: '收费审批', to: '报告处理', by: '赵财务', time: '2026-11-10 09:40', reason: '处理范围与收费清单不一致，请重新勾选后再收费。', kind: '人工', reportNo: 'SC2026-0190-01' }] }),
     row({ code: 'SC2026/0175', customer: '贵州送变电有限公司', sample: '绝缘手套 10kV',
       sendDate: '2026-09-03', requireDate: '2026-09-12', acceptDate: '2026-09-03',
       status: '收费审批', at: '2026-09-04 09:40:00',
       reports: reports('SC2026/0175', 3, '2026-09-04 09:40:00') }),
     row({ code: 'SC2026/0285', customer: '安顺供电局', sample: '高强度螺栓连接副',
       sendDate: '2026-08-27', requireDate: '2026-09-05', acceptDate: '2026-08-27',
-      status: '收费审批', at: '2026-08-27 16:10:00',
-      reports: reports('SC2026/0285', 2, '2026-08-27 16:10:00'),
-      returns: [{ from: '报告发放', to: '收费审批', by: '孙发放', time: '2026-11-09 14:18', reason: '收费未结清，暂不能发放，退回收费审批。', kind: '人工' }] }),
+      status: '报告发放', at: '2026-08-27 16:10:00',
+      reports: (function () {
+        var reps = reports('SC2026/0285', 2, '2026-08-27 16:10:00');
+        reps[0].stage = '收费审批';
+        return reps;
+      })(),
+      returns: [{ from: '报告发放', to: '收费审批', by: '孙发放', time: '2026-11-09 14:18', reason: '收费未结清，暂不能发放，退回收费审批。', kind: '人工', reportNo: 'SC2026-0285-01' }] }),
     row({ code: 'SC2026/0447', contract: 'HT2026-0447', customer: '杭州数蚕智能科技有限公司', sample: '安全带',
       sendDate: '2026-11-12', requireDate: '2026-11-20', acceptDate: '2026-11-12',
       status: '报告发放', at: '2026-11-12 13:27:35',
@@ -199,8 +217,49 @@
 
   var rows = load();
 
+  var SPLIT_STAGES = { '报告处理': 1, '收费审批': 1, '报告发放': 1 };
+  var PER_REPORT_BACK = { '收费审批': 1, '报告发放': 1 };
+  function stageOf(task, report) {
+    if (!report) return task.status;
+    return report.stage || task.status;
+  }
+  function reportsAt(task, stage) {
+    return (task.reports || []).filter(function (r) {
+      if (stage === '报告发放' && r.issued) return false;
+      return stageOf(task, r) === stage;
+    });
+  }
+  function pinOpen(task) {
+    (task.reports || []).forEach(function (r) {
+      if (r.issued) return;
+      if (!r.stage) r.stage = task.status;
+    });
+  }
+  function recomputeStatus(task) {
+    var open = (task.reports || []).filter(function (r) { return !r.issued; });
+    if (!open.length) {
+      if ((task.reports || []).some(function (r) { return r.issued; }) && ORDER.indexOf(task.status) <= ORDER.indexOf('报告发放')) {
+        task.status = '任务归档';
+      }
+      return;
+    }
+    var best = -1;
+    var name = task.status;
+    open.forEach(function (r) {
+      var s = r.stage || task.status;
+      var i = ORDER.indexOf(s);
+      if (i > best) { best = i; name = s; }
+    });
+    if (best >= 0) task.status = name;
+    (task.reports || []).forEach(function (r) {
+      if (r.stage && r.stage === task.status) r.stage = '';
+    });
+  }
   function list(stage) {
-    return rows.filter(function (r) { return r.status === stage; });
+    return rows.filter(function (task) {
+      if (SPLIT_STAGES[stage] && task.reports && task.reports.length) return reportsAt(task, stage).length > 0;
+      return task.status === stage;
+    });
   }
   function get(code) {
     for (var i = 0; i < rows.length; i++) if (rows[i].code === code) return rows[i];
@@ -219,43 +278,86 @@
     function p(n) { return n < 10 ? '0' + n : '' + n; }
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
-  function pass(code, note) {
+  function pass(code, note, extra) {
+    extra = extra || {};
     var t = get(code); if (!t) return false;
-    var nx = nextOf(t.status); if (!nx) return false;
-    var from = t.status;
+    var from = extra.from || t.status;
+    if (from === '任务完成') return false;
+    var nx = nextOf(from); if (!nx) return false;
     var text = note || (from.replace('报告', '').replace('任务', '') + '通过');
     if (from === '报告签发' && !note) text = '签发通过，已生成 PDF 报告';
+    if ((from === '报告处理' || from === '收费审批') && extra.from) {
+      pinOpen(t);
+      var moving = reportsAt(t, from);
+      if (!moving.length) return false;
+      t.logs.push({
+        at: stamp(), node: from, by: ACTOR[from] || 'admin',
+        text: text + ' ' + moving.length + ' 份报告', tone: 'success'
+      });
+      moving.forEach(function (r) { r.stage = nx; });
+      recomputeStatus(t);
+      syncReportFiles(t);
+      save(rows);
+      return true;
+    }
+    if (from !== t.status) return false;
     t.logs.push({ at: stamp(), node: from, by: ACTOR[from] || 'admin', text: text, tone: 'success' });
     t.status = nx;
+    (t.reports || []).forEach(function (r) { if (!r.issued) r.stage = ''; });
     syncReportFiles(t);
     save(rows);
     return true;
   }
-  function back(code, reason, extra) {
-    extra = extra || {};
-    var t = get(code); if (!t) return false;
-    var from = t.status;
-    if (from === '任务完成') return false;
-    var prev = prevOf(from);
-    var to = extra.to || prev || '报告审核';
+  function pushReturn(t, from, to, reason, extra, reportNo) {
     var rec = {
       from: from, to: to, by: extra.by || ACTOR[from] || 'admin',
-      time: stamp(), reason: reason || '', kind: extra.kind || '人工'
+      time: stamp(), reason: reason || '', kind: extra.kind || '人工',
+      reportNo: reportNo || ''
     };
     t.returns = t.returns || [];
+    t.logs = t.logs || [];
     t.returns.push(rec);
     t.logs.push({
       at: rec.time, node: from, by: rec.by,
-      text: '退回至' + to, tone: 'danger',
-      reason: rec.reason, target: to
+      text: '退回至' + to + (reportNo ? ' · ' + reportNo : ''),
+      tone: 'danger', reason: rec.reason, target: to, reportNo: reportNo || ''
     });
     if (global.ReturnStore) {
       global.ReturnStore.push({
         code: t.code, from: rec.from, to: rec.to, by: rec.by,
-        time: rec.time, reason: rec.reason, kind: rec.kind
+        time: rec.time, reason: rec.reason, kind: rec.kind, reportNo: rec.reportNo
       });
     }
+    return rec;
+  }
+  function back(code, reason, extra) {
+    extra = extra || {};
+    var t = get(code); if (!t) return false;
+    var from = extra.from || t.status;
+    if (from === '任务完成') return false;
+    var prev = prevOf(from);
+    var to = extra.to || prev || '报告审核';
+    if (PER_REPORT_BACK[from]) {
+      var ids = (extra.reportIds || []).map(String);
+      if (!ids.length) return false;
+      pinOpen(t);
+      var targets = (t.reports || []).filter(function (r) {
+        if (r.issued || stageOf(t, r) !== from) return false;
+        return ids.indexOf(String(r.id)) >= 0 || ids.indexOf(String(r.no)) >= 0;
+      });
+      if (!targets.length) return false;
+      targets.forEach(function (r) {
+        r.stage = to;
+        pushReturn(t, from, to, reason, extra, r.no || r.id);
+      });
+      recomputeStatus(t);
+      syncReportFiles(t);
+      save(rows);
+      return { count: targets.length, reports: targets.map(function (r) { return r.no || r.id; }) };
+    }
+    pushReturn(t, from, to, reason, extra, extra.reportNo || '');
     t.status = prev ? to : '已退回审核';
+    (t.reports || []).forEach(function (r) { if (!r.issued) r.stage = ''; });
     syncReportFiles(t);
     save(rows);
     return true;
@@ -270,7 +372,7 @@
         if (snap) r.ship = clone(snap);
       }
     });
-    var left = (t.reports || []).filter(function (r) { return !r.issued; });
+    var left = (t.reports || []).filter(function (r) { return !r.issued && stageOf(t, r) === '报告发放'; });
     t.logs.push({
       at: stamp(), node: t.status, by: ACTOR[t.status] || 'admin',
       text: '发放通过 ' + ids.length + ' 份报告' + (left.length ? '（本单仍有 ' + left.length + ' 份待发放）' : '，进入任务归档'),
@@ -332,6 +434,7 @@
     ORDER: ORDER, STORAGE_KEY: STORAGE_KEY, SIGNED: SIGNED,
     isSigned: isSigned, syncReportFiles: syncReportFiles,
     list: list, get: get, pass: pass, back: back, issue: issue, setShip: setShip, removeShip: removeShip,
+    reportsAt: reportsAt, stageOf: stageOf,
     acceptFromReview: acceptFromReview, reset: reset,
     all: function () { return rows; },
     nextOf: nextOf, prevOf: prevOf

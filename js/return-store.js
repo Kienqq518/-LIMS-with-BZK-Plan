@@ -3,7 +3,7 @@
  * { from, to, by, time, reason, kind }  kind = 人工 / AI / 系统
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-returns-v10';
+  var STORAGE_KEY = 'lims-returns-v11';
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
   function now() {
@@ -89,8 +89,8 @@
     { code: 'SC2026/0238', from: '报告审核', to: '报告编制', by: 'AI 审核引擎', time: '2026-09-03 10:15', reason: 'L1-b-1 检测/审核/批准签名位不完整', kind: 'AI', reportNo: 'SC2026/0238-03' },
     { code: 'SC2026/0238', from: '报告签发', to: '报告审核', by: '周签发', time: '2026-09-05 09:15', reason: '结论页检测结论措辞与检测数据口径不一致，退回报告审核核实后再签发。', kind: '人工', reportNo: 'SC2026/0238-04' },
     { code: 'SC2026/0312', from: '报告处理', to: '报告签发', by: '王处理', time: '2026-11-20 14:30', reason: '签发章位置与机构授权范围不符，退回签发重新核验。', kind: '人工', reportNo: 'SC2026/0312-01' },
-    { code: 'SC2026/0190', from: '收费审批', to: '报告处理', by: '赵财务', time: '2026-11-10 09:40', reason: '处理范围与收费清单不一致，请重新勾选后再收费。', kind: '人工' },
-    { code: 'SC2026/0285', from: '报告发放', to: '收费审批', by: '孙发放', time: '2026-11-09 14:18', reason: '收费未结清，暂不能发放，退回收费审批。', kind: '人工' },
+    { code: 'SC2026/0190', from: '收费审批', to: '报告处理', by: '赵财务', time: '2026-11-10 09:40', reason: '处理范围与收费清单不一致，请重新勾选后再收费。', kind: '人工', reportNo: 'SC2026-0190-01' },
+    { code: 'SC2026/0285', from: '报告发放', to: '收费审批', by: '孙发放', time: '2026-11-09 14:18', reason: '收费未结清，暂不能发放，退回收费审批。', kind: '人工', reportNo: 'SC2026-0285-01' },
     { code: 'SC2026/0166', from: '任务归档', to: '报告发放', by: 'admin', time: '2026-11-08 11:02', reason: '快递单号填写错误，退回发放更正。', kind: '人工' }
   ];
 
