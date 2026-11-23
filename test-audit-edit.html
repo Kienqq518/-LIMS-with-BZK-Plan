@@ -125,8 +125,7 @@
       </div>
       <p class="text-sm text-slate-600">
         <span class="font-medium text-slate-700">注：</span>
-        将鼠标悬浮在 <i class="fa fa-question-circle text-orange-500" title="不合格原因示例"></i> 图标上，可查看不合格原因；
-        将鼠标悬浮在 <i class="fa fa-exclamation-circle text-orange-500" title="退回原因"></i> 图标上，可查看退回原因。
+        将鼠标悬浮在 <i class="fa fa-question-circle text-orange-500" title="不合格原因示例"></i> 图标上，可查看不合格原因<span id="retHint">；将鼠标悬浮在 <i class="fa fa-exclamation-circle text-orange-500" title="退回原因"></i> 图标上，可查看退回原因</span>。
       </p>
       <div class="mt-2 text-xs text-slate-400">
         委托编号：<span id="entrustCode" class="text-slate-600">—</span>
@@ -193,6 +192,10 @@
     document.getElementById('sampleTag').textContent = sampleShort;
     document.getElementById('entrustCode').textContent = entrustCode;
     document.getElementById('customerName').textContent = customer;
+    if (auditType === 'data') {
+      var retHint = document.getElementById('retHint');
+      if (retHint) retHint.remove();
+    }
 
     function specimenId(seq) {
       var n = String(seq);
@@ -308,7 +311,8 @@
       groups.forEach(function (g, gi) {
         html += '<section class="test-group">';
         html += '<div class="test-group-header">';
-        html += '<div class="group-title">' + g.title + (window.ReturnUI ? ReturnUI.itemMark(entrustCode, g.title) : '') + '</div>';
+        html += '<div class="group-title">' + g.title +
+          (auditType !== 'data' && window.ReturnUI ? ReturnUI.itemMark(entrustCode, g.title) : '') + '</div>';
         html += '<div class="group-tester">' +
           (window.ReturnUI
             ? ReturnUI.testerMeta(entrustCode, g.title, g.tester || defaultTester, g.detectTime)
@@ -366,32 +370,44 @@
       if (strip) headCard.insertAdjacentHTML('afterend', strip);
     }
 
-    if (window.PrototypeAnnotation) PrototypeAnnotation.init({
-      annotations: [
-        {
-          id: 'audit-ret-item',
-          selector: '.ret-tag, .ret-warn-wrap',
-          position: 'bottom',
-          title: '审核页退回试验项',
-          wide: true,
-          content: '<strong>需求逻辑：</strong>组内审核 / 数据审核被退回的委托，原因要落到对应试验项，编辑页必须能看见退回数据，不能只在名单打标签。<br>' +
-          '<strong>展示规则：</strong>试验项标题后打红色「退回」标签，旁附感叹号；悬停气泡分行展示原因、来源节点、退回人、时间。演示：组内 SC2026/0062 交流耐压、SC2026/0060 抗弯动负荷；数据审核 SC2026/0055 外观及尺寸。<br>' +
-          '<strong>交互逻辑：</strong>点名单「审核」带入委托编号后，本页按 item 匹配试验项；无退回记录的试验项不打标。',
-          tag: nodeName
-        },
-        {
-          id: 'audit-or-table',
-          selector: '[data-annotate="audit-or-table"]',
-          position: 'top-right',
-          title: '审核页原始记录表',
-          wide: true,
-          content: '<strong>需求逻辑：</strong>审核员核对结论时要能对照原始记录单文件身份，列结构必须与委托详情 / 原始记录页一致，避免审核页只给一个文件名。<br>' +
-          '<strong>展示规则：</strong>列与委托详情「原始记录单」相同：序号、原始记录名称、覆盖样品、生成模式、生成时间、状态、操作。文件按本单试验项各一份。<br>' +
-          '<strong>交互逻辑：</strong>「查看 / 查看历史」为原型提示；「跳转原始记录页面」进入原始记录维护页。',
-          tag: '原始记录'
-        }
-      ]
+    var annotations = [];
+    if (auditType === 'data') {
+      annotations.push({
+        id: 'data-audit-whole-return',
+        selector: '.ret-strip, .ret-tl',
+        position: 'bottom',
+        title: '数据审核整单退回',
+        wide: true,
+        content: '<strong>需求逻辑：</strong>数据审核待办里的退回只可能来自报告编制，且编制退回是该委托下全部报告一起打回，不是某一试验项。<br>' +
+        '<strong>展示规则：</strong>编辑页顶部时间轴展示整单退回原因（演示 SC2026/0055）。试验项名称后不打「退回」标签，页头也不再写「悬停感叹号查看退回原因」。<br>' +
+        '<strong>交互逻辑：</strong>名单仍打退回标签；点「审核」进本页看顶部退回记录后继续复核数据。',
+        tag: '数据审核'
+      });
+    } else {
+      annotations.push({
+        id: 'audit-ret-item',
+        selector: '.ret-tag, .ret-warn-wrap',
+        position: 'bottom',
+        title: '组内审核退回试验项',
+        wide: true,
+        content: '<strong>需求逻辑：</strong>数据审核可以把委托打回组内审核，原因落到对应试验项，编辑页必须能看见，不能只在名单打标签。<br>' +
+        '<strong>展示规则：</strong>试验项标题后打红色「退回」标签，旁附感叹号；悬停气泡分行展示原因、来源、退回人、时间。演示：SC2026/0062 交流耐压、SC2026/0060 抗弯动负荷。<br>' +
+        '<strong>交互逻辑：</strong>点名单「审核」带入委托编号后，本页按 item 匹配试验项；无退回记录的试验项不打标。',
+        tag: '组内审核'
+      });
+    }
+    annotations.push({
+      id: 'audit-or-table',
+      selector: '[data-annotate="audit-or-table"]',
+      position: 'top-right',
+      title: '审核页原始记录表',
+      wide: true,
+      content: '<strong>需求逻辑：</strong>审核员核对结论时要能对照原始记录单文件身份，列结构必须与委托详情 / 原始记录页一致，避免审核页只给一个文件名。<br>' +
+      '<strong>展示规则：</strong>列与委托详情「原始记录单」相同：序号、原始记录名称、覆盖样品、生成模式、生成时间、状态、操作。文件按本单试验项各一份。<br>' +
+      '<strong>交互逻辑：</strong>「查看 / 查看历史」为原型提示；「跳转原始记录页面」进入原始记录维护页。',
+      tag: '原始记录'
     });
+    if (window.PrototypeAnnotation) PrototypeAnnotation.init({ annotations: annotations });
 
     renderGroups();
     renderRecords();

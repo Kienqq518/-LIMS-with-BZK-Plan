@@ -344,7 +344,10 @@ out.push((dConcl >= 0 && dStatus === dConcl + 1 ? '✅' : '❌') + ' 数据审�
 await p.goto(BASE + '/test-audit-edit.html?type=data&code=SC2026/0055&sample=' + encodeURIComponent('绝缘毯') + '&tester=' + encodeURIComponent('张三'), { waitUntil: 'load' });
 await p.waitForTimeout(280);
 const d55 = (await p.locator('body').textContent()) || '';
-out.push((/外观及尺寸/.test(d55) && /退回/.test(d55) && /绝缘毯外观结论/.test(d55) ? '✅' : '❌') + ' 数据审核0055详情有退回试验项');
+out.push((/退回记录/.test(d55) && /绝缘毯外观结论/.test(d55) && /报告编制/.test(d55) ? '✅' : '❌') + ' 数据审核0055详情顶部有整单退回记录');
+const d55ItemTag = await p.locator('.test-group-header .ret-tag, .test-group-header .ret-warn-wrap').count();
+out.push((d55ItemTag === 0 ? '✅' : '❌') + ' 数据审核0055试验项名称后无退回标签 ' + d55ItemTag);
+out.push((!/可查看退回原因/.test(d55) && /可查看不合格原因/.test(d55) ? '✅' : '❌') + ' 数据审核详情去掉悬停看退回原因说明');
 const orHead = (await p.locator('[data-annotate="audit-or-table"] thead').textContent()) || '';
 out.push((/覆盖样品/.test(orHead) && /生成模式/.test(orHead) && /状态/.test(orHead) && /操作/.test(orHead) ? '✅' : '❌') + ' 审核页原始记录表与委托详情列对齐');
 out.push((/SC2026\/0055-外观及尺寸-原始记录/.test(d55) ? '✅' : '❌') + ' 0055原始记录按试验项出文件');
