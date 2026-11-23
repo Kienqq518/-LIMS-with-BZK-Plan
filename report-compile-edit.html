@@ -993,7 +993,7 @@
       syncLogOrderButtons();
       if (wbOpenId != null) {
         var row = reportFiles.filter(function (r) { return r.id === wbOpenId; })[0];
-        if (row) document.getElementById('wbRecordList').innerHTML = renderWbTimeline(row.timeline || []);
+        if (row) document.getElementById('wbRecordList').innerHTML = renderWbTimeline(row.timeline || [], row.node);
       }
     }
 
@@ -1004,7 +1004,7 @@
       var sub = document.getElementById('wbRecordSubtitle');
       if (sub) sub.textContent = row.reportNo + ' · ' + row.fileName;
       syncLogOrderButtons();
-      document.getElementById('wbRecordList').innerHTML = renderWbTimeline(row.timeline || []);
+      document.getElementById('wbRecordList').innerHTML = renderWbTimeline(row.timeline || [], row.node);
       var drawer = document.getElementById('wbRecordDrawer');
       clearTimeout(wbRecordHideTimer);
       drawer.classList.remove('hidden');
@@ -1018,12 +1018,12 @@
       wbRecordHideTimer = setTimeout(function () { drawer.classList.add('hidden'); }, 220);
     }
 
-    function renderWbTimeline(items) {
+    function renderWbTimeline(items, currentNode) {
       items = sortTimeline(items);
-      if (window.AuditLog) items = AuditLog.present(items, getLogOrder());
+      if (window.AuditLog) items = AuditLog.present(items, getLogOrder(), currentNode || '');
       if (!items.length) return '<p class="py-6 text-center text-sm text-slate-400">暂无流转记录</p>';
       return '<ol class="audit-tl">' + items.map(function (item) {
-        if (item.hop) return AuditLog.hopHtml(item);
+        if (window.AuditLog) return AuditLog.itemHtml(item);
         var person = item.actor
           ? '<span class="audit-person"><span class="audit-avatar" style="background:' + auditAvatarColor(item.actor) + '">' + auditAvatarMark(item.actor) + '</span>' + escapeHtml(item.actor) + '</span>'
           : '';

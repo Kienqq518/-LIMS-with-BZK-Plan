@@ -1072,11 +1072,26 @@
             reportId: row.id,
             pending: true,
             node: '报告编制',
-            actor: (row.compile && row.compile.user) || '',
+            actor: '',
             tone: 'pending',
-            status: '编制中',
+            status: '当前节点',
             statusTone: 'pending',
-            icon: 'fa-pencil',
+            icon: 'fa-circle-o',
+            opinionKicker: '',
+            opinion: ''
+          });
+        } else if (row.node) {
+          items.push({
+            time: '',
+            reportNo: row.reportNo,
+            reportId: row.id,
+            pending: true,
+            node: row.node,
+            actor: '',
+            tone: 'pending',
+            status: '当前节点',
+            statusTone: 'pending',
+            icon: 'fa-circle-o',
             opinionKicker: '',
             opinion: ''
           });
@@ -1176,7 +1191,7 @@
       }
       var showNo = activeReportLogFilter === 'all';
       box.innerHTML = '<ol class="audit-tl">' + logs.map(function (item) {
-        if (item.hop) return AuditLog.hopHtml(item);
+        if (window.AuditLog) return AuditLog.itemHtml(item, { no: showNo ? reportNoChip(item.reportNo) : '' });
         var person = item.actor
           ? '<span class="audit-person"><span class="audit-avatar" style="background:' + auditAvatarColor(item.actor) + '">' + auditAvatarMark(item.actor) + '</span>' + escapeHtml(item.actor) + '</span>'
           : '';

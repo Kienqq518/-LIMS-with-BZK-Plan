@@ -288,22 +288,11 @@
       document.getElementById('rvLogReport').textContent = '· ' + rep.reportNo;
       document.getElementById('rvRecordSubtitle').textContent = rep.reportNo + ' · ' + (rep.file && rep.file.word ? rep.file.word : '');
       var logs = window.AuditLog
-        ? AuditLog.present(rep.log || [], rvOpen.order)
-        : (rep.log || []).slice().sort(function (a, b) { return rvOpen.order === 'desc' ? (a.at < b.at ? 1 : -1) : (a.at < b.at ? -1 : 1); });
+        ? AuditLog.present(rep.log || [], rvOpen.order, AuditLog.currentNodeForReview(rep))
+        : (rep.log || []).slice();
       document.getElementById('rvLogOrderBtn').textContent = rvOpen.order === 'desc' ? '时间倒序' : '时间正序';
       document.getElementById('rvRecordLog').innerHTML = '<ol class="audit-tl">' + logs.map(function (log) {
-        if (log.hop) return AuditLog.hopHtml(log);
-        var tone = rvTone(log); var st = rvStatus(log);
-        var line = window.ReturnUI ? ReturnUI.logLine(log) : { extra: '', isRet: false };
-        if (line.isRet) { st.text = '退回'; st.icon = 'fa-undo'; st.tone = 'reject'; tone = 'reject'; }
-        var pending = tone === 'pending';
-        var person = '<span class="audit-person"><span class="audit-avatar" style="background:' + rvAvatarColor(log.by) + '">' + rvAvatarMark(log.by) + '</span>' + rvEsc(log.by || '系统') + '</span>';
-        var status = '<span class="audit-status is-' + st.tone + '"><i class="fa ' + st.icon + '"></i>' + rvEsc(st.text) + '</span>';
-        var time = log.at ? '<time class="audit-time">' + rvEsc(log.at) + (log.at.length < 19 ? ':00' : '') + '</time>' : '';
-        var headRight = (pending && log.tone === 'pending' && !/预审/.test(log.text || '')) ? status : time;
-        var second = (pending && log.tone === 'pending' && !/预审/.test(log.text || '')) ? '' : ('<div class="audit-row">' + person + status + '</div>' + (line.extra || ''));
-        return '<li class="audit-tl-item is-' + tone + (pending ? ' is-pending' : '') + '"><div class="audit-rail" aria-hidden="true"><span class="audit-dot"></span></div>' +
-          '<div class="audit-main"><div class="audit-head"><div class="audit-title">' + rvEsc(log.node) + '</div>' + headRight + '</div>' + second + '</div></li>';
+        return AuditLog.itemHtml(log);
       }).join('') + '</ol>';
     }
     function openRvRecord(code) {

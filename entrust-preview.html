@@ -237,6 +237,7 @@
   </div>
 
   <!-- 委托公共数据源：必须在下面的列表脚本之前加载（列表要按它对齐客户/样品/日期） -->
+  <script src="js/audit-log.js"></script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/entrust-mock.js"></script>
   <script>
@@ -331,18 +332,22 @@
       if (window.ColumnConfig && ColumnConfig.refresh) ColumnConfig.refresh();
     })();
 
-    // 渲染日志时间轴
+    // 渲染日志时间轴：与报告记录抽屉同一套节点样式，末节点是当前节点
     (function renderLog() {
       const box = document.getElementById('logList');
-      box.innerHTML = logData.map(function (item) {
-        return '<div class="relative border-l-2 border-slate-200 pl-5">' +
-          '<span class="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-blue-500 bg-white"></span>' +
-          '<div class="flex flex-wrap items-center gap-2 text-sm text-slate-500">' +
-          '<span>' + item.time + '</span>' +
-          '<span class="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">SC2026/0212-01</span>' +
-          '</div>' +
-          '<div class="mt-1 text-sm leading-6 text-slate-700">' + item.text + '</div></div>';
-      }).join('');
+      function toLog(item) {
+        var m = String(item.text || '').match(/^(.+?)\s+在\s+(\S+)\s+将\s+.+?(提交至|退回至|自动退回至)\s+(\S+)/);
+        if (!m) return { at: item.time, node: '操作记录', by: '', text: item.text, tone: 'default' };
+        return { at: item.time, node: m[2], by: m[1], text: m[3] + m[4], tone: /退回/.test(m[3]) ? 'danger' : 'default' };
+      }
+      var logs = logData.map(toLog);
+      if (window.AuditLog) {
+        box.innerHTML = '<ol class="audit-tl">' + AuditLog.present(logs, 'desc', '报告处理').map(function (log) {
+          return AuditLog.itemHtml(log, { no: 'SC2026/0212-01' });
+        }).join('') + '</ol>';
+        return;
+      }
+      box.innerHTML = '';
     })();
 
     // ================= 交互逻辑 =================

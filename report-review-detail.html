@@ -522,13 +522,11 @@
     // ---------- 操作日志 ----------
     function renderLog(report) {
       $('log-report').textContent = '· ' + report.reportNo;
-      var logs = window.AuditLog ? AuditLog.present(report.log || [], 'asc') : (report.log || []);
+      var logs = window.AuditLog
+        ? AuditLog.present(report.log || [], 'asc', AuditLog.currentNodeForReview(report))
+        : (report.log || []);
       $('log-list').innerHTML = '<ul class="audit-tl">' + logs.map(function (e) {
-        if (e.hop) return AuditLog.hopHtml(e);
-        return '<li class="audit-tl-item tone-' + (e.tone || 'default') + '"><div class="audit-rail"><span class="audit-dot"></span></div>' +
-          '<div class="audit-main"><div class="flex items-baseline justify-between gap-2"><span class="font-medium text-slate-700">' + esc(e.node) + '</span><span class="text-[11px] text-slate-400 mono">' + esc(e.at) + '</span></div>' +
-          '<div class="mt-0.5 log-who"><i class="fa fa-user-o text-slate-400"></i>' + esc(e.by || '系统') + '</div>' +
-          '<div class="mt-0.5 text-slate-500">' + esc(e.text) + '</div></div></li>';
+        return AuditLog.itemHtml(e);
       }).join('') + '</ul>';
     }
 

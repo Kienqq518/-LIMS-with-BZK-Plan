@@ -233,15 +233,15 @@
         });
       });
     }
-    function logHtml(log) {
+    function logHtml(log, row) {
       if (!log || !log.length) return '<div class="text-xs text-slate-400">暂无操作日志</div>';
-      var rows = window.AuditLog ? AuditLog.present(log, 'asc') : log;
+      var current = '';
+      if (window.AuditLog) {
+        current = (row && row.report) ? AuditLog.currentNodeForReview(row.report) : (row && row.bizNode) || '';
+      }
+      var rows = window.AuditLog ? AuditLog.present(log, 'asc', current) : log;
       return '<ol class="audit-tl">' + rows.map(function (ev) {
-        if (ev.hop) return AuditLog.hopHtml(ev);
-        var tone = ev.tone || 'default';
-        return '<li class="audit-tl-item tone-' + tone + '"><div class="audit-rail"><span class="audit-dot"></span></div>' +
-          '<div class="audit-main"><div class="text-[11px] text-slate-400">' + esc(ev.at) + ' · ' + esc(ev.node) + ' · ' + esc(ev.by) + '</div>' +
-          '<div class="text-xs text-slate-700">' + esc(ev.text) + '</div></div></li>';
+        return window.AuditLog ? AuditLog.itemHtml(ev) : '';
       }).join('') + '</ol>';
     }
     function humanResultHtml(row) {
@@ -407,7 +407,7 @@
             '</section>' +
             '<section class="glass flex-1 px-4 py-3" data-annotate="sn-log">' +
               '<div class="mb-2 text-sm font-semibold" style="color:var(--brand)">操作日志</div>' +
-              logHtml(row.log || (row.report && row.report.log) || []) +
+              logHtml(row.log || (row.report && row.report.log) || [], row) +
               '<div class="mt-3 text-[11px] text-slate-400">' + (readonly ? '归档只读：不能重跑、不能改标注。' : (pending ? '排队 / 执行中的快照只读。' : '过程中任务请进入报告审核工作台处置。')) + '</div>' +
             '</section>' +
           '</div>' +

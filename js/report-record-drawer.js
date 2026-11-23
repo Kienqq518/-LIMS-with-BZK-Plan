@@ -106,10 +106,20 @@
     if (/通过|归档/.test(t)) return { text: t, icon: 'fa-check-circle', tone: 'pass' };
     return { text: t, icon: 'fa-circle-o', tone: 'muted' };
   }
-  function stateChip(task) {
-    if (task.status === '已退回审核') return '<span class="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700">已退回审核</span>';
-    if (task.status === '任务完成') return '<span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">已完成</span>';
-    return '<span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800">当前：' + esc(task.status) + '</span>';
+  function stateChip(task, rep) {
+    var stage = currentOfReport(task, rep);
+    if (stage === '已退回审核') return '<span class="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700">已退回审核</span>';
+    if (stage === '任务完成') return '<span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">已完成</span>';
+    return '<span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800">当前：' + esc(stage) + '</span>';
+  }
+  function reportHasReturn(task, rep) {
+    var no = normNo(rep && (rep.no || rep.id));
+    var own = (task.returns || []).some(function (rec) {
+      return !rec.reportNo || normNo(rec.reportNo) === no;
+    });
+    if (own) return true;
+    if (!(task.returns || []).length && global.ReturnStore && ReturnStore.listByCode(task.code).length) return true;
+    return false;
   }
   function ensure() {
     if (!document.getElementById('flowRecordDrawerStyle')) {
@@ -144,9 +154,8 @@
     document.getElementById('flowRecordRoster').innerHTML = reps.map(function (rep) {
       return '<button type="button" class="rr-rep-card' + (rep.id === state.reportId ? ' is-on' : '') + '" data-rid="' + esc(rep.id) + '">' +
         '<div class="flex items-center justify-between gap-2"><span class="font-semibold text-slate-800">' + esc(rep.no || rep.id) +
-        ((task.returns && task.returns.length) || (global.ReturnStore && ReturnStore.listByCode(task.code).length)
-          ? (global.ReturnUI ? ReturnUI.tagHtml() : '') : '') +
-        '</span>' + stateChip(task) + '</div>' +
+        (reportHasReturn(task, rep) && global.ReturnUI ? ReturnUI.tagHtml() : '') +
+        '</span>' + stateChip(task, rep) + '</div>' +
         '<div class="mt-1 flex items-center justify-between text-xs text-slate-400"><span><i class="fa ' + (/\.pdf$/i.test(rep.name || '') ? 'fa-file-pdf-o' : 'fa-file-word-o') + ' mr-1"></i>' + esc(rep.name || '') + '</span><span>' + esc(rep.at || '') + '</span></div>' +
         '</button>';
     }).join('') || '<p class="py-4 text-center text-sm text-slate-400">暂无报告文件</p>';
@@ -158,6 +167,38 @@
       });
     });
   }
+  function normNo(s) { return String(s || '').replace(/\//g, '-'); }
+  function logOwner(log, task) {
+    if (log.reportNo) return log.reportNo;
+    var rets = (task && task.returns) || [];
+    for (var i = 0; i < rets.length; i++) {
+      var rec = rets[i];
+      if (!rec.reportNo) continue;
+      if (rec.reason && log.reason && rec.reason === log.reason) return rec.reportNo;
+      if (rec.time && rec.time === log.at && rec.by === log.by) return rec.reportNo;
+    }
+    return '';
+  }
+  function logsForReport(task, rep) {
+    var no = normNo(rep && (rep.no || rep.id));
+    return (task.logs || []).filter(function (log) {
+      var owner = normNo(logOwner(log, task));
+      return !owner || owner === no;
+    });
+  }
+  function currentOfReport(task, rep) {
+    if (rep && rep.stage) return rep.stage;
+    var no = normNo(rep && (rep.no || rep.id));
+    var mine = (task.returns || []).filter(function (rec) {
+      return rec.reportNo && normNo(rec.reportNo) === no;
+    });
+    mine.sort(function (a, b) { return String(a.time) < String(b.time) ? 1 : -1; });
+    if (mine.length && mine[0].to) return mine[0].to;
+    var whole = (task.returns || []).filter(function (rec) { return !rec.reportNo && rec.to; });
+    whole.sort(function (a, b) { return String(a.time) < String(b.time) ? 1 : -1; });
+    if (whole.length) return whole[0].to;
+    return task.status || '';
+  }
   function paintLog() {
     var task = global.ReportFlowStore && ReportFlowStore.get(state.code);
     if (!task) {
@@ -167,28 +208,18 @@
     var rep = (task.reports || []).filter(function (r) { return r.id === state.reportId; })[0] || (task.reports || [])[0];
     document.getElementById('flowLogReport').textContent = rep ? '· ' + (rep.no || rep.id) : '';
     document.getElementById('flowRecordSubtitle').textContent = (rep ? (rep.no || '') + ' · ' : '') + (task.code || '');
+    var raw = logsForReport(task, rep);
+    var current = currentOfReport(task, rep);
     var logs = global.AuditLog
-      ? AuditLog.present(task.logs || [], state.order)
-      : (task.logs || []).slice().sort(function (a, b) { return state.order === 'desc' ? (a.at < b.at ? 1 : -1) : (a.at < b.at ? -1 : 1); });
+      ? AuditLog.present(raw, state.order, current)
+      : raw.slice();
     document.getElementById('flowLogOrderBtn').textContent = state.order === 'desc' ? '时间倒序' : '时间正序';
     if (!logs.length) {
       document.getElementById('flowRecordLog').innerHTML = '<p class="py-6 text-center text-sm text-slate-400">暂无流转记录</p>';
       return;
     }
     document.getElementById('flowRecordLog').innerHTML = '<ol class="audit-tl">' + logs.map(function (log) {
-      if (log.hop) return AuditLog.hopHtml(log);
-      var tone = toneOf(log);
-      var line = global.ReturnUI ? ReturnUI.logLine(log) : { text: log.text || '', extra: '', isRet: tone === 'reject' };
-      var st = logStatus(log);
-      if (line.isRet) { st.text = '退回'; st.icon = 'fa-undo'; st.tone = 'reject'; tone = 'reject'; }
-      var pending = tone === 'pending';
-      var person = '<span class="audit-person"><span class="audit-avatar" style="background:' + avatarColor(log.by) + '">' + avatarMark(log.by) + '</span>' + esc(log.by || '系统') + '</span>';
-      var status = '<span class="audit-status is-' + st.tone + '"><i class="fa ' + st.icon + '"></i>' + esc(st.text) + '</span>';
-      var time = log.at ? '<time class="audit-time">' + esc(log.at) + (log.at.length < 19 ? ':00' : '') + '</time>' : '';
-      var headRight = (pending && log.tone === 'pending') ? status : time;
-      var second = (pending && log.tone === 'pending') ? '' : ('<div class="audit-row">' + person + status + '</div>' + (line.extra || ''));
-      return '<li class="audit-tl-item is-' + tone + (pending ? ' is-pending' : '') + '"><div class="audit-rail" aria-hidden="true"><span class="audit-dot"></span></div>' +
-        '<div class="audit-main"><div class="audit-head"><div class="audit-title">' + esc(log.node) + '</div>' + headRight + '</div>' + second + '</div></li>';
+      return global.AuditLog ? AuditLog.itemHtml(log) : '';
     }).join('') + '</ol>';
   }
   function open(code) {
