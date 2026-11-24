@@ -85,31 +85,15 @@
           <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">客户单位</label>
           <input id="q_customer" type="text" placeholder="请输入客户单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
         </div>
-        <div class="flex items-center gap-2">
-          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">日期类型</label>
-          <select id="q_dateKind" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+        <div class="flex items-center gap-2 xl:col-span-2" data-annotate="ledger-dates">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">日期范围</label>
+          <select id="q_dateKind" class="w-28 flex-shrink-0 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-blue-500">
             <option value="order">委托日期</option>
             <option value="receive">收样日期</option>
           </select>
-        </div>
-        <div class="flex items-center gap-2">
-          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">日期范围</label>
-          <select id="q_preset" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
-            <option value="">全部</option>
-            <option value="1m">近 1 个月</option>
-            <option value="3m">近 3 个月</option>
-            <option value="6m">近 6 个月</option>
-            <option value="thisYear">今年</option>
-            <option value="lastYear">去年</option>
-            <option value="prevYear">前年</option>
-            <option value="custom">自定义</option>
-          </select>
-        </div>
-        <div id="customDates" class="hidden items-center gap-2 xl:col-span-2">
-          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">自定义区间</label>
-          <input id="q_from" type="date" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+          <input id="q_from" type="date" class="flex-1 min-w-0 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" title="开始日期" />
           <span class="text-slate-400">~</span>
-          <input id="q_to" type="date" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+          <input id="q_to" type="date" class="flex-1 min-w-0 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" title="结束日期" />
         </div>
         <div class="flex items-center gap-2" data-annotate="ledger-nodes">
           <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">当前节点</label>
@@ -140,10 +124,6 @@
             <option>未逾期</option>
             <option>逾期</option>
           </select>
-        </div>
-        <div class="flex items-center gap-2">
-          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">排序</label>
-          <select id="q_sort" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500"></select>
         </div>
         <div class="flex items-center gap-2 xl:col-span-4 xl:justify-end">
           <button type="button" onclick="doSearch()" class="flex items-center gap-1 rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"><i class="fa fa-search"></i>查询</button>
@@ -214,14 +194,6 @@
           return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
         });
       }
-      function pad(n) { return n < 10 ? '0' + n : '' + n; }
-      function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
-      function addMonths(isoStr, n) {
-        var p = isoStr.split('-').map(Number);
-        var d = new Date(p[0], p[1] - 1, p[2]);
-        d.setMonth(d.getMonth() + n);
-        return iso(d);
-      }
       function toast(msg) {
         var el = document.getElementById('toast');
         el.textContent = msg;
@@ -246,18 +218,6 @@
       function catOf(name) {
         return (window.SampleDataStore && SampleDataStore.catLabelOfNames(name)) || '—';
       }
-      function rangeFromPreset(id) {
-        var t = L.today();
-        var y = Number(t.slice(0, 4));
-        if (id === '1m') return { from: addMonths(t, -1), to: t };
-        if (id === '3m') return { from: addMonths(t, -3), to: t };
-        if (id === '6m') return { from: addMonths(t, -6), to: t };
-        if (id === 'thisYear') return { from: y + '-01-01', to: t };
-        if (id === 'lastYear') return { from: (y - 1) + '-01-01', to: (y - 1) + '-12-31' };
-        if (id === 'prevYear') return { from: (y - 2) + '-01-01', to: (y - 2) + '-12-31' };
-        return { from: '', to: '' };
-      }
-
       function paintNodes() {
         var text = document.getElementById('q_nodes_text');
         if (!selectedNodes.length) {
@@ -277,25 +237,21 @@
       }
 
       function readForm() {
-        var preset = document.getElementById('q_preset').value;
-        var range = preset && preset !== 'custom' ? rangeFromPreset(preset) : {
-          from: document.getElementById('q_from').value,
-          to: document.getElementById('q_to').value
-        };
+        var from = document.getElementById('q_from').value;
+        var to = document.getElementById('q_to').value;
+        if (from && to && from > to) { var tmp = from; from = to; to = tmp; }
         return {
           code: document.getElementById('q_code').value,
           sampleNo: document.getElementById('q_no').value,
           name: document.getElementById('q_name').value,
           customer: document.getElementById('q_customer').value,
           dateKind: document.getElementById('q_dateKind').value,
-          preset: preset,
-          from: range.from,
-          to: range.to,
+          from: from,
+          to: to,
           nodes: selectedNodes.slice(),
           status: document.getElementById('q_status').value,
           result: document.getElementById('q_result').value,
-          timeliness: document.getElementById('q_time').value,
-          sort: document.getElementById('q_sort').value
+          timeliness: document.getElementById('q_time').value
         };
       }
       function writeForm(q) {
@@ -305,18 +261,15 @@
         document.getElementById('q_name').value = q.name || '';
         document.getElementById('q_customer').value = q.customer || '';
         document.getElementById('q_dateKind').value = q.dateKind || 'order';
-        document.getElementById('q_preset').value = q.preset || '';
         document.getElementById('q_from').value = q.from || '';
         document.getElementById('q_to').value = q.to || '';
         document.getElementById('q_status').value = q.status || '';
         if (document.getElementById('q_status').value === '全部') document.getElementById('q_status').value = '';
         document.getElementById('q_result').value = q.result || '';
         document.getElementById('q_time').value = q.timeliness || '';
-        document.getElementById('q_sort').value = q.sort || 'order-desc';
         var nodes = q.nodes;
         if (!nodes && q.node) nodes = Array.isArray(q.node) ? q.node : [q.node];
         setNodes(nodes || []);
-        toggleCustom();
       }
       function persist(extra) {
         var q = readForm();
@@ -385,12 +338,19 @@
 
       window.doSearch = function () { renderTable(); };
       window.doReset = function () {
-        writeForm({ sort: 'order-desc' });
+        writeForm({});
+        var cat = document.getElementById('qSampleCat');
+        if (cat) cat.value = '';
         L.persistQuery({});
         renderTable();
       };
       window.doExport = function () {
-        var rows = lastRows.length ? lastRows : L.query(readForm());
+        var rows = L.query(readForm());
+        var catSel = document.getElementById('qSampleCat');
+        var want = catSel ? catSel.value : '';
+        if (want) {
+          rows = rows.filter(function (s) { return catOf(s.name) === want; });
+        }
         if (!rows.length) { toast('没有可导出的样品'); return; }
         var lines = [['样品编号', '委托编号', '样品名称', '流转状态', '检测结果', '当前节点', '委托日期', '收样日期', '要求完成日期', '样品大类', '客户单位']];
         rows.forEach(function (s) {
@@ -406,12 +366,6 @@
         toast('已导出当前筛选结果 ' + rows.length + ' 条');
       };
 
-      function toggleCustom() {
-        var custom = document.getElementById('q_preset').value === 'custom';
-        document.getElementById('customDates').classList.toggle('hidden', !custom);
-        document.getElementById('customDates').classList.toggle('flex', custom);
-      }
-
       document.getElementById('q_status').innerHTML = '<option value="">全部</option>' + L.LIST_FILTERS.map(function (n) {
         return '<option>' + n + '</option>';
       }).join('');
@@ -420,9 +374,6 @@
       }).join('');
       document.getElementById('q_nodes_panel').innerHTML = L.FLOW_NODES.map(function (n) {
         return '<label class="ms-option"><input type="checkbox" value="' + esc(n) + '" /><span>' + esc(n) + '</span></label>';
-      }).join('');
-      document.getElementById('q_sort').innerHTML = L.QUERY_SORTS.map(function (s) {
-        return '<option value="' + s.id + '">' + s.name + ' · ' + s.hint + '</option>';
       }).join('');
 
       var nodeDrop = document.getElementById('q_nodes');
@@ -438,7 +389,6 @@
         if (!nodeDrop.contains(e.target)) nodeDrop.classList.remove('open');
       });
 
-      document.getElementById('q_preset').addEventListener('change', toggleCustom);
       document.getElementById('q_no').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
       });
@@ -464,8 +414,8 @@
               id: 'ledger-query', selector: '[data-annotate="ledger-query"]', position: 'bottom-left', wide: true, tag: '样品台账',
               title: '全库样品查询',
               content: '<strong>需求逻辑：</strong>样品台账是样品管理的只读全库查询，一行一件样品，不替代收样 / 发样 / 还样 / 退样。<br>' +
-                '<strong>展示规则：</strong>查询区为 Web 端下拉与输入。流转状态、检测结果、当前节点、检测时效都在条件区。样品编号后对「要求完成日期前未完成报告签发」的样品标逾期天数。<br>' +
-                '<strong>交互逻辑：</strong>查询条件与排序写入 sessionStorage，从详情返回时原样还原。'
+                '<strong>展示规则：</strong>查询区为 Web 端下拉与输入。日期范围可自选开始、结束日期，按委托日期或收样日期过滤。名单固定按样品编号倒序。导出只出当前筛选结果。<br>' +
+                '<strong>交互逻辑：</strong>查询条件写入 sessionStorage，从详情返回时原样还原。'
             },
             {
               id: 'ledger-scan', selector: '[data-annotate="ledger-scan"]', position: 'bottom-left', tag: '样品台账',

@@ -4,7 +4,7 @@
  */
 (function (global) {
   var STORAGE_KEY = 'lims-sample-ledger-v3';
-  var QUERY_KEY = 'lims-sample-ledger-query-v3';
+  var QUERY_KEY = 'lims-sample-ledger-query-v4';
 
   var TASK_STEPS = [
     '委托登记', '样品收样', '委托确认', '费用审核', '样品制备', '样品发样',
@@ -17,16 +17,6 @@
   var PHASES = ['委托登记', '收样', '发样', '领样', '检测中', '检测完成', '待退样', '留库', '退回客户'];
   var FLOW_NODES = TASK_STEPS.slice();
   var SIGN_STEP = 13;
-  var QUERY_SORTS = [
-    { id: 'order-desc', name: '委托日期', hint: '最新在前' },
-    { id: 'order-asc', name: '委托日期', hint: '最早在前' },
-    { id: 'receive-desc', name: '收样日期', hint: '最新在前' },
-    { id: 'receive-asc', name: '收样日期', hint: '最早在前' },
-    { id: 'no-desc', name: '样品编号', hint: '降序' },
-    { id: 'no-asc', name: '样品编号', hint: '升序' },
-    { id: 'due-asc', name: '检测时效', hint: '最紧急在前' },
-    { id: 'due-desc', name: '检测时效', hint: '最宽松在前' }
-  ];
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
   function today() {
@@ -391,18 +381,10 @@
     var order = a < b ? -1 : 1;
     return desc ? -order : order;
   }
-  function compareSamples(sort, a, b) {
-    if (sort === 'order-desc' || sort === 'order-asc') return compareDate(a.orderDate, b.orderDate, /desc$/.test(sort));
-    if (sort === 'receive-desc' || sort === 'receive-asc') return compareDate(a.receivedAt, b.receivedAt, /desc$/.test(sort));
-    if (sort === 'no-desc' || sort === 'no-asc') return compareDate(a.sampleNo, b.sampleNo, /desc$/.test(sort));
-    return compareDate(a.due, b.due, sort === 'due-desc');
-  }
-
   function queryList(q) {
     q = q || {};
-    var sort = q.sort || 'order-desc';
     return items.filter(function (s) { return matchesQuery(s, q); }).sort(function (a, b) {
-      return compareSamples(sort, a, b);
+      return compareDate(a.sampleNo, b.sampleNo, true);
     });
   }
 
@@ -442,7 +424,6 @@
     RESULT_FILTERS: RESULT_FILTERS,
     PHASES: PHASES,
     FLOW_NODES: FLOW_NODES,
-    QUERY_SORTS: QUERY_SORTS,
     items: function () { return items; },
     get: get,
     query: queryList,
