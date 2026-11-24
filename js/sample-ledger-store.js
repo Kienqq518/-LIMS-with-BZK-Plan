@@ -3,7 +3,7 @@
  * STORAGE_KEY 升版本后浏览器才会吃到新种子。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-sample-ledger-v3';
+  var STORAGE_KEY = 'lims-sample-ledger-v4';
   var QUERY_KEY = 'lims-sample-ledger-query-v4';
 
   var TASK_STEPS = [
@@ -79,8 +79,11 @@
       status: '合格', taskStep: 18, taskType: '材料（安全工具器类）',
       recheckAt: '2027-04-18', returnApplied: false, afterReturn: 'keep',
       receiver: '赵工', receivedAt: '2026-10-16', orderDate: '2026-10-16', due: '2026-10-20',
-      qty: '2 根', category: '委托试验', plant: '远东工器具', place: '留样室', resultAt: '2026-10-18 16:20',
-      sender: '王客户', sendWay: '送样', receiveStatus: '完好',
+      qty: '2 根', category: '委托试验', plant: '远东工器具', plantAddr: '江苏省宜兴市远东大道 1 号',
+      manufacturer: '远东工器具', manufacturerAddr: '江苏省宜兴市远东大道 1 号',
+      place: '留样室', resultAt: '2026-10-18 16:20',
+      sender: '王客户', senderPhone: '13800003601', sendWay: '送样', receiveStatus: '完好',
+      photos: ['外观正面', '铭牌'],
       reportNo: 'SC2026/0356-01', reportStatus: '已签发', signedAt: '2026-10-18',
       tests: [tPass(RES, '王工', '2026-10-18 11:20'), tPass(BEND, '陈工', '2026-10-18 16:20')],
       ledger: buildLedger([
@@ -102,8 +105,11 @@
       status: '检测中', taskStep: 8, taskType: '材料（安全工具器类）',
       recheckAt: '', returnApplied: false, afterReturn: '',
       receiver: '赵工', receivedAt: '2026-10-16', orderDate: '2026-10-16', due: '2026-11-25',
-      qty: '1 架', category: '委托试验', plant: '远东工器具', place: '检测室 2', resultAt: '',
-      sender: '王客户', sendWay: '送样', receiveStatus: '完好',
+      qty: '1 架', category: '委托试验', plant: '远东工器具', plantAddr: '江苏省宜兴市远东大道 1 号',
+      manufacturer: '远东工器具', manufacturerAddr: '江苏省宜兴市远东大道 1 号',
+      place: '检测室 2', resultAt: '',
+      sender: '王客户', senderPhone: '13800003601', sendWay: '送样', receiveStatus: '完好',
+      photos: ['外观正面'],
       reportNo: '', reportStatus: '',
       tests: [tPass(RES, '王工', '2026-11-19 11:40'), tWait(BEND, '王工', '检测中')],
       ledger: buildLedger([
@@ -120,8 +126,11 @@
       status: '待收样', taskStep: 2, taskType: '材料（安全工具器类）',
       recheckAt: '', returnApplied: false, afterReturn: '',
       receiver: '尚未收样', receivedAt: '—', orderDate: '2026-11-18', due: '2026-11-30',
-      qty: '1 条', category: '例行试验', plant: '杭工', place: '—', resultAt: '',
-      sender: '', sendWay: '', receiveStatus: '',
+      qty: '1 条', category: '例行试验', plant: '杭工', plantAddr: '杭州市余杭区工一路 8 号',
+      manufacturer: '杭工', manufacturerAddr: '杭州市余杭区工一路 8 号',
+      place: '—', resultAt: '',
+      sender: '', senderPhone: '', sendWay: '', receiveStatus: '',
+      photos: [],
       reportNo: '', reportStatus: '',
       tests: [tWait(APP, '待分配'), tWait(RES, '待分配')],
       ledger: buildLedger([
@@ -134,8 +143,11 @@
       status: '不合格', taskStep: 12, taskType: '材料（安全工具器类）',
       recheckAt: '', returnApplied: false, afterReturn: 'client',
       receiver: '赵工', receivedAt: '2026-10-08', orderDate: '2026-10-08', due: '2026-10-18',
-      qty: '1 根', category: '委托试验', plant: '杭工', place: '已退回客户', resultAt: '2026-10-17 15:10',
-      sender: '刘工', sendWay: '送样', receiveStatus: '完好',
+      qty: '1 根', category: '委托试验', plant: '杭工', plantAddr: '杭州市余杭区工一路 8 号',
+      manufacturer: '杭工', manufacturerAddr: '杭州市余杭区工一路 8 号',
+      place: '已退回客户', resultAt: '2026-10-17 15:10',
+      sender: '刘工', senderPhone: '13700003410', sendWay: '送样', receiveStatus: '完好',
+      photos: ['外观正面', '端部'],
       reportNo: 'SC2026/0341-01', reportStatus: '审核中',
       tests: [tFail(RES, '王工', '2026-10-17 11:00', '泄漏电流超标'), tPass(BEND, '陈工', '2026-10-17 15:10')],
       ledger: buildLedger([
@@ -155,8 +167,11 @@
       status: '已过期', taskStep: 8, taskType: '材料（电线电缆、金具、金属材料类）',
       recheckAt: '', returnApplied: false, afterReturn: '',
       receiver: '李工', receivedAt: '2026-09-20', orderDate: '2026-09-20', due: '2026-09-28',
-      qty: '1 根', category: '抽样试验', plant: '远东电缆', place: '检测室 2', resultAt: '',
-      sender: '李客户', sendWay: '上门', receiveStatus: '完好',
+      qty: '1 根', category: '抽样试验', plant: '远东电缆', plantAddr: '江苏省宜兴市电缆工业园',
+      manufacturer: '远东电缆', manufacturerAddr: '江苏省宜兴市电缆工业园',
+      place: '检测室 2', resultAt: '',
+      sender: '李客户', senderPhone: '13600000880', sendWay: '上门', receiveStatus: '完好',
+      photos: ['电缆盘', '截面'],
       reportNo: '', reportStatus: '',
       tests: [tWait(RES, '王工', '检测中'), tWait(APP, '王工')],
       ledger: buildLedger([
@@ -173,8 +188,11 @@
       status: '检测中', taskStep: 8, taskType: '材料（安全工具器类）',
       recheckAt: '', returnApplied: false, afterReturn: '',
       receiver: '李工', receivedAt: '2026-11-10', orderDate: '2026-11-10', due: '2026-11-20',
-      qty: '1 根', category: '委托试验', plant: '杭工', place: '检测室 2', resultAt: '',
-      sender: '陈工', sendWay: '送样', receiveStatus: '完好',
+      qty: '1 根', category: '委托试验', plant: '杭工', plantAddr: '杭州市余杭区工一路 8 号',
+      manufacturer: '杭工', manufacturerAddr: '杭州市余杭区工一路 8 号',
+      place: '检测室 2', resultAt: '',
+      sender: '陈工', senderPhone: '13900003200', sendWay: '送样', receiveStatus: '完好',
+      photos: ['外观正面'],
       reportNo: '', reportStatus: '',
       tests: [tWait(RES, '王工', '检测中'), tWait(BEND, '陈工')],
       ledger: buildLedger([
@@ -272,6 +290,11 @@
   function receiveNote(s) {
     var rows = (s.ledger || []).filter(function (r) { return r.name === '收样' && r.state === '已完成'; });
     return rows.length ? rows[rows.length - 1].note : '';
+  }
+  function receiveTime(s) {
+    var rows = (s.ledger || []).filter(function (r) { return r.name === '收样' && r.state === '已完成'; });
+    if (rows.length && rows[rows.length - 1].time) return rows[rows.length - 1].time;
+    return s.receivedAt && s.receivedAt !== '—' ? s.receivedAt : '—';
   }
   function labelDetectStatus(s) {
     var flow = flowStatus(s);
@@ -400,8 +423,15 @@
   }
 
   function recordsOf(s) {
-    return (s.tests || []).filter(function (t) { return t.state === '已完成'; }).map(function (t) {
-      return { name: s.sampleNo + ' ' + s.name + ' ' + t.name + '记录单', item: t.name, time: t.finishedAt, mode: '试验完成后生成' };
+    return (s.tests || []).filter(function (t) { return t.state === '已完成'; }).map(function (t, i) {
+      return {
+        id: 'ledger-' + s.sampleNo + '-' + i,
+        fileName: s.sampleNo + ' ' + s.name + ' ' + t.name + '记录单',
+        specimenIds: [s.sampleNo],
+        modeKey: 'specimen-each',
+        createdAt: t.finishedAt,
+        invalid: false
+      };
     });
   }
 
@@ -436,6 +466,7 @@
     flowStatus: flowStatus,
     resultLabel: resultLabel,
     receiveNote: receiveNote,
+    receiveTime: receiveTime,
     labelDetectStatus: labelDetectStatus,
     isSigned: isSigned,
     testsDone: testsDone,

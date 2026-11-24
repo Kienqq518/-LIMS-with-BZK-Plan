@@ -46,6 +46,8 @@
     .row-back td { background: #fff7ed; }
     .row-run td { background: #fffbeb; }
     .row-pending td { color: #94a3b8; }
+    .photo-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 80px; height: 64px; border: 1px dashed #cbd5e1; border-radius: 6px; background: #f8fafc; color: #94a3b8; font-size: 10px; }
+    .cert-mount { display: inline-block; max-width: 100%; overflow: auto; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-700">
@@ -72,6 +74,11 @@
   <script src="js/web-perms.js"></script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/sample-ledger-store.js"></script>
+  <script src="js/original-record-version.js"></script>
+  <script src="js/original-record-ui.js"></script>
+  <script src="js/short-link-qr.js"></script>
+  <script src="js/label-cert-config.js"></script>
+  <script src="js/label-cert-render.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script>
     (function () {
@@ -122,6 +129,8 @@
       var cat = (window.SampleDataStore && SampleDataStore.catLabelOfNames(s.name)) || '—';
       var xorCopy = s.afterReturn === 'keep' ? '还样后走留样，不出现退样' : (s.afterReturn === 'client' ? '还样后走退样，不出现留样' : '尚未还样，留样 / 退样都不出现');
       var recvNote = L.receiveNote(s);
+      var recvTime = L.receiveTime(s);
+      var received = !!(s.receivedAt && s.receivedAt !== '—');
 
       function kv(label, val) {
         return '<td class="lbl">' + esc(label) + '</td><td class="val">' + val + '</td>';
@@ -146,10 +155,52 @@
       }
       function resultBadge() {
         if (resultSt === '/') return '<span class="text-slate-400">/</span>';
-        if (resultSt === '合格') {
-          return '<a class="' + resultClass(resultSt) + '" href="cert-print-single.html?code=' + encodeURIComponent(s.code) + '">' + esc(resultSt) + '</a>';
-        }
         return '<span class="' + resultClass(resultSt) + '">' + esc(resultSt) + '</span>';
+      }
+      function photosHtml() {
+        var list = s.photos || [];
+        if (!list.length) {
+          return '<span class="text-slate-400">' + (received ? '未上传' : '尚未收样') + '</span>';
+        }
+        return '<div class="flex flex-wrap gap-2">' + list.map(function (p) {
+          return '<div class="photo-tile"><i class="fa fa-image mb-0.5"></i>' + esc(p) + '</div>';
+        }).join('') + '</div>';
+      }
+      function paintCert() {
+        var mount = document.getElementById('certMount');
+        if (!mount || !window.LabelCertRender || !window.LabelCertConfig) return;
+        var catKey = (window.SampleDataStore && SampleDataStore.catKeyOfName && SampleDataStore.catKeyOfName(s.name)) || 'aqgqj';
+        var masterId = LabelCertConfig.masterIdFromName(s.name) || 'rod';
+        var tpl = LabelCertConfig.resolveTemplate(catKey, 'certificate', masterId);
+        if (!tpl) {
+          mount.innerHTML = '<p class="text-sm text-slate-400">未配置合格证模版。</p>';
+          return;
+        }
+        LabelCertRender.ensureStyles();
+        var owners = [];
+        (s.tests || []).forEach(function (t) {
+          if (t.owner && owners.indexOf(t.owner) < 0) owners.push(t.owner);
+        });
+        var item = {
+          sampleNo: s.sampleNo,
+          name: s.name,
+          spec: s.spec || '',
+          model: s.model || '',
+          specModel: [s.model || '', s.spec || ''].filter(Boolean).join(' '),
+          receiveDate: received ? s.receivedAt : '',
+          inspectDate: String(s.resultAt || s.receivedAt || '').slice(0, 10),
+          reinspectDate: s.recheckAt || '',
+          clientName: s.customer,
+          detectStatus: '已检测',
+          judgment: '合格',
+          status: '报告签发',
+          inspectors: owners,
+          recorders: [],
+          masterId: masterId,
+          cat: catKey
+        };
+        mount.innerHTML = LabelCertRender.renderSheet(LabelCertConfig.clone(tpl), item, { suffix: '-ledger' });
+        LabelCertRender.mountQrs(mount);
       }
 
       var recs = L.recordsOf(s);
@@ -176,7 +227,6 @@
               '<p class="mt-1 text-sm text-slate-500">委托编号 <a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.code) + '</a>' +
                 '　当前节点 <button type="button" id="toggleSteps" class="text-blue-600 hover:underline" data-annotate="ledger-task">' + esc(taskName) + '</button></p>' +
             '</div>' +
-            '<p class="text-xs text-slate-400">只读台账，不能在此收样、发样、领样、还样、退样或改判。</p>' +
           '</div>' +
           '<div id="taskSteps" class="hidden border-b border-slate-100 px-4 py-3 grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">' +
             L.TASK_STEPS.map(function (name, i) {
@@ -213,17 +263,23 @@
                 kv('委托日期', esc(s.orderDate)),
                 kv('任务类型', esc(s.taskType)),
                 kv('要求完成日期', esc(s.due)),
-                kv('生产厂家', esc(s.plant)),
-                kv('送样人', esc(s.sender || '—')),
-                kv('送样方式', esc(s.sendWay || '—'))
+                kv('生产厂家', esc(s.plant || '—')),
+                kv('生产厂家地址', esc(s.plantAddr || '—')),
+                kv('制造商', esc(s.manufacturer || '—')),
+                kv('制造商地址', esc(s.manufacturerAddr || '—')),
+                kv('', '')
               ]) +
               '<h3 class="sec-title">接收信息</h3>' +
               pairTable([
-                kv('收样日期', esc(s.receivedAt)),
-                kv('收样人', esc(s.receiver)),
-                kv('收样状态', esc(s.receiveStatus || (s.receivedAt && s.receivedAt !== '—' ? '—' : '尚未收样'))),
-                kv('到样情况', esc(recvNote || (s.receivedAt && s.receivedAt !== '—' ? '—' : '尚未收样'))),
+                kv('收样时间', esc(recvTime)),
+                kv('收样人', esc(s.receiver || '—')),
+                kv('收样状态', esc(s.receiveStatus || (received ? '—' : '尚未收样'))),
+                kv('送样方式', esc(s.sendWay || (received ? '—' : '尚未收样'))),
+                kv('送样人', esc(s.sender || (received ? '—' : '尚未收样'))),
+                kv('送样人联系方式', esc(s.senderPhone || (received ? '—' : '尚未收样'))),
+                kv('到样情况', esc(recvNote || (received ? '—' : '尚未收样'))),
                 kv('下次再检日期', esc(s.recheckAt || '—')),
+                kv('样品图片', photosHtml()),
                 kv('', '')
               ]) +
             '</div>' +
@@ -243,14 +299,18 @@
                   '<td>' + esc(t.finishedAt || '—') + '</td><td>' + esc(t.remark || '—') + '</td></tr>';
               }).join('') +
               '</tbody></table>' +
-              '<h3 class="sec-title">原始记录</h3>' +
-              (recs.length
-                ? ('<table class="data-table"><thead><tr><th>记录单</th><th>试验项</th><th>生成时间</th><th>操作</th></tr></thead><tbody>' +
-                  recs.map(function (r) {
-                    return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.item) + '</td><td>' + esc(r.time) + '</td>' +
-                      '<td><a class="text-blue-600 hover:underline" href="original-record-list.html">查看</a></td></tr>';
-                  }).join('') + '</tbody></table>')
-                : '<p class="text-sm text-slate-400">尚无已完成试验，未生成原始记录。</p>') +
+              '<h3 class="sec-title">原始记录单</h3>' +
+              '<div class="overflow-x-auto">' +
+                '<table class="data-table min-w-[960px]"><thead><tr>' +
+                  '<th class="whitespace-nowrap">序号</th>' +
+                  '<th>原始记录名称</th>' +
+                  '<th>覆盖样品</th>' +
+                  '<th>生成模式</th>' +
+                  '<th>生成时间</th>' +
+                  '<th>状态</th>' +
+                  '<th>操作</th>' +
+                '</tr></thead><tbody id="orTableBody"></tbody></table>' +
+              '</div>' +
             '</div>' +
 
             '<div class="panel' + (defaultTab === 'flow' ? ' is-on' : '') + '" id="panel-flow" data-annotate="ledger-xor">' +
@@ -289,7 +349,7 @@
               ]) +
               '<h3 class="sec-title">合格证</h3>' +
               (resultSt === '合格'
-                ? ('<p class="text-sm"><a class="text-blue-600 hover:underline" href="cert-print-single.html?code=' + encodeURIComponent(s.code) + '"><i class="fa fa-file-text-o mr-1"></i>' + esc(s.sampleNo) + ' 合格证</a></p>')
+                ? '<div id="certMount" class="cert-mount"></div>'
                 : '<p class="text-sm text-slate-400">该样品未出具合格证。</p>') +
               '<h3 class="sec-title">报告文档</h3>' +
               (s.reportNo
@@ -319,6 +379,11 @@
           });
         });
       });
+
+      if (window.OriginalRecordUI && OriginalRecordUI.paintStatic) {
+        OriginalRecordUI.paintStatic('orTableBody', recs);
+      }
+      paintCert();
 
       if (window.PrototypeAnnotation) {
         PrototypeAnnotation.init({
