@@ -3,7 +3,7 @@
  * 编制 / 审核通过后进入本链；状态落 localStorage，刷新不丢。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-report-flow-v11';
+  var STORAGE_KEY = 'lims-report-flow-v12';
   var ORDER = ['报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   var SIGNED = ['报告处理', '收费审批', '报告发放', '任务归档', '任务完成'];
   function isSigned(status) { return SIGNED.indexOf(status) >= 0; }
@@ -35,9 +35,31 @@
     d.setDate(d.getDate() + n);
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   }
+  function shiftMinutes(stamp, delta) {
+    var m = String(stamp || '').match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
+    if (!m) return stamp;
+    var dt = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]));
+    dt.setUTCMinutes(dt.getUTCMinutes() + delta);
+    return dt.getUTCFullYear() + '-' + pad(dt.getUTCMonth() + 1) + '-' + pad(dt.getUTCDate()) + ' ' + pad(dt.getUTCHours()) + ':' + pad(dt.getUTCMinutes());
+  }
+  function ensureGeneration(out) {
+    var logs = out.logs || (out.logs = []);
+    var has = logs.some(function (l) {
+      return l && (l.node === '报告生成' || /生成报告/.test(String(l.text || '')));
+    });
+    if (has) return;
+    var earliest = '';
+    logs.forEach(function (l) {
+      if (l && l.at && (!earliest || String(l.at) < earliest)) earliest = String(l.at);
+    });
+    var at = (out.acceptDate || '2026-09-01') + ' 15:20';
+    if (earliest && at >= earliest) at = shiftMinutes(earliest, -20);
+    logs.unshift({ at: at, node: '报告生成', by: 'admin', text: '生成报告', tone: 'default' });
+  }
   function historyLogs(status, acceptDate) {
     var d = acceptDate || '2026-09-01';
     var logs = [
+      { at: d + ' 15:20', node: '报告生成', by: 'admin', text: '生成报告', tone: 'default' },
       { at: d + ' 15:40', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
       { at: d + ' 15:52', node: '报告审核', by: 'AI 审核引擎', text: '预审结论：通过', tone: 'success' },
       { at: d + ' 16:20', node: '报告审核', by: '李审核', text: '人工审核通过，提交至报告签发', tone: 'success' }
@@ -108,6 +130,7 @@
         tone: 'danger', reason: rec.reason, target: rec.to, reportNo: rec.reportNo || ''
       });
     });
+    ensureGeneration(out);
     return out;
   }
 
@@ -118,6 +141,7 @@
       reports: reports('SC2026/0312', 2, '2026-10-12 09:20:00'),
       returns: [{ from: '报告处理', to: '报告签发', by: '王处理', time: '2026-11-20 14:30', reason: '签发章位置与机构授权范围不符，退回签发重新核验。', kind: '人工', reportNo: 'SC2026/0312-01' }],
       logs: [
+        { at: '2026-10-08 15:20', node: '报告生成', by: 'admin', text: '生成报告', tone: 'default' },
         { at: '2026-10-08 15:40', node: '报告编制', by: 'admin', text: '提交至报告审核', tone: 'default' },
         { at: '2026-10-08 15:52', node: '报告审核', by: 'AI 审核引擎', text: '预审结论：通过', tone: 'success' },
         { at: '2026-10-08 16:20', node: '报告审核', by: '李审核', text: '人工审核通过，提交至报告签发', tone: 'success' },
