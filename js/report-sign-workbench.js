@@ -14,7 +14,7 @@
     return m ? decodeURIComponent(m[1]) : '';
   }
 
-  var state = { code: '', panel: 'preview', ovTab: 'entrust' };
+  var state = { code: '', panel: 'preview', ovTab: 'entrust', order: 'desc' };
 
   function list() { return ReportFlowStore.list('报告签发'); }
 
@@ -127,10 +127,12 @@
 
   function renderLog(task) {
     $('log-report').textContent = '· ' + task.code;
-    var logs = global.AuditLog ? AuditLog.present(task.logs || [], 'asc', task.status || '') : (task.logs || []);
+    var btn = $('wbLogOrderBtn');
+    if (btn) btn.textContent = state.order === 'desc' ? '时间倒序' : '时间正序';
+    var logs = global.AuditLog ? AuditLog.present(task.logs || [], state.order, task.status || '') : (task.logs || []);
     $('log-list').innerHTML = logs.length
-      ? '<ul class="audit-tl">' + logs.map(function (e) { return AuditLog.itemHtml(e); }).join('') + '</ul>'
-      : '<p class="text-slate-400">暂无操作日志</p>';
+      ? '<ol class="audit-tl">' + logs.map(function (e) { return AuditLog.itemHtml(e); }).join('') + '</ol>'
+      : '<p class="py-6 text-center text-sm text-slate-400">暂无操作日志</p>';
   }
 
   function renderInfo(task) {
@@ -166,8 +168,6 @@
     renderLog(task);
     renderInfo(task);
     renderActions(task);
-    var strip = $('sign-return-strip');
-    if (strip && global.ReturnUI) strip.innerHTML = ReturnUI.stripHtml(code, '报告签发');
   }
 
   function bindChrome() {
@@ -208,6 +208,13 @@
         if (task) renderInfo(task);
       });
     });
+    if ($('wbLogOrderBtn')) {
+      $('wbLogOrderBtn').addEventListener('click', function () {
+        state.order = state.order === 'desc' ? 'asc' : 'desc';
+        var task = ReportFlowStore.get(state.code);
+        if (task) renderLog(task);
+      });
+    }
     $('btn-back').addEventListener('click', function () {
       var task = ReportFlowStore.get(state.code);
       if (!task) return;

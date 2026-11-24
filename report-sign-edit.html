@@ -59,17 +59,14 @@
     .roster-row:hover { background: #f8fafc; border-color: rgba(20,60,154,.18); }
     .roster-row.active { background: linear-gradient(90deg, rgba(20,60,154,.10), rgba(20,60,154,0)); box-shadow: inset 3px 0 0 var(--brand); }
     .preview-frame { width: 100%; height: 100%; min-height: 420px; border: 0; border-radius: 8px; background: #fff; }
-    .audit-tl { list-style: none; margin: 0; padding: 0; }
-    .audit-tl-item { display: grid; grid-template-columns: 18px minmax(0,1fr); column-gap: 12px; }
-    .audit-rail { position: relative; }
-    .audit-rail::after { content: ""; position: absolute; left: 50%; top: 18px; bottom: 0; width: 2px; transform: translateX(-50%); background: var(--rail, #cbd5e1); }
-    .audit-tl-item:last-child .audit-rail::after { display: none; }
-    .audit-dot { position: relative; z-index: 1; display: block; width: 14px; height: 14px; margin: 3px auto 0; box-sizing: border-box; border-radius: 999px; border: 2px solid var(--dot, #94a3b8); background: var(--dot, #94a3b8); }
-    .audit-tl-item.tone-success { --rail:#10b981; --dot:#10b981; }
-    .audit-tl-item.tone-warn { --rail:#f59e0b; --dot:#f59e0b; }
-    .audit-tl-item.tone-danger { --rail:#ef4444; --dot:#ef4444; }
-    .audit-tl-item.tone-pending { --rail:#f59e0b; --dot:#fff; }
-    .audit-main { min-width: 0; padding: 0 0 16px; }
+    .wb-left .audit-legend { display: flex; flex-wrap: wrap; gap: 8px 10px; font-size: 12px; color: #94a3b8; }
+    .wb-left .audit-legend span { display: inline-flex; align-items: center; gap: 4px; }
+    .wb-left .lg-k { color: #64748b; font-weight: 600; }
+    .wb-left .lg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 999px; border: 2px solid #3b82f6; box-sizing: border-box; }
+    .wb-left .lg-line { display: inline-block; width: 14px; height: 2px; border-radius: 999px; background: #3b82f6; }
+    .wb-left .lg-pass { border-color: #3b82f6; background: #3b82f6; }
+    .wb-left .lg-reject { border-color: #ef4444; background: #ef4444; }
+    .wb-left .lg-pending { border-color: #f59e0b; background: #fff; }
     .btn-brand { background: linear-gradient(120deg, var(--brand), var(--brand-2)); color: #fff; box-shadow: 0 6px 18px rgba(20,60,154,.30); }
     .btn-brand:hover { box-shadow: 0 8px 26px rgba(20,60,154,.42); }
     .btn-brand:disabled { filter: grayscale(.4) opacity(.55); box-shadow: none; cursor: not-allowed; }
@@ -94,7 +91,6 @@
         <i class="fa fa-file-text-o"></i>
         <span>授权签字人查看报告文件、收样与检测信息后签发。退回须填写原因。</span>
       </div>
-      <div id="sign-return-strip"></div>
 
       <section class="glass" data-annotate="sg-overview">
         <button id="ov-toggle" type="button" class="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left">
@@ -133,8 +129,22 @@
             <div id="roster-list" class="overflow-y-auto px-2 pb-2" style="min-height:0" data-annotate="sg-roster"></div>
           </section>
           <section class="glass flex flex-1 flex-col" style="min-height:0" data-annotate="sg-log">
-            <div class="flex items-center gap-2 border-b border-white/50 px-3 py-2 text-xs font-medium text-slate-500"><i class="fa fa-history" style="color:var(--brand)"></i>操作日志 <span id="log-report" class="text-slate-400 mono"></span></div>
-            <div id="log-list" class="flex-1 overflow-y-auto px-3 py-3 text-xs" style="min-height:0"></div>
+            <div class="border-b border-white/50 px-3 py-2">
+              <div class="flex items-center justify-between gap-2">
+                <h4 class="min-w-0 text-sm font-medium text-slate-700">操作日志 <span id="log-report" class="font-normal text-slate-400"></span></h4>
+                <button type="button" id="wbLogOrderBtn" class="shrink-0 text-xs text-blue-600 hover:underline">时间倒序</button>
+              </div>
+              <span class="audit-legend mt-1.5">
+                <span class="lg-k">点</span>
+                <span><i class="lg-dot lg-pass"></i>通过</span>
+                <span><i class="lg-dot lg-reject"></i>拒绝</span>
+                <span><i class="lg-dot lg-pending"></i>当前</span>
+                <span class="lg-k">线</span>
+                <span><i class="lg-line lg-pass"></i>推进</span>
+                <span><i class="lg-line lg-reject"></i>回退</span>
+              </span>
+            </div>
+            <div id="log-list" class="flex-1 overflow-y-auto px-3 py-3" style="min-height:0"></div>
           </section>
         </aside>
 
@@ -200,7 +210,7 @@
         { id: 'sg-roster', selector: '[data-annotate="sg-roster"]', position: 'right', title: '待签发名单',
           content: '<strong>需求逻辑：</strong>授权签字人一次可能签发同一委托下多份报告，左侧名单用来切换当前份。<br><strong>展示规则：</strong>卡片展示报告编号、版本、状态；当前份高亮。<br><strong>交互逻辑：</strong>点击切换中间预览、操作日志与底部签发处置对象。', tag: '报告签发' },
         { id: 'sg-log', selector: '[data-annotate="sg-log"]', position: 'right', title: '操作日志',
-          content: '<strong>需求逻辑：</strong>签发前要能看到编制提交、AI 预审、人工审核的留痕。<br><strong>展示规则：</strong>当前报告的流转时间轴。系统自动推进不单独占点，只标出节点之间的去向。<br><strong>交互逻辑：</strong>只读；随左侧名单切换。', tag: '报告签发' },
+          content: '<strong>需求逻辑：</strong>签发前要能看到编制提交、AI 预审、人工审核的留痕。<br><strong>展示规则：</strong>与报告记录里的操作日志同一套：点分通过 / 拒绝 / 当前，线分推进 / 回退。默认时间倒序，可切正序。系统自动推进不单独占点。<br><strong>交互逻辑：</strong>点「时间倒序」切换排序；随左侧名单切换。', tag: '报告签发' },
         { id: 'sg-file', selector: '[data-annotate="sg-file"]', position: 'bottom', title: '报告文件',
           content: '<strong>需求逻辑：</strong>签发看的是编制提交的 Word 报告正文，不在本页做 AI 核对。正式 PDF 只在签发通过后生成，避免未签字版本外流。<br><strong>展示规则：</strong>本页文件名为 .docx，Word 图标；签发通过后进入报告处理，文件名改为 .pdf。<br><strong>交互逻辑：</strong>点击文件名打开预览（原型为 HTML 示意）。预览在下方「报告预览」Tab。', tag: '报告签发' },
         { id: 'sg-info', selector: '[data-annotate="sg-info"]', position: 'top', title: '报告预览 / 收样 / 检测',
