@@ -45,7 +45,8 @@
       if (isPush(log)) {
         var to = destOf(log);
         if (!to || to === lastNode) return;
-        out.push({ hop: true, from: lastNode, to: to, at: timeOf(log), back: /退回/.test(textOf(log)) });
+        var back = /退回/.test(textOf(log));
+        if (back) out.push({ hop: true, from: lastNode, to: to, at: timeOf(log), back: true });
         lastNode = to;
         return;
       }
@@ -105,20 +106,14 @@
     return (tone === 'danger' || tone === 'reject') && /退回|拒绝/.test(t);
   }
 
-  function generationText(log) {
-    var name = String((log && (log.reportNo || log.reportName)) || '');
-    if (!name) {
-      var matched = textOf(log).match(/生成报告\s*(\S+)/);
-      if (matched) name = matched[1];
-    }
-    name = name.replace(/\.(docx|pdf)$/i, '').replace(/[，,。；;].*$/, '');
-    return '上一版的' + name + '报告生成';
+  function generationText() {
+    return '报告生成';
   }
 
   function aiFace(log) {
     var t = textOf(log) + String(log.opinionKicker || '');
     if (/不通过|自动退回/.test(t) && !/需复核|需人工|待人工/.test(t)) {
-      return { kind: 'reject', text: '不通过', icon: 'fa-times-circle', rail: 'reject', statusTone: 'reject' };
+      return { kind: 'reject', text: '不通过', icon: 'fa-minus-circle', rail: 'reject', statusTone: 'reject' };
     }
     if (/通过/.test(t) && !/不通过/.test(t)) {
       return { kind: 'forward', text: '通过', icon: 'fa-check-circle', rail: 'pass', statusTone: 'pass' };
@@ -172,30 +167,31 @@
     return String(ra) === String(rb);
   }
 
-  function annotateReturns(list, order) {
+  function edgeIsReturn(newer, older) {
+    if (!newer || !older) return false;
+    if (newer.hop && newer.back) return true;
+    if (older.hop && older.back) {
+      var dest = older.to || '';
+      return !!(newer.current || nodeOf(newer) === dest);
+    }
+    if (!older.hop && isReturnLog(older)) {
+      var target = returnTarget(older);
+      return !!(target && nodeOf(newer) === target);
+    }
+    return false;
+  }
+
+  function markRails(list, order) {
     var desc = order === 'desc';
-    var step = desc ? -1 : 1;
-    list.forEach(function (log) {
-      if (!log) return;
-      log.returnedHere = false;
-      log.returnRail = false;
-    });
     for (var i = 0; i < list.length; i++) {
-      var cur = list[i];
-      var target = '';
-      if (cur && cur.hop && cur.back) target = cur.to || '';
-      else if (cur && isReturnLog(cur)) target = returnTarget(cur);
-      if (!target) continue;
-      var j = i + step;
-      while (j >= 0 && j < list.length && !sameReport(cur, list[j])) j += step;
-      var nxt = list[j];
-      if (!nxt || nxt.hop) continue;
-      if (nodeOf(nxt) !== target) continue;
-      if (nxt.current || isCurrentMarker(nxt)) nxt.returnRail = true;
-      else {
-        nxt.returnedHere = true;
-        if (desc) nxt.returnRail = true;
-      }
+      var item = list[i];
+      if (!item) continue;
+      item.returnedHere = false;
+      var below = list[i + 1];
+      if (!below || !sameReport(item, below)) { item.returnRail = false; continue; }
+      var newer = desc ? item : below;
+      var older = desc ? below : item;
+      item.returnRail = edgeIsReturn(newer, older);
     }
   }
 
@@ -230,7 +226,7 @@
       });
     }
     if ((hasPush || place) && order === 'desc') folded.reverse();
-    annotateReturns(folded, order);
+    markRails(folded, order);
     return folded;
   }
 
@@ -284,7 +280,6 @@
     if (at && at.length === 16) at += ':00';
     var statusTone = view.statusTone || (view.kind === 'reject' ? 'reject' : 'pass');
     var toneClass = view.rail === 'reject' || view.kind === 'reject' ? 'is-reject' : 'is-pass';
-    if (log && log.returnedHere) toneClass += ' is-returned';
     if (log && log.returnRail) toneClass += ' is-return-rail';
     var status = '<span class="audit-status is-' + statusTone + '"><i class="fa ' + view.icon + '" aria-hidden="true"></i>' + esc(view.text) + '</span>';
     return '<li class="audit-tl-item ' + toneClass + '">' +
@@ -310,11 +305,15 @@
   function hopHtml(item) {
     var from = item.from || '';
     var to = item.to || '';
-    var verb = item.back ? '退回至' : '推进至';
-    var label = from ? ('从' + esc(from) + verb + esc(to)) : (verb + esc(to));
-    return '<li class="audit-hop' + (item.back ? ' is-return' : '') + '" data-audit-hop="' + esc(from) + '→' + esc(to) + '">' +
+    var label = from ? ('从' + from + '退回至' + to) : ('退回至' + to);
+    var at = timeOf(item);
+    if (at && at.length === 16) at += ':00';
+    return '<li class="audit-hop is-return" data-audit-hop="' + esc(from) + '→' + esc(to) + '">' +
       '<div class="audit-rail" aria-hidden="true"></div>' +
-      '<div class="audit-hop-label">' + label + '</div></li>';
+      '<div class="audit-main">' +
+        '<div class="audit-head"><span></span>' + (at ? '<time class="audit-time">' + esc(at) + '</time>' : '') + '</div>' +
+        '<div class="audit-row"><span></span><span class="audit-status is-reject">' + esc(label) + '</span></div>' +
+      '</div></li>';
   }
 
   function injectCss() {
@@ -330,7 +329,7 @@
       '.audit-tl{list-style:none;margin:0;padding:2px 2px 0 0}',
       '.audit-tl-item{display:grid;grid-template-columns:20px minmax(0,1fr);column-gap:12px}',
       '.audit-rail{position:relative}',
-      '.audit-rail::after{content:"";position:absolute;left:50%;top:18px;bottom:0;width:2px;transform:translateX(-50%);background:var(--audit-rail,var(--rail,#cbd5e1))}',
+      '.audit-rail::after{content:"";position:absolute;left:50%;top:18px;bottom:0;width:2px;transform:translateX(-50%);background:var(--audit-rail,var(--rail,#3b82f6))}',
       '.audit-tl-item:last-child .audit-rail::after,.audit-hop:last-child .audit-rail::after{display:none}',
       '.audit-dot{position:relative;z-index:1;display:block;width:16px;height:16px;margin:2px auto 0;box-sizing:border-box;border-radius:999px;border:2px solid var(--audit-dot,var(--dot,#94a3b8));background:var(--audit-dot,var(--dot,#94a3b8))}',
       '.audit-main{min-width:0;padding:0 0 16px}',
@@ -346,10 +345,10 @@
       '.audit-status.is-warn{color:#d97706}',
       '.audit-status.is-reject{color:#dc2626}',
       '.audit-status.is-pending{color:#d97706}',
+      '.audit-tl-item{--audit-rail:#3b82f6;--rail:#3b82f6}',
       '.audit-tl-item.is-pass{--audit-rail:#3b82f6;--audit-dot:#3b82f6;--rail:#3b82f6;--dot:#3b82f6}',
-      '.audit-tl-item.is-reject{--audit-rail:#ef4444;--audit-dot:#ef4444;--rail:#ef4444;--dot:#ef4444}',
-      '.audit-tl-item.is-pending{--audit-rail:#f59e0b;--audit-dot:#f59e0b;--rail:#f59e0b;--dot:#f59e0b}',
-      '.audit-tl-item.is-returned{--audit-dot:#ef4444;--dot:#ef4444}',
+      '.audit-tl-item.is-reject{--audit-rail:#3b82f6;--audit-dot:#ef4444;--rail:#3b82f6;--dot:#ef4444}',
+      '.audit-tl-item.is-pending{--audit-rail:#3b82f6;--audit-dot:#f59e0b;--rail:#3b82f6;--dot:#f59e0b}',
       '.audit-tl-item.is-return-rail{--audit-rail:#ef4444;--rail:#ef4444}',
       '.audit-tl-item.is-pending.is-return-rail{--audit-rail:#ef4444;--audit-dot:#f59e0b;--rail:#ef4444;--dot:#f59e0b}',
       '.audit-tl-item.is-pending .audit-dot,.audit-tl-item.is-pending.is-return-rail .audit-dot{background:#fff}',
@@ -359,13 +358,11 @@
     ].join('') + scopes.map(function (s) {
       return [
         s.scope + '.audit-hop{display:grid;grid-template-columns:' + s.col + ' minmax(0,1fr);column-gap:' + s.gap + ';align-items:stretch}',
-        s.scope + '.audit-hop .audit-rail{position:relative;min-height:22px}',
-        s.scope + '.audit-hop .audit-rail::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);background:#cbd5e1}',
-        s.scope + '.audit-hop.is-return .audit-rail::after{background:#ef4444}',
+        s.scope + '.audit-hop .audit-rail{position:relative}',
+        s.scope + '.audit-hop .audit-rail::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);background:#ef4444}',
         s.scope + '.audit-hop:last-child .audit-rail::after{display:none}',
-        s.scope + '.audit-hop-label{padding:2px 0 12px;font-size:12px;line-height:1.45;color:#64748b}',
-        s.scope + '.audit-hop.is-return .audit-hop-label{color:#dc2626}',
-        s.scope + '.audit-tl-item.is-returned{--audit-dot:#ef4444;--dot:#ef4444}',
+        s.scope + '.audit-tl-item.is-reject{--audit-rail:#3b82f6;--audit-dot:#ef4444;--rail:#3b82f6;--dot:#ef4444}',
+        s.scope + '.audit-tl-item.is-pending{--audit-rail:#3b82f6;--audit-dot:#f59e0b;--rail:#3b82f6;--dot:#f59e0b}',
         s.scope + '.audit-tl-item.is-return-rail{--audit-rail:#ef4444;--rail:#ef4444}',
         s.scope + '.audit-tl-item.is-pending.is-return-rail{--audit-rail:#ef4444;--audit-dot:#f59e0b;--rail:#ef4444;--dot:#f59e0b}'
       ].join('');

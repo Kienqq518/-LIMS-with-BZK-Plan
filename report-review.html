@@ -42,8 +42,9 @@
     }
     #rvRecordDrawer .audit-tl-item.is-pending .audit-dot { background: #fff; }
     #rvRecordDrawer .audit-tl-item.is-pass { --audit-rail: #3b82f6; --audit-dot: #3b82f6; }
-    #rvRecordDrawer .audit-tl-item.is-reject { --audit-rail: #ef4444; --audit-dot: #ef4444; }
-    #rvRecordDrawer .audit-tl-item.is-pending { --audit-rail: #f59e0b; --audit-dot: #f59e0b; }
+    #rvRecordDrawer .audit-tl-item.is-reject { --audit-rail: #3b82f6; --audit-dot: #ef4444; }
+    #rvRecordDrawer .audit-tl-item.is-pending { --audit-rail: #3b82f6; --audit-dot: #f59e0b; }
+    #rvRecordDrawer .audit-tl-item.is-return-rail { --audit-rail: #ef4444; }
     #rvRecordDrawer .audit-main { min-width: 0; padding: 0 0 20px; }
     #rvRecordDrawer .audit-tl-item:last-child .audit-main { padding-bottom: 2px; }
     #rvRecordDrawer .audit-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -57,9 +58,11 @@
     #rvRecordDrawer .audit-status.is-pass { color: #16a34a; }
     #rvRecordDrawer .audit-status.is-reject { color: #dc2626; }
     #rvRecordDrawer .audit-status.is-pending { color: #d97706; }
-    #rvRecordDrawer .audit-legend { display: flex; gap: 14px; font-size: 12px; color: #94a3b8; }
+    #rvRecordDrawer .audit-legend { display: flex; flex-wrap: wrap; gap: 10px 12px; font-size: 12px; color: #94a3b8; }
     #rvRecordDrawer .audit-legend span { display: inline-flex; align-items: center; gap: 4px; }
+    #rvRecordDrawer .lg-k { color: #64748b; font-weight: 600; }
     #rvRecordDrawer .lg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 999px; border: 2px solid #3b82f6; box-sizing: border-box; }
+    #rvRecordDrawer .lg-line { display: inline-block; width: 14px; height: 2px; border-radius: 999px; background: #3b82f6; }
     #rvRecordDrawer .lg-pass { border-color: #3b82f6; background: #3b82f6; }
     #rvRecordDrawer .lg-reject { border-color: #ef4444; background: #ef4444; }
     #rvRecordDrawer .lg-pending { border-color: #f59e0b; background: #fff; }
@@ -182,9 +185,13 @@
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
               <h4 class="text-sm font-medium text-slate-700">操作日志 <span id="rvLogReport" class="font-normal text-slate-400"></span></h4>
               <span class="audit-legend">
-                <span><i class="lg-dot lg-pass"></i>流转</span>
-                <span><i class="lg-dot lg-reject"></i>退回</span>
+                <span class="lg-k">点</span>
+                <span><i class="lg-dot lg-pass"></i>通过</span>
+                <span><i class="lg-dot lg-reject"></i>拒绝</span>
                 <span><i class="lg-dot lg-pending"></i>当前</span>
+                <span class="lg-k">线</span>
+                <span><i class="lg-line lg-pass"></i>推进</span>
+                <span><i class="lg-line lg-reject"></i>回退</span>
               </span>
             </div>
             <button type="button" id="rvLogOrderBtn" class="text-xs text-blue-600 hover:underline">时间倒序</button>

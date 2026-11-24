@@ -120,10 +120,12 @@
 
     /* 报告记录 · 操作日志：审批时间轴（节点 / 处理人 / 状态 / 意见） */
     #reportRecordModal .audit-legend {
-      display: inline-flex; align-items: center; gap: 12px;
+      display: inline-flex; align-items: center; flex-wrap: wrap; gap: 10px 12px;
       font-size: 12px; color: #64748b;
     }
     #reportRecordModal .audit-legend span { display: inline-flex; align-items: center; gap: 4px; }
+    #reportRecordModal .lg-k { color: #475569; font-weight: 600; }
+    #reportRecordModal .lg-line { display: inline-block; width: 14px; height: 2px; border-radius: 999px; background: #3b82f6; }
     #reportRecordModal .lg-dot {
       display: inline-block; width: 9px; height: 9px; border-radius: 999px; box-sizing: border-box;
       border: 2px solid; background: #fff; vertical-align: -1px;
@@ -150,8 +152,9 @@
     }
     #reportRecordModal .audit-tl-item.is-pending .audit-dot { background: #fff; }
     #reportRecordModal .audit-tl-item.is-pass { --audit-rail: #3b82f6; --audit-dot: #3b82f6; }
-    #reportRecordModal .audit-tl-item.is-reject { --audit-rail: #ef4444; --audit-dot: #ef4444; }
-    #reportRecordModal .audit-tl-item.is-pending { --audit-rail: #f59e0b; --audit-dot: #f59e0b; }
+    #reportRecordModal .audit-tl-item.is-reject { --audit-rail: #3b82f6; --audit-dot: #ef4444; }
+    #reportRecordModal .audit-tl-item.is-pending { --audit-rail: #3b82f6; --audit-dot: #f59e0b; }
+    #reportRecordModal .audit-tl-item.is-return-rail { --audit-rail: #ef4444; }
     #reportRecordModal .audit-main { min-width: 0; padding: 0 0 20px; }
     #reportRecordModal .audit-tl-item:last-child .audit-main { padding-bottom: 2px; }
     #reportRecordModal .audit-head {
@@ -388,9 +391,13 @@
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
               <h4 class="text-sm font-medium text-slate-700">操作日志</h4>
               <span class="audit-legend">
-                <span><i class="lg-dot lg-pass"></i>流转</span>
-                <span><i class="lg-dot lg-reject"></i>退回</span>
+                <span class="lg-k">点</span>
+                <span><i class="lg-dot lg-pass"></i>通过</span>
+                <span><i class="lg-dot lg-reject"></i>拒绝</span>
                 <span><i class="lg-dot lg-pending"></i>当前</span>
+                <span class="lg-k">线</span>
+                <span><i class="lg-line lg-pass"></i>推进</span>
+                <span><i class="lg-line lg-reject"></i>回退</span>
               </span>
               <button type="button" data-log-order-btn class="ml-1 text-xs text-blue-600 hover:underline" onclick="toggleLogOrder()">时间正序</button>
             </div>

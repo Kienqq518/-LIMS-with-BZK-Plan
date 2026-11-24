@@ -21,8 +21,9 @@
     '  background: var(--audit-dot, #3b82f6); }',
     '#flowRecordDrawer .audit-tl-item.is-pending .audit-dot { background: #fff; }',
     '#flowRecordDrawer .audit-tl-item.is-pass { --audit-rail: #3b82f6; --audit-dot: #3b82f6; }',
-    '#flowRecordDrawer .audit-tl-item.is-reject { --audit-rail: #ef4444; --audit-dot: #ef4444; }',
-    '#flowRecordDrawer .audit-tl-item.is-pending { --audit-rail: #f59e0b; --audit-dot: #f59e0b; }',
+    '#flowRecordDrawer .audit-tl-item.is-reject { --audit-rail: #3b82f6; --audit-dot: #ef4444; }',
+    '#flowRecordDrawer .audit-tl-item.is-pending { --audit-rail: #3b82f6; --audit-dot: #f59e0b; }',
+    '#flowRecordDrawer .audit-tl-item.is-return-rail { --audit-rail: #ef4444; }',
     '#flowRecordDrawer .audit-main { min-width: 0; padding: 0 0 20px; }',
     '#flowRecordDrawer .audit-tl-item:last-child .audit-main { padding-bottom: 2px; }',
     '#flowRecordDrawer .audit-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }',
@@ -36,9 +37,11 @@
     '#flowRecordDrawer .audit-status.is-pass { color: #16a34a; }',
     '#flowRecordDrawer .audit-status.is-reject { color: #dc2626; }',
     '#flowRecordDrawer .audit-status.is-pending { color: #d97706; }',
-    '#flowRecordDrawer .audit-legend { display: flex; gap: 14px; font-size: 12px; color: #94a3b8; }',
+    '#flowRecordDrawer .audit-legend { display: flex; flex-wrap: wrap; gap: 10px 12px; font-size: 12px; color: #94a3b8; }',
     '#flowRecordDrawer .audit-legend span { display: inline-flex; align-items: center; gap: 4px; }',
+    '#flowRecordDrawer .lg-k { color: #64748b; font-weight: 600; }',
     '#flowRecordDrawer .lg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 999px; border: 2px solid #3b82f6; box-sizing: border-box; }',
+    '#flowRecordDrawer .lg-line { display: inline-block; width: 14px; height: 2px; border-radius: 999px; background: #3b82f6; }',
     '#flowRecordDrawer .lg-pass { border-color: #3b82f6; background: #3b82f6; }',
     '#flowRecordDrawer .lg-reject { border-color: #ef4444; background: #ef4444; }',
     '#flowRecordDrawer .lg-pending { border-color: #f59e0b; background: #fff; }',
@@ -62,9 +65,13 @@
     '<div class="mb-3 flex flex-wrap items-center justify-between gap-2">' +
     '<div class="flex flex-wrap items-center gap-x-3 gap-y-1">' +
     '<h4 class="text-sm font-medium text-slate-700">操作日志 <span id="flowLogReport" class="font-normal text-slate-400"></span></h4>' +
-    '<span class="audit-legend"><span><i class="lg-dot lg-pass"></i>流转</span>' +
-    '<span><i class="lg-dot lg-reject"></i>退回</span>' +
-    '<span><i class="lg-dot lg-pending"></i>当前</span></span></div>' +
+    '<span class="audit-legend"><span class="lg-k">点</span>' +
+    '<span><i class="lg-dot lg-pass"></i>通过</span>' +
+    '<span><i class="lg-dot lg-reject"></i>拒绝</span>' +
+    '<span><i class="lg-dot lg-pending"></i>当前</span>' +
+    '<span class="lg-k">线</span>' +
+    '<span><i class="lg-line lg-pass"></i>推进</span>' +
+    '<span><i class="lg-line lg-reject"></i>回退</span></span></div>' +
     '<button type="button" id="flowLogOrderBtn" class="text-xs text-blue-600 hover:underline">时间倒序</button></div>' +
     '<div id="flowRecordLog"></div></div></div></aside></div>';
 

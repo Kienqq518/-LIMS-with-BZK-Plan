@@ -80,8 +80,9 @@
     }
     #wbRecordDrawer .audit-tl-item.is-pending .audit-dot { background: #fff; }
     #wbRecordDrawer .audit-tl-item.is-pass { --audit-rail: #3b82f6; --audit-dot: #3b82f6; }
-    #wbRecordDrawer .audit-tl-item.is-reject { --audit-rail: #ef4444; --audit-dot: #ef4444; }
-    #wbRecordDrawer .audit-tl-item.is-pending { --audit-rail: #f59e0b; --audit-dot: #f59e0b; }
+    #wbRecordDrawer .audit-tl-item.is-reject { --audit-rail: #3b82f6; --audit-dot: #ef4444; }
+    #wbRecordDrawer .audit-tl-item.is-pending { --audit-rail: #3b82f6; --audit-dot: #f59e0b; }
+    #wbRecordDrawer .audit-tl-item.is-return-rail { --audit-rail: #ef4444; }
     #wbRecordDrawer .audit-main { min-width: 0; padding: 0 0 20px; }
     #wbRecordDrawer .audit-tl-item:last-child .audit-main { padding-bottom: 2px; }
     #wbRecordDrawer .audit-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -98,9 +99,11 @@
     #wbRecordDrawer .audit-opinion { margin-top: 8px; border-radius: 8px; background: #f8fafc; border: 1px solid #eef2f7; padding: 8px 12px; }
     #wbRecordDrawer .audit-opinion-kicker { font-size: 12px; line-height: 1.5; color: #64748b; }
     #wbRecordDrawer .audit-opinion-text { margin-top: 2px; font-size: 13px; line-height: 1.55; color: #4b5563; }
-    #wbRecordDrawer .audit-legend { display: flex; gap: 14px; font-size: 12px; color: #94a3b8; }
+    #wbRecordDrawer .audit-legend { display: flex; flex-wrap: wrap; gap: 10px 12px; font-size: 12px; color: #94a3b8; }
     #wbRecordDrawer .audit-legend span { display: inline-flex; align-items: center; gap: 4px; }
+    #wbRecordDrawer .lg-k { color: #64748b; font-weight: 600; }
     #wbRecordDrawer .lg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 999px; border: 2px solid #3b82f6; box-sizing: border-box; }
+    #wbRecordDrawer .lg-line { display: inline-block; width: 14px; height: 2px; border-radius: 999px; background: #3b82f6; }
     #wbRecordDrawer .lg-pass { border-color: #3b82f6; background: #3b82f6; }
     #wbRecordDrawer .lg-reject { border-color: #ef4444; background: #ef4444; }
     #wbRecordDrawer .lg-pending { border-color: #f59e0b; background: #fff; }
@@ -346,9 +349,13 @@
       <div class="rr-body">
         <div class="mb-3 flex items-center justify-end gap-3">
           <span class="audit-legend">
-            <span><i class="lg-dot lg-pass"></i>流转</span>
-            <span><i class="lg-dot lg-reject"></i>退回</span>
+            <span class="lg-k">点</span>
+            <span><i class="lg-dot lg-pass"></i>通过</span>
+            <span><i class="lg-dot lg-reject"></i>拒绝</span>
             <span><i class="lg-dot lg-pending"></i>当前</span>
+            <span class="lg-k">线</span>
+            <span><i class="lg-line lg-pass"></i>推进</span>
+            <span><i class="lg-line lg-reject"></i>回退</span>
           </span>
           <button type="button" data-log-order-btn class="text-xs text-blue-600 hover:underline" onclick="toggleLogOrder()">时间正序</button>
         </div>
