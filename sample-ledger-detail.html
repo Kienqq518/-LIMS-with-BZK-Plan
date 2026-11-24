@@ -41,8 +41,6 @@
     .step.done { color: #334155; }
     .step.cur { color: #1d4ed8; font-weight: 600; }
     .step i { width: 16px; text-align: center; }
-    .bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-    .bar > span { display: block; height: 100%; background: #2563eb; }
     .row-back td { background: #fff7ed; }
     .row-run td { background: #fffbeb; }
     .row-pending td { color: #94a3b8; }
@@ -124,8 +122,6 @@
       var flowSt = L.flowStatus(s);
       var resultSt = L.resultLabel(s);
       var overdue = L.signOverdue(s);
-      var doneN = s.tests.filter(function (t) { return t.state === '已完成'; }).length;
-      var pct = s.tests.length ? Math.round(doneN / s.tests.length * 100) : 0;
       var cat = (window.SampleDataStore && SampleDataStore.catLabelOfNames(s.name)) || '—';
       var xorCopy = s.afterReturn === 'keep' ? '还样后走留样，不出现退样' : (s.afterReturn === 'client' ? '还样后走退样，不出现留样' : '尚未还样，留样 / 退样都不出现');
       var recvNote = L.receiveNote(s);
@@ -286,10 +282,6 @@
 
             '<div class="panel" id="panel-detect">' +
               '<h3 class="sec-title">检测信息</h3>' +
-              '<div class="mb-3 flex items-center gap-3 text-sm text-slate-500">' +
-                '<span>已完成 ' + doneN + '/' + s.tests.length + '</span>' +
-                '<div class="bar flex-1"><span style="width:' + pct + '%"></span></div>' +
-              '</div>' +
               '<table class="data-table"><thead><tr>' +
                 '<th>试验项</th><th>检测依据</th><th>检测员</th><th>状态</th><th>完成时间</th><th>说明</th>' +
               '</tr></thead><tbody>' +
