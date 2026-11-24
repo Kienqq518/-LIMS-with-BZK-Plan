@@ -128,8 +128,11 @@
       var recvTime = L.receiveTime(s);
       var received = !!(s.receivedAt && s.receivedAt !== '—');
 
-      function kv(label, val) {
-        return '<td class="lbl">' + esc(label) + '</td><td class="val">' + val + '</td>';
+      function kv(label, val, annotate) {
+        var lbl = annotate
+          ? '<td class="lbl" data-annotate="' + annotate + '">' + esc(label) + '</td>'
+          : '<td class="lbl">' + esc(label) + '</td>';
+        return lbl + '<td class="val">' + val + '</td>';
       }
       function pairTable(rows) {
         var html = '<table class="info-table"><tbody>';
@@ -335,7 +338,7 @@
               '<h3 class="sec-title">检测结论</h3>' +
               pairTable([
                 kv('检测结果', resultBadge()),
-                kv('出具时间', esc(s.resultAt || '—')),
+                kv('出具时间', esc(s.resultAt || '—'), 'ledger-result-at'),
                 kv('结论说明', esc(L.resultCopy(s))),
                 kv('', '')
               ]) +
@@ -369,6 +372,7 @@
           document.querySelectorAll('.panel').forEach(function (p) {
             p.classList.toggle('is-on', p.id === 'panel-' + id);
           });
+          if (window.PrototypeAnnotation && PrototypeAnnotation.refresh) PrototypeAnnotation.refresh();
         });
       });
 
@@ -391,6 +395,13 @@
               title: '还样后留样或退样二选一',
               content: '<strong>需求逻辑：</strong>样品实物路径在还样之后只能走留样或退样，不能两条都走。<br>' +
                 '<strong>展示规则：</strong>流转台账含当前存放位置。还样后<strong>留样或退样二选一</strong>。未还样则两条都不出现。回退行橙色标「回退」。'
+            },
+            {
+              id: 'ledger-result-at', selector: '[data-annotate="ledger-result-at"]', position: 'top-left', tag: '样品台账',
+              title: '出具时间',
+              content: '<strong>需求逻辑：</strong>出具时间是该样品<strong>最后一项试验项完成上传</strong>的时间。<br>' +
+                '<strong>展示规则：</strong>全部试验项完成上传后才有值；尚有试验项未完成时显示 —。<br>' +
+                '<strong>交互逻辑：</strong>只读，不在此改时间。'
             }
           ]
         });
