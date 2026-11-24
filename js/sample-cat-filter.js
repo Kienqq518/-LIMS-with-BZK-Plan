@@ -129,7 +129,22 @@
     obs.observe(tbody, { childList: true });
   }
 
+  function fillCatSelect(sel) {
+    if (!sel || sel.getAttribute('data-cat-filled') === '1') return;
+    if (sel.options.length <= 1) {
+      sel.innerHTML = '<option value="">请选择样品大类</option>' + catList().map(function (c) {
+        return '<option value="' + c + '">' + c + '</option>';
+      }).join('');
+    }
+    sel.setAttribute('data-cat-filled', '1');
+  }
+
   function addFilter() {
+    var existing = doc.getElementById('qSampleCat');
+    if (existing) {
+      fillCatSelect(existing);
+      return 'exists';
+    }
     if (hasOverlayText('label', '样品大类')) return 'exists';
     var labels = [].slice.call(doc.querySelectorAll('label')).filter(function (l) {
       return l.textContent.trim() === '样品名称' && !inOverlay(l);
@@ -158,7 +173,12 @@
       }).join('');
       ctl.parentNode.replaceChild(sel, ctl);
     }
-    item.parentNode.insertBefore(clone, item.nextSibling);
+    var parent = item.parentNode;
+    if (parent && parent.classList && parent.classList.contains('flex-nowrap')) {
+      parent.classList.remove('flex-nowrap');
+      parent.classList.add('flex-wrap');
+    }
+    parent.insertBefore(clone, item.nextSibling);
     return true;
   }
 
