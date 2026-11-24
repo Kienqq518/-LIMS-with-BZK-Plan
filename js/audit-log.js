@@ -247,12 +247,20 @@
     return esc(ch);
   }
 
+  function pickReason(log) {
+    if (!log) return '';
+    if (log.reason) return String(log.reason).trim();
+    var opinion = String(log.opinion || '').trim();
+    var blob = textOf(log) + String(log.opinionKicker || '');
+    if (opinion && /退回|审批拒绝|签发退回|自动退回|拒绝/.test(blob)) return opinion;
+    var matched = textOf(log).match(/原因\s*[:：]\s*([^。；;]+)/);
+    return matched && matched[1] ? matched[1].trim() : '';
+  }
+
   function reasonHtml(log) {
     if (!log || log.hop || isCurrentMarker(log)) return '';
-    var blob = textOf(log) + String(log.opinionKicker || '');
-    var reason = log.reason || '';
-    if (!reason && log.opinion && /退回|审批拒绝|签发退回|自动退回/.test(blob)) reason = log.opinion;
-    if (reason) return '<div class="ret-log-reason">退回原因：' + esc(reason) + '</div>';
+    var reason = pickReason(log);
+    if (reason && face(log).text === '审批拒绝') return '<div class="ret-log-reason">退回原因：' + esc(reason) + '</div>';
     var note = log.opinion || '';
     if (!note && /命中|仍剩|不通过|异常|超时|不一致/.test(textOf(log))) note = textOf(log);
     if (!note) return '';

@@ -65,11 +65,10 @@
     '<div class="mb-3 flex flex-wrap items-center justify-between gap-2">' +
     '<div class="flex flex-wrap items-center gap-x-3 gap-y-1">' +
     '<h4 class="text-sm font-medium text-slate-700">操作日志 <span id="flowLogReport" class="font-normal text-slate-400"></span></h4>' +
-    '<span class="audit-legend"><span class="lg-k">点</span>' +
+    '<span class="audit-legend">' +
     '<span><i class="lg-dot lg-pass"></i>通过</span>' +
     '<span><i class="lg-dot lg-reject"></i>拒绝</span>' +
     '<span><i class="lg-dot lg-pending"></i>当前</span>' +
-    '<span class="lg-k">线</span>' +
     '<span><i class="lg-line lg-pass"></i>推进</span>' +
     '<span><i class="lg-line lg-reject"></i>回退</span></span></div>' +
     '<button type="button" id="flowLogOrderBtn" class="text-xs text-blue-600 hover:underline">时间倒序</button></div>' +
