@@ -82,8 +82,8 @@
           <input id="q_name" type="text" placeholder="请输入样品名称" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
         </div>
         <div class="flex items-center gap-2">
-          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">客户单位</label>
-          <input id="q_customer" type="text" placeholder="请输入客户单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">送检单位</label>
+          <input id="q_customer" type="text" placeholder="请输入送检单位" class="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
         </div>
         <div class="flex items-center gap-2" data-annotate="ledger-nodes">
           <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">当前节点</label>
@@ -102,7 +102,7 @@
           </select>
         </div>
         <div class="flex items-center gap-2">
-          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">检测结果</label>
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">检测结论</label>
           <select id="q_result" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
             <option value="">全部</option>
           </select>
@@ -135,28 +135,36 @@
 
     <div class="mt-4 rounded bg-white p-4 shadow-sm">
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[1280px] border-collapse text-left text-sm">
+        <table class="w-full min-w-[1980px] border-collapse text-left text-sm">
           <thead>
             <tr class="bg-slate-100 text-slate-600">
               <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">序号</th>
               <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">样品编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">规格型号</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">送检单位</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">联系人</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">联系方式</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">收样时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测结论</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测员</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测时间</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">下次检测日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">退样时间</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">流转状态</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">检测结果</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">当前节点</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">委托日期</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">收样日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">要求完成日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">样品大类</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
       </div>
-      <p id="emptyBox" class="hidden py-10 text-center text-sm text-slate-400">没有匹配的样品。请核对样品编号，或缩短委托号 / 名称 / 客户关键词。</p>
+      <p id="emptyBox" class="hidden py-10 text-center text-sm text-slate-400">没有匹配的样品。请核对样品编号，或缩短委托号 / 名称 / 送检单位关键词。</p>
       <div class="mt-4 flex items-center justify-end gap-2 text-sm text-slate-500">
         <span id="totalText">共 0 条</span>
         <button class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-300" disabled><i class="fa fa-angle-left"></i></button>
@@ -316,14 +324,22 @@
             '<td class="whitespace-nowrap border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="sample-ledger-detail.html?no=' + encodeURIComponent(s.sampleNo) + '">' + esc(s.sampleNo) + '</a>' + overdueTag + '</td>' +
             '<td class="whitespace-nowrap border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.code) + '</a></td>' +
             '<td class="border border-slate-200 px-3 py-2">' + esc(s.name) + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2">' + flowHtml(s) + '</td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(L.specModel(s)) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(s.customer) + '</td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(L.contactOf(s)) + '</td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(L.phoneOf(s)) + '</td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(L.receiveTime(s)) + '</td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(L.labelDetectStatus(s)) + '</td>' +
             '<td class="border border-slate-200 px-3 py-2">' + resultHtml(s) + '</td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(L.testersOf(s)) + '</td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(L.detectAt(s)) + '</td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(s.recheckAt || '—') + '</td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(L.returnAt(s)) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + flowHtml(s) + '</td>' +
             '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(node) + back + '</td>' +
             '<td class="border border-slate-200 px-3 py-2">' + esc(s.orderDate) + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2">' + esc(s.receivedAt) + '</td>' +
             '<td class="border border-slate-200 px-3 py-2">' + esc(s.due) + '</td>' +
             '<td class="border border-slate-200 px-3 py-2" data-cat-col>' + esc(catOf(s.name)) + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2">' + esc(s.customer) + '</td>' +
             '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' +
               '<a class="op-link" href="sample-ledger-detail.html?no=' + encodeURIComponent(s.sampleNo) + '">查看</a>' +
               '<span class="px-1 text-slate-300">|</span>' +
@@ -352,9 +368,13 @@
           rows = rows.filter(function (s) { return catOf(s.name) === want; });
         }
         if (!rows.length) { toast('没有可导出的样品'); return; }
-        var lines = [['样品编号', '委托编号', '样品名称', '流转状态', '检测结果', '当前节点', '委托日期', '收样日期', '要求完成日期', '样品大类', '客户单位']];
+        var lines = [['样品编号', '委托编号', '样品名称', '规格型号', '送检单位', '联系人', '联系方式', '收样时间', '检测状态', '检测结论', '检测员', '检测时间', '下次检测日期', '退样时间', '流转状态', '当前节点', '委托日期', '要求完成日期', '样品大类']];
         rows.forEach(function (s) {
-          lines.push([s.sampleNo, s.code, s.name, L.flowStatus(s), L.resultLabel(s), L.taskNode(s), s.orderDate, s.receivedAt, s.due, catOf(s.name), s.customer]);
+          lines.push([
+            s.sampleNo, s.code, s.name, L.specModel(s), s.customer, L.contactOf(s), L.phoneOf(s),
+            L.receiveTime(s), L.labelDetectStatus(s), L.resultLabel(s), L.testersOf(s), L.detectAt(s),
+            s.recheckAt || '—', L.returnAt(s), L.flowStatus(s), L.taskNode(s), s.orderDate, s.due, catOf(s.name)
+          ]);
         });
         var csv = '\ufeff' + lines.map(function (r) {
           return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(',');
@@ -414,7 +434,7 @@
               id: 'ledger-query', selector: '[data-annotate="ledger-query"]', position: 'bottom-left', wide: true, tag: '样品台账',
               title: '全库样品查询',
               content: '<strong>需求逻辑：</strong>样品台账是样品管理的只读全库查询，一行一件样品，不替代收样 / 发样 / 还样 / 退样。<br>' +
-                '<strong>展示规则：</strong>查询区为 Web 端下拉与输入。日期范围可自选开始、结束日期，按委托日期或收样日期过滤。名单固定按样品编号倒序。导出只出当前筛选结果。<br>' +
+                '<strong>展示规则：</strong>查询区为 Web 端下拉与输入。日期范围可自选开始、结束日期，按委托日期或收样日期过滤。名单含规格型号、送检单位、联系人/联系方式、收样时间、检测状态、检测结论、检测员、检测时间、下次检测日期、退样时间。固定按样品编号倒序。导出只出当前筛选结果。<br>' +
                 '<strong>交互逻辑：</strong>查询条件写入 sessionStorage，从详情返回时原样还原。'
             },
             {

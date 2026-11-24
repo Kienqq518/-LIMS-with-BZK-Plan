@@ -3,7 +3,7 @@
  * STORAGE_KEY 升版本后浏览器才会吃到新种子。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-sample-ledger-v6';
+  var STORAGE_KEY = 'lims-sample-ledger-v7';
   var QUERY_KEY = 'lims-sample-ledger-query-v4';
 
   var TASK_STEPS = [
@@ -83,6 +83,7 @@
       manufacturer: '远东工器具', manufacturerAddr: '江苏省宜兴市远东大道 1 号',
       place: '留样室', resultAt: '2026-10-18 16:20',
       sender: '王客户', senderPhone: '13800003601', sendWay: '送样', receiveStatus: '完好',
+      contact: '王客户', phone: '13800003601',
       photos: ['外观正面', '铭牌'],
       reportNo: 'SC2026/0356-01', reportStatus: '已签发',
       reportGeneratedAt: '2026-10-18 16:50', compiler: 'admin', compiledAt: '2026-10-18',
@@ -111,6 +112,7 @@
       manufacturer: '远东工器具', manufacturerAddr: '江苏省宜兴市远东大道 1 号',
       place: '检测室 2', resultAt: '',
       sender: '王客户', senderPhone: '13800003601', sendWay: '送样', receiveStatus: '完好',
+      contact: '王客户', phone: '13800003601',
       photos: ['外观正面'],
       reportNo: '', reportStatus: '',
       tests: [tPass(RES, '王工', '2026-11-19 11:40'), tWait(BEND, '王工', '检测中')],
@@ -132,6 +134,7 @@
       manufacturer: '杭工', manufacturerAddr: '杭州市余杭区工一路 8 号',
       place: '—', resultAt: '',
       sender: '', senderPhone: '', sendWay: '', receiveStatus: '',
+      contact: '孙倩', phone: '13600001234',
       photos: [],
       reportNo: '', reportStatus: '',
       tests: [tWait(APP, '待分配'), tWait(RES, '待分配')],
@@ -149,6 +152,7 @@
       manufacturer: '杭工', manufacturerAddr: '杭州市余杭区工一路 8 号',
       place: '已退回客户', resultAt: '2026-10-17 15:10',
       sender: '刘工', senderPhone: '13700003410', sendWay: '送样', receiveStatus: '完好',
+      contact: '刘工', phone: '13700003410',
       photos: ['外观正面', '端部'],
       reportNo: 'SC2026/0341-01', reportStatus: '审核中',
       reportGeneratedAt: '2026-10-17 16:30', compiler: 'admin', compiledAt: '2026-10-17',
@@ -175,6 +179,7 @@
       manufacturer: '远东电缆', manufacturerAddr: '江苏省宜兴市电缆工业园',
       place: '检测室 2', resultAt: '',
       sender: '李客户', senderPhone: '13600000880', sendWay: '上门', receiveStatus: '完好',
+      contact: '李客户', phone: '13600000880',
       photos: ['电缆盘', '截面'],
       reportNo: '', reportStatus: '',
       tests: [tWait(RES, '王工', '检测中'), tWait(APP, '王工')],
@@ -196,6 +201,7 @@
       manufacturer: '杭工', manufacturerAddr: '杭州市余杭区工一路 8 号',
       place: '检测室 2', resultAt: '',
       sender: '陈工', senderPhone: '13900003200', sendWay: '送样', receiveStatus: '完好',
+      contact: '陈工', phone: '13900003200',
       photos: ['外观正面'],
       reportNo: '', reportStatus: '',
       tests: [tWait(RES, '王工', '检测中'), tWait(BEND, '陈工')],
@@ -306,6 +312,40 @@
     if (flow === '待检') return '未检测';
     if (flow === '已完成' || flow === '留样' || flow === '已处置') return '已检测';
     return '检测中';
+  }
+  function dash(v) {
+    v = String(v == null ? '' : v).trim();
+    return v && v !== '—' ? v : '—';
+  }
+  function specModel(s) {
+    var model = String((s && s.model) || '').trim();
+    var spec = String((s && s.spec) || '').trim();
+    if (model && spec && model !== spec) return model + ' ' + spec;
+    return dash(model || spec);
+  }
+  function contactOf(s) { return dash((s && (s.contact || s.sender)) || ''); }
+  function phoneOf(s) { return dash((s && (s.phone || s.senderPhone)) || ''); }
+  function testersOf(s) {
+    var names = [];
+    ((s && s.tests) || []).forEach(function (t) {
+      var who = String((t && t.owner) || '').trim();
+      if (!who || who === '待分配') return;
+      if (names.indexOf(who) < 0) names.push(who);
+    });
+    return names.length ? names.join('、') : '—';
+  }
+  function detectAt(s) {
+    var last = '';
+    ((s && s.tests) || []).forEach(function (t) {
+      if (t && t.finishedAt && t.finishedAt > last) last = t.finishedAt;
+    });
+    return dash(last || (s && s.resultAt) || '');
+  }
+  function returnAt(s) {
+    var rows = ((s && s.ledger) || []).filter(function (r) {
+      return r.name === '退样' && r.state === '已完成' && r.time;
+    });
+    return rows.length ? rows[rows.length - 1].time : '—';
   }
 
   function currentFlow(s) {
@@ -577,6 +617,12 @@
     receiveNote: receiveNote,
     receiveTime: receiveTime,
     labelDetectStatus: labelDetectStatus,
+    specModel: specModel,
+    contactOf: contactOf,
+    phoneOf: phoneOf,
+    testersOf: testersOf,
+    detectAt: detectAt,
+    returnAt: returnAt,
     isSigned: isSigned,
     testsDone: testsDone,
     resultCopy: resultCopy,
