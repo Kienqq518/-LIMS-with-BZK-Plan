@@ -148,7 +148,7 @@
       return { kind: 'forward', text: generationText(log), icon: 'fa-check-circle', rail: 'pass', statusTone: 'pass' };
     }
     if (isReturnLog(log) || (/异常|超时/.test(t) && !/预审/.test(t))) {
-      return { kind: 'reject', text: '审批拒绝', icon: 'fa-times-circle', rail: 'reject', statusTone: 'reject' };
+      return { kind: 'reject', text: '审批拒绝', icon: 'fa-minus-circle', rail: 'reject', statusTone: 'reject' };
     }
     var dest = forwardDest(log);
     return {
