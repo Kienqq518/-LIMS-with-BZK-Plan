@@ -45,7 +45,7 @@
       if (isPush(log)) {
         var to = destOf(log);
         if (!to || to === lastNode) return;
-        out.push({ hop: true, from: lastNode, to: to, at: timeOf(log) });
+        out.push({ hop: true, from: lastNode, to: to, at: timeOf(log), back: /退回/.test(textOf(log)) });
         lastNode = to;
         return;
       }
@@ -75,15 +75,61 @@
     return tone === 'pending' && /等待|当前节点|编制中|审批中|审核中|排队|正在/.test(textOf(log));
   }
 
+  function isAiLog(log) {
+    if (!log || log.hop) return false;
+    var who = actorOf(log);
+    var node = nodeOf(log);
+    var t = textOf(log) + String(log.opinionKicker || '');
+    if (node === 'AI审核' || node.indexOf('AI') === 0) return true;
+    if (/AI/.test(who)) return true;
+    if (/预审结论|重审结论|预审通过|预审不通过/.test(t)) return true;
+    return false;
+  }
+
+  function returnTarget(log) {
+    if (!log) return '';
+    if (log.hop && log.back) return log.to || '';
+    var t = textOf(log) + ' ' + String(log.opinionKicker || '') + ' ' + String(log.target || '');
+    var matched = t.match(/(?:退回至|自动退回至|自动退回|退回)\s*([^\s，,。；;（(]+)/);
+    if (matched) return matched[1].replace(/节点$/, '').trim();
+    if (/签发退回/.test(t)) return '报告审核';
+    return log.target ? String(log.target) : '';
+  }
+
   function isReturnLog(log) {
     if (!log || log.hop || isCurrentMarker(log)) return false;
     var t = textOf(log) + String(log.opinionKicker || '');
-    if (/预审结论：不通过/.test(t)) return true;
-    if (/预审/.test(t) && !/退回/.test(t)) return false;
-    if (/异常|超时/.test(t) && !/退回/.test(t)) return false;
-    if (/退回至|自动退回|审批拒绝|签发退回/.test(t)) return true;
+    if (isAiLog(log) && !/退回/.test(t)) return false;
+    if (/退回至|自动退回|审批拒绝|签发退回|退回/.test(t)) return true;
     var tone = log.tone || log.statusTone || '';
     return (tone === 'danger' || tone === 'reject') && /退回|拒绝/.test(t);
+  }
+
+  function generationText(log) {
+    var name = String((log && (log.reportNo || log.reportName)) || '');
+    if (!name) {
+      var matched = textOf(log).match(/生成报告\s*(\S+)/);
+      if (matched) name = matched[1];
+    }
+    name = name.replace(/\.(docx|pdf)$/i, '').replace(/[，,。；;].*$/, '');
+    return '上一版的' + name + '报告生成';
+  }
+
+  function aiFace(log) {
+    var t = textOf(log) + String(log.opinionKicker || '');
+    if (/不通过|自动退回/.test(t) && !/需复核|需人工|待人工/.test(t)) {
+      return { kind: 'reject', text: '不通过', icon: 'fa-times-circle', rail: 'reject', statusTone: 'reject' };
+    }
+    if (/通过/.test(t) && !/不通过/.test(t)) {
+      return { kind: 'forward', text: '通过', icon: 'fa-check-circle', rail: 'pass', statusTone: 'pass' };
+    }
+    if (/需复核|需人工|待人工|人工核查/.test(t)) {
+      return { kind: 'warn', text: '待人工核查', icon: 'fa-exclamation-circle', rail: 'pass', statusTone: 'warn' };
+    }
+    if (/异常|超时/.test(t)) {
+      return { kind: 'reject', text: '审核异常', icon: 'fa-times-circle', rail: 'reject', statusTone: 'reject' };
+    }
+    return null;
   }
 
   function forwardDest(log) {
@@ -97,17 +143,60 @@
   }
 
   function face(log) {
-    if (isCurrentMarker(log)) return { kind: 'current', text: '当前节点', icon: 'fa-circle-o', tone: 'pending' };
-    if (isReturnLog(log) || (/异常|超时/.test(textOf(log)) && !/预审/.test(textOf(log)))) {
-      return { kind: 'reject', text: '审批拒绝', icon: 'fa-times-circle', tone: 'reject' };
+    if (isCurrentMarker(log)) return { kind: 'current', text: '当前节点', icon: 'fa-circle-o', rail: 'pending', statusTone: 'pending' };
+    if (isAiLog(log)) {
+      var ai = aiFace(log);
+      if (ai) return ai;
+    }
+    var t = textOf(log);
+    if ((nodeOf(log) === '报告生成' || /生成报告/.test(t)) && !isReturnLog(log)) {
+      return { kind: 'forward', text: generationText(log), icon: 'fa-check-circle', rail: 'pass', statusTone: 'pass' };
+    }
+    if (isReturnLog(log) || (/异常|超时/.test(t) && !/预审/.test(t))) {
+      return { kind: 'reject', text: '审批拒绝', icon: 'fa-times-circle', rail: 'reject', statusTone: 'reject' };
     }
     var dest = forwardDest(log);
     return {
       kind: 'forward',
       text: dest ? ('推进到' + dest + '节点') : '推进到下一节点',
       icon: 'fa-check-circle',
-      tone: 'pass'
+      rail: 'pass',
+      statusTone: 'pass'
     };
+  }
+
+  function sameReport(a, b) {
+    var ra = a && (a.reportNo || a.reportId || '');
+    var rb = b && (b.reportNo || b.reportId || '');
+    if (!ra || !rb) return true;
+    return String(ra) === String(rb);
+  }
+
+  function annotateReturns(list, order) {
+    var desc = order === 'desc';
+    var step = desc ? -1 : 1;
+    list.forEach(function (log) {
+      if (!log) return;
+      log.returnedHere = false;
+      log.returnRail = false;
+    });
+    for (var i = 0; i < list.length; i++) {
+      var cur = list[i];
+      var target = '';
+      if (cur && cur.hop && cur.back) target = cur.to || '';
+      else if (cur && isReturnLog(cur)) target = returnTarget(cur);
+      if (!target) continue;
+      var j = i + step;
+      while (j >= 0 && j < list.length && !sameReport(cur, list[j])) j += step;
+      var nxt = list[j];
+      if (!nxt || nxt.hop) continue;
+      if (nodeOf(nxt) !== target) continue;
+      if (nxt.current || isCurrentMarker(nxt)) nxt.returnRail = true;
+      else {
+        nxt.returnedHere = true;
+        if (desc) nxt.returnRail = true;
+      }
+    }
   }
 
   function chrono(logs) {
@@ -141,6 +230,7 @@
       });
     }
     if ((hasPush || place) && order === 'desc') folded.reverse();
+    annotateReturns(folded, order);
     return folded;
   }
 
@@ -168,7 +258,7 @@
     if (!reason && log.opinion && /退回|审批拒绝|签发退回|自动退回/.test(blob)) reason = log.opinion;
     if (reason) return '<div class="ret-log-reason">退回原因：' + esc(reason) + '</div>';
     var note = log.opinion || '';
-    if (!note && /预审结论：不通过|异常|超时/.test(textOf(log))) note = textOf(log);
+    if (!note && /命中|仍剩|不通过|异常|超时|不一致/.test(textOf(log))) note = textOf(log);
     if (!note) return '';
     if (face(log).kind === 'forward' && note === textOf(log)) return '';
     return '<div class="audit-opinion"><div class="audit-opinion-text">' + esc(note) + '</div></div>';
@@ -181,7 +271,7 @@
     var node = nodeOf(log) || '操作记录';
     var no = opts.no ? '<span class="audit-no">' + esc(opts.no) + '</span>' : '';
     if (view.kind === 'current') {
-      return '<li class="audit-tl-item is-pending" data-current="1">' +
+      return '<li class="audit-tl-item is-pending' + (log && log.returnRail ? ' is-return-rail' : '') + '" data-current="1">' +
         '<div class="audit-rail" aria-hidden="true"><span class="audit-dot"></span></div>' +
         '<div class="audit-main"><div class="audit-head"><div class="audit-title"><span>' + esc(node) + '</span>' + no + '</div>' +
         '<span class="audit-status is-pending"><i class="fa fa-circle-o" aria-hidden="true"></i>当前节点</span></div></div></li>';
@@ -192,8 +282,10 @@
       : '<span></span>';
     var at = timeOf(log);
     if (at && at.length === 16) at += ':00';
-    var statusTone = view.kind === 'reject' ? 'reject' : 'pass';
-    var toneClass = view.kind === 'reject' ? 'is-reject' : 'is-pass';
+    var statusTone = view.statusTone || (view.kind === 'reject' ? 'reject' : 'pass');
+    var toneClass = view.rail === 'reject' || view.kind === 'reject' ? 'is-reject' : 'is-pass';
+    if (log && log.returnedHere) toneClass += ' is-returned';
+    if (log && log.returnRail) toneClass += ' is-return-rail';
     var status = '<span class="audit-status is-' + statusTone + '"><i class="fa ' + view.icon + '" aria-hidden="true"></i>' + esc(view.text) + '</span>';
     return '<li class="audit-tl-item ' + toneClass + '">' +
       '<div class="audit-rail" aria-hidden="true"><span class="audit-dot"></span></div>' +
@@ -218,8 +310,9 @@
   function hopHtml(item) {
     var from = item.from || '';
     var to = item.to || '';
-    var label = from ? ('从' + esc(from) + '推进至' + esc(to)) : ('推进至' + esc(to));
-    return '<li class="audit-hop" data-audit-hop="' + esc(from) + '→' + esc(to) + '">' +
+    var verb = item.back ? '退回至' : '推进至';
+    var label = from ? ('从' + esc(from) + verb + esc(to)) : (verb + esc(to));
+    return '<li class="audit-hop' + (item.back ? ' is-return' : '') + '" data-audit-hop="' + esc(from) + '→' + esc(to) + '">' +
       '<div class="audit-rail" aria-hidden="true"></div>' +
       '<div class="audit-hop-label">' + label + '</div></li>';
   }
@@ -250,12 +343,16 @@
       '.audit-avatar{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:999px;color:#fff;font-size:11px}',
       '.audit-status{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500}',
       '.audit-status.is-pass{color:#16a34a}',
+      '.audit-status.is-warn{color:#d97706}',
       '.audit-status.is-reject{color:#dc2626}',
       '.audit-status.is-pending{color:#d97706}',
       '.audit-tl-item.is-pass{--audit-rail:#3b82f6;--audit-dot:#3b82f6;--rail:#3b82f6;--dot:#3b82f6}',
       '.audit-tl-item.is-reject{--audit-rail:#ef4444;--audit-dot:#ef4444;--rail:#ef4444;--dot:#ef4444}',
       '.audit-tl-item.is-pending{--audit-rail:#f59e0b;--audit-dot:#f59e0b;--rail:#f59e0b;--dot:#f59e0b}',
-      '.audit-tl-item.is-pending .audit-dot{background:#fff}',
+      '.audit-tl-item.is-returned{--audit-dot:#ef4444;--dot:#ef4444}',
+      '.audit-tl-item.is-return-rail{--audit-rail:#ef4444;--rail:#ef4444}',
+      '.audit-tl-item.is-pending.is-return-rail{--audit-rail:#ef4444;--audit-dot:#f59e0b;--rail:#ef4444;--dot:#f59e0b}',
+      '.audit-tl-item.is-pending .audit-dot,.audit-tl-item.is-pending.is-return-rail .audit-dot{background:#fff}',
       '.ret-log-reason{margin-top:8px;padding:8px 12px;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:12px;line-height:1.55}',
       '.audit-opinion{margin-top:8px;border-radius:8px;background:#f8fafc;border:1px solid #eef2f7;padding:8px 12px}',
       '.audit-opinion-text{font-size:13px;line-height:1.55;color:#4b5563}'
@@ -264,8 +361,13 @@
         s.scope + '.audit-hop{display:grid;grid-template-columns:' + s.col + ' minmax(0,1fr);column-gap:' + s.gap + ';align-items:stretch}',
         s.scope + '.audit-hop .audit-rail{position:relative;min-height:22px}',
         s.scope + '.audit-hop .audit-rail::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);background:#cbd5e1}',
+        s.scope + '.audit-hop.is-return .audit-rail::after{background:#ef4444}',
         s.scope + '.audit-hop:last-child .audit-rail::after{display:none}',
-        s.scope + '.audit-hop-label{padding:2px 0 12px;font-size:12px;line-height:1.45;color:#64748b}'
+        s.scope + '.audit-hop-label{padding:2px 0 12px;font-size:12px;line-height:1.45;color:#64748b}',
+        s.scope + '.audit-hop.is-return .audit-hop-label{color:#dc2626}',
+        s.scope + '.audit-tl-item.is-returned{--audit-dot:#ef4444;--dot:#ef4444}',
+        s.scope + '.audit-tl-item.is-return-rail{--audit-rail:#ef4444;--rail:#ef4444}',
+        s.scope + '.audit-tl-item.is-pending.is-return-rail{--audit-rail:#ef4444;--audit-dot:#f59e0b;--rail:#ef4444;--dot:#f59e0b}'
       ].join('');
     }).join('');
     var style = document.createElement('style');
