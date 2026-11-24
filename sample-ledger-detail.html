@@ -277,9 +277,7 @@
                 kv('送样人', esc(s.sender || (received ? '—' : '尚未收样'))),
                 kv('送样人联系方式', esc(s.senderPhone || (received ? '—' : '尚未收样'))),
                 kv('到样情况', esc(recvNote || (received ? '—' : '尚未收样'))),
-                kv('下次再检日期', esc(s.recheckAt || '—')),
-                kv('样品图片', photosHtml()),
-                kv('', '')
+                kv('样品图片', photosHtml())
               ]) +
             '</div>' +
 
@@ -340,7 +338,7 @@
                 kv('检测结果', resultBadge()),
                 kv('出具时间', esc(s.resultAt || '—'), 'ledger-result-at'),
                 kv('结论说明', esc(L.resultCopy(s))),
-                kv('', '')
+                kv('下次再检日期', esc(s.recheckAt || '—'))
               ]) +
               '<h3 class="sec-title">合格证</h3>' +
               (resultSt === '合格'
@@ -348,13 +346,18 @@
                 : '<p class="text-sm text-slate-400">该样品未出具合格证。</p>') +
               '<h3 class="sec-title">报告文档</h3>' +
               (s.reportNo
-                ? ('<table class="info-table"><tbody><tr>' +
-                  kv('报告编号', '<a class="text-blue-600 hover:underline" href="' + reportHref() + '">' + esc(s.reportNo) + '</a>') +
-                  kv('报告状态', esc(s.reportStatus || '—')) +
-                  '</tr><tr>' +
-                  kv('签发日期', esc(s.signedAt || '—')) +
-                  kv('当前节点', esc(taskName)) +
-                  '</tr></tbody></table>')
+                ? pairTable([
+                  kv('报告编号', '<a class="text-blue-600 hover:underline" href="' + reportHref() + '">' + esc(s.reportNo) + '</a>'),
+                  kv('报告状态', esc(s.reportStatus || '—')),
+                  kv('报告生成时间', esc(s.reportGeneratedAt || '—')),
+                  kv('编制人', esc(s.compiler || '—')),
+                  kv('编制日期', esc(s.compiledAt || '—')),
+                  kv('审核人', esc(s.reviewer || '—')),
+                  kv('审核日期', esc(s.reviewedAt || '—')),
+                  kv('签发人', esc(s.signer || '—')),
+                  kv('签发日期', esc(s.signedAt || '—')),
+                  kv('当前节点', esc(taskName))
+                ])
                 : '<p class="text-sm text-slate-400">该样品尚未生成报告。</p>') +
             '</div>' +
 

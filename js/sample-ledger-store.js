@@ -3,7 +3,7 @@
  * STORAGE_KEY 升版本后浏览器才会吃到新种子。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-sample-ledger-v4';
+  var STORAGE_KEY = 'lims-sample-ledger-v5';
   var QUERY_KEY = 'lims-sample-ledger-query-v4';
 
   var TASK_STEPS = [
@@ -84,7 +84,9 @@
       place: '留样室', resultAt: '2026-10-18 16:20',
       sender: '王客户', senderPhone: '13800003601', sendWay: '送样', receiveStatus: '完好',
       photos: ['外观正面', '铭牌'],
-      reportNo: 'SC2026/0356-01', reportStatus: '已签发', signedAt: '2026-10-18',
+      reportNo: 'SC2026/0356-01', reportStatus: '已签发',
+      reportGeneratedAt: '2026-10-18 16:50', compiler: 'admin', compiledAt: '2026-10-18',
+      reviewer: '周审核', reviewedAt: '2026-10-18', signer: '周签发', signedAt: '2026-10-18',
       tests: [tPass(RES, '王工', '2026-10-18 11:20'), tPass(BEND, '陈工', '2026-10-18 16:20')],
       ledger: buildLedger([
         done('委托登记', '李工', '2026-10-16 09:12', '业务室', '委托已受理'),
@@ -149,6 +151,8 @@
       sender: '刘工', senderPhone: '13700003410', sendWay: '送样', receiveStatus: '完好',
       photos: ['外观正面', '端部'],
       reportNo: 'SC2026/0341-01', reportStatus: '审核中',
+      reportGeneratedAt: '2026-10-17 16:30', compiler: 'admin', compiledAt: '2026-10-17',
+      reviewer: '周审核', reviewedAt: '', signer: '', signedAt: '',
       tests: [tFail(RES, '王工', '2026-10-17 11:00', '泄漏电流超标'), tPass(BEND, '陈工', '2026-10-17 15:10')],
       ledger: buildLedger([
         done('委托登记', '李工', '2026-10-08 09:00', '业务室', '委托已受理'),
