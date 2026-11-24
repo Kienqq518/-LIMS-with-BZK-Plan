@@ -219,7 +219,7 @@
               '<div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">' +
                 '<span class="text-base font-semibold text-slate-800">' + esc(s.sampleNo) + '</span>' +
                 (overdue.overdue ? '<span class="overdue-tag">' + esc(overdue.text) + '</span>' : '') +
-                '<span class="text-sm text-slate-700">' + esc(L.titleName(s)) + '</span>' +
+                '<span class="text-sm text-slate-700" data-annotate="ledger-alias">' + esc(L.titleName(s)) + '</span>' +
                 '<span class="' + flowClass(flowSt) + '">' + esc(flowSt) + '</span>' +
                 (resultSt === '/' ? '' : resultBadge()) +
               '</div>' +
@@ -387,6 +387,12 @@
       if (window.PrototypeAnnotation) {
         PrototypeAnnotation.init({
           annotations: [
+            {
+              id: 'ledger-alias', selector: '[data-annotate="ledger-alias"]', position: 'bottom-left', tag: '样品台账',
+              title: '样品别名（样品名称）',
+              content: '<strong>需求逻辑：</strong>页首优先展示样品别名，样品名称跟在括号后，避免业务员口头名与主数据名称对不上。<br>' +
+                '<strong>展示规则：</strong>有样品别名且与名称不同时显示「别名（样品名称）」；无别名或别名等于名称时只显示样品名称。'
+            },
             {
               id: 'ledger-task', selector: '[data-annotate="ledger-task"]', position: 'bottom-left', tag: '样品台账',
               title: '委托任务流程节点',
