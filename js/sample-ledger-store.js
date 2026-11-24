@@ -3,7 +3,7 @@
  * STORAGE_KEY 升版本后浏览器才会吃到新种子。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-sample-ledger-v5';
+  var STORAGE_KEY = 'lims-sample-ledger-v6';
   var QUERY_KEY = 'lims-sample-ledger-query-v4';
 
   var TASK_STEPS = [
@@ -74,7 +74,7 @@
 
   var SEED = [
     {
-      sampleNo: 'SC2026/0356-01', code: 'SC2026/0356', name: '绝缘操作杆',
+      sampleNo: 'SC2026/0356-01', code: 'SC2026/0356', name: '绝缘操作杆', alias: '10kV操作杆',
       customer: '杭州应敏科技有限公司', spec: '10kV', model: '绝缘操作杆', mark: '10kV',
       status: '合格', taskStep: 18, taskType: '材料（安全工具器类）',
       recheckAt: '2027-04-18', returnApplied: false, afterReturn: 'keep',
@@ -102,7 +102,7 @@
       ], 'keep')
     },
     {
-      sampleNo: 'SC2026/0356-02', code: 'SC2026/0356', name: '绝缘硬梯',
+      sampleNo: 'SC2026/0356-02', code: 'SC2026/0356', name: '绝缘硬梯', alias: '折叠式硬梯',
       customer: '杭州应敏科技有限公司', spec: '10kV', model: '绝缘硬梯', mark: '10kV',
       status: '检测中', taskStep: 8, taskType: '材料（安全工具器类）',
       recheckAt: '', returnApplied: false, afterReturn: '',
@@ -123,7 +123,7 @@
       ], '')
     },
     {
-      sampleNo: 'SC2026/0368-01', code: 'SC2026/0368', name: '安全带',
+      sampleNo: 'SC2026/0368-01', code: 'SC2026/0368', name: '安全带', alias: '围杆式安全带',
       customer: '宇宙设想有限公司', spec: '围杆式', model: '安全带', mark: '',
       status: '待收样', taskStep: 2, taskType: '材料（安全工具器类）',
       recheckAt: '', returnApplied: false, afterReturn: '',
@@ -140,7 +140,7 @@
       ], '')
     },
     {
-      sampleNo: 'SC2026/0341-01', code: 'SC2026/0341', name: '绝缘操作杆',
+      sampleNo: 'SC2026/0341-01', code: 'SC2026/0341', name: '绝缘操作杆', alias: '10kV操作杆',
       customer: '东集西造有限公司', spec: '10kV', model: '绝缘操作杆', mark: '10kV',
       status: '不合格', taskStep: 12, taskType: '材料（安全工具器类）',
       recheckAt: '', returnApplied: false, afterReturn: 'client',
@@ -166,7 +166,7 @@
       ], 'client')
     },
     {
-      sampleNo: 'SC2026/0088-01', code: 'SC2026/0088', name: '10kV3芯电力电缆',
+      sampleNo: 'SC2026/0088-01', code: 'SC2026/0088', name: '10kV3芯电力电缆', alias: '',
       customer: '杭州应敏科技有限公司', spec: 'YJV-8.7/10 3×35', model: 'YJV-交联聚乙烯绝缘聚氯乙烯护套电力电缆', mark: 'YJV-8.7/10 3×35',
       status: '已过期', taskStep: 8, taskType: '材料（电线电缆、金具、金属材料类）',
       recheckAt: '', returnApplied: false, afterReturn: '',
@@ -187,7 +187,7 @@
       ], '')
     },
     {
-      sampleNo: 'SC2026/0320-01', code: 'SC2026/0320', name: '绝缘操作杆',
+      sampleNo: 'SC2026/0320-01', code: 'SC2026/0320', name: '绝缘操作杆', alias: '10kV操作杆',
       customer: '杭州数蚕智能科技有限公司', spec: '10kV', model: '绝缘操作杆', mark: '10kV',
       status: '检测中', taskStep: 8, taskType: '材料（安全工具器类）',
       recheckAt: '', returnApplied: false, afterReturn: '',
@@ -451,6 +451,13 @@
     return (s.ledger || []).some(function (r) { return r.direction === 'back'; });
   }
 
+  function titleName(s) {
+    var alias = String((s && s.alias) || '').trim();
+    var name = String((s && s.name) || '').trim();
+    if (alias && alias !== name) return alias + '（' + name + '）';
+    return name;
+  }
+
   global.SampleLedger = {
     STORAGE_KEY: STORAGE_KEY,
     TASK_STEPS: TASK_STEPS,
@@ -478,6 +485,7 @@
     recordsOf: recordsOf,
     progressText: progressText,
     hasBack: hasBack,
+    titleName: titleName,
     persistQuery: persistQuery,
     loadQuery: loadQuery,
     today: today
