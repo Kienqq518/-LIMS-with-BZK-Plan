@@ -37,10 +37,6 @@
     .sec-title:first-child { margin-top: 0; }
     .back-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #fff7ed; color: #c2410c; font-size: 11px; line-height: 16px; }
     .xor-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #eff6ff; color: #1d4ed8; font-size: 11px; line-height: 16px; }
-    .step { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; color: #94a3b8; }
-    .step.done { color: #334155; }
-    .step.cur { color: #1d4ed8; font-weight: 600; }
-    .step i { width: 16px; text-align: center; }
     .row-back td { background: #fff7ed; }
     .row-run td { background: #fffbeb; }
     .row-pending td { color: #94a3b8; }
@@ -72,6 +68,7 @@
   <script src="js/web-perms.js"></script>
   <script src="js/sample-data-store.js"></script>
   <script src="js/sample-ledger-store.js"></script>
+  <script src="js/contract-flow-modal.js"></script>
   <script src="js/original-record-version.js"></script>
   <script src="js/original-record-ui.js"></script>
   <script src="js/short-link-qr.js"></script>
@@ -224,17 +221,8 @@
                 (resultSt === '/' ? '' : resultBadge()) +
               '</div>' +
               '<p class="mt-1 text-sm text-slate-500">委托编号 <a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.code) + '</a>' +
-                '　当前节点 <button type="button" id="toggleSteps" class="text-blue-600 hover:underline" data-annotate="ledger-task">' + esc(taskName) + '</button></p>' +
+                '　当前节点 <button type="button" id="openTaskFlow" class="text-blue-600 hover:underline" data-annotate="ledger-task">' + esc(taskName) + '</button></p>' +
             '</div>' +
-          '</div>' +
-          '<div id="taskSteps" class="hidden border-b border-slate-100 px-4 py-3 grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">' +
-            L.TASK_STEPS.map(function (name, i) {
-              var n = i + 1;
-              var cls = n < s.taskStep ? 'step done' : (n === s.taskStep ? 'step cur' : 'step');
-              var icon = n < s.taskStep ? 'fa-check-circle text-emerald-500' : (n === s.taskStep ? 'fa-circle text-blue-600' : 'fa-circle-o');
-              var tag = n === s.taskStep ? ' <span class="st st-wait">当前</span>' : '';
-              return '<div class="' + cls + '"><i class="fa ' + icon + '"></i>' + n + '. ' + esc(name) + tag + '</div>';
-            }).join('') +
           '</div>' +
           '<div class="flex items-center gap-0 overflow-x-auto border-b border-slate-200 px-2 text-sm whitespace-nowrap">' +
             tabs.map(function (t) {
@@ -364,8 +352,13 @@
           '</div>' +
         '</div>';
 
-      document.getElementById('toggleSteps').addEventListener('click', function () {
-        document.getElementById('taskSteps').classList.toggle('hidden');
+      document.getElementById('openTaskFlow').addEventListener('click', function () {
+        if (!window.ContractFlowModal) return;
+        ContractFlowModal.open({
+          code: s.code,
+          sample: L.titleName(s),
+          steps: L.taskFlowOf(s)
+        });
       });
       document.querySelectorAll('.info-tab').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -397,7 +390,7 @@
               id: 'ledger-task', selector: '[data-annotate="ledger-task"]', position: 'bottom-left', tag: '样品台账',
               title: '委托任务流程节点',
               content: '<strong>需求逻辑：</strong>页首当前节点是委托任务进度，从委托登记到任务完成。<br>' +
-                '<strong>交互逻辑：</strong>点当前节点展开各步：已过打勾，当前标「当前」，未到灰色。只读。'
+                '<strong>交互逻辑：</strong>点当前节点弹出「合同流程」弹窗（与顶栏搜索委托编号回车弹出的弹窗同一套）：已完成绿色对勾并记操作人/时间，当前蓝色高亮，未到灰色标「暂无」。只读，不在页内展开。'
             },
             {
               id: 'ledger-xor', selector: '[data-annotate="ledger-xor"]', position: 'top-left', wide: true, tag: '样品台账',
@@ -417,6 +410,7 @@
       }
     })();
   </script>
+  <script src="js/modal-drag.js"></script>
   <script src="js/ui-a11y.js" defer></script>
 </body>
 </html>

@@ -458,6 +458,104 @@
     return name;
   }
 
+  var LEDGER_AS_TASK = {
+    '委托登记': '委托登记',
+    '收样': '样品收样',
+    '制备': '样品制备',
+    '发样': '样品发样',
+    '领样': '试样分发',
+    '检测': '试验检测'
+  };
+
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+  function stampMs(raw) {
+    var t = String(raw || '').replace('T', ' ').trim();
+    var m = t.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+    if (!m) return 0;
+    return Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  }
+
+  function formatStamp(ms) {
+    var d = new Date(ms);
+    return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate()) +
+      ' ' + pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes()) + ':' + pad2(d.getUTCSeconds());
+  }
+
+  function defaultWho(stepName, s) {
+    var map = {
+      '委托登记': '李工',
+      '样品收样': (s.receiver && s.receiver !== '尚未收样') ? s.receiver : '赵工',
+      '委托确认': 'admin',
+      '费用审核': 'admin',
+      '样品制备': '张三',
+      '样品发样': '赵工',
+      '试样分发': '王工',
+      '试验检测': '王工',
+      '组内审核': 'admin',
+      '数据审核': 'admin',
+      '报告编制': s.compiler || 'admin',
+      '报告审核': s.reviewer || '周审核',
+      '报告签发': s.signer || '周签发',
+      '报告处理': 'admin',
+      '收费审批': 'admin',
+      '报告发放': 'admin',
+      '任务归档': 'admin',
+      '任务完成': 'admin'
+    };
+    return map[stepName] || 'admin';
+  }
+
+  function normalizeStamp(raw) {
+    var t = String(raw || '').trim();
+    if (!t) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t + ' 09:00:00';
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(t)) return t + ':00';
+    return t;
+  }
+
+  /** 委托 18 步时间轴，口径与顶栏「合同流程」弹窗一致。 */
+  function taskFlowOf(s) {
+    if (!s) return [];
+    var hits = {};
+    (s.ledger || []).forEach(function (r) {
+      var key = LEDGER_AS_TASK[r.name];
+      if (!key || r.state === '未开始' || !r.time) return;
+      if (!hits[key]) hits[key] = { user: r.who || defaultWho(key, s), time: normalizeStamp(r.time) };
+    });
+    if (s.reportGeneratedAt || s.compiledAt) {
+      hits['报告编制'] = {
+        user: s.compiler || 'admin',
+        time: normalizeStamp(s.reportGeneratedAt || s.compiledAt)
+      };
+    }
+    if (s.reviewedAt) {
+      hits['报告审核'] = { user: s.reviewer || '周审核', time: normalizeStamp(s.reviewedAt) };
+    }
+    if (s.signedAt) {
+      hits['报告签发'] = { user: s.signer || '周签发', time: normalizeStamp(s.signedAt) };
+    }
+    var cur = Math.max(1, Number(s.taskStep) || 1);
+    var allDone = cur >= TASK_STEPS.length;
+    var startMs = stampMs((s.ledger && s.ledger[0] && s.ledger[0].time) || s.orderDate || '2026-01-01');
+    if (!startMs) startMs = stampMs('2026-01-01 09:00:00');
+    var prevMs = 0;
+    return TASK_STEPS.map(function (name, i) {
+      var done = (i + 1) < cur || allDone;
+      if (!done) return { name: name, user: '', time: '' };
+      var hit = hits[name];
+      var ms = hit ? stampMs(hit.time) : 0;
+      if (!ms || ms <= prevMs) ms = prevMs ? prevMs + 12 * 60 * 1000 + 30 * 1000 : startMs;
+      prevMs = ms;
+      return { name: name, user: (hit && hit.user) || defaultWho(name, s), time: formatStamp(ms) };
+    });
+  }
+
+  function byCode(code) {
+    var c = String(code || '').replace(/\s/g, '');
+    return items.filter(function (s) { return s.code === c; });
+  }
+
   global.SampleLedger = {
     STORAGE_KEY: STORAGE_KEY,
     TASK_STEPS: TASK_STEPS,
@@ -486,6 +584,8 @@
     progressText: progressText,
     hasBack: hasBack,
     titleName: titleName,
+    taskFlowOf: taskFlowOf,
+    byCode: byCode,
     persistQuery: persistQuery,
     loadQuery: loadQuery,
     today: today
