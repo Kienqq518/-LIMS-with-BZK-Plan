@@ -71,6 +71,12 @@
    * 末列若不是「操作」（例如是「备注」），也会被误钉住。 */
   var PIN_LEFT_LABELS = ['勾选', '序号', '委托编号'];   // 左侧钉住的一组（勾选列存在就一起钉，否则会被滚走）
   var PIN_STICKY_LABELS = ['序号', '委托编号'];         // 至少要命中一个才启用左侧冻结
+  function pinLeftLabels() {
+    return pageKey() === 'sample-ledger' ? ['勾选', '序号', '样品编号'] : PIN_LEFT_LABELS;
+  }
+  function pinStickyLabels() {
+    return pageKey() === 'sample-ledger' ? ['序号', '样品编号'] : PIN_STICKY_LABELS;
+  }
   var PIN_RIGHT_LABELS = ['操作', '操作记录', '发放记录']; // 右侧钉住：名单操作列 / 还样「操作记录」/ 任务完成「发放记录」
   var STICKY_RIGHT_LABELS = ['报告记录', '操作', '操作记录', '发放记录']; // 从右连续冻结（任务完成：报告记录+发放记录）
   var PIN_LOCK_LABELS = ['序号', '委托编号', '样品编号', '操作', '操作记录', '发放记录'];
@@ -86,13 +92,13 @@
   function isRightLabel(lb) { return PIN_RIGHT_LABELS.indexOf(lb) >= 0; }
   function isLockKey(k) {
     var lb = labelOfKey(k);
-    return PIN_LEFT_LABELS.indexOf(lb) >= 0 || isRightLabel(lb);   // 位置锁：含勾选列
+    return pinLeftLabels().indexOf(lb) >= 0 || isRightLabel(lb);   // 位置锁：含勾选列
   }
   function isHideLockKey(k) { return PIN_LOCK_LABELS.indexOf(labelOfKey(k)) >= 0; }  // 隐藏锁：三列
   /** 把固定列归位：勾选/序号/委托编号在最左，操作在最右，其余列保持当前相对顺序 */
   function enforcePins(list) {
     var head = [], tail = [];
-    PIN_LEFT_LABELS.forEach(function (lb) {
+    pinLeftLabels().forEach(function (lb) {
       var k = keyOfLabel(lb);
       if (k && list.indexOf(k) >= 0) head.push(k);
     });
@@ -299,13 +305,15 @@
   }
   function stickySets() {
     var vis = order.filter(function (k) { return !hidden[k]; });
-    // 左侧：从最左边起连续的「勾选 / 序号 / 委托编号」
+    // 左侧：从最左边起连续的固定列（样品台账钉样品编号，其它页钉委托编号）
     var leftKeys = [];
+    var leftPin = pinLeftLabels();
+    var stickyPin = pinStickyLabels();
     for (var i = 0; i < vis.length; i++) {
-      if (PIN_LEFT_LABELS.indexOf(labelOfKey(vis[i])) < 0) break;
+      if (leftPin.indexOf(labelOfKey(vis[i])) < 0) break;
       leftKeys.push(vis[i]);
     }
-    var hasSticky = leftKeys.some(function (k) { return PIN_STICKY_LABELS.indexOf(labelOfKey(k)) >= 0; });
+    var hasSticky = leftKeys.some(function (k) { return stickyPin.indexOf(labelOfKey(k)) >= 0; });
     // 表里没有「序号 / 委托编号」（如人员、设备、字典类台账）时，退回按位置钉住头两列，别把原有的冻结弄丢
     if (!hasSticky) leftKeys = vis.slice(0, 2);
     var rightKeys = [];

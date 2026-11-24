@@ -92,6 +92,7 @@
   <script src="js/receive-history-mock.js"></script>
   <script src="js/label-cert-config.js"></script>
   <script src="js/label-cert-samples.js"></script>
+  <script src="js/sample-ledger-store.js"></script>
   <script src="js/label-cert-render.js"></script>
   <script src="js/short-link-qr.js"></script>
   <script src="js/prototype-annotation.js"></script>
@@ -101,6 +102,7 @@
     var entrustCodes = (params.get('codes') || params.get('code') || 'SC2026/0079').split(',').filter(Boolean);
     var sampleNos = (params.get('nos') || '').split(',').filter(Boolean);
     if (params.get('from') === 'qualified') document.getElementById('backLink').href = 'cert-qualified-print.html';
+    if (params.get('from') === 'ledger') document.getElementById('backLink').href = 'sample-ledger.html';
 
     var SAMPLE_BY_NO = {
       'SC2026/00790101': { sampleNo: 'SC2026/00790101', entrustNo: 'SC2026/0079', name: '绝缘操作杆', model: '10kV', receiveDate: '2026-07-09', clientName: '杭州数蚕智能科技有限公司', detectStatus: '已检测', cat: 'aqgqj', masterId: 'rod' },
@@ -155,18 +157,44 @@
       });
     }
 
-    /* 统一数据源：委托下有哪些样品一律取 js/entrust-mock.js（与合格证、委托详情同源），
-     * 只有共享数据缺失时才退回本页写死的样品表 */
+    function pushFromLedger(led) {
+      pushSample({
+        sampleNo: led.sampleNo,
+        entrustNo: led.code,
+        name: led.name,
+        spec: led.spec || '',
+        model: led.model || '',
+        receiveDate: led.receivedAt && led.receivedAt !== '—' ? led.receivedAt : '',
+        clientName: led.customer,
+        detectStatus: SampleLedger.labelDetectStatus(led),
+        masterId: (window.LabelCertConfig && LabelCertConfig.masterIdFromName(led.name)) || 'rod',
+        cat: (window.SampleDataStore && SampleDataStore.catKeyOfName && SampleDataStore.catKeyOfName(led.name)) || 'aqgqj'
+      });
+    }
+
+    /* 样品台账点「打印标签」优先用台账样品，避免 LabelCertSamples 按委托号兜底成另一件样品。
+     * 其余入口仍取 js/entrust-mock.js（与合格证、委托详情同源）。 */
+    var ledgerHits = [];
+    if (sampleNos.length && window.SampleLedger) {
+      sampleNos.forEach(function (no) {
+        var led = SampleLedger.get(no.trim());
+        if (led) ledgerHits.push(led);
+      });
+    }
     var unified = window.LabelCertSamples
       ? (sampleNos.length ? LabelCertSamples.byNos(sampleNos) : LabelCertSamples.ofCodes(entrustCodes))
       : null;
-    if (unified && unified.length) {
+    if (ledgerHits.length && ledgerHits.length === sampleNos.length) {
+      ledgerHits.forEach(pushFromLedger);
+    } else if (unified && unified.length) {
       allSamples = unified;
     } else if (sampleNos.length) {
       sampleNos.forEach(function (no) {
         var s = SAMPLE_BY_NO[no.trim()];
         if (s) pushSample(s);
-        else pushSample({
+        else if (window.SampleLedger && SampleLedger.get(no.trim())) {
+          pushFromLedger(SampleLedger.get(no.trim()));
+        } else pushSample({
           sampleNo: no.trim(),
           entrustNo: '',
           name: '绝缘操作杆',

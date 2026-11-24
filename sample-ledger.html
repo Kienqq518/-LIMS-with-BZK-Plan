@@ -16,6 +16,12 @@
     .st-ok { background: #dcfce7; color: #15803d; }
     .st-ng { background: #fef2f2; color: #b91c1c; }
     .st-exp { background: #f1f5f9; color: #475569; }
+    .st-keep { background: #ecfeff; color: #0e7490; }
+    .st-done { background: #f1f5f9; color: #475569; }
+    .st-back { background: #fff7ed; color: #c2410c; }
+    .overdue-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #fef2f2; color: #b91c1c; font-size: 11px; line-height: 16px; }
+    .op-link { color: #2563eb; white-space: nowrap; }
+    .op-link:hover { text-decoration: underline; }
     .back-tag { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px; background: #fff7ed; color: #c2410c; font-size: 11px; line-height: 16px; }
     .ms-dropdown { position: relative; flex: 1; min-width: 0; }
     .ms-trigger {
@@ -116,8 +122,14 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">状态</label>
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">流转状态</label>
           <select id="q_status" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">全部</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="w-28 flex-shrink-0 text-right text-sm text-slate-600">检测结果</label>
+          <select id="q_result" class="flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500">
             <option value="">全部</option>
           </select>
         </div>
@@ -150,14 +162,14 @@
               <th class="whitespace-nowrap border border-slate-200 px-3 py-2 font-medium">样品编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">委托编号</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">样品名称</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">流转状态</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">检测结果</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">当前节点</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">委托日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">收样日期</th>
+              <th class="border border-slate-200 px-3 py-2 font-medium">要求完成日期</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">样品大类</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">客户单位</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">委托日期</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">要求完成日期</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">当前节点</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">状态</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">检测进度</th>
-              <th class="border border-slate-200 px-3 py-2 font-medium">存放位置</th>
               <th class="border border-slate-200 px-3 py-2 font-medium">操作</th>
             </tr>
           </thead>
@@ -216,12 +228,20 @@
         el.classList.add('show');
         setTimeout(function () { el.classList.remove('show'); }, 1800);
       }
-      function statusClass(st) {
+      function flowClass(st) {
+        if (st === '留样' || st === '已完成') return 'st st-ok';
+        if (st === '在检') return 'st st-run';
+        if (st === '待审核') return 'st st-wait';
+        if (st === '已处置') return 'st st-done';
+        if (st === '退回') return 'st st-back';
+        if (st === '待检') return 'st st-keep';
+        return 'st st-wait';
+      }
+      function resultClass(st) {
         if (st === '合格') return 'st st-ok';
         if (st === '不合格') return 'st st-ng';
-        if (st === '检测中') return 'st st-run';
         if (st === '已过期') return 'st st-exp';
-        return 'st st-wait';
+        return '';
       }
       function catOf(name) {
         return (window.SampleDataStore && SampleDataStore.catLabelOfNames(name)) || '—';
@@ -273,6 +293,7 @@
           to: range.to,
           nodes: selectedNodes.slice(),
           status: document.getElementById('q_status').value,
+          result: document.getElementById('q_result').value,
           timeliness: document.getElementById('q_time').value,
           sort: document.getElementById('q_sort').value
         };
@@ -287,9 +308,9 @@
         document.getElementById('q_preset').value = q.preset || '';
         document.getElementById('q_from').value = q.from || '';
         document.getElementById('q_to').value = q.to || '';
-        document.getElementById('q_status').value = q.status || q.chip || '';
-        if (document.getElementById('q_status').value === '过期') document.getElementById('q_status').value = '已过期';
+        document.getElementById('q_status').value = q.status || '';
         if (document.getElementById('q_status').value === '全部') document.getElementById('q_status').value = '';
+        document.getElementById('q_result').value = q.result || '';
         document.getElementById('q_time').value = q.timeliness || '';
         document.getElementById('q_sort').value = q.sort || 'order-desc';
         var nodes = q.nodes;
@@ -303,12 +324,18 @@
         L.persistQuery(q);
       }
 
-      function statusHtml(s) {
-        var cls = statusClass(s.status);
-        if (s.status === '合格') {
-          return '<a class="' + cls + '" href="cert-print-single.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.status) + '</a>';
+      function flowHtml(s) {
+        var st = L.flowStatus(s);
+        return '<span class="' + flowClass(st) + '">' + esc(st) + '</span>';
+      }
+      function resultHtml(s) {
+        var st = L.resultLabel(s);
+        if (st === '/') return '<span class="text-slate-400">/</span>';
+        var cls = resultClass(st);
+        if (st === '合格') {
+          return '<a class="' + cls + '" href="cert-print-single.html?code=' + encodeURIComponent(s.code) + '">' + esc(st) + '</a>';
         }
-        return '<span class="' + cls + '">' + esc(s.status) + '</span>';
+        return '<span class="' + cls + '">' + esc(st) + '</span>';
       }
 
       window.renderTable = function renderTable() {
@@ -326,25 +353,29 @@
         }
         emptyBox.classList.add('hidden');
         body.innerHTML = lastRows.map(function (s, i) {
-          var flow = L.currentFlow(s);
-          var node = L.flowLabel(flow);
-          var back = flow.direction === 'back'
-            ? '<span class="back-tag">回退</span>'
-            : (L.hasBack(s) ? '<span class="back-tag">含回退</span>' : '');
+          var node = L.taskNode(s);
+          var back = L.hasBack(s) ? '<span class="back-tag">含回退</span>' : '';
+          var overdue = L.signOverdue(s);
+          var overdueTag = overdue.overdue ? '<span class="overdue-tag">' + esc(overdue.text) + '</span>' : '';
+          var printHref = 'label-print-preview.html?nos=' + encodeURIComponent(s.sampleNo) + '&code=' + encodeURIComponent(s.code) + '&from=ledger';
           return '<tr>' +
             '<td class="border border-slate-200 px-3 py-2">' + (i + 1) + '</td>' +
-            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="sample-ledger-detail.html?no=' + encodeURIComponent(s.sampleNo) + '">' + esc(s.sampleNo) + '</a></td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="sample-ledger-detail.html?no=' + encodeURIComponent(s.sampleNo) + '">' + esc(s.sampleNo) + '</a>' + overdueTag + '</td>' +
             '<td class="whitespace-nowrap border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.code) + '</a></td>' +
             '<td class="border border-slate-200 px-3 py-2">' + esc(s.name) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + flowHtml(s) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + resultHtml(s) + '</td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' + esc(node) + back + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(s.orderDate) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(s.receivedAt) + '</td>' +
+            '<td class="border border-slate-200 px-3 py-2">' + esc(s.due) + '</td>' +
             '<td class="border border-slate-200 px-3 py-2" data-cat-col>' + esc(catOf(s.name)) + '</td>' +
             '<td class="border border-slate-200 px-3 py-2">' + esc(s.customer) + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2">' + esc(s.orderDate) + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2">' + esc(s.due) + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2">' + esc(node) + back + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2">' + statusHtml(s) + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2">' + esc(L.progressText(s)) + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2">' + esc(s.place) + '</td>' +
-            '<td class="border border-slate-200 px-3 py-2"><a class="text-blue-600 hover:underline" href="sample-ledger-detail.html?no=' + encodeURIComponent(s.sampleNo) + '">查看</a></td>' +
+            '<td class="whitespace-nowrap border border-slate-200 px-3 py-2">' +
+              '<a class="op-link" href="sample-ledger-detail.html?no=' + encodeURIComponent(s.sampleNo) + '">查看</a>' +
+              '<span class="px-1 text-slate-300">|</span>' +
+              '<a class="op-link" href="' + printHref + '">打印标签</a>' +
+            '</td>' +
             '</tr>';
         }).join('');
         document.getElementById('totalText').textContent = '共 ' + lastRows.length + ' 条';
@@ -361,9 +392,9 @@
       window.doExport = function () {
         var rows = lastRows.length ? lastRows : L.query(readForm());
         if (!rows.length) { toast('没有可导出的样品'); return; }
-        var lines = [['样品编号', '委托编号', '样品名称', '样品大类', '客户单位', '委托日期', '要求完成日期', '当前节点', '状态', '检测进度', '存放位置']];
+        var lines = [['样品编号', '委托编号', '样品名称', '流转状态', '检测结果', '当前节点', '委托日期', '收样日期', '要求完成日期', '样品大类', '客户单位']];
         rows.forEach(function (s) {
-          lines.push([s.sampleNo, s.code, s.name, catOf(s.name), s.customer, s.orderDate, s.due, L.flowLabel(L.currentFlow(s)), s.status, L.progressText(s), s.place]);
+          lines.push([s.sampleNo, s.code, s.name, L.flowStatus(s), L.resultLabel(s), L.taskNode(s), s.orderDate, s.receivedAt, s.due, catOf(s.name), s.customer]);
         });
         var csv = '\ufeff' + lines.map(function (r) {
           return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(',');
@@ -383,6 +414,9 @@
 
       document.getElementById('q_status').innerHTML = '<option value="">全部</option>' + L.LIST_FILTERS.map(function (n) {
         return '<option>' + n + '</option>';
+      }).join('');
+      document.getElementById('q_result').innerHTML = '<option value="">全部</option>' + L.RESULT_FILTERS.map(function (n) {
+        return '<option value="' + esc(n) + '">' + esc(n) + '</option>';
       }).join('');
       document.getElementById('q_nodes_panel').innerHTML = L.FLOW_NODES.map(function (n) {
         return '<label class="ms-option"><input type="checkbox" value="' + esc(n) + '" /><span>' + esc(n) + '</span></label>';
@@ -430,7 +464,7 @@
               id: 'ledger-query', selector: '[data-annotate="ledger-query"]', position: 'bottom-left', wide: true, tag: '样品台账',
               title: '全库样品查询',
               content: '<strong>需求逻辑：</strong>样品台账是样品管理的只读全库查询，一行一件样品，不替代收样 / 发样 / 还样 / 退样。<br>' +
-                '<strong>展示规则：</strong>查询区为 Web 端下拉与输入，不含胶囊快捷标签。状态、当前节点、检测时效都在条件区。<br>' +
+                '<strong>展示规则：</strong>查询区为 Web 端下拉与输入。流转状态、检测结果、当前节点、检测时效都在条件区。样品编号后对「要求完成日期前未完成报告签发」的样品标逾期天数。<br>' +
                 '<strong>交互逻辑：</strong>查询条件与排序写入 sessionStorage，从详情返回时原样还原。'
             },
             {
@@ -442,7 +476,7 @@
             {
               id: 'ledger-nodes', selector: '[data-annotate="ledger-nodes"]', position: 'bottom-left', tag: '样品台账',
               title: '当前节点可多选',
-              content: '<strong>交互逻辑：</strong>当前节点是勾选下拉，可同时筛留样、退样、检测中等。不选表示全部节点。'
+              content: '<strong>交互逻辑：</strong>当前节点是勾选下拉，选项为委托登记到任务完成的全部流程节点。不选表示全部节点。'
             }
           ]
         });

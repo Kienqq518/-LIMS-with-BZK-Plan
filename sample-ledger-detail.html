@@ -16,6 +16,10 @@
     .st-ok { background: #dcfce7; color: #15803d; }
     .st-ng { background: #fef2f2; color: #b91c1c; }
     .st-exp { background: #f1f5f9; color: #475569; }
+    .st-done { background: #f1f5f9; color: #475569; }
+    .st-back { background: #fff7ed; color: #c2410c; }
+    .st-keep { background: #ecfeff; color: #0e7490; }
+    .overdue-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #fef2f2; color: #b91c1c; font-size: 11px; line-height: 16px; }
     .info-table { width: 100%; border-collapse: collapse; }
     .info-table td { border: 1px solid #e5e7eb; padding: 8px 12px; font-size: 13px; vertical-align: top; }
     .info-table .lbl { background: #f8fafc; color: #64748b; white-space: nowrap; width: 130px; }
@@ -29,6 +33,8 @@
     .info-tab:hover { color: #2563eb; }
     .panel { display: none; }
     .panel.is-on { display: block; }
+    .sec-title { margin: 16px 0 8px; font-size: 13px; font-weight: 600; color: #334155; }
+    .sec-title:first-child { margin-top: 0; }
     .back-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #fff7ed; color: #c2410c; font-size: 11px; line-height: 16px; }
     .xor-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #eff6ff; color: #1d4ed8; font-size: 11px; line-height: 16px; }
     .step { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; color: #94a3b8; }
@@ -86,12 +92,19 @@
           return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
         });
       }
-      function statusClass(st) {
+      function flowClass(st) {
+        if (st === '留样' || st === '已完成') return 'st st-ok';
+        if (st === '在检') return 'st st-run';
+        if (st === '已处置') return 'st st-done';
+        if (st === '退回') return 'st st-back';
+        if (st === '待检') return 'st st-keep';
+        return 'st st-wait';
+      }
+      function resultClass(st) {
         if (st === '合格') return 'st st-ok';
         if (st === '不合格') return 'st st-ng';
-        if (st === '检测中') return 'st st-run';
         if (st === '已过期') return 'st st-exp';
-        return 'st st-wait';
+        return '';
       }
       if (!s) {
         wrap.innerHTML = '<div class="rounded bg-white p-10 text-center shadow-sm">' +
@@ -100,22 +113,25 @@
         return;
       }
 
-      var flow = L.currentFlow(s);
-      var node = L.flowLabel(flow);
-      var taskName = L.TASK_STEPS[s.taskStep - 1] || '—';
+      var taskName = L.taskNode(s);
+      var flowSt = L.flowStatus(s);
+      var resultSt = L.resultLabel(s);
+      var overdue = L.signOverdue(s);
       var doneN = s.tests.filter(function (t) { return t.state === '已完成'; }).length;
       var pct = s.tests.length ? Math.round(doneN / s.tests.length * 100) : 0;
       var cat = (window.SampleDataStore && SampleDataStore.catLabelOfNames(s.name)) || '—';
       var xorCopy = s.afterReturn === 'keep' ? '还样后走留样，不出现退样' : (s.afterReturn === 'client' ? '还样后走退样，不出现留样' : '尚未还样，留样 / 退样都不出现');
+      var recvNote = L.receiveNote(s);
 
       function kv(label, val) {
         return '<td class="lbl">' + esc(label) + '</td><td class="val">' + val + '</td>';
       }
-      function statusHtml() {
-        if (s.status === '合格') {
-          return '<a class="' + statusClass(s.status) + '" href="cert-print-single.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.status) + '</a>';
+      function pairTable(rows) {
+        var html = '<table class="info-table"><tbody>';
+        for (var i = 0; i < rows.length; i += 2) {
+          html += '<tr>' + rows[i] + (rows[i + 1] || kv('', '')) + '</tr>';
         }
-        return '<span class="' + statusClass(s.status) + '">' + esc(s.status) + '</span>';
+        return html + '</tbody></table>';
       }
       function testState(t) {
         if (t.result === '不合格') return '<span class="st st-ng">不合格</span>';
@@ -128,16 +144,20 @@
         if (s.reportStatus === '审核中') return 'report-review.html';
         return 'report-compile-edit.html?entrust=' + encodeURIComponent(s.code);
       }
+      function resultBadge() {
+        if (resultSt === '/') return '<span class="text-slate-400">/</span>';
+        if (resultSt === '合格') {
+          return '<a class="' + resultClass(resultSt) + '" href="cert-print-single.html?code=' + encodeURIComponent(s.code) + '">' + esc(resultSt) + '</a>';
+        }
+        return '<span class="' + resultClass(resultSt) + '">' + esc(resultSt) + '</span>';
+      }
 
       var recs = L.recordsOf(s);
       var tabs = [
-        { id: 'entrust', name: '委托信息' },
         { id: 'sample', name: '样品信息' },
+        { id: 'detect', name: '检测信息' },
         { id: 'flow', name: '流转台账' },
-        { id: 'progress', name: '检测进度' },
-        { id: 'result', name: '检测结果' },
-        { id: 'records', name: '原始记录' },
-        { id: 'report', name: '报告' }
+        { id: 'report', name: '结果报告' }
       ];
       var defaultTab = 'flow';
 
@@ -148,12 +168,13 @@
               '<a href="sample-ledger.html" class="text-sm text-blue-600 hover:underline"><i class="fa fa-arrow-left"></i> 返回样品台账</a>' +
               '<div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">' +
                 '<span class="text-base font-semibold text-slate-800">' + esc(s.sampleNo) + '</span>' +
+                (overdue.overdue ? '<span class="overdue-tag">' + esc(overdue.text) + '</span>' : '') +
                 '<span class="text-sm text-slate-700">' + esc(s.name) + '</span>' +
-                statusHtml() +
-                '<span class="text-sm text-slate-500">当前节点 ' + esc(node) + '</span>' +
+                '<span class="' + flowClass(flowSt) + '">' + esc(flowSt) + '</span>' +
+                resultBadge() +
               '</div>' +
               '<p class="mt-1 text-sm text-slate-500">委托编号 <a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.code) + '</a>' +
-                '　任务节点 <button type="button" id="toggleSteps" class="text-blue-600 hover:underline" data-annotate="ledger-task">' + esc(taskName) + '</button></p>' +
+                '　当前节点 <button type="button" id="toggleSteps" class="text-blue-600 hover:underline" data-annotate="ledger-task">' + esc(taskName) + '</button></p>' +
             '</div>' +
             '<p class="text-xs text-slate-400">只读台账，不能在此收样、发样、领样、还样、退样或改判。</p>' +
           '</div>' +
@@ -173,7 +194,67 @@
           '</div>' +
           '<div class="p-4">' +
 
+            '<div class="panel" id="panel-sample">' +
+              '<h3 class="sec-title">样品标识</h3>' +
+              pairTable([
+                kv('样品编号', esc(s.sampleNo)),
+                kv('样品名称', esc(s.name)),
+                kv('样品大类', esc(cat)),
+                kv('产品标记', esc(s.mark || '—')),
+                kv('型号 / 分类', esc(s.model || '—')),
+                kv('规格', esc(s.spec || '—')),
+                kv('检测类别', esc(s.category)),
+                kv('数量', esc(s.qty))
+              ]) +
+              '<h3 class="sec-title">来源信息</h3>' +
+              pairTable([
+                kv('委托编号', '<a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.code) + '</a>'),
+                kv('委托单位', esc(s.customer)),
+                kv('委托日期', esc(s.orderDate)),
+                kv('任务类型', esc(s.taskType)),
+                kv('要求完成日期', esc(s.due)),
+                kv('生产厂家', esc(s.plant)),
+                kv('送样人', esc(s.sender || '—')),
+                kv('送样方式', esc(s.sendWay || '—'))
+              ]) +
+              '<h3 class="sec-title">接收信息</h3>' +
+              pairTable([
+                kv('收样日期', esc(s.receivedAt)),
+                kv('收样人', esc(s.receiver)),
+                kv('收样状态', esc(s.receiveStatus || (s.receivedAt && s.receivedAt !== '—' ? '—' : '尚未收样'))),
+                kv('到样情况', esc(recvNote || (s.receivedAt && s.receivedAt !== '—' ? '—' : '尚未收样'))),
+                kv('下次再检日期', esc(s.recheckAt || '—')),
+                kv('', '')
+              ]) +
+            '</div>' +
+
+            '<div class="panel" id="panel-detect">' +
+              '<h3 class="sec-title">检测信息</h3>' +
+              '<div class="mb-3 flex items-center gap-3 text-sm text-slate-500">' +
+                '<span>已完成 ' + doneN + '/' + s.tests.length + '</span>' +
+                '<div class="bar flex-1"><span style="width:' + pct + '%"></span></div>' +
+              '</div>' +
+              '<table class="data-table"><thead><tr>' +
+                '<th>试验项</th><th>检测依据</th><th>检测员</th><th>状态</th><th>完成时间</th><th>说明</th>' +
+              '</tr></thead><tbody>' +
+              s.tests.map(function (t) {
+                var std = /电缆/.test(s.name) ? 'GB/T 12706.2-2020' : 'DL/T 976-2017';
+                return '<tr><td>' + esc(t.name) + '</td><td>' + esc(std) + '</td><td>' + esc(t.owner) + '</td><td>' + testState(t) + '</td>' +
+                  '<td>' + esc(t.finishedAt || '—') + '</td><td>' + esc(t.remark || '—') + '</td></tr>';
+              }).join('') +
+              '</tbody></table>' +
+              '<h3 class="sec-title">原始记录</h3>' +
+              (recs.length
+                ? ('<table class="data-table"><thead><tr><th>记录单</th><th>试验项</th><th>生成时间</th><th>操作</th></tr></thead><tbody>' +
+                  recs.map(function (r) {
+                    return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.item) + '</td><td>' + esc(r.time) + '</td>' +
+                      '<td><a class="text-blue-600 hover:underline" href="original-record-list.html">查看</a></td></tr>';
+                  }).join('') + '</tbody></table>')
+                : '<p class="text-sm text-slate-400">尚无已完成试验，未生成原始记录。</p>') +
+            '</div>' +
+
             '<div class="panel' + (defaultTab === 'flow' ? ' is-on' : '') + '" id="panel-flow" data-annotate="ledger-xor">' +
+              '<p class="mb-2 text-sm text-slate-600">当前存放位置 <b class="font-medium text-slate-800">' + esc(s.place || '—') + '</b></p>' +
               '<p class="mb-3 text-xs text-slate-400">' + esc(xorCopy) + '</p>' +
               '<table class="data-table"><thead><tr>' +
                 '<th>节点</th><th>状态</th><th>办理人</th><th>地点</th><th>时间</th><th>说明</th>' +
@@ -198,57 +279,27 @@
               '</tbody></table>' +
             '</div>' +
 
-            '<div class="panel' + (defaultTab === 'entrust' ? ' is-on' : '') + '" id="panel-entrust">' +
-              '<table class="info-table"><tbody>' +
-                '<tr>' + kv('委托编号', '<a class="text-blue-600 hover:underline" href="entrust-detail.html?code=' + encodeURIComponent(s.code) + '">' + esc(s.code) + '</a>') + kv('委托日期', esc(s.orderDate)) + '</tr>' +
-                '<tr>' + kv('委托单位', esc(s.customer)) + kv('任务类型', esc(s.taskType)) + '</tr>' +
-                '<tr>' + kv('要求检测日期', esc(s.due)) + kv('样品大类', esc(cat)) + '</tr>' +
-              '</tbody></table>' +
-            '</div>' +
-
-            '<div class="panel" id="panel-sample">' +
-              '<table class="info-table"><tbody>' +
-                '<tr>' + kv('样品编号', esc(s.sampleNo)) + kv('产品标记', esc(s.mark || '—')) + '</tr>' +
-                '<tr>' + kv('型号 / 分类', esc(s.model || '—')) + kv('规格', esc(s.spec || '—')) + '</tr>' +
-                '<tr>' + kv('检测类别', esc(s.category)) + kv('数量', esc(s.qty)) + '</tr>' +
-                '<tr>' + kv('生产厂家', esc(s.plant)) + kv('下次再检日期', esc(s.recheckAt || '—')) + '</tr>' +
-              '</tbody></table>' +
-            '</div>' +
-
-            '<div class="panel" id="panel-progress">' +
-              '<div class="mb-3 flex items-center gap-3 text-sm text-slate-500">' +
-                '<span>已完成 ' + doneN + '/' + s.tests.length + '</span>' +
-                '<div class="bar flex-1"><span style="width:' + pct + '%"></span></div>' +
-              '</div>' +
-              '<table class="data-table"><thead><tr>' +
-                '<th>试验项</th><th>检测员</th><th>状态</th><th>完成时间</th><th>说明</th>' +
-              '</tr></thead><tbody>' +
-              s.tests.map(function (t) {
-                return '<tr><td>' + esc(t.name) + '</td><td>' + esc(t.owner) + '</td><td>' + testState(t) + '</td>' +
-                  '<td>' + esc(t.finishedAt || '—') + '</td><td>' + esc(t.remark || '—') + '</td></tr>';
-              }).join('') +
-              '</tbody></table>' +
-            '</div>' +
-
-            '<div class="panel" id="panel-result">' +
-              '<p class="text-sm text-slate-600">' + esc(L.resultCopy(s)) +
-                (s.status === '合格' ? ' <a class="text-blue-600 hover:underline" href="cert-print-single.html?code=' + encodeURIComponent(s.code) + '">打开合格证</a>' : '') +
-              '</p>' +
-            '</div>' +
-
-            '<div class="panel" id="panel-records">' +
-              (recs.length
-                ? ('<table class="data-table"><thead><tr><th>记录单</th><th>试验项</th><th>生成时间</th><th>操作</th></tr></thead><tbody>' +
-                  recs.map(function (r) {
-                    return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.item) + '</td><td>' + esc(r.time) + '</td>' +
-                      '<td><a class="text-blue-600 hover:underline" href="original-record-list.html">查看</a></td></tr>';
-                  }).join('') + '</tbody></table>')
-                : '<p class="text-sm text-slate-400">尚无已完成试验，未生成原始记录。</p>') +
-            '</div>' +
-
             '<div class="panel" id="panel-report">' +
+              '<h3 class="sec-title">检测结论</h3>' +
+              pairTable([
+                kv('检测结果', resultBadge()),
+                kv('出具时间', esc(s.resultAt || '—')),
+                kv('结论说明', esc(L.resultCopy(s))),
+                kv('', '')
+              ]) +
+              '<h3 class="sec-title">合格证</h3>' +
+              (resultSt === '合格'
+                ? ('<p class="text-sm"><a class="text-blue-600 hover:underline" href="cert-print-single.html?code=' + encodeURIComponent(s.code) + '"><i class="fa fa-file-text-o mr-1"></i>' + esc(s.sampleNo) + ' 合格证</a></p>')
+                : '<p class="text-sm text-slate-400">该样品未出具合格证。</p>') +
+              '<h3 class="sec-title">报告文档</h3>' +
               (s.reportNo
-                ? ('<table class="info-table"><tbody><tr>' + kv('报告编号', '<a class="text-blue-600 hover:underline" href="' + reportHref() + '">' + esc(s.reportNo) + '</a>') + kv('状态', esc(s.reportStatus)) + '</tr></tbody></table>')
+                ? ('<table class="info-table"><tbody><tr>' +
+                  kv('报告编号', '<a class="text-blue-600 hover:underline" href="' + reportHref() + '">' + esc(s.reportNo) + '</a>') +
+                  kv('报告状态', esc(s.reportStatus || '—')) +
+                  '</tr><tr>' +
+                  kv('签发日期', esc(s.signedAt || '—')) +
+                  kv('当前节点', esc(taskName)) +
+                  '</tr></tbody></table>')
                 : '<p class="text-sm text-slate-400">该样品尚未生成报告。</p>') +
             '</div>' +
 
@@ -274,15 +325,15 @@
           annotations: [
             {
               id: 'ledger-task', selector: '[data-annotate="ledger-task"]', position: 'bottom-left', tag: '样品台账',
-              title: '委托任务 18 步',
-              content: '<strong>需求逻辑：</strong>页首任务节点是委托任务进度，不是样品实物路径。<br>' +
-                '<strong>交互逻辑：</strong>点任务节点展开 18 步：已过打勾，当前标「当前」，未到灰色。只读。'
+              title: '委托任务流程节点',
+              content: '<strong>需求逻辑：</strong>页首当前节点是委托任务进度，从委托登记到任务完成。<br>' +
+                '<strong>交互逻辑：</strong>点当前节点展开各步：已过打勾，当前标「当前」，未到灰色。只读。'
             },
             {
               id: 'ledger-xor', selector: '[data-annotate="ledger-xor"]', position: 'top-left', wide: true, tag: '样品台账',
               title: '还样后留样或退样二选一',
               content: '<strong>需求逻辑：</strong>样品实物路径在还样之后只能走留样或退样，不能两条都走。<br>' +
-                '<strong>展示规则：</strong>详情用 tab 切换各块。流转台账是表格：节点、状态、办理人、地点、时间、说明。还样后<strong>留样或退样二选一</strong>。未还样则两条都不出现。回退行橙色标「回退」。'
+                '<strong>展示规则：</strong>流转台账含当前存放位置。还样后<strong>留样或退样二选一</strong>。未还样则两条都不出现。回退行橙色标「回退」。'
             }
           ]
         });

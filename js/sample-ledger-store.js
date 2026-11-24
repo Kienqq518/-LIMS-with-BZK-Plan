@@ -3,8 +3,8 @@
  * STORAGE_KEY 升版本后浏览器才会吃到新种子。
  */
 (function (global) {
-  var STORAGE_KEY = 'lims-sample-ledger-v1';
-  var QUERY_KEY = 'lims-sample-ledger-query';
+  var STORAGE_KEY = 'lims-sample-ledger-v3';
+  var QUERY_KEY = 'lims-sample-ledger-query-v3';
 
   var TASK_STEPS = [
     '委托登记', '样品收样', '委托确认', '费用审核', '样品制备', '样品发样',
@@ -12,9 +12,11 @@
     '报告签发', '报告处理', '收费审批', '报告发放', '任务归档', '任务完成'
   ];
   var SPINE = ['委托登记', '收样', '制备', '发样', '领样', '检测', '还样'];
-  var LIST_FILTERS = ['待收样', '检测中', '已检测', '合格', '不合格', '已过期'];
+  var LIST_FILTERS = ['待接收', '待检', '在检', '待审核', '已完成', '留样', '已处置', '退回'];
+  var RESULT_FILTERS = ['合格', '不合格', '已过期', '/'];
   var PHASES = ['委托登记', '收样', '发样', '领样', '检测中', '检测完成', '待退样', '留库', '退回客户'];
-  var FLOW_NODES = ['委托登记', '收样', '制备', '发样', '领样', '检测中', '还样', '留样', '退样', '退回发样'];
+  var FLOW_NODES = TASK_STEPS.slice();
+  var SIGN_STEP = 13;
   var QUERY_SORTS = [
     { id: 'order-desc', name: '委托日期', hint: '最新在前' },
     { id: 'order-asc', name: '委托日期', hint: '最早在前' },
@@ -88,7 +90,8 @@
       recheckAt: '2027-04-18', returnApplied: false, afterReturn: 'keep',
       receiver: '赵工', receivedAt: '2026-10-16', orderDate: '2026-10-16', due: '2026-10-20',
       qty: '2 根', category: '委托试验', plant: '远东工器具', place: '留样室', resultAt: '2026-10-18 16:20',
-      reportNo: 'SC2026/0356-01', reportStatus: '已签发',
+      sender: '王客户', sendWay: '送样', receiveStatus: '完好',
+      reportNo: 'SC2026/0356-01', reportStatus: '已签发', signedAt: '2026-10-18',
       tests: [tPass(RES, '王工', '2026-10-18 11:20'), tPass(BEND, '陈工', '2026-10-18 16:20')],
       ledger: buildLedger([
         done('委托登记', '李工', '2026-10-16 09:12', '业务室', '委托已受理'),
@@ -110,6 +113,7 @@
       recheckAt: '', returnApplied: false, afterReturn: '',
       receiver: '赵工', receivedAt: '2026-10-16', orderDate: '2026-10-16', due: '2026-11-25',
       qty: '1 架', category: '委托试验', plant: '远东工器具', place: '检测室 2', resultAt: '',
+      sender: '王客户', sendWay: '送样', receiveStatus: '完好',
       reportNo: '', reportStatus: '',
       tests: [tPass(RES, '王工', '2026-11-19 11:40'), tWait(BEND, '王工', '检测中')],
       ledger: buildLedger([
@@ -127,6 +131,7 @@
       recheckAt: '', returnApplied: false, afterReturn: '',
       receiver: '尚未收样', receivedAt: '—', orderDate: '2026-11-18', due: '2026-11-30',
       qty: '1 条', category: '例行试验', plant: '杭工', place: '—', resultAt: '',
+      sender: '', sendWay: '', receiveStatus: '',
       reportNo: '', reportStatus: '',
       tests: [tWait(APP, '待分配'), tWait(RES, '待分配')],
       ledger: buildLedger([
@@ -140,6 +145,7 @@
       recheckAt: '', returnApplied: false, afterReturn: 'client',
       receiver: '赵工', receivedAt: '2026-10-08', orderDate: '2026-10-08', due: '2026-10-18',
       qty: '1 根', category: '委托试验', plant: '杭工', place: '已退回客户', resultAt: '2026-10-17 15:10',
+      sender: '刘工', sendWay: '送样', receiveStatus: '完好',
       reportNo: 'SC2026/0341-01', reportStatus: '审核中',
       tests: [tFail(RES, '王工', '2026-10-17 11:00', '泄漏电流超标'), tPass(BEND, '陈工', '2026-10-17 15:10')],
       ledger: buildLedger([
@@ -160,6 +166,7 @@
       recheckAt: '', returnApplied: false, afterReturn: '',
       receiver: '李工', receivedAt: '2026-09-20', orderDate: '2026-09-20', due: '2026-09-28',
       qty: '1 根', category: '抽样试验', plant: '远东电缆', place: '检测室 2', resultAt: '',
+      sender: '李客户', sendWay: '上门', receiveStatus: '完好',
       reportNo: '', reportStatus: '',
       tests: [tWait(RES, '王工', '检测中'), tWait(APP, '王工')],
       ledger: buildLedger([
@@ -177,6 +184,7 @@
       recheckAt: '', returnApplied: false, afterReturn: '',
       receiver: '李工', receivedAt: '2026-11-10', orderDate: '2026-11-10', due: '2026-11-20',
       qty: '1 根', category: '委托试验', plant: '杭工', place: '检测室 2', resultAt: '',
+      sender: '陈工', sendWay: '送样', receiveStatus: '完好',
       reportNo: '', reportStatus: '',
       tests: [tWait(RES, '王工', '检测中'), tWait(BEND, '陈工')],
       ledger: buildLedger([
@@ -233,6 +241,56 @@
     return { tone: 'normal', days: left, text: '' };
   }
 
+  function taskNode(s) {
+    return TASK_STEPS[(s.taskStep || 1) - 1] || '—';
+  }
+  function isSigned(s) {
+    return (s.taskStep || 0) >= SIGN_STEP;
+  }
+  function signOverdue(s) {
+    if (isSigned(s)) {
+      var at = String(s.signedAt || '').slice(0, 10);
+      if (!at) return { overdue: false, days: 0, text: '' };
+      var late = dueOffset(s.due, at);
+      if (late >= 0) return { overdue: false, days: 0, text: '' };
+      var n = Math.max(1, -late);
+      return { overdue: true, days: n, text: '逾期' + n + '天' };
+    }
+    var left = dueOffset(s.due);
+    if (left >= 0) return { overdue: false, days: 0, text: '' };
+    var days = Math.max(1, -left);
+    return { overdue: true, days: days, text: '逾期' + days + '天' };
+  }
+  function resultLabel(s) {
+    if (s.status === '合格') return '合格';
+    if (s.status === '不合格') return '不合格';
+    if (s.status === '已过期') return '已过期';
+    return '/';
+  }
+  function flowStatus(s) {
+    if (s.afterReturn === 'keep') return '留样';
+    if (s.afterReturn === 'client') return '已处置';
+    var cur = currentFlow(s);
+    if (cur && cur.direction === 'back') return '退回';
+    if (!isReceived(s)) return '待接收';
+    if (s.taskStep >= SIGN_STEP) return '已完成';
+    if (s.taskStep >= 9) return '待审核';
+    var testing = (s.tests || []).some(function (t) { return t.state === '检测中' || t.state === '已完成'; });
+    if (testing || s.taskStep >= 8) return '在检';
+    return '待检';
+  }
+  function receiveNote(s) {
+    var rows = (s.ledger || []).filter(function (r) { return r.name === '收样' && r.state === '已完成'; });
+    return rows.length ? rows[rows.length - 1].note : '';
+  }
+  function labelDetectStatus(s) {
+    var flow = flowStatus(s);
+    if (flow === '待接收') return '未收样';
+    if (flow === '待检') return '未检测';
+    if (flow === '已完成' || flow === '留样' || flow === '已处置') return '已检测';
+    return '检测中';
+  }
+
   function currentFlow(s) {
     var active = (s.ledger || []).filter(function (r) { return r.state === '进行中'; });
     if (active.length) return active[active.length - 1];
@@ -267,11 +325,8 @@
 
   function matchesListFilter(s, filter) {
     if (!filter || filter === '全部') return true;
-    if (filter === '待收样') return !isReceived(s);
-    if (filter === '检测中') return s.status === '检测中';
-    if (filter === '已检测') return s.status === '合格' || s.status === '不合格';
-    if (filter === '过期' || filter === '已过期') return s.status === '已过期';
-    return s.status === filter;
+    if (filter === '待收样') return flowStatus(s) === '待接收';
+    return flowStatus(s) === filter;
   }
 
   function inRange(date, from, to) {
@@ -312,14 +367,17 @@
     var nodes = q.nodes;
     if (!nodes && q.node) nodes = Array.isArray(q.node) ? q.node : [q.node];
     if (nodes && nodes.length) {
-      var cur = flowLabel(currentFlow(s));
+      var cur = taskNode(s);
       var hit = false;
       for (var i = 0; i < nodes.length; i++) { if (nodes[i] && nodes[i] === cur) { hit = true; break; } }
       if (!hit) return false;
     }
-    if (q.result && s.status !== q.result) return false;
-    if (q.timeliness === '逾期' && dueUrgency(s.due, s.status).tone !== 'overdue') return false;
-    if (q.timeliness === '未逾期' && dueUrgency(s.due, s.status).tone === 'overdue') return false;
+    if (q.result) {
+      if (resultLabel(s) !== q.result) return false;
+    }
+    var overdue = signOverdue(s).overdue;
+    if (q.timeliness === '逾期' && !overdue) return false;
+    if (q.timeliness === '未逾期' && overdue) return false;
     if (q.phase && !matchesPhase(s, q.phase)) return false;
     if (!matchesListFilter(s, q.status || q.chip)) return false;
     return true;
@@ -381,6 +439,7 @@
     STORAGE_KEY: STORAGE_KEY,
     TASK_STEPS: TASK_STEPS,
     LIST_FILTERS: LIST_FILTERS,
+    RESULT_FILTERS: RESULT_FILTERS,
     PHASES: PHASES,
     FLOW_NODES: FLOW_NODES,
     QUERY_SORTS: QUERY_SORTS,
@@ -391,6 +450,13 @@
     flowLabel: flowLabel,
     flowActor: flowActor,
     dueUrgency: dueUrgency,
+    signOverdue: signOverdue,
+    taskNode: taskNode,
+    flowStatus: flowStatus,
+    resultLabel: resultLabel,
+    receiveNote: receiveNote,
+    labelDetectStatus: labelDetectStatus,
+    isSigned: isSigned,
     testsDone: testsDone,
     resultCopy: resultCopy,
     recordsOf: recordsOf,
