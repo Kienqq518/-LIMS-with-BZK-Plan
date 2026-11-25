@@ -9,7 +9,7 @@
  */
 (function (global) {
   'use strict';
-  var TID = global.TID;
+  var TID = global.TID, TIDP_UTIL = null;
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
@@ -146,8 +146,16 @@
     return out;
   }
 
+  TIDP_UTIL = { esc: esc, $: $, clone: clone, roundBy: roundBy, ROUND_MODES: ROUND_MODES,
+    ROUND_HELP: ROUND_HELP, INTERVALS: INTERVALS, OPS_NUM: OPS_NUM, OPS_TEXT: OPS_TEXT,
+    OPS_ENUM: OPS_ENUM, VAR_KINDS: VAR_KINDS, LOGIC: LOGIC, poolFor: poolFor, specList: specList,
+    specOptions: specOptions, testList: testList, subItemList: subItemList, allVarsOf: allVarsOf,
+    modalShell: function (t, i, ok, l, layer) { modalShell(t, i, ok, l, layer); },
+    host: host, toast: function (m) { (global.toast || alert)(m); } };
+
   var P = { list: [], idx: -1, draft: null, sub: 'ctrl', page: 1, mpage: 1, _rin: '7.325', _rout: '', q: { name: '', symbol: '' } };
   global.TIDP = P;
+  global.TIDPU = TIDP_UTIL;
 
   function normalize(r) {
     var d = blank();
@@ -293,7 +301,10 @@
   function topMask() { var h = host(); return h.lastElementChild; }
   function modalShell(title, inner, onOk, okLabel, layer) {
     var h = host(), li = layer || 0;
-    while (h.children.length > li) h.removeChild(h.lastChild);
+    // 同层重绘也必须先摘掉旧的那一层，否则会叠出两层同名弹窗
+    for (var k = h.children.length - 1; k >= 0; k--) {
+      if (Number(h.children[k].getAttribute('data-layer')) >= li) h.removeChild(h.children[k]);
+    }
     var wrap = document.createElement('div');
     wrap.className = 'pm-mask'; wrap.setAttribute('data-layer', String(li));
     wrap.style.zIndex = String(Z[li]);
@@ -364,7 +375,11 @@
     var varCols = d.mappingType === '组合映射' ? vars : vars.slice(0, 1);
     var head = d.mappingType === '区间映射'
       ? '<th>范围下限（闭区间）</th><th>范围上限（闭区间）</th>'
-      : varCols.map(function (v) { return '<th><span class="req">*</span> ' + esc(v.label) + '</th>'; }).join('');
+      : varCols.map(function (v, vi) {
+          return '<th class="pm-colh' + (d.mappingType === '组合映射' ? ' draggable' : '') + '"' +
+            (d.mappingType === '组合映射' ? ' draggable="true" ondragstart="TIDP.colDrag(' + vi + ',event)" ondragover="TIDP.colOver(event)" ondrop="TIDP.colDrop(' + vi + ')"' : '') +
+            '>' + (d.mappingType === '组合映射' ? '<i class="pm-grip" title="拖动调整自变量列顺序"></i> ' : '<span class="req">*</span> ') + esc(v.label) + '</th>';
+        }).join('');
     var dep = '<th id="pmDepTh">' + esc((d.name || '') + (d.symbol || '')) + (d.unit ? '(' + esc(d.unit) + ')' : '') + '</th>';
     var per = 10, total = Math.max(1, Math.ceil(d.rows.length / per));
     if (P.mpage > total) P.mpage = total;
@@ -434,7 +449,7 @@
         subs.map(function (s) { return '<option' + (s === d.subItem ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join('') + '</select>') : '') +
       '</div>' +
       '<div class="pm-divide">试验预设值配置区域</div>' +
-      '<div class="pm-grid"><div class="pm-fi pm-wide">' + fitemInline('是否开启映射配置', false, sw('mappingOn', d.mappingOn)) + '</div></div>' +
+      '<div class="pm-grid pm-mapsw"><div class="pm-fi pm-wide">' + fitemInline('是否开启映射配置', false, sw('mappingOn', d.mappingOn)) + '</div></div>' +
       (d.mappingOn ? renderMapping() : '<div class="pm-grid">' + fitem('固定值', true, txt('fixedValue', d.fixedValue)) +
         fitem('备注', false, txt('remark', d.remark)) + fitem('排序', false, txt('sort', d.sort)) + '</div>');
     modalShell(P.idx >= 0 ? '编辑试验预设值' : '新增试验预设值', inner, 'TIDP.saveEdit()', '确 定', 0);
@@ -517,6 +532,22 @@
     var d = cur(); if (d.rows.length === 1) { (global.toast || alert)('至少保留一行'); return; }
     d.rows.splice(ri, 1); renderModal();
   };
+  P._coldrag = -1;
+  P.colDrag = function (i, ev) { P._coldrag = i; ev.dataTransfer.effectAllowed = 'move'; };
+  P.colOver = function (ev) { ev.preventDefault(); };
+  P.colDrop = function (i) {
+    var d = cur(), from = P._coldrag;
+    if (from < 0 || from === i) return;
+    function move(arr) { var x = arr.splice(from, 1)[0]; arr.splice(i, 0, x); }
+    move(d.vars.spec);
+    // 规格参数之外的自变量按出现顺序一起挪，保证列与数据对齐
+    var order = allVarsOf(d);
+    d.rows = d.rows.map(function (r) {
+      var out = r.slice(); var x = out.splice(from, 1)[0]; out.splice(i, 0, x); return out;
+    });
+    P._coldrag = -1; renderModal();
+  };
+
   P.page = function (dv) {
     var total = Math.max(1, Math.ceil(cur().rows.length / 10));
     P.mpage = Math.min(total, Math.max(1, P.mpage + dv)); renderModal();
@@ -637,6 +668,7 @@
           '<span class="tid-step"><button onclick="TIDP.setRound(\'digits\',' + (Number(r.digits) - 1) + ')">−</button>' +
           '<input type="text" value="' + esc(r.digits) + '" oninput="TIDP.setRound(\'digits\',this.value)" />' +
           '<button onclick="TIDP.setRound(\'digits\',' + (Number(r.digits) + 1) + ')">＋</button></span> 位</div>') +
+      // PRD §3.4.2.3.3：选「直接取值」时整个边界条件处理模块隐藏
       (isDirect ? '' : '<div class="pm-rrow"><span class="pm-lab">边界条件处理：</span>负数按绝对值修约（对称修约）' +
         '<input type="checkbox" class="flag" checked disabled title="系统强制，不可取消" /></div>') +
       '<div class="pm-divide" style="margin-top:14px">预览效果</div>' +
