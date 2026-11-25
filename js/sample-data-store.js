@@ -387,6 +387,24 @@
   cementSample('po', '普通硅酸盐水泥', 2, '17.0', '42.5');
   cementSample('pc', '复合硅酸盐水泥', 3, '15.0', '32.5');
 
+  /* 判定方案跟随样品：同一样品下所有型号共享同一套映射，早期 mock 把它写在型号层，
+   * 这里统一上提到样品层并从型号层删除，避免「样品层 / 型号层」两处真相。 */
+  (function hoistJudgesToSampleLevel() {
+    Object.keys(SAMPLE_MOCK).forEach(function (id) {
+      var sample = SAMPLE_MOCK[id] || {};
+      var seen = {};
+      var merged = (sample.judges || []).slice();
+      merged.forEach(function (j) { seen[j.category] = 1; });
+      (sample.models || []).forEach(function (m) {
+        (m.judges || []).forEach(function (j) {
+          if (!seen[j.category]) { seen[j.category] = 1; merged.push(j); }
+        });
+        delete m.judges;
+      });
+      sample.judges = merged;
+    });
+  })();
+
   var CAT_LABELS = { dlwz: '电力物资类', aqgqj: '安全工器具类', hjjc: '环境检测', gcjc: '工程检测' };
 
   function walk(nodes, fn, parent) {

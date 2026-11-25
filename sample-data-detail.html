@@ -486,7 +486,7 @@
               </div>
             </div>
 
-            <div class="section-card">
+            <div class="section-card" data-annotate="test-items">
               <div class="mb-3 flex items-center justify-between">
                 <div class="section-title mb-0">试验项：</div>
                 <div class="flex gap-2">
@@ -832,19 +832,6 @@
       }).join('') || emptyTableRow(8, '暂无数据');
     }
 
-    // 判定方案跟随样品：样品下所有型号共享同一套映射，故取样品层数据；
-    // 原型 mock 里部分样品把 judges 写在了型号层，这里做一次去重合并兜底。
-    function judgesOfSample(sample) {
-      if (sample.judges && sample.judges.length) return sample.judges;
-      var seen = {}, out = [];
-      (sample.models || []).forEach(function (m) {
-        (m.judges || []).forEach(function (j) {
-          if (!seen[j.category]) { seen[j.category] = 1; out.push(j); }
-        });
-      });
-      return out;
-    }
-
     function renderJudges(judges) {
       judges = judges || [];
       document.getElementById('judgeTableBody').innerHTML = judges.map(function (j, i) {
@@ -882,10 +869,10 @@
       if (diffYes) {
         var model = currentModel(sample);
         renderTests(model ? model.tests : []);
-        renderJudges(judgesOfSample(sample));
+        renderJudges(sample.judges || []);
       } else {
         renderTests(sample.tests || []);
-        renderJudges(judgesOfSample(sample));
+        renderJudges(sample.judges || []);
       }
     }
 
@@ -1029,6 +1016,26 @@
             '<strong>展示规则：</strong>「区分型号 = 是」时，型号信息 / 规格参数 / 试验项 / 样品判定归入蓝色「型号面板」，随上方型号 Tab（如 YJV）切换。<br>' +
             '<strong>交互逻辑：</strong>切 Tab 即切换该型号的数据集；「区分型号 = 否」时整块面板隐藏，配置直接挂在样品层。',
               tag: '型号'
+            },
+            {
+              id: 'test-items',
+              selector: '[data-annotate="test-items"]',
+              position: 'top-right',
+              title: '试验项 · 编码自动生成与表格冻结列',
+              wide: true,
+              content: '<strong>需求逻辑：</strong>试验编码是底层设备对接与数据采集的唯一标识符，' +
+                '<strong>由系统生成，不允许人工编制</strong>——人工起名必然出现同义不同名（dcdz / dcdzcl / dc_dz），' +
+                '下游数采映射与 AI 拆解入库都会撞车。<br>' +
+                '<strong>展示规则：</strong>「新增试验」时试验编码框置灰、占位「保存后由系统自动生成」；' +
+                '保存成功后才回显真实编码，仍为只读。试验子项的编码同理，只读回显。' +
+                '试验项表格横向滚动时<strong>「序号」「检测项目」左侧冻结、「操作」右侧冻结</strong>，中间列滚动，' +
+                '冻结边界带分隔投影。<br>' +
+                '<strong>交互逻辑：</strong>提交只校验人工必填项（试验名称、检测类别、子项名称），编码不参与必填校验。' +
+                '<br><span style="color:#b45309"><strong>下个迭代待办：</strong>' +
+                '① 真实生成规则需与后端对齐（是否取名称拼音首字母、大类内重号时加 _2/_3 还是走流水号）；' +
+                '② 编码要求<strong>大类内绝对唯一</strong>，目前抽屉内没有唯一性校验入口，' +
+                '应做失焦即校验 + 冲突提示，这是 AI 拆解入库最容易失败的一处。</span>',
+              tag: '试验项'
             },
             {
               id: 'sample-judge',

@@ -12,7 +12,8 @@
 
   /* ── 字典（真实系统由【数据管理-数据字典】驱动，原型内先内置一份） ───────────── */
   var DICT = {
-    category: ['例行试验', '抽样试验', '委托检测', '出厂检验', '型式检验'],
+    // 与【数据管理-数据字典 lims_detect_category】统一：叫「型式试验」，不叫「型式检验」
+    category: ['例行试验', '型式试验', '抽样试验', '委托检测', '出厂检验'],
     quality: ['A', 'B', 'C'],
     coreMode: ['随机选一芯', '每芯（包括复合线）', '每芯（只检测主线）', '整缆'],
     standards: [
@@ -48,7 +49,7 @@
   var PRESET = {
     '导体直流电阻': {
       code: 'dcdz', fee: '0', quality: '',
-      categories: ['例行试验', '型式检验', '抽样试验'],
+      categories: ['例行试验', '型式试验', '抽样试验'],
       basis: [{ std: 'GBT 3956-2008 电缆的导体', clause: '' },
               { std: 'GBT 12706.2-2020 额定电压1kV(Um1.2kV)到35kV(Um40.5kV)挤包绝缘电力电缆及附件 第2部分', clause: '16.2' }],
       deviceMode: '设备', devices: ['YM-WRH-01 电缆直流电阻快速测量系统-无人化版【YWZL-G 100】', '2411020108 智能型数字电桥【QJ-36】'],
@@ -60,7 +61,7 @@
     },
     '结构尺寸检查': {
       code: 'jgcc1', fee: '0', quality: '',
-      categories: ['型式检验', '抽样试验'],
+      categories: ['型式试验', '抽样试验'],
       basis: [{ std: 'GBT 12706.2-2020 额定电压1kV(Um1.2kV)到35kV(Um40.5kV)挤包绝缘电力电缆及附件 第2部分', clause: '16.4、16.5' }],
       deviceMode: '设备', devices: ['DF291968 台式测厚仪【(0~12.7)mm/0.001mm】', '33225991 数显千分尺【(0~25)mm/0.001mm】'],
       process: '', req: '绝缘厚度、外护套厚度等符合标准', remark: '',
@@ -84,6 +85,36 @@
     makeSample: false, sampleSegments: 1, segFlag: true, specimenQty: 1, specimenCode: '',
     coreMode: ''
   };
+
+  /* 试验编码由后端生成，前端只回显、不允许人工编制。
+   * 原型内用「已知名称映射 + 冲突加后缀」模拟，真实生成规则待与后端对齐（已列入下个迭代）。 */
+  var CODE_BY_NAME = {
+    '导体直流电阻': 'dcdz', '导体直流电阻测量': 'dcdzcl', '结构尺寸检查': 'jgcc',
+    '结构尺寸检查（铜带屏蔽）': 'jgcc_tp', '老化前绝缘的机械性能': 'lhqjy',
+    '非金属护套老化前机械性能': 'fjslh', 'XLPE绝缘的热延伸试验': 'rexys',
+    '局部放电试验': 'jufd', '4h电压试验': 'dy4h', '交流耐压试验': 'jlny',
+    '绝缘电阻测量': 'jydc', '铠装层连续性试验': 'kzcxlx', '外观及尺寸': 'wgcc',
+    '环刚度试验': 'hgd', '环刚度': 'hgd', '扁平试验': 'bp', '冲击试验': 'sj',
+    '热变形试验': 'rbx', '压扁试验': 'yb', '落锤冲击': 'lc', '密度测量': 'mdcl',
+    '颜色外观检查': 'yswg', '尺寸检查': 'cc', '维卡软化温度': 'wkrh',
+    '密度比表面积': 'mdbmj', '标准稠度用水量': 'bzcdysl', '凝结时间': 'njsj',
+    '安定性': 'adx', '胶砂强度': 'jsq'
+  };
+  function genTestCode(name, taken) {
+    var base = CODE_BY_NAME[String(name || '').trim()];
+    if (!base) {   // 名称不在已知映射里：走大类内流水号
+      var i = taken.length + 1, seq;
+      do { seq = 'sys' + String(i++).padStart(3, '0'); } while (taken.indexOf(seq) >= 0);
+      return seq;
+    }
+    var code = base, n = 1;
+    while (taken.indexOf(code) >= 0) { n++; code = base + '_' + n; }
+    return code;
+  }
+  function codeField(val) {
+    return '<div class="tid-locked"><input type="text" value="' + esc(val) + '" disabled placeholder="保存后由系统自动生成" />' +
+      '<div class="tid-locked-hint"><i class="fa fa-lock"></i> 系统自动生成，不可人工编制</div></div>';
+  }
 
   var TID = { state: null, testIdx: -1, tab: 'info' };
   global.TID = TID;
@@ -146,7 +177,7 @@
     if (t && PRESET[t.name]) base = clone(PRESET[t.name]);
     base.name = t ? t.name : '';
     if (t) {
-      if (!base.code) base.code = '';
+      if (t.code) base.code = t.code;   // 回显系统已生成的编码（只读）
       if (t.quality) base.quality = t.quality;
       if (t.category && !base.categories.length) {
         base.categories = String(t.category).split(/[、,]/).filter(function (x) { return x; });
@@ -273,12 +304,12 @@
   function subItemTable() {
     var rows = TID.state.subItems.map(function (s, i) {
       return '<tr><td style="width:20%"><input type="text" value="' + esc(s.name) + '" placeholder="请输入" oninput="TID.editSub(' + i + ',\'name\',this.value)" /></td>' +
-        '<td style="width:20%"><input type="text" value="' + esc(s.code) + '" placeholder="请输入" oninput="TID.editSub(' + i + ',\'code\',this.value)" /></td>' +
+        '<td><div class="tid-locked"><input type="text" value="' + esc(s.code) + '" disabled placeholder="保存后生成" /></div></td>' +
         '<td class="cell-long" title="' + esc(s.req) + '"><input type="text" value="' + esc(s.req) + '" placeholder="请输入" oninput="TID.editSub(' + i + ',\'req\',this.value)" /></td>' +
         '<td style="width:64px"><span class="op-del" title="移除" onclick="TID.delSub(' + i + ')">−</span></td></tr>';
     }).join('');
     return '<div class="tid-sub" data-annotate="test-subitems"><table><thead><tr>' +
-      '<th><span class="req">*</span>试验子项</th><th><span class="req">*</span>试验编码</th><th>标准要求</th>' +
+      '<th><span class="req">*</span>试验子项</th><th>试验编码</th><th>标准要求</th>' +
       '<th style="width:64px">操作<span class="op-add" title="添加" onclick="TID.addSub()">＋</span></th>' +
       '</tr></thead><tbody>' + (rows || '<tr><td colspan="4" class="tid-locked">暂无试验子项</td></tr>') + '</tbody></table></div>';
   }
@@ -313,7 +344,7 @@
     var st = TID.state;
     var html = '<div class="tid-grid">' +
       item('试验名称', true, clearable('tidName', st.name, '请输入', 'TID.set(\'name\',this.value)')) +
-      item('试验编码', true, clearable('tidCode', st.code, '请输入', 'TID.set(\'code\',this.value)')) +
+      item('试验编码', true, codeField(st.code)) +
       item('检测费用(元)', false, clearable('tidFee', st.fee, '0', 'TID.set(\'fee\',this.value)')) +
       item('质量特性', false, '<select onchange="TID.set(\'quality\',this.value)"><option value="">请选择</option>' +
         DICT.quality.map(function (q) { return '<option' + (q === st.quality ? ' selected' : '') + '>' + q + '</option>'; }).join('') + '</select>') +
@@ -442,18 +473,17 @@
     var st = TID.state;
     var miss = [];
     if (!st.name) miss.push('试验名称');
-    if (!st.code) miss.push('试验编码');
     if (!st.categories || !st.categories.length) miss.push('检测类别');
     if (st.hasSubItems) {
-      st.subItems.forEach(function (s, i) {
-        if (!s.name) miss.push('第 ' + (i + 1) + ' 行试验子项名称');
-        if (!s.code) miss.push('第 ' + (i + 1) + ' 行试验子项编码');
-      });
+      st.subItems.forEach(function (s, i) { if (!s.name) miss.push('第 ' + (i + 1) + ' 行试验子项名称'); });
     }
     if (miss.length) { (global.toast || alert)(('缺少必填项：' + miss.join('、'))); return; }
     var tests = currentTests();
+    var taken = tests.map(function (x) { return x.code; }).filter(Boolean);
+    if (!st.code) st.code = genTestCode(st.name, taken);
+    if (st.hasSubItems) st.subItems.forEach(function (s, i) { if (!s.code) s.code = st.code + '_' + (i + 1); });
     var row = {
-      name: st.name, quality: st.quality,
+      name: st.name, code: st.code, quality: st.quality,
       category: st.categories.join('、'),
       basis: (st.basis[0] && st.basis[0].std ? String(st.basis[0].std).split(' ')[0] : '') +
               (st.basis.length > 1 ? ' 等 ' + st.basis.length + ' 项' : ''),
