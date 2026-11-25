@@ -12,6 +12,13 @@
   var CMP_OPS = ['=', '!=', '<', '≤', '>', '≥', '符合'];
   var CONCL_LOGIC = ['当满足所有条件时', '当满足任一条件时', '不满足任一条件时', '不满足所有条件时'];
   var LEVELS = ['试样', '样段', '线芯', '试验'];
+  /* 层级可用性由样品属性决定：样段要求「是否制样=是」，线芯要求「是否电缆=是」 */
+  function levelBlock(m) {
+    var st = TID.state || {};
+    if (m === '样段' && !st.makeSample) return '样品「是否制样=否」，不存在样段';
+    if (m === '线芯' && !(TID.ctx && TID.ctx.sample && TID.ctx.sample.isCable)) return '样品「是否电缆=否」，不存在线芯';
+    return '';
+  }
   var LEVEL_HINT = {
     '线芯': '每个相别各判一个结论（合格/不合格），3 芯即产出 3 条结论',
     '试验': '整个试验项只判一个结论',
@@ -77,7 +84,18 @@
     if (c && typeof c === 'object') return (c.a || '') + '≤' + varSymbol(varDef) + '≤' + (c.b || '');
     return c == null ? '' : String(c);
   }
-  function depCols(type) { return type === '范围' ? ['最小值', '最大值'] : type === '公差' ? ['基准值', '负偏差', '正偏差'] : [type === '单值' ? '单值' : type]; }
+  /* 图1-图6：多行映射下因变量列随标称值类型变化
+   *  单值 → 一列（列头留空）；公差 → 基准单值 / (-) 负偏差 / (+) 正偏差；
+   *  范围 → 最小值 + 最大值（各带比较符号）；最大值 / 最小值 → 一列（带比较符号）；
+   *  公式 → 系统明确禁止开启多行映射 */
+  var DEP_COLS = {
+    '单值': [{ k: 'v', h: '' }],
+    '公差': [{ k: 'v', h: '基准单值' }, { k: 'v', h: '(-) 负偏差' }, { k: 'v', h: '(+) 正偏差' }],
+    '范围': [{ k: 'op', h: '最小值', ops: MIN_OPS }, { k: 'op', h: '最大值', ops: MAX_OPS }],
+    '最大值': [{ k: 'op', h: '最大值', ops: MAX_OPS }],
+    '最小值': [{ k: 'op', h: '最小值', ops: MIN_OPS }]
+  };
+  function depCols(type) { return (DEP_COLS[type] || [{ k: 'v', h: type }]).map(function (c) { return c.h; }); }
 
   function nomCard(it, gi, ii) {
     var head = '<div class="nv-card-h"><b>' + (ii + 1) + '.' + esc(it.name) + '（' + esc(it.unit || '') + '）</b>' +
@@ -89,10 +107,14 @@
       body = '<div class="nv-line">' + nomSummary(it) + '</div>';
     } else {
       var cols = (it.vars || []).map(function (v) { return '<th>' + esc(v.label) + '</th>'; }).join('') +
-        depCols(it.type).map(function (c) { return '<th>' + c + '</th>'; }).join('');
+        depCols(it.type).map(function (c) { return '<th>' + (c || '&nbsp;') + '</th>'; }).join('');
+      var off = (it.vars || []).length, cols2 = DEP_COLS[it.type] || [{ k: 'v', h: it.type }];
       var rows = (it.rows || []).map(function (r) {
         return '<tr>' + (it.vars || []).map(function (v, vi) { return '<td>' + esc(cellText(r[vi], v)) + '</td>'; }).join('') +
-          '<td>' + esc(fmtDep(it, r, it.vars ? it.vars.length : 0)) + '</td></tr>';
+          cols2.map(function (c, ci) {
+            var x = r[off + ci];
+            return '<td>' + esc(c.k === 'op' && x && typeof x === 'object' ? (x.op || '') + (x.val || '') : (x == null ? '' : String(x))) + '</td>';
+          }).join('') + '</tr>';
       }).join('');
       body = '<div class="nv-map"><table class="data-table"><thead><tr>' + cols + '</tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div class="pager"><span class="pg">‹</span><span class="pg active">1</span><span class="pg">›</span></div></div>';
@@ -158,6 +180,9 @@
   }
   function nomModal() {
     var d = ND.d;
+    if (!d.v) d.v = { single: '', minOp: '≥', min: '', maxOp: '≤', max: '', negOn: false, neg: '', posOn: false, pos: '', formula: '', round: null };
+    if (!d.rows) d.rows = [];
+    if (!d.vars) d.vars = [];
     var inner = '<div class="pm-context"><span class="pm-ctx-ttl"><i class="fa fa-info-circle"></i>基本信息</span>' +
       '<span class="kv">样品：<b>' + esc((TID.ctx && TID.ctx.sampleName) || '') + '</b></span>' +
       '<span class="kv">试验项：<b>' + esc(TID.state.name || '新增试验') + '</b></span>' +
@@ -202,37 +227,83 @@
   }
   function nomVarsPanel(d) {
     var specs = U.specList();
-    return '<div class="pm-vars"><div class="pm-vhead"><span class="req">*</span> 请勾选自变量：</div>' +
+    if (d.type === '公式') return '';
+    d.varsByKind = d.varsByKind || {};
+    var pick = '<div class="pm-vars"><div class="pm-vhead"><span class="req">*</span> 请勾选自变量：</div>' +
       '<div class="pm-vrow"><span class="pm-vlab">规格参数：</span><span class="pm-vbox">' +
       specs.map(function (sp) {
-        var hit = d.vars.filter(function (x) { return x.label === sp.name; })[0];
-        return '<label class="pm-ck"><input type="checkbox" ' + (hit ? 'checked' : '') + ' onchange="TIDN.pickVar(\'' + esc(sp.name) + '\',this.checked)" />' + esc(sp.name) + '</label>';
-      }).join('') + '</span></div></div>' +
-      (d.vars.length ? '<table class="data-table nv-edit"><thead><tr>' +
-        d.vars.map(function (v, vi) {
-          return '<th>' + esc(v.label) + '<select class="nv-mode" onchange="TIDN.varMode(' + vi + ',this.value)">' +
-            ['固定值', '区间'].map(function (m) { return '<option' + (m === v.mode ? ' selected' : '') + '>' + m + '</option>'; }).join('') + '</select></th>';
-        }).join('') + '<th>标称值</th><th class="ms-op">操作<span class="op-add" onclick="TIDN.addNRow()">＋</span></th></tr></thead><tbody>' +
-        d.rows.map(function (r, ri) {
-          return '<tr>' + d.vars.map(function (v, vi) {
-            if (v.mode === 'interval') {
-              var c = r[vi] && typeof r[vi] === 'object' ? r[vi] : { a: '', b: '' };
-              return '<td><span class="nv-int"><input type="text" value="' + esc(c.a) + '" placeholder="下限" oninput="TIDN.setNRow(' + ri + ',' + vi + ',\'a\',this.value)" />' +
-                '<span>≤S≤</span><input type="text" value="' + esc(c.b) + '" placeholder="上限" oninput="TIDP_setB(' + ri + ',' + vi + ',this.value)" /></span></td>';
-            }
-            var opts = (specs.filter(function (x) { return x.name === v.label; })[0] || {}).options || [];
-            return '<td><select onchange="TIDN.setNRow(' + ri + ',' + vi + ',\'v\',this.value)"><option value="">请选择</option>' +
-              opts.map(function (o) { return '<option' + (o === r[vi] ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select></td>';
-          }).join('') + '<td><input type="text" value="' + esc(r[d.vars.length]) + '" placeholder="请输入" oninput="TIDN.setNRow(' + ri + ',' + d.vars.length + ',\'v\',this.value)" /></td>' +
-            '<td class="ms-op"><span class="op-del" onclick="TIDP.delNRow(' + ri + ')">−</span></td></tr>';
-        }).join('') + '</tbody></table>' : '<div class="pm-need">请先勾选至少一个自变量</div>');
+        var on = d.vars.some(function (x) { return x.label === sp.name; });
+        return '<label class="pm-ck"><input type="checkbox" ' + (on ? 'checked' : '') +
+          ' onchange="TIDN.pickVar(\'' + esc(sp.name) + '\',this.checked)" />' + esc(sp.name) + '</label>';
+      }).join('') + '</span></div>' +
+      ['preset|预设值', 'measured|实测值', 'computed|计算值'].map(function (t) {
+        var k = t.split('|')[0], lab = t.split('|')[1], sel = d.varsByKind[k] || { test: '', param: '' };
+        return '<div class="pm-vrow"><span class="pm-vlab">' + lab + '：</span><span class="pm-vbox">' +
+          '<select class="pm-vtest" onchange="TIDN.varTest(\'' + k + '\',this.value)"><option value="">请选择试验项</option>' +
+          U.testList().map(function (x) { return '<option' + (x === sel.test ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>' +
+          '<select class="pm-vpick" ' + (sel.test ? '' : 'disabled') + ' onchange="TIDN.varPick(\'' + k + '\',this.value)"><option value="">请选择</option>' +
+          (sel.test ? U.poolFor(sel.test)[k].map(function (n) { return '<option' + (n === sel.param ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') : '') +
+          '</select></span></div>';
+      }).join('') + '</div>';
+    if (!d.vars.length) return pick + '<div class="pm-need">请先勾选至少一个自变量</div>';
+    var off = d.vars.length, cols = DEP_COLS[d.type] || [{ k: 'v', h: d.type }];
+    var head = d.vars.map(function (v, vi) {
+      return '<th class="nv-vh"><i class="pm-grip"></i><span>' + esc(v.label) + '</span>' +
+        '<button class="nv-toggle' + (v.mode === '区间' ? ' on' : '') + '" title="切换 固定值 / 区间" onclick="TIDN.varMode(' + vi +
+        ',\'' + (v.mode === '区间' ? '固定值' : '区间') + '\')"><i class="fa fa-angle-double-down"></i></button></th>';
+    }).join('') + cols.map(function (c) { return '<th>' + (c.h ? esc(c.h) : '&nbsp;') + '</th>'; }).join('') +
+      '<th class="ms-op">操作<span class="op-add" onclick="TIDN.addNRow()">＋</span></th>';
+    var body = d.rows.map(function (r, ri) {
+      var cells = d.vars.map(function (v, vi) {
+        if (v.mode === '区间') {
+          var c = (r[vi] && typeof r[vi] === 'object') ? r[vi] : { a: '', b: '' };
+          return '<td><span class="nv-int"><input type="text" value="' + esc(c.a) + '" placeholder="下限" oninput="TIDN.setNRow(' + ri + ',' + vi + ',\'a\',this.value)" />' +
+            '<span>≤' + esc(varSymbol(v)) + '≤</span><input type="text" value="' + esc(c.b) + '" placeholder="上限" oninput="TIDP_setB(' + ri + ',' + vi + ',this.value)" /></span></td>';
+        }
+        var opts = (specs.filter(function (x) { return x.name === v.label; })[0] || {}).options || [];
+        return '<td><select onchange="TIDN.setNRow(' + ri + ',' + vi + ',\'v\',this.value)"><option value="">请选择</option>' +
+          opts.map(function (o) { return '<option' + (o === r[vi] ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select></td>';
+      }).join('');
+      cells += cols.map(function (c, ci) {
+        var x = r[off + ci], p = off + ci;
+        if (c.k === 'op') {
+          var o = (x && typeof x === 'object') ? x : { op: '', val: '' };
+          return '<td><span class="nv-pair"><select onchange="TIDN.setNOp(' + ri + ',' + p + ',this.value)"><option value="">符..</option>' +
+            c.ops.map(function (q) { return '<option' + (q === o.op ? ' selected' : '') + '>' + q + '</option>'; }).join('') + '</select>' +
+            '<input type="text" value="' + esc(o.val) + '" placeholder="请输入" oninput="TIDN.setNVal(' + ri + ',' + p + ',this.value)" /></span></td>';
+        }
+        return '<td><input type="text" value="' + esc(x == null ? '' : x) + '" placeholder="请输入" oninput="TIDN.setNRow(' + ri + ',' + p + ',\'v\',this.value)" /></td>';
+      }).join('');
+      return '<tr>' + cells + '<td class="ms-op"><span class="op-del" onclick="TIDN.delNRow(' + ri + ')">−</span></td></tr>';
+    }).join('');
+    return pick + '<table class="data-table nv-edit"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
   }
+  N.varTest = function (k, v) { ND.d.varsByKind[k] = { test: v, param: '' }; nomModal(); };
+  N.varPick = function (k, v) {
+    var d = ND.d; d.varsByKind[k] = { test: d.varsByKind[k].test, param: v };
+    if (v && !d.vars.some(function (x) { return x.label === v; })) d.vars.push({ kind: k, label: v, mode: 'fixed' });
+    nomModal();
+  };
+  N.setNOp = function (ri, ci, v) { var r = ND.d.rows[ri]; if (typeof r[ci] !== 'object') r[ci] = { op: '', val: '' }; r[ci].op = v; };
+  N.setNVal = function (ri, ci, v) { var r = ND.d.rows[ri]; if (typeof r[ci] !== 'object') r[ci] = { op: '', val: '' }; r[ci].val = v; };
+
   global.TIDP_setB = function (ri, vi, v) { var r = ND.d.rows[ri]; if (typeof r[vi] !== 'object') r[vi] = { a: '', b: '' }; r[vi].b = v; };
-  N.setN = function (k, v) { ND.d[k] = v; if (k === 'type') nomModal(); };
+  N.setN = function (k, v) {
+    ND.d[k] = v;
+    if (k === 'type') {
+      // 图6：公式类型与多行映射互斥
+      if (v === '公式' && ND.d.multi) { ND.d.multi = false; U.toast('标称值类型为公式时，不允许开启多行映射'); }
+      ND.d.rows = [];
+      if (ND.d.multi) N.addNRow(true);
+      nomModal();
+    }
+  };
   N.setV = function (k, v) { ND.d.v[k] = v; if (k === 'negOn' || k === 'posOn') nomModal(); };
   N.setMulti = function (v) {
+    if (v && ND.d.type === '公式') { U.toast('标称值类型为公式时，不允许开启多行映射'); ND.d.multi = false; nomModal(); return; }
     ND.d.multi = v;
-    if (v && !ND.d.rows.length) ND.d.rows = [];
+    if (v && !ND.d.rows.length) N.addNRow(true);
+    if (!v) ND.d.rows = [];
     nomModal();
   };
   N.pickVar = function (name, on) {
@@ -250,10 +321,14 @@
     });
     nomModal();
   };
-  N.addNRow = function () {
-    var d = ND.d, n = d.vars.length + 1;
-    d.rows.push(new Array(n).fill('').map(function (x, i) { return d.vars[i] && d.vars[i].mode === '区间' ? { a: '', b: '' } : x; }));
-    nomModal();
+  N.addNRow = function (quiet) {
+    var d = ND.d, cols = DEP_COLS[d.type] || [{ k: 'v', h: d.type }];
+    d.rows.push(new Array(d.vars.length + cols.length).fill('').map(function (x, i) {
+      if (d.vars[i] && d.vars[i].mode === '区间') return { a: '', b: '' };
+      if (i >= d.vars.length && cols[i - d.vars.length] && cols[i - d.vars.length].k === 'op') return { op: '', val: '' };
+      return x;
+    }));
+    if (!quiet) nomModal();
   };
   N.delNRow = function (ri) { ND.d.rows.splice(ri, 1); nomModal(); };
   N.setNRow = function (ri, ci, which, v) {
@@ -282,6 +357,7 @@
       if (d.type === '范围' && (!v.min || !v.max)) miss.push('范围的最小值与最大值（必须成对）');
       if (d.type === '公式' && !v.formula) miss.push('公式');
     } else if (!d.vars.length) miss.push('自变量');
+    if (d.multi && !d.rows.length) miss.push('映射数据行');
     if (miss.length) { U.toast('缺少必填项：' + miss.join('、')); return; }
     var g = nomGroups()[ND.gi];
     // 多行映射时把当前子项写进 sub；单行保留原值
@@ -289,34 +365,58 @@
     if (ND.ii >= 0) g.items[ND.ii] = out; else g.items.push(out);
     U.host().innerHTML = ''; renderNom();
   };
+  /* 图4 只是示意：真实粒度是「单条标称值」。下拉按左侧样品树的层级展示
+   *  大类 → 样品 → 型号 → 试验项 → 标称值，分组节点置灰不可选。 */
   N.copyDlg = function () {
-    var tree = [];
-    (TID.ctx && TID.ctx.path ? TID.ctx.path.split('/') : []).forEach(function (p, i) { tree.push({ d: i, t: p }); });
-    U.testList().forEach(function (tn) {
-      tree.push({ d: 3, t: tn });
-      var seed = SEED_N[tn];
-      (seed || []).forEach(function (g) { g.items.forEach(function (it) { tree.push({ d: 4, t: it.name }); }); });
+    var rows = [];
+    function push(d, label, sel) { rows.push({ d: d, t: label, sel: sel || null }); }
+    Object.keys(global.SampleDataStore.TREES).forEach(function (cat) {
+      var leaves = [];
+      (function walk(ns) { (ns || []).forEach(function (n) { if (n.leaf) leaves.push(n); walk(n.children); }); })(global.SampleDataStore.TREES[cat]);
+      leaves.forEach(function (lf) {
+        var sm = global.SampleDataStore.SAMPLE_MOCK[lf.id]; if (!sm) return;
+        push(0, CAT_META[cat] ? CAT_META[cat].name : cat);
+        push(1, sm.name);
+        var models = (sm.models && sm.models.length) ? sm.models : [{ code: '（不区分型号）', tests: sm.tests || [] }];
+        models.forEach(function (md) {
+          push(2, md.code);
+          (md.tests || []).forEach(function (t) {
+            (SEED_N[t.name] || []).forEach(function (g) {
+              if (!g.items.length) return;
+              push(3, t.name + (g.sub ? ' — ' + g.sub : ''));
+              g.items.forEach(function (it) {
+                push(4, it.name + '（' + (it.unit || '无单位') + '）',
+                  { test: t.name, sub: g.sub, item: it.name });
+              });
+            });
+          });
+        });
+      });
     });
+    N._copyRows = rows;
     var inner = '<div class="pm-grid" style="grid-template-columns:1fr"><div class="pm-fi">' +
       '<span class="pm-lab req">请选择要复制的标称值：</span><span class="pm-ctl">' +
-      '<select size="12" id="nvCopy" style="height:auto">' + tree.map(function (n) {
-        return '<option' + (n.d > 2 ? ' disabled' : '') + '>' + Array(n.d + 1).join('　') + (n.d ? '▾ ' : '') + esc(n.t) + '</option>';
-      }).join('') + '</select></span></div></div>';
+      '<select size="14" id="nvCopy" style="height:auto">' + rows.map(function (n, i) {
+        return '<option value="' + i + '"' + (n.sel ? '' : ' disabled') + '>' + Array(n.d + 1).join('　') + (n.sel ? '' : '▾ ') + esc(n.t) + '</option>';
+      }).join('') + '</select>' +
+      '<span class="nv-hint">层级：大类 → 样品 → 型号 → 试验项（试验子项）→ 标称值；灰色为分组节点，只可复制单条标称值。</span></span></div></div>';
     U.modalShell('复制标称值', inner, 'TIDN.copyOk()', '确 定', 1);
   };
   N.copyOk = function () {
     var s = $('nvCopy');
-    if (!s || s.selectedIndex < 0) { U.toast('请选择一个标称值'); return; }
-    var label = s.options[s.selectedIndex].textContent.replace(/[▾　]/g, '').trim();
-    var found = null;
-    Object.keys(SEED_N).forEach(function (k) {
-      SEED_N[k].forEach(function (g) { g.items.forEach(function (it) { if (it.name === label) found = clone(it); }); });
+    if (!s || !s.value) { U.toast('请选择一条标称值'); return; }
+    var hit = N._copyRows[Number(s.value)];
+    if (!hit || !hit.sel) { U.toast('分组节点不可复制，请选择到具体标称值'); return; }
+    var src = hit.sel, found = null;
+    (SEED_N[src.test] || []).forEach(function (g) {
+      if (g.sub !== src.sub) return;
+      g.items.forEach(function (it) { if (it.name === src.item) found = clone(it); });
     });
-    if (!found) { U.toast('原型内仅预置了「结构尺寸检查」的标称值可复制'); return; }
+    if (!found) { U.toast('原型内仅预置了「结构尺寸检查」的标称值数据'); return; }
     found.sub = norm()[N.rail] || found.sub;
     nomGroups()[N.rail].items.push(found);
     U.host().innerHTML = ''; renderNom();
-    U.toast('已复制标称值「' + found.name + '」到当前试验子项');
+    U.toast('已复制「' + src.test + ' / ' + found.name + '」到当前试验子项');
   };
 
   /* ══════════════ 二、结果判定 ══════════════ */
@@ -358,7 +458,11 @@
       '<div class="pm-fi"><span class="pm-lab req">判定方式：</span><span class="pm-ctl"><span class="tid-radios">' +
       ['人工判定', '系统判定'].map(function (m) { return '<label><input type="radio" name="jdM" value="' + m + '"' + (j.method === m ? ' checked' : '') + ' onchange="TIDJ.set(\'method\',this.value)" />' + m + '</label>'; }).join('') + '</span></span></div>' +
       '<div class="pm-fi"><span class="pm-lab req">判断层级：</span><span class="pm-ctl"><span class="tid-radios">' +
-      LEVELS.map(function (m) { return '<label><input type="radio" name="jdL" value="' + m + '"' + (j.level === m ? ' checked' : '') + ' onchange="TIDJ.set(\'level\',this.value)" />' + m + '</label>'; }).join('') +
+      LEVELS.map(function (m) {
+        var why = levelBlock(m);
+        return '<label' + (why ? ' class="disabled" title="' + esc(why) + '"' : '') + '><input type="radio" name="jdL" value="' + m + '"' +
+          (j.level === m ? ' checked' : '') + (why ? ' disabled' : '') + ' onchange="TIDJ.set(\'level\',this.value)" />' + m + '</label>';
+      }).join('') +
       '</span><span class="nv-hint">' + esc(LEVEL_HINT[j.level] || '') + '</span></div>' +
       '</div>';
     if (manual) {
@@ -455,8 +559,9 @@
         (side === '标称值对比'
           ? '<select onchange="TIDJ.setC(\'right\',this.value)"><option value="">请选择</option>' + nomNames().map(function (n) {
             return '<option' + (n === CD.right ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select>' +
-            '<span class="jd-star">*</span><span class="jd-pct">百分比 %</span><select><option>+</option><option>-</option></select>' +
-            '<input type="text" placeholder="输入数值" />'
+            (nomTypeOf(CD.right) === '单值'
+              ? '<span class="jd-star">*</span><span class="jd-pct">百分比 %</span><select><option>+</option><option>-</option></select><input type="text" placeholder="输入数值" />'
+              : '<span class="jd-lock"><i class="fa fa-lock"></i> 非单值标称值不配修饰符，对比符号锁定为「符合」</span>')
           : '<select onchange="TIDJ.setC(\'rightWhat\',this.value)"><option>参数</option><option>自定义数值</option></select>' +
             (CD.rightWhat === '自定义数值' ? '<input type="text" value="' + esc(CD.rightVal || '') + '" placeholder="请输入" oninput="TIDJ.setC(\'rightVal\',this.value)" />'
               : '<select onchange="TIDJ.setC(\'right\',this.value)"><option value="">请选择</option>' + paramNames('实测值').map(function (n) {
@@ -475,6 +580,13 @@
     var pool = U.poolFor(TID.state.name);
     return t === '实测值' ? pool.measured : pool.computed;
   }
+  /* PRD §3.4.4：标称值除「单值」外均不配置动态修饰符引擎，对比符号强制「符合」 */
+  function nomTypeOf(name) {
+    var hit = null;
+    nomGroups().forEach(function (g) { g.items.forEach(function (it) {
+      if (it.name + (it.unit ? '（' + it.unit + '）' : '') === name) hit = it; }); });
+    return hit ? hit.type : '单值';
+  }
   function nomNames() {
     var out = [];
     nomGroups().forEach(function (g) { g.items.forEach(function (it) { out.push(it.name + (it.unit ? '（' + it.unit + '）' : '')); }); });
@@ -484,7 +596,7 @@
     var parts = k.split('.'), o = CD;
     for (var i = 0; i < parts.length - 1; i++) o = o[parts[i]];
     o[parts[parts.length - 1]] = v;
-    if (k === 'leftType' || k === 'branch' || k === 'rightWhat') condRender();
+    if (k === 'leftType' || k === 'branch' || k === 'rightWhat' || k === 'right') condRender();
   };
   J.side = function (s) { CD._side = s; CD.side = s; condRender(); };
   J.addVal = function (v) { if (v && CD.values.indexOf(v) < 0) CD.values.push(v); condRender(); };
@@ -493,6 +605,9 @@
     var j = judge();
     if (j.ruleMode === '判定对比') { if (!CD.source || !CD.op || !CD.values.length) { U.toast('请补全判定参数、对比符号与目标结论'); return; } }
     else {
+      if (CD._side === '标称值对比' && CD.right && nomTypeOf(CD.right) !== '单值' && CD.cmp !== '符合') {
+        U.toast('该标称值类型为「' + nomTypeOf(CD.right) + '」，对比符号只能选「符合」'); return;
+      }
       var rightOk = CD.right || (CD.rightWhat === '自定义数值' && CD.rightVal);
       if (!CD.left || !CD.cmp || !rightOk) { U.toast('请补全参数、对比符号与被对比值'); return; }
     }
@@ -505,16 +620,16 @@
   /* ══════════════ 三、采集配置 ══════════════ */
   function collectRows() {
     var st = TID.state, cfg = st.collectCfg || (st.collectCfg = {}), rows = [];
-    (st.controls || []).forEach(function (c) { rows.push(mk('预设值', c.name, c.code || c.symbol, c.unit, '', cfg)); });
+    (st.controls || []).forEach(function (c) { rows.push(mk('预设值', c.name, c.code, c.unit, '', cfg, null, c.symbol)); });
     if (global.TIDM && TIDM.groups) { TIDM.groups('m'); TIDM.groups('c'); }   // 统一视图：先把两个子 Tab 的参数装载出来
     (st.measures || []).forEach(function (g) { g.params.forEach(function (p) {
-      rows.push(mk('测量参数', p.name, p.code, p.unit, '', cfg, p.type !== '文字')); }); });
-    (st.calcs || []).forEach(function (g) { g.params.forEach(function (p) { rows.push(mk('计算参数', p.name, p.code, p.unit, p.bind, cfg)); }); });
-    nomGroups().forEach(function (g) { g.items.forEach(function (it) { rows.push(mk('标称值', it.name, it.symbol || codeOf(it), it.unit, '', cfg)); }); });
-    function mk(type, name, code, unit, bind, o, coverDefault) {
+      rows.push(mk('测量参数', p.name, p.code, p.unit, '', cfg, p.type !== '文字', p.symbol)); }); });
+    (st.calcs || []).forEach(function (g) { g.params.forEach(function (p) { rows.push(mk('计算参数', p.name, p.code, p.unit, p.bind, cfg, true, p.symbol)); }); });
+    nomGroups().forEach(function (g) { g.items.forEach(function (it) { rows.push(mk('标称值', it.name, it.symbol || codeOf(it), it.unit, '', cfg, false, it.symbol)); }); });
+    function mk(type, name, code, unit, bind, o, coverDefault, symbol) {
       var key = type + '|' + name;
       var hit = o[key] || (o[key] = {});
-      return { type: type, name: name, code: code || '—', bind: bind || '—', unit: unit || '',
+      return { type: type, name: name, code: code || '—', bind: bind || '—', unit: unit || '', symbol: symbol || '',
         order: hit.order != null ? hit.order : rows.length + 1, cover: hit.cover != null ? hit.cover : (coverDefault === false ? false : type === '测量参数'), key: key };
     }
     function codeOf(it) { return (TID.state.code || 'bcz') + '_' + (it.name || '').slice(0, 4); }
@@ -546,7 +661,7 @@
       '<table class="data-table"><thead><tr><th>序号</th><th>类型</th><th>参数名称</th><th>参数编码</th><th>绑定层级</th><th>符号</th><th>单位</th><th>计算顺序</th><th>是否覆盖LIMS参数</th><th>操作</th></tr></thead><tbody>' +
       (page.length ? page.map(function (r, i) {
         return '<tr><td>' + ((C.page - 1) * per + i + 1) + '</td><td>' + esc(r.type) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.code) + '</td>' +
-          '<td>' + esc(r.bind) + '</td><td></td><td>' + esc(r.unit) + '</td>' +
+          '<td>' + esc(r.bind) + '</td><td>' + esc(r.symbol) + '</td><td>' + esc(r.unit) + '</td>' +
           '<td><input type="text" class="nv-ord" value="' + r.order + '" oninput="TIDC.setOrder(\'' + esc(r.key) + '\',this.value)" /></td>' +
           '<td><label class="toggle"><input type="checkbox" ' + (r.cover ? 'checked' : '') + ' onchange="TIDC.setCover(\'' + esc(r.key) + '\',this.checked)" /><span class="toggle-slider"></span></label></td>' +
           '<td><a class="link" onclick="TIDC.sortDlg(\'' + esc(r.key) + '\')"><i class="fa fa-pencil"></i> 排序</a></td></tr>';
