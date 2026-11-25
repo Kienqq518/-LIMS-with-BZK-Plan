@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
   <link rel="stylesheet" href="css/ui-baseline.css" />
+  <link rel="stylesheet" href="css/test-item-drawer.css" />
   <style>
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 4px; }
@@ -70,7 +71,8 @@
       align-self: flex-start;
     }
     .radio-row, .phase-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; min-height: 36px; font-size: 13px; color: #475569; }
-    .radio-row label, .phase-row label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; color: #475569; }
+    .radio-row label, .phase-row label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; color: #475569; white-space: nowrap; }
+    .radio-row { flex-wrap: nowrap; }
     .phase-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; padding: 4px 8px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; align-items: center; }
     .phase-tag { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; background: #eff6ff; color: #2563eb; font-size: 12px; }
     .phase-tag .rm { cursor: pointer; color: #94a3b8; }
@@ -149,6 +151,20 @@
     .section-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
     .section-title-row .section-title { margin-bottom: 0; }
     .section-title-row .icon-btn { margin-left: 0; }
+    /* 试验项表格：序号+检测项目 左固定、操作 右固定，中间列横向滚动 */
+    .table-sticky-wrap { position: relative; }
+    .data-table.table-sticky { border-collapse: separate; border-spacing: 0; }
+    .data-table.table-sticky th, .data-table.table-sticky td {
+      border-width: 1px 0 1px 1px;
+      background-clip: padding-box;
+    }
+    .data-table.table-sticky tr > th:last-child,
+    .data-table.table-sticky tr > td:last-child { border-right-width: 1px; }
+    .data-table.table-sticky .sticky { position: sticky; z-index: 2; background: #fff; }
+    .data-table.table-sticky thead .sticky { background: #f8fafc; z-index: 4; }
+    .data-table.table-sticky .sticky-l1 { left: 0; width: 72px; min-width: 72px; max-width: 72px; }
+    .data-table.table-sticky .sticky-l2 { left: 72px; width: 168px; min-width: 168px; max-width: 168px; white-space: normal; word-break: break-word; box-shadow: 6px 0 8px -6px rgba(15,23,42,.18); }
+    .data-table.table-sticky .sticky-r1 { right: 0; width: 150px; min-width: 150px; max-width: 150px; box-shadow: -6px 0 8px -6px rgba(15,23,42,.18); }
     /* 型号面板：凸显当前型号下的配置区块 */
     .model-scope-panel.is-model {
       margin-bottom: 12px;
@@ -475,21 +491,21 @@
                 <div class="section-title mb-0">试验项：</div>
                 <div class="flex gap-2">
                   <button class="btn-outline" type="button" onclick="toast('复制试验（原型）')">复制试验</button>
-                  <button class="btn-primary" type="button" onclick="toast('新增试验（原型）')"><i class="fa fa-plus"></i> 新增试验</button>
+                  <button class="btn-primary" type="button" onclick="TID.open(-1)"><i class="fa fa-plus"></i> 新增试验</button>
                 </div>
               </div>
-              <div class="overflow-x-auto">
-                <table class="data-table min-w-[1100px]">
+              <div class="overflow-x-auto table-sticky-wrap">
+                <table class="data-table table-sticky min-w-[1180px]">
                   <thead>
                     <tr>
-                      <th class="whitespace-nowrap" style="width:72px">序号</th>
-                      <th style="width:160px">检测项目</th>
+                      <th class="sticky sticky-l1 whitespace-nowrap">序号</th>
+                      <th class="sticky sticky-l2">检测项目</th>
                       <th style="width:100px">质量特性</th>
                       <th style="width:100px">检验类别</th>
                       <th style="width:140px">试验依据</th>
-                      <th>标准要求</th>
+                      <th style="min-width:320px">标准要求</th>
                       <th style="width:70px">状态</th>
-                      <th style="width:150px">操作</th>
+                      <th class="sticky sticky-r1 whitespace-nowrap">操作</th>
                     </tr>
                   </thead>
                   <tbody id="testTableBody"></tbody>
@@ -501,25 +517,25 @@
                 <select class="rounded border border-slate-200 px-2 py-1 text-xs"><option>10条/页</option></select>
               </div>
             </div>
+          </div><!-- /型号面板：样品判定跟随样品，不属于型号 -->
 
-            <div class="section-card" data-annotate="sample-judge">
-              <div class="mb-3 flex items-center justify-between">
-                <div class="section-title mb-0">样品判定：</div>
-                <button class="btn-outline" type="button" onclick="goReportJudgment()">去设置</button>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th class="whitespace-nowrap" style="width:70px">序号</th>
-                      <th style="width:140px">检测类别</th>
-                      <th>规则判定方案</th>
-                      <th style="width:90px">详情</th>
-                    </tr>
-                  </thead>
-                  <tbody id="judgeTableBody"></tbody>
-                </table>
-              </div>
+          <div class="section-card" data-annotate="sample-judge">
+            <div class="mb-3 flex items-center justify-between">
+              <div class="section-title mb-0">样品判定：</div>
+              <button class="btn-outline" type="button" onclick="goReportJudgment()">去设置</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th class="whitespace-nowrap" style="width:70px">序号</th>
+                    <th style="width:140px">检测类别</th>
+                    <th>规则判定方案</th>
+                    <th style="width:90px">详情</th>
+                  </tr>
+                </thead>
+                <tbody id="judgeTableBody"></tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -530,6 +546,7 @@
   <script src="js/tab-bar.js"></script>
   <script src="js/prototype-annotation.js"></script>
   <script src="js/sample-data-store.js"></script>
+  <script src="js/test-item-drawer.js"></script>
   <script>
     var CAT_META = {
       dlwz: { name: '电力物资类' },
@@ -799,20 +816,33 @@
       document.getElementById('testPager').style.display = tests.length ? '' : 'none';
       document.getElementById('testTableBody').innerHTML = tests.map(function (t, i) {
         return '<tr>' +
-          '<td>' + (i + 1) + '</td>' +
-          '<td>' + t.name + '</td>' +
+          '<td class="sticky sticky-l1">' + (i + 1) + '</td>' +
+          '<td class="sticky sticky-l2">' + t.name + '</td>' +
           '<td>' + (t.quality || '') + '</td>' +
           '<td><span class="tag">' + t.category + '</span></td>' +
           '<td>' + t.basis + '</td>' +
           '<td>' + t.req + '</td>' +
           '<td><label class="toggle"><input type="checkbox" ' + (t.on ? 'checked' : '') + ' /><span class="toggle-slider"></span></label></td>' +
-          '<td class="whitespace-nowrap">' +
+          '<td class="sticky sticky-r1 whitespace-nowrap">' +
           '<a class="link mr-2" title="上移"><i class="fa fa-arrow-up"></i></a>' +
           '<a class="link mr-2" title="下移"><i class="fa fa-arrow-down"></i></a>' +
-          '<a class="link mr-2" onclick="toast(\'编辑试验（原型）\')"><i class="fa fa-pencil"></i> 编辑</a>' +
+          '<a class="link mr-2" onclick="TID.open(' + i + ')"><i class="fa fa-pencil"></i> 编辑</a>' +
           '<a class="link danger" onclick="toast(\'删除试验（原型）\')"><i class="fa fa-trash"></i> 删除</a>' +
           '</td></tr>';
       }).join('') || emptyTableRow(8, '暂无数据');
+    }
+
+    // 判定方案跟随样品：样品下所有型号共享同一套映射，故取样品层数据；
+    // 原型 mock 里部分样品把 judges 写在了型号层，这里做一次去重合并兜底。
+    function judgesOfSample(sample) {
+      if (sample.judges && sample.judges.length) return sample.judges;
+      var seen = {}, out = [];
+      (sample.models || []).forEach(function (m) {
+        (m.judges || []).forEach(function (j) {
+          if (!seen[j.category]) { seen[j.category] = 1; out.push(j); }
+        });
+      });
+      return out;
     }
 
     function renderJudges(judges) {
@@ -852,10 +882,10 @@
       if (diffYes) {
         var model = currentModel(sample);
         renderTests(model ? model.tests : []);
-        renderJudges(model ? model.judges : []);
+        renderJudges(judgesOfSample(sample));
       } else {
         renderTests(sample.tests || []);
-        renderJudges(sample.judges || []);
+        renderJudges(judgesOfSample(sample));
       }
     }
 
