@@ -4,16 +4,47 @@
  */
 (function (global) {
   'use strict';
-  var TID = global.TID, U = global.TIDPU, TIDM = global.TIDM;
+  var TID = global.TID, U = global.TIDPU, TIDM = global.TIDM, TIDN_UTIL = null;
   var esc = U.esc, $ = U.$, clone = U.clone;
 
   var NOM_TYPES = ['单值', '公差', '范围', '最大值', '最小值', '公式'];
   var MIN_OPS = ['>', '≥'], MAX_OPS = ['<', '≤'];
   var CMP_OPS_NUM = ['=', '!=', '<', '≤', '>', '≥'];
-  var CMP_OPS_CONFORM = ['符合'];
-  /* 标称值对比：被对比标称值不是「单值」⇒ 不配修饰符且对比符号只能「符合」；
-   * 是「单值」⇒ 放开 = != < ≤ > ≥，且不得选「符合」 */
+  var CMP_OPS_CONFORM = ['满足'];
+  /* 标称值对比的对比符号由被对比标称值的类型**直接推导并置灰**，不让人自己判断该选哪个：
+   *   未选标称值 ⇒ empty，符号区禁选
+   *   非单值     ⇒ derived，唯一取值「满足」，控件置灰不可选，修饰符（百分比 % ± 常量）整体不配置
+   *   单值       ⇒ pick，可选 = != < ≤ > ≥，「满足」不出现在下拉里
+   * 报告打印时再把「满足」按标称值类型展开成实际数学式（≤7 / ≥16 / ∈[5.6,6.5] / 0.1±0.02）：
+   * 配置语言防错，报告语言仍是标准语言，两边都不妥协。 */
   function cmpOpsFor(nomType) { return nomType === '单值' ? CMP_OPS_NUM : CMP_OPS_CONFORM; }
+  function cmpMode(nomName, side) {
+    if (side !== '标称值对比') return 'pick';
+    if (!nomName) return 'empty';
+    return nomTypeOf(nomName) === '单值' ? 'pick' : 'derived';
+  }
+  function cmpLocked(nomName, side) { return cmpMode(nomName, side) === 'derived'; }
+  /* 报告展开式：配置里的「满足」在打印时还原成标准数学写法 */
+  function reportExpr(item) {
+    if (!item) return '';
+    if (item.multi) return '按 ' + ((item.rows && item.rows.length) || 'N') + ' 行映射逐行展开';
+    var v = item.v || {}, u = item.unit ? ' ' + item.unit : '';
+    var lo = function (op) { return op === '>' ? '(' : '['; };
+    var hi = function (op) { return op === '<' ? ')' : ']'; };
+    if (item.type === '最小值') return (v.minOp || '≥') + (v.min || '…') + u;
+    if (item.type === '最大值') return (v.maxOp || '≤') + (v.max || '…') + u;
+    if (item.type === '范围') return '∈' + lo(v.minOp) + (v.min || '…') + ', ' + (v.max || '…') + hi(v.maxOp) + u;
+    if (item.type === '公差') {
+      var pos = v.posOn ? v.pos : '', neg = v.negOn ? v.neg : '';
+      var tol = (!pos && !neg) ? '…' : (pos && neg ? (pos === neg ? '±' + pos : '+' + pos + '/-' + neg) : (pos ? '+' + pos : '-' + neg));
+      return (v.single || '…') + tol + u;
+    }
+    if (item.type === '公式') return '按公式 ' + (v.formula || '…') + ' 计算后判定';
+    return (v.single || '…') + u;
+  }
+  TIDN_UTIL = { cmpMode: cmpMode, cmpLocked: cmpLocked, reportExpr: reportExpr, nomItemOf: nomItemOf,
+    nomTypeOf: function (n) { return nomTypeOf(n); } };
+  global.TIDNU = TIDN_UTIL;
   var CONCL_LOGIC = ['当满足所有条件时', '当满足任一条件时', '不满足任一条件时', '不满足所有条件时'];
   var LEVELS = ['试样', '样段', '线芯', '试验'];
   /* 层级可用性由样品属性决定：样段要求「是否制样=是」，线芯要求「是否电缆=是」 */
@@ -43,10 +74,12 @@
                  ['紧压绞合圆形', { a: '25', b: '50' }, '6'], ['紧压绞合圆形', { a: '70', b: '95' }, '15'],
                  ['紧压绞合圆形', { a: '120', b: '150' }, '18'], ['紧压绞合圆形', { a: '150', b: '185' }, '30'],
                  ['紧压绞合圆形', { a: '240', b: '300' }, '34']] },
+        { name: '导体最大最小直径（紧压绞合圆型）', symbol: '', unit: 'mm', remark: '', multi: false, type: '范围',
+          v: { minOp: '≥', min: '5.6', maxOp: '≤', max: '6.5' } },
         { name: '导体最大直径（铜芯，实心/非紧压绞合）', symbol: '', unit: 'mm', remark: '', multi: true, type: '最大值',
           vars: [{ kind: '规格参数', label: '导体结构', mode: 'fixed' }, { kind: '规格参数', label: '导体标称截面积S(mm²)', mode: 'fixed' }],
-          rows: ['实心导体|25|5.7|实心导体|35|6.7|实心导体|50|7.8|实心导体|70|9.4|实心导体|95|11.0|实心导体|120|12.4|实心导体|150|13.8|实心导体|185|15.4|实心导体|240|17.6|实心导体|300|19.8']
-            .map(function (x) { return x.split('|'); }) }
+          rows: (function (flat, w) { var o = []; for (var i = 0; i < flat.length; i += w) o.push(flat.slice(i, i + w)); return o; })(
+            '实心导体|25|5.7|实心导体|35|6.7|实心导体|50|7.8|实心导体|70|9.4|实心导体|95|11.0|实心导体|120|12.4|实心导体|150|13.8|实心导体|185|15.4|实心导体|240|17.6|实心导体|300|19.8'.split('|'), 3) }
       ] },
       { sub: '绝缘厚度测量', items: [
         { name: '绝缘标称厚度', symbol: '', unit: 'mm', remark: '', multi: false, type: '最小值', v: { minOp: '≥', min: '4.5' } },
@@ -443,21 +476,21 @@
       conditions: [
         { branch: true, _side: '标称值对比', branches: [
           { kind: 'IF', ifs: [{ type: '实测值', v: '导体结构', op: '不包含', values: ['实心导体'], join: 'and' }],
-            thens: [{ side: '标称值对比', leftType: '实测值', left: '导体单丝根数(根)', cmp: '≥',
+            thens: [{ side: '标称值对比', leftType: '实测值', left: '导体单丝根数(根)', cmp: '满足',
                       rightType: '最小值', right: '导体最少单线数量(根)', join: 'and' }] },
           { kind: 'ELSE IF', ifs: [{ type: '实测值', v: '导体结构', op: '包含', values: ['紧压绞合圆形'], join: 'and' }],
-            thens: [{ side: '标称值对比', leftType: '实测值', left: '导体直径(mm)', cmp: '符合',
+            thens: [{ side: '标称值对比', leftType: '实测值', left: '导体直径(mm)', cmp: '满足',
                       rightType: '范围', right: '导体最大最小直径（紧压绞合圆型）(mm)', join: 'and' }] }
         ] },
-        { _side: '标称值对比', leftType: '实测值', left: '导体直径(mm)', cmp: '符合',
+        { _side: '标称值对比', leftType: '实测值', left: '导体直径(mm)', cmp: '满足',
           rightType: '最大值', right: '导体最大直径（铜芯，实心/非紧压绞合）(mm)' }
       ],
       conclusions: [{ value: '合格', logic: '当满足所有条件时' }, { value: '不合格', logic: '不满足任一条件时' }]
     },
     '老化前绝缘的机械性能': {
       conditions: [
-        { side: '标称值对比', leftType: '计算值', left: '抗张强度中间值(N/mm²)', cmp: '符合', right: '抗张强度最小值（老化前）(N/mm²)', rightKind: '最小值' },
-        { side: '标称值对比', leftType: '计算值', left: '断裂伸长率中间值(%)', cmp: '符合', right: '断裂伸长率最小值（老化前）(%)', rightKind: '最小值' }
+        { side: '标称值对比', leftType: '计算值', left: '抗张强度中间值(N/mm²)', cmp: '满足', right: '抗张强度最小值（老化前）(N/mm²)', rightKind: '最小值' },
+        { side: '标称值对比', leftType: '计算值', left: '断裂伸长率中间值(%)', cmp: '满足', right: '断裂伸长率最小值（老化前）(%)', rightKind: '最小值' }
       ],
       conclusions: [{ value: '合格', logic: '当满足所有条件时' }, { value: '不合格', logic: '不满足任一条件时' }]
     }
@@ -514,6 +547,12 @@
     }).join('') + '<input type="text" class="ms-opt-add" placeholder="回车添加" onkeydown="TIDJ.addOpt(event)" /></div>';
   }
   function tag(t) { return '<span class="jd-tag">' + esc(t) + '</span>'; }
+  /* 配置态显示「满足」，旁边给出报告打印时的展开式（防错配置 / 标准语言报告两不误） */
+  function expNote(row) {
+    if (!row || row.cmp !== '满足' || row.side !== '标称值对比' && row._side !== '标称值对比') return '';
+    var it = nomItemOf(row.right);
+    return it ? '<span class="jd-exp">报告 ' + esc(reportExpr(it)) + '</span>' : '';
+  }
   function cmpSym(c) {
     var m = { '≥': '>=', '≤': '<=', '>': '>', '<': '<', '=': '=', '!=': '!=' };
     return m[c] || c;
@@ -534,7 +573,7 @@
           (b.thens || []).map(function (t, ti) {
             return '<div class="jd-bline">' +
               '<div><b>' + esc(t.left) + '</b>' + tag('标称值对比') + tag(t.leftType === '实测值' ? '实测参数' : '计算参数') + '</div>' +
-              '<span class="jd-bop">' + cmpSym(t.cmp) + '</span>' +
+              '<span class="jd-bop">' + cmpSym(t.cmp) + '</span>' + expNote(t) +
               '<div><b>' + esc(t.right) + '</b>' + tag(t.rightType || '标称值') + '</div>' +
               (ti > 0 ? '<span class="jd-bjoin">' + (t.join || 'and') + '</span>' : '') + '</div>';
           }).join('') + '</div>';
@@ -549,7 +588,7 @@
     if (c.branch) return branchCard(c, i);
     var left = c.source ? '<div class="jd-c"><b>' + esc(c.source) + '</b><span class="jd-cmp">' + esc(c.op) + '</span><span>' + esc((c.values || []).join('、')) + '</span><span class="nv-tag">下拉选项</span></div>'
       : '<div class="jd-c"><b>' + esc(c.left) + '</b><span class="nv-tag">' + esc(c.leftType) + '</span><span class="jd-cmp">' + esc(c.cmp) + '</span>' +
-        '<span>' + esc(c.right || '') + '</span><span class="nv-tag">' + esc(c.rightKind || '标称值') + '</span></div>';
+        expNote(c) + '<span>' + esc(c.right || '') + '</span><span class="nv-tag">' + esc(c.rightKind || '标称值') + '</span></div>';
     return '<div class="jd-cond"><b>条件' + (i + 1) + '</b><span class="nv-ops">' +
       '<a class="link" onclick="TIDJ.editCond(' + i + ')"><i class="fa fa-pencil"></i> 编辑</a>' +
       '<a class="link danger" onclick="TIDJ.delCond(' + i + ')"><i class="fa fa-trash"></i> 删除</a></span>' +
@@ -572,12 +611,26 @@
     j.conditions = []; j.conclusions = []; renderJudge();
   };
 
+  /* 符号区：条件行与分支 THEN 共用，杜绝两处规则不一致 */
+  function sepHtml(side, rightName, cur, onSet) {
+    var mode = cmpMode(rightName, side);
+    if (mode === 'derived') {
+      var it = nomItemOf(rightName);
+      return '<div class="jd-derived"><b>满足</b><span>由标称值类型「' + esc(it.type) + '」推导，不可选择</span>' +
+        '<span class="jd-rpt">报告展开 ' + esc(reportExpr(it)) + '</span></div>';
+    }
+    if (mode === 'empty') return '<div class="jd-derived is-off"><b>—</b><span>选定标称值后自动推导符号</span></div>';
+    return '<select onchange="' + onSet + '"><option value="">请选择</option>' +
+      cmpOpsFor(side === '标称值对比' ? nomTypeOf(rightName) : '单值').map(function (o) {
+        return '<option' + (o === cur ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select>';
+  }
+
   var CD = null;
   function condModal() {
     var j = judge();
     CD = J._ci >= 0 ? clone(j.conditions[J._ci]) : (j.ruleMode === '判定对比'
       ? { source: (norm()[0] || '') + '-结论', op: '包含', values: ['合格'] }
-      : { side: '标称值对比', leftType: '计算值', left: '', leftPct: { on: false, sign: '+', val: '' }, cmp: '符合', rightKind: '标称值', right: '', rightPct: { on: false, sign: '+', val: '' }, branch: false });
+      : { side: '标称值对比', leftType: '计算值', left: '', leftPct: { on: false, sign: '+', val: '' }, cmp: '满足', rightKind: '标称值', right: '', rightPct: { on: false, sign: '+', val: '' }, branch: false });
     CD._side = CD.side || '标称值对比';
     CD._bi = 0;
     condRender();
@@ -607,16 +660,14 @@
         '<span class="jd-star">*</span><span class="jd-pct">百分比 %</span>' +
         '<select onchange="TIDJ.setC(\'leftPct.sign\',this.value)"><option>+</option><option>-</option></select>' +
         '<input type="text" value="' + esc(CD.leftPct.val) + '" placeholder="输入数值" oninput="TIDJ.setC(\'leftPct.val\',this.value)" /></div></div>' +
-        '<div class="jd-sep"><select onchange="TIDJ.setC(\'cmp\',this.value)"><option value="">请选择</option>' +
-        cmpOpsFor(side === '标称值对比' ? nomTypeOf(CD.right) : '单值').map(function (o) {
-          return '<option' + (o === CD.cmp ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></div>' +
+        '<div class="jd-sep">' + sepHtml(side, CD.right, CD.cmp, "TIDJ.setC('cmp',this.value)") + '</div>' +
         '<div><span class="pm-mut">' + (side === '标称值对比' ? '标称值：' : '') + '</span><div class="jd-row">' +
         (side === '标称值对比'
           ? '<select onchange="TIDJ.setC(\'right\',this.value)"><option value="">请选择</option>' + nomNames().map(function (n) {
             return '<option' + (n === CD.right ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select>' +
             (nomTypeOf(CD.right) === '单值'
               ? '<span class="jd-star">*</span><span class="jd-pct">百分比 %</span><select><option>+</option><option>-</option></select><input type="text" placeholder="输入数值" />'
-              : '<span class="jd-lock"><i class="fa fa-lock"></i> 非单值标称值不配修饰符，对比符号锁定为「符合」</span>')
+              : '<span class="jd-lock"><i class="fa fa-lock"></i> 非单值标称值不配修饰符，对比符号由类型推导为「满足」</span>')
           : '<select onchange="TIDJ.setC(\'rightWhat\',this.value)"><option>参数</option><option>自定义数值</option></select>' +
             (CD.rightWhat === '自定义数值' ? '<input type="text" value="' + esc(CD.rightVal || '') + '" placeholder="请输入" oninput="TIDJ.setC(\'rightVal\',this.value)" />'
               : '<select onchange="TIDJ.setC(\'right\',this.value)"><option value="">请选择</option>' + paramNames('实测值').map(function (n) {
@@ -636,12 +687,15 @@
     return t === '实测值' ? pool.measured : pool.computed;
   }
   /* PRD §3.4.4：标称值除「单值」外均不配置动态修饰符引擎，对比符号强制「符合」 */
-  function nomTypeOf(name) {
-    var hit = null;
+  function nameKey(n) { return String(n || '').replace(/\uff08/g, '(').replace(/\uff09/g, ')').replace(/\s+/g, '').trim(); }
+  function nomItemOf(name) {
+    var k = nameKey(name), hit = null;
+    if (!k) return null;
     nomGroups().forEach(function (g) { g.items.forEach(function (it) {
-      if (it.name + (it.unit ? '（' + it.unit + '）' : '') === name) hit = it; }); });
-    return hit ? hit.type : '单值';
+      if (nameKey(it.name + (it.unit ? '（' + it.unit + '）' : '')) === k || nameKey(it.name) === k) hit = it; }); });
+    return hit;
   }
+  function nomTypeOf(name) { var hit = nomItemOf(name); return hit ? hit.type : '单值'; }
   function nomNames() {
     var out = [];
     nomGroups().forEach(function (g) { g.items.forEach(function (it) { out.push(it.name + (it.unit ? '（' + it.unit + '）' : '')); }); });
@@ -664,12 +718,12 @@
   }
   function newCond() { return { type: '实测值', v: '', op: '包含', values: [], join: 'and' }; }
   function newThen() { return { side: '标称值对比', leftType: '实测值', left: '', leftPct: { sign: '+', val: '' },
-    cmp: '符合', rightType: '', right: '', rightPct: { sign: '+', val: '' }, join: 'and' }; }
+    cmp: '满足', rightType: '', right: '', rightPct: { sign: '+', val: '' }, join: 'and' }; }
   function blankBranch(kind) { return { kind: kind, ifs: [newCond()], thens: [newThen()] }; }
   function toBranches() {
     var b = blankBranch('IF');
     b.thens = [{ side: CD._side || '标称值对比', leftType: CD.leftType || '实测值', left: CD.left || '',
-      leftPct: CD.leftPct || { sign: '+', val: '' }, cmp: CD.cmp || '符合', rightType: CD.rightType || '',
+      leftPct: CD.leftPct || { sign: '+', val: '' }, cmp: CD.cmp || '', rightType: CD.rightType || '',
       right: CD.right || '', rightPct: CD.rightPct || { sign: '+', val: '' }, join: 'and' }];
     if (CD.source) { b.ifs = [{ type: '下拉选项', v: CD.source, op: CD.op || '包含', values: (CD.values || []).slice(), join: 'and' }]; }
     return [b];
@@ -740,13 +794,12 @@
       '<span class="jd-star">*</span><span class="jd-pct">百分比 %</span>' +
       '<select onchange="TIDJ.setThen(' + i + ',\'leftPct.sign\',this.value)"><option>+</option><option>-</option></select>' +
       '<input type="text" value="' + esc((t.leftPct||{}).val) + '" placeholder="输入数值" oninput="TIDJ.setThen(' + i + ',\'leftPct.val\',this.value)" /></div></div>' +
-      '<div class="jd-sep"><select onchange="TIDJ.setThen(' + i + ',\'cmp\',this.value)"><option value="">请选择</option>' +
-      cmpOpsFor(t.side === '标称值对比' ? nt : '单值').map(function (o) { return '<option' + (o === t.cmp ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></div>' +
+      '<div class="jd-sep">' + sepHtml(t.side, t.right, t.cmp, "TIDJ.setThen(" + i + ",'cmp',this.value)") + '</div>' +
       '<div><span class="pm-mut">标称值：</span>' + (t.side === '标称值对比' && t.right ? tag(nt) : '') +
       '<div class="jd-row"><select onchange="TIDJ.setThen(' + i + ',\'right\',this.value)"><option value="">请选择</option>' +
       nomNames().map(function (x) { return '<option' + (x === t.right ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>' +
       (t.side === '标称值对比' && nt !== '单值'
-        ? '<span class="jd-lock"><i class="fa fa-lock"></i> 非单值不配修饰符，符号锁定「符合」</span>'
+        ? '<span class="jd-lock"><i class="fa fa-lock"></i> 非单值不配修饰符，符号推导为「满足」</span>'
         : '<span class="jd-star">*</span><span class="jd-pct">百分比 %</span>' +
           '<select onchange="TIDJ.setThen(' + i + ',\'rightPct.sign\',this.value)"><option>+</option><option>-</option></select>' +
           '<input type="text" value="' + esc((t.rightPct||{}).val) + '" placeholder="输入数值" oninput="TIDJ.setThen(' + i + ',\'rightPct.val\',this.value)" />') +
@@ -774,8 +827,8 @@
     if (ps.length > 1) { t[ps[0]] = t[ps[0]] || {}; t[ps[0]][ps[1]] = v; } else t[k] = v;
     if (k === 'right' || k === 'side' || k === 'leftType' || k === '_side') {
       if (k === '_side') t.side = v;
-      if (t.side === '标称值对比' && nomTypeOf(t.right) !== '单值') t.cmp = '符合';
-      if (t.side === '标称值对比' && nomTypeOf(t.right) === '单值' && t.cmp === '符合') t.cmp = '';
+      if (cmpLocked(t.right, t.side)) t.cmp = '满足';
+      else if (t.cmp === '满足') t.cmp = '';
     }
     branchCondRender();
   };
@@ -798,9 +851,17 @@
       }
       return;
     }
+    if (k === 'right' && CD._side === '标称值对比') {
+      if (cmpLocked(v, CD._side)) CD.cmp = '满足';
+      else if (CD.cmp === '满足') CD.cmp = '';
+    }
     if (k === 'leftType' || k === 'rightWhat' || k === 'right') condRender();
   };
-  J.side = function (s) { CD._side = s; CD.side = s; condRender(); };
+  J.side = function (s) {
+    CD._side = s; CD.side = s;
+    if (s === '标称值对比' && cmpLocked(CD.right, s)) CD.cmp = '满足';
+    condRender();
+  };
   J.addVal = function (v) { if (v && CD.values.indexOf(v) < 0) CD.values.push(v); condRender(); };
   J.delVal = function (i, ev) { ev.stopPropagation(); CD.values.splice(i, 1); condRender(); };
   J.condOk = function () {
@@ -823,8 +884,8 @@
     else {
       if (CD._side === '标称值对比' && CD.right) {
         var nt = nomTypeOf(CD.right);
-        if (nt !== '单值' && CD.cmp !== '符合') { U.toast('被对比标称值类型为「' + nt + '」，不配置修饰符，对比符号只能选「符合」'); return; }
-        if (nt === '单值' && CD.cmp === '符合') { U.toast('被对比标称值为单值时，对比符号请用 = != < ≤ > ≥，不可选「符合」'); return; }
+        if (nt !== '单值' && CD.cmp !== '满足') { U.toast('被对比标称值类型为「' + nt + '」，不配置修饰符，对比符号由类型推导为「满足」'); return; }
+        if (nt === '单值' && CD.cmp === '满足') { U.toast('被对比标称值为单值时，对比符号请用 = != < ≤ > ≥，不可用「满足」'); return; }
       }
       var rightOk = CD.right || (CD.rightWhat === '自定义数值' && CD.rightVal);
       if (!CD.left || !CD.cmp || !rightOk) { U.toast('请补全参数、对比符号与被对比值'); return; }
@@ -968,5 +1029,5 @@
   };
   var _open = TID.open;
   TID.open = function (i) { _open.call(TID, i); N.rail = 0; J.rail = 0; C.page = 1; };
-  global.TIDN = N; global.TIDJ = J; global.TIDC = C;
+  global.TIDN = N; global.TIDJ = J; global.TIDC = C; global.TIDNU = TIDN_UTIL;
 })(typeof window !== 'undefined' ? window : globalThis);
