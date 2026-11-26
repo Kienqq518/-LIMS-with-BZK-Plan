@@ -67,14 +67,17 @@
   function paintHeader() {
     var el = document.getElementById('wbDoc'); if (!el) return;
     var left = SCOPE.filter(function (q) { return !S.answers[q.id]; }).length;
-    var fLeft = rawLeft(), sk = skipCnt(), ai = aiCnt();
-    el.innerHTML = '稿件 <b style="color:' + (S.generated ? '#15803d' : '#1e293b') + '">' +
-      (S.generated ? 'v1-draft' : '未生成') + '</b> · ' +
-      (left ? '范围级剩 ' + left + ' 处必答'
-        : (fLeft ? '未处置 ' + fLeft + ' 处' : (sk ? '已处置完，跳过 ' + sk + ' 处待 F3 再问' : '待定项已清零'))) +
-      (S.generated && (fLeft || sk) ? ' · <span style="color:#b45309">' +
-        (fLeft ? '定稿前需清零或跳过' : '入库前需二次确认') + '</span>' : '') +
-      (S.imported ? ' · <span style="color:#6d28d9">已入库' + (ai ? '，自决 ' + ai + ' 处已通知' : '') + '</span>' : '');
+    var fLeft = rawLeft(), sk = skipCnt(), ai = aiCnt(), ver = global.ORCver || 1;
+    // 顶栏只报一个主状态，按流水线取最高位：已入库 > 已定稿 > 已生成 > 未生成
+    var main = S.imported ? '<b style="color:#6d28d9">v' + ver + (S.imported === 2 ? ' 已重放' : ' 已入库') + (ai ? '（自决 ' + ai + ' 处已通知）' : '') + '</b>'
+      : S.finalized ? '<b style="color:#15803d">v' + ver + '-final 已定稿</b>'
+      : S.generated ? '<b style="color:#15803d">v' + ver + '-draft 已生成</b>'
+      : '<b style="color:#1e293b">未生成</b>';
+    var tail = S.imported
+      ? (fLeft || sk ? ' · <span style="color:#b45309">仍有 ' + (fLeft + sk) + ' 处未闭环，下次入库会再拦</span>' : ' · 待定项已闭环')
+      : (left ? ' · 范围级剩 ' + left + ' 处必答'
+        : (fLeft ? ' · 未处置 ' + fLeft + ' 处' : (sk ? ' · 跳过 ' + sk + ' 处待 F3 再问' : ' · 待定项已清零')));
+    el.innerHTML = '稿件 ' + main + tail;
     var dl = document.getElementById('btnDl'); if (dl) dl.disabled = !S.generated;
   }
 
@@ -548,6 +551,23 @@
   WB.raw = function (id) { return RAW.filter(function (x) { return x.id === id; })[0]; };
   WB.state = function () { return S.answers; };
   WB.say = function (w, n, t) { say(w, n, t); paintChat(); };
+  WB.imported = function () { return !!S.imported; };
+  WB.unanswered = function () { return RAW.filter(function (q) { return !S.answers[q.id]; }).length; };
+  WB.scopeLeft = function () { return SCOPE.filter(function (q) { return !S.answers[q.id]; }).length; };
+  WB.replaceChat = function (needle, text) {
+    for (var i = S.chat.length - 1; i >= 0; i--) {
+      if (S.chat[i].text.indexOf(needle) >= 0) { S.chat[i].text = text; S.chat[i].at = now(); break; }
+    }
+    save(); paintChat();
+  };
+  WB.markFinal = function () { S.finalized = 1; S.generated = 1; save(); paintHeader(); };
+  WB.markGenerated = function () { S.generated = 1; if (S.imported) S.imported = 2; save(); paintHeader(); };
+  WB.ask = function (t) {
+    if (!t || !t.trim()) return;
+    if (global.ORC) ORC.ask(t.trim());
+    else say('sys', '系统', '编排器未加载。');
+    var i = document.getElementById('chatIn'); if (i) i.value = '';
+  };
   global.WB = WB;
   global.WBInit = function (raw) {
     RAW = raw; build();

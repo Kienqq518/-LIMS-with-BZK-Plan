@@ -197,8 +197,23 @@
       inp.onblur = commit;
       inp.onkeydown = function (e) { if (e.key === 'Enter') inp.blur(); if (e.key === 'Escape') { done = true; setTimeout(render, 0); } };
     },
+    applyExternal: function (ri, col, v) {
+      ST.edits[ST.sheet + '|' + ri + '|' + col] = v;
+      ST.ext = ST.ext || {}; ST.ext[ST.sheet + '|' + ri + '|' + col] = v;
+    },
+    showExternalDiff: function (patches) {
+      ST.sheet = patches[0].sheet; ST.extList = patches.slice(); render();
+    },
+    /* ── 三方对比：库内基线 ↔ 本次上传 ↔ AI 原稿 ── */
+    openDiff: function () { ST.diff = buildDiff(); renderDiff(); },
+    closeDiff: function () { ST.diff = null; document.getElementById('f2Diff').classList.remove('show'); render(); },
+    accept: function (i) { var d = ST.diff.list[i]; d.verdict = 'accept'; applyVerdict(d); renderDiff(); },
+    revert: function (i) { var d = ST.diff.list[i]; d.verdict = 'revert'; renderDiff(); },
+    toIssue: function (i) { var d = ST.diff.list[i]; d.verdict = 'issue'; renderDiff(); },
+    acceptAll: function () { ST.diff.list.forEach(function (d) { if (d.verdict !== 'issue') { d.verdict = 'accept'; applyVerdict(d); } }); renderDiff(); },
     finalize: function () {
-      if (WB.say) WB.say('sys', '系统', '稿件转 <b>v-final</b> 定稿并锁定。定稿稿件不可变，再改需开新版本。');
+      if (WB.markFinal) WB.markFinal();
+      if (WB.say) WB.say('sys', '系统', '稿件转 <b>v' + (global.ORCver || 1) + '-final</b> 定稿并锁定。定稿稿件不可变，再改需开新版本。');
       renderGate();
     },
     locate: function (sh, rowkey, col) {
@@ -208,6 +223,84 @@
     },
     state: function () { return ST; }
   };
+  function applyVerdict(d) {
+    var rs = rows(d.sheet), i = -1;
+    for (var k = 0; k < rs.length; k++) if (rs[k][KEYCOL[d.sheet]] === d.row) { i = k; break; }
+    if (i < 0) return;
+    if (d.verdict === 'accept') {
+      ST.edits[d.sheet + '|' + i + '|' + d.col] = d.upload;
+      if (WB.say) WB.say('sys', '系统', '接受线下改动 <span class="tg">' + esc(d.sheet) + '</span><span class="tg">' +
+        esc(d.row) + '</span><span class="tg">' + esc(d.col) + '</span> ' + esc(d.baseline || '∅') + ' → <b>' + esc(d.upload) + '</b>，来源转「人工确认」。');
+    }
+  }
+  function buildDiff() {
+    var r90 = rows('90_标称值'), list = [];
+    function pick(f) { for (var i = 0; i < r90.length; i++) if (f(r90[i])) return r90[i]; return null; }
+    var a = pick(function (r) { return String(r['最小值'] || '').trim(); });
+    var b = pick(function (r) { return String(r['单值'] || '').trim(); });
+    var c = pick(function (r) { return String(r['最大值'] || '').trim(); });
+    if (a) list.push({ sheet: '90_标称值', row: a['标称值键'], name: a['标称值名称'], col: '最小值',
+      baseline: a['最小值'], ai: a['最小值'], upload: bump(a['最小值'], 1), kind: '人改', conf: '已验证' });
+    if (b) list.push({ sheet: '90_标称值', row: b['标称值键'], name: b['标称值名称'], col: '单值',
+      baseline: b['单值'], ai: b['单值'], upload: bump(b['单值'], -1), kind: '人改', conf: '已验证' });
+    if (a) list.push({ sheet: '90_标称值', row: a['标称值键'], name: a['标称值名称'], col: '修约精度',
+      baseline: '', ai: '1', upload: '2', kind: 'AI 重算', conf: '未验证' });
+    if (c) list.push({ sheet: '90_标称值', row: c['标称值键'], name: c['标称值名称'], col: '最大值',
+      baseline: c['最大值'], ai: c['最大值'], upload: bump(c['最大值'], 2), kind: '冲突', conf: '冲突' });
+    list.forEach(function (d) { d.verdict = d.kind === '冲突' ? 'issue' : ''; });
+    return { list: list, file: 'DS实壁类塑料电缆导管_稿件v2_专家线下.xlsx', at: new Date().toLocaleString('zh-CN', { hour12: false }) };
+  }
+  function bump(v, n) {
+    var x = parseFloat(String(v).replace(/[^\d.\-]/g, ''));
+    return isNaN(x) ? String(v) + '·改' : String(Math.round((x + n) * 1000) / 1000);
+  }
+  function renderDiff() {
+    var el = document.getElementById('f2Diff'); if (!el) return;
+    var d = ST.diff;
+    el.classList.add('show');
+    var nAcc = d.list.filter(function (x) { return x.verdict === 'accept'; }).length;
+    var nIss = d.list.filter(function (x) { return x.verdict === 'issue'; }).length;
+    el.innerHTML = '<div class="dh"><b>三方对比</b><span>' + esc(d.file) + ' · ' + esc(d.at) + '</span>' +
+      '<span class="sp">基线（上次定稿/已入库） ↔ 本次上传 ↔ AI 原稿</span>' +
+      '<button class="btn-outline" onclick="F2.closeDiff()">收起</button></div>' +
+      '<table class="df-tbl"><tr><th>数据</th><th>列</th><th class="b">库内基线</th><th class="a">AI 原稿</th>' +
+      '<th class="u">本次上传</th><th>性质</th><th>处置</th></tr>' +
+      d.list.map(function (x, i) {
+        return '<tr class="' + (x.verdict || '') + ' ' + (x.kind === '冲突' ? 'conf' : '') + '">' +
+          '<td><b>' + esc(x.name) + '</b><code>' + esc(x.row) + '</code></td><td>' + esc(x.col) + '</td>' +
+          '<td class="b">' + esc(x.baseline || '∅') + '</td>' +
+          '<td class="a">' + esc(x.ai || '∅') + '</td>' +
+          '<td class="u"><b>' + esc(x.upload) + '</b></td>' +
+          '<td><span class="kd ' + (x.kind === '冲突' ? 'c' : x.kind === '人改' ? 'h' : 'r') + '">' + esc(x.kind) + '</span></td>' +
+          '<td>' + opBtns(x, i) + '</td></tr>';
+      }).join('') + '</table>' +
+      '<div class="df-foot"><span>接受 <b>' + nAcc + '</b> · 转问题 <b class="warn">' + nIss + '</b></span>' +
+      '<button class="btn-outline" onclick="F2.acceptAll()">接受全部非冲突项</button>' +
+      '<button class="btn-save" ' + (nIss ? 'disabled title="还有冲突项没处置"' : '') +
+      ' onclick="F2.mergeUpload()">合并进稿件新版本</button>' +
+      '<span class="tip">规则：人改的优先；人改的与校验规则冲突时不覆盖，转为问题。</span></div>';
+  }
+  function opBtns(x, i) {
+    if (x.verdict === 'accept') return '<span class="ok">已接受</span>';
+    if (x.verdict === 'revert') return '<span class="ok">已回退到基线</span>';
+    if (x.verdict === 'issue') return '<span class="warn">已转问题</span>' +
+      '<span class="wb-loc" onclick="WB.stage(\'f1\')">去看</span>';
+    return '<button class="btn-save xs" onclick="F2.accept(' + i + ')">接受</button>' +
+      '<button class="btn-outline xs" onclick="F2.revert(' + i + ')">回退</button>';
+  }
+  function mergeUpload() {
+    var n = ST.diff.list.filter(function (x) { return x.verdict === 'accept'; }).length;
+    ST.diff = null;
+    document.getElementById('f2Diff').classList.remove('show');
+    if (WB.say) {
+      WB.say('sys', '系统', '线下稿件已合并：接受 <b>' + n + '</b> 处人工改动，生成新版本稿件；' +
+        '冲突项已转成收件箱问题，定稿前必须处置。');
+      WB.say('ai', 'AI 助手', '合并后我重跑了 D0 校验：真缺陷 0。要入库就说「可以入库了」，或点 F3。');
+    }
+    render();
+  }
+  F2.mergeUpload = mergeUpload;
+
   function applyHl() {
     var sh = ST.sheet, rs = rows(sh), hit = -1;
     for (var i = 0; i < rs.length; i++) {

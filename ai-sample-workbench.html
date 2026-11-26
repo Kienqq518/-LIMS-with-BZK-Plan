@@ -72,10 +72,16 @@
      </div>
 
      <div id="wbF2" style="display:none">
-      <div class="f2-tabs" id="f2Tabs"></div>
+      <div class="f2-tabs"><span id="f2Tabs" style="display:flex;gap:6px"></span>
+        <span style="flex:1"></span>
+        <button class="btn-outline" style="font-size:11.5px" onclick="F2.openDiff()">
+          <i class="fa fa-upload"></i> 上传线下改完的稿件</button>
+        <button class="btn-outline" style="font-size:11.5px" onclick="WB.say('sys','系统','稿件 v' + ((window.ORCver||1)) + '-draft 已导出，22 张 sheet 全量。改完从这个按钮传回来，我会做三方对比。');alert('已导出稿件（原型演示）')">下载稿件</button>
+      </div>
       <div class="f2-wrap">
         <div class="f2-main">
           <div class="f2-cnt" id="f2Cnt"></div>
+          <div id="f2Diff" class="f2-diff"></div>
           <div class="f2-scroll" id="f2Body"></div>
         </div>
         <aside class="f2-drawer" id="f2Drawer"></aside>
@@ -111,6 +117,15 @@
   <aside class="wb-chat">
     <div class="wb-chat-h"><span class="on">对话与提问</span><span onclick="alert('日志页原型未接')">操作日志</span></div>
     <div class="wb-chat-b" id="wbChat"></div>
+    <div class="wb-composer">
+      <div class="chips"><span onclick="ORC.quick(this)">系统里 SN24 那条环刚度下限是错的，改成 25</span>
+        <span onclick="ORC.quick(this)">可以入库了</span>
+        <span onclick="ORC.quick(this)">别绕了，直接改库</span>
+        <span onclick="ORC.quick(this)">为什么这几行是灰的</span></div>
+      <div class="crow"><textarea id="chatIn" rows="2" placeholder="直接说要做的事，我来判断走 F1 / F2 / F3 哪几步"></textarea>
+        <button class="btn-save" onclick="WB.ask(document.getElementById('chatIn').value)">发 送</button></div>
+      <div class="cnote">对话不改变唯一真源：任何写库都必须经过稿件。跨阶段执行前会先给你编排计划卡。</div>
+    </div>
   </aside>
 </div>
 
@@ -119,6 +134,7 @@
 <script src="js/workbench-sheet-data.js"></script>
 <script src="js/ai-sample-workbench.js"></script>
 <script src="js/ai-sample-f2.js"></script>
+<script src="js/ai-sample-orchestrator.js"></script>
 <script>
   (function () {
     WBInit(window.INBOX_SEED);
