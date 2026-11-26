@@ -22,7 +22,7 @@
     { code: 'EN 50306-2:2020', nm: '铁路机车车辆电缆', stage: 3, q: 0, done: 0, st: '已定稿' }
   ];
 
-  var S = { answers: {}, collapsed: {}, chat: [], run: 0, task: 0, generated: 0, stage: 'f1', notified: 0 };
+  var S = { answers: {}, collapsed: {}, chat: [], run: 0, task: 0, generated: 0, stage: 'f1', notified: 0, f1sub: 'inbox' };
   function mode(id) { var a = S.answers[id]; return a ? (a.mode || 'answer') : ''; }
   function cnt(f) { var n = 0; for (var k in S.answers) if (f(S.answers[k])) n++; return n; }
   function rawLeft() { var n = 0; RAW.forEach(function (q) { if (!S.answers[q.id]) n++; }); return n; }
@@ -511,7 +511,7 @@
     ['btnDl', 'btnRun'].forEach(function (id) { document.getElementById(id).style.display = k === 'f1' ? '' : 'none'; });
     if (k === 'f3') renderF3();
     else if (k === 'f2') { if (global.F2) F2.render(); }
-    else render();
+    else { renderF1u(); render(); }
     if (k === 'f1' && focusId) {
       var c = document.getElementById('q_' + focusId) ||
         (function () { var g = groupOf(focusId)[0]; return document.getElementById('q_' + g); })();
@@ -560,6 +560,90 @@
     }
     save(); paintChat();
   };
+  /* ═════ 编排留痕面板 ═════ */
+  var TRC = [];
+  WB.setTraces = function (t) { TRC = t; var e = document.getElementById('trcN'); if (e) e.textContent = t.length; };
+  WB.openTrace = function (t) {
+    WB.setTraces(t);
+    document.getElementById('trcList').innerHTML = (t.length ? t.map(function (x, i) {
+      return '<div class="trc-i' + (x.rolled ? ' rolled' : '') + '">' +
+        '<div class="hd"><span class="tg">' + esc(x.id) + '</span><span class="at">' + esc(x.at) + '</span>' +
+        '<span class="it">' + esc(x.intent) + '</span><span class="who">' + esc(x.who) + '</span></div>' +
+        '<div class="say">「' + esc(x.text) + '」</div>' +
+        '<div class="rl">' +
+          '<span>补丁 <b>' + (x.patches ? x.patches.length : 0) + '</b> 处</span>' +
+          '<span>稿件 <b>v' + x.ver + '</b></span>' +
+          '<span>预检 <b>' + esc(x.d0) + '</b></span>' +
+          (x.blocks && x.blocks.length ? '<span>重放块 <b>' + esc(x.blocks.join(' / ')) + '</b></span>' : '') +
+          (x.rolled ? '<span class="bad">已回滚</span>' : '') +
+        '</div>' +
+        (x.patches && x.patches.length ? '<div class="pd">' + x.patches.slice(0, 4).map(function (y) {
+          return '<code>' + esc(y.sheet) + ' · ' + esc(y.row) + ' · ' + esc(y.col) + '</code> ' +
+            '<s>' + esc(y.from) + '</s>→<b>' + esc(y.to) + '</b>';
+        }).join('<br>') + (x.patches.length > 4 ? '<br><span class="mo">…共 ' + x.patches.length + ' 处</span>' : '') + '</div>' : '') +
+        (x.rolled ? '' : '<div class="op"><button class="btn-outline xs" onclick="WB.closeTrace();ORC.fast(\'' +
+          (x.planId || 'P0') + '\')">重放这次编排</button></div>') + '</div>';
+    }).join('') : '<div class="trc-e">还没有编排记录。在右下角对话里说一句「系统里 维卡软化温度下限 那条是错的，改成 95」并确认执行，这里就会留下第一条。</div>');
+    document.getElementById('trcMask').classList.add('show');
+  };
+  WB.closeTrace = function () { document.getElementById('trcMask').classList.remove('show'); };
+
+  /* ═════ F1 上传与拆解 ═════ */
+  function renderF1u() {
+    var el = document.getElementById('wbF1u'); if (!el) return;
+    el.innerHTML =
+      '<div class="up-slots">' +
+        slot('检测能力范围表', '认可的检测能力范围(中文).pdf', '已解析 · 11 页 · 3 个检测对象大类', 'ok') +
+        slot('检测依据标准文件', 'DL/T 802.3—2023.pdf', '已识别 DL/T 802.3—2023 · 命中库内 v3 成果', 'ok') +
+        slot('检测报告 / 原始记录单', '数据线.docm · EN50264.docm', '已解析 · 用于补型号与参数命名', 'ok') +
+      '</div>' +
+      '<div class="f1-sec"><h4>任务发现<span class="sh">AI 先给清单，人确认后才开工；一个任务 = 一份标准文件</span></h4>' +
+        '<table class="task-tbl"><tr><th>标准文件</th><th>层级角色</th><th>覆盖样品 / 型号</th><th>库状态</th><th>建议</th><th></th></tr>' +
+        task('DL/T 802.3—2023', '子标准（802.1 点名的实壁类）', '2 个样品 / 8 个型号', '已存档 · 已拆解 v3', '独立成任务', 1) +
+        task('DL/T 802.1—2023', '总标准（集合型，不直接产数据）', '电缆保护管全类型索引', '已存档 · 未拆解', '只建分类节点，不建任务', 0) +
+        task('DL/T 802.4—2023', '子标准（波纹型，802.1 点名）', '能力表未覆盖', '未上传', '本次不拆', 0) +
+        '</table><div class="f1-note">能力表只覆盖实壁类，所以只生成 1 个任务；' +
+        '若你说「波纹型也要拆」，需要补传 DL/T 802.4—2023，我会另开一个任务。</div></div>' +
+      '<div class="f1-sec"><h4>拆解进度</h4>' +
+        '<div id="f1Stages">' + ['识别标准文件|DL/T 802.3—2023 · 规范化编号 + 年号',
+          '命中库|元数据命中 · 文件本体按客户隔离 · 拆解成果可复用',
+          '任务发现|1 个任务 · 2 个样品 / 8 个型号',
+          '逐 sheet 生成|22 张 · 166 参数 / 42 判定条件'].map(function (x) {
+            var a = x.split('|');
+            return '<div class="wb-stage done"><span class="dot"></span>' + esc(a[0]) + '<span class="out">' + esc(a[1]) + '</span></div>';
+          }).join('') + '</div>' +
+        '<div class="f1-acts"><button class="btn-save" onclick="WB.f1sub(\'inbox\')">进入问题收件箱（89 条）</button>' +
+        '<button class="btn-outline" onclick="WB.ask(\'命中库了，按库内成果拆还是按我上传的拆？\')">问：命中库怎么拆</button></div></div>';
+  }
+  function slot(t, f, st, cls) {
+    return '<div class="slot ' + cls + '"><div class="st-t">' + esc(t) + '</div>' +
+      '<div class="st-f"><i class="fa fa-file-pdf-o"></i> ' + esc(f) + '</div>' +
+      '<div class="st-s">' + esc(st) + '</div></div>';
+  }
+  function task(code, role, cov, lib, sug, on) {
+    return '<tr class="' + (on ? 'on' : '') + '"><td><b>' + esc(code) + '</b></td><td>' + esc(role) + '</td>' +
+      '<td>' + esc(cov) + '</td><td>' + esc(lib) + '</td><td>' + esc(sug) + '</td>' +
+      '<td>' + (on ? '<span class="ok2"><i class="fa fa-check-circle"></i> 已确认</span>'
+                   : '<button class="btn-outline xs" onclick="this.parentNode.innerHTML=\'<span class=\'ok2\'>已确认</span>\'">加入</button>') + '</td></tr>';
+  }
+  WB.f1sub = function (k) {
+    S.f1sub = k;
+    if (k === 'upload') renderF1u();
+    var bb = document.querySelector('.wb-batch');
+    if (bb) bb.style.display = (k === 'inbox' && S.stage === 'f1') ? '' : 'none';
+    document.getElementById('wbF1u').style.display = k === 'upload' ? '' : 'none';
+    document.getElementById('wbInbox').style.display = k === 'inbox' ? '' : 'none';
+    renderF1Sub();
+  };
+  function renderF1Sub() {
+    var e = document.getElementById('f1Sub'); if (!e) return;
+    var un = WB.unanswered();
+    e.innerHTML = '<span class="' + (S.f1sub !== 'inbox' ? 'on' : '') + '" onclick="WB.f1sub(\'upload\')">上传与拆解</span>' +
+      '<span class="' + (S.f1sub === 'inbox' ? 'on' : '') + '" onclick="WB.f1sub(\'inbox\')">问题收件箱<small>' + un + ' 条未答</small></span>';
+  }
+  var _render = render;
+  render = function () { _render(); renderF1Sub(); };
+
   WB.markFinal = function () { S.finalized = 1; S.generated = 1; save(); paintHeader(); };
   WB.markGenerated = function () { S.generated = 1; if (S.imported) S.imported = 2; save(); paintHeader(); };
   WB.ask = function (t) {

@@ -10,7 +10,16 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
     });
   };
-  var PLANS = {}, seq = 0;
+  var PLANS = {}, seq = 0, TRACES = [];
+  function rec(p) {
+    TRACES.unshift({ id: 'T' + (TRACES.length + 1), at: new Date().toLocaleString('zh-CN', { hour12: false }),
+      who: '实施工程师 · 内部档', text: p.text, intent: p.intent, patches: p.patches.slice(),
+      ver: global.ORCver || 1, d0: '真缺陷 0 · 通过',
+      kind: p.kind, rolled: !!p.rolled,
+      blocks: (p.intent === '改已入库' || p.kind === 'import') ? p.blocks.slice() : [] });
+    if (TRACES.length > 40) TRACES.pop();
+    if (WB.setTraces) WB.setTraces(TRACES);
+  }
 
   /* ── 意图分类 ── */
   function classify(t) {
@@ -29,25 +38,41 @@
   function toPatches(s) {
     var out = [], seed = global.SHEET_SEED;
     if (!seed) return out;
-    var m = s.match(/(.+?)(?:的|，|,)(?:标称值|参数|列)?(.{0,10}?)?\s*(?:改成|改为|调成|换成)\s*([^\s，。,]+)/);
-    var target = m ? m[1] : '', col = (m && m[2]) || '', val = m ? m[3] : '';
-    var rows = seed['90_标称值'].rows;
-    var hit = rows.filter(function (r) {
-      if (!target) return false;
-      return (r['标称值名称'] && target.indexOf(r['标称值名称']) >= 0) ||
-        (r['标称值键'] && target.toUpperCase().indexOf(r['标称值键']) >= 0) ||
-        (target.indexOf(r['符号'] || '@@') >= 0);
+    var parts = String(s).split(/改成|改为|调成|换成/);
+    if (parts.length < 2) return out;
+    var left = parts[0], val = parts.slice(1).join('改成').trim().split(/[，,。\s]/)[0];
+    if (!val) return out;
+    // 档位 token：SN24 / Φ110 / 120~240 / 2.5
+    var gm = left.match(/([A-Za-z]{1,3}\s?\d{1,3}(?:\.\d+)?(?:\s*(?:~|-|～|—)\s*\d{1,3}(?:\.\d+)?)?)/);
+    var gkey = gm ? gm[1].replace(/\s+/g, '') : '';
+    var name = left.replace(/^[把对帮请]\s*/, '').replace(/系统里|库里|线上数据|那条|这条|的|是错的|有误|写错/g, ' ')
+      .replace(gkey || '@@', ' ').replace(/\s+/g, ' ').trim();
+    var rows90 = (seed['90_标称值'] || {}).rows || [];
+    var hit = rows90.filter(function (r) {
+      var nm = String(r['标称值名称'] || '');
+      if (!name) return false;
+      return name.indexOf(nm) >= 0 || nm.indexOf(name) >= 0 ||
+        (name.length >= 3 && nm.replace(/下限|上限|公差/g, '').indexOf(name.replace(/下限|上限|公差/g, '')) >= 0);
     });
-    if (!hit.length && target) {
-      hit = rows.filter(function (r) {
-        return r['标称值名称'] && (r['标称值名称'].indexOf(target.slice(-4)) >= 0 || target.indexOf(r['标称值名称'].slice(0, 3)) >= 0);
-      });
-    }
     var multi = 0;
+    if (gkey) {
+      var m61 = (seed['61_映射明细'] || {}).rows || [];
+      m61.forEach(function (x) {
+        var owner = hit.filter(function (h) { return h['标称值键'] === x['归属键']; })[0];
+        if (!owner) return;
+        if (String(x['自变量值'] || '').replace(/\s+/g, '').toUpperCase() !== gkey.toUpperCase()) return;
+        var col = owner['标称值类型'] === '范围' ? '因变量2' : '因变量1';
+        if (String(x[col] || '') === String(val)) return;
+        out.push({ sheet: '61_映射明细', row: x['归属键'] + '#' + x['行号'], col: col,
+          from: x[col] || '∅', to: val, name: owner['标称值名称'] + ' · ' + gkey,
+          test: String(owner['标称值键']).split('-N')[0], gear: 1 });
+      });
+      if (out.length) return out;
+    }
     hit.forEach(function (r) {
-      var c = /最小值|下限/.test(col + target) ? '最小值' : /最大值|上限/.test(col + target) ? '最大值' :
-        /公差|偏差/.test(col + target) ? '正偏差' : '单值';
-      if (String(r['多行映射'] || '') === '是') { multi++; return; }   // 值在 61，不在 90
+      if (String(r['多行映射'] || '') === '是') { multi++; return; }
+      var c = /最小值|下限/.test(name) ? '最小值' : /最大值|上限/.test(name) ? '最大值' :
+        /公差|偏差/.test(name) ? '正偏差' : (/标称厚度|厚度/.test(name) ? '单值' : '单值');
       if (String(r[c] || '') === String(val)) return;
       out.push({ sheet: '90_标称值', row: r['标称值键'], col: c, from: r[c] || '∅', to: val,
         name: r['标称值名称'], test: r['试验项键'] });
@@ -123,6 +148,7 @@
   function renderPlan(p) {
     var rows = p.patches.slice(0, 6).map(function (x) {
       return '<tr><td>' + esc(x.sheet) + '</td><td><code>' + esc(x.row) + '</code></td><td>' + esc(x.col) +
+        (x.gear ? '<span class="gz">档位行</span>' : '') +
         '</td><td class="old">' + esc(x.from) + '</td><td class="new">' + esc(x.to) + '</td></tr>';
     }).join('');
     return '<div class="orc-plan" id="plan_' + p.id + '">' +
@@ -212,13 +238,17 @@
       s.k === 'D0' ? '真缺陷 0 · 通过' : (p.blocks.length || 2) + ' 块已重放';
     if (n) { n.classList.add('ok'); n.querySelector('.rs').textContent = s.res; }
   }
+  function keyColOf(sh) {
+    return { '90_标称值': '标称值键', 'A1_判定条件': '试验项键', '61_映射明细': '归属键',
+      '70_测量参数': '参数键', '80_计算参数': '参数键', '60_控制参数': '参数键', 'B0_采集配置': '参数键' }[sh] || '参数键';
+  }
   function applyPatches(p) {
     p.patches.forEach(function (x) {
-      var rs = SHEET_SEED[x.sheet].rows;
+      var rs = SHEET_SEED[x.sheet].rows, kc = keyColOf(x.sheet), base = String(x.row).split('#')[0], ln = String(x.row).split('#')[1];
       for (var i = 0; i < rs.length; i++) {
-        if (rs[i][x.sheet === '90_标称值' ? '标称值键' : '试验项键'] === x.row) {
-          F2.applyExternal(i, x.col, x.to); break;
-        }
+        if (rs[i][kc] !== base) continue;
+        if (ln && String(rs[i]['行号']) !== ln) continue;
+        F2.applyExternalAt(x.sheet, i, x.col, x.to); return;
       }
     });
   }
@@ -227,6 +257,7 @@
     p.done = 1; p.running = 0;
     // 版本号在最后一步才落定，这里再刷一次顶栏，避免显示成补丁前的版本
     if (WB.markGenerated && (p.kind === 'patch' || p.kind === 'import')) WB.markGenerated();
+    if (p.kind !== 'read' && p.kind !== 'refuse') rec(p);
     // 版本号在最后一步才落定，这里再刷一次顶栏，避免显示成补丁前的版本
     if (WB.markGenerated && (p.kind === 'patch' || p.kind === 'import')) WB.markGenerated();
     // 对话流存的是 HTML 字符串：卡片状态必须回写进那条消息，否则重绘时会退回「需确认」
@@ -284,13 +315,17 @@
         }
       });
       p.done = 0; p.rolled = 1;
+      for (var i = 0; i < TRACES.length; i++) if (TRACES[i].text === p.text && !TRACES[i].rolled) { TRACES[i].rolled = 1; break; }
+      if (WB.setTraces) WB.setTraces(TRACES);
       if (WB.replaceChat) WB.replaceChat('plan_' + p.id, '识别意图：<b>' + esc(p.intent) + '</b>' + renderPlan(p));
       WB.say('sys', '系统', '已回滚这次编排的 ' + p.patches.length + ' 处稿件补丁。库内数据未受影响——本来就没有第二条写库路径。');
       if (WB.stage) WB.stage('f2');
     },
     gotoF2: function () { jump('f2'); WB.say('sys', '系统', '已切到 F2 表格，选中一行后可以直接改，改完我会接着走预检。'); },
     quick: function (el) { ORC.ask(el.textContent); },
-    classify: classify, plan: plan
+    classify: classify, plan: plan,
+    traces: function () { return TRACES; },
+    panel: function () { if (WB.openTrace) WB.openTrace(TRACES); }
   };
   function explain(text) {
     var m = /标灰|灰色|为什么.*(灰|标灰)/.test(text);
