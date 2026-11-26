@@ -1,0 +1,118 @@
+/* 样品配置工作台 · 问题收件箱 */
+.wb-layout { display: flex; min-height: calc(100vh - 42px); background: #f1f5f9; border-top: 1px solid #e2e8f0; }
+.wb-tasks { width: 236px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+.wb-tasks-h { padding: 11px 14px; border-bottom: 1px solid #eef2f7; display: flex; align-items: center; justify-content: space-between; }
+.wb-tasks-h b { font-size: 13px; color: #334155; font-weight: 600; }
+.wb-task { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+.wb-task:hover { background: #f8fafc; }
+.wb-task.on { background: #eff6ff; box-shadow: inset 2px 0 0 #2563eb; }
+.wb-task .code { font-size: 12.5px; color: #1e293b; font-weight: 600; }
+.wb-task .nm { font-size: 11.5px; color: #64748b; margin-top: 2px; }
+.wb-task .bar { display: flex; gap: 3px; margin-top: 7px; }
+.wb-task .bar i { flex: 1; height: 3px; border-radius: 2px; background: #e2e8f0; }
+.wb-task .bar i.done { background: #16a34a; }
+.wb-task .bar i.cur { background: #2563eb; }
+.wb-task .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+
+.wb-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.wb-topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 10px 18px; display: flex; align-items: center; gap: 12px; }
+.wb-title { font-size: 15px; font-weight: 600; color: #1e293b; white-space: nowrap; }
+.wb-title small { font-size: 12px; color: #94a3b8; font-weight: 400; margin-left: 6px; }
+.wb-topbar button, .wb-topbar .wb-badge { white-space: nowrap; flex-shrink: 0; }
+.wb-topbar { gap: 10px; }
+.wb-topbar #wbDoc { white-space: nowrap; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.wb-badge { font-size: 11.5px; padding: 2px 8px; border-radius: 10px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+.wb-badge.ext { border-color: #fde68a; background: #fffbeb; color: #b45309; }
+.wb-spacer { flex: 1; }
+.wb-stats { display: flex; gap: 18px; padding: 12px 18px; background: #fff; border-bottom: 1px solid #eef2f7; }
+.wb-stat { font-size: 12px; color: #64748b; }
+.wb-stat b { display: block; font-size: 19px; color: #0f172a; font-weight: 600; font-family: "Roboto Mono", monospace; }
+.wb-stat b.warn { color: #dc2626; }
+.wb-stat b.ok { color: #16a34a; }
+.wb-body { flex: 1; overflow-y: auto; padding: 14px 18px 84px; }
+
+/* 范围级：阻塞 */
+.wb-block { border: 1px solid #fecaca; background: #fef2f2; border-radius: 4px; padding: 10px 14px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: #991b1b; }
+.wb-block.clear { border-color: #bbf7d0; background: #f0fdf4; color: #15803d; }
+.wb-scope { border-left: 3px solid #dc2626; }
+.wb-scope.clear { border-left-color: #16a34a; }
+
+/* 分组 */
+.wb-group { background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 10px; overflow: hidden; }
+.wb-gh { padding: 9px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+.wb-gh:hover { background: #f8fafc; }
+.wb-gh .caret { width: 12px; color: #94a3b8; font-size: 11px; transition: transform .15s; }
+.wb-group.collapsed .caret { transform: rotate(-90deg); }
+.wb-group.collapsed .wb-gb { display: none; }
+.wb-gh .sh { font-size: 13px; font-weight: 600; color: #1e293b; font-family: "Roboto Mono", monospace; white-space: nowrap; }
+.wb-gh .cn { white-space: nowrap; }
+.wb-gh button { white-space: nowrap; flex-shrink: 0; }
+.wb-gh .cn { font-size: 11.5px; color: #94a3b8; }
+.wb-gh .prog { width: 90px; height: 4px; border-radius: 2px; background: #e2e8f0; overflow: hidden; }
+.wb-gh .prog i { display: block; height: 100%; background: #2563eb; }
+.wb-gb { padding: 4px 14px 12px; }
+
+/* 问题卡（含同因合并） */
+.wb-q { border: 1px solid #eef2f7; border-radius: 4px; padding: 10px 12px; margin-top: 9px; background: #fcfdfe; }
+.wb-q.answered { border-color: #bbf7d0; background: #f7fef9; }
+.wb-q-h { display: flex; align-items: flex-start; gap: 8px; }
+.wb-q-t { flex: 1; font-size: 12.5px; color: #1e293b; line-height: 1.55; }
+.wb-conf { font-size: 11px; padding: 1px 7px; border-radius: 9px; white-space: nowrap; flex-shrink: 0; }
+.wb-conf.c0 { background: #f1f5f9; color: #64748b; }
+.wb-conf.c1 { background: #eff6ff; color: #1d4ed8; }
+.wb-conf.c2 { background: #fffbeb; color: #b45309; }
+.wb-conf.c3 { background: #fef2f2; color: #b91c1c; }
+.wb-merge { font-size: 11.5px; color: #6d28d9; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 3px; padding: 2px 7px; }
+.wb-opts { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 9px; }
+.wb-opt { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #334155; cursor: pointer; white-space: nowrap; }
+.wb-opt input { accent-color: #2563eb; }
+.wb-opt .def { font-size: 10.5px; color: #16a34a; border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 3px; padding: 0 5px; }
+.wb-other { margin-top: 8px; display: none; gap: 6px; }
+.wb-other.show { display: flex; }
+.wb-other input { flex: 1; border: 1px solid #dcdfe6; border-radius: 4px; padding: 5px 9px; font-size: 12.5px; outline: none; }
+.wb-other input:focus { border-color: #2563eb; }
+.wb-q-f { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11.5px; color: #94a3b8; }
+.wb-q-f .src { font-family: "Roboto Mono", monospace; }
+.wb-loc { color: #2563eb; cursor: pointer; }
+.wb-ans { color: #15803d; }
+.wb-undo { color: #94a3b8; cursor: pointer; }
+.wb-undo:hover { color: #dc2626; }
+.wb-rows { margin-top: 7px; border-top: 1px dashed #e2e8f0; padding-top: 6px; display: none; }
+.wb-rows.show { display: block; }
+.wb-rows code { display: inline-block; font-size: 11px; color: #475569; background: #f1f5f9; border-radius: 3px; padding: 1px 6px; margin: 2px 4px 0 0; }
+
+/* 底部批量指令 */
+.wb-batch { position: absolute; left: 236px; right: 360px; bottom: 0; background: #fff; border-top: 1px solid #e2e8f0; padding: 10px 18px; }
+.wb-batch-in { display: flex; gap: 8px; align-items: center; }
+.wb-batch-in input { flex: 1; border: 1px solid #dcdfe6; border-radius: 4px; padding: 8px 11px; font-size: 13px; outline: none; }
+.wb-batch-in input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.1); }
+.wb-hint { font-size: 11.5px; color: #94a3b8; margin-top: 6px; }
+.wb-hint b { color: #2563eb; font-weight: 500; cursor: pointer; }
+.wb-preview { margin-top: 8px; border: 1px solid #bfdbfe; background: #eff6ff; border-radius: 4px; padding: 9px 12px; font-size: 12.5px; color: #1e40af; display: none; }
+.wb-preview.show { display: block; }
+
+/* 右栏对话流 */
+.wb-chat { width: 360px; flex-shrink: 0; background: #fff; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+.wb-chat-h { padding: 10px 14px; border-bottom: 1px solid #eef2f7; display: flex; gap: 14px; }
+.wb-chat-h span { font-size: 12.5px; color: #94a3b8; cursor: pointer; padding-bottom: 6px; }
+.wb-chat-h span.on { color: #1e293b; font-weight: 600; border-bottom: 2px solid #2563eb; margin-bottom: -11px; }
+.wb-chat-b { flex: 1; overflow-y: auto; padding: 12px 14px; }
+.wb-msg { margin-bottom: 12px; font-size: 12.5px; line-height: 1.6; }
+.wb-msg .who { font-size: 11px; color: #94a3b8; margin-bottom: 3px; }
+.wb-msg .bd { border-radius: 6px; padding: 8px 11px; }
+.wb-msg.ai .bd { background: #f1f5f9; color: #334155; }
+.wb-msg.me .bd { background: #eff6ff; color: #1e40af; }
+.wb-msg.sys .bd { background: #f0fdf4; color: #15803d; font-size: 12px; }
+.wb-msg .tg { display: inline-block; font-size: 10.5px; border-radius: 3px; padding: 0 5px; margin-left: 5px; background: #fff; border: 1px solid #e2e8f0; color: #64748b; }
+
+/* 生成进度带 */
+.wb-run { background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 12px 14px; margin-bottom: 12px; display: none; }
+.wb-run.show { display: block; }
+.wb-stage { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: #94a3b8; padding: 4px 0; }
+.wb-stage.on { color: #1e293b; }
+.wb-stage.done { color: #15803d; }
+.wb-stage .dot { width: 7px; height: 7px; border-radius: 50%; background: #e2e8f0; flex-shrink: 0; }
+.wb-stage.on .dot { background: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+.wb-stage.done .dot { background: #16a34a; }
+.wb-stage .out { margin-left: auto; font-size: 11.5px; color: #94a3b8; font-family: "Roboto Mono", monospace; }

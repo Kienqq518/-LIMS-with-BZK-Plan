@@ -45,13 +45,15 @@ SHEETS = [
                  "修约方式", "修约精度", "条件修约", "排序"]),
     ("71_参数可选项", ["参数键", "序号", "数据标签", "是否默认"]),
     ("80_计算参数", ["参数键", "试验项键", "子项键", "名称", "编码", "符号", "单位", "绑定层级", "计算类型",
-                 "数据源参数键", "统计类型", "公式", "公式库键", "公式绑定", "修约方式", "修约精度", "条件修约", "排序"]),
+                 "数据源参数键", "统计类型", "公式原文", "符号对照", "规范公式", "公式库键", "公式绑定",
+                 "修约方式", "修约精度", "条件修约", "排序"]),
     ("90_标称值", ["任务键", "标称值键", "试验项键", "子项键", "标称值名称", "符号", "单位", "多行映射",
                "标称值类型", "单值", "负偏差", "正偏差", "最小值", "最小值符号", "最大值", "最大值符号",
-               "公式", "公式库键", "修约方式", "修约精度", "备注"]),
+               "公式", "公式库键", "修约方式", "修约精度", "备注", "原文说明"]),
     ("A0_判定配置", ["试验项键", "判定参数名", "判定参数类型", "可选项", "判定方式", "判断层级", "判定模式"]),
     ("A1_判定条件", ["试验项键", "条件序号", "条件类型", "对比参数键", "修饰符百分比", "修饰符符号", "修饰符常量",
-                 "对比符号", "报告展开式", "被对比标称值键", "被对比参数键", "自定义数值", "子项结论来源"]),
+                 "对比符号", "报告展开式", "被对比标称值键", "被对比参数键", "自定义数值", "子项结论来源",
+                 "原文条件"]),
     ("A2_结论映射", ["试验项键", "结论序号", "结论值", "逻辑"]),
     ("B0_采集配置", ["参数键", "类型", "参数编码", "计算顺序", "是否覆盖LIMS参数"]),
     ("C0_待定项", ["问题ID", "任务键", "问题层级", "目标sheet", "目标行键", "目标列", "状态", "置信度",
@@ -76,7 +78,10 @@ RULES = [
     ("V10c", "62_条件规则", "对比符号", "判断条件 THEN 侧同样受 V19 的「满足」推导约束", "阻断", "THEN 侧修饰符/符号违规", "F3预检"),
     ("V11", "70_测量参数", "类型", "下拉选项 ⇒ 71 有可选项且默认值在列内", "阻断", "下拉选项参数缺可选项或默认值越界", "F3预检"),
     ("V12", "70_测量参数", "修约方式", "直接取值 ⇒ 不写修约精度", "告警", "直接取值形态下修约精度不生效", "F3预检"),
-    ("V13", "80_计算参数", "公式", "每个 {参数名称|符号} 在同一样品/型号内可唯一解析；括号闭合", "阻断", "公式变量无法解析", "F3预检"),
+    ("V13", "80_计算参数", "规范公式", "每个 {参数名称|符号} 在同一样品/型号内可唯一解析；括号闭合", "阻断", "公式变量无法解析", "F3预检"),
+    ("V13d", "80_计算参数", "符号对照", "公式原文含符号时符号对照不得为空，且要覆盖原文里全部符号", "阻断", "符号对照缺失，无法核对变量归属", "F3预检"),
+    ("V13e", "80_计算参数", "规范公式", "有公式原文但转译不出规范公式 ⇒ 图形公式没转成机器可读表达式", "告警", "公式原文未转译成规范公式", "F2重算"),
+    ("V13d", "80_计算参数", "符号对照", "符号对照必须覆盖公式原文里的全部符号变量；规范公式变量集与符号对照一一对应", "阻断", "符号对照缺失或与规范公式不一致", "F3预检"),
     ("V14", "80_计算参数", "公式绑定", "绑定实测值测量次数 ⇒ 公式内实测值测量次数一致", "阻断", "数组运算的测量次数不一致", "F3预检"),
     ("V15", "90_标称值", "最小值/最大值", "范围 ⇒ 最小值与最大值必须成对", "阻断", "范围类型未成对", "F3预检"),
     ("V16", "90_标称值", "多行映射", "多行映射=开 且 类型=公式 ⇒ 拒绝（V09镜像）", "阻断", "公式与多行映射互斥", "F3预检"),
@@ -84,7 +89,7 @@ RULES = [
     ("V18", "A0_判定配置", "判断层级", "样段⇒所属试验项 是否制样=是；线芯⇒样品 是否电缆=是", "阻断", "判断层级与样品属性冲突", "F3预检"),
     ("V19", "A1_判定条件", "对比符号", "符号由标称值类型推导：非单值⇒必须「满足」且无修饰符；单值⇒必须 ∈ = != < ≤ > ≥ 且禁「满足」", "阻断", "对比符号与标称值类型推导结果不符", "F3预检"),
     ("V19b", "A1_判定条件", "对比符号", "被对比标称值键为空⇒对比符号必须留空（禁选态，不允许先填符号）", "阻断", "标称值未定时填了对比符号", "F3预检"),
-    ("V19c", "A1_判定条件", "报告展开式", "符号=满足⇒报告展开式必填且须由标称值类型与取值推出", "告警", "报告展开式与标称值配置不一致", "F3预检"),
+    ("V19c", "A1_判定条件", "报告展开式", "符号=满足⇒报告展开式必填且须由类型与取值推出；多行映射逐行列出", "告警", "报告展开式与标称值配置不一致", "F3预检"),
     ("V20", "A2_结论映射", "结论值", "同试验项不得出现两条相同结论", "告警", "存在重复结论，建议合并", "F3预检"),
     ("V21", "90_标称值", "标称值键", "被 A1 引用的标称值不得删除", "阻断", "标称值被判定引用，需先解除绑定", "F2重算"),
     ("V22", "B0_采集配置", "计算顺序", "必须构成拓扑序：公式引用者序号 > 被引用者序号", "阻断", "计算顺序违反依赖关系", "F3预检"),
@@ -96,35 +101,128 @@ CMP_NUM = ["=", "!=", "<", "≤", ">", "≥"]
 CMP_CONFORM = "满足"
 
 
+def sym_map_text(P, tkey, expr):
+    """公式原文里出现的每个符号 → 系统参数，逐条写在公式后面，供人核对（契约 80 的符号对照列）。
+    取值域 = 本试验项的参数；同一样品/型号内名称唯一，是 F3 解析的口径。"""
+    if not expr:
+        return ""
+    pool = []
+    for sheet, keycol in (("60_控制参数", "参数键"), ("70_测量参数", "参数键"),
+                          ("80_计算参数", "参数键"), ("90_标称值", "标称值键")):
+        for row in P.rows[sheet]:
+            d = dict(zip(COLS[sheet], row))
+            if d.get("试验项键") != tkey:
+                continue
+            nm = (d.get("名称") or d.get("标称值名称") or "").strip()
+            sym = (d.get("符号") or "").strip()
+            code = (d.get("编码") or "").strip()
+            if nm:
+                pool.append((sym, nm, code))
+    hits = []
+    for sym, nm, code in pool:
+        for token in [t for t in (sym, code, nm) if t]:
+            if re.search(r"(?<![0-9A-Za-z_])" + re.escape(token) + r"(?![0-9A-Za-z_])", expr):
+                hits.append("%s={%s|%s}" % (token, nm, sym or nm))
+                break
+    return "; ".join(hits)
+
+
+def clean_unit(u):
+    u = str(u or "").strip()
+    return "" if (not u or re.match(r"^[\s\u2014\u2013\-/、.,·—–]+$", u)) else u
+
+
 def is_on(v):
     return str(v or "").strip() in ("是", "开", "true", "TRUE", "Y", "1")
 
 
-def nom_report_expr(nom_row, n_map_rows=0):
-    """「满足」在报告里展开成的实际数学式：配置语言防错，报告语言仍是标准语言。"""
-    t = g(0, "标称值类型", nom_row) or NOM_SINGLE
-    u = (g(0, "单位", nom_row) or "").strip()
+def cell(row, col):
+    v = row.get(col, "") if isinstance(row, dict) else ""
+    return str(v).strip() if v is not None else ""
+
+
+def _val_expr(t, v1, v2, v3, sym1, u):
+    """一行因变量 → 实际数学式"""
     sfx = (" " + u) if u else ""
-    if is_on(g(0, "多行映射", nom_row)):
-        return "按 %d 行映射逐行展开" % n_map_rows if n_map_rows else "按多行映射逐行展开"
-    if t == "公式":
-        return "按公式 %s 计算后判定" % (g(0, "公式", nom_row) or "…")
-    if t == "单值":
-        return (g(0, "单值", nom_row) or "…") + sfx
+    if t == "最小值":
+        return (sym1 or "≥") + (v1 or "…") + sfx
+    if t == "最大值":
+        return (sym1 or "≤") + (v1 or "…") + sfx
+    if t == "范围":
+        return "∈[" + (v1 or "…") + ", " + (v2 or "…") + "]" + sfx
     if t == "公差":
-        pos, neg = g(0, "正偏差", nom_row), g(0, "负偏差", nom_row)
-        base = g(0, "单值", nom_row) or "…"
+        if v2 and v3:
+            return v1 + ("±" + v2 if v2 == v3 else "+%s/-%s" % (v2, v3)) + sfx
+        return v1 + (("+%s" % v2) if v2 else (("-" + v3) if v3 else "…")) + sfx
+    if t == "公式":
+        return "按公式计算" + sfx
+    return (v1 or "…") + sfx
+
+
+def nom_multi_expr(nom_row, map_rows, spec_unit):
+    """多行映射的报告展开式：逐行列出（口径已定），如 25mm²→≥7根、50mm²→≥19根"""
+    if not map_rows:
+        return "按多行映射逐行展开"
+    spec_unit = spec_unit or {}
+    rows = {}
+    for m in map_rows:
+        rows.setdefault(int(m.get("行号") or 0), []).append(m)
+    t = cell(nom_row, "标称值类型") or NOM_SINGLE
+    u = clean_unit(cell(nom_row, "单位"))
+    parts = []
+    for rn in sorted(rows):
+        lhs, seen = [], set()
+        for m in rows[rn]:
+            v = str(m.get("自变量值") or "").strip()
+            if not v:
+                lo = str(m.get("自变量下限") or "").strip()
+                hi = str(m.get("自变量上限") or "").strip()
+                if not lo and not hi:
+                    continue
+                ls = str(m.get("区间下限符号") or "").strip() or "≥"
+                hs = str(m.get("区间上限符号") or "").strip() or "≤"
+                v = "%s%s ~ %s%s" % (ls, lo or "…", hs, hi or "…")
+            su = clean_unit(spec_unit.get(str(m.get("自变量键") or "").strip(), ""))
+            if su and "~" not in v and not v.endswith(su):
+                v += su
+            if v not in seen:
+                seen.add(v); lhs.append(v)
+        d = rows[rn][0]
+        rhs = _val_expr(t, str(d.get("因变量1") or "").strip(), str(d.get("因变量2") or "").strip(),
+                        str(d.get("因变量3") or "").strip(),
+                        str(d.get("因变量1符号") or "").strip(), u)
+        parts.append(("%s→%s" % ("且".join(lhs), rhs)) if lhs else rhs)
+    return "、".join(parts)
+
+
+def nom_report_expr(nom_row, map_rows=None, spec_unit=None):
+    """「满足」在报告里展开成的实际数学式：配置语言防错，报告语言仍是标准语言。"""
+    if not nom_row:
+        return ""
+    if is_on(cell(nom_row, "多行映射")):
+        return nom_multi_expr(nom_row, map_rows, spec_unit)
+    t = cell(nom_row, "标称值类型") or NOM_SINGLE
+    u = clean_unit(cell(nom_row, "单位"))
+    sfx = (" " + u) if u else ""
+    if t == "公式":
+        return "按公式 %s 计算后判定" % (cell(nom_row, "公式") or "…")
+    if t == "单值":
+        return (cell(nom_row, "单值") or "…") + sfx
+    if t == "公差":
+        pos, neg = cell(nom_row, "正偏差"), cell(nom_row, "负偏差")
+        base = cell(nom_row, "单值") or "…"
         if pos and neg:
             return base + ("±%s" % pos if pos == neg else "+%s/-%s" % (pos, neg)) + sfx
-        return base + (("+%s" % pos) if pos else (("-%s" % neg) if neg else "…")) + sfx
+        return base + (("+%s" % pos) if pos else (("-" + neg) if neg else "…")) + sfx
     if t == "最小值":
-        return (g(0, "最小值符号", nom_row) or "≥") + (g(0, "最小值", nom_row) or "…") + sfx
+        return (cell(nom_row, "最小值符号") or "≥") + (cell(nom_row, "最小值") or "…") + sfx
     if t == "最大值":
-        return (g(0, "最大值符号", nom_row) or "≤") + (g(0, "最大值", nom_row) or "…") + sfx
+        return (cell(nom_row, "最大值符号") or "≤") + (cell(nom_row, "最大值") or "…") + sfx
     if t == "范围":
-        lo = "[" if (g(0, "最小值符号", nom_row) or "≥") != ">" else "("
-        hi = "]" if (g(0, "最大值符号", nom_row) or "≤") != "<" else ")"
-        return "∈%s%s, %s%s%s" % (lo, g(0, "最小值", nom_row) or "…", g(0, "最大值", nom_row) or "…", hi, sfx)
+        lo = "(" if (cell(nom_row, "最小值符号") or "≥") == ">" else "["
+        hi = ")" if (cell(nom_row, "最大值符号") or "≤") == "<" else "]"
+        return "∈%s%s, %s%s%s" % (lo, cell(nom_row, "最小值") or "…",
+                                  cell(nom_row, "最大值") or "…", hi, sfx)
     return ""
 
 
@@ -214,7 +312,7 @@ def finalize_b0(P):
 
     deps = {}
     expr_of = {}
-    for sheet, keycol, exprcols in (("80_计算参数", "参数键", ("公式",)),
+    for sheet, keycol, exprcols in (("80_计算参数", "参数键", ("公式原文", "规范公式", "符号对照")),
                                     ("90_标称值", "标称值键", ("公式",)),
                                     ("62_条件规则", "", ())):
         for r in P.rows[sheet]:
@@ -341,6 +439,7 @@ def convert(src, dst):
     # ---- 10_分类路径 / 20_样品：从「样品基本信息」的 样品分类路径 拆 ----
     samples = []           # (label, kvdict)
     cur_sample = None
+    cur_sample_i = 0        # 章节归属：DS 这类文档每个样品自带一整章（型号/试验项都在章内）
     specs_global = []
     models = []            # (型号标题, grid)
     tests = []             # list of dict per 试验项
@@ -361,12 +460,14 @@ def convert(src, dst):
                     mark_rule = mark_rule or t
             m = re.match(r"^型号[:：]\s*([A-Za-z0-9\-/]+)（(.+)）", t)
             if m and st.startswith("Heading"):
-                models.append({"code": m.group(1), "name": m.group(2), "grid": None})
+                models.append({"code": m.group(1), "name": m.group(2), "grid": None,
+                               "sample": cur_sample_i})
                 section = "model"
                 continue
             m = re.match(r"^试验项\s*(\d+)[:：]\s*(.+)$", t)
             if m and st.startswith("Heading"):
                 cur_test = {"no": int(m.group(1)), "name": m.group(2).strip(), "info": [], "subs": None,
+                            "sample": cur_sample_i,
                             "ctrl": None, "meas": None, "calc": None, "nom": None, "judge": None, "collect": None}
                 tests.append(cur_test)
                 section = "test"
@@ -424,6 +525,7 @@ def convert(src, dst):
                 else:
                     samples.append({"label": "样品 %d：%s" % (len(samples) + 1, d0.get("样品名称", "")),
                                     "info": d0})
+                cur_sample_i = len(samples) - 1
             elif section == "specs":
                 specs_global.append(g)
             elif section == "model" and models and models[-1]["grid"] is None:
@@ -480,19 +582,18 @@ def convert(src, dst):
         if not iscable:
             P.notes.append("样品 %s 是否电缆=否 ⇒ 50 的「多芯电缆试验线芯数」按口径留空" % skey)
 
-    if len(samples) > 1 and models:
-        P.open_issue("范围", "40_型号", "S01", "样品键", "AI推断", 0.3,
-                     "文档里有 %d 个样品，但型号只在「四、型号列表」里出现一次（%s）。"
-                     "这些型号是三个样品共用一套，还是每个样品各自一套？"
-                     % (len(samples), " / ".join(str(m.get("code") or m.get("name") or "") for m in models[:6])),
-                     "三个样品共用、每个样品各自一套、只有部分样品区分型号", "四、型号列表")
-        P.notes.append("型号暂全部挂 S01，待「范围级」问题确认后由 F2 重排")
-    if len(samples) > 1:
-        P.open_issue("范围", "20_样品", "S02", "试验项归属", "AI推断", 0.3,
-                     "文档里 %d 个样品共用同一套试验项配置（五、C级试验项只出现一次）。"
-                     "试验项是三个样品各自复制一份，还是只挂在一个样品下？" % len(samples),
-                     "各自复制一份、只挂主样品、人工指定", "五、C级试验项配置")
+    _no_test = [SAMP[i] for i in range(len(samples))
+                if not any(x.get("sample") == i for x in tests)]
+    if _no_test:
+        P.open_issue("范围", "20_样品", _no_test[0], "试验项归属", "无来源", 0,
+                     "样品 %s 的章节里没有试验项配置。是漏写了，还是它与别的样品共用一套？"
+                     % "、".join(_no_test),
+                     "与别的样品共用、本次不拆它、人工补配置", "五、C级试验项配置")
     SAMP = ["S%02d" % i for i in range(1, max(1, len(samples)) + 1)] or ["S01"]
+    if len(samples) > 1 and models:
+        P.notes.append("口径：每个样品各自一套型号，同名型号互不隶属（键 %s… 与 %s… 各自独立）"
+                       % (SAMP[0], SAMP[1]))
+
     MODEL0 = (SAMP[0] + "-M01") if SAMP else "S01-M01"
 
     # ---- 30 规格参数 ----
@@ -507,9 +608,14 @@ def convert(src, dst):
                   备注=r[4] if len(r) > 4 else "")
 
     # ---- 40 型号 / 41 赋值 ----
+    MODEL_KEYS = {}          # 样品键 → [型号键]，供 50 按型号拆行时用
     for mi, m in enumerate(models, 1):
-        mkey = "%s-M%02d" % (SAMP[0], mi)
-        P.add("40_型号", 型号键=mkey, 样品键="S01", 型号=m["code"], 名称=m["name"], 排序=mi,
+        skey = SAMP[m["sample"]] if m["sample"] < len(SAMP) else SAMP[0]
+        mi_local = len(MODEL_KEYS.setdefault(skey, [])) + 1
+        mkey = "%s-M%02d" % (skey, mi_local)
+        m["key"] = mkey
+        MODEL_KEYS[skey].append(mkey)
+        P.add("40_型号", 型号键=mkey, 样品键=skey, 型号=m["code"], 名称=m["name"], 排序=mi_local,
               最大检测周期月="", 描述="")
         g = m["grid"]
         if not g:
@@ -539,6 +645,8 @@ def convert(src, dst):
         infos = t.get("info") or []
         if not infos:
             continue
+        skey = SAMP[t["sample"]] if t.get("sample", 0) < len(SAMP) else SAMP[0]
+        owns = MODEL_KEYS.get(skey) or []
         for vi, ig in enumerate(infos):
             d = {}
             for r in ig[1:]:
@@ -546,20 +654,28 @@ def convert(src, dst):
                     d[r[0]] = r[1]
             tname = d.get("试验名称", t["name"])
             tcode = d.get("试验编码", "")
-            tkey = "S01-M01-T%02d" % (len(P.rows["50_试验项"]) + 1)
-            cats = [x.strip() for x in re.split(r"[ /、,，]+", d.get("检测类别", "")) if x.strip()]
+            if len(infos) > 1 and len(infos) == len(owns):
+                owner_type, owner_key = "型号", owns[vi]          # 一套配置对应一个型号
+            elif len(infos) > 1 and owns:
+                owner_type, owner_key = "型号", owns[0]
+            else:
+                owner_type, owner_key = "样品", skey             # 不分型号差异时挂样品层，型号共享
+            tkey = "%s-T%02d" % (owner_key, len([x for x in P.rows["50_试验项"]
+                                                 if x[COLS["50_试验项"].index("归属键")] == owner_key]) + 1)
+            cats = [x.strip() for x in re.split(r"[ /、，,]+", d.get("检测类别", "")) if x.strip()]
             bad = [c for c in cats if c not in DICT_CATEGORY]
-            P.add("50_试验项", 任务键=TASK, 试验项键=tkey, 归属类型="型号", 归属键=MODEL0,
+            P.add("50_试验项", 任务键=TASK, 试验项键=tkey, 归属类型=owner_type, 归属键=owner_key,
                   试验名称=tname, 试验编码=tcode, 质量特性=d.get("质量特性", ""),
                   检测类别="、".join(cats), 是否制样="是", 多芯电缆试验线芯数="", 样段=1, 启用样段="是",
                   试样数量=1, 试样类别代码="", 试验过程="", 标准要求=d.get("标准要求", ""),
                   检测费用元="", 检测设备="", 状态="启用", 排序=len(P.rows["50_试验项"]) + 1)
-            if len(infos) > 1:
-                P.open_issue("范围", "50_试验项", tkey, "试验项键", "AI推断", 0.5,
-                             "「试验项 %d：%s」在 Word 里是一个试验项、却有 %d 套试验信息（不同型号用不同配置）。"
-                             "系统里试验项挂在型号下，必须拆成多条。按哪种方式拆？"
-                             % (t["no"], t["name"], len(infos)),
-                             "按型号各拆一条、合并成一条并用条件映射区分、先只保留其中一套", "五、C级试验项配置")
+            if len(infos) > 1 and len(infos) != len(owns):
+                P.open_issue("范围", "50_试验项", tkey, "归属键", "AI推断", 0.45,
+                             "「试验项 %d：%s」（样品 %s）有 %d 套试验信息，但该样品下只有 %d 个型号，套数对不上。"
+                             "按型号各拆一条已经失效，需要人工指定每套配置归谁。"
+                             % (t["no"], t["name"], skey, len(infos), len(owns)),
+                             "按型号各拆一条（多余配置丢弃）、合并成一条并用条件映射区分、人工指定归属",
+                             "五、C级试验项配置")
             for c in bad:
                 P.open_issue("字段", "50_试验项", tkey, "检测类别", "AI推断", 0.5,
                              "检测类别「%s」不在字典里。新增字典选项还是归到现有项？" % c,
@@ -624,7 +740,7 @@ def convert(src, dst):
                     if (r[i["类型"]] if "类型" in i else "") == "下拉选项":
                         P.open_issue("字段", "70_测量参数", pk, "可选项", "无来源", 0,
                                      "「%s」是下拉选项型参数，Word 里没写可选项。检测员实际能选哪些？" % r[i["参数名称"]],
-                                     "合格 / 不合格、通过 / 未通过、破裂 / 无破裂、人工填写", "x.4 试验参数")
+                                     "破裂 / 无破裂、合格 / 不合格、通过 / 未通过、人工填写", "x.4 试验参数")
                     if mode == "" and rnd:
                         P.open_issue("字段", "70_测量参数", pk, "修约方式", "未验证", 0.4,
                                      "「%s」的修约规则写的是「%s」，不在系统六种算法之内。映射到哪个？" % (r[0], rnd[:40]),
@@ -649,11 +765,19 @@ def convert(src, dst):
                           单位=r[i["单位"]] if "单位" in i else "",
                           绑定层级=r[i["绑定层级"]] if "绑定层级" in i else "试验",
                           计算类型=ctype, 数据源参数键="", 统计类型="",
-                          公式=round_only(expr)[0] if ctype == "算术表达式型" else "",
+                          公式原文=expr,
+                          符号对照=(sm := sym_map_text(P, tkey, expr)),
+                          规范公式=round_only(expr)[0] if ctype == "算术表达式型" else "",
                           公式绑定="绑定计算参数层级",
                           修约方式=round_only(expr)[1] if ctype == "算术表达式型" else "",
                           修约精度=round_only(expr)[2] if ctype == "算术表达式型" else "",
                           条件修约="否", 排序=len(P.rows["80_计算参数"]) + 1)
+                    if ctype == "算术表达式型" and expr and re.search(r"[A-Za-z][A-Za-z0-9_]{1,}", expr) and not sm:
+                        P.open_issue("字段", "80_计算参数", pk, "符号对照", "未验证", 0.25,
+                                     "「%s」的计算方式「%s」里有符号/参数名，但没匹配到本试验项的任何参数。"
+                                     "它引用的是哪个参数？（跨试验项引用系统不支持，需先建中间量）"
+                                     % (r[i["参数名称"]], expr[:50]),
+                                     "本试验项内的实测参数、本试验项内的计算参数、需要先建中间量", "x.4 试验参数")
                     if ctype == "算术表达式型" and not round_only(expr)[0]:
                         P.rows["80_计算参数"][-1][COLS["80_计算参数"].index("计算类型")] = ""
                         P.open_issue("字段", "80_计算参数", pk, "公式", "冲突", 0.35,
@@ -685,12 +809,16 @@ def convert(src, dst):
                     multi = "开" in (r[i.get("多行映射", 3)] or "")
                     ck = i.get("各型号配置", i.get("配置说明", len(r) - 1))
                     conf_raw = r[ck] if ck < len(r) else ""
+                    um = re.search(r"[（(]([^）)]{1,12})[）)]", typ_raw)
+                    unit = um.group(1).strip() if um else ""
+                    if unit and re.match(r"^[≤≥<>\s=]+$", unit):
+                        unit = ""                       # 「最小值 (≥)」里的 ≥ 不是单位
                     P.add("90_标称值", 任务键=TASK, 标称值键=nk, 试验项键=tkey, 子项键="",
                           标称值名称=r[i.get("标称值名称", 0)], 符号=r[i.get("符号", 1)],
-                          单位=(re.search(r"\(([^)]+)\)", typ_raw).group(1) if re.search(r"\(([^)]+)\)", typ_raw) else ""),
+                          单位=unit,
                           多行映射=("是" if multi else "否"), 标称值类型=typ,
                           单值="", 负偏差="", 正偏差="", 最小值="", 最小值符号="≥", 最大值="", 最大值符号="≤",
-                          公式="", 修约方式="", 修约精度="", 备注=conf_raw[:200])
+                          公式="", 修约方式="", 修约精度="", 备注="", 原文说明=conf_raw[:400])
                     vals = re.findall(r"([≤≥<>]=?)\s*([\d.]+)", conf_raw)
                     if typ == "最大值" and vals:
                         P.rows["90_标称值"][-1][COLS["90_标称值"].index("最大值")] = vals[0][1]
@@ -700,11 +828,19 @@ def convert(src, dst):
                         m2 = re.search(r"[:：]\s*([\d.]+)", conf_raw)
                         P.rows["90_标称值"][-1][COLS["90_标称值"].index("单值")] = m2.group(1) if m2 else ""
                     if multi:
-                        rows = re.findall(r"([A-Za-z0-9.]+)\s*(?:→|->)\s*([\d.]+)", conf_raw)
+                        rows, seen_pair = [], set()
+                        for a, b in re.findall(r"([A-Za-z][A-Za-z0-9.]*)\s*[—–\-]*\s*(?:→|->)\s*([\d.]+)", conf_raw):
+                            if (a, b) not in seen_pair:
+                                seen_pair.add((a, b)); rows.append((a, b))
                         if rows:
+                            pre = re.match(r"^([A-Za-z]+)", rows[0][0]).group(1) if rows[0][0] else ""
+                            sp = next((x for x in P.rows["30_规格参数"]
+                                       if str(x[COLS["30_规格参数"].index("符号")]).strip() == pre
+                                       or str(x[COLS["30_规格参数"].index("名称")]).strip().startswith(pre)), None)
+                            skey_var = sp[0] if sp else SPEC0 + "04"
                             for idx, (a, b) in enumerate(rows, 1):
                                 P.add("61_映射明细", 归属类型="标称值", 归属键=nk, 行号=idx, 自变量序号=1,
-                                      自变量类型="规格参数", 自变量键=SPEC0 + "04", 自变量形态="固定值", 自变量值=a,
+                                      自变量类型="规格参数", 自变量键=skey_var, 自变量形态="固定值", 自变量值=a,
                                       自变量下限="", 自变量上限="", 区间下限符号="", 区间上限符号="",
                                       因变量1=b, 因变量2="", 因变量3="", 因变量1符号="", 因变量2符号="")
                             P.open_issue("字段", "61_映射明细", nk, "自变量键", "AI推断", 0.3,
@@ -735,7 +871,7 @@ def convert(src, dst):
                         P.add("A1_判定条件", 试验项键=tkey, 条件序号=ci, 条件类型=side,
                               对比参数键="", 修饰符百分比="", 修饰符符号="", 修饰符常量="",
                               对比符号="", 被对比标称值键="", 被对比参数键="", 自定义数值="",
-                              子项结论来源="", 报告展开式="")
+                              子项结论来源="", 报告展开式="", 原文条件=re.sub(r"\s+", " ", str(blk).strip())[:400])
                     P.add("A2_结论映射", 试验项键=tkey, 结论序号=1, 结论值="合格", 逻辑="当满足所有条件时")
                     P.add("A2_结论映射", 试验项键=tkey, 结论序号=2, 结论值="不合格", 逻辑="不满足任一条件时")
                     P.open_issue("字段", "A1_判定条件", tkey, "对比参数键/被对比标称值键", "AI推断", 0.25,
@@ -898,7 +1034,7 @@ def check(path, out=None):
         for r in data[sheet]:
             allnames.setdefault(r["试验项键"], set()).add(g(0, "名称", r))
     for r in data["80_计算参数"]:
-        f = g(0, "公式", r)
+        f = g(0, "规范公式", r)
         if g(0, "计算类型", r) == "算术表达式型" and not f:
             R("V13", "阻断", r["参数键"], "算术表达式型公式为空")
         for var in re.findall(r"\{([^}]+)\}", f or ""):
@@ -907,6 +1043,11 @@ def check(path, out=None):
                 R("V13", "阻断", r["参数键"], "公式变量 {%s} 在同一样品/型号下解析不到" % nm)
         if f and f.count("(") != f.count(")"):
             R("V13", "阻断", r["参数键"], "公式括号不闭合")
+        src = g(0, "公式原文", r)
+        if src and not f and g(0, "计算类型", r) == "算术表达式型":
+            R("V13e", "告警", r["参数键"], "公式原文「%s」没有转译出规范公式，F3 无法计算" % src[:40])
+        if src and not g(0, "符号对照", r) and re.search(r"[A-Za-z]\w*", src):
+            R("V13d", "阻断", r["参数键"], "公式原文含符号但符号对照为空，无法核对变量归属")
 
     for r in data["A0_判定配置"]:
         if g(0, "判定方式", r) == "系统判定" and not any(c["试验项键"] == r["试验项键"] for c in data["A1_判定条件"]):
@@ -922,7 +1063,8 @@ def check(path, out=None):
 
     map_rows = {}
     for m in data["61_映射明细"]:
-        map_rows[m["归属键"]] = map_rows.get(m["归属键"], 0) + 1
+        map_rows.setdefault(m["归属键"], []).append(m)
+    spec_unit = {str(r["规格键"]): str(r["单位"] or "") for r in data["30_规格参数"]}
     for r in data["A1_判定条件"]:
         if g(0, "条件类型", r) == "标称值对比":
             key = r["被对比标称值键"]
@@ -940,7 +1082,7 @@ def check(path, out=None):
                 if has_mod:
                     R("V19", "阻断", r["试验项键"], "被对比标称值类型为「%s」时不配置修饰符" % nt)
                 if nom_row is not None:
-                    want = nom_report_expr(nom_row, map_rows.get(key, 0))
+                    want = nom_report_expr(nom_row, map_rows.get(key), spec_unit)
                     got = g(0, "报告展开式", r)
                     if not got:
                         R("V19c", "告警", r["试验项键"], "符号为「满足」但缺报告展开式，应为「%s」" % want)
