@@ -25,7 +25,7 @@
     if (sh === 'A1_判定条件' && c === '对比符号') return '待推导';
     return EMPTY_HINT[c] || null;
   }
-  var DERIVED = { '90_标称值': [], 'A1_判定条件': ['报告展开式'], '61_映射明细': [],
+  var DERIVED = { '90_标称值': ['报告展开式'], 'A1_判定条件': ['报告展开式'], '61_映射明细': [],
     '70_测量参数': [], '80_计算参数': ['规范公式', '符号对照'], '60_控制参数': [], 'B0_采集配置': ['计算顺序'] };
   var FRONT = {
     '61_映射明细': ['归属键', '行号', '自变量序号', '自变量类型', '自变量键', '自变量形态', '自变量值',
@@ -40,7 +40,110 @@
     'A1_判定条件': ['试验项键', '条件序号', '条件类型', '对比符号', '报告展开式', '被对比标称值键', '对比参数键',
       '被对比参数键', '自定义数值', '修饰符百分比', '修饰符符号', '修饰符常量', '子项结论来源', '子项键', '原文条件']
   };
-  var ST = { sheet: SHEETS[0], sel: -1, edits: {}, hl: null };
+  var ST = { sheet: SHEETS[0], sel: -1, edits: {}, hl: null, derived: 0 };
+  var EXTRA = { '90_标称值': ['报告展开式'] };   // 界面派生列，契约里不落存储列
+
+  function cleanUnit(u) {
+    u = String(u || '').trim();
+    return (!u || /^[\s\u2014\u2013\-/、.,·—–]+$/.test(u)) ? '' : u;
+  }
+  function cellOf(sh, ri, col) {
+    var k = sh + '|' + ri + '|' + col;
+    if (ST.edits[k] !== undefined) return String(ST.edits[k]);
+    var r = SEED[sh] && SEED[sh].rows[ri];
+    return r ? String(r[col] == null ? '' : r[col]) : '';
+  }
+  function valExpr(type, v1, v2, v3, sym1, u) {
+    var sfx = u ? ' ' + u : '';
+    if (type === '最小值') return (sym1 || '≥') + (v1 || '…') + sfx;
+    if (type === '最大值') return (sym1 || '≤') + (v1 || '…') + sfx;
+    if (type === '范围') return '∈[' + (v1 || '…') + ', ' + (v2 || '…') + ']' + sfx;
+    if (type === '公差') {
+      if (v1 && v2 && v2 === v3) return v1 + '±' + v2 + sfx;
+      if (v1 && (v2 || v3)) return v1 + (v2 ? '+' + v2 : '') + (v3 ? '-' + v3 : '') + sfx;
+      return (v1 || '…') + sfx;
+    }
+    if (type === '公式') return '按公式计算' + sfx;
+    return (v1 || '…') + sfx;
+  }
+  /* 一条标称值 → 报告展开式（多行映射逐行列出） */
+  function nominalExpr(nomRi) {
+    var sh = '90_标称值';
+    var type = cellOf(sh, nomRi, '标称值类型') || '单值';
+    var u = cleanUnit(cellOf(sh, nomRi, '单位'));
+    if (cellOf(sh, nomRi, '多行映射') === '是') {
+      var key = cellOf(sh, nomRi, '标称值键');
+      var m = (SEED['61_映射明细'] || {}).rows || [], by = {}, order = [];
+      m.forEach(function (x, i) {
+        if (x['归属键'] !== key) return;
+        var rn = String(x['行号'] || i + 1);
+        if (!by[rn]) { by[rn] = []; order.push(rn); }
+        by[rn].push(i);
+      });
+      if (!order.length) return '多行映射=是 但 61 无数据行（缺映射，见收件箱）';
+      var su = {};
+      ((SEED['30_规格参数'] || {}).rows || []).forEach(function (x) { su[x['规格键']] = cleanUnit(x['单位']); });
+      return order.map(function (rn) {
+        var idxs = by[rn], d = SEED['61_映射明细'].rows[idxs[0]], lhs = [], seen = {};
+        idxs.forEach(function (i2) {
+          var x = SEED['61_映射明细'].rows[i2];
+          var v = cellOf('61_映射明细', i2, '自变量值');
+          if (!v) {
+            var lo = cellOf('61_映射明细', i2, '自变量下限'), hi = cellOf('61_映射明细', i2, '自变量上限');
+            if (!lo && !hi) return;
+            v = (cellOf('61_映射明细', i2, '区间下限符号') || '≥') + (lo || '…') + ' ~ ' +
+                (cellOf('61_映射明细', i2, '区间上限符号') || '≤') + (hi || '…');
+          }
+          var un = su[x['自变量键'] || ''];
+          if (un && v.indexOf('~') < 0 && v.slice(-un.length) !== un) v += un;
+          if (!seen[v]) { seen[v] = 1; lhs.push(v); }
+        });
+        var rhs = valExpr(type, cellOf('61_映射明细', idxs[0], '因变量1'), cellOf('61_映射明细', idxs[0], '因变量2'),
+                          cellOf('61_映射明细', idxs[0], '因变量3'), cellOf('61_映射明细', idxs[0], '因变量1符号'), u);
+        return (lhs.length ? lhs.join('且') + '→' : '') + rhs;
+      }).join('、');
+    }
+    if (type === '公式') return '按公式 ' + (cellOf(sh, nomRi, '公式') || '…') + ' 计算后判定';
+    if (type === '单值') return (cellOf(sh, nomRi, '单值') || '…') + (u ? ' ' + u : '');
+    if (type === '公差') {
+      var pos = cellOf(sh, nomRi, '正偏差'), neg = cellOf(sh, nomRi, '负偏差'), base = cellOf(sh, nomRi, '单值') || '…';
+      return base + (pos && neg ? (pos === neg ? '±' + pos : '+' + pos + '/-' + neg)
+                    : (pos ? '+' + pos : (neg ? '-' + neg : '…'))) + (u ? ' ' + u : '');
+    }
+    if (type === '最小值') return (cellOf(sh, nomRi, '最小值符号') || '≥') + (cellOf(sh, nomRi, '最小值') || '…') + (u ? ' ' + u : '');
+    if (type === '最大值') return (cellOf(sh, nomRi, '最大值符号') || '≤') + (cellOf(sh, nomRi, '最大值') || '…') + (u ? ' ' + u : '');
+    if (type === '范围') {
+      var lb = (cellOf(sh, nomRi, '最小值符号') || '≥') === '>' ? '(' : '[';
+      var rb = (cellOf(sh, nomRi, '最大值符号') || '≤') === '<' ? ')' : ']';
+      return '∈' + lb + (cellOf(sh, nomRi, '最小值') || '…') + ', ' + (cellOf(sh, nomRi, '最大值') || '…') + rb + (u ? ' ' + u : '');
+    }
+    return '';
+  }
+  /* A1 的报告展开式 = 被对比标称值的展开式；没定标称值就是「待生成」 */
+  function a1Expr(ri) {
+    var key = cellOf('A1_判定条件', ri, '被对比标称值键');
+    if (!key) return '待生成';
+    var rs = SEED['90_标称值'].rows;
+    for (var i = 0; i < rs.length; i++) if (rs[i]['标称值键'] === key) return nominalExpr(i);
+    return '待生成';
+  }
+  function derivedVal(sh, ri, col) {
+    if (col !== '报告展开式') return null;
+    if (sh === '90_标称值') return nominalExpr(ri);
+    if (sh === 'A1_判定条件') return a1Expr(ri);
+    if (sh === '80_计算参数') {
+      var f = cellOf(sh, ri, '公式原文');
+      return f ? '待转译' : '';
+    }
+    return null;
+  }
+  function recomputeAll() {
+    var before = ST.derived;
+    var n = 0;
+    (SEED['90_标称值'].rows || []).forEach(function (r, i) { derivedVal('90_标称值', i, '报告展开式'); n++; });
+    (SEED['A1_判定条件'].rows || []).forEach(function (r, i) { derivedVal('A1_判定条件', i, '报告展开式'); n++; });
+    ST.derived = n; return n - before;
+  }
   var SEED = null;
 
   function applyExternalAt(sh, ri, col, v) {
@@ -49,14 +152,22 @@
   }
 
   function cols(sh) {
-    var all = SEED[sh].cols, f = FRONT[sh] || [];
+    var all = SEED[sh].cols.slice(), ex = EXTRA[sh] || [];
+    ex.forEach(function (c) { if (all.indexOf(c) < 0) all.push(c); });
+    var f = (FRONT[sh] || []).slice();
+    ex.forEach(function (c) { if (f.indexOf(c) < 0) f.splice(Math.max(0, f.length - 1), 0, c); });
     return f.filter(function (c) { return all.indexOf(c) >= 0; })
       .concat(all.filter(function (c) { return f.indexOf(c) < 0; }));
   }
   function rows(sh) { return SEED[sh].rows; }
   function val(sh, r, c, ri) {
     var k = sh + '|' + ri + '|' + c;
-    return ST.edits[k] !== undefined ? ST.edits[k] : (r[c] || '');
+    if (ST.edits[k] !== undefined) return ST.edits[k];
+    if (DERIVED[sh].indexOf(c) >= 0 || (EXTRA[sh] || []).indexOf(c) >= 0) {
+      var d = derivedVal(sh, ri, c);
+      if (d !== null) return d;
+    }
+    return r[c] || '';
   }
   function keyOf(sh, r) { return r[KEYCOL[sh]] || ''; }
 
@@ -119,6 +230,22 @@
     if (c === '报告展开式') return '派生列：符号定为「满足」后按标称值类型逐行展开';
     if (c === '被对比标称值键' || c === '对比参数键') return '判定条件仍是自然语言，键未解析——这是挂在收件箱里的问题';
     return '本行不适用该列';
+  }
+  /* 改了哪些列会影响多少处展开式：61 的因变量/自变量 → 该标称值 + 引用它的 A1 */
+  function affected(sh, col) {
+    if (sh === 'A1_判定条件') return 0;   // A1 的展开式是终端，不再向下游传导
+    var keys = {};
+    if (sh === '61_映射明细') {
+      var m = SEED['61_映射明细'].rows, hit = null;
+      // 定位被改的那一行归属哪个标称值：用 edits 反查
+      for (var i = 0; i < m.length; i++) if (ST.edits[sh + '|' + i + '|' + col] !== undefined) keys[m[i]['归属键']] = 1;
+    } else if (sh === '90_标称值') {
+      var r90 = SEED['90_标称值'].rows;
+      for (var j = 0; j < r90.length; j++) if (ST.edits[sh + '|' + j + '|' + col] !== undefined) keys[r90[j]['标称值键']] = 1;
+    }
+    var n = 0, a1 = SEED['A1_判定条件'].rows || [];
+    a1.forEach(function (x) { if (keys[x['被对比标称值键']]) n++; });
+    return { nom: Object.keys(keys).length, a1: n };
   }
   function pageIssues(sh) { return ((SEED.conf || {})[sh] || []).length; }
   function issueMode(sh, r) {
@@ -201,10 +328,19 @@
         var v = inp.value.trim();
         if (v !== cur) {
           ST.edits[sh + '|' + ri + '|' + col] = v;
+          recomputeAll();
           if (WB.say) {
+            var aff = affected(sh, col);
+            if (aff.nom) {
+              WB.say('sys', '系统', '联动重算报告展开式：本条标称值 <b>1</b> 处' +
+                (aff.a1 ? '，引用它的判定条件 <b>' + aff.a1 + '</b> 处'
+                        : '，引用它的判定条件 <b>0</b> 处（被对比标称值键还没解析，' +
+                          '解析后会自动跟着变；见收件箱 A1 那批问题）') +
+                '。<span class="tg">配置显示「满足」，报告打印按类型展开</span>');
+            }
             WB.say('me', '业务专家', '直接改格 <span class="tg">' + esc(sh) + '</span><span class="tg">' +
               esc(keyOf(sh, rows(sh)[ri])) + '</span><span class="tg">' + esc(col) + '</span> ' + esc(cur || '∅') + ' → <b>' + esc(v || '∅') + '</b>');
-            WB.say('sys', '系统', '该格来源角标转「人工确认」；派生列（报告展开式）按新值重算。');
+            WB.say('sys', '系统', '该格来源角标转「人工确认」。');
           }
         }
         setTimeout(render, 0);
