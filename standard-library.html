@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>标准文件库 - 智慧实验室</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="css/ui-baseline.css" />
+  <link rel="stylesheet" href="css/standard-library.css" />
+</head>
+<body class="bg-slate-100">
+<div class="sl-wrap">
+  <div class="sl-head">
+    <span class="sl-title">标准文件库<small>元数据全局共享 · 文件本体按客户隔离 · 拆解成果是复利来源</small></span>
+    <div class="sl-search"><i class="fa fa-search"></i>
+      <input placeholder="搜编号 / 名称" oninput="SL.search(this.value)" /></div>
+    <select class="sl-fs" onchange="SL.filt('s',this.value)">
+      <option>全部</option><option>现行</option><option>被代替</option><option>废止</option></select>
+    <select class="sl-fs" onchange="SL.filt('t',this.value)">
+      <option>全部</option><option>GB</option><option>DL/T</option><option>已拆解</option><option>未拆解</option></select>
+    <span class="sl-sp"></span>
+    <a class="btn-outline" href="ai-sample-workbench.html" target="mainFrame">样品配置工作台</a>
+    <button class="btn-save" onclick="SL.toast('上传后先做正文识别：抽编号 + 名称做规范化，再拿 hash 与元数据比对（原型演示）')">
+      <i class="fa fa-upload"></i> 上传标准文件</button>
+  </div>
+  <div class="sl-bar" id="slCount"></div>
+  <div class="sl-main">
+    <aside class="sl-side"><div id="slList"></div></aside>
+    <section class="sl-detail">
+      <div class="sl-tabs" id="slTabs"></div>
+      <div class="sl-body" id="slBody"></div>
+    </section>
+  </div>
+</div>
+<div class="sl-toast" id="slToast"></div>
+<script src="js/ui-a11y.js"></script>
+<script src="js/standard-library-data.js"></script>
+<script src="js/standard-library.js"></script>
+<script>SL.init(window.STD_SEED);</script>
+</body>
+</html>
