@@ -22,7 +22,12 @@
     { code: 'EN 50306-2:2020', nm: '铁路机车车辆电缆', stage: 3, q: 0, done: 0, st: '已定稿' }
   ];
 
-  var S = { answers: {}, collapsed: {}, chat: [], run: 0, task: 0, generated: 0 };
+  var S = { answers: {}, collapsed: {}, chat: [], run: 0, task: 0, generated: 0, stage: 'f1', notified: 0 };
+  function mode(id) { var a = S.answers[id]; return a ? (a.mode || 'answer') : ''; }
+  function cnt(f) { var n = 0; for (var k in S.answers) if (f(S.answers[k])) n++; return n; }
+  function rawLeft() { var n = 0; RAW.forEach(function (q) { if (!S.answers[q.id]) n++; }); return n; }
+  function skipCnt() { return RAW.filter(function (q) { return mode(q.id) === 'skip'; }).length; }
+  function aiCnt() { return RAW.filter(function (q) { return mode(q.id) === 'ai'; }).length; }
   var RAW = [], GROUPS = [], SCOPE = [], SCOPE_G = [], MERGE = {};
 
   /* ── 同因合并：把「某某」这类实例名抹掉后同形的问题并成一条 ── */
@@ -62,32 +67,39 @@
   function paintHeader() {
     var el = document.getElementById('wbDoc'); if (!el) return;
     var left = SCOPE.filter(function (q) { return !S.answers[q.id]; }).length;
-    var fLeft = (function () { var n = 0; allMembers().forEach(function (m) { m.items.forEach(function (q) { if (!S.answers[q.id]) n++; }); }); return n; })();
+    var fLeft = rawLeft(), sk = skipCnt(), ai = aiCnt();
     el.innerHTML = '稿件 <b style="color:' + (S.generated ? '#15803d' : '#1e293b') + '">' +
-      (S.generated ? 'v1-draft 已生成' : '未生成') + '</b> · ' +
-      (left ? '范围级未答完' : (fLeft ? '字段级剩 ' + fLeft + ' 条' : '待定项已清零')) +
-      (S.generated && fLeft ? ' · <span style="color:#b45309">定稿前需清零或显式忽略</span>' : '');
+      (S.generated ? 'v1-draft' : '未生成') + '</b> · ' +
+      (left ? '范围级剩 ' + left + ' 处未处置'
+        : (fLeft ? '未处置 ' + fLeft + ' 处' : (sk ? '已处置完，跳过 ' + sk + ' 处待 F3 再问' : '待定项已清零'))) +
+      (S.generated && (fLeft || sk) ? ' · <span style="color:#b45309">' +
+        (fLeft ? '定稿前需清零或跳过' : '入库前需二次确认') + '</span>' : '') +
+      (S.imported ? ' · <span style="color:#6d28d9">已入库' + (ai ? '，自决 ' + ai + ' 处已通知' : '') + '</span>' : '');
     var dl = document.getElementById('btnDl'); if (dl) dl.disabled = !S.generated;
   }
 
   function render() {
     paintHeader();
     var scopeLeft = SCOPE.filter(function (q) { return !S.answers[q.id]; }).length;
+    var skipN = skipCnt();
     var fieldAll = [], GROUPED = [];
     GROUPS.forEach(function (g) { g.members.forEach(function (m) { m.items.forEach(function (q) { fieldAll.push(q); }); }); });
     var fAns = answeredCount(fieldAll);
 
     document.getElementById('wbStats').innerHTML =
-      stat(scopeLeft ? '范围级待答' : '范围级已答', (SCOPE.length - scopeLeft) + ' / ' + SCOPE.length, scopeLeft ? 'warn' : 'ok', SCOPE_G.length + ' 类问题') +
+      stat('范围级已处置', (SCOPE.length - scopeLeft) + ' / ' + SCOPE.length, scopeLeft ? 'warn' : 'ok',
+        SCOPE_G.length + ' 类问题' + (scopeLeft ? '，剩 ' + scopeLeft + ' 处未处置' : '')) +
       stat('字段级已答', fAns + ' / ' + fieldAll.length, fAns === fieldAll.length ? 'ok' : '', GROUPS.length + ' 张 sheet') +
       stat('合并后卡片', GROUPS.reduce(function (a, g) { return a + g.members.length; }, 0), '',
         '原始 ' + fieldAll.length + ' 条，省 ' + (fieldAll.length - GROUPS.reduce(function (a, g) { return a + g.members.length; }, 0)) + ' 次点击') +
-      stat('未决阻断', scopeLeft ? scopeLeft + 2 : 2, scopeLeft ? 'warn' : '', '含 2 项待答即消除');
+      stat('已跳过待 F3 再问', skipCnt(), skipCnt ? 'warn' : '', '延迟决策，不阻塞出稿') +
+      stat('AI 自决落库', aiCnt(), '', '二次仍跳过，已通知客户');
 
     document.getElementById('wbBlock').innerHTML = scopeLeft
-      ? '<i class="fa fa-exclamation-circle"></i><b>范围级问题没答完，稿件不能生成。</b>' +
-        '这 ' + scopeLeft + ' 条决定「拆成什么结构」，必须先定；下面的字段级问题可以边生成边答。'
-      : '<i class="fa fa-check-circle"></i>范围级已全部确认，可以生成稿件 v1-draft 了。';
+      ? '<i class="fa fa-exclamation-circle"></i><b>范围级还有 ' + scopeLeft + ' 条未处置，稿件不能生成。</b>' +
+        '它们决定「拆成什么结构」。可以回答，也可以<b>跳过</b>——跳过会把结构交给 AI，影响面是整块数据，F3 前一定会再问你一次。'
+      : '<i class="fa fa-check-circle"></i>范围级已全部处置，可以生成稿件 v1-draft。' +
+        (skipN ? '其中 <b>' + skipN + ' 处是跳过</b>，稿件里标灰占位，F3 入库前需二次确认。' : '');
     document.getElementById('wbBlock').className = 'wb-block' + (scopeLeft ? '' : ' clear');
     document.getElementById('btnRun').disabled = scopeLeft > 0;
     document.getElementById('btnRun').title = scopeLeft ? '先答完 ' + scopeLeft + ' 条范围级问题' : '';
@@ -159,9 +171,12 @@
     var a = S.answers[q.id];
     return '<div class="wb-q-f"><span class="src">' + esc(q.src) + '</span>' +
       '<span class="wb-loc" onclick="WB.loc(\'' + esc(q.sheet) + '\',\'' + esc(q.row) + '\',\'' + esc(q.col) + '\')">定位到表格</span>' +
-      (a ? '<span class="wb-ans"><i class="fa fa-check"></i> ' + esc(a.other || a.choice) + '</span>' +
-        '<span class="wb-undo" onclick="WB.undo(\'' + esc(q.id) + '\')">撤销</span>'
-        : '<span style="color:#cbd5e1">未回答</span>') + '</div>';
+      (a && a.mode !== 'skip'
+        ? '<span class="wb-ans"><i class="fa fa-check"></i> ' + esc(a.other || a.choice) + '</span>' +
+          (a.mode === 'ai' ? '<span class="wb-ai">AI 自决落库</span>' : '')
+        : (a ? '<span class="wb-skip">已跳过 · F3 会再问一次</span>' : '<span style="color:#cbd5e1">未处置</span>')) +
+      '<span class="wb-undo" onclick="WB.undo(\'' + esc(q.id) + '\')">撤销</span>' +
+      (a ? '' : '<span class="wb-skipbtn" onclick="WB.skip(\'' + esc(q.id) + '\')">跳过</span>') + '</div>';
   }
   function paintChat() {
     var el = document.getElementById('wbChat');
@@ -193,9 +208,10 @@
     }
     if (box) {
       var a = S.answers[id];
-      box.classList.toggle('answered', !!a);
+      box.classList.toggle('answered', !!a && a.mode !== 'skip');
       box.classList.toggle('clear', !!a && box.parentNode.id === 'wbScope');
       var f = box.querySelector('.wb-q-f'); if (f) f.innerHTML = qFoot(q);
+      if (box) box.classList.toggle('skipped', !!a && a.mode === 'skip');
       var wrap = box.querySelector('.wb-opts') || box.querySelector('.wb-other');
       if (wrap) { var tmp = document.createElement('div'); tmp.innerHTML = optInner(q, optsOf(q));
         wrap.parentNode.replaceChild(tmp.firstChild, wrap); }
@@ -219,9 +235,8 @@
   function renderScopeMeta() {
     var left = SCOPE.filter(function (q) { return !S.answers[q.id]; }).length;
     document.getElementById('wbBlock').innerHTML = left
-      ? '<i class="fa fa-exclamation-circle"></i><b>范围级问题没答完，稿件不能生成。</b>这 ' + left +
-        ' 条决定「拆成什么结构」，必须先定；下面的字段级问题可以边生成边答。'
-      : '<i class="fa fa-check-circle"></i>范围级已全部确认，可以生成稿件 v1-draft 了。';
+      ? '<i class="fa fa-exclamation-circle"></i><b>范围级还有 ' + left + ' 条未处置，稿件不能生成。</b>可以回答，也可以跳过；跳过会把结构交给 AI，F3 前会再问一次。'
+      : '<i class="fa fa-check-circle"></i>范围级已全部处置，可以生成稿件 v1-draft 了。';
     document.getElementById('wbBlock').className = 'wb-block' + (left ? '' : ' clear');
     document.getElementById('btnRun').disabled = left > 0;
     document.getElementById('btnRun').title = left ? '先答完 ' + left + ' 条范围级问题' : '';
@@ -237,8 +252,9 @@
     var st = document.querySelectorAll('#wbStats .wb-stat');
     if (st[1]) st[1].innerHTML = '字段级已答<b class="' + (fAns === fieldAll.length ? 'ok' : '') + '">' + fAns + ' / ' + fieldAll.length +
       '</b><span style="font-size:11px">' + GROUPS.length + ' 张 sheet</span>';
-    if (st[3]) { var sl = SCOPE.filter(function (q) { return !S.answers[q.id]; }).length;
-      st[3].innerHTML = '未决阻断<b class="' + (sl ? 'warn' : '') + '">' + (2 + sl) + '</b><span style="font-size:11px">含 2 项待答即消除</span>'; }
+    if (st[3]) st[3].innerHTML = '已跳过待 F3 再问<b class="' + (skipCnt() ? 'warn' : '') + '">' + skipCnt() +
+      '</b><span style="font-size:11px">延迟决策，不阻塞出稿</span>';
+    if (st[4]) st[4].innerHTML = 'AI 自决落库<b>' + aiCnt() + '</b><span style="font-size:11px">二次仍跳过，已通知客户</span>';
     paintHeader();
   }
 
@@ -247,7 +263,7 @@
     rows: function (k) { var e = document.getElementById('rows_' + k); if (e) e.classList.toggle('show'); },
     pick: function (id, v) {
       var q = RAW.filter(function (x) { return x.id === id; })[0];
-      groupOf(id).forEach(function (x) { S.answers[x] = { choice: v, other: '' }; });
+      groupOf(id).forEach(function (x) { S.answers[x] = { choice: v, other: '', mode: 'answer' }; });
       say('me', '业务专家', esc(q ? q.q.slice(0, 34) : id) + '… → <b>' + esc(v) + '</b>');
       save(); paintCard(id); paintChat();
     },
@@ -265,6 +281,15 @@
       save();
       var f = document.getElementById('q_' + id);
       if (f) { var b = f.querySelector('.wb-q-f'); if (b) b.innerHTML = qFoot(RAW.filter(function (x) { return x.id === id; })[0]); }
+    },
+    skip: function (id) {
+      var q = RAW.filter(function (x) { return x.id === id; })[0];
+      var n = groupOf(id).length;
+      groupOf(id).forEach(function (x) { S.answers[x] = { choice: '', other: '', mode: 'skip' }; });
+      say('sys', '系统', '跳过 ' + n + ' 处（' + esc(q.q.slice(0, 26)) + '…）。' +
+        '数据先按 AI 当前最优猜测 <b>' + esc((optsOf(q)[0] || '—')) + '</b> 占位，' +
+        '<b>不阻塞出稿</b>，但 F3 入库前会再问你一次。<span class="tg">可撤销</span>');
+      save(); render();
     },
     undo: function (id) {
       groupOf(id).forEach(function (x) { delete S.answers[x]; });
@@ -380,11 +405,146 @@
     render();
   }
 
+  /* ══════════ F3：预检 · 跳过项二次确认 · AI 自决落库 ══════════ */
+  function skippedMembers() {
+    var out = [];
+    SCOPE_G.concat(GROUPS.reduce(function (a, g) { return a.concat(g.members); }, []))
+      .forEach(function (m) { if (mode(m.rep.id) === 'skip') out.push(m); });
+    return out;
+  }
+  function aiPicks(m) {
+    var q = m.rep, o = optsOf(q);
+    return { value: o.length ? o[0] : '（无默认值，需人工）',
+             basis: q.conf > 0 ? '同类先例 + 上下文推断' : '标准文件条款就近匹配' };
+  }
+  function renderF3() {
+    var pend = skippedMembers().length, ai = aiCnt();
+    document.getElementById('wbF3Sum').innerHTML =
+      box('真缺陷', '0', 'good', '契约 / 转换层问题') +
+      box('待答即消除', '2', '', '回答或跳过均可推进') +
+      box('跳过待二次确认', String(pend), pend ? 'bad' : 'good', '本轮再问一次') +
+      box('AI 自决落库', String(ai), '', ai ? '已通知客户' : '尚无');
+    var el = document.getElementById('wbF3Skip');
+    if (!pend && !ai) {
+      el.innerHTML = '<h4>跳过项二次确认</h4><p>本次没有跳过的问题，直接预检入库。</p>';
+    } else {
+      el.innerHTML = '<h4>跳过项二次确认<span class="cn" style="margin-left:8px;font-size:11.5px;color:#b45309">' +
+        pend + ' 类 / ' + RAW.filter(function (q) { return mode(q.id) === 'skip'; }).length + ' 处</span></h4>' +
+        '<p>这些是你上一轮标记「跳过」的条目。现在再问一次：能答就答，' +
+        '仍然跳过则<b>由 AI 按自己的理解拆解落库</b>，并把自决清单通知到客户。</p>' +
+        skippedMembers().map(askCard).join('') +
+        (ai ? '<h4 style="margin-top:16px">AI 自决清单（已通知客户）<span class="cn" style="margin-left:8px;font-size:11.5px;color:#6d28d9">' +
+          aiMembers().length + ' 类 / ' + ai + ' 处</span></h4>' + aiMembers().map(noticeRow).join('') : '');
+    }
+    var gate = pend ? '还有 ' + pend + ' 类跳过项未二次处置，不能入库（V24）'
+      : (ai ? '可入库：' + ai + ' 处将由 AI 自决落库，入库后推送自决清单' : '可入库：全部问题已人工确认');
+    document.getElementById('wbF3Gate').innerHTML = '<i class="fa ' + (pend ? 'fa-lock' : 'fa-unlock') + '"></i> ' + gate;
+    document.getElementById('btnImport').disabled = pend > 0;
+    var bell = document.getElementById('wbBell');
+    bell.style.display = ai ? '' : 'none';
+    document.getElementById('wbBellN').textContent = ai;
+  }
+  function box(k, v, c, s) { return '<div><div class="k">' + k + '</div><div class="v ' + c + '">' + v + '</div><div class="s">' + s + '</div></div>'; }
+  function askCard(m) {
+    var q = m.rep, p = aiPicks(m), n = m.items.length;
+    return '<div class="wb-ask"><div class="t">' + esc(q.q) +
+      '<span class="wb-merge" style="margin-left:6px">涉及 ' + n + ' 处</span></div>' +
+      '<div class="ai">AI 拟取值 <b>' + esc(p.value) + '</b>　依据：' + esc(p.basis) +
+      '　出处：' + esc(q.src) + '</div>' +
+      '<div class="ops">' + optsOf(q).slice(0, 3).map(function (x) {
+        return '<button class="btn-outline" onclick="WB.pick(\'' + esc(q.id) + '\',\'' + esc(x).replace(/'/g, '') + '\',1)">' + esc(x) + '</button>';
+      }).join('') +
+      '<button class="btn-save" onclick="WB.decide(\'' + esc(q.id) + '\')">仍跳过，AI 自决落库</button>' +
+      '<span class="wb-loc" onclick="WB.stage(\'f1\')">回原问题</span></div></div>';
+  }
+  function aiMembers() {
+    return SCOPE_G.concat(GROUPS.reduce(function (a, g) { return a.concat(g.members); }, []))
+      .filter(function (m) { return mode(m.rep.id) === 'ai'; });
+  }
+  function noticeRow(m) {
+    var q = m.rep, n = m.items.length;
+    var paths = m.items.slice(0, 3).map(function (x) {
+      return '<code>' + esc(x.row) + ' · ' + esc(x.col) + '</code>';
+    }).join(' ');
+    return '<div class="wb-notice"><div class="r"><b>' + esc(q.q.slice(0, 46)) + '…</b>' +
+      '<span class="wb-merge" style="margin-left:6px">涉及 ' + n + ' 处</span><br>' +
+      'AI 落库取值 <code>' + esc((optsOf(q)[0] || '—')) + '</code>　依据 ' + esc(aiPicks(m).basis) + '<br>' +
+      '回改路径 ' + paths + (n > 3 ? ' 等 ' + n + ' 处' : '') +
+      '　通知 站内消息 + 自决清单</div></div>';
+  }
+  WB.decide = function (id) {
+    var q = RAW.filter(function (x) { return x.id === id; })[0];
+    var m = { rep: q }; var p = aiPicks(m);
+    groupOf(id).forEach(function (x) {
+      S.answers[x] = { choice: p.value, other: '', mode: 'ai', basis: p.basis };
+    });
+    say('sys', '系统', '二次仍跳过 → <b>AI 自决落库</b> ' + groupOf(id).length + ' 处，取值 <b>' + esc(p.value) +
+      '</b>（依据 ' + esc(p.basis) + '）。已生成自决清单，入库后通知客户。<span class="tg">可撤销</span>');
+    S.notified++; save(); render(); WBsyncTasks(); if (S.stage === 'f3') renderF3();
+  };
+  WB.stage = function (k) {
+    S.stage = k;
+    document.getElementById('wbInbox').style.display = k === 'f1' ? '' : 'none';
+    document.getElementById('wbF3').style.display = k === 'f3' ? '' : 'none';
+    document.getElementById('segF1').className = 'wb-seg-i' + (k === 'f1' ? ' on' : '');
+    document.getElementById('segF3').className = 'wb-seg-i' + (k === 'f3' ? ' on' : '');
+    document.querySelector('.wb-batch').style.display = k === 'f1' ? '' : 'none';
+    ['btnDl', 'btnRun'].forEach(function (id) { document.getElementById(id).style.display = k === 'f1' ? '' : 'none'; });
+    if (k === 'f3') renderF3(); else render();
+  };
+  WB.importRun = function () {
+    if (skippedMembers().length) return;
+    var el = document.getElementById('wbF3Run'); el.style.display = '';
+    var blocks = ['S01 DS实壁类电缆导管_直管', 'S02 DS实壁类塑料电缆导管_带承口'];
+    el.innerHTML = '<h4>分块入库（按样品，一块一事务）</h4>' +
+      blocks.map(function (b, i) {
+        return '<div class="wb-stage" id="imp' + i + '"><span class="dot"></span>' + esc(b) +
+          '<span class="out"></span></div>';
+      }).join('');
+    var i = 0;
+    (function step() {
+      if (i > 0) { document.getElementById('imp' + (i - 1)).className = 'wb-stage done';
+        document.getElementById('imp' + (i - 1)).querySelector('.out').textContent = '已入库 · 可回滚本块'; }
+      if (i >= blocks.length) {
+        say('sys', '系统', '入库完成：2 个样品块全部成功，未触发回滚。' +
+          (aiCnt() ? '已推送 <b>AI 自决清单</b>（' + aiMembers().length + ' 类 / ' + aiCnt() + ' 处）到客户站内消息。' : '') +
+          ' <span class="tg">跳转样品数据页</span>');
+        S.imported = 1; save(); renderF3(); return;
+      }
+      document.getElementById('imp' + i).className = 'wb-stage on'; i++; setTimeout(step, 900);
+    })();
+  };
+  WB.pick = (function (orig) {
+    return function (id, v, fromF3) {
+      orig(id, v);
+      if (fromF3 && S.stage === 'f3') renderF3();
+    };
+  })(WB.pick);
+
   global.WB = WB;
   global.WBInit = function (raw) {
     RAW = raw; build();
     var d = load(); S.answers = d.a || {}; S.collapsed = d.c || {}; S.chat = d.ch || [];
     render();
   };
+  function renderTasks() {
+    var el = document.getElementById('taskList'); if (!el) return;
+    el.innerHTML = TASKS.map(function (t, i) {
+      var bar = [0, 1, 2].map(function (k) {
+        return '<i class="' + (k < t.stage - 1 ? 'done' : k === t.stage - 1 ? 'cur' : '') + '"></i>';
+      }).join('');
+      return '<div class="wb-task' + (i === S.task ? ' on' : '') + '" onclick="WB.pickTask(' + i + ')">' +
+        '<div class="code">' + esc(t.code) + '</div><div class="nm">' + esc(t.nm) + '</div>' +
+        '<div class="bar">' + bar + '</div>' +
+        '<div class="meta"><span class="wb-badge" style="font-size:10.5px">' + esc(t.st) + '</span>' +
+        '<span style="font-size:11px;color:#94a3b8">' + (t.q ? t.q + ' 条待定' : '—') + '</span></div></div>';
+    }).join('');
+  }
+  WB.pickTask = function (i) { S.task = i; renderTasks(); };
   global.WBTasks = TASKS;
+  global.WBsyncTasks = function () {
+    TASKS[0].q = RAW.length;
+    TASKS[0].st = S.imported ? '已入库' : (S.generated ? '校稿中' : '校稿中');
+    renderTasks();
+  };
 })(window);

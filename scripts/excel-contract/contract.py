@@ -57,7 +57,7 @@ SHEETS = [
     ("A2_结论映射", ["试验项键", "结论序号", "结论值", "逻辑"]),
     ("B0_采集配置", ["参数键", "类型", "参数编码", "计算顺序", "是否覆盖LIMS参数"]),
     ("C0_待定项", ["问题ID", "任务键", "问题层级", "目标sheet", "目标行键", "目标列", "状态", "置信度",
-               "问题文本", "候选项", "人工回答", "回答来源", "依据出处"]),
+               "问题文本", "候选项", "人工回答", "回答来源", "依据出处", "处置状态", "自决依据"]),
     ("D0_校验规则", ["规则ID", "目标sheet", "目标列", "规则说明", "严重级", "失败提示", "触发时机"]),
 ]
 COLS = {n: c for n, c in SHEETS}
@@ -94,6 +94,8 @@ RULES = [
     ("V21", "90_标称值", "标称值键", "被 A1 引用的标称值不得删除", "阻断", "标称值被判定引用，需先解除绑定", "F2重算"),
     ("V22", "B0_采集配置", "计算顺序", "必须构成拓扑序：公式引用者序号 > 被引用者序号", "阻断", "计算顺序违反依赖关系", "F3预检"),
     ("V23", "B0_采集配置", "计算顺序", "从1连续、无重复、覆盖全部参数", "阻断", "采集配置缺参数或序号断裂", "F3预检"),
+    ("V24", "C0_待定项", "处置状态", "已跳过的问题必须在 F3 二次确认；仍有未二次处置的跳过项 ⇒ 不得入库", "阻断", "存在未二次确认的跳过项", "F3预检"),
+    ("V25", "C0_待定项", "自决依据", "AI自决落库必须写清选了什么+依据，且已通知客户", "阻断", "自决落库缺依据或缺通知", "F3预检"),
 ]
 DICT_CATEGORY = ["例行试验", "型式试验", "抽样试验", "委托检测", "出厂检验"]
 NOM_SINGLE = "单值"
@@ -425,7 +427,7 @@ class Pack:
         oid = "Q%03d" % (len(self.rows["C0_待定项"]) + 1)
         self.add("C0_待定项", 问题ID=oid, 任务键=TASK, 问题层级=level, 目标sheet=sheet, 目标行键=rowkey,
                  目标列=col, 状态=state, 置信度=conf, 问题文本=q, 候选项=cand, 人工回答="",
-                 回答来源="", 依据出处=src)
+                 回答来源="", 依据出处=src, 处置状态="待答", 自决依据="")
         return oid
 
 
@@ -725,6 +727,8 @@ def convert(src, dst):
                         continue
                     i = {n: k for k, n in enumerate(hdr)}
                     g = pad(g, len(hdr))
+                    if not str(r[i["参数名称"]] or "").strip():
+                        continue          # 合并单元格续行，不是参数行
                     pk = tkey + "-M%02d" % (len(P.rows["70_测量参数"]) + 1)
                     times = re.sub(r"\D", "", r[i["测量次数"]] or "") or "1"
                     rnd = r[i["修约规则"]] if "修约规则" in i else ""
@@ -755,6 +759,8 @@ def convert(src, dst):
                 gg = pad(gg, len(hdr))
                 for r in gg[1:]:
                     if len(r) < 5 or not r[0]:
+                        continue
+                    if not str(r[i["参数名称"]] or "").strip():
                         continue
                     pk = tkey + "-K%02d" % (len(P.rows["80_计算参数"]) + 1)
                     way = r[i["计算方式"]] if "计算方式" in i else ""
@@ -800,6 +806,8 @@ def convert(src, dst):
                 ng = pad(ng, len(hdr))
                 for r in ng[1:]:
                     if len(r) < 3 or not r[0]:
+                        continue
+                    if not str(r[i.get("标称值名称", 0)] or "").strip():
                         continue
                     nk = tkey + "-N%02d" % (len(P.rows["90_标称值"]) + 1)
                     typ_raw = r[i.get("标称值类型", 2)]
@@ -1102,6 +1110,17 @@ def check(path, out=None):
         if k in seen:
             R("V20", "告警", r["试验项键"], "存在两条相同结论「%s」，建议合并" % r["结论值"])
         seen[k] = 1
+
+    skipped = [r for r in data["C0_待定项"] if g(0, "处置状态", r) == "已跳过"]
+    for r in skipped:
+        R("V24", "阻断", r["问题ID"], "该问题被跳过，尚未在 F3 二次确认（AI 拟取值：%s）"
+          % (g(0, "候选项", r).split("、")[0] or "无默认值"))
+    for r in data["C0_待定项"]:
+        if g(0, "处置状态", r) == "AI自决落库":
+            if not g(0, "自决依据", r):
+                R("V25", "阻断", r["问题ID"], "AI 自决落库但没写依据，客户事后无法复核")
+            if "已通知" not in g(0, "自决依据", r):
+                R("V25", "阻断", r["问题ID"], "AI 自决落库但未通知客户")
 
     used = {c["被对比标称值键"] for c in data["A1_判定条件"]}
     orders = sorted(int(g(0, "计算顺序", r) or 0) for r in data["B0_采集配置"])

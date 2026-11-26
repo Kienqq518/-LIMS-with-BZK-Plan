@@ -36,7 +36,13 @@
       <span class="wb-title">样品配置工作台<small>F1 生成初版稿件 · 问题收件箱</small></span>
       <span class="wb-badge">内部档 · 实施工程师</span>
       <span class="wb-badge ext">定稿后回流公司资产</span>
+      <span class="wb-seg">
+        <span class="wb-seg-i on" id="segF1" onclick="WB.stage('f1')">F1 · 问题收件箱</span>
+        <span class="wb-seg-i" id="segF3" onclick="WB.stage('f3')">F3 · 预检与入库</span>
+      </span>
       <span class="wb-spacer"></span>
+      <span class="wb-bell" id="wbBell" style="display:none" onclick="WB.stage('f3')">
+        <i class="fa fa-bell-o"></i><span id="wbBellN">0</span></span>
       <span id="wbDoc" style="font-size:12px;color:#64748b">稿件 <b style="color:#1e293b">未生成</b> · 范围级未答完</span>
       <button class="btn-outline" style="font-size:12px" id="btnDl" disabled onclick="alert('下载稿件 xlsx（契约 v0.2 / 22 sheet）')">下载稿件</button>
       <button class="btn-save" style="font-size:12px" id="btnRun" disabled onclick="WB.run()">生成稿件 v1-draft</button>
@@ -45,6 +51,7 @@
     <div class="wb-stats" id="wbStats"></div>
 
     <div class="wb-body">
+     <div id="wbInbox">
       <div class="wb-block" id="wbBlock"></div>
 
       <div class="wb-run" id="wbRun"><div style="font-size:12.5px;font-weight:600;color:#1e293b;margin-bottom:6px">拆解进行中</div>
@@ -61,6 +68,18 @@
         <span style="font-size:11.5px;color:#94a3b8">按 sheet 分组 · 同因已合并 · 每条给默认值，人只做接受/改一个/跳过</span>
       </div>
       <div id="wbGroups"></div>
+     </div>
+
+     <div id="wbF3" style="display:none">
+      <div class="wb-f3sum" id="wbF3Sum"></div>
+      <div class="wb-f3card" id="wbF3Skip"></div>
+      <div class="wb-f3card" id="wbF3Run" style="display:none"></div>
+      <div class="wb-f3foot">
+        <div style="flex:1;font-size:12px;color:#64748b" id="wbF3Gate"></div>
+        <button class="btn-outline" onclick="WB.stage('f1')">回收件箱</button>
+        <button class="btn-save" id="btnImport" disabled onclick="WB.importRun()">拆解入库</button>
+      </div>
+     </div>
     </div>
 
     <!-- 批量指令 -->
@@ -87,30 +106,8 @@
 <script src="js/ai-sample-workbench.js"></script>
 <script>
   (function () {
-    var h = WBTasks.map(function (t, i) {
-      var bar = [0, 1, 2].map(function (k) {
-        var c = k < t.stage - 1 ? 'done' : k === t.stage - 1 ? 'cur' : '';
-        return '<i class="' + c + '"></i>';
-      }).join('');
-      return '<div class="wb-task' + (i === 0 ? ' on' : '') + '"><div class="code">' + t.code + '</div>' +
-        '<div class="nm">' + t.nm + '</div><div class="bar">' + bar + '</div>' +
-        '<div class="meta"><span class="wb-badge" style="font-size:10.5px">' + t.st + '</span>' +
-        '<span style="font-size:11px;color:#94a3b8">' + (t.q ? t.q + ' 条待定' : '—') + '</span></div></div>';
-    }).join('');
-    document.getElementById('taskList').innerHTML = h;
     WBInit(window.INBOX_SEED);
-    boot2();
-    function boot2() {
-      // 首屏给一条 AI 的开场说明，符合「空态文案说清下一步做什么」
-      if (!document.getElementById('wbChat').textContent.trim()) {
-        document.getElementById('wbChat').innerHTML =
-          '<div class="wb-msg ai"><div class="who">AI 助手 · 现在</div><div class="bd">' +
-          '我已把 DL/T 802.3—2023 的能力表、报告单和标准文件读完，产出 22 张 sheet 的草稿数据，' +
-          '过程中攒下 <b>112 条不确定项</b>。<br>其中 <b>4 条是范围级</b>（决定拆成什么结构，必须先答），' +
-          '<b>108 条字段级</b>已按 sheet 分组并合并同因，每条都给了默认值。<br>' +
-          '你可以逐条改、整组采纳默认值，或直接给我一句批量指令。</div></div>';
-      }
-    }
+    WBsyncTasks();
   })();
 </script>
 </body>
