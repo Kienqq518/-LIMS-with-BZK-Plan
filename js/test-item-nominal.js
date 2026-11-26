@@ -9,7 +9,11 @@
 
   var NOM_TYPES = ['单值', '公差', '范围', '最大值', '最小值', '公式'];
   var MIN_OPS = ['>', '≥'], MAX_OPS = ['<', '≤'];
-  var CMP_OPS = ['=', '!=', '<', '≤', '>', '≥', '符合'];
+  var CMP_OPS_NUM = ['=', '!=', '<', '≤', '>', '≥'];
+  var CMP_OPS_CONFORM = ['符合'];
+  /* 标称值对比：被对比标称值不是「单值」⇒ 不配修饰符且对比符号只能「符合」；
+   * 是「单值」⇒ 放开 = != < ≤ > ≥，且不得选「符合」 */
+  function cmpOpsFor(nomType) { return nomType === '单值' ? CMP_OPS_NUM : CMP_OPS_CONFORM; }
   var CONCL_LOGIC = ['当满足所有条件时', '当满足任一条件时', '不满足任一条件时', '不满足所有条件时'];
   var LEVELS = ['试样', '样段', '线芯', '试验'];
   /* 层级可用性由样品属性决定：样段要求「是否制样=是」，线芯要求「是否电缆=是」 */
@@ -435,6 +439,21 @@
     return st.judges;
   }
   var SEED_J = {
+    '结构尺寸检查': {
+      conditions: [
+        { branch: true, _side: '标称值对比', branches: [
+          { kind: 'IF', ifs: [{ type: '实测值', v: '导体结构', op: '不包含', values: ['实心导体'], join: 'and' }],
+            thens: [{ side: '标称值对比', leftType: '实测值', left: '导体单丝根数(根)', cmp: '≥',
+                      rightType: '最小值', right: '导体最少单线数量(根)', join: 'and' }] },
+          { kind: 'ELSE IF', ifs: [{ type: '实测值', v: '导体结构', op: '包含', values: ['紧压绞合圆形'], join: 'and' }],
+            thens: [{ side: '标称值对比', leftType: '实测值', left: '导体直径(mm)', cmp: '符合',
+                      rightType: '范围', right: '导体最大最小直径（紧压绞合圆型）(mm)', join: 'and' }] }
+        ] },
+        { _side: '标称值对比', leftType: '实测值', left: '导体直径(mm)', cmp: '符合',
+          rightType: '最大值', right: '导体最大直径（铜芯，实心/非紧压绞合）(mm)' }
+      ],
+      conclusions: [{ value: '合格', logic: '当满足所有条件时' }, { value: '不合格', logic: '不满足任一条件时' }]
+    },
     '老化前绝缘的机械性能': {
       conditions: [
         { side: '标称值对比', leftType: '计算值', left: '抗张强度中间值(N/mm²)', cmp: '符合', right: '抗张强度最小值（老化前）(N/mm²)', rightKind: '最小值' },
@@ -494,7 +513,40 @@
       return '<span class="tid-tag"><span>' + esc(o) + '</span><i class="fa fa-times" onclick="TIDJ.delOpt(' + i + ',event)"></i></span>';
     }).join('') + '<input type="text" class="ms-opt-add" placeholder="回车添加" onkeydown="TIDJ.addOpt(event)" /></div>';
   }
+  function tag(t) { return '<span class="jd-tag">' + esc(t) + '</span>'; }
+  function cmpSym(c) {
+    var m = { '≥': '>=', '≤': '<=', '>': '>', '<': '<', '=': '=', '!=': '!=' };
+    return m[c] || c;
+  }
+  function branchCard(c, i) {
+    return '<div class="jd-cond jd-branch"><b>条件' + (i + 1) + '</b><span class="jd-side">判断条件</span>' +
+      '<span class="nv-ops"><a class="link" onclick="TIDJ.editCond(' + i + ')"><i class="fa fa-pencil"></i> 编辑</a>' +
+      '<a class="link danger" onclick="TIDJ.delCond(' + i + ')"><i class="fa fa-trash"></i> 删除</a></span>' +
+      (c.branches || []).map(function (b) {
+        return '<div class="jd-brow"><span class="jd-bkey">' + b.kind + '</span>' +
+          (b.ifs || []).map(function (f) {
+            return '<div class="jd-bline">' +
+              '<div><b>' + esc(f.v) + '</b>' + tag(f.type) + (isEnumVar(f) ? tag('下拉选项') : '') + '</div>' +
+              '<span class="jd-bop">' + esc(f.op) + '</span>' +
+              '<div><b>' + esc((f.values || []).join('、')) + '</b></div></div>';
+          }).join('') +
+          '<span class="jd-bkey">THEN</span>' +
+          (b.thens || []).map(function (t, ti) {
+            return '<div class="jd-bline">' +
+              '<div><b>' + esc(t.left) + '</b>' + tag('标称值对比') + tag(t.leftType === '实测值' ? '实测参数' : '计算参数') + '</div>' +
+              '<span class="jd-bop">' + cmpSym(t.cmp) + '</span>' +
+              '<div><b>' + esc(t.right) + '</b>' + tag(t.rightType || '标称值') + '</div>' +
+              (ti > 0 ? '<span class="jd-bjoin">' + (t.join || 'and') + '</span>' : '') + '</div>';
+          }).join('') + '</div>';
+      }).join('') + '</div>';
+  }
+  function isEnumVar(f) {
+    var hit = null;
+    (TID.state.measures || []).forEach(function (g) { g.params.forEach(function (p) { if (p.name === f.v) hit = p; }); });
+    return !!(hit && hit.type === '下拉选项');
+  }
   function condCard(c, i) {
+    if (c.branch) return branchCard(c, i);
     var left = c.source ? '<div class="jd-c"><b>' + esc(c.source) + '</b><span class="jd-cmp">' + esc(c.op) + '</span><span>' + esc((c.values || []).join('、')) + '</span><span class="nv-tag">下拉选项</span></div>'
       : '<div class="jd-c"><b>' + esc(c.left) + '</b><span class="nv-tag">' + esc(c.leftType) + '</span><span class="jd-cmp">' + esc(c.cmp) + '</span>' +
         '<span>' + esc(c.right || '') + '</span><span class="nv-tag">' + esc(c.rightKind || '标称值') + '</span></div>';
@@ -527,10 +579,12 @@
       ? { source: (norm()[0] || '') + '-结论', op: '包含', values: ['合格'] }
       : { side: '标称值对比', leftType: '计算值', left: '', leftPct: { on: false, sign: '+', val: '' }, cmp: '符合', rightKind: '标称值', right: '', rightPct: { on: false, sign: '+', val: '' }, branch: false });
     CD._side = CD.side || '标称值对比';
+    CD._bi = 0;
     condRender();
   }
   function condRender() {
     var j = judge(), isConcl = j.ruleMode === '判定对比';
+    if (CD.branch) return branchCondRender();
     var inner = '<div class="pm-grid pm-mapsw"><div class="pm-fi pm-wide">' +
       '<span class="pm-lab">切换为判断条件：</span><span class="pm-ctl"><label class="toggle"><input type="checkbox" ' + (CD.branch ? 'checked' : '') +
       ' onchange="TIDJ.setC(\'branch\',this.checked)" /><span class="toggle-slider"></span></label>' +
@@ -554,7 +608,8 @@
         '<select onchange="TIDJ.setC(\'leftPct.sign\',this.value)"><option>+</option><option>-</option></select>' +
         '<input type="text" value="' + esc(CD.leftPct.val) + '" placeholder="输入数值" oninput="TIDJ.setC(\'leftPct.val\',this.value)" /></div></div>' +
         '<div class="jd-sep"><select onchange="TIDJ.setC(\'cmp\',this.value)"><option value="">请选择</option>' +
-        CMP_OPS.map(function (o) { return '<option' + (o === CD.cmp ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></div>' +
+        cmpOpsFor(side === '标称值对比' ? nomTypeOf(CD.right) : '单值').map(function (o) {
+          return '<option' + (o === CD.cmp ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></div>' +
         '<div><span class="pm-mut">' + (side === '标称值对比' ? '标称值：' : '') + '</span><div class="jd-row">' +
         (side === '标称值对比'
           ? '<select onchange="TIDJ.setC(\'right\',this.value)"><option value="">请选择</option>' + nomNames().map(function (n) {
@@ -592,21 +647,184 @@
     nomGroups().forEach(function (g) { g.items.forEach(function (it) { out.push(it.name + (it.unit ? '（' + it.unit + '）' : '')); }); });
     return out;
   }
+  /* ══ 判断条件：IF / ELSE IF / ELSE 树编辑器（图4-图6）══ */
+  function varPool(kind) {
+    if (kind === '规格参数') return U.specList().map(function (x) { return x.name; });
+    if (kind === '标称值') return nomNames();
+    var pool = U.poolFor(TID.state.name);
+    if (kind === '实测值') return pool.measured.concat(measuredAll());
+    if (kind === '预设值') return pool.preset;
+    return pool.computed;
+  }
+  function measuredAll() {
+    var out = [];
+    ((TID.state || {}).measures || []).forEach(function (g) { g.params.forEach(function (p) {
+      out.push(p.name + (p.unit ? '(' + p.unit + ')' : '')); }); });
+    return out.length ? out : U.poolFor(TID.state.name).measured;
+  }
+  function newCond() { return { type: '实测值', v: '', op: '包含', values: [], join: 'and' }; }
+  function newThen() { return { side: '标称值对比', leftType: '实测值', left: '', leftPct: { sign: '+', val: '' },
+    cmp: '符合', rightType: '', right: '', rightPct: { sign: '+', val: '' }, join: 'and' }; }
+  function blankBranch(kind) { return { kind: kind, ifs: [newCond()], thens: [newThen()] }; }
+  function toBranches() {
+    var b = blankBranch('IF');
+    b.thens = [{ side: CD._side || '标称值对比', leftType: CD.leftType || '实测值', left: CD.left || '',
+      leftPct: CD.leftPct || { sign: '+', val: '' }, cmp: CD.cmp || '符合', rightType: CD.rightType || '',
+      right: CD.right || '', rightPct: CD.rightPct || { sign: '+', val: '' }, join: 'and' }];
+    if (CD.source) { b.ifs = [{ type: '下拉选项', v: CD.source, op: CD.op || '包含', values: (CD.values || []).slice(), join: 'and' }]; }
+    return [b];
+  }
+  function branchCondRender() {
+    var bi = CD._bi = Math.min(CD._bi || 0, CD.branches.length - 1);
+    var b = CD.branches[bi];
+    (b.thens || []).forEach(function (t) {
+      t.leftPct = t.leftPct || { sign: '+', val: '' };
+      t.rightPct = t.rightPct || { sign: '+', val: '' };
+    });
+    (b.ifs || []).forEach(function (f) { f.values = f.values || []; });
+    var tabs = CD.branches.map(function (x, i) {
+      return '<span class="jd-btab' + (i === bi ? ' on' : '') + '" onclick="TIDJ.pickBranch(' + i + ')">' + x.kind +
+        (x.kind === 'IF' ? '' : '<i class="fa fa-times" onclick="event.stopPropagation();TIDJ.delBranch(' + i + ')"></i>') + '</span>';
+    }).join('');
+    var hasElse = CD.branches.some(function (x) { return x.kind === 'ELSE'; });
+    var btns = '<button class="btn-save" onclick="TIDJ.addBranch(\'ELSE IF\')"><i class="fa fa-plus"></i> ELSE IF</button>' +
+      (hasElse ? '' : '<button class="btn-save" onclick="TIDJ.addBranch(\'ELSE\')"><i class="fa fa-plus"></i> ELSE</button>');
+    var inner = '<div class="pm-grid pm-mapsw"><div class="pm-fi pm-wide">' +
+      '<span class="pm-lab">切换为判断条件：</span><span class="pm-ctl"><label class="toggle"><input type="checkbox" checked ' +
+      'onchange="TIDJ.setC(\'branch\',this.checked)" /><span class="toggle-slider"></span></label></span></div></div>' +
+      '<div class="jd-btabs">' + tabs + '<span class="jd-btabs-r">' + btns + '</span></div>' +
+      (b.kind === 'ELSE' ? '' :
+        '<div class="jd-cmpbox">' + b.ifs.map(function (f, i) { return ifBranchRow(f, i, b.ifs.length); }).join('') +
+        '<div class="jd-joins"><button onclick="TIDJ.addIf(\'and\')">＋ and</button><button onclick="TIDJ.addIf(\'or\')">＋ or</button></div></div>') +
+      '<div class="pm-sec" style="margin:16px 0 8px">THEN：</div>' +
+      b.thens.map(function (t, i) { return thenBlock(t, i, b.thens.length); }).join('') +
+      '<div class="jd-joins"><button onclick="TIDJ.addThen(\'and\')">＋ and</button><button onclick="TIDJ.addThen(\'or\')">＋ or</button></div>';
+    U.modalShell(J._ci >= 0 ? '编辑条件' : '添加条件', inner, 'TIDJ.condOk()', '确 定', 1);
+  }
+  function ifBranchRow(f, i, n) {
+    var pool = varPool(f.type);
+    var enumish = f.type === '规格参数' || /结构|类型/.test(f.v || '');
+    return '<div class="jd-brow1"><select onchange="TIDJ.setIf(' + i + ',\'type\',this.value)">' +
+      ['实测值', '计算值', '规格参数', '预设值', '标称值'].map(function (t) { return '<option' + (t === f.type ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select>' +
+      '<select onchange="TIDJ.setIf(' + i + ',\'v\',this.value)"><option value="">请选择</option>' +
+      pool.map(function (x) { return '<option' + (x === f.v ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>' +
+      '<select onchange="TIDJ.setIf(' + i + ',\'op\',this.value)">' +
+      (enumish ? ['包含', '不包含'] : ['=', '!=', '<', '≤', '>', '≥', 'in', 'not in', 'between', 'is null', 'is not null'])
+        .map(function (o) { return '<option' + (o === f.op ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select>' +
+      (enumish ? '<span class="ms-tagbox">' + (f.values || []).map(function (v, vi) {
+        return '<span class="tid-tag"><span>' + esc(v) + '</span><i class="fa fa-times" onclick="TIDJ.delIfVal(' + i + ',' + vi + ')"></i></span>'; }).join('') +
+        '<select onchange="TIDJ.addIfVal(' + i + ',this.value)"><option value="">请选择</option>' +
+        enumVals(f.v).map(function (v) { return '<option>' + esc(v) + '</option>'; }).join('') + '</select></span>'
+        : '<input type="text" value="' + esc(f.target || '') + '" placeholder="请输入" oninput="TIDJ.setIf(' + i + ',\'target\',this.value)" />') +
+      (n > 1 ? '<a class="link danger" onclick="TIDJ.delIf2(' + i + ')"><i class="fa fa-trash"></i></a>' : '') +
+      (f.join && i > 0 ? '<span class="jd-bjoin">' + f.join + '</span>' : '') + '</div>';
+  }
+  function enumVals(v) {
+    var hit = null;
+    (TID.state.measures || []).forEach(function (g) { g.params.forEach(function (p) { if (p.name === v) hit = p; }); });
+    if (hit && hit.options) return hit.options;
+    var sp = U.specList().filter(function (x) { return x.name === v; })[0];
+    return sp ? sp.options : [];
+  }
+  function thenBlock(t, i, n) {
+    var nt = nomTypeOf(t.right);
+    return '<div class="jd-cmpbox"><div class="jd-sides">' +
+      ['标称值对比', '非标称值对比'].map(function (sd) {
+        return '<span class="jd-side-tab' + (sd === t.side ? ' on' : '') + '" onclick="TIDJ.setThen(' + i + ',\'_side\',\'' + sd + '\')">' + sd + '</span>'; }).join('') +
+      (n > 1 ? '<span class="jd-bjoin-r"><span class="jd-bjoin">' + (t.join || 'and') + '</span>' +
+        '<a class="link danger" onclick="TIDJ.delThen(' + i + ')"><i class="fa fa-trash"></i> 删除</a></span>' : '') + '</div>' +
+      '<div class="jd-cmpgrid"><div><span class="pm-mut">参数：</span><div class="jd-row">' +
+      '<select onchange="TIDJ.setThen(' + i + ',\'leftType\',this.value)"><option>实测值</option><option>计算值</option></select>' +
+      '<select onchange="TIDJ.setThen(' + i + ',\'left\',this.value)"><option value="">请选择</option>' +
+      varPool(t.leftType).map(function (x) { return '<option' + (x === t.left ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>' +
+      '<span class="jd-star">*</span><span class="jd-pct">百分比 %</span>' +
+      '<select onchange="TIDJ.setThen(' + i + ',\'leftPct.sign\',this.value)"><option>+</option><option>-</option></select>' +
+      '<input type="text" value="' + esc((t.leftPct||{}).val) + '" placeholder="输入数值" oninput="TIDJ.setThen(' + i + ',\'leftPct.val\',this.value)" /></div></div>' +
+      '<div class="jd-sep"><select onchange="TIDJ.setThen(' + i + ',\'cmp\',this.value)"><option value="">请选择</option>' +
+      cmpOpsFor(t.side === '标称值对比' ? nt : '单值').map(function (o) { return '<option' + (o === t.cmp ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></div>' +
+      '<div><span class="pm-mut">标称值：</span>' + (t.side === '标称值对比' && t.right ? tag(nt) : '') +
+      '<div class="jd-row"><select onchange="TIDJ.setThen(' + i + ',\'right\',this.value)"><option value="">请选择</option>' +
+      nomNames().map(function (x) { return '<option' + (x === t.right ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>' +
+      (t.side === '标称值对比' && nt !== '单值'
+        ? '<span class="jd-lock"><i class="fa fa-lock"></i> 非单值不配修饰符，符号锁定「符合」</span>'
+        : '<span class="jd-star">*</span><span class="jd-pct">百分比 %</span>' +
+          '<select onchange="TIDJ.setThen(' + i + ',\'rightPct.sign\',this.value)"><option>+</option><option>-</option></select>' +
+          '<input type="text" value="' + esc((t.rightPct||{}).val) + '" placeholder="输入数值" oninput="TIDJ.setThen(' + i + ',\'rightPct.val\',this.value)" />') +
+      '</div></div></div></div>';
+  }
+  J.pickBranch = function (i) { CD._bi = i; branchCondRender(); };
+  J.addBranch = function (kind) {
+    CD.branches.push(blankBranch(kind)); CD._bi = CD.branches.length - 1; branchCondRender();
+  };
+  J.delBranch = function (i) {
+    if (CD.branches.length <= 1) { U.toast('至少保留一个 IF 分支'); return; }
+    CD.branches.splice(i, 1); CD._bi = 0; branchCondRender();
+  };
+  J.setIf = function (i, k, v) {
+    var f = CD.branches[CD._bi].ifs[i]; f[k] = v;
+    if (k === 'type' || k === 'v') { f.values = []; f.target = ''; }
+    branchCondRender();
+  };
+  J.addIf = function (j) { var n = newCond(); n.join = j; CD.branches[CD._bi].ifs.push(n); branchCondRender(); };
+  J.delIf2 = function (i) { CD.branches[CD._bi].ifs.splice(i, 1); branchCondRender(); };
+  J.addIfVal = function (i, v) { if (v) { CD.branches[CD._bi].ifs[i].values.push(v); branchCondRender(); } };
+  J.delIfVal = function (i, vi) { CD.branches[CD._bi].ifs[i].values.splice(vi, 1); branchCondRender(); };
+  J.setThen = function (i, k, v) {
+    var t = CD.branches[CD._bi].thens[i], ps = k.split('.');
+    if (ps.length > 1) { t[ps[0]] = t[ps[0]] || {}; t[ps[0]][ps[1]] = v; } else t[k] = v;
+    if (k === 'right' || k === 'side' || k === 'leftType' || k === '_side') {
+      if (k === '_side') t.side = v;
+      if (t.side === '标称值对比' && nomTypeOf(t.right) !== '单值') t.cmp = '符合';
+      if (t.side === '标称值对比' && nomTypeOf(t.right) === '单值' && t.cmp === '符合') t.cmp = '';
+    }
+    branchCondRender();
+  };
+  J.addThen = function (j) { var n = newThen(); n.join = j; CD.branches[CD._bi].thens.push(n); branchCondRender(); };
+  J.delThen = function (i) { CD.branches[CD._bi].thens.splice(i, 1); branchCondRender(); };
+
   J.setC = function (k, v) {
     var parts = k.split('.'), o = CD;
     for (var i = 0; i < parts.length - 1; i++) o = o[parts[i]];
     o[parts[parts.length - 1]] = v;
-    if (k === 'leftType' || k === 'branch' || k === 'rightWhat' || k === 'right') condRender();
+    if (k === 'branch') {
+      if (v) { CD.branches = toBranches(); CD._bi = 0; branchCondRender(); }
+      else {
+        var b = CD.branches[0], t = (b.thens || [])[0] || {};
+        CD.branch = false; delete CD.branches;
+        CD.side = t.side; CD._side = t.side; CD.leftType = t.leftType; CD.left = t.left;
+        CD.cmp = t.cmp; CD.right = t.right; CD.rightType = t.rightType;
+        CD.leftPct = t.leftPct; CD.rightPct = t.rightPct;
+        condRender();
+      }
+      return;
+    }
+    if (k === 'leftType' || k === 'rightWhat' || k === 'right') condRender();
   };
   J.side = function (s) { CD._side = s; CD.side = s; condRender(); };
   J.addVal = function (v) { if (v && CD.values.indexOf(v) < 0) CD.values.push(v); condRender(); };
   J.delVal = function (i, ev) { ev.stopPropagation(); CD.values.splice(i, 1); condRender(); };
   J.condOk = function () {
     var j = judge();
+    if (CD.branch) {
+      for (var bi = 0; bi < CD.branches.length; bi++) {
+        var b = CD.branches[bi];
+        if (b.kind !== 'ELSE' && (!b.ifs.length || b.ifs.some(function (f) { return !f.v || !f.op || (!(f.values || []).length && !f.target); }))) {
+          U.toast('分支「' + b.kind + '」的条件没填全（变量、对比符号、目标值都必填）'); return;
+        }
+        if (!b.thens.length || b.thens.some(function (t) { return !t.left || !t.cmp || !t.right; })) {
+          U.toast('分支「' + b.kind + '」的 THEN 判定没填全（参数、对比符号、标称值都必填）'); return;
+        }
+      }
+      var out = { branch: true, branches: clone(CD.branches) };
+      if (J._ci >= 0) j.conditions[J._ci] = out; else j.conditions.push(out);
+      U.host().innerHTML = ''; renderJudge(); return;
+    }
     if (j.ruleMode === '判定对比') { if (!CD.source || !CD.op || !CD.values.length) { U.toast('请补全判定参数、对比符号与目标结论'); return; } }
     else {
-      if (CD._side === '标称值对比' && CD.right && nomTypeOf(CD.right) !== '单值' && CD.cmp !== '符合') {
-        U.toast('该标称值类型为「' + nomTypeOf(CD.right) + '」，对比符号只能选「符合」'); return;
+      if (CD._side === '标称值对比' && CD.right) {
+        var nt = nomTypeOf(CD.right);
+        if (nt !== '单值' && CD.cmp !== '符合') { U.toast('被对比标称值类型为「' + nt + '」，不配置修饰符，对比符号只能选「符合」'); return; }
+        if (nt === '单值' && CD.cmp === '符合') { U.toast('被对比标称值为单值时，对比符号请用 = != < ≤ > ≥，不可选「符合」'); return; }
       }
       var rightOk = CD.right || (CD.rightWhat === '自定义数值' && CD.rightVal);
       if (!CD.left || !CD.cmp || !rightOk) { U.toast('请补全参数、对比符号与被对比值'); return; }
