@@ -38,6 +38,7 @@
       <span class="wb-badge ext">定稿后回流公司资产</span>
       <span class="wb-seg">
         <span class="wb-seg-i on" id="segF1" onclick="WB.stage('f1')">F1 · 问题收件箱</span>
+        <span class="wb-seg-i" id="segF2" onclick="WB.stage('f2')">F2 · 校稿表格</span>
         <span class="wb-seg-i" id="segF3" onclick="WB.stage('f3')">F3 · 预检与入库</span>
       </span>
       <span class="wb-spacer"></span>
@@ -68,6 +69,18 @@
         <span style="font-size:11.5px;color:#94a3b8">按 sheet 分组 · 同因已合并 · 每条给默认值，人只做接受/改一个/跳过</span>
       </div>
       <div id="wbGroups"></div>
+     </div>
+
+     <div id="wbF2" style="display:none">
+      <div class="f2-tabs" id="f2Tabs"></div>
+      <div class="f2-wrap">
+        <div class="f2-main">
+          <div class="f2-cnt" id="f2Cnt"></div>
+          <div class="f2-scroll" id="f2Body"></div>
+        </div>
+        <aside class="f2-drawer" id="f2Drawer"></aside>
+      </div>
+      <div class="f2-gate" id="f2Gate"></div>
      </div>
 
      <div id="wbF3" style="display:none">
@@ -103,11 +116,14 @@
 
 <script src="js/ui-a11y.js"></script>
 <script src="js/workbench-inbox-data.js"></script>
+<script src="js/workbench-sheet-data.js"></script>
 <script src="js/ai-sample-workbench.js"></script>
+<script src="js/ai-sample-f2.js"></script>
 <script>
   (function () {
     WBInit(window.INBOX_SEED);
     WBsyncTasks();
+    if (window.SHEET_SEED) F2.init(window.SHEET_SEED);
   })();
 </script>
 </body>

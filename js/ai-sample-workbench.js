@@ -70,7 +70,7 @@
     var fLeft = rawLeft(), sk = skipCnt(), ai = aiCnt();
     el.innerHTML = '稿件 <b style="color:' + (S.generated ? '#15803d' : '#1e293b') + '">' +
       (S.generated ? 'v1-draft' : '未生成') + '</b> · ' +
-      (left ? '范围级剩 ' + left + ' 处未处置'
+      (left ? '范围级剩 ' + left + ' 处必答'
         : (fLeft ? '未处置 ' + fLeft + ' 处' : (sk ? '已处置完，跳过 ' + sk + ' 处待 F3 再问' : '待定项已清零'))) +
       (S.generated && (fLeft || sk) ? ' · <span style="color:#b45309">' +
         (fLeft ? '定稿前需清零或跳过' : '入库前需二次确认') + '</span>' : '') +
@@ -87,8 +87,8 @@
     var fAns = answeredCount(fieldAll);
 
     document.getElementById('wbStats').innerHTML =
-      stat('范围级已处置', (SCOPE.length - scopeLeft) + ' / ' + SCOPE.length, scopeLeft ? 'warn' : 'ok',
-        SCOPE_G.length + ' 类问题' + (scopeLeft ? '，剩 ' + scopeLeft + ' 处未处置' : '')) +
+      stat('范围级已回答', (SCOPE.length - scopeLeft) + ' / ' + SCOPE.length, scopeLeft ? 'warn' : 'ok',
+        SCOPE_G.length + ' 类问题' + (scopeLeft ? '，剩 ' + scopeLeft + ' 处必答' : '，不可跳过')) +
       stat('字段级已答', fAns + ' / ' + fieldAll.length, fAns === fieldAll.length ? 'ok' : '', GROUPS.length + ' 张 sheet') +
       stat('合并后卡片', GROUPS.reduce(function (a, g) { return a + g.members.length; }, 0), '',
         '原始 ' + fieldAll.length + ' 条，省 ' + (fieldAll.length - GROUPS.reduce(function (a, g) { return a + g.members.length; }, 0)) + ' 次点击') +
@@ -97,9 +97,9 @@
 
     document.getElementById('wbBlock').innerHTML = scopeLeft
       ? '<i class="fa fa-exclamation-circle"></i><b>范围级还有 ' + scopeLeft + ' 条未处置，稿件不能生成。</b>' +
-        '它们决定「拆成什么结构」。可以回答，也可以<b>跳过</b>——跳过会把结构交给 AI，影响面是整块数据，F3 前一定会再问你一次。'
-      : '<i class="fa fa-check-circle"></i>范围级已全部处置，可以生成稿件 v1-draft。' +
-        (skipN ? '其中 <b>' + skipN + ' 处是跳过</b>，稿件里标灰占位，F3 入库前需二次确认。' : '');
+        '它们决定最终输出的结构（拆几个任务、型号归谁、试验项挂哪层），<b>必须回答，不能跳过</b>。'
+      : '<i class="fa fa-check-circle"></i>范围级已全部回答，可以生成稿件 v1-draft。' +
+        (skipN ? '其中 <b>' + skipN + ' 处字段级是跳过</b>，稿件里标灰占位，F3 入库前需二次确认。' : '');
     document.getElementById('wbBlock').className = 'wb-block' + (scopeLeft ? '' : ' clear');
     document.getElementById('btnRun').disabled = scopeLeft > 0;
     document.getElementById('btnRun').title = scopeLeft ? '先答完 ' + scopeLeft + ' 条范围级问题' : '';
@@ -176,7 +176,8 @@
           (a.mode === 'ai' ? '<span class="wb-ai">AI 自决落库</span>' : '')
         : (a ? '<span class="wb-skip">已跳过 · F3 会再问一次</span>' : '<span style="color:#cbd5e1">未处置</span>')) +
       '<span class="wb-undo" onclick="WB.undo(\'' + esc(q.id) + '\')">撤销</span>' +
-      (a ? '' : '<span class="wb-skipbtn" onclick="WB.skip(\'' + esc(q.id) + '\')">跳过</span>') + '</div>';
+      (a || q.lv === '范围' ? '' : '<span class="wb-skipbtn" onclick="WB.skip(\'' + esc(q.id) + '\')">跳过</span>') +
+      (q.lv === '范围' && !a ? '<span class="wb-must">必答 · 不可跳过</span>' : '') + '</div>';
   }
   function paintChat() {
     var el = document.getElementById('wbChat');
@@ -235,11 +236,11 @@
   function renderScopeMeta() {
     var left = SCOPE.filter(function (q) { return !S.answers[q.id]; }).length;
     document.getElementById('wbBlock').innerHTML = left
-      ? '<i class="fa fa-exclamation-circle"></i><b>范围级还有 ' + left + ' 条未处置，稿件不能生成。</b>可以回答，也可以跳过；跳过会把结构交给 AI，F3 前会再问一次。'
-      : '<i class="fa fa-check-circle"></i>范围级已全部处置，可以生成稿件 v1-draft 了。';
+      ? '<i class="fa fa-exclamation-circle"></i><b>范围级还有 ' + left + ' 条未回答，稿件不能生成。</b>范围级决定输出结构，不允许跳过。'
+      : '<i class="fa fa-check-circle"></i>范围级已全部回答，可以生成稿件 v1-draft 了。';
     document.getElementById('wbBlock').className = 'wb-block' + (left ? '' : ' clear');
     document.getElementById('btnRun').disabled = left > 0;
-    document.getElementById('btnRun').title = left ? '先答完 ' + left + ' 条范围级问题' : '';
+    document.getElementById('btnRun').title = left ? '先回答 ' + left + ' 条范围级问题（不可跳过）' : '';
     var st = document.querySelectorAll('#wbStats .wb-stat');
     if (st[0]) st[0].innerHTML = (left ? '范围级待答' : '范围级已答') + '<b class="' + (left ? 'warn' : 'ok') + '">' +
       (SCOPE.length - left) + ' / ' + SCOPE.length + '</b><span style="font-size:11px">' +
@@ -284,6 +285,11 @@
     },
     skip: function (id) {
       var q = RAW.filter(function (x) { return x.id === id; })[0];
+      if (q && q.lv === '范围') {
+        say('sys', '系统', '<b>范围级问题不能跳过。</b>它决定最终输出的结构（拆几个任务、型号归谁、试验项挂哪层），' +
+          '交给 AI 自决等于把整块数据的层级押上去，回改要推翻已入库内容。请回答，或补料后再回答。<span class="tg">V24b</span>');
+        render(); return;
+      }
       var n = groupOf(id).length;
       groupOf(id).forEach(function (x) { S.answers[x] = { choice: '', other: '', mode: 'skip' }; });
       say('sys', '系统', '跳过 ' + n + ' 处（' + esc(q.q.slice(0, 26)) + '…）。' +
@@ -320,8 +326,14 @@
       save(); render();
     },
     loc: function (sh, row, col) {
-      say('sys', '系统', '已请求定位 <span class="tg">' + esc(sh) + '</span><span class="tg">' + esc(row) + '</span>' +
-        '<span class="tg">' + esc(col) + '</span> —— F2 表格视图尚未接入，接入后此处直接跳到该行该列并高亮。');
+      if (global.F2 && F2.locate(sh, row, col)) {
+        WB.stage('f2');
+        say('sys', '系统', '已定位 <span class="tg">' + esc(sh) + '</span><span class="tg">' + esc(row) +
+          '</span><span class="tg">' + esc(col) + '</span> 并高亮该格。');
+        return;
+      }
+      say('sys', '系统', '该问题的目标数据不在已接入的两张 sheet（90_标称值 / A1_判定条件）里，' +
+        '定位 <span class="tg">' + esc(sh) + '</span><span class="tg">' + esc(row) + '</span> 需等其余 sheet 接入。');
       render();
     },
     batch: function (val) {
@@ -482,15 +494,26 @@
       '</b>（依据 ' + esc(p.basis) + '）。已生成自决清单，入库后通知客户。<span class="tg">可撤销</span>');
     S.notified++; save(); render(); WBsyncTasks(); if (S.stage === 'f3') renderF3();
   };
-  WB.stage = function (k) {
+  WB.stage = function (k, focusId) {
     S.stage = k;
     document.getElementById('wbInbox').style.display = k === 'f1' ? '' : 'none';
     document.getElementById('wbF3').style.display = k === 'f3' ? '' : 'none';
-    document.getElementById('segF1').className = 'wb-seg-i' + (k === 'f1' ? ' on' : '');
-    document.getElementById('segF3').className = 'wb-seg-i' + (k === 'f3' ? ' on' : '');
+    var f2 = document.getElementById('wbF2');
+    if (f2) f2.style.display = k === 'f2' ? '' : 'none';
+    ['F1', 'F2', 'F3'].forEach(function (n) {
+      var e = document.getElementById('seg' + n);
+      if (e) e.className = 'wb-seg-i' + (k === n.toLowerCase() ? ' on' : '');
+    });
     document.querySelector('.wb-batch').style.display = k === 'f1' ? '' : 'none';
     ['btnDl', 'btnRun'].forEach(function (id) { document.getElementById(id).style.display = k === 'f1' ? '' : 'none'; });
-    if (k === 'f3') renderF3(); else render();
+    if (k === 'f3') renderF3();
+    else if (k === 'f2') { if (global.F2) F2.render(); }
+    else render();
+    if (k === 'f1' && focusId) {
+      var c = document.getElementById('q_' + focusId) ||
+        (function () { var g = groupOf(focusId)[0]; return document.getElementById('q_' + g); })();
+      if (c) { c.scrollIntoView({ block: 'center' }); c.classList.add('flash'); setTimeout(function () { c.classList.remove('flash'); }, 1400); }
+    }
   };
   WB.importRun = function () {
     if (skippedMembers().length) return;
@@ -521,6 +544,10 @@
     };
   })(WB.pick);
 
+  WB.raws = function () { return RAW; };
+  WB.raw = function (id) { return RAW.filter(function (x) { return x.id === id; })[0]; };
+  WB.state = function () { return S.answers; };
+  WB.say = function (w, n, t) { say(w, n, t); paintChat(); };
   global.WB = WB;
   global.WBInit = function (raw) {
     RAW = raw; build();

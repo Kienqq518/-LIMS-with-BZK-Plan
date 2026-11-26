@@ -53,7 +53,7 @@ SHEETS = [
     ("A0_判定配置", ["试验项键", "判定参数名", "判定参数类型", "可选项", "判定方式", "判断层级", "判定模式"]),
     ("A1_判定条件", ["试验项键", "条件序号", "条件类型", "对比参数键", "修饰符百分比", "修饰符符号", "修饰符常量",
                  "对比符号", "报告展开式", "被对比标称值键", "被对比参数键", "自定义数值", "子项结论来源",
-                 "原文条件"]),
+                 "子项键", "原文条件"]),
     ("A2_结论映射", ["试验项键", "结论序号", "结论值", "逻辑"]),
     ("B0_采集配置", ["参数键", "类型", "参数编码", "计算顺序", "是否覆盖LIMS参数"]),
     ("C0_待定项", ["问题ID", "任务键", "问题层级", "目标sheet", "目标行键", "目标列", "状态", "置信度",
@@ -94,7 +94,9 @@ RULES = [
     ("V21", "90_标称值", "标称值键", "被 A1 引用的标称值不得删除", "阻断", "标称值被判定引用，需先解除绑定", "F2重算"),
     ("V22", "B0_采集配置", "计算顺序", "必须构成拓扑序：公式引用者序号 > 被引用者序号", "阻断", "计算顺序违反依赖关系", "F3预检"),
     ("V23", "B0_采集配置", "计算顺序", "从1连续、无重复、覆盖全部参数", "阻断", "采集配置缺参数或序号断裂", "F3预检"),
+    ("V19d", "A1_判定条件", "条件序号", "同一（试验项键, 子项键）内条件序号从1连续且不重复；执行顺序=从上到下", "阻断", "判定条件序号断裂或重复", "F3预检"),
     ("V24", "C0_待定项", "处置状态", "已跳过的问题必须在 F3 二次确认；仍有未二次处置的跳过项 ⇒ 不得入库", "阻断", "存在未二次确认的跳过项", "F3预检"),
+    ("V24b", "C0_待定项", "处置状态", "范围级问题不允许跳过或自决落库（决定最终输出结构），出现即为数据异常", "阻断", "范围级问题被跳过，结构决策不能交给 AI", "F3预检"),
     ("V25", "C0_待定项", "自决依据", "AI自决落库必须写清选了什么+依据，且已通知客户", "阻断", "自决落库缺依据或缺通知", "F3预检"),
 ]
 DICT_CATEGORY = ["例行试验", "型式试验", "抽样试验", "委托检测", "出厂检验"]
@@ -694,12 +696,20 @@ def convert(src, dst):
                       章节=(re.search(r"第([\d.]+)节", b).group(0) if re.search(r"第([\d.]+)节", b) else ""))
             # 52
             for sg in (t.get("subs") or []):
+                sh = [str(x) for x in sg[0]] if sg else []
+                j = {k: i for i, k in enumerate(sh)}
+                inm = j.get("子项名称", j.get("试验子项", 1))
+                ireq = j.get("对应标准条款", j.get("标准要求", 2))
                 for r in sg[1:]:
                     if len(r) < 2 or not r[0]:
                         continue
+                    nm = str(r[inm] if inm < len(r) else "").strip()
+                    if not nm:
+                        continue                      # 合并单元格续行
                     subkey = tkey + "-SUB%d" % (len(P.rows["52_试验子项"]) + 1)
-                    P.add("52_试验子项", 子项键=subkey, 试验项键=tkey, 试验子项=r[0],
-                          标准要求=r[1] if len(r) > 1 else "", 排序=len(P.rows["52_试验子项"]) + 1)
+                    P.add("52_试验子项", 子项键=subkey, 试验项键=tkey, 试验子项=nm,
+                          标准要求=str(r[ireq] if ireq < len(r) else "").strip(),
+                          排序=len(P.rows["52_试验子项"]) + 1)
             # 60 控制参数
             for cg in (t.get("ctrl") or []):
                 hdr = cg[0] if cg else []
@@ -859,6 +869,7 @@ def convert(src, dst):
                                          "「%s」标了多行映射=开，但配置说明是自然语言，无法解析成数据行。人工补录还是重新解析？"
                                          % r[0], "人工补录、按型号各建一条单行标称值", "4.5 标称值配置")
             # A0/A1/A2 结果判定
+            seq = {}                                   # 条件序号按（试验项, 子项）连续，跨表不重启
             for jg in (t.get("judge") or []):
                 hdr = jg[0]
                 if "判定方式" not in hdr:
@@ -866,20 +877,40 @@ def convert(src, dst):
                 i = {n: k for k, n in enumerate(hdr)}
                 g = pad(g, len(hdr))
                 jg = pad(jg, len(hdr))
+                cur_sub = ""
                 for r in jg[1:]:
                     if len(r) < 3 or not r[0]:
+                        continue
+                    msub = re.match(r"^[▌┃]\s*子项\s*\d+\s*[:：]\s*(.+)$", str(r[0]).strip())
+                    if msub:
+                        nm = msub.group(1).strip()
+                        pool = [x for x in P.rows["52_试验子项"] if x[COLS["52_试验子项"].index("试验项键")] == tkey]
+                        hit = next((x for x in pool if str(x[COLS["52_试验子项"].index("试验子项")]).strip() == nm), None) \
+                            or next((x for x in pool if nm in str(x[COLS["52_试验子项"].index("试验子项")])
+                                     or str(x[COLS["52_试验子项"].index("试验子项")]) in nm), None)
+                        cur_sub = hit[COLS["52_试验子项"].index("子项键")] if hit else ""
+                        if not hit and pool:
+                            P.open_issue("字段", "A1_判定条件", tkey, "子项键", "AI推断", 0.3,
+                                         "判定表里的子项「%s」在 52_试验子项 中找不到对应行（该试验项共 %d 个子项）。"
+                                         "是名称写法不一致，还是这个子项没被登记？" % (nm, len(pool)),
+                                         "按名称就近匹配、人工指定子项、该判定条件挂试验项层", "x.6 结果判定")
+                        continue
+                    if str(r[0]).strip() in ("判定参数", "子项"):
                         continue
                     cond = r[i.get("判定条件", 2)]
                     P.add("A0_判定配置", 试验项键=tkey, 判定参数名=r[i.get("判定参数", 0)],
                           判定参数类型="下拉选项", 可选项="合格、不合格",
                           判定方式="系统判定" if "系统" in r[i.get("判定方式", 1)] else "人工判定",
                           判断层级="试验", 判定模式="试验参数对比")
-                    for ci, blk in enumerate(re.split(r"AND|且(?=【)", cond), 1):
+                    for blk in re.split(r"AND|且(?=【)", cond):
                         side = "标称值对比" if "标称值对比" in blk else "非标称值对比"
+                        ci = seq.get((tkey, cur_sub), 0) + 1
+                        seq[(tkey, cur_sub)] = ci
                         P.add("A1_判定条件", 试验项键=tkey, 条件序号=ci, 条件类型=side,
                               对比参数键="", 修饰符百分比="", 修饰符符号="", 修饰符常量="",
                               对比符号="", 被对比标称值键="", 被对比参数键="", 自定义数值="",
-                              子项结论来源="", 报告展开式="", 原文条件=re.sub(r"\s+", " ", str(blk).strip())[:400])
+                              子项结论来源="", 报告展开式="", 子项键=cur_sub,
+                              原文条件=re.sub(r"\s+", " ", str(blk).strip())[:400])
                     P.add("A2_结论映射", 试验项键=tkey, 结论序号=1, 结论值="合格", 逻辑="当满足所有条件时")
                     P.add("A2_结论映射", 试验项键=tkey, 结论序号=2, 结论值="不合格", 逻辑="不满足任一条件时")
                     P.open_issue("字段", "A1_判定条件", tkey, "对比参数键/被对比标称值键", "AI推断", 0.25,
@@ -1105,12 +1136,23 @@ def check(path, out=None):
             R("V10", "阻断", r["试验项键"], "空值判断不应填目标值")
 
     seen = {}
+    seqseen = {}
+    for r in data["A1_判定条件"]:
+        kk = (r["试验项键"], r.get("子项键", ""))
+        seqseen.setdefault(kk, []).append(int(str(r["条件序号"] or 0)))
+    for kk, lst in seqseen.items():
+        if sorted(lst) != list(range(1, len(lst) + 1)):
+            R("V19d", "阻断", kk[0] + (kk[1] and (" / " + kk[1]) or ""), "条件序号不连续或重复：%s" % sorted(lst))
+
     for r in data["A2_结论映射"]:
         k = (r["试验项键"], r["结论值"])
         if k in seen:
             R("V20", "告警", r["试验项键"], "存在两条相同结论「%s」，建议合并" % r["结论值"])
         seen[k] = 1
 
+    for r in data["C0_待定项"]:
+        if g(0, "问题层级", r) == "范围" and g(0, "处置状态", r) in ("已跳过", "AI自决落库"):
+            R("V24b", "阻断", r["问题ID"], "范围级问题被标记为「%s」，结构决策不能交给 AI" % g(0, "处置状态", r))
     skipped = [r for r in data["C0_待定项"] if g(0, "处置状态", r) == "已跳过"]
     for r in skipped:
         R("V24", "阻断", r["问题ID"], "该问题被跳过，尚未在 F3 二次确认（AI 拟取值：%s）"
