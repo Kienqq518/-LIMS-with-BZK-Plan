@@ -45,7 +45,20 @@
   TIDN_UTIL = { cmpMode: cmpMode, cmpLocked: cmpLocked, reportExpr: reportExpr, nomItemOf: nomItemOf,
     nomTypeOf: function (n) { return nomTypeOf(n); } };
   global.TIDNU = TIDN_UTIL;
-  var CONCL_LOGIC = ['当满足所有条件时', '当满足任一条件时', '不满足任一条件时', '不满足所有条件时'];
+  /* 结论聚合方式两大家族：条件型（任一/全部/取反）与计数型（满足条数达标 / 不满足条数超限）。
+   * 计数型是飞书 Story 第 8 项要求新增的形态：典型场景落锤冲击——
+   * 「各试样冲击结果 = 无破裂 的条数 ≥ n 条 ⇒ 该相别 / 该试验项合格」。 */
+  var CONCL_LOGIC = ['当满足所有条件时', '当满足任一条件时', '不满足任一条件时', '不满足所有条件时',
+    '计数型：满足条数达标', '计数型：不满足条数超限'];
+  var COUNT_LOGIC = ['计数型：满足条数达标', '计数型：不满足条数超限'];
+  var COUNT_OPS = ['≥', '>', '=', '≤', '<'];
+  var COUNT_SRC = ['常量', '规格参数换算'];
+  function isCount(c) { return COUNT_LOGIC.indexOf(c.logic) >= 0; }
+  function aggOf(c, j) {
+    if (!c.agg) c.agg = { obj: j.level || '线芯', target: (j.options || ['合格'])[0], op: '≥', n: '', src: '常量', expr: '' };
+    if (!c.agg.obj) c.agg.obj = j.level || '线芯';
+    return c.agg;
+  }
   var LEVELS = ['试样', '样段', '线芯', '试验'];
   /* 层级可用性由样品属性决定：样段要求「是否制样=是」，线芯要求「是否电缆=是」 */
   function levelBlock(m) {
@@ -535,11 +548,35 @@
             '<div class="jd-concl-b"><select onchange="TIDJ.setConcl(' + i + ',\'value\',this.value)">' +
             j.options.map(function (o) { return '<option' + (o === c.value ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>' +
             '<select onchange="TIDJ.setConcl(' + i + ',\'logic\',this.value)">' +
-            CONCL_LOGIC.map(function (o) { return '<option' + (o === c.logic ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></div></div>';
+            CONCL_LOGIC.map(function (o) { return '<option' + (o === c.logic ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></div>' +
+            (isCount(c) ? countRow(c, j, i) : '') + '</div>';
         }).join('') + '</div>';
     }
     body.innerHTML = '<div class="nv-wrap">' + railHtml(J.rail, 'TIDJ.pickRail') +
       '<div class="nv-main"><div class="nv-bar"><button class="btn-outline nv-del" onclick="TIDJ.clearAll()">删 除</button></div>' + inner + '</div></div>';
+  }
+  /* 计数型四要素：计数对象 / 目标结论值 / 比较符 / 阈值（常量或规格参数换算） */
+  function countRow(c, j, i) {
+    var a = aggOf(c, j), why = levelBlock(a.obj);
+    return '<div class="jd-count"><div class="jd-crow">' +
+      '<span class="pm-mut">计数对象</span><select onchange="TIDJ.setAgg(' + i + ',\'obj\',this.value)">' +
+      ['试样', '样段', '线芯', '试验'].map(function (o) {
+        return '<option' + (o === a.obj ? ' selected' : '') + (levelBlock(o) ? ' disabled' : '') + '>' + o + '</option>';
+      }).join('') + '</select>' +
+      '<span class="pm-mut">目标结论值</span><select onchange="TIDJ.setAgg(' + i + ',\'target\',this.value)">' +
+      (j.options || []).map(function (o) { return '<option' + (o === a.target ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>' +
+      '<span class="pm-mut">的条数</span><select class="jd-op" onchange="TIDJ.setAgg(' + i + ',\'op\',this.value)">' +
+      COUNT_OPS.map(function (o) { return '<option' + (o === a.op ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select>' +
+      '<input class="jd-n" type="text" value="' + esc(a.n) + '" placeholder="条数 n" oninput="TIDJ.setAgg(' + i + ',\'n\',this.value)" />' +
+      '<span class="pm-mut">阈值来源</span><select onchange="TIDJ.setAgg(' + i + ',\'src\',this.value)">' +
+      COUNT_SRC.map(function (o) { return '<option' + (o === a.src ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select>' +
+      (a.src === '规格参数换算' ? '<input class="jd-n" type="text" value="' + esc(a.expr) + '" placeholder="如 试样数 × 0.9" oninput="TIDJ.setAgg(' + i + ',\'expr\',this.value)" />' : '') +
+      '</div>' +
+      '<div class="jd-chint">' + (why ? '<i class="fa fa-triangle-o"></i> ' + esc(why) + '，已置灰；'
+        : a.obj === '线芯' ? '每相分别计数，各出一个结论；' : a.obj === '试验' ? '整个试验项计数，出一个结论；' : '按「' + esc(a.obj) + '」逐个计数；') +
+      '读法：<b>结论「' + esc(c.value) + '」= ' + esc(a.target) + ' 的' + esc(a.obj) + '数 ' + esc(a.op) + ' ' +
+      (a.src === '规格参数换算' ? esc(a.expr || '…') : esc(a.n || '…')) + '</b>' +
+      '　<span class="jd-cfrom">来源：飞书 Story 第 8 项（计数型判定），真实系统待迭代</span></div></div>';
   }
   function tagbox(j) {
     return '<div class="ms-tagbox">' + j.options.map(function (o, i) {
@@ -603,7 +640,19 @@
   J.delCond = function (i) { judge().conditions.splice(i, 1); renderJudge(); };
   J.addConcl = function () { judge().conclusions.push({ value: judge().options[0] || '合格', logic: CONCL_LOGIC[0] }); renderJudge(); };
   J.delConcl = function (i) { judge().conclusions.splice(i, 1); renderJudge(); };
-  J.setConcl = function (i, k, v) { judge().conclusions[i][k] = v; };
+  J.setConcl = function (i, k, v) {
+    var j = judge(), c = j.conclusions[i];
+    c[k] = v;
+    if (k === 'logic' && isCount(c)) aggOf(c, j);            // 切到计数型即给一套默认四要素
+    renderJudge();
+  };
+  J.setAgg = function (i, k, v) {
+    var j = judge(), c = j.conclusions[i], a = aggOf(c, j);
+    a[k] = v;
+    if (k === 'obj' && levelBlock(v)) { U.toast(levelBlock(v)); a.obj = '试样'; }
+    if (k === 'src' && v === '常量') a.expr = '';
+    renderJudge();
+  };
   J.clearAll = function () {
     var j = judge();
     if (!j.conditions.length && !j.conclusions.length) { U.toast('当前没有可清除的判定规则'); return; }
