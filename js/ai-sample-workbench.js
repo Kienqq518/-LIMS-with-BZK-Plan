@@ -81,7 +81,7 @@
     var dl = document.getElementById('btnDl'); if (dl) dl.disabled = !S.generated;
   }
 
-  function render() {
+  function renderInbox() {
     paintHeader();
     var scopeLeft = SCOPE.filter(function (q) { return !S.answers[q.id]; }).length;
     var skipN = skipCnt();
@@ -89,30 +89,26 @@
     GROUPS.forEach(function (g) { g.members.forEach(function (m) { m.items.forEach(function (q) { fieldAll.push(q); }); }); });
     var fAns = answeredCount(fieldAll);
 
+    var done = SCOPE.length - scopeLeft + fAns;
+    var total = SCOPE.length + fieldAll.length;
     document.getElementById('wbStats').innerHTML =
-      stat('范围级已回答', (SCOPE.length - scopeLeft) + ' / ' + SCOPE.length, scopeLeft ? 'warn' : 'ok',
-        SCOPE_G.length + ' 类问题' + (scopeLeft ? '，剩 ' + scopeLeft + ' 处必答' : '，不可跳过')) +
-      stat('字段级已答', fAns + ' / ' + fieldAll.length, fAns === fieldAll.length ? 'ok' : '', GROUPS.length + ' 张 sheet') +
-      stat('合并后卡片', GROUPS.reduce(function (a, g) { return a + g.members.length; }, 0), '',
-        '原始 ' + fieldAll.length + ' 条，省 ' + (fieldAll.length - GROUPS.reduce(function (a, g) { return a + g.members.length; }, 0)) + ' 次点击') +
-      stat('已跳过待 F3 再问', skipCnt(), skipCnt ? 'warn' : '', '延迟决策，不阻塞出稿') +
-      stat('AI 自决落库', aiCnt(), '', '二次仍跳过，已通知客户');
+      '<div class="wb-prog"><i style="width:' + (total ? Math.round(done * 100 / total) : 0) + '%"></i></div>' +
+      '<span class="wb-prog-lab"><b>' + done + '</b> / ' + total + ' 已处置</span>' +
+      (scopeLeft ? '<span class="wb-stat alert"><i class="fa fa-lock"></i><b>' + scopeLeft + '</b> 条必答</span>' : '') +
+      (skipCnt() ? '<span class="wb-stat alert"><i class="fa fa-clock-o"></i><b>' + skipCnt() + '</b> 条待 F3</span>' : '') +
+      (aiCnt() ? '<span class="wb-stat alert"><i class="fa fa-magic"></i><b>' + aiCnt() + '</b> 处 AI 自决</span>' : '') +
+      (S.generated ? '<span class="wb-stat alert" style="color:var(--ok);background:var(--ok-soft)"><i class="fa fa-check"></i><b style="color:var(--ok)">v' + (global.ORCver || 1) + '</b> 稿件</span>' : '') +
+      (S.imported ? '<span class="wb-stat alert" style="color:var(--acc);background:var(--acc-soft)"><i class="fa fa-database"></i><b style="color:var(--acc)">已入库</b></span>' : '');
 
     document.getElementById('wbBlock').innerHTML = scopeLeft
-      ? '<i class="fa fa-exclamation-circle"></i><b>范围级还有 ' + scopeLeft + ' 条未处置，稿件不能生成。</b>' +
-        '它们决定最终输出的结构（拆几个任务、型号归谁、试验项挂哪层），<b>必须回答，不能跳过</b>。'
-      : '<i class="fa fa-check-circle"></i>范围级已全部回答，可以生成稿件 v1-draft。' +
-        (skipN ? '其中 <b>' + skipN + ' 处字段级是跳过</b>，稿件里标灰占位，F3 入库前需二次确认。' : '');
+      ? '范围级 ' + scopeLeft + ' 条必答' : '范围级已答完';
     document.getElementById('wbBlock').className = 'wb-block' + (scopeLeft ? '' : ' clear');
-    document.getElementById('btnRun').disabled = scopeLeft > 0;
-    document.getElementById('btnRun').title = scopeLeft ? '先答完 ' + scopeLeft + ' 条范围级问题' : '';
+    gate(scopeLeft, '先答完 ' + scopeLeft + ' 条必答');
 
     document.getElementById('wbScope').innerHTML = SCOPE_G.map(scopeCard).join('') || '<div class="wb-hint">本次没有范围级问题。</div>';
     document.getElementById('wbGroups').innerHTML = GROUPS.map(groupCard).join('');
-    document.getElementById('wbChat').innerHTML = S.chat.map(chatRow).join('') ||
-      '<div class="wb-hint">对话区记录 AI 的提问、你的回答和系统动作，全程可回溯。</div>';
-    document.getElementById('wbChat').scrollTop = 9e5;
   }
+  function render() { renderInbox(); paintChat(); }
   function stat(lab, val, cls, sub) {
     return '<div class="wb-stat">' + lab + '<b class="' + cls + '">' + esc(val) + '</b>' +
       '<span style="font-size:11px">' + esc(sub) + '</span></div>';
@@ -184,13 +180,15 @@
   }
   function paintChat() {
     var el = document.getElementById('wbChat');
-    el.innerHTML = S.chat.map(chatRow).join('') ||
-      '<div class="wb-hint">对话区记录 AI 的提问、你的回答和系统动作，全程可回溯。</div>';
-    el.scrollTop = 9e5;
+    el.innerHTML = S.chat.map(chatRow).join('');
+    remount(); renderArtNav();
+    var b = document.querySelector('.wb-body'); if (b) b.scrollTop = b.scrollHeight;
   }
+  var AV = { ai: '<i class="fa fa-magic"></i>', me: '我', sys: '<i class="fa fa-circle-notch"></i>' };
   function chatRow(c) {
-    return '<div class="wb-msg ' + c.who + '"><div class="who">' + esc(c.name) + ' · ' + esc(c.at) + '</div>' +
-      '<div class="bd">' + c.text + '</div></div>';
+    return '<div class="wb-msg ' + c.who + '"><span class="av">' + (AV[c.who] || 'AI') + '</span>' +
+      '<div class="col">' + (c.who === 'ai' ? '' : '<div class="who">' + esc(c.name) + ' · ' + esc(c.at) + '</div>') +
+      '<div class="bd">' + c.text + '</div></div></div>';
   }
 
   /* ── 交互 ── */
@@ -264,8 +262,7 @@
       ? '<i class="fa fa-exclamation-circle"></i><b>范围级还有 ' + left + ' 条未回答，稿件不能生成。</b>范围级决定输出结构，不允许跳过。'
       : '<i class="fa fa-check-circle"></i>范围级已全部回答，可以生成稿件 v1-draft 了。';
     document.getElementById('wbBlock').className = 'wb-block' + (left ? '' : ' clear');
-    document.getElementById('btnRun').disabled = left > 0;
-    document.getElementById('btnRun').title = left ? '先回答 ' + left + ' 条范围级问题（不可跳过）' : '';
+    gate(left, '先回答 ' + left + ' 条必答');
     var st = document.querySelectorAll('#wbStats .wb-stat');
     if (st[0]) st[0].innerHTML = (left ? '范围级待答' : '范围级已答') + '<b class="' + (left ? 'warn' : 'ok') + '">' +
       (SCOPE.length - left) + ' / ' + SCOPE.length + '</b><span style="font-size:11px">' +
@@ -284,6 +281,95 @@
     paintHeader();
   }
 
+  /* ════════ 产物卡：F1/F2/F3 变成对话里可展开的对象 ════════ */
+  var ARTS = {
+    upload: { ic: 'fa-upload', ti: '上传与拆解', stage: 'wbF1u', sum: function () { return '3 份料 · 1 个任务'; } },
+    inbox:  { ic: 'fa-inbox', ti: '问题收件箱', stage: 'wbInbox', sum: function () {
+        var l = WB.unanswered ? WB.unanswered() : 0, s = WB.scopeLeft ? WB.scopeLeft() : 0;
+        return l ? l + ' 条待处置' + (s ? ' · 其中 ' + s + ' 条必答' : '') : '已全部处置'; } },
+    sheet:  { ic: 'fa-table', ti: '稿件表格', stage: 'wbF2', sum: function () { return '22 张 sheet · 9 张可编辑'; } },
+    f3:     { ic: 'fa-database', ti: '预检与入库', stage: 'wbF3', sum: function () { return '真缺陷 0 · 阻断 0'; } }
+  };
+  var OPEN = {};
+  function artShell(kind, opt, open) {
+    var a = ARTS[kind]; if (!a) return '';
+    opt = opt || {}; if (open) OPEN[kind] = 1;
+    return '<div class="wb-art' + (OPEN[kind] ? ' open' : '') + (opt.cls ? ' ' + opt.cls : '') + '" id="art_' + kind + '">' +
+      '<div class="wb-art-h" onclick="WB.toggleArt(\'' + kind + '\')">' +
+      '<span class="ic"><i class="fa ' + a.ic + '"></i></span><span class="ti">' + esc(opt.ti || a.ti) + '</span>' +
+      '<span class="su">' + esc(opt.su != null ? opt.su : a.sum()) + '</span><span class="sp"></span>' +
+      (opt.pin ? '<span class="pin">' + esc(opt.pin) + '</span>' : '') +
+      '<button class="go" onclick="event.stopPropagation();WB.openSide(\'' + kind + '\')">放大</button>' +
+      '<i class="fa fa-chevron-right caret"></i></div>' +
+      '<div class="wb-art-b"><div data-mount="' + kind + '"></div></div></div>';
+  }
+  /* 产物内容不搬节点：真实节点常驻 #dock，展开位只放副本。
+     搬进对话消息会被下一次 paintChat 连根销毁 —— 这个坑踩过两次。 */
+  function syncSlots() {
+    var hosts = [];
+    Object.keys(ARTS).forEach(function (k) {
+      var card = document.getElementById('art_' + k);
+      if (card && card.classList.contains('open')) {
+        var slot = card.querySelector('[data-mount="' + k + '"]');
+        if (slot) hosts.push([slot, k]);
+      }
+    });
+    var side = document.getElementById('side');
+    if (side && side.classList.contains('show') && S.side) {
+      var sb = document.getElementById('sideBody');
+      if (sb) hosts.push([sb, S.side]);
+    }
+    hosts.forEach(function (h) {
+      var stage = document.getElementById(ARTS[h[1]].stage);
+      if (!stage) return;
+      /* 副本剥掉 id：否则 getElementById 会命中对话里的那份，写入全跑偏 */
+      h[0].innerHTML = stage.innerHTML.replace(/\s+id="[^"]*"/g, '');
+    });
+  }
+  var BUSY = false;
+  function remount() { if (BUSY) return; BUSY = true; try { syncSlots(); } finally { BUSY = false; } }
+  function renderStage(k) {
+    if (k === 'inbox') renderInbox();
+    else if (k === 'sheet' && global.F2) F2.render();
+    else if (k === 'f3') renderF3();
+    else if (k === 'upload') renderF1u();
+    syncSlots();
+  }
+  function renderArtNav() {
+    var el = document.getElementById('artNav'); if (!el) return;
+    var live = Object.keys(ARTS).filter(function (k) { return document.getElementById('art_' + k); });
+    el.innerHTML = live.map(function (k) {
+      var a = ARTS[k], card = document.getElementById('art_' + k);
+      var warn = k === 'inbox' && WB.scopeLeft && WB.scopeLeft();
+      return '<div class="wb-arts-i' + (card && card.classList.contains('open') ? ' on' : '') + '" onclick="WB.jumpArt(\'' + k + '\')">' +
+        '<i class="fa ' + a.ic + '"></i>' + esc(a.ti) +
+        (warn ? '<span class="dotr"></span>' : '<em>' + esc(a.sum().split(' · ')[0]) + '</em>') + '</div>';
+    }).join('');
+  }
+  var _wb = {
+    toggleArt: function (k) { OPEN[k] = !OPEN[k]; var c = document.getElementById('art_' + k);
+      if (c) c.classList.toggle('open', !!OPEN[k]); renderStage(k); renderArtNav(); },
+    openArt: function (k) {
+      OPEN[k] = 1;                       // 先置展开，否则新生成的卡片是折叠态、副本不会同步
+      var c = document.getElementById('art_' + k);
+      if (!c) { say('ai', 'AI 助手', artShell(k, {})); paintChat(); renderStage(k); }
+      else { c.classList.add('open'); renderStage(k); c.scrollIntoView({ block: 'nearest' }); }
+      renderArtNav();
+    },
+    jumpArt: function (k) { WB.openArt(k); },
+    openSide: function (k) {
+      var a = ARTS[k]; if (!a) return;
+      S.side = k; OPEN[k] = 1;
+      var c = document.getElementById('art_' + k); if (c) c.classList.add('open');
+      document.getElementById('sideTitle').textContent = a.ti;
+      document.getElementById('side').classList.add('show');
+      document.querySelector('.wb-conv').classList.add('wide');
+      renderStage(k); renderArtNav();
+    },
+    closeSide: function () { S.side = null;
+      document.getElementById('side').classList.remove('show');
+      document.querySelector('.wb-conv').classList.remove('wide'); S.side = null; syncSlots(); }
+  };
   var WB = {
     toggle: function (sh) { S.collapsed[sh] = !S.collapsed[sh]; save(); render(); },
     rows: function (k) { var e = document.getElementById('rows_' + k); if (e) e.classList.toggle('show'); },
@@ -405,7 +491,23 @@
       })();
     },
     answers: function () { return S.answers; },
-    reset: function () { S = { answers: {}, collapsed: {}, chat: [], run: 0, task: 0, generated: 0 }; save(); boot(); }
+    reset: function () { S = { answers: {}, collapsed: {}, chat: [], run: 0, task: 0, generated: 0, stage: 'f1', notified: 0, f1sub: 'inbox' };
+      OPEN = {}; global.ORCver = 1; if (global.DEMO) DEMO.reset && DEMO.reset();
+      try { localStorage.removeItem('lims.stdlib.v2'); } catch (e) { }
+      save(); WB.boot(); },
+    boot: function () {
+      S.chat = []; OPEN = { upload: 1 };
+      say('ai', 'AI 助手', '把检测能力范围表、检测依据标准文件放进来。我拆成可下载的 Excel 稿件，再落进样品数据。' +
+        artShell('upload', { su: '拖拽或点击上传' }, 1));
+      paintChat(); render();
+      if (global.DEMO) DEMO.mountQuick();
+    },
+    /* 恢复会话：展开状态与 demo 产物都要跟着回来 */
+    restore: function (d) {
+      OPEN = d.o || {};
+      if (global.DEMO && d.d) DEMO.load(d.d);
+      if (global.DEMO) DEMO.mountQuick();
+    }
   };
   function left() {
     var n = 0; allMembers().forEach(function (m) { m.items.forEach(function (q) { if (!S.answers[q.id]) n++; }); });
@@ -431,7 +533,7 @@
   }
 
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify({ a: S.answers, c: S.collapsed, ch: S.chat.slice(-40) })); } catch (e) { }
+    try { localStorage.setItem(KEY, JSON.stringify({ a: S.answers, c: S.collapsed, ch: S.chat.slice(-40), o: OPEN, d: global.DEMO ? DEMO.state() : null })); } catch (e) { }
   }
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } }
 
@@ -480,6 +582,7 @@
     var bell = document.getElementById('wbBell');
     bell.style.display = ai ? '' : 'none';
     document.getElementById('wbBellN').textContent = ai;
+    syncSlots();
   }
   function box(k, v, c, s) { return '<div><div class="k">' + k + '</div><div class="v ' + c + '">' + v + '</div><div class="s">' + s + '</div></div>'; }
   function askCard(m) {
@@ -530,7 +633,6 @@
       if (e) e.className = 'wb-seg-i' + (k === n.toLowerCase() ? ' on' : '');
     });
     document.querySelector('.wb-batch').style.display = k === 'f1' ? '' : 'none';
-    ['btnDl', 'btnRun'].forEach(function (id) { document.getElementById(id).style.display = k === 'f1' ? '' : 'none'; });
     if (k === 'f3') renderF3();
     else if (k === 'f2') { if (global.F2) F2.render(); }
     else { renderF1u(); render(); }
@@ -569,9 +671,26 @@
     };
   })(WB.pick);
 
+  Object.keys(_wb).forEach(function (f) { WB[f] = _wb[f]; });
   WB.raws = function () { return RAW; };
   WB.raw = function (id) { return RAW.filter(function (x) { return x.id === id; })[0]; };
   WB.state = function () { return S.answers; };
+  WB.edits = function () { return global.F2 ? F2.state().edits : {}; };
+  WB.sync = function () { syncSlots(); };
+  WB.paintChatNow = function () { paintChat(); };
+  WB.pushMsg = function (who, name, text) {
+    var m = { who: who, name: name, text: text, at: now() };
+    S.chat.push(m); paintChat(); return m;
+  };
+  WB.replaceMsg = function (m, html) {
+    for (var i = S.chat.length - 1; i >= 0; i--) { if (S.chat[i] === m) { m.text = html; break; } }
+    var bd = document.querySelector('#wbChat .wb-msg:last-child .bd');
+    if (bd && S.chat[S.chat.length - 1] === m) bd.innerHTML = html; else paintChat();
+  };
+  WB.paintLast = function () {
+    var el = document.getElementById('wbChat');
+    if (el && S.chat.length) el.lastElementChild.querySelector('.bd').innerHTML = S.chat[S.chat.length - 1].text;
+  };
   WB.say = function (w, n, t) { say(w, n, t); paintChat(); };
   WB.imported = function () { return !!S.imported; };
   WB.unanswered = function () { return RAW.filter(function (q) { return !S.answers[q.id]; }).length; };
@@ -670,15 +789,23 @@
   WB.markGenerated = function () { S.generated = 1; if (S.imported) S.imported = 2; save(); paintHeader(); };
   WB.ask = function (t) {
     if (!t || !t.trim()) return;
+    if (global.DEMO && DEMO.ask(t.trim())) return;
     if (global.ORC) ORC.ask(t.trim());
     else say('sys', '系统', '编排器未加载。');
     var i = document.getElementById('chatIn'); if (i) i.value = '';
   };
   global.WB = WB;
+  function gate(left, why) {
+    var b = document.getElementById('btnRun'), t = document.getElementById('wbGateTxt');
+    if (b) { b.disabled = left > 0; b.title = left ? why : ''; }
+    if (t) t.textContent = left ? why : '';
+  }
+
   global.WBInit = function (raw) {
     RAW = raw; build();
     var d = load(); S.answers = d.a || {}; S.collapsed = d.c || {}; S.chat = d.ch || [];
-    render();
+    if (!S.chat.length) { WB.boot(); return; }
+    WB.restore(d); render();
   };
   function renderTasks() {
     var el = document.getElementById('taskList'); if (!el) return;

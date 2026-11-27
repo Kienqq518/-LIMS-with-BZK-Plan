@@ -182,7 +182,7 @@
     }
     return null;
   }
-  var DOT = { '已验证': '#16a34a', '冲突': '#dc2626', '未验证': '#d97706', 'AI推断': '#2563eb', '无来源': '#94a3b8' };
+  var DOT = { '已验证': '#16a34a', '冲突': '#dc2626', '未验证': '#d97706', 'AI推断': '#143C9A', '无来源': '#94a3b8' };
 
   function render() {
     var el = document.getElementById('f2Body'); if (!el || !SEED) return;
@@ -210,6 +210,7 @@
     el.innerHTML = '<table class="f2-tbl"><thead>' + head + '</thead><tbody>' + body + '</tbody></table>';
     if (ST.hl) applyHl();
     renderGate();
+    if (global.WB && WB.sync) WB.sync();
   }
   function r2cells(sh, r, ri, cs) {
     return cs.map(function (c, ci) {

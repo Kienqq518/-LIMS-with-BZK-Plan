@@ -20,132 +20,108 @@
 <body class="bg-slate-100">
 <div class="wb-layout">
 
-  <!-- 左：任务列表 -->
+  <!-- 左：任务 + 本任务产物 -->
   <aside class="wb-tasks">
     <div class="wb-tasks-h"><b>拆解任务</b>
-      <button class="btn-save" style="font-size:11.5px;padding:2px 9px" onclick="WB.reset()">重置演示</button></div>
+      <button onclick="WB.reset()">重置演示</button></div>
     <div id="taskList" style="flex:1;overflow-y:auto"></div>
-    <div style="padding:10px 14px;border-top:1px solid #eef2f7;font-size:11.5px;color:#94a3b8;line-height:1.6">
-      一个任务 = 一份标准文件。<br>一包可多任务，F1/F2/F3 可独立进入。
-    </div>
+    <div class="wb-arts-h">本任务产物</div>
+    <div class="wb-arts" id="artNav"></div>
   </aside>
 
-  <!-- 中：主工作区 -->
+  <!-- 中：对话即主区 -->
   <section class="wb-main">
     <div class="wb-topbar">
-      <span class="wb-title">样品配置工作台<small>F1 生成初版稿件 · 问题收件箱</small></span>
-      <span class="wb-badge">内部档 · 实施工程师</span>
-      <span class="wb-badge ext">定稿后回流公司资产</span>
-      <span class="wb-seg">
-        <span class="wb-seg-i on" id="segF1" onclick="WB.stage('f1')">F1 · 问题收件箱</span>
-        <span class="wb-seg-i" id="segF2" onclick="WB.stage('f2')">F2 · 校稿表格</span>
-        <span class="wb-seg-i" id="segF3" onclick="WB.stage('f3')">F3 · 预检与入库</span>
-      </span>
+      <span class="wb-title" id="wbTaskName">DL/T 802.3—2023</span>
+      <span class="wb-badge">内部档</span>
       <span class="wb-spacer"></span>
-      <button class="btn-outline" style="font-size:11.5px" onclick="ORC.panel()">编排留痕 <b id="trcN">0</b></button>
-      <span class="wb-bell" id="wbBell" style="display:none" onclick="WB.stage('f3')">
+      <button class="btn-outline" onclick="ORC.panel()">编排留痕 <b id="trcN">0</b></button>
+      <span class="wb-bell" id="wbBell" style="display:none" onclick="WB.openArt('f3')">
         <i class="fa fa-bell-o"></i><span id="wbBellN">0</span></span>
-      <span id="wbDoc" style="font-size:12px;color:#64748b">稿件 <b style="color:#1e293b">未生成</b> · 范围级未答完</span>
-      <button class="btn-outline" style="font-size:12px" id="btnDl" disabled onclick="alert('下载稿件 xlsx（契约 v0.2 / 22 sheet）')">下载稿件</button>
-      <button class="btn-save" style="font-size:12px" id="btnRun" disabled onclick="WB.run()">生成稿件 v1-draft</button>
+      <span id="wbDoc"></span>
     </div>
 
     <div class="wb-stats" id="wbStats"></div>
 
     <div class="wb-body">
-     <div class="f1-sub" id="f1Sub"></div>
-     <div id="wbF1u" style="display:none"></div>
-     <div id="wbInbox">
-      <div class="wb-block" id="wbBlock"></div>
-
-      <div class="wb-run" id="wbRun"><div style="font-size:12.5px;font-weight:600;color:#1e293b;margin-bottom:6px">拆解进行中</div>
-        <div id="wbStages"></div></div>
-
-      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 8px">
-        <span style="font-size:13px;font-weight:600;color:#1e293b">范围级问题</span>
-        <span style="font-size:11.5px;color:#94a3b8">决定拆成什么结构，必须先答；答完才能生成稿件</span>
+      <div class="wb-cols">
+        <div class="wb-conv" id="wbChat"></div>
+        <aside class="wb-side" id="side">
+          <div class="wb-side-h"><b id="sideTitle"></b><span class="wb-spacer"></span>
+            <i class="fa fa-times" onclick="WB.closeSide()"></i></div>
+          <div class="wb-side-b" id="sideBody"></div>
+        </aside>
       </div>
-      <div id="wbScope"></div>
-
-      <div style="display:flex;align-items:center;gap:8px;margin:18px 0 8px">
-        <span style="font-size:13px;font-weight:600;color:#1e293b">字段级问题</span>
-        <span style="font-size:11.5px;color:#94a3b8">按 sheet 分组 · 同因已合并 · 每条给默认值，人只做接受/改一个/跳过</span>
-      </div>
-      <div id="wbGroups"></div>
-     </div>
-
-     <div id="wbF2" style="display:none">
-      <div class="f2-tabs"><span id="f2Tabs" style="display:flex;gap:6px"></span>
-        <span style="flex:1"></span>
-        <button class="btn-outline" style="font-size:11.5px" onclick="F2.openDiff()">
-          <i class="fa fa-upload"></i> 上传线下改完的稿件</button>
-        <button class="btn-outline" style="font-size:11.5px" onclick="WB.say('sys','系统','稿件 v' + ((window.ORCver||1)) + '-draft 已导出，22 张 sheet 全量。改完从这个按钮传回来，我会做三方对比。');alert('已导出稿件（原型演示）')">下载稿件</button>
-      </div>
-      <div class="f2-wrap">
-        <div class="f2-main">
-          <div class="f2-cnt" id="f2Cnt"></div>
-          <div id="f2Diff" class="f2-diff"></div>
-          <div class="f2-scroll" id="f2Body"></div>
-        </div>
-        <aside class="f2-drawer" id="f2Drawer"></aside>
-      </div>
-      <div class="f2-gate" id="f2Gate"></div>
-     </div>
-
-     <div id="wbF3" style="display:none">
-      <div class="wb-f3sum" id="wbF3Sum"></div>
-      <div class="wb-f3card" id="wbF3Skip"></div>
-      <div class="wb-f3card" id="wbF3Run" style="display:none"></div>
-      <div class="wb-f3foot">
-        <div style="flex:1;font-size:12px;color:#64748b" id="wbF3Gate"></div>
-        <button class="btn-outline" onclick="WB.stage('f1')">回收件箱</button>
-        <button class="btn-save" id="btnImport" disabled onclick="WB.importRun()">拆解入库</button>
-      </div>
-     </div>
     </div>
 
-    <!-- 批量指令 -->
-    <div class="wb-batch">
-      <div class="wb-batch-in">
-        <input id="wbBatch" placeholder="批量指令，例：下拉选项全部按 破裂/无破裂、所有修约按四舍五入、检测类别统一型式试验"
-               oninput="WB.batch(this.value)" />
-        <button class="btn-save" onclick="WB.adoptAll()">全部采纳默认值</button>
+    <div class="wb-dock" id="dock">
+      <div id="wbF1u"><div id="fzHost"></div></div>
+      <div id="wbInbox">
+        <div class="wb-block" id="wbBlock"></div>
+        <div class="wb-run" id="wbRun"><div class="wb-run-h">拆解进行中</div><div id="wbStages"></div></div>
+        <div id="wbScope"></div>
+        <div id="wbGroups"></div>
+        <div class="wb-inbox-foot"><span class="fg" id="wbGateTxt"></span>
+          <button class="btn-save" id="btnRun" disabled onclick="WB.run()">生成稿件 v1-draft</button></div>
       </div>
-      <div class="wb-hint">先回显<b onclick="WB.batch('下拉选项全部按 破裂 / 无破裂')">影响范围预览</b>再落，落完可撤销；不会静默改数据。</div>
+      <div id="wbF2">
+        <div class="f2-tabs"><span id="f2Tabs" style="display:flex;gap:6px"></span>
+          <span style="flex:1"></span>
+          <button class="btn-outline" onclick="F2.openDiff()"><i class="fa fa-exchange"></i> 三方对比</button>
+          <button class="btn-outline" onclick="WB.say('sys','系统','已导出稿件（22 张 sheet）');WB.toast&&0">下载稿件</button>
+        </div>
+        <div class="f2-wrap">
+          <div class="f2-main">
+            <div class="f2-cnt" id="f2Cnt"></div>
+            <div id="f2Diff" class="f2-diff"></div>
+            <div class="f2-scroll" id="f2Body"></div>
+          </div>
+          <aside class="f2-drawer" id="f2Drawer"></aside>
+        </div>
+        <div class="f2-gate" id="f2Gate"></div>
+      </div>
+      <div id="wbF3">
+        <div class="wb-f3sum" id="wbF3Sum"></div>
+        <div class="wb-f3card" id="wbF3Skip"></div>
+        <div class="wb-f3card" id="wbF3Run" style="display:none"></div>
+        <div class="wb-f3foot">
+          <div id="wbF3Gate"></div>
+          <button class="btn-save" id="btnImport" disabled onclick="WB.importRun()">拆解入库</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="wb-quick" id="quickBar"></div>
+    <input type="file" id="fileIn" multiple hidden />
+    <!-- 悬浮提问胶囊 -->
+    <div class="wb-batch">
+      <i class="fa fa-magic ai-ic"></i>
+      <div class="wb-batch-in">
+        <input id="wbBatch" placeholder="问任何事，或让我改任何一处"
+               onkeydown="if(event.key==='Enter'){WB.ask(this.value);this.value='';}" />
+        <button class="btn-save" onclick="WB.ask(document.getElementById('wbBatch').value)"><i class="fa fa-arrow-right"></i></button>
+      </div>
+      <button class="wb-adoptall" onclick="WB.adoptAll()">全部采纳默认值</button>
       <div class="wb-preview" id="wbPreview"></div>
     </div>
   </section>
-
-  <!-- 右：对话流 -->
-  <aside class="wb-chat">
-    <div class="wb-chat-h"><span class="on">对话与提问</span><span onclick="alert('日志页原型未接')">操作日志</span></div>
-    <div class="wb-chat-b" id="wbChat"></div>
-    <div class="wb-composer">
-      <div class="chips"><span onclick="ORC.quick(this)">系统里 SN24 那条环刚度下限是错的，改成 25</span>
-        <span onclick="ORC.quick(this)">可以入库了</span>
-        <span onclick="ORC.quick(this)">别绕了，直接改库</span>
-        <span onclick="ORC.quick(this)">为什么这几行是灰的</span></div>
-      <div class="crow"><textarea id="chatIn" rows="2" placeholder="直接说要做的事，我来判断走 F1 / F2 / F3 哪几步"></textarea>
-        <button class="btn-save" onclick="WB.ask(document.getElementById('chatIn').value)">发 送</button></div>
-      <div class="cnote">对话不改变唯一真源：任何写库都必须经过稿件。跨阶段执行前会先给你编排计划卡。</div>
-    </div>
-  </aside>
 </div>
-
 <script src="js/ui-a11y.js"></script>
 <script src="js/workbench-inbox-data.js"></script>
+<script src="js/workbench-sheet-data.js"></script>
 <script src="js/standard-library-data.js"></script>
 <script src="js/std-library-store.js"></script>
-<script src="js/workbench-sheet-data.js"></script>
+<script src="js/xlsx-lite.js"></script>
 <script src="js/ai-sample-workbench.js"></script>
 <script src="js/ai-sample-f2.js"></script>
 <script src="js/ai-sample-orchestrator.js"></script>
+<script src="js/ai-sample-demo.js"></script>
 <script>
-  (function () {
-    WBInit(window.INBOX_SEED);
-    WBsyncTasks();
-    if (window.SHEET_SEED) F2.init(window.SHEET_SEED);
-  })();
+  WBInit(window.INBOX_SEED);
+  WBsyncTasks();
+  if (window.SHEET_SEED) F2.init(window.SHEET_SEED);
+  WB.boot();
+  document.getElementById('fileIn').addEventListener('change', function (e) { DEMO.pick(e.target.files); this.value = ''; });
 </script>
 <div class="trc-mask" id="trcMask" onclick="if(event.target===this)WB.closeTrace()">
   <div class="trc-box">
