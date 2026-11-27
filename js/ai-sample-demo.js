@@ -127,6 +127,23 @@
   }
 
   /* ── 生成真实 xlsx ── */
+  var WIDE_RE = /问题文本|原文|说明|备注|要求|过程|条件|候选|依据|表达式|标签|名称$/;
+  var KEYCOL = { '90_标称值': '标称值键', 'A1_判定条件': '试验项键', '61_映射明细': '归属键',
+    '70_测量参数': '参数键', '80_计算参数': '参数键', '60_控制参数': '参数键', 'B0_采集配置': '参数键',
+    'A2_结论映射': '试验项键', '50_试验项': '试验项键', '20_样品': '样品键', '40_型号': '型号键',
+    '30_规格参数': '规格键', '52_试验子项': '子项键', '71_参数可选项': '参数键', '51_试验依据': '试验项键',
+    'A0_判定配置': '试验项键', '10_分类路径': '分类路径键', '41_型号规格赋值': '型号键' };
+  /* 与界面上同一套色标：C0 命中的格子在 Excel 里也是彩色的，专家线下才知道哪里不确定 */
+  function cellState(sh, rowObj, c) {
+    var list = ((global.SHEET_SEED || {}).conf || {})[sh] || [], k = String(rowObj[KEYCOL[sh] || ''] || '');
+    for (var i = 0; i < list.length; i++) {
+      var e = list[i];
+      if (!(e.row === k || e.row.indexOf(k) === 0 || k.indexOf(e.row) === 0)) continue;
+      var cs = String(e.col).split('/');
+      if (e.col === '*' || cs.indexOf(c) >= 0) return e.state;
+    }
+    return '';
+  }
   function manuscript() {
     var seed = global.SHEET_SEED || {}, st = WB.state ? WB.state() : {}, rows = [];
     rows.push(['项', '值', '备注']);
@@ -135,6 +152,15 @@
     rows.push(['生成时间', new Date().toLocaleString('zh-CN', { hour12: false }), '']);
     rows.push(['上传文件', D.files.map(function (f) { return f.name; }).join(' | '), '']);
     rows.push(['待定项', (global.INBOX_SEED || []).length + ' 条', '已处置 ' + Object.keys(st).length + ' 条']);
+    rows.push(['']);
+    rows.push([{ v: '色标说明', s: 9 }]);
+    [['已验证', '值已在检测依据标准文件里核对通过', 3],
+     ['冲突', '报告值与标准条款不一致，必须人工裁决', 4],
+     ['未验证', '有来源但没回到标准文件核对（人工拆解稿的默认态）', 5],
+     ['AI推断', '输入里没有，由 AI 推导', 6],
+     ['无来源', '空，挂在收件箱里待问', 7]].forEach(function (x) {
+      rows.push([{ v: x[0], s: x[2] }, { v: x[1], s: XLSX.styleFor(x[0], true) }]);
+    });
     var sheets = [{ name: '00_包信息', rows: rows }];
     var ORDER = SHEET_ORDER.slice(1);
     Object.keys(seed).forEach(function (k) {
@@ -147,7 +173,10 @@
       blk.rows.forEach(function (r, ri) {
         out.push(blk.cols.map(function (c) {
           var v = ed[name + '|' + ri + '|' + c];
-          return v !== undefined ? v : (r[c] == null ? '' : r[c]);
+          v = v !== undefined ? v : (r[c] == null ? '' : r[c]);
+          var st = cellState(name, r, c);
+          if (!st) return v;
+          return { v: v, s: XLSX.styleFor(st, WIDE_RE.test(c)) };
         }));
       });
       sheets.push({ name: name, rows: out });
