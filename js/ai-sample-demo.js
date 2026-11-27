@@ -217,6 +217,7 @@
       if (global.TS) TS.addFiles(added);
       if (!demo && added.length) WB.archNote(false);
       render();
+      if (demo && global.WB) WB.renderF1();      // 料变了，上传卡必须跟着变
     },
     pickImages: function (fl) {
       var added = [];
@@ -234,10 +235,14 @@
       var el = document.getElementById('fz'); if (el) el.classList.remove('over');
       DEMO.pick(ev.dataTransfer.files);
     },
-    del: function (i) { D.files.splice(i, 1); if (global.TS) TS.delFile(i); render(); },
+    del: function (i) { D.files.splice(i, 1); if (global.TS) TS.delFile(i); render();
+      if (global.WB) WB.renderF1(); },
     unattach: function (i) { ATT.splice(i, 1); renderChips(); },
     resetState: function () { D.files = []; D.manuscript = null; D.ver = 'v1-draft'; ATT = []; renderChips(); render(); },
     attachments: function () { return ATT.slice(); },
+    list: function () { return D.files.slice(); },
+    sheetCount: sheetCount,
+    paint: render,
     clearAttachments: function () { ATT = []; renderChips(); },
     /* F1：流式思考 → 产出真实 xlsx */
     f1: function () {
@@ -271,6 +276,7 @@
           '范围级 ' + (WB.scopeLeft ? WB.scopeLeft() : 0) + ' 条必答，答完才能定稿入库。');
         WB.openArt('inbox');
         if (WB.markGenerated) WB.markGenerated();   // 稿件已出，顶栏与进度节点必须跟着翻篇
+        if (global.WB) WB.renderF1();            // 任务发现与拆解进度只在出稿后才成立
         if (global.TS) TS.addOutput({ ver: D.ver, state: '初稿', sheets: sheets.length, size: D.size,
           rows: counts(), at: new Date().toLocaleString('zh-CN', { hour12: false }).slice(0, 16),
           hits: ['命中库内成果 v3-final'] });

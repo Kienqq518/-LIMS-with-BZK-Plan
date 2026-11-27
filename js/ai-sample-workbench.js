@@ -220,6 +220,13 @@
     if (tvh) { el.innerHTML = '稿件 <b style="color:' + tvh.col + '">' + esc(tvh.lab) + '</b>' + tvh.tail; return; }
     var left = SCOPE.filter(function (q) { return !S.answers[q.id]; }).length;
     var fLeft = rawLeft(), sk = skipCnt(), ai = aiCnt(), ver = global.ORCver || 1;
+    // 稿件没生成，问题就还不存在——这时候报"7 处必答"是把内存里的种子当结论
+    if (!S.generated && !S.finalized && !S.imported) {
+      var nf = (global.DEMO && DEMO.list) ? DEMO.list().length : 0;
+      el.innerHTML = '稿件 <b style="color:#94a3b8">未开始</b> · ' +
+        (nf ? '已收到 ' + nf + ' 份料，可以开始拆解' : '等待上传检测能力表与标准文件');
+      return;
+    }
     // 顶栏只报一个主状态，按流水线取最高位：已入库 > 已定稿 > 已生成 > 未生成
     var main = S.imported ? '<b style="color:#6d28d9">v' + ver + (S.imported === 2 ? ' 已重放' : ' 已入库') + (ai ? '（自决 ' + ai + ' 处已通知）' : '') + '</b>'
       : S.finalized ? '<b style="color:#15803d">v' + ver + '-final 已定稿</b>'
@@ -237,6 +244,16 @@
     paintHeader();
     if (arch('inbox')) return;
     var br = document.getElementById('btnRun'); if (br) br.textContent = '生成稿件 v1-draft';
+    if (!S.generated && !S.finalized && !S.imported) {
+      var st0 = document.getElementById('wbStats');
+      var nf0 = (global.DEMO && DEMO.list) ? DEMO.list().length : 0;
+      if (st0) st0.innerHTML = '<div class="wb-prog"><i style="width:0%"></i></div>' +
+        '<span class="wb-prog-lab"><b>0</b> / 0 已处置</span>' +
+        '<span class="wb-stat"><i class="fa fa-inbox"></i>还没有问题</span>' +
+        (nf0 ? '<span class="wb-stat"><i class="fa fa-paperclip"></i><b>' + nf0 + '</b> 份料已收到</span>'
+             : '<span class="wb-stat alert"><i class="fa fa-upload"></i>等待上传</span>');
+      return;
+    }
     var scopeLeft = SCOPE.filter(function (q) { return !S.answers[q.id]; }).length;
     var skipN = skipCnt();
     var fieldAll = [], GROUPED = [];
@@ -264,7 +281,7 @@
       (SCOPE_G.map(scopeCard).join('') || '<div class="wb-hint">本次没有范围级问题。</div>');
     document.getElementById('wbGroups').innerHTML = GROUPS.map(groupCard).join('');
   }
-  function render() { renderInbox(); paintChat(); }
+  function render() { renderInbox(); renderF1u(); paintChat(); }
   function stat(lab, val, cls, sub) {
     return '<div class="wb-stat">' + lab + '<b class="' + cls + '">' + esc(val) + '</b>' +
       '<span style="font-size:11px">' + esc(sub) + '</span></div>';
@@ -275,7 +292,7 @@
       '<div class="wb-gb" style="padding-top:10px">' +
       '<div class="wb-q-h"><div class="wb-q-t">' + esc(q.q) + '</div>' +
       (multi ? '<span class="wb-merge" onclick="WB.rows(\'' + esc(m.key) + '\')">同因合并 ' + m.items.length + ' 条 ▾</span>' : '') +
-      '<span class="wb-conf ' + confCls(q.conf) + '">' + confTxt(q.conf) + '</span></div>' +
+      '<span class="wb-conf ' + confCls(q.conf) + '" data-annotate="ws-conf">' + confTxt(q.conf) + '</span></div>' +
       (multi ? '<div class="wb-rows" id="rows_' + esc(m.key) + '">' +
         m.items.map(function (x) { return '<code>' + esc(x.row) + ' · ' + esc(x.col) + '</code>'; }).join('') + '</div>' : '') +
       optRow(q, o) + qFoot(q) + '</div></div>';
@@ -333,10 +350,10 @@
           (a.mode === 'ai' ? '<span class="wb-ai">AI 自决落库</span>' : '')
         : (a ? '<span class="wb-skip">已跳过 · F3 会再问一次</span>' : '<span style="color:#cbd5e1">未处置</span>')) +
       '<span class="wb-undo" onclick="WB.undo(\'' + esc(q.id) + '\')">撤销</span>' +
-      (a || q.lv === '范围' ? '' : '<span class="wb-skipbtn" onclick="WB.skip(\'' + esc(q.id) + '\')">跳过</span>') +
-      (q.lv === '范围' && !a ? '<span class="wb-must">必答 · 不可跳过</span>' : '') +
+      (a || q.lv === '范围' ? '' : '<span class="wb-skipbtn" data-annotate="ws-skip" onclick="WB.skip(\'' + esc(q.id) + '\')">跳过</span>') +
+      (q.lv === '范围' && !a ? '<span class="wb-must" data-annotate="ws-must">必答 · 不可跳过</span>' : '') +
       (global.SH ? '<span class="wb-asg' + (SH.mine(q.id) ? ' me' : (SH.who(q.id) ? ' set' : '')) +
-        '" onclick="SH.assignUI(\'' + esc(q.id) + '\',event)" title="' +
+        '" data-annotate="ws-asg" onclick="SH.assignUI(\'' + esc(q.id) + '\',event)" title="' +
         (SH.who(q.id) ? '当前负责人：' + esc(SH.who(q.id)) + '，点击改派' : '指派给任务里的某个人') + '">' +
         (SH.who(q.id) ? '<i class="av xs">' + esc(SH.ini(q.id)) + '</i>' + esc(SH.mine(q.id) ? '我' : SH.who(q.id))
           : '<i class="fa fa-user-plus"></i>指派') + '</span>' : '') + '</div>';
@@ -767,13 +784,14 @@
     var dist = ks.filter(function (k) { return pl.by[k]; }).map(function (k) {
       return '<span class="wchip ' + VERB[k].c + '"><i class="fa ' + VERB[k].ic + '"></i>' + k + '<b>' + pl.by[k].n + '</b></span>';
     }).join('');
+    var ann = ' data-annotate="ws-verbs"'; 
     el.innerHTML = '<h4>写操作计划<span class="cn">' + pl.n + ' 个实体 · 对齐基准：' +
       (S.answers['Q095'] ? esc(S.answers['Q095'].other || S.answers['Q095'].choice) : '未选') + '</span></h4>' +
-      '<div class="wdist">' + dist + '</div>' +
+      '<div class="wdist"' + ann + '>' + dist + '</div>' +
       (pl.risky.length ? '<div class="wsec">动到已有数据的条目（' + pl.risky.length + '）——这些不会静默执行</div>' +
         pl.risky.map(function (x) { return riskyRow(x[0], x[1]); }).join('') +
         (S.answers['Q095'] && !pl.by['待确认']
-          ? '<label class="wauth' + (ok('import.auth') ? '' : ' off') + '"><input type="checkbox" id="cbAuth" ' +
+          ? '<label class="wauth' + (ok('import.auth') ? '' : ' off') + '" data-annotate="ws-auth"><input type="checkbox" id="cbAuth" ' +
             (S.auth ? 'checked' : '') + (ok('import.auth') ? '' : ' disabled') +
             ' onchange="WB.authorize(this.checked)" /> 我已逐条确认以上 ' +
             ((pl.by['变更'] || {}).n || 0) + ' 处变更与 ' + ((pl.by['停用'] || {}).n || 0) + ' 处停用会影响在流转的检测任务</label>'
@@ -994,37 +1012,52 @@
   WB.closeTrace = function () { document.getElementById('trcMask').classList.remove('show'); };
 
   /* ═════ F1 上传与拆解 ═════ */
+  /* 上传卡完全由真实输入驱动：没料就只有一个拖拽区，不许出现任何"已解析"的假象 */
   function renderF1u() {
     var el = document.getElementById('wbF1u'); if (!el) return;
     if (arch('upload')) return;
-    el.innerHTML =
-      '<div class="up-slots">' +
-        slot('检测能力范围表', '认可的检测能力范围(中文).pdf', '已解析 · 11 页 · 3 个检测对象大类', 'ok') +
-        slot('检测依据标准文件', 'DL/T 802.3—2023.pdf', '已识别 DL/T 802.3—2023 · 命中库内 v3 成果', 'ok') +
-        slot('检测报告 / 原始记录单', '数据线.docm · EN50264.docm', '已解析 · 用于补型号与参数命名', 'ok') +
-      '</div>' +
-      '<div class="f1-sec"><h4>任务发现<span class="sh">AI 先给清单，人确认后才开工；一个任务 = 一份标准文件</span></h4>' +
+    var fs = (global.DEMO && DEMO.list) ? DEMO.list() : [];
+    var st = WB.status ? WB.status() : { generated: 0 };
+    var bySlot = { cap: [], std: [], rec: [] };
+    fs.forEach(function (f) { (bySlot[f.slot] || (bySlot[f.slot] = [])).push(f.name); });
+    var html = '<div id="fzHost"></div>';
+    if (fs.length) {
+      html += '<div class="up-slots">' +
+        slot('检测能力范围表', bySlot.cap, '已收到 · 待解析') +
+        slot('检测依据标准文件', bySlot.std, bySlot.std.length ? '待正文识别标准号' : '缺 · 没有依据我不能出稿') +
+        slot('检测报告 / 原始记录单', bySlot.rec, bySlot.rec.length ? '用于补型号与参数命名' : '可选 · 缺了会降低置信度') +
+        '</div>';
+    }
+    if (st.generated) {
+      html += '<div class="f1-sec"><h4>任务发现<span class="sh">一个任务 = 一份标准文件</span></h4>' +
         '<table class="task-tbl"><tr><th>标准文件</th><th>层级角色</th><th>覆盖样品 / 型号</th><th>库状态</th><th>建议</th><th></th></tr>' +
         task('DL/T 802.3—2023', '子标准（802.1 点名的实壁类）', '2 个样品 / 8 个型号', '已存档 · 已拆解 v3', '独立成任务', 1) +
         task('DL/T 802.1—2023', '总标准（集合型，不直接产数据）', '电缆保护管全类型索引', '已存档 · 未拆解', '只建分类节点，不建任务', 0) +
         task('DL/T 802.4—2023', '子标准（波纹型，802.1 点名）', '能力表未覆盖', '未上传', '本次不拆', 0) +
         '</table><div class="f1-note">能力表只覆盖实壁类，所以只生成 1 个任务；' +
-        '若你说「波纹型也要拆」，需要补传 DL/T 802.4—2023，我会另开一个任务。</div></div>' +
-      '<div class="f1-sec"><h4>拆解进度</h4>' +
-        '<div id="f1Stages">' + ['识别标准文件|DL/T 802.3—2023 · 规范化编号 + 年号',
-          '命中库|元数据命中 · 文件本体按客户隔离 · 拆解成果可复用',
-          '任务发现|1 个任务 · 2 个样品 / 8 个型号',
-          '逐 sheet 生成|23 张 · 166 参数 / 42 判定条件'].map(function (x) {
-            var a = x.split('|');
-            return '<div class="wb-stage done"><span class="dot"></span>' + esc(a[0]) + '<span class="out">' + esc(a[1]) + '</span></div>';
-          }).join('') + '</div>' +
+        '若波纹型也要拆，需要补传 DL/T 802.4—2023，我会另开一个任务。</div></div>' +
+        '<div class="f1-sec"><h4>拆解进度</h4><div id="f1Stages">' +
+        ['识别标准文件|DL/T 802.3—2023 · 规范化编号 + 年号',
+         '命中库|元数据命中 · 文件本体按客户隔离 · 拆解成果可复用',
+         '任务发现|1 个任务 · 2 个样品 / 8 个型号',
+         '系统对齐|33 个实体 · 公司基线取骨架 → 本客户环境逐实体比对',
+         '逐 sheet 生成|' + (global.DEMO ? DEMO.sheetCount() : 23) + ' 张 · 166 参数 / 42 判定条件']
+          .map(function (x) { var a = x.split('|');
+            return '<div class="wb-stage done"><span class="dot"></span>' + esc(a[0]) + '<span class="out">' + esc(a[1]) + '</span></div>'; })
+          .join('') + '</div>' +
         '<div class="f1-acts"><button class="btn-save" onclick="WB.openArt(\'inbox\')">进入问题收件箱</button>' +
         '<button class="btn-outline" onclick="WB.ask(\'命中库了，按库内成果拆还是按我上传的拆？\')">问：命中库怎么拆</button></div></div>';
+    }
+    el.innerHTML = html;
+    if (global.DEMO) DEMO.paint();          // 拖拽区永远在，且必须最后挂
+    syncSlots();
   }
-  function slot(t, f, st, cls) {
-    return '<div class="slot ' + cls + '"><div class="st-t">' + esc(t) + '</div>' +
-      '<div class="st-f"><i class="fa fa-file-pdf-o"></i> ' + esc(f) + '</div>' +
-      '<div class="st-s">' + esc(st) + '</div></div>';
+  function slot(t, files, st) {
+    return '<div class="slot ' + (files.length ? 'ok' : 'warn') + '"><div class="st-t">' + esc(t) + '</div>' +
+      '<div class="st-f">' + (files.length
+        ? files.map(function (f) { return '<i class="fa fa-file-pdf-o"></i> ' + esc(f); }).join('<br/>')
+        : esc(st)) + '</div>' +
+      (files.length ? '<div class="st-s">' + esc(st) + '</div>' : '') + '</div>';
   }
   function task(code, role, cov, lib, sug, on) {
     return '<tr class="' + (on ? 'on' : '') + '"><td><b>' + esc(code) + '</b></td><td>' + esc(role) + '</td>' +
@@ -1073,6 +1106,7 @@
   WB.sideKey = function () { return S.side || ''; };
   WB.demo = function () { return global.TS ? !!TS.sel().cur : true; };
   WB.refreshInbox = function () { renderInbox(); paintChat(); };
+  WB.renderF1 = function () { renderF1u(); syncSlots(); };
   WB.askImport = function () { SH.askImport(); paintChat(); };
   WB.archNote = function (ask) { return archNote(ask); };
   WB.renderF3 = function () { renderF3(); };
@@ -1101,7 +1135,11 @@
       '<button class="ra" onclick="WB.openArt(\'sheet\')">看稿件表格</button>');
     if (global.DEMO) DEMO.mountQuick();
   };
-  WB.markGenerated = function () { S.generated = 1; if (S.imported) S.imported = 2; save(); paintHeader(); };
+  WB.markGenerated = function () {
+    S.generated = 1; if (S.imported) S.imported = 2; save();
+    // 出稿这一刻问题才真实存在：收件箱、上传卡、顶栏必须一起翻过来
+    renderInbox(); renderF1u(); paintHeader(); paintChat();
+  };
   WB.ask = function (t) {
     t = String(t || '').trim();
     var atts = global.DEMO ? DEMO.attachments() : [];

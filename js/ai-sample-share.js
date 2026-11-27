@@ -152,7 +152,7 @@
       }).join('');
       var mine = by[D.me] || 0;
       var on = FIL === D.me;
-      return '<div class="pg-bar">' + chips +
+      return '<div class="pg-bar" data-annotate="ws-pgbar">' + chips +
         '<span class="pg-end' + (on ? ' on' : '') + '" onclick="SH.filter(\'' + D.me + '\')" ' +
         'title="只看待处置且挂在你名下的问题">' +
         '<i class="fa fa-' + (on ? 'times' : 'filter') + '"></i>' +
@@ -270,7 +270,7 @@
         '" title="' + esc(u.nm + ' · ' + ROLE[m.role].ti + (m.canImport ? ' · 可入库' : '')) + '">' + esc(u.ini) + '</span>';
     }).join('') + (ms.length > 4 ? '<span class="peer more">+' + (ms.length - 4) + '</span>' : '') + '</span>' +
       '<span class="shbtn" onclick="SH.open()"><i class="fa fa-user-plus"></i>邀请</span>' +
-      '<select class="meSel" onchange="SH.switchMe(this.value)" title="原型：切换身份看权限差异">' +
+      '<select class="meSel" data-annotate="ws-mesel" onchange="SH.switchMe(this.value)" title="原型：切换身份看权限差异">' +
       USERS.map(function (u) {
         return '<option value="' + u.id + '"' + (u.id === D.me ? ' selected' : '') + '>' + esc(u.nm) + '（' +
           esc(ROLE[myRole()].ti) + '）</option>';

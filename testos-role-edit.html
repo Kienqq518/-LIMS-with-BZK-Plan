@@ -145,9 +145,10 @@
       { type: 'item', object: '任务日志', perms: ['试验任务日志', '定时任务日志'], checked: [true, true] },
       { type: 'item', object: '系统设置', perms: ['系统参数', '操作日志', '登录日志', '关于我们'], checked: [true, true, true, true] }
     ];
-    modulePermissions['LIMS检测标准库'] = TestOSAiPermissions.clone();
     modulePermissions[APP_DATA_MODULE] = TestOSAppPermissions.clone();
-    modulePermissions['实验室物资业务管理系统'] = TestOSWuziPermissions.clone();
+    /* AI 助手是「实验室物资业务管理系统」下的一个模块，权限跟着它走 */
+    modulePermissions['实验室物资业务管理系统'] =
+      TestOSWuziPermissions.clone().concat(TestOSAiPermissions.clone());
 
     var defaultPermissions = [
       { type: 'item', object: '工作台', perms: ['查看', '导出'], checked: [true, true] },
@@ -155,7 +156,7 @@
       { type: 'item', object: '系统设置', perms: ['查看', '配置'], checked: [true, false] }
     ];
 
-    var currentModule = 'LIMS检测标准库';
+    var currentModule = '实验室物资业务管理系统';
     var permState = {};
     var groupExpanded = {};
     var nestedExpanded = {};

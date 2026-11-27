@@ -165,44 +165,54 @@
         '<i class="fa fa-external-link"></i> 打开样品数据页</a>' +
         '<a class="plink" href="standard-library.html" target="_blank"><i class="fa fa-book"></i> 打开标准成果库</a></div>' : '');
   }
-  var NODES = [
-    { k: 'upload', ic: 'fa-upload', ti: '上传料' },
-    { k: 'upload', ic: 'fa-magic', ti: '拆解生成' },
-    { k: 'inbox', ic: 'fa-inbox', ti: '问题处置' },
-    { k: 'sheet', ic: 'fa-table', ti: '校稿定稿' },
-    { k: 'f3', ic: 'fa-database', ti: '预检入库' }
-  ];
-  /* 每个任务都算一遍五节点状态：演示任务读实时流水线，其余读它自己的存档 */
-  function nodes(t) {
+  /* 流程节点按实际执行顺序排，问题箱只在它该出现的地方插进来：
+     上传料 → 拆解生成 →（问题箱 · 拆解）→ 校稿 → 定稿 → 入库检查 →（问题箱 · 入库）→ 入库完成 */
+  function steps(t) {
     var live = !!t.cur && global.WB;
     var st = live ? WB.status() : { generated: t.stage >= 2, finalized: t.stage >= 3, imported: t.stage >= 4 };
     var c = live && WB.counts ? WB.counts() : null;
     var o = t.outputs[0] || {};
     var imp = t.stage >= 4 || !!o.imported;
+    var nf = live && global.DEMO ? DEMO.list().length : t.files.length;
     var ver = live ? 'v' + (global.ORCver || 1) : (o.ver || '');
-    var n = [];
-    n.push(t.files.length >= 3 ? ['done', t.files.length + ' 份料已齐']
-      : (t.files.length ? ['blocked', '还缺 ' + (3 - t.files.length) + ' 份料'] : ['todo', '未上传']));
-    n.push(st.generated ? ['done', live ? 'v1-draft 已出' : '已出稿 ' + (t.outputs.length || 1) + ' 版'] : ['todo', '未生成']);
-    if (live && c) n.push(c.un ? ['cur', (c.sk + c.ai) + ' 处已处置 · 剩 ' + c.un] : ['done', '全部处置完']);
-    else n.push(t.qa && t.qa.length ? ['done', t.qa.length + ' 条已沉淀'] :
-      (t.files.length >= 3 ? ['todo', '无待处置问题'] : ['blocked', '缺料，问不了']));
-    n.push(st.finalized ? ['done', (live ? ver + '-final' : ver) + ' 已定稿']
-      : (st.generated ? ['cur', '稿件待定稿'] : ['todo', '—']));
-    n.push(imp ? ['done', (t.samples ? t.samples.length : 2) + ' 块已入库']
-      : (st.finalized ? ['cur', '可入库'] : ['todo', '—']));
-    return n;
+    var out = [];
+    var P = function (ti, ic, k, s, note) { out.push({ ti: ti, ic: ic, k: k, s: s, note: note }); };
+
+    P('上传料', 'fa-upload', 'upload',
+      nf >= 3 ? ['done', nf + ' 份料已齐'] : (nf ? ['blocked', '还缺 ' + (3 - nf) + ' 份料'] : ['todo', '未上传']));
+    P('拆解生成', 'fa-magic', 'upload',
+      st.generated ? ['done', live ? 'v1-draft 已出' : '已出稿 ' + (t.outputs.length || 1) + ' 版']
+        : (nf >= 3 ? ['cur', '可以开始拆解'] : ['todo', '未生成']));
+    if (st.generated) {
+      var un = c ? c.un : 0, sc = c ? c.scope : 0;
+      var qa = (!live && t.qa) ? t.qa.length : 0;
+      P('问题箱 · 拆解', 'fa-inbox', 'inbox',
+        live ? (un ? (sc ? ['blocked', sc + ' 条必答 · 共剩 ' + un] : ['cur', un + ' 条待处置']) : ['done', '全部处置完'])
+          : (qa ? ['done', qa + ' 条已沉淀'] : ['todo', '没有问题']));
+      P('校稿', 'fa-table', 'sheet',
+        st.finalized ? ['done', '稿件已锁定'] : (live && un ? ['blocked', '还有 ' + un + ' 条没答'] : ['cur', '在线改或下载线下改']));
+      P('定稿生成', 'fa-lock', 'sheet',
+        st.finalized ? ['done', (live ? ver + '-final' : ver) + ' 已定稿'] : ['todo', '未定稿']);
+    }
+    if (st.finalized || imp) {
+      var pend = c ? c.sk : (o.skips || 0);
+      P('入库检查', 'fa-check-circle', 'f3',
+        imp ? ['done', '真缺陷 0 · 已放行'] : ['cur', '按动词算写操作计划']);
+      if (pend) P('问题箱 · 入库', 'fa-question-circle', 'f3', ['blocked', pend + ' 处跳过要再问一次']);
+      P('入库完成', 'fa-database', 'f3',
+        imp ? ['done', (t.samples ? t.samples.length : 2) + ' 块已入库'] : ['cur', '待入库']);
+    }
+    return out;
   }
   function progress() {
     var el = document.getElementById('artNav'); if (!el) return;
-    var t = TS.sel(), ns = nodes(t);
-    el.innerHTML = NODES.map(function (nd, i) {
-      var st = ns[i][0], lab = ns[i][1];
-      return '<div class="pg-i s-' + st + '" onclick="WB.openArt(\'' + nd.k + '\')">' +
-        '<span class="dot"><i class="fa ' + (st === 'done' ? 'fa-check' : st === 'blocked' ? 'fa-exclamation'
-          : st === 'cur' ? 'fa-play' : '') + '"></i></span>' +
-        '<span class="ti"><i class="fa ' + nd.ic + '"></i>' + nd.ti + '</span>' +
-        '<em>' + esc(lab) + '</em></div>' + (i < 4 ? '<div class="pg-l s-' + ns[i][0] + '"></div>' : '');
+    var ns = steps(TS.sel());
+    el.innerHTML = ns.map(function (n, i) {
+      return '<div class="pg-i s-' + n.s[0] + '" onclick="WB.openArt(\'' + n.k + '\')">' +
+        '<span class="dot"><i class="fa ' + (n.s[0] === 'done' ? 'fa-check' : n.s[0] === 'blocked'
+          ? 'fa-exclamation' : n.s[0] === 'cur' ? 'fa-play' : '') + '"></i></span>' +
+        '<span class="ti"><i class="fa ' + n.ic + '"></i>' + esc(n.ti) + '</span>' +
+        '<em>' + esc(n.s[1]) + '</em></div>' + (i < ns.length - 1 ? '<div class="pg-l s-' + n.s[0] + '"></div>' : '');
     }).join('');
   }
   function icon(slot) {

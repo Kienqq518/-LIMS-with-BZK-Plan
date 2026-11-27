@@ -23,10 +23,10 @@
   <!-- 左：任务 + 本任务产物 -->
   <aside class="wb-tasks">
     <div class="wb-tasks-h"><b>拆解任务</b>
-      <span><button onclick="TS.create()">新建</button></span></div>
-    <div id="taskList" style="flex:1;overflow-y:auto"></div>
+      <span><button onclick="TS.create()" data-annotate="ws-new">新建</button></span></div>
+    <div id="taskList" data-annotate="ws-tasks" style="flex:1;overflow-y:auto"></div>
     <div class="wb-arts-h">任务进度</div>
-    <div class="wb-arts" id="artNav"></div>
+    <div class="wb-arts" id="artNav" data-annotate="ws-progress"></div>
   </aside>
 
   <!-- 中：对话即主区 -->
@@ -34,20 +34,19 @@
     <div class="wb-topbar">
       <span class="wb-title" id="wbTaskName">DL/T 802.3—2023</span>
       <span class="wb-spacer"></span>
-      <span id="peerBar" class="wb-peers"></span>
+      <span id="peerBar" class="wb-peers" data-annotate="ws-peers"></span>
       <button class="btn-outline" onclick="ORC.panel()">编排留痕 <b id="trcN">0</b></button>
-      <button class="btn-outline an-btn" id="btnAnno" onclick="AN.toggle()"><i class="fa fa-comment-o"></i> 批注</button>
       <span class="wb-bell" id="wbBell" style="display:none" onclick="WB.openArt('f3')">
         <i class="fa fa-bell-o"></i><span id="wbBellN">0</span></span>
-      <span id="wbDoc"></span>
+      <span id="wbDoc" data-annotate="ws-doc"></span>
     </div>
 
-    <div class="wb-stats" id="wbStats"></div>
+    <div class="wb-stats" id="wbStats" data-annotate="ws-stats"></div>
 
     <div class="wb-body">
       <div class="wb-cols">
         <div class="wb-conv" id="wbChat"></div>
-        <aside class="wb-side" id="side">
+        <aside class="wb-side" id="side" data-annotate="ws-side">
           <div class="wb-side-h"><div class="wb-side-tabs" id="sideTabs"></div>
             <span class="wb-spacer"></span><i class="fa fa-times" onclick="WB.closeSide()"></i></div>
           <div class="wb-side-b" id="sideBody"></div>
@@ -56,7 +55,7 @@
     </div>
 
     <div class="wb-dock" id="dock">
-      <div id="wbF1u"><div id="fzHost"></div></div>
+      <div id="wbF1u" data-annotate="ws-f1"><div id="fzHost"></div></div>
       <div id="wbInbox">
         <div class="wb-block" id="wbBlock"></div>
         <div class="wb-run" id="wbRun"><div class="wb-run-h">拆解进行中</div><div id="wbStages"></div></div>
@@ -65,7 +64,7 @@
         <div class="wb-inbox-foot"><span class="fg" id="wbGateTxt"></span>
           <button class="btn-save" id="btnRun" disabled onclick="WB.run()">生成稿件 v1-draft</button></div>
       </div>
-      <div id="wbF2">
+      <div id="wbF2" data-annotate="ws-f2">
         <div class="f2-tabs"><span id="f2Tabs" style="display:flex;gap:6px"></span>
           <span style="flex:1"></span>
           <button class="btn-outline" onclick="F2.openDiff()" title="线下改过的稿件传回来，和 AI 原稿、库内已入库版本放在一起逐条比"><i class="fa fa-exchange"></i> 对比线下改稿</button>
@@ -79,9 +78,9 @@
           </div>
           <aside class="f2-drawer" id="f2Drawer"></aside>
         </div>
-        <div class="f2-gate" id="f2Gate"></div>
+        <div class="f2-gate" id="f2Gate" data-annotate="ws-gate"></div>
       </div>
-      <div id="wbF3">
+      <div id="wbF3" data-annotate="ws-f3">
         <div class="wb-f3sum" id="wbF3Sum"></div>
         <div class="wb-f3card" id="wbF3W"></div>
         <div class="wb-f3card" id="wbF3Skip"></div>
@@ -93,23 +92,23 @@
       </div>
     </div>
 
-    <div class="wb-quick" id="quickBar"></div>
+    <div class="wb-quick" id="quickBar" data-annotate="ws-quick"></div>
     <input type="file" id="fileIn" multiple hidden />
     <!-- 悬浮提问胶囊 -->
     <div class="wb-batch">
       <i class="fa fa-magic ai-ic"></i>
-      <span class="wb-att">
+      <span class="wb-att" data-annotate="ws-att">
         <i class="fa fa-paperclip" title="上传附件" onclick="document.getElementById('fileIn').click()"></i>
         <i class="fa fa-image" title="上传图片或截图" onclick="document.getElementById('imgIn').click()"></i>
       </span>
       <div class="wb-batch-in">
         <div class="wb-chips" id="attChips"></div>
-        <input id="wbBatch" placeholder="问任何事，或让我改任何一处"
+        <input id="wbBatch" data-annotate="ws-input" placeholder="问任何事，或让我改任何一处"
                onkeydown="if(event.key==='Enter'){WB.ask(this.value);}" />
         <button class="btn-save" onclick="WB.ask(document.getElementById('wbBatch').value)"><i class="fa fa-arrow-right"></i></button>
       </div>
       <input type="file" id="imgIn" accept="image/*" multiple hidden />
-      <button class="wb-adoptall" onclick="WB.adoptAll()">全部采纳默认值</button>
+      <button class="wb-adoptall" data-annotate="ws-adoptall" onclick="WB.adoptAll()">全部采纳默认值</button>
       <div class="wb-preview" id="wbPreview"></div>
     </div>
   </section>
@@ -125,13 +124,18 @@
 <script src="js/ai-sample-orchestrator.js"></script>
 <script src="js/ai-sample-tasks.js"></script>
 <script src="js/ai-sample-share.js"></script>
-<script src="js/ai-sample-annotate.js"></script>
+<script src="js/prototype-annotation.js"></script>
+<script src="js/ai-sample-annotations.js"></script>
 <script src="js/ai-sample-demo.js"></script>
 <script>
+  /* 刷新即回到初始 mock：会话态、任务态、协作态每次加载都清掉。
+     标准成果库的写回结果不清，那是跨页演示"复利"的证据。 */
+  ['lims.wb.inbox.v1', 'lims.wb.tasks.v3', 'lims.wb.share.v1', 'lims.wb.demo.v1']
+    .forEach(function (k) { try { localStorage.removeItem(k); } catch (e) { } });
   WBInit(window.INBOX_SEED);
   WBsyncTasks();
   if (window.SHEET_SEED) F2.init(window.SHEET_SEED);
-  TS.render(); SH.paint(); AN.boot();
+  TS.render(); SH.paint(); PrototypeAnnotation.init({ annotations: window.WB_ANNOTATIONS || [] });
   document.getElementById('fileIn').addEventListener('change', function (e) { DEMO.pick(e.target.files); this.value = ''; });
   document.getElementById('imgIn').addEventListener('change', function (e) { DEMO.pickImages(e.target.files); this.value = ''; });
 </script>
