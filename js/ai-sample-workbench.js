@@ -1203,6 +1203,7 @@
       (t.hits.length ? esc(t.hits[0]) + '。' : '尚未命中库内成果。') +
       (t.outputs.length ? '稿件可直接入库，或下载后线下改。' : '补齐检测依据标准文件，我按 F1 拆。') + cards);
     paintChat(); render(); paintArts();
+    if (global.DEMO) DEMO.mountQuick();      // 按钮文案跟着任务换
   };
   function paintArts() { ['upload', 'inbox', 'sheet', 'f3'].forEach(renderStage); }
   WB.newTask = function () {

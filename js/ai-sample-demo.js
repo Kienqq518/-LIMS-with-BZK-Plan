@@ -91,16 +91,22 @@
     var q = document.getElementById('quickBar');
     if (q) q.innerHTML = quick();
   }
+  /* 快捷按钮报的是「当前选中任务」的状态，不是全局演示状态——
+     否则切到已入库的任务，按钮还挂着上一个任务的"已定稿"。 */
+  function quickState() {
+    if (!global.TS) return WB.status();
+    var t = TS.sel();
+    if (!t || t.cur) return WB.status();
+    var o = t.outputs[0] || {};
+    return { finalized: t.stage >= 3 || !!o.ver, imported: t.stage >= 4 || !!o.imported, ver: o.ver || '' };
+  }
   function quick() {
-    var b = function (k, ic, ti, on) {
-      return '<button class="qk" data-run="' + k + '"' + (on ? '' : ' disabled') + '>' +
-        '<i class="fa ' + ic + '"></i>' + ti + '</button>';
-    };
+    var st = quickState();
     return '<button class="qk" data-run="f1"><i class="fa fa-magic"></i>生成初版稿件</button>' +
       '<button class="qk" data-run="f2"><i class="fa fa-table"></i>' +
-      (global.WB && WB.status().finalized ? '已定稿 · 下载定稿' : '校稿与定稿') + '</button>' +
+      (st.finalized ? '已定稿 · 下载定稿' : '校稿与定稿') + '</button>' +
       '<button class="qk" data-run="f3"><i class="fa fa-database"></i>' +
-      (global.WB && WB.status().imported ? '已入库 · 看回执' : '预检入库') + '</button>';
+      (st.imported ? '已入库 · 看回执' : '预检入库') + '</button>';
   }
 
   /* ── 流式思考：以对话记录为唯一真源，每一步回写消息文本再局部重绘。
