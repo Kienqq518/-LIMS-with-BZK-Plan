@@ -198,6 +198,28 @@
   function groupOf(id) { return MERGE[id] || [id]; }
   function allMembers() { var a = []; GROUPS.forEach(function (g) { a = a.concat(g.members); }); return a; }
   function now() { var d = new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  /* 拆解成果是复利来源：生成 / 定稿 / 入库都必须回写标准文件库，两边读写同一份数据 */
+  function writeback(kind) {
+    if (!global.STDLib) return;
+    var code = (global.WBTasks && WBTasks[0] && WBTasks[0].code) || 'DL/T 802.3-2023';
+    var st = (global.SHEET_SEED || {}), cnt = function (sh) { return (st[sh] && st[sh].rows.length) || 0; };
+    var nparam = cnt('60_控制参数') + cnt('70_测量参数') + cnt('80_计算参数') + cnt('90_标称值');
+    var cover = '2 个样品 / 8 个型号 / ' + (st.tests ? Object.keys(st.tests).length : 16) + ' 个试验项 / ' +
+      nparam + ' 个参数 / ' + cnt('A1_判定条件') + ' 条判定条件';
+    var qa = RAW.filter(function (q) { return q.lv === '范围' && S.answers[q.id]; })
+      .map(function (q) { var a = S.answers[q.id]; return { q: q.q.slice(0, 40), a: a.other || a.choice }; });
+    var ver = 'v' + (global.ORCver || 1) + '-' + (kind === 'draft' ? 'draft' : 'final');
+    var rec = null;
+    if (kind === 'draft') rec = STDLib.onDraft(code, { ver: ver, cover: cover, precheck: '真缺陷 0 · 阻断 0', open: RAW.length });
+    else if (kind === 'final') rec = STDLib.onFinalize(code, { ver: ver, by: '李工（业务专家）', precheck: '真缺陷 0 · 阻断 0', qa: qa });
+    else rec = STDLib.onImport(code, { tenant: '迈特诺技术股份有限公司检测中心', deploy: '云部署',
+      ver: ver, blocks: 2, rows: nparam + cnt('A1_判定条件') + cnt('A2_结论映射') + cnt('61_映射明细'), how: '首次拆解' });
+    if (rec) {
+      say('sys', '系统', '已回写<b>标准文件库</b>：' + esc(code) + ' 的拆解成果更新为 <b>' + esc(ver) + '</b>' +
+        (kind === 'import' ? '，复用记录与变更记录已追加' : kind === 'final' ? '，沉淀范围级问答 ' + qa.length + ' 条（下个客户直接跳过）' : '，待定项 ' + RAW.length + ' 条') +
+        ' <span class="wb-loc" onclick="window.open(\'standard-library.html\')">打开标准文件库看</span>');
+    }
+  }
   function say(who, name, text) { S.chat.push({ who: who, name: name, text: text, at: now() }); }
 
   /* 只重画一张卡与相关计数，避免整树重渲染丢滚动位置与焦点（112 条规模下必须） */
@@ -377,7 +399,7 @@
         if (i >= nodes.length) {
           say('sys', '系统', '稿件 <b>v1-draft</b> 已生成，可下载给专家线下改。剩余字段级未答 ' +
             left() + ' 条；定稿前需清零或显式忽略。');
-          S.generated = 1; render(); return;
+          S.generated = 1; writeback('draft'); render(); return;
         }
         nodes[i].className = 'wb-stage on'; i++; setTimeout(step, 780);
       })();
@@ -535,7 +557,7 @@
         say('sys', '系统', '入库完成：2 个样品块全部成功，未触发回滚。' +
           (aiCnt() ? '已推送 <b>AI 自决清单</b>（' + aiMembers().length + ' 类 / ' + aiCnt() + ' 处）到客户站内消息。' : '') +
           ' <span class="tg">跳转样品数据页</span>');
-        S.imported = 1; save(); renderF3(); return;
+        S.imported = 1; writeback('import'); save(); renderF3(); return;
       }
       document.getElementById('imp' + i).className = 'wb-stage on'; i++; setTimeout(step, 900);
     })();
@@ -644,7 +666,7 @@
   var _render = render;
   render = function () { _render(); renderF1Sub(); };
 
-  WB.markFinal = function () { S.finalized = 1; S.generated = 1; save(); paintHeader(); };
+  WB.markFinal = function () { S.finalized = 1; S.generated = 1; writeback('final'); save(); paintHeader(); };
   WB.markGenerated = function () { S.generated = 1; if (S.imported) S.imported = 2; save(); paintHeader(); };
   WB.ask = function (t) {
     if (!t || !t.trim()) return;
