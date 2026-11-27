@@ -270,6 +270,7 @@
           '<button class="pv" onclick="DEMO.preview()">看内容</button></div>' +
           '范围级 ' + (WB.scopeLeft ? WB.scopeLeft() : 0) + ' 条必答，答完才能定稿入库。');
         WB.openArt('inbox');
+        if (WB.markGenerated) WB.markGenerated();   // 稿件已出，顶栏与进度节点必须跟着翻篇
         if (global.TS) TS.addOutput({ ver: D.ver, state: '初稿', sheets: sheets.length, size: D.size,
           rows: counts(), at: new Date().toLocaleString('zh-CN', { hour12: false }).slice(0, 16),
           hits: ['命中库内成果 v3-final'] });
