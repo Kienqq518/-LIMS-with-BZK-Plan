@@ -129,18 +129,25 @@
       '<span class="' + (PTAB === 'view' ? 'on' : '') + '" onclick="TS.tab(\'view\')">预览</span>';
     var body = document.getElementById('sideBody');
     var sk = global.WB ? WB.sideKey() : '';
-    document.getElementById('sideTabs').children[1].style.display = sk ? '' : 'none';
+    document.getElementById('sideTabs').children[1].style.display = '';
     if (PTAB === 'view') {
-      body.innerHTML = sk ? '<div data-mount="' + sk + '"></div>' : viewHtml();
-      if (sk && global.WB && WB.renderStage) WB.renderStage(sk);
-      if (global.WB && WB.sync) WB.sync();
+      if (sk) {
+        body.innerHTML = '<div data-mount="' + sk + '"></div>';
+        if (global.WB && WB.renderStage) WB.renderStage(sk);
+        if (global.WB && WB.sync) WB.sync();
+        return;
+      }
+      body.innerHTML = fileView();
       return;
     }
     var files = t.files.length ? t.files.map(function (f, i) {
-      return '<div class="pf"><span class="ic"><i class="fa ' + icon(f.slot) + '"></i></span>' +
+      var can = global.DEMO && DEMO.blob && DEMO.blob(f.name);
+      return '<div class="pf' + (can ? ' pv-ok' : '') + '"><span class="ic"><i class="fa ' + icon(f.slot) + '"></i></span>' +
         '<span class="nm" title="' + esc(f.name) + '">' + esc(f.name) + '</span>' +
         '<span class="sz">' + kb(f.size) + '</span>' +
         '<span class="sl">' + esc(SLOT_TI[f.slot] || '输入') + '</span>' +
+        (can ? '<i class="fa fa-eye" title="预览原件" onclick="TS.preview(' + i + ')"></i>'
+             : '<i class="fa fa-eye-slash" title="原型里没有这份原件，重新上传后即可预览"></i>') +
         '<i class="fa fa-times" onclick="TS.delFile(' + i + ')"></i></div>';
     }).join('') : '<div class="pe">还没有上传文件</div>';
     var outs = t.outputs.length ? t.outputs.map(function (o, i) {
@@ -232,6 +239,46 @@
       return '<div class="pv-i"><b>' + esc(k) + '</b><span>' + sd[k].rows.length + ' 行 × ' + sd[k].cols.length + ' 列</span></div>';
     }).join('') + '</div>';
   }
+  /* 原件预览：PDF 与图片用浏览器原生渲染，Office 类不做预览只给下载 */
+  function fileView() {
+    var t = TS.sel(), fs = t.files;
+    if (!fs.length) return '<div class="pe">这个任务还没有上传文件。</div>';
+    if (PVI >= fs.length) PVI = 0;
+    var f = fs[PVI], bl = (global.DEMO && DEMO.blob) ? DEMO.blob(f.name) : null;
+    var ext = (f.name.split('.').pop() || '').toLowerCase();
+    var tabs = '<div class="pv-tabs">' + fs.map(function (x, i) {
+      return '<span class="' + (i === PVI ? 'on' : '') + '" onclick="TS.preview(' + i + ')">' + esc(x.name) + '</span>';
+    }).join('') + '</div>';
+    if (!bl) return tabs + '<div class="pv-none"><i class="fa fa-file-o"></i>' +
+      '<p>原型里没有这份原件的二进制，重新上传后即可预览。<br/>' +
+      '标准成果库里已存档的文件，正式环境走文件本体下载或 OnlyOffice 预览。</p></div>';
+    if (ext === 'pdf') return tabs +
+      '<div class="pv-bar"><span class="t">' + esc(f.name) + '</span>' +
+      '<button class="btn-outline xs" onclick="TS.zoom()">放大</button></div>' +
+      '<iframe class="pv-pdf" src="' + bl.url + '#toolbar=0&navpanes=0" title="' + esc(f.name) + '"></iframe>';
+    if (bl.type.indexOf('image/') === 0) return tabs +
+      '<div class="pv-bar"><span class="t">' + esc(f.name) + '</span>' +
+      '<button class="btn-outline xs" onclick="TS.zoom()">放大</button></div>' +
+      '<div class="pv-img"><img src="' + bl.url + '" alt="' + esc(f.name) + '" /></div>';
+    return tabs + '<div class="pv-none"><i class="fa fa-file-excel-o"></i>' +
+      '<p><b>' + esc(f.name) + '</b> 是 Office 文档，浏览器里不做原件渲染。' +
+      '正式环境要"所见即原件"需自部署 OnlyOffice Document Server；' +
+      '稿件本身的结构与色标在「稿件表格」里已经可以逐格看。</p>' +
+      '<a class="dl" href="' + bl.url + '" download="' + esc(f.name) + '"><i class="fa fa-download"></i> 下载原件</a></div>';
+  }
+  var PVI = 0;
+  TS.preview = function (i) { PVI = i; if (global.WB) WB.closeSide(); PTAB = 'view'; panel(); };
+  TS.zoom = function () {
+    var el = document.querySelector('#sideBody .pv-pdf, #sideBody .pv-img');
+    if (!el) return;
+    var m = document.createElement('div');
+    m.className = 'pv-full'; m.id = 'pvFull';
+    m.innerHTML = '<div class="pv-full-h"><span>' + esc(TS.sel().files[PVI].name) + '</span>' +
+      '<i class="fa fa-times"></i></div>' + (el.tagName === 'IFRAME'
+        ? '<iframe src="' + el.src + '"></iframe>' : '<img src="' + el.firstChild.src + '" />');
+    m.querySelector('.pv-full-h').addEventListener('click', function () { m.remove(); });
+    document.body.appendChild(m);
+  };
   TS.tab = function (t) { PTAB = t; panel(); };
   TS.progress = progress;
   TS.sideTitle = function () { return (global.WB && WB.sideKey()) ? (TS.sel().code + ' · 稿件预览') : '文件'; };

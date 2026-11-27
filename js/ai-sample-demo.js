@@ -10,7 +10,8 @@
     });
   };
   var D = { files: [], parsed: 0, manuscript: null, ver: 'v1-draft' };
-  var ATT = [];                       // 输入框里挂着的附件/图片
+  var ATT = [];
+  var BLOBS = {};                      // 文件名 → { url, type }：只存内存，刷新即清                       // 输入框里挂着的附件/图片
   function renderChips() {
     var el = document.getElementById('attChips'); if (!el) return;
     el.innerHTML = ATT.map(function (a, i) {
@@ -212,6 +213,7 @@
       Array.prototype.forEach.call(fl, function (f) {
         var it = { name: f.name, size: f.size, slot: slotOf(f.name) };
         if (demo) D.files.push(it);
+        try { BLOBS[f.name] = { url: URL.createObjectURL(f), type: f.type || '' }; } catch (e) { }
         added.push(it);
       });
       if (global.TS) TS.addFiles(added);
@@ -223,6 +225,7 @@
       var added = [];
       Array.prototype.forEach.call(fl, function (f) {
         added.push({ name: f.name, size: f.size, slot: 'img' });
+        try { BLOBS[f.name] = { url: URL.createObjectURL(f), type: f.type || 'image/' + (f.name.split('.').pop() || 'png') }; } catch (e) { }
       });
       if (!added.length) return;
       if (global.TS) TS.addFiles(added);
@@ -241,6 +244,7 @@
     resetState: function () { D.files = []; D.manuscript = null; D.ver = 'v1-draft'; ATT = []; renderChips(); render(); },
     attachments: function () { return ATT.slice(); },
     list: function () { return D.files.slice(); },
+    blob: function (n) { return BLOBS[n] || null; },
     sheetCount: sheetCount,
     paint: render,
     clearAttachments: function () { ATT = []; renderChips(); },
@@ -295,7 +299,7 @@
     f2: function () {
       if (global.WB && !WB.demo()) return WB.openArt('sheet');
       if (!D.manuscript) {
-        WB.say('ai', 'AI 助手', '这个任务还没有稿件可校。先生成初版稿件，或者上传线下改完的稿件直接做三方对比。');
+        WB.say('ai', 'AI 助手', '这个任务还没有稿件可校。先生成初版稿件，或者上传线下改完的稿件直接和上一版比差异。');
         WB.openArt('upload'); return;
       }
       WB.openArt('sheet');

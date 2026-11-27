@@ -356,16 +356,19 @@
     showExternalDiff: function (patches) {
       ST.sheet = patches[0].sheet; ST.extList = patches.slice(); render();
     },
-    /* ── 三方对比：库内基线 ↔ 本次上传 ↔ AI 原稿 ── */
+    /* ── 版本对比：上一版稿件 ↔ 本次上传 ── */
     openDiff: function () { ST.diff = buildDiff(); renderDiff(); },
     closeDiff: function () { ST.diff = null; ST.dFilter = '全部'; document.getElementById('f2Diff').classList.remove('show'); render(); },
     accept: function (i) { var d = ST.diff.list[i]; d.verdict = 'accept'; applyVerdict(d); renderDiff(); },
     revert: function (i) { var d = ST.diff.list[i]; d.verdict = 'revert'; renderDiff(); },
     toIssue: function (i) { var d = ST.diff.list[i]; d.verdict = 'issue'; renderDiff(); },
     acceptAll: function () {
-      // 尊重已经明确「回退」的行，一键接受不覆盖人的显式决定
+      // 一键确认 = 把还没处置的都按"采用本次上传"落定，已明确回退的不动
+      // 只跳过与标准文件冲突的：那些必须人逐条裁决，不替他按
       ST.diff.list.forEach(function (d) {
-        if (d.verdict !== 'issue' && d.verdict !== 'revert') { d.verdict = 'accept'; applyVerdict(d); }
+        if (d.kind === '冲突' && d.verdict !== 'accept') return;
+        if (d.verdict === 'accept') return;
+        d.verdict = 'accept'; applyVerdict(d);
       });
       renderDiff();
     },
@@ -381,16 +384,16 @@
   function applyVerdict(d) {
     var k = d.sheet + '|' + d.ri + '|' + d.col;
     if (d.verdict === 'accept') {
-      ST.edits[k] = d.upload;
+      ST.edits[k] = d.next;
       recomputeAll();
       if (WB.say) WB.say('sys', '系统', '接受线下改动 <span class="tg">' + esc(d.sheet) + '</span><span class="tg">' +
-        esc(d.row) + '</span><span class="tg">' + esc(d.col) + '</span> ' + esc(d.baseline || '∅') + ' → <b>' + esc(d.upload) + '</b>');
+        esc(d.row) + '</span><span class="tg">' + esc(d.col) + '</span> ' + esc(d.prev || '∅') + ' → <b>' + esc(d.next) + '</b>');
     } else if (d.verdict === 'revert') {
-      if (ST.edits[k] !== undefined && String(ST.edits[k]) === String(d.upload)) delete ST.edits[k];
+      if (ST.edits[k] !== undefined && String(ST.edits[k]) === String(d.next)) delete ST.edits[k];
       recomputeAll();
     }
   }
-  /* ── 三方对比：跨全部 sheet 逐格比对 库内基线 ↔ 本次上传 ↔ AI 原稿 ──
+  /* ── 版本对比：跨全部 sheet 逐格比对 上一版稿件 ↔ 本次上传 ──
    * 差异不是随手编的：每个 sheet 的"人改"与"冲突"都对应真实校验规则，
    * 冲突项必须处置掉才能合并，否则等于把线下 Excel 的错直接灌进稿件。 */
   var MUT = [
@@ -438,8 +441,8 @@
       var up = mu.fixed ? mu.fixed : (mu.flip ? (base === '开' ? '关' : '开') : bump(base, mu.dlt || 1));
       list.push({ sheet: mu.sh, ri: ri, row: String(pick[kc]), name: pick['标称值名称'] || pick['名称'] ||
         pick['参数编码'] || pick['归属键'] || pick[kc], col: mu.col,
-        baseline: base, ai: mu.kind === 'AI 重算' ? bump(base, 1) : base, upload: up,
-        kind: mu.kind, why: mu.why, verdict: mu.kind === '冲突' ? 'issue' : '' });
+        prev: base, next: up, kind: mu.kind, why: mu.why,
+        verdict: mu.kind === '冲突' ? '' : 'accept' });
     });
     return { list: list, file: 'DS实壁类塑料电缆导管_稿件_专家线下.xlsx',
       at: new Date().toLocaleString('zh-CN', { hour12: false }) };
@@ -450,57 +453,62 @@
     el.classList.add('show');
     var sheets = []; d.list.forEach(function (x) { if (sheets.indexOf(x.sheet) < 0) sheets.push(x.sheet); });
     var nAcc = d.list.filter(function (x) { return x.verdict === 'accept'; }).length;
-    var nIss = d.list.filter(function (x) { return x.verdict === 'issue'; }).length;
+    var nIss = d.list.filter(function (x) { return x.kind === '冲突' && !x.verdict; }).length;
     var nRev = d.list.filter(function (x) { return x.verdict === 'revert'; }).length;
     var shown = d.list.map(function (x, i) { return { x: x, i: i }; }).filter(function (o) {
       if (ST.dFilter === '冲突') return o.x.kind === '冲突';
       if (ST.dFilter && ST.dFilter !== '全部') return o.x.sheet === ST.dFilter;
       return true;
     });
-    el.innerHTML = '<div class="dh"><b>对比线下改稿</b><span>' + esc(d.file) + ' · ' + esc(d.at) + '</span>' +
-      '<span class="sp">库内基线（上次定稿 / 已入库） ↔ 本次上传 ↔ AI 原稿</span>' +
+    el.innerHTML = '<div class="dh"><b>对比上一版稿件</b><span>' + esc(d.file) + ' · ' + esc(d.at) + '</span>' +
+      '<span class="sp">上一版稿件 ↔ 本次上传</span>' +
       '<select onchange="F2.dfilter(this.value)">' +
       ['全部'].concat(sheets).map(function (o) {
         return '<option' + (ST.dFilter === o ? ' selected' : '') + '>' + esc(o) + '</option>';
       }).join('') + '</select>' +
       '<button class="btn-outline" onclick="F2.closeDiff()">收起</button></div>' +
-      '<table class="df-tbl"><tr><th>数据</th><th>列</th><th class="b">库内基线</th><th class="a">AI 原稿</th>' +
-      '<th class="u">本次上传</th><th>性质</th><th>处置</th></tr>' +
+      '<table class="df-tbl"><tr><th class="ck">采用</th><th>数据</th><th>列</th>' +
+      '<th class="b">上一版</th><th class="u">本次上传</th><th>性质</th><th></th></tr>' +
       shown.map(function (o) {
-        var x = o.x, i = o.i;
-        return '<tr class="' + (x.verdict || '') + (x.kind === '冲突' ? ' conf' : '') + '">' +
+        var x = o.x, i = o.i, conf = x.kind === '冲突';
+        return '<tr class="' + (x.verdict ? (x.verdict === 'revert' ? 'rev' : '') : (conf ? 'conf' : '')) + '">' +
+          '<td class="ck"><input type="checkbox" ' + (x.verdict === 'accept' ? 'checked' : '') +
+            (conf && !x.verdict ? ' data-conf="1"' : '') + ' onchange="F2.mark(' + i + ',this.checked)" /></td>' +
           '<td><b>' + esc(x.name) + '</b><code>' + esc(x.sheet) + ' · ' + esc(x.row) + '</code></td>' +
-          '<td>' + esc(x.col) + '</td><td class="b">' + esc(x.baseline || '∅') + '</td>' +
-          '<td class="a">' + esc(x.ai || '∅') + '</td><td class="u"><b>' + esc(x.upload) + '</b></td>' +
-          '<td><span class="kd ' + (x.kind === '冲突' ? 'c' : x.kind === '人改' ? 'h' : 'r') + '">' + esc(x.kind) + '</span>' +
+          '<td>' + esc(x.col) + '</td><td class="b">' + esc(x.prev || '∅') + '</td>' +
+          '<td class="u"><b>' + esc(x.next) + '</b></td>' +
+          '<td><span class="kd ' + (conf ? 'c' : 'h') + '">' + esc(x.kind) + '</span>' +
           '<div class="why">' + esc(x.why) + '</div></td>' +
           '<td>' + opBtns(x, i) + '</td></tr>';
       }).join('') + '</table>' +
-      '<div class="df-foot"><span>接受 <b class="ok">' + nAcc + '</b> · 回退 <b>' + nRev + '</b> · 转问题 <b class="warn">' + nIss + '</b></span>' +
-      '<button class="btn-outline" onclick="F2.acceptAll()">接受全部非冲突项</button>' +
-      '<button class="btn-save" ' + (nIss ? 'disabled title="还有 ' + nIss + ' 条冲突没处置"' : '') +
-      ' onclick="F2.mergeUpload()">合并进稿件新版本</button>' +
-      '<span class="tip">规则：人改的优先；人改的与校验规则冲突时不覆盖，转为收件箱问题。</span></div>';
+      '<div class="df-foot"><span>采用 <b class="ok">' + nAcc + '</b> · 回退上一版 <b>' + nRev + '</b>' +
+      (nIss ? ' · 冲突待处置 <b class="warn">' + nIss + '</b>' : '') + '</span>' +
+      '<button class="btn-outline" onclick="F2.acceptAll()">一键确认</button>' +
+      '<button class="btn-outline" onclick="F2.revertAll()">全部回退上一版</button>' +
+      '<button class="btn-save" ' + (nIss ? 'disabled title="还有 ' + nIss + ' 条与标准文件冲突，先处置"' : '') +
+      ' onclick="F2.mergeUpload()">合并成新版本</button>' +
+      '<span class="tip">默认全部采用本次上传；取消勾选即回退上一版。与检测依据标准文件冲突的不默认采用。</span></div>';
   }
   function opBtns(x, i) {
-    if (x.verdict === 'accept') return '<span class="ok">已接受</span><button class="btn-outline xs" onclick="F2.revert(' + i + ')">撤回</button>';
-    if (x.verdict === 'revert') return '<span class="ok">已回退到基线</span><button class="btn-outline xs" onclick="F2.accept(' + i + ')">改接受</button>';
-    if (x.verdict === 'issue') return '<span class="warn">已转问题</span>' +
-      '<button class="btn-outline xs" onclick="F2.accept(' + i + ')">按上传改</button>' +
-      '<button class="btn-outline xs" onclick="F2.revert(' + i + ')">按基线改</button>';
-    return '<button class="btn-save xs" onclick="F2.accept(' + i + ')">接受</button>' +
-      '<button class="btn-outline xs" onclick="F2.revert(' + i + ')">回退</button>';
+    if (x.verdict === 'revert') return '<button class="btn-outline xs" onclick="F2.mark(' + i + ',true)">改采用</button>';
+    if (x.kind === '冲突') return '<button class="btn-outline xs" onclick="F2.toIssue(' + i + ')">转问题</button>';
+    return '<button class="btn-outline xs" onclick="F2.mark(' + i + ',false)">回退上一版</button>';
   }
+  F2.mark = function (i, on) { ST.diff.list[i].verdict = on ? 'accept' : 'revert'; renderDiff(); };
+  F2.revertAll = function () {
+    ST.diff.list.forEach(function (x) { x.verdict = 'revert'; });
+    renderDiff();
+  };
   function mergeUpload() {
     var acc = ST.diff.list.filter(function (x) { return x.verdict === 'accept'; });
     if (!acc.length) { if (WB.toast) WB.toast('没有接受任何改动'); return; }
     var bySh = {};
-    acc.forEach(function (x) { applyExternalAt(x.sheet, x.ri, x.col, x.upload); bySh[x.sheet] = (bySh[x.sheet] || 0) + 1; });
+    acc.forEach(function (x) { applyExternalAt(x.sheet, x.ri, x.col, x.next); bySh[x.sheet] = (bySh[x.sheet] || 0) + 1; });
     var scope = Object.keys(bySh).map(function (k) { return k + ' ' + bySh[k] + ' 处'; }).join('、');
     ST.diff = null; ST.dFilter = '全部';
     document.getElementById('f2Diff').classList.remove('show');
     if (WB.say) {
-      WB.say('sys', '系统', '线下稿件已合并进新版本：接受 <b>' + acc.length + '</b> 处（' + esc(scope) + '）；' +
+      WB.say('sys', '系统', '本次上传已合并进新版本：采用 <b>' + acc.length + '</b> 处（' + esc(scope) + '）；' +
         '派生列已联动重算。');
       WB.say('ai', 'AI 助手', '合并后重跑 D0 校验：真缺陷 0。要入库就说「可以入库了」，或切到 F3。');
     }
