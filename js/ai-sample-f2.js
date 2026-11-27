@@ -268,13 +268,12 @@
     (WB.raws() || []).forEach(function (q) {
       var a = st[q.id]; if (!a) un++; else if (a.mode === 'skip') sk++;
     });
-    var ok = un === 0 && sk === 0;
-    g.innerHTML = '<span>未答<b class="' + (un ? 'warn' : 'ok') + '">' + un + '</b></span>' +
-      '<span>已跳过<b class="' + (sk ? 'warn' : 'ok') + '">' + sk + '</b><small>F3 二次确认</small></span>' +
-      '<span>阻断<b class="warn">2</b><small>待答即消除</small></span>' +
+    var ok = un === 0;                       // 跳过不阻塞定稿（口径：延迟决策，F3 再问）
+    g.innerHTML = '<span>未处置<b class="' + (un ? 'warn' : 'ok') + '">' + un + '</b></span>' +
+      '<span>已跳过<b>' + sk + '</b>' + (sk ? '<small>F3 再问</small>' : '') + '</span>' +
       '<span>真缺陷<b class="ok">0</b></span>' +
-      '<button class="btn-save" ' + (ok ? '' : 'disabled title="还有未答或跳过的待定项，不能定稿"') +
-      ' onclick="F2.finalize()">定 稿</button>';
+      '<button class="btn-save" ' + (ok ? '' : 'disabled title="还有 ' + un + ' 条未处置"') +
+      ' onclick="WB.finalize()">定 稿</button>';
   }
 
   /* ── 溯源抽屉 ── */
@@ -369,11 +368,7 @@
       renderDiff();
     },
     mergeUpload: function () { mergeUpload(); },
-    finalize: function () {
-      if (WB.markFinal) WB.markFinal();
-      if (WB.say) WB.say('sys', '系统', '稿件转 <b>v' + (global.ORCver || 1) + '-final</b> 定稿并锁定。定稿稿件不可变，再改需开新版本。');
-      renderGate();
-    },
+    finalize: function () { if (WB.finalize) WB.finalize(); },
     locate: function (sh, rowkey, col) {
       if (!SEED || SHEETS.indexOf(sh) < 0) return false;
       ST.sheet = sh; ST.hl = { row: rowkey, col: col };

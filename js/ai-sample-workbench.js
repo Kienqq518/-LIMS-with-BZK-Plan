@@ -403,9 +403,7 @@
       }
       var n = groupOf(id).length;
       groupOf(id).forEach(function (x) { S.answers[x] = { choice: '', other: '', mode: 'skip' }; });
-      say('sys', '系统', '跳过 ' + n + ' 处（' + esc(q.q.slice(0, 26)) + '…）。' +
-        '数据先按 AI 当前最优猜测 <b>' + esc((optsOf(q)[0] || '—')) + '</b> 占位，' +
-        '<b>不阻塞出稿</b>，但 F3 入库前会再问你一次。<span class="tg">可撤销</span>');
+      mini('skip', n, { v: (optsOf(q)[0] || '—'), c: n });
       save(); render();
     },
     undo: function (id) {
@@ -618,33 +616,31 @@
     groupOf(id).forEach(function (x) {
       S.answers[x] = { choice: p.value, other: '', mode: 'ai', basis: p.basis };
     });
-    say('sys', '系统', '二次仍跳过 → <b>AI 自决落库</b> ' + groupOf(id).length + ' 处，取值 <b>' + esc(p.value) +
-      '</b>（依据 ' + esc(p.basis) + '）。已生成自决清单，入库后通知客户。<span class="tg">可撤销</span>');
-    S.notified++; save(); render(); WBsyncTasks(); if (S.stage === 'f3') renderF3();
+    /* 同类动作合并成一条累计回执，不是一旦就刷一屏长句 */
+    mini('ai-decide', groupOf(id).length, { v: p.value, c: groupOf(id).length });
+    S.notified++; save(); render(); WBsyncTasks(); renderF3();
   };
+  /* 旧三 tab 时代的 stage 语义保留为别名：F1→收件箱，F2→表格，F3→预检 */
   WB.stage = function (k, focusId) {
     S.stage = k;
-    document.getElementById('wbInbox').style.display = k === 'f1' ? '' : 'none';
-    document.getElementById('wbF3').style.display = k === 'f3' ? '' : 'none';
-    var f2 = document.getElementById('wbF2');
-    if (f2) f2.style.display = k === 'f2' ? '' : 'none';
-    ['F1', 'F2', 'F3'].forEach(function (n) {
-      var e = document.getElementById('seg' + n);
-      if (e) e.className = 'wb-seg-i' + (k === n.toLowerCase() ? ' on' : '');
-    });
-    document.querySelector('.wb-batch').style.display = k === 'f1' ? '' : 'none';
-    if (k === 'f3') renderF3();
-    else if (k === 'f2') { if (global.F2) F2.render(); }
-    else { renderF1u(); render(); }
-    if (k === 'f1' && focusId) {
-      var c = document.getElementById('q_' + focusId) ||
-        (function () { var g = groupOf(focusId)[0]; return document.getElementById('q_' + g); })();
+    var map = { f1: 'inbox', f2: 'sheet', f3: 'f3', upload: 'upload' };
+    WB.openArt(map[k] || 'inbox');
+    if (focusId) setTimeout(function () {
+      var g = groupOf(focusId)[0], c = document.getElementById('q_' + g);
       if (c) { c.scrollIntoView({ block: 'center' }); c.classList.add('flash'); setTimeout(function () { c.classList.remove('flash'); }, 1400); }
-    }
+    }, 260);
   };
   WB.importRun = function () {
     if (skippedMembers().length) return;
     var el = document.getElementById('wbF3Run'); el.style.display = '';
+    var ver = S.finalized ? 'v' + (global.ORCver || 1) + '-final' : 'v' + (global.ORCver || 1) + '-draft';
+    var rows = 0;
+    if (global.SHEET_SEED) {
+      var sd = SHEET_SEED, gc = function (k) { return ((sd[k] || {}).rows || []).length; };
+      rows = gc('20_样品') + ' 样品 · ' + gc('40_型号') + ' 型号 · ' + gc('50_试验项') + ' 试验项 · ' +
+        (gc('60_控制参数') + gc('70_测量参数') + gc('80_计算参数') + gc('90_标称值')) + ' 参数 · ' +
+        gc('A1_判定条件') + ' 判定条件';
+    }
     var blocks = ['S01 DS实壁类电缆导管_直管', 'S02 DS实壁类塑料电缆导管_带承口'];
     el.innerHTML = '<h4>分块入库（按样品，一块一事务）</h4>' +
       blocks.map(function (b, i) {
@@ -656,10 +652,19 @@
       if (i > 0) { document.getElementById('imp' + (i - 1)).className = 'wb-stage done';
         document.getElementById('imp' + (i - 1)).querySelector('.out').textContent = '已入库 · 可回滚本块'; }
       if (i >= blocks.length) {
-        say('sys', '系统', '入库完成：2 个样品块全部成功，未触发回滚。' +
-          (aiCnt() ? '已推送 <b>AI 自决清单</b>（' + aiMembers().length + ' 类 / ' + aiCnt() + ' 处）到客户站内消息。' : '') +
-          ' <span class="tg">跳转样品数据页</span>');
-        S.imported = 1; writeback('import'); save(); renderF3(); return;
+        S.imported = 1; writeback('import'); save(); renderF3(); renderArtNav();
+        var f = global.DEMO ? DEMO.download() : null;
+        receipt('<div class="rc-t"><i class="fa fa-database"></i>入库完成 <b>2 个样品块</b>' +
+          '<span class="rc-m">' + ver + '</span></div>' +
+          '<div class="rc-l">写入 ' + rows + '。按样品分块，一块一事务，本次未触发回滚。' +
+          (aiCnt() ? '<b>' + aiCnt() + '</b> 处由 AI 自决落库，自决清单已推送到站内消息，' +
+            '每条写明落库取值、依据与回改路径。' : '全部数据来自人工确认的稿件。') +
+            '拆解成果已回写标准文件库。</div>',
+          '<a class="ra" href="sample-data-detail.html?cat=dlwz" target="_blank"><i class="fa fa-external-link"></i> 打开样品数据页</a>' +
+          (f ? '<a class="dl" download="' + f.name + '" href="' + f.url + '"><i class="fa fa-download"></i> 下载稿件</a>' : '') +
+          '<button class="ra" onclick="ORC.panel()">看编排留痕</button>');
+        if (global.DEMO) DEMO.mountQuick();
+        return;
       }
       document.getElementById('imp' + i).className = 'wb-stage on'; i++; setTimeout(step, 900);
     })();
@@ -786,6 +791,64 @@
   render = function () { _render(); renderF1Sub(); };
 
   WB.markFinal = function () { S.finalized = 1; S.generated = 1; writeback('final'); save(); paintHeader(); };
+  /* 回执：写动作必须在对话里留下可点的凭据，而不是只弹一句系统提示 */
+  function receipt(html, acts) {
+    say('ai', 'AI 助手', '<div class="rc">' + html + (acts ? '<div class="rc-a">' + acts + '</div>' : '') + '</div>');
+    paintChat();
+  }
+  WB.receipt = receipt;
+  function counts4() {
+    var un = 0, sk = 0;
+    RAW.forEach(function (q) { var a = S.answers[q.id]; if (!a) un++; else if (a.mode === 'skip') sk++; });
+    return { un: un, sk: sk, ai: aiCnt(), scope: SCOPE.filter(function (q) { return !S.answers[q.id]; }).length };
+  }
+  /* 同类动作合并成一行累计，避免一次批量操作刷出满屏长句 */
+  function mini(tag, n, item) {
+    var last = S.chat[S.chat.length - 1];
+    if (last && last.tag === tag) {
+      last.n += n; last.items.push(item); last.text = tag === 'skip' ? skipLine(last) : decideLine(last);
+      return last;
+    }
+    var m = { who: 'sys', name: '系统', at: now(), tag: tag, n: n, items: [item] };
+    m.text = tag === 'skip' ? skipLine(m) : decideLine(m);
+    S.chat.push(m); return m;
+  }
+  function skipLine(m) {
+    return '<span class="mini"><i class="fa fa-clock-o"></i><b>跳过 ' + m.n + ' 处</b>' +
+      (m.items.length > 2 ? '<span>· ' + m.items.length + ' 类</span>'
+        : '<span>· 占位 ' + esc(m.items[0].v) + '</span>') +
+      '<span class="u">不阻塞出稿 · F3 入库前再问 · 可撤销</span></span>';
+  }
+  function decideLine(m) {
+    var top = m.items.slice(0, 2).map(function (x) { return esc(x.v) + ' ×' + x.c; }).join('、');
+    return '<span class="mini"><i class="fa fa-magic"></i><b>AI 自决落库 ' + m.n + ' 处</b>' +
+      (m.items.length > 2 ? ' · ' + m.items.length + ' 类' : ' · ' + top) +
+      '<span class="u">入库后推送自决清单 · 可撤销</span></span>';
+  }
+  WB.counts = counts4;
+  WB.renderF3 = function () { renderF3(); };
+  WB.status = function () { return { generated: !!S.generated, finalized: !!S.finalized, imported: !!S.imported, ver: global.ORCver || 1 }; };
+  WB.finalize = function () {
+    var c = counts4();
+    if (c.un) {
+      say('ai', 'AI 助手', '还有 <b>' + c.un + '</b> 条没处置，不能定稿。' + artShell('inbox', { su: c.un + ' 条未处置' }, 1));
+      paintChat(); return;
+    }
+    var ver = 'v' + (global.ORCver = (global.ORCver || 1) + 1) + '-final';
+    WB.markFinal();
+    var f = global.DEMO ? DEMO.emit(ver) : null;
+    if (global.F2) F2.render();
+    renderF3(); renderArtNav();
+    receipt('<div class="rc-t"><i class="fa fa-lock"></i>稿件已定稿 <b>' + ver + '</b>' +
+      (f ? '<span class="rc-m">' + f.sheets + ' sheet · ' + Math.round(f.size / 1024) + ' KB</span>' : '') + '</div>' +
+      '<div class="rc-l">定稿不可变，再改会自动开新版本。' +
+      (c.sk ? '其中 <b>' + c.sk + '</b> 处是跳过——按口径不阻塞定稿，F3 入库前会再问一次。' : '全部问题均已人工确认。') +
+      (c.ai ? ' 已有 <b>' + c.ai + '</b> 处 AI 自决落库。' : '') + '拆解成果已回写标准文件库。</div>',
+      (f ? '<a class="dl" download="' + f.name + '" href="' + f.url + '"><i class="fa fa-download"></i> 下载定稿</a>' : '') +
+      '<button class="ra" onclick="WB.openArt(\'f3\')">去预检入库</button>' +
+      '<button class="ra" onclick="WB.openArt(\'sheet\')">看稿件表格</button>');
+    if (global.DEMO) DEMO.mountQuick();
+  };
   WB.markGenerated = function () { S.generated = 1; if (S.imported) S.imported = 2; save(); paintHeader(); };
   WB.ask = function (t) {
     if (!t || !t.trim()) return;

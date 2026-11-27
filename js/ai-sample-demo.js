@@ -85,9 +85,10 @@
       return '<button class="qk" data-run="' + k + '"' + (on ? '' : ' disabled') + '>' +
         '<i class="fa ' + ic + '"></i>' + ti + '</button>';
     };
-    return b('f1', 'fa-magic', 'F1 生成初版 Excel', !!D.files.length) +
-      b('f2', 'fa-table', 'F2 校稿 / 下载稿件', !!D.manuscript) +
-      b('f3', 'fa-database', 'F3 预检入库', !!D.manuscript);
+    var st = global.WB ? WB.status() : {};
+    return b('f1', 'fa-magic', D.manuscript ? 'F1 重新生成初版' : 'F1 生成初版 Excel', !!D.files.length) +
+      b('f2', 'fa-table', st.finalized ? 'F2 已定稿 · 下载定稿' : 'F2 校稿 / 定稿', !!D.manuscript) +
+      b('f3', 'fa-database', st.imported ? 'F3 已入库' : 'F3 预检入库', !!D.manuscript);
   }
 
   /* ── 流式思考：以对话记录为唯一真源，每一步回写消息文本再局部重绘。
@@ -259,6 +260,10 @@
       var bl = new Blob([XLSX.build(D.manuscript)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       D.url = URL.createObjectURL(bl); D.size = bl.size;
       return { url: D.url, name: 'DLT-802.3-2023_' + D.ver + '.xlsx', size: D.size, sheets: D.manuscript.length };
+    },
+    emit: function (ver) {
+      D.ver = ver; DEMO.rebuild();
+      return { url: D.url, name: 'DLT-802.3-2023_' + ver + '.xlsx', size: D.size, sheets: D.manuscript.length };
     },
     download: function () { return D.manuscript ? { url: D.url, name: 'DLT-802.3-2023_' + D.ver + '.xlsx', size: D.size, sheets: D.manuscript.length } : DEMO.rebuild(); }
   };
