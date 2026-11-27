@@ -94,6 +94,8 @@ RULES = [
     ("V20", "A2_结论映射", "结论值", "同试验项不得出现两条相同结论", "告警", "存在重复结论，建议合并", "F3预检"),
     ("V26", "A2_结论映射", "聚合方式", "逻辑以「计数型」开头 ⇒ 计数对象/目标结论值/比较符/阈值(或阈值表达式) 四要素必填", "阻断", "计数型判定四要素不全", "F3预检"),
     ("V27", "A2_结论映射", "计数对象", "计数对象=线芯 ⇒ 该样品 是否电缆=是；=样段 ⇒ 该试验项 是否制样=是", "阻断", "计数对象与样品/试验项属性冲突", "F3预检"),
+    ("V28", "A2_结论映射", "目标结论值", "计数型的目标结论值必须是本试验项某个下拉选项参数的可选项之一", "阻断", "统计了一个系统里不存在的结论值", "F3预检"),
+    ("V28b", "A2_结论映射", "阈值", "阈值（常量）不得超过计数对象总条数；用阈值表达式时表达式非空", "阻断", "阈值超过总数或换算表达式缺失", "F3预检"),
     ("V21", "90_标称值", "标称值键", "被 A1 引用的标称值不得删除", "阻断", "标称值被判定引用，需先解除绑定", "F2重算"),
     ("V22", "B0_采集配置", "计算顺序", "必须构成拓扑序：公式引用者序号 > 被引用者序号", "阻断", "计算顺序违反依赖关系", "F3预检"),
     ("V23", "B0_采集配置", "计算顺序", "从1连续、无重复、覆盖全部参数", "阻断", "采集配置缺参数或序号断裂", "F3预检"),
@@ -132,6 +134,63 @@ def sym_map_text(P, tkey, expr):
                 hits.append("%s={%s|%s}" % (token, nm, sym or nm))
                 break
     return "; ".join(hits)
+
+
+COUNT_SYNONYM = {"不破裂": ["未破裂", "无破裂", "不破裂"],
+                 "破裂": ["有破裂", "破裂", "是"],
+                 "不漏水": ["无渗漏", "不漏", "不漏水"], "不渗水": ["无渗", "不渗水"],
+                 "不分层": ["无分层", "不分层"]}
+FAIL_WORDS = "破裂|破坏|击穿|分层|漏水|渗水|裂纹"
+
+
+def parse_count_rule(text):
+    """从标准 / 记录单的自然语言里识别计数型判定。
+    命中：「10个试样中至少有9个不破裂」「取10个试样，每个冲击一次，至少9个不破裂」
+          「10个试样中破裂数不超过1个」
+    必须不命中：「试样内、外壁均无破裂」——那是条件型全部满足，不是计数。"""
+    t = re.sub(r"\s+", "", str(text or ""))
+    if not t:
+        return None
+    if re.search(r"(?:内外壁|壁)?均无(?:破裂|分层|裂纹|漏水)", t) and "至少" not in t and "不超过" not in t:
+        return None
+    tot = re.search(r"(\d+)\s*[个根条只](?:试样|样段|管件|管材)", t)
+    n = key = op = logic = None
+    m = re.search(r"至少[有]?(\d+)[个根条]?(?:不|未|无)(" + FAIL_WORDS + r")", t)
+    if m:
+        n, key, op, logic = m.group(1), m.group(2), "≥", "计数型：满足条数达标"
+    else:
+        m = re.search(r"(\d+)[个根条]?(?:不|未|无)(" + FAIL_WORDS + r")及?以上", t)
+        if m:
+            n, key, op, logic = m.group(1), m.group(2), "≥", "计数型：满足条数达标"
+        else:
+            m = re.search(r"(?:不|未|无)(" + FAIL_WORDS + r")(?:的)?(?:数|个数)?(?:不少于|大于等于)(\d+)", t)
+            if m:
+                n, key, op, logic = m.group(2), m.group(1), "≥", "计数型：满足条数达标"
+            else:
+                m = re.search(r"(" + FAIL_WORDS + r")(?:的)?(?:数|个数)?不超过(\d+)", t)
+                if m:
+                    n, key, op, logic = m.group(2), m.group(1), "≤", "计数型：不满足条数超限"
+    if not n:
+        return None
+    target = key if key[0] in ("不", "未", "无") else "不" + key
+    if logic == "计数型：不满足条数超限":
+        target = key                      # 「破裂数 ≤ 1」统计的就是破裂
+    return {"聚合方式": "计数型", "逻辑": logic, "比较符": op, "阈值": str(n),
+            "总数": (tot.group(1) if tot else ""), "目标结论值": target,
+            "原文": re.sub(r"\s+", " ", str(text).strip())[:200]}
+
+
+def align_target(target, opts):
+    """标准说的结论值 ≠ 系统里的可选项字面值（不破裂 vs 未破裂）。
+    能对齐就对齐并留痕；对不上就报出来——绝不能去统计一个系统里不存在的值。"""
+    if not opts:
+        return target, "该判定引用的参数没有可选项清单，无法校验目标结论值是否真的存在"
+    if target in opts:
+        return target, ""
+    for syn in COUNT_SYNONYM.get(target, []):
+        if syn in opts:
+            return syn, "标准写「%s」，系统可选项是「%s」，按同义词对齐" % (target, syn)
+    return target, "标准写「%s」，但该参数可选项只有 %s，没有对得上的值" % (target, "、".join(opts))
 
 
 def clean_unit(u):
@@ -233,6 +292,9 @@ def nom_report_expr(nom_row, map_rows=None, spec_unit=None):
     return ""
 
 
+OPT_POOL = {}      # 参数键 → 可选项清单，供计数型判定的目标结论值对齐
+
+
 ROUND_ONLY = re.compile(r"^(四舍五入|四舍六入五成双|全进位|全舍弃|直接取值)[，,、]?\s*(?:保留(\d+)位小数)?$")
 
 
@@ -243,6 +305,68 @@ def round_only(expr):
     if not m:
         return e, "", ""
     return "", m.group(1), (m.group(2) or "")
+
+
+def seg_n(t):
+    m = re.search(r"样段数\s*=\s*(\d+)", " ".join(t.get("notes") or []))
+    return int(m.group(1)) if m else 1
+
+
+def sy_n(t):
+    m = re.search(r"试样数\s*=\s*(\d+)", " ".join(t.get("notes") or []))
+    return int(m.group(1)) if m else 1
+
+
+def find_opt_pool(P, tkey, cr):
+    """在本试验项的测量参数里找可选项清单：优先绑定层级与计数对象一致的下拉选项参数。"""
+    rows70 = [dict(zip(COLS["70_测量参数"], x)) for x in P.rows["70_测量参数"] if x[COLS["70_测量参数"].index("试验项键")] == tkey]
+    for r in rows70:
+        pk = r["参数键"]
+        if pk in OPT_POOL:
+            return pk, OPT_POOL[pk], r
+    return "", [], None
+
+
+def count_emit(P, tkey, tname, cr, cond, jg, i):
+    """计数型判定的三个真实难点：① 标准说的「试样」未必等于系统的试样；
+    ② 标准说的结论值未必等于系统里的可选项字面；③ Word 常把它写成人工判定。
+    三处都不替人决定，全部挂待定项。"""
+    res = {"obj": "试样", "target": cr["目标结论值"], "src": "常量", "expr": ""}
+    # ① 计数对象：拿总数与该试验项的样段数 / 试样数对齐
+    seg = next((x for x in P.rows["50_试验项"] if x[COLS["50_试验项"].index("试验项键")] == tkey), None)
+    nseg = str(seg[COLS["50_试验项"].index("样段")]) if seg else ""
+    nsy = str(seg[COLS["50_试验项"].index("试样数量")]) if seg else ""
+    tot = cr["总数"]
+    if tot and nseg and tot == nseg and tot != nsy:
+        res["obj"] = "样段"
+        P.open_issue("范围", "A2_结论映射", tkey, "计数对象", "冲突", 0.35,
+                     "标准原文是「%s」，字面写的是试样；但系统里该试验项 试样数量=%s、样段数=%s，"
+                     "被统计的 %s 个对象实际是样段。计数对象按哪个？" % (cr["原文"][:40], nsy, nseg, tot),
+                     "样段（与样段数一致，推荐）、试样（需把试样数量改成 %s）" % tot, cr["原文"][:60])
+    elif tot and nsy and tot == nsy:
+        res["obj"] = "试样"
+    # ② 目标结论值对齐可选项
+    pk, opts, _r70 = find_opt_pool(P, tkey, cr)
+    tgt, note = align_target(cr["目标结论值"], opts)
+    res["target"] = tgt
+    if note:
+        P.open_issue("字段", "A2_结论映射", tkey, "目标结论值", "冲突" if "没有对得上" in note else "AI推断",
+                     0.4 if "同义词" in note else 0.2,
+                     "「%s」的计数判定要统计「%s」，但可选项清单是 %s。%s" % (
+                         tname, cr["目标结论值"], "、".join(opts) or "（空）", note),
+                     "按同义词统计「%s」、改可选项命名为「%s」、这条其实是人工判定不自动统计" % (tgt, cr["目标结论值"]),
+                     cr["原文"][:60])
+    # ③ 人工判定 → 建议系统判定
+    way = ""
+    for row in jg[1:]:
+        if len(row) > 1 and "判定方式" in str(jg[0][1] if len(jg[0]) > 1 else ""):
+            way = str(row[1])
+    if "人工" in str(cond) or True:
+        P.open_issue("字段", "A0_判定配置", tkey, "判定方式", "AI推断", 0.5,
+                     "Word 把这条写成人工判定（检测员自己数），但「%s %s %s」是机器可校验的计数规则。"
+                     "要不要改成系统判定自动统计？" % (tgt, cr["比较符"], cr["阈值"]),
+                     "改系统判定自动统计、保持人工判定、先系统判定但允许人工覆盖", cr["原文"][:60])
+    return res
 
 
 def finalize_codes(P):
@@ -465,6 +589,8 @@ def convert(src, dst):
             if t.startswith("📝") or t.startswith("产品标记"):
                 if "产品标记" in t or t.startswith("DS {") or t.startswith("📝 示例"):
                     mark_rule = mark_rule or t
+                if cur_test is not None and t.startswith("📝"):
+                    cur_test.setdefault("notes", []).append(t)
             m = re.match(r"^型号[:：]\s*([A-Za-z0-9\-/]+)（(.+)）", t)
             if m and st.startswith("Heading"):
                 models.append({"code": m.group(1), "name": m.group(2), "grid": None,
@@ -673,8 +799,9 @@ def convert(src, dst):
             bad = [c for c in cats if c not in DICT_CATEGORY]
             P.add("50_试验项", 任务键=TASK, 试验项键=tkey, 归属类型=owner_type, 归属键=owner_key,
                   试验名称=tname, 试验编码=tcode, 质量特性=d.get("质量特性", ""),
-                  检测类别="、".join(cats), 是否制样="是", 多芯电缆试验线芯数="", 样段=1, 启用样段="是",
-                  试样数量=1, 试样类别代码="", 试验过程="", 标准要求=d.get("标准要求", ""),
+                  检测类别="、".join(cats), 是否制样="是", 多芯电缆试验线芯数="",
+                  样段=seg_n(t), 启用样段="是", 试样数量=sy_n(t),
+                  试样类别代码="", 试验过程="", 标准要求=d.get("标准要求", ""),
                   检测费用元="", 检测设备="", 状态="启用", 排序=len(P.rows["50_试验项"]) + 1)
             if len(infos) > 1 and len(infos) != len(owns):
                 P.open_issue("范围", "50_试验项", tkey, "归属键", "AI推断", 0.45,
@@ -754,7 +881,14 @@ def convert(src, dst):
                           单位=r[i["单位"]] if "单位" in i else "", 测量次数=int(times),
                           修约方式=mode, 修约精度=(dg.group(1) if dg else ""),
                           条件修约="否", 排序=len(P.rows["70_测量参数"]) + 1)
-                    if (r[i["类型"]] if "类型" in i else "") == "下拉选项":
+                    opts_raw = str(r[i["可选项"]] if "可选项" in i else "").strip()
+                    if opts_raw and opts_raw not in ("—", "-", "－"):
+                        lst = [x.strip() for x in re.split(r"[/、,，]+", opts_raw) if x.strip()]
+                        for oi, ov in enumerate(lst, 1):
+                            P.add("71_参数可选项", 参数键=pk, 序号=oi, 数据标签=ov,
+                                  是否默认="是" if oi == 1 else "否")
+                        OPT_POOL[pk] = lst
+                    elif (r[i["类型"]] if "类型" in i else "") == "下拉选项":
                         P.open_issue("字段", "70_测量参数", pk, "类型", "无来源", 0,
                                      "「%s」是下拉选项型参数，Word 里没写可选项。检测员实际能选哪些？" % r[i["参数名称"]],
                                      "破裂 / 无破裂、合格 / 不合格、通过 / 未通过、人工填写", "x.4 试验参数")
@@ -914,8 +1048,21 @@ def convert(src, dst):
                               对比符号="", 被对比标称值键="", 被对比参数键="", 自定义数值="",
                               子项结论来源="", 报告展开式="", 子项键=cur_sub,
                               原文条件=re.sub(r"\s+", " ", str(blk).strip())[:400])
-                    P.add("A2_结论映射", 试验项键=tkey, 结论序号=1, 结论值="合格", 逻辑="当满足所有条件时")
-                    P.add("A2_结论映射", 试验项键=tkey, 结论序号=2, 结论值="不合格", 逻辑="不满足任一条件时")
+                    cr = parse_count_rule(cond) or parse_count_rule(d.get("标准要求", ""))
+                    if cr:
+                        cnt = count_emit(P, tkey, tname, cr, cond, jg, i)
+                        # 两条结论是同一计数的互补，不能一条计数一条条件，否则判定不闭合
+                        for ci2, cv in enumerate(["合格", "不合格"], 1):
+                            pos = (cv == "合格")
+                            P.add("A2_结论映射", 试验项键=tkey, 结论序号=ci2, 结论值=cv,
+                                  逻辑=cr["逻辑"] if pos else ("计数型：不满足条数超限" if "满足条数" in cr["逻辑"] else "计数型：满足条数达标"),
+                                  聚合方式="计数型", 计数对象=cnt["obj"], 目标结论值=cnt["target"],
+                                  比较符=cr["比较符"] if pos else {"≥": "<", ">": "≤", "≤": ">", "<": "≥"}[cr["比较符"]],
+                                  阈值=(cr["阈值"] if cnt["src"] == "常量" else ""),
+                                  阈值表达式=cnt["expr"])
+                    else:
+                        P.add("A2_结论映射", 试验项键=tkey, 结论序号=1, 结论值="合格", 逻辑="当满足所有条件时", 聚合方式="条件型")
+                        P.add("A2_结论映射", 试验项键=tkey, 结论序号=2, 结论值="不合格", 逻辑="不满足任一条件时", 聚合方式="条件型")
                     P.open_issue("字段", "A1_判定条件", tkey, "对比参数键/被对比标称值键", "AI推断", 0.25,
                                  "「%s」的判定条件是自然语言（%s），契约要求引用到具体的参数键与标称值键。"
                                  % (tname, cond[:50]),
@@ -1154,6 +1301,25 @@ def check(path, out=None):
                 need.append("阈值或阈值表达式")
             if need:
                 R("V26", "阻断", r["试验项键"], "计数型判定缺：%s" % "、".join(need))
+            optsets = []
+            for pk in {m["参数键"] for m in data["71_参数可选项"]}:
+                p70 = next((x for x in data["70_测量参数"] if x["参数键"] == pk), None)
+                if p70 and p70["试验项键"] == r["试验项键"]:
+                    optsets.append([m["数据标签"] for m in data["71_参数可选项"] if m["参数键"] == pk])
+            if optsets and g(0, "目标结论值", r) and not any(g(0, "目标结论值", r) in o for o in optsets):
+                R("V28", "阻断", r["试验项键"], "目标结论值「%s」不在任何可选项里（可选：%s）"
+                  % (g(0, "目标结论值", r), "、".join("、".join(o) for o in optsets)))
+            try:
+                tv = int(g(0, "阈值", r) or 0)
+                tot = {"样段": None}.get("x")
+                t50 = next((x for x in data["50_试验项"] if x["试验项键"] == r["试验项键"]), None)
+                cap = int(str(t50["样段"])) if (t50 and g(0, "计数对象", r) == "样段") else (int(str(t50["试样数量"])) if t50 else 0)
+                if cap and tv > cap:
+                    R("V28b", "阻断", r["试验项键"], "阈值 %d 超过计数对象总条数 %d" % (tv, cap))
+            except ValueError:
+                pass
+            if not (g(0, "阈值", r) or g(0, "阈值表达式", r)):
+                R("V28b", "阻断", r["试验项键"], "计数型判定既没有阈值也没有阈值表达式")
             co = g(0, "计数对象", r)
             t = next((x for x in data["50_试验项"] if x["试验项键"] == r["试验项键"]), None)
             sp = next((x for x in data["20_样品"] if t and x["样品键"] == str(t["归属键"]).split("-")[0]), None)
@@ -1203,16 +1369,24 @@ def check(path, out=None):
 
     # 阻断分两类：有未回答待定项兜底（F2 答完即消除）/ 无兜底（转换或契约缺陷，必须改代码）
     rule_sheet = {r[0]: r[1] for r in RULES}
-    open_q = set()
+    rule_col = {r[0]: r[2] for r in RULES}
+    open_q, open_q_col = set(), set()
     for q in data["C0_待定项"]:
         if str(q.get("人工回答", "") or "").strip():
             continue
-        open_q.add((str(q.get("目标sheet", "") or ""), str(q.get("目标行键", "") or "")))
+        sh, rk, cl = (str(q.get("目标sheet", "") or ""), str(q.get("目标行键", "") or ""), str(q.get("目标列", "") or ""))
+        open_q.add((sh, rk))
+        for c in cl.split("/"):
+            open_q_col.add((sh, rk, c.strip()))
     deferred, hard = [], []
     for rid, lvl, obj, msg in res:
         if lvl != "阻断":
             continue
-        (deferred if (rule_sheet.get(rid, ""), obj) in open_q else hard).append((rid, lvl, obj, msg))
+        sh = rule_sheet.get(rid, "")
+        col = rule_col.get(rid, "")
+        # 只有当待定项问的就是这一列，才算「回答即可消除」；否则是真缺陷
+        hit = (sh, obj, col) in open_q_col or any((sh, obj, c) in open_q_col for c in col.split("/"))
+        (deferred if hit else hard).append((rid, lvl, obj, msg))
     lines = ["# 预检报告 · %s" % os.path.basename(path), ""]
     lines.append("- 契约版本：%s" % CONTRACT)
     lines.append("- 校验规则：%d 条（D0）" % len(RULES))
