@@ -23,7 +23,7 @@
   <!-- 左：任务 + 本任务产物 -->
   <aside class="wb-tasks">
     <div class="wb-tasks-h"><b>拆解任务</b>
-      <button onclick="WB.reset()">重置演示</button></div>
+      <span><button onclick="TS.create()">新建</button><button onclick="WB.reset()">重置</button></span></div>
     <div id="taskList" style="flex:1;overflow-y:auto"></div>
     <div class="wb-arts-h">本任务产物</div>
     <div class="wb-arts" id="artNav"></div>
@@ -47,8 +47,8 @@
       <div class="wb-cols">
         <div class="wb-conv" id="wbChat"></div>
         <aside class="wb-side" id="side">
-          <div class="wb-side-h"><b id="sideTitle"></b><span class="wb-spacer"></span>
-            <i class="fa fa-times" onclick="WB.closeSide()"></i></div>
+          <div class="wb-side-h"><div class="wb-side-tabs" id="sideTabs"></div>
+            <span class="wb-spacer"></span><i class="fa fa-times" onclick="WB.closeSide()"></i></div>
           <div class="wb-side-b" id="sideBody"></div>
         </aside>
       </div>
@@ -96,11 +96,17 @@
     <!-- 悬浮提问胶囊 -->
     <div class="wb-batch">
       <i class="fa fa-magic ai-ic"></i>
+      <span class="wb-att">
+        <i class="fa fa-paperclip" title="上传附件" onclick="document.getElementById('fileIn').click()"></i>
+        <i class="fa fa-image" title="上传图片或截图" onclick="document.getElementById('imgIn').click()"></i>
+      </span>
       <div class="wb-batch-in">
+        <div class="wb-chips" id="attChips"></div>
         <input id="wbBatch" placeholder="问任何事，或让我改任何一处"
-               onkeydown="if(event.key==='Enter'){WB.ask(this.value);this.value='';}" />
+               onkeydown="if(event.key==='Enter'){WB.ask(this.value);}" />
         <button class="btn-save" onclick="WB.ask(document.getElementById('wbBatch').value)"><i class="fa fa-arrow-right"></i></button>
       </div>
+      <input type="file" id="imgIn" accept="image/*" multiple hidden />
       <button class="wb-adoptall" onclick="WB.adoptAll()">全部采纳默认值</button>
       <div class="wb-preview" id="wbPreview"></div>
     </div>
@@ -115,13 +121,15 @@
 <script src="js/ai-sample-workbench.js"></script>
 <script src="js/ai-sample-f2.js"></script>
 <script src="js/ai-sample-orchestrator.js"></script>
+<script src="js/ai-sample-tasks.js"></script>
 <script src="js/ai-sample-demo.js"></script>
 <script>
   WBInit(window.INBOX_SEED);
   WBsyncTasks();
   if (window.SHEET_SEED) F2.init(window.SHEET_SEED);
-  WB.boot();
+  TS.render();
   document.getElementById('fileIn').addEventListener('change', function (e) { DEMO.pick(e.target.files); this.value = ''; });
+  document.getElementById('imgIn').addEventListener('change', function (e) { DEMO.pickImages(e.target.files); this.value = ''; });
 </script>
 <div class="trc-mask" id="trcMask" onclick="if(event.target===this)WB.closeTrace()">
   <div class="trc-box">

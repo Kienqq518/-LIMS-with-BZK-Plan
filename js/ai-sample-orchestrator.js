@@ -276,11 +276,11 @@
   }
 
   var ORC = {
-    ask: function (text) {
+    ask: function (text, silent) {
       var it = classify(text);
       var p = plan(it, text);
       PLANS[p.id] = p;
-      WB.say('me', '你', esc(text));
+      if (!silent) WB.say('me', '你', esc(text));
       WB.say('ai', 'AI 助手', '识别意图：<b>' + esc(it) + '</b>' + (it === '改已入库' ? '（数据已入库，必须走稿件再重放）' : '') + renderPlan(p));
       if (it === '查询解释') explain(text);
       if (it === '其他') {

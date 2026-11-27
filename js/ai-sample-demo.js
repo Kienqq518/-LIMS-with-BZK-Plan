@@ -10,6 +10,16 @@
     });
   };
   var D = { files: [], parsed: 0, manuscript: null, ver: 'v1-draft' };
+  var ATT = [];                       // 输入框里挂着的附件/图片
+  function renderChips() {
+    var el = document.getElementById('attChips'); if (!el) return;
+    el.innerHTML = ATT.map(function (a, i) {
+      return '<span class="ac' + (a.slot === 'img' ? ' img' : '') + '">' +
+        (a.slot === 'img' ? '<i class="fa fa-image"></i>' : '<i class="fa fa-paperclip"></i>') +
+        esc(a.name.length > 18 ? a.name.slice(0, 17) + '…' : a.name) +
+        '<i class="fa fa-times" onclick="DEMO.unattach(' + i + ')"></i></span>';
+    }).join('');
+  }
   /* 判断顺序即优先级：记录单/报告里也带标准号，先认它，否则会被归成标准文件 */
   var SLOT_OF = [
     { k: 'rec', re: /记录|报告|原始|试验单|\.docm?$/i, ti: '检测报告 / 原始记录单', must: 0 },
@@ -85,10 +95,11 @@
       return '<button class="qk" data-run="' + k + '"' + (on ? '' : ' disabled') + '>' +
         '<i class="fa ' + ic + '"></i>' + ti + '</button>';
     };
-    var st = global.WB ? WB.status() : {};
-    return b('f1', 'fa-magic', D.manuscript ? 'F1 重新生成初版' : 'F1 生成初版 Excel', !!D.files.length) +
-      b('f2', 'fa-table', st.finalized ? 'F2 已定稿 · 下载定稿' : 'F2 校稿 / 定稿', !!D.manuscript) +
-      b('f3', 'fa-database', st.imported ? 'F3 已入库' : 'F3 预检入库', !!D.manuscript);
+    return '<button class="qk" data-run="f1"><i class="fa fa-magic"></i>生成初版稿件</button>' +
+      '<button class="qk" data-run="f2"><i class="fa fa-table"></i>' +
+      (global.WB && WB.status().finalized ? '已定稿 · 下载定稿' : '校稿与定稿') + '</button>' +
+      '<button class="qk" data-run="f3"><i class="fa fa-database"></i>' +
+      (global.WB && WB.status().imported ? '已入库 · 看回执' : '预检入库') + '</button>';
   }
 
   /* ── 流式思考：以对话记录为唯一真源，每一步回写消息文本再局部重绘。
@@ -196,20 +207,45 @@
 
   var DEMO = {
     pick: function (fl) {
+      var added = [];
+      var demo = !global.WB || WB.demo();
       Array.prototype.forEach.call(fl, function (f) {
-        D.files.push({ name: f.name, size: f.size, slot: slotOf(f.name) });
+        var it = { name: f.name, size: f.size, slot: slotOf(f.name) };
+        if (demo) D.files.push(it);
+        added.push(it);
       });
+      if (global.TS) TS.addFiles(added);
+      if (!demo && added.length) WB.archNote(false);
       render();
+    },
+    pickImages: function (fl) {
+      var added = [];
+      Array.prototype.forEach.call(fl, function (f) {
+        added.push({ name: f.name, size: f.size, slot: 'img' });
+      });
+      if (!added.length) return;
+      if (global.TS) TS.addFiles(added);
+      ATT.push.apply(ATT, added);
+      renderChips();
+      WB.say('ai', 'AI 助手', '已挂上 ' + added.length + ' 张图。说一句要我做什么都行，随消息一起发出。');
     },
     drop: function (ev) {
       ev.preventDefault(); ev.stopPropagation();
       var el = document.getElementById('fz'); if (el) el.classList.remove('over');
       DEMO.pick(ev.dataTransfer.files);
     },
-    del: function (i) { D.files.splice(i, 1); render(); },
+    del: function (i) { D.files.splice(i, 1); if (global.TS) TS.delFile(i); render(); },
+    unattach: function (i) { ATT.splice(i, 1); renderChips(); },
+    resetState: function () { D.files = []; D.manuscript = null; D.ver = 'v1-draft'; ATT = []; renderChips(); render(); },
+    attachments: function () { return ATT.slice(); },
+    clearAttachments: function () { ATT = []; renderChips(); },
     /* F1：流式思考 → 产出真实 xlsx */
     f1: function () {
-      if (!D.files.length) return;
+      if (global.WB && !WB.demo()) return WB.openArt('upload');
+      if (!D.files.length) {
+        WB.say('ai', 'AI 助手', '还没有料。先把<b>检测能力范围表</b>和<b>检测依据标准文件</b>放进来——可以拖进上面的区域，也可以点输入框左边的回形针。');
+        WB.openArt('upload'); return;
+      }
       var cap = D.files.filter(function (f) { return f.slot === 'cap'; })[0];
       var std = D.files.filter(function (f) { return f.slot === 'std'; })[0];
       var lines = [
@@ -233,6 +269,9 @@
           '<button class="pv" onclick="DEMO.preview()">看内容</button></div>' +
           '范围级 ' + (WB.scopeLeft ? WB.scopeLeft() : 0) + ' 条必答，答完才能定稿入库。');
         WB.openArt('inbox');
+        if (global.TS) TS.addOutput({ ver: D.ver, state: '初稿', sheets: sheets.length, size: D.size,
+          rows: counts(), at: new Date().toLocaleString('zh-CN', { hour12: false }).slice(0, 16),
+          hits: ['命中库内成果 v3-final'] });
         render();
       });
     },
@@ -246,12 +285,22 @@
     },
     /* F2：打开表格编辑，改完可下载新稿件 */
     f2: function () {
+      if (global.WB && !WB.demo()) return WB.openArt('sheet');
+      if (!D.manuscript) {
+        WB.say('ai', 'AI 助手', '这个任务还没有稿件可校。先生成初版稿件，或者上传线下改完的稿件直接做三方对比。');
+        WB.openArt('upload'); return;
+      }
       WB.openArt('sheet');
       if (D.manuscript) DEMO.rebuild();            // 带上人工改动，下载拿到的才是最新的
       WB.say('ai', 'AI 助手', '表格已展开，点任意单元格直接改。改完再点 F2 重新出稿件，下载拿到的就是最新的那份。');
     },
     /* F3：预检 → 分块入库 */
     f3: function () {
+      if (global.WB && !WB.demo()) return WB.openArt('f3');
+      if (!D.manuscript) {
+        WB.say('ai', 'AI 助手', '没有稿件可以入库。先生成初版稿件。');
+        WB.openArt('upload'); return;
+      }
       var left = WB.unanswered ? WB.unanswered() : 0, sl = WB.scopeLeft ? WB.scopeLeft() : 0;
       if (sl) { WB.openArt('inbox'); WB.say('ai', 'AI 助手', '范围级还有 <b>' + sl + '</b> 条必答，先答完才能入库。'); return; }
       think(['整包预检：38 条规则', '真缺陷 0 · 阻断 ' + (left ? left + ' 条待处置' : '0'),
@@ -276,6 +325,12 @@
       if (/入库|落到系统/.test(low)) { WB.say('me', '你', esc(t)); DEMO.f3(); return 1; }
       if (/校稿|改表格|看表格/.test(low)) { WB.say('me', '你', esc(t)); DEMO.f2(); return 1; }
       return 0;
+    },
+    forTask: function (t, o) {
+      var sheets = manuscript();
+      sheets[0].rows.push(['所属任务', t.code, '']);
+      var bl = new Blob([XLSX.build(sheets)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      return { url: URL.createObjectURL(bl), name: t.code.replace(/[—–\s]/g, '').replace(/[\/:]/g, '-') + '_' + o.ver + '.xlsx', size: bl.size };
     },
     state: function () { return { files: D.files, ver: D.ver, has: !!D.manuscript }; },
     load: function (st) {
