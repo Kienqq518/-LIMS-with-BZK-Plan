@@ -25,7 +25,7 @@
     <div class="wb-tasks-h"><b>拆解任务</b>
       <span><button onclick="TS.create()">新建</button><button onclick="WB.reset()">重置</button></span></div>
     <div id="taskList" style="flex:1;overflow-y:auto"></div>
-    <div class="wb-arts-h">本任务产物</div>
+    <div class="wb-arts-h">任务进度</div>
     <div class="wb-arts" id="artNav"></div>
   </aside>
 
@@ -33,10 +33,11 @@
   <section class="wb-main">
     <div class="wb-topbar">
       <span class="wb-title" id="wbTaskName">DL/T 802.3—2023</span>
-      <span class="wb-badge">内部档</span>
+      <span class="wb-badge" title="内部档可现推标准族并回流公司资产">内部档</span>
       <span class="wb-spacer"></span>
       <span id="peerBar" class="wb-peers"></span>
       <button class="btn-outline" onclick="ORC.panel()">编排留痕 <b id="trcN">0</b></button>
+      <button class="btn-outline an-btn" id="btnAnno" onclick="AN.toggle()"><i class="fa fa-comment-o"></i> 批注</button>
       <span class="wb-bell" id="wbBell" style="display:none" onclick="WB.openArt('f3')">
         <i class="fa fa-bell-o"></i><span id="wbBellN">0</span></span>
       <span id="wbDoc"></span>
@@ -68,7 +69,7 @@
       <div id="wbF2">
         <div class="f2-tabs"><span id="f2Tabs" style="display:flex;gap:6px"></span>
           <span style="flex:1"></span>
-          <button class="btn-outline" onclick="F2.openDiff()"><i class="fa fa-exchange"></i> 三方对比</button>
+          <button class="btn-outline" onclick="F2.openDiff()" title="线下改过的稿件传回来，和 AI 原稿、库内已入库版本放在一起逐条比"><i class="fa fa-exchange"></i> 对比线下改稿</button>
           <button class="btn-outline" onclick="WB.say('sys','系统','已导出稿件（23 张 sheet）');WB.toast&&0">下载稿件</button>
         </div>
         <div class="f2-wrap">
@@ -125,12 +126,13 @@
 <script src="js/ai-sample-orchestrator.js"></script>
 <script src="js/ai-sample-tasks.js"></script>
 <script src="js/ai-sample-share.js"></script>
+<script src="js/ai-sample-annotate.js"></script>
 <script src="js/ai-sample-demo.js"></script>
 <script>
   WBInit(window.INBOX_SEED);
   WBsyncTasks();
   if (window.SHEET_SEED) F2.init(window.SHEET_SEED);
-  TS.render(); SH.paint();
+  TS.render(); SH.paint(); AN.boot();
   document.getElementById('fileIn').addEventListener('change', function (e) { DEMO.pick(e.target.files); this.value = ''; });
   document.getElementById('imgIn').addEventListener('change', function (e) { DEMO.pickImages(e.target.files); this.value = ''; });
 </script>

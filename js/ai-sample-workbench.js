@@ -317,7 +317,7 @@
       '<label class="wb-opt"><input type="radio" name="o_' + esc(q.id) + '" ' + (a && a.other ? 'checked' : '') +
       ' onchange="WB.otherOn(\'' + esc(q.id) + '\')" />其他</label>' +
       '<div class="wb-other' + (a && (a.other || a.open) ? ' show' : '') + '" id="oth_' + esc(q.id) + '">' +
-      '<input placeholder="补充说明：" value="' + esc(a ? a.other : '') + '" oninput="WB.other(\'' + esc(q.id) + '\',this.value)" /></div>';
+      '<input placeholder="补充说明：" value="' + esc(a ? a.other : '') + '" oninput="WB.other(\'' + esc(q.id) + '\',this.value)" /></div></div>';
   }
   function optRow(q, o) { return optInner(q, o); }
   function qFoot(q) {
@@ -497,17 +497,8 @@
     else if (k === 'upload') renderF1u();
     syncSlots();
   }
-  function renderArtNav() {
-    var el = document.getElementById('artNav'); if (!el) return;
-    var live = Object.keys(ARTS).filter(function (k) { return document.getElementById('art_' + k); });
-    el.innerHTML = live.map(function (k) {
-      var a = ARTS[k], card = document.getElementById('art_' + k);
-      var warn = k === 'inbox' && WB.scopeLeft && WB.scopeLeft();
-      return '<div class="wb-arts-i' + (card && card.classList.contains('open') ? ' on' : '') + '" onclick="WB.jumpArt(\'' + k + '\')">' +
-        '<i class="fa ' + a.ic + '"></i>' + esc(a.ti) +
-        (warn ? '<span class="dotr"></span>' : '<em>' + esc(a.sum().split(' · ')[0]) + '</em>') + '</div>';
-    }).join('');
-  }
+  /* 左下只有一套：进度节点。产物卡该不该展开，由节点状态自己说 */
+  function renderArtNav() { if (global.TS && TS.progress) TS.progress(); }
   var _wb = {
     toggleArt: function (k) { OPEN[k] = !OPEN[k]; var c = document.getElementById('art_' + k);
       if (c) c.classList.toggle('open', !!OPEN[k]); renderStage(k); renderArtNav(); },
@@ -909,9 +900,9 @@
         receipt('<div class="rc-t"><i class="fa fa-database"></i>入库完成 <b>' + blocks.length + ' 个样品块</b>' +
           '<span class="rc-m">' + ver + '</span></div>' +
           '<div class="rc-l">写入 ' + rows + '。按样品分块，一块一事务，本次未触发回滚。' +
-          (function () { var p = alignPlan(), q = function (k) { return (p.by[k] || {}).n || 0; };
+          (tv ? '' : (function () { var p = alignPlan(), q = function (k) { return (p.by[k] || {}).n || 0; };
             return '新建 ' + (q('新建') + q('挂载')) + ' · 复用 ' + q('复用') +
-              ' · 变更 ' + q('变更') + ' · 停用 ' + q('停用') + '。'; })() +
+              ' · 变更 ' + q('变更') + ' · 停用 ' + q('停用') + '。'; })()) +
           (tv ? '该任务的 ' + ((tv.o.skips || 0)) + ' 处跳过项已在定稿前闭环。'
             : (aiCnt() ? '<b>' + aiCnt() + '</b> 处由 AI 自决落库，自决清单已推送到站内消息，' +
               '每条写明落库取值、依据与回改路径。' : '全部数据来自人工确认的稿件。')) +

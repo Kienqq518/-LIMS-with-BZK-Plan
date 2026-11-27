@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var KEY = 'lims.wb.tasks.v2';
+  var KEY = 'lims.wb.tasks.v3';
   var esc = function (v) {
     return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
@@ -17,6 +17,19 @@
     { code: 'GB/T 12706.2—2020', nm: '中压电力电缆（6kV~30kV）', status: '待补料', stage: 1, cur: 0,
       files: [{ name: '认可的检测能力范围(中文).pdf', size: 533504, slot: 'cap' }],
       outputs: [], hits: ['库里已有该标准，未拆解'], qa: [], samples: [] },
+    { code: 'IEC 61156-5:2012', nm: '铁路机车用通讯电缆（数据线）', status: '已入库', stage: 4, cur: 0,
+      files: [{ name: '认可的检测能力范围(中文).pdf', size: 533504, slot: 'cap' },
+        { name: 'IEC 61156-5-2012.pdf', size: 2129920, slot: 'std' },
+        { name: '数据线.docm', size: 118784, slot: 'rec' }],
+      outputs: [{ ver: 'v2-final', state: '定稿', sheets: 23, size: 651264, skips: 0, imported: 1,
+        impAt: '2026-05-09 09:12', rows: '1 样品 · 5 型号 · 6 试验项 · 58 参数 · 54 判定条件', at: '2026-05-08 17:26' }],
+      hits: ['命中库内成果 v2-final', '沉淀范围级问答 4 条', '报告 RC20260500101 已回读比对'],
+      samples: ['S01 铁路机车用通讯电缆'],
+      qa: [{ q: '特性阻抗技术要求写 100±15，系统里怎么落？', a: '标称值类型=区间 [85,115]', src: '报告 §7.1.2 · IEC 61156-5 表 3' },
+        { q: '衰减与串音按 9 个频率档逐一判定，用多行映射还是拆成 9 个参数？', a: '多行映射，自变量=频率', src: 'IEC 61156-5 表 2' },
+        { q: '线对1 / 线对2 各出一个结论，判断层级选哪个？', a: '线芯（每线对各判）', src: '报告 §7.1.1' },
+        { q: '报告符号「-」表示不要求判定，结论映射怎么表达？', a: '补一档「不判定」，不参与合格判定', src: '报告 §5 符号说明' }],
+    },
     { code: 'EN 50306-2:2020', nm: '铁路机车车辆电缆', status: '已定稿', stage: 3, cur: 0,
       files: [{ name: '认可的检测能力范围(中文).pdf', size: 533504, slot: 'cap' },
         { name: 'EN 50306-2.pdf', size: 1845760, slot: 'std' },
@@ -99,6 +112,7 @@
           (td ? '<span class="todo">待我 ' + td + '</span>' : '') + '</div></div>';
       }).join('');
       panel();
+      progress();
       if (global.SH) SH.paint();
     }
   };
@@ -151,6 +165,46 @@
         '<i class="fa fa-external-link"></i> 打开样品数据页</a>' +
         '<a class="plink" href="standard-library.html" target="_blank"><i class="fa fa-book"></i> 打开标准文件库</a></div>' : '');
   }
+  var NODES = [
+    { k: 'upload', ic: 'fa-upload', ti: '上传料' },
+    { k: 'upload', ic: 'fa-magic', ti: '拆解生成' },
+    { k: 'inbox', ic: 'fa-inbox', ti: '问题处置' },
+    { k: 'sheet', ic: 'fa-table', ti: '校稿定稿' },
+    { k: 'f3', ic: 'fa-database', ti: '预检入库' }
+  ];
+  /* 每个任务都算一遍五节点状态：演示任务读实时流水线，其余读它自己的存档 */
+  function nodes(t) {
+    var live = !!t.cur && global.WB;
+    var st = live ? WB.status() : { generated: t.stage >= 2, finalized: t.stage >= 3, imported: t.stage >= 4 };
+    var c = live && WB.counts ? WB.counts() : null;
+    var o = t.outputs[0] || {};
+    var imp = t.stage >= 4 || !!o.imported;
+    var ver = live ? 'v' + (global.ORCver || 1) : (o.ver || '');
+    var n = [];
+    n.push(t.files.length >= 3 ? ['done', t.files.length + ' 份料已齐']
+      : (t.files.length ? ['blocked', '还缺 ' + (3 - t.files.length) + ' 份料'] : ['todo', '未上传']));
+    n.push(st.generated ? ['done', live ? 'v1-draft 已出' : '已出稿 ' + (t.outputs.length || 1) + ' 版'] : ['todo', '未生成']);
+    if (live && c) n.push(c.un ? ['cur', (c.sk + c.ai) + ' 处已处置 · 剩 ' + c.un] : ['done', '全部处置完']);
+    else n.push(t.qa && t.qa.length ? ['done', t.qa.length + ' 条已沉淀'] :
+      (t.files.length >= 3 ? ['todo', '无待处置问题'] : ['blocked', '缺料，问不了']));
+    n.push(st.finalized ? ['done', (live ? ver + '-final' : ver) + ' 已定稿']
+      : (st.generated ? ['cur', '稿件待定稿'] : ['todo', '—']));
+    n.push(imp ? ['done', (t.samples ? t.samples.length : 2) + ' 块已入库']
+      : (st.finalized ? ['cur', '可入库'] : ['todo', '—']));
+    return n;
+  }
+  function progress() {
+    var el = document.getElementById('artNav'); if (!el) return;
+    var t = TS.sel(), ns = nodes(t);
+    el.innerHTML = NODES.map(function (nd, i) {
+      var st = ns[i][0], lab = ns[i][1];
+      return '<div class="pg-i ' + st + '" onclick="WB.openArt(\'' + nd.k + '\')">' +
+        '<span class="dot"><i class="fa ' + (st === 'done' ? 'fa-check' : st === 'blocked' ? 'fa-exclamation'
+          : st === 'cur' ? 'fa-play' : '') + '"></i></span>' +
+        '<span class="ti"><i class="fa ' + nd.ic + '"></i>' + nd.ti + '</span>' +
+        '<em>' + esc(lab) + '</em></div>' + (i < 4 ? '<div class="pg-l ' + ns[i][0] + '"></div>' : '');
+    }).join('');
+  }
   function icon(slot) {
     return slot === 'cap' ? 'fa-file-excel-o' : slot === 'rec' ? 'fa-file-text-o' : slot === 'img' ? 'fa-file-image-o' : 'fa-file-pdf-o';
   }
@@ -169,6 +223,7 @@
     }).join('') + '</div>';
   }
   TS.tab = function (t) { PTAB = t; panel(); };
+  TS.progress = progress;
   TS.sideTitle = function () { return (global.WB && WB.sideKey()) ? (TS.sel().code + ' · 稿件预览') : '文件'; };
   TS.dl = function (i) {
     var t = TS.sel(), o = t.outputs[i];

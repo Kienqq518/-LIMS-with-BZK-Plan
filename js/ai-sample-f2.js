@@ -457,7 +457,7 @@
       if (ST.dFilter && ST.dFilter !== '全部') return o.x.sheet === ST.dFilter;
       return true;
     });
-    el.innerHTML = '<div class="dh"><b>三方对比</b><span>' + esc(d.file) + ' · ' + esc(d.at) + '</span>' +
+    el.innerHTML = '<div class="dh"><b>对比线下改稿</b><span>' + esc(d.file) + ' · ' + esc(d.at) + '</span>' +
       '<span class="sp">库内基线（上次定稿 / 已入库） ↔ 本次上传 ↔ AI 原稿</span>' +
       '<select onchange="F2.dfilter(this.value)">' +
       ['全部'].concat(sheets).map(function (o) {
