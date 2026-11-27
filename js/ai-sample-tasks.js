@@ -204,10 +204,10 @@
     if (st.finalized || imp) {
       var pend = c ? c.sk : (o.skips || 0);
       P('入库检查', 'fa-check-circle', 'f3',
-        imp ? ['done', '真缺陷 0 · 已放行'] : ['cur', '按动词算写操作计划']);
-      if (pend) P('问题箱 · 入库', 'fa-question-circle', 'f3', ['blocked', pend + ' 处跳过要再问一次']);
+        imp ? ['done', '已放行'] : ['cur', '算写操作计划']);
+      if (pend) P('问题箱 · 入库', 'fa-question-circle', 'f3', ['blocked', pend + ' 处待再问']);
       P('入库完成', 'fa-database', 'f3',
-        imp ? ['done', (t.samples ? t.samples.length : 2) + ' 块已入库'] : ['cur', '待入库']);
+        imp ? ['done', (t.samples ? t.samples.length : 2) + ' 块已入库'] : ['cur', '可入库']);
     }
     return out;
   }
