@@ -35,6 +35,7 @@
       <span class="wb-title" id="wbTaskName">DL/T 802.3—2023</span>
       <span class="wb-badge">内部档</span>
       <span class="wb-spacer"></span>
+      <span id="peerBar" class="wb-peers"></span>
       <button class="btn-outline" onclick="ORC.panel()">编排留痕 <b id="trcN">0</b></button>
       <span class="wb-bell" id="wbBell" style="display:none" onclick="WB.openArt('f3')">
         <i class="fa fa-bell-o"></i><span id="wbBellN">0</span></span>
@@ -123,15 +124,22 @@
 <script src="js/ai-sample-f2.js"></script>
 <script src="js/ai-sample-orchestrator.js"></script>
 <script src="js/ai-sample-tasks.js"></script>
+<script src="js/ai-sample-share.js"></script>
 <script src="js/ai-sample-demo.js"></script>
 <script>
   WBInit(window.INBOX_SEED);
   WBsyncTasks();
   if (window.SHEET_SEED) F2.init(window.SHEET_SEED);
-  TS.render();
+  TS.render(); SH.paint();
   document.getElementById('fileIn').addEventListener('change', function (e) { DEMO.pick(e.target.files); this.value = ''; });
   document.getElementById('imgIn').addEventListener('change', function (e) { DEMO.pickImages(e.target.files); this.value = ''; });
 </script>
+<div class="sh-mask" id="shMask" onclick="if(event.target===this)SH.close()">
+  <div class="sh-box">
+    <div class="sh-h"><b id="shTitle">协作与权限</b><i class="fa fa-times" onclick="SH.close()"></i></div>
+    <div class="sh-b" id="shBody"></div>
+  </div>
+</div>
 <div class="trc-mask" id="trcMask" onclick="if(event.target===this)WB.closeTrace()">
   <div class="trc-box">
     <div class="trc-h"><b>编排留痕</b><span>每次跨阶段执行的原话、补丁、稿件版本、预检结果与入库块，可回放可回滚</span>

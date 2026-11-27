@@ -66,6 +66,16 @@
   /* ── 渲染 ── */
   /* 顶栏 / 进度条 / 产物卡都跟着「当前选中的任务」走：
      演示任务读实时流水线，其余任务读它自己的存档，互不串台。 */
+  /* 两层权限取交集：角色 + 单独授予。没权限就给一句"为什么"，不静默禁用 */
+  function ok(act) { return global.SH ? SH.can(act) : true; }
+  function noPerm(act) {
+    if (!global.SH) return false;
+    say('sys', '系统', '<span class="np"><i class="fa fa-user-times"></i>' + SH.why(act) + '</span>' +
+      (act === 'import' || act === 'import.auth'
+        ? '<div class="rc-a"><button class="ra" onclick="WB.askImport()">申请入库权</button></div>' : ''));
+    paintChat(); return true;
+  }
+
   function taskView() {
     if (!global.TS) return null;
     var t = TS.sel(); if (!t || t.cur) return null;
@@ -320,7 +330,10 @@
         : (a ? '<span class="wb-skip">已跳过 · F3 会再问一次</span>' : '<span style="color:#cbd5e1">未处置</span>')) +
       '<span class="wb-undo" onclick="WB.undo(\'' + esc(q.id) + '\')">撤销</span>' +
       (a || q.lv === '范围' ? '' : '<span class="wb-skipbtn" onclick="WB.skip(\'' + esc(q.id) + '\')">跳过</span>') +
-      (q.lv === '范围' && !a ? '<span class="wb-must">必答 · 不可跳过</span>' : '') + '</div>';
+      (q.lv === '范围' && !a ? '<span class="wb-must">必答 · 不可跳过</span>' : '') +
+      (global.SH ? '<span class="wb-asg' + (SH.mine(q.id) ? ' me' : '') + '" onclick="SH.assignUI(\'' +
+        esc(q.id) + '\',event)"><i class="fa fa-user-o"></i>' +
+        (SH.who(q.id) ? esc(SH.who(q.id)) : '指派') + '</span>' : '') + '</div>';
   }
   function paintChat() {
     var el = document.getElementById('wbChat');
@@ -756,7 +769,8 @@
       (pl.risky.length ? '<div class="wsec">动到已有数据的条目（' + pl.risky.length + '）——这些不会静默执行</div>' +
         pl.risky.map(function (x) { return riskyRow(x[0], x[1]); }).join('') +
         (S.answers['Q095'] && !pl.by['待确认']
-          ? '<label class="wauth"><input type="checkbox" id="cbAuth" ' + (S.auth ? 'checked' : '') +
+          ? '<label class="wauth' + (ok('import.auth') ? '' : ' off') + '"><input type="checkbox" id="cbAuth" ' +
+            (S.auth ? 'checked' : '') + (ok('import.auth') ? '' : ' disabled') +
             ' onchange="WB.authorize(this.checked)" /> 我已逐条确认以上 ' +
             ((pl.by['变更'] || {}).n || 0) + ' 处变更与 ' + ((pl.by['停用'] || {}).n || 0) + ' 处停用会影响在流转的检测任务</label>'
           : '')
@@ -848,7 +862,10 @@
       if (c) { c.scrollIntoView({ block: 'center' }); c.classList.add('flash'); setTimeout(function () { c.classList.remove('flash'); }, 1400); }
     }, 260);
   };
-  WB.authorize = function (v) { S.auth = v ? 1 : 0; save(); renderF3(); };
+  WB.authorize = function (v) {
+    if (v && !ok('import.auth')) { noPerm('import.auth'); renderF3(); return; }
+    S.auth = v ? 1 : 0; save(); renderF3();
+  };
   function importBlock() {
     var pl = alignPlan(), g = function (k) { return (pl.by[k] || {}).n || 0; };
     if (!S.answers['Q095']) return '先答范围级「对齐基准」';
@@ -858,6 +875,7 @@
     return '';
   }
   WB.importRun = function () {
+    if (!ok('import')) { noPerm('import'); return; }
     var tv = taskView();
     if (tv) { if (!tv.done || tv.imp) return; }
     else if (importBlock()) { renderF3(); return; }
@@ -1051,10 +1069,12 @@
   WB.counts = counts4;
   WB.sideKey = function () { return S.side || ''; };
   WB.demo = function () { return global.TS ? !!TS.sel().cur : true; };
+  WB.askImport = function () { SH.askImport(); paintChat(); };
   WB.archNote = function (ask) { return archNote(ask); };
   WB.renderF3 = function () { renderF3(); };
   WB.status = function () { return { generated: !!S.generated, finalized: !!S.finalized, imported: !!S.imported, ver: global.ORCver || 1 }; };
   WB.finalize = function () {
+    if (!ok('finalize')) { noPerm('finalize'); return; }
     var c = counts4();
     if (c.un) {
       say('ai', 'AI 助手', '还有 <b>' + c.un + '</b> 条没处置，不能定稿。' + artShell('inbox', { su: c.un + ' 条未处置' }, 1));
@@ -1144,6 +1164,7 @@
   };
   function paintArts() { ['upload', 'inbox', 'sheet', 'f3'].forEach(renderStage); }
   WB.newTask = function () {
+    if (!ok('task.create')) { noPerm('task.create'); return; }
     S.answers = {};
     S.chat = []; S.answers = {}; OPEN = { upload: 1 }; S.generated = 0; S.finalized = 0; S.imported = 0;
     say('ai', 'AI 助手', '新任务已建。先上传<b>检测能力范围表</b>和<b>检测依据标准文件</b>，' +

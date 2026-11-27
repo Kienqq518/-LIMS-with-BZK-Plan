@@ -87,14 +87,19 @@
         var bar = [1, 2, 3].map(function (k) {
           return '<i class="' + (k < t.stage ? 'done' : k === t.stage ? 'cur' : '') + '"></i>';
         }).join('');
+        var td = global.SH ? SH.todo(i) : 0;
         return '<div class="wb-task' + (i === T.sel ? ' on' : '') + '" onclick="TS.pick(' + i + ')">' +
-          '<div class="code">' + esc(t.code) + '</div><div class="nm">' + esc(t.nm) + '</div>' +
+          '<div class="code">' + esc(t.code) +
+          '<span class="tmore" title="更多" onclick="SH.menu(' + i + ',event)"><i class="fa fa-ellipsis-h"></i></span></div>' +
+          '<div class="nm">' + esc(t.nm) + '</div>' +
           '<div class="bar">' + bar + '</div>' +
           '<div class="meta"><span class="st">' + esc(t.status) + '</span>' +
           '<span class="rf">' + (t.files.length ? t.files.length + ' 份料' : '—') +
-          (t.outputs.length ? ' · ' + t.outputs.length + ' 产出' : '') + '</span></div></div>';
+          (t.outputs.length ? ' · ' + t.outputs.length + ' 产出' : '') + '</span>' +
+          (td ? '<span class="todo">待我 ' + td + '</span>' : '') + '</div></div>';
       }).join('');
       panel();
+      if (global.SH) SH.paint();
     }
   };
 

@@ -318,6 +318,8 @@
     edit: function (ev, td) {
       ev.stopPropagation();
       if (td.querySelector('input')) return;
+      /* 校稿专家不改稿件正文：没有执行权就打开协作面板，让人看见是谁的活 */
+      if (global.SH && !SH.can('cell.edit')) { SH.open(); return; }
       var tr = td.parentNode, ri = +tr.getAttribute('data-ri'), sh = ST.sheet, col = td.getAttribute('data-c');
       if (DERIVED[sh].indexOf(col) >= 0) return;
       var cur = val(sh, rows(sh)[ri], col, ri);
