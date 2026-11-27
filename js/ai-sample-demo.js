@@ -37,7 +37,7 @@
   }
   function sheetCount() { return Object.keys(global.SHEET_SEED || {}).filter(function (k) {
     return k !== 'tests' && k !== 'conf' && SHEET_ORDER.indexOf(k) >= 0; }).length + 1; }
-  var SHEET_ORDER = ['00_包信息', '10_分类路径', '20_样品', '30_规格参数', '40_型号', '41_型号规格赋值', '50_试验项',
+  var SHEET_ORDER = ['00_包信息', '05_系统对齐', '10_分类路径', '20_样品', '30_规格参数', '40_型号', '41_型号规格赋值', '50_试验项',
     '51_试验依据', '52_试验子项', '60_控制参数', '61_映射明细', '62_条件规则', '70_测量参数', '71_参数可选项',
     '80_计算参数', '90_标称值', 'A0_判定配置', 'A1_判定条件', 'A2_结论映射', 'B0_采集配置', 'C0_待定项', 'D0_校验规则'];
 
@@ -158,7 +158,7 @@
   function manuscript() {
     var seed = global.SHEET_SEED || {}, st = WB.state ? WB.state() : {}, rows = [];
     rows.push(['项', '值', '备注']);
-    rows.push(['契约版本', 'v0.2', '']);
+    rows.push(['契约版本', 'v0.3', 'v0.3 新增 05_系统对齐：拆解前先对齐系统已有数据']);
     rows.push(['稿件版本', D.ver, 'F1 产出，待专家复核']);
     rows.push(['生成时间', new Date().toLocaleString('zh-CN', { hour12: false }), '']);
     rows.push(['上传文件', D.files.map(function (f) { return f.name; }).join(' | '), '']);
@@ -253,6 +253,7 @@
         '正文识别标准号：' + (std ? std.name.replace(/\.[a-z]+$/i, '') : 'DL/T 802.3—2023') + ' → 规范化 DL/T 802.3-2023',
         '命中标准文件库：已有该标准，拆解成果 v3-final 可复用',
         '任务发现：802.1 是总标准只建分类节点，802.3 独立成 1 个任务',
+        '系统对齐：公司基线 v3-final 取骨架 → 本客户环境逐实体比对 · 33 个实体',
         '按能力范围裁剪：' + counts(),
         '逐 sheet 生成 ' + sheetCount() + ' 张，不确定项转成 ' + (global.INBOX_SEED || []).length + ' 条待处置问题'
       ];

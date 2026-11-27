@@ -116,7 +116,7 @@
     return '<div class="sec"><h5>拆解成果 <span class="v">' + esc(v.v) + '</span>' +
       '<span class="lock"><i class="fa fa-lock"></i> ' + esc(st) + '</span>' +
       (x.recent === 'final' || x.recent === 'import' ? '<span class="live"><i class="fa fa-bolt"></i> 本次会话刚更新</span>' : '') + '</h5>' +
-      kv('稿件', '<code>' + esc(art) + '.xlsx</code> · 22 张 sheet') +
+      kv('稿件', '<code>' + esc(art) + '.xlsx</code> · 22 张 sheet · 契约 v0.2') +
       kv('覆盖', esc(v.cover || x.cover || '—')) +
       kv('操作人 / 时间', esc(v.by || '—') + ' · ' + esc(v.at || '—')) +
       kv('预检', esc(v.precheck || '—') + (v.open ? ' · 待定项 ' + esc(v.open) + ' 条' : '')) + '</div>' +
@@ -132,7 +132,7 @@
       '<div class="acts">' +
       '<button class="btn-save" data-msg="已以此成果发起新任务：复用拆解成果，只重算你们实验室的量程与能力裁剪" onclick="SL.act(this)">以此拆解新任务</button>' +
       '<button class="btn-outline" data-msg="打开两个稿件版本的差异对比（原型演示）" onclick="SL.act(this)">对比版本</button>' +
-      '<button class="btn-outline" data-msg="下载该版本稿件（22 张 sheet）" onclick="SL.act(this)">下载稿件</button></div></div>';
+      '<button class="btn-outline" data-msg="下载该版本稿件（22 张 sheet · 契约 v0.2）" onclick="SL.act(this)">下载稿件</button></div></div>';
   }
   function reuse(x) {
     var rs = (x.reuse || []).map(function (r) {

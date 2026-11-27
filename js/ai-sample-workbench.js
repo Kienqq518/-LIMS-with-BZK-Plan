@@ -12,7 +12,7 @@
     });
   };
   var SHEET_CN = {
-    '20_样品': '样品', '50_试验项': '试验项', '61_映射明细': '映射明细', '70_测量参数': '测量参数',
+    '05_系统对齐': '系统对齐', '20_样品': '样品', '50_试验项': '试验项', '61_映射明细': '映射明细', '70_测量参数': '测量参数',
     '80_计算参数': '计算参数', 'A1_判定条件': '判定条件', '41_型号规格赋值': '型号规格赋值',
     '90_标称值': '标称值', '60_控制参数': '控制参数', 'B0_采集配置': '采集配置'
   };
@@ -22,7 +22,7 @@
     { code: 'EN 50306-2:2020', nm: '铁路机车车辆电缆', stage: 3, q: 0, done: 0, st: '已定稿' }
   ];
 
-  var S = { answers: {}, collapsed: {}, chat: [], run: 0, task: 0, generated: 0, stage: 'f1', notified: 0 };
+  var S = { answers: {}, collapsed: {}, chat: [], run: 0, task: 0, generated: 0, stage: 'f1', notified: 0, auth: 0 };
   function mode(id) { var a = S.answers[id]; return a ? (a.mode || 'answer') : ''; }
   function cnt(f) { var n = 0; for (var k in S.answers) if (f(S.answers[k])) n++; return n; }
   function rawLeft() { var n = 0; RAW.forEach(function (q) { if (!S.answers[q.id]) n++; }); return n; }
@@ -435,7 +435,7 @@
         var l = WB.unanswered ? WB.unanswered() : 0, s = WB.scopeLeft ? WB.scopeLeft() : 0;
         return l ? l + ' 条待处置' + (s ? ' · 其中 ' + s + ' 条必答' : '') : '已全部处置'; } },
     sheet:  { ic: 'fa-table', ti: '稿件表格', stage: 'wbF2', sum: function () {
-        var tv = taskView(); return tv ? (tv.o.ver ? tv.o.sheets + ' 张 sheet · ' + tv.o.state : '未生成') : '22 张 sheet · 9 张可编辑'; } },
+        var tv = taskView(); return tv ? (tv.o.ver ? tv.o.sheets + ' 张 sheet · ' + tv.o.state : '未生成') : '23 张 sheet · 10 张可编辑'; } },
     f3:     { ic: 'fa-database', ti: '预检与入库', stage: 'wbF3', sum: function () {
         var tv = taskView(); return tv ? (tv.imp ? '已入库' : tv.done ? '待入库' : '不可入库') : '真缺陷 0 · 阻断 0'; } }
   };
@@ -619,7 +619,7 @@
       var el = document.getElementById('wbRun'); el.classList.add('show');
       var stages = [['识别标准文件', 'DL/T 802.3—2023 · 命中库内 v3 成果'],
       ['任务发现', '1 个任务 · 2 个样品 / 8 个型号'],
-      ['逐 sheet 生成', '22 张 · 200 参数 / 16 试验项'],
+      ['逐 sheet 生成', '23 张 · 200 参数 / 16 试验项'],
       ['跑 D0 校验', '真缺陷 0 · 阻断 2（待答即消除）']];
       var i = 0;
       document.getElementById('wbStages').innerHTML = stages.map(function (s) {
@@ -702,14 +702,79 @@
     return { value: o.length ? o[0] : '（无默认值，需人工）',
              basis: q.conf > 0 ? '同类先例 + 上下文推断' : '标准文件条款就近匹配' };
   }
+  /* ── 系统对齐：F1 的产出不是"新建"，是"对齐"。
+     每个实体最终落到哪个写操作动词，由对齐基准 + 人工答案共同决定。 ── */
+  var VERB = {
+    新建: { ic: 'fa-plus', c: '', ti: '新建', d: '系统里没有，按稿件创建' },
+    挂载: { ic: 'fa-paper-plane-o', c: '', ti: '挂载', d: '父节点已存在，只挂新子节点' },
+    复用: { ic: 'fa-link', c: 'good', ti: '复用', d: '命中系统已有编码，不写、不重编' },
+    变更: { ic: 'fa-exchange', c: 'bad', ti: '变更', d: '改已有配置，作用到在流转的检测任务' },
+    停用: { ic: 'fa-pause', c: 'bad', ti: '停用', d: '不删除，标注不在能力范围' },
+    待确认: { ic: 'fa-question-circle', c: 'bad', ti: '待确认', d: '对齐不确定，必须先答' }
+  };
+  /* 人工答案 → 写操作动词。答完才定得下来，所以动词是算出来的不是存出来的 */
+  function verbOf(r) {
+    var v = r['对齐动词'];
+    var a = function (id) { var x = S.answers[id]; return x ? String(x.other || x.choice || '') : ''; };
+    var q96 = a('Q096'), q97 = a('Q097'), q98 = a('Q098'), q99 = a('Q099'), q100 = a('Q100');
+    if (v === '待确认') {
+      if (r['实体类型'] === '型号') return /^不是/.test(q96) ? '新建' : (q96 ? '复用' : '待确认');
+      if (r['实体键'] === 'S01-M01-T02') return /^型号层新建/.test(q98) ? '新建' : (/^按基线挂型号层/.test(q98) ? '变更' : (q98 ? '复用' : '待确认'));
+      return /^不是/.test(q97) ? '新建' : (/^同一个，把方法标准号/.test(q97) ? '变更' : (q97 ? '复用' : '待确认'));
+    }
+    if (v === '变更') return /^保留/.test(q99) ? '复用' : (q99 ? '变更' : '待确认');
+    if (v === '停用') return /^保留启用/.test(q100) ? '复用' : (q100 ? '停用' : '待确认');
+    return v;
+  }
+  function alignPlan() {
+    var blk = (global.SHEET_SEED || {})['05_系统对齐'];
+    if (!blk) return { n: 0, by: {}, risky: [] };
+    var by = {}, risky = [];
+    blk.rows.forEach(function (r) {
+      var v = verbOf(r);
+      (by[v] = by[v] || { n: 0, rows: [] }); by[v].n++; by[v].rows.push([r, v]);
+      if (v === '变更' || v === '停用' || v === '待确认') risky.push([r, v]);
+    });
+    return { n: blk.rows.length, by: by, risky: risky };
+  }
+  function riskyRow(r, v) {
+    var verb = VERB[v];
+    return '<div class="wrow"><span class="wv ' + verb.c + '"><i class="fa ' + verb.ic + '"></i>' + v + '</span>' +
+      '<span class="wn">' + esc(r['实体类型']) + ' · ' + esc(r['实体名称']) + '</span>' +
+      '<span class="wb">' + esc(r['对齐目标编码'] || '—') + '</span>' +
+      '<span class="wz">' + esc(r['对齐依据']) + '</span></div>';
+  }
+  function renderAlign() {
+    var el = document.getElementById('wbF3W'); if (!el) return;
+    var pl = alignPlan(), ks = ['新建', '挂载', '复用', '变更', '停用', '待确认'];
+    var dist = ks.filter(function (k) { return pl.by[k]; }).map(function (k) {
+      return '<span class="wchip ' + VERB[k].c + '"><i class="fa ' + VERB[k].ic + '"></i>' + k + '<b>' + pl.by[k].n + '</b></span>';
+    }).join('');
+    el.innerHTML = '<h4>写操作计划<span class="cn">' + pl.n + ' 个实体 · 对齐基准：' +
+      (S.answers['Q095'] ? esc(S.answers['Q095'].other || S.answers['Q095'].choice) : '未选') + '</span></h4>' +
+      '<div class="wdist">' + dist + '</div>' +
+      (pl.risky.length ? '<div class="wsec">动到已有数据的条目（' + pl.risky.length + '）——这些不会静默执行</div>' +
+        pl.risky.map(function (x) { return riskyRow(x[0], x[1]); }).join('') +
+        (S.answers['Q095'] && !pl.by['待确认']
+          ? '<label class="wauth"><input type="checkbox" id="cbAuth" ' + (S.auth ? 'checked' : '') +
+            ' onchange="WB.authorize(this.checked)" /> 我已逐条确认以上 ' +
+            ((pl.by['变更'] || {}).n || 0) + ' 处变更与 ' + ((pl.by['停用'] || {}).n || 0) + ' 处停用会影响在流转的检测任务</label>'
+          : '')
+        : '<div class="wsec">本次只新建与复用，不改系统已有配置</div>');
+  }
+
   function renderF3() {
     if (arch('f3')) return;
+    renderAlign();
     var pend = skippedMembers().length, ai = aiCnt();
+    var pl = alignPlan(), g = function (k) { return (pl.by[k] || {}).n || 0; };
+    var risky = g('变更') + g('停用'), hold = g('待确认');
     document.getElementById('wbF3Sum').innerHTML =
       box('真缺陷', '0', 'good', '契约 / 转换层问题') +
-      box('待答即消除', '2', '', '回答或跳过均可推进') +
-      box('跳过待二次确认', String(pend), pend ? 'bad' : 'good', '本轮再问一次') +
-      box('AI 自决落库', String(ai), '', ai ? '已通知客户' : '尚无');
+      box('新建 / 挂载', String(g('新建') + g('挂载')), '', '系统里没有的，按稿件创建') +
+      box('复用 / 变更 / 停用', g('复用') + ' / ' + g('变更') + ' / ' + g('停用'), risky && !S.auth ? 'bad' : '',
+        '复用不动系统 · 变更停用需授权') +
+      box('跳过待二次确认', String(pend + hold), (pend + hold) ? 'bad' : 'good', '本轮再问一次');
     var el = document.getElementById('wbF3Skip');
     if (!pend && !ai) {
       el.innerHTML = '<h4>跳过项二次确认</h4><p>本次没有跳过的问题，直接预检入库。</p>';
@@ -722,10 +787,14 @@
         (ai ? '<h4 style="margin-top:16px">AI 自决清单（已通知客户）<span class="cn" style="margin-left:8px;font-size:11.5px;color:#6d28d9">' +
           aiMembers().length + ' 类 / ' + ai + ' 处</span></h4>' + aiMembers().map(noticeRow).join('') : '');
     }
-    var gate = pend ? '还有 ' + pend + ' 类跳过项未二次处置，不能入库（V24）'
-      : (ai ? '可入库：' + ai + ' 处将由 AI 自决落库，入库后推送自决清单' : '可入库：全部问题已人工确认');
-    document.getElementById('wbF3Gate').innerHTML = '<i class="fa ' + (pend ? 'fa-lock' : 'fa-unlock') + '"></i> ' + gate;
-    document.getElementById('btnImport').disabled = pend > 0;
+    var why = !S.answers['Q095'] ? '先答范围级「对齐基准」'
+      : hold ? '还有 ' + hold + ' 处系统对齐没定，写操作动词算不出来'
+      : (risky && !S.auth) ? risky + ' 处变更/停用动到在流转的数据，需逐条授权'
+      : pend ? '还有 ' + pend + ' 类跳过项未二次处置（V24）' : '';
+    var gate = why || (ai ? '可入库：' + ai + ' 处将由 AI 自决落库，入库后推送自决清单'
+      : '可入库：新建 ' + (g('新建') + g('挂载')) + ' · 复用 ' + g('复用') + ' · 变更 ' + g('变更') + ' · 停用 ' + g('停用'));
+    document.getElementById('wbF3Gate').innerHTML = '<i class="fa ' + (why ? 'fa-lock' : 'fa-unlock') + '"></i> ' + gate;
+    document.getElementById('btnImport').disabled = !!why;
     var bell = document.getElementById('wbBell');
     bell.style.display = ai ? '' : 'none';
     document.getElementById('wbBellN').textContent = ai;
@@ -779,10 +848,19 @@
       if (c) { c.scrollIntoView({ block: 'center' }); c.classList.add('flash'); setTimeout(function () { c.classList.remove('flash'); }, 1400); }
     }, 260);
   };
+  WB.authorize = function (v) { S.auth = v ? 1 : 0; save(); renderF3(); };
+  function importBlock() {
+    var pl = alignPlan(), g = function (k) { return (pl.by[k] || {}).n || 0; };
+    if (!S.answers['Q095']) return '先答范围级「对齐基准」';
+    if (g('待确认')) return g('待确认') + ' 处系统对齐没定';
+    if ((g('变更') + g('停用')) && !S.auth) return '变更/停用未逐条授权';
+    if (skippedMembers().length) return '跳过项未二次处置';
+    return '';
+  }
   WB.importRun = function () {
     var tv = taskView();
     if (tv) { if (!tv.done || tv.imp) return; }
-    else if (skippedMembers().length) return;
+    else if (importBlock()) { renderF3(); return; }
     var el = document.getElementById('wbF3Run'); el.style.display = '';
     var ver = tv ? (tv.o.ver || 'v1-final')
       : 'v' + (global.ORCver || 1) + (S.finalized ? '-final' : '-draft');
@@ -813,6 +891,9 @@
         receipt('<div class="rc-t"><i class="fa fa-database"></i>入库完成 <b>' + blocks.length + ' 个样品块</b>' +
           '<span class="rc-m">' + ver + '</span></div>' +
           '<div class="rc-l">写入 ' + rows + '。按样品分块，一块一事务，本次未触发回滚。' +
+          (function () { var p = alignPlan(), q = function (k) { return (p.by[k] || {}).n || 0; };
+            return '新建 ' + (q('新建') + q('挂载')) + ' · 复用 ' + q('复用') +
+              ' · 变更 ' + q('变更') + ' · 停用 ' + q('停用') + '。'; })() +
           (tv ? '该任务的 ' + ((tv.o.skips || 0)) + ' 处跳过项已在定稿前闭环。'
             : (aiCnt() ? '<b>' + aiCnt() + '</b> 处由 AI 自决落库，自决清单已推送到站内消息，' +
               '每条写明落库取值、依据与回改路径。' : '全部数据来自人工确认的稿件。')) +
@@ -829,7 +910,7 @@
   WB.pick = (function (orig) {
     return function (id, v, fromF3) {
       orig(id, v);
-      if (fromF3 && S.stage === 'f3') renderF3();
+      renderF3();          // 写操作计划跟着答案实时重算
     };
   })(WB.pick);
 
@@ -912,7 +993,7 @@
         '<div id="f1Stages">' + ['识别标准文件|DL/T 802.3—2023 · 规范化编号 + 年号',
           '命中库|元数据命中 · 文件本体按客户隔离 · 拆解成果可复用',
           '任务发现|1 个任务 · 2 个样品 / 8 个型号',
-          '逐 sheet 生成|22 张 · 166 参数 / 42 判定条件'].map(function (x) {
+          '逐 sheet 生成|23 张 · 166 参数 / 42 判定条件'].map(function (x) {
             var a = x.split('|');
             return '<div class="wb-stage done"><span class="dot"></span>' + esc(a[0]) + '<span class="out">' + esc(a[1]) + '</span></div>';
           }).join('') + '</div>' +

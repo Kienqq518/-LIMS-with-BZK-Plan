@@ -154,7 +154,7 @@
   }
   function viewHtml() {
     var t = TS.sel();
-    if (!t.outputs.length) return '<div class="pe">这个任务还没有稿件可预览。生成后这里会显示 22 张 sheet 的结构与色标。</div>';
+    if (!t.outputs.length) return '<div class="pe">这个任务还没有稿件可预览。生成后这里会显示 23 张 sheet 的结构与色标。</div>';
     var sd = global.SHEET_SEED;
     if (!sd) return '<div class="pe">预览数据未加载。</div>';
     return '<div class="pv-list">' + Object.keys(sd).filter(function (k) {
