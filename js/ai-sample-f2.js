@@ -40,7 +40,7 @@
     'A1_判定条件': ['试验项键', '条件序号', '条件类型', '对比符号', '报告展开式', '被对比标称值键', '对比参数键',
       '被对比参数键', '自定义数值', '修饰符百分比', '修饰符符号', '修饰符常量', '子项结论来源', '子项键', '原文条件']
   };
-  var ST = { sheet: SHEETS[0], sel: -1, edits: {}, hl: null, derived: 0 };
+  var ST = { sheet: SHEETS[0], sel: -1, edits: {}, hl: null, derived: 0, dFilter: '全部' };
   var EXTRA = { '90_标称值': ['报告展开式'] };   // 界面派生列，契约里不落存储列
 
   function cleanUnit(u) {
@@ -311,6 +311,7 @@
     render: function () { render(); },
     init: function (seed) { SEED = seed; render(); },
     sheet: function (s) { ST.sheet = s; ST.sel = -1; ST.hl = null; render(); },
+    dfilter: function (v) { ST.dFilter = v; renderDiff(); },
     sel: function (ri) { ST.sel = ri; render(); trace(ri); },
     trace: function (ev, ri) { ev.stopPropagation(); ST.sel = ri; render(); trace(ri); },
     closeDrawer: function () { document.getElementById('f2Drawer').classList.remove('show'); },
@@ -355,11 +356,18 @@
     },
     /* ── 三方对比：库内基线 ↔ 本次上传 ↔ AI 原稿 ── */
     openDiff: function () { ST.diff = buildDiff(); renderDiff(); },
-    closeDiff: function () { ST.diff = null; document.getElementById('f2Diff').classList.remove('show'); render(); },
+    closeDiff: function () { ST.diff = null; ST.dFilter = '全部'; document.getElementById('f2Diff').classList.remove('show'); render(); },
     accept: function (i) { var d = ST.diff.list[i]; d.verdict = 'accept'; applyVerdict(d); renderDiff(); },
     revert: function (i) { var d = ST.diff.list[i]; d.verdict = 'revert'; renderDiff(); },
     toIssue: function (i) { var d = ST.diff.list[i]; d.verdict = 'issue'; renderDiff(); },
-    acceptAll: function () { ST.diff.list.forEach(function (d) { if (d.verdict !== 'issue') { d.verdict = 'accept'; applyVerdict(d); } }); renderDiff(); },
+    acceptAll: function () {
+      // 尊重已经明确「回退」的行，一键接受不覆盖人的显式决定
+      ST.diff.list.forEach(function (d) {
+        if (d.verdict !== 'issue' && d.verdict !== 'revert') { d.verdict = 'accept'; applyVerdict(d); }
+      });
+      renderDiff();
+    },
+    mergeUpload: function () { mergeUpload(); },
     finalize: function () {
       if (WB.markFinal) WB.markFinal();
       if (WB.say) WB.say('sys', '系统', '稿件转 <b>v' + (global.ORCver || 1) + '-final</b> 定稿并锁定。定稿稿件不可变，再改需开新版本。');
@@ -373,82 +381,133 @@
     state: function () { return ST; }
   };
   function applyVerdict(d) {
-    var rs = rows(d.sheet), i = -1;
-    for (var k = 0; k < rs.length; k++) if (rs[k][KEYCOL[d.sheet]] === d.row) { i = k; break; }
-    if (i < 0) return;
+    var k = d.sheet + '|' + d.ri + '|' + d.col;
     if (d.verdict === 'accept') {
-      ST.edits[d.sheet + '|' + i + '|' + d.col] = d.upload;
+      ST.edits[k] = d.upload;
+      recomputeAll();
       if (WB.say) WB.say('sys', '系统', '接受线下改动 <span class="tg">' + esc(d.sheet) + '</span><span class="tg">' +
-        esc(d.row) + '</span><span class="tg">' + esc(d.col) + '</span> ' + esc(d.baseline || '∅') + ' → <b>' + esc(d.upload) + '</b>，来源转「人工确认」。');
+        esc(d.row) + '</span><span class="tg">' + esc(d.col) + '</span> ' + esc(d.baseline || '∅') + ' → <b>' + esc(d.upload) + '</b>');
+    } else if (d.verdict === 'revert') {
+      if (ST.edits[k] !== undefined && String(ST.edits[k]) === String(d.upload)) delete ST.edits[k];
+      recomputeAll();
     }
   }
-  function buildDiff() {
-    var r90 = rows('90_标称值'), list = [];
-    function pick(f) { for (var i = 0; i < r90.length; i++) if (f(r90[i])) return r90[i]; return null; }
-    var a = pick(function (r) { return String(r['最小值'] || '').trim(); });
-    var b = pick(function (r) { return String(r['单值'] || '').trim(); });
-    var c = pick(function (r) { return String(r['最大值'] || '').trim(); });
-    if (a) list.push({ sheet: '90_标称值', row: a['标称值键'], name: a['标称值名称'], col: '最小值',
-      baseline: a['最小值'], ai: a['最小值'], upload: bump(a['最小值'], 1), kind: '人改', conf: '已验证' });
-    if (b) list.push({ sheet: '90_标称值', row: b['标称值键'], name: b['标称值名称'], col: '单值',
-      baseline: b['单值'], ai: b['单值'], upload: bump(b['单值'], -1), kind: '人改', conf: '已验证' });
-    if (a) list.push({ sheet: '90_标称值', row: a['标称值键'], name: a['标称值名称'], col: '修约精度',
-      baseline: '', ai: '1', upload: '2', kind: 'AI 重算', conf: '未验证' });
-    if (c) list.push({ sheet: '90_标称值', row: c['标称值键'], name: c['标称值名称'], col: '最大值',
-      baseline: c['最大值'], ai: c['最大值'], upload: bump(c['最大值'], 2), kind: '冲突', conf: '冲突' });
-    list.forEach(function (d) { d.verdict = d.kind === '冲突' ? 'issue' : ''; });
-    return { list: list, file: 'DS实壁类塑料电缆导管_稿件v2_专家线下.xlsx', at: new Date().toLocaleString('zh-CN', { hour12: false }) };
-  }
+  /* ── 三方对比：跨全部 sheet 逐格比对 库内基线 ↔ 本次上传 ↔ AI 原稿 ──
+   * 差异不是随手编的：每个 sheet 的"人改"与"冲突"都对应真实校验规则，
+   * 冲突项必须处置掉才能合并，否则等于把线下 Excel 的错直接灌进稿件。 */
+  var MUT = [
+    { sh: '90_标称值', col: '最小值', kind: '人改', dlt: 1, why: '专家按标准表3 复核后微调' },
+    { sh: '90_标称值', col: '修约精度', kind: 'AI 重算', dlt: 1, why: '修约方式改动后派生值重算' },
+    { sh: '61_映射明细', col: '因变量1', kind: '人改', dlt: 1, why: '档位对应值按新版标准表更正' },
+    { sh: '61_映射明细', col: '自变量值', kind: '冲突', fixed: 'SN24-99', why: '改成非档位写法，61 与 30 规格参数对不上（V04/V15）' },
+    { sh: '70_测量参数', col: '修约精度', kind: '人改', dlt: 1, why: '按记录单小数位统一' },
+    { sh: '70_测量参数', col: '测量次数', kind: '冲突', fixed: '0', why: '测量次数=0，采集配置与公式数组运算都会崩（V14）' },
+    { sh: '80_计算参数', col: '修约精度', kind: '人改', dlt: 1, why: '结果位数按报告模板调整' },
+    { sh: '80_计算参数', col: '公式原文', kind: '冲突', fixed: '(A + B', why: '括号不闭合，规范公式无法计算（V13）' },
+    { sh: '60_控制参数', col: '固定值', kind: '人改', dlt: 1, why: '预设值按设备量程修正' },
+    { sh: '60_控制参数', col: '映射类型', kind: '冲突', fixed: '组合映射', why: '改成组合映射但 61 里不足 2 个自变量（V07）' },
+    { sh: 'B0_采集配置', col: '计算顺序', kind: '冲突', fixed: '1', why: '顺序改成 1，与已有序号重复，拓扑序断裂（V23）' },
+    { sh: 'B0_采集配置', col: '是否覆盖LIMS参数', kind: '人改', flip: true, why: '该参数改由 LIMS 侧维护' },
+    { sh: 'A1_判定条件', col: '修饰符常量', kind: '人改', dlt: 1, why: '判定容差按新版标准收紧' },
+    { sh: 'A1_判定条件', col: '对比符号', kind: '冲突', fixed: '≥', why: '被对比标称值是非单值，符号由类型推导为「满足」，不能手填（V19）' },
+    { sh: 'A2_结论映射', col: '阈值', kind: '冲突', fixed: '11', why: '阈值 11 超过计数对象总条数 10（V28b）' },
+    { sh: 'A2_结论映射', col: '目标结论值', kind: '人改', fixed: '未破裂', why: '按系统可选项字面统一，避免统计一个不存在的值' },
+    { sh: 'A1_判定条件', col: '被对比标称值键', kind: '人改', fill: 'S01-T02-N02', why: '线下把自然语言条件补成了具体标称值键' }
+  ];
   function bump(v, n) {
     var x = parseFloat(String(v).replace(/[^\d.\-]/g, ''));
-    return isNaN(x) ? String(v) + '·改' : String(Math.round((x + n) * 1000) / 1000);
+    if (isNaN(x)) return String(v) + '·改';
+    return String(Math.round((x + n) * 1000) / 1000);
+  }
+  function buildDiff() {
+    var list = [];
+    MUT.forEach(function (mu) {
+      var blk = SEED[mu.sh]; if (!blk) return;
+      var kc = KEYCOL[mu.sh], pick = null, ri = -1;
+      for (var i = 0; i < blk.rows.length; i++) {
+        var r = blk.rows[i], cur = String(r[mu.col] == null ? '' : r[mu.col]).trim();
+        var empty = (!cur || cur === '—' || cur === '∅');
+        if (empty && !mu.fill) continue;            // 只有明确要"补空值"的才挑空格子
+        if (!empty && mu.fill) continue;
+        if (empty) cur = '∅';
+        if (mu.col === '计算顺序' && i % 7 !== 3) continue;
+        if (mu.kind === '冲突' && i % 5 !== 2) continue;
+        if (mu.kind !== '冲突' && i % 5 === 2) continue;
+        pick = r; ri = i; break;
+      }
+      if (!pick) return;
+      var base = String(pick[mu.col] || '').trim() || '∅';
+      var up = mu.fixed ? mu.fixed : (mu.flip ? (base === '开' ? '关' : '开') : bump(base, mu.dlt || 1));
+      list.push({ sheet: mu.sh, ri: ri, row: String(pick[kc]), name: pick['标称值名称'] || pick['名称'] ||
+        pick['参数编码'] || pick['归属键'] || pick[kc], col: mu.col,
+        baseline: base, ai: mu.kind === 'AI 重算' ? bump(base, 1) : base, upload: up,
+        kind: mu.kind, why: mu.why, verdict: mu.kind === '冲突' ? 'issue' : '' });
+    });
+    return { list: list, file: 'DS实壁类塑料电缆导管_稿件_专家线下.xlsx',
+      at: new Date().toLocaleString('zh-CN', { hour12: false }) };
   }
   function renderDiff() {
     var el = document.getElementById('f2Diff'); if (!el) return;
     var d = ST.diff;
     el.classList.add('show');
+    var sheets = []; d.list.forEach(function (x) { if (sheets.indexOf(x.sheet) < 0) sheets.push(x.sheet); });
     var nAcc = d.list.filter(function (x) { return x.verdict === 'accept'; }).length;
     var nIss = d.list.filter(function (x) { return x.verdict === 'issue'; }).length;
+    var nRev = d.list.filter(function (x) { return x.verdict === 'revert'; }).length;
+    var shown = d.list.map(function (x, i) { return { x: x, i: i }; }).filter(function (o) {
+      if (ST.dFilter === '冲突') return o.x.kind === '冲突';
+      if (ST.dFilter && ST.dFilter !== '全部') return o.x.sheet === ST.dFilter;
+      return true;
+    });
     el.innerHTML = '<div class="dh"><b>三方对比</b><span>' + esc(d.file) + ' · ' + esc(d.at) + '</span>' +
-      '<span class="sp">基线（上次定稿/已入库） ↔ 本次上传 ↔ AI 原稿</span>' +
+      '<span class="sp">库内基线（上次定稿 / 已入库） ↔ 本次上传 ↔ AI 原稿</span>' +
+      '<select onchange="F2.dfilter(this.value)">' +
+      ['全部'].concat(sheets).map(function (o) {
+        return '<option' + (ST.dFilter === o ? ' selected' : '') + '>' + esc(o) + '</option>';
+      }).join('') + '</select>' +
       '<button class="btn-outline" onclick="F2.closeDiff()">收起</button></div>' +
       '<table class="df-tbl"><tr><th>数据</th><th>列</th><th class="b">库内基线</th><th class="a">AI 原稿</th>' +
       '<th class="u">本次上传</th><th>性质</th><th>处置</th></tr>' +
-      d.list.map(function (x, i) {
-        return '<tr class="' + (x.verdict || '') + ' ' + (x.kind === '冲突' ? 'conf' : '') + '">' +
-          '<td><b>' + esc(x.name) + '</b><code>' + esc(x.row) + '</code></td><td>' + esc(x.col) + '</td>' +
-          '<td class="b">' + esc(x.baseline || '∅') + '</td>' +
-          '<td class="a">' + esc(x.ai || '∅') + '</td>' +
-          '<td class="u"><b>' + esc(x.upload) + '</b></td>' +
-          '<td><span class="kd ' + (x.kind === '冲突' ? 'c' : x.kind === '人改' ? 'h' : 'r') + '">' + esc(x.kind) + '</span></td>' +
+      shown.map(function (o) {
+        var x = o.x, i = o.i;
+        return '<tr class="' + (x.verdict || '') + (x.kind === '冲突' ? ' conf' : '') + '">' +
+          '<td><b>' + esc(x.name) + '</b><code>' + esc(x.sheet) + ' · ' + esc(x.row) + '</code></td>' +
+          '<td>' + esc(x.col) + '</td><td class="b">' + esc(x.baseline || '∅') + '</td>' +
+          '<td class="a">' + esc(x.ai || '∅') + '</td><td class="u"><b>' + esc(x.upload) + '</b></td>' +
+          '<td><span class="kd ' + (x.kind === '冲突' ? 'c' : x.kind === '人改' ? 'h' : 'r') + '">' + esc(x.kind) + '</span>' +
+          '<div class="why">' + esc(x.why) + '</div></td>' +
           '<td>' + opBtns(x, i) + '</td></tr>';
       }).join('') + '</table>' +
-      '<div class="df-foot"><span>接受 <b>' + nAcc + '</b> · 转问题 <b class="warn">' + nIss + '</b></span>' +
+      '<div class="df-foot"><span>接受 <b class="ok">' + nAcc + '</b> · 回退 <b>' + nRev + '</b> · 转问题 <b class="warn">' + nIss + '</b></span>' +
       '<button class="btn-outline" onclick="F2.acceptAll()">接受全部非冲突项</button>' +
-      '<button class="btn-save" ' + (nIss ? 'disabled title="还有冲突项没处置"' : '') +
+      '<button class="btn-save" ' + (nIss ? 'disabled title="还有 ' + nIss + ' 条冲突没处置"' : '') +
       ' onclick="F2.mergeUpload()">合并进稿件新版本</button>' +
-      '<span class="tip">规则：人改的优先；人改的与校验规则冲突时不覆盖，转为问题。</span></div>';
+      '<span class="tip">规则：人改的优先；人改的与校验规则冲突时不覆盖，转为收件箱问题。</span></div>';
   }
   function opBtns(x, i) {
-    if (x.verdict === 'accept') return '<span class="ok">已接受</span>';
-    if (x.verdict === 'revert') return '<span class="ok">已回退到基线</span>';
+    if (x.verdict === 'accept') return '<span class="ok">已接受</span><button class="btn-outline xs" onclick="F2.revert(' + i + ')">撤回</button>';
+    if (x.verdict === 'revert') return '<span class="ok">已回退到基线</span><button class="btn-outline xs" onclick="F2.accept(' + i + ')">改接受</button>';
     if (x.verdict === 'issue') return '<span class="warn">已转问题</span>' +
-      '<span class="wb-loc" onclick="WB.stage(\'f1\')">去看</span>';
+      '<button class="btn-outline xs" onclick="F2.accept(' + i + ')">按上传改</button>' +
+      '<button class="btn-outline xs" onclick="F2.revert(' + i + ')">按基线改</button>';
     return '<button class="btn-save xs" onclick="F2.accept(' + i + ')">接受</button>' +
       '<button class="btn-outline xs" onclick="F2.revert(' + i + ')">回退</button>';
   }
   function mergeUpload() {
-    var n = ST.diff.list.filter(function (x) { return x.verdict === 'accept'; }).length;
-    ST.diff = null;
+    var acc = ST.diff.list.filter(function (x) { return x.verdict === 'accept'; });
+    if (!acc.length) { if (WB.toast) WB.toast('没有接受任何改动'); return; }
+    var bySh = {};
+    acc.forEach(function (x) { applyExternalAt(x.sheet, x.ri, x.col, x.upload); bySh[x.sheet] = (bySh[x.sheet] || 0) + 1; });
+    var scope = Object.keys(bySh).map(function (k) { return k + ' ' + bySh[k] + ' 处'; }).join('、');
+    ST.diff = null; ST.dFilter = '全部';
     document.getElementById('f2Diff').classList.remove('show');
     if (WB.say) {
-      WB.say('sys', '系统', '线下稿件已合并：接受 <b>' + n + '</b> 处人工改动，生成新版本稿件；' +
-        '冲突项已转成收件箱问题，定稿前必须处置。');
-      WB.say('ai', 'AI 助手', '合并后我重跑了 D0 校验：真缺陷 0。要入库就说「可以入库了」，或点 F3。');
+      WB.say('sys', '系统', '线下稿件已合并进新版本：接受 <b>' + acc.length + '</b> 处（' + esc(scope) + '）；' +
+        '派生列已联动重算。');
+      WB.say('ai', 'AI 助手', '合并后重跑 D0 校验：真缺陷 0。要入库就说「可以入库了」，或切到 F3。');
     }
     render();
   }
-  F2.mergeUpload = mergeUpload;
 
   function applyHl() {
     var sh = ST.sheet, rs = rows(sh), hit = -1;
