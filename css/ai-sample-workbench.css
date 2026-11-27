@@ -763,16 +763,16 @@ a.dl.in { margin-left: 0; display: inline-block; }
 .pg-i .ti { font-size: 12.5px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px; }
 .pg-i .ti > i { font-size: 11px; color: var(--ink-3); width: 12px; text-align: center; }
 .pg-i em { margin-left: auto; font-style: normal; font-size: 11px; font-family: var(--mono); color: var(--ink-3); }
-.pg-i.done .dot { background: var(--ok); border-color: var(--ok); }
-.pg-i.done .ti { color: var(--ink-2); }
-.pg-i.cur .dot { border-color: var(--acc); color: var(--acc); font-size: 8px; }
-.pg-i.cur .ti { color: var(--acc); font-weight: 600; }
-.pg-i.cur em { color: var(--acc); }
-.pg-i.blocked .dot { border-color: var(--warn); color: var(--warn); font-size: 9px; }
-.pg-i.blocked em { color: var(--warn); }
+.pg-i.s-done .dot { background: var(--ok); border-color: var(--ok); }
+.pg-i.s-done .ti { color: var(--ink-2); }
+.pg-i.s-cur .dot { border-color: var(--acc); color: var(--acc); font-size: 8px; }
+.pg-i.s-cur .ti { color: var(--acc); font-weight: 600; }
+.pg-i.s-cur em { color: var(--acc); }
+.pg-i.s-blocked .dot { border-color: var(--warn); color: var(--warn); font-size: 9px; }
+.pg-i.s-blocked em { color: var(--warn); }
 .pg-l { width: 1.5px; height: 9px; margin-left: 16px; background: var(--line); }
-.pg-l.done { background: var(--ok); }
-.pg-l.cur, .pg-l.blocked { background: var(--acc); }
+.pg-l.s-done { background: var(--ok); }
+.pg-l.s-cur, .pg-l.s-blocked { background: var(--acc); }
 
 /* ── 批注模式 ── */
 .an-btn.on { border-color: var(--acc); color: var(--acc); background: var(--acc-soft); }
@@ -788,4 +788,42 @@ a.dl.in { margin-left: 0; display: inline-block; }
 .an-tip.show { display: block; }
 .an-tip b { display: block; font-size: 12.5px; color: var(--acc); margin-bottom: 5px; }
 .an-tip p { margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.75; }
+
+/* ── 谁说的：自己发的消息靠右、带头像与姓名 ── */
+.wb-msg.me { flex-direction: row-reverse; }
+.wb-msg.me .col { display: flex; flex-direction: column; align-items: flex-end; min-width: 0; }
+.wb-msg.me .who { text-align: right; }
+.wb-msg.me .bd { background: var(--acc-soft); border: 1px solid var(--acc-line); border-radius: 12px 3px 12px 12px;
+  padding: 9px 13px; max-width: 88%; text-align: left; color: var(--ink); }
+.wb-msg.me .av.who { background: var(--acc); color: #fff; font-size: 11px; font-weight: 600; }
+/* 消息里嵌了产物卡或回执时不套气泡，否则会卡中卡 */
+.wb-msg.me .bd:has(.wb-art), .wb-msg.me .bd:has(.rc), .wb-msg.me .bd:has(.file),
+.wb-msg.me .bd:has(.pv-box), .wb-msg.me .bd:has(.orc-plan) { background: none; border: 0; padding: 0; max-width: 100%; }
+.wb-msg.me .sent-att { margin-top: 6px; }
+
+/* ── 指派：收件箱顶部分堆 + 卡上负责人标签 ── */
+.pg-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 2px 0 13px; margin-bottom: 12px;
+  border-bottom: 1px solid var(--line); }
+.pg-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2);
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 5px; cursor: pointer; background: #fff; }
+.pg-chip:first-child { padding-left: 10px; }
+.pg-chip:hover { border-color: var(--acc-line); color: var(--acc); }
+.pg-chip.on { border-color: var(--acc); background: var(--acc-soft); color: var(--acc); font-weight: 600; }
+.pg-chip b { font-family: var(--mono); font-weight: 600; }
+.pg-chip .av { width: 18px; height: 18px; }
+.pg-end { margin-left: auto; font-size: 12px; color: var(--ink-3); cursor: pointer; display: inline-flex;
+  align-items: center; gap: 5px; }
+.pg-end:hover, .pg-end.on { color: var(--acc); }
+.wb-asg { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-3); cursor: pointer; }
+.wb-asg:hover { color: var(--acc); }
+.wb-asg i { font-size: 11px; }
+.wb-asg.set { color: var(--ink-2); }
+.wb-asg.me { color: var(--acc); font-weight: 600; }
+.av.xs { width: 17px; height: 17px; border-radius: 50%; background: var(--acc-soft); color: var(--acc);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+.wb-asg.me .av.xs { background: var(--acc); color: #fff; }
+.wb-q.fo, .wb-group.fo { display: none; }
+.shmt { font-size: 11px; color: var(--ink-3); padding: 5px 10px 6px; }
+.shmi .ld { margin-left: auto; font-weight: 400; color: var(--warn); font-size: 11px; font-family: var(--mono); }
+.shmi.on .ld { color: var(--acc); }
 

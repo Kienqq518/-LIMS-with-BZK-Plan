@@ -55,6 +55,7 @@
     }
   };
   var D = load();
+  var FIL = '';                       // 收件箱筛选：'' 全部 | '__none__' 未指派 | 成员 id
   function load() {
     try { var r = localStorage.getItem(KEY); if (r) { var d = JSON.parse(r); if (d && d.tasks) return d; } } catch (e) { }
     return JSON.parse(JSON.stringify(SEED));
@@ -67,6 +68,8 @@
   }
   function user(id) { return USERS.filter(function (u) { return u.id === id; })[0] || { id: id, nm: id, ini: '?' }; }
   function mem(id) { return tk().members.filter(function (m) { return m.id === id; })[0]; }
+  function userRole(id) { var m = mem(id); return m ? m.role : 'viewer'; }
+  function S_ans(qid) { var st = global.WB && WB.state ? WB.state() : {}; return !!st[qid]; }
   function myRole() { var m = mem(D.me); return m ? m.role : 'viewer'; }
 
   var SH = {
@@ -123,19 +126,50 @@
       save(); paint();
     },
     assign: function (qid, uid) {
-      var t = tk();
+      var t = tk(), q = global.WB && WB.raw ? WB.raw(qid) : null;
       if (uid) t.assign[qid] = uid; else delete t.assign[qid];
-      save(); if (global.WB) WB.renderInbox ? WB.renderInbox() : 0;
-      if (global.WB) WB.paintChatNow();
+      save();
+      if (global.WB && WB.refreshInbox) WB.refreshInbox();
+      if (global.WB && q) {
+        var txt = uid === D.me
+          ? '已挂到<b>你名下</b>，收件箱顶部可以用「只看指派给我的」筛出来。'
+          : (uid ? '已把这条指派给 <b>' + esc(user(uid).nm) + '</b>（' + ROLE[userRole(uid)].ti + '），' +
+            'TA 的任务列表会出现「待我 N」。' : '已取消这条的指派，回到谁都能处置。');
+        txt += '<span class="tg">' + esc((q.q || '').slice(0, 22)) + '…</span>';
+        WB.say('sys', '系统', txt);
+      }
+      if (global.TS) TS.render();
     },
-    assignedToMe: function () {
-      var t = tk(), n = 0;
-      Object.keys(t.assign).forEach(function (k) { if (t.assign[k] === D.me) n++; });
-      return n;
+    /* 收件箱顶部：按人分堆 + 只看我的 */
+    bar: function () {
+      if (!global.WB || !WB.raws) return '';
+      var t = tk(), all = WB.raws(), by = {};
+      all.forEach(function (q) { if (!S_ans(q.id)) { var u = t.assign[q.id] || ''; by[u] = (by[u] || 0) + 1; } });
+      var chips = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; }).map(function (k) {
+        var nm = k ? user(k).nm : '未指派';
+        return '<span class="pg-chip' + (FIL === k ? ' on' : '') + '" onclick="SH.filter(\'' + k + '\')">' +
+          (k ? '<i class="av sm">' + esc(user(k).ini) + '</i>' : '') + esc(nm) + '<b>' + by[k] + '</b></span>';
+      }).join('');
+      var mine = by[D.me] || 0;
+      var on = FIL === D.me;
+      return '<div class="pg-bar">' + chips +
+        '<span class="pg-end' + (on ? ' on' : '') + '" onclick="SH.filter(\'' + D.me + '\')" ' +
+        'title="只看待处置且挂在你名下的问题">' +
+        '<i class="fa fa-' + (on ? 'times' : 'filter') + '"></i>' +
+        (on ? '看全部待处置 ' + all.length + ' 条' : '只看指派给我的 ' + mine + ' 条') + '</span>';
     },
+    filter: function (k) { FIL = (FIL === k ? '' : k); if (global.WB) WB.refreshInbox(); paint(); },
+    filtering: function () { return FIL; },
+    shown: function (id) {
+      if (!FIL) return true;
+      var t = tk();
+      if (FIL === '__none__') return !t.assign[id];
+      return t.assign[id] === FIL;
+    },
+    assignedToMe: function () { return SH.todo(global.TS ? TS.idx() : 0); },
     todo: function (i) {
       var t = D.tasks[i] || { assign: {} }, n = 0;
-      Object.keys(t.assign).forEach(function (k) { if (t.assign[k] === D.me) n++; });
+      Object.keys(t.assign).forEach(function (k) { if (t.assign[k] === D.me && !S_ans(k)) n++; });
       return n;
     },
     /* 无入库权的人点入库 → 发申请，不静默失败 */
@@ -162,15 +196,24 @@
       if (!SH.can('share.manage') && !SH.can('q.answer')) return;
       var box = document.createElement('div');
       box.id = 'shAssign'; box.className = 'sh-menu';
-      var t = tk(), cur = t.assign[qid];
-      box.innerHTML = '<div class="shmi' + (!cur ? ' on' : '') + '" onclick="SH.assign(\'' + qid + '\',\'\')">' +
-        '<i class="fa fa-circle-o"></i>不指派</div>' +
-        t.members.map(function (m) {
-          var u = user(m.id);
-          return '<div class="shmi' + (cur === m.id ? ' on' : '') + '" onclick="SH.assign(\'' + qid + '\',\'' + m.id + '\')">' +
-            '<span class="av sm">' + esc(u.ini) + '</span>' + esc(u.nm) +
-            '<small>' + ROLE[m.role].ti + '</small></div>';
-        }).join('');
+      var t = tk(), cur = t.assign[qid], load = {};
+      if (global.WB && WB.raws) WB.raws().forEach(function (q) {
+        if (S_ans(q.id)) return; var k = t.assign[q.id] || ''; load[k] = (load[k] || 0) + 1;
+      });
+      var rows = [{ id: '', nm: '不指派', ini: '', role: '', ic: 'fa-circle-o' }];
+      if (!mem(D.me) || D.me !== cur) rows.push({ id: D.me, nm: '指派给我', ini: user(D.me).ini, role: '', ic: '' });
+      t.members.forEach(function (m) {
+        if (m.id === D.me) return;
+        var u = user(m.id);
+        rows.push({ id: m.id, nm: u.nm, ini: u.ini, role: ROLE[m.role].ti, ic: '' });
+      });
+      box.innerHTML = '<div class="shmt">指派这条问题</div>' + rows.map(function (r) {
+        var on = (r.id || '') === (cur || '');
+        return '<div class="shmi' + (on ? ' on' : '') + '" onclick="SH.assign(\'' + qid + '\',\'' + r.id + '\')">' +
+          (r.ic ? '<i class="fa ' + r.ic + '"></i>' : '<span class="av sm">' + esc(r.ini) + '</span>') +
+          esc(r.nm) + (r.role ? '<small>' + r.role + '</small>' : '') +
+          (r.id && load[r.id] ? '<b class="ld">' + load[r.id] + ' 待处理</b>' : '') + '</div>';
+      }).join('');
       var r = ev && ev.target ? ev.target.getBoundingClientRect() : { left: 300, bottom: 200 };
       box.style.left = Math.min(r.left, window.innerWidth - 210) + 'px';
       box.style.top = (r.bottom + 6) + 'px';
@@ -181,6 +224,7 @@
     },
     who: function (qid) { var t = tk(); return t.assign[qid] ? user(t.assign[qid]).nm : ''; },
     mine: function (qid) { return tk().assign[qid] === D.me; },
+    ini: function (qid) { var u = tk().assign[qid]; return u ? user(u).ini : ''; },
     open: function () { var m = document.getElementById('shMask'); if (m) m.classList.add('show'); panel(); },
     close: function () { var m = document.getElementById('shMask'); if (m) m.classList.remove('show'); },
     menu: function (i, ev) {

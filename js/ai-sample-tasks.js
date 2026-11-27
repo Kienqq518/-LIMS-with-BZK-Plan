@@ -159,11 +159,11 @@
       '<button class="padd" onclick="document.getElementById(\'fileIn\').click()"><i class="fa fa-plus"></i> 添加文件</button>' +
       files + '</div>' +
       '<div class="psec"><h5>产出<span class="n">' + t.outputs.length + '</span></h5>' + outs + '</div>' +
-      (t.hits && t.hits.length ? '<div class="psec"><h5>标准文件库</h5>' +
+      (t.hits && t.hits.length ? '<div class="psec"><h5>标准成果库</h5>' +
         t.hits.map(function (h) { return '<div class="ph3"><i class="fa fa-cube"></i>' + esc(h) + '</div>'; }).join('') + '</div>' : '') +
       (t.outputs.length ? '<div class="psec"><a class="plink" href="sample-data-detail.html?cat=dlwz" target="_blank">' +
         '<i class="fa fa-external-link"></i> 打开样品数据页</a>' +
-        '<a class="plink" href="standard-library.html" target="_blank"><i class="fa fa-book"></i> 打开标准文件库</a></div>' : '');
+        '<a class="plink" href="standard-library.html" target="_blank"><i class="fa fa-book"></i> 打开标准成果库</a></div>' : '');
   }
   var NODES = [
     { k: 'upload', ic: 'fa-upload', ti: '上传料' },
@@ -198,11 +198,11 @@
     var t = TS.sel(), ns = nodes(t);
     el.innerHTML = NODES.map(function (nd, i) {
       var st = ns[i][0], lab = ns[i][1];
-      return '<div class="pg-i ' + st + '" onclick="WB.openArt(\'' + nd.k + '\')">' +
+      return '<div class="pg-i s-' + st + '" onclick="WB.openArt(\'' + nd.k + '\')">' +
         '<span class="dot"><i class="fa ' + (st === 'done' ? 'fa-check' : st === 'blocked' ? 'fa-exclamation'
           : st === 'cur' ? 'fa-play' : '') + '"></i></span>' +
         '<span class="ti"><i class="fa ' + nd.ic + '"></i>' + nd.ti + '</span>' +
-        '<em>' + esc(lab) + '</em></div>' + (i < 4 ? '<div class="pg-l ' + ns[i][0] + '"></div>' : '');
+        '<em>' + esc(lab) + '</em></div>' + (i < 4 ? '<div class="pg-l s-' + ns[i][0] + '"></div>' : '');
     }).join('');
   }
   function icon(slot) {

@@ -251,7 +251,7 @@
       var lines = [
         '读取 ' + D.files.length + ' 份文件：' + (cap ? cap.name : '—'),
         '正文识别标准号：' + (std ? std.name.replace(/\.[a-z]+$/i, '') : 'DL/T 802.3—2023') + ' → 规范化 DL/T 802.3-2023',
-        '命中标准文件库：已有该标准，拆解成果 v3-final 可复用',
+        '命中标准成果库：已有该标准，拆解成果 v3-final 可复用',
         '任务发现：802.1 是总标准只建分类节点，802.3 独立成 1 个任务',
         '系统对齐：公司基线 v3-final 取骨架 → 本客户环境逐实体比对 · 33 个实体',
         '按能力范围裁剪：' + counts(),
@@ -305,7 +305,7 @@
       var left = WB.unanswered ? WB.unanswered() : 0, sl = WB.scopeLeft ? WB.scopeLeft() : 0;
       if (sl) { WB.openArt('inbox'); WB.say('ai', 'AI 助手', '范围级还有 <b>' + sl + '</b> 条必答，先答完才能入库。'); return; }
       think(['整包预检：38 条规则', '真缺陷 0 · 阻断 ' + (left ? left + ' 条待处置' : '0'),
-        '按样品分块写入：S01 直管', 'S02 带承口', '回写标准文件库：拆解成果更新'], function () {
+        '按样品分块写入：S01 直管', 'S02 带承口', '回写标准成果库：拆解成果更新'], function () {
         WB.openArt('f3');
         if (WB.importRun) WB.importRun();
         render();

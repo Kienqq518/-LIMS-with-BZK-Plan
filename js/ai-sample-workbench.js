@@ -1,5 +1,5 @@
 /**
- * 样品配置工作台 · 问题收件箱
+ * 建模工作台 · F1/F2/F3 一体
  * 数据 = scripts/excel-contract/contract.py 对 DS 实壁类塑料电缆导管真实转换产出的 C0 待定项（112 条）。
  * 设计依据 docs/ai-workbench-page-design-v0.1.md 第四、五节。
  */
@@ -122,7 +122,7 @@
     document.getElementById('wbF1u').innerHTML =
       '<div class="up-slots">' + (slots || '<div class="pe">还没有上传文件</div>') + '</div>' +
       (t.hits && t.hits.length
-        ? archBox('fa-cube', '标准文件库', '', t.hits.map(function (h) {
+        ? archBox('fa-cube', '标准成果库', '', t.hits.map(function (h) {
             return '<div class="arch-li"><i class="fa fa-cube"></i>' + esc(h) + '</div>'; }).join(''))
         : '');
     syncSlots();
@@ -160,7 +160,7 @@
           ['结构', o.sheets + ' 张 sheet'], ['内容', o.rows || '—'], ['定稿', o.at || '—']
         ]) + '<div class="arch-act"><span class="ra" onclick="TS.dl(0)"><i class="fa fa-download"></i> 下载稿件</span>' +
           '<a class="ra" href="sample-data-detail.html?cat=dlwz" target="_blank"><i class="fa fa-external-link"></i> 样品数据页</a>' +
-          '<a class="ra" href="standard-library.html" target="_blank"><i class="fa fa-book"></i> 标准文件库</a></div>')
+          '<a class="ra" href="standard-library.html" target="_blank"><i class="fa fa-book"></i> 标准成果库</a></div>')
       : archBox('fa-table', '稿件存档', '', archRows([['稿件', '未生成'], ['状态', t.status]]));
     document.getElementById('f2Gate').innerHTML = '';
     var dr = document.getElementById('f2Drawer'); if (dr) dr.innerHTML = '';
@@ -259,7 +259,9 @@
     document.getElementById('wbBlock').className = 'wb-block' + (scopeLeft ? '' : ' clear');
     gate(scopeLeft, '先答完 ' + scopeLeft + ' 条必答');
 
-    document.getElementById('wbScope').innerHTML = SCOPE_G.map(scopeCard).join('') || '<div class="wb-hint">本次没有范围级问题。</div>';
+    document.getElementById('wbScope').innerHTML =
+      (global.SH ? SH.bar() : '') +
+      (SCOPE_G.map(scopeCard).join('') || '<div class="wb-hint">本次没有范围级问题。</div>');
     document.getElementById('wbGroups').innerHTML = GROUPS.map(groupCard).join('');
   }
   function render() { renderInbox(); paintChat(); }
@@ -269,7 +271,7 @@
   }
   function scopeCard(m) {
     var q = m.rep, a = S.answers[q.id], o = optsOf(q), multi = m.items.length > 1;
-    return '<div class="wb-group wb-scope' + (a ? ' clear' : '') + '" style="margin-bottom:8px">' +
+    return '<div class="wb-group wb-scope' + (a ? ' clear' : '') + (hidden(q) ? ' fo' : '') + '" style="margin-bottom:8px">' +
       '<div class="wb-gb" style="padding-top:10px">' +
       '<div class="wb-q-h"><div class="wb-q-t">' + esc(q.q) + '</div>' +
       (multi ? '<span class="wb-merge" onclick="WB.rows(\'' + esc(m.key) + '\')">同因合并 ' + m.items.length + ' 条 ▾</span>' : '') +
@@ -282,7 +284,8 @@
     var total = 0, ans = 0;
     g.members.forEach(function (m) { total += m.items.length; ans += memberAnswered(m); });
     var col = S.collapsed[g.sheet];
-    return '<div class="wb-group' + (col ? ' collapsed' : '') + '">' +
+    var vis = 0; g.members.forEach(function (m) { m.items.forEach(function (q) { if (!hidden(q)) vis++; }); });
+    return '<div class="wb-group' + (col ? ' collapsed' : '') + (vis ? '' : ' fo') + '">' +
       '<div class="wb-gh" onclick="WB.toggle(\'' + esc(g.sheet) + '\')">' +
       '<i class="fa fa-caret-down caret"></i><span class="sh">' + esc(g.sheet) + '</span>' +
       '<span class="cn">' + (SHEET_CN[g.sheet] || '') + ' · ' + g.members.length + ' 类问题 / ' + total + ' 处</span>' +
@@ -291,10 +294,11 @@
       '<button class="btn-outline" style="font-size:11.5px;padding:2px 9px" onclick="WB.adoptGroup(event,\'' + esc(g.sheet) + '\')">整组采纳默认值</button>' +
       '</div><div class="wb-gb">' + g.members.map(memberCard).join('') + '</div></div>';
   }
+  function hidden(q) { return global.SH && !SH.shown(q.id); }
   function memberCard(m) {
     var q = m.rep, multi = m.items.length > 1, a = S.answers[q.id];
     var o = optsOf(q);
-    return '<div class="wb-q' + (a ? ' answered' : '') + '" id="q_' + esc(q.id) + '">' +
+    return '<div class="wb-q' + (a ? ' answered' : '') + (hidden(q) ? ' fo' : '') + '" id="q_' + esc(q.id) + '">' +
       '<div class="wb-q-h"><div class="wb-q-t">' + esc(q.q) + '</div>' +
       (multi ? '<span class="wb-merge" onclick="WB.rows(\'' + esc(m.key) + '\')">涉及 ' + m.items.length + ' 处 ▾</span>' : '') +
       '<span class="wb-conf ' + confCls(q.conf) + '">' + confTxt(q.conf) + '</span></div>' +
@@ -331,9 +335,11 @@
       '<span class="wb-undo" onclick="WB.undo(\'' + esc(q.id) + '\')">撤销</span>' +
       (a || q.lv === '范围' ? '' : '<span class="wb-skipbtn" onclick="WB.skip(\'' + esc(q.id) + '\')">跳过</span>') +
       (q.lv === '范围' && !a ? '<span class="wb-must">必答 · 不可跳过</span>' : '') +
-      (global.SH ? '<span class="wb-asg' + (SH.mine(q.id) ? ' me' : '') + '" onclick="SH.assignUI(\'' +
-        esc(q.id) + '\',event)"><i class="fa fa-user-o"></i>' +
-        (SH.who(q.id) ? esc(SH.who(q.id)) : '指派') + '</span>' : '') + '</div>';
+      (global.SH ? '<span class="wb-asg' + (SH.mine(q.id) ? ' me' : (SH.who(q.id) ? ' set' : '')) +
+        '" onclick="SH.assignUI(\'' + esc(q.id) + '\',event)" title="' +
+        (SH.who(q.id) ? '当前负责人：' + esc(SH.who(q.id)) + '，点击改派' : '指派给任务里的某个人') + '">' +
+        (SH.who(q.id) ? '<i class="av xs">' + esc(SH.ini(q.id)) + '</i>' + esc(SH.mine(q.id) ? '我' : SH.who(q.id))
+          : '<i class="fa fa-user-plus"></i>指派') + '</span>' : '') + '</div>';
   }
   function paintChat() {
     var el = document.getElementById('wbChat');
@@ -341,10 +347,12 @@
     remount(); renderArtNav();
     var b = document.querySelector('.wb-body'); if (b) b.scrollTop = b.scrollHeight;
   }
-  var AV = { ai: '<i class="fa fa-magic"></i>', me: '<i class="fa fa-user"></i>', sys: '<i class="fa fa-circle-notch"></i>' };
+  var AV = { ai: '<i class="fa fa-magic"></i>', sys: '<i class="fa fa-circle-notch"></i>' };
   function chatRow(c) {
-    return '<div class="wb-msg ' + c.who + '"><span class="av">' + (AV[c.who] || 'AI') + '</span>' +
-      '<div class="col">' + (c.who === 'ai' ? '' : '<div class="who">' + esc(c.name) + ' · ' + esc(c.at) + '</div>') +
+    var av = c.who === 'me' ? '<span class="av who">' + esc(c.ini || (c.name || '我').slice(0, 1)) + '</span>'
+      : '<span class="av">' + (AV[c.who] || 'AI') + '</span>';
+    var head = c.who === 'ai' ? '' : '<div class="who">' + esc(c.name) + ' · ' + esc(c.at) + '</div>';
+    return '<div class="wb-msg ' + c.who + '">' + av + '<div class="col">' + head +
       '<div class="bd">' + c.text + '</div></div></div>';
   }
 
@@ -353,7 +361,7 @@
   function groupOf(id) { return MERGE[id] || [id]; }
   function allMembers() { var a = []; GROUPS.forEach(function (g) { a = a.concat(g.members); }); return a; }
   function now() { var d = new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
-  /* 拆解成果是复利来源：生成 / 定稿 / 入库都必须回写标准文件库，两边读写同一份数据 */
+  /* 拆解成果是复利来源：生成 / 定稿 / 入库都必须回写标准成果库，两边读写同一份数据 */
   function writeback(kind) {
     if (!global.STDLib) return;
     var code = (global.WBTasks && WBTasks[0] && WBTasks[0].code) || 'DL/T 802.3-2023';
@@ -370,12 +378,17 @@
     else rec = STDLib.onImport(code, { tenant: '迈特诺技术股份有限公司检测中心', deploy: '云部署',
       ver: ver, blocks: 2, rows: nparam + cnt('A1_判定条件') + cnt('A2_结论映射') + cnt('61_映射明细'), how: '首次拆解' });
     if (rec) {
-      say('sys', '系统', '已回写<b>标准文件库</b>：' + esc(code) + ' 的拆解成果更新为 <b>' + esc(ver) + '</b>' +
+      say('sys', '系统', '已回写<b>标准成果库</b>：' + esc(code) + ' 的拆解成果更新为 <b>' + esc(ver) + '</b>' +
         (kind === 'import' ? '，复用记录与变更记录已追加' : kind === 'final' ? '，沉淀范围级问答 ' + qa.length + ' 条（下个客户直接跳过）' : '，待定项 ' + RAW.length + ' 条') +
-        ' <span class="wb-loc" onclick="window.open(\'standard-library.html\')">打开标准文件库看</span>');
+        ' <span class="wb-loc" onclick="window.open(\'standard-library.html\')">打开标准成果库看</span>');
     }
   }
-  function say(who, name, text) { S.chat.push({ who: who, name: name, text: text, at: now() }); }
+  function whoMe() { return global.SH ? SH.who() : { nm: '你', ini: '我' }; }
+  function say(who, name, text) {
+    var m = { who: who, name: who === 'me' ? whoMe().nm : name, text: text, at: now() };
+    if (who === 'me') m.ini = whoMe().ini;
+    S.chat.push(m); return m;
+  }
 
   /* 只重画一张卡与相关计数，避免整树重渲染丢滚动位置与焦点（112 条规模下必须） */
   function paintCard(id) {
@@ -906,7 +919,7 @@
           (tv ? '该任务的 ' + ((tv.o.skips || 0)) + ' 处跳过项已在定稿前闭环。'
             : (aiCnt() ? '<b>' + aiCnt() + '</b> 处由 AI 自决落库，自决清单已推送到站内消息，' +
               '每条写明落库取值、依据与回改路径。' : '全部数据来自人工确认的稿件。')) +
-            '拆解成果已回写标准文件库。</div>',
+            '拆解成果已回写标准成果库。</div>',
           '<a class="ra" href="sample-data-detail.html?cat=dlwz" target="_blank"><i class="fa fa-external-link"></i> 打开样品数据页</a>' +
           (f ? '<a class="dl" download="' + f.name + '" href="' + f.url + '"><i class="fa fa-download"></i> 下载稿件</a>' : '') +
           '<button class="ra" onclick="ORC.panel()">看编排留痕</button>');
@@ -931,8 +944,7 @@
   WB.sync = function () { syncSlots(); };
   WB.paintChatNow = function () { paintChat(); };
   WB.pushMsg = function (who, name, text) {
-    var m = { who: who, name: name, text: text, at: now() };
-    S.chat.push(m); paintChat(); return m;
+    var m = say(who, name, text); paintChat(); return m;
   };
   WB.replaceMsg = function (m, html) {
     for (var i = S.chat.length - 1; i >= 0; i--) { if (S.chat[i] === m) { m.text = html; break; } }
@@ -1060,6 +1072,7 @@
   WB.counts = counts4;
   WB.sideKey = function () { return S.side || ''; };
   WB.demo = function () { return global.TS ? !!TS.sel().cur : true; };
+  WB.refreshInbox = function () { renderInbox(); paintChat(); };
   WB.askImport = function () { SH.askImport(); paintChat(); };
   WB.archNote = function (ask) { return archNote(ask); };
   WB.renderF3 = function () { renderF3(); };
@@ -1082,7 +1095,7 @@
       (f ? '<span class="rc-m">' + f.sheets + ' sheet · ' + Math.round(f.size / 1024) + ' KB</span>' : '') + '</div>' +
       '<div class="rc-l">定稿不可变，再改会自动开新版本。' +
       (c.sk ? '其中 <b>' + c.sk + '</b> 处是跳过——按口径不阻塞定稿，F3 入库前会再问一次。' : '全部问题均已人工确认。') +
-      (c.ai ? ' 已有 <b>' + c.ai + '</b> 处 AI 自决落库。' : '') + '拆解成果已回写标准文件库。</div>',
+      (c.ai ? ' 已有 <b>' + c.ai + '</b> 处 AI 自决落库。' : '') + '拆解成果已回写标准成果库。</div>',
       (f ? '<a class="dl" download="' + f.name + '" href="' + f.url + '"><i class="fa fa-download"></i> 下载定稿</a>' : '') +
       '<button class="ra" onclick="WB.openArt(\'f3\')">去预检入库</button>' +
       '<button class="ra" onclick="WB.openArt(\'sheet\')">看稿件表格</button>');
